@@ -1,5 +1,9 @@
 # WebComponents changelog
 
+## v.next
+
+- InputForm: Added the `skipLogic` property
+
 ## 1.4.6 (2026-09-23)
 
 - Bundles webcomponents 0.3.7: InputForm funcCall swap and cleared-funcCall fixes, ValidationIcon retention, clearing and severity colors

@@ -30,8 +30,9 @@ network file systems, S3, Dropbox, and Google Cloud.
 
 ## Governance
 
-Centrally manage all of the data sources, file shares, connections, queries, and reports in one place. Learn what data
-is being consumed by business by using data flow analysis and impact analysis tools.
+Centrally manage all of the data sources, file shares, connections, queries, and reports in one place. See which
+queries, scripts, and models are behind a result with [data provenance](../../../../govern/audit/data-provenance.md),
+and who uses which data with [Usage Analysis](../../../../govern/audit/usage-analysis.md).
 
 ## Deployment
 
@@ -40,10 +41,13 @@ use it as a SaaS. To scale scientific computations, spin out as many Grok Comput
 
 ## Monitoring
 
-Keep your hand on the platform's pulse by monitoring the performance and efficiency of enterprise systems. Analyze who
-does what, which databases are being used, which queries are submitted and how long they take to execute. Get instant
-alerts when services are down. Use impact analysis tools to see what will get affected downstream if a particular
-component fails.
+Keep your hand on the platform's pulse. [Health endpoints](../../../../develop/server-management.md#server-health) show the state of every
+service. [Usage Analysis](../../../../govern/audit/usage-analysis.md) shows who does what, which functions and queries
+run, which errors users hit, and how the database and server perform. **Log sync** pushes logs, alerts, and a heartbeat
+to Amazon CloudWatch, Google Cloud Logging, or any OpenTelemetry collector, so your monitoring system can page you
+when a service degrades.
+
+[Learn more](../../../../govern/manage-enterprise.md#monitor-the-platform).
 
 ## Audit
 
@@ -60,3 +64,5 @@ build new viewers on top of Datagrok using Grok JS API, or develop custom applic
 
 Built-in admin tools let you change hundreds of parameters and defaults that are exposed by the platform. Use jobs or
 alerts to automate anything.
+
+[Learn how to manage an enterprise instance](../../../../govern/manage-enterprise.md).

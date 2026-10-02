@@ -24,11 +24,18 @@ src/init.ts, src/cli.ts init | compile [--check] | lint | list-steps | run [play
 src/runtime/            args, locate, gestures, assertions, harness (session, journey, resetShell, error floor),
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
+                        server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
-bindings/platform/      the shell: elements, datasets, steps, data, columns, commands, functions, events — always loaded
-bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, events, floor), widgets (shared per-viewer steps)
+bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
+                        account and signing in as another), data (rows, filter, links between tables), columns, commands,
+                        functions, events, workspace (open tables and views, direct links, files in the user's files or a
+                        space, a dropped or chosen file), browse (the tree's loading state, favorites,
+                        moving by address) — always loaded
+bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
+                        per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
+                        what a viewer draws of its lines), filter-panel
 tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
 ```
@@ -71,6 +78,22 @@ One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
 filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
 
+A UI walk that an outside dependency interrupts halfway (a tutorial whose last step runs SQL on an
+outside host) keeps its UI part: a capability gate (`the stand runs the {string} service`, `the stand
+can reach the database of the {string} connection`) goes right before the step that needs it and skips
+the rest of the test where the stand has not got it (`test.skip`; `isSkip` in `failure.ts` lets it
+through the harness; a journey that skips after a failed scenario reports that failure). Python in
+Jupyter stays out even behind a gate (the lead, 2026-10-01): the Scripting tutorial ends before its
+run. The service gate reads the health the stand reports (`serviceGap` in `server.ts`); a dev stack
+reports none (datlas runs without `checkHealth`), and that lets the test go on rather than skip — a
+tutorial, which itself refuses to start on such a stand, gates with the Tutorials project's strict copy. A third gate, `the {string} package is
+installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
+as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
+never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
+a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
+own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
+serves none). Nothing else skips.
+
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
 one line. A gap hunt counts these as covered elsewhere, not as gaps.
@@ -85,7 +108,11 @@ prove it is gone. That covers:
 - entities it creates: projects, tables, layouts, queries, scripts, connections, spaces, groups,
   files it uploads, rows or tables it writes into a database;
 - what the UI makes on the side: the layout and project a query or script save writes, the chat a
-  Chats pane post creates, the grant a Share dialog adds;
+  Chats pane post creates, the grant a Share dialog adds, the picture a Save dialog or the Layouts
+  pane stores (`<pictureId>.png`, which the server keeps when the project or the layout goes — the
+  library's project and layout sweeps delete it; the thumbnails the server cuts from it,
+  `<pictureId>_<width>.png`, have no delete and stay), the notification a share sends (made with
+  Send notifications off unless it is claimed);
 - changes to things the feature does not own: a connection's identifiers configuration, a catalog's
   comment, a shared connection's parameters, the account's settings — put back as they were.
 
@@ -106,7 +133,19 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
   menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
-  Datagrok pages in one browser.
+  Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
+  viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
+  but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
+  workers included, holds more than `BDD_PAGE_MAX_MB` (3000, read from the OS every third feature at
+  ~0.2 s a reading; 0 turns either off) the page is closed
+  and the next feature opens a new one in the same context (a new renderer process; the storage
+  state and HTTP cache stay, the boot is ~3 s); `BDD_MEMORY_LOG=<file>` writes each feature's process
+  and heap memory (`src/runtime/memory.ts`, `BDD_MEMORY_GC=1` adds the readings after a forced
+  collection). A page whose renderer crashed stays open to Playwright (`isClosed()` is false, every
+  call fails): the harness marks it on `crash`, skips its feature-end cleanups (they call into it;
+  the feature fails naming how many did not run) and replaces it in a new context, since a feature
+  may have signed the old one in as another account. A journey
+  scenario that fails closes its dialogs and menus (Escape) before the next scenario starts.
 - **`user is logged in` only resets when the page is in the shell**; it sets `simpleMode` (view
   tabs hidden — switch views by name), clears the error and balloon floors, installs the in-page
   runtime. It waits for the PowerPack Home widgets to finish loading first, so what a widget logs
@@ -214,8 +253,12 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs, and by the project save (`isStaleFixture`,
-  platform/steps.ts). Fixed names (the spaces, most projects) are swept by their exact name.
+  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
+  (the server stamps `createdOn` when it saves an entity, whatever the client set, so a claim about
+  what was made since a step compares with the server's clock, `serverNow`, less a margin for the
+  proxy's clock), by the project save (`isStaleFixture`, platform/steps.ts), and once per worker
+  and view family by `saves the layout of the current table view to the server`, whose own layout
+  goes by id at feature end. Fixed names (the spaces, most projects) are swept by their exact name. The `… named "a, b" should be on the server` counts take a list, from one listing.
 - **Groups and roles are cleaned like spaces** (the complete listing, never a name or ID filter —
   `grok.dapi.groups.filter('name = …')` missed a group that existed). Their global permissions are
   revoked before `grok.dapi.groups.delete`, which refuses a role that holds one (GROK-20904). Never
@@ -424,7 +467,14 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   `html`; see that package's bdd README).
 - A sharing feature shares with `DATAGROK_SHARING_LOGIN` or, unset, with the `bddsecond` user
   `global-setup.ts` creates through `POST /public/v1/users` with the dev-key token (a missing
-  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays).
+  login answers 200 with an `ApiError` body; users cannot be deleted, so it stays). A feature signs
+  in as another account on its own page (`user signs in as the sharing user`, `… as "<login>"`,
+  `… as themselves again`): a session minted from the account's dev key replaces the page's, the
+  client's function cache is cleared as a sign-out clears it, and the account the feature started
+  with signs back in first thing at feature end (`atFeatureEnd(…, first)`), so the cleanups
+  registered before the switch run as it. `the sharing user has no notifications, …` deletes the
+  second account's notifications, and refuses an account that is not a bdd fixture. A share that
+  claims nothing about its notification is made with Send notifications off.
 - `pub serve` degrades under a run: the direct port (`:63343`) has served the bundle in 46 s
   while nginx at `:8888` answered from cache in 3 s; a run started while it is starved fails every
   feature at the shell load. `curl -o /dev/null -w '%{time_total}' localhost:63343/login.dart.js_1.part.js`

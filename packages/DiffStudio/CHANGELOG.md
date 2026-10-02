@@ -1,5 +1,9 @@
 # Diff Studio changelog
 
+## v.next
+
+* Save to Library: Fixed overwriting a library model on a file storage that ignores case — the unused name is now picked ignoring case (a saved PK-PD landed on the library's pk-pd.ivp)
+
 ## 1.7.0 (2026-09-14)
 
 * Compute `#output` expressions inside the per-stage solver so they work in `#loop` / `#update` models

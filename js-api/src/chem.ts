@@ -611,6 +611,7 @@ export namespace chem {
         
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
+          .item('Copy as CXSMILES', () => navigator.clipboard.writeText(convert(this.getMolFile(), Notation.Unknown, Notation.CxSmiles)))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
           .items(Sketcher.getCollection(Sketcher.RECENT_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })

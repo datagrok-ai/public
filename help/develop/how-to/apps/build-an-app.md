@@ -660,8 +660,8 @@ and other package entities shared to the group.
 
 #### Authentication
 
-Out-of-the-box, Datagrok offers authentication with login-password, OAuth (Google, Facebook, Github)
-, SSO (single sign-on) and Active Directory. Enterprise customers might prefer to use a custom SSO (
+Out-of-the-box, Datagrok offers authentication with login-password, [OpenID](../../../deploy/complete-setup/configure-auth.md#openid-authentication) (for example, Google or Azure AD),
+SSO (single sign-on), and Active Directory. Enterprise customers might prefer to use a custom SSO (
 single sign-on)
 scheme. We can accommodate these needs by developing a customer-specific integration.
 

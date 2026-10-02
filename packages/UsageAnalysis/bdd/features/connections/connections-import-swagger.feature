@@ -26,7 +26,7 @@ Feature: Importing an OpenAPI (Swagger) file as a connection
     And the "bdd-swagger.yaml" view should be current
     When user closes all views
     # the tree keeps the node of a connection deleted through the API; a refresh drops it
-    When user clicks on "Refresh" icon inside browse toolbar
+    When user refreshes the browse tree
     Given Platform tree node inside browse tree is expanded
     And Platform---Functions tree node inside browse tree is expanded
     And Platform---Functions---OpenAPI tree node inside browse tree is expanded

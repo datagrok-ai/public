@@ -12,29 +12,31 @@ keywords:
 ---
 
 * [Architecture](../../../../develop/under-the-hood/architecture.md)
-  * Data flows
+  * [Infrastructure](../../../../develop/under-the-hood/infrastructure.md)
   * [Deployment](../../../../deploy/deploy.md)
 
 * Security
   * [Security, authentication, and authorization](../../../../govern/access-control/access-control.md)
   * [Encryption at rest](#encryption-at-rest)
   and [encryption in transit](#encryption-in-transit)
+  * [Vulnerability remediation](security.md#vulnerability-remediation)
 
-* Enterprise Readiness
-  * [Logging and monitoring](#logging-and-monitoring) (using standard AWS tools)
+* Enterprise readiness
+  * [Managing an enterprise instance](../../../../govern/manage-enterprise.md)
+  * [Logging and monitoring](#logging-and-monitoring)
   * [Backup and restore](#backup-and-restore)
   * [Disaster recovery (HA/DR)](#disaster-recovery)
   * [Infrastructure as code](#infrastructure-as-a-code) (ability to deploy using standard DevOps tools)
 
 * Interoperability
-  * Calling web services from client and server with proper auth and integrate that data with Datagrok API
+  * Calling web services from client and server with proper auth: [OpenAPI](../../../../access/open-api.md)
   * Interacting with Datagrok
     * [server API](#server-api)
     * [client API](../../../../develop/packages/js-api.md)
   * Connecting to common data sources
     * [relational databases](https://youtu.be/YJmSvh3_uCM)
     * [local files](https://datagrok.ai/img/slides/access-file-formats.mp4)
-    * datastore files
+    * [file shares and cloud storage](../../../../access/files/files.md)
   <!--Incorrect GIF* [Embedding a Datagrok visualization into a custom web application](https://datagrok.ai/embed_test.html)-->
   * [Embedding a custom visualization into Datagrok](../../../../visualize/viewers/markup.md)
 
@@ -43,40 +45,27 @@ keywords:
   * [Devops process including deployment of packages, their dependencies and versioning](../../../../develop/develop.md)
   * [Concurrent work by team of developers](../../../../develop/develop.md#development)
 
-* Scalability and Performance
-  * Maximum dataset sizes
-  * Stability under concurrent user load
+* Scalability and performance
+  * [Maximum dataset sizes and in-memory performance](../../../../develop/under-the-hood/performance.md)
+  * [Stability under concurrent user load](stress-testing-results.md)
   * [Scaling and stability under load](../../../../develop/under-the-hood/infrastructure.md#scalability)
 
 * Extensibility
   * [Creating custom visualizations](https://github.com/datagrok-ai/public/tree/master/packages/BiostructureViewer)
   * [Creating custom server-side components](https://github.com/datagrok-ai/public/tree/master/packages/Admetica)
-  * [Creating custom scripts](https://datagrok.ai/help/compute/scripting) and utilizing them in other components
+  * [Creating custom scripts](../../../../compute/scripting/scripting.mdx) and utilizing them in other components
   * [Ability to reskin Datagrok to appear as a fit-for-purpose web application](https://public.datagrok.ai/apps/HitTriage/HitTriage?browse=apps)
   * [Ability to build custom application including data entry, workflow, data model, state management, persistence, etc](https://github.com/datagrok-ai/public/tree/master/packages)
 
 * Frontend
-  * Capacity of holding data in client with differently sized data sets related to project scenarios, sizes detailed in
-    data sources section below
-    * High-throughput screening
-    * Virtual screening (minimal requirement)
-    * Large-chemical spaces
-  * Ability to cross-connect multiple large data tables
-  * Visualization of data sets in different plots
-    * High-throughput screening
-    * Virtual screening
-  * 2D | 3D structure rendering and interaction:
-    * Ability to customize structure rendering, and interact with it
-    * Atom-based annotations
-    * 2D-3D connectivity
+  * [Holding and exploring large datasets in the browser](../../../../develop/under-the-hood/performance.md#in-memory-database)
+  * [Visualizing datasets with interactive viewers](../../../../visualize/viewers/viewers.md)
+  * [2D and 3D structure rendering, sketching, and search](../../../../datagrok/solutions/domains/chem/chem.md)
+  * [3D biostructures](../../../../visualize/viewers/biostructure.md)
   * Interactivity
     * [Live data masking](https://youtu.be/67LzPsdNrEc)
     * [Filter by selection](https://youtu.be/67LzPsdNrEc)
-    * Different input methods (2D drawing etc.)
-    * API calls
-  * Ability to plugin non-native Datagrok pieces (e.g. react containers) and interact with Datagrok frontend (eg react
-    containers)
-  * Scalability of frontend scripting functionality
+  * [Developing custom viewers, including non-native components such as React containers](../../../../develop/how-to/viewers/develop-custom-viewer.md)
 
 ## Encryption at rest
 
@@ -84,6 +73,8 @@ For AWS deployment, we rely on Amazon's built-in encryption for
 [RDS](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html)
 and
 [S3 buckets](https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html).
+Credentials for data connections are additionally encrypted by Datagrok with
+[server keys](../../../../govern/access-control/server-keys.md).
 
 ## Encryption in transit
 
@@ -98,12 +89,27 @@ features.
 
 ## Logging and monitoring
 
-For AWS deployment, we rely on [Amazon CloudWatch](https://aws.amazon.com/cloudwatch/) service which provides a
-convenient way to collect and observe metrics and logs.
+Datagrok works with the monitoring tools you already use, in any cloud or on-premises:
+
+* **Logs and alerts.** **Log sync** pushes logs, audit events, alerts, and a heartbeat to
+  Amazon CloudWatch, Google Cloud Logging, or any OpenTelemetry (OTLP) collector. See
+  [Export logs](../../../../govern/audit/audit.md#export-logs).
+* **Health checks.** The `/api/admin/health` endpoint reports the status of every service and needs
+  no sign-in, so load balancers and uptime monitors can probe it.
+* **Usage and performance.** [Usage Analysis](../../../../govern/audit/usage-analysis.md) shows
+  user activity, errors, and server and database metrics.
+
+For details, see [Monitor the platform](../../../../govern/manage-enterprise.md#monitor-the-platform).
 
 ## Backup and restore
 
-Amazon has scheduled backups for RDS and S3, but you can back up and restore an RDS database as a standard Postgres database.
+Back up these together so that you can restore them to the same point in time:
+
+* The Postgres database that holds metadata, audit logs, and encrypted credentials. You can back it up and restore it
+  as a standard Postgres database, for example with scheduled RDS snapshots on AWS.
+* The file storage (S3, Google Cloud Storage, or a local volume). On AWS, see
+  [S3 backup](../../../../deploy/complete-setup/configure-s3-backup.md).
+* [Server key](../../../../govern/access-control/server-keys.md) material, if you keep keys in an external backend.
 
 ## Disaster recovery
 
@@ -113,12 +119,10 @@ Amazon has scheduled backups for RDS and S3, but you can back up and restore an 
 
 Datagrok Docker containers are built using Jenkins. All software is upgraded and patched on every build.
 
-Docker-compose manifest is used to describe and deploy Datagrok applications.
+You can deploy Datagrok with standard DevOps tools:
 
-Also, there are multiple advanced options to deploy application:
-* [CloudFormation template](https://github.com/datagrok-ai/public/blob/master/help/deploy/cloudformation/cloudformation.json)
-  to deploy to AWS ECS
-* [Terraform scripts](https://github.com/datagrok-ai/public/blob/master/help/deploy/aws/terraform/terraform.tf)
-to deploy to
-  AWS ECS
-  
+* [Docker Compose](../../../../deploy/docker-compose/docker-compose.mdx)
+* [Helm chart for Kubernetes](../../../../deploy/k8s/install-helm-chart.md)
+* [CloudFormation template for Amazon EKS](../../../../deploy/aws/deploy-amazon-eks.mdx)
+* [Terraform for AWS](../../../../deploy/aws/deploy-amazon-terraform.md)
+* [Terraform for Google Cloud (GKE)](../../../../deploy/GCP/deploy-gcp-gke-terraform.md)

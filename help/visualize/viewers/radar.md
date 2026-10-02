@@ -34,8 +34,12 @@ You can use a radar viewer as a standalone chart or as an [inline viewer in summ
   1. Right-click a grid viewer. The context menu appears.
   1. Select **Add** > **Summary columns** > **Radar**.
 
-> Developers: To add the viewer from the console, use:
- `grok.shell.tv.addViewer('Radar');` 
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Radar');`
+
+:::
 
 Initially, a radar viewer selects the first 20 numerical columns from the corresponding table and displays up to 1000 rows, along with the current row. Percentiles (5th and 95th) can be toggled on or off and are represented as color-filled areas across the axes. Both the colors and values of these percentiles can be configured for better visualization.
 

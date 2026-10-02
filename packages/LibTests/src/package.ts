@@ -2,6 +2,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {ViewerT, InputFormT} from '@datagrok-libraries/webcomponents';
@@ -127,6 +128,14 @@ export async function TestDiv2(a: number, b: number) {
 //output: dataframe res
 export async function TestDF1(df: DG.DataFrame) {
   return df;
+}
+
+//output: dataframe res
+export async function TestPresets() {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'preset', ['fast', 'exact']),
+    DG.Column.fromList('double', 'a', [1, 10]),
+  ]);
 }
 
 //input: file inputFile
@@ -426,6 +435,22 @@ export async function TestAnnotatedInputs(a: number, b: number, c: number, v: nu
   return 1;
 }
 
+// inputs named like the driver's own aliases and expression keys
+
+//input: string region = "EU"
+//input: string city {choices: LibTests:MockCities}
+//input: string call
+//input: string all
+//input: double table
+//input: double target
+//input: double literals
+//input: int x {validator: table + target > 0}
+//output: string res
+export function TestReservedNames(region: string, city: string, call: string, all: string, table: number,
+  target: number, literals: number, x: number): string {
+  return city;
+}
+
 //input: int x
 //output: string res
 export function MockValidator(x: number): string | null {
@@ -437,6 +462,76 @@ export function MockValidator(x: number): string | null {
 //output: int res
 export function TestNamedValidators(x: number, y: number): number {
   return x + y;
+}
+
+// annotation values
+
+//input: string region
+//output: list<string> res
+export function MockCities(region: string): string[] {
+  return region ? [`${region}-1`, `${region}-2`] : [];
+}
+
+//output: dataframe res
+export function MockCars(): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
+    DG.Column.fromList('int', 'mpg', [21, 30]),
+    DG.Column.fromList('int', 'CYL', [6, 4]),
+  ]);
+}
+
+//input: int calc = 2 + 2
+//input: string bare = high
+//input: string metric = minkowski {choices: ["euclidean", "minkowski"]}
+//input: string speed {choices: ["slow", "fast"]}
+//input: string region = "EU"
+//input: string city {choices: LibTests:MockCities}
+//input: string model {choices: LibTests:MockCars(); propagateChoice: all}
+//input: int mpg
+//input: int cyl
+//output: string res
+export function TestValueAnnotations(calc: number, bare: string, metric: string, speed: string, region: string,
+  city: string, model: string, mpg: number, cyl: number): string {
+  return `${model} ${mpg} ${cyl}`;
+}
+
+//output: dataframe res
+export function MockCarsTyped(): DG.DataFrame {
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'model', ['Mazda', 'Volvo']),
+    DG.Column.fromList('string', 'cyl', ['4', 'abc']),
+    DG.Column.fromList('double', 'mpg', [21.5, 30]),
+    DG.Column.fromList('int', 'name', [1, 2]),
+    DG.Column.fromList('string', 'flag', ['true', 'no']),
+    DG.Column.fromList('string', 'engine', ['E1', 'E2']),
+    DG.Column.fromList('string', 'made', ['2020-05-01T00:00:00Z', 'not a date']),
+  ]);
+  const dates = ['2021-03-04T05:06:07Z', '2022-01-02T00:00:00Z'];
+  df.columns.addNewDateTime('when').init((i: number) => dayjs(dates[i]));
+  return df;
+}
+
+//output: dataframe res
+export function MockEngines(): DG.DataFrame {
+  return DG.DataFrame.fromColumns([
+    DG.Column.fromList('string', 'engine', ['E1', 'E2']),
+    DG.Column.fromList('int', 'cyl', [8, 10]),
+  ]);
+}
+
+//input: string model {choices: LibTests:MockCarsTyped(); propagateChoice: all}
+//input: string engine {choices: LibTests:MockEngines(); propagateChoice: all}
+//input: int cyl
+//input: int mpg
+//input: string name
+//input: bool flag
+//input: datetime when
+//input: datetime made
+//output: string res
+export function TestLookupAnnotations(model: string, engine: string, cyl: number, mpg: number, name: string,
+  flag: boolean, when: dayjs.Dayjs, made: dayjs.Dayjs): string {
+  return `${model} ${engine}`;
 }
 
 //input: int x
@@ -459,4 +554,12 @@ export function MockValidatorThrow(x: number): string {
 //output: int res
 export function TestExpressionInputs(k: number, hv: number, foo: number, bar: number, code: string): number {
   return k;
+}
+
+//input: int k = 2
+//input: int en = 1 {enabled: k > 1}
+//input: int both = 1 {visible: k > 0; enabled: k > 1}
+//output: int res
+export function TestEnabledInputs(k: number, en: number, both: number): number {
+  return en;
 }

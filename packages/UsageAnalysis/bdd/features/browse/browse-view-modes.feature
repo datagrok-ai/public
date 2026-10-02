@@ -12,10 +12,11 @@ Feature: Browsing mode and persistent views
   Dashboards is used instead: it is a top-level node of the tree, present on every stand, so the
   case has no reason to skip.
 
-  Browse-View-02, -03 and -05 are not translated, and there is no other file holding them.
-  -03 (the pin control) is writable today — the preview tab's pin carries an aria-label — and is
-  the first thing to add to this file. -02 needs an edit gesture on the previewed view, and -05
-  needs the sidebar's count badge, which carries no name at all.
+  Browse-View-03 (the pin on a preview tab keeps the view) is claimed with simple mode off, since
+  the pin lives on the view's tab handle, which simple mode hides. Browse-View-02 (an edit pins the
+  preview) needs an edit gesture on a previewed view and is not written; Browse-View-05 (the badge
+  counting the open views) has no text and no name: the count is a CSS `content: attr(data-count)`
+  on a sidebar header simple mode keeps hidden.
 
   Background:
     Given user is logged in
@@ -52,5 +53,23 @@ Feature: Browsing mode and persistent views
     Then Demo view should be visible
     And Tutorials view should be visible
     And Projects view should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: The pin on a preview tab keeps the view through the next single click
+    Given simple mode is off
+    And Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---demog.csv tree node inside browse tree
+    Then the "demog" view should be current
+    And "This is Browse preview. Click to keep it open" icon should be visible
+    When user clicks on "This is Browse preview. Click to keep it open" icon
+    Then "This is Browse preview. Click to keep it open" icon should be absent
+    # the pinned view is a table view now, and its Toolbox takes the Browse tab's place
+    Given the toolbox pane is hidden
+    And the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    Then Projects view should be visible
+    And demog view should be present
     And no errors should have been logged
     And no error or warning balloon should have been shown

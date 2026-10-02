@@ -26,6 +26,8 @@ export class UsageWidget extends DG.Widget {
         progress.close();
       }
     });
+    // as in the Reports widget: the click would bubble to the Home view's root, which makes Home current again
+    link.addEventListener('click', (e) => e.stopPropagation());
     const linkDiv = ui.box( ui.div([link],
       {style: {display: 'flex', justifyContent: 'end', alignItems: 'center', paddingRight: '8px'}}), {style: {maxHeight: '40px'}});
     super(ui.box(ui.splitV([linkDiv, uniqueUsersDiv, userErrorsDiv, services], {classes: 'ua-widget'})));

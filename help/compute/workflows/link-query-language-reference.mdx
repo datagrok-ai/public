@@ -28,7 +28,9 @@ NAME(FLAGS)?:PATH
 ```
 
 - `NAME` is the query alias, an identifier (`[_a-zA-Z][a-zA-Z_0-9]*`).
-  Aliases are distinct within a link, across `from` and `to`.
+  Aliases are distinct within a link, across `from` and `to`. A leading
+  `$`, as in `$call`, marks names the driver adds; rules and checks
+  reject it in aliases they are given.
 - `FLAGS` is an optional comma-separated subset of `optional`, `call`
   and `template`.
 - `PATH` is a list of `/`-separated segments, relative to the link's host
@@ -75,7 +77,7 @@ empty path. These forms are equivalent:
 | `after*`    | reference   | non-`base`      | many nodes | Every following sibling whose id matches.<br/>*e.g.* `after*(@base, nextStep)` |
 | `after+`    | reference   | non-`base`      | one node | The immediately following sibling, only when its id matches.<br/>*e.g.* `after+(@base, nextStep)` |
 | `#SELECTOR` | tag variant | any path        | as the selector | The same matching on [tags](./configuration#tags), with AND across tags, descending through nesting.<br/>*e.g.* `#all(metric&primary)` |
-| `outputs(nqName)`, `inputs(nqName)` | io wildcard | last segment of `from` / `to`, with `(template)` | one query per io | Every output or input the script `nqName` declares, minus an optional `\|`-list of exclusions.<br/>*e.g.* `inputs(Pkg:Script, debug\|verbose)` |
+| `outputs(nqName)`, `inputs(nqName)` | io wildcard | last segment of `from` / `to`, with `(template)` | one query per io | Every output or input the script `nqName` declares, minus an optional `\|`-list of exclusions. An exclusion is an io name, `$nonscalar` (every io that is not a number, string, boolean or date, such as dataframes, columns and lists), or `$linked` (ios that a data link without `$linked` writes, dropped after matching).<br/>*e.g.* `inputs(Pkg:Script, debug\|verbose)`, `inputs(Pkg:Solver, preset\|$nonscalar\|$linked)` |
 
 - Reference selectors take the base query name as their first argument,
   prefixed with `@`. Plain selectors must not take one.
@@ -93,7 +95,7 @@ empty path. These forms are equivalent:
 |------------|---------|------------|
 | `optional` | A query with no match does not prevent the link from being created; the alias reads as absent. | Any query. |
 | `call`     | Match the node (the FuncCall) itself rather than a script io. In `funccall` actions it is required for inputs read as `DG.FuncCall` and for the `setFuncCall` output. In every other link type it must be combined with `optional`, and the controller exposes only a `hasCall(name)` presence check. | `from` of any link; `to` of `funccall` actions only. Not in `base`, `showWhen`, `hideWhen` or rule queries, not with `template`. Accepted in `not` without effect. |
-| `template` | Expand the last segment into one query per io: a `\|`-list of io names, or an `outputs()` / `inputs()` wildcard. The alias is the prefix plus the io name; a `_` prefix gives the io names alone. | `from` and `to` of data links. Not in rule queries. |
+| `template` | Expand the last segment into one query per io: a `\|`-list of io names, or an `outputs()` / `inputs()` wildcard. The alias is the prefix plus the io name; a `_` prefix gives the io names alone. | `from` of data, validator, meta, node meta and pipeline validator links; `to` of data, validator and meta links; `from` and `to` of rules. |
 
 ### Where a query appears
 
@@ -107,7 +109,7 @@ empty path. These forms are equivalent:
 | `actions` of validators | a node, any selector | `optional` |
 | `showWhen`, `hideWhen` of actions | a node; no io wildcards | `optional` |
 | `from` / `to` of `funccall` actions | a node with `call`, or a script io | `optional`, `call` |
-| `from` / `to` of rules | a script io | `optional` only; `call` is added by the expansion for validator sources |
+| `from` / `to` of rules | a script io | `optional`, `template` |
 | `io`, `check.table` and `vars` values of checks | a script io | none; written without an alias |
 
 Two rules hold across the table. `base` is evaluated first and must
@@ -160,7 +162,10 @@ IOSegment ::= IOSelector
 TagSpec ::= '#' TagSelectorType '(' TagSelectorArgs ')'
 TagSelectorArgs ::= (RefArg (',' TagIds)?) | TagIds
 TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
-IOSelector ::= IOSelectorType '(' IOSelectorNqName (',' TargetIds?)? ')'
+IOSelector ::= IOSelectorType '(' IOSelectorNqName (',' ExcludeIds?)? ')'
+ExcludeIds ::= ExcludeArg ('|' ExcludeArg)*
+ExcludeArg ::= Id | ExcludeKind
+ExcludeKind ::= '$' Id
 IOSelectorType ::= "inputs" | "outputs"
 IOSelectorNqName ::= Id ':' Id
 Selector ::= SelectorType '(' SelectorArgs? ')'
@@ -200,5 +205,5 @@ tables above are checked after parsing.
   `call` with `template` are rejected at parse time.
 - An io wildcard (`outputs()`, `inputs()`) requires the `template` flag
   and may only be the last segment.
-- Rule queries reject `call` and `template`; a check's `io`, `table` and
-  `vars` queries carry no alias.
+- Rule queries reject `call`; a check's `io`, `table` and `vars` queries
+  carry no alias.

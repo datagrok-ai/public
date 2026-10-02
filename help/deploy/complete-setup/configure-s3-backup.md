@@ -1,6 +1,6 @@
 ---
 title: "Advanced: Configure AWS S3 backup"
-sidebar_position: 4
+sidebar_position: 5
 description: Enable AWS Backup with bucket versioning to automatically back up the S3 bucket used by Datagrok.
 keywords:
   - s3 bucket versioning
@@ -10,7 +10,8 @@ keywords:
   - restore from backup
 ---
 
-This document contains instructions to configure AWS S3 bucket backup
+This document contains instructions to configure AWS S3 bucket backup. The bucket is only one part of an instance's state.
+To learn what else to back up and how to restore, see [Back up and restore](backup.md).
 
 ## Configure with terraform AWS deployment
 
@@ -41,7 +42,6 @@ To configure manual AWS S3 bucket backup, follow these steps:
                      "s3:GetObjectVersionAcl",
                      "s3:GetObject",
                      "s3:ListBucketMultipartUploads",
-                     "s3:*",
                      "backup:CreateBackupPlan",
                      "backup:CreateBackupSelection",
                      "backup:StartBackupJob",
@@ -53,14 +53,16 @@ To configure manual AWS S3 bucket backup, follow these steps:
                  "Effect": "Allow",
                  "Resource": [
                      "arn:aws:s3:::<Your S3 bucket name>",
-                     "arn:aws:s3:::<Your S3 bucket name>/*",
-                     "*"
+                     "arn:aws:s3:::<Your S3 bucket name>/*"
                  ]
              }
          ],
          "Version": "2012-10-17"
         }
      ```
+
+     Keep the `Resource` list limited to your bucket. Don't add `s3:*` or `"*"`: that grants the role
+     full access to every bucket in the account.
 
    - Set tag and policy name and save it
    - Add saved policy to IAM Role

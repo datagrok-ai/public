@@ -149,9 +149,14 @@ features, and upcoming changes. You can also track our latest updates in [Releas
 
 ## QA tools
 
-### GrokTester
+### Continuous testing
 
-Is an integrated monitoring system that runs automated package tests every hour. It's also possible to run [package testing locally](../how-to/tests/test-packages.md#local-testing) before publishing.
+Every pull request that changes a public package, and every push of package changes to `master` or a release branch,
+runs that package's tests in GitHub Actions against a
+fresh Datagrok instance (see [Testing public package changes](../how-to/tests/test-packages.md#testing-public-package-changes)).
+Scheduled test pipelines run the platform and package test suites on our test instances and report the results to the
+[test tracking system](#test-tracking-system). You can also run [package tests locally](../how-to/tests/test-packages.md#local-testing)
+before publishing.
 
 ### Test tracking system
 

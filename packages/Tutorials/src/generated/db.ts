@@ -426,37 +426,37 @@ export type OrderDetailsExpand = {
 };
 
 export type NorthwindTransactionOp =
-  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>} |
+  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'categories'; id: string; values: DG.DomainTxValues<Partial<CategoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'categories'; id: string} |
-  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>} |
+  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'suppliers'; id: string; values: DG.DomainTxValues<Partial<SuppliersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'suppliers'; id: string} |
-  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>} |
+  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'products'; id: string; values: DG.DomainTxValues<Partial<ProductsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'products'; id: string} |
-  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>} |
+  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'customers'; id: string; values: DG.DomainTxValues<Partial<CustomersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'customers'; id: string} |
-  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>} |
+  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employees'; id: string; values: DG.DomainTxValues<Partial<EmployeesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employees'; id: string} |
-  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>} |
+  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'shippers'; id: string; values: DG.DomainTxValues<Partial<ShippersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'shippers'; id: string} |
-  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>} |
+  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'regions'; id: string; values: DG.DomainTxValues<Partial<RegionsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'regions'; id: string} |
-  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>} |
+  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'territories'; id: string; values: DG.DomainTxValues<Partial<TerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'territories'; id: string} |
-  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>} |
+  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employee_territories'; id: string; values: DG.DomainTxValues<Partial<EmployeeTerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employee_territories'; id: string} |
-  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>} |
+  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'orders'; id: string; values: DG.DomainTxValues<Partial<OrdersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'orders'; id: string} |
-  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>} |
+  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'order_details'; id: string; values: DG.DomainTxValues<Partial<OrderDetailsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'order_details'; id: string};
 

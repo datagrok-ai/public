@@ -973,6 +973,15 @@ export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
 }
 
+//name: Copy as CXSMILES
+//description: Copies structure as smiles
+//input: semantic_value value { semType: Molecule }
+//meta.action: Copy as CXSMILES
+//meta.exclude-actions-panel: true
+export function copyAsCXSmiles(value: DG.SemanticValue) : void {
+  PackageFunctions.copyAsCXSmiles(value);
+}
+
 //name: Copy as MOLFILE V2000
 //description: Copies structure as molfile V2000
 //input: semantic_value value { semType: Molecule }

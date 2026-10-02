@@ -37,7 +37,7 @@ automatically. This page covers manual Helm installs for any Kubernetes cluster
 The chart is published as an OCI artifact in the shared `datagrok/datagrok` Docker Hub
 repo under tags suffixed with `-helm` to keep the chart and image tag namespaces
 disjoint. `--version 1.27.3-helm` pulls a chart that deploys Datagrok `1.27.3`, and
-every sub-service (grok-pipe, grok-spawner, grok-connect, Jupyter Kernel Gateway)
+every sub-service (grok-pipe, grok-spawner, grok-connect)
 defaults to the same app tag. Override individual service image tags via
 `--set <service>.image.tag=...` — see [Service versions](#service-versions) below.
 
@@ -50,14 +50,24 @@ Chart tags follow the same scheme as the Datagrok image tags with a `-helm` suff
 helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
   --version 1.27.3-helm \
   --namespace datagrok --create-namespace \
-  --set postgres.password=$(openssl rand -base64 24) \
+  --set datagrok.adminPassword=<password> \
   --set postgres.adminPassword=$(openssl rand -base64 24) \
   --set ingress.host=datagrok.example.com
 ```
 
 This installs PostgreSQL, RabbitMQ, the datagrok app, grok-pipe, grok-spawner,
-grok-connect, and JupyterKernelGateway with default resources. Suitable for
-evaluation, dev, or single-tenant production.
+grok-connect, and grok-connect-adbc with default resources. Suitable for
+evaluation, dev, or single-tenant production. The chart deploys no script execution
+gateways. The Scripting package starts a `scripting-<lang>` container on the first run
+of a script in that language and stops it when idle.
+
+The chart ships no default passwords. Rendering fails without `datagrok.adminPassword`
+(the password of the Datagrok `admin` user) and, for the in-cluster PostgreSQL,
+`postgres.adminPassword`. To keep passwords off the command line, store them in a
+Kubernetes Secret and reference it with `datagrok.existingSecret` and
+`postgres.existingSecret`, or map single fields with `datagrok.secretRefs.*` and
+`postgres.secretRefs.*`. With `ingress.host` set, RabbitMQ accepts Datagrok-issued
+tokens and needs no password. Without an ingress host, also set `rabbitmq.password`.
 
 To track the latest unstable build (rebuilt after every merge to `master`), use
 `--version bleeding-edge-helm` instead of a release version.
@@ -77,12 +87,41 @@ helm install datagrok oci://registry-1.docker.io/datagrok/datagrok \
   --set grokPipe.image.tag=1.19.0 \
   --set grokConnect.image.tag=2.6.2 \
   --set spawner.image.tag=2.16.0 \
-  --set jkg.image.tag=1.31.0 \
-  --set grokRegistryProxy.image.tag=1.27.1 \
+  --set registry.proxy.image.tag=1.27.1 \
   -n datagrok
 ```
 
 RabbitMQ follows its own upstream release cadence and is not pinned to the Datagrok version.
+
+## Database connectors
+
+The chart runs up to three grok_connect endpoints:
+
+| Value                         | Default | Service                                                                                               |
+|-------------------------------|---------|-------------------------------------------------------------------------------------------------------|
+| `grokConnect.enabled`         | `true`  | Java JDBC connectors, port 1234.                                                                      |
+| `grokConnectAdbc.enabled`     | `true`  | Rust ADBC connector, port 1235. ClickHouse and BigQuery can use it instead of JDBC. Disable it to keep these types on JDBC only. |
+| `grokConnectExtended.enabled` | `false` | Amazon Neptune and Cloudera Impala. Their drivers carry known CVEs with no upstream fix, so they ship in a separate, optional image. |
+
+To use Neptune or Impala, accept that CVE exposure and enable the extended connectors with
+`--set grokConnectExtended.enabled=true`. While it's off, these data sources don't appear in
+Datagrok, and existing connections of these types can't run.
+
+## Common options
+
+| Value                                  | Description                                                                                          |
+|----------------------------------------|------------------------------------------------------------------------------------------------------|
+| `datagrok.openId.*`                    | OpenID Connect single sign-on: `enabled`, `configEndpoint`, `clientId`, `secretType` (`Client Secret` or `Signed JWT`), `autoLogin`. |
+| `serverKeys.backend`                   | Where [server keys](../../govern/access-control/server-keys.md) are stored: `local` (default), `aws_secrets_manager`, or `gcp_secret_manager`. |
+| `serverKeys.signingKeyMaxAgeDays`      | Rotates the primary signing key when it is older than this many days. `0` (default) turns rotation off. |
+| `serverKeys.deleteRecoveryDays`        | AWS Secrets Manager recovery window, in days, for a deleted key (7–30, default `7`). `0` deletes it immediately. |
+| `datagrok.hsts.enabled`                | Adds the HTTP Strict Transport Security header. Enable it when TLS terminates in front of the pod.    |
+| `datagrok.updateStrategy`              | Rolling update `maxUnavailable` and `maxSurge` (`25%` each). On a small node set, use `maxSurge: 0` and `maxUnavailable: 1`. |
+| `datagrok.dnsConfig`                   | Pod DNS resolver options (default `ndots: 2`, `timeout: 2`, `attempts: 3`). Set to `{}` to use the cluster defaults. |
+| `credentials.externalSecrets.*`        | With `credentials.source: externalSecrets`, reads all passwords from an External Secrets store under `remoteKey`. |
+| `<service>.revisionHistoryLimit`       | Number of old ReplicaSets kept for rollback (default `10`).                                          |
+| `postgres.extraConfig`                 | Extra PostgreSQL settings as a key-value map, passed as `-c key=value`. Overrides the named `postgres.*` settings. |
+| `scripting.*`                          | Script execution settings, for example `scripting.useKernelPool` and `scripting.kernelPoolSize`. These replace the former `jkg.*` values. |
 
 ## Production install on AWS EKS
 

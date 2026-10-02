@@ -9,7 +9,7 @@ Feature: The app's hub, and the Open model menu
     Given user opens the Diff Studio app
     Then the "Diff Studio" view should be current
     And Create button should be visible
-    When user double-clicks on Bioreactor hub card
+    When user double-clicks on Bioreactor hub card inside library section
     Then the "Bioreactor" view should be current
     And "Process mode" input should be visible
 

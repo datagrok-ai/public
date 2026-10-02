@@ -288,7 +288,17 @@ You can create and edit macromolecules:
 * For DNA, RNA, and protein sequences in the linear format, you can edit the sequences.
 * For HELM notation, you can add or remove monomers and modify connections. The editor supports circular and branching structures.
 
-![HELM editor](img/helm-editor-0.png)
+![Replacing a monomer in the HELM editor](img/helm-editor.gif)
+
+<details>
+<summary>How to use</summary>
+
+1. Double-click a HELM cell, or right-click it and select **Edit Helm...**. The HELM editor opens.
+1. To replace a monomer, click it in the drawing, and then click a monomer in the palette on the left. To find a monomer, type its name in **Search monomers**.
+1. To see the macromolecule in another form, use the tabs under the drawing: **Sequence**, **HELM**, **FASTA**, **BILN**, **Properties**, **Molecular Structure**, and **Composition Analysis**.
+1. Click **OK** to save the changes to the cell.
+
+</details>
 
 ## Searching and filtering
 
@@ -517,9 +527,9 @@ To add a dendrogram viewer, do the following:
 
 For DNA, RNA, and natural peptides, Datagrok uses [KAlign](https://github.com/TimoLassmann/kalign), which can be modified to work with custom substitution matrices.
 
-For non-canonical sequences, the MSA dialog discovers all installed engines and lets you select one. The following engines are available out of the box:
+For non-canonical sequences, the MSA dialog discovers all installed engines and lets you select one in the **Engine** field:
 
-* **HELM MSA**. An in-browser progressive aligner built from scratch for arbitrary HELM topologies. It aligns linear, cyclic (head-to-tail, lariat), stapled, CHEM-bridged macrocyclic, branched, and multi-chain sequences with any number of non-canonical monomers. Cyclic peptides are automatically rotated to a common frame before alignment, and connection positions are remapped after gap insertion so the output HELM remains valid. The engine uses UPGMA-guided progressive alignment for small sets and center-star alignment for large ones, with affine gap penalties and separate terminal-gap control. Because it runs entirely in the browser, no Docker container is required and thousands of sequences align in under a second.
+* **Datagrok MSA**. An in-browser progressive aligner built from scratch for arbitrary HELM topologies. It aligns linear, cyclic (head-to-tail, lariat), stapled, CHEM-bridged macrocyclic, branched, and multi-chain sequences with any number of non-canonical monomers. Cyclic peptides are automatically rotated to a common frame before alignment, and connection positions are remapped after gap insertion so the output HELM remains valid. The engine uses UPGMA-guided progressive alignment for small sets and center-star alignment for large ones, with affine gap penalties and separate terminal-gap control. Because it runs entirely in the browser, no Docker container is required and thousands of sequences align in under a second.
 * **PepSeA**. [PepSeA](https://github.com/Merck/PepSeA) aligns multiple linear peptide sequences in HELM notation of up to 256 non-natural amino acids. It runs in a Docker container and is best suited for linear peptides where a chemistry-aware substitution matrix is desirable.<!--PepSeA uses a substitution matrix calculated with Rapid Overlay of Chemical Structures Similarities Across ChEMBL 28 HELM Monomers.-->
 
 Each engine exposes its own parameters (gap penalties, alignment method, and engine-specific options) directly in the MSA dialog.

@@ -5,8 +5,12 @@ title: "Box plot"
 The box plot (a.k.a. box and whisker diagram) is a standardized way of displaying the distribution of data based on the
 five number summary: minimum, first quartile, median, third quartile, and maximum.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Box plot');`
+
+:::
 
 General:
 
@@ -36,6 +40,12 @@ To find out which groups differ:
 
 The same analyses are available as dialogs under **ML** > **Analyze** > **Group Comparison**. See
 [Group comparison](../../explore/group-comparison.md).
+
+## Formula lines
+
+To mark a threshold or a range on the value axis, right-click the box plot and select
+**Tools** > **Formula Lines...**. To learn more, see
+[formula lines](scatter-plot.md#formula-lines) and [annotation regions](scatter-plot.md#annotation-regions).
 
 ## Inverted whiskers
 
@@ -171,23 +181,23 @@ For instance, you would get the upper whisker inverted on the following data: [0
 | Control Band Color | number | Color of the band highlighting the control group in control comparisons mode. |
 | Linear Color Scheme | list |  |
 | Categorical Color Scheme | list | Applies only to columns with 100+ categories; below that, the column's color coding is used. |
-| Controls Font | string | Viewer controls elements font. |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls box plot tooltip visibility |
 | Show Labels | visibilitymode |  |
 | Row Tooltip | string | Newline-separated list of column names to be used in a tooltip. Requires *showTooltip* to be enabled. |
-| **Legend** | | |
-| Legend Visibility | visibilitymode |  |
-| Legend Position | flexautoposition |  |
-| **Description** | | |
-| Show Title | boolean |  |
 | **Annotations** | | |
 | Show Viewer Annotation Regions | boolean |  |
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Legend** | | |
+| Legend Visibility | visibilitymode |  |
+| Legend Position | flexautoposition |  |
+| **Description** | | |
+| Show Title | boolean |  |
 
 See also:
 

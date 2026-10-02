@@ -22,8 +22,12 @@ keywords:
 1. On the menu ribbon, click the **Add viewer** icon. A dialog opens.
 2. In the dialog, select **Pareto Front**.
 
-> Developers: To add the viewer from the console, use:
- `grok.shell.tv.addViewer('Pareto front');`
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Pareto front');`
+
+:::
 
 Initially, the viewer selects two numerical columns as objectives to be minimized. The resulting Pareto-optimal points are displayed on the scatter plot in green. By default, the viewer uses:
 

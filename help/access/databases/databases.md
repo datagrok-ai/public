@@ -286,7 +286,7 @@ Once your layout is complete, click Save.
 <TabItem value="debug" label="Debug">
 
 This tab is where you can run queries and monitor their execution logs. 
-Use it to track the query’s execution process and debug issues.
+Use it to track the query’s execution process and debug issues (see [Debugging queries](#debugging-queries)).
 
 ![Debug](img/Debug.gif)
 
@@ -599,15 +599,15 @@ the dashboard to refine search criteria and interact with data in real-time.
 To save the query output as a dynamic dashboard, do the following:
 
 1. Run a query to open a dataframe and create a desired view of the query output.
-1. On the **Sidebar**, click **Projects** > **Upload**.
-1. In the **Upload project** dialog, enter a name and description (optional) in
+1. On the **Top Menu**, click **SAVE**.
+1. In the **Save project** dialog, enter a name and description (optional) in
    the fields provided.
 1. Select how to store data:
     * Save the data as a static snapshot.
     * Store the data as a creation script by toggling the **Data sync**
       control. The query re-executes each time the project is opened. To learn
       more about dynamic data updates in projects, see [Dynamic data](../../datagrok/navigation/basic-tasks/basic-tasks.md#dynamic-data).
-1. Click **OK** to upload the project.
+1. Click **OK** to save the project.
 1. [Share](#sharing-query-results) the project with others.
 
 ![Dynamic dashboards](img/dynamic-dashboards.gif)
@@ -738,97 +738,36 @@ This creates a seamless exploration experience where users can navigate complex 
 
 For detailed instructions on setting up and using the DB-explorer library, refer to the [Developers Guide](../../develop/how-to/db/register-identifiers.md).
 
-<!--
-
 ## Debugging queries
 
-Debugging queries helps you fix and improve query performance.
+Debug a query to see how long each stage of its execution takes and to tune how
+it fetches data.
 
-For existing queries:
+To debug a saved query, right-click it and select **Debug**. In the
+[Query Editor](#query-editor), use the **Debug** tab. When a query asks for
+parameters, click the bug icon in the parameters dialog to turn on debugging.
+The dialog then shows two optional settings:
 
-1. Right-click your query and select **Debug**. A dialog opens.
-1. In the dialog, set parameters:
-   * **Fetch size**: This parameter tells the JDBC driver how many rows to fetch from the
-     database at one time. If set to zero, the driver chooses the optimal fetch
-      size. The default limit for WebSocket messages is set to 10 MB.
-             
-      To obtain consistent fetch size.
-      To persist the fetch size, include a meta parameter in your query:
-        
-        ```
-        --meta.connectFetchSize: 10000
-        SELECT * FROM very_big_table
-        ```
-        Or, to specify in megabytes:
+* **Fetch size**: How many rows the JDBC driver fetches from the database at a
+  time, as a number of rows or megabytes, for example `10 MB`. If empty,
+  Datagrok calculates it from the size of the data.
+* **Init fetch size**: How many rows come in the first chunk, so the first rows
+  show quickly. The default is 100.
 
-        ```
-        --meta.connectFetchSize: 10 MB
-        ```
-      
-   * **Init fetch size** (optional): The number of rows in the first chunk (default 100,
-   chosen to show the first rows quickly). Unlike **Fetch size**, it accepts only a row
-   count, not a megabyte value (the size of a row isn't known before the first chunk is
-   read). To persist this parameter, include a meta parameter in your query:
+After the run, Datagrok shows the results, a **Summary** with the time spent in
+each stage (such as receiving the connection, processing the result set, and
+transferring the data), and detailed logs. Network speed and server load affect
+the numbers, so run **Debug** several times before drawing conclusions. To
+review a past debug run later, select the run and expand **Log** on the
+**Context Panel**.
 
-      ```
-     --meta.initConnectFetchSize: 1000
-     SELECT * FROM very_big_table
-    ```
+To keep the fetch sizes you found, add them to the query header:
 
-   * **Optimize fetch size**: Selecting this checkbox disables manual fetch size inputs
-     and automatically tests different fetch sizes to determine the most
-     efficient one for your query.
-1. Press **OK**. A table with the fetch results opens.
-
-:::note
-
-You can debug queries in [Query Editor](#query-editor) by clicking on the "bug"
-icon on top of the editor. Also, you can start debugging from the **Context
-Panel** using the **Debug** section.
-
-:::
-
-When you finish debugging with **Optimize fetch size** off, you will see the
-execution results, **Summary**, and detailed logs. **Summary** shows the times
-of different stages of query execution. These metrics help you evaluate how
-factors like network speed, data complexity, etc. affect performance.
-**Summary** also explains what each metric means.
-
-:::note
-
-The network connection or the local disk load can affect the result a lot. For
-better evaluation, run **Debug** several times in a row.
-
-:::
-
-You can always return to **Summary** and detailed logs to analyze them later. In order to do this:
-
-1. Navigate to the desired saved query and expand the tree with historical runs.
-2. Click on the run and open **Context Panel**.
-3. Expand **Log** section. **Summary** and detailed logs are hidden under the appropriate subsection.
-
-:::note
-
-**Summary** and detailed logs are only available for queries that were run in Debug mode.
-
-:::
-
-To set a constant value for **Fetch size** and **Init fetch size** after
-analyzing **Summary** or **Optimize fetch size** results, follow these steps:
-
-1. Open the saved query in [Query Editor](#query-editor).
-1. Add the meta parameters *initConnectFetchSize* or *connectFetchSize* with the
-   desired value to the query declaration.
-1. Save query.
-
-For example:
-
-```
+```sql
 --meta.connectFetchSize: 10 MB
 --meta.initConnectFetchSize: 1000
 SELECT * FROM data;
 ```
--->
 
 ## Resources
 

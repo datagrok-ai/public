@@ -29,6 +29,19 @@ function called and its result checked),
 is a package test or an `ApiTests` test, never a feature. The same goes for a TestTrack case marked
 `manual-only` or `apitest`. The rule and its reasons are in `CLAUDE.md`, "What never becomes a feature".
 
+**A stand that lacks a capability skips, it does not fail.** The suites run on CI, dev, local stands
+and public, which differ: `Given the stand runs the "Jupyter" service` and `Given the stand can reach
+the database of the "<name>" connection` are gates placed right before the first step that needs the
+capability — in the Background only when every scenario needs it from its first step — so the steps before
+them run everywhere and fail as usual,
+and the rest of the test is reported skipped with the reason when the stand has not got it. The service
+gate goes by the health the stand reports; a stand that reports none (a dev stack) lets the test go on.
+`Given the "Chem" package is installed` gates on a package the feature needs but does not test; it
+may stand in the Background when every scenario needs it, and never names the package under test.
+`Given the stand has a reachable "<name>" connection` is the connection gate for a connection a package
+brings rather than the feature (absent skips too), and `Given the stand serves the help pages` gates a
+claim on the help panel's content.
+
 **Nothing stays on the server.** Whatever a feature adds or changes on the server — entities, files,
 database rows, the layout or chat the UI makes on the side, a setting or configuration of something
 it does not own — is removed or restored at feature end and swept again at its start, and the
@@ -70,7 +83,10 @@ also trigger the error: they must resolve to the same physical copy. Repeat the 
 does not fix it.
 
 **What the stand needs**: a platform built from `core` at or after 2026-09-10 (the viewer
-features rely on signals the core gained for them); a login — global setup mints a token from the
+features rely on signals the core gained for them), and with `TableView.getSnapshot` skipping a
+hidden view (without it the Save project dialog logs "Unable to find element in cloned iframe" once
+per table view not shown, and a feature that saves a project with several views fails its error
+check); a login — global setup mints a token from the
 dev key of the `localhost` entry in `~/.grok/config.yaml` (or `DATAGROK_SERVER=<name>`), falls back
 to the login form with `DATAGROK_LOGIN`/`DATAGROK_PASSWORD`, and a CI runner passes
 `DATAGROK_AUTH_TOKEN`; another stand through `DATAGROK_URL=https://…`. The datasets the features
@@ -79,7 +95,10 @@ open are registered in `bindings/platform/datasets.ts`: `demog-1000` is
 `grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:DemoFiles/demog-1000.csv" --host localhost`;
 `spgi` comes with the published `Chem` package (`grok s packages install Chem`). A sharing feature
 shares with the account in `DATAGROK_SHARING_LOGIN`, or, unset, with the `bddsecond` user the
-setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays).
+setup creates on the stand (a dev key is needed for that; users cannot be deleted, so it stays). A
+feature that signs in as that account or another does it on its own page, and the running account
+is back when the feature ends; a feature that empties the second account's notifications runs only
+against a `bdd…` fixture account.
 
 `grok-bdd init` runs in the package directory and creates what is missing, never overwriting:
 
@@ -121,7 +140,9 @@ beside them.
 One browser page per worker: the first scenario the worker runs opens it and boots the shell
 (about 4 s), every scenario ends with the shell reset (dialogs and popups closed,
 `grok.shell.closeAll()`, the Home view current), and every later feature starts on that reset
-shell. A dataset is read from the server once per page and every feature gets a clone, with the
+shell — until the page has run `BDD_PAGE_MAX_FEATURES` features (25) or its renderer holds more than
+`BDD_PAGE_MAX_MB` (3000): closed views stay in the renderer's memory, so the next feature then opens a
+new page in the same context. A dataset is read from the server once per page and every feature gets a clone, with the
 semantic types the first detection found. What a feature leaves on the server it puts back itself
 (`atFeatureEnd`). Playwright runs and reports one test per scenario (and per outline row), each
 with its own trace; a `Background` runs before every scenario, as Gherkin says.
@@ -253,7 +274,13 @@ list is the reference; this is the map:
   group or holds a role; the gallery's render mode and
   its counter against a remembered one (lower, not lower, higher — search, then clear). The membership editor behind Groups..., Roles..., Members
   and Assigned to is `"<name>" membership row` / `membership candidate` with `add button`,
-  `remove button` and `checkbox` parts, typed into through `membership search`.
+  `remove button` and `checkbox` parts, typed into through `membership search`. Signing in as
+  another account on the feature's page (the sharing user or a named fixture account) and back,
+  the running account back first thing at feature end; the second account's notifications.
+- **The workspace** (`platform/workspace.ts`): what is open (no table left, the table views, a
+  table view opened with its rows, a project), a project's direct link, a file put into the user's
+  files or a space for the feature (deleted at feature end), a file dropped from disk, the file
+  chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
   filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
   equal row by row), calculated and renamed columns, colour coding,
@@ -322,7 +349,12 @@ The `viewers` tier drives viewers the way the platform sees them:
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+- **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
+  viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
+  it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.
+- **`filter-panel.ts`**: the cards of the filter panel, what every view's panel filters by across a
+  project round trip, and a wait for the Chem cards (searching, drawing, scaffold hits).
 
 Every property set, menu pick, area gesture, resize and data step snapshots the viewer first, and
 no check moves the snapshot, so `should have repainted` and every "than before" compare with the

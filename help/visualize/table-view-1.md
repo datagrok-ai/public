@@ -61,7 +61,7 @@ apply them to multiple datasets.
 
 To add a viewer to the **Table View**, on the **Toolbox** click the icon for the
 viewer you want to add. Alternatively, at the top of the screen, click the **Add
-viewer** (![](../uploads/icons/add-viewer-icon-temp.png)) icon and select
+viewer** (![](../uploads/icons/add-viewer-icon.png)) icon and select
 the viewer you want.
 
 ![](../datagrok/navigation/views/img/table-view-add-viewers-dock.gif)
@@ -78,43 +78,6 @@ Developers, you can dock viewers programmatically. See the `dockManager`
 property of the `View` class.
 
 :::
-
-### Minimized viewers
-
-To get a viewer out of the way without closing it, click the minimize icon
-in its header. The viewer leaves the layout and becomes an icon on the ribbon,
-in the **Minimized** panel. The viewer keeps its settings and stays connected to
-the table: it still follows the current filter and selection.
-
-Hover the icon to see the live viewer. This preview is fully interactive: you
-can change its columns, use its context menu, and edit its properties without
-restoring it. Click the icon to put the viewer back where it was. Right-click
-the icon for **Restore** and **Close**; a closed viewer can be brought back with
-**Ctrl+Z**.
-
-When several viewers of the same type are minimized, their icons are numbered;
-a viewer with a title shows the title instead. Minimized viewers are saved with
-[layouts](view-layout.md) and projects, and come back minimized when the layout
-or project is opened.
-
-To hide the minimize icon, turn off **Settings > General > Allow viewer
-minimization**.
-
-### Multiple views
-
-You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
-
-All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
-
-#### Add view
-
-To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
-
-#### Clone view
-
-To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
-
-![Add view and clone view](viewers/img/add-vew-clone-vew.gif)
 
 ### Viewer properties
 
@@ -167,7 +130,46 @@ To customize fonts, access the viewer's **Context Panel** and look for font prop
 
 ![](viewers/img/viewers-font.gif)
 
-### Tooltips
+### Minimized viewers
+
+To get a viewer out of the way without closing it, click the minimize icon
+in its header. The viewer leaves the layout and becomes an icon on the ribbon,
+in the **Minimized** panel. The viewer keeps its settings and stays connected to
+the table: it still follows the current filter and selection.
+
+Hover the icon to see the live viewer. This preview is fully interactive: you
+can change its columns, use its context menu, and edit its properties without
+restoring it. Click the icon to put the viewer back where it was. Right-click
+the icon for **Restore** and **Close**; a closed viewer can be brought back with
+**Ctrl+Z**.
+
+![Minimizing viewers and previewing them with a filter](viewers/img/minimized-viewers.gif)
+
+When several viewers of the same type are minimized, their icons are numbered;
+a viewer with a title shows the title instead. Minimized viewers are saved with
+[layouts](view-layout.md) and projects, and come back minimized when the layout
+or project is opened.
+
+To hide the minimize icon, turn off **Settings > General > Allow viewer
+minimization**.
+
+## Multiple views
+
+You can add multiple views to the same table, each maintaining its own layout configuration while operating over the same underlying data and interaction state. This enables you to apply different visual arrangements or analytical perspectives without duplicating the dataset or losing context continuity.
+
+All views of the same table share synchronized filter and selection state. Any filtering or selection applied in one view immediately propagates to all other views, ensuring consistent data subset and selection across different layouts.
+
+### Add view
+
+To add a new view and configure a separate layout, right-click the table name and select **Table > Add View**.
+
+### Clone view
+
+To reuse the current layout configuration and viewer arrangement, clone the existing view. From the top menu, select **View > Layout > Clone View**.
+
+![Add view and clone view](viewers/img/add-vew-clone-vew.gif)
+
+## Tooltips
 
 By default, Datagrok shows tooltips for columns, rows, and data visualized in
 viewers. For example,  in tables, tooltips show statistics for numeric
@@ -192,7 +194,7 @@ columns. Tooltips don't show any column values for tables with 21 or more column
 
 :::
 
-#### Group tooltips
+### Group tooltips
 
 One of the unique features of Datagrok is the ability to create tooltips that
 interactively visualize groups of rows. For example, you can create
@@ -219,13 +221,13 @@ Remove Group Tooltip**.
 
 ![Group Tooltip](../uploads/viewers/viewer-group-tooltip.png "Group Tooltip")
 
-### Statistical hypothesis testing
+## Statistical hypothesis testing
 
 Certain viewers include statistical features:
 
-* Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#t-test), allowing you to determine
+* Box [plots](viewers/box-plot.md) show the [p-value](viewers/box-plot.md#group-comparison), allowing you to determine
   whether the findings are statistically significant.
-* Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#formula-lines) with
+* Scatterplots can show one or more [regression lines](viewers/scatter-plot.md#regression-line) with
   associated equations and color-coding. [Correlation plots](viewers/correlation-plot.md) highlight the values of
   Pearson's correlation coefficient, making it easy to trace the strength of the
   relationship between given variables.
@@ -534,6 +536,7 @@ Usage:
 | Click            | Jump to column |
 | Shift+drag       | Select multiple columns |
 | Ctrl+click       | Toggle column selection |
+| Drag a row       | Reorder columns in the grid |
 | Esc              | Clear selection |
 | Right-click      | Show popup menu |
 | Popup: Add Stats | Show/hide statistics |
@@ -587,7 +590,7 @@ Many viewers support the following:
 | Alt+drag     | Zoom                                                                                                                                                                                                                                                                                                                       |
 | Mouse drag   | Pan                                                                                                                                                                                                                                                                                                                        |
 | Properties   | Show viewer properties in the [Context Panel](../datagrok/navigation/panels/panels.md#context-panel)                                                                                                                                                                                                                                           |
-| Reset View   | Reset zoom level. Use in: [scatterplot](viewers/scatter-plot.md), [line chart](viewers/line-chart.md), [bar chart](viewers/bar-chart.md), [3D scatterplot](viewers/3d-scatter-plot.md), and [box plot](visualize/viewers/box-plot.md) |
+| Reset View   | Reset zoom level. Use in: [scatterplot](viewers/scatter-plot.md), [line chart](viewers/line-chart.md), [bar chart](viewers/bar-chart.md), [3D scatterplot](viewers/3d-scatter-plot.md), and [box plot](viewers/box-plot.md) |
 
 General commands available under the **General** submenu:
 

@@ -21,23 +21,26 @@ function withContext(
   const base = buildRuleContext(controller);
   if (!sources)
     return run(base);
-  const resolved = resolveSources(controller, sources);
+  const resolved = resolveSources(controller, sources, base);
   if (resolved instanceof Promise)
     return resolved.then((values) => run({...base, ...values}));
   return run({...base, ...resolved});
 }
 
-function matchedTargets<E extends {targets: string | string[]}>(controller: IControllerBase, effect: E) {
+function matchedTargets<E extends {targets?: string | string[]}>(controller: IControllerBase, effect: E) {
   const outputs = controller.getMatchedOutputs();
+  if (effect.targets == null)
+    return [...outputs];
   return ruleTargets(effect.targets).filter((target) => outputs.has(target));
 }
 
 export const ruleMetaHandler: MetaHandler = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     const metas: Record<string, Record<string, any>> = {};
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
       for (const target of matchedTargets(controller, effect)) {
         const meta = metas[target] ??= {};
         if (effect.effect === 'hide')
@@ -62,9 +65,10 @@ const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifi
 export const ruleValidatorHandler: Validator = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleValidatorEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     const results: Record<string, ValidationResult | undefined> = {};
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
       for (const target of matchedTargets(controller, effect)) {
         results[target] ??= undefined;
         if (!on)
@@ -95,8 +99,10 @@ export const ruleValidatorHandler: Validator = ({controller}) => {
 export const ruleDataHandler: Handler = ({controller}) => {
   const {when, effects, sources} = ruleParams<RuleDataEffect>(controller);
   return withContext(controller, sources, (ctx) => {
-    const on = isOn(when, ctx);
+    const ruleOn = isOn(when, ctx);
     for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      const values = effect.effect === 'assign' && on ? evaluate(effect.values, ctx) : undefined;
       for (const target of matchedTargets(controller, effect)) {
         if (effect.effect === 'set') {
           if (on)
@@ -105,6 +111,19 @@ export const ruleDataHandler: Handler = ({controller}) => {
             controller.clearRestriction(target);
         } else if (effect.effect === 'clear' && on)
           controller.setAll(target, null, effect.restriction ?? 'none');
+        else if (effect.effect === 'assign') {
+          if (!on)
+            controller.clearRestriction(target);
+          else if (values != null && typeof values === 'object') {
+            const key = effect.ignoreCase ?
+              Object.keys(values).find((name) => name.toLowerCase() === target.toLowerCase()) :
+              target in values ? target : undefined;
+            if (key !== undefined)
+              controller.setAll(target, values[key], effect.restriction ?? 'none');
+            else
+              controller.clearRestriction(target);
+          }
+        }
       }
     }
   });

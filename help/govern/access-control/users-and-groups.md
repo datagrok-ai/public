@@ -56,7 +56,7 @@ To create a new user:
 1. On the **Sidebar**, click **Browse (<FAIcon icon="fa-solid fa-compass"/>) > Platform > Users**.
 1. Click the **NEW** button and select the option you want:
 
-   * **User...**: Select this option to create a user without sending an invitation to sign up. This option is typically used to create the initial admin users who can later invite other users to sign up via URL or email invitation, or add users using services like OAuth or OpenID.
+   * **New User...**: Select this option to create a user without sending an invitation to sign up. This option is typically used to create the initial admin users who can later invite other users to sign up via URL or email invitation, or add users using services like OAuth or OpenID.
      <details>
      <summary>Instructions</summary>
      1. In the **New User** dialog, enter the user's name, email, and login.
@@ -64,7 +64,7 @@ To create a new user:
      1. Click **OK** to create a user.
      </details> 
 
-   * **Service user...**: Choose this option to create a service user account.
+   * **New Service User...**: Choose this option to create an account for scripts and integrations. To sign in as a service user, give it a key pair (see [Keypair authentication](keypair-authentication.md#ci-and-automation)).
      <details>
      <summary>Instructions</summary>
      1. In the **New Service User** dialog, enter the login for the service user.
@@ -82,17 +82,24 @@ To create a new user:
 
 To manage users, in the **Users View**, find the user you want, and right-click it to access available actions.
 
-Only [Administrators](#group-types) with global permissions can add or remove users.
+To create users and service users, you need the **Create User** [global permission](access-control.md#global-permissions).
+To invite users, you need the **Invite User** permission.
 
 ### Disabling accounts
 
-To disable a user account, log in as [administrator](#group-types), go to
-**Browse** > **Platform** > **Users**, right-click the user, and select **Block**.
-The blocked user can't log in and won't count toward the license. 
+To disable a user account, go to **Browse** > **Platform** > **Users**, right-click the user,
+and select **Disable...**. You need the **Edit User** [global permission](access-control.md#global-permissions),
+and you can't disable your own account. The disabled user can't log in, all their active sessions
+end immediately, and they won't count toward the license. 
 
-All assets that the user has created will continue to be available in the system.
-Administrators can [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 
-them with others if necessary.  
+Nothing is deleted: the assets the user owns stay available and shared the same way.
+The **Disable user** dialog lists them under **Owned entities**, so you can move them to a space,
+one by one or all at once with **Move all to**. Turn on Admin mode first: otherwise, the dialog warns
+**Admin mode is off.**, lists only the entities shared with you, and can't move them.
+You can also [share](../../datagrok/navigation/basic-tasks/basic-tasks.md#share) 
+the assets with others later.  
+
+To restore access, right-click the user and select **Enable**. The user signs in with their existing credentials.
 
 Currently, there is no way to permanently delete a user. We are planning 
 to implement it in the future versions.
@@ -156,56 +163,72 @@ Regardless of group membership, any user can do the following actions with respe
 
 ### Group types
 
-Datagrok automatically creates several key groups upon deployment, each designed
-with specific roles and permissions:
+Datagrok automatically creates these groups upon deployment:
 
-* **All users**: This group includes all users and groups and initially comes
-  with a basic set of [permissions](access-control.md#permissions).
-* **Administrators**:
-  * During the deployment process, the Administrators group is created and
-       granted all available permissions, ensuring complete control over the
-       platform.
-  * An 'admin' user and password is provided in the deployment script.
-  * Immediately following the deployment, logging in as the admin user is the
-       standard procedure to begin configuring and managing the Datagrok
-       instance.
-     
-       :::danger
-       
-       Exercise caution when modifying the Administrators group. Modifying
-       or deleting this group without a functional replacement may result in a
-       loss of all administrative capabilities on the platform.
-       
-       :::
+| Name               | Kind                               | Purpose                                                                                     |
+|--------------------|------------------------------------|---------------------------------------------------------------------------------------------|
+| **All users**      | Group                              | Contains every user and group. Its [permissions](access-control.md#defaults-on-a-new-instance) apply to everyone |
+| **Administrators** | [Role](#roles)                     | Holds all global permissions that **All users** doesn't have                                |
+| **Admin**          | Personal group of the `admin` user | Member of **Administrators**. The `admin` user and password come from the deployment script |
+| **System**         | Internal service account           | Used by the platform itself. Member of **Administrators**. Don't modify                     |
 
-* **Developers**: Initially created as a child group under Administrators,
-  this group inherits the permissions from its parent group.
+Immediately after the deployment, sign in as the `admin` user to configure the
+instance. To give other people administrator rights, add them, or a group they
+belong to, to the **Administrators** role.
 
-Members of the Administrators group have global permissions, accessible via **Top Menu > Admin > Global Permissions...** 
+:::danger
 
-The following operations require global permissions:
-    * Creating a new user - `CreateUser`
-    * Inviting a user - `InviteUser`
-    * Editing a user - `EditUser`
-    * Editing a group - `EditGroup`
-    * Editing global permissions - `EditGlobalPermissions`
-    * Editing server settings - `EditPluginsSettings`
-    * Start Admin Session (disable all permissions check during current session) - `StartAdminSession`
-    * Deploy or install a package - `PublishPackage`
-    * Delete a comment in any chat - `DeleteComments`
-    * Create or edit entity type (see [Sticky Meta](../catalog/sticky-meta.md)) - `SaveEntityType`
-    * Modify any system pre-created data connection, such as `Datagrok`, `DatagrokAdmin` or `AppData` - `AdminSystemConnections`
-    * Create anything - `CreateEntity`
-    * Create a [script](../../compute/scripting/scripting.mdx) - `CreateScript`
+Exercise caution when modifying the **Administrators** role. Removing its
+permissions or members without a functional replacement may result in a loss
+of all administrative capabilities on the platform.
+
+:::
+
+Global permissions control administrative operations such as creating users,
+editing groups, and changing server settings. For the full list and the
+defaults, see [Global permissions](access-control.md#global-permissions). To
+edit them, go to **Settings** > **Global Permissions**, or select a group or
+role and, on the **Context Panel**, expand **Global Permissions** and click
+**MANAGE**.
+
+### Roles
+
+A _role_ is a group that holds permissions rather than people. Assign a role to
+groups, and every member of those groups inherits what the role grants. To
+learn when to use a group and when to use a role, see
+[Groups and roles](access-control.md#groups-and-roles).
+
+To view or manage roles, go to **Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>) > **Platform** > **Roles**.
+
+* **Create a role**: On the **Top Menu**, click the **NEW ROLE...** button.
+* **Grant permissions to a role**: Select the role and, on the **Context
+  Panel**, expand **Global Permissions** and click **MANAGE**. Share entities
+  with the role like with any group.
+* **Assign a role to a group**: Right-click the group, select
+  **Properties...**, and open the **Roles** tab.
+* **See who has a role**: The role's **Assigned to** tab (in the
+  **Properties...** dialog) and **Assigned to** pane (on the **Context Panel**)
+  list the groups and users that have it.
+
+[Group synchronization](../../deploy/complete-setup/configure-auth.md#group-synchronization)
+from an identity provider never matches roles, so a group created in the
+identity provider can't grant itself a role.
 
 ### Managing groups
 
 The following actions are available from the group's context menu (available on right-click):
 
-* **Edit...**: Edit the group's name and description. Generate a URL link.
-* **Edit members**: Add or remove group members
-* **Edit memberships**: Add or remove the group to/from other groups
+* **Properties...**: Opens the group editor with these tabs:
+  * **Details**: The group's name and description
+  * **Members**: Add or remove members, and mark group admins
+  * **Roles**: Assign [roles](#roles) to the group
+  * **Belongs to**: Add the group to other groups or remove it from them
+* **Request membership**: Ask the group admins to add you
+* **Chat**: Chat with group members
 * **Delete**: Delete a group
+
+You can also manage members from the **Context Panel**: expand **Members** and
+click **MANAGE**.
 
 #### Creating a group
 
@@ -227,8 +250,11 @@ If user is the only admin in group, they can't leave the group or revoke their a
 #### Adding users to a group
 
 To add users to a group, you have two options:
-1. **Manually add members** (right click the group and select **Add members...**)
+1. **Manually add members** (right-click the group, select **Properties...**, and open the **Members** tab)
 1. Invite users to sign up via URL
+
+If you add a member by an email address that doesn't belong to any user yet,
+Datagrok creates a new user with that email.
 
 ##### Inviting users via URL
 
@@ -239,7 +265,7 @@ signups after specific events such as webinars or collaborative projects.
 To create an invitation link:
 
 1. Go to **Sidebar** > **Browse** (<FAIcon icon="fa-solid fa-compass"/>) > **Platform** > **Groups**. A **Groups View** opens.
-1. In the **Groups View**, right-click the group and select **Edit…** A dialog opens.
+1. In the **Groups View**, right-click the group and select **Properties...** A dialog opens.
 1. Click the **Gear (<FAIcon icon="fa-solid fa-gear"/>) icon** and enter or generate a password in the **Password** field. By default, the dialog displays an autogenerated password.
 1. Copy the password and use it to create an invitation link as follows:
 
@@ -247,7 +273,7 @@ To create an invitation link:
 
       For example:
 
-      `public.datagrok.ai/?groupPassword=w0TDE6RcpH8XO0ZIBSauVLos`
+      `public.datagrok.ai/?groupPassword=<password>`
     
 1. Copy the URL and distribute to recipients.
 

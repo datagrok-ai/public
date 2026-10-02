@@ -431,8 +431,8 @@ test('SAR viewer lifecycle — model.add-* family + VIEWER_TYPE discriminator + 
   });
 
   await softStep('Scenario 2 (step 8): no null-receiver crash across the toggle-off + toggle-on round-trip', async () => {
-    const lastError = await page.evaluate(() =>
-      grok.shell.lastError ? String(grok.shell.lastError) : null);
+    const lastError = await page.evaluate(async () =>
+      ((await grok.shell.lastError) ?? null));
     const fatal = lastError && /setTrue|fire.*on (null|undefined)|Cannot read .* (null|undefined)|method not found.*null/i.test(lastError);
     expect(fatal,
       `Scenario 2 step 8 invariant: toggle-off + toggle-on produced a null-receiver / fatal error: ${lastError}`)

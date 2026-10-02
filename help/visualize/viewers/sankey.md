@@ -23,8 +23,12 @@ or values move through a system.
 To create a **Sankey** viewer, navigate to the **Main Menu**
 and select **Add > Javascript Viewers > Sankey**.
 
-> Developers: To add the viewer from the console, use:
-`grok.shell.tv.addViewer('Sankey')`
+:::note developers
+
+To add the viewer from the console, use:
+`grok.shell.tv.addViewer('Sankey');`
+
+:::
 
 When you add a sankey viewer in Datagrok, the platform selects three columns:
 

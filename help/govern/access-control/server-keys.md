@@ -17,9 +17,9 @@ the JWTs your sessions ride on. The **Keys** page lets administrators
 create, rotate, move, and revoke these keys without restarting the
 platform.
 
-You'll find it under **Browse > Platform > Keys**. The page is gated
+You'll find it under **Browse > Platform > Settings > Keys**. The page is gated
 by the `AdminKeys` permission — by default only members of the
-**Administrators** group can see it.
+**Administrators** role can see it.
 
 ## What a key is
 
@@ -151,11 +151,11 @@ row. Local PEM files are deleted right away.
 Read access (the gallery, Identity / Usage / Rotation panes) is
 admin-only via the standard auth check. Writes — create, rotate, move,
 revoke, delete — additionally require the `AdminKeys` global
-permission. New deployments grant it to the **Administrators** group
+permission. New deployments grant it to the **Administrators** role
 automatically; on existing deployments the upgrade migration grants
-it to **Administrators** and the **Admin** group.
+it to the **Administrators** role and the **Admin** group.
 
-`AdminKeys` is also what gates the **Browse > Platform > Keys** node
+`AdminKeys` is also what gates the **Browse > Platform > Settings > Keys** node
 itself.
 
 ## Storage backends

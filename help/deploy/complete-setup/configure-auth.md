@@ -38,6 +38,9 @@ To configure login-password authentication:
 3. To disable signup uncheck '_Signup Allowed_' option
 4. To restrict from which domains people can sign up to the platform, use the '_Signup Domains Whitelist_' option. You can set several domains separated with commas.
 5. To force people to use active emails, enable the '_Require Email Confirm_' option.
+6. To require strong passwords (a mix of uppercase and lowercase letters, digits, or special characters, and a minimum length), enable '_Enforce Password Policy_'.
+7. To show a message on the login form, for example a support contact, set '_Prompt_'.
+8. To let people sign up through OpenID or SAML when they sign in for the first time, enable '_Allow Oauth Signup_'. Otherwise, an administrator must create the user first.
 
 For login-password authentication, it is important to [configure an email service](configure-smtp.md) that will deliver signup, welcome, confirmation and forgot password emails.
 
@@ -45,9 +48,11 @@ For login-password authentication, it is important to [configure an email servic
 
 To create [user](../../govern/access-control/users-and-groups#users):
 
-1. On the **Sidebar** go to **Manage** > **Users**. 
-2. On the **Toolbox** click **Add User**. Create new user dialog appears. 
-3. Fill all input fields and click **OK**. New User profile appears. Click **Save** on the **Top Bar**.
+1. Go to **Browse** > **Platform** > **Users**.
+2. Click **New** and select **New User...**. The **New User** dialog opens.
+3. Enter the name, email, and login, and click **OK**.
+
+For bulk provisioning, use the [`grok s` CLI](../../develop/server-management.md#manage-users-and-groups).
 
 Use [user groups](../../govern/access-control/users-and-groups#groups) to manage user permissions inside platform.
 
@@ -74,9 +79,10 @@ Datagrok integrates with your LDAP or Active Directory server enabling the smoot
 
 :::tip Sync AD groups with Datagrok groups
 
-LDAP authentication lets AD users sign in with their domain credentials. To
-keep Datagrok groups and shares in sync with AD groups, drive the platform
-from a script using the [`grok s` CLI](../../develop/server-management.md#sync-an-ad-group-with-datagrok).
+LDAP authentication lets AD users sign in with their domain credentials, but
+doesn't synchronize group membership. To keep Datagrok groups and shares in
+sync with AD groups, drive the platform from a script using the
+[`grok s` CLI](../../develop/server-management.md#sync-an-ad-group-with-datagrok).
 
 :::
 
@@ -91,14 +97,26 @@ such as Azure AD, Google, Okta, Auth0, and any other OIDC-compliant identity pro
 3. Get a well-known-configuration route and set it to 'Open Id Config Endpoint'. It should look
    like `https://login.datagrok.ai/.well-known/openid-configuration`.
    For Google, use `https://accounts.google.com/.well-known/openid-configuration`.
-4. Set `Client Id` and `Client Secret` as in your OpenId provider. 
-Datagrok supports a certificate-based authentication method for Azure AD. If you prefer it against a plain secret, 
-generate a certificate, sign it with a private RSA key, and upload it to the Datagrok. Then upload the certificate to your Azure AD application settings. 
-5. Set the `Code Challenge method` if you enabled authorization code encryption. In most cases, it is `S256`
-6. Enable `Auto Login` option to forward users to authentication automatically without showing the login form.
-7. Make sure the correct Web Root is set in `Admin` section
-8. Enable `Keep Token` mode if you want to enable seamless integration with other services. 
-Datagrok will request `offline_access` scope and keep encrypted external token in session metadata. 
+4. Set `Client Id` as in your OpenID provider, and choose how Datagrok proves its identity to the provider in `Secret Type`:
+   * `Client Secret`: Paste the client secret from the provider into `Client Secret`.
+   * `AzureAD JWT`: Certificate-based authentication for Microsoft Entra ID (Azure AD). Generate a certificate
+     and a private RSA key, paste them into `Client Certificate` and `Client Private Key`, and upload the certificate
+     to your Entra ID application settings.
+   * `Signed JWT`: Datagrok signs the client assertion with the server's signing
+     [key](../../govern/access-control/server-keys.md), and the provider verifies it against the keys the server
+     publishes (JWKS). No secret is shared, and the key rotates with the server keys.
+5. Set `Code Challenge Method` (`S256` by default, or `None` if your provider doesn't support PKCE).
+6. Set `Scopes` (`openid profile email` by default).
+7. Map the claims in the login token to the user's attributes: `Login Claim` (`udn` by default), `Email Claim`,
+   `First Name Claim`, `Last Name Claim`, and `Picture Claim`. For Microsoft Entra ID, set `Login Claim` to
+   `preferred_username`.
+8. Enable `Auto Login using OpenID` to forward users to authentication automatically without showing the login form.
+9. Make sure the correct Web Root is set in `Admin` section
+10. Enable `Keep Token` mode if you want to enable seamless integration with other services.
+Datagrok will request `offline_access` scope and keep encrypted external token in session metadata.
+
+If users sign in through an identity-aware proxy and you need OpenID only for the OAuth flows of data connectors,
+turn off `Use For Login`.
 
 ### Keep Token
 
@@ -183,7 +201,12 @@ skipped.
 2. Enable SAML authentication
 3. Copy ACS URI and Entity ID to SAML provider (i.e. Google or Azure AD)
 4. Copy SSO URI to Datagrok as IdP Endpoint and Certificate. Make sure you switch to a multiline edit mode when copying certificate.
-5. Make sure you have mappings in your authentication provided: email, first_name, last_name 
+5. Map the attributes the provider sends to the user's attributes: `Email Claim`, `First Name Claim`, and
+   `Last Name Claim` (`email`, `first_name`, and `last_name` by default).
+
+SAML doesn't synchronize group membership. To mirror directory groups, use the
+[`grok s` CLI](../../develop/server-management.md#sync-an-ad-group-with-datagrok) or switch to
+[OpenID](#group-synchronization).
 
 ## IAP authentication
 

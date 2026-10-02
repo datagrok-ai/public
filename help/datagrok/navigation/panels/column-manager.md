@@ -25,6 +25,7 @@ Usage:
 | Click            | Jump to column |
 | Shift+drag       | Select multiple columns |
 | Ctrl+click       | Toggle column selection |
+| Drag a row       | Reorder columns in the grid |
 | Esc              | Clear selection |
 | Right-click      | Show popup menu |
 | Popup: Add Stats | Show/hide statistics |

@@ -3,6 +3,7 @@
 ## v.next
 
 * Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
+* Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
 * Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space
 * SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
 * SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point
@@ -24,7 +25,7 @@
 * Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
-* Substructure filter: Added the card's structure, search type, fingerprint, similarity cutoff and searching state as readings of the filter panel it sits in
+* Substructure filter: Added the card's structure, search type, fingerprint, similarity cutoff, searching state and whether it is still drawing (the cards below it move until it has) as readings of the filter panel it sits in
 * Similarity and Diversity Search: Added a `chem-search` status beside `search-results` — metric, fingerprint, size, row source, header, the set of rows the cards show, card sizes and properties; Similarity adds the target row, cutoff and scores
 * Scaffold Tree: Added status readings of its nodes (count, checked, coloured, each node's scaffold, hits and colour), its message and why generation is blocked, hit areas for each node and its icons, and `aria-disabled` on a blocked icon
 * Matched Molecular Pairs: Added status readings of its activities, current tab, substitutions, pairs and generated molecules

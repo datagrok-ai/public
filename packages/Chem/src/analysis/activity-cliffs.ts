@@ -128,7 +128,9 @@ function drawPropPanelElement(params: ITooltipAndPanelParams, element: HTMLDivEl
   const activity = ui.divText(params.activityCol.get(molIdx).toFixed(2));
   activity.style.paddingLeft = '15px';
   activity.style.paddingLeft = '10px';
-  const molHost = ui.div();
+  const molHost = ui.div([], 'chem-activity-cliffs-molecule');
+  molHost.setAttribute('role', 'button');
+  molHost.setAttribute('aria-label', `molecule of row ${molIdx + 1}`);
   if (params.df.currentRowIdx === molIdx)
     molHost.style.border = 'solid 1px lightgrey';
 

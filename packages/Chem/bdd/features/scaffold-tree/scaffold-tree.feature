@@ -26,6 +26,7 @@ Feature: The Scaffold Tree viewer — building, checking, editing and filtering
     And no errors should have been logged
 
   Scenario: The magic wand builds a tree from the molecule column
+    Given the stand runs the "Jupyter" service
     When user hovers over Scaffold Tree viewer
     And user clicks on "Generate" icon inside Scaffold Tree viewer
     Then Scaffold Tree viewer should have finished building its tree

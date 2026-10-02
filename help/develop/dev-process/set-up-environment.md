@@ -1,8 +1,9 @@
 ---
 title: "Environment setup"
 sidebar_position: 0
-description: How to install Node.js, npm, pnpm, and datagrok-tools, and configure your developer key for package development.
+description: How to install Node.js, npm, pnpm, and datagrok-tools, and log in with `grok login` for package development.
 keywords:
+  - grok login
   - developer key
   - grok config
   - datagrok-tools
@@ -38,16 +39,18 @@ We recommend avoiding Snap and following the installation instructions provided 
 
 ## Configuration
 
-1. Retrieve your developer key by opening your user profile, clicking on `Developer key` and copying it to the clipboard
-2. Configure your environment with the following command:
+Log in to your server with a keypair:
 
-   ```bash
-   grok config
-   ```
+```bash
+grok login <server>
+```
 
-   Enter developer keys and set the default server. Your credentials will be stored locally in `config.yaml`. Once
-   created, this file will be used for [publishing](../develop.md#publishing)
-   all your packages. Administrators can manage existing keys and grant or revoke privileges.
+The CLI opens your browser to approve the login and saves the server to `config.yaml`. This file is used for
+[publishing](../develop.md#publishing) all your packages. See
+[Keypair authentication](../../govern/access-control/keypair-authentication.md).
+
+The developer key is deprecated. As a legacy fallback, copy it from **Developer key...** on your profile, then run
+`grok config` and enter it. Datagrok 1.28 and later accept the developer key only from datagrok-tools 6.6.0 or later.
 
 ## Next steps
 

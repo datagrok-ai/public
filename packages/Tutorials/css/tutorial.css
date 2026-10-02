@@ -190,6 +190,16 @@ progress[value]::-webkit-progress-value::after {
   background-color: var(--green-2);
 }
 
+.tutorials-failure {
+  gap: 8px;
+  margin: 10px 0;
+  padding: 12px;
+  border-left: 3px solid var(--red-3);
+  border-radius: 4px;
+  background-color: var(--red-1);
+  color: var(--grey-6);
+}
+
 .grok-tutorial-step-description {
   -webkit-user-select: text;
   -moz-user-select: text;

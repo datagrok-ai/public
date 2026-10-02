@@ -100,6 +100,9 @@ Each event is associated with a fixed type and the user session that triggered i
 * viewer-rendered
 * log
 * package-tested
+* alert-opened
+* alert-escalated
+* alert-resolved
 * server-started
 * user-logged-in
 * user-logged-out
@@ -126,22 +129,71 @@ You can access audit logs in a number of ways:
   * **Usage**: This info pane shows a high-level overview of server-side usage for the current entity in the last seven days
 * From the [Console](../../datagrok/navigation/panels/panels.md#console)
 * From a Datagrok app, [Usage Analysis](usage-analysis.md)
-* Using external providers like Amazon CloudWatch
+* In your own log backend, such as Amazon CloudWatch, Google Cloud Logging, or any
+  OpenTelemetry collector (see [Export logs](#export-logs))
 
-### Exporting logs to Amazon CloudWatch
+### Export logs
 
-To set up automated exports of audit logs to Amazon CloudWatch:
+**Log sync** sends log events to external destinations as they are posted,
+without waiting for them to be saved to the database. To add a destination:
 
-1. On the **Sidebar**, click **Settings** (<FAIcon icon="fa-solid fa-gear"/>) > **Logger**. This opens the **Settings - Logger** view.
-1. In the **Settings - Logger** view, click **ADD NEW EXPORT BLOCK** next to **CloudWatch export**. This shows the export settings.
-1. Configure the export settings:
-     * **Level**: Select the log levels to push to CloudWatch (error, warning, info, etc.) 
-     * **Parameters**: 
-     * **AWS connection**:
-     * **Log Group**: 
-     * **Stream**: Map audit record types to specific log streams (e.g., `log => datagrok_log`, `error => datagrok_errors`).
-     * **Batch size**:
-1. Optional. Repeat the steps for other log levels.
+1. On the **Sidebar**, click **Settings** (<FAIcon icon="fa-solid fa-gear"/>) > **Logger**, and expand **Log sync**.
+1. Click **Add new sync block**.
+1. Set **Cloud** to the destination and fill in its settings (see the table below).
+1. Select the **Levels** to sync. Only levels that are posted can be synced. See [Changing settings for default logs](#changing-settings-for-default-logs).
+1. Click **Save and apply**.
+
+Add one block per destination. For example, send errors to one CloudWatch log
+group and audit events to another.
+
+<details>
+<summary>Log sync settings</summary>
+
+| Setting        | Applies to            | Description                                                                                          |
+|----------------|-----------------------|------------------------------------------------------------------------------------------------------|
+| **Enabled**    | All                   | Turns the destination off without deleting it                                                        |
+| **Levels**     | All                   | Levels to sync: error, warning, info, debug, audit, usage                                            |
+| **Event type** | All                   | Narrows the destination to a single audit or usage event type. Leave empty for all                   |
+| **Params**     | All                   | Syncs only events whose parameters have the given values                                              |
+| **Batch Size** | All                   | Maximum number of events sent in one batch                                                            |
+| **Format**     | All                   | `json` (one object per event, queryable in the backend) or `text`                                     |
+| **Cloud**      | All                   | **Amazon CloudWatch**, **Google Cloud Logging**, or **OpenTelemetry (OTLP)**                          |
+| **Connection** | All                   | An AWS or GCP connection with write access. Leave empty to authenticate with the instance role       |
+| **Log Group**, **Stream** | Amazon CloudWatch | Destination log group and stream. Without a connection, Datagrok creates them if they don't exist. With a connection, create them first |
+| **Log Name**   | Google Cloud Logging  | Destination log                                                                                       |
+| **Endpoint**   | OpenTelemetry         | OTLP/HTTP logs endpoint, for example `http://otel-collector:4318/v1/logs`                             |
+| **Auth**       | OpenTelemetry         | `none`, `bearer` (with **Token**), `aws-sigv4`, or `gcp-oauth`                                        |
+| **Headers**, **Compress**, **Max Payload** | OpenTelemetry | Extra HTTP headers, gzip compression, and the size at which a batch is split          |
+| **Alerts**     | OpenTelemetry         | Sends alert and heartbeat records regardless of the selected levels. On by default                    |
+
+</details>
+
+Besides regular events, the server emits records that let your monitoring
+system page you:
+
+* `alert-opened`, `alert-escalated`, and `alert-resolved` when a problem starts, gets worse, or clears. Alerts
+  cover a failed service health check, requests slowing down or failing across the board, one error hitting many
+  users, an account that keeps failing to sign in, and a problem reported by a user.
+* `alert-firing` every five minutes for each alert that is still open.
+* `heartbeat` every five minutes. A missing heartbeat means the instance stopped reporting.
+
+`alert-firing` and `heartbeat` aren't stored in the database. They exist only in Log sync destinations.
+
+To learn more, see [Export logs to Amazon CloudWatch](../../datagrok/solutions/teams/it/log-export-cloud-watch.md).
+
+:::note
+
+On a platform-managed instance, the **Log sync** section is hidden. The deployment owns the destinations.
+
+:::
+
+### Retention
+
+By default, Datagrok keeps all events. To delete old events automatically,
+turn on the **Garbage Collector** in **Settings** > **Admin**. It removes audit
+events after 365 days, errors, warnings, info, and usage events after 183 days,
+and debug events after 30 days. You can change each period. To keep events
+longer, [export them](#export-logs) to a backend with its own retention policy.
 
 ## Logging events
 

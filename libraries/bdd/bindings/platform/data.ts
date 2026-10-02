@@ -5,9 +5,11 @@
    before the change, and returns once every viewer has drawn the change, so the next step's
    baseline is the state after it. The in-page runtime's `table`, `col`, `rowFacts` and `setRows`
    do the lookups and the row scans, and say which column or category is missing. */
-import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {Locator, Page} from '@playwright/test';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
+import {openColumnSelector, pickInColumnGrid} from '../../src/runtime/gestures.js';
+import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {baselineAll, changeAll, evaluate, RowFacts, RowTest, settleAll} from '../../src/runtime/viewers.js';
 
 declare const grok: any;
@@ -108,13 +110,23 @@ export const rowsRangeSelected = Then('rows {int} to {int} should be selected', 
   await expect.poll(() => page.evaluate(([a, b]) => {
     const df = grok.shell.t;
     let inRange = 0;
-    for (let i = a - 1; i < b && i < df.rowCount; i++) {
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
       if (df.selection.get(i))
         inRange++;
-    }
     return `${inRange} of ${b - a + 1} in the range, ${df.selection.trueCount} in all`;
   }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range, ${to - from + 1} in all`);
 }, {description: 'rows counted from 1 as the grid shows them, every row of the range and nothing else'});
+
+export const rowsRangeAllSelected = Then('rows {int} to {int} should all be selected', async (page: Page, from: number, to: number) => {
+  await expect.poll(() => page.evaluate(([a, b]) => {
+    const df = grok.shell.t;
+    let inRange = 0;
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
+      if (df.selection.get(i))
+        inRange++;
+    return `${inRange} of ${b - a + 1} in the range`;
+  }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range`);
+}, {description: 'every row of the range is selected, whatever else is — pair it with the total count when a selection spans several ranges'});
 
 export const selectedPassFilter = Then('every selected row should pass the filter', async (page: Page) => {
   const off = await page.evaluate(() => {
@@ -197,6 +209,40 @@ export const filterPassesFewer = Then('fewer than {int} rows should pass the fil
 export const filterPassesAll = Then('all rows should pass the filter', (page: Page) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.filter.trueCount === grok.shell.t.rowCount), {message: 'every row passes the filter'}).toBe(true));
 
+/* The filter count of the current table kept for a claim in another view or after a change, where
+   the count itself depends on data a filter computed (a scaffold tree, a molecule). Forgotten when the
+   feature ends: the page, and this map with it, outlives the feature. */
+const rememberedPassing = new WeakMap<Page, number>();
+
+function passingRemembered(page: Page): number {
+  const count = rememberedPassing.get(page);
+  if (count === undefined)
+    throw new Error('no filter count was remembered — "user remembers how many rows pass the filter" comes first');
+  return count;
+}
+
+export const rememberPassing = When('user remembers how many rows pass the filter', async (page: Page) => {
+  await settleAll(page);
+  if (!rememberedPassing.has(page))
+    atFeatureEnd(page, async () => { rememberedPassing.delete(page); });
+  rememberedPassing.set(page, await filteredCount(page));
+}, {tier: 'api', description: 'the filter count of the current table, for a claim in another view or after a change'});
+
+export const passingAsRemembered = Then('as many rows as remembered should pass the filter', async (page: Page) => {
+  const want = passingRemembered(page);
+  await expect.poll(() => filteredCount(page), {message: `rows passing the filter (remembered: ${want})`}).toBe(want);
+}, {description: 'the filter count equals the remembered one'});
+
+export const passingFewer = Then('fewer rows than remembered should pass the filter', async (page: Page) => {
+  const want = passingRemembered(page);
+  await expect.poll(() => filteredCount(page), {message: `rows passing the filter (remembered: ${want})`}).toBeLessThan(want);
+}, {description: 'the filter count is below the remembered one'});
+
+export const passingMore = Then('more rows than remembered should pass the filter', async (page: Page) => {
+  const want = passingRemembered(page);
+  await expect.poll(() => filteredCount(page), {message: `rows passing the filter (remembered: ${want})`}).toBeGreaterThan(want);
+}, {description: 'the filter count is above the remembered one'});
+
 /** The table filter bit by bit: the rows the test names pass, no other row does. */
 async function expectFilterExactly(page: Page, column: string, test: RowTest, what: string): Promise<void> {
   await expect.poll(async () => {
@@ -242,7 +288,8 @@ export const deleteSelected = When('user deletes the selected rows', (page: Page
    a read that threw ended the poll, so the step failed on the gap rather than waiting it out. */
 export const rowCount = Then('the table should have {int} row(s)', (page: Page, count: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t ? grok.shell.t.rowCount as number : 'no table is open'),
-    {message: 'rows in the table'}).toBe(count));
+    {message: 'rows in the table', timeout: pollMs(30000)}).toBe(count),
+{description: 'polled: a query view opens its table before the rows arrive'});
 
 /** The one claim about a value the column may no longer hold (the rows were deleted), so it
  * counts on its own rather than through `rowFacts`, which refuses an unknown value. */
@@ -264,6 +311,11 @@ export const tableTagIsFile = Then('the table should have tag {string} equal to 
   expect(file.length, `the length of ${path}`).toBeGreaterThan(0);
   expect(actual, `tag "${tag}" of the table against ${path}`).toBe(file);
 }, {tier: 'api', description: 'byte for byte, line breaks included — what a file handler put on the table it opened'});
+
+export const tableTagContains = Then('the {string} tag of the table should contain {string}', async (page: Page, tag: string, text: string) => {
+  await expect.poll(() => page.evaluate((t) => String(grok.shell.t?.getTag(t) ?? ''), tag),
+    {message: `the "${tag}" tag of the current table`}).toContain(text);
+}, {description: 'the tag of the table in front — a dataframe formula line is kept in ".formula-lines"'});
 
 export const columnIsCurrentObject = Given('the {string} column is the current object', async (page: Page, column: string) => {
   await page.evaluate((c) => {
@@ -501,12 +553,18 @@ export const tableOpen = Then('table {string} should be open', async (page: Page
 }, {description: 'in grok.shell.tables, by its exact name'});
 
 export const tableColumns = Then('table {string} should have columns {string}', async (page: Page, name: string, columns: string) => {
-  expect((await tableInfo(page, name)).columns, `columns of "${name}"`).toEqual(list(columns));
+  await expect.poll(async () => (await tableInfo(page, name).catch((e) => ({columns: [String(e?.message ?? e)], rows: -1}))).columns,
+    {message: `columns of "${name}"`}).toEqual(list(columns));
 }, {description: 'exactly these, in this order (comma-separated)'});
 
+/* Polled, the table found by name each time: a query view opens its table before the rows arrive,
+   and a project opens its tables one by one. */
 export const tableRows = Then('table {string} should have {int} row(s)', async (page: Page, name: string, count: number) => {
-  expect((await tableInfo(page, name)).rows, `rows of "${name}"`).toBe(count);
-});
+  await expect.poll(() => page.evaluate((n) => {
+    const t = (grok.shell.tables as any[]).find((x) => x.name === n);
+    return t ? t.rowCount as number : `not open; open: ${(grok.shell.tables as any[]).map((x) => x.name).join(' | ') || 'none'}`;
+  }, name), {message: `rows of table "${name}"`, timeout: pollMs(30000)}).toBe(count);
+}, {description: 'polled until the open table of that name holds exactly that many rows'});
 
 const missingCount = (page: Page, name: string, column: string): Promise<number> => evaluate(page, ([n, c]) => {
   const b = (window as any).__bdd;
@@ -537,9 +595,10 @@ export const tableFilterCount = Then('{int} rows of table {string} should pass t
 /** The filters of the current view's filter panel, by column name. */
 const filterColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
   // getFiltersGroup creates one when the view has none, which would make "0 filters" resurrect a panel
-  const open = Array.from(grok.shell.tv?.viewers ?? []).some((v: any) => String(v.type) === 'Filters');
-  const group = open ? grok.shell.tv.getFiltersGroup({createDefaultFilters: false}) : null;
-  return group ? (group.filters as any[]).map((f) => String(f.columnName ?? f.column?.name ?? '')) : [];
+  const panel: any = Array.from(grok.shell.tv?.viewers ?? []).find((v: any) => String(v.type) === 'Filters');
+  // the look lists every card by its column; a card added from the panel's menu has a JS wrapper
+  // with no columnName, so the wrappers alone read it as ""
+  return panel ? ((panel.getOptions().look.filters ?? []) as any[]).map((f) => String(f.column ?? f.columnName ?? '')) : [];
 });
 
 export const filterPanelCount = Then('the filter panel should have {int} filter(s)', async (page: Page, count: number) => {
@@ -701,3 +760,81 @@ export const colorLinearThrough = When('user colors {string} column linearly thr
 export const mouseOverRowIs = Then('the mouse-over row of the table should be {int}', (page: Page, row: number) =>
   expect.poll(() => page.evaluate(() => grok.shell.t.mouseOverRowIdx + 1 as number), {message: 'the mouse-over row of the table (from 1, 0 for none)'}).toBe(row),
 {description: 'the row the pointer is over in some viewer, counted from 1; 0 when no row is hovered'});
+
+// --- linked tables -------------------------------------------------------------------------------------
+
+const linkDialog = (page: Page): Locator => page.locator('[name="dialog-Link-Tables"]').filter({visible: true}).last();
+
+/** A pair of key columns of Data > Link Tables: row N holds the column of the left table and the column
+ * of the right one, each a Dart column selector. */
+export const setLinkKeyPair = When('user sets key columns {int} of the Link Tables dialog to {string} and {string}',
+  async (page: Page, row: number, left: string, right: string) => {
+    for (const [side, column] of [[0, left], [1, right]] as [number, string][]) {
+      const selector = linkDialog(page).locator(`[name="div-selectKeyCol${side}Row${row}"] .d4-column-selector`).first();
+      await expect(selector, `key column ${side === 0 ? 'left' : 'right'} of row ${row} in the Link Tables dialog`).toBeVisible({timeout: pollMs(5000)});
+      await openColumnSelector(page, selector);
+      await pickInColumnGrid(page, column, `key column row ${row}`, selector);
+      await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: pollMs(5000)});
+    }
+  }, {tier: 'ui', description: 'picks the left and the right column of the key row N (1-based; "Add" makes a row) through their column pickers and reads each back'});
+
+/** The two table choices of a link: the left one is labelled "Tables", the right one has no label. */
+export const setLinkTables = When('user sets the tables of the Link Tables dialog to {string} and {string}',
+  async (page: Page, left: string, right: string) => {
+    for (const [side, table] of [['Left', left], ['Right', right]]) {
+      const select = linkDialog(page).locator(`select[name="input-selectTable${side}"]`).first();
+      await select.selectOption({label: table});
+      await expect(select, `the ${side.toLowerCase()} table of the Link Tables dialog`).toHaveValue(table, {timeout: pollMs(5000)});
+    }
+  }, {tier: 'ui', description: 'chooses the left and the right table of the link being made and reads both back'});
+
+/** The rows of a table whose key tuple is the key tuple of some selected row of another table — what a
+ * link keyed that way should leave there — against a bitset of the first table. */
+async function linkedRowsCheck(page: Page, table: string, bitset: 'filter' | 'selection', source: string, keys: string, sourceKeys: string): Promise<string> {
+  return page.evaluate(([t, b, st, k, sk]) => {
+    const tables = grok.shell.tables as any[];
+    const df = tables.find((x) => x.name === t);
+    const src = tables.find((x) => x.name === st);
+    if (!df || !src)
+      return `no table "${df ? st : t}" is open`;
+    const cols = (d: any, names: string): any[] => names.split(/\s*,\s*/).map((n) => {
+      const c = d.col(n);
+      if (!c)
+        throw new Error(`"${d.name}" has no "${n}" column`);
+      return c;
+    });
+    const kc = cols(df, k);
+    const skc = cols(src, sk);
+    const tuples = new Set<string>();
+    for (let i = 0; i < src.rowCount; i++)
+      if (src.selection.get(i))
+        tuples.add(JSON.stringify(skc.map((c) => c.get(i))));
+    const bits = df[b];
+    let expected = 0;
+    let wrong = 0;
+    for (let i = 0; i < df.rowCount; i++) {
+      const hit = tuples.has(JSON.stringify(kc.map((c) => c.get(i))));
+      if (hit)
+        expected++;
+      if (hit !== bits.get(i))
+        wrong++;
+    }
+    return wrong === 0 ? `${expected}` : `${bits.trueCount} rows, ${expected} match the ${tuples.size} selected keys of "${st}", ${wrong} rows differ`;
+  }, [table, bitset, source, keys, sourceKeys] as [string, 'filter' | 'selection', string, string, string]);
+}
+
+async function expectLinked(page: Page, table: string, bitset: 'filter' | 'selection', source: string, keys: string, sourceKeys: string): Promise<void> {
+  let got = '';
+  await expect.poll(async () => /^\d+$/.test(got = await linkedRowsCheck(page, table, bitset, source, keys, sourceKeys)) && got !== '0',
+    {message: `the ${bitset} of "${table}" against the selection of "${source}"`}).toBe(true).catch(() => {
+    throw new Error(`the ${bitset} of "${table}": ${got === '0' ? 'no row matches the selection, which proves nothing' : got}`);
+  });
+}
+
+export const filterMatchesLinkedSelection = Then('the rows of table {string} that pass the filter should be exactly those matching the rows selected in table {string} on {string} = {string}',
+  (page: Page, table: string, source: string, keys: string, sourceKeys: string) => expectLinked(page, table, 'filter', source, keys, sourceKeys),
+  {description: 'row by row: a row passes exactly when its key columns (comma-separated) hold the keys of some row selected in the other table; at least one row must match'});
+
+export const selectionMatchesLinkedSelection = Then('the rows selected in table {string} should be exactly those matching the rows selected in table {string} on {string} = {string}',
+  (page: Page, table: string, source: string, keys: string, sourceKeys: string) => expectLinked(page, table, 'selection', source, keys, sourceKeys),
+  {description: 'row by row: a row is selected exactly when its key columns hold the keys of some row selected in the other table; at least one row must match'});

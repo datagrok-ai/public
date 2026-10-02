@@ -11,10 +11,15 @@ keywords:
 
 Network diagram visualizes graphs, where values of the specified two columns become nodes and rows become
 edges. You can color-code and size-code nodes and columns by choosing the aggregate function that applies
-to the values representing an edge or a node.
+to the values representing an edge or a node. Hover a node to see its column and value, the number of
+rows, and the values behind its size and color, if they are set.
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Network diagram');`
+
+:::
 
 General:
 

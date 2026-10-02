@@ -1,11 +1,22 @@
 ---
+mdx:
+  format: mdx
 title: "Line chart"
 ---
 
+```mdx-code-block
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
 Line chart shows data points as connected line segments. It is commonly used to track trends, changes over time, and compare multiple data series. 
 
-> Developers: To add the viewer from the console, use:
+:::note developers
+
+To add the viewer from the console, use:
 `grok.shell.tv.addViewer('Line chart');`
+
+:::
 
 General:
 
@@ -40,10 +51,42 @@ To configure a custom aggregated tooltip, go to **Context menu > Tooltip > Edit*
 
 ![](img/line-chart-aggregated-tooltip.gif)
 
-## Tools
+## Trend lines
 
-- **Formula lines**: Add reference lines or bands defined by mathematical formulas to analyze trends and thresholds. See [Scatterplot: Formula lines](scatter-plot.md#formula-lines) for details.
-- **Annotation regions**: Highlight and annotate areas of interest on the chart using rectangular, lasso, or formula-based regions. See [Scatterplot: Annotation regions](scatter-plot.md#annotation-regions) for details.
+A line chart can show a regression line or a moving average line for each series. Both work with a numerical or date
+X axis. A line chart split by a column draws a line for each split category, up to 20 categories. In the
+**Multi Axis** mode, each Y column gets its own line.
+
+<Tabs>
+<TabItem value="regression-line" label="Regression line" default>
+
+To show a regression line, press `R` or right-click the chart and select **Tools** > **Show Regression Line**. The
+equation of each line is shown in the top left corner. To learn more, see
+[Scatterplot: regression lines](scatter-plot.md#regression-line).
+
+![Adding a regression line to a line chart](img/line-chart-regression-line.gif)
+
+</TabItem>
+<TabItem value="moving-average" label="Moving average">
+
+To show a moving average line, check **Show Moving Average Line** in the **Context Panel**. To make the line smoother,
+increase **Moving Average Window**. To show the spread around the trend, check **Show Moving Average Deviation**. To
+learn more, see [Scatterplot: moving average](scatter-plot.md#moving-average).
+
+![Adding a moving average to a line chart](img/line-chart-moving-average.gif)
+
+</TabItem>
+</Tabs>
+
+## Annotations
+
+To show thresholds or expected values, add formula lines: reference lines or bands defined by a
+formula. To highlight areas of interest, add annotation regions: rectangular, lasso, or
+formula-based areas with a description. To add them, right-click the chart and select **Tools** >
+**Formula Lines...** or **Tools** > **Draw Annotation Region**.
+
+For details, see [Formula lines](scatter-plot.md#formula-lines) and
+[Annotation regions](scatter-plot.md#annotation-regions).
 
 ## Statistical Process Control
 
@@ -132,8 +175,6 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Y Selectors | boolean |  |
 | Show Aggr Selectors | boolean |  |
 | Show Split Selector | boolean |  |
-| Interpolation | lineinterpolationmode |  |
-| Spline Tension | number |  |
 | Y Axis Custom Tickmarks | list |  |
 | **Size** | | |
 | Markers Size Column Name | string |  |
@@ -151,18 +192,8 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Line Width | number |  |
 | Line Transparency | number |  |
 | Line Coloring Type | string |  |
-| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
-| Show Regression Line Equation | boolean |  |
-| Show Spearman Correlation | boolean |  |
-| Show Pearson Correlation | boolean |  |
-| Show Mean Absolute Error | boolean |  |
-| Show Root Mean Square Error | boolean |  |
-| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
-| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
-| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
-| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
-| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
-| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
+| Interpolation | lineinterpolationmode |  |
+| Spline Tension | number |  |
 | **SPC** | | |
 | Show Statistical Process Control | boolean | Shows/hides upper and lower control limits, and [Western Electric rules](https://sentient.cloud/what-are-western-electric-rules-2/). |
 | Show Control Limits | boolean | Shows/hides upper and lower control limits. |
@@ -201,13 +232,13 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Statistical Process Line Color | number |  |
 | Statistical Process Area Color | number |  |
 | Statistical Process Rule Color | number |  |
-| Controls Font | string | Viewer controls elements font. |
 | Regression Line Color | number |  |
 | Regression Line Transparency | number |  |
 | Moving Average Line Color | number |  |
 | Moving Average Line Transparency | number |  |
 | Annotation Font | string |  |
 | Formula Font | string |  |
+| Controls Font | string | Viewer controls elements font. |
 | **Tooltip** | | |
 | Show Tooltip | string | Controls scatter plot tooltip visibility |
 | Show Labels | visibilitymode |  |
@@ -223,6 +254,21 @@ Toggle each component on/off independently in the **Context Panel** to focus on 
 | Show Dataframe Annotation Regions | boolean |  |
 | Show Viewer Formula Lines | boolean | Control the visibility of viewer-level formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
 | Show Dataframe Formula Lines | boolean | Control the visibility of dataframe-originated formula lines. Edit formula lines by right-clicking and selecting "Tools \| Formula Lines" from the popup menu. Requires the PowerPack plugin. |
+| **Statistics** | | |
+| Show Regression Line | boolean | Regression line visibility (toggle by pressing R). |
+| Show Regression Line Equation | boolean |  |
+| Show Determination Coefficient | boolean | Coefficient of determination (r²) of the fit. |
+| Show Spearman Correlation | boolean |  |
+| Show Pearson Correlation | boolean |  |
+| Show Mean Absolute Error | boolean |  |
+| Show Root Mean Square Error | boolean |  |
+| Regression Per Category | boolean | Splits the regression by category. Supports up to 20 categories; otherwise, a common regression line is shown. |
+| Regression Zero Intercept | boolean | Forces the line through the origin (y = a·x). r² is then computed against the uncentered total sum of squares (Σy²) and is not comparable with the free-intercept r². |
+| Show Moving Average Line | boolean | Moving (rolling) average line visibility. |
+| Moving Average Window | number | Trailing window size, interpreted per *Moving Average Window Unit*: a count of *Points*, an *Absolute* width in X-axis units, or that many time periods (e.g. 30 *Days*, 3 *Months*). |
+| Moving Average Window Unit | string | Window unit (*Points*, a row count, by default): * *Absolute* — a width in X-axis units, for a numeric X axis. * *Days*, *Weeks*, *Months*, *Quarters*, *Years* — a fixed time period, for a datetime X axis (falls back to *Points* when X is not datetime). |
+| Show Moving Average Deviation | boolean | Shades a ±1 standard deviation band around the line. |
+| Moving Average Per Category | boolean | Splits the average by category (color column on the scatter plot, Split column on the line chart), up to 20. |
 | **Description** | | |
 | Show Title | boolean |  |
 
