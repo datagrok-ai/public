@@ -1,0 +1,7 @@
+type: artifact
+extends: node
+abstract: true
+description: A non-code thing that vouches for a feature.
+properties:
+  path?:        Path
+  url?:         Url

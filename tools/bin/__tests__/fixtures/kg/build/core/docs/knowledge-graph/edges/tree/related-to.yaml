@@ -1,0 +1,7 @@
+type: related-to
+from: Feature | Concept
+to: Feature | Concept
+key: related
+symmetric: true
+derived_by: [annotation]
+description: A see-also link between features or concepts, with no ownership meaning.

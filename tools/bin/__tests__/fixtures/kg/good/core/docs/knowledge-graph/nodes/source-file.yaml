@@ -1,0 +1,7 @@
+type: source-file
+extends: component
+description: One source file. Id file:<repo-relative path>.
+properties:
+  path:          Path
+  loc?:          number
+  generated?:    boolean = false

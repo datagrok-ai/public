@@ -1,0 +1,7 @@
+type: customer-contact
+extends: person
+description: A person at a customer or partner.
+properties:
+  company:       Customer
+  title?:        string
+  role?:         "'champion' | 'user' | 'procurement' | 'it' | 'security' | 'scientist'"

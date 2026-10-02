@@ -1,0 +1,5 @@
+type: includes
+from: Release
+to: Commit | PullRequest
+derived_by: [git, annotation]
+description: A release contains a commit or PR, either on its branch or listed among its picks in the release record.

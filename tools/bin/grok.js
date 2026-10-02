@@ -40,6 +40,7 @@ const commands = {
   server: lazy('server', 'server'),
   s: lazy('server', 'server'),
   setup: lazy('setup', 'setup'),
+  kg: lazy('kg', 'kg'),
 };
 
 // `--version` is a string option (grok publish --version 1.10), so a bare `grok --version` parses as ''.

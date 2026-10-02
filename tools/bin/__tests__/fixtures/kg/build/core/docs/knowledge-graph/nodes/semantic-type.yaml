@@ -1,0 +1,8 @@
+type: semantic-type
+extends: component
+description: >
+  A registered semantic type name such as Molecule or Macromolecule: declared in
+  package.json meta.semanticTypes, assigned by detectors, consumed by inputs and
+  renderers. Id semtype:<Name>.
+properties:
+  language:      "'other'"

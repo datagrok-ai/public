@@ -86,6 +86,9 @@ jobs:
       - name: Unit tests (grok s, migrate)
         run: pnpm run test:server
         working-directory: ./tools
+      - name: Unit tests (grok kg, grok test --recent)
+        run: pnpm exec vitest run --project unit bin/__tests__/kg*.test.ts bin/__tests__/recent-tests.test.ts
+        working-directory: ./tools
       # Trusted publishing (OIDC) needs npm >= 11.5.1 on Node >= 22.14. Swap the
       # toolchain only for the publish step so the build keeps its pinned Node.
       - name: Setup Node for trusted publishing

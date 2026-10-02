@@ -1,0 +1,19 @@
+type: report
+extends: work
+visibility: dev
+description: >
+  A user error report, feedback or vulnerability report captured by a running
+  instance. Id is host#number. Reports group by error signature and are promoted to
+  a ticket, named by `ticket`.
+properties:
+  host:          Environment
+  ticket?:       Ticket
+  number:        number
+  kind:          "'report' | 'feedback' | 'vulnerability'"
+  auto:          boolean
+  state:         "'open' | 'resolved' | 'ticketed'"
+  signature?:    string
+  group?:        string
+  version?:      Version
+  view?:         string
+  viewer?:       string

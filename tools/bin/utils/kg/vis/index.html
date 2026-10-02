@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge graph</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="vis.css">
+<script src="https://cdn.jsdelivr.net/npm/@cosmos.gl/graph@3.4.1/dist/index.min.js" integrity="sha384-+uxZtGD3/LJcx0YJJ4sV4tEPnFwDjbyDDXYLNgYzRe2AJ8/XYDTICgmxE16Ivpqr" crossorigin="anonymous"></script>
+</head>
+<body>
+<header class="kgv-header">
+  <div class="kgv-brand">Knowledge graph</div>
+  <div class="kgv-stats" id="stats"></div>
+  <div class="kgv-chips" id="chips"></div>
+  <div class="kgv-spacer"></div>
+  <div class="kgv-batch" id="batch"></div>
+</header>
+<main class="kgv-main" id="main">
+  <aside class="kgv-left" id="left">
+    <div class="kgv-search">
+      <input id="search" type="search" placeholder="Find by name or id…" autocomplete="off" spellcheck="false">
+      <div class="kgv-results" id="results" hidden></div>
+    </div>
+    <section class="kgv-section">
+      <h3>Presets</h3>
+      <div class="kgv-presets" id="presets"></div>
+    </section>
+    <section class="kgv-section">
+      <h3>Questions</h3>
+      <div class="kgv-questions">
+        <select id="question"><option value="">ask the graph…</option></select>
+        <div id="question-params" class="kgv-params"></div>
+        <div id="question-why" class="kgv-why"></div>
+        <div class="kgv-question-actions"><button id="ask" hidden>Ask</button><span id="question-status"></span></div>
+      </div>
+    </section>
+    <section class="kgv-section">
+      <h3>Scope</h3>
+      <div class="kgv-scope">
+        <input id="scope" type="text" placeholder="id or ~id: the node, what is under it, and…" autocomplete="off" spellcheck="false">
+        <label>hops <select id="hops"><option>0</option><option selected>1</option><option>2</option></select></label>
+        <button id="scope-clear" title="Clear the scope">×</button>
+      </div>
+    </section>
+    <section class="kgv-section">
+      <h3>Node types <span class="kgv-count" id="node-type-count"></span></h3>
+      <div id="node-types" class="kgv-tree"></div>
+    </section>
+    <section class="kgv-section">
+      <h3>Edge kinds <span class="kgv-count" id="edge-kind-count"></span></h3>
+      <div id="edge-kinds" class="kgv-tree"></div>
+    </section>
+    <section class="kgv-section">
+      <h3>Facets</h3>
+      <div id="facets" class="kgv-facets"></div>
+      <label class="kgv-slider">min confidence <span id="conf-value">0</span>
+        <input id="conf" type="range" min="0" max="100" value="0"></label>
+    </section>
+  </aside>
+  <div class="kgv-gutter" data-side="left"></div>
+  <div class="kgv-center">
+    <div class="kgv-toolbar">
+      <button id="sim" title="Pause or resume the layout simulation (space)">Freeze</button>
+      <button id="fit" title="Fit the whole view (f)">Fit</button>
+      <button id="zoom-sel" title="Zoom to the selection (z)">Zoom to selection</button>
+      <button id="unpin" title="Drop the nodes pinned into the view by Expand">Clear pins <span id="pin-count"></span></button>
+      <label><input type="checkbox" id="labels-on" checked> labels</label>
+      <span class="kgv-visible" id="visible"></span>
+      <span class="kgv-mode" id="mode" hidden></span>
+      <button id="back" class="kgv-back" hidden title="Back to the previous view (backspace)">↩ Back</button>
+      <span class="kgv-spacer"></span>
+      <button id="drawer-toggle" title="Cypher (ctrl+enter runs)">Cypher</button>
+    </div>
+    <div id="graph" class="kgv-graph"></div>
+    <div id="labels" class="kgv-labels"></div>
+    <div id="tooltip" class="kgv-tooltip" hidden></div>
+    <section id="drawer" class="kgv-drawer" hidden>
+      <div class="kgv-drawer-bar">
+        <textarea id="cypher" rows="3" spellcheck="false" placeholder="MATCH (f:Feature)-[:IS_IMPLEMENTED_IN]->(c) RETURN f.id, c.id LIMIT 100"></textarea>
+        <div class="kgv-drawer-actions">
+          <button id="run" title="Run (ctrl+enter)">Run</button>
+          <select id="history" title="History"><option value="">history…</option></select>
+          <label><input type="checkbox" id="highlight" checked> highlight</label>
+          <label><input type="checkbox" id="restrict"> restrict view</label>
+          <span id="query-status"></span>
+        </div>
+      </div>
+      <div id="query-result" class="kgv-table"></div>
+    </section>
+  </div>
+  <div class="kgv-gutter" data-side="right"></div>
+  <aside class="kgv-right" id="right">
+    <div class="kgv-pane-empty" id="pane-empty">Click a node to see it here. Double-click a node to pull its neighbours into the view.</div>
+    <div id="pane" class="kgv-pane" hidden></div>
+  </aside>
+</main>
+<div id="loading" class="kgv-loading">Loading the graph…</div>
+<script type="module" src="vis.js"></script>
+</body>
+</html>

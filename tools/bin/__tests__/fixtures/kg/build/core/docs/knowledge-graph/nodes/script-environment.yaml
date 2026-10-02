@@ -1,0 +1,7 @@
+type: script-environment
+extends: component
+description: A conda or pip environment declared under a package's environments/ folder.
+properties:
+  language:      "'python' | 'r' | 'other'"
+  path:          Path
+  packages?:     string[]

@@ -1,0 +1,6 @@
+type: release
+extends: work
+prefix: Rel
+description: A platform version. Extracted from release branches, never a home.
+properties:
+  version:       Version

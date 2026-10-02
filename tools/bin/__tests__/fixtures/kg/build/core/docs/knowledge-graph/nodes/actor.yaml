@@ -1,0 +1,9 @@
+# Root. Someone or something that wants, owns or uses features.
+type: actor
+extends: node
+abstract: true
+visibility: internal
+description: >
+  People, teams, customers and partners. Everything under this root lives in the
+  internal layer unless a subtype narrows otherwise. Actors reach features and
+  tickets through involves edges.

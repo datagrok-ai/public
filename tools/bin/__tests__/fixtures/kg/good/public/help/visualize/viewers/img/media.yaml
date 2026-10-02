@@ -1,0 +1,7 @@
+scatter-plot.png:
+  kind: screenshot
+  caption: A scatter plot of two columns
+  description: Points of the demo table plotted by age and weight, coloured by sex.
+  illustrates: [visualize/viewers/scatter-plot, C:dataframe]
+  quality: answer
+  described_by: person

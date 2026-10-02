@@ -1,0 +1,8 @@
+type: part-of
+from: Feature | Concept | Scenario
+to: Feature | Concept | Scenario
+same_type: true
+cardinality: one
+acyclic: true
+derived_by: [filesystem]
+description: The hierarchy edge, derived from the id path and never authored.

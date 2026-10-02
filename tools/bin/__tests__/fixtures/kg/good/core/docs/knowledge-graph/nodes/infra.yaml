@@ -1,0 +1,4 @@
+type: infra
+extends: node
+abstract: true
+description: Where the platform runs and what builds it.

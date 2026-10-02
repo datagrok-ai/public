@@ -1,0 +1,8 @@
+type: db-table
+extends: component
+description: >
+  A table in the platform database, known from an entity class's dbTableName, a
+  repository, or a migration. Id table:<schema>.<name>; schema defaults to public.
+properties:
+  language:      "'sql'"
+  schema?:       string

@@ -1,0 +1,5 @@
+{
+  "image": "datagrok/demo_published:1.0",
+  "port": 8080,
+  "on_demand": true
+}

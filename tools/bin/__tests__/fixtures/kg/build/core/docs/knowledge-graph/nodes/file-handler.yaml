@@ -1,0 +1,9 @@
+type: file-handler
+extends: function
+description: >
+  An importer or exporter for file extensions (roles fileHandler, fileExporter).
+properties:
+  extensions?:   string[]             # //meta.ext; exporters may declare none
+  direction:     "'import' | 'export'"
+notes:
+  - roles includes one of [fileHandler, file-handler, fileExporter]

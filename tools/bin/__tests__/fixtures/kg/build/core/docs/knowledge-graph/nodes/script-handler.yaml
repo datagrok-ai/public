@@ -1,0 +1,11 @@
+type: script-handler
+extends: function
+description: >
+  A handler that teaches the platform a new scripting language.
+properties:
+  script_language: string
+  extensions:    string[]
+  comment_start?: string
+  editor_mode?:  string
+notes:
+  - roles contains 'scriptHandler'

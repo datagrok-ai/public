@@ -1,0 +1,12 @@
+type: job
+extends: infra
+prefix: Job
+description: >
+  A CI/CD pipeline: a Jenkins job under infra/jenkins or a GitHub Actions workflow
+  under public/.github/workflows. Builds images, deploys environments, runs tests,
+  syncs snapshots.
+properties:
+  system:        "'jenkins' | 'github'"
+  file:          Path
+  kind:          "'build' | 'deploy' | 'test' | 'release' | 'sync' | 'scan' | 'publish' | 'other'"
+  schedule?:     string

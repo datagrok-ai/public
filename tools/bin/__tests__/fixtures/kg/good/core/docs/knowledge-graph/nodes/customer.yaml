@@ -1,0 +1,7 @@
+type: customer
+extends: actor
+prefix: Cust
+authored: true
+description: An organization we work with.
+properties:
+  relationship:  "'customer' | 'partner' | 'prospect'"

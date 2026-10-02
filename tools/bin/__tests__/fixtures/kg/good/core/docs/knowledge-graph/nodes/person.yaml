@@ -1,0 +1,11 @@
+type: person
+extends: actor
+prefix: P
+authored: true
+description: A human. One node per person regardless of roles.
+home: core/docs/knowledge-graph/internal/people/<handle>.yaml
+properties:
+  email:         string
+  slack?:        string
+  company?:      Customer | Team
+  tier?:         "'staff' | 'contractor' | 'guest' = 'staff'"

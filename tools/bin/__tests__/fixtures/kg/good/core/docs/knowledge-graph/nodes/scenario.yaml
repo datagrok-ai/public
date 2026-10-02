@@ -1,0 +1,12 @@
+type: scenario
+extends: artifact
+prefix: TS
+hierarchical: true
+authored: true
+description: A manual test scenario in Test Track.
+properties:
+  path:          Path
+  priority?:     "'p1' | 'p2' | 'p3'"
+  target_layer?: string
+  coverage_type?: string
+  manual_only?:  boolean = false

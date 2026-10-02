@@ -1,0 +1,10 @@
+type: changelog-entry
+extends: artifact
+description: >
+  One bullet in a package CHANGELOG.md under a version heading. Mentions tickets;
+  describes a change to a feature through changes.
+properties:
+  package:       Package
+  version:       Version
+  date?:         Date
+  text:          Text

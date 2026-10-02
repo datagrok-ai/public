@@ -1,0 +1,8 @@
+type: documents
+from: DocPage
+to: Feature
+key: documents
+derived_by: [annotation]
+description: A page describes a feature.
+properties:
+  audience?:     "'user' | 'developer'"

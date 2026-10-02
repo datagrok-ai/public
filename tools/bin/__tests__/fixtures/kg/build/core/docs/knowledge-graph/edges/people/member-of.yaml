@@ -1,0 +1,8 @@
+type: member-of
+from: Person
+to: Team
+derived_by: [annotation]
+description: A person belongs to a team.
+properties:
+  role?:         string
+  joined?:       Date

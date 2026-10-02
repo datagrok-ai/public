@@ -1,0 +1,12 @@
+type: feature
+extends: node
+hierarchical: true
+authored: true
+visibility: public
+description: A capability a user or a developer would recognize as distinct. The tree.
+home: any markdown file carrying a `feature:` frontmatter key
+properties:
+  user_help?:      DocPage
+  developer_help?: DocPage
+notes:
+  - a second-level node (the area) must set owner

@@ -1,0 +1,12 @@
+type: is-implemented-in
+from: Feature
+to: Component
+key: code
+derived_by: [annotation, filesystem, llm]
+description: >
+  The feature's own code: the roots listed under `code:` in its home doc, the folder
+  the home doc sits in, and files carrying an explicit marker. A component has at most
+  one owner through this edge.
+properties:
+  role?:         "'definition' | 'ui' | 'api' | 'server' | 'test-support' | 'other'"
+  layer?:        "'client' | 'server' | 'shared' | 'js_api' | 'plugin' | 'connector'"

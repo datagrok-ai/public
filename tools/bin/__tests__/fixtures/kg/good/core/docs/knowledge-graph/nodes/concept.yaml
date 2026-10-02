@@ -1,0 +1,10 @@
+type: concept
+extends: node
+prefix: C
+hierarchical: true
+authored: true
+visibility: public
+description: A platform noun such as dataframe or view. Kept shallow.
+home: core/docs/knowledge-graph/concepts/<name>.yaml
+properties:
+  area?:        "'data' | 'entity' | 'ui'"

@@ -1,6 +1,7 @@
 /build.js
 bin/validators/*.ts
 bin/utils/*.ts
+bin/utils/kg/**/*.ts
 bin/commands/*.ts
 bin/__tests__/
 test-record.mp4
