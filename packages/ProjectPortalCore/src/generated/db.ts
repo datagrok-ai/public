@@ -57,6 +57,8 @@ export type ProgramFlowSource = 'rule' | 'manual';
 
 export type ModelStatus = 'active' | 'deprecated' | 'experimental';
 
+export type ModelCardApproval = 'draft' | 'in_review' | 'approved' | 'retired';
+
 export type ModelRunPurpose = 'screening' | 'characterization' | 'scale-up' | 'troubleshooting' | 'verification';
 
 export type CriterionArtifactRole = 'candidate' | 'selected' | 'superseded';
@@ -872,6 +874,7 @@ export type RunTypeColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'au
 
 /** Expand keys of `portal.run_type` → fields each adds to the row (consumed by query()/builder). */
 export type RunTypeExpand = {
+  'details:model': {model?: ModelRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
 };
 
@@ -1020,6 +1023,10 @@ export interface ModelRow {
   description?: string;
   status?: ModelStatus;
   owner?: string;
+  current_version?: string;
+  portfolios?: string;
+  unit_operations?: string;
+  default_run_type_id?: string;
 }
 
 /** Insert payload for `portal.model`. */
@@ -1031,16 +1038,78 @@ export interface ModelInsert {
   description?: string;
   status?: ModelStatus;
   owner?: string;
+  current_version?: string;
+  portfolios?: string;
+  unit_operations?: string;
+  default_run_type_id?: string;
 }
 
 export type ModelColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
-  'package' | 'category' | 'description' | 'status' | 'owner';
+  'package' | 'category' | 'description' | 'status' | 'owner' | 'current_version' | 'portfolios' |
+  'unit_operations' | 'default_run_type_id';
 
 /** Expand keys of `portal.model` → fields each adds to the row (consumed by query()/builder). */
 export type ModelExpand = {
   'owner': {'owner.login'?: string; 'owner.firstName'?: string; 'owner.lastName'?: string; 'owner.status'?: string;
     'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
+  'default_run_type_id': {'default_run_type_id.code'?: string; 'default_run_type_id.name'?: string;
+    'default_run_type_id.definition'?: string; 'default_run_type_id.ordinal'?: number;
+    'default_run_type_id.is_execution_mode'?: boolean};
+  'details:model_card': {model_card?: ModelCardRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
+};
+
+/** Row of `portal.model_card`. */
+export interface ModelCardRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  model_id: string;
+  model_version: string;
+  question?: string;
+  intended_use?: string;
+  inputs?: {[key: string]: any};
+  outputs?: {[key: string]: any};
+  applicability?: string;
+  performance?: string;
+  lineage?: string;
+  supersedes?: string;
+  limitations?: string;
+  owner?: string;
+  approval: ModelCardApproval;
+  approved_on?: Dayjs;
+}
+
+/** Insert payload for `portal.model_card`. */
+export interface ModelCardInsert {
+  model_id: string;
+  model_version: string;
+  question?: string;
+  intended_use?: string;
+  inputs?: {[key: string]: any};
+  outputs?: {[key: string]: any};
+  applicability?: string;
+  performance?: string;
+  lineage?: string;
+  supersedes?: string;
+  limitations?: string;
+  owner?: string;
+  approval: ModelCardApproval;
+  approved_on?: Dayjs | string;
+}
+
+export type ModelCardColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'model_id' |
+  'model_version' | 'question' | 'intended_use' | 'inputs' | 'outputs' | 'applicability' | 'performance' |
+  'lineage' | 'supersedes' | 'limitations' | 'owner' | 'approval' | 'approved_on';
+
+/** Expand keys of `portal.model_card` → fields each adds to the row (consumed by query()/builder). */
+export type ModelCardExpand = {
+  'model_id': {'model_id.code'?: string; 'model_id.name'?: string; 'model_id.package'?: string;
+    'model_id.category'?: string; 'model_id.description'?: string; 'model_id.status'?: ModelStatus;
+    'model_id.owner'?: string; 'model_id.current_version'?: string; 'model_id.portfolios'?: string;
+    'model_id.unit_operations'?: string; 'model_id.default_run_type_id'?: string};
 };
 
 /** Row of `portal.model_run`. */
@@ -1103,7 +1172,8 @@ export type ModelRunExpand = {
     'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'model_id': {'model_id.code'?: string; 'model_id.name'?: string; 'model_id.package'?: string;
     'model_id.category'?: string; 'model_id.description'?: string; 'model_id.status'?: ModelStatus;
-    'model_id.owner'?: string};
+    'model_id.owner'?: string; 'model_id.current_version'?: string; 'model_id.portfolios'?: string;
+    'model_id.unit_operations'?: string; 'model_id.default_run_type_id'?: string};
   'stage_id': {'stage_id.stage_model_id'?: string; 'stage_id.code'?: string; 'stage_id.name'?: string;
     'stage_id.ordinal'?: number; 'stage_id.phase'?: string; 'stage_id.is_gate'?: boolean;
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
@@ -1238,6 +1308,9 @@ export type PortalTransactionOp =
   {op: 'insert'; table: 'model'; ref?: string; values: DG.DomainTxValues<ModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'model'; id: string; values: DG.DomainTxValues<Partial<ModelRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'model'; id: string} |
+  {op: 'insert'; table: 'model_card'; ref?: string; values: DG.DomainTxValues<ModelCardInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'model_card'; id: string; values: DG.DomainTxValues<Partial<ModelCardRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'model_card'; id: string} |
   {op: 'insert'; table: 'model_run'; ref?: string; values: DG.DomainTxValues<ModelRunInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'model_run'; id: string; values: DG.DomainTxValues<Partial<ModelRunRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'model_run'; id: string} |
@@ -1312,6 +1385,9 @@ export const portalDb = {
   },
   get models() {
     return grok.dapi.domains.table<ModelRow, ModelInsert, ModelColumn, ModelExpand>('portal.model');
+  },
+  get modelCards() {
+    return grok.dapi.domains.table<ModelCardRow, ModelCardInsert, ModelCardColumn, ModelCardExpand>('portal.model_card');
   },
   get modelRuns() {
     return grok.dapi.domains.table<ModelRunRow, ModelRunInsert, ModelRunColumn, ModelRunExpand>('portal.model_run');

@@ -5,6 +5,7 @@ import {Given, Then} from '@datagrok-libraries/bdd';
 import {atFeatureEnd, expect, silent} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
+declare const DG: any;
 
 export const APP_PATH = '/apps/ProjectPortalCore';
 
@@ -111,3 +112,66 @@ export const matrixFollows = Then('the readiness matrix should show the programs
     return ids(t.readiness) === ids(tv.dataFrame) ? 'same' : `${ids(t.readiness)} ≠ ${ids(tv.dataFrame)}`;
   }), {message: 'the readiness matrix against the programs'}).toBe('same');
 }, {description: 'the readiness matrix is a linked table: its rows passing the filter are those of the programs'});
+
+/** Removes every live program with [code] in [portfolio], with what saving runs to it left: the
+ * model_run rows, the saved calls and their uploaded tables, and its workspace folder. */
+async function removeScratchWithRuns(page: Page, code: string, portfolio: string): Promise<number> {
+  return page.evaluate(async ([c, p]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const programs = grok.dapi.domains.table('portal.program');
+    const runs = grok.dapi.domains.table('portal.model_run');
+    const removeSpace = async (id: string): Promise<void> => {
+      const children = await grok.dapi.spaces.id(id).children.ofTypes('Project', false).list({pageSize: 1000}).catch(() => []);
+      for (const child of children)
+        await removeSpace(child.id);
+      const space = await grok.dapi.spaces.find(id).catch(() => null);
+      if (space)
+        await grok.dapi.spaces.delete(space);
+    };
+    for (const r of await programs.query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`})) {
+      for (const run of await runs.query({filter: `program_id = "${r.id}"`})) {
+        const call = run.run_id ? await grok.dapi.functions.calls.find(run.run_id).catch(() => null) : null;
+        for (const id of (call?.options?.portalTables ?? []) as string[]) {
+          const t = await grok.dapi.tables.find(id).catch(() => null);
+          if (t)
+            await grok.dapi.tables.delete(t);
+        }
+        if (call)
+          await grok.dapi.functions.calls.delete(call);
+        await runs.delete(run.id);
+      }
+      if (r.space_id)
+        await removeSpace(r.space_id);
+      await programs.delete(r.id);
+    }
+    return (await programs.query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`})).length;
+  }, [code, portfolio]);
+}
+
+export const scratchProjectAtStage = Given('a scratch project {string} at stage {string} in the {string} portfolio',
+  async (page: Page, code: string, stage: string, portfolio: string) => {
+    silent(page);
+    await removeScratchWithRuns(page, code, portfolio);
+    atFeatureEnd(page, async () => {
+      const left = await removeScratchWithRuns(page, code, portfolio);
+      if (left !== 0)
+        throw new Error(`${left} scratch program(s) ${code} survived the cleanup`);
+    });
+    await page.evaluate(async ([c, s, p]) => {
+      const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+      const st = await grok.dapi.domains.table('portal.stage').getByKey({stage_model_id: pf.stage_model_id, code: s});
+      await grok.dapi.domains.table('portal.program').insert({portfolio_id: pf.id, code: c, name: c,
+        stage_model_id: pf.stage_model_id, stage_id: st.id, source: 'manual', modality: 'mAb'});
+    }, [code, stage, portfolio]);
+  }, {tier: 'api', description: 'a manual program at a stage; it, its saved runs, their calls and tables, and its workspace folder are swept first and deleted at the end of the feature'});
+
+export const exampleRunSaved = Given('a run of the example model saved to the scratch project {string} in the {string} portfolio',
+  async (page: Page, code: string, portfolio: string) => {
+    silent(page);
+    await page.evaluate(async ([c, p]) => {
+      const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+      const call = await f.prepare({feedRate: 3, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
+      await grok.functions.call('ProjectPortalCore:saveModelRun', {call, portfolio: p, program: c,
+        unitOperation: 'EX-PROD', runType: 'EX-SIM', purpose: 'characterization'});
+    }, [code, portfolio]);
+  }, {tier: 'api', description: 'runs Fed-batch titer (example) and saves the run to the program with saveModelRun'});

@@ -45,3 +45,10 @@ app.element('EXC-3001 compound', {selector: u2('compound-exc-3001')});
 
 app.element('table button', {selector: u2('table-button')});
 app.element('all portfolios button', {selector: u2('all-portfolios-button')});
+
+app.element('scratch runs project card', {selector: u2('program-bdd-runs')});
+app.element('saved runs', {selector: u2('saved-runs')});
+app.element('example model link', {selector: u2('model-link-projectportalcore-fedbatchtiter')});
+app.element('model card', {selector: u2('model-card')});
+app.element('model card question', {selector: u2('model-card-question')});
+app.element('model card inputs', {selector: u2('model-card-inputs')});

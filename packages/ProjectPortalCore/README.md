@@ -141,6 +141,33 @@ Saving a run does four things:
   `selectRunForCriterion`: the run becomes the `selected` artifact, an earlier one `superseded`,
   and the criterion is met unless it was waived.
 
+### Model catalogue and model cards
+
+A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
+
+```json
+"catalogue": {
+  "unitOperations": [{"code": "EX-PROD", "name": "Production bioreactor", "ordinal": 2}],
+  "runTypes": [{"code": "EX-SIM", "name": "Simulated", "definition": "..."}],
+  "models": [{"code": "ProjectPortalCore:FedBatchTiter", "name": "Fed-batch titer (example)",
+    "unitOperations": ["EX-PROD"], "defaultRunType": "EX-SIM",
+    "card": {"version": "1.0", "question": "What final titer ...?", "intendedUse": "...",
+      "inputs": [{"name": "feedRate", "units": "% v/v per day", "min": 0, "max": 6}],
+      "applicability": "...", "performance": "...", "lineage": "...", "owner": "...", "approval": "draft"}}]
+}
+```
+
+- **A model is its function.** Its code is the function's nqName (`Package:Name`), the handle that survives a release.
+- **Checked with the set.** A model may name a unit operation or run type that any portfolio of the set declares. A code two portfolios declare must be declared the same way; a model two portfolios declare lists both.
+- **Loaded with the portfolios, idempotently.** Rows are matched by code. A model's portfolios and unit operations only grow, so loading one portfolio never drops another's claim. Runs saved before the model was catalogued are linked to it.
+- **One card per model version** (`model_card`); `model.current_version` names the current one, and older cards stay as lineage.
+- **The card is written around the question** (PORT-41): question, intended use, inputs with their validity range, outputs, applicability, performance, lineage, limitations, owner, approval (`draft`, `in_review`, `approved`, `retired`). Inputs and outputs the card does not list come from the function's signature; a listed one takes what it leaves out (caption, units) from the function.
+- **Where it shows.** The program page lists the program's saved runs; a run's model opens its card. `modelCard(model)` returns the card as a widget.
+- A package with a catalogue but no portfolio hands it over with `loadModelCatalogue(catalogue, portfolio)`.
+
+The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
+with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
+
 `model_run.func_call`, the soft reference to the saved call, cannot be written today (platform
 gap, see Tests). Every row also holds `run_id`, the call's id as plain text. The insert tries the
 soft reference first and writes the row without it when the server refuses, so the reference is
@@ -192,6 +219,8 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
 | `setCompoundRole(portfolio, program, compound, role, rationale)` | Changes a compound's role in a program by hand, logged |
 | `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
+| `modelCard(model)` | The card of a catalogued model (by function nqName), as a widget |
+| `loadModelCatalogue(catalogue, portfolio)` | Loads a catalogue handed over without a portfolio file, checked first. Idempotent |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
 ## Tests
@@ -207,10 +236,11 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
+  - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-01, 108 of the 111 package tests and all 12 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 118 of the 121 package tests and all 13 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
@@ -237,3 +267,6 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
    runs, and a fresh space with a run just linked, list them (with and without a `FuncCall` types filter), and the
    folder view shows them. The ticket was closed; reopen it with a repro if it recurs. The tests still read
    `grok.dapi.projects.find(id).links`.
+8. **A panel that takes a function is not offered for one.** A `meta.role: panel` function whose input is a `func`
+   (or an `object`), with a condition that holds, does not appear in the context panel of a model script. The
+   model card is therefore reached from the program page and through `modelCard(model)`, not as an info panel.

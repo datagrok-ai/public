@@ -10,6 +10,7 @@ import './tests/workspace-growth-tests';
 import './tests/compound-tests';
 import './tests/portfolio-table-tests';
 import './tests/model-run-tests';
+import './tests/catalogue-tests';
 
 export let _package = new DG.Package();
 export { tests };

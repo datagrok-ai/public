@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- Model catalogue and model cards (F-12, FR-50): a portfolio file declares its `catalogue` (unit operations, run types, models with their cards), checked with the set and loaded with the portfolios, idempotently; `loadModelCatalogue` loads one handed over without a portfolio file. Runs saved before their model was catalogued are linked to it on load
+- Model card: the question the model answers, intended use, inputs with their validity range, outputs, applicability, performance, lineage, limitations, owner, approval state. Inputs and outputs the card does not list come from the function's signature. `modelCard(model)` returns it; the program page opens it from a saved run
+- Program page: the program's saved runs, newest first, with model, stage at run, unit operation, run type and purpose
+- `portal` schema 0.2.7: `model_card` (one per model version); `model.current_version`, `model.portfolios`, `model.unit_operations`, `model.default_run_type_id`. Additive, no migration script
+- Example catalogue for EX-BIOC: unit operations EX-SEED, EX-PROD, EX-HARV, EX-PROA, EX-UFDF; run types EX-SIM, EX-TWIN, EX-BENCH; `FedBatchTiter` with a draft card
+- `saveModelRun` records the uploaded tables' ids in the call's options (`portalTables`), so removing a run can remove its tables
+- Loading configuration compares json values with their keys sorted, so a reload no longer rewrites json columns the server returns in its own key order
 - A program has a workspace only when its folder still exists: the portfolio table's workspace flag and the program page's Open workspace button check the server, not the recorded `space_id`, so folders deleted by hand no longer show as present
 - Portfolio table: one row per program in a Datagrok table view with the filter panel (Table and All portfolios on the board; `/Portal/<code>/table`, `/Portal/table`). Stage in model order, days in stage, readiness for the next gate, compounds by role, work units, workspace. Default viewers: programs by stage and modality, days in stage, a readiness matrix and compounds by role, all driven by the filters. A row opens the program's page. `portfolioTable(portfolio)` returns the table
 - Model runs: `saveModelRun` annotates a call (portfolio, program, stage at run, unit operation, run type, purpose) in its options, saves it, links it into the program's workspace (the current stage's folder when there is one) and records a `model_run`; `selectRunForCriterion` selects a run for a gate criterion and supersedes the one selected before

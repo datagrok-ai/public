@@ -46,6 +46,20 @@ const CSS = `
 .pp-detail textarea { width: 100%; box-sizing: border-box; }
 /* a long gate panel scrolls; its rows must not shrink (the rationale box collapsed to a line) */
 .pp-detail > * { flex-shrink: 0; }
+.pp-runs { gap: 4px; }
+.pp-run { gap: 1px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
+.pp-run-meta { gap: 4px; align-items: center; flex-wrap: wrap; }
+.pp-link { color: var(--u2-accent, #2083d5); cursor: pointer; }
+.pp-link:hover { text-decoration: underline; }
+.pp-model-card { gap: 4px; font-size: 12px; max-width: 520px; }
+.pp-model-card > * { flex-shrink: 0; }
+.pp-card-text { white-space: pre-wrap; }
+.pp-card-table { border-collapse: collapse; font-size: 12px; }
+.pp-card-table th { text-align: left; font-weight: 600; color: var(--u2-text-muted, #666); padding: 2px 10px 2px 0; }
+.pp-card-table td { padding: 2px 10px 2px 0; border-top: 1px solid var(--u2-border, #eee); }
+.pp-card-facts { gap: 2px; margin-top: 6px; }
+.pp-card-fact { gap: 6px; }
+.pp-card-fact > .pp-muted { flex: 0 0 110px; }
 `;
 
 let installed = false;

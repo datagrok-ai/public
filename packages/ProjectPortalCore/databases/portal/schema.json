@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -406,13 +406,42 @@
         "category": {"type": "string", "description": "Subject-matter family, from the profile"},
         "description": {"type": "string", "editor": "textarea", "searchable": true},
         "status": {"type": "string", "choices": ["active", "deprecated", "experimental"], "default": "active"},
-        "owner": {"type": "user", "onDelete": "setnull"}
+        "owner": {"type": "user", "onDelete": "setnull"},
+        "current_version": {"type": "string", "description": "The model version in use; its model_card is the current card"},
+        "portfolios": {"type": "string", "description": "Codes of the portfolios whose catalogue declares the model, '|'-separated; the save-to-program dialog offers the first one"},
+        "unit_operations": {"type": "string", "description": "Codes of the unit operations the model applies to, '|'-separated; the first is the default when a run is saved"},
+        "default_run_type_id": {"type": "ref", "ref": "run_type", "onDelete": "setnull", "friendlyName": "Default run type",
+          "description": "How a run of the model is usually executed (simulated, digital twin, ...)"}
       },
       "filters": [
         {"column": "category"},
         {"column": "package"},
         {"column": "status"}
       ]
+    },
+    "model_card": {
+      "securityMode": "table",
+      "businessKey": ["model_id", "model_version"],
+      "friendlyName": "Model cards",
+      "description": "What a version of a model is for, written around the scientific question it answers (FR-50, PORT-41, PORT-43). One card per model version; an older version's card stays as lineage.",
+      "grants": {"All users": ["view"]},
+      "columns": {
+        "model_id": {"type": "ref", "ref": "model", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Model"},
+        "model_version": {"type": "string", "required": true, "description": "The model version the card describes"},
+        "question": {"type": "string", "editor": "textarea", "searchable": true, "description": "The scientific question the model answers"},
+        "intended_use": {"type": "string", "editor": "textarea", "searchable": true, "description": "What the model is for, and what it is not for"},
+        "inputs": {"type": "json", "description": "The inputs as {params: [...]}: name, caption, units, and the validity range (min, max) the model was built for"},
+        "outputs": {"type": "json", "description": "The outputs as {params: [...]}: name, caption, units"},
+        "applicability": {"type": "string", "editor": "textarea", "description": "The applicability domain in words: the processes, modalities, scales it holds for"},
+        "performance": {"type": "string", "editor": "textarea", "description": "How well it predicts, and against what data"},
+        "lineage": {"type": "string", "editor": "textarea", "description": "What it was built from: data, method, the version it replaces"},
+        "supersedes": {"type": "string", "description": "The model version this one replaces"},
+        "limitations": {"type": "string", "editor": "textarea"},
+        "owner": {"type": "string", "description": "The person or team who answers for the model"},
+        "approval": {"type": "string", "choices": ["draft", "in_review", "approved", "retired"], "required": true, "default": "draft"},
+        "approved_on": {"type": "datetime"}
+      },
+      "filters": [{"column": "model_id.name", "label": "Model"}, {"column": "approval"}]
     },
     "model_run": {
       "securityMode": "master",

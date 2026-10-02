@@ -37,6 +37,23 @@ export namespace funcs {
   }
 
   /**
+   * Loads a model catalogue handed over without a portfolio file: unit operations, run types, models and their cards, as JSON. Checked before loading; idempotent
+   * @param {string} catalogue - JSON object with unitOperations, runTypes, models
+   * @param {string} portfolio - The portfolio the models belong to
+   */
+  export async function loadModelCatalogue(catalogue: string , portfolio?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:LoadModelCatalogue', { catalogue, portfolio });
+  }
+
+  /**
+   * The card of a catalogued model: the question it answers, intended use, inputs with their validity range, outputs, applicability, performance, lineage, approval
+   * @param {string} model - The model's function nqName, e.g. ProjectPortalCore:FedBatchTiter
+   */
+  export async function modelCard(model: string ): Promise<any> {
+    return await grok.functions.call('ProjectPortalCore:ModelCard', { model });
+  }
+
+  /**
    * Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
    */
   export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {

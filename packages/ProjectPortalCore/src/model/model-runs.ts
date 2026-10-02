@@ -11,6 +11,8 @@ export const RUN_OPTIONS = {
   unitOperation: 'portalUnitOperation',
   runType: 'portalRunType',
   purpose: 'portalPurpose',
+  /** Ids of the tables uploaded for the call's dataframes. */
+  tables: 'portalTables',
 } as const;
 
 export const RUN_PURPOSES = ['screening', 'characterization', 'scale-up', 'troubleshooting', 'verification'] as const;

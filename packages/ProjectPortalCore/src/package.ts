@@ -13,6 +13,8 @@ import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
 import {portfolioTables} from './portfolio-table';
 import {saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
 import {RunPurpose} from './model/model-runs';
+import {loadCatalogues} from './catalogue';
+import {modelCardWidget} from './views/model-card';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -58,6 +60,24 @@ export async function loadPortfolios(): Promise<string> {
 //output: string report
 export async function loadPortfolioConfigs(configs: string): Promise<string> {
   return loadPortfolioSet(JSON.parse(configs));
+}
+
+//name: loadModelCatalogue
+//description: Loads a model catalogue handed over without a portfolio file: unit operations, run types, models and their cards, as JSON. Checked before loading; idempotent
+//input: string catalogue {description: JSON object with unitOperations, runTypes, models}
+//input: string portfolio {optional: true; description: The portfolio the models belong to}
+//output: string report
+export async function loadModelCatalogue(catalogue: string, portfolio?: string): Promise<string> {
+  return loadCatalogues([{portfolio: portfolio || null, catalogue: JSON.parse(catalogue)}]);
+}
+
+//name: modelCard
+//description: The card of a catalogued model: the question it answers, intended use, inputs with their validity range, outputs, applicability, performance, lineage, approval
+//input: string model {description: The model's function nqName, e.g. ProjectPortalCore:FedBatchTiter}
+//output: widget result
+export async function modelCard(model: string): Promise<DG.Widget> {
+  installStyles();
+  return modelCardWidget(model);
 }
 
 /** Programs first, so work units find the programs they hang under. */

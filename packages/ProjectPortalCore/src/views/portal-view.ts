@@ -16,6 +16,8 @@ import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
 import {openPortfolioTable} from './portfolio-table-view';
 import {existingSpaces} from '../workspace';
+import {SavedRunItem, savedRunsOf} from '../model-runs';
+import {showModelCard} from './model-card';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -192,7 +194,8 @@ export class PortalView {
     const compounds = await compoundsOf(id).catch(() => []);
     const spaceId = ctx.program.space_id;
     const spaceLive = !!spaceId && (await existingSpaces([spaceId]).catch(() => new Set<string>())).has(spaceId);
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive);
+    const runs = await savedRunsOf(id).catch(() => []);
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs);
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
@@ -211,7 +214,7 @@ export class PortalView {
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
-    compounds: {link: any, compound: any}[] = [], spaceLive = false): void {
+    compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = []): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -292,6 +295,8 @@ export class PortalView {
       divH([advance, hold, terminate], 'pp-actions'),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
+      named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
+      runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
@@ -335,6 +340,32 @@ export class PortalView {
         ...(x.link.missing_from_feed ? [badge('missing from feed', {variant: 'error'})] : []),
       ], 'pp-unit'), `compound-${slug(x.compound.code)}`)),
     ], 'pp-units'), 'program-compounds');
+  }
+
+  /** The model runs saved to the program, newest first: title, then the model (its card opens on
+   * a click), the stage at run, unit operation, run type, purpose, author's date. */
+  private savedRuns(items: SavedRunItem[]): HTMLElement {
+    return named(divV(items.map(({run, model, stage, unitOperation, runType}) => {
+      const modelLink = named(span(model?.name ?? run.model_name, model ? 'pp-link' : 'pp-muted'),
+        `model-link-${slug(run.model_name)}`);
+      if (model) {
+        modelLink.title = 'Open the model card';
+        modelLink.onclick = () => void showModelCard(model.code);
+      } else
+        modelLink.title = 'Not in the model catalogue';
+      return named(divV([
+        span(run.title ?? run.run_id ?? run.model_name),
+        divH([
+          modelLink,
+          ...(stage ? [badge(stage, {variant: 'accent'})] : []),
+          ...(unitOperation ? [span(unitOperation, 'pp-muted')] : []),
+          ...(runType ? [span(runType, 'pp-muted')] : []),
+          ...(run.purpose ? [badge(run.purpose)] : []),
+          ...(run.is_reference ? [badge('reference', {variant: 'success'})] : []),
+          span((run.run_started ?? run.created_on)?.format?.('YYYY-MM-DD') ?? '', 'pp-muted'),
+        ], 'pp-run-meta'),
+      ], 'pp-run'), `saved-run-${slug(run.title ?? run.run_id ?? run.id)}`);
+    }), 'pp-runs'), 'saved-runs');
   }
 
   /** One criterion of the gate: its state, and for a data condition what the data says. A computed

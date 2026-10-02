@@ -15,6 +15,8 @@ import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
 import {CompoundPlan, CompoundRef, CompoundRole, COMPOUND_ROLES, LinkRef, planCompounds} from './model/compounds';
 import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
+import {loadCatalogue} from './catalogue';
+import {mergeCatalogues} from './model/catalogue';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -97,7 +99,11 @@ export async function shareProgram(programId: string, portfolio: PortfolioRow): 
 // ---------------------------------------------------------------------------------------------
 // Loading configuration
 
-async function upsertByKey<T extends {id: string}>(
+/** JSON with object keys sorted: a json column comes back with its keys in the server's order. */
+const stableJson = (v: unknown): string => JSON.stringify(v, (_k, x) => x && typeof x === 'object' && !Array.isArray(x) &&
+  typeof x.toJSON !== 'function' ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]])) : x);
+
+export async function upsertByKey<T extends {id: string}>(
   client: {getByKey(k: any): Promise<T | null>, insert(v: any): Promise<{id: string}[]>,
     update(id: string, v: any): Promise<any>},
   key: Record<string, unknown>, values: Record<string, unknown>): Promise<string> {
@@ -109,7 +115,7 @@ async function upsertByKey<T extends {id: string}>(
   const changed: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(values)) {
     const was = (existing as any)[k];
-    if (JSON.stringify(was ?? null) !== JSON.stringify(v ?? null))
+    if (stableJson(was ?? null) !== stableJson(v ?? null))
       changed[k] = v;
   }
   if (Object.keys(changed).length > 0)
@@ -203,6 +209,9 @@ export async function loadPortfolioSet(configs: PortfolioConfig[]): Promise<stri
   const out: string[] = [];
   for (const c of configs)
     out.push(await loadPortfolio(c));
+  // the catalogues after the portfolios, merged: a model may name another portfolio's unit operation
+  await loadCatalogue(mergeCatalogues(configs.filter((c) => c.catalogue)
+    .map((c) => ({portfolio: c.code, catalogue: c.catalogue!}))).catalogue, out);
   return out.join('\n');
 }
 

@@ -10,10 +10,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {CriterionArtifactRow, ModelRunInsert, ModelRunRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
+import {CriterionArtifactRow, ModelRow, ModelRunInsert, ModelRunRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {portfolioByCode} from './portal';
 import {findSubfolder} from './workspace';
-import {RunPurpose, runFolderPath, runOptions} from './model/model-runs';
+import {RUN_OPTIONS, RunPurpose, runFolderPath, runOptions} from './model/model-runs';
 import {programFolderName} from './model/workspace-plan';
 
 export interface SaveModelRunOptions {
@@ -155,6 +155,9 @@ export async function saveModelRun(call: DG.FuncCall, portfolioCode: string, pro
     call.options[k] = v;
 
   const tableIds = await uploadTables(call, portfolio, notes);
+  // the uploaded tables, so whoever removes the run can remove them too
+  if (tableIds.length)
+    call.options[RUN_OPTIONS.tables] = tableIds;
   const saved = await grok.dapi.functions.calls.save(call);
 
   const folder = options.link === false ? null :
@@ -189,6 +192,35 @@ export async function saveModelRun(call: DG.FuncCall, portfolioCode: string, pro
 export async function modelRunsOf(programId: string): Promise<ModelRunRow[]> {
   const runs = await portalDb.modelRuns.query({filter: `program_id = "${programId}"`});
   return runs.sort((a, b) => b.created_on.valueOf() - a.created_on.valueOf());
+}
+
+/** A saved run as the program page lists it: the row and the names it refers to. */
+export interface SavedRunItem {
+  run: ModelRunRow;
+  /** The catalogued model; null when the run's function is not catalogued. */
+  model: ModelRow | null;
+  stage: string | null;
+  unitOperation: string | null;
+  runType: string | null;
+}
+
+/** The program's runs, newest first, with the model, stage, unit operation and run type by name.
+ * Each catalogue table is read once, not once per run. */
+export async function savedRunsOf(programId: string): Promise<SavedRunItem[]> {
+  const runs = await modelRunsOf(programId);
+  if (runs.length === 0)
+    return [];
+  const ids = (pick: (r: ModelRunRow) => string | undefined) => [...new Set(runs.map(pick).filter((x): x is string => !!x))];
+  const byIds = async <T extends {id: string}>(table: {query(o: any): Promise<T[]>}, list: string[]) =>
+    new Map((list.length ? await table.query({filter: list.map((id) => `id = "${id}"`).join(' or ')}) : [])
+      .map((x) => [x.id, x] as const));
+  const [models, stages, ops, types] = await Promise.all([
+    byIds(portalDb.models, ids((r) => r.model_id)), byIds(portalDb.stages, ids((r) => r.stage_id)),
+    byIds(portalDb.unitOperations, ids((r) => r.unit_operation_id)), byIds(portalDb.runTypes, ids((r) => r.run_type_id))]);
+  return runs.map((run) => ({run, model: run.model_id ? models.get(run.model_id) ?? null : null,
+    stage: run.stage_id ? stages.get(run.stage_id)?.code ?? null : null,
+    unitOperation: run.unit_operation_id ? ops.get(run.unit_operation_id)?.name ?? null : null,
+    runType: run.run_type_id ? types.get(run.run_type_id)?.name ?? null : null}));
 }
 
 /** Selects a run for a program's criterion: the run becomes the `selected` artifact, a run

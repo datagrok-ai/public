@@ -4,6 +4,7 @@ import {DataCondition, ProgramDataConfig, validateCondition} from './conditions'
 import {validateWorkUnits, WorkUnitFeedConfig, WorkUnitKind} from './work-units';
 import {validateStageFolders} from './workspace-plan';
 import {CompoundFeedConfig, validateCompoundFeed} from './compounds';
+import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -88,6 +89,9 @@ export interface PortfolioConfig {
   compoundFeed?: CompoundFeedConfig;
   /** The program dataset query that data conditions are evaluated over. */
   programData?: ProgramDataConfig;
+  /** The portfolio's model catalogue: unit operations, run types, models and their cards. Checked
+   * and loaded with the set, so a model may name a unit operation another portfolio declares. */
+  catalogue?: ModelCatalogueConfig;
   stageModel: StageModelConfig;
   feeds: FeedConfig[];
 }
@@ -252,6 +256,8 @@ export function validatePortfolioSet(portfolios: PortfolioConfig[]): string[] {
     if (p.handoff && !codes.has(p.handoff.to))
       errors.push(`${p.code}: hands off to "${p.handoff.to}", which is not configured`);
   }
+  errors.push(...mergeCatalogues(portfolios.filter((p) => p.catalogue)
+    .map((p) => ({portfolio: p.code, catalogue: p.catalogue!}))).errors);
   return errors;
 }
 
