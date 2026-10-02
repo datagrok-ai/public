@@ -98,6 +98,15 @@ an app-like shareable link:
 /func/Chem.mutateMolecule?molecule=CCO&steps=2&run=true
 ```
 
+A value is evaluated, so a parameter can take a function's result:
+`?table=OpenFile("System:DemoFiles/demog.csv")` opens that file and passes its table, and
+`?n=Abs(-7)` passes 7. A string or column parameter takes its text as written
+(`?smiles=CC(=O)O`, `?unit=month`, `?column=age`) unless it starts with a quote or calls a
+function, and a date parameter takes a date as written (`?date=2024-01-01`). Quote text that
+looks like a function call, such as a column named `avg(AGE)`: `?column="avg(AGE)"`. Encode
+characters that mean something in a URL, such as `#`, `&` and `+`: `?smiles=C%23N` passes
+`C#N`.
+
 To copy such a link for the parameters you currently see, click the **copy** icon next to
 the **Run** button. Once the function has run and the parameter form is gone, the same icon
 sits next to **Refresh** in the **Source** pane of the Toolbox.
