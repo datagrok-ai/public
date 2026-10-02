@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Decisions with evidence (F-25, FR-71/74): a gate decision (the gate-log entry) carries evidence rows: a model run by `run_id`, a file path, a URL, a criterion's state at the gate, and (reserved) a program snapshot. Each points at its target by a soft reference and freezes the name and context when attached, so the history reads the same after the target is renamed or deleted, and says so (`now …`, `gone; as recorded`)
+- The gate panel suggests the gate's readiness and the runs selected for its criteria, all ticked; the approver may untick any and attach a link or file path. The program's history lists each decision with its evidence, each piece clickable (a run opens its call, a criterion its stage, a URL its page)
+- `recordDecision` writes the suggestion when no list is given, so an advance by data now records its readiness evidence the same way as an approver's. `stage_transition.evidence` is still written
+- `decisionEvidence(portfolio, program, decision)` lists decisions with their evidence and whether each target is live, renamed or gone; `addEvidence(portfolio, program, kind, target, name, decision)` adds a piece to a decision already recorded (default the latest), approvers only
+- `portal` schema 0.2.18: table `evidence`. Additive, no migration script
+
 - Program roles (F-16, app side): viewers, contributors and approvers per program, on top of the portfolio's groups, held by a group or a user. Managed by the portfolio's approvers on the program page (*Program roles*) and with `setProgramRole`; listed by `programRoles`. A program approver records gate decisions and a program contributor selects runs, checked where the portfolio's groups are checked. The program's workspace folder is shared to match (View to viewers, Edit to contributors and approvers), also by the builder. Row grants wait on GROK-21041; `ROW_GRANTS` in `src/program-roles.ts` turns them on
 - `portal` schema 0.2.17: table `program_role`. Additive, no migration script
 - Simple mode keeps Program roles behind More

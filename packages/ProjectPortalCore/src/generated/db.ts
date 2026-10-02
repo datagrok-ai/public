@@ -73,6 +73,10 @@ export type FollowWorkUnitKind = 'campaign' | 'series' | 'study' | 'process_stag
 
 export type ProgramRoleRole = 'viewer' | 'contributor' | 'approver';
 
+export type EvidenceKind = 'model_run' | 'snapshot' | 'file' | 'url' | 'criterion';
+
+export type EvidenceRole = 'readiness' | 'supporting';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -425,6 +429,7 @@ export type ProgramExpand = {
   'details:criterion_artifact': {criterion_artifact?: CriterionArtifactRow[]};
   'details:follow': {follow?: FollowRow[]};
   'details:program_role': {program_role?: ProgramRoleRow[]};
+  'details:evidence': {evidence?: EvidenceRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -481,6 +486,7 @@ export type StageTransitionExpand = {
   'decided_by': {'decided_by.login'?: string; 'decided_by.firstName'?: string; 'decided_by.lastName'?: string;
     'decided_by.status'?: string; 'decided_by.createdOn'?: Dayjs; 'decided_by.picture'?: string;
     'decided_by.group'?: string; 'decided_by.author'?: string};
+  'details:evidence': {evidence?: EvidenceRow[]};
 };
 
 /** Row of `portal.criterion_status`. */
@@ -1448,6 +1454,58 @@ export type ProgramRoleExpand = {
     'granted_by.group'?: string; 'granted_by.author'?: string};
 };
 
+/** Row of `portal.evidence`. */
+export interface EvidenceRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  stage_transition_id?: string;
+  kind: EvidenceKind;
+  target: string;
+  name: string;
+  role?: EvidenceRole;
+  context?: {[key: string]: any};
+  added_by?: string;
+  added_on?: Dayjs;
+}
+
+/** Insert payload for `portal.evidence`. */
+export interface EvidenceInsert {
+  program_id: string;
+  stage_transition_id?: string;
+  kind: EvidenceKind;
+  target: string;
+  name: string;
+  role?: EvidenceRole;
+  context?: {[key: string]: any};
+  added_by?: string;
+  added_on?: Dayjs | string;
+}
+
+export type EvidenceColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'stage_transition_id' | 'kind' | 'target' | 'name' | 'role' | 'context' | 'added_by' | 'added_on';
+
+/** Expand keys of `portal.evidence` → fields each adds to the row (consumed by query()/builder). */
+export type EvidenceExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'stage_transition_id': {'stage_transition_id.program_id'?: string; 'stage_transition_id.from_stage_id'?: string;
+    'stage_transition_id.to_stage_id'?: string; 'stage_transition_id.decision'?: StageTransitionDecision;
+    'stage_transition_id.decided_by'?: string; 'stage_transition_id.decided_on'?: Dayjs;
+    'stage_transition_id.rationale'?: string; 'stage_transition_id.source'?: StageTransitionSource;
+    'stage_transition_id.evidence'?: string};
+  'added_by': {'added_by.login'?: string; 'added_by.firstName'?: string; 'added_by.lastName'?: string;
+    'added_by.status'?: string; 'added_by.createdOn'?: Dayjs; 'added_by.picture'?: string; 'added_by.group'?: string;
+    'added_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -1532,7 +1590,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'follow'; id: string} |
   {op: 'insert'; table: 'program_role'; ref?: string; values: DG.DomainTxValues<ProgramRoleInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'program_role'; id: string; values: DG.DomainTxValues<Partial<ProgramRoleRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'program_role'; id: string};
+  {op: 'delete'; table: 'program_role'; id: string} |
+  {op: 'insert'; table: 'evidence'; ref?: string; values: DG.DomainTxValues<EvidenceInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'evidence'; id: string; values: DG.DomainTxValues<Partial<EvidenceRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'evidence'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -1619,6 +1680,9 @@ export const portalDb = {
   },
   get programRoles() {
     return grok.dapi.domains.table<ProgramRoleRow, ProgramRoleInsert, ProgramRoleColumn, ProgramRoleExpand>('portal.program_role');
+  },
+  get evidences() {
+    return grok.dapi.domains.table<EvidenceRow, EvidenceInsert, EvidenceColumn, EvidenceExpand>('portal.evidence');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

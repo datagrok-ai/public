@@ -21,6 +21,9 @@ import {CriterionArtifactKind, RunFilter} from './model/run-selection';
 // program-roles.ts imports from here too; the cycle is safe because neither uses the other at load
 import {programAccess} from './program-roles';
 import {ProgramRole} from './model/program-roles';
+// evidence.ts imports from here too; the cycle is safe because neither uses the other at load
+import {suggestedEvidence, writeEvidence} from './evidence';
+import {EvidenceItem} from './model/evidence';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -680,17 +683,32 @@ export function verdictFor(ctx: ProgramContext, decision: Decision, targetStageI
 export interface DecisionSource {
   source: 'approver' | 'data';
   evidence?: string;
+  /** The evidence rows to write beside the decision (F-25). Left out: what the gate panel would
+   * suggest, the gate's readiness and the runs selected for its criteria. An empty list writes none. */
+  items?: EvidenceItem[];
 }
+
+export type RecordedDecision = GateVerdict & {
+  workspace?: string;
+  /** The gate-log entry written. */
+  transitionId?: string;
+  /** Evidence rows written, and the items refused or not written. A failure here does not undo the decision. */
+  evidence?: {written: number, errors: string[]};
+};
 
 /** Records a gate decision after checking it again server-side of the UI. An advance grows the
  * program's workspace by the folders of the stage it entered (FR-14), when the workspace exists;
- * a failure there is reported on the verdict, not thrown: the decision stands. */
+ * a failure there is reported on the verdict, not thrown: the decision stands. The evidence is
+ * written beside the gate-log entry, the same way for an approver and for data. */
 export async function recordDecision(programId: string, decision: Decision, targetStageId: string | null,
-  rationale: string, by: DecisionSource = {source: 'approver'}): Promise<GateVerdict & {workspace?: string}> {
+  rationale: string, by: DecisionSource = {source: 'approver'}): Promise<RecordedDecision> {
   const ctx = await programContext(programId);
   const verdict = verdictFor(ctx, decision, targetStageId, rationale);
   if (!verdict.allowed)
     throw new Error(verdict.reasons.join('; '));
+  // what the decision rests on, read before anything changes
+  const items = by.items ?? await suggestedEvidence(programId, ctx.readiness,
+    ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []);
   const now = new Date().toISOString();
   // what the data said when the gate was passed, kept beside the decision
   if (decision === 'advance' && ctx.readiness) {
@@ -699,9 +717,15 @@ export async function recordDecision(programId: string, decision: Decision, targ
         status: c.state === 'met' ? 'met' : 'not_met', evidence: `Evaluated at the gate ${now.slice(0, 10)}: ${c.result!.summary}`});
     }
   }
-  await portalDb.stageTransitions.insert({program_id: programId, from_stage_id: ctx.program.stage_id,
+  const [transition] = await portalDb.stageTransitions.insert({program_id: programId, from_stage_id: ctx.program.stage_id,
     to_stage_id: verdict.toStageId ?? ctx.program.stage_id, decision, decided_by: DG.User.current().id,
     decided_on: now as any, rationale, source: by.source, evidence: by.evidence});
+  let evidence: RecordedDecision['evidence'] = {written: 0, errors: []};
+  if (items.length) {
+    evidence = await writeEvidence(programId, transition.id, items)
+      .catch((e: any) => ({written: 0, errors: [`evidence not written: ${e?.message ?? e}`]}));
+  }
+  const recorded: RecordedDecision = {...verdict, transitionId: transition.id, evidence};
   const status = statusAfter(decision, (ctx.program.status ?? 'active') as any);
   await portalDb.programs.update(programId, {
     ...(verdict.toStageId ? {stage_id: verdict.toStageId} : {}),
@@ -711,12 +735,12 @@ export async function recordDecision(programId: string, decision: Decision, targ
   if (decision === 'advance' && entered?.folders && ctx.portfolio.workspace_root && ctx.program.space_id) {
     try {
       const r = await buildPortfolioWorkspace(ctx.portfolio.code, false, programId);
-      return {...verdict, workspace: summarizeWorkspace(r)};
+      return {...recorded, workspace: summarizeWorkspace(r)};
     } catch (e: any) {
-      return {...verdict, workspace: `workspace not grown: ${e?.message ?? e}`};
+      return {...recorded, workspace: `workspace not grown: ${e?.message ?? e}`};
     }
   }
-  return verdict;
+  return recorded;
 }
 
 export async function setCriterion(programId: string, criterionId: string, status: CriterionState,

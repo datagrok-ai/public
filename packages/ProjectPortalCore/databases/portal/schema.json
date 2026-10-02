@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -565,6 +565,26 @@
         "active": {"type": "bool", "default": true, "description": "False once the role is removed; giving a role again turns it back on"},
         "granted_by": {"type": "user", "onDelete": "setnull"},
         "granted_on": {"type": "datetime"}
+      }
+    },
+    "evidence": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "friendlyName": "Evidence",
+      "description": "What a gate decision rested on: a model run, a program snapshot, a file, a URL, or a criterion's state at the gate. The target is a soft reference (its id or address as text, no foreign key) with its name and context frozen when attached, so the evidence reads the same after the target is renamed or deleted. Written once.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "stage_transition_id": {"type": "ref", "ref": "stage_transition", "onDelete": "cascade", "immutable": true, "friendlyName": "Decision",
+          "description": "The gate-log entry the evidence supports"},
+        "kind": {"type": "string", "choices": ["model_run", "snapshot", "file", "url", "criterion"], "required": true, "immutable": true},
+        "target": {"type": "string", "required": true, "immutable": true,
+          "description": "Soft reference: a run's run_id, a snapshot's id, a file path, a URL, or a gate criterion's id"},
+        "name": {"type": "string", "required": true, "isName": true, "immutable": true, "description": "The target's name when attached, frozen"},
+        "role": {"type": "string", "choices": ["readiness", "supporting"], "default": "supporting", "immutable": true,
+          "description": "readiness: a criterion as the gate saw it; supporting: attached by the decider"},
+        "context": {"type": "json", "immutable": true, "description": "What the target said when attached: a run's model and selection, a criterion's state and data summary"},
+        "added_by": {"type": "user", "immutable": true},
+        "added_on": {"type": "datetime", "immutable": true}
       }
     }
   }

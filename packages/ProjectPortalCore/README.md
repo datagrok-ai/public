@@ -303,6 +303,19 @@ portfolio's groups give.
 - **The program row is not shared yet.** Program rows refuse grants (GROK-21041, see Tests), so a role does not make the row visible to someone outside the portfolio's groups. `syncRowGrants` in `src/program-roles.ts` applies the same grants to the row; it runs when `ROW_GRANTS` is set to true. Once GROK-21041 is fixed, set it, and the same table drives the row grants. The two isolation tests stay unchanged as the acceptance check.
 - `program_role` is table-secured with View and Edit for all users, like `follow`: the app enforces who may change it, the server does not.
 
+### Decisions with evidence
+
+A gate decision rests on evidence (F-25, FR-71/74). The decision is the gate-log entry
+(`stage_transition`: program, decision, from, to, who, when, rationale, source); the `evidence` table
+says what it rested on. There is no separate `decision` table.
+
+- **What a piece is.** `kind` (`model_run`, `snapshot`, `file`, `url`, `criterion`), `target`, a soft reference (a run's `run_id`, a file path, a URL, a gate criterion's id, a snapshot's id) as plain text with no foreign key, and `name` and `context` frozen when attached (a run's model, the criterion it was selected for, who chose it and why; a criterion's state, basis and what the data said). `role` is `readiness` for a criterion as the gate saw it, `supporting` for the rest.
+- **It survives its target.** The history looks each target up again: a run renamed shows `(now <new title>)`, a run deleted shows `(gone; as recorded)` and a click shows what was recorded. URLs are not fetched.
+- **When deciding.** The gate panel suggests the gate's readiness (one tick for its required criteria) and the run selected for each of its criteria, all ticked. Untick what the decision does not rest on; type a link or a file path and **Attach**. Advance, Hold and Terminate write the ticked pieces beside the gate-log entry.
+- **By API and by data.** `recordDecision` without a list writes the suggestion, so an advance by data records its readiness the same way (the free-text `stage_transition.evidence` is kept). An empty list writes none. A piece that fails its check is reported and left out; the decision stands.
+- **Afterwards.** The program's history lists each decision with its evidence, each piece clickable: a run shows its saved call in the context panel, a criterion shows its stage's gate, a URL opens, a CSV file opens as a table. `addEvidence(portfolio, program, kind, target, name, decision)` adds a piece to a recorded decision (default the latest), dated when added; the program's approvers only. `decisionEvidence(portfolio, program, decision)` lists decisions and evidence, with each target's state (`live`, `renamed`, `gone`, `unchecked`).
+- `evidence` is master-secured through the program, like the gate log.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -410,6 +423,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
 | `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
 | `programRoles(portfolio, program)` | The program's roles as a table |
+| `decisionEvidence(portfolio, program, decision)` | The program's gate decisions with their evidence, one row per piece, and whether each target is live, renamed or gone |
+| `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |
 | `unfollowProgram(portfolio, program, series)` | Stops following |
@@ -454,6 +469,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Modes and personas: the rules (the persona from groups, default and setting; cards from the defaults, the portfolio and functions; the config check; what Simple hides), and on EXS-KIN1 the settings remembered, the program page's cards for a chemist and a modeler, Simple with More and back, and a function card that opens a table.
+  - Decisions with evidence: the rules (what an item needs, a typed link, readiness as evidence, the suggestion, renamed and gone targets), and on EX-SMD a scratch program advanced with its readiness, with an explicit list and a refused item, a run added later then renamed and deleted, the gate panel attaching a link, and an advance by data with its readiness evidence.
   - Program roles: the rules (the strongest role, roles only add, who may change them, grants and what changes), and on EXS-KIN1 a throwaway user made viewer, contributor and approver (access in the app, the folder's grant, the folder seen as that user), a downgrade, removal; a non-approver refused; the functions.
   - New-data notification: the rules (snapshot, baseline, growth only, a value in a blank cell, a watermark that sees a replaced row, the config check), and on EXS-KIN1 a follow and a series follow with their baselines, a quiet check, news told once to the follower, a series follower told only about the series, what's new since the last visit, the sync hook, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
@@ -463,7 +479,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 216 of the 219 package tests and all 25 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 226 of the 229 package tests and all 26 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

@@ -129,6 +129,26 @@ export namespace funcs {
   }
 
   /**
+   * A program's gate decisions with the evidence each rests on, one row per piece: kind, frozen name, target (a soft reference), and whether the target still exists under that name (live, renamed, gone, unchecked). With decision, only that gate-log entry
+   * @param {string} decision - Gate-log entry id (stage_transition)
+   */
+  export async function decisionEvidence(portfolio: string , program: string , decision?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DecisionEvidence', { portfolio, program, decision });
+  }
+
+  /**
+   * Adds evidence to a program's gate decision (default: its latest): a saved run by run_id or title, a criterion by code, a URL, a file path. Its name and context are frozen now. The program's approvers only
+   * @param {string} kind
+   *   choices: ["model_run", "criterion", "url", "file", "snapshot"]
+   * @param {string} target - run_id, criterion code, URL, file path or snapshot id
+   * @param {string} name - Name to freeze
+   * @param {string} decision - Gate-log entry id
+   */
+  export async function addEvidence(portfolio: string , program: string , kind: string , target: string , name?: string , decision?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:AddEvidence', { portfolio, program, kind, target, name, decision });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

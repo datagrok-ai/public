@@ -99,19 +99,22 @@ category('Portal: auto-advance rules', () => {
 });
 
 /** Puts EXS-GPC3 (unstaged, its data meets Hit-to-Lead) at Hit Finding for [fn], then puts it back:
- * its stage, and the transitions and criterion statuses written meanwhile. */
-async function gpc3AtHitFinding(fn: (p: ProgramRow, stage: (code: string) => string) => Promise<void>): Promise<void> {
+ * its stage, and the transitions, criterion statuses and evidence written meanwhile. */
+export async function gpc3AtHitFinding(fn: (p: ProgramRow, stage: (code: string) => string) => Promise<void>): Promise<void> {
   const smd = await portfolioByCode('EX-SMD');
   const p = (await portalDb.programs.query({filter: `portfolio_id = "${smd.id}" and code = "EXS-GPC3"`}))[0];
   const stages = await portalDb.stages.query({filter: `stage_model_id = "${smd.stage_model_id}"`});
   const stage = (code: string) => stages.find((s) => s.code === code)!.id;
   const transitionsBefore = new Set((await portalDb.stageTransitions.query({filter: `program_id = "${p.id}"`})).map((t) => t.id));
   const statusesBefore = new Set((await portalDb.criterionStatuses.query({filter: `program_id = "${p.id}"`})).map((t) => t.id));
+  const evidenceBefore = new Set((await portalDb.evidences.query({filter: `program_id = "${p.id}"`})).map((t) => t.id));
   await portalDb.programs.update(p.id, {stage_id: stage('HF')});
   try {
     await fn(p, stage);
   } finally {
     await portalDb.programs.update(p.id, {stage_id: p.stage_id ?? null} as any);
+    for (const e of await portalDb.evidences.query({filter: `program_id = "${p.id}"`}))
+      if (!evidenceBefore.has(e.id)) await portalDb.evidences.delete(e.id).catch(() => undefined);
     for (const t of await portalDb.stageTransitions.query({filter: `program_id = "${p.id}"`}))
       if (!transitionsBefore.has(t.id)) await portalDb.stageTransitions.delete(t.id).catch(() => undefined);
     for (const s of await portalDb.criterionStatuses.query({filter: `program_id = "${p.id}"`}))

@@ -29,6 +29,8 @@ import {missingAssayFrame, recommendByCode, recommendationFrame} from './recomme
 import {checkNewDataOf, followByCode} from './new-data';
 import {namedRolesOf, programRolesFrame, resolvePrincipal, setProgramRole as setRoleOf} from './program-roles';
 import {ProgramRole} from './model/program-roles';
+import {addEvidenceTo, decisionEvidenceFrame, evidenceItemFor, summarizeAdded} from './evidence';
+import {EvidenceKind} from './model/evidence';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -217,6 +219,32 @@ export async function setProgramRole(portfolio: string, program: string, princip
 export async function programRoles(portfolio: string, program: string): Promise<DG.DataFrame> {
   const p = await programByCode(portfolio, program);
   return programRolesFrame(await namedRolesOf(p.id), `${p.code} · Program roles`);
+}
+
+//name: decisionEvidence
+//description: A program's gate decisions with the evidence each rests on, one row per piece: kind, frozen name, target (a soft reference), and whether the target still exists under that name (live, renamed, gone, unchecked). With decision, only that gate-log entry
+//input: string portfolio
+//input: string program
+//input: string decision {optional: true; description: Gate-log entry id (stage_transition); default: every decision}
+//output: dataframe result
+export async function decisionEvidence(portfolio: string, program: string, decision?: string): Promise<DG.DataFrame> {
+  return decisionEvidenceFrame(await programByCode(portfolio, program), decision || null);
+}
+
+//name: addEvidence
+//description: Adds evidence to a program's gate decision (default: its latest): a saved run by run_id or title, a criterion by code, a URL, a file path. Its name and context are frozen now. The program's approvers only
+//input: string portfolio
+//input: string program
+//input: string kind {choices: ["model_run", "criterion", "url", "file", "snapshot"]}
+//input: string target {description: run_id, criterion code, URL, file path or snapshot id}
+//input: string name {optional: true; description: Name to freeze; default: the target's own}
+//input: string decision {optional: true; description: Gate-log entry id; default: the latest decision}
+//output: string report
+export async function addEvidence(portfolio: string, program: string, kind: string, target: string, name?: string,
+  decision?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const item = await evidenceItemFor(p, kind as EvidenceKind, target, name || undefined);
+  return summarizeAdded(p, await addEvidenceTo(p, [item], decision || null));
 }
 
 //name: loadPortfolios

@@ -41,6 +41,8 @@ import {isApprover} from '../portal';
 import {namedRolesOf, resolvePrincipal, setProgramRole} from '../program-roles';
 import {PROGRAM_ROLE_LABELS, PROGRAM_ROLES, ProgramRole} from '../model/program-roles';
 import {ProgramRoleRow} from '../generated/db';
+import {EvidenceLine, evidenceOf, suggestedEvidence} from '../evidence';
+import {EVIDENCE_LABELS, EvidenceItem, evidenceKey, linkEvidence, validateEvidence} from '../model/evidence';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -56,6 +58,8 @@ const statusVariant: Record<string, BadgeVariant> = {
 export const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 const APP_PATH = '/apps/ProjectPortalCore/Portal';
+
+const viewedStageName = (ctx: ProgramContext, stageId: string | null) => ctx.stages.find((s) => s.id === stageId)?.name ?? 'the gate';
 
 export class PortalView {
   readonly root = named(divH([], 'pp-root'), 'portal');
@@ -94,6 +98,9 @@ export class PortalView {
   private roles: {rows: (ProgramRoleRow & {name: string})[], manage: boolean} = {rows: [], manage: false};
   /** What the last role change on this page did, by program id. */
   private roleLine = new Map<string, string>();
+  /** The evidence the next decision on [programId] carries: suggested items the decider unticked,
+   * and links added by hand. Kept across redraws of the same program. */
+  private picked: {programId: string, off: Set<string>, links: EvidenceItem[]} = {programId: '', off: new Set(), links: []};
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -225,6 +232,8 @@ export class PortalView {
       this.data = undefined;
       this.news = undefined;
     }
+    if (this.picked.programId !== id)
+      this.picked = {programId: id, off: new Set(), links: []};
     this.selected = id;
     this.viewedStage = viewedStage;
     for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
@@ -274,8 +283,12 @@ export class PortalView {
     const news = follows.length ? this.news ?? null : null;
     this.follows = follows;
     this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
+    // the evidence behind each decision, and what the next one would rest on
+    const evidence = await evidenceOf(id).catch(() => new Map<string, EvidenceLine[]>());
+    const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
+      ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
-      choices, attention, recommendation, news);
+      choices, attention, recommendation, news, {lines: evidence, suggested});
     this.redraw();
   }
 
@@ -359,7 +372,8 @@ export class PortalView {
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
     compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
     choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null,
-    recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null): void {
+    recommendation: ProgramRecommendation | null = null, news: {since: string | null, lines: string[]} | null = null,
+    evidence: {lines: Map<string, EvidenceLine[]>, suggested: EvidenceItem[]} = {lines: new Map(), suggested: []}): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -392,8 +406,12 @@ export class PortalView {
     const reasons = named(divV(verdict.reasons.map((r) => span(r, 'pp-reason'))), 'gate-reasons');
     const decide = (d: Decision) => async () => {
       try {
-        const done = await recordDecision(program.id, d, null, rationale.value);
-        grok.shell.info(`${program.name}: ${d} recorded${done.workspace ? `\n${done.workspace}` : ''}`);
+        const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
+        const done = await recordDecision(program.id, d, null, rationale.value, {source: 'approver', items});
+        this.picked = {programId: program.id, off: new Set(), links: []};
+        const ev = done.evidence;
+        grok.shell.info(`${program.name}: ${d} recorded${ev?.written ? ` with ${ev.written} piece(s) of evidence` : ''}` +
+          `${ev?.errors.length ? `\n${ev.errors.join('\n')}` : ''}${done.workspace ? `\n${done.workspace}` : ''}`);
         await this.openPortfolio(this.portfolio!.code);
         await this.openProgram(program.id);
       } catch (e: any) {
@@ -407,7 +425,7 @@ export class PortalView {
     const terminate = named(button('Terminate', decide('terminate')), 'terminate-button');
     hold.disabled = terminate.disabled = !ctx.approver || ctx.portfolio.stage_authority === 'feed';
 
-    const history = named(divV(transitions.map((t) => {
+    const history = named(divV(transitions.map((t, i) => {
       const row = span(
         `${(t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
         `${stageName(t.to_stage_id)}${t.source === 'data' ? ' (by data)' : ''}${t.rationale ? ` — ${t.rationale}` : ''}`,
@@ -415,8 +433,14 @@ export class PortalView {
       // what the data said when it advanced the program
       if (t.evidence)
         row.title = t.evidence;
-      return row;
+      const lines = evidence.lines.get(t.id) ?? [];
+      if (!lines.length)
+        return named(row, `decision-${i}`);
+      return named(divV([row, named(divV(lines.map((l, j) => this.evidenceLink(ctx, l, `evidence-${i}-${slug(l.row.kind)}-${j}`)),
+        'pp-evidence'), `decision-evidence-${i}`)]), `decision-${i}`);
     })), 'transition-history');
+    const picker = evidence.suggested.length || (ctx.approver && ctx.portfolio.stage_authority === 'portal') ?
+      this.evidencePicker(program.id, evidence.suggested, viewedStageName(ctx, ctx.readiness?.stageId ?? null)) : null;
 
     const lineage: HTMLElement[] = [];
     if (program.predecessor_id)
@@ -497,6 +521,7 @@ export class PortalView {
         'data-error')] : []),
       reasons,
       rationale,
+      ...(picker ? [picker] : []),
       divH([advance, hold, terminate], 'pp-actions'),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
@@ -798,6 +823,92 @@ export class PortalView {
       ...(runs.superseded.length ? [named(divV(runs.superseded.map((e) =>
         span(`Superseded: ${describeSelection(e)}`, 'pp-gap'))), `run-history-${slug(c.code)}`)] : []),
     ]), `criterion-run-${slug(c.code)}`);
+  }
+
+  /** What the next decision will rest on: the gate's readiness (one tick for its criteria), the run
+   * selected for each criterion, and links added here. Everything is ticked; untick to leave it out. */
+  private evidencePicker(programId: string, suggested: EvidenceItem[], stageName: string): HTMLElement {
+    const box = (name: string, label: string, keys: string[], title?: string) => {
+      const input = named(document.createElement('input'), name);
+      input.type = 'checkbox';
+      input.checked = keys.every((k) => !this.picked.off.has(k));
+      input.onchange = () => keys.forEach((k) => input.checked ? this.picked.off.delete(k) : this.picked.off.add(k));
+      const label_ = document.createElement('label');
+      label_.className = 'pp-evidence-pick';
+      label_.append(input, span(label));
+      if (title)
+        label_.title = title;
+      return label_;
+    };
+    const readiness = suggested.filter((e) => e.role === 'readiness');
+    const rows: HTMLElement[] = [];
+    if (readiness.length) {
+      rows.push(box('evidence-readiness', `Readiness of ${stageName}: ${readiness.length} criteri${readiness.length === 1 ? 'on' : 'a'}`,
+        readiness.map(evidenceKey), readiness.map((e) => `${e.name}: ${String(e.context?.state ?? '').replace(/_/g, ' ')}`).join('\n')));
+    }
+    for (const e of suggested.filter((x) => x.kind === 'model_run'))
+      rows.push(box(`evidence-run-${slug(String(e.context?.criterion ?? e.target))}`, `Run: ${e.name} (for ${e.context?.criterion ?? '?'})`, [evidenceKey(e)]));
+    this.picked.links.forEach((e, i) => rows.push(box(`evidence-link-${i}`, `${EVIDENCE_LABELS[e.kind]}: ${e.name}`, [evidenceKey(e)], e.target)));
+    const link = named(document.createElement('input'), 'evidence-link-input');
+    link.className = 'pp-text';
+    link.placeholder = 'Link or file path to attach';
+    const add = named(button('Attach', () => {
+      const item = linkEvidence(link.value);
+      const problems = link.value.trim() ? validateEvidence(item) : ['Type a link or a file path'];
+      if (problems.length) {
+        grok.shell.warning(problems.join('; '));
+        return;
+      }
+      if (!this.picked.links.some((x) => evidenceKey(x) === evidenceKey(item)))
+        this.picked.links.push(item);
+      this.picked.off.delete(evidenceKey(item));
+      this.redraw?.();
+    }), 'add-evidence-link-button');
+    add.title = 'Attach a document, report or page to the next decision';
+    return named(divV([
+      span('Evidence for the decision', 'pp-muted'),
+      ...(rows.length ? rows : [span('Nothing suggested for this gate', 'pp-muted')]),
+      named(divH([link, add], 'pp-actions pp-role-form'), 'evidence-link'),
+    ], 'pp-evidence-picker'), 'decision-evidence');
+  }
+
+  /** One piece of a decision's evidence: what it is, and a click to open it. A target that is gone
+   * shows what was recorded. */
+  private evidenceLink(ctx: ProgramContext, l: EvidenceLine, name: string): HTMLElement {
+    const el = named(span(l.text, l.state === 'gone' ? 'pp-gap' : 'pp-link pp-gap'), name);
+    const recorded = () => grok.shell.info([`${EVIDENCE_LABELS[l.row.kind]}: ${l.row.name}`, `target: ${l.row.target}`,
+      ...Object.entries(l.row.context ?? {}).map(([k, v]) => `${k}: ${v}`)].join('\n'));
+    el.title = l.state === 'gone' ? 'Gone since it was attached; click for what was recorded' : l.row.target;
+    el.onclick = () => void (async () => {
+      if (l.state === 'gone')
+        return recorded();
+      switch (l.row.kind) {
+      case 'url':
+        window.open(l.row.target, '_blank', 'noopener');
+        return;
+      case 'criterion': {
+        const c = ctx.criteria.find((x) => x.id === l.row.target);
+        return c ? this.openProgram(ctx.program.id, c.stageId === ctx.readiness?.stageId ? null : c.stageId) : recorded();
+      }
+      case 'model_run': {
+        const call = await grok.dapi.functions.calls.find(l.row.target).catch(() => null);
+        if (call)
+          grok.shell.o = call;
+        else
+          recorded();
+        return;
+      }
+      case 'file':
+        if (/\.(csv|tsv|txt)$/i.test(l.row.target))
+          grok.shell.addTableView(await grok.dapi.files.readCsv(l.row.target));
+        else
+          recorded();
+        return;
+      default:
+        return recorded();
+      }
+    })().catch((e) => grok.shell.error(e?.message ?? String(e)));
+    return el;
   }
 
   /** The program's own viewers, contributors and approvers, on top of the portfolio's groups. The

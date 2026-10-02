@@ -124,3 +124,11 @@ app.element('program role input', {selector: u2('role-input')});
 app.element('add role button', {selector: u2('add-role-button')});
 app.element('role result', {selector: u2('role-result')});
 app.element('remove admin role link', {selector: u2('remove-role-admin')});
+
+app.element('evidence project card', {selector: u2('program-bdd-evidence')});
+app.element('decision evidence', {selector: u2('decision-evidence')});
+app.element('evidence readiness checkbox', {selector: u2('evidence-readiness')});
+app.element('evidence link input', {selector: u2('evidence-link-input')});
+app.element('attach evidence button', {selector: u2('add-evidence-link-button')});
+app.element('rationale input', {selector: u2('rationale-input')});
+app.element('latest decision evidence', {selector: u2('decision-evidence-0')});

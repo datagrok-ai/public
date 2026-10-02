@@ -86,6 +86,9 @@ const CSS = `
 .pp-quick-off:hover { background: none; }
 .pp-role-form { align-items: center; flex-wrap: wrap; }
 .pp-role-form .pp-text { flex: 1 1 120px; height: 22px; font-size: 12px; }
+.pp-evidence-picker { gap: 2px; font-size: 12px; }
+.pp-evidence-pick { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.pp-evidence { padding-left: 12px; gap: 1px; }
 `;
 
 let installed = false;
