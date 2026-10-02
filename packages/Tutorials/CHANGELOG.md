@@ -1,5 +1,9 @@
 # Tutorials changelog
 
+## v.next
+
+* Sticky Meta: Fixed the Annotate dataset step not completing
+
 ## 1.11.6 (2026-10-02)
 
 * Activity Cliffs: Fixed "Wait for analysis to complete" never completing
