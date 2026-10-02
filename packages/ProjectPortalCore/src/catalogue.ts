@@ -45,13 +45,18 @@ export function funcParams(func: DG.Func | null): {inputs: FuncParamInfo[], outp
 export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promise<void> {
   if (!c.unitOperations.length && !c.runTypes.length && !c.models.length)
     return;
+  // like a model's, the portfolios that declare an entry only grow
   for (const u of c.unitOperations) {
+    const existing = await portalDb.unitOperations.getByKey({code: u.code});
     await upsertByKey(portalDb.unitOperations, {code: u.code},
-      {name: u.name, ordinal: u.ordinal ?? null, description: u.description ?? null});
+      {name: u.name, ordinal: u.ordinal ?? null, description: u.description ?? null,
+        portfolios: unionCodes(existing?.portfolios, u.portfolios ?? []) || null});
   }
   for (const r of c.runTypes) {
+    const existing = await portalDb.runTypes.getByKey({code: r.code});
     await upsertByKey(portalDb.runTypes, {code: r.code}, {name: r.name, definition: r.definition ?? null,
-      ordinal: r.ordinal ?? null, is_execution_mode: r.isExecutionMode ?? true});
+      ordinal: r.ordinal ?? null, is_execution_mode: r.isExecutionMode ?? true,
+      portfolios: unionCodes(existing?.portfolios, r.portfolios ?? []) || null});
   }
   let cards = 0;
   for (const m of c.models) {

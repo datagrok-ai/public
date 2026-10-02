@@ -305,6 +305,16 @@ development gate code on a research project, and a stage spelling that resolves 
 Customer portfolios live in customer packages, not here. A customer package hands its files to the
 core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 
+### Profile tooling
+
+Portfolio files load and validate as a set. Four functions work on them as files (F-18):
+
+- **`exportPortfolio(code)`** reads a loaded portfolio back into the file format: stage model, criteria, feeds, groups by name, datasets, rules, schedule, auto-advance, handoff, and its catalogue (the unit operations and run types it declared, the models that name it, each with its current card). Loading the export gives the same portfolio. Rows a newer file no longer declares are still exported, because loading never deletes.
+- **`diffPortfolios(a, b)`** compares two portfolios, each a loaded code or a file's JSON. Both are normalized first (defaults written out, empty lists dropped, keys sorted, cards completed from the function as loading does). The lines come in three groups: vocabulary (stages, criteria, work units, series maturity, catalogue codes), workspace tree (root, workstreams, stage folders), other fields (feeds, groups, datasets, rules, schedule). Long text such as SQL is reported by length, not printed.
+- **`exportProfile(codes)`** bundles loaded portfolios (default: all) as `{format: "project-portal-profile", version, exportedOn, portfolios}`.
+- **`importProfile(bundle, dryRun)`** checks the bundle's portfolios as a set (a handoff may name a portfolio already loaded), diffs each against the loaded one (new, changed, unchanged), and unless `dryRun` (the default) loads them. A bundle that does not validate is refused whole. Loading adds and updates; removals in the diff are reported, not applied.
+- **In the app.** The board's **Export** shows the open portfolio's file, with a download.
+
 `files/sources.json` lists each source system's full key query for the routing audit.
 `validatePortfolioSet` checks the files as a set before anything is written. It checks:
 - duplicate codes;
@@ -327,6 +337,10 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
 | `syncDuePortfolios(codes)` | Syncs only the portfolios whose schedule is due, records each run, notifies owners of a run that changed something |
 | `syncHistory(portfolio)` | A portfolio's sync runs as a table, newest first |
+| `exportPortfolio(code)` | A loaded portfolio as its portfolio file (JSON) |
+| `diffPortfolios(a, b)` | Differences from `a` to `b` (each a loaded code or a file's JSON): vocabulary, workspace tree, other fields |
+| `exportProfile(codes)` | Loaded portfolios as one bundle, to move them to another instance |
+| `importProfile(bundle, dryRun)` | Validates a bundle as a set, diffs it against what is loaded, and unless `dryRun` loads it; refused when it does not validate |
 | `autoAdvancePortfolio(code, dryRun)` | Advances each program whose next gate the data alone meets, one stage, never past `autoAdvance.through`. `dryRun` (default) says what would move and why the rest stay |
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
@@ -356,6 +370,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
   - Scheduled sync: the rules (intervals and cron in UTC, when a sync is due, a run's counts and per-program changes, when owners hear of it), and on EX-SMD and EX-BIOD a recorded run, a due and a not-yet-due schedule, a platform notification, the function and the history panel.
   - Auto-advance: the rules (one stage, never past `through`, waivers, recorded criteria, held and unstaged programs, the setting), and on EX-SMD a dry run, a real pass with its gate-log entry and evidence, a sync that advances and its history, and the example put back.
+  - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
@@ -363,7 +378,7 @@ core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 162 of the 165 package tests and all 19 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 180 of the 183 package tests and all 21 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

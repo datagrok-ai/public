@@ -96,3 +96,7 @@ app.element('latest sync run', {selector: u2('sync-run-0')});
 app.element('sync auto-advance', {selector: u2('sync-auto-advance')});
 app.element('preview advance by data button', {selector: u2('auto-advance-preview-button')});
 app.element('advance by data preview', {selector: u2('auto-advance-preview')});
+
+app.element('export button', {selector: u2('export-button')});
+app.element('export dialog', {selector: u2('export-dialog')});
+app.element('exported portfolio file', {selector: u2('export-json')});

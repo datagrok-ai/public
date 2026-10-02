@@ -23,6 +23,8 @@ import {recordedSync, summarizeDue, syncDue} from './sync-runs';
 import {syncHistoryFrame} from './views/sync-history';
 import {span} from '@datagrok-libraries/u2';
 import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from './auto-advance';
+import {diffPortfolioRefs, exportPortfolioConfig, exportProfileBundle, importProfileBundle} from './profile';
+import {summarizeDiff} from './model/profile';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -202,6 +204,42 @@ export async function syncDuePortfolios(codes?: string): Promise<string> {
 //output: string report
 export async function autoAdvancePortfolio(code: string, dryRun: boolean = true): Promise<string> {
   return summarizeAutoAdvanceResult(await autoAdvance(code, dryRun));
+}
+
+//name: exportPortfolio
+//description: A loaded portfolio as a portfolio file (JSON): stage model, criteria, feeds, groups by name, datasets, rules, schedule, its model catalogue. Loading it gives the same portfolio
+//input: string code
+//output: string json
+export async function exportPortfolio(code: string): Promise<string> {
+  return JSON.stringify(await exportPortfolioConfig(code), null, 2);
+}
+
+//name: diffPortfolios
+//description: What changes from portfolio a to portfolio b, in readable lines: vocabulary (stages, criteria, work units, catalogue codes), workspace tree (workstreams, stage folders) and other fields. Each is a loaded portfolio's code or a portfolio file's JSON
+//input: string a {description: Portfolio code (loaded) or portfolio JSON}
+//input: string b {description: Portfolio code (loaded) or portfolio JSON}
+//output: string report
+export async function diffPortfolios(a: string, b: string): Promise<string> {
+  const r = await diffPortfolioRefs(a, b);
+  return summarizeDiff(r.title, r.diff);
+}
+
+//name: exportProfile
+//description: A profile bundle for moving portfolios to another instance: the loaded portfolios named (default: all) as portfolio files in one JSON
+//input: string codes {optional: true; description: Comma-separated portfolio codes}
+//output: string json
+export async function exportProfile(codes?: string): Promise<string> {
+  const list = (codes ?? '').split(',').map((c) => c.trim()).filter((c) => c.length > 0);
+  return JSON.stringify(await exportProfileBundle(list.length ? list : undefined), null, 2);
+}
+
+//name: importProfile
+//description: Imports a profile bundle: checks its portfolios as a set (refused whole when they do not validate), diffs each against the loaded one, and unless dryRun (the default) loads them. Loading adds and updates; it never removes
+//input: string bundle {description: The JSON exportProfile returns}
+//input: bool dryRun = true
+//output: string report
+export async function importProfile(bundle: string, dryRun: boolean = true): Promise<string> {
+  return (await importProfileBundle(bundle, dryRun)).report;
 }
 
 //name: syncHistory

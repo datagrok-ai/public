@@ -17,6 +17,7 @@ import './tests/program-data-tests';
 import './tests/attention-tests';
 import './tests/sync-run-tests';
 import './tests/auto-advance-tests';
+import './tests/profile-tests';
 
 export let _package = new DG.Package();
 export { tests };

@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.12",
+  "version": "0.2.13",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -87,6 +87,7 @@
         "attention": {"type": "json", "description": "Rules over the program dataset that flag compounds or lots needing attention: {rules: [{code, name, severity, condition, message}]}"},
         "schedule": {"type": "string", "description": "When syncDuePortfolios syncs it: an interval (every 6h) or a five-field cron line in UTC (0 6 * * 1-5); empty = only on call"},
         "owners": {"type": "string", "description": "User logins told about a scheduled sync that changed something, '|'-separated"},
+        "handoff": {"type": "json", "description": "Where a program goes when it leaves the terminal stage: {to: portfolio code, fromStage: stage code}"},
         "auto_advance": {"type": "json", "description": "Stage advance driven by data, off when empty: {through: stage code, countWaivers}. Portal authority only"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
@@ -332,6 +333,7 @@
         "code": {"type": "string", "required": true, "unique": true},
         "name": {"type": "string", "required": true, "isName": true},
         "ordinal": {"type": "int", "description": "Typical process order, for display outside any one flow"},
+        "portfolios": {"type": "string", "description": "Codes of the portfolios whose catalogue declares it, '|'-separated; what exportPortfolio writes back"},
         "description": {"type": "string", "editor": "textarea"}
       }
     },
@@ -346,6 +348,7 @@
         "name": {"type": "string", "required": true, "isName": true},
         "definition": {"type": "string", "editor": "textarea"},
         "ordinal": {"type": "int"},
+        "portfolios": {"type": "string", "description": "Codes of the portfolios whose catalogue declares it, '|'-separated; what exportPortfolio writes back"},
         "is_execution_mode": {"type": "bool", "default": true, "description": "False for values on another axis (input provenance, a run's role) that are not mutually exclusive execution modes"}
       }
     },

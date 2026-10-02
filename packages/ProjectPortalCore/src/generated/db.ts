@@ -223,6 +223,7 @@ export interface PortfolioRow {
   attention?: {[key: string]: any};
   schedule?: string;
   owners?: string;
+  handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
@@ -248,6 +249,7 @@ export interface PortfolioInsert {
   attention?: {[key: string]: any};
   schedule?: string;
   owners?: string;
+  handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
   viewers?: string;
   contributors?: string;
@@ -258,7 +260,7 @@ export interface PortfolioInsert {
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
   'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
-  'owners' | 'auto_advance' | 'viewers' | 'contributors' | 'approvers' | 'description';
+  'owners' | 'handoff' | 'auto_advance' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -317,9 +319,9 @@ export type RegistryFeedExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -382,9 +384,9 @@ export type ProgramExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -715,7 +717,8 @@ export type ProcessStageExpand = {
     'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
     'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
   'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
-    'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
+    'unit_operation_id.ordinal'?: number; 'unit_operation_id.portfolios'?: string;
+    'unit_operation_id.description'?: string};
 };
 
 /** Row of `portal.compound`. */
@@ -857,6 +860,7 @@ export interface UnitOperationRow {
   code: string;
   name: string;
   ordinal?: number;
+  portfolios?: string;
   description?: string;
 }
 
@@ -865,11 +869,12 @@ export interface UnitOperationInsert {
   code: string;
   name: string;
   ordinal?: number;
+  portfolios?: string;
   description?: string;
 }
 
 export type UnitOperationColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
-  'ordinal' | 'description';
+  'ordinal' | 'portfolios' | 'description';
 
 /** Expand keys of `portal.unit_operation` → fields each adds to the row (consumed by query()/builder). */
 export type UnitOperationExpand = {
@@ -889,6 +894,7 @@ export interface RunTypeRow {
   name: string;
   definition?: string;
   ordinal?: number;
+  portfolios?: string;
   is_execution_mode?: boolean;
 }
 
@@ -898,11 +904,12 @@ export interface RunTypeInsert {
   name: string;
   definition?: string;
   ordinal?: number;
+  portfolios?: string;
   is_execution_mode?: boolean;
 }
 
 export type RunTypeColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
-  'definition' | 'ordinal' | 'is_execution_mode';
+  'definition' | 'ordinal' | 'portfolios' | 'is_execution_mode';
 
 /** Expand keys of `portal.run_type` → fields each adds to the row (consumed by query()/builder). */
 export type RunTypeExpand = {
@@ -972,7 +979,8 @@ export type ProcessStepExpand = {
   'process_flow_id': {'process_flow_id.code'?: string; 'process_flow_id.name'?: string;
     'process_flow_id.process_type'?: string; 'process_flow_id.description'?: string};
   'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
-    'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
+    'unit_operation_id.ordinal'?: number; 'unit_operation_id.portfolios'?: string;
+    'unit_operation_id.description'?: string};
 };
 
 /** Row of `portal.flow_rule`. */
@@ -1086,7 +1094,7 @@ export type ModelExpand = {
     'owner.createdOn'?: Dayjs; 'owner.picture'?: string; 'owner.group'?: string; 'owner.author'?: string};
   'default_run_type_id': {'default_run_type_id.code'?: string; 'default_run_type_id.name'?: string;
     'default_run_type_id.definition'?: string; 'default_run_type_id.ordinal'?: number;
-    'default_run_type_id.is_execution_mode'?: boolean};
+    'default_run_type_id.portfolios'?: string; 'default_run_type_id.is_execution_mode'?: boolean};
   'details:model_card': {model_card?: ModelCardRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
 };
@@ -1211,9 +1219,10 @@ export type ModelRunExpand = {
     'stage_id.is_terminal'?: boolean; 'stage_id.governance'?: string; 'stage_id.aliases'?: string[];
     'stage_id.spellings'?: string; 'stage_id.folders'?: string; 'stage_id.description'?: string};
   'unit_operation_id': {'unit_operation_id.code'?: string; 'unit_operation_id.name'?: string;
-    'unit_operation_id.ordinal'?: number; 'unit_operation_id.description'?: string};
+    'unit_operation_id.ordinal'?: number; 'unit_operation_id.portfolios'?: string;
+    'unit_operation_id.description'?: string};
   'run_type_id': {'run_type_id.code'?: string; 'run_type_id.name'?: string; 'run_type_id.definition'?: string;
-    'run_type_id.ordinal'?: number; 'run_type_id.is_execution_mode'?: boolean};
+    'run_type_id.ordinal'?: number; 'run_type_id.portfolios'?: string; 'run_type_id.is_execution_mode'?: boolean};
   'run_author': {'run_author.login'?: string; 'run_author.firstName'?: string; 'run_author.lastName'?: string;
     'run_author.status'?: string; 'run_author.createdOn'?: Dayjs; 'run_author.picture'?: string;
     'run_author.group'?: string; 'run_author.author'?: string};
@@ -1274,9 +1283,9 @@ export type SyncRunExpand = {
     'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
-    'portfolio_id.owners'?: string; 'portfolio_id.auto_advance'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
     'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
     'run_by.author'?: string};

@@ -121,6 +121,38 @@ export namespace funcs {
   }
 
   /**
+   * A loaded portfolio as a portfolio file (JSON): stage model, criteria, feeds, groups by name, datasets, rules, schedule, its model catalogue. Loading it gives the same portfolio
+   */
+  export async function exportPortfolio(code: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ExportPortfolio', { code });
+  }
+
+  /**
+   * What changes from portfolio a to portfolio b, in readable lines: vocabulary (stages, criteria, work units, catalogue codes), workspace tree (workstreams, stage folders) and other fields. Each is a loaded portfolio's code or a portfolio file's JSON
+   * @param {string} a - Portfolio code (loaded) or portfolio JSON
+   * @param {string} b - Portfolio code (loaded) or portfolio JSON
+   */
+  export async function diffPortfolios(a: string , b: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:DiffPortfolios', { a, b });
+  }
+
+  /**
+   * A profile bundle for moving portfolios to another instance: the loaded portfolios named (default: all) as portfolio files in one JSON
+   * @param {string} codes - Comma-separated portfolio codes
+   */
+  export async function exportProfile(codes?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ExportProfile', { codes });
+  }
+
+  /**
+   * Imports a profile bundle: checks its portfolios as a set (refused whole when they do not validate), diffs each against the loaded one, and unless dryRun (the default) loads them. Loading adds and updates; it never removes
+   * @param {string} bundle - The JSON exportProfile returns
+   */
+  export async function importProfile(bundle: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ImportProfile', { bundle, dryRun });
+  }
+
+  /**
    * A portfolio's sync runs, newest first: when, by schedule or by hand, who, counts of created, updated and flagged rows, unresolved spellings, error
    */
   export async function syncHistory(portfolio: string ): Promise<DG.DataFrame> {

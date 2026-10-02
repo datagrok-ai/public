@@ -27,6 +27,7 @@ import {attentionFor, attentionRulesOf, openAttentionItem} from '../attention';
 import {AttentionSeverity, ProgramAttention} from '../model/attention';
 import {recordedSync} from '../sync-runs';
 import {openSyncHistory} from './sync-history';
+import {openExportDialog} from './export-dialog';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -529,6 +530,12 @@ export class PortalView {
     await this.openProgram(programId, this.viewedStage);
   }
 
+  /** The open portfolio as a portfolio file. */
+  async exportPortfolio(): Promise<void> {
+    if (this.portfolio)
+      await openExportDialog(this.portfolio.code).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
   /** The open portfolio's schedule and sync runs. */
   async syncHistory(): Promise<void> {
     if (this.portfolio)
@@ -562,11 +569,13 @@ export async function portalAppView(portfolioCode?: string): Promise<DG.ViewBase
   sync.title = 'Run this portfolio\'s registry feeds';
   const history = named(button('Sync history', () => void portal.syncHistory()), 'sync-history-button');
   history.title = 'This portfolio\'s schedule, and what each sync changed';
+  const exportButton = named(button('Export', () => void portal.exportPortfolio()), 'export-button');
+  exportButton.title = 'This portfolio as a portfolio file, to diff or load on another instance';
   const table = named(button('Table', () => void openPortfolioTable(portal.portfolioCode)), 'table-button');
   table.title = 'This portfolio as a table, with filters and analytics';
   const all = named(button('All portfolios', () => void openPortfolioTable(null)), 'all-portfolios-button');
   all.title = 'Every portfolio you can see as one table';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history], [table, all]], status: portal.status,
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, exportButton], [table, all]], status: portal.status,
     path: portal.path});
   await portal.load(portfolioCode);
   (view as any).portal = portal;

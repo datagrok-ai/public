@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Profile tooling (F-18): `exportPortfolio(code)` reads a loaded portfolio back into the file format (round-trips the three example files); `diffPortfolios(a, b)` compares loaded portfolios and files in readable lines (vocabulary, workspace tree, other fields); `exportProfile(codes)` and `importProfile(bundle, dryRun)` move a set of portfolios between instances: validated as a set, diffed against what is loaded, refused when invalid, loaded unless dry run. The board's **Export** shows the open portfolio's file
+- `validatePortfolioSet` and `loadPortfolioSet` take the codes already loaded, so a handoff may name one of them
+- `portal` schema 0.2.13: `portfolio.handoff` (was validated, not stored), `unit_operation.portfolios`, `run_type.portfolios`. Additive, no migration script
+
 - Stage advance driven by data (opt-in, off by default): a portal-authority portfolio may declare `autoAdvance: {through, countWaivers}`. After each sync, and on `autoAdvancePortfolio(code, dryRun)`, an active program whose next gate is met from its data alone moves one stage, never past `through`; a waiver counts only with `countWaivers`, a criterion recorded met by hand never does, held, ended and unstaged programs stay. The move is recorded like an approver's advance (gate log, criterion evidence, workspace folders) with source `data` and the evidence. The sync's report, history and owner notification name each move; Sync history has a preview
 - The gate log records who moved a program: `approver`, `registry` or `data`
 - `portal` schema 0.2.12: `portfolio.auto_advance`, `stage_transition.source`, `stage_transition.evidence`. Additive, no migration script

@@ -263,8 +263,9 @@ export function validateStageModel(m: StageModelConfig): string[] {
   return errors;
 }
 
-/** Problems across the whole set of portfolios one instance runs. */
-export function validatePortfolioSet(portfolios: PortfolioConfig[]): string[] {
+/** Problems across the whole set of portfolios one instance runs. [alsoKnown] names portfolios the
+ * instance already has, which a handoff may go to (a bundle imported beside them). */
+export function validatePortfolioSet(portfolios: PortfolioConfig[], alsoKnown: string[] = []): string[] {
   const errors: string[] = [];
   const codes = new Set<string>();
   const models = new Map<string, string>();
@@ -284,7 +285,7 @@ export function validatePortfolioSet(portfolios: PortfolioConfig[]): string[] {
     }
   }
   for (const p of portfolios) {
-    if (p.handoff && !codes.has(p.handoff.to))
+    if (p.handoff && !codes.has(p.handoff.to) && !alsoKnown.includes(p.handoff.to))
       errors.push(`${p.code}: hands off to "${p.handoff.to}", which is not configured`);
   }
   errors.push(...mergeCatalogues(portfolios.filter((p) => p.catalogue)

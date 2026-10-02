@@ -172,7 +172,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     program_datasets: c.programDatasets ? {datasets: c.programDatasets} : null,
     attention: c.attention?.length ? {rules: c.attention} : null,
     schedule: c.schedule ?? null, owners: (c.owners ?? []).join('|') || null,
-    auto_advance: c.autoAdvance ?? null,
+    auto_advance: c.autoAdvance ?? null, handoff: c.handoff ?? null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,
@@ -217,9 +217,10 @@ export async function loadAllPortfolios(pkg: DG.Package): Promise<string> {
 }
 
 /** Loads a set of portfolios after checking them together. A customer package hands its own
- * portfolio files to the core this way (see the loadPortfolioConfigs function). */
-export async function loadPortfolioSet(configs: PortfolioConfig[]): Promise<string> {
-  const errors = validatePortfolioSet(configs);
+ * portfolio files to the core this way (see the loadPortfolioConfigs function). [alsoKnown]: codes
+ * of portfolios already loaded that a handoff may name. */
+export async function loadPortfolioSet(configs: PortfolioConfig[], alsoKnown: string[] = []): Promise<string> {
+  const errors = validatePortfolioSet(configs, alsoKnown);
   if (errors.length > 0)
     throw new Error(errors.join('\n'));
   const out: string[] = [];

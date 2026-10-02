@@ -81,8 +81,8 @@ export interface ModelCatalogueConfig {
 
 /** A catalogue merged from several sources: each model knows the portfolios that declare it. */
 export interface MergedCatalogue {
-  unitOperations: UnitOperationConfig[];
-  runTypes: RunTypeConfig[];
+  unitOperations: (UnitOperationConfig & {portfolios?: string[]})[];
+  runTypes: (RunTypeConfig & {portfolios?: string[]})[];
   models: (ModelConfig & {portfolios: string[]})[];
 }
 
@@ -185,8 +185,12 @@ export function mergeCatalogues(sources: {portfolio: string | null, catalogue: M
   for (const s of sources) {
     errors.push(...validateCatalogue(s.catalogue, known).map((e) => s.portfolio ? `${s.portfolio}: ${e}` : e));
   }
-  const unitOperations = [...merge('unit operation', (c) => c.unitOperations).values()].map((x) => x.item);
-  const runTypes = [...merge('run type', (c) => c.runTypes).values()].map((x) => x.item);
+  const declaring = (pick: (c: ModelCatalogueConfig) => {code: string}[] | undefined, code: string) =>
+    sources.filter((s) => s.portfolio && (pick(s.catalogue) ?? []).some((x) => x.code === code)).map((s) => s.portfolio!);
+  const unitOperations = [...merge('unit operation', (c) => c.unitOperations).values()]
+    .map(({item}) => ({...item, portfolios: declaring((c) => c.unitOperations, item.code)}));
+  const runTypes = [...merge('run type', (c) => c.runTypes).values()]
+    .map(({item}) => ({...item, portfolios: declaring((c) => c.runTypes, item.code)}));
   const models = [...merge('model', (c) => c.models).values()].map(({item}) => ({...item,
     portfolios: sources.filter((s) => s.portfolio && (s.catalogue.models ?? []).some((m) => m.code === item.code))
       .map((s) => s.portfolio!)}));
