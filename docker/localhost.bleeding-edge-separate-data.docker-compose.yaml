@@ -1,4 +1,4 @@
-x-datagrok-release: 1.27.9
+x-datagrok-release: 1.27.12
 
 services:
   rabbitmq:
@@ -34,7 +34,7 @@ services:
   datagrok:
     privileged: true
     container_name: datagrok_dev
-    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.9}
+    image: datagrok/datagrok:${DATAGROK_VERSION:-1.27.12}
     environment:
       GROK_PARAMETERS: |
         {
@@ -93,7 +93,7 @@ services:
     profiles: [ "all", "datagrok" ]
 
   grok_spawner:
-    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-2.23.0}
+    image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-2.24.0}
     user: root
     container_name: grok_spawner_dev
     environment:
