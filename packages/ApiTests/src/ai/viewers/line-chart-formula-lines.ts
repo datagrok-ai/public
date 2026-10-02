@@ -70,4 +70,13 @@ category('AI: Viewers: LineChart Formula Lines', () => {
     fl.clear();
     expect(fl.items.length, 0);
   });
+
+  test('setDefaults folds a saved opacity into the color alpha once', async () => {
+    const fold = (item: DG.FormulaLine) => DG.FormulaLinesHelper.setDefaults(item);
+    expect(fold({...bandFormula}).color, '#00ff004d');
+    expect(fold({...bandFormula, opacity: 30}).color, '#00ff004c');
+    expect(fold({...bandFormula, color: '#ff0000', opacity: 50}).color, '#ff00007f');
+    expect(fold({...lineFormula, opacity: 100}).color, '#838383ff');
+    expect('opacity' in fold({...bandFormula, opacity: 30}), false);
+  });
 }, {owner: 'agolovko@datagrok.ai'});

@@ -147,21 +147,35 @@ function dimColor(color: string | undefined | null, alpha: number): string | und
     const c = DG.Color.fromHtml(color.trim());
     if (c == null || Number.isNaN(c))
       return undefined;
-    return htmlWithAlpha(DG.Color.setAlpha(c, Math.max(8, Math.round(DG.Color.a(c) * alpha))));
+    return DG.Color.toHtml(DG.Color.setAlpha(c, Math.max(8, Math.round(DG.Color.a(c) * alpha))));
   } catch {
     return undefined;
   }
 }
 
-/** `#rrggbb` for an opaque color, `#rrggbbaa` otherwise (`DG.Color.toHtml` drops a zero alpha). */
-function htmlWithAlpha(c: number): string {
-  const a = DG.Color.a(c);
-  return DG.Color.toHtml(DG.Color.setAlpha(c, 255)) + (a === 255 ? '' : a.toString(16).padStart(2, '0'));
-}
-
 /** A region color written as 0xRRGGBB carries no alpha and means opaque, as the renderers read it. */
 function opaqueIfNoAlpha(c: number): number {
   return DG.Color.a(c) === 0 ? DG.Color.setAlpha(c, 255) : c;
+}
+
+/** Bands and region fills saved without an alpha are drawn at this opacity, as before the alpha replaced `opacity`. */
+const LEGACY_FILL_OPACITY = 30;
+
+const opacityToAlpha = (opacity: number): number => Math.floor(Math.min(100, Math.max(0, opacity)) * 255 / 100);
+
+/** The color a line or band is drawn with, read the way the viewers read it. */
+function formulaLineColor(item: DG.FormulaLine, defaultColor: string): number {
+  const opacity = item.opacity ?? (item.type === ITEM_TYPE.BAND && item.color?.length !== 9 ? LEGACY_FILL_OPACITY : null);
+  const c = DG.Color.fromHtml(item.color ?? defaultColor);
+  return opacity == null ? c : DG.Color.setAlpha(c, Math.floor(DG.Color.a(c) * opacityToAlpha(opacity) / 255));
+}
+
+/** The fill a region is drawn with, read the way the viewers read it. */
+function regionFill(item: DG.AnnotationRegion): number {
+  const fill = item.fillColor;
+  const a = fill == null ? 0 : DG.Color.a(fill);
+  return item.opacity == null && a !== 0 && a !== 255 ? fill! :
+    DG.Color.setAlpha(fill ?? DG.Color.gray, opacityToAlpha(item.opacity ?? LEGACY_FILL_OPACITY));
 }
 
 export const DEFAULT_OPTIONS: EditorOptions = {
@@ -1165,24 +1179,23 @@ class Editor {
   }
 
   /** A line's or band's color, or a region's fill; the alpha is the opacity. An `opacity` saved before the alpha
-   *  replaced it is folded in the way the renderers fold it, and dropped on the first edit. */
+   *  replaced it is folded in the way the viewers fold it, and dropped on the first edit. */
   private inputColor(itemIdx: number, isFormulaLine: boolean = true): HTMLElement {
     const item = isFormulaLine ? this.formulaLineItems[itemIdx] : this.annotationRegionItems[itemIdx];
     const defaultColor = isFormulaLine ? '#000000' : DG.Color.toHtml(DG.Color.gray);
-    const fill = (item as DG.AnnotationRegion).fillColor;
-    let c = isFormulaLine ? DG.Color.fromHtml((item as DG.FormulaLine).color ?? defaultColor) : fill ?? DG.Color.gray;
-    if (isFormulaLine && item.opacity != null)
-      c = DG.Color.setAlpha(c, Math.round(DG.Color.a(c) * item.opacity / 100));
-    else if (!isFormulaLine && (item.opacity != null || fill == null || DG.Color.a(fill) === 0))
-      c = DG.Color.setAlpha(c, Math.round((item.opacity ?? 30) * 255 / 100));
+    const c = isFormulaLine ? formulaLineColor(item as DG.FormulaLine, defaultColor) : regionFill(item as DG.AnnotationRegion);
 
-    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {value: htmlWithAlpha(c), useAlphaChannel: true,
+    const ibColor = ui.input.color(isFormulaLine ? 'Color' : 'Region Color', {value: DG.Color.toHtml(c), useAlphaChannel: true,
       onValueChanged: (value) => {
         delete item.opacity;
-        if (isFormulaLine)
-          (item as DG.FormulaLine).color = value;
-        else
-          (item as DG.AnnotationRegion).fillColor = DG.Color.fromHtml(value);
+        if (isFormulaLine) // "#rrggbbff": a color without an alpha component reads as saved before the alpha (see formulaLineColor)
+          (item as DG.FormulaLine).color = value.length === 7 ? `${value}ff` : value;
+        else {
+          const fill = DG.Color.fromHtml(value);
+          (item as DG.AnnotationRegion).fillColor = fill;
+          if (DG.Color.a(fill) === 255) // an opaque fill alone reads as saved before the alpha (see regionFill)
+            item.opacity = 100;
+        }
         this.onItemChangedAction(itemIdx, isFormulaLine);
       }});
     (ibColor.input as HTMLInputElement).placeholder = defaultColor;
@@ -1193,7 +1206,7 @@ class Editor {
     const item = this.annotationRegionItems[itemIdx] as DG.AnnotationRegion;
     const color = item[key];
     const ibColor = ui.input.color(header, {
-      value: color ? htmlWithAlpha(opaqueIfNoAlpha(color)) : defaultColor, useAlphaChannel: true,
+      value: color ? DG.Color.toHtml(opaqueIfNoAlpha(color)) : defaultColor, useAlphaChannel: true,
       onValueChanged: (value) => {
         item[key] = DG.Color.fromHtml(value);
         this.onItemChangedAction(itemIdx, false);

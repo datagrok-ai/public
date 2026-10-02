@@ -88,6 +88,16 @@ category('AI: Viewers: ScatterPlot extras', () => {
     expect(alphaOf(c.props.movingAverageLineColor), 128);
   });
 
+  test('zero opacity keeps alpha 1: alpha 0 means a color written without alpha', async () => {
+    const c = v();
+    c.props.markerOpacity = 0;
+    expect(c.props.markerOpacity, 0);
+    expect(alphaOf(c.props.filteredRowsColor), 1);
+    c.setOptions({regressionLineTransparency: 1});
+    expect(alphaOf(c.props.regressionLineColor), 1);
+    expect(c.props.regressionLineTransparency, 1);
+  });
+
   test('selection visibility bools combined round-trip', async () => {
     const c = v();
     expectRoundTrip(c, {showCurrentPoint: false, showMouseOverPoint: false,
