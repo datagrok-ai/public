@@ -8,11 +8,18 @@ export type DataKey = 'templates' | 'buildingBlocks' | 'reagents';
 
 export const MODE_LABEL = {depth: 'Depth-first', breadth: 'Breadth-first', reagents: 'Reagents'} as const;
 export const roundsLabel = (n: number): string => `${n} step${n === 1 ? '' : 's'}`;
+export const cyclesLabel = (cfg: EnumeratorConfig): string => {
+  const n = cfg.enumeration.max_cycles;
+  return cfg.enumeration.apply_until_fails ? ` · ≤ ${n} cycle${n === 1 ? '' : 's'}` : '';
+};
 
 export const OVERRIDE_DOT_COLOR = 'var(--orange-2, #c98a1b)';
 export const CHANGED_DOT_STYLE = {width: '6px', height: '6px', borderRadius: '50%', background: OVERRIDE_DOT_COLOR};
 
 export const MAX_ROUNDS = 10;
+
+/** Separate from MAX_ROUNDS: a step builds tabs and columns, a cycle only costs firings. */
+export const MAX_CYCLES = 10;
 
 /** Every per-round loop that builds DOM must clamp: "Number of steps" can transiently hold a much
  * larger typed value, which would freeze the tab building thousands of rows per keystroke. */
@@ -136,9 +143,11 @@ const COLUMN_DESCRIPTIONS: Record<string, string> = {
   product: 'The product this route makes: the molecule its last step produced.',
   route: 'Every step of the synthesis, drawn as reactions.',
   product_counts: 'How many distinct products each step formed, one line per step, including ones the ' +
-    'product filters removed. More than one means the template matched in several non-equivalent places.',
+    'product filters removed. More than one means the template matched in several non-equivalent places. ' +
+    'With "Repeat until it stops", a step counts only the products it ended on.',
   n_products: 'The per-step product counts multiplied together: how many isomer paths this route ' +
-    'passed through.',
+    'passed through. With "Repeat until it stops", a step counts only the products it ended on, not the ' +
+    'paths to them.',
   n_routes: 'How many distinct routes reach this same product.',
   round: 'The step at which this product first appeared.',
 };

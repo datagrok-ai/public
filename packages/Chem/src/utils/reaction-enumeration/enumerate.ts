@@ -355,6 +355,137 @@ export interface OutputRow {
   n_routes: number;
 }
 
+/** Distinct SMILES of one firing, as RDKit writes them; null when run_reactants threw. Frees every
+ * WASM handle before returning, so a cascade can await between firings. */
+function fireTemplateOn(
+  rdkit: RDModule, config: EnumeratorConfig, t: ParsedTemplate, reactants: string[],
+  warnings: string[],
+): string[] | null {
+  let molList: MolList | null = null;
+  let result: ReturnType<RDReaction['run_reactants']> | null = null;
+  // Fresh mols per firing, never shared with the BB cache: copy() is shallow at the WASM level, so
+  // a copy still aliases the original's memory and molList.delete() reaches into both, corrupting
+  // the heap.
+  const inputMols: RDMol[] = [];
+  try {
+    molList = new rdkit.MolList();
+    for (const smi of reactants) {
+      const fresh = tryGetMol(rdkit, smi);
+      if (!fresh) return [];
+      inputMols.push(fresh);
+      molList.append(fresh);
+    }
+
+    try {
+      // Cap 0 = unlimited, so a reaction firing at several sites returns every product.
+      result = t.rxn.run_reactants(molList, 0);
+    } catch (e) {
+      warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
+      return null;
+    }
+    if (!result || result.size() === 0) return [];
+
+    const produced: string[] = [];
+    const producedSmilesSet = new Set<string>();
+    // Exactly one next() per set — calling reset() or at_end() beforehand can leave the iterator
+    // corrupt.
+    for (let ri = 0; ri < result.size(); ri++) {
+      const productSet = result.get(ri);
+      try {
+        const productMol = productSet.next();
+        try {
+          if (!productMol || !productMol.is_valid()) continue;
+
+          let productSmiles: string;
+          try {productSmiles = productMol.get_smiles();} catch {continue;}
+          if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
+            const stripped = stripIsotopesFromSmiles(productSmiles);
+            const re = canonicalize(rdkit, stripped);
+            if (!re) continue;
+            productSmiles = re;
+          }
+          if (producedSmilesSet.has(productSmiles))
+            continue;
+          producedSmilesSet.add(productSmiles);
+          produced.push(productSmiles);
+        } finally {
+          try {productMol?.delete();} catch {/* ignore */}
+        }
+      } finally {
+        try {productSet.delete();} catch {/* ignore */}
+      }
+    }
+    return produced;
+  } finally {
+    try {result?.delete();} catch {/* ignore */}
+    try {molList?.delete();} catch {/* ignore */}
+    for (const m of inputMols) try {m.delete();} catch {/* ignore */}
+    inputMols.length = 0;
+  }
+}
+
+/** Max cycles bounds depth only, so the width needs its own limit. A cycle that would pass it is
+ * abandoned whole, so the cascade returns whole cycles, never an arbitrary part of one. */
+const CASCADE_MAX_PRODUCTS = 100;
+
+/** Re-applies `fire` to the products of the first firing `fired` until they stop reacting; null when
+ * cancelled. `outOfCycles`/`outOfRoom`: Max cycles or CASCADE_MAX_PRODUCTS stopped it early. */
+async function runCascade(
+  fire: (reactants: string[]) => string[] | null, blocked: (smiles: string) => boolean,
+  combo: string[], fired: string[], maxCycles: number,
+  yieldIfNeeded: () => Promise<void>, isCancelled?: () => boolean,
+): Promise<{products: Set<string>; outOfCycles: boolean; outOfRoom: boolean} | null> {
+  const terminal = new Set<string>();
+  // Converging branches collapse to one product.
+  const visited = new Set([...combo, ...fired]);
+
+  let frontier = fired;
+  let capped = false;
+  // `fired` was cycle 1, so the template has maxCycles - 1 runs left.
+  for (let cycle = 1; cycle < maxCycles && frontier.length > 0; cycle++) {
+    const next: string[] = [];
+    for (const smi of frontier) {
+      if (isCancelled?.()) return null;
+      await yieldIfNeeded();
+      if (blocked(smi)) {terminal.add(smi); continue;}
+      const grown = fire([smi]);
+      // A self-map is finished; a throw (null) ends only this branch.
+      const successors = grown?.filter((p) => p !== smi) ?? [];
+      if (successors.length === 0) {terminal.add(smi); continue;}
+      for (const p of successors) {
+        if (visited.has(p)) continue;
+        // Unfired molecules are left out: those that react on are intermediates, not results.
+        if (terminal.size + next.length >= CASCADE_MAX_PRODUCTS) {capped = true; break;}
+        visited.add(p);
+        next.push(p);
+      }
+      if (capped) break;
+    }
+    // Molecules finished after the last new one still count; a cycle that queues nothing just ends.
+    if (next.length > 0 && terminal.size + next.length > CASCADE_MAX_PRODUCTS) capped = true;
+    if (capped) for (const s of frontier) terminal.add(s);
+    frontier = capped ? [] : next;
+  }
+
+  let outOfCycles = false;
+  for (const smi of frontier) {
+    if (isCancelled?.()) return null;
+    await yieldIfNeeded();
+    // One cycle must give what the setting off gives, so it keeps every molecule.
+    if (blocked(smi) || (maxCycles === 1 && outOfCycles)) {terminal.add(smi); continue;}
+    const successors = fire([smi])?.filter((p) => p !== smi) ?? [];
+    // As in every earlier cycle, a molecule that only leads to ones already reached is not an end product.
+    if (maxCycles > 1 && successors.length > 0 && successors.every((p) => visited.has(p))) continue;
+    terminal.add(smi);
+    // Leading back to the starting material is not reacting further.
+    if (successors.some((p) => !combo.includes(p))) outOfCycles = true;
+  }
+
+  // A template that only undoes itself (A->B->A) has no end product: keep the first firing.
+  if (terminal.size === 0) for (const p of fired) terminal.add(p);
+  return {products: terminal, outOfCycles, outOfRoom: capped};
+}
+
 export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRow[]; warnings: string[]}> {
   const {rdkit, config, templates, buildingBlocks, exclusionSmarts, reagents,
     perRoundOverrides, onProgress, isCancelled} = opts;
@@ -402,6 +533,13 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
   if (overArityCount > 0) {
     warnings.push(`${overArityCount} template(s) need more reactants than Max # components ` +
       `(${config.max_num_components}) allows and will be skipped in every step.`);
+  }
+
+  const {apply_until_fails: applyUntilFails, max_cycles: maxCycles} = config.enumeration;
+  // Warn only when the setting does nothing at all: mostly two-reactant libraries are the norm.
+  if (applyUntilFails && !parsedTemplates.some((t) => t.numReactants === 1)) {
+    warnings.push('"Repeat until it stops" had no effect: it only repeats templates with a single ' +
+      'reactant, and every template here takes more than one.');
   }
 
   const exclusion = buildExclusionQmols(rdkit, exclusionSmarts);
@@ -610,9 +748,20 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
         }
         const comboCap = max_num_combinations_per_template;
         const productCap = max_num_products_per_step;
+        const cascade = applyUntilFails && t.numReactants === 1;
+        const blockedInCascade = (smiles: string): boolean => {
+          if (t.blockingQmols.length === 0) return false;
+          const mol = tryGetMol(rdkit, smiles);
+          if (!mol) return false;
+          try {return buildBlockingFilter(mol, t.blockingQmols);} finally {
+            try {mol.delete();} catch {/* ignore */}
+          }
+        };
         let executed = 0;
         let truncated = false;
         let productCapped = 0;
+        let outOfCycles = 0;
+        let outOfRoom = 0;
         progressContext.combosTotal = totalCombos;
 
         configLoop:
@@ -642,93 +791,57 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               if (prevCount !== 1 || prevCount + bbCount !== combo.length) continue;
             }
 
-            let molList: MolList | null = null;
-            let result: ReturnType<RDReaction['run_reactants']> | null = null;
-            // Fresh mols per combo, never shared with the BB cache: copy() is shallow at the WASM
-            // level, so a copy still aliases the original's memory and molList.delete() reaches
-            // into both, corrupting the heap. Matches the pattern in reactions.ts.
-            const inputMols: RDMol[] = [];
             const comboSteps: RouteStep[] = [];
             try {
-              molList = new rdkit.MolList();
-              let allValid = true;
-              for (const smi of combo) {
-                const fresh = tryGetMol(rdkit, smi);
-                if (!fresh) {allValid = false; break;}
-                inputMols.push(fresh);
-                molList.append(fresh);
-              }
-              if (!allValid) continue;
+              const fired = fireTemplateOn(rdkit, config, t, combo, warnings);
+              if (!fired?.length) continue;
+              let stepProducts: Iterable<string> = fired;
 
-              try {
-                // Cap 0 = unlimited, so a reaction firing at several sites returns every product.
-                result = t.rxn.run_reactants(molList, 0);
-              } catch (e) {
-                warnings.push(`run_reactants failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
-                continue;
+              if (cascade) {
+                // Canonical SMILES, or an explicit [H] would hide molecules already reached; unreadable
+                // products are dropped. Only the cascade does this, so the setting off is unchanged.
+                const canon = (s: string): string | null => canonCache.getOrCreate(s, (k) => canonicalize(rdkit, k));
+                const fireCanonical = (reactants: string[]): string[] | null =>
+                  fireTemplateOn(rdkit, config, t, reactants, warnings)?.flatMap((s) => canon(s) ?? []) ?? null;
+                const run = await runCascade(fireCanonical, blockedInCascade, combo.map((s) => canon(s) ?? s),
+                  fired.flatMap((s) => canon(s) ?? []), maxCycles, yieldIfNeeded, isCancelled);
+                if (!run) break configLoop;
+                if (run.outOfCycles) outOfCycles++;
+                if (run.outOfRoom) outOfRoom++;
+                stepProducts = run.products;
               }
-              if (!result || result.size() === 0) continue;
 
-              // One result.get(i).next() per set, as in rdkit-api.ts — calling reset() or at_end()
-              // beforehand can leave the iterator corrupt.
-              const producedSmilesSet = new Set<string>();
-              // Counted before the product filters: they choose what to keep, not what the reaction
-              // forms, so a stricter filter must never make a non-selective reaction pass the cap.
+              // Filters judge only what leaves the step, never a cascade's intermediates. nFormed is
+              // counted before the filters, so a stricter filter never lets a reaction pass the cap.
               let nFormed = 0;
-              for (let ri = 0; ri < result.size(); ri++) {
-                const productSet = result.get(ri);
+              for (const productSmiles of stepProducts) {
+                // Evaluate a fresh mol parsed from the SMILES, never the one run_reactants returned:
+                // get_substruct_match on a post-reaction mol corrupts the WASM heap.
+                const evalMol = tryGetMol(rdkit, productSmiles);
+                if (!evalMol) continue;
+                nFormed++;
                 try {
-                  const productMol = productSet.next();
+                  let stats: MolStats;
                   try {
-                    if (!productMol || !productMol.is_valid()) continue;
-
-                    let productSmiles: string;
-                    try {productSmiles = productMol.get_smiles();} catch {continue;}
-                    if (config.products_specs.remove_isotope_information && /\[\d+[A-Za-z]/.test(productSmiles)) {
-                      const stripped = stripIsotopesFromSmiles(productSmiles);
-                      const re = canonicalize(rdkit, stripped);
-                      if (!re) continue;
-                      productSmiles = re;
-                    }
-                    if (producedSmilesSet.has(productSmiles))
-                      continue;
-                    producedSmilesSet.add(productSmiles);
-
-                    // Evaluate a fresh mol parsed from the canonical SMILES, never productMol
-                    // itself: get_substruct_match on a post-reaction mol corrupts the WASM heap.
-                    const evalMol = tryGetMol(rdkit, productSmiles);
-                    if (!evalMol) continue;
-                    nFormed++;
-                    try {
-                      let stats: MolStats;
-                      try {
-                        stats = computeMolStats(evalMol);
-                      } catch (e) {
-                        warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
-                        continue;
-                      }
-                      const fr = applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol);
-                      if (!fr.pass) continue;
-                    } finally {
-                      try {evalMol.delete();} catch {/* ignore */}
-                    }
-
-                    comboSteps.push({
-                      reactants: combo.slice(),
-                      product: productSmiles,
-                      templateSmarts: t.smarts,
-                      templateIndex: t.index,
-                      reactionName: t.reactionName,
-                      nProducts: 0,
-                      buildingBlocks: [],
-                      reagents: [],
-                    });
-                  } finally {
-                    try {productMol?.delete();} catch {/* ignore */}
+                    stats = computeMolStats(evalMol);
+                  } catch (e) {
+                    warnings.push(`computeMolStats failed: ${e instanceof Error ? e.message : String(e)}`);
+                    continue;
                   }
+                  if (!applyProductFilters(stats, config.products_specs, exclusion.qmols, evalMol).pass) continue;
                 } finally {
-                  try {productSet.delete();} catch {/* ignore */}
+                  try {evalMol.delete();} catch {/* ignore */}
                 }
+                comboSteps.push({
+                  reactants: combo.slice(),
+                  product: productSmiles,
+                  templateSmarts: t.smarts,
+                  templateIndex: t.index,
+                  reactionName: t.reactionName,
+                  nProducts: 0,
+                  buildingBlocks: [],
+                  reagents: [],
+                });
               }
 
               // The routes below hold these same step objects, so one stamp reaches every route.
@@ -771,18 +884,24 @@ export async function enumerate(opts: EnumerateOptions): Promise<{rows: OutputRo
               }
             } catch (e) {
               warnings.push(`Combo execution failed for template ${t.index + 1}: ${e instanceof Error ? e.message : String(e)}`);
-            } finally {
-              try {result?.delete();} catch {/* ignore */}
-              try {molList?.delete();} catch {/* ignore */}
-              for (const m of inputMols) try {m.delete();} catch {/* ignore */}
-              inputMols.length = 0;
             }
           }
         }
         if (truncated)
           warnings.push(`Template ${t.index + 1} (${t.reactionName || ''}): truncated at ${executed}/${totalCombos} combinations (cap=${comboCap}).`);
+        const where = `Step ${round}, template ${t.index + 1} (${t.reactionName || ''})`;
         if (productCapped > 0)
-          warnings.push(`Step ${round}, template ${t.index + 1} (${t.reactionName || ''}): dropped ${productCapped} combination(s) over the ${productCap}-product cap.`);
+          warnings.push(`${where}: dropped ${productCapped} combination(s) over the ${productCap}-product cap.`);
+        if (outOfCycles > 0) {
+          warnings.push(`${where}: some products of ${outOfCycles} combination(s) could still react after ` +
+            `${maxCycles} cycle(s), so they are not fully reacted. Raise Max cycles or add a step to react ` +
+            `them further.`);
+        }
+        if (outOfRoom > 0) {
+          warnings.push(`${where}: ${outOfRoom} combination(s) stopped before the cycle that would take ` +
+            `them past ${CASCADE_MAX_PRODUCTS} products, so some of their products are not fully reacted. ` +
+            `Use a more specific template to stay under the limit.`);
+        }
       }
 
       productPools.push(Array.from(newPool.values()));
