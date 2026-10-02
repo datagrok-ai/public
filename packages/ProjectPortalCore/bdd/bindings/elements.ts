@@ -100,3 +100,9 @@ app.element('advance by data preview', {selector: u2('auto-advance-preview')});
 app.element('export button', {selector: u2('export-button')});
 app.element('export dialog', {selector: u2('export-dialog')});
 app.element('exported portfolio file', {selector: u2('export-json')});
+
+app.element('missing assays heading', {selector: u2('missing-assays-heading')});
+app.element('missing solubility', {selector: u2('missing-assay-adme-panel-solubility-um')});
+app.element('suggested models heading', {selector: u2('suggested-models-heading')});
+app.element('suggested solubility estimate', {selector: u2('suggested-model-projectportalcore-solubilityestimate')});
+app.element('solubility estimate card link', {selector: u2('recommended-card-projectportalcore-solubilityestimate')});

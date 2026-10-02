@@ -28,6 +28,8 @@ import {AttentionSeverity, ProgramAttention} from '../model/attention';
 import {recordedSync} from '../sync-runs';
 import {openSyncHistory} from './sync-history';
 import {openExportDialog} from './export-dialog';
+import {ProgramRecommendation, recommendFor, runModelFor} from '../recommend';
+import {describeMissing} from '../model/recommend';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -217,7 +219,13 @@ export class PortalView {
       }
     }
     const attention = await this.attentionOf(ctx);
-    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices, attention);
+    const recommendation = await recommendFor(ctx, {readiness, rows: this.data?.rows, dataError: this.data?.error})
+      .catch((e) => {
+        grok.log.warning(`Project Portal: no model recommendation for ${ctx.program.code}: ${e?.message ?? e}`);
+        return null;
+      });
+    this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs, choices, attention,
+      recommendation);
   }
 
   /** The portfolio's attention rules over the program's data, read once per open; null without rules. */
@@ -251,7 +259,8 @@ export class PortalView {
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
     readiness: Readiness | null, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[] = [],
     compounds: {link: any, compound: any}[] = [], spaceLive = false, runs: SavedRunItem[] = [],
-    choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null): void {
+    choices = new Map<string, CriterionRuns>(), attention: {result: ProgramAttention | null, error?: string} | null = null,
+    recommendation: ProgramRecommendation | null = null): void {
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -360,6 +369,7 @@ export class PortalView {
       reasons,
       rationale,
       divH([advance, hold, terminate], 'pp-actions'),
+      ...(recommendation ? this.recommendation(recommendation) : []),
       ...(attention ? this.attention(ctx.portfolio.code, program.code, attention) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
@@ -370,6 +380,49 @@ export class PortalView {
       span('History', 'pp-heading'),
       transitions.length ? history : span('No transitions yet', 'pp-muted'),
     );
+  }
+
+  /** Missing assays for the shown gate (what would close it), then the catalogued models that fit
+   * the program, best first. A model that predicts a missing assay says so; Run opens its dialog
+   * filled in from the program. */
+  private recommendation(r: ProgramRecommendation): HTMLElement[] {
+    const out: HTMLElement[] = [];
+    const modelLink = (code: string, name: string, prefix = 'recommended-card') => {
+      const link = named(span(name, 'pp-link'), `${prefix}-${slug(code)}`);
+      link.title = 'Open the model card';
+      link.onclick = () => void showModelCard(code);
+      return link;
+    };
+    if (r.missing.length) {
+      out.push(named(span(`Missing assays${r.stage ? ` for ${r.stage.name}` : ''} (${r.missing.length})`, 'pp-heading'),
+        'missing-assays-heading'));
+      out.push(named(divV(r.missing.map((m) => {
+        const by = m.column ? r.predictors.get(m.column) ?? [] : [];
+        return named(divV([
+          span(describeMissing(m)),
+          ...(by.length ? [divH([span('Predicted meanwhile by', 'pp-muted'), ...by.map((x) => modelLink(x.code, x.name, 'predictor-card'))],
+            'pp-run-meta')] : []),
+        ], 'pp-run'), `missing-assay-${slug(m.criterion)}${m.column ? `-${slug(m.column)}` : ''}`);
+      }), 'pp-runs'), 'missing-assays'));
+    }
+    out.push(named(span(`Suggested models (${r.models.length})`, 'pp-heading'), 'suggested-models-heading'));
+    if (!r.models.length) {
+      out.push(named(span('No catalogued model fits this program\'s stage, modality and work units', 'pp-muted'),
+        'no-suggested-models'));
+      return out;
+    }
+    out.push(named(divV(r.models.map((m) => {
+      const run = named(button('Run', () => void runModelFor(m.code, {portfolio: r.portfolio.code, program: r.program.code,
+        series: r.series}).catch((e) => grok.shell.error(e?.message ?? String(e)))), `run-model-${slug(m.code)}`);
+      run.disabled = !m.installed;
+      run.title = m.installed ? 'Open the model\'s dialog, filled in from this program' : 'The model\'s function is not installed here';
+      return named(divV([
+        divH([modelLink(m.code, m.name), ...(m.approval ? [badge(m.approval.replace('_', ' '),
+          {variant: m.approval === 'approved' ? 'success' : 'default'})] : []), run], 'pp-run-meta'),
+        ...(m.reasons.length ? [span(m.reasons.join(' · '), 'pp-muted')] : []),
+      ], 'pp-run'), `suggested-model-${slug(m.code)}`);
+    }), 'pp-runs'), 'suggested-models'));
+    return out;
   }
 
   /** Needs attention: a count per rule that trips, then each flagged compound (or lot) with the

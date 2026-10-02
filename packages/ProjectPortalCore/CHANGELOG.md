@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- Model recommendation v1 (F-13, FR-51): a card may declare `appliesTo` (tasks, stages, modalities, work-unit kinds, the program-data columns it predicts, rank; a key left out matches any). The program page shows *Missing assays* for the gate it shows (the columns open data conditions need and rows lack, and which suggested model predicts each) and *Suggested models*, best first, each with **Run**, which opens the model's dialog filled in from the program (the program dataset, program and series codes). `recommendModels(portfolio, program, stage, series, task)` and `missingAssays(portfolio, program, stage, series)` return them
+- `portal` schema 0.2.14: `model_card.applies_to`. Additive, no migration script. `exportPortfolio` writes it back
+- EX-SMD declares two synthetic predictive models, `SolubilityEstimate` and `HergRisk` (tiny scripts, invented numbers)
+
 - Profile tooling (F-18): `exportPortfolio(code)` reads a loaded portfolio back into the file format (round-trips the three example files); `diffPortfolios(a, b)` compares loaded portfolios and files in readable lines (vocabulary, workspace tree, other fields); `exportProfile(codes)` and `importProfile(bundle, dryRun)` move a set of portfolios between instances: validated as a set, diffed against what is loaded, refused when invalid, loaded unless dry run. The board's **Export** shows the open portfolio's file
 - `validatePortfolioSet` and `loadPortfolioSet` take the codes already loaded, so a handoff may name one of them
 - `portal` schema 0.2.13: `portfolio.handoff` (was validated, not stored), `unit_operation.portfolios`, `run_type.portfolios`. Additive, no migration script

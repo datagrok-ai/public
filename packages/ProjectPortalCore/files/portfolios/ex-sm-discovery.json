@@ -76,6 +76,46 @@
       "message": "{compound}: hERG IC50 {herg_ic50_um} uM"
     }
   ],
+  "catalogue": {
+    "models": [
+      {
+        "code": "ProjectPortalCore:SolubilityEstimate",
+        "name": "Solubility estimate (example)",
+        "category": "Physchem",
+        "description": "Synthetic stand-in for a solubility measurement: an invented function of potency.",
+        "status": "experimental",
+        "card": {
+          "version": "1.0",
+          "question": "Roughly what solubility should we expect for a compound not yet measured?",
+          "intendedUse": "Shows how a predictive model is suggested for a missing assay. Not for decisions: the numbers are invented.",
+          "applicability": "Small molecules of a validated series, Hit-to-Lead and Lead Optimization.",
+          "performance": "Not validated: an example.",
+          "limitations": "Uses only potency; ignores structure.",
+          "owner": "Example Computational Chemistry",
+          "approval": "draft",
+          "appliesTo": {"tasks": ["physchem"], "stages": ["H2L", "LO"], "modalities": ["Small Molecule"], "workUnits": ["series"], "predicts": ["solubility_um"]}
+        }
+      },
+      {
+        "code": "ProjectPortalCore:HergRisk",
+        "name": "hERG risk (example)",
+        "category": "ADMET",
+        "description": "Synthetic stand-in for a hERG IC50 measurement: an invented function of potency.",
+        "status": "experimental",
+        "card": {
+          "version": "1.0",
+          "question": "Is a compound likely to block hERG below 10 uM before it is measured?",
+          "intendedUse": "Shows how a predictive model is suggested for a missing safety assay. Not for decisions: the numbers are invented.",
+          "applicability": "Small molecules from Lead Optimization to candidate selection.",
+          "performance": "Not validated: an example.",
+          "limitations": "Uses only potency; ignores structure, basicity and lipophilicity.",
+          "owner": "Example Computational Chemistry",
+          "approval": "draft",
+          "appliesTo": {"tasks": ["ADMET"], "stages": ["LO", "CS"], "modalities": ["Small Molecule"], "predicts": ["herg_ic50_um"]}
+        }
+      }
+    ]
+  },
   "stageModel": {
     "code": "EX-SMD-V1",
     "name": "Example Small Molecule Discovery",

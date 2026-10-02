@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -451,7 +451,8 @@
         "limitations": {"type": "string", "editor": "textarea"},
         "owner": {"type": "string", "description": "The person or team who answers for the model"},
         "approval": {"type": "string", "choices": ["draft", "in_review", "approved", "retired"], "required": true, "default": "draft"},
-        "approved_on": {"type": "datetime"}
+        "approved_on": {"type": "datetime"},
+        "applies_to": {"type": "json", "description": "Where the model applies, for recommendation: {tasks, stages, modalities, workUnits, predicts, rank}; a key left out matches anything"}
       },
       "filters": [{"column": "model_id.name", "label": "Model"}, {"column": "approval"}]
     },

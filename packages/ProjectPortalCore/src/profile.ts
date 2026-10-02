@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {portalDb} from './generated/db';
 import {loadPortfolioSet, portfolioByCode, stagesOf, COMPOUND_FEED} from './portal';
 import {CriterionConfig, FeedConfig, PortfolioConfig, StageConfig} from './model/config';
-import {CardParam, ModelCatalogueConfig, ModelConfig, readParams, splitCodes} from './model/catalogue';
+import {CardParam, ModelCardConfig, ModelCatalogueConfig, ModelConfig, readParams, splitCodes} from './model/catalogue';
 import {WorkUnitFeedConfig, WorkUnitKind} from './model/work-units';
 import {funcOf, funcParams} from './catalogue';
 import {cardParams} from './model/catalogue';
@@ -57,7 +57,8 @@ async function catalogueOf(code: string): Promise<ModelCatalogueConfig | undefin
         inputs: readParams(card.inputs) ?? undefined, outputs: readParams(card.outputs) ?? undefined,
         applicability: card.applicability, performance: card.performance, lineage: card.lineage,
         supersedes: card.supersedes, limitations: card.limitations, owner: card.owner, approval: card.approval as any,
-        approvedOn: card.approved_on ? new Date(card.approved_on.valueOf()).toISOString().slice(0, 10) : undefined}) : undefined}));
+        approvedOn: card.approved_on ? new Date(card.approved_on.valueOf()).toISOString().slice(0, 10) : undefined,
+        appliesTo: (card.applies_to as ModelCardConfig['appliesTo']) ?? undefined}) : undefined}));
   }
   if (unitOperations.length) out.unitOperations = unitOperations;
   if (runTypes.length) out.runTypes = runTypes;

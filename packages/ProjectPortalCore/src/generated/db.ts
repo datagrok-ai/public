@@ -1120,6 +1120,7 @@ export interface ModelCardRow {
   owner?: string;
   approval: ModelCardApproval;
   approved_on?: Dayjs;
+  applies_to?: {[key: string]: any};
 }
 
 /** Insert payload for `portal.model_card`. */
@@ -1138,11 +1139,12 @@ export interface ModelCardInsert {
   owner?: string;
   approval: ModelCardApproval;
   approved_on?: Dayjs | string;
+  applies_to?: {[key: string]: any};
 }
 
 export type ModelCardColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'model_id' |
   'model_version' | 'question' | 'intended_use' | 'inputs' | 'outputs' | 'applicability' | 'performance' |
-  'lineage' | 'supersedes' | 'limitations' | 'owner' | 'approval' | 'approved_on';
+  'lineage' | 'supersedes' | 'limitations' | 'owner' | 'approval' | 'approved_on' | 'applies_to';
 
 /** Expand keys of `portal.model_card` → fields each adds to the row (consumed by query()/builder). */
 export type ModelCardExpand = {

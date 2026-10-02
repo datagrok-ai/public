@@ -94,6 +94,7 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
       lineage: card.lineage ?? null, supersedes: card.supersedes ?? null, limitations: card.limitations ?? null,
       owner: card.owner ?? null, approval: card.approval ?? 'draft',
       approved_on: card.approvedOn ? new Date(card.approvedOn).toISOString() : null,
+      applies_to: card.appliesTo ?? null,
     });
     cards++;
   }

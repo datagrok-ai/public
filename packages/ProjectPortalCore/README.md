@@ -168,6 +168,23 @@ A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
 The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
 with a draft card. The codes carry the `EX-` prefix because unit operations and run types are global.
 
+### Model recommendation
+
+A card may say where its model applies (F-13, FR-51). Every key is optional; a key left out matches anything:
+
+```json
+"appliesTo": {"tasks": ["physchem"], "stages": ["H2L", "LO"], "modalities": ["Small Molecule"],
+  "workUnits": ["series"], "predicts": ["solubility_um"], "rank": 1}
+```
+
+- **Missing assays.** For the gate the program page shows (the next stage, or the stage clicked on the track), each open data condition lists the columns it needs that rows lack: `measured` columns on the rows that pass `where`, and columns compared with a number in `where` on the rows in scope. A column matched against a value or list (`series_maturity in [...]`) classifies a row and is not an assay. A criterion with only a rule in words is listed without a column. With a series, only its rows count.
+- **Suggested models.** Candidates are the models the portfolio's catalogue declares, and any model whose card declares `appliesTo`. A deprecated model or a retired card is never suggested. Each declared key must match: stages (the program's stage or the one it works towards), modality, work-unit kind (the portfolio's, or `series` for a series), and the task when one is asked for. Order: models predicting a missing column, then the more keys matched, then approved, in review, draft, then `rank`, then name.
+- **Program page.** *Missing assays for <stage>* says which rows lack what, and which suggested model predicts it meanwhile. *Suggested models* lists each with why; the name opens its card, **Run** opens its dialog filled in from the program: a dataframe input gets the program dataset (opened as a table), inputs named `program`, `portfolio` or `series` get those codes.
+- `recommendModels(portfolio, program, stage, series, task)` returns one row per suggested model (model, name, rank, predicts, matched, reasons, approval, installed). `missingAssays(portfolio, program, stage, series)` returns one row per missing column.
+
+EX-SMD declares two synthetic models, `SolubilityEstimate` and `HergRisk`: tiny scripts that compute an
+invented number from potency. They exist to show the flow; their cards say so.
+
 ### Program data
 
 Each portfolio declares its program dataset, `programData`: one SQL on a named connection, with
@@ -332,6 +349,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
 | `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program |
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
+| `recommendModels(portfolio, program, stage, series, task)` | Catalogued models that fit the program, best first, a model predicting an assay the gate lacks first |
+| `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
 | `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
@@ -372,13 +391,14 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Auto-advance: the rules (one stage, never past `through`, waivers, recorded criteria, held and unstaged programs, the setting), and on EX-SMD a dry run, a real pass with its gate-log entry and evidence, a sync that advances and its history, and the example put back.
   - Profiles: the rules (normal form, readable diff lines by kind, bundle checks, refusal, a handoff to a loaded portfolio), and on the examples the export of each EX file equal to the file, the functions on an edited EX-SMD, and a bundle dry-run, refused, imported and put back.
   - Attention: the rules (what trips one, severity, messages, the lead set, what a rule needs), and on EX-SMD the flags of EXS-KIN1 and EXS-GPC3, an EX-BIOC lot, the function, the portfolio table's count, and a flagged compound opened.
+  - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
-On a bleeding-edge stand dated 2026-10-02, 180 of the 183 package tests and all 21 BDD scenarios pass.
+On a bleeding-edge stand dated 2026-10-02, 189 of the 192 package tests and all 22 BDD scenarios pass.
 The two isolation tests fail because of a platform gap, not a portal bug:
 - The server refuses `permissions.grant` on a promoted domain row, even from the row's author with Share (`~can_share` true).
 - `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.

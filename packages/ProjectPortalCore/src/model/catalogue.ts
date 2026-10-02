@@ -2,6 +2,8 @@
  * their cards (F-12, FR-50). A portfolio file carries its catalogue under `catalogue`; the loader
  * merges the catalogues of every portfolio it loads. Pure data and pure checks. */
 
+import {ModelApplicability, validateApplicability} from './recommend';
+
 export const APPROVAL_STATES = ['draft', 'in_review', 'approved', 'retired'] as const;
 export type ApprovalState = typeof APPROVAL_STATES[number];
 
@@ -56,6 +58,9 @@ export interface ModelCardConfig {
   approval?: ApprovalState;
   /** ISO date. */
   approvedOn?: string;
+  /** Where the model applies, by key (task, stage, modality, work-unit kind) and the dataset
+   * columns it predicts; what model recommendation reads. Absent: any, within its portfolios. */
+  appliesTo?: ModelApplicability;
 }
 
 export interface ModelConfig {
@@ -145,6 +150,7 @@ export function validateCard(card: ModelCardConfig): string[] {
     errors.push(`card: approvedOn "${card.approvedOn}" is not a date`);
   if (card.supersedes && card.supersedes === card.version)
     errors.push('card: a version cannot supersede itself');
+  errors.push(...validateApplicability(card.appliesTo).map((e) => `card: ${e}`));
   for (const [kind, params] of [['input', card.inputs], ['output', card.outputs]] as const) {
     const names = new Set<string>();
     for (const p of params ?? []) {

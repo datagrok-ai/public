@@ -25,6 +25,7 @@ import {span} from '@datagrok-libraries/u2';
 import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from './auto-advance';
 import {diffPortfolioRefs, exportPortfolioConfig, exportProfileBundle, importProfileBundle} from './profile';
 import {summarizeDiff} from './model/profile';
+import {missingAssayFrame, recommendByCode, recommendationFrame} from './recommend';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
@@ -115,6 +116,31 @@ export async function openProgramData(portfolio: string, program: string, datase
 export async function programAttention(portfolio: string, program: string): Promise<DG.DataFrame> {
   const r = await programAttentionOf(portfolio, program);
   return attentionFrame(r.attention, attentionRulesOf(r.portfolio), `${r.program.code} · Needs attention`);
+}
+
+//name: recommendModels
+//description: Catalogued models that fit a program, best first: keyed on the card's appliesTo (task, stage, modality, work-unit kind; a key left out matches any), models predicting an assay the gate lacks first. Stage defaults to the program's next
+//input: string portfolio
+//input: string program
+//input: string stage {optional: true; description: Stage code whose gate the missing assays come from}
+//input: string series {optional: true; description: Series code: only its rows, and models for series}
+//input: string task {optional: true; description: Only models declaring this task (potency, ADMET, physchem, ...)}
+//output: dataframe result
+export async function recommendModels(portfolio: string, program: string, stage?: string, series?: string,
+  task?: string): Promise<DG.DataFrame> {
+  return recommendationFrame(await recommendByCode(portfolio, program, {stage: stage || undefined,
+    series: series || undefined, task: task || undefined}));
+}
+
+//name: missingAssays
+//description: The measurements a program's gate still lacks: per open data condition and column, the rows (compounds, lots) without it, and the suggested models that predict it. Stage defaults to the program's next
+//input: string portfolio
+//input: string program
+//input: string stage {optional: true; description: Stage code}
+//input: string series {optional: true; description: Series code: only its rows}
+//output: dataframe result
+export async function missingAssays(portfolio: string, program: string, stage?: string, series?: string): Promise<DG.DataFrame> {
+  return missingAssayFrame(await recommendByCode(portfolio, program, {stage: stage || undefined, series: series || undefined}));
 }
 
 //name: loadPortfolios

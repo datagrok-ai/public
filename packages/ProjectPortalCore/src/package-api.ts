@@ -61,6 +61,25 @@ export namespace funcs {
   }
 
   /**
+   * Catalogued models that fit a program, best first: keyed on the card's appliesTo (task, stage, modality, work-unit kind; a key left out matches any), models predicting an assay the gate lacks first. Stage defaults to the program's next
+   * @param {string} stage - Stage code whose gate the missing assays come from
+   * @param {string} series - Series code: only its rows, and models for series
+   * @param {string} task - Only models declaring this task (potency, ADMET, physchem, ...)
+   */
+  export async function recommendModels(portfolio: string , program: string , stage?: string , series?: string , task?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:RecommendModels', { portfolio, program, stage, series, task });
+  }
+
+  /**
+   * The measurements a program's gate still lacks: per open data condition and column, the rows (compounds, lots) without it, and the suggested models that predict it. Stage defaults to the program's next
+   * @param {string} stage - Stage code
+   * @param {string} series - Series code: only its rows
+   */
+  export async function missingAssays(portfolio: string , program: string , stage?: string , series?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:MissingAssays', { portfolio, program, stage, series });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {
