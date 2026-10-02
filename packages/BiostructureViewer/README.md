@@ -1,4 +1,4 @@
-# Biostructure Viewer
+# BiostructureViewer
 
 Biostructure Viewer is a [package](https://datagrok.ai/help/develop/#packages) for
 the [Datagrok](https://datagrok.ai/) platform that enables visualization of biological structures.
@@ -25,7 +25,7 @@ on a cell opens a Biostructure Viewer to explore the structure details.
 
 ## Viewers
 
-Both [Biostructure Viewer](#BiostructureViewer) and [NGL Viewer](#NglViewer) use the same method to obtain
+Both [Biostructure Viewer](#biostructure-viewer) and [NGL Viewer](#ngl-viewer) use the same method to obtain
 a structural data into the viewer from different sources (in order of priority) controlled by
 properties of the 'Data' category:
 
@@ -59,7 +59,7 @@ ball+stick, licorice, hyperball, and surface.
 
 ## File previews and File handlers
 
-Files with handled extensions are previewed and opened with the [Biostructure Viewer](#BiostructureViewer).
+Files with handled extensions are previewed and opened with the [Biostructure Viewer](#biostructure-viewer).
 
 This package implements file viewers for supported file types. This is how it looks in action:
 

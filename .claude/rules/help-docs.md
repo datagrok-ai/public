@@ -5,7 +5,7 @@ paths:
   - docusaurus-static/**
 ---
 
-## Documentation
+# Documentation
 
 `help/` is a submodule of datagrok-ai/help: commit and push doc changes in that repo, never the
 `help` pointer in public (a bot bumps it on every help merge).
