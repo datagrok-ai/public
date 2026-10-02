@@ -181,15 +181,8 @@ async function closeOtherViewers(page: Page) {
   });
 }
 
-async function setOpacity(page: Page, value: string) {
-  await page.evaluate((val) => {
-    const label = Array.from(document.querySelectorAll('.d4-dialog .ui-input-label'))
-      .find((el) => el.textContent?.trim() === 'Opacity');
-    const o = label?.parentElement?.querySelector('input') as HTMLInputElement | null;
-    if (!o) throw new Error('Opacity input not found');
-    o.value = val; o.dispatchEvent(new Event('input', {bubbles: true}));
-  }, value);
-}
+/** The alpha (0..255) of an ARGB color stored in a region. */
+const alphaOf = (c: number): number => (c >>> 24) & 0xff;
 
 async function fillHeaderColor(page: Page, color: string) {
   const hc = page.locator('[name="input-host-Header-Color"], [name="input-host-Color"]').locator('input').first();
@@ -266,12 +259,11 @@ test('Annotation regions scenario', async ({page}) => {
     await awaitFormulaDialog(page);
     await page.locator('[name="input-host-Title"] input').fill('My Rect Region');
     await page.locator('[name="input-host-Description"] textarea').fill('Rectangle description');
-    await page.locator('[name="input-host-Region-Color"] input').fill('#ff8800');
+    await page.locator('[name="input-host-Region-Color"] input').fill('#ff880099');
     await page.locator('[name="input-host-Outline-Color"] input').fill('#003366');
 
     await page.locator('[name="input-host-Width"] input').fill('3');
     await page.locator('[name="input-host-Width"] input').press('Tab');
-    await setOpacity(page, '60');
     await fillHeaderColor(page, '#ffffff');
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
@@ -279,7 +271,8 @@ test('Annotation regions scenario', async ({page}) => {
     expect(region.header).toBe('My Rect Region');
     expect(region.description).toBe('Rectangle description');
     expect(region.outlineWidth).toBe(3);
-    expect(region.opacity).toBe(60);
+    expect(alphaOf(region.fillColor)).toBe(0x99);
+    expect(region.opacity).toBeUndefined();
   });
 
   await softStep('1.2 Draw Lasso (polygon) region', async () => {
@@ -378,7 +371,7 @@ test('Annotation regions scenario', async ({page}) => {
       console.warn('[4.1] AMBIGUOUS — cursor likely missed the region (worldToScreen unavailable)');
   });
 
-  await softStep('4.2 Modify region via dialog: reopen and edit Outline Width / Opacity / Header Color', async () => {
+  await softStep('4.2 Modify region via dialog: reopen and edit Outline Width / Region Color alpha / Header Color', async () => {
     await rightClick(page, 'Scatter plot');
     await clickMenuItem(page, 'Formula Lines...');
     await awaitFormulaDialog(page);
@@ -390,13 +383,14 @@ test('Annotation regions scenario', async ({page}) => {
 
     await page.locator('.d4-dialog [name="input-host-Width"] input').fill('5');
     await page.locator('.d4-dialog [name="input-host-Width"] input').press('Tab');
-    await setOpacity(page, '40');
+    await page.locator('.d4-dialog [name="input-host-Region-Color"] input').fill('#00aa0066');
     await fillHeaderColor(page, '#ff0000');
     await page.locator('.d4-dialog [name="button-OK"]').click();
 
     const region = (await regions(page, 'Scatter plot'))[0];
     expect(region.outlineWidth).toBe(5);
-    expect(region.opacity).toBe(40);
+    expect(alphaOf(region.fillColor)).toBe(0x66);
+    expect(region.opacity).toBeUndefined();
   });
 
   await softStep('5.1 Preview / 5.2 Grid representation', async () => {
