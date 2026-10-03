@@ -165,7 +165,7 @@ A portfolio file declares its model catalogue under `catalogue` (F-12, FR-50):
 - **Loaded with the portfolios, idempotently.** Rows are matched by code. A model's portfolios and unit operations only grow, so loading one portfolio never drops another's claim. Runs saved before the model was catalogued are linked to it.
 - **One card per model version** (`model_card`); `model.current_version` names the current one, and older cards stay as lineage.
 - **The card is written around the question** (PORT-41): question, intended use, inputs with their validity range, outputs, applicability, performance, lineage, limitations, owner, approval (`draft`, `in_review`, `approved`, `retired`). Inputs and outputs the card does not list come from the function's signature; a listed one takes what it leaves out (caption, units) from the function.
-- **Where it shows.** The program page lists the program's saved runs; a run's model opens its card. `modelCard(model)` returns the card as a widget.
+- **Where it shows.** The program page lists the program's saved runs; a run's model opens its card. `modelCard(model)` returns the card as a widget. In the Workspace tab on Home, a pinned model shows its card beside its own preview: Power Pack shows the widgets of functions with `meta.role: workspaceModelPanel`, and `workspaceModelCard(model)` is one (nothing for a function the catalogue does not list). This needs a Power Pack with that role (after 1.8.3).
 - A package with a catalogue but no portfolio hands it over with `loadModelCatalogue(catalogue, portfolio)`.
 
 The example catalogue (EX-BIOC) declares five unit operations, three run types and `FedBatchTiter`
@@ -592,6 +592,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `saveModelRun(call, portfolio, program, unitOperation, runType, purpose, title, folder)` | Annotates, saves and links a run into the program's workspace, and records it as a `model_run` |
 | `saveRunToProgram(call)` | Opens the save-to-program dialog for a run |
 | `modelCard(model)` | The card of a catalogued model (by function nqName), as a widget |
+| `workspaceModelCard(model)` | The card beside a model's preview in the Workspace tab on Home (`meta.role: workspaceModelPanel`); nothing for an uncatalogued function |
 | `loadModelCatalogue(catalogue, portfolio)` | Loads a catalogue handed over without a portfolio file, checked first. Idempotent |
 | `buildAllWorkspaces` | Builds the workspace of every portfolio that declares a `workspaceRoot` |
 
@@ -628,7 +629,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
-  - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, and a run saved with the catalogue's codes.
+  - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`.
 
@@ -662,7 +663,8 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
    `grok.dapi.projects.find(id).links`.
 8. **A panel that takes a function is not offered for one.** A `meta.role: panel` function whose input is a `func`
    (or an `object`), with a condition that holds, does not appear in the context panel of a model script. The
-   model card is therefore reached from the program page and through `modelCard(model)`, not as an info panel.
+   model card is therefore reached from the program page, through `modelCard(model)` and in the Workspace tab on
+   Home (`workspaceModelCard`, a Power Pack role), not as an info panel.
 9. **A package cannot schedule its own functions.** The server's scheduler (`#schedule:` with an optional
    `#schedule.runAs:` group) runs only server-side scripts and queries, and the JS API has no way to create a
    schedule. A package's JavaScript function does not run headless either. So `syncDuePortfolios` exists but is not

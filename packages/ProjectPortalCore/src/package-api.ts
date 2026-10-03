@@ -348,6 +348,13 @@ export namespace funcs {
   }
 
   /**
+   * The model card beside a model's preview in the Workspace tab on Home: approval, portfolios, question, inputs and outputs. Nothing for a function the portal's catalogue does not list
+   */
+  export async function workspaceModelCard(model: any ): Promise<any> {
+    return await grok.functions.call('ProjectPortalCore:WorkspaceModelCard', { model });
+  }
+
+  /**
    * Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
    */
   export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {

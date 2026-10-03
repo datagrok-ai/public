@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Model card in the Workspace on Home: `workspaceModelCard(model)` (`meta.role: workspaceModelPanel`) returns the card of a catalogued model, found by its function's nqName, and nothing for another function. Power Pack's Workspace tab shows it beside the model's own preview: approval, portfolios, question, inputs with their validity range, outputs
+
 - Pinned programs: pinning a program pins its workspace folder, as a platform favorite (the user's, or a group's by a portfolio approver); nothing is stored in the portal, so a pin made in the Workspace or with the star is the same pin. Program page: **Pin to my Workspace** / **Unpin**, **Pin for <viewers>** and **Build its folder** for approvers; a program without a folder says why it cannot be pinned. Board cards say *pinned*; the portfolio table has a `pinned` column
 - Home widget **My programs** (`myProgramsWidget`, `meta.role: dashboard`): a tile per pinned program across portfolios with stage on its track, status, next-gate readiness, attention and unseen new data; a click opens the program. Read in a few batched calls, readiness and attention from the portfolio table's facts. Functions `pinProgram`, `unpinProgram`, `pinnedPrograms`. Pure rules in `src/model/pinning.ts`
 - The app's address now names the program: `/apps/ProjectPortalCore/Portal/<portfolio>/<program>` opens its page

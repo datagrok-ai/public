@@ -102,6 +102,20 @@ export async function modelCardWidget(code: string): Promise<DG.Widget> {
     named(span(`${code} is not in the portal's model catalogue`, 'pp-muted'), 'model-card-missing'));
 }
 
+/** The card beside a model's preview in the Workspace tab on Home (PowerPack's `workspaceModelPanel` role):
+ * the card of the catalogued model [func] is, by its nqName; null for a function the catalogue does not list. */
+export async function workspaceModelCardWidget(func: DG.Func): Promise<DG.Widget | null> {
+  const codes = [...new Set([func.nqName, func.package ? `${func.package.name}:${func.name}` : ''].filter((c) => c))];
+  for (const code of codes) {
+    const v = await modelCardOf(code);
+    if (v) {
+      installStyles();
+      return DG.Widget.fromRoot(named(divV([modelCardElement(v)]), 'workspace-model-card'));
+    }
+  }
+  return null;
+}
+
 /** Opens the card of [code] in a dialog. */
 export async function showModelCard(code: string): Promise<void> {
   try {

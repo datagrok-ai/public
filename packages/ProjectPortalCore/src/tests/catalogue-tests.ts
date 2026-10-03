@@ -7,7 +7,7 @@ import {
   cardMismatches, cardParams, mergeCatalogues, ModelCatalogueConfig, outsideValidity, unionCodes, validateCatalogue,
 } from '../model/catalogue';
 import {modelCardOf} from '../catalogue';
-import {modelCardElement} from '../views/model-card';
+import {modelCardElement, workspaceModelCardWidget} from '../views/model-card';
 import {saveModelRun, savedRunsOf} from '../model-runs';
 import {_package} from '../package-test';
 
@@ -130,6 +130,20 @@ category('Portal: model catalogue', () => {
     expect(el.querySelector('[data-u2-name="model-card-input-feedrate"]')?.textContent?.includes('0 – 6'), true);
     expect(el.querySelector('[data-u2-name="model-card-approval"]')?.textContent, 'draft');
   });
+
+  test('the Workspace on Home shows a catalogued model\'s card beside its preview, nothing for another function',
+    async () => {
+      const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+      const panel = DG.Func.find({package: 'ProjectPortalCore', meta: {role: 'workspaceModelPanel'}});
+      expect(panel.map((x) => x.name).join(), 'workspaceModelCard', 'found by its role, as PowerPack finds it');
+      const w: DG.Widget | null = await panel[0].apply({model: f});
+      const root = w?.root;
+      expect(root?.querySelector('[data-u2-name="model-card-approval"]')?.textContent, 'draft');
+      expect(root?.querySelector('[data-u2-name="model-card-facts"]')?.textContent?.includes('EX-BIOC'), true,
+        'the portfolios it belongs to');
+      const other = DG.Func.find({package: 'ProjectPortalCore', name: 'pinnedPrograms'})[0];
+      expect(await workspaceModelCardWidget(other), null, 'a function the catalogue does not list');
+    });
 
   test('a run saved with the example catalogue\'s codes resolves its model, unit operation and run type', async () => {
     const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];

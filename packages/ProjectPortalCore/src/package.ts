@@ -14,7 +14,7 @@ import {portfolioTables} from './portfolio-table';
 import {saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
 import {RunPurpose} from './model/model-runs';
 import {loadCatalogues} from './catalogue';
-import {modelCardWidget} from './views/model-card';
+import {modelCardWidget, workspaceModelCardWidget} from './views/model-card';
 import {openSaveRunDialog} from './views/save-run-dialog';
 import {trackModelRuns} from './save-run';
 import {openProgramTable, programTable} from './program-data';
@@ -537,6 +537,16 @@ export async function loadModelCatalogue(catalogue: string, portfolio?: string):
 export async function modelCard(model: string): Promise<DG.Widget> {
   installStyles();
   return modelCardWidget(model);
+}
+
+//name: workspaceModelCard
+//friendlyName: Model card
+//description: The model card beside a model's preview in the Workspace tab on Home: approval, portfolios, question, inputs and outputs. Nothing for a function the portal's catalogue does not list
+//input: func model
+//output: widget result
+//meta.role: workspaceModelPanel
+export async function workspaceModelCard(model: DG.Func): Promise<DG.Widget | null> {
+  return workspaceModelCardWidget(model);
 }
 
 /** Programs first, so work units find the programs they hang under. A real sync is recorded in the

@@ -421,3 +421,34 @@ export const openHome = When('user opens Home', async (page: Page) => {
   });
   await page.locator('[data-u2-name="my-programs"]').waitFor({timeout: 60000});
 }, {tier: 'ui', description: 'the platform\'s Home view with its widgets'});
+
+export const modelPinned = Given('the user has pinned the {string} model',
+  async (page: Page, model: string) => {
+    silent(page);   // set-up a person does not do: kept out of guide videos
+    const pin = (set: boolean | null) => page.evaluate(async ([m, s]) => {
+      const [pkg, name] = m.split(':');
+      const f = DG.Func.find({package: pkg, name})[0];
+      const on = (await grok.dapi.entities.getFavorites(DG.User.current().group)).some((e: any) => e.id === f.id);
+      if (s !== null && s !== on)
+        await (s ? DG.Favorites.add(f) : DG.Favorites.remove(f));
+      return on;
+    }, [model, set] as [string, boolean | null]);
+    const was = await pin(true);
+    // the user's favorites end as they were found
+    atFeatureEnd(page, async () => {
+      await pin(was);
+    });
+  }, {tier: 'api', description: 'adds the model function to the user\'s own favorites; at the end of the feature, puts back what was there'});
+
+export const selectInWorkspace = When('user selects the {string} model in the Workspace on Home',
+  async (page: Page, model: string) => {
+    const id = await page.evaluate((m) => {
+      const [pkg, name] = m.split(':');
+      return DG.Func.find({package: pkg, name})[0].id;
+    }, model);
+    // Home builds its Workspace once, so it is opened afresh to list the pin just made
+    await page.goto('/', {waitUntil: 'domcontentloaded'});
+    await page.locator('.d4-tab-header', {hasText: /^Workspace$/}).first().click({timeout: 120000});
+    const row = page.locator(`.pp-workspace-item[data-entity-id="${id}"]`).first();
+    await row.click({timeout: 60000});
+  }, {tier: 'ui', description: 'Home, its Spotlight widget\'s Workspace tab, the model\'s row (PowerPack addresses the rows by entity id)'});
