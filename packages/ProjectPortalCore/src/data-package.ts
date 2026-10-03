@@ -10,7 +10,7 @@ import {savedRunsOf} from './model-runs';
 import {snapshotsOf} from './snapshots';
 import {datasetsOf} from './program-data';
 import {generatedOf} from './evidence-tables';
-import {userNames} from './approvals';
+import {userNames} from './users';
 import {EvidenceCheck} from './model/evidence-tables';
 import {buildManifest, MANIFEST_COLUMNS, manifestCell, ManifestLine} from './model/data-package';
 import {filterValue, ROW_LIMIT} from './rows';
@@ -40,8 +40,8 @@ export async function dataPackageOf(programId: string): Promise<DataPackage> {
     if (c)
       selectedFor.set(a.model_run_id, [...selectedFor.get(a.model_run_id) ?? [], c]);
   }
-  const names = await userNames([...documents.flatMap((d) => [d.linked_by, d.approved_by]),
-    ...runs.map((r) => r.run.run_author ?? r.run.author_id), ...snapshots.map((s) => s.taken_by)]).catch(() => new Map());
+  const names = await userNames([...documents.flatMap((d) => [d.linked_by, d.approved_by, d.written_by]),
+    ...runs.map((r) => r.run.run_author ?? r.run.author_id), ...snapshots.map((s) => s.taken_by)]);
   const lines = buildManifest({
     stages: ctx.stages.map((s) => ({id: s.id, code: s.code, ordinal: s.ordinal})),
     stageId: ctx.program.stage_id ?? null,

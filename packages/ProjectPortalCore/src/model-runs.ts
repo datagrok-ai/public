@@ -20,6 +20,7 @@ import {findSubfolder} from './workspace';
 import {RUN_OPTIONS, RunPurpose, runFolderPath, runOptions} from './model/model-runs';
 import {programFolderName} from './model/workspace-plan';
 import {filterValue, ROW_LIMIT} from './rows';
+import {userNames} from './users';
 
 export interface SaveModelRunOptions {
   /** Unit operation code (`unit_operation` catalogue). */
@@ -316,9 +317,7 @@ export async function criterionRuns(programId: string, criterionId: string): Pro
     {filter: `program_id = ${filterValue(programId)} and gate_criterion_id = ${filterValue(criterionId)}`}))[0];
   const artifacts = status ? await portalDb.criterionArtifacts.query({filter: `criterion_status_id = ${filterValue(status.id)}`, limit: ROW_LIMIT}) : [];
   const titles = new Map(items.map((i) => [i.run.id, i.run.title ?? i.run.run_id ?? i.run.model_name]));
-  const users = new Map<string, string>();
-  for (const id of new Set(artifacts.map((a) => a.selected_by).filter((x): x is string => !!x)))
-    users.set(id, (await grok.dapi.users.find(id).catch(() => null))?.friendlyName ?? '');
+  const users = await userNames(artifacts.map((x) => x.selected_by));
   const entries: SelectionEntry[] = artifacts.map((a) => ({runTitle: titles.get(a.model_run_id) ?? a.model_run_id,
     role: a.role, selectedOn: a.selected_on ? dayjs(a.selected_on as any).toISOString() : null,
     selectedBy: a.selected_by ? users.get(a.selected_by) || null : null, rationale: a.rationale ?? null}));

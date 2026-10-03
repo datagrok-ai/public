@@ -7,6 +7,7 @@ import {loadAllPortfolios, portfolioByCode, programContext} from '../portal';
 import {loadExampleDocuments} from '../documents';
 import {saveModelRun} from '../model-runs';
 import {dataPackageOf} from '../data-package';
+import {cachedUserNames, clearUserNames, userNames} from '../users';
 import {openDataPackageDialog} from '../views/data-package-dialog';
 import {filterValue, ROW_LIMIT} from '../rows';
 import {_package} from '../package-test';
@@ -63,6 +64,13 @@ category('Portal: data package rules', () => {
     expect(lines.find((l) => l.section === 'dataset')!.source, 'System:Datagrok');
     expect(summarizeManifest(lines), '2 criteria · 1 document · 1 evidence table · 2 runs · 1 dataset · 1 snapshot');
     expect(summarizeManifest([]), 'Nothing recorded yet');
+  });
+
+  test('who wrote a document: the name, or the id when the user cannot be read', async () => {
+    const docs = (writtenBy: string) => buildManifest(input({documents: [{id: 'd1', title: 'R', kind: 'development_report',
+      status: 'draft', path: 'S:/r.md', writtenBy}]})).find((l) => l.section === 'document')!;
+    expect(docs('u1').source, 'development report · written by Ann');
+    expect(docs('u9').source, 'development report · written by u9');
   });
 
   test('CSV: a header, a line each, quoted where needed; the file name', async () => {
@@ -137,6 +145,29 @@ category('Portal: data package', () => {
     expect(run.source, 'Fed-batch titer (example) · Production bioreactor · Simulated · characterization');
     expect(run.by, DG.User.current().friendlyName);
     expect(p.lines.filter((l) => l.section === 'criterion').every((l) => ['D1', 'D2', 'D3', 'D4', 'D5', 'D6'].includes(l.stage!)), true);
+  });
+
+  test('user names: read once per id, the id when the user cannot be read', async () => {
+    clearUserNames();
+    const me = DG.User.current();
+    const missing = '00000000-0000-0000-0000-00000000dead';
+    const names = await userNames([me.id, me.id, null, undefined, missing]);
+    expect(names.size, 2);
+    expect(names.get(me.id), me.friendlyName || me.login);
+    expect(names.get(missing), missing);
+    expect(cachedUserNames() >= 1, true);
+    expect((await userNames([me.id])).get(me.id), names.get(me.id), 'from the cache');
+  });
+
+  test('a document written here shows its author by name, not by id', async () => {
+    const [d] = await portalDb.documents.insert({program_id: programId, path: `System:AppData/ProjectPortalCore/${code}.md`,
+      title: 'Author test', kind: 'other', status: 'draft', doc_version: '1', written_by: DG.User.current().id,
+      linked_by: DG.User.current().id});
+    undo.push(() => portalDb.documents.delete(d.id));
+    const line = (await dataPackageOf(programId)).lines.find((l) => l.section === 'document' && l.name === 'Author test')!;
+    const me = DG.User.current();
+    expect(line.source!.endsWith(`written by ${me.friendlyName || me.login}`), true, line.source!);
+    expect(line.by, me.friendlyName || me.login);
   });
 
   test('the functions: a table and CSV of the same lines', async () => {

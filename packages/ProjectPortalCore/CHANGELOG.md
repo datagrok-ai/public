@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Names instead of user ids: the data package showed a document's author ("written by") as a raw id. Every view that says who did something now reads names through one lookup (`src/users.ts`): one read per distinct id, all at once, kept for the session; a user that cannot be read shows its id and is asked again next time. Used by the data package, activity feed, approvals, observations, run selections, the gate's suggested evidence, snapshots and the sync history
+
 - Write permissions on portal tables, enforced by the server: `program_role` and `parked_folder` take writes only from the portfolios' approvers groups, `approval_request` only from their contributors groups (approvers nested). Before, every user could write them from the console and so make themselves a program approver; the app's checks run in the browser and are not enforcement. Loading a portfolio grants its groups Edit and takes All users' Edit and Delete away (a redeploy never revokes a grant); `securePortalTables(dryRun)` does it for every portfolio. Needs Share on the tables (admins); without it the load report says so. Proved with a throwaway restricted user. Still open: `follow` stays writable by all (the server refuses a security-mode change), and grants are per table, not per portfolio or row. Pure rules in `src/model/write-grants.ts`
 - `portal` schema 0.2.31: `program_role`, `approval_request`, `parked_folder` declare View for All users (was View and Edit). Metadata only, no migration script
 

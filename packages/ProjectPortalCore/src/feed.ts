@@ -15,6 +15,7 @@ import {myFollowsAll} from './new-data';
 import {reviewsOf} from './model/approvals';
 import {newestFirstBy} from './model/time';
 import {filterValue, ROW_LIMIT} from './rows';
+import {userNames} from './users';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
 const inList = (ids: string[]) => ids.map(filterValue).join(', ');
@@ -184,10 +185,8 @@ export async function myFeedOf(filter: FeedFilter = {}): Promise<{entries: FeedE
 }
 
 /** Display names of the users in [entries], by id; a user that cannot be read keeps the id. */
-export async function feedUserNames(entries: FeedEntry[]): Promise<Map<string, string>> {
-  const ids = [...new Set(entries.map((e) => e.who).filter((x): x is string => !!x))];
-  const names = await Promise.all(ids.map((id) => grok.dapi.users.find(id).then((u) => u.friendlyName || u.login).catch(() => id)));
-  return new Map(ids.map((id, i) => [id, names[i]]));
+export function feedUserNames(entries: FeedEntry[]): Promise<Map<string, string>> {
+  return userNames(entries.map((e) => e.who));
 }
 
 /** The feed as a table: the stable contract of programFeed and myFeed. */

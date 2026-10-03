@@ -1,7 +1,6 @@
 /** A portfolio's sync history: its schedule, its owners, and each run with what it changed, newest
  * first. Opened from the board's Sync history button; `syncHistory(portfolio)` returns the runs as a
  * table. */
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
@@ -11,6 +10,7 @@ import {describeChange, describeSchedule, ProgramChange} from '../model/sync-run
 import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from '../auto-advance';
 import {describeAutoAdvanceConfig} from '../model/auto-advance';
 import {stagesOf} from '../portal';
+import {userNames} from '../users';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -22,21 +22,10 @@ const utc = (v: any): string => {
   return Number.isNaN(t) ? '' : `${new Date(t).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 };
 
-async function userNames(runs: SyncRunRow[]): Promise<Map<string, string>> {
-  const ids = [...new Set(runs.map((r) => r.run_by).filter((x): x is string => !!x))];
-  const out = new Map<string, string>();
-  for (const id of ids) {
-    const u = await grok.dapi.users.find(id).catch(() => null);
-    if (u)
-      out.set(id, u.friendlyName || u.login);
-  }
-  return out;
-}
-
 /** The runs of [portfolio] as a table, newest first. */
 export async function syncHistoryFrame(portfolio: PortfolioRow, limit = 200): Promise<DG.DataFrame> {
   const runs = await syncRunsOf(portfolio, limit);
-  const names = await userNames(runs);
+  const names = await userNames(runs.map((r) => r.run_by));
   const S = DG.COLUMN_TYPE.STRING;
   const I = DG.COLUMN_TYPE.INT;
   const time = (v: any) => v === null || v === undefined ? null : new Date(typeof v === 'string' ? v : Number(v.valueOf()));
@@ -64,7 +53,7 @@ const programChanges = (r: SyncRunRow): ProgramChange[] => (r.changes as {progra
 export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Promise<HTMLElement> {
   const state = await dueState(portfolio);
   const runs = await syncRunsOf(portfolio, limit);
-  const names = await userNames(runs);
+  const names = await userNames(runs.map((r) => r.run_by));
   const schedule = state.schedule ?
     `Scheduled: ${describeSchedule(state.schedule)} · next ${state.due ? 'due now' : utc(state.next)}` :
     state.scheduleError ? `Schedule "${portfolio.schedule}" cannot be read: ${state.scheduleError}` :

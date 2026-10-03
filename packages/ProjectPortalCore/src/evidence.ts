@@ -20,6 +20,7 @@ import {documentsOf, toRef} from './documents';
 import {documentEvidence} from './model/documents';
 import {newestFirstBy} from './model/time';
 import {filterValue, ROW_LIMIT} from './rows';
+import {userNames} from './users';
 
 const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 
@@ -35,9 +36,7 @@ export async function selectedRunsOf(programId: string): Promise<SelectedRun[]> 
   ]);
   const criteria = await portalDb.gateCriterions.query(
     {filter: `id in (${inList([...new Set(statuses.map((s) => s.gate_criterion_id))])})`});
-  const users = new Map<string, string>();
-  for (const id of new Set(picks.map((p) => p.selected_by).filter((x): x is string => !!x)))
-    users.set(id, (await grok.dapi.users.find(id).catch(() => null))?.friendlyName ?? '');
+  const users = await userNames(picks.map((x) => x.selected_by));
   const out: SelectedRun[] = [];
   for (const p of picks) {
     const status = statuses.find((s) => s.id === p.criterion_status_id);

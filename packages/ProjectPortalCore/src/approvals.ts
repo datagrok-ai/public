@@ -28,6 +28,10 @@ import {
   RequestKind, RequestRef, requestNotice, Review, reviewsOf, ReviewVerdict, statusAfter, waitingFor,
 } from './model/approvals';
 import {newestFirstBy, oldestFirstBy} from './model/time';
+import {userNames} from './users';
+
+// the views and functions that list requests read names from here too
+export {userNames};
 import {filterValue, ROW_LIMIT} from './rows';
 
 export const requestRef = (r: ApprovalRequestRow): RequestRef => ({id: r.id, kind: r.kind as RequestKind,
@@ -332,14 +336,6 @@ export async function waitingForMe(): Promise<ApprovalRequestRow[]> {
   const ids = new Set(waitingFor(pending.map(requestRef), me, (r) => allowed.has(r.id)).map((r) => r.id));
   return pending.filter((r) => ids.has(r.id))
     .sort(oldestFirstBy((x) => x.proposed_on ?? x.created_on));
-}
-
-/** The names of the users behind [ids], by id. */
-export async function userNames(ids: (string | null | undefined)[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  for (const id of new Set(ids.filter((x): x is string => !!x)))
-    out.set(id, (await grok.dapi.users.find(id).catch(() => null))?.friendlyName ?? id);
-  return out;
 }
 
 /** `advance to Lead Generation · proposed by Ann 2026-10-02 · 0 of 1 approvals` */

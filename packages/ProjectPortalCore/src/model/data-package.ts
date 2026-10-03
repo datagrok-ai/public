@@ -95,7 +95,7 @@ export function buildManifest(x: ManifestInput): ManifestLine[] {
       stage: null, criterion: d.criterionId ? criterionCode.get(d.criterionId) ?? null : null,
       status: g?.state === 'stale' ? `${d.status}, evidence changed` : d.status, version: d.version ?? null,
       source: g ? `generated from ${g.sources.length ? [...new Set(g.sources)].join(', ') : 'nothing recorded'}` :
-        `${d.kind.replace(/_/g, ' ')}${d.writtenBy ? ` · written by ${d.writtenBy}` : ''}`,
+        `${d.kind.replace(/_/g, ' ')}${d.writtenBy ? ` · written by ${name(d.writtenBy)}` : ''}`,
       by: name(d.approvedBy ?? d.linkedBy), on: day(d.approvedOn ?? d.linkedOn), ref: d.path});
   }
   for (const r of x.runs) {

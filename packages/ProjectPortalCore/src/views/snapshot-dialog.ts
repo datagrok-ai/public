@@ -9,6 +9,7 @@ import {portalDb, ProgramSnapshotRow} from '../generated/db';
 import {frozenCriteria, frozenRuns, snapshotTable, summaryOf} from '../snapshots';
 import {describeSnapshot, snapshotDate} from '../model/snapshots';
 import {installStyles} from './styles';
+import {userNames} from '../users';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -54,7 +55,7 @@ export async function openSnapshotDialog(snapshotId: string): Promise<DG.Dialog>
   installStyles();
   const s = await portalDb.programSnapshots.get(snapshotId);
   const program = await portalDb.programs.get(s.program_id).catch(() => null);
-  const by = s.taken_by ? (await grok.dapi.users.find(s.taken_by).catch(() => null))?.friendlyName ?? '' : '';
+  const by = s.taken_by ? (await userNames([s.taken_by])).get(s.taken_by)! : '';
   const summary = summaryOf(s);
   const {check} = s.table_file ? await snapshotTable(s).catch(() => ({check: 'missing' as const})) : {check: 'not kept' as const};
   const criteria = frozenCriteria(s);
