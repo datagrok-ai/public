@@ -1,20 +1,21 @@
 /** Activity feed (F-21, FR-81): what happened to a program, assembled from the portal's own records
  * rather than a separate event store. Each record kind already says who did what and when: the gate
  * log, evidence, saved and selected runs, documents, snapshots, compound role changes, the sync
- * history (registry and work-unit changes, new data) and the follows' last news. Pure: the caller
+ * history (registry and work-unit changes, new data), the follows' last news, program roles and the
+ * approved cards of the models the program used. Pure: the caller
  * reads the records; this turns them into entries, merges, filters and pages them. */
 import type {ProgramChange} from './sync-runs';
 
 export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'prediction' | 'document' | 'snapshot' |
-  'compound' | 'work_unit' | 'registry' | 'new_data';
+  'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card';
 
 export const FEED_KINDS: FeedKind[] = ['decision', 'evidence', 'run', 'selection', 'prediction', 'document', 'snapshot', 'compound',
-  'work_unit', 'registry', 'new_data'];
+  'work_unit', 'registry', 'new_data', 'role', 'model_card'];
 
 export const FEED_KIND_LABELS: Record<FeedKind, string> = {
   decision: 'Gate decisions', evidence: 'Evidence', run: 'Runs saved', selection: 'Runs selected',
   prediction: 'Predictions', document: 'Documents', snapshot: 'Snapshots', compound: 'Compound roles',
-  work_unit: 'Work units', registry: 'Registry', new_data: 'New data',
+  work_unit: 'Work units', registry: 'Registry', new_data: 'New data', role: 'Program roles', model_card: 'Model cards',
 };
 
 /** The record an entry opens, by the kinds provenance starts from. */
@@ -65,6 +66,11 @@ export interface FeedRecords {
   syncs: {id: string, on: When, by: string | null, change: ProgramChange | null, newData: string[]}[];
   /** The follows' last news about the program, with when it was told. */
   news: {id: string, line: string, on: When}[];
+  /** Program roles (F-16) as they stand: the latest grant or removal per group, with who and when.
+   * The table keeps no history, so an earlier role of the same group is not an entry. */
+  programRoles?: {id: string, group: string, role: string, active: boolean, by: string | null, on: When}[];
+  /** Approved cards of the models the program's runs and predictions used (F-30): who approved, when. */
+  modelCards?: {id: string, model: string, version: string, by: string | null, on: When}[];
 }
 
 /** Evidence attached this close to its decision belongs to the decision; later, it is an entry. */
@@ -135,6 +141,14 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
   }
   for (const s of r.snapshots)
     push({key: `snapshot:${s.id}`, at: s.on, kind: 'snapshot', who: s.by, text: `Snapshot taken: ${s.label}`, ref: {kind: 'snapshot', id: s.id}});
+  for (const g of r.programRoles ?? []) {
+    push({key: `program-role:${g.id}:${g.on}`, at: g.on, kind: 'role', who: g.by,
+      text: g.active ? `Program role: ${g.group} is ${g.role}` : `Program role removed: ${g.group}`});
+  }
+  for (const c of r.modelCards ?? []) {
+    push({key: `model-card:${c.id}`, at: c.on, kind: 'model_card', who: c.by,
+      text: `Model card approved: ${c.model} ${c.version}`});
+  }
   for (const c of r.roleChanges) {
     push({key: `role:${c.id}`, at: c.on, kind: 'compound', who: c.by, compounds: [c.compound],
       text: `${c.compound}: ${c.from ?? 'new'} → ${c.to}`});

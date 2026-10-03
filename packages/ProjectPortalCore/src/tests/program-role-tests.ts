@@ -99,6 +99,9 @@ category('Portal: program roles', () => {
       }
       expect(`${await access()} ${await grantOf()}`, 'null false false none');
       expect(await seesFolder(), false, 'the folder is no longer shared');
+      // the throwaway user's row, inactive now, would stay on EXS-KIN1 (and in its activity feed) for good
+      for (const r of await portalDb.programRoles.query({filter: `program_id = "${kin1.id}" and group_id = "${user.group}"`}))
+        await portalDb.programRoles.delete(r.id).catch(() => undefined);
       return true;
     });
     if (ran === null)

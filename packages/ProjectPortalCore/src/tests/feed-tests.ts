@@ -59,6 +59,19 @@ category('Portal: feed rules', () => {
     expect(describeEntry(e[0], 'Ann', true), '2026-09-05 06:00 · P1 · New data: P1: 1 new row · Ann');
   });
 
+  test('program roles and approved model cards are entries; a removed role says so', async () => {
+    const e = programFeedEntries({...records(),
+      programRoles: [{id: 'r1', group: 'Chem team', role: 'contributor', active: true, by: 'u1', on: '2026-09-06T08:00:00Z'},
+        {id: 'r2', group: 'Ann', role: 'approver', active: false, by: 'u1', on: '2026-09-06T09:00:00Z'}],
+      modelCards: [{id: 'c1', model: 'Solubility estimate', version: '1.0', by: 'u2', on: '2026-09-07T08:00:00Z'},
+        {id: 'c2', model: 'Old model', version: '0.1', by: null, on: null}]});
+    expect(e.filter((x) => x.kind === 'role').map((x) => x.text).sort().join(' | '),
+      'Program role removed: Ann | Program role: Chem team is contributor');
+    expect(e.filter((x) => x.kind === 'model_card').map((x) => `${x.text} · ${x.who}`).join(),
+      'Model card approved: Solubility estimate 1.0 · u2', 'a card with no approval date is not an entry');
+    expect(parseKinds('role, model_card').join(), 'role,model_card');
+  });
+
   test('a series narrows to its work units, its news and its compounds; kinds filter; pages', async () => {
     const e = mergeFeeds(programFeedEntries(records()));
     const a = filterFeed(e, {series: 'A', seriesCompounds: ['C-2']});
@@ -128,6 +141,29 @@ category('Portal: activity feed', () => {
     const mine = await myFeedOf();
     expect(mine.entries.filter((x) => x.program === 'EXS-KIN1').every((x) => x.unit === 'series KIN-A' ||
       (x.compounds ?? []).some((c) => c.startsWith('EXC-10'))), true, 'only the series');
+  });
+
+  test('a program role given on the program is in its feed, with who gave it', async () => {
+    const me = DG.User.current();
+    const stamp = {granted_by: me.id, granted_on: new Date().toISOString() as any};
+    // one row per program and group: the user's own may be there already (inactive), and is put back
+    const before = (await portalDb.programRoles.query({filter: `program_id = "${kin1.id}" and group_id = "${me.group.id}"`}))[0];
+    const id = before ? before.id : (await portalDb.programRoles.insert({program_id: kin1.id, group_id: me.group.id, role: 'viewer',
+      active: true, ...stamp}))[0].id;
+    try {
+      if (before)
+        await portalDb.programRoles.update(id, {role: 'viewer', active: true, ...stamp});
+      const feed = await programFeedOf(smd, kin1, {kinds: ['role']});
+      const entry = feed.find((x) => x.key.startsWith(`program-role:${id}:`));
+      expect(entry?.text.endsWith(' is viewer'), true, feed.map((x) => x.text).join('; '));
+      expect(entry?.who, me.id);
+    } finally {
+      if (before) {
+        await portalDb.programRoles.update(id, {role: before.role, active: before.active, granted_by: before.granted_by,
+          granted_on: before.granted_on}).catch(() => undefined);
+      } else
+        await portalDb.programRoles.delete(id).catch(() => undefined);
+    }
   });
 
   test('programFeed and myFeed return the feed as a table; kinds filter it', async () => {

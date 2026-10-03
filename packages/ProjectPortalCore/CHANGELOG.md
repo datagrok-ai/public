@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Activity feed: program roles (kind `role`: "Program role: Chem team is contributor", "Program role removed: …") and approved model cards of the models the program used (kind `model_card`) are entries
+
 - Approval workflow: a new proposal, document submission or model-card submission tells its approvers in the platform's notifications (the portfolio's approvers group and the program's approver roles, never the proposer). `Proposal.notified` says how it went; `approverUsers(portfolio, programId)` lists them
 
 - Quality pass (review of 0.3.0 so far):

@@ -12,6 +12,8 @@ import {ProgramChange} from './model/sync-runs';
 import {columnValue} from './model/conditions';
 import {rowsOf} from './model/new-data';
 import {myFollowsAll} from './new-data';
+import {reviewsOf} from './model/approvals';
+import {newestFirstBy} from './model/time';
 import {filterValue, ROW_LIMIT} from './rows';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
@@ -50,6 +52,10 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
   const criteria = criterionIds.length ? await portalDb.gateCriterions.query({filter: `id in (${inList(criterionIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
   const compoundIds = [...new Set(roleChanges.map((c) => c.compound_id))];
   const compounds = compoundIds.length ? await portalDb.compounds.query({filter: `id in (${inList(compoundIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
+  const [programRoles, modelCards] = await Promise.all([
+    programRolesOf(program.id).catch(() => []),
+    approvedCardsOf([...runs.map((x) => x.model_id), ...predictions.map((x) => x.model_id)]).catch(() => []),
+  ]);
   const runTitle = (id: string) => {
     const r = runs.find((x) => x.id === id);
     return r ? r.title ?? r.run_id ?? r.model_name : 'a run';
@@ -90,7 +96,42 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
         newData: (ch?.newData ?? []).filter((n) => n.program === program.code).map((n) => n.line)};
     }).filter((s) => s.change || s.newData.length),
     news: follows.filter((f) => f.last_news && f.news_on).map((f) => ({id: f.id, line: f.last_news!, on: iso(f.news_on)})),
+    programRoles,
+    modelCards,
   };
+}
+
+/** The program's roles as they stand, with the names of their groups. */
+async function programRolesOf(programId: string): Promise<NonNullable<FeedRecords['programRoles']>> {
+  const rows = await portalDb.programRoles.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
+  const names = new Map<string, string>();
+  for (const id of new Set(rows.map((r) => r.group_id))) {
+    const g = await grok.dapi.groups.find(id).catch(() => null);
+    names.set(id, g ? g.friendlyName || g.name : id);
+  }
+  return rows.map((r) => ({id: r.id, group: names.get(r.group_id) ?? r.group_id, role: r.role, active: r.active !== false,
+    by: r.granted_by ?? r.author_id ?? null, on: iso(r.granted_on ?? r.created_on)}));
+}
+
+/** The approved cards of [modelIds]: the model, the version, who approved it (the request's last
+ * reviewer, when the approval workflow approved it) and when. */
+async function approvedCardsOf(modelIds: (string | null | undefined)[]): Promise<NonNullable<FeedRecords['modelCards']>> {
+  const ids = [...new Set(modelIds.filter((x): x is string => !!x))];
+  if (!ids.length)
+    return [];
+  const [models, cards] = await Promise.all([
+    portalDb.models.query({filter: `id in (${inList(ids)})`, limit: ROW_LIMIT}),
+    portalDb.modelCards.query({filter: `model_id in (${inList(ids)})`, limit: ROW_LIMIT}),
+  ]);
+  const approved = cards.filter((c) => c.approval === 'approved' && c.approved_on);
+  const requests = approved.length ? await portalDb.approvalRequests.query({filter:
+    `kind = "model_card" and status = "approved" and target in (${inList(approved.map((c) => c.id))})`, limit: ROW_LIMIT})
+    .catch(() => []) : [];
+  return approved.map((c) => {
+    const reviews = reviewsOf(requests.filter((r) => r.target === c.id).sort(newestFirstBy((r) => r.closed_on))[0]?.reviews);
+    return {id: c.id, model: models.find((m) => m.id === c.model_id)?.name ?? c.model_id, version: c.model_version,
+      by: reviews.length ? reviews[reviews.length - 1].by : null, on: iso(c.approved_on)};
+  });
 }
 
 /** One program's feed, newest first. */
