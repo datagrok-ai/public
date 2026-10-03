@@ -334,6 +334,26 @@ Discovery records of what was proposed and picked (F-23, FR-101/102). Never fold
 - **Functions.** `createDesignSet(portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter)`, `designSets(portfolio, program)`, `chooseForSynthesis(portfolio, program, designSet, labels, chosen)`, `createSelectionSet(portfolio, program, name, campaign, rationale, compounds)`, `selectionSets(portfolio, program)`, `loadExampleDesignSets()`.
 - **Example.** EXS-KIN1: *KIN-A para-substituents* (enumerated, six proposals, four chosen; three of them are the registered EXC-1001 to EXC-1003) and *KIN-A cycle 7, permeability* (generative, three), and the hit list *K1 screen: indazole hits* from HTS-K1. `loadExampleDesignSets` loads them, EX-* only, once.
 
+### DMTA status
+
+Where each compound of a discovery program stands in the design → make → test → analyze loop (F-24, FR-105).
+Request objects (F-49) do not exist yet, so each stage is derived from what the portal has:
+
+| Stage | From | Date |
+|---|---|---|
+| designed | a proposal of a design set | the set's `designed_on` |
+| requested | a proposal chosen for synthesis | `chosen_on` |
+| made | the compound is registered in the program (registry projection) | none: the registry gives no date |
+| tested | the first row of the compound in the assay results | its date column |
+| analyzed | a current observation on the compound, or its role set by hand | when written |
+
+- **Which compound.** A proposal is the compound it became: its recorded code, else a registered compound with the same SMILES (exact, not canonical). Until then it goes by its design label.
+- **Tested from.** `dmta.tested: {dataset, compoundColumn, dateColumn}` in the portfolio file, else the first dataset with a compound column and a date column (`run_date`, `tested_on`, `date`, …), further datasets before the program dataset.
+- **Pluggable.** A portfolio may name functions in `dmta.sources` (Package:Function, inputs `portfolio` and `program`) that return a table of `compound`, `stage`, `on` and optionally `source` and `series`; a package may call `registerDmtaSource` in code. A request system's status plugs in here until request objects exist.
+- **Cycle time.** Per series, the median whole days from designed to tested over the compounds with both dates.
+- **Program page.** *DMTA (n)* in discovery portfolios: a line per series (`KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested · cycle 14 days (median of 3)`), what could not be read, and **Open status** (the table per compound).
+- **Functions.** `dmtaStatus(portfolio, program)`, `dmtaCycles(portfolio, program)`.
+
 ### Modes and quick actions per persona
 
 The board has a **Mode** and a **Persona** select (F-08, FR-30–32). Both are the user's own and are
@@ -612,6 +632,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `createSelectionSet(portfolio, program, name, campaign, rationale, compounds)` | A hit list of the program's compounds |
 | `selectionSets(portfolio, program)` | The program's hit lists |
 | `loadExampleDesignSets()` | The synthetic KIN-A design sets and K1 hit list on EXS-KIN1. EX-* only; idempotent |
+| `dmtaStatus(portfolio, program)` | Each compound's DMTA stage with dates, design label, series, cycle days and sources |
+| `dmtaCycles(portfolio, program)` | Per series: compounds at each DMTA stage and the median cycle time |
 | `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
@@ -688,6 +710,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Observations: the rules (subjects the program holds, what an observation needs, evidence outside the gate, who records and retracts, order, the feed's entries tagged with the series or compound), and on EXS-KIN1 its series, campaigns and compounds offered, one on series KIN-A with a link in the list, the function's table and the series' feed, one on a compound of another program refused, one retracted once with its feed entry, and the dialog.
   - Design sets: the rules (a series of the program, labels once, sources, ranking with ties and lower-is-better, columns from a table, made-up labels, codes, the summary, a hit list's checks), and on EXS-KIN1 the examples loaded once (ranks, chosen, the hit list), a set from a table through the function chosen and unchosen with who, the table's Molecule column, a hit list of another program's compound refused, and the dialog.
+  - DMTA status: the rules (a row per compound with each stage's earliest date, the furthest first, the series from the program data, the median cycle per series, a dataset's compound and date columns, a proposal's compound, a plug-in's rows, the config check), and on EXS-KIN1 the KIN-A loop from the example design sets, the registry and the assay results (EXC-1001 tested 14 days after design, a chosen proposal requested, a screen hit made), a registered source adding a request, and the functions.
   - Comparing runs in Compute2: the rules (runs grouped by model, across models, a run without a saved call, the tool missing or fewer than two runs, the steps), and on EX-BIOC a scratch project's two process description candidates as a plan and as the function's table, and the dialog with Open Compare Runs on only where Compute2 is installed.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.
@@ -750,3 +773,6 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
    with `=` joined by `or`, 50 at a time.
 17. **A `json` column holds a map, not a list.** Writing a JSON array to a domain `json` column fails with
    `Cannot convert '[...]' to map`. `observation.evidence` keeps its list under `items`.
+18. **A table view opened from a click in the app view does not take the focus.** `grok.shell.addTableView` called
+   in a click handler on the program page adds the table, but the app view stays current. The DMTA section's
+   Open status defers the call with `setTimeout`.

@@ -256,6 +256,7 @@ export interface PortfolioRow {
   owners?: string;
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
+  dmta?: {[key: string]: any};
   personas?: {[key: string]: any};
   document_kinds?: {[key: string]: any};
   approval?: {[key: string]: any};
@@ -286,6 +287,7 @@ export interface PortfolioInsert {
   owners?: string;
   handoff?: {[key: string]: any};
   auto_advance?: {[key: string]: any};
+  dmta?: {[key: string]: any};
   personas?: {[key: string]: any};
   document_kinds?: {[key: string]: any};
   approval?: {[key: string]: any};
@@ -298,8 +300,8 @@ export interface PortfolioInsert {
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
   'workstreams' | 'flow_folders' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' |
-  'attention' | 'schedule' | 'owners' | 'handoff' | 'auto_advance' | 'personas' | 'document_kinds' | 'approval' |
-  'viewers' | 'contributors' | 'approvers' | 'description';
+  'attention' | 'schedule' | 'owners' | 'handoff' | 'auto_advance' | 'dmta' | 'personas' | 'document_kinds' |
+  'approval' | 'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -362,10 +364,10 @@ export type RegistryFeedExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
 };
 
 /** Row of `portal.program`. */
@@ -430,10 +432,10 @@ export type ProgramExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'stage_model_id': {'stage_model_id.code'?: string; 'stage_model_id.name'?: string;
     'stage_model_id.model_version'?: string; 'stage_model_id.setting'?: StageModelSetting;
     'stage_model_id.description'?: string};
@@ -1350,10 +1352,10 @@ export type SyncRunExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
     'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
     'run_by.author'?: string};
@@ -1827,10 +1829,10 @@ export type ApprovalRequestExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
     'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
     'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
@@ -1907,10 +1909,10 @@ export type ParkedFolderExpand = {
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
-    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.personas'?: {[key: string]: any};
-    'portfolio_id.document_kinds'?: {[key: string]: any}; 'portfolio_id.approval'?: {[key: string]: any};
-    'portfolio_id.viewers'?: string; 'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string;
-    'portfolio_id.description'?: string};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
   'parked_by': {'parked_by.login'?: string; 'parked_by.firstName'?: string; 'parked_by.lastName'?: string;
     'parked_by.status'?: string; 'parked_by.createdOn'?: Dayjs; 'parked_by.picture'?: string;
     'parked_by.group'?: string; 'parked_by.author'?: string};

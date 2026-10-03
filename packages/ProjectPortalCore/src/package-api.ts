@@ -341,6 +341,20 @@ export namespace funcs {
   }
 
   /**
+   * Where each compound of a program stands in the DMTA loop (F-24): designed, requested, made, tested, analyzed, with dates, design label, series, cycle days designed to tested, and the sources. Derived from design sets, the registry, the assay results, observations and the portfolio's dmta sources
+   */
+  export async function dmtaStatus(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DmtaStatus', { portfolio, program });
+  }
+
+  /**
+   * Per series of a program: compounds reaching each DMTA stage and the median cycle time designed to tested, in days
+   */
+  export async function dmtaCycles(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DmtaCycles', { portfolio, program });
+  }
+
+  /**
    * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

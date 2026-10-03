@@ -244,3 +244,7 @@ app.element('para design set link', {selector: u2('design-set-kin-a-2026-04-20')
 app.element('design set dialog', {selector: u2('design-set-dialog')});
 app.element('design proposals', {selector: u2('design-proposals')});
 app.element('design set summary', {selector: u2('design-set-summary')});
+
+app.element('dmta heading', {selector: u2('dmta-heading')});
+app.element('dmta cycles', {selector: u2('dmta-cycles')});
+app.element('open dmta status button', {selector: u2('dmta-open-table')});

@@ -6,7 +6,8 @@ import {validateStageFolders} from './workspace-plan';
 import {CompoundFeedConfig, validateCompoundFeed} from './compounds';
 import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
 import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-selection';
-import {ProgramDatasetConfig, validateProgramDatasets} from './program-data';
+import {MAIN_DATASET, ProgramDatasetConfig, validateProgramDatasets} from './program-data';
+import {DmtaConfig, validateDmta} from './dmta';
 import {AttentionRule, validateAttentionRules} from './attention';
 import {validateSchedule} from './sync-runs';
 import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
@@ -96,6 +97,8 @@ export interface PortfolioConfig {
   /** Unit-operation folders from each program's process flows, under the program's folder: the
    * flows and rules the file declares, and those a loader wrote to program_flow. None when absent. */
   flowFolders?: FlowFoldersConfig;
+  /** Where the DMTA status (F-24) reads tested from, and functions that add events. Defaults when absent. */
+  dmta?: DmtaConfig;
   /** Work units the portfolio uses (FR-06); none when absent. */
   workUnits?: WorkUnitKind[];
   /** Feeds that deliver work units from a source system, keyed by program code. */
@@ -198,6 +201,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     }
   }
   errors.push(...validateWorkUnits(c.workUnits, c.workUnitFeeds, c.seriesMaturity));
+  errors.push(...validateDmta(c.dmta, [...(c.programData ? [MAIN_DATASET] : []), ...(c.programDatasets ?? []).map((d) => d.code)]));
   errors.push(...validateFlowFolders(c.flowFolders, (c.stageModel?.stages ?? []).map((s) => s.code), c.workspaceRoot));
   errors.push(...validateCompoundFeed(c.compoundFeed));
   if (c.programData !== undefined) {

@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- DMTA status (F-24, FR-105), discovery: per compound, designed → requested → made → tested → analyzed with dates, and per series the compounds at each stage and the median cycle time designed → tested. Request objects (F-49) do not exist yet, so each stage is derived from what the portal has: design sets and their choices for synthesis, the registry projection, the first dated row of the assay results, observations and roles set by hand. Sources are pluggable: `registerDmtaSource` in code, and functions a portfolio names in `dmta.sources`. Program page: *DMTA (n)* with a line per series and **Open status**. Functions `dmtaStatus`, `dmtaCycles`. Pure rules in `src/model/dmta.ts`
+- `portal` schema 0.2.30: `portfolio.dmta` (optional `{tested: {dataset, compoundColumn, dateColumn}, sources}`). Additive, no migration script
+
 - Design sets and selection sets (F-23, FR-101/102), discovery: a design set holds the structures proposed for a series (enumerated, generative or manual), each scored and ranked (ties share a rank), and the ones chosen for synthesis, with who and when; a proposal records its compound once registered. A selection set is a hit list: compounds of the program picked from a campaign, with the rationale. Program page: *Design sets* with **New design set…** (from a table open in the platform), **New selection set…**, and a set's proposals with Chosen ticks and **Save**. Functions `createDesignSet`, `designSets`, `chooseForSynthesis`, `createSelectionSet`, `selectionSets`, `loadExampleDesignSets`. EXS-KIN1 gets two KIN-A design sets and a hit list from its screen (synthetic). Pure rules in `src/model/design-sets.ts`
 - `portal` schema 0.2.29: tables `design_set`, `design_proposal`, `selection_set`. Additive, no migration script
 

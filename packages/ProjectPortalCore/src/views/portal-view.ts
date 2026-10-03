@@ -64,6 +64,8 @@ import {DesignSetItem, designRefusal, designSetsOf, selectionSetsOf} from '../de
 import {describeDesignSet, selectionCompounds, summarizeDesignSet} from '../model/design-sets';
 import {openDesignSetDialog, openNewDesignSetDialog, openNewSelectionSetDialog} from './design-set-dialog';
 import {SelectionSetRow} from '../generated/db';
+import {DmtaStatus, dmtaFrame, dmtaOf} from '../dmta';
+import {describeCycle} from '../model/dmta';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
@@ -161,6 +163,8 @@ export class PortalView {
     {list: [], names: new Map(), refused: [], approver: false};
   /** The selected program's design and selection sets (F-23), and why the user may not add one. */
   private designs: {sets: DesignSetItem[], selections: SelectionSetRow[], refused: string[]} = {sets: [], selections: [], refused: []};
+  /** The selected program's DMTA status (F-24); null where the portfolio is not discovery. */
+  private dmta: {status: DmtaStatus | null, error?: string} = {status: null};
   /** The folders pinned in the user's Workspace, by space id: read with the board and on each program open. */
   private pins = new Map<string, PinHolders>();
   /** The open portfolio's viewers group, which an approver may pin a program for. */
@@ -400,11 +404,21 @@ export class PortalView {
     const designSets = await designSetsOf(id).catch(() => [] as DesignSetItem[]);
     const selections = await selectionSetsOf(id).catch(() => [] as SelectionSetRow[]);
     const designRefused = await designRefusal(ctx.program);
+    // DMTA status (F-24), discovery
+    let dmta: {status: DmtaStatus | null, error?: string} = {status: null};
+    if (ctx.portfolio.setting === 'discovery') {
+      try {
+        dmta = {status: await dmtaOf(ctx.portfolio, ctx.program)};
+      } catch (e: any) {
+        dmta = {status: null, error: e?.message ?? String(e)};
+      }
+    }
     const obsNames = await userNames(observations.flatMap((o) => [o.by, o.retractedBy])).catch(() => new Map<string, string>());
     // another program was opened meanwhile: its page is not this one's to draw
     if (this.selected !== id)
       return;
     this.designs = {sets: designSets, selections, refused: designRefused};
+    this.dmta = dmta;
     this.observations = {list: observations, names: obsNames, approver: obsAccess?.approver ?? false,
       refused: checkObservationAccess({isApprover: obsAccess?.approver ?? false, isContributor: obsAccess?.contributor ?? false})};
     this.follows = follows;
@@ -699,6 +713,7 @@ export class PortalView {
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       ...this.observationsSection(ctx),
       ...this.designSection(ctx, units, compounds),
+      ...this.dmtaSection(ctx),
       ...(more ? [divH([more], 'pp-actions')] : []),
       ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
       ...(shown('predictions') && (ctx.portfolio.setting === 'discovery' || this.predictions.length) ? this.predictionsSection(ctx) : []),
@@ -1432,6 +1447,28 @@ export class PortalView {
     if (this.roleLine.has(program.id))
       out.push(named(span(this.roleLine.get(program.id)!, 'pp-muted'), 'role-result'));
     return out;
+  }
+
+  /** DMTA status (F-24): per series, compounds at each stage and the cycle time; the full status
+   * per compound opens as a table. Discovery only; nothing when no compound is in the loop. */
+  private dmtaSection(ctx: ProgramContext): HTMLElement[] {
+    const {status, error} = this.dmta;
+    const heading = named(span('DMTA', 'pp-heading'), 'dmta-heading');
+    if (error)
+      return [heading, named(span(`The DMTA status could not be read: ${error}`, 'pp-reason'), 'dmta-error')];
+    if (!status || !status.rows.length)
+      return [];
+    heading.textContent = `DMTA (${status.rows.length})`;
+    // after the click is done: the app view takes the focus back on a click inside it
+    const open = named(button('Open status', () => setTimeout(() => grok.shell.addTableView(dmtaFrame(status, `${ctx.program.code} DMTA status`)))),
+      'dmta-open-table');
+    open.title = 'Each compound: designed, requested, made, tested, analyzed, with dates and sources';
+    return [
+      heading,
+      named(divV(status.cycles.map((c) => named(span(describeCycle(c)), `dmta-series-${slug(c.series)}`)), 'pp-units'), 'dmta-cycles'),
+      ...(status.notes.length ? [named(span(status.notes.join('; '), 'pp-muted'), 'dmta-notes')] : []),
+      divH([open], 'pp-actions'),
+    ];
   }
 
   /** Design sets and selection sets (F-23): what was proposed per series, ranked, and chosen for

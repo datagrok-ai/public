@@ -42,6 +42,7 @@ import {addObservation as addObs, observationsFrame, observationsOf, retractObse
 import {describeObservation, observationsAbout, ObservationSubject} from './model/observations';
 import {chooseForSynthesis as choose, createDesignSet as newDesignSet, createSelectionSet as newSelectionSet, designSetsFrame,
   designSetsOf, loadExampleDesignSets as loadDesignExamples, selectionSetsFrame, selectionSetsOf} from './design-sets';
+import {cyclesFrame, dmtaFrame, dmtaOf} from './dmta';
 import {DesignSource, describeDesignSet, proposalColumns, proposalsFromRows, summarizeDesignSet} from './model/design-sets';
 import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
@@ -578,6 +579,26 @@ export async function selectionSets(portfolio: string, program: string): Promise
 //output: string report
 export async function loadExampleDesignSets(): Promise<string> {
   return loadDesignExamples(_package);
+}
+
+//name: dmtaStatus
+//description: Where each compound of a program stands in the DMTA loop (F-24): designed, requested, made, tested, analyzed, with dates, design label, series, cycle days designed to tested, and the sources. Derived from design sets, the registry, the assay results, observations and the portfolio's dmta sources
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function dmtaStatus(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return dmtaFrame(await dmtaOf(await portfolioByCode(portfolio), p), `${p.code} DMTA status`);
+}
+
+//name: dmtaCycles
+//description: Per series of a program: compounds reaching each DMTA stage and the median cycle time designed to tested, in days
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function dmtaCycles(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return cyclesFrame(await dmtaOf(await portfolioByCode(portfolio), p), `${p.code} DMTA cycles`);
 }
 
 //name: showProvenance
