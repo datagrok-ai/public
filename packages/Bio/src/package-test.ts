@@ -40,6 +40,7 @@ import './tests/editor-loop-tests';
 import './tests/scoring';
 import './tests/projects-tests';
 import './tests/antibody-numbering-tests';
+import './tests/composition-analysis-tests';
 
 
 export const _package = new DG.Package();
