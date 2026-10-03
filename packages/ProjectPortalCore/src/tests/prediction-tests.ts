@@ -131,7 +131,11 @@ category('Portal: predictions', () => {
   });
 
   test('provenance leads from the scoring run to the model and the predictions', async () => {
-    const prov = await provenanceOf('model_run', first!.modelRunId!, 2);
+    // the first test's run, else the run behind the stored predictions: this test stands on its own
+    const runId = first?.modelRunId ?? (await portalDb.predictions.query({filter: `program_id = "${kin1.id}" and model_code = "${SOL}"`,
+      limit: 1}))[0]?.model_run_id;
+    expect(!!runId, true, 'no scoring run of the example model on EXS-KIN1');
+    const prov = await provenanceOf('model_run', runId!, 2);
     const up = prov.nodes.filter((n) => n.direction === 'up').map((n) => n.kind);
     const down = prov.nodes.filter((n) => n.direction === 'down').map((n) => `${n.kind}:${n.name}`);
     expect(up.includes('model'), true, up.join());

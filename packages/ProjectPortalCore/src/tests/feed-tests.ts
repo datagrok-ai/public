@@ -106,10 +106,11 @@ category('Portal: activity feed', () => {
     await follow(smd, kin1);
     await lower(null, 3);
     const r = await checkNewDataOf(smd, {notify: false});
-    expect(r.news.map((x) => x.line).join(), 'EXS-KIN1: 3 new values');
+    expect(r.news.filter((x) => x.user === DG.User.current().id).map((x) => x.line).join(), 'EXS-KIN1: 3 new values');
     const feed = await programFeedOf(smd, kin1);
-    expect(feed[0].kind, 'new_data');
-    expect(feed[0].text, 'New data: EXS-KIN1: 3 new values');
+    // found by what it says, not by being first: a newer record of EXS-KIN1 from elsewhere may lead
+    const news = feed.find((x) => x.kind === 'new_data' && x.text === 'New data: EXS-KIN1: 3 new values');
+    expect(!!news && Date.now() - Date.parse(news.at) < 10 * 60 * 1000, true, feed.slice(0, 3).map((x) => x.text).join('; '));
     const decisions = (await portalDb.stageTransitions.query({filter: `program_id = "${kin1.id}"`})).length;
     expect(feed.filter((x) => x.kind === 'decision').length, decisions, 'one entry per gate-log row');
     const mine = await myFeedOf();

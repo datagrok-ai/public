@@ -151,6 +151,9 @@ category('Portal: park orphans', () => {
   });
 
   test('someone who is not an approver may preview but not park', async () => {
+    const smd = await portfolioByCode('EX-SMD');
+    // counted before: folders parked by anyone else on the stand are not this test's business
+    const before = (await parkedFoldersOf(smd)).length;
     const ran = await withRestrictedUser('pppark', async (user) => {
       let refused = '';
       try {
@@ -163,8 +166,7 @@ category('Portal: park orphans', () => {
     });
     if (ran === null)
       console.log('skipped: no self-signup on this stand');
-    const smd = await portfolioByCode('EX-SMD');
-    expect((await parkedFoldersOf(smd)).length, 0, 'nothing is left parked on EX-SMD');
+    expect((await parkedFoldersOf(smd)).length, before, 'the refused park parked nothing');
   });
 });
 

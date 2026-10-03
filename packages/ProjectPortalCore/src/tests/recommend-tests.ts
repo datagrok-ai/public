@@ -85,6 +85,12 @@ category('Portal: model recommendation rules', () => {
 });
 
 category('Portal: model recommendation', () => {
+  // another package's catalogue on the same stand may declare where its models apply (a modality,
+  // say) and be offered here too: the tests look at this package's example models only
+  const own = (codes: string[]) => codes.filter((c) => c.startsWith('ProjectPortalCore:'));
+  const ownRows = (df: DG.DataFrame) => Array.from({length: df.rowCount}, (_, i) => i)
+    .filter((i) => String(df.get('model', i)).startsWith('ProjectPortalCore:'));
+
   before(async () => {
     await loadAllPortfolios(_package);
   });
@@ -103,9 +109,10 @@ category('Portal: model recommendation', () => {
     expect(r.missing.map((m) => `${m.column}:${m.items.join('+')}`).join(),
       'solubility_um:EXC-1006,papp:EXC-1006+EXC-1007,clint:EXC-1006+EXC-1007+EXC-1008',
       'the ADME panel on the lead set; hERG margin is already met');
-    expect(r.models.map((x) => x.code).join(), `${SOL},${HERG}`, 'a model predicting a gap first; no bioprocess model');
+    expect(own(r.models.map((x) => x.code)).join(), `${SOL},${HERG}`, 'a model predicting a gap first; no bioprocess model');
+    expect(r.models[0].code, SOL, 'the model predicting a gap comes first');
     expect(r.predictors.get('solubility_um')!.map((x) => x.code).join(), SOL);
-    expect(r.models.every((x) => x.installed), true, 'the example scripts ship with the package');
+    expect(r.models.filter((x) => own([x.code]).length).every((x) => x.installed), true, 'the example scripts ship with the package');
   });
 
   test('the recommendModels and missingAssays functions; a stage no model is for suggests none', async () => {
@@ -114,10 +121,10 @@ category('Portal: model recommendation', () => {
     expect(`${df.get('model', 0)} ${df.get('rank', 0)} ${df.get('predicts', 0)}`, `${SOL} 1 solubility_um`);
     const tv: DG.DataFrame = await grok.functions.call('ProjectPortalCore:recommendModels',
       {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'TV'});
-    expect(tv.rowCount, 0);
+    expect(ownRows(tv).length, 0);
     const adme: DG.DataFrame = await grok.functions.call('ProjectPortalCore:recommendModels',
       {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'LO', task: 'ADMET'});
-    expect(adme.rowCount === 1 && adme.get('model', 0) === HERG, true, 'only the model declaring the task');
+    expect(ownRows(adme).map((i) => adme.get('model', i)).join(), HERG, 'only the model declaring the task');
     const gaps: DG.DataFrame = await grok.functions.call('ProjectPortalCore:missingAssays',
       {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'LO'});
     expect(`${gaps.rowCount} ${gaps.get('assay', 0)} ${gaps.get('missing', 0)} ${gaps.get('predicted by', 0)}`,
@@ -129,7 +136,7 @@ category('Portal: model recommendation', () => {
 
   test('a biologics program is offered its own catalogue, not the small-molecule models', async () => {
     const r = await recommendByCode('EX-BIOC', 'EXB-203');
-    expect(r.models.map((x) => x.code).join(), 'ProjectPortalCore:FedBatchTiter');
+    expect(own(r.models.map((x) => x.code)).join(), 'ProjectPortalCore:FedBatchTiter');
   });
 
   test('the example models run on the program\'s data', async () => {

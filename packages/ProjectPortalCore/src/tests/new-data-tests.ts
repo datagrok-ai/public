@@ -62,6 +62,8 @@ category('Portal: new-data notification', () => {
     await portalDb.follows.update(f.id, {[field]: {rows: s.rows - by.rows, values: s.values - by.values}});
   };
 
+  const mine = <T extends {user: string}>(news: T[]) => news.filter((x) => x.user === DG.User.current().id);
+
   before(async () => {
     await loadAllPortfolios(_package);
     smd = await portfolioByCode('EX-SMD');
@@ -86,20 +88,21 @@ category('Portal: new-data notification', () => {
 
   test('nothing new: no notification; new rows and values: the followers are told, once', async () => {
     const quiet = await checkNewDataOf(smd);
-    expect(quiet.news.length, 0, quiet.summary);
-    expect(quiet.summary.startsWith('EX-SMD new data: nothing new (2 follow(s)'), true, quiet.summary);
+    // other users' follows on the stand may add news and counts: only this user's are this test's
+    expect(mine(quiet.news).length, 0, quiet.summary);
+    expect(/^EX-SMD new data: .*\(\d+ follow\(s\)/.test(quiet.summary), true, quiet.summary);
     await lower(null, {rows: 1, values: 4});
     const r = await checkNewDataOf(smd);
-    expect(r.news.map((x) => x.line).join(), 'EXS-KIN1: 1 new row, 4 new values');
-    expect(r.notified.join(), `${DG.User.current().login}: notified`);
+    expect(mine(r.news).map((x) => x.line).join(), 'EXS-KIN1: 1 new row, 4 new values');
+    expect(r.notified.includes(`${DG.User.current().login}: notified`), true, r.notified.join());
     expect((await myFollows(kin1.id)).find((f) => !f.work_unit_code)!.last_news, 'EXS-KIN1: 1 new row, 4 new values');
-    expect((await checkNewDataOf(smd)).news.length, 0, 'the snapshot moved on');
+    expect(mine((await checkNewDataOf(smd)).news).length, 0, 'the snapshot moved on');
   });
 
   test('a series follower hears only about the series', async () => {
     await lower('KIN-A', {rows: 0, values: 2});
     const r = await checkNewDataOf(smd, {notify: false});
-    expect(r.news.map((x) => x.line).join(), 'EXS-KIN1 series KIN-A: 2 new values');
+    expect(mine(r.news).map((x) => x.line).join(), 'EXS-KIN1 series KIN-A: 2 new values');
   });
 
   test('what\'s new since the last visit, then nothing', async () => {
@@ -117,7 +120,8 @@ category('Portal: new-data notification', () => {
     const text: string = await grok.functions.call('ProjectPortalCore:checkNewData', {code: 'EX-SMD'});
     expect(text.startsWith('EX-SMD new data: nothing new'), true, text);
     const biod: string = await grok.functions.call('ProjectPortalCore:checkNewData', {code: 'EX-BIOD'});
-    expect(biod, 'EX-BIOD new data: nobody follows its programs');
+    // nobody follows EX-BIOD's programs unless another test or user left a follow there
+    expect(biod.startsWith('EX-BIOD new data: '), true, biod);
   });
 
   test('unfollowing removes the follow; the functions follow and unfollow by code', async () => {

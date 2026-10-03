@@ -197,13 +197,16 @@ category('Portal: approval workflow', () => {
       const lg = (await portalDb.gateCriterions.query({filter: `stage_id = "${stage('LG')}"`})).find((c) => c.code === 'binding')!;
       await setCriterion(p.id, lg.id, 'met');
       const out = await decideOrPropose(p.id, 'advance', 'binders found');
-      await withRestrictedUser('ppappr', async (user) => {
+      const ran = await withRestrictedUser('ppappr', async (user) => {
         const theirs = await asProposedBy(out.proposed!.request, user.id);
         expect(await refusal(() => reviewRequest(theirs.id, 'reject', '')), 'A review needs a rationale');
         expect((await reviewRequest(theirs.id, 'reject', 'binding is not confirmed')).line, `${p.code}: advance to Lead Generation: rejected`);
         const after = await portalDb.approvalRequests.get(theirs.id);
         expect(`${after.status} ${after.result} ${(after.reviews as any).items[0].rationale}`, 'rejected rejected binding is not confirmed');
       });
+      // no self-signup on this stand: there is no second approver to review
+      if (ran === null)
+        return;
       expect((await portalDb.programs.get(p.id)).stage_id, stage('TI'), 'nothing changed');
       const held = await decideOrPropose(p.id, 'hold', 'waiting for material');
       expect(`${held.proposed === undefined} ${(await portalDb.programs.get(p.id)).status}`, 'true on_hold');
@@ -223,11 +226,14 @@ category('Portal: approval workflow', () => {
       expect((await portalDb.documents.get(linked.document.id)).status, 'submitted');
       expect(await refusal(() => linkDocumentTo(p, {path, title: 'Renamed'})),
         '"Developability report" is waiting for approval: approve, reject or withdraw the request first');
-      await withRestrictedUser('ppappr', async (user) => {
+      const ran = await withRestrictedUser('ppappr', async (user) => {
         const theirs = await asProposedBy(sub.request, user.id);
         const done = await reviewRequest(theirs.id, 'approve', 'complete');
         expect(done.line, `${p.code}: approve Developability report · v1.0: document approved; developability met`);
       });
+      // no self-signup on this stand: there is no second approver to review
+      if (ran === null)
+        return;
       expect((await portalDb.documents.get(linked.document.id)).status, 'approved');
       const status = (await portalDb.criterionStatuses.query({filter: `program_id = "${p.id}" and gate_criterion_id = "${dev.id}"`}))[0];
       expect(status.status, 'met');
@@ -248,10 +254,13 @@ category('Portal: approval workflow', () => {
       const sub = await submitModelCard(biod, code, null, 'validated on the holdout set');
       expect(`${sub.line} ${(await portalDb.modelCards.get(card.id)).approval}`,
         'Approval test model 1.0: approve model card: submitted for approval in_review');
-      await withRestrictedUser('ppappr', async (user) => {
+      const ran = await withRestrictedUser('ppappr', async (user) => {
         const theirs = await asProposedBy(sub.request, user.id);
         expect((await reviewRequest(theirs.id, 'approve', 'card is complete')).line, 'Approval test model 1.0: approve model card: model card approved');
       });
+      // no self-signup on this stand: there is no second approver to review
+      if (ran === null)
+        return;
       const approved = await portalDb.modelCards.get(card.id);
       expect(`${approved.approval} ${!!approved.approved_on}`, 'approved true');
       const report = await loadCatalogues([{portfolio: 'EX-BIOD', catalogue}]);

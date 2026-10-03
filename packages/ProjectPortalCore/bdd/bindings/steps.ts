@@ -145,6 +145,13 @@ async function removeScratchWithRuns(page: Page, code: string, portfolio: string
         if (sn.table_file && sn.table_folder)
           await grok.dapi.spaces.id(sn.table_folder).files.delete(sn.table_file).catch(() => undefined);
       }
+      // follows and pending approval requests would outlive the program: in My feed, in Waiting for me
+      const follows = grok.dapi.domains.table('portal.follow');
+      for (const f of await follows.query({filter: `program_id = "${r.id}"`, limit: 10000}))
+        await follows.update(f.id, {active: false}).catch(() => undefined);
+      const requests = grok.dapi.domains.table('portal.approval_request');
+      for (const q of await requests.query({filter: `program_id = "${r.id}" and status = "pending"`, limit: 10000}))
+        await requests.update(q.id, {status: 'withdrawn', result: 'withdrawn by the BDD cleanup'}).catch(() => undefined);
       if (r.space_id)
         await removeSpace(r.space_id);
       await programs.delete(r.id);
@@ -251,6 +258,8 @@ async function unfollowAll(page: Page, program: string, portfolio: string): Prom
   return page.evaluate(async ([c, p]) => {
     const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
     const pr = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    if (!pr)
+      return 0;
     const follows = grok.dapi.domains.table('portal.follow');
     const mine = (await follows.query({filter: `program_id = "${pr.id}" and user_id = "${DG.User.current().id}"`}))
       .filter((f: any) => f.active !== false);
@@ -393,6 +402,8 @@ async function pinnedOwn(page: Page, program: string, portfolio: string, set?: b
   return page.evaluate(async ([c, p, s]) => {
     const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
     const row = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    if (!row?.space_id)
+      throw new Error(`${c} has no workspace folder: build the ${p} workspace first`);
     const space = await grok.dapi.spaces.find(row.space_id);
     const on = (await grok.dapi.entities.getFavorites(DG.User.current().group)).some((e: any) => e.id === space.id);
     if (s !== null && s !== on)
