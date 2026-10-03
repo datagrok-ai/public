@@ -43,9 +43,14 @@ for (const ds of datasets) {
         await new Promise((r) => setTimeout(r, 300));
       }
     });
-    await page.waitForFunction(() => {
-      const f = (grok as any).functions.find;
-      try { return !!(f && (f('Bio:sequenceSpaceTopMenu') || f('Bio:sequenceSpace'))); } catch { return false; }
+    await page.waitForFunction(async () => {
+      try {
+        return !!(await (grok as any).functions.find('Bio:sequenceSpaceTopMenu') ||
+          await (grok as any).functions.find('Bio:sequenceSpace'));
+      }
+      catch {
+        return false;
+      }
     }, undefined, {timeout: 30_000});
     await softStep(`${ds.name}: Open Bio > Analyze > Sequence Space (defaults)`, async () => {
       await bio.openBioAnalyze(page, 'div-Bio---Analyze---Sequence-Space...');
