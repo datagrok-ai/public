@@ -4,7 +4,7 @@
  * Additive: it creates what is missing and never renames, moves or deletes. A program renamed in
  * its registry keeps its folder (the folder's id is recorded on the program row) and the report
  * names the difference. Learned building an earlier workspace generator:
- * - The server stores a space name in normalized form ("Molecule A" → "MoleculeA"), so
+ * - The server stores a space name in normalized form ("Program A" → "ProgramA"), so
  *   `subspaceExists(display name)` misses a folder that is there. Each parent's children are
  *   listed once and matched in both forms.
  * - Creation is slow (~200 ms a folder). Two builds against one root race and duplicate folders,

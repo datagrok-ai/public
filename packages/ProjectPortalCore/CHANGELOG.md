@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Tidy-ups from the branch scan: a code comment and two test fixtures use generic example names (`Program A`, `EX-BIOC`)
+
 - The workspace builder makes no new folders for a program that has ended (completed or terminated): no program folder, workstream, stage-growth or unit-operation folder it lacks. Folders it has are reused and nothing is deleted or moved. A dry run lists the missing ones as skipped with the reason (`- path: skipped, P is completed: no new folders`); the report counts them (`skipped`). Not configurable per portfolio. Pure rule `noNewFoldersReason` in `src/model/workspace-plan.ts`
 
 - Names instead of user ids: the data package showed a document's author ("written by") as a raw id. Every view that says who did something now reads names through one lookup (`src/users.ts`): one read per distinct id, all at once, kept for the session; a user that cannot be read shows its id and is asked again next time. Used by the data package, activity feed, approvals, observations, run selections, the gate's suggested evidence, snapshots and the sync history

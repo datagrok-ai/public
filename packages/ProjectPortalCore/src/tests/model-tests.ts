@@ -124,7 +124,7 @@ category('Portal: sync plan', () => {
       {id: 'a', code: 'MOVED', portfolioCode: 'P', status: 'active', source: 'feed', externalRef: 'sys:MOVED'},
       {id: 'b', code: 'GONE', portfolioCode: 'P', status: 'active', source: 'feed', externalRef: 'sys:GONE'},
       {id: 'c', code: 'MINE', portfolioCode: 'P', status: 'active', source: 'manual'}];
-    const elsewhere: ProgramRef[] = [{id: 'z', code: 'MOVED', portfolioCode: 'CMC', status: 'active',
+    const elsewhere: ProgramRef[] = [{id: 'z', code: 'MOVED', portfolioCode: 'EX-BIOC', status: 'active',
       source: 'feed', externalRef: 'sys:MOVED', predecessorId: 'a'}];
     const p = plan({existing, elsewhere, rows: []});
     const byCode = Object.fromEntries(p.missing.map((m) => [m.code, m.status]));
@@ -181,7 +181,7 @@ category('Portal: gate rules', () => {
   });
 
   test('a stage of another model is unreachable', async () => {
-    const v = checkDecision(base({targetStageId: 'cmc-5', criterionStates: {c1: 'met'}}));
+    const v = checkDecision(base({targetStageId: 'ex-5', criterionStates: {c1: 'met'}}));
     expect(v.allowed, false);
     expect(v.reasons.some((r) => r.includes('different stage model')), true);
   });
