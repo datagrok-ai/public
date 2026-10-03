@@ -5,7 +5,7 @@ import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {COMPARE_RUNS_FUNCTION, CompareCandidate, comparePlan, describePlan} from '../model/compare-runs';
 import {criterionRuns, saveModelRun} from '../model-runs';
-import {compareRunsTool, criterionComparePlan} from '../compare-runs';
+import {compareCandidates, compareRunsTool, criterionComparePlan, openCompareRuns} from '../compare-runs';
 import {openCompareRunsDialog} from '../views/compare-runs-dialog';
 import {_package} from '../package-test';
 
@@ -25,10 +25,18 @@ category('Portal: run comparison rules', () => {
   test('not offered without the tool, or with fewer than two runs it can add', async () => {
     expect(comparePlan([run('1', 'A'), run('2', 'A')], false).unavailable, 'Compute2\'s Compare Runs is not installed on this server');
     expect(comparePlan([run('1', 'A'), run('2', 'A', {runId: null})], true).unavailable,
-      'Comparing needs two runs with a saved call; one here');
+      'Comparing needs two of your runs with a saved call; one here');
     expect(comparePlan([], true).steps.length, 0);
     expect(describePlan(comparePlan([], true)), 'No candidate runs');
     expect(COMPARE_RUNS_FUNCTION, 'Compute2:CompareRuns');
+  });
+
+  test('runs saved by another user are listed but not ticked: the tool lists only your own', async () => {
+    const p = comparePlan([run('1', 'A'), run('2', 'A', {byOther: true}), run('3', 'A')], true);
+    expect(`${p.byOthers} ${p.notAddable} ${p.unavailable}`, '1 0 null');
+    expect(p.steps[1], 'Pick A, tick "Run 1", "Run 3", then Add selected runs');
+    expect(comparePlan([run('1', 'A'), run('2', 'A', {byOther: true})], true).unavailable,
+      'Comparing needs two of your runs with a saved call; one here');
   });
 });
 
@@ -74,6 +82,25 @@ category('Portal: run comparison', () => {
     expect(df.columns.names().join(), 'Model,Run,Run id,Saved on,Selected');
     expect(df.col('Run')!.toList().sort().join(), 'Feed 2,Feed 4');
     expect(df.col('Run id')!.toList().every((x) => !!x), true, 'each run has its saved call');
+  });
+
+  test('a run counts as another user\'s by its recorded author', async () => {
+    const runs = await criterionRuns(program.id, criterionId);
+    expect(compareCandidates(runs).filter((c) => c.byOther).length, 0, 'the test user saved both');
+    expect(compareCandidates(runs, 'someone-else').filter((c) => c.byOther).length, 2);
+  });
+
+  test('Open Compare Runs opens Compute2\'s Run Comparison view', async () => {
+    if (!compareRunsTool())
+      return 'Compute2 is not installed on this server';
+    const before = new Set([...grok.shell.views]);
+    await openCompareRuns();
+    const added = [...grok.shell.views].filter((v) => !before.has(v));
+    try {
+      expect(added.map((v) => v.name).join(), 'Run Comparison');
+    } finally {
+      added.forEach((v) => v.close());
+    }
   });
 
   test('the dialog lists the runs and opens Compare Runs only where Compute2 is installed', async () => {

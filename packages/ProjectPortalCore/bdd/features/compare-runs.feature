@@ -2,7 +2,7 @@
 Feature: Compare a criterion's runs in Compute2
   A criterion that rests on a run offers Compare in Compute2 once it has two candidates. The dialog
   lists the candidate runs by model and what to add in Compute2's Compare Runs, which takes no runs
-  as input; it opens the tool where Compute2 is installed, and lists the runs as a table.
+  as input; it opens the tool where Compute2 is installed (this scenario needs it), and lists the runs as a table.
 
   Background:
     Given user opens the Project Portal app
@@ -18,5 +18,8 @@ Feature: Compare a criterion's runs in Compute2
     And compare runs summary should contain text "2 runs of 1 model"
     And compare runs groups should contain text "Fed-batch titer (example)"
     And compare runs groups should contain text "Feed 4"
+    And open compare runs button should be enabled
+    When user clicks on open compare runs button
+    Then the open view should be named "Run Comparison"
     When user clicks on open compare runs as table button
     Then the open table should have 2 rows and a name starting with "BDD-CMP · process_description runs"

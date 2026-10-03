@@ -1,7 +1,8 @@
 /** Cross-model run comparison (F-29, FR-55): a criterion's candidate runs, handed to Compute2's
  * Compare Runs tool. Not a portal build: the tool does the matching of inputs and outputs across
- * models. Compare Runs takes no runs as input today, so the portal cannot seed it; it opens the
- * tool and lists what to add, model by model. Pure: the caller reads the runs and says whether the
+ * models. Compare Runs takes no runs as input (no function input, URL or API in Compute2 1.6), so the
+ * portal cannot seed it; it opens the tool and lists what to add, model by model. Its run history
+ * lists only the current user's runs, so runs saved by others are listed but not to be ticked. Pure: the caller reads the runs and says whether the
  * tool is installed. */
 
 /** Compute2's run comparison tool (Model Hub → Tools → Compare Runs). */
@@ -21,6 +22,8 @@ export interface CompareCandidate {
   /** ISO time. */
   on: string | null;
   selected: boolean;
+  /** Saved by another user: Compare Runs' history lists only the current user's runs. */
+  byOther?: boolean;
 }
 
 export interface CompareGroup {
@@ -42,7 +45,12 @@ export interface ComparePlan {
   steps: string[];
   /** Runs without a saved call: listed, but the tool cannot add them. */
   notAddable: number;
+  /** Runs saved by other users: listed, but the tool's history does not show them. */
+  byOthers: number;
 }
+
+/** Whether Compare Runs can add the run: it has a saved call, and the current user saved it. */
+export const addable = (c: CompareCandidate): boolean => !!c.runId && !c.byOther;
 
 /** The candidates grouped by model, and what to do in Compare Runs. [toolInstalled] is whether
  * COMPARE_RUNS_FUNCTION exists on this server. */
@@ -54,17 +62,17 @@ export function comparePlan(candidates: CompareCandidate[], toolInstalled: boole
       groups.push(g = {model: c.model, modelName: c.modelName, runs: []});
     g.runs.push(c);
   }
-  const addable = candidates.filter((c) => c.runId);
+  const can = candidates.filter(addable);
   const unavailable = !toolInstalled ? 'Compute2\'s Compare Runs is not installed on this server' :
-    addable.length < 2 ? `Comparing needs two runs with a saved call; ${addable.length === 1 ? 'one' : 'none'} here` : null;
+    can.length < 2 ? `Comparing needs two of your runs with a saved call; ${can.length === 1 ? 'one' : 'none'} here` : null;
   const steps = unavailable ? [] : [
     'Open Compare Runs',
-    ...groups.filter((g) => g.runs.some((r) => r.runId)).map((g) =>
-      `Pick ${g.modelName}, tick ${g.runs.filter((r) => r.runId).map((r) => `"${r.title}"`).join(', ')}, then Add selected runs`),
+    ...groups.filter((g) => g.runs.some(addable)).map((g) =>
+      `Pick ${g.modelName}, tick ${g.runs.filter(addable).map((r) => `"${r.title}"`).join(', ')}, then Add selected runs`),
     ...(groups.length > 1 ? ['Runs of different models are matched by input and output name and units; check the pairings it proposes'] : []),
   ];
   return {groups, runs: candidates.length, models: groups.length, crossModel: groups.length > 1, unavailable, steps,
-    notAddable: candidates.length - addable.length};
+    notAddable: candidates.filter((c) => !c.runId).length, byOthers: candidates.filter((c) => c.runId && c.byOther).length};
 }
 
 /** "3 runs of 2 models" */

@@ -10,19 +10,20 @@ export function compareRunsTool(): DG.Func | null {
   return DG.Func.find({package: pkg, name})[0] ?? null;
 }
 
-/** The criterion's candidates as the plan lists them, newest first. */
-export function compareCandidates(runs: CriterionRuns): CompareCandidate[] {
+/** The criterion's candidates as the plan lists them, newest first. A run counts as another
+ * user's when its recorded author is not the current user. */
+export function compareCandidates(runs: CriterionRuns, me: string = DG.User.current().id): CompareCandidate[] {
   return runs.candidates.map((i) => ({id: i.run.id, runId: i.run.run_id ?? null,
     title: i.run.title ?? i.run.run_id ?? i.run.model_name, model: i.run.model_name,
     modelName: i.model?.name ?? i.run.model_name, on: i.run.created_on ? i.run.created_on.toISOString() : null,
-    selected: i.run.id === runs.selectedRunId}));
+    selected: i.run.id === runs.selectedRunId, byOther: !!i.run.run_author && i.run.run_author !== me}));
 }
 
 export function criterionComparePlan(runs: CriterionRuns): ComparePlan {
   return comparePlan(compareCandidates(runs), compareRunsTool() !== null);
 }
 
-/** Opens Compare Runs in a view of its own. */
+/** Opens Compare Runs in a view of its own, empty: it takes no runs. */
 export async function openCompareRuns(): Promise<void> {
   const f = compareRunsTool();
   if (!f)

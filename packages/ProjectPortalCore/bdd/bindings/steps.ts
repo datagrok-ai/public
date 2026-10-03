@@ -86,6 +86,10 @@ export const currentSpace = Then('the open view should be the space {string}', a
     {message: 'the open view'}).toBe(name);
 }, {description: 'the Spaces view the Browse tree opens for a space, by the space\'s display name'});
 
+export const currentViewNamed = Then('the open view should be named {string}', async (page: Page, name: string) => {
+  await expect.poll(() => page.evaluate(() => grok.shell.v?.name ?? ''), {message: 'the open view'}).toBe(name);
+}, {description: 'the current view by its name, e.g. a view another package opens'});
+
 /** The open portfolio table's viewers by title: those over the programs and those over its linked tables. */
 export const tableViewers = Then('the portfolio table should show the viewers {string}', async (page: Page, titles: string) => {
   const expected = titles.split(',').map((s) => s.trim());

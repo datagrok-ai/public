@@ -225,6 +225,7 @@ app.element('compare runs dialog', {selector: u2('compare-runs-dialog')});
 app.element('compare runs summary', {selector: u2('compare-runs-summary')});
 app.element('compare runs groups', {selector: u2('compare-runs-groups')});
 app.element('open compare runs as table button', {selector: u2('compare-runs-table')});
+app.element('open compare runs button', {selector: u2('compare-runs-open')});
 
 app.element('scratch observation project card', {selector: u2('program-bdd-obs')});
 app.element('add observation button', {selector: u2('add-observation-button')});

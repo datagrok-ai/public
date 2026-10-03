@@ -11,7 +11,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {openApp, openTableStarting, scratchProjectAtStage, titledRunSaved} from '../bindings/steps.js';
+import {currentViewNamed, openApp, openTableStarting, scratchProjectAtStage, titledRunSaved} from '../bindings/steps.js';
 import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -31,7 +31,10 @@ test.describe("Compare a criterion's runs in Compute2", () => {
     await session.step(18, "And compare runs summary should contain text \"2 runs of 1 model\"", () => shouldContainText(page, el("compare runs summary"), "2 runs of 1 model"));
     await session.step(19, "And compare runs groups should contain text \"Fed-batch titer (example)\"", () => shouldContainText(page, el("compare runs groups"), "Fed-batch titer (example)"));
     await session.step(20, "And compare runs groups should contain text \"Feed 4\"", () => shouldContainText(page, el("compare runs groups"), "Feed 4"));
-    await session.step(21, "When user clicks on open compare runs as table button", () => clickOn(page, el("open compare runs as table button")));
-    await session.step(22, "Then the open table should have 2 rows and a name starting with \"BDD-CMP · process_description runs\"", () => openTableStarting(page, 2, "BDD-CMP · process_description runs"));
+    await session.step(21, "And open compare runs button should be enabled", () => shouldBe(page, el("open compare runs button"), "enabled"));
+    await session.step(22, "When user clicks on open compare runs button", () => clickOn(page, el("open compare runs button")));
+    await session.step(23, "Then the open view should be named \"Run Comparison\"", () => currentViewNamed(page, "Run Comparison"));
+    await session.step(24, "When user clicks on open compare runs as table button", () => clickOn(page, el("open compare runs as table button")));
+    await session.step(25, "Then the open table should have 2 rows and a name starting with \"BDD-CMP · process_description runs\"", () => openTableStarting(page, 2, "BDD-CMP · process_description runs"));
   });
 });
