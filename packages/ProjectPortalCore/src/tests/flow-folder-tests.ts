@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {FlowFoldersConfig, flowFolderPaths, flowFoldersDue, flowsForProgram, TableFlow, validateFlowFolders,
   validateFlowSet} from '../model/flow-folders';
-import {programFolderName} from '../model/workspace-plan';
+import {noNewFoldersReason, programFolderName} from '../model/workspace-plan';
 import {portalDb} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, syncPortfolio} from '../portal';
 import {buildPortfolioWorkspace} from '../workspace';
@@ -62,6 +62,13 @@ category('Portal: flow folder rules', () => {
     expect(twice.length, 1);
   });
 
+  test('an ended program gets no new folders; one on hold or active does', async () => {
+    expect(noNewFoldersReason({code: 'P1', status: 'completed'}), 'P1 is completed: no new folders');
+    expect(noNewFoldersReason({code: 'P2', status: 'terminated'}), 'P2 is terminated: no new folders');
+    for (const status of ['active', 'on_hold', null])
+      expect(noNewFoldersReason({code: 'P3', status}), null, String(status));
+  });
+
   test('flowFolders are checked', async () => {
     expect(validateFlowFolders(config, ['D1'], 'Root').join('; '), '');
     expect(validateFlowFolders(undefined, [], undefined).length, 0);
@@ -90,6 +97,15 @@ const DS = ['01 - Seed train', '02 - Production bioreactor', '03 - Harvest', '04
 
 const subspaces = async (id: string) =>
   await grok.dapi.spaces.id(id).children.ofTypes('Project', false).list({pageSize: 1000}) as DG.Project[];
+/** Deletes a folder this test made, its children first. */
+async function removeFolder(id: string): Promise<void> {
+  for (const c of await subspaces(id))
+    await removeFolder(c.id);
+  const space = await grok.dapi.spaces.find(id).catch(() => null);
+  if (space)
+    await grok.dapi.spaces.delete(space);
+}
+
 const named = (spaces: DG.Project[], name: string) =>
   spaces.find((s) => (s.friendlyName ?? s.name).replace(/[^A-Za-z0-9]/g, '').toLowerCase() ===
     name.replace(/[^A-Za-z0-9]/g, '').toLowerCase());
@@ -150,6 +166,45 @@ category('Portal: flow folders', () => {
     } finally {
       await portalDb.programs.delete(program.id);
       await portalDb.processFlows.delete(flow.id);
+    }
+  });
+
+  test('an ended program: what it has is reused, nothing new is made, the preview lists the rest as skipped', async () => {
+    const bioc = await portfolioByCode('EX-BIOC');
+    const stage = async (code: string) => (await portalDb.stages.getByKey({stage_model_id: bioc.stage_model_id, code}))!.id;
+    const code = `WSE-${Date.now() % 1e9}`;
+    const [program] = await portalDb.programs.insert({portfolio_id: bioc.id, code, name: code,
+      stage_model_id: bioc.stage_model_id, stage_id: await stage('D1'), source: 'manual', modality: 'mAb', status: 'completed'});
+    let spaceId: string | null = null;
+    try {
+      const none = await buildPortfolioWorkspace('EX-BIOC', false, program.id);
+      expect(none.entries.map((e) => `${e.action} ${e.path}${e.reason ? ` (${e.reason})` : ''}`).join(),
+        `reuse ${ROOT},skip ${ROOT}/${code} (${code} is completed: no new folders)`, 'the root only, which is there');
+      expect((await portalDb.programs.get(program.id)).space_id ?? null, null, 'no folder, none recorded');
+
+      // its folder from when it was active, at D1; then it ends at D4, past the flow folders' stage
+      await portalDb.programs.update(program.id, {status: 'active'});
+      const built = await buildPortfolioWorkspace('EX-BIOC', false, program.id);
+      expect(built.failed, 0, built.entries.filter((e) => e.status !== 'ok').map((e) => `${e.path}: ${e.status}`).join('; '));
+      spaceId = (await portalDb.programs.get(program.id)).space_id!;
+      await portalDb.programs.update(program.id, {status: 'completed', stage_id: await stage('D4')});
+
+      const preview = await buildPortfolioWorkspace('EX-BIOC', true, program.id);
+      const skipped = preview.entries.filter((e) => e.action === 'skip');
+      expect(preview.created, 0, preview.entries.filter((e) => e.action === 'create').map((e) => e.path).join());
+      expect(preview.reused, built.created + built.reused, 'what it has is listed as there');
+      expect(skipped.some((e) => /\/Drug Substance\/01 - /.test(e.path)), true, skipped.map((e) => e.path).join());
+      expect(skipped.every((e) => e.reason === `${code} is completed: no new folders`), true);
+      expect(preview.skipped, skipped.length);
+      const again = await buildPortfolioWorkspace('EX-BIOC', false, program.id);
+      expect(again.created, 0, again.entries.filter((e) => e.action === 'create').map((e) => e.path).join());
+      expect(again.skipped, preview.skipped);
+      const folders = await subspaces(spaceId);
+      expect(!!named(await subspaces(named(folders, 'Drug Substance')!.id), DS[0]), false, 'no unit-operation folder made');
+    } finally {
+      if (spaceId)
+        await removeFolder(spaceId).catch(() => {});
+      await portalDb.programs.delete(program.id);
     }
   });
 });

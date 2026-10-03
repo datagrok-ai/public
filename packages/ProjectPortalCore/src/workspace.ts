@@ -12,7 +12,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {normalizeSpaceName} from './model/config';
-import {findOrphans, findProgramFolder, isSpaceNamed, Orphan, PARKED_FOLDER, parseWorkstreams, programAttributes, programFolderName,
+import {findOrphans, findProgramFolder, isSpaceNamed, noNewFoldersReason, Orphan, PARKED_FOLDER, parseWorkstreams, programAttributes, programFolderName,
   SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
@@ -22,8 +22,10 @@ import {FlowFoldersConfig, flowFolderPaths, flowFoldersDue, flowsForProgram, Pro
 
 export interface WorkspaceEntry {
   path: string;
-  action: 'create' | 'reuse';
+  /** skip: the folder is missing and is not made, for [reason]. */
+  action: 'create' | 'reuse' | 'skip';
   status: string;
+  reason?: string;
 }
 
 export interface WorkspaceReport {
@@ -34,6 +36,8 @@ export interface WorkspaceReport {
   created: number;
   reused: number;
   failed: number;
+  /** Folders missing but not made: those of programs that have ended. */
+  skipped: number;
   /** Things the builder saw but, being additive, did not change. */
   notes: string[];
   /** Folders a prune-or-park pass would look at; the builder never touches them (parkOrphans
@@ -118,11 +122,13 @@ export async function buildPortfolioWorkspace(code: string, dryRun = false, only
 async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean, onlyProgramId?: string):
   Promise<WorkspaceReport> {
   const report: WorkspaceReport = {portfolio: portfolio.code, root: rootName, dryRun, entries: [],
-    created: 0, reused: 0, failed: 0, notes: [], orphans: []};
-  const record = (path: string, action: 'create' | 'reuse', status = 'ok') => {
-    report.entries.push({path, action, status});
+    created: 0, reused: 0, failed: 0, skipped: 0, notes: [], orphans: []};
+  const record: RecordEntry = (path, action, status = 'ok', reason) => {
+    report.entries.push({path, action, status, ...(reason ? {reason} : {})});
     if (status !== 'ok')
       report.failed++;
+    else if (action === 'skip')
+      report.skipped++;
     else if (action === 'create')
       report.created++;
     else
@@ -183,9 +189,15 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       report.notes.push(`${p.code}: folder parked under ${PARKED_FOLDER}; not rebuilt (unpark it to use it)`);
       continue;
     }
+    // an ended program keeps the folders it has and gets no new ones
+    const ended = noNewFoldersReason(p);
     try {
       const found = findProgramFolder(p, children.map(asRef));
       let folder = found ? children.find((c) => c.id === found.space.id)! : null;
+      if (!folder && ended) {
+        record(path, 'skip', 'ok', ended);
+        continue;
+      }
       record(path, folder ? 'reuse' : 'create');
       if (found && found.by === 'id' && !isSpaceNamed(found.space, folderName)) {
         report.notes.push(`${p.code}: folder is "${found.space.friendlyName ?? found.space.name}", ` +
@@ -197,11 +209,13 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
         ...flowFolderPaths(flowsOf.get(p.id) ?? [], flowConfig?.placement)];
       if (dryRun) {
         const existing = folder ? await subspaces(folder.id) : [];
-        for (const w of workstreams)
-          record(`${path}/${w}`, existing.some((c) => isSpaceNamed(asRef(c), w)) ? 'reuse' : 'create');
+        for (const w of workstreams) {
+          const there = existing.some((c) => isSpaceNamed(asRef(c), w));
+          record(`${path}/${w}`, there ? 'reuse' : ended ? 'skip' : 'create', 'ok', there ? undefined : ended ?? undefined);
+        }
         const counted = new Set(workstreams.map((w) => normalizeSpaceName(`${path}/${w}`).toLowerCase()));
         for (const parts of extra)
-          await ensurePath(folder, parts, path, true, counted, record);
+          await ensurePath(folder, parts, path, true, counted, record, ended);
         continue;
       }
       if (!folder) {
@@ -220,13 +234,17 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       const existing = workstreams.length > 0 ? await subspaces(folder.id) : [];
       for (const w of workstreams) {
         const there = existing.some((c) => isSpaceNamed(asRef(c), w));
+        if (!there && ended) {
+          record(`${path}/${w}`, 'skip', 'ok', ended);
+          continue;
+        }
         if (!there)
           existing.push(await grok.dapi.spaces.id(folder.id).addSubspace(w));
         record(`${path}/${w}`, there ? 'reuse' : 'create');
       }
       const counted = new Set(workstreams.map((w) => normalizeSpaceName(`${path}/${w}`).toLowerCase()));
       for (const parts of extra)
-        await ensurePath(folder, parts, path, false, counted, record);
+        await ensurePath(folder, parts, path, false, counted, record, ended);
     } catch (e: any) {
       record(path, 'create', `error: ${e?.message ?? e}`);
     }
@@ -266,21 +284,27 @@ async function tableFlows(programIds: string[]): Promise<Map<string, TableFlow[]
 
 const chunks = <T>(xs: T[], n: number): T[][] => Array.from({length: Math.ceil(xs.length / n)}, (_, i) => xs.slice(i * n, i * n + n));
 
+type RecordEntry = (path: string, action: 'create' | 'reuse' | 'skip', status?: string, reason?: string) => void;
+
 /** Makes sure [parts] exists under [folder], one segment at a time. A segment already there under
  * either spelling is reused, so a stage folder under a workstream (DMPK/In vivo PK) lands in the
- * workstream; [counted] keeps a segment shared by two paths, or a workstream, from counting twice. */
+ * workstream; [counted] keeps a segment shared by two paths, or a workstream, from counting twice.
+ * With [skip] (why no new folders), a missing segment and those below it are listed as skipped. */
 async function ensurePath(folder: DG.Project | null, parts: string[], base: string, dryRun: boolean,
-  counted: Set<string>, record: (path: string, action: 'create' | 'reuse') => void): Promise<void> {
+  counted: Set<string>, record: RecordEntry, skip: string | null = null): Promise<void> {
   let parent = folder;
   let path = base;
   for (const part of parts) {
     path = `${path}/${part}`;
     const found = (parent ? await subspaces(parent.id) : []).find((c) => isSpaceNamed(asRef(c), part)) ?? null;
-    const next = found ?? (dryRun || !parent ? null : await grok.dapi.spaces.id(parent.id).addSubspace(part));
+    const next = found ?? (dryRun || !parent || skip ? null : await grok.dapi.spaces.id(parent.id).addSubspace(part));
     const key = normalizeSpaceName(path).toLowerCase();
     if (!counted.has(key)) {
       counted.add(key);
-      record(path, found ? 'reuse' : 'create');
+      if (found || !skip)
+        record(path, found ? 'reuse' : 'create');
+      else
+        record(path, 'skip', 'ok', skip);
     }
     parent = next;
   }
@@ -292,7 +316,7 @@ export async function workspaceOrphans(code: string): Promise<WorkspaceReport> {
   if (!portfolio.workspace_root)
     throw new Error(`portfolio ${code} has no workspaceRoot`);
   const report: WorkspaceReport = {portfolio: code, root: portfolio.workspace_root, dryRun: true, entries: [],
-    created: 0, reused: 0, failed: 0, notes: [], orphans: []};
+    created: 0, reused: 0, failed: 0, skipped: 0, notes: [], orphans: []};
   const root = await findRoot(portfolio.workspace_root);
   if (!root) {
     report.notes.push('the workspace is not built yet');
@@ -313,10 +337,13 @@ export function summarizeWorkspace(r: WorkspaceReport): string {
     return lines.join('\n');
   }
   const head = `${r.portfolio} workspace "${r.root}"${r.dryRun ? ' (preview)' : ''}: ` +
-    `${r.dryRun ? 'would create' : 'created'} ${r.created}, reused ${r.reused}, failed ${r.failed}`;
+    `${r.dryRun ? 'would create' : 'created'} ${r.created}, reused ${r.reused}, failed ${r.failed}` +
+    (r.skipped ? `, skipped ${r.skipped}` : '');
   const lines = [head, ...r.notes.map((n) => `  ${n}`)];
-  if (r.dryRun)
+  if (r.dryRun) {
     lines.push(...r.entries.filter((e) => e.action === 'create').map((e) => `  + ${e.path}`));
+    lines.push(...r.entries.filter((e) => e.action === 'skip').map((e) => `  - ${e.path}: skipped, ${e.reason}`));
+  }
   lines.push(...r.entries.filter((e) => e.status !== 'ok').map((e) => `  ! ${e.path}: ${e.status}`));
   if (r.orphans.length) {
     lines.push(`  Not touched (parking is a separate, explicit step: parkOrphans):`);

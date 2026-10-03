@@ -18,6 +18,15 @@ export interface WorkspaceProgram {
   status?: string | null;
 }
 
+/** Statuses of a program that has ended: the builder makes no new folders for it. */
+export const ENDED_STATUSES = ['completed', 'terminated'];
+
+/** Why the builder makes no new folders for [p] (it has ended), or null when it may. Folders that
+ * are there stay as they are. */
+export function noNewFoldersReason(p: Pick<WorkspaceProgram, 'code' | 'status'>): string | null {
+  return ENDED_STATUSES.includes(p.status ?? '') ? `${p.code} is ${p.status}: no new folders` : null;
+}
+
 /** A program's folder: its code first, so folders sort and read the way the registry lists them. */
 export function programFolderName(p: Pick<WorkspaceProgram, 'code' | 'name'>): string {
   const name = (p.name ?? '').trim();
