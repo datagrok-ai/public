@@ -8,6 +8,7 @@ import {AutoAdvanceConfig, AutoAdvanceOutcome, planAutoAdvance, summarizeAutoAdv
 import {ProgramStatus} from './model/config';
 import {approvalOf, needsApproval} from './model/approvals';
 import {proposeDecision, requestsOf} from './approvals';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export interface AutoAdvanceResult {
   portfolio: string;
@@ -39,7 +40,7 @@ export async function autoAdvance(code: string, dryRun: boolean): Promise<AutoAd
     throw new Error(`${code}: autoAdvance needs stage authority "portal"; the registry owns these stages`);
   if (!dryRun && !await isApprover(portfolio))
     throw new Error(`${code}: only the portfolio's approvers may let data advance its programs; preview with dryRun`);
-  const programs = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`}))
+  const programs = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .sort((a, b) => a.code.localeCompare(b.code));
   for (const p of programs) {
     const status = (p.status ?? 'active') as ProgramStatus;

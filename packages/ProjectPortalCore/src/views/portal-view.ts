@@ -68,6 +68,8 @@ import {openWorkspaceDialog} from './workspace-dialog';
 import {myPins, setPinned} from '../pinning';
 import {PinHolders, whyNotPinnable} from '../model/pinning';
 import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
+import {newestFirstBy} from '../model/time';
+import {filterValue, ROW_LIMIT} from '../rows';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -111,6 +113,12 @@ export class PortalView {
   private news: {since: string | null, lines: string[]} | null | undefined;
   /** The selected program's dataset, read once per open; undefined = not read yet. */
   private data: {rows: DataRow[] | null, error?: string} | undefined;
+  /** What a click's work that failed says: the platform's error balloon, never an unhandled rejection. */
+  private readonly failed = (e: any): void => {
+    grok.shell.error(e?.message ?? String(e));
+  };
+  /** The program [data] was read for: a read that lands after another program was opened is not kept. */
+  private dataFor: string | null = null;
   /** Simple or Advanced, remembered per user. */
   private mode: PortalMode = savedMode();
   /** The persona whose quick actions head the program page, in the open portfolio. */
@@ -168,11 +176,11 @@ export class PortalView {
   }
 
   async load(portfolioCode?: string): Promise<void> {
-    const [portfolios, models] = await Promise.all([portalDb.portfolios.query({}), portalDb.stageModels.query({})]);
+    const [portfolios, models] = await Promise.all([portalDb.portfolios.query({limit: ROW_LIMIT}), portalDb.stageModels.query({limit: ROW_LIMIT})]);
     this.portfolios = portfolios.sort((a, b) => a.name.localeCompare(b.name));
     this.models = new Map(models.map((m) => [m.id, m]));
     const counts = await Promise.all(this.portfolios.map((p) =>
-      portalDb.programs.count({filter: `portfolio_id = "${p.id}"`}).catch(() => 0)));
+      portalDb.programs.count({filter: `portfolio_id = ${filterValue(p.id)}`}).catch(() => 0)));
     this.renderPortfolios(counts);
     const first = this.portfolios.find((p) => p.code === portfolioCode) ?? this.portfolios[0];
     if (first)
@@ -189,7 +197,7 @@ export class PortalView {
         span(p.name, 'pp-portfolio-name'),
         span(`${counts[i]} ${(p.program_noun ?? 'program').toLowerCase()}s · ${model?.name ?? ''}`, 'pp-muted'),
       ], 'pp-portfolio'), `portfolio-${slug(p.code)}`);
-      card.onclick = () => void this.openPortfolio(p.code);
+      card.onclick = () => void this.openPortfolio(p.code).catch(this.failed);
       if (this.portfolio?.id === p.id)
         card.classList.add('pp-selected');
       this.portfolioList.append(card);
@@ -203,15 +211,22 @@ export class PortalView {
     this.portfolio = p;
     this.selected = null;
     this.redraw = null;
-    this.persona = await personaIn(p).catch(() => ({persona: 'lead' as Persona, chosen: false}));
+    const persona = await personaIn(p).catch(() => ({persona: 'lead' as Persona, chosen: false}));
+    // another portfolio was opened meanwhile
+    if (this.portfolio !== p)
+      return;
+    this.persona = persona;
     this.path.value = `${APP_PATH}/${p.code}`;
     for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
       el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
-    [this.stages, this.programs, this.pins] = await Promise.all([
+    const [stages, programs, pins] = await Promise.all([
       stagesOf(p.stage_model_id),
-      portalDb.programs.query({filter: `portfolio_id = "${p.id}"`}),
+      portalDb.programs.query({filter: `portfolio_id = ${filterValue(p.id)}`, limit: ROW_LIMIT}),
       myPins().catch(() => new Map<string, PinHolders>()),
     ]);
+    if (this.portfolio !== p)
+      return;
+    [this.stages, this.programs, this.pins] = [stages, programs, pins];
     this.viewersGroup = null;
     this.renderBoard();
     this.detail.replaceChildren(span(`Select a ${(p.program_noun ?? 'program').toLowerCase()}`, 'pp-muted'));
@@ -268,7 +283,7 @@ export class PortalView {
     ], 'pp-card'), `program-${slug(x.code)}`);
     if (x.id === this.selected)
       el.classList.add('pp-selected');
-    el.onclick = () => void this.openProgram(x.id);
+    el.onclick = () => void this.openProgram(x.id).catch(this.failed);
     return el;
   }
 
@@ -291,9 +306,9 @@ export class PortalView {
         this.path.value = `${APP_PATH}/${this.portfolio.code}/${program.code}`;
     }
     const ctx = await programContext(id);
-    const transitions = (await portalDb.stageTransitions.query({filter: `program_id = "${id}"`}))
-      .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
-    const successors = await portalDb.programs.query({filter: `predecessor_id = "${id}"`}).catch(() => []);
+    const transitions = (await portalDb.stageTransitions.query({filter: `program_id = ${filterValue(id)}`, limit: ROW_LIMIT}))
+      .sort(newestFirstBy((x) => x.created_on));
+    const successors = await portalDb.programs.query({filter: `predecessor_id = ${filterValue(id)}`, limit: ROW_LIMIT}).catch(() => []);
     const readiness = await this.readinessOf(ctx, viewedStage);
     const units = await Promise.all(enabledWorkUnits(ctx.portfolio).map(async (kind) =>
       ({kind, rows: await workUnitsOf(kind, [id]).catch(() => [])})));
@@ -311,7 +326,8 @@ export class PortalView {
       }
     }
     const attention = await this.attentionOf(ctx);
-    const recommendation = await recommendFor(ctx, {readiness, rows: this.data?.rows, dataError: this.data?.error})
+    const known = this.dataFor === id ? this.data : undefined;
+    const recommendation = await recommendFor(ctx, {readiness, rows: known?.rows, dataError: known?.error})
       .catch((e) => {
         grok.log.warning(`Project Portal: no model recommendation for ${ctx.program.code}: ${e?.message ?? e}`);
         return null;
@@ -320,22 +336,17 @@ export class PortalView {
     const follows = await myFollows(id).catch(() => [] as FollowRow[]);
     // read once per open of a program: a click on the stage track is not a new visit
     if (this.news === undefined && follows.length) {
-      if (this.data === undefined) {
-        try {
-          this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
-        } catch (e: any) {
-          this.data = {rows: null, error: e?.message ?? String(e)};
-        }
-      }
-      this.news = await whatsNew(ctx.portfolio, ctx.program, this.data.rows, follows).catch(() => null);
+      const data = await this.programDataOf(ctx);
+      const news = await whatsNew(ctx.portfolio, ctx.program, data.rows, follows).catch(() => null);
+      if (this.selected === id)
+        this.news = news;
     }
     const news = follows.length ? this.news ?? null : null;
-    this.follows = follows;
-    this.roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
+    const roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
     // pinned or not is the platform's favorite, which the Workspace may have changed since
-    this.pins = await myPins().catch(() => this.pins);
-    if (this.roles.manage && ctx.portfolio.viewers && this.viewersGroup?.id !== ctx.portfolio.viewers)
-      this.viewersGroup = await grok.dapi.groups.find(ctx.portfolio.viewers).catch(() => null);
+    const pins = await myPins().catch(() => this.pins);
+    const viewersGroup = roles.manage && ctx.portfolio.viewers && this.viewersGroup?.id !== ctx.portfolio.viewers ?
+      await grok.dapi.groups.find(ctx.portfolio.viewers).catch(() => null) : this.viewersGroup;
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
     // documents: the cards of the current and next gate's document criteria, and the rest
     const docRows = await documentsOf(id).catch(() => [] as DocumentRow[]);
@@ -351,28 +362,37 @@ export class PortalView {
     const suggested = ctx.approver && ctx.portfolio.stage_authority === 'portal' ? await suggestedEvidence(id, ctx.readiness,
       ctx.stages.find((s) => s.id === ctx.readiness?.stageId)?.name ?? '').catch(() => []) : [];
     // stored predictions, and the program data to set them against
-    this.predictions = await predictionsOf(id).then((p) => p.latest).catch(() => [] as Prediction[]);
-    if (this.predictions.length && this.data === undefined) {
-      try {
-        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
-      } catch (e: any) {
-        this.data = {rows: null, error: e?.message ?? String(e)};
-      }
-    }
+    const predictions = await predictionsOf(id).then((p) => p.latest).catch(() => [] as Prediction[]);
+    if (predictions.length)
+      await this.programDataOf(ctx);
     // the program's activity, from its own records
-    if (this.feed.programId !== id)
-      this.feed = {programId: id, entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
+    let feedEntries: FeedEntry[] = [];
+    let feedNames = new Map<string, string>();
+    let feedError: string | undefined;
     try {
-      this.feed.entries = await programFeedOf(ctx.portfolio, ctx.program);
-      this.feed.names = await feedUserNames(this.feed.entries);
-      this.feed.error = undefined;
+      feedEntries = await programFeedOf(ctx.portfolio, ctx.program);
+      feedNames = await feedUserNames(feedEntries);
     } catch (e: any) {
-      this.feed.error = e?.message ?? String(e);
+      feedError = e?.message ?? String(e);
     }
     // the approval workflow's requests about this program, when the portfolio asks for approvals
     const requests = await requestsOf(id).catch(() => [] as ApprovalRequestRow[]);
-    this.approvals = {rows: requests, names: await userNames(requests.flatMap((r) =>
-      [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])).catch(() => new Map<string, string>())};
+    const approvalNames = await userNames(requests.flatMap((r) =>
+      [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])).catch(() => new Map<string, string>());
+    // another program was opened meanwhile: its page is not this one's to draw
+    if (this.selected !== id)
+      return;
+    this.follows = follows;
+    this.roles = roles;
+    this.pins = pins;
+    this.viewersGroup = viewersGroup;
+    this.predictions = predictions;
+    if (this.feed.programId !== id)
+      this.feed = {programId: id, entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
+    this.feed.entries = feedEntries;
+    this.feed.names = feedNames;
+    this.feed.error = feedError;
+    this.approvals = {rows: requests, names: approvalNames};
     this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
       choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents);
     this.redraw();
@@ -430,28 +450,36 @@ export class PortalView {
   private async attentionOf(ctx: ProgramContext): Promise<{result: ProgramAttention | null, error?: string} | null> {
     if (attentionRulesOf(ctx.portfolio).length === 0)
       return null;
-    if (this.data === undefined) {
-      try {
-        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
-      } catch (e: any) {
-        this.data = {rows: null, error: e?.message ?? String(e)};
-      }
-    }
-    return this.data.error ? {result: null, error: this.data.error} : {result: attentionFor(ctx.portfolio, this.data.rows)};
+    const data = await this.programDataOf(ctx);
+    return data.error ? {result: null, error: data.error} : {result: attentionFor(ctx.portfolio, data.rows)};
   }
 
   /** Readiness for the viewed stage: the context already holds the next stage's. */
   private async readinessOf(ctx: ProgramContext, stageId: string | null): Promise<Readiness | null> {
     if (stageId === null || stageId === ctx.readiness?.stageId)
       return ctx.readiness;
-    if (ctx.criteria.some((c) => c.stageId === stageId && c.condition) && this.data === undefined) {
-      try {
-        this.data = {rows: await programData(ctx.portfolio, ctx.program.code)};
-      } catch (e: any) {
-        this.data = {rows: null, error: e?.message ?? String(e)};
-      }
+    const data = ctx.criteria.some((c) => c.stageId === stageId && c.condition) ? await this.programDataOf(ctx) :
+      this.dataFor === ctx.program.id ? this.data : undefined;
+    return readinessFor(ctx, stageId, data?.rows ?? null, data?.error);
+  }
+
+  /** The program dataset of the program [ctx] is about, read once per open. Kept only while that
+   * program is still the one shown. */
+  private async programDataOf(ctx: ProgramContext): Promise<{rows: DataRow[] | null, error?: string}> {
+    const id = ctx.program.id;
+    if (this.data !== undefined && this.dataFor === id)
+      return this.data;
+    let data: {rows: DataRow[] | null, error?: string};
+    try {
+      data = {rows: await programData(ctx.portfolio, ctx.program.code)};
+    } catch (e: any) {
+      data = {rows: null, error: e?.message ?? String(e)};
     }
-    return readinessFor(ctx, stageId, this.data?.rows ?? null, this.data?.error);
+    if (this.selected === id) {
+      this.data = data;
+      this.dataFor = id;
+    }
+    return data;
   }
 
   private renderDetail(ctx: ProgramContext, transitions: StageTransitionRow[], successors: ProgramRow[],
@@ -474,7 +502,7 @@ export class PortalView {
         current && s.ordinal < current.ordinal ? 'pp-step pp-step-done' : 'pp-step';
       const step = named(span(s.code, cls + (s.id === viewed?.id ? ' pp-step-viewed' : '')), `step-${slug(s.code)}`);
       step.title = `${s.name}: show what entering it takes`;
-      step.onclick = () => void this.openProgram(program.id, s.id === next?.id ? null : s.id);
+      step.onclick = () => void this.openProgram(program.id, s.id === next?.id ? null : s.id).catch(this.failed);
       return step;
     }), 'pp-track'), 'stage-track');
 
@@ -563,7 +591,7 @@ export class PortalView {
       lineage.push(named(span(`Continued as ${s.code} in another portfolio`, 'pp-lineage'), 'lineage-successor'));
 
     const workspace = spaceLive ?
-      named(button('Open workspace', () => void this.openWorkspace(program.space_id!)), 'open-workspace-button') :
+      named(button('Open workspace', () => void this.openWorkspace(program.space_id!).catch(this.failed)), 'open-workspace-button') :
       named(span(program.space_id ? 'The workspace folder is gone: rebuild it with buildWorkspace' :
         'No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
 
@@ -579,7 +607,7 @@ export class PortalView {
     });
 
     const followed = this.follows.some((f) => !f.work_unit_code);
-    const followButton = named(button(followed ? 'Unfollow' : 'Follow', () => void this.toggleFollow(ctx, null)),
+    const followButton = named(button(followed ? 'Unfollow' : 'Follow', () => void this.toggleFollow(ctx, null).catch(this.failed)),
       'follow-button');
     followButton.title = followed ? 'Stop being notified of new data in this program' :
       'Be notified, in the platform\'s notifications, when new results land in this program\'s data';
@@ -727,8 +755,8 @@ export class PortalView {
         void openChooseRunDialog({programId: program.id, criterion: {id: c.id, code: c.code, name: c.name,
           runFilter: c.runFilter}, runs: run![1], onSelected: () => this.openProgram(program.id, this.viewedStage)}).catch(failed);
       },
-      follow: () => void this.toggleFollow(ctx, null),
-      open_workspace: () => void this.openWorkspace(program.space_id!),
+      follow: () => void this.toggleFollow(ctx, null).catch(this.failed),
+      open_workspace: () => void this.openWorkspace(program.space_id!).catch(this.failed),
       gate_decision: s.gate,
       portfolio_table: () => void openPortfolioTable(portfolio.code),
     };
@@ -790,7 +818,7 @@ export class PortalView {
       run.disabled = !m.installed;
       run.title = m.installed ? 'Open the model\'s dialog, filled in from this program' : 'The model\'s function is not installed here';
       const scores = m.scores ?? [];
-      const score = scores.length && r.portfolio.setting === 'discovery' ? named(button('Score', () => void this.score(r, m.code)),
+      const score = scores.length && r.portfolio.setting === 'discovery' ? named(button('Score', () => void this.score(r, m.code).catch(this.failed)),
         `score-model-${slug(m.code)}`) : null;
       if (score) {
         score.disabled = !m.installed;
@@ -900,11 +928,11 @@ export class PortalView {
       const on = this.follows.some((f) => f.work_unit_kind === 'series' && f.work_unit_code === code);
       const b = named(span(on ? 'Unfollow' : 'Follow', 'pp-link'), `follow-series-${slug(code)}`);
       b.title = on ? 'Stop being notified of new data in this series' : 'Be notified when new results land in this series';
-      b.onclick = () => void this.toggleFollow(ctx, {kind: 'series', code});
+      b.onclick = () => void this.toggleFollow(ctx, {kind: 'series', code}).catch(this.failed);
       // what is new in the series: the Activity section narrowed to it
       const a = named(span('Activity', 'pp-link'), `series-activity-${slug(code)}`);
       a.title = 'What happened in this series: its work-unit changes, new data and compound roles';
-      a.onclick = () => void this.setFeedSeries(ctx, code, true);
+      a.onclick = () => void this.setFeedSeries(ctx, code, true).catch(this.failed);
       return [b, a];
     };
     const unitVariant = (s?: string): BadgeVariant => ['active', 'running', 'in_development'].includes(s ?? '') ?
@@ -988,9 +1016,9 @@ export class PortalView {
     ], 'pp-criterion'), `criterion-${slug(c.code)}`);
     if (editable) {
       if (c.basis === 'recorded' && c.state !== 'met' && c.state !== 'waived')
-        row.append(named(button('Met', () => void this.mark(programId, c.id, 'met')), `mark-met-${slug(c.code)}`));
+        row.append(named(button('Met', () => void this.mark(programId, c.id, 'met').catch(this.failed)), `mark-met-${slug(c.code)}`));
       if (c.state !== 'waived' && c.state !== 'met')
-        row.append(named(button('Waive', () => void this.mark(programId, c.id, 'waived')), `mark-waived-${slug(c.code)}`));
+        row.append(named(button('Waive', () => void this.mark(programId, c.id, 'waived').catch(this.failed)), `mark-waived-${slug(c.code)}`));
     }
     const runLines = run ? [this.criterionRun(programId, c, run.runs, run.criterion)] : [];
     if (!c.result && !c.gap && !runLines.length)
@@ -1246,6 +1274,8 @@ export class PortalView {
   provenance(kind: string, id: string): void {
     void openProvenanceDialog(kind, id, {openProgram: async (programId) => {
       const p = await portalDb.programs.get(programId);
+      if (!p)
+        throw new Error('This program is gone, or it is not shared with you');
       await this.showProgram((await portalDb.portfolios.get(p.portfolio_id)).code, programId);
     }})
       .catch((e) => grok.shell.error(e?.message ?? String(e)));
@@ -1324,7 +1354,7 @@ export class PortalView {
       } catch (e: any) {
         this.roleLine.set(program.id, e?.message ?? String(e));
       }
-      await this.openProgram(program.id, this.viewedStage);
+      await this.openProgram(program.id, this.viewedStage).catch(this.failed);
     };
     out.push(named(divV(this.roles.rows.length ? this.roles.rows.map((r) => named(divH([
       span(r.name),
@@ -1405,7 +1435,7 @@ export class PortalView {
     const held = ctx.program.space_id ? this.pins.get(ctx.program.space_id) : undefined;
     const reason = whyNotPinnable({spaceId: ctx.program.space_id, spaceLive});
     const mine = !!held?.mine;
-    const pin = named(button(mine ? 'Unpin' : 'Pin to my Workspace', () => void this.togglePin(ctx, !mine, null)), 'pin-button');
+    const pin = named(button(mine ? 'Unpin' : 'Pin to my Workspace', () => void this.togglePin(ctx, !mine, null).catch(this.failed)), 'pin-button');
     pin.disabled = !!reason && !mine;
     pin.title = reason && !mine ? `Cannot pin: ${reason}` : mine ? 'Take its folder out of your Workspace and its tile off Home' :
       'Its folder goes in your Workspace, and its tile in My programs on Home';
@@ -1415,7 +1445,7 @@ export class PortalView {
     const gName = g.friendlyName || g.name;
     const forGroup = !!held?.groups.includes(gName);
     const groupPin = named(button(forGroup ? `Unpin for ${gName}` : `Pin for ${gName}`,
-      () => void this.togglePin(ctx, !forGroup, g)), 'pin-group-button');
+      () => void this.togglePin(ctx, !forGroup, g).catch(this.failed)), 'pin-group-button');
     groupPin.disabled = !!reason && !forGroup;
     groupPin.title = reason && !forGroup ? `Cannot pin: ${reason}` :
       `${forGroup ? 'Take it out of' : 'Put it in'} the Workspace of everyone in ${gName}`;
@@ -1503,8 +1533,10 @@ export class PortalView {
   myFeed(): void {
     void openMyFeedDialog({
       openProgram: async (code, programId) => {
-        const p = await portalDb.programs.get(programId);
-        await this.showProgram(code || (await portalDb.portfolios.get(p.portfolio_id)).code, programId);
+        const p = code ? null : await portalDb.programs.get(programId);
+        if (!code && !p)
+          throw new Error('This program is gone, or it is not shared with you');
+        await this.showProgram(code || (await portalDb.portfolios.get(p!.portfolio_id)).code, programId);
       },
       trace: (kind, id) => this.provenance(kind, id),
     }).catch((e) => grok.shell.error(e?.message ?? String(e)));

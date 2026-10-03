@@ -7,13 +7,18 @@ import {readRunAnnotations} from './model/model-runs';
 import {Choice, programChoices, SaveRunChoices} from './model/save-run';
 import {splitCodes} from './model/catalogue';
 import {portfolioByCode} from './portal';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** The codes of the catalogued models, read once per session; refreshed by `catalogueCodes(true)`. */
 let codes: Promise<Set<string>> | null = null;
 export function catalogueCodes(refresh = false): Promise<Set<string>> {
   if (!codes || refresh) {
-    codes = portalDb.models.query({}).then((ms) => new Set(ms.map((m) => m.code)))
-      .catch(() => new Set<string>());
+    codes = portalDb.models.query({limit: ROW_LIMIT}).then((ms) => new Set(ms.map((m) => m.code)))
+      .catch(() => {
+        // not cached: one failed read must not turn run tracking off for the session
+        codes = null;
+        return new Set<string>();
+      });
   }
   return codes;
 }
@@ -47,7 +52,7 @@ export function trackModelRuns(onRun: (call: DG.FuncCall) => void): void {
 /** The programs of a portfolio the user can see, as the dialog lists them. */
 export async function programsOf(portfolioCode: string): Promise<Choice[]> {
   const pf = await portfolioByCode(portfolioCode);
-  return programChoices(await portalDb.programs.query({filter: `portfolio_id = "${pf.id}"`}));
+  return programChoices(await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)}`, limit: ROW_LIMIT}));
 }
 
 /** Everything the dialog offers for [call]: portfolios, unit operations, run types, and the
@@ -55,7 +60,7 @@ export async function programsOf(portfolioCode: string): Promise<Choice[]> {
 export async function saveRunChoices(call: DG.FuncCall | null,
   context?: {portfolio?: string | null, program?: string | null} | null): Promise<SaveRunChoices> {
   const [portfolios, ops, types] = await Promise.all([
-    portalDb.portfolios.query({}), portalDb.unitOperations.query({}), portalDb.runTypes.query({})]);
+    portalDb.portfolios.query({limit: ROW_LIMIT}), portalDb.unitOperations.query({limit: ROW_LIMIT}), portalDb.runTypes.query({limit: ROW_LIMIT})]);
   const model = call?.func ? await portalDb.models.getByKey({code: call.func.nqName}).catch(() => null) : null;
   const runType = model?.default_run_type_id ? types.find((t) => t.id === model.default_run_type_id) : undefined;
   const byName = <T extends {code: string, name: string}>(xs: T[]) => xs.map((x) => ({code: x.code, name: x.name}))

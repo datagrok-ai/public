@@ -24,6 +24,7 @@ import {
   shouldNotify, staleMessage,
 } from './model/evidence-tables';
 import {notifyUser} from './notify';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** The kind a generated table takes: `evidence_table` when the portfolio declares it, else `other`. */
 export const EVIDENCE_KIND = 'evidence_table';
@@ -105,12 +106,12 @@ export async function evidenceInputsOf(ctx: ProgramContext, c: ContextCriterion,
   // decisions citing the criterion, its run, or a document over it that a person wrote
   const docs = opts.docs ?? await documentsOf(program.id).catch(() => [] as DocumentRow[]);
   const docIds = new Set(docs.filter((d) => d.gate_criterion_id === c.id && !generatedOf(d)).map((d) => d.id));
-  const evidence = await portalDb.evidences.query({filter: `program_id = "${program.id}"`}).catch(() => []);
+  const evidence = await portalDb.evidences.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}).catch(() => []);
   const citing = new Set(evidence.filter((e) => (e.kind === 'criterion' && e.target === c.id) ||
     (e.kind === 'model_run' && run && e.target === run.runId) ||
     (e.kind === 'file' && docIds.has(String((e.context as any)?.document ?? ''))))
     .map((e) => e.stage_transition_id).filter((x): x is string => !!x));
-  const transitions = citing.size ? await portalDb.stageTransitions.query({filter: `program_id = "${program.id}"`}) : [];
+  const transitions = citing.size ? await portalDb.stageTransitions.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}) : [];
   const code = (id?: string | null) => id ? ctx.stages.find((s) => s.id === id)?.code ?? null : null;
   const decisions = transitions.filter((t) => citing.has(t.id) && t.decision !== 'sync')
     .map((t) => ({id: t.id, decision: t.decision, on: dayjs((t.decided_on ?? t.created_on) as any).toISOString(),
@@ -280,11 +281,11 @@ export interface EvidenceChangeCheck {
  * result on each, and tells each stale document's author and the program's followers once per state
  * of the evidence, in the platform's notifications. */
 export async function checkEvidenceChangesOf(portfolio: PortfolioRow, opts: {notify?: boolean} = {}): Promise<EvidenceChangeCheck> {
-  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const programs = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
   const out: EvidenceChangeCheck = {documents: 0, stale: [], notified: [], errors: [], summary: ''};
   const ids = programs.map((p) => `"${p.id}"`).join(', ');
-  const docs = ids ? (await portalDb.documents.query({filter: `program_id in (${ids})`})).filter((d) => generatedOf(d) &&
-    d.status !== 'superseded') : [];
+  const all = ids ? await portalDb.documents.query({filter: `program_id in (${ids})`, limit: ROW_LIMIT}) : [];
+  const docs = all.filter((d) => generatedOf(d) && d.status !== 'superseded');
   const tell = new Map<string, string[]>();
   for (const program of programs) {
     const mine = docs.filter((d) => d.program_id === program.id);
@@ -292,8 +293,9 @@ export async function checkEvidenceChangesOf(portfolio: PortfolioRow, opts: {not
       continue;
     try {
       const ctx = await programContext(program.id);
-      const found = await evidenceChangesOf(ctx, mine);
-      const followers = opts.notify === false ? [] : (await portalDb.follows.query({filter: `program_id = "${program.id}"`}))
+      // every document of the program: the decisions citing a person-written one count as evidence too
+      const found = await evidenceChangesOf(ctx, all.filter((d) => d.program_id === program.id));
+      const followers = opts.notify === false ? [] : (await portalDb.follows.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}))
         .filter((f) => f.active !== false).map((f) => f.user_id);
       for (const d of mine) {
         const r = found.get(d.id);

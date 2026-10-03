@@ -183,3 +183,8 @@ export function describeApproval(config: ApprovalConfig | null): string {
   const n = approvalsNeeded(config);
   return `Needs ${n} approver${n === 1 ? '' : 's'} besides the proposer: ${what.join(', ')}`;
 }
+
+/** Whether an approval may take effect now on [r]: it waits, or its last approval has claimed it
+ * (status approved, not yet closed) and the effect is being applied. */
+export const takesEffect = (r: {status: string, closed_on?: unknown}): boolean =>
+  r.status === 'pending' || (r.status === 'approved' && !r.closed_on);

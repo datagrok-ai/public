@@ -26,6 +26,8 @@ import {
   approvalOf, approvalsNeeded, checkProposal, checkReview, checkWithdraw, decisionTitle, describeProgress, RequestKind,
   RequestRef, Review, reviewsOf, ReviewVerdict, statusAfter, waitingFor,
 } from './model/approvals';
+import {newestFirstBy, oldestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export const requestRef = (r: ApprovalRequestRow): RequestRef => ({id: r.id, kind: r.kind as RequestKind,
   status: r.status as RequestRef['status'], title: r.title, proposedBy: r.proposed_by ?? null,
@@ -33,16 +35,16 @@ export const requestRef = (r: ApprovalRequestRow): RequestRef => ({id: r.id, kin
   needed: r.approvals_needed ?? 1, reviews: reviewsOf(r.reviews), programId: r.program_id ?? null, portfolioId: r.portfolio_id});
 
 const newestFirst = (rows: ApprovalRequestRow[]) =>
-  rows.sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+  rows.sort(newestFirstBy((x) => x.created_on));
 
 /** Every request of a program, newest first. */
 export async function requestsOf(programId: string): Promise<ApprovalRequestRow[]> {
-  return newestFirst(await portalDb.approvalRequests.query({filter: `program_id = "${programId}"`}));
+  return newestFirst(await portalDb.approvalRequests.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}));
 }
 
 /** The requests about one document or model card, newest first. */
 async function requestsFor(kind: RequestKind, target: string): Promise<ApprovalRequestRow[]> {
-  return newestFirst(await portalDb.approvalRequests.query({filter: `kind = "${kind}" and target = "${target}"`}));
+  return newestFirst(await portalDb.approvalRequests.query({filter: `kind = ${filterValue(kind)} and target = ${filterValue(target)}`, limit: ROW_LIMIT}));
 }
 
 export interface Proposal {
@@ -109,14 +111,25 @@ export async function submitDocument(program: ProgramRow, documentId: string, ra
     refused.push(`the document is ${doc.status}; only a draft or a rejected document is submitted`);
   if (refused.length)
     throw new Error(refused.join('; '));
-  await portalDb.documents.update(doc.id, {status: 'submitted'});
   const [r] = await portalDb.approvalRequests.insert({portfolio_id: ctx.portfolio.id, program_id: program.id, kind: 'document',
     target: doc.id, title: `${program.code}: approve ${describeDocument({title: doc.title, version: doc.doc_version, status: 'draft'})
       .replace(/ · draft$/, '')}`, rationale: rationale ?? undefined, source: 'person',
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(approvalOf(ctx.portfolio.approval)),
     status: 'pending'});
+  // the request first, then the document: a failed insert leaves no document stuck as submitted
+  await markSubmitted(r.id, () => portalDb.documents.update(doc.id, {status: 'submitted'}));
   const request = await portalDb.approvalRequests.get(r.id);
   return {request, line: `${request.title}: submitted for approval`};
+}
+
+/** Marks the target of request [id] as waiting; if that fails, the request is removed again. */
+async function markSubmitted(id: string, mark: () => Promise<unknown>): Promise<void> {
+  try {
+    await mark();
+  } catch (e: any) {
+    await portalDb.approvalRequests.delete(id).catch(() => undefined);
+    throw e;
+  }
 }
 
 /** Submits a model card for approval (draft or rejected → in review), in a portfolio whose
@@ -139,11 +152,11 @@ export async function submitModelCard(portfolio: PortfolioRow, modelCode: string
     refused.push(`the card is ${card.approval.replace('_', ' ')}; only a draft or a rejected card is submitted`);
   if (refused.length)
     throw new Error(refused.join('; '));
-  await portalDb.modelCards.update(card.id, {approval: 'in_review'});
   const [r] = await portalDb.approvalRequests.insert({portfolio_id: portfolio.id, kind: 'model_card', target: card.id,
     title: `${model.name} ${card.model_version}: approve model card`, rationale: rationale ?? undefined, source: 'person',
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(approvalOf(portfolio.approval)),
     status: 'pending'});
+  await markSubmitted(r.id, () => portalDb.modelCards.update(card.id, {approval: 'in_review'}));
   const request = await portalDb.approvalRequests.get(r.id);
   return {request, line: `${request.title}: submitted for approval`};
 }
@@ -179,6 +192,14 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
     throw new Error(refused.join('; '));
   const reviews: Review[] = [...ref.reviews, {by: me, on: dayjs().toISOString(), verdict, rationale: rationale.trim()}];
   const status = statusAfter(reviews, ref.needed);
+  // claim the request first, with its new status, against the version read: a second reviewer (or a
+  // second click) at the same time fails here, or then finds it closed, instead of losing a review
+  // or applying the decision twice. If the effect fails, the claim is undone.
+  try {
+    await portalDb.approvalRequests.update(row.id, {reviews: {items: reviews}, status} as any, {version: row.version});
+  } catch (e: any) {
+    throw new Error(`${row.title}: reviewed by someone else meanwhile; reload and try again (${e?.message ?? e})`);
+  }
   let result = '';
   let effect: RecordedDecision | undefined;
   let transition: string | undefined;
@@ -202,6 +223,8 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
         result = 'model card approved';
       }
     } catch (e: any) {
+      await portalDb.approvalRequests.update(row.id, {reviews: {items: ref.reviews}, status: 'pending'} as any)
+        .catch(() => undefined);
       throw new Error(`Approved, but it could not take effect, so the request stays pending: ${e?.message ?? e}`);
     }
   } else if (status === 'rejected') {
@@ -240,7 +263,7 @@ export async function withdrawRequest(requestId: string): Promise<ApprovalReques
 
 /** The pending requests the current user may review, oldest first. */
 export async function waitingForMe(): Promise<ApprovalRequestRow[]> {
-  const pending = await portalDb.approvalRequests.query({filter: 'status = "pending"'});
+  const pending = await portalDb.approvalRequests.query({filter: 'status = "pending"', limit: ROW_LIMIT});
   const portfolios = new Map<string, PortfolioRow>();
   const allowed = new Set<string>();
   for (const r of pending) {
@@ -250,7 +273,7 @@ export async function waitingForMe(): Promise<ApprovalRequestRow[]> {
   const me = DG.User.current().id;
   const ids = new Set(waitingFor(pending.map(requestRef), me, (r) => allowed.has(r.id)).map((r) => r.id));
   return pending.filter((r) => ids.has(r.id))
-    .sort((a, b) => String(a.proposed_on ?? a.created_on).localeCompare(String(b.proposed_on ?? b.created_on)));
+    .sort(oldestFirstBy((x) => x.proposed_on ?? x.created_on));
 }
 
 /** The names of the users behind [ids], by id. */

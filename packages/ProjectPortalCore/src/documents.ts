@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import {DocumentRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {ProgramContext, programContext, portfolioByCode} from './portal';
 import {programAccess} from './program-roles';
-import {approvalOf, needsApproval} from './model/approvals';
+import {approvalOf, needsApproval, takesEffect} from './model/approvals';
 import {existingSpaces} from './workspace';
 // evidence.ts imports from here too; the cycle is safe because neither uses the other at load
 import {selectedRunsOf} from './evidence';
@@ -17,6 +17,8 @@ import {
   checkDocumentChange, criterionAfter, defaultKindFor, describeDocument, DocumentCard, documentCards, DocumentInput,
   DocumentKindConfig, DocumentRef, DocumentStatus, documentVocabulary, supersededBy, validateDocument,
 } from './model/documents';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** Where the package's own files are read from by path. */
 export const PACKAGE_FILES = 'System:AppData/ProjectPortalCore/';
@@ -34,8 +36,8 @@ export function vocabularyOf(ctx: Pick<ProgramContext, 'portfolio' | 'criteria'>
 }
 
 export async function documentsOf(programId: string): Promise<DocumentRow[]> {
-  return (await portalDb.documents.query({filter: `program_id = "${programId}"`}))
-    .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+  return (await portalDb.documents.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}))
+    .sort(newestFirstBy((x) => x.created_on));
 }
 
 export interface LinkedDocument {
@@ -73,7 +75,7 @@ export async function linkDocumentTo(program: ProgramRow, input: Partial<Documen
   if (status === 'approved' && existing?.status !== 'approved' &&
     needsApproval(approvalOf(ctx.portfolio.approval), 'document')) {
     const request = opts.approvedRequest ? await portalDb.approvalRequests.get(opts.approvedRequest).catch(() => null) : null;
-    if (!request || request.status !== 'pending' || request.kind !== 'document' || request.target !== existing?.id)
+    if (!request || !takesEffect(request) || request.kind !== 'document' || request.target !== existing?.id)
       throw new Error(`${ctx.portfolio.code} asks for approval of documents: submit it, and another approver approves it`);
   }
   const doc: DocumentInput = {path, criterionId: criterion?.id ?? null, status,
@@ -177,11 +179,11 @@ export async function uploadDocument(program: ProgramRow, name: string, bytes: U
 
 /** The decisions that cite each document, by document id: `advance 2026-10-02`. */
 async function citationsOf(programId: string): Promise<Record<string, string[]>> {
-  const evidence = (await portalDb.evidences.query({filter: `program_id = "${programId}" and kind = "file"`}).catch(() => []))
+  const evidence = (await portalDb.evidences.query({filter: `program_id = ${filterValue(programId)} and kind = "file"`, limit: ROW_LIMIT}).catch(() => []))
     .filter((e) => (e.context as any)?.document);
   if (!evidence.length)
     return {};
-  const transitions = await portalDb.stageTransitions.query({filter: `program_id = "${programId}"`});
+  const transitions = await portalDb.stageTransitions.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
   const out: Record<string, string[]> = {};
   for (const e of evidence) {
     const t = transitions.find((x) => x.id === e.stage_transition_id);
@@ -249,7 +251,7 @@ export async function loadExampleDocuments(pkg: DG.Package): Promise<string> {
       if (!portfolios.has(e.portfolio))
         portfolios.set(e.portfolio, await portfolioByCode(e.portfolio));
       const pf = portfolios.get(e.portfolio)!;
-      const program = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${e.program}"`}))[0];
+      const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(e.program)}`, limit: ROW_LIMIT}))[0];
       if (!program) {
         lines.push(`${e.portfolio} ${e.program}: no such program (sync the portfolio first)`);
         continue;

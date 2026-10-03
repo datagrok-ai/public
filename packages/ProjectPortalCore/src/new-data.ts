@@ -9,6 +9,7 @@ import {portfolioByCode, programData} from './portal';
 import {compare, DataSnapshot, describeNews, followLabel, isNews, rowsOf} from './model/new-data';
 import {DataRow, ProgramDataConfig} from './model/conditions';
 import {notifyUser} from './notify';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export interface WorkUnitRef {
   kind: FollowWorkUnitKind;
@@ -28,7 +29,7 @@ const isActive = (f: FollowRow) => f.active !== false;
 
 /** Every follow row of the current user for a program, unfollowed ones too. */
 const myRows = (programId: string): Promise<FollowRow[]> =>
-  portalDb.follows.query({filter: `program_id = "${programId}" and user_id = "${me()}"`});
+  portalDb.follows.query({filter: `program_id = ${filterValue(programId)} and user_id = ${filterValue(me())}`, limit: ROW_LIMIT});
 
 /** The current user's follows of a program: the program itself and any of its work units. */
 export async function myFollows(programId: string): Promise<FollowRow[]> {
@@ -37,12 +38,12 @@ export async function myFollows(programId: string): Promise<FollowRow[]> {
 
 /** Every active follow of the current user, across programs: what "my feed" reads. */
 export async function myFollowsAll(): Promise<FollowRow[]> {
-  return (await portalDb.follows.query({filter: `user_id = "${me()}"`})).filter(isActive);
+  return (await portalDb.follows.query({filter: `user_id = ${filterValue(me())}`, limit: ROW_LIMIT})).filter(isActive);
 }
 
 async function programByCode(portfolioCode: string, programCode: string): Promise<{portfolio: PortfolioRow, program: ProgramRow}> {
   const portfolio = await portfolioByCode(portfolioCode);
-  const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(programCode)}`, limit: ROW_LIMIT}))[0];
   if (!program)
     throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
   return {portfolio, program};
@@ -68,7 +69,9 @@ export async function follow(portfolio: PortfolioRow, program: ProgramRow, unit?
     seen: base ?? undefined, seen_on: base ? now as any : undefined};
   // an unfollowed row is turned back on, with a fresh baseline
   if (existing) {
-    await portalDb.follows.update(existing.id, {active: true, ...snapshots, checked: base as any, seen: base as any});
+    // and without the news told before the unfollow, which would read as unseen
+    await portalDb.follows.update(existing.id, {active: true, ...snapshots, checked: base as any, seen: base as any,
+      checked_on: now as any, seen_on: now as any, last_news: null as any, news_on: null as any});
     return portalDb.follows.get(existing.id);
   }
   const [r] = await portalDb.follows.insert({user_id: me(), program_id: program.id,
@@ -110,9 +113,9 @@ export interface NewDataCheck {
 /** Checks every followed program of a portfolio for new data, tells the followers, and moves each
  * follow's snapshot on. Programs nobody follows are not read. */
 export async function checkNewDataOf(portfolio: PortfolioRow, opts: {notify?: boolean} = {}): Promise<NewDataCheck> {
-  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const programs = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
   const ids = programs.map((p) => `"${p.id}"`).join(', ');
-  const follows = ids ? (await portalDb.follows.query({filter: `program_id in (${ids})`})).filter(isActive) : [];
+  const follows = ids ? (await portalDb.follows.query({filter: `program_id in (${ids})`, limit: ROW_LIMIT})).filter(isActive) : [];
   const out: NewDataCheck = {follows: follows.length, news: [], notified: [], errors: [], summary: ''};
   if (!follows.length) {
     out.summary = `${portfolio.code} new data: nobody follows its programs`;
@@ -141,10 +144,16 @@ export async function checkNewDataOf(portfolio: PortfolioRow, opts: {notify?: bo
       const line = describeNews(followLabel(program.code, {kind: f.work_unit_kind, code: f.work_unit_code}), n);
       if (n.baseline)
         baselines++;
+      // one follow that cannot be written does not cost the others their news
+      try {
+        await portalDb.follows.update(f.id, {checked: n.now, checked_on: now as any,
+          ...(line ? {last_news: line, news_on: now as any} : {})});
+      } catch (e: any) {
+        out.errors.push(`${program.code} (follow not updated: ${e?.message ?? e})`);
+        continue;
+      }
       if (line)
         out.news.push({user: f.user_id, program: program.code, line});
-      await portalDb.follows.update(f.id, {checked: n.now, checked_on: now as any,
-        ...(line ? {last_news: line, news_on: now as any} : {})});
     }
   }
   const users = [...new Set(out.news.map((x) => x.user))];

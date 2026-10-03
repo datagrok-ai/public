@@ -16,10 +16,11 @@ import {Readiness} from './model/readiness';
 import {programTable} from './program-data';
 import {describePrediction, Prediction, withPredictions} from './model/predictions';
 import {predictionsOf} from './predictions';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** Every catalogued model with its current card's approval and applicability. */
 export async function candidateModels(): Promise<CandidateModel[]> {
-  const [models, cards] = await Promise.all([portalDb.models.query({}), portalDb.modelCards.query({})]);
+  const [models, cards] = await Promise.all([portalDb.models.query({limit: ROW_LIMIT}), portalDb.modelCards.query({limit: ROW_LIMIT})]);
   return models.map((m) => {
     const mine = cards.filter((c) => c.model_id === m.id);
     const card = mine.find((c) => c.model_version === m.current_version) ?? mine[0];
@@ -84,7 +85,7 @@ export async function recommendFor(ctx: ProgramContext, opts: {stageId?: string 
 export async function recommendByCode(portfolioCode: string, programCode: string,
   opts: {stage?: string, series?: string, task?: string} = {}): Promise<ProgramRecommendation> {
   const portfolio = await portfolioByCode(portfolioCode);
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(programCode)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
   const ctx = await programContext(p.id);

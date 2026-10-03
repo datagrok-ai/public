@@ -95,18 +95,36 @@ export async function openSaveRunDialog(opts: SaveRunDialogOptions = {}): Promis
     warnings.replaceChildren(...outsideValidity(card.inputs, values).map((w) => span(w, 'pp-reason')));
   };
 
-  portfolio.el.onchange = async () => {
-    programs = portfolio.el.value ? await programsOf(portfolio.el.value).catch(() => []) : [];
-    program.fill(programs, '');
+  // a later change wins: a slow read for an earlier pick does not overwrite a newer one
+  let seq = 0;
+  const loadPrograms = async (code: string, keep: string) => {
+    const mine = ++seq;
+    const list = code ? await programsOf(code).catch(() => []) : [];
+    if (mine !== seq)
+      return;
+    programs = list;
+    program.fill(programs, keep);
     refresh();
   };
+  portfolio.el.onchange = () => void loadPrograms(portfolio.el.value, '');
   for (const s of [program, unitOperation, runType, purpose])
     s.el.onchange = refresh;
   if (runPick) {
-    runPick.el.onchange = () => {
+    // another model's run: its own unit operations, run types and defaults
+    runPick.el.onchange = async () => {
       call = offered[Number(runPick.el.value)] ?? null;
+      const mine = ++seq;
+      const next = await saveRunChoices(call, opts.context).catch(() => null);
+      if (!next || mine !== seq)
+        return;
+      const f = saveRunDefaults(next);
+      portfolio.fill(next.portfolios, f.portfolio);
+      unitOperation.fill(next.unitOperations, f.unitOperation);
+      runType.fill(next.runTypes, f.runType);
+      purpose.el.value = f.purpose;
+      title.value = f.title;
       void checkValidity();
-      refresh();
+      await loadPrograms(f.portfolio, f.program);
     };
   }
 

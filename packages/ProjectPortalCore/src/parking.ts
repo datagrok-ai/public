@@ -13,6 +13,8 @@ import {
   checkParking, checkUnpark, isParkingFolder, parkDay, ParkedRef, ParkPlan, planParking, PARKED_FOLDER, summarizeParking,
 } from './model/parking';
 import {isSpaceNamed} from './model/workspace-plan';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
 const asRef = (e: DG.Entity) => ({id: e.id, name: e.name, friendlyName: (e as any).friendlyName ?? null});
 
@@ -21,9 +23,9 @@ export const parkedRef = (r: ParkedFolderRow): ParkedRef => ({id: r.id, name: r.
 
 /** The portfolio's parked folders, newest first; only those still parked unless [all]. */
 export async function parkedFoldersOf(portfolio: PortfolioRow, all = false): Promise<ParkedFolderRow[]> {
-  return (await portalDb.parkedFolders.query({filter: `portfolio_id = "${portfolio.id}"`}))
+  return (await portalDb.parkedFolders.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .filter((r) => all || r.status === 'parked')
-    .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+    .sort(newestFirstBy((x) => x.created_on));
 }
 
 /** The child of [parentId] called [name], made when missing. */
@@ -89,9 +91,9 @@ export const summarizeParkResult = (r: ParkResult): string => summarizeParking(r
  * of its portfolio only. An empty day folder, and then an empty `_Parked`, is removed. */
 export async function unparkFolder(id: string): Promise<{row: ParkedFolderRow, line: string, notes: string[]}> {
   // by the record's id, else the folder's: the latest record of it still parked
-  const row = (await portalDb.parkedFolders.query({filter: `id = "${id}"`}))[0] ??
-    (await portalDb.parkedFolders.query({filter: `space_id = "${id}"`}))
-      .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on))).find((r) => r.status === 'parked');
+  const row = (await portalDb.parkedFolders.query({filter: `id = ${filterValue(id)}`, limit: ROW_LIMIT}))[0] ??
+    (await portalDb.parkedFolders.query({filter: `space_id = ${filterValue(id)}`, limit: ROW_LIMIT}))
+      .sort(newestFirstBy((x) => x.created_on)).find((r) => r.status === 'parked');
   if (!row)
     throw new Error(`no parked folder ${id}`);
   const portfolio = await portalDb.portfolios.get(row.portfolio_id);

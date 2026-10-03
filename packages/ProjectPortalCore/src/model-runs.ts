@@ -19,6 +19,7 @@ import {ProgramStatus} from './model/config';
 import {findSubfolder} from './workspace';
 import {RUN_OPTIONS, RunPurpose, runFolderPath, runOptions} from './model/model-runs';
 import {programFolderName} from './model/workspace-plan';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export interface SaveModelRunOptions {
   /** Unit operation code (`unit_operation` catalogue). */
@@ -52,7 +53,7 @@ export interface SavedModelRun {
 }
 
 async function programByCode(portfolio: PortfolioRow, code: string): Promise<ProgramRow> {
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${code}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(code)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio.code} has no program ${code}, or it is not shared with you`);
   return p;
@@ -112,7 +113,7 @@ async function targetFolder(portfolio: PortfolioRow, program: ProgramRow, stageF
  * server refuses it. An existing row for the same run is returned as it is. */
 async function recordRun(values: Omit<ModelRunInsert, 'func_call'> & {run_id: string}):
   Promise<{row: ModelRunRow, recordedBy: 'func_call' | 'run_id', softRefError?: string}> {
-  const existing = (await portalDb.modelRuns.query({filter: `run_id = "${values.run_id}"`}))[0];
+  const existing = (await portalDb.modelRuns.query({filter: `run_id = ${filterValue(values.run_id)}`, limit: ROW_LIMIT}))[0];
   if (existing)
     return {row: existing, recordedBy: existing.func_call ? 'func_call' : 'run_id'};
   try {
@@ -135,7 +136,7 @@ export async function saveModelRun(call: DG.FuncCall, portfolioCode: string, pro
   const notes: string[] = [];
   const portfolio = await portfolioByCode(portfolioCode);
   const program = await programByCode(portfolio, programCode);
-  const known = call.id ? (await portalDb.modelRuns.query({filter: `run_id = "${call.id}"`}))[0] : undefined;
+  const known = call.id ? (await portalDb.modelRuns.query({filter: `run_id = ${filterValue(call.id)}`, limit: ROW_LIMIT}))[0] : undefined;
   if (known) {
     if (known.program_id !== program.id)
       throw new Error(`run ${call.id} is already recorded for another program`);
@@ -164,11 +165,6 @@ export async function saveModelRun(call: DG.FuncCall, portfolioCode: string, pro
     call.options[RUN_OPTIONS.tables] = tableIds;
   const saved = await grok.dapi.functions.calls.save(call);
 
-  const folder = options.link === false ? null :
-    await targetFolder(portfolio, program, stage?.folders ?? null, options.folder, notes);
-  if (folder)
-    await grok.dapi.spaces.id(folder.id).addEntity(saved.id, true);
-
   const started = saved.started ?? call.started;
   const recorded = await recordRun({
     run_id: saved.id,
@@ -188,13 +184,26 @@ export async function saveModelRun(call: DG.FuncCall, portfolioCode: string, pro
   });
   if (recorded.recordedBy === 'run_id')
     notes.push('recorded by run id: the server refused the soft reference to the call (migration debt)');
+  // linked after it is recorded: a folder that refuses the link leaves a recorded run, not an orphan
+  // call that a retry would save (and upload tables for) a second time
+  let folder: Awaited<ReturnType<typeof targetFolder>> = null;
+  if (options.link !== false) {
+    try {
+      folder = await targetFolder(portfolio, program, stage?.folders ?? null, options.folder, notes);
+      if (folder)
+        await grok.dapi.spaces.id(folder.id).addEntity(saved.id, true);
+    } catch (e: any) {
+      notes.push(`not linked into the workspace folder: ${e?.message ?? e}`);
+      folder = null;
+    }
+  }
   return {call: saved, runId: saved.id, modelRun: recorded.row, recordedBy: recorded.recordedBy,
     softRefError: recorded.softRefError, folder, tableIds, notes};
 }
 
 /** The runs recorded for a program, newest first. */
 export async function modelRunsOf(programId: string): Promise<ModelRunRow[]> {
-  const runs = await portalDb.modelRuns.query({filter: `program_id = "${programId}"`});
+  const runs = await portalDb.modelRuns.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
   return runs.sort((a, b) => b.created_on.valueOf() - a.created_on.valueOf());
 }
 
@@ -219,7 +228,7 @@ export async function savedRunsOf(programId: string): Promise<SavedRunItem[]> {
     return [];
   const ids = (pick: (r: ModelRunRow) => string | undefined) => [...new Set(runs.map(pick).filter((x): x is string => !!x))];
   const byIds = async <T extends {id: string}>(table: {query(o: any): Promise<T[]>}, list: string[]) =>
-    new Map((list.length ? await table.query({filter: list.map((id) => `id = "${id}"`).join(' or ')}) : [])
+    new Map((list.length ? await table.query({filter: list.map((id) => `id = "${id}"`).join(' or '), limit: ROW_LIMIT}) : [])
       .map((x) => [x.id, x] as const));
   const [models, stages, ops, types] = await Promise.all([
     byIds(portalDb.models, ids((r) => r.model_id)), byIds(portalDb.stages, ids((r) => r.stage_id)),
@@ -246,14 +255,21 @@ export async function selectRunForCriterion(programId: string, criterionId: stri
   const access = await programAccess(portfolio, programId);
   const refused = checkRunSelection({isApprover: access.approver, isContributor: access.contributor,
     programStatus: (program.status ?? 'active') as ProgramStatus, rationale});
+  // the criterion must be one of the program's gates that rests on a run
+  const criterion = await portalDb.gateCriterions.get(criterionId).catch(() => null);
+  const stage = criterion ? await portalDb.stages.get(criterion.stage_id).catch(() => null) : null;
+  if (!criterion || !stage || stage.stage_model_id !== program.stage_model_id)
+    refused.push(`criterion ${criterionId} is not a gate criterion of ${program.code}`);
+  else if (criterion.artifact !== 'model_run')
+    refused.push(`criterion ${criterion.code} does not rest on a run`);
   if (refused.length)
     throw new Error(refused.join('; '));
   let status = (await portalDb.criterionStatuses.query(
-    {filter: `program_id = "${programId}" and gate_criterion_id = "${criterionId}"`}))[0];
+    {filter: `program_id = ${filterValue(programId)} and gate_criterion_id = ${filterValue(criterionId)}`}))[0];
   if (!status)
     status = await portalDb.criterionStatuses.get((await portalDb.criterionStatuses.insert(
       {program_id: programId, gate_criterion_id: criterionId, status: 'in_progress'}))[0].id);
-  const artifacts = await portalDb.criterionArtifacts.query({filter: `criterion_status_id = "${status.id}"`});
+  const artifacts = await portalDb.criterionArtifacts.query({filter: `criterion_status_id = ${filterValue(status.id)}`, limit: ROW_LIMIT});
   for (const a of artifacts.filter((a) => a.role === 'selected' && a.model_run_id !== modelRunId))
     await portalDb.criterionArtifacts.update(a.id, {role: 'superseded'});
   const now = dayjs();
@@ -297,8 +313,8 @@ export async function criterionRuns(programId: string, criterionId: string): Pro
   const filter = (criterion.run_filter as RunFilter | undefined) ?? null;
   const candidates = items.filter((i) => matchesRunFilter(itemCodes(i), filter));
   const status = (await portalDb.criterionStatuses.query(
-    {filter: `program_id = "${programId}" and gate_criterion_id = "${criterionId}"`}))[0];
-  const artifacts = status ? await portalDb.criterionArtifacts.query({filter: `criterion_status_id = "${status.id}"`}) : [];
+    {filter: `program_id = ${filterValue(programId)} and gate_criterion_id = ${filterValue(criterionId)}`}))[0];
+  const artifacts = status ? await portalDb.criterionArtifacts.query({filter: `criterion_status_id = ${filterValue(status.id)}`, limit: ROW_LIMIT}) : [];
   const titles = new Map(items.map((i) => [i.run.id, i.run.title ?? i.run.run_id ?? i.run.model_name]));
   const users = new Map<string, string>();
   for (const id of new Set(artifacts.map((a) => a.selected_by).filter((x): x is string => !!x)))

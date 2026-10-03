@@ -9,6 +9,9 @@ import {
 } from './model/catalogue';
 // portal.ts imports from here too; the cycle is safe because neither uses the other at load
 import {upsertByKey} from './portal';
+import {catalogueCodes} from './save-run';
+import {compareVersions} from './model/predictions';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** The function a model code names, when its package is installed. */
 export function funcOf(code: string): DG.Func | null {
@@ -65,13 +68,14 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
     const modelId = await upsertByKey(portalDb.models, {code: m.code}, {
       name: m.name, package: m.package ?? m.code.split(':')[0], category: m.category ?? null,
       description: m.description ?? null, status: m.status ?? 'active',
-      current_version: m.card?.version ?? existing?.current_version ?? null,
+      // a load of fewer portfolios, carrying an older card, does not move the current version back
+      current_version: newerVersion(m.card?.version, existing?.current_version),
       portfolios: unionCodes(existing?.portfolios, m.portfolios) || null,
       unit_operations: unionCodes(existing?.unit_operations, m.unitOperations ?? []) || null,
       default_run_type_id: runType?.id ?? existing?.default_run_type_id ?? null,
     });
     // runs saved before the model was catalogued name it only by model_name: link them now
-    const unlinked = (await portalDb.modelRuns.query({filter: `model_name = "${m.code}"`})).filter((r) => !r.model_id);
+    const unlinked = (await portalDb.modelRuns.query({filter: `model_name = ${filterValue(m.code)}`, limit: ROW_LIMIT})).filter((r) => !r.model_id);
     for (const r of unlinked)
       await portalDb.modelRuns.update(r.id, {model_id: modelId});
     if (unlinked.length)
@@ -88,7 +92,7 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
     }
     // a card the approval workflow (F-30) has acted on keeps its approval: the file does not undo it
     const stored = await portalDb.modelCards.getByKey({model_id: modelId, model_version: card.version});
-    const reviewed = stored ? (await portalDb.approvalRequests.query({filter: `kind = "model_card" and target = "${stored.id}"`})
+    const reviewed = stored ? (await portalDb.approvalRequests.query({filter: `kind = "model_card" and target = ${filterValue(stored.id)}`, limit: ROW_LIMIT})
       .catch(() => [])).length > 0 : false;
     await upsertByKey(portalDb.modelCards, {model_id: modelId, model_version: card.version}, {
       question: card.question ?? null, intended_use: card.intendedUse ?? null,
@@ -107,7 +111,13 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
   }
   report.push(`model catalogue: ${c.unitOperations.length} unit operation(s), ${c.runTypes.length} run type(s), ` +
     `${c.models.length} model(s), ${cards} card(s)`);
+  // the session's run tracking now knows the models just catalogued
+  void catalogueCodes(true);
 }
+
+/** The later of two versions; either may be absent. */
+const newerVersion = (a?: string | null, b?: string | null): string | null =>
+  !a ? b ?? null : !b ? a : compareVersions(a, b) >= 0 ? a : b;
 
 /** Loads catalogues handed over without a portfolio file, each optionally for a portfolio. */
 export async function loadCatalogues(sources: {portfolio?: string | null, catalogue: ModelCatalogueConfig}[]):
@@ -141,7 +151,7 @@ export async function modelCardOf(code: string): Promise<ModelCardView | null> {
   const model = await portalDb.models.getByKey({code});
   if (!model)
     return null;
-  const versions = (await portalDb.modelCards.query({filter: `model_id = "${model.id}"`}))
+  const versions = (await portalDb.modelCards.query({filter: `model_id = ${filterValue(model.id)}`, limit: ROW_LIMIT}))
     .sort((a, b) => b.created_on.valueOf() - a.created_on.valueOf());
   const card = versions.find((v) => v.model_version === model.current_version) ?? versions[0] ?? null;
   const func = funcOf(code);

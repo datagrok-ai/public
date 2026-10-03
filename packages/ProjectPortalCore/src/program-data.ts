@@ -11,6 +11,7 @@ import {
   programDatasets,
 } from './model/program-data';
 import {ProgramDataConfig} from './model/conditions';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** The datasets a portfolio offers for each of its programs, the program dataset first. */
 export function datasetsOf(portfolio: PortfolioRow): ProgramDataset[] {
@@ -19,7 +20,7 @@ export function datasetsOf(portfolio: PortfolioRow): ProgramDataset[] {
 }
 
 async function programOf(portfolio: PortfolioRow, code: string): Promise<ProgramRow> {
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${code}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(code)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio.code} has no program ${code}, or it is not shared with you`);
   return p;
@@ -43,7 +44,7 @@ export async function programTable(portfolioCode: string, programCode: string, d
     throw new Error(all.length === 0 ? `${portfolio.code} declares no program data` :
       `${portfolio.code} has no dataset ${code}; it has ${all.map((x) => x.code).join(', ')}`);
   }
-  const df = await queryFrame(d.connection, d.sql.replace(/@program\b/g, sqlLiteral(program.code)));
+  const df = await queryFrame(d.connection, d.sql.replace(/@program\b/g, () => sqlLiteral(program.code)));
   df.name = datasetTableName(program, d);
   df.setTag('portal.portfolio', portfolio.code);
   df.setTag('portal.program', program.code);

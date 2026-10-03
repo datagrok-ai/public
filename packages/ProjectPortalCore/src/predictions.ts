@@ -16,6 +16,7 @@ import {saveModelRun} from './model-runs';
 import {
   compoundColumn, compoundsOf, latestPredictions, planScoring, Prediction, predictionColumn, unitsOf, unscored,
 } from './model/predictions';
+import {filterValue, ROW_LIMIT} from './rows';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
 
@@ -27,9 +28,9 @@ export const asPrediction = (p: PredictionRow, names?: Map<string, string>): Pre
 
 /** Every prediction stored for a program, the models' names alongside. */
 export async function predictionsOf(programId: string): Promise<{rows: PredictionRow[], latest: Prediction[]}> {
-  const rows = await portalDb.predictions.query({filter: `program_id = "${programId}"`});
+  const rows = await portalDb.predictions.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
   const codes = [...new Set(rows.map((r) => r.model_code))];
-  const models = codes.length ? await portalDb.models.query({filter: `code in (${codes.map((c) => `"${c}"`).join(', ')})`})
+  const models = codes.length ? await portalDb.models.query({filter: `code in (${codes.map((c) => `"${c}"`).join(', ')})`, limit: ROW_LIMIT})
     .catch(() => [] as ModelRow[]) : [];
   const names = new Map(models.map((m) => [m.code, m.name]));
   return {rows, latest: latestPredictions(rows.map((r) => asPrediction(r, names)))};
@@ -37,7 +38,7 @@ export async function predictionsOf(programId: string): Promise<{rows: Predictio
 
 /** The columns a model's current card says it predicts, and the version that card is for. */
 async function cardOf(model: ModelRow): Promise<{version: string | null, predicts: string[]}> {
-  const cards = await portalDb.modelCards.query({filter: `model_id = "${model.id}"`});
+  const cards = await portalDb.modelCards.query({filter: `model_id = ${filterValue(model.id)}`, limit: ROW_LIMIT});
   const card = cards.find((c) => c.model_version === model.current_version) ?? cards[0];
   return {version: card?.model_version ?? model.current_version ?? null,
     predicts: ((card?.applies_to as ModelApplicability | undefined)?.predicts ?? []).filter((p) => !!p)};
@@ -79,7 +80,7 @@ export async function scoreCompounds(portfolioCode: string, programCode: string,
   if (!rows)
     throw new Error(`${portfolio.code} declares no program data to score`);
   const compounds = compoundsOf(rows);
-  const stored = (await portalDb.predictions.query({filter: `program_id = "${program.id}" and model_code = "${model.code}"`}))
+  const stored = (await portalDb.predictions.query({filter: `program_id = ${filterValue(program.id)} and model_code = ${filterValue(model.code)}`, limit: ROW_LIMIT}))
     .map((p) => asPrediction(p));
   const base = {portfolio: portfolio.code, program: program.code, model: model.code, version};
   if (predicts.every((p) => unscored(compounds, stored, model.code, version, p).length === 0)) {
@@ -114,6 +115,17 @@ export async function scoreCompounds(portfolioCode: string, programCode: string,
   if (plans.every((x) => !x.column))
     throw new Error(`${model.name}: ${notes.join('; ')}`);
 
+  // nothing new to store (estimates missing, or ids the model writes differently): no run is saved,
+  // else every call would save another empty one
+  const kept = Math.max(0, ...plans.map((x) => x.plan.kept));
+  if (plans.every((x) => x.plan.insert.length === 0)) {
+    const skipped = Math.max(0, ...plans.map((x) => x.plan.skipped));
+    return {...base, runId: null, modelRunId: null, stored: [], kept, notes,
+      summary: `${program.code}: ${model.name} ${version} gave nothing new to store` +
+        (kept ? `; ${kept} already scored, kept` : '') + (skipped ? `; ${skipped} without an estimate or a compound` : '') +
+        '; no run saved' + (notes.length ? `\n  ${notes.join('\n  ')}` : '')};
+  }
+
   // the run first, so each prediction can point at it
   const saved = await saveModelRun(call, portfolio.code, program.code, {purpose: 'screening',
     title: `Scoring · ${model.name} ${version} · ${program.code}`,
@@ -121,7 +133,7 @@ export async function scoreCompounds(portfolioCode: string, programCode: string,
       .map((x) => x.predicts).join(', ')}`});
   notes.push(...saved.notes);
   const known = new Map(!compounds.length ? [] : (await portalDb.compounds.query({filter:
-    `code in (${compounds.map((c) => `"${c.replace(/"/g, '')}"`).join(', ')})`}).catch(() => [])).map((c) => [c.code, c.id]));
+    `code in (${compounds.map((c) => `"${c.replace(/"/g, '')}"`).join(', ')})`, limit: ROW_LIMIT}).catch(() => [])).map((c) => [c.code, c.id]));
   const now = new Date().toISOString();
   const me = DG.User.current().id;
   const result: ScoringResult = {...base, runId: saved.runId, modelRunId: saved.modelRun.id, stored: [], kept: 0, notes, summary: ''};
@@ -142,7 +154,7 @@ export async function scoreCompounds(portfolioCode: string, programCode: string,
 }
 
 async function programOf(portfolio: PortfolioRow, code: string): Promise<ProgramRow> {
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${code}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(code)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio.code} has no program ${code}, or it is not shared with you`);
   return p;

@@ -6,6 +6,7 @@ import {portalDb, ProgramRow} from './generated/db';
 import {inBatches, portfolioFacts} from './portfolio-table';
 import {myPins} from './pinning';
 import {assembleTiles, describeTile, ProgramTile, TileInput} from './model/pinning';
+import {filterValue} from './rows';
 
 const LIMIT = 10000;
 
@@ -30,7 +31,7 @@ export async function pinnedTiles(): Promise<ProgramTile[]> {
   const me = DG.User.current().id;
   const [{stages, facts}, follows] = await Promise.all([
     portfolioFacts(undefined, Date.now(), ids),
-    inBatches(ids, (b) => portalDb.follows.query({filter: `user_id = "${me}" and program_id in (${b})`, limit: LIMIT})),
+    inBatches(ids, (b) => portalDb.follows.query({filter: `user_id = ${filterValue(me)} and program_id in (${b})`, limit: LIMIT})),
   ]);
   const str = (v: any): string | null => v ? String(v.toISOString?.() ?? v) : null;
   const inputs: TileInput[] = facts.map((f) => ({

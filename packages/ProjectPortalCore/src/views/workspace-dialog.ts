@@ -34,13 +34,20 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
     }), 'park-preview-button');
     preview.title = 'What parking would move, and where; nothing changes';
     preview.disabled = report.orphans.length === 0;
-    const parkSome = (only?: string[]) => {
-      result.replaceChildren(span('Parking…', 'pp-muted'));
-      parkOrphans(portfolio.code, false, only).then(async (r) => {
-        await draw();
-        result.replaceChildren(...lines(summarizeParkResult(r)));
-      }).catch(failed);
+    // one park or unpark at a time from this dialog: two at once would plan the same moves twice
+    let busy = false;
+    const once = (work: () => Promise<unknown>) => {
+      if (busy)
+        return;
+      busy = true;
+      void work().catch(failed).finally(() => busy = false);
     };
+    const parkSome = (only?: string[]) => once(async () => {
+      result.replaceChildren(span('Parking…', 'pp-muted'));
+      const r = await parkOrphans(portfolio.code, false, only);
+      await draw();
+      result.replaceChildren(...lines(summarizeParkResult(r)));
+    });
     const park = named(button(`Park all ${report.orphans.length}`, () => parkSome(), {primary: true}), 'park-button');
     park.disabled = !approver || report.orphans.length === 0;
     park.title = approver ? `Move them into _Parked/<today> under ${report.root}; each can be unparked. Nothing is deleted` :
@@ -56,12 +63,11 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
     });
     const parkedRows = parked.map((p) => {
       const key = slug(p.name);
-      const unpark = named(button('Unpark', () => {
-        unparkFolder(p.id).then(async (r) => {
-          await draw();
-          result.replaceChildren(...lines([r.line, ...r.notes].join('\n')));
-        }).catch(failed);
-      }), `unpark-${key}`);
+      const unpark = named(button('Unpark', () => once(async () => {
+        const r = await unparkFolder(p.id);
+        await draw();
+        result.replaceChildren(...lines([r.line, ...r.notes].join('\n')));
+      })), `unpark-${key}`);
       unpark.disabled = !approver;
       unpark.title = approver ? `Move it back to ${p.from_path}` : 'Only the portfolio\'s approvers unpark folders';
       return named(divH([span(p.parked_path), span(p.reason ?? '', 'pp-muted'), unpark], 'pp-unit'), `parked-${key}`);

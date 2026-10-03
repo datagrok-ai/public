@@ -12,8 +12,10 @@ import {MAIN_DATASET} from './model/program-data';
 import {
   Provenance, provenanceGraph, ProvenanceRecords, ProvenanceStart, PROVENANCE_STARTS, startKey, traverse,
 } from './model/provenance';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
-const inList = (ids: string[]) => ids.map((id) => `"${id}"`).join(', ');
+const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 const iso = (d: any) => d ? dayjs(d).toISOString() : '';
 
 /** Runs whose saved calls are read for their tables; more are shown without them. */
@@ -39,12 +41,12 @@ async function programsOf(kind: ProvenanceStart, id: string): Promise<string[]> 
   case 'document':
     return one(portalDb.documents.get(id));
   case 'model_run':
-    return one(portalDb.modelRuns.query({filter: `id = "${id}" or run_id = "${id}"`}).then((r) => r[0]));
+    return one(portalDb.modelRuns.query({filter: `id = ${filterValue(id)} or run_id = ${filterValue(id)}`, limit: ROW_LIMIT}).then((r) => r[0]));
   case 'compound': {
-    const c = (await portalDb.compounds.query({filter: `id = "${id}" or code = "${id}"`}).catch(() => []))[0];
+    const c = (await portalDb.compounds.query({filter: `id = ${filterValue(id)} or code = ${filterValue(id)}`, limit: ROW_LIMIT}).catch(() => []))[0];
     if (!c)
       return [];
-    const links = await portalDb.programCompounds.query({filter: `compound_id = "${c.id}"`});
+    const links = await portalDb.programCompounds.query({filter: `compound_id = ${filterValue(c.id)}`, limit: ROW_LIMIT});
     return [...new Set(links.map((l) => l.program_id))].slice(0, MAX_PROGRAMS);
   }
   }
@@ -70,24 +72,25 @@ export async function provenanceRecords(programIds: string[], compound?: string)
   if (!programIds.length)
     return r;
   const by = `program_id in (${inList(programIds)})`;
-  const programs = await portalDb.programs.query({filter: `id in (${inList(programIds)})`});
+  const programs = await portalDb.programs.query({filter: `id in (${inList(programIds)})`, limit: ROW_LIMIT});
   const [transitions, evidence, runs, artifacts, statuses, documents, snapshots] = await Promise.all([
-    portalDb.stageTransitions.query({filter: by}), portalDb.evidences.query({filter: by}),
-    portalDb.modelRuns.query({filter: by}), portalDb.criterionArtifacts.query({filter: by}),
-    portalDb.criterionStatuses.query({filter: by}), portalDb.documents.query({filter: by}),
-    portalDb.programSnapshots.query({filter: by}),
+    portalDb.stageTransitions.query({filter: by, limit: ROW_LIMIT}), portalDb.evidences.query({filter: by, limit: ROW_LIMIT}),
+    portalDb.modelRuns.query({filter: by, limit: ROW_LIMIT}), portalDb.criterionArtifacts.query({filter: by, limit: ROW_LIMIT}),
+    portalDb.criterionStatuses.query({filter: by, limit: ROW_LIMIT}), portalDb.documents.query({filter: by, limit: ROW_LIMIT}),
+    portalDb.programSnapshots.query({filter: by, limit: ROW_LIMIT}),
   ]);
-  const predictions = await portalDb.predictions.query({filter: by}).catch(() => []);
+  const predictions = await portalDb.predictions.query({filter: by, limit: ROW_LIMIT}).catch(() => []);
   const stages = (await Promise.all([...new Set(programs.map((p) => p.stage_model_id))].map((m) => stagesOf(m)))).flat();
   const stageCode = (id?: string | null) => stages.find((s) => s.id === id)?.code ?? null;
-  const criteria = stages.length ? await portalDb.gateCriterions.query({filter: `stage_id in (${inList(stages.map((s) => s.id))})`}) : [];
+  const criteria = stages.length ? await portalDb.gateCriterions.query({filter: `stage_id in (${inList(stages.map((s) => s.id))})`, limit: ROW_LIMIT}) : [];
   const modelIds = [...new Set(runs.map((x) => x.model_id).filter((x): x is string => !!x))];
-  const models = modelIds.length ? await portalDb.models.query({filter: `id in (${inList(modelIds)})`}) : [];
-  const portfolios = await portalDb.portfolios.query({filter: `id in (${inList([...new Set(programs.map((p) => p.portfolio_id))])})`});
+  const models = modelIds.length ? await portalDb.models.query({filter: `id in (${inList(modelIds)})`, limit: ROW_LIMIT}) : [];
+  const portfolios = await portalDb.portfolios.query({filter: `id in (${inList([...new Set(programs.map((p) => p.portfolio_id))])})`, limit: ROW_LIMIT});
 
   r.programs = programs.map((p) => ({id: p.id, code: p.code, name: p.name}));
   r.datasets = programs.flatMap((p) => {
-    const main = datasetsOf(portfolios.find((x) => x.id === p.portfolio_id)!).find((d) => d.code === MAIN_DATASET);
+    const pf = portfolios.find((x) => x.id === p.portfolio_id);
+    const main = pf ? datasetsOf(pf).find((d) => d.code === MAIN_DATASET) : undefined;
     return main ? [{programId: p.id, name: main.name}] : [];
   });
   r.criteria = criteria.map((c) => ({id: c.id, code: c.code, name: c.name, stage: stageCode(c.stage_id) ?? undefined}));
@@ -95,7 +98,7 @@ export async function provenanceRecords(programIds: string[], compound?: string)
     on: iso(t.decided_on ?? t.created_on), from: stageCode(t.from_stage_id), to: stageCode(t.to_stage_id)}));
   r.evidence = evidence.map((e) => ({id: e.id, decisionId: e.stage_transition_id ?? null, kind: e.kind, target: e.target,
     name: e.name, context: (e.context as Record<string, any> | undefined) ?? null}));
-  const sorted = [...runs].sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+  const sorted = [...runs].sort(newestFirstBy((x) => x.created_on));
   r.runs = await Promise.all(sorted.map(async (x, i) => {
     const m = models.find((y) => y.id === x.model_id);
     const tables = x.run_id && i < MAX_CALLS ? await callTables(x.run_id) : {inputs: [], outputs: []};
@@ -116,9 +119,9 @@ export async function provenanceRecords(programIds: string[], compound?: string)
   r.predictions = [...scored.values()];
   r.snapshots = snapshots.map((s) => ({id: s.id, programId: s.program_id, label: s.label, takenOn: iso(s.taken_on)}));
   if (compound) {
-    const c = (await portalDb.compounds.query({filter: `id = "${compound}" or code = "${compound}"`}).catch(() => []))[0];
+    const c = (await portalDb.compounds.query({filter: `id = ${filterValue(compound)} or code = ${filterValue(compound)}`, limit: ROW_LIMIT}).catch(() => []))[0];
     if (c) {
-      const links = await portalDb.programCompounds.query({filter: `compound_id = "${c.id}" and ${by}`});
+      const links = await portalDb.programCompounds.query({filter: `compound_id = ${filterValue(c.id)} and ${by}`, limit: ROW_LIMIT});
       r.compounds = links.map((l) => ({id: c.id, code: c.code, programId: l.program_id, role: l.role}));
     }
   }

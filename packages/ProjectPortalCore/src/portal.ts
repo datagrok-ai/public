@@ -27,7 +27,8 @@ import {EvidenceItem} from './model/evidence';
 // snapshots.ts imports from here too; the cycle is safe because neither uses the other at load
 import {summaryOf, takeSnapshot} from './snapshots';
 import {snapshotEvidence} from './model/snapshots';
-import {approvalOf, needsApproval} from './model/approvals';
+import {approvalOf, needsApproval, takesEffect} from './model/approvals';
+import {filterValue, ROW_LIMIT} from './rows';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -294,7 +295,7 @@ export async function portfolioByCode(code: string): Promise<PortfolioRow> {
 }
 
 export async function stagesOf(stageModelId: string): Promise<StageRow[]> {
-  const stages = await portalDb.stages.query({filter: `stage_model_id = "${stageModelId}"`});
+  const stages = await portalDb.stages.query({filter: `stage_model_id = ${filterValue(stageModelId)}`, limit: ROW_LIMIT});
   return stages.sort((a, b) => a.ordinal - b.ordinal);
 }
 
@@ -310,8 +311,8 @@ export async function syncPortfolio(code: string, dryRun = false): Promise<SyncP
   const portfolio = await portfolioByCode(code);
   const [stages, feeds, portfolios] = await Promise.all([
     stagesOf(portfolio.stage_model_id),
-    portalDb.registryFeeds.query({filter: `portfolio_id = "${portfolio.id}"`}),
-    portalDb.portfolios.query({}),
+    portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}),
+    portalDb.portfolios.query({limit: ROW_LIMIT}),
   ]);
   const codeOf = new Map(portfolios.map((p) => [p.id, p.code]));
   const stageRefs: StageRef[] = stages.map((s) => ({id: s.id, code: s.code, name: s.name, ordinal: s.ordinal,
@@ -319,8 +320,8 @@ export async function syncPortfolio(code: string, dryRun = false): Promise<SyncP
   const plans: SyncPlan[] = [];
   for (const feed of feeds.filter((f) => f.enabled !== false && (f.target ?? 'program') === 'program')) {
     const rows = await runFeed({connection: feed.connection, sql: feed.sql});
-    const all = await portalDb.programs.query({filter: `external_ref like "${feed.system}:%"`});
-    const mine = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`}))
+    const all = await portalDb.programs.query({filter: `external_ref like "${feed.system}:%"`, limit: ROW_LIMIT});
+    const mine = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
       .map((p) => toRef(p, code));
     const plan = planSync({
       portfolioCode: code, system: feed.system, stageAuthority: portfolio.stage_authority as any,
@@ -397,7 +398,7 @@ export async function workUnitsOf(kind: WorkUnitKind, programIds: string[]): Pro
   // keep the filter short: a portfolio may hold hundreds of programs
   for (let i = 0; i < programIds.length; i += 100) {
     const ids = programIds.slice(i, i + 100).map((id) => `"${id}"`).join(', ');
-    out.push(...await (workUnitTable(kind) as any).query({filter: `program_id in (${ids})`}));
+    out.push(...await (workUnitTable(kind) as any).query({filter: `program_id in (${ids})`, limit: ROW_LIMIT}));
   }
   return out;
 }
@@ -407,12 +408,12 @@ export async function workUnitsOf(kind: WorkUnitKind, programIds: string[]): Pro
 export async function syncWorkUnits(code: string, dryRun = false): Promise<WorkUnitPlan[]> {
   const portfolio = await portfolioByCode(code);
   const enabled = enabledWorkUnits(portfolio);
-  const feeds = (await portalDb.registryFeeds.query({filter: `portfolio_id = "${portfolio.id}"`}))
+  const feeds = (await portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .filter((f) => f.enabled !== false && f.target && f.target !== 'program')
     .sort((a, b) => a.code.localeCompare(b.code));
   if (feeds.length === 0)
     return [];
-  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const programs = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
   const byCode = new Map(programs.map((p) => [p.code, p.id]));
   const maturity = (portfolio.series_maturity ?? '').split('|').filter((m) => m.length > 0);
   const plans: WorkUnitPlan[] = [];
@@ -464,26 +465,26 @@ async function inBatches<T>(keys: string[], run: (batch: string[]) => Promise<T[
  * code, links by program and compound, role changes logged. */
 export async function syncCompounds(code: string, dryRun = false): Promise<CompoundPlan | null> {
   const portfolio = await portfolioByCode(code);
-  const feed = (await portalDb.registryFeeds.query({filter: `portfolio_id = "${portfolio.id}"`}))
+  const feed = (await portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .find((f) => f.target === 'compound' && f.enabled !== false);
   if (!feed)
     return null;
   const rows = await runFeed({connection: feed.connection, sql: feed.sql});
-  const programs = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const programs = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
   const byCode = new Map(programs.map((p) => [p.code, p.id]));
   const codes = [...new Set(rows.map((r) => r.compound).filter((c) => c !== null && c !== undefined).map(String))];
   const known = await inBatches(codes, (b) =>
-    portalDb.compounds.query({filter: `system = "${feed.system}" and code in (${quoted(b)})`}));
+    portalDb.compounds.query({filter: `system = ${filterValue(feed.system)} and code in (${quoted(b)})`, limit: ROW_LIMIT}));
   const compounds = new Map<string, CompoundRef>(known.map((c) => [c.code, {id: c.id, code: c.code,
     values: {name: c.name ?? null, smiles: c.smiles ?? null, aliases: c.aliases ?? null, batches: c.batches ?? null,
       details: (c.details as any) ?? null}}]));
   const linkRows = await inBatches(programs.map((p) => p.id), (b) =>
-    portalDb.programCompounds.query({filter: `program_id in (${quoted(b)})`}));
+    portalDb.programCompounds.query({filter: `program_id in (${quoted(b)})`, limit: ROW_LIMIT}));
   const links: LinkRef[] = linkRows.map((l) => ({id: l.id, programId: l.program_id, compoundId: l.compound_id,
     role: (l.role ?? null) as CompoundRole | null, source: l.source ?? null, missingFromFeed: l.missing_from_feed ?? false}));
   // links to compounds of this system that are not in the feed any more still need their codes
   const missingIds = links.map((l) => l.compoundId).filter((id) => ![...compounds.values()].some((c) => c.id === id));
-  for (const c of await inBatches([...new Set(missingIds)], (b) => portalDb.compounds.query({filter: `id in (${quoted(b)})`}))) {
+  for (const c of await inBatches([...new Set(missingIds)], (b) => portalDb.compounds.query({filter: `id in (${quoted(b)})`, limit: ROW_LIMIT}))) {
     if (c.system === feed.system)
       compounds.set(c.code, {id: c.id, code: c.code, values: {}});
   }
@@ -529,7 +530,7 @@ export async function setCompoundRole(programId: string, compoundId: string, rol
   if (!rationale?.trim())
     throw new Error('A role change needs a rationale');
   const now = new Date().toISOString();
-  const link = (await portalDb.programCompounds.query({filter: `program_id = "${programId}" and compound_id = "${compoundId}"`}))[0];
+  const link = (await portalDb.programCompounds.query({filter: `program_id = ${filterValue(programId)} and compound_id = ${filterValue(compoundId)}`, limit: ROW_LIMIT}))[0];
   if (link?.role === role)
     return;
   // from now on the registry no longer moves this compound's role in this program
@@ -543,9 +544,9 @@ export async function setCompoundRole(programId: string, compoundId: string, rol
 
 /** A program's compounds with their roles, the compound rows joined in. */
 export async function compoundsOf(programId: string): Promise<{link: any, compound: any}[]> {
-  const links = await portalDb.programCompounds.query({filter: `program_id = "${programId}"`});
+  const links = await portalDb.programCompounds.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
   const compounds = await inBatches([...new Set(links.map((l) => l.compound_id))], (b) =>
-    portalDb.compounds.query({filter: `id in (${quoted(b)})`}));
+    portalDb.compounds.query({filter: `id in (${quoted(b)})`, limit: ROW_LIMIT}));
   const byId = new Map(compounds.map((c) => [c.id, c]));
   return links.map((link) => ({link, compound: byId.get(link.compound_id)})).filter((x) => x.compound);
 }
@@ -561,7 +562,7 @@ export async function programData(portfolio: PortfolioRow, programCode: string):
   const config = portfolio.program_data as ProgramDataConfig | undefined;
   if (!config?.sql)
     return null;
-  return runSql(config.connection, config.sql.replace(/@program\b/g, sqlLiteral(programCode)));
+  return runSql(config.connection, config.sql.replace(/@program\b/g, () => sqlLiteral(programCode)));
 }
 
 export interface ContextCriterion {
@@ -613,11 +614,11 @@ export async function programContext(programId: string): Promise<ProgramContext>
   const [portfolio, stages, states] = await Promise.all([
     portalDb.portfolios.get(program.portfolio_id),
     stagesOf(program.stage_model_id),
-    portalDb.criterionStatuses.query({filter: `program_id = "${programId}"`}),
+    portalDb.criterionStatuses.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}),
   ]);
   const stageIds = stages.map((s) => `"${s.id}"`).join(', ');
   const criteria = stageIds === '' ? [] :
-    await portalDb.gateCriterions.query({filter: `stage_id in (${stageIds})`});
+    await portalDb.gateCriterions.query({filter: `stage_id in (${stageIds})`, limit: ROW_LIMIT});
   const recorded = Object.fromEntries(states.map((s) => [s.gate_criterion_id, s.status as CriterionState]));
   const access = await programAccess(portfolio, programId);
   const ctx: ProgramContext = {
@@ -651,7 +652,7 @@ export async function programContext(programId: string): Promise<ProgramContext>
 export async function programReadiness(portfolioCode: string, programCode: string, stageCode?: string):
   Promise<{program: ProgramRow, stage: StageRow, readiness: Readiness}> {
   const portfolio = await portfolioByCode(portfolioCode);
-  const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(programCode)}`, limit: ROW_LIMIT}))[0];
   if (!program)
     throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
   const ctx = await programContext(program.id);
@@ -717,7 +718,8 @@ export async function recordDecision(programId: string, decision: Decision, targ
   if (needsApproval(approvalOf(ctx.portfolio.approval), 'decision', decision)) {
     // only the request being approved carries it out: pending, for this program and decision
     const request = by.approvedRequest ? await portalDb.approvalRequests.get(by.approvedRequest).catch(() => null) : null;
-    if (!request || request.status !== 'pending' || request.program_id !== programId || request.decision !== decision)
+    if (!request || !takesEffect(request) || request.program_id !== programId || request.decision !== decision ||
+      (request.to_stage_id ?? null) !== (targetStageId ?? null))
       throw new Error(`${ctx.portfolio.code} asks for approval of ${decision}: propose it, and another approver approves it`);
   }
   const verdict = verdictFor(ctx, decision, targetStageId, rationale);
@@ -783,7 +785,7 @@ export interface RoutingReport {
 
 /** For each source system: which keys no portfolio's feed takes, and which two feeds both take. */
 export async function routingAudit(sources: SourceConfig[]): Promise<RoutingReport[]> {
-  const [portfolios, feeds] = await Promise.all([portalDb.portfolios.query({}), portalDb.registryFeeds.query({})]);
+  const [portfolios, feeds] = await Promise.all([portalDb.portfolios.query({limit: ROW_LIMIT}), portalDb.registryFeeds.query({limit: ROW_LIMIT})]);
   const codeOf = new Map(portfolios.map((p) => [p.id, p.code]));
   const reports: RoutingReport[] = [];
   for (const source of sources) {

@@ -52,6 +52,8 @@ export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
 import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export const _package = new DG.Package();
 
@@ -74,7 +76,8 @@ export async function portalInit(): Promise<void> {
   grok.events.onContextMenu.subscribe((e: any) => {
     const item = e?.args?.item;
     if (item instanceof DG.FuncCall && e.args.menu)
-      e.args.menu.item('Save to program…', () => void openSaveRunDialog({call: item}));
+      e.args.menu.item('Save to program…', () => void openSaveRunDialog({call: item})
+        .catch((err) => grok.shell.error(err?.message ?? String(err))));
   });
 }
 
@@ -101,7 +104,13 @@ export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
     return portfolioTableView(known ? code : null);
   }
   // .../Portal/<code>/<program>: the program's page in its portfolio
-  const [prev, last] = segments.slice(-2).map((x) => decodeURIComponent(x));
+  const [prev, last] = segments.slice(-2).map((x) => {
+    try {
+      return decodeURIComponent(x);
+    } catch {
+      return x;
+    }
+  });
   if (prev && last && !(await portalDb.portfolios.getByKey({code: last}).catch(() => null)) &&
     await portalDb.portfolios.getByKey({code: prev}).catch(() => null))
     return portalAppView(prev, last);
@@ -259,7 +268,7 @@ export async function myFeed(kinds?: string, limit?: number): Promise<DG.DataFra
 /** A program of a portfolio by code, under row security. */
 async function programByCode(portfolio: string, program: string) {
   const pf = await portfolioByCode(portfolio);
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(program)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio} has no program ${program}, or it is not shared with you`);
   return p;
@@ -423,7 +432,7 @@ export async function showProvenance(kind: string, id: string): Promise<void> {
 export async function proposeDecision(portfolio: string, program: string, decision: string, rationale: string,
   stage?: string): Promise<string> {
   const p = await programByCode(portfolio, program);
-  const to = stage ? (await portalDb.stages.query({filter: `stage_model_id = "${p.stage_model_id}" and code = "${stage}"`}))[0] : null;
+  const to = stage ? (await portalDb.stages.query({filter: `stage_model_id = ${filterValue(p.stage_model_id)} and code = ${filterValue(stage)}`, limit: ROW_LIMIT}))[0] : null;
   if (stage && !to)
     throw new Error(`${stage} is not a stage of ${program}'s model`);
   return (await propose(p.id, decision as any, rationale, {toStageId: to?.id ?? null})).line;
@@ -483,11 +492,11 @@ export async function withdrawRequest(request: string): Promise<string> {
 export async function approvalRequests(portfolio: string, program?: string, status?: string): Promise<DG.DataFrame> {
   const pf = await portfolioByCode(portfolio);
   const rows: ApprovalRequestRow[] = program ? await requestsOf((await programByCode(portfolio, program)).id) :
-    (await portalDb.approvalRequests.query({filter: `portfolio_id = "${pf.id}"`}))
-      .sort((a, b) => String(b.created_on).localeCompare(String(a.created_on)));
+    (await portalDb.approvalRequests.query({filter: `portfolio_id = ${filterValue(pf.id)}`, limit: ROW_LIMIT}))
+      .sort(newestFirstBy((x) => x.created_on));
   const shown = rows.filter((r) => !status || r.status === status);
   return requestsFrame(shown, await userNames(shown.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])),
-    `${program ?? portfolio} · Approval requests`);
+    `${program || portfolio} · Approval requests`);
 }
 
 //name: waitingForMe
@@ -579,7 +588,7 @@ export async function syncPortfolio(code: string, dryRun: boolean = false): Prom
 //description: Syncs every loaded portfolio, discovery before development so lineage resolves in one pass
 //output: string report
 export async function syncAllPortfolios(): Promise<string> {
-  const portfolios = await portalDb.portfolios.query({});
+  const portfolios = await portalDb.portfolios.query({limit: ROW_LIMIT});
   const order = (s?: string) => s === 'discovery' ? 0 : s === 'development' ? 1 : 2;
   const out: string[] = [];
   for (const p of portfolios.sort((a, b) => order(a.setting) - order(b.setting)))
@@ -671,10 +680,10 @@ export async function programReadiness(portfolio: string, program: string, stage
 export async function setCompoundRole(portfolio: string, program: string, compound: string, role: string,
   rationale: string): Promise<string> {
   const pf = await portfolioByCode(portfolio);
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(program)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio} has no program ${program}, or it is not shared with you`);
-  const c = (await portalDb.compounds.query({filter: `code = "${compound}"`}));
+  const c = (await portalDb.compounds.query({filter: `code = ${filterValue(compound)}`, limit: ROW_LIMIT}));
   if (c.length !== 1)
     throw new Error(c.length ? `${compound} is registered in ${c.length} registries` : `no compound ${compound} is known to the portal`);
   await setRole(p.id, c[0].id, role as CompoundRole, rationale);
@@ -706,7 +715,7 @@ export async function buildWorkspace(code: string, dryRun: boolean = false, prog
   let only: string | undefined;
   if (program) {
     const pf = await portfolioByCode(code);
-    const p = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${program}"`}))[0];
+    const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(program)}`, limit: ROW_LIMIT}))[0];
     if (!p)
       throw new Error(`${code} has no program ${program}, or it is not shared with you`);
     only = p.id;
@@ -814,7 +823,7 @@ export async function saveModelRun(call: DG.FuncCall, portfolio: string, program
 //description: Builds the workspace of every loaded portfolio that declares a workspaceRoot, one after another
 //output: string report
 export async function buildAllWorkspaces(): Promise<string> {
-  const portfolios = (await portalDb.portfolios.query({})).filter((p) => p.workspace_root);
+  const portfolios = (await portalDb.portfolios.query({limit: ROW_LIMIT})).filter((p) => p.workspace_root);
   const out: string[] = [];
   for (const p of portfolios.sort((a, b) => a.code.localeCompare(b.code)))
     out.push(summarizeWorkspace(await buildPortfolioWorkspace(p.code)));

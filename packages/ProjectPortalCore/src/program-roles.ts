@@ -13,13 +13,14 @@ import dayjs from 'dayjs';
 import {portalDb, PortfolioRow, ProgramRoleRow, ProgramRow} from './generated/db';
 import {isApprover, isContributor} from './portal';
 import {accessOf, checkRoleChange, grantChanges, grantsFor, ProgramAccess, ProgramRole, RoleGrant} from './model/program-roles';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** Whether program roles also grant on the program row. Off until GROK-21041 is fixed. */
 export const ROW_GRANTS = false;
 
 /** The program's roles in force (not removed). */
 export async function rolesOf(programId: string): Promise<ProgramRoleRow[]> {
-  return (await portalDb.programRoles.query({filter: `program_id = "${programId}"`})).filter((r) => r.active !== false);
+  return (await portalDb.programRoles.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT})).filter((r) => r.active !== false);
 }
 
 const asGrants = (rows: ProgramRoleRow[]): RoleGrant[] => rows.map((r) => ({groupId: r.group_id, role: r.role as ProgramRole}));
@@ -82,7 +83,7 @@ export async function setProgramRole(program: ProgramRow, groupId: string, role:
   const refused = checkRoleChange({isPortfolioApprover: await isApprover(portfolio), role});
   if (refused.length)
     throw new Error(refused.join('; '));
-  const existing = (await portalDb.programRoles.query({filter: `program_id = "${program.id}" and group_id = "${groupId}"`}))[0];
+  const existing = (await portalDb.programRoles.query({filter: `program_id = ${filterValue(program.id)} and group_id = ${filterValue(groupId)}`, limit: ROW_LIMIT}))[0];
   const stamp = {granted_by: DG.User.current().id, granted_on: dayjs()};
   if (role === null) {
     if (existing && existing.active !== false)
@@ -112,7 +113,7 @@ export async function setProgramRole(program: ProgramRow, groupId: string, role:
 /** The groups program roles manage on an entity: every group that holds or held a role on the
  * program, never the portfolio's own groups, whose grants the sync and the builder make. */
 async function managedGroups(program: ProgramRow, portfolio: PortfolioRow): Promise<string[]> {
-  const all = await portalDb.programRoles.query({filter: `program_id = "${program.id}"`});
+  const all = await portalDb.programRoles.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT});
   const own = new Set([portfolio.viewers, portfolio.contributors, portfolio.approvers].filter((x) => x));
   return [...new Set(all.map((r) => r.group_id))].filter((g) => !own.has(g));
 }

@@ -94,6 +94,7 @@ export async function openLinkDocumentDialog(opts: LinkDocumentOptions): Promise
     errors,
   ], 'pp-save-run'), 'link-document-form'));
 
+  let uploaded: {file: File, path: string, folder: string | null} | null = null;
   dlg.addButton('LINK', async () => {
     if (refresh().length > 0 || ok()?.classList.contains('pp-busy'))
       return;
@@ -103,9 +104,11 @@ export async function openLinkDocumentDialog(opts: LinkDocumentOptions): Promise
       let folder: string | null = folderFile.value ? program.space_id ?? null : null;
       const file = upload.files?.[0];
       if (file) {
-        const r = await uploadDocument(program, file.name, new Uint8Array(await file.arrayBuffer()));
-        target = r.path;
-        folder = r.folder;
+        // uploaded once: a retry after a failed link links the file already in the folder
+        if (uploaded?.file !== file)
+          uploaded = {file, ...await uploadDocument(program, file.name, new Uint8Array(await file.arrayBuffer()))};
+        target = uploaded.path;
+        folder = uploaded.folder;
       }
       const r = await linkDocumentTo(program, {path: target, folder, criterionId: criterion?.id ?? null, kind: kind.value,
         title: title.value.trim() || title.placeholder, version: version.value.trim() || undefined,

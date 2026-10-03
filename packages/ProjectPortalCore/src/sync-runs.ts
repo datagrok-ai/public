@@ -16,6 +16,7 @@ import {autoAdvance, autoAdvanceOf} from './auto-advance';
 import {notifyUser} from './notify';
 import {checkNewDataOf} from './new-data';
 import {checkEvidenceChangesOf} from './evidence-tables';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export type SyncTrigger = 'schedule' | 'manual';
 
@@ -45,7 +46,7 @@ const ms = (v: any): number | null => {
 
 /** A portfolio's runs, newest first. */
 export async function syncRunsOf(portfolio: PortfolioRow, limit = 50): Promise<SyncRunRow[]> {
-  const rows = await portalDb.syncRuns.query({filter: `portfolio_id = "${portfolio.id}"`, sort: '!started_on', limit});
+  const rows = await portalDb.syncRuns.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, sort: '!started_on', limit});
   // the server's order is asked for, and kept whatever it returns
   return rows.sort((a, b) => (ms(b.started_on) ?? 0) - (ms(a.started_on) ?? 0));
 }
@@ -75,7 +76,7 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
     const programs = await syncPortfolio(code);
     const units = await syncWorkUnits(code);
     const compounds = await syncCompounds(code);
-    const rows = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+    const rows = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
     const {counts, changes} = summarizeRun({programs, units, compounds, programCodes: new Map(rows.map((p) => [p.id, p.code]))});
     const report = [...programs.map(summarizePlan), ...units.map(summarizeWorkUnitPlan),
       ...(compounds ? [summarizeCompoundPlan(compounds)] : [])].join('\n');
@@ -200,7 +201,7 @@ export async function dueState(portfolio: PortfolioRow, now = Date.now()): Promi
  * resolves in one pass. Only portfolios that declare a schedule are looked at; [codes] narrows them
  * further. Owners hear about a run worth telling (see worthNotifying). */
 export async function syncDue(codes?: string[], now = Date.now()): Promise<{ran: SyncRunResult[], skipped: string[]}> {
-  const all = await portalDb.portfolios.query({});
+  const all = await portalDb.portfolios.query({limit: ROW_LIMIT});
   const wanted = codes?.length ? new Set(codes) : null;
   const order = (s?: string) => s === 'discovery' ? 0 : s === 'development' ? 1 : 2;
   const scheduled = all.filter((p) => p.schedule && (!wanted || wanted.has(p.code)))

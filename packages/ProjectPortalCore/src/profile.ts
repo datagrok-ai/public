@@ -12,6 +12,7 @@ import {cardParams} from './model/catalogue';
 import {
   diffPortfolios, ImportPlan, makeBundle, planImport, PortfolioDiff, ProfileBundle, readBundle, summarizeImport,
 } from './model/profile';
+import {filterValue, ROW_LIMIT} from './rows';
 
 const split = (s: string | null | undefined) => (s ?? '').split('|').filter((x) => x.length > 0);
 const orNull = <T>(xs: T[]) => xs.length ? xs : undefined;
@@ -32,8 +33,8 @@ async function groupName(id: string | null | undefined): Promise<string | undefi
  * loaded before 0.2.13 recorded that, that its models use), and the models that name it, each with
  * its current card. */
 async function catalogueOf(code: string): Promise<ModelCatalogueConfig | undefined> {
-  const [ops, types, models] = await Promise.all([portalDb.unitOperations.query({}), portalDb.runTypes.query({}),
-    portalDb.models.query({})]);
+  const [ops, types, models] = await Promise.all([portalDb.unitOperations.query({limit: ROW_LIMIT}), portalDb.runTypes.query({limit: ROW_LIMIT}),
+    portalDb.models.query({limit: ROW_LIMIT})]);
   const mine = models.filter((m) => split(m.portfolios).includes(code)).sort((a, b) => a.code.localeCompare(b.code));
   const typeCode = new Map(types.map((t) => [t.id, t.code]));
   const usedOps = new Set(mine.flatMap((m) => split(m.unit_operations)));
@@ -48,7 +49,7 @@ async function catalogueOf(code: string): Promise<ModelCatalogueConfig | undefin
       isExecutionMode: t.is_execution_mode}));
   const configs: ModelConfig[] = [];
   for (const m of mine) {
-    const cards = await portalDb.modelCards.query({filter: `model_id = "${m.id}"`});
+    const cards = await portalDb.modelCards.query({filter: `model_id = ${filterValue(m.id)}`, limit: ROW_LIMIT});
     const card = cards.find((c) => c.model_version === m.current_version);
     configs.push(compact({code: m.code, name: m.name, package: m.package, category: m.category, description: m.description,
       status: m.status as any, unitOperations: orNull(split(m.unit_operations)),
@@ -73,10 +74,10 @@ export async function exportPortfolioConfig(code: string): Promise<PortfolioConf
   const [model, stages, feeds] = await Promise.all([
     portalDb.stageModels.get(p.stage_model_id),
     stagesOf(p.stage_model_id),
-    portalDb.registryFeeds.query({filter: `portfolio_id = "${p.id}"`}),
+    portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(p.id)}`, limit: ROW_LIMIT}),
   ]);
   const ids = stages.map((s) => `"${s.id}"`).join(', ');
-  const criteria = ids ? await portalDb.gateCriterions.query({filter: `stage_id in (${ids})`}) : [];
+  const criteria = ids ? await portalDb.gateCriterions.query({filter: `stage_id in (${ids})`, limit: ROW_LIMIT}) : [];
   const stageConfigs: StageConfig[] = stages.map((s) => compact({
     code: s.code, name: s.name, ordinal: s.ordinal, phase: s.phase, isGate: s.is_gate, isTerminal: s.is_terminal,
     governance: s.governance, aliases: orNull(split(s.spellings)), description: s.description,
@@ -156,7 +157,7 @@ export async function diffPortfolioRefs(a: string, b: string): Promise<{title: s
 
 /** A bundle of the loaded portfolios [codes], or of every loaded portfolio. */
 export async function exportProfileBundle(codes?: string[]): Promise<ProfileBundle> {
-  const all = (await portalDb.portfolios.query({})).map((p) => p.code).sort();
+  const all = (await portalDb.portfolios.query({limit: ROW_LIMIT})).map((p) => p.code).sort();
   const wanted = codes?.length ? codes : all;
   const missing = wanted.filter((c) => !all.includes(c));
   if (missing.length)
@@ -176,7 +177,7 @@ export async function importProfileBundle(input: string | unknown, dryRun: boole
     return {plan, report: summarizeImport(plan, dryRun)};
   }
   bundle.portfolios = bundle.portfolios.map(completeCards);
-  const loadedCodes = (await portalDb.portfolios.query({})).map((p) => p.code);
+  const loadedCodes = (await portalDb.portfolios.query({limit: ROW_LIMIT})).map((p) => p.code);
   const loaded = new Map<string, PortfolioConfig>();
   for (const p of bundle.portfolios)
     if (loadedCodes.includes(p.code)) loaded.set(p.code, await exportPortfolioConfig(p.code));

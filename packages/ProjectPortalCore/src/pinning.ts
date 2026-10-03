@@ -9,6 +9,7 @@ import {isApprover, portfolioByCode} from './portal';
 import {existingSpaces} from './workspace';
 import {resolvePrincipal} from './program-roles';
 import {checkGroupPin, PinHolders, pinsOf, whyNotPinnable} from './model/pinning';
+import {filterValue, ROW_LIMIT} from './rows';
 
 const asPin = (e: DG.Entity) => ({id: e.id, isSpace: e instanceof DG.Project});
 
@@ -63,8 +64,8 @@ export async function setPinned(portfolio: PortfolioRow, program: ProgramRow, pi
       return `${label}: not pinned (no folder)`;
     throw new Error(`${program.code} cannot be pinned: ${reason}`);
   }
-  const before = await pinStateOf(program);
-  const was = group ? before.groups.includes(group.friendlyName || group.name) : before.mine;
+  // a group's pins read from the group itself: an approver outside it does not see them as their own
+  const was = group ? await groupHasPin(group, space.id) : (await pinStateOf(program)).mine;
   if (was === pinned)
     return `${label}: ${pinned ? 'already pinned' : 'was not pinned'}`;
   if (pinned)
@@ -74,9 +75,14 @@ export async function setPinned(portfolio: PortfolioRow, program: ProgramRow, pi
   return `${label}: ${pinned ? 'pinned; its folder is in the Workspace and its tile on Home' : 'unpinned'}`;
 }
 
+/** Whether [group] has [spaceId] among its favorites. */
+export async function groupHasPin(group: DG.Group, spaceId: string): Promise<boolean> {
+  return (await grok.dapi.entities.getFavorites(group).catch(() => [] as DG.Entity[])).some((e) => e.id === spaceId);
+}
+
 async function programByCode(portfolioCode: string, programCode: string): Promise<{portfolio: PortfolioRow, program: ProgramRow}> {
   const portfolio = await portfolioByCode(portfolioCode);
-  const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(programCode)}`, limit: ROW_LIMIT}))[0];
   if (!program)
     throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
   return {portfolio, program};

@@ -16,6 +16,8 @@ import {
   checkTable, defaultSnapshotLabel, describeSnapshot, snapshotArtifacts, snapshotCriteria, SnapshotCriterion, snapshotDate,
   snapshotFileName, SnapshotSummary, TableCheck,
 } from './model/snapshots';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** SHA-256 of a text, as hex. */
 export async function sha256(text: string): Promise<string> {
@@ -43,9 +45,11 @@ export interface TakenSnapshot {
 
 /** Freezes [program] now. Contributors and approvers of the program may; the table is kept when the
  * program has a workspace folder and a program dataset, else the snapshot says why not. */
-export async function takeSnapshot(program: ProgramRow, options: {label?: string, note?: string, reason?: string} = {}):
+export async function takeSnapshot(given: ProgramRow, options: {label?: string, note?: string, reason?: string} = {}):
   Promise<TakenSnapshot> {
-  const ctx = await programContext(program.id);
+  const ctx = await programContext(given.id);
+  // the row just read: the caller's may predate a decision (stage, status, folder)
+  const program = ctx.program;
   const access = await programAccess(ctx.portfolio, program.id);
   if (!access.approver && !access.contributor)
     throw new Error('Only the portfolio\'s or the program\'s contributors and approvers take snapshots');
@@ -68,8 +72,12 @@ export async function takeSnapshot(program: ProgramRow, options: {label?: string
       if (!live)
         notes.push(`${program.code} has no workspace folder: the table (${t.df.rowCount} rows) is not kept, only its fingerprint`);
       else {
-        const file = snapshotFileName(program.code, takenOn);
-        await grok.dapi.spaces.id(program.space_id!).files.writeString(file, csv);
+        const files = grok.dapi.spaces.id(program.space_id!).files;
+        let file = snapshotFileName(program.code, takenOn);
+        // two snapshots in the same second: the second must not overwrite the first one's table
+        if (await files.exists(file).catch(() => false))
+          file = file.replace(/Z\.csv$/, `.${takenOn.slice(20, 23)}Z.csv`);
+        await files.writeString(file, csv);
         table = {...table, file, folder: program.space_id!};
       }
     } catch (e: any) {
@@ -98,8 +106,8 @@ export async function takeSnapshot(program: ProgramRow, options: {label?: string
 
 /** The program's snapshots, newest first. */
 export async function snapshotsOf(programId: string): Promise<ProgramSnapshotRow[]> {
-  return (await portalDb.programSnapshots.query({filter: `program_id = "${programId}"`}))
-    .sort((a, b) => String(b.taken_on ?? b.created_on).localeCompare(String(a.taken_on ?? a.created_on)));
+  return (await portalDb.programSnapshots.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}))
+    .sort(newestFirstBy((x) => x.taken_on ?? x.created_on));
 }
 
 /** The snapshot's table as it was frozen, and whether the file still holds it. */

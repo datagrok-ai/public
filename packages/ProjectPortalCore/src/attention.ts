@@ -8,6 +8,7 @@ import {portfolioByCode, programData} from './portal';
 import {AttentionRule, evaluateAttention, ProgramAttention} from './model/attention';
 import {DataRow, DEFAULT_LEAD_ROLES, ProgramDataConfig, rowId} from './model/conditions';
 import {openProgramTable} from './program-data';
+import {filterValue, ROW_LIMIT} from './rows';
 
 /** The attention rules a portfolio declares; none when absent. */
 export function attentionRulesOf(portfolio: PortfolioRow): AttentionRule[] {
@@ -24,7 +25,7 @@ export function attentionFor(portfolio: PortfolioRow, rows: DataRow[] | null): P
 }
 
 async function programOf(portfolio: PortfolioRow, code: string): Promise<ProgramRow> {
-  const p = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${code}"`}))[0];
+  const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(code)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio.code} has no program ${code}, or it is not shared with you`);
   return p;

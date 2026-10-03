@@ -16,6 +16,7 @@ import {findOrphans, findProgramFolder, isSpaceNamed, Orphan, PARKED_FOLDER, par
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
 import {syncFolderGrants} from './program-roles';
+import {filterValue, ROW_LIMIT} from './rows';
 
 export interface WorkspaceEntry {
   path: string;
@@ -135,12 +136,12 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
     await shareRoot(root, portfolio, report.notes);
 
   const children = root ? await subspaces(root.id) : [];
-  const stageRows = await portalDb.stages.query({filter: `stage_model_id = "${portfolio.stage_model_id}"`});
+  const stageRows = await portalDb.stages.query({filter: `stage_model_id = ${filterValue(portfolio.stage_model_id)}`, limit: ROW_LIMIT});
   const stages = new Map(stageRows.map((s) => [s.id, s.code]));
   const ordinals = new Map(stageRows.map((s) => [s.id, s.ordinal]));
   const stageFolders: StageFolders[] = stageRows.map((s) => ({code: s.code, ordinal: s.ordinal,
     folders: (s.folders ?? '').split('|').filter((f) => f.length > 0)}));
-  const rows = await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`});
+  const rows = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
   const all: (WorkspaceProgram & {ordinal: number | null})[] = rows
     .map((p) => ({id: p.id, code: p.code, name: p.name, spaceId: p.space_id ?? null,
       stage: p.stage_id ? stages.get(p.stage_id) ?? null : null, status: p.status ?? null,
@@ -148,10 +149,10 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
     .sort((a, b) => a.code.localeCompare(b.code));
   const programs = onlyProgramId ? all.filter((p) => p.id === onlyProgramId) : all;
   // programs with roles of their own get their folder shared to match
-  const withRoles = dryRun ? new Set<string>() : new Set((await portalDb.programRoles.query({}).catch(() => []))
+  const withRoles = dryRun ? new Set<string>() : new Set((await portalDb.programRoles.query({limit: ROW_LIMIT}).catch(() => []))
     .map((r) => r.program_id));
   // a parked program folder stays parked: the builder neither rebuilds it nor makes a new one
-  const parked = new Set((await portalDb.parkedFolders.query({filter: `portfolio_id = "${portfolio.id}"`}).catch(() => []))
+  const parked = new Set((await portalDb.parkedFolders.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}).catch(() => []))
     .filter((r) => r.status === 'parked').map((r) => r.space_id));
 
   let attributesWritten = 0;
@@ -248,7 +249,7 @@ export async function workspaceOrphans(code: string): Promise<WorkspaceReport> {
     report.notes.push('the workspace is not built yet');
     return report;
   }
-  const programs: WorkspaceProgram[] = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}"`}))
+  const programs: WorkspaceProgram[] = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .map((p) => ({id: p.id, code: p.code, name: p.name, spaceId: p.space_id ?? null, status: p.status ?? null}));
   report.orphans = findOrphans(portfolio.workspace_root, (await subspaces(root.id)).map(asRef), programs);
   return report;

@@ -9,6 +9,7 @@ import {ApprovalRequestRow, portalDb} from '../generated/db';
 import {describeRequest, reviewRequest, userNames, waitingForMe, withdrawRequest} from '../approvals';
 import {reviewsOf} from '../model/approvals';
 import {installStyles} from './styles';
+import {ROW_LIMIT} from '../rows';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -44,11 +45,23 @@ export function requestItem(r: ApprovalRequestRow, o: RequestItemOptions): HTMLE
     if (o.canReview) {
       const rationale = named(document.createElement('input'), `${o.name}-rationale`);
       rationale.placeholder = 'Rationale';
-      const review = (verdict: 'approve' | 'reject') => () => void reviewRequest(r.id, verdict, rationale.value)
-        .then((x) => o.onDone([x.line, ...(x.notified ? [`Proposer: ${x.notified}`] : [])].join('\n'))).catch(failed);
-      const approve = named(button('Approve', review('approve'), {primary: true}), `${o.name}-approve`);
+      // one review at a time: a second click would append a second review, or apply the decision twice
+      let busy = false;
+      const review = (verdict: 'approve' | 'reject') => () => {
+        if (busy)
+          return;
+        busy = true;
+        approve.disabled = reject.disabled = true;
+        void reviewRequest(r.id, verdict, rationale.value)
+          .then((x) => o.onDone([x.line, ...(x.notified ? [`Proposer: ${x.notified}`] : [])].join('\n'))).catch(failed)
+          .finally(() => {
+            busy = false;
+            approve.disabled = reject.disabled = false;
+          });
+      };
+      const approve = named(button('Approve', review('approve'), {primary: true}), `${o.name}-approve`) as HTMLButtonElement;
       approve.title = 'Approve with the rationale: on the last approval it takes effect';
-      const reject = named(button('Reject', review('reject')), `${o.name}-reject`);
+      const reject = named(button('Reject', review('reject')), `${o.name}-reject`) as HTMLButtonElement;
       reject.title = 'Reject with the rationale: it does not take effect, and the proposer is told';
       actions.push(rationale, approve, reject);
     }
@@ -77,7 +90,7 @@ export async function openWaitingDialog(opts: WaitingOptions): Promise<DG.Dialog
   const draw = async () => {
     const rows = await waitingForMe();
     const names = await userNames(rows.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)]));
-    const portfolios = new Map((await portalDb.portfolios.query({})).map((p) => [p.id, p]));
+    const portfolios = new Map((await portalDb.portfolios.query({limit: ROW_LIMIT})).map((p) => [p.id, p]));
     body.replaceChildren(...(rows.length ? rows.map((r, i) => {
       const item = requestItem(r, {names, canReview: true, canWithdraw: false, name: `waiting-${i}`,
         onDone: async (line) => {

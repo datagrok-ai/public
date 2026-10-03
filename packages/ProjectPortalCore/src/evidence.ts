@@ -18,18 +18,20 @@ import {snapshotEvidence} from './model/snapshots';
 // documents.ts imports from here too; the cycle is safe because neither uses the other at load
 import {documentsOf, toRef} from './documents';
 import {documentEvidence} from './model/documents';
+import {newestFirstBy} from './model/time';
+import {filterValue, ROW_LIMIT} from './rows';
 
-const inList = (ids: string[]) => ids.map((id) => `"${id}"`).join(', ');
+const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 
 /** The run selected now for each criterion of the program, with the names the evidence freezes. */
 export async function selectedRunsOf(programId: string): Promise<SelectedRun[]> {
-  const picks = (await portalDb.criterionArtifacts.query({filter: `program_id = "${programId}"`}))
+  const picks = (await portalDb.criterionArtifacts.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}))
     .filter((a) => a.role === 'selected');
   if (!picks.length)
     return [];
   const [statuses, runs] = await Promise.all([
-    portalDb.criterionStatuses.query({filter: `id in (${inList([...new Set(picks.map((p) => p.criterion_status_id))])})`}),
-    portalDb.modelRuns.query({filter: `id in (${inList([...new Set(picks.map((p) => p.model_run_id))])})`}),
+    portalDb.criterionStatuses.query({filter: `id in (${inList([...new Set(picks.map((p) => p.criterion_status_id))])})`, limit: ROW_LIMIT}),
+    portalDb.modelRuns.query({filter: `id in (${inList([...new Set(picks.map((p) => p.model_run_id))])})`, limit: ROW_LIMIT}),
   ]);
   const criteria = await portalDb.gateCriterions.query(
     {filter: `id in (${inList([...new Set(statuses.map((s) => s.gate_criterion_id))])})`});
@@ -94,7 +96,7 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
   const of = (kind: EvidenceKind) => rows.filter((r) => r.kind === kind);
   const runs = of('model_run');
   if (runs.length) {
-    const found = await portalDb.modelRuns.query({filter: runs.map((r) => `run_id = "${r.target}"`).join(' or ')}).catch(() => null);
+    const found = await portalDb.modelRuns.query({filter: runs.map((r) => `run_id = "${r.target}"`).join(' or '), limit: ROW_LIMIT}).catch(() => null);
     if (found) {
       for (const r of runs) {
         const m = found.find((x) => x.run_id === r.target);
@@ -104,14 +106,14 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
   }
   const criteria = of('criterion');
   if (criteria.length) {
-    const found = await portalDb.gateCriterions.query({filter: `id in (${inList([...new Set(criteria.map((r) => r.target))])})`})
+    const found = await portalDb.gateCriterions.query({filter: `id in (${inList([...new Set(criteria.map((r) => r.target))])})`, limit: ROW_LIMIT})
       .catch(() => null);
     if (found)
       for (const r of criteria) out.set(r.id, found.find((x) => x.id === r.target)?.name ?? null);
   }
   const snapshots = of('snapshot');
   if (snapshots.length) {
-    const found = await portalDb.programSnapshots.query({filter: `id in (${inList([...new Set(snapshots.map((r) => r.target))])})`})
+    const found = await portalDb.programSnapshots.query({filter: `id in (${inList([...new Set(snapshots.map((r) => r.target))])})`, limit: ROW_LIMIT})
       .catch(() => null);
     if (found)
       for (const r of snapshots) out.set(r.id, found.find((x) => x.id === r.target)?.label ?? null);
@@ -119,7 +121,7 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
   // a document is looked up by its record: its title now, or gone
   const docs = of('file').filter((r) => (r.context as any)?.document);
   if (docs.length) {
-    const found = await portalDb.documents.query({filter: `id in (${inList([...new Set(docs.map((r) => String((r.context as any).document)))])})`})
+    const found = await portalDb.documents.query({filter: `id in (${inList([...new Set(docs.map((r) => String((r.context as any).document)))])})`, limit: ROW_LIMIT})
       .catch(() => null);
     if (found)
       for (const r of docs) out.set(r.id, found.find((x) => x.id === (r.context as any).document)?.title ?? null);
@@ -142,7 +144,7 @@ export interface EvidenceLine {
 
 /** The program's evidence by gate-log entry, each target looked up again. */
 export async function evidenceOf(programId: string): Promise<Map<string, EvidenceLine[]>> {
-  const rows = await portalDb.evidences.query({filter: `program_id = "${programId}"`});
+  const rows = await portalDb.evidences.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
   const names = await currentNames(rows);
   const byDecision = new Map<string, EvidenceLine[]>();
   for (const row of orderEvidence(rows)) {
@@ -162,9 +164,9 @@ export async function addEvidenceTo(program: ProgramRow, items: EvidenceItem[], 
   const ctx = await programContext(program.id);
   if (!ctx.approver)
     throw new Error('Only the portfolio\'s or the program\'s approvers add evidence to a decision');
-  const transitions = (await portalDb.stageTransitions.query({filter: `program_id = "${program.id}"`}))
+  const transitions = (await portalDb.stageTransitions.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}))
     .filter((t) => t.decision !== 'sync')
-    .sort((a, b) => String(b.decided_on ?? b.created_on).localeCompare(String(a.decided_on ?? a.created_on)));
+    .sort(newestFirstBy((x) => x.decided_on ?? x.created_on));
   const t = transitionId ? transitions.find((x) => x.id === transitionId) : transitions[0];
   if (!t)
     throw new Error(transitionId ? `${program.code} has no decision ${transitionId}` : `${program.code} has no decision yet`);
@@ -175,14 +177,14 @@ export async function addEvidenceTo(program: ProgramRow, items: EvidenceItem[], 
  * one row with the evidence columns empty), newest decision first. */
 export async function decisionEvidenceFrame(program: ProgramRow, transitionId?: string | null): Promise<DG.DataFrame> {
   const [transitions, stages, evidence] = await Promise.all([
-    portalDb.stageTransitions.query({filter: `program_id = "${program.id}"`}),
-    portalDb.stages.query({filter: `stage_model_id = "${program.stage_model_id}"`}),
+    portalDb.stageTransitions.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}),
+    portalDb.stages.query({filter: `stage_model_id = ${filterValue(program.stage_model_id)}`, limit: ROW_LIMIT}),
     evidenceOf(program.id),
   ]);
   const code = (id?: string) => stages.find((s) => s.id === id)?.code ?? '';
   const rows: Record<string, any>[] = [];
   const shown = transitions.filter((t) => t.decision !== 'sync' && (!transitionId || t.id === transitionId))
-    .sort((a, b) => String(b.decided_on ?? b.created_on).localeCompare(String(a.decided_on ?? a.created_on)));
+    .sort(newestFirstBy((x) => x.decided_on ?? x.created_on));
   for (const t of shown) {
     const head = {decision_id: t.id, decided_on: (t.decided_on ?? t.created_on)?.toISOString?.() ?? '', decision: t.decision,
       from: code(t.from_stage_id), to: code(t.to_stage_id), source: t.source ?? '', rationale: t.rationale ?? ''};
@@ -227,7 +229,7 @@ export async function evidenceItemFor(program: ProgramRow, kind: EvidenceKind, t
     return {...item, name: name?.trim() || item.name};
   }
   case 'model_run': {
-    const runs = await portalDb.modelRuns.query({filter: `program_id = "${program.id}"`});
+    const runs = await portalDb.modelRuns.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT});
     const run = runs.find((r) => r.run_id === t || r.id === t) ?? runs.find((r) => r.title === t);
     if (!run)
       throw new Error(`${program.code} has no saved run ${t}`);
@@ -246,7 +248,7 @@ export async function evidenceItemFor(program: ProgramRow, kind: EvidenceKind, t
       context: {code: c.code, stage: stage?.name ?? '', state: ctx.states[c.id] ?? 'not_started'}};
   }
   case 'snapshot': {
-    const s = (await portalDb.programSnapshots.query({filter: `id = "${t}"`}))[0];
+    const s = (await portalDb.programSnapshots.query({filter: `id = ${filterValue(t)}`, limit: ROW_LIMIT}))[0];
     if (!s || s.program_id !== program.id)
       throw new Error(`${program.code} has no snapshot ${t}`);
     const item = snapshotEvidence(s.id, summaryOf(s));

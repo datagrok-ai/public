@@ -2,6 +2,16 @@
 
 ## 0.3.0 (unreleased)
 
+- Quality pass (review of 0.3.0 so far):
+  - Every list read passes a row limit: a `query({filter})` without one gets the server's 100 rows, silently (the sync history of EX-SMD had 234). `src/rows.ts`
+  - Values put into filter strings are escaped (`filterValue`): a `"` in a program code or an id can no longer widen a filter
+  - Newest-first and oldest-first sorts compare times, not strings: a datetime read back is a dayjs object whose string starts with the weekday. Wrong across days for snapshots, evidence targets, documents, approval requests, parked folders. `src/model/time.ts`
+  - Approval review claims the request against its version before it takes effect: two approvers or a double click can no longer record a decision twice or lose a review; the Approve and Reject buttons wait for the first click. A submitted document or card is marked only after its request exists
+  - The sync's stale check of evidence tables reads every document of the program, not only the generated ones: no more false "decision no longer cites it" notices
+  - A run is recorded before it is linked into its folder; a refused link is a note, not a duplicate call on retry. A scoring with nothing new to store saves no run. A run selected for a criterion must be a gate criterion of the program that rests on a run
+  - The program page keeps a slow read for one program from landing on another's page; click handlers report errors instead of leaving unhandled rejections
+  - Smaller fixes: snapshot file names no longer collide within a second; a snapshot reads the program row fresh; the catalogue never moves a model's current version back and refreshes run tracking; a failed catalogue read is not cached; a follow that cannot be written does not cost other followers their news; following again clears old news; a group's pin is read from the group; the link-document dialog reuses an uploaded file on retry; save-to-program refreshes its choices when another run is picked
+
 - Model card in the Workspace on Home: `workspaceModelCard(model)` (`meta.role: workspaceModelPanel`) returns the card of a catalogued model, found by its function's nqName, and nothing for another function. Power Pack's Workspace tab shows it beside the model's own preview: approval, portfolios, question, inputs with their validity range, outputs
 
 - Pinned programs: pinning a program pins its workspace folder, as a platform favorite (the user's, or a group's by a portfolio approver); nothing is stored in the portal, so a pin made in the Workspace or with the star is the same pin. Program page: **Pin to my Workspace** / **Unpin**, **Pin for <viewers>** and **Build its folder** for approvers; a program without a folder says why it cannot be pinned. Board cards say *pinned*; the portfolio table has a `pinned` column

@@ -12,9 +12,10 @@ import {ProgramChange} from './model/sync-runs';
 import {columnValue} from './model/conditions';
 import {rowsOf} from './model/new-data';
 import {myFollowsAll} from './new-data';
+import {filterValue, ROW_LIMIT} from './rows';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
-const inList = (ids: string[]) => ids.map((id) => `"${id}"`).join(', ');
+const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 
 /** Sync runs read per portfolio: the feed looks this far back in the sync history. */
 const SYNC_RUNS = 50;
@@ -23,7 +24,7 @@ type SyncChanges = {programs?: ProgramChange[], newData?: {program: string, line
 
 /** The portfolio's recent sync runs, read once per feed. */
 async function syncRunsOf(portfolioId: string): Promise<SyncRunRow[]> {
-  return portalDb.syncRuns.query({filter: `portfolio_id = "${portfolioId}"`, sort: '!started_on', limit: SYNC_RUNS})
+  return portalDb.syncRuns.query({filter: `portfolio_id = ${filterValue(portfolioId)}`, sort: '!started_on', limit: SYNC_RUNS})
     .catch(() => []);
 }
 
@@ -32,23 +33,23 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
   const by = `program_id = "${program.id}"`;
   const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, predictions, syncs] = await Promise.all([
     stagesOf(program.stage_model_id),
-    portalDb.stageTransitions.query({filter: by}),
-    portalDb.evidences.query({filter: by}).catch(() => []),
-    portalDb.modelRuns.query({filter: by}).catch(() => []),
-    portalDb.criterionArtifacts.query({filter: by}).catch(() => []),
-    portalDb.documents.query({filter: by}).catch(() => []),
-    portalDb.programSnapshots.query({filter: by}).catch(() => []),
-    portalDb.compoundRoleChanges.query({filter: by}).catch(() => []),
-    portalDb.follows.query({filter: by}).catch(() => []),
-    portalDb.predictions.query({filter: by}).catch(() => []),
+    portalDb.stageTransitions.query({filter: by, limit: ROW_LIMIT}),
+    portalDb.evidences.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.modelRuns.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.criterionArtifacts.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.documents.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.programSnapshots.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.compoundRoleChanges.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.follows.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    portalDb.predictions.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     syncRuns ? Promise.resolve(syncRuns) : syncRunsOf(portfolio.id),
   ]);
   const statusIds = [...new Set(artifacts.map((a) => a.criterion_status_id))];
-  const statuses = statusIds.length ? await portalDb.criterionStatuses.query({filter: `id in (${inList(statusIds)})`}).catch(() => []) : [];
+  const statuses = statusIds.length ? await portalDb.criterionStatuses.query({filter: `id in (${inList(statusIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
   const criterionIds = [...new Set(statuses.map((s) => s.gate_criterion_id))];
-  const criteria = criterionIds.length ? await portalDb.gateCriterions.query({filter: `id in (${inList(criterionIds)})`}).catch(() => []) : [];
+  const criteria = criterionIds.length ? await portalDb.gateCriterions.query({filter: `id in (${inList(criterionIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
   const compoundIds = [...new Set(roleChanges.map((c) => c.compound_id))];
-  const compounds = compoundIds.length ? await portalDb.compounds.query({filter: `id in (${inList(compoundIds)})`}).catch(() => []) : [];
+  const compounds = compoundIds.length ? await portalDb.compounds.query({filter: `id in (${inList(compoundIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
   const runTitle = (id: string) => {
     const r = runs.find((x) => x.id === id);
     return r ? r.title ?? r.run_id ?? r.model_name : 'a run';
@@ -114,11 +115,14 @@ export async function myFeedOf(filter: FeedFilter = {}): Promise<{entries: FeedE
   const ids = [...new Set(follows.map((f) => f.program_id))];
   if (!ids.length)
     return {entries: [], programs: 0};
-  const programs = await portalDb.programs.query({filter: `id in (${inList(ids)})`});
-  const portfolios = await portalDb.portfolios.query({filter: `id in (${inList([...new Set(programs.map((p) => p.portfolio_id))])})`});
+  const programs = await portalDb.programs.query({filter: `id in (${inList(ids)})`, limit: ROW_LIMIT});
+  const portfolios = await portalDb.portfolios.query({filter: `id in (${inList([...new Set(programs.map((p) => p.portfolio_id))])})`, limit: ROW_LIMIT});
   const syncs = new Map<string, Promise<SyncRunRow[]>>();
   const lists = await Promise.all(programs.map(async (p) => {
-    const pf = portfolios.find((x) => x.id === p.portfolio_id)!;
+    const pf = portfolios.find((x) => x.id === p.portfolio_id);
+    // a portfolio not shared with the user: its programs' feeds are not theirs to read
+    if (!pf)
+      return [];
     if (!syncs.has(pf.id))
       syncs.set(pf.id, syncRunsOf(pf.id));
     const entries = programFeedEntries(await feedRecordsOf(p, pf, await syncs.get(pf.id)));
@@ -159,7 +163,7 @@ export function feedFrame(entries: FeedEntry[], names: Map<string, string>, name
 /** A program by portfolio and program code, under row security. */
 export async function programOf(portfolioCode: string, programCode: string): Promise<{portfolio: PortfolioRow, program: ProgramRow}> {
   const portfolio = await portfolioByCode(portfolioCode);
-  const program = (await portalDb.programs.query({filter: `portfolio_id = "${portfolio.id}" and code = "${programCode}"`}))[0];
+  const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)} and code = ${filterValue(programCode)}`, limit: ROW_LIMIT}))[0];
   if (!program)
     throw new Error(`${portfolioCode} has no program ${programCode}, or it is not shared with you`);
   return {portfolio, program};
