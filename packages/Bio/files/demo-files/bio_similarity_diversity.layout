@@ -59,7 +59,7 @@
                       }
                     }
                   ],
-                  "onInitializedScript": "\n      setTimeout(async () => {\n        const t = grok.shell.table('Table');\n        if (!t)\n          return;\n        await t.meta.detectSemanticTypes();\n        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];\n        if (!func)\n          return;\n        const cols = [\"sequence\"];\n        func.apply({\n          df: t,\n          colNameList: cols,\n          distance: 'euclidean',\n          linkage: 'complete'\n        });\n      }, 1000)\n    "
+                  "onInitializedScript": "\n      setTimeout(async () => {\n        const view = v.tableView;\n        const isOpen = () => !!view && Array.from(grok.shell.tableViews).some((tv) => tv.dart === view.dart);\n        if (!isOpen())\n          return;\n        const t = v.dataFrame;\n        await t.meta.detectSemanticTypes();\n        const func = DG.Func.find({name: 'hierarchicalClustering'})[0];\n        if (!func || !isOpen())\n          return;\n        const sub = grok.events.onViewRemoved.subscribe((removed) => {\n          if (removed.dart === view.dart)\n            t.temp['__dendrogram_view_closed_temp__'] = true;\n        });\n        const cols = [\"sequence\"];\n        try {\n          await func.apply({\n            df: t,\n            colNameList: cols,\n            distance: 'euclidean',\n            linkage: 'complete'\n          });\n        } finally {\n          sub.unsubscribe();\n          t.temp['__dendrogram_view_closed_temp__'] = false;\n        }\n      }, 1000)\n    "
                 },
                 "title": "peptides-non-natural",
                 "default": true

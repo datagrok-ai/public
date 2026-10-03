@@ -12,6 +12,7 @@ import {attachLoaderDivToGrid} from '.';
 import {GridNeighbor} from '@datagrok-libraries/gridext/src/ui/GridNeighbor';
 
 export const DENDROGRAM_NEIGHBOR_TEMP_NAME = '__dendrogram_neighbor_temp__';
+export const DENDROGRAM_VIEW_CLOSED_TEMP_NAME = '__dendrogram_view_closed_temp__';
 // Custom UI Dialog for Hierarchical Clustering
 export async function hierarchicalClusteringDialog(getDefaultCoulumn: (t: DG.DataFrame) => DG.Column | null = (_t) => null): Promise<void> {
   if (!grok.shell.tv?.table) {
@@ -90,6 +91,8 @@ export async function hierarchicalClusteringUI(
     grok.shell.warning('Please open a table for hierarchical clustering.');
     return;
   }
+  if (df.temp[DENDROGRAM_VIEW_CLOSED_TEMP_NAME])
+    return;
   const linkageCode = Object.values(LinkageMethod).findIndex((method) => method === linkage);
 
   const colNameSet: Set<string> = new Set(colNameList);
@@ -97,14 +100,15 @@ export async function hierarchicalClusteringUI(
     hierarchicalClusteringFilterDfForNulls(df, colNameSet);
   const th: ITreeHelper = new TreeHelper();
 
-  let tv: DG.TableView = options ? options.tableView ?? grok.shell.tableView(df.name) : grok.shell.tableView(df.name);
+  let tv: DG.TableView | undefined = options?.tableView ??
+    Array.from(grok.shell.tableViews).find((view) => view.dataFrame?.dart === df.dart);
   if (filteredDf.rowCount != df.rowCount) {
     grok.shell.warning('Hierarchical clustering analysis on data filtered out for nulls.');
     tv = grok.shell.addTableView(filteredDf);
   }
   else if (!tv)
     tv = grok.shell.addTableView(df);
-  if (!tv.grid)
+  if (!tv?.grid)
     throw new Error('TableView has no grid to attach dendrogram to.');
 
   if (tv.grid.temp[DENDROGRAM_NEIGHBOR_TEMP_NAME]) {
@@ -184,20 +188,31 @@ export async function hierarchicalClusteringUI(
       return;
     tv.grid.props.onInitializedScript = `
       setTimeout(async () => {
-        const t = grok.shell.table('${tv.dataFrame.name}');
-        if (!t)
+        const view = v.tableView;
+        const isOpen = () => !!view && Array.from(grok.shell.tableViews).some((tv) => tv.dart === view.dart);
+        if (!isOpen())
           return;
+        const t = v.dataFrame;
         await t.meta.detectSemanticTypes();
         const func = DG.Func.find({name: 'hierarchicalClustering'})[0];
-        if (!func)
+        if (!func || !isOpen())
           return;
-        const cols = ${JSON.stringify(colNameList)};
-        func.apply({
-          df: t,
-          colNameList: cols,
-          distance: '${distance}',
-          linkage: '${linkage}'
+        const sub = grok.events.onViewRemoved.subscribe((removed) => {
+          if (removed.dart === view.dart)
+            t.temp['${DENDROGRAM_VIEW_CLOSED_TEMP_NAME}'] = true;
         });
+        const cols = ${JSON.stringify(colNameList)};
+        try {
+          await func.apply({
+            df: t,
+            colNameList: cols,
+            distance: '${distance}',
+            linkage: '${linkage}'
+          });
+        } finally {
+          sub.unsubscribe();
+          t.temp['${DENDROGRAM_VIEW_CLOSED_TEMP_NAME}'] = false;
+        }
       }, 1000)
     `;
     const nb = injectTreeForGridUI2(tv.grid, newickRoot, undefined, neighborWidth, undefined,
