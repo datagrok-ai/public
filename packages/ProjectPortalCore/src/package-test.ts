@@ -39,6 +39,7 @@ import './tests/observation-tests';
 import './tests/design-set-tests';
 import './tests/dmta-tests';
 import './tests/panel-tests';
+import './tests/write-grant-tests';
 
 export let _package = new DG.Package();
 export { tests };

@@ -2,6 +2,9 @@
  * to a program, and the program's workspace folder shared to match. The rules are in
  * ./model/program-roles.
  *
+ * Only the portfolios' approvers groups may write `program_role` on the server (./write-grants);
+ * that one approver manages only their own portfolio's programs is the app's check.
+ *
  * Row grants wait on GROK-21041: the server refuses `permissions.grant` on a promoted domain row,
  * so a program role cannot make a program row visible yet. `syncRowGrants` applies the same grants
  * to the row as to the folder; it runs only when ROW_GRANTS is true. Once the platform accepts the

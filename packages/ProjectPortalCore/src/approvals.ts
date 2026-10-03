@@ -4,9 +4,10 @@
  * through linkDocumentTo (criterion met, older version superseded). The rules live in
  * ./model/approvals.
  *
- * `approval_request` is table-secured, like program_role: the app checks who may propose and
- * review, the server does not. Master security through the program would hide a request from every
- * approver but the program's author until GROK-21041 is fixed. */
+ * `approval_request` is table-secured, like program_role. The server lets only the portfolios'
+ * contributors groups (approvers are nested in them) write it (./write-grants); which contributor
+ * may review which request is the app's check. Master security through the program would hide a
+ * request from every approver but the program's author until GROK-21041 is fixed. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';

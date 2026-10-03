@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.30",
+  "version": "0.2.31",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -560,8 +560,8 @@
       "securityMode": "table",
       "businessKey": ["program_id", "group_id"],
       "friendlyName": "Program roles",
-      "description": "Viewers, contributors and approvers of one program, on top of the portfolio's groups. Managed by the portfolio's approvers in the app; drives the program's workspace folder grants, and its row grants once GROK-21041 is fixed.",
-      "grants": {"All users": ["view", "edit"]},
+      "description": "Viewers, contributors and approvers of one program, on top of the portfolio's groups. Managed by the portfolio's approvers in the app; the server lets only the portfolios' approvers groups write it (Edit granted when a portfolio is loaded); drives the program's workspace folder grants, and its row grants once GROK-21041 is fixed.",
+      "grants": {"All users": ["view"]},
       "columns": {
         "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
         "group_id": {"type": "group", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Group or user",
@@ -666,8 +666,8 @@
     "approval_request": {
       "securityMode": "table",
       "friendlyName": "Approval requests",
-      "description": "The optional approval workflow (F-30, FR-57): a gate decision proposed, or a document or model card submitted, in a portfolio that opts in. It takes effect once enough approvers other than the proposer approve; one rejection ends it. Read and written by the app, which checks who may review.",
-      "grants": {"All users": ["view", "edit"]},
+      "description": "The optional approval workflow (F-30, FR-57): a gate decision proposed, or a document or model card submitted, in a portfolio that opts in. It takes effect once enough approvers other than the proposer approve; one rejection ends it. Read and written by the app, which checks who may review; the server lets only the portfolios' contributors groups write it (Edit granted when a portfolio is loaded).",
+      "grants": {"All users": ["view"]},
       "filters": [{"column": "kind"}, {"column": "status"}],
       "columns": {
         "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
@@ -693,8 +693,8 @@
     "parked_folder": {
       "securityMode": "table",
       "friendlyName": "Parked folders",
-      "description": "A workspace folder moved out of the way (FR-22): a root folder no program claims, or the folder of a program that ended, moved into _Parked/<date> under the portfolio's root. Never deleted; unparking moves it back. Written by parkOrphans and unparkFolder, which check that the user is one of the portfolio's approvers.",
-      "grants": {"All users": ["view", "edit"]},
+      "description": "A workspace folder moved out of the way (FR-22): a root folder no program claims, or the folder of a program that ended, moved into _Parked/<date> under the portfolio's root. Never deleted; unparking moves it back. Written by parkOrphans and unparkFolder, which check that the user is one of the portfolio's approvers; the server lets only the portfolios' approvers groups write it.",
+      "grants": {"All users": ["view"]},
       "filters": [{"column": "status"}, {"column": "kind"}],
       "columns": {
         "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},

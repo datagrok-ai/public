@@ -404,7 +404,7 @@ portfolio's groups give.
 - **Enforced in the app** where the portfolio's groups are: a program approver records gate decisions (and Met / Waive), a program contributor or approver selects runs. `recordDecision` and `selectRunForCriterion` check again before they write. Letting data advance a whole portfolio stays with the portfolio's approvers.
 - **The workspace folder** of the program is shared to match: View to viewers, Edit to contributors and approvers. Removing a role removes the grant. The portfolio's own groups are never touched. A folder built later gets the roles from the builder.
 - **The program row is not shared yet.** Program rows refuse grants (GROK-21041, see Tests), so a role does not make the row visible to someone outside the portfolio's groups. `syncRowGrants` in `src/program-roles.ts` applies the same grants to the row; it runs when `ROW_GRANTS` is set to true. Once GROK-21041 is fixed, set it, and the same table drives the row grants. The two isolation tests stay unchanged as the acceptance check.
-- `program_role` is table-secured with View and Edit for all users, like `follow`: the app enforces who may change it, the server does not.
+- `program_role` is table-secured: View for all users, Edit only for the portfolios' approvers groups, on the server (see *Write permissions on portal tables*). Which portfolio's programs an approver manages is the app's check.
 
 ### Decisions with evidence
 
@@ -471,7 +471,30 @@ every decision and approval takes effect at once, as before.
 - **Approvers are told.** A new proposal or submission is posted to the platform's notifications of each approver who may review it: the members of the portfolio's approvers group (nested groups included) and of the program's approver roles; for a model card, the portfolio's approvers. Never the proposer; at most 25. The notice says what waits, who proposed it and why. The server lets a user notify others only when they may edit users; otherwise the request still shows under **Waiting for me**. The result (`2 of 2 approver(s) notified`) is on the proposal, in the info balloon, and on the `submitDocument` and `submitModelCard` reports.
 - **In the app.** The gate panel's buttons say **Propose advance to …** and **Propose termination**, and are off while a decision waits. *Waiting for approval* on the program page (both modes) lists the program's requests: Approve and Reject with a rationale for an approver who did not propose it, Withdraw for the proposer, the last three closed. The history says who proposed and who approved a decision. The ribbon's **Waiting for me** lists every pending request the user may review, across portfolios.
 - **Example.** EX-BIOD asks for one approver on advance, terminate, documents and model cards. No existing test or scenario decides in EX-BIOD.
-- `approval_request` is table-secured, View and Edit for all users, like `program_role`: the app checks who proposes and reviews. Master security through the program would hide a request from every approver but the program's author until GROK-21041 is fixed.
+- `approval_request` is table-secured: View for all users, Edit only for the portfolios' contributors groups (approvers are nested in them), on the server. Who reviews which request is the app's check. Master security through the program would hide a request from every approver but the program's author until GROK-21041 is fixed.
+
+### Write permissions on portal tables
+
+Package functions run in the user's browser, so a check in them is the app's, not the server's: anyone can call
+the domain API from the console. What the server enforces is the table's security mode and its grants.
+
+- **Workflow tables.** `program_role` and `parked_folder`: Edit for each portfolio's approvers group.
+  `approval_request`: Edit for each portfolio's contributors group (approvers are nested in it). All users keep
+  View only. Nobody but admins deletes: the app never deletes these rows. Loading a portfolio grants its groups and
+  takes All users' Edit away; `securePortalTables(dryRun)` does it for every portfolio. Both need Share on the
+  tables, which admins and the publisher hold; without it the load report says `write permissions not set`.
+- **Why at load time.** The schema now declares View only, but a redeploy never revokes a grant it made before,
+  so an existing server keeps All users' Edit until the revoke runs.
+- **Tables secured through the program row** (gate log, criterion status, evidence, documents, snapshots, runs,
+  predictions, observations, design and selection sets, work units, program compounds, flows): a write needs Edit
+  on the program row. Only its author (the sync) and admins hold it today, since program rows refuse grants
+  (GROK-21041).
+- **Reference tables** (stage models, stages, criteria, portfolios, the catalogue and model cards, compounds,
+  process flows, sync runs, feeds): View for all users or none; only admins write.
+- **Still open.** `follow` is writable by every user, each user's own follow and everyone else's. Narrowing it
+  to the author needs row security, and the server refuses changing the security mode of a deployed table. A
+  portfolio's approvers can write another portfolio's `program_role` rows from the console, and a contributor can
+  write any request's status and reviews: the server grants per table, not per row.
 
 ### Provenance
 
@@ -613,6 +636,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
 | `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
 | `programRoles(portfolio, program)` | The program's roles as a table |
+| `securePortalTables(dryRun)` | Server write permissions on `program_role`, `parked_folder`, `approval_request`: Edit to each portfolio's approvers (contributors for requests), none to All users. Admins; idempotent; preview by default |
 | `decisionEvidence(portfolio, program, decision)` | The program's gate decisions with their evidence, one row per piece, and whether each target is live, renamed or gone |
 | `snapshotProgram(portfolio, program, label, note)` | Freezes the program now: stage, criteria, selected runs, and the program dataset as a file in its workspace folder |
 | `programSnapshots(portfolio, program)` | The program's snapshots, newest first |
@@ -698,6 +722,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Pinned programs: the rules (what can be pinned, who pins for a group, pins from the user's and the groups' favorites, a tile's track, readiness and address, tiles that follow the pins, unseen news), and on EX-SMD a pin and unpin of EXS-PRO2 through favorites (its tile, `pinnedPrograms`, the table's `pinned` column), an unpin in the platform taking the tile away, a pin for the viewers group, a program without a folder refused, and a program's address opening its page. The admin's favorites are put back.
   - Parking: the rules (where each orphan goes, already parked, only some, who may, unparking over a folder of the same name, the parking folder never an orphan, the summary), and on EX-SMD a throwaway folder previewed, parked, left out of the report and the build, unparked with `_Parked` removed and the tree as before; a terminated scratch program's folder parked and not rebuilt; a non-approver refused.
   - Isolation between portfolios, of program rows and of the workspace, run as a throwaway restricted user.
+  - Write permissions: the rules (which group writes which table, the plan of grants and revokes), the grants on the stand, a throwaway plain user refused on insert, update and delete of all three tables through the domain API (making itself an approver included), and the same user in EX-SMD's approvers managing a role, writing a request and parking, and in its contributors proposing but not managing roles.
   - Model runs: the example model, a run saved at process lock (annotations, the stage folder, the reload, the `model_run` row by run id), and a gate document criterion selecting it.
   - Saving from the app: the dialog's rules (what it fills in, the program list, what it refuses, the result line) and the dialog itself, driven in the test: filled in for a Fed-batch titer run, a validity warning, saved to a program.
   - Scheduled sync: the rules (intervals and cron in UTC, when a sync is due, a run's counts and per-program changes, when owners hear of it), and on EX-SMD and EX-BIOD a recorded run, a due and a not-yet-due schedule, a platform notification, the function and the history panel.
@@ -785,3 +810,6 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 18. **A table view opened from a click in the app view does not take the focus.** `grok.shell.addTableView` called
    in a click handler on the program page adds the table, but the app view stays current. The DMTA section's
    Open status defers the call with `setTimeout`.
+19. **A domain schema redeploy never revokes a grant.** Removing a group or a permission from a table's `grants`
+   in `schema.json` leaves the grant on a server that has it; changing `securityMode` or `defaultRowVisibility`
+   of a deployed table is refused. Narrowing access is a runtime `revoke` by someone with Share on the table.

@@ -446,6 +446,13 @@ export namespace funcs {
   }
 
   /**
+   * Lets only the portfolios' groups write the workflow tables, on the server: Edit on program_role and parked_folder to each portfolio's approvers, on approval_request to its contributors, none to All users. Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
+   */
+  export async function securePortalTables(dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SecurePortalTables', { dryRun });
+  }
+
+  /**
    * Loads a model catalogue handed over without a portfolio file: unit operations, run types, models and their cards, as JSON. Checked before loading; idempotent
    * @param {string} catalogue - JSON object with unitOperations, runTypes, models
    * @param {string} portfolio - The portfolio the models belong to

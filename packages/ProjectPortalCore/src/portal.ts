@@ -29,6 +29,7 @@ import {summaryOf, takeSnapshot} from './snapshots';
 import {snapshotEvidence} from './model/snapshots';
 import {approvalOf, needsApproval, takesEffect} from './model/approvals';
 import {filterValue, ROW_LIMIT} from './rows';
+import {secureWriteTables} from './write-grants';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -207,6 +208,8 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
         target: f.kind});
   }
   report.push(`portfolio ${c.code}: ${c.feeds.length} feed(s)`);
+  // the server, not only the app, keeps the workflow tables to the portfolio's groups
+  report.push(...await secureWriteTables([{code: c.code, approvers: groups.approvers, contributors: groups.contributors}]));
   return report.join('\n');
 }
 

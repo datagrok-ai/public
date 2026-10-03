@@ -52,6 +52,7 @@ import {parseKinds} from './model/feed';
 import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as review, submitDocument as submitDoc,
   submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
 import {reviewsOf} from './model/approvals';
+import {secureWriteTables} from './write-grants';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
 import {ApprovalRequestRow} from './generated/db';
 import {pinByCode} from './pinning';
@@ -719,6 +720,15 @@ export async function loadPortfolios(): Promise<string> {
 //output: string report
 export async function loadPortfolioConfigs(configs: string): Promise<string> {
   return loadPortfolioSet(JSON.parse(configs));
+}
+
+//name: securePortalTables
+//description: Lets only the portfolios' groups write the workflow tables, on the server: Edit on program_role and parked_folder to each portfolio's approvers, on approval_request to its contributors, none to All users. Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
+//input: bool dryRun = true
+//output: string report
+export async function securePortalTables(dryRun: boolean = true): Promise<string> {
+  const lines = await secureWriteTables(undefined, dryRun);
+  return lines.length ? lines.join('\n') : 'write permissions already in place';
 }
 
 //name: loadModelCatalogue
