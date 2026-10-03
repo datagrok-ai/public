@@ -218,3 +218,10 @@ app.element('data package summary', {selector: u2('data-package-summary')});
 app.element('data package lines', {selector: u2('data-package-lines')});
 app.element('download data package csv button', {selector: u2('data-package-csv')});
 app.element('open data package as table button', {selector: u2('data-package-open-table')});
+
+app.element('scratch compare project card', {selector: u2('program-bdd-cmp')});
+app.element('compare process description runs button', {selector: u2('compare-runs-process-description')});
+app.element('compare runs dialog', {selector: u2('compare-runs-dialog')});
+app.element('compare runs summary', {selector: u2('compare-runs-summary')});
+app.element('compare runs groups', {selector: u2('compare-runs-groups')});
+app.element('open compare runs as table button', {selector: u2('compare-runs-table')});

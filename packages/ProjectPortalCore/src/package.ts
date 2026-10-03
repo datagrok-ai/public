@@ -11,7 +11,7 @@ import {portalAppView} from './views/portal-view';
 import {installStyles} from './views/styles';
 import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
 import {portfolioTables} from './portfolio-table';
-import {saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
+import {criterionRuns, saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
 import {RunPurpose} from './model/model-runs';
 import {loadCatalogues} from './catalogue';
 import {modelCardWidget, workspaceModelCardWidget} from './views/model-card';
@@ -37,6 +37,7 @@ import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
 import {dataPackageFrame, dataPackageOf} from './data-package';
 import {manifestCsv} from './model/data-package';
+import {comparePlanFrame, criterionComparePlan} from './compare-runs';
 import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
@@ -430,6 +431,21 @@ export async function dataPackage(portfolio: string, program: string): Promise<D
 //output: string csv
 export async function dataPackageCsv(portfolio: string, program: string): Promise<string> {
   return manifestCsv((await dataPackageOf((await programByCode(portfolio, program)).id)).lines);
+}
+
+//name: criterionRunsToCompare
+//description: A run criterion's candidate runs, grouped by model, as Compute2's Compare Runs would take them (F-29): model, run, run id, saved on, selected. Compare Runs takes no runs as input, so this is the list to add there
+//input: string portfolio
+//input: string program
+//input: string criterion {description: The criterion code, e.g. process_description}
+//output: dataframe result
+export async function criterionRunsToCompare(portfolio: string, program: string, criterion: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  const ctx = await programContext(p.id);
+  const c = ctx.criteria.find((x) => x.code === criterion && x.artifact === 'model_run');
+  if (!c)
+    throw new Error(`${program} has no criterion ${criterion} that rests on a run`);
+  return comparePlanFrame(criterionComparePlan(await criterionRuns(p.id, c.id)), `${program} · ${criterion} runs`);
 }
 
 //name: showProvenance

@@ -56,6 +56,7 @@ import {describeChanges, EvidenceChange} from '../model/evidence-tables';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
 import {openDataPackageDialog} from './data-package-dialog';
+import {openCompareRunsDialog} from './compare-runs-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
@@ -1040,11 +1041,21 @@ export class PortalView {
       .catch((e) => grok.shell.error(e?.message ?? String(e)))), `choose-run-${slug(c.code)}`);
     choose.disabled = runs.refused.length > 0;
     choose.title = runs.refused.join('; ') || 'Compare the program\'s runs for this criterion and select one';
+    // Compute2's Compare Runs over the candidates, also across models (F-29)
+    const compare = named(button('Compare in Compute2…', () => {
+      const program = this.programs.find((p) => p.id === programId)?.code ?? '';
+      openCompareRunsDialog({program, criterion: {code: c.code, name: c.name}, runs,
+        compareHere: runs.refused.length ? undefined : () => choose.click()});
+    }), `compare-runs-${slug(c.code)}`);
+    compare.disabled = runs.candidates.length < 2;
+    compare.title = runs.candidates.length < 2 ? 'Comparing needs two candidate runs' :
+      'The candidate runs in Compute2\'s Compare Runs, also runs of different models';
     return named(divV([
       named(divH([
         runs.selected ? span(`Run: ${describeSelection(runs.selected)}`) :
           span(`No run selected · ${runs.candidates.length} candidate${runs.candidates.length === 1 ? '' : 's'}`, 'pp-muted'),
         choose,
+        compare,
       ], 'pp-criterion-run'), `selected-run-${slug(c.code)}`),
       ...(runs.superseded.length ? [named(divV(runs.superseded.map((e) =>
         span(`Superseded: ${describeSelection(e)}`, 'pp-gap'))), `run-history-${slug(c.code)}`)] : []),

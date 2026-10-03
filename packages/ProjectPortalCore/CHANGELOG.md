@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Cross-model run comparison (F-29, FR-55): **Compare in Compute2…** on a criterion that rests on a run, once it has two candidates. The dialog lists the candidates by model and what to add in Compute2's Compare Runs, opens it where Compute2 is installed, and lists the runs as a table. Compare Runs takes no runs as input, so it is not seeded; the dialog is the list to work from. `criterionRunsToCompare(portfolio, program, criterion)` returns the list. Pure plan in `src/model/compare-runs.ts`
+
 - Data package manifest (F-43), as a view: **Data package** on the program page lists what the program's gate case rests on, one line each: criteria to the next gate (state, recorded or evaluated), documents, generated evidence tables (sources, stale), saved runs (model, unit operation, run type, who, selected for), datasets and snapshots. **Open as table**, **Download CSV**. Functions `dataPackage(portfolio, program)` and `dataPackageCsv(portfolio, program)`. Read from the records each time; no schema change. Pure assembly in `src/model/data-package.ts`
 
 - Unit-operation folders from a program's flow: optional `flowFolders` in a portfolio file (placement, fromStage, flows with numbered step folders, rules by modality). The builder adds a folder per step under the program's process-type folder (or the program's folder), from the program's `program_flow` rows where a loader wrote them, else from the declared flows. Additive and idempotent; a dry run lists them; the notes name each program's flow. Exported, diffed (workspace tree) and checked with the set (unit operations must be in a catalogue of the set). EX-BIOC declares `EX-MAB-DS` for its antibodies from D2. Pure rules in `src/model/flow-folders.ts`

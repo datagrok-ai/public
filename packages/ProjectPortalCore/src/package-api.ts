@@ -254,6 +254,14 @@ export namespace funcs {
   }
 
   /**
+   * A run criterion's candidate runs, grouped by model, as Compute2's Compare Runs would take them (F-29): model, run, run id, saved on, selected. Compare Runs takes no runs as input, so this is the list to add there
+   * @param {string} criterion - The criterion code, e.g. process_description
+   */
+  export async function criterionRunsToCompare(portfolio: string , program: string , criterion: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:CriterionRunsToCompare', { portfolio, program, criterion });
+  }
+
+  /**
    * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

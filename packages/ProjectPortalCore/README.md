@@ -481,6 +481,15 @@ A criterion can rest on a model run (F-15). It says so in the portfolio file:
 - **What a choice does** is unchanged: the run becomes `selected`, the one before `superseded` (kept, shown as history), and the criterion is met unless it was waived.
 - `criterionRuns(programId, criterionId)` and `runComparison(items)` return what the panel and the dialog show.
 
+### Comparing a criterion's runs in Compute2
+
+Runs of different models for one criterion are compared in Compute2, not in the portal (F-29).
+- **Compare in Compute2…** sits beside Choose run… on a criterion that rests on a run, once it has two candidates.
+- The dialog lists the candidates by model (newest first, the selected one marked) and the steps in Compare Runs: pick each model, tick its runs, Add selected runs. Across models the tool matches inputs and outputs by name and units.
+- **Open Compare Runs** opens `Compute2:CompareRuns`; the dialog stays open beside it. Where Compute2 is not installed the button is off and says so. **Compare here** opens the portal's own side by side (one model). **Open as table** lists the runs with their run ids.
+- **Not seeded.** Compare Runs takes no runs as input today, so the portal cannot hand them over. A run without a saved call is listed but cannot be added.
+- `criterionRunsToCompare(portfolio, program, criterion)` returns the list as a table.
+
 ### Saving a run from the app
 
 The **Save to program** dialog (F-14, FR-53) asks for portfolio, program, unit operation, run type,
@@ -573,6 +582,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
 | `dataPackage(portfolio, program)` | A program's data package manifest: criteria to the next gate, documents, evidence tables, runs, datasets, snapshots, with status and source |
 | `dataPackageCsv(portfolio, program)` | The same as CSV text |
+| `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
@@ -646,6 +656,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Activity feed: the rules (entries from each kind of record, evidence folded into its decision, news told twice counted once, newest first, a series' part, kinds, pages), and on EXS-KIN1 new data a check found in the program's feed and the follower's, a series follow that sees only its series, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
+  - Comparing runs in Compute2: the rules (runs grouped by model, across models, a run without a saved call, the tool missing or fewer than two runs, the steps), and on EX-BIOC a scratch project's two process description candidates as a plan and as the function's table, and the dialog with Open Compare Runs on only where Compute2 is installed.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
