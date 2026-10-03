@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
+
 ## 1.10.3 (WIP)
 
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)
