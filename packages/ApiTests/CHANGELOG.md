@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21087: Read rows without a backing item as empty and create the item on edit
+
 ## 1.10.3 (WIP)
 
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)
