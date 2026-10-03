@@ -7,6 +7,28 @@
   "programNoun": "Project",
   "workspaceRoot": "Example Biologics Development",
   "workstreams": ["Drug Substance", "Drug Product", "Analytical", "Regulatory"],
+  "flowFolders": {
+    "placement": "process_type",
+    "fromStage": "D2",
+    "flows": [
+      {
+        "code": "EX-MAB-DS",
+        "name": "Example antibody drug substance",
+        "processType": "Drug Substance",
+        "description": "Example: a platform antibody process, seed train to UF/DF",
+        "steps": [
+          {"step": 1, "unitOperation": "EX-SEED", "folderName": "01 - Seed train"},
+          {"step": 2, "unitOperation": "EX-PROD", "folderName": "02 - Production bioreactor"},
+          {"step": 3, "unitOperation": "EX-HARV", "folderName": "03 - Harvest"},
+          {"step": 4, "unitOperation": "EX-PROA", "folderName": "04 - Protein A capture"},
+          {"step": 5, "unitOperation": "EX-UFDF", "folderName": "05 - UF-DF"}
+        ]
+      }
+    ],
+    "rules": [
+      {"modality": "mAb", "flow": "EX-MAB-DS", "priority": 1, "note": "Example: every antibody runs the platform process"}
+    ]
+  },
   "description": "Example portfolio on synthetic data. The registry owns the stage; the portal mirrors it and records every change it observes as a sync transition.",
   "schedule": "0 6 * * 1-5",
   "owners": ["admin"],

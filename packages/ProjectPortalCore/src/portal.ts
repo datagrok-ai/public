@@ -178,6 +178,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     name: c.name, setting: c.setting, modality_class: c.modalityClass ?? null, stage_model_id: modelId,
     stage_authority: c.stageAuthority, program_noun: c.programNoun ?? 'Program',
     workspace_root: c.workspaceRoot ?? null, workstreams: (c.workstreams ?? []).join('|') || null,
+    flow_folders: c.flowFolders ?? null,
     program_data: c.programData ?? null,
     // a json column holds an object, not a list
     program_datasets: c.programDatasets ? {datasets: c.programDatasets} : null,

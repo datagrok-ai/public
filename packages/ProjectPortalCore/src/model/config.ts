@@ -13,6 +13,7 @@ import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
 import {PersonaConfig, validatePersonas} from './personas';
 import {DocumentKindConfig, validateDocumentKinds} from './documents';
 import {ApprovalConfig, validateApproval} from './approvals';
+import {FlowFoldersConfig, validateFlowFolders, validateFlowSet} from './flow-folders';
 
 export type Setting = 'discovery' | 'development' | 'rollout';
 export type StageAuthority = 'feed' | 'portal';
@@ -92,6 +93,9 @@ export interface PortfolioConfig {
   groups?: {viewers?: string, contributors?: string, approvers?: string};
   /** Where a program goes when it leaves this portfolio's terminal stage. */
   handoff?: {to: string, fromStage: string};
+  /** Unit-operation folders from each program's process flows, under the program's folder: the
+   * flows and rules the file declares, and those a loader wrote to program_flow. None when absent. */
+  flowFolders?: FlowFoldersConfig;
   /** Work units the portfolio uses (FR-06); none when absent. */
   workUnits?: WorkUnitKind[];
   /** Feeds that deliver work units from a source system, keyed by program code. */
@@ -194,6 +198,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
     }
   }
   errors.push(...validateWorkUnits(c.workUnits, c.workUnitFeeds, c.seriesMaturity));
+  errors.push(...validateFlowFolders(c.flowFolders, (c.stageModel?.stages ?? []).map((s) => s.code), c.workspaceRoot));
   errors.push(...validateCompoundFeed(c.compoundFeed));
   if (c.programData !== undefined) {
     need(c.programData.connection, 'programData: connection');
@@ -307,6 +312,8 @@ export function validatePortfolioSet(portfolios: PortfolioConfig[], alsoKnown: s
   }
   errors.push(...mergeCatalogues(portfolios.filter((p) => p.catalogue)
     .map((p) => ({portfolio: p.code, catalogue: p.catalogue!}))).errors);
+  errors.push(...validateFlowSet(portfolios.map((p) => ({code: p.code, flowFolders: p.flowFolders,
+    unitOperations: (p.catalogue?.unitOperations ?? []).map((u) => u.code)}))));
   return errors;
 }
 

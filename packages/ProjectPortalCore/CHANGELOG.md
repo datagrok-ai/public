@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Unit-operation folders from a program's flow: optional `flowFolders` in a portfolio file (placement, fromStage, flows with numbered step folders, rules by modality). The builder adds a folder per step under the program's process-type folder (or the program's folder), from the program's `program_flow` rows where a loader wrote them, else from the declared flows. Additive and idempotent; a dry run lists them; the notes name each program's flow. Exported, diffed (workspace tree) and checked with the set (unit operations must be in a catalogue of the set). EX-BIOC declares `EX-MAB-DS` for its antibodies from D2. Pure rules in `src/model/flow-folders.ts`
+- `portal` schema 0.2.27: `portfolio.flow_folders`. Additive, no migration script
+
 - Provenance runs through generated documents: an evidence table rests on the run, snapshot, data conditions and decisions it records in `document.generated` (relation *generated into*)
 
 - Activity feed: program roles (kind `role`: "Program role: Chem team is contributor", "Program role removed: …") and approved model cards of the models the program used (kind `model_card`) are entries

@@ -1,4 +1,5 @@
-/** The workspace builder: a Spaces tree per portfolio, root → program → workstream.
+/** The workspace builder: a Spaces tree per portfolio, root → program → workstream, and with
+ * `flowFolders` the unit-operation folders of each program's process flows.
  *
  * Additive: it creates what is missing and never renames, moves or deletes. A program renamed in
  * its registry keeps its folder (the folder's id is recorded on the program row) and the report
@@ -17,6 +18,7 @@ import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
 import {syncFolderGrants} from './program-roles';
 import {filterValue, ROW_LIMIT} from './rows';
+import {FlowFoldersConfig, flowFolderPaths, flowFoldersDue, flowsForProgram, ProgramFlow, TableFlow} from './model/flow-folders';
 
 export interface WorkspaceEntry {
   path: string;
@@ -155,6 +157,24 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
   const parked = new Set((await portalDb.parkedFolders.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}).catch(() => []))
     .filter((r) => r.status === 'parked').map((r) => r.space_id));
 
+  // unit-operation folders, when the portfolio asks for them
+  const flowConfig = (portfolio.flow_folders ?? null) as FlowFoldersConfig | null;
+  const flowsOf = new Map<string, ProgramFlow[]>();
+  if (flowConfig) {
+    const table = await tableFlows(programs.map((p) => p.id));
+    const from = flowConfig.fromStage ? stageRows.find((s) => s.code === flowConfig.fromStage)?.ordinal ?? null : null;
+    for (const p of programs) {
+      const row = rows.find((r) => r.id === p.id)!;
+      if (flowFoldersDue(from, p.ordinal))
+        flowsOf.set(p.id, flowsForProgram(row.modality, table.get(p.id) ?? [], flowConfig));
+    }
+    const withFlows = programs.filter((p) => flowsOf.get(p.id)?.length);
+    report.notes.push(`flow folders: ${withFlows.length ? withFlows.map((p) => `${p.code} (${flowsOf.get(p.id)!
+      .map((f) => f.code).join(', ')})`).join(', ') : 'no program has a flow'}` +
+      (programs.length > withFlows.length ? `; ${programs.length - withFlows.length} program(s) without` +
+        `${flowConfig.fromStage ? ` (or before ${flowConfig.fromStage})` : ''}` : ''));
+  }
+
   let attributesWritten = 0;
   for (const p of programs) {
     const folderName = programFolderName(p);
@@ -173,7 +193,8 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       }
       if (p.spaceId && found?.by !== 'id')
         report.notes.push(`${p.code}: its recorded folder is gone from ${rootName}`);
-      const extra = stageFolderPaths(stageFolders, p.ordinal);
+      const extra = [...stageFolderPaths(stageFolders, p.ordinal),
+        ...flowFolderPaths(flowsOf.get(p.id) ?? [], flowConfig?.placement)];
       if (dryRun) {
         const existing = folder ? await subspaces(folder.id) : [];
         for (const w of workstreams)
@@ -216,6 +237,34 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
     report.orphans = findOrphans(rootName, children.map(asRef), all);
   return report;
 }
+
+/** The program_flow rows of [programIds], each joined to its flow and steps. A loader of process
+ * flows writes them; the builder only reads. */
+async function tableFlows(programIds: string[]): Promise<Map<string, TableFlow[]>> {
+  const out = new Map<string, TableFlow[]>();
+  if (!programIds.length)
+    return out;
+  const links = (await Promise.all(chunks(programIds, 200).map((ids) => portalDb.programFlows.query({
+    filter: `program_id in (${ids.map(filterValue).join(', ')})`, limit: ROW_LIMIT})))).flat();
+  const flowIds = [...new Set(links.map((l) => l.process_flow_id))];
+  if (!flowIds.length)
+    return out;
+  const inFlows = flowIds.map(filterValue).join(', ');
+  const [flows, steps] = await Promise.all([
+    portalDb.processFlows.query({filter: `id in (${inFlows})`, limit: ROW_LIMIT}),
+    portalDb.processSteps.query({filter: `process_flow_id in (${inFlows})`, limit: ROW_LIMIT}),
+  ]);
+  for (const l of links) {
+    const f = flows.find((x) => x.id === l.process_flow_id);
+    if (!f)
+      continue;
+    out.set(l.program_id, [...out.get(l.program_id) ?? [], {code: f.code, processType: f.process_type, rowSource: l.source,
+      steps: steps.filter((s) => s.process_flow_id === f.id).map((s) => ({step: s.step_number, folderName: s.folder_name}))}]);
+  }
+  return out;
+}
+
+const chunks = <T>(xs: T[], n: number): T[][] => Array.from({length: Math.ceil(xs.length / n)}, (_, i) => xs.slice(i * n, i * n + n));
 
 /** Makes sure [parts] exists under [folder], one segment at a time. A segment already there under
  * either spelling is reused, so a stage folder under a workstream (DMPK/In vivo PK) lands in the

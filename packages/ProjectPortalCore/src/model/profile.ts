@@ -206,8 +206,15 @@ export function diffPortfolios(a: PortfolioConfig, b: PortfolioConfig): Portfoli
 
   deepDiff(x.workspaceRoot, y.workspaceRoot, 'workspace root', workspace);
   deepDiff(x.workstreams ?? [], y.workstreams ?? [], 'workstreams', workspace);
+  // unit-operation folders: placement and stage are the tree's shape, flows by code, rules as a whole
+  const fa = x.flowFolders ?? {};
+  const fb = y.flowFolders ?? {};
+  deepDiff(omit(fa, ['flows', 'rules']), omit(fb, ['flows', 'rules']), 'flow folders', workspace);
+  deepDiff(fa.flows ?? [], fb.flows ?? [], 'flow', workspace);
+  deepDiff(fa.rules ?? [], fb.rules ?? [], 'flow rules', workspace);
 
-  const handled = ['stageModel', 'workUnits', 'seriesMaturity', 'catalogue', 'documentKinds', 'workspaceRoot', 'workstreams'];
+  const handled = ['stageModel', 'workUnits', 'seriesMaturity', 'catalogue', 'documentKinds', 'workspaceRoot', 'workstreams',
+    'flowFolders'];
   deepDiff(omit(x, handled), omit(y, handled), '', fields);
   // `criterion H2L/ potency` reads better as `criterion H2L/potency`
   const tidy = (ls: string[]) => ls.map((l) => l.replace(/\/ /g, '/'));

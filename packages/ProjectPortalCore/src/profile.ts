@@ -100,6 +100,7 @@ export async function exportPortfolioConfig(code: string): Promise<PortfolioConf
   return compact({
     code: p.code, name: p.name, setting: p.setting, modalityClass: p.modality_class, stageAuthority: p.stage_authority,
     programNoun: p.program_noun, workspaceRoot: p.workspace_root, workstreams: orNull(split(p.workstreams)),
+    flowFolders: p.flow_folders as any,
     description: p.description, schedule: p.schedule, owners: orNull(split(p.owners)),
     autoAdvance: p.auto_advance as any,
     personas: p.personas as any,

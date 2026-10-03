@@ -240,6 +240,7 @@ export interface PortfolioRow {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  flow_folders?: {[key: string]: any};
   work_units?: string;
   series_maturity?: string;
   program_data?: {[key: string]: any};
@@ -269,6 +270,7 @@ export interface PortfolioInsert {
   program_noun?: string;
   workspace_root?: string;
   workstreams?: string;
+  flow_folders?: {[key: string]: any};
   work_units?: string;
   series_maturity?: string;
   program_data?: {[key: string]: any};
@@ -289,9 +291,9 @@ export interface PortfolioInsert {
 
 export type PortfolioColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'code' | 'name' |
   'setting' | 'modality_class' | 'stage_model_id' | 'stage_authority' | 'program_noun' | 'workspace_root' |
-  'workstreams' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' | 'attention' | 'schedule' |
-  'owners' | 'handoff' | 'auto_advance' | 'personas' | 'document_kinds' | 'approval' | 'viewers' | 'contributors' |
-  'approvers' | 'description';
+  'workstreams' | 'flow_folders' | 'work_units' | 'series_maturity' | 'program_data' | 'program_datasets' |
+  'attention' | 'schedule' | 'owners' | 'handoff' | 'auto_advance' | 'personas' | 'document_kinds' | 'approval' |
+  'viewers' | 'contributors' | 'approvers' | 'description';
 
 /** Expand keys of `portal.portfolio` → fields each adds to the row (consumed by query()/builder). */
 export type PortfolioExpand = {
@@ -349,7 +351,8 @@ export type RegistryFeedExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
@@ -416,7 +419,8 @@ export type ProgramExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
@@ -1331,7 +1335,8 @@ export type SyncRunExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
@@ -1807,7 +1812,8 @@ export type ApprovalRequestExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
@@ -1886,7 +1892,8 @@ export type ParkedFolderExpand = {
     'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
     'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
     'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
-    'portfolio_id.workstreams'?: string; 'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
     'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
     'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
     'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};

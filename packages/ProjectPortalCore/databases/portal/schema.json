@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.26",
+  "version": "0.2.27",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -80,6 +80,7 @@
         "program_noun": {"type": "string", "default": "Program", "description": "What this portfolio calls a program: Project, Program, Molecule"},
         "workspace_root": {"type": "string", "description": "Name of the root space the workspace builder creates the portfolio's tree under"},
         "workstreams": {"type": "string", "description": "Folders the builder creates under every program, '|'-separated (Chemistry|Biology|DMPK)"},
+        "flow_folders": {"type": "json", "description": "Unit-operation folders from each program's process flows, off when empty: {placement: process_type|program, fromStage, flows: [{code, name, processType, steps: [{step, unitOperation, folderName}]}], rules: [{modality, flow, priority}]}. program_flow rows win for their process type"},
         "work_units": {"type": "string", "description": "Work units the portfolio uses, '|'-separated: campaign, series, study, process_stage"},
         "series_maturity": {"type": "string", "description": "The ordered series maturity vocabulary, '|'-separated (hit|validated|lead|optimized|candidate)"},
         "program_data": {"type": "json", "description": "The program dataset query data conditions are evaluated over: connection, sql with @program, leadRoles"},
