@@ -289,7 +289,7 @@ export class StickyMetaTutorial extends Tutorial {
       'Hover a cell to verify metadata tooltip.',
       new Promise<void>((resolve) => {
         const sub = grid.onCellTooltip((cell) => {
-          if (cell.cell.column.name === 'smiles' && cell.gridRow === 0) {
+          if (cell.tableColumn?.name === 'smiles' && cell.gridRow === 0) {
             sub.unsubscribe();
             resolve();
           }

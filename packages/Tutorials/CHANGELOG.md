@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21085: Sticky Meta: Fixed an error when hovering the row header in the last tutorial step
 * GROK-20153: Tutorials | Sticky meta: Stuck on annotate dataset step in some cases
 * Tutorials: Fixed the step counters of Scatter Plot, Embedded Viewers, Filters, Grid Customization, Calculated Columns and Data Aggregation (each declared one step more than it lists), so "Step N of M" names the step in progress
 * Tutorials: Fixed hints captured when their step began: they follow their element now, so one that appears later is still highlighted — the new connection's tree node and the query's row (Dashboards, Data Connectors), the New Entity Type and New Schema buttons (Sticky Meta), the Chem and ML menus (Activity Cliffs, R-Groups Analysis, Multivariate Analysis)
