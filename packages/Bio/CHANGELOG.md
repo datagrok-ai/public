@@ -1,5 +1,9 @@
 # Bio changelog
 
+## v.next
+
+* GROK-21075: Composition analysis: Fixed an error in the panel for sequences with more than 20 distinct monomers
+
 ## 2.28.4 (2026-09-29)
 
 * MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)
