@@ -104,7 +104,7 @@ category('Portal: sync plan', () => {
   });
 
   test('a program arriving from another portfolio links back as its successor', async () => {
-    const elsewhere: ProgramRef[] = [{id: 'disc-1', code: 'X', portfolioCode: 'BIO-DISC', status: 'completed',
+    const elsewhere: ProgramRef[] = [{id: 'disc-1', code: 'X', portfolioCode: 'EX-BIOD', status: 'completed',
       source: 'feed', externalRef: 'sys:X'}];
     const p = plan({elsewhere, rows: [{code: 'X', name: 'X', stage: '1'}]});
     expect(p.inserts[0].predecessor_id, 'disc-1');
@@ -113,10 +113,10 @@ category('Portal: sync plan', () => {
   });
 
   test('two feeds delivering the same key at once is an overlap', async () => {
-    const elsewhere: ProgramRef[] = [{id: 'disc-1', code: 'X', portfolioCode: 'BIO-DISC', status: 'active',
+    const elsewhere: ProgramRef[] = [{id: 'disc-1', code: 'X', portfolioCode: 'EX-BIOD', status: 'active',
       source: 'feed', externalRef: 'sys:X'}];
     const p = plan({elsewhere, rows: [{code: 'X', name: 'X', stage: '1'}]});
-    expect(p.overlaps.map((o) => o.otherPortfolio).join(), 'BIO-DISC');
+    expect(p.overlaps.map((o) => o.otherPortfolio).join(), 'EX-BIOD');
   });
 
   test('a program gone from its feed is transitioned when another portfolio has it, else flagged', async () => {
