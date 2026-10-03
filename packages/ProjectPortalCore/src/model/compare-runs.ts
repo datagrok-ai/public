@@ -2,7 +2,7 @@
  * Compare Runs tool. Not a portal build: the tool does the matching of inputs and outputs across
  * models. Compare Runs takes no runs as input (no function input, URL or API in Compute2 1.6), so the
  * portal cannot seed it; it opens the tool and lists what to add, model by model. Its run history
- * lists only the current user's runs, so runs saved by others are listed but not to be ticked. Pure: the caller reads the runs and says whether the
+ * lists only the current user's runs, so runs saved by others are listed but not to be selected. Pure: the caller reads the runs and says whether the
  * tool is installed. */
 
 /** Compute2's run comparison tool (Model Hub → Tools → Compare Runs). */
@@ -68,8 +68,10 @@ export function comparePlan(candidates: CompareCandidate[], toolInstalled: boole
   const steps = unavailable ? [] : [
     'Open Compare Runs',
     ...groups.filter((g) => g.runs.some(addable)).map((g) =>
-      `Pick ${g.modelName}, tick ${g.runs.filter(addable).map((r) => `"${r.title}"`).join(', ')}, then Add selected runs`),
+      `Pick ${g.modelName}, select ${g.runs.filter(addable).map((r) => `"${r.title}"`).join(', ')} in its history ` +
+      '(Ctrl+click; Cmd+click on a Mac), then Add selected runs'),
     ...(groups.length > 1 ? ['Runs of different models are matched by input and output name and units; check the pairings it proposes'] : []),
+    'Under Compare, pick a value to chart it across the runs',
   ];
   return {groups, runs: candidates.length, models: groups.length, crossModel: groups.length > 1, unavailable, steps,
     notAddable: candidates.filter((c) => !c.runId).length, byOthers: candidates.filter((c) => c.runId && c.byOther).length};

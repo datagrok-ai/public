@@ -533,7 +533,7 @@ A criterion can rest on a model run (F-15). It says so in the portfolio file:
 
 Runs of different models for one criterion are compared in Compute2, not in the portal (F-29).
 - **Compare in Compute2…** sits beside Choose run… on a criterion that rests on a run, once it has two candidates.
-- The dialog lists the candidates by model (newest first, the selected one marked) and the steps in Compare Runs: pick each model, tick its runs, Add selected runs. Across models the tool matches inputs and outputs by name and units.
+- The dialog lists the candidates by model (newest first, the selected one marked) and the steps in Compare Runs: pick each model, select its runs in the history (Ctrl+click; Cmd+click on a Mac), Add selected runs, pick a value under Compare. Across models the tool matches inputs and outputs by name and units.
 - **Open Compare Runs** opens `Compute2:CompareRuns`; the dialog stays open beside it. Where Compute2 is not installed the button is off and says so. **Compare here** opens the portal's own side by side (one model). **Open as table** lists the runs with their run ids.
 - **Not seeded.** Compare Runs takes no runs as input today, so the portal cannot hand them over. A run without a saved call is listed but cannot be added.
 - **Your own runs only.** Compare Runs' history lists only the current user's runs. A run another user saved is listed as "saved by another user" and left out of the steps; Open Compare Runs needs two of your own runs with a saved call.

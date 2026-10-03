@@ -17,8 +17,10 @@ category('Portal: run comparison rules', () => {
     const p = comparePlan([run('1', 'Titer'), run('2', 'Kinetics'), run('3', 'Titer', {runId: null})], true);
     expect(p.groups.map((g) => `${g.modelName}:${g.runs.map((r) => r.id).join('+')}`).join(), 'Titer:1+3,Kinetics:2');
     expect(`${p.crossModel} ${p.notAddable} ${p.unavailable}`, 'true 1 null');
-    expect(p.steps[1], 'Pick Titer, tick "Run 1", then Add selected runs', 'a run without a saved call is not to be ticked');
-    expect(p.steps.length, 4);
+    expect(p.steps[1], 'Pick Titer, select "Run 1" in its history (Ctrl+click; Cmd+click on a Mac), then Add selected runs',
+      'a run without a saved call is not to be selected');
+    expect(p.steps.length, 5);
+    expect(p.steps[4], 'Under Compare, pick a value to chart it across the runs');
     expect(describePlan(p), '3 runs of 2 models');
   });
 
@@ -31,10 +33,10 @@ category('Portal: run comparison rules', () => {
     expect(COMPARE_RUNS_FUNCTION, 'Compute2:CompareRuns');
   });
 
-  test('runs saved by another user are listed but not ticked: the tool lists only your own', async () => {
+  test('runs saved by another user are listed but not selected: the tool lists only your own', async () => {
     const p = comparePlan([run('1', 'A'), run('2', 'A', {byOther: true}), run('3', 'A')], true);
     expect(`${p.byOthers} ${p.notAddable} ${p.unavailable}`, '1 0 null');
-    expect(p.steps[1], 'Pick A, tick "Run 1", "Run 3", then Add selected runs');
+    expect(p.steps[1], 'Pick A, select "Run 1", "Run 3" in its history (Ctrl+click; Cmd+click on a Mac), then Add selected runs');
     expect(comparePlan([run('1', 'A'), run('2', 'A', {byOther: true})], true).unavailable,
       'Comparing needs two of your runs with a saved call; one here');
   });
