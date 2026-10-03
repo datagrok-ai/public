@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 import './tests/webgpu-tests';
+import './tests/piechart-tests';
 
 
 export const _package = new DG.Package();
