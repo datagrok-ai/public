@@ -240,6 +240,20 @@ export namespace funcs {
   }
 
   /**
+   * A program's data package manifest: one line per criterion (to the next gate), document, evidence table, saved run, dataset and snapshot, with stage, criterion, status, version, source, by, on and a reference. Read from the records now
+   */
+  export async function dataPackage(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DataPackage', { portfolio, program });
+  }
+
+  /**
+   * A program's data package manifest as CSV text, as the program page's Download CSV saves it
+   */
+  export async function dataPackageCsv(portfolio: string , program: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:DataPackageCsv', { portfolio, program });
+  }
+
+  /**
    * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

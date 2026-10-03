@@ -210,3 +210,11 @@ app.element('my programs widget', {selector: u2('my-programs')});
 app.element('EXS-KIN1 tile', {selector: u2('pinned-tile-exs-kin1')});
 
 app.element('workspace model card', {selector: u2('workspace-model-card')});
+
+app.element('scratch package project card', {selector: u2('program-bdd-pkg')});
+app.element('data package button', {selector: u2('program-data-package-button')});
+app.element('data package dialog', {selector: u2('data-package-dialog')});
+app.element('data package summary', {selector: u2('data-package-summary')});
+app.element('data package lines', {selector: u2('data-package-lines')});
+app.element('download data package csv button', {selector: u2('data-package-csv')});
+app.element('open data package as table button', {selector: u2('data-package-open-table')});

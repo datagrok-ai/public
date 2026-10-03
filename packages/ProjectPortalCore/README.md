@@ -436,6 +436,17 @@ document → decision, and back. The graph is the portal's own records; nothing 
 - **In the app.** **Provenance** on the program page, beside each decision and each piece of evidence in the history, and beside each saved run, document and snapshot. The dialog shows *Rests on* and *Used by* as indented trees; a click opens the record (a run's call in the context panel, a snapshot, a document's file, the program data, a model card, a table, another program on its page), and **Trace** starts the walk again from it.
 - **Functions.** `provenance(kind, id, depth)` returns `{start, nodes, edges}` (kind: program, decision, evidence, model_run, snapshot, document, compound; a run's `run_id` and a compound's code work as ids). `showProvenance(kind, id)` opens the dialog.
 
+### Data package manifest
+
+What a program's gate case rests on, one line each (F-43, FR-43, PORT-11). Started as a view: the
+lines are read from the portal's records each time; nothing is stored or authored.
+
+- **Lines.** The criteria of every stage the program has reached and of the next one, with their state and whether it was recorded or evaluated from data now. Documents, with version, status, kind, and who linked or approved them and when. Generated evidence tables, with what they were written from and *evidence changed* when the last check found it stale. Saved runs, with model, unit operation, run type, purpose, who ran them and the criteria they are selected for. The program's datasets, with their connection. Snapshots.
+- **Columns.** Section, Item, Stage, Criterion, Status, Version, Source, By, On, Reference (a file path, a saved call's id, a snapshot id, a dataset code).
+- **In the app.** **Data package** on the program page opens it in a dialog with a one-line summary (`4 criteria · 1 run · 1 dataset`). **Open as table** puts it in a table view; **Download CSV** saves `<CODE>-data-package-<date>.csv`.
+- **Functions.** `dataPackage(portfolio, program)` returns the table; `dataPackageCsv(portfolio, program)` the CSV text.
+- Pure assembly and CSV in `src/model/data-package.ts`; the reads in `src/data-package.ts`.
+
 ### Stage advance driven by data
 
 Off by default. A portfolio whose stages the portal owns may let data move its programs, up to a
@@ -560,6 +571,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `checkEvidenceChanges(code)` | Marks each generated evidence table of the portfolio stale or current against the evidence now; tells a stale one's author and the program's followers once. The sync runs it too |
 | `provenance(kind, id, depth)` | What a portal record rests on and what rests on it, `depth` steps each way, as `{start, nodes, edges}` |
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
+| `dataPackage(portfolio, program)` | A program's data package manifest: criteria to the next gate, documents, evidence tables, runs, datasets, snapshots, with status and source |
+| `dataPackageCsv(portfolio, program)` | The same as CSV text |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
@@ -610,6 +623,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Integration against the example portfolios: feeds, authority, lineage, overlap, routing, gate decisions.
   - Schema round-trips: the run-selection loop and the workspace vocabulary.
   - The workspace builder: tree, idempotence, preview, a renamed program, concurrent builds, stage folders from the builder and on advance, the orphan report.
+  - Data package: the rules (criteria to the next gate in stage order with state and basis, each section's status and source, a stale evidence table, a selected and a reference run, the summary, CSV quoting, the file name), and on EX-BIOC the lines of EXB-201 (criteria of D1 to D5, its example documents, its dataset), a scratch project's saved run with its model, unit operation, run type and author, the functions and the dialog.
   - Flow folders: the rules (a flow by modality and priority, one per process type, a `program_flow` row and a manual one winning, placement, `fromStage`, the config and set checks), and on EX-BIOC a preview naming the five step folders of EXB-201 and EXB-204 only, a build under the Drug Substance workstream and a rebuild that creates nothing, EX-SMD reading no flow, and a loader's `program_flow` row winning over the declared flow.
   - Pinned programs: the rules (what can be pinned, who pins for a group, pins from the user's and the groups' favorites, a tile's track, readiness and address, tiles that follow the pins, unseen news), and on EX-SMD a pin and unpin of EXS-PRO2 through favorites (its tile, `pinnedPrograms`, the table's `pinned` column), an unpin in the platform taking the tile away, a pin for the viewers group, a program without a folder refused, and a program's address opening its page. The admin's favorites are put back.
   - Parking: the rules (where each orphan goes, already parked, only some, who may, unparking over a folder of the same name, the parking folder never an orphan, the summary), and on EX-SMD a throwaway folder previewed, parked, left out of the report and the build, unparked with `_Parked` removed and the tree as before; a terminated scratch program's folder parked and not rebuilt; a non-approver refused.

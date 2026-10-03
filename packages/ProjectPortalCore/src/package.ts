@@ -35,6 +35,8 @@ import {describeSnapshotRow, snapshotsFrame, snapshotsOf, takeSnapshot} from './
 import {documentsFrame, documentsOf, linkDocumentTo, loadExampleDocuments as loadExamples} from './documents';
 import {describeDocument} from './model/documents';
 import {provenanceOf} from './provenance';
+import {dataPackageFrame, dataPackageOf} from './data-package';
+import {manifestCsv} from './model/data-package';
 import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
@@ -410,6 +412,24 @@ export async function checkEvidenceChanges(code: string): Promise<string> {
 export async function provenance(kind: string, id: string, depth?: number): Promise<object> {
   const p = await provenanceOf(kind, id, depth || 4);
   return {start: p.start, nodes: p.nodes, edges: p.edges};
+}
+
+//name: dataPackage
+//description: A program's data package manifest: one line per criterion (to the next gate), document, evidence table, saved run, dataset and snapshot, with stage, criterion, status, version, source, by, on and a reference. Read from the records now
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function dataPackage(portfolio: string, program: string): Promise<DG.DataFrame> {
+  return dataPackageFrame(await dataPackageOf((await programByCode(portfolio, program)).id));
+}
+
+//name: dataPackageCsv
+//description: A program's data package manifest as CSV text, as the program page's Download CSV saves it
+//input: string portfolio
+//input: string program
+//output: string csv
+export async function dataPackageCsv(portfolio: string, program: string): Promise<string> {
+  return manifestCsv((await dataPackageOf((await programByCode(portfolio, program)).id)).lines);
 }
 
 //name: showProvenance

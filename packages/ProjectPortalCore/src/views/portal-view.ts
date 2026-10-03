@@ -55,6 +55,7 @@ import {evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFo
 import {describeChanges, EvidenceChange} from '../model/evidence-tables';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
+import {openDataPackageDialog} from './data-package-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
@@ -650,7 +651,8 @@ export class PortalView {
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
       named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx, spaceLive),
-        named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button')],
+        named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button'),
+        this.dataPackageButton(program.id)],
       'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
       ...quick,
@@ -1268,6 +1270,14 @@ export class PortalView {
       ...rows,
       named(divH([link, add], 'pp-actions pp-role-form'), 'evidence-link'),
     ], 'pp-evidence-picker'), 'decision-evidence');
+  }
+
+  /** The program's data package manifest (F-43): criteria, documents, evidence tables, runs, data. */
+  private dataPackageButton(programId: string): HTMLElement {
+    const b = named(button('Data package', () => void openDataPackageDialog(programId).catch(this.failed)),
+      'program-data-package-button');
+    b.title = 'What the program\'s gate case rests on, one line each, with status and source; exports to CSV';
+    return b;
   }
 
   /** Opens the provenance of a portal object; a program node in it opens on this page. */

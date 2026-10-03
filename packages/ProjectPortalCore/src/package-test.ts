@@ -33,6 +33,7 @@ import './tests/parking-tests';
 import './tests/evidence-table-tests';
 import './tests/pinning-tests';
 import './tests/flow-folder-tests';
+import './tests/data-package-tests';
 
 export let _package = new DG.Package();
 export { tests };

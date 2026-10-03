@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Data package manifest (F-43), as a view: **Data package** on the program page lists what the program's gate case rests on, one line each: criteria to the next gate (state, recorded or evaluated), documents, generated evidence tables (sources, stale), saved runs (model, unit operation, run type, who, selected for), datasets and snapshots. **Open as table**, **Download CSV**. Functions `dataPackage(portfolio, program)` and `dataPackageCsv(portfolio, program)`. Read from the records each time; no schema change. Pure assembly in `src/model/data-package.ts`
+
 - Unit-operation folders from a program's flow: optional `flowFolders` in a portfolio file (placement, fromStage, flows with numbered step folders, rules by modality). The builder adds a folder per step under the program's process-type folder (or the program's folder), from the program's `program_flow` rows where a loader wrote them, else from the declared flows. Additive and idempotent; a dry run lists them; the notes name each program's flow. Exported, diffed (workspace tree) and checked with the set (unit operations must be in a catalogue of the set). EX-BIOC declares `EX-MAB-DS` for its antibodies from D2. Pure rules in `src/model/flow-folders.ts`
 - `portal` schema 0.2.27: `portfolio.flow_folders`. Additive, no migration script
 
