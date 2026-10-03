@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Observations (F-26, FR-76/106): a curated conclusion on a program, one of its series, campaigns or studies, or a compound it holds: title, finding, who, when, and the evidence it rests on (saved runs, snapshots, a link or file). Never edited; retracted with a reason by its author or an approver, and kept. Program page: *Observations* with **Add observation…** (contributors and approvers) and **Retract**. Activity feed: kind `observation`, recorded and retracted, tagged with the series or the compound so a series' feed shows them. Functions `addObservation`, `retractObservation`, `observations`. Pure rules in `src/model/observations.ts`
+- `portal` schema 0.2.28: table `observation`. Additive, no migration script
+
 - Cross-model run comparison (F-29, FR-55): **Compare in Compute2…** on a criterion that rests on a run, once it has two candidates. The dialog lists the candidates by model and what to add in Compute2's Compare Runs, opens it where Compute2 is installed, and lists the runs as a table. Compare Runs takes no runs as input, so it is not seeded; the dialog is the list to work from. `criterionRunsToCompare(portfolio, program, criterion)` returns the list. Pure plan in `src/model/compare-runs.ts`
 
 - Data package manifest (F-43), as a view: **Data package** on the program page lists what the program's gate case rests on, one line each: criteria to the next gate (state, recorded or evaluated), documents, generated evidence tables (sources, stale), saved runs (model, unit operation, run type, who, selected for), datasets and snapshots. **Open as table**, **Download CSV**. Functions `dataPackage(portfolio, program)` and `dataPackageCsv(portfolio, program)`. Read from the records each time; no schema change. Pure assembly in `src/model/data-package.ts`

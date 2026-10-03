@@ -33,7 +33,7 @@ async function syncRunsOf(portfolioId: string): Promise<SyncRunRow[]> {
 /** Everything one program's feed is made of. [syncRuns] spares a second read of the portfolio's history. */
 export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow, syncRuns?: SyncRunRow[]): Promise<FeedRecords> {
   const by = `program_id = "${program.id}"`;
-  const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, predictions, syncs] = await Promise.all([
+  const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, predictions, syncs, observations] = await Promise.all([
     stagesOf(program.stage_model_id),
     portalDb.stageTransitions.query({filter: by, limit: ROW_LIMIT}),
     portalDb.evidences.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
@@ -45,6 +45,7 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     portalDb.follows.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     portalDb.predictions.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     syncRuns ? Promise.resolve(syncRuns) : syncRunsOf(portfolio.id),
+    portalDb.observations.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
   ]);
   const statusIds = [...new Set(artifacts.map((a) => a.criterion_status_id))];
   const statuses = statusIds.length ? await portalDb.criterionStatuses.query({filter: `id in (${inList(statusIds)})`, limit: ROW_LIMIT}).catch(() => []) : [];
@@ -98,6 +99,10 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     news: follows.filter((f) => f.last_news && f.news_on).map((f) => ({id: f.id, line: f.last_news!, on: iso(f.news_on)})),
     programRoles,
     modelCards,
+    observations: observations.map((o) => ({id: o.id, subject: o.subject_kind, code: o.subject_code ?? null, title: o.title,
+      by: o.observed_by ?? o.author_id, on: iso(o.observed_on ?? o.created_on),
+      retractedBy: o.retracted_by ?? null, retractedOn: o.status === 'retracted' ? iso(o.retracted_on) : null,
+      retraction: o.retraction ?? null})),
   };
 }
 

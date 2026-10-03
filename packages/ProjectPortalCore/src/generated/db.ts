@@ -91,6 +91,10 @@ export type ParkedFolderKind = 'unclaimed' | 'park';
 
 export type ParkedFolderStatus = 'parked' | 'restored';
 
+export type ObservationSubjectKind = 'program' | 'series' | 'compound' | 'campaign' | 'study';
+
+export type ObservationStatus = 'current' | 'retracted';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -463,6 +467,7 @@ export type ProgramExpand = {
   'details:document': {document?: DocumentRow[]};
   'details:prediction': {prediction?: PredictionRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
+  'details:observation': {observation?: ObservationRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1909,6 +1914,63 @@ export type ParkedFolderExpand = {
     'restored_by.group'?: string; 'restored_by.author'?: string};
 };
 
+/** Row of `portal.observation`. */
+export interface ObservationRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  subject_kind: ObservationSubjectKind;
+  subject_code?: string;
+  title: string;
+  finding: string;
+  evidence?: {[key: string]: any};
+  status: ObservationStatus;
+  observed_by?: string;
+  observed_on?: Dayjs;
+  retracted_by?: string;
+  retracted_on?: Dayjs;
+  retraction?: string;
+}
+
+/** Insert payload for `portal.observation`. */
+export interface ObservationInsert {
+  program_id: string;
+  subject_kind: ObservationSubjectKind;
+  subject_code?: string;
+  title: string;
+  finding: string;
+  evidence?: {[key: string]: any};
+  status: ObservationStatus;
+  observed_by?: string;
+  observed_on?: Dayjs | string;
+  retracted_by?: string;
+  retracted_on?: Dayjs | string;
+  retraction?: string;
+}
+
+export type ObservationColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'subject_kind' | 'subject_code' | 'title' | 'finding' | 'evidence' | 'status' | 'observed_by' | 'observed_on' |
+  'retracted_by' | 'retracted_on' | 'retraction';
+
+/** Expand keys of `portal.observation` → fields each adds to the row (consumed by query()/builder). */
+export type ObservationExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'observed_by': {'observed_by.login'?: string; 'observed_by.firstName'?: string; 'observed_by.lastName'?: string;
+    'observed_by.status'?: string; 'observed_by.createdOn'?: Dayjs; 'observed_by.picture'?: string;
+    'observed_by.group'?: string; 'observed_by.author'?: string};
+  'retracted_by': {'retracted_by.login'?: string; 'retracted_by.firstName'?: string;
+    'retracted_by.lastName'?: string; 'retracted_by.status'?: string; 'retracted_by.createdOn'?: Dayjs;
+    'retracted_by.picture'?: string; 'retracted_by.group'?: string; 'retracted_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -2011,7 +2073,10 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'approval_request'; id: string} |
   {op: 'insert'; table: 'parked_folder'; ref?: string; values: DG.DomainTxValues<ParkedFolderInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'parked_folder'; id: string; values: DG.DomainTxValues<Partial<ParkedFolderRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'parked_folder'; id: string};
+  {op: 'delete'; table: 'parked_folder'; id: string} |
+  {op: 'insert'; table: 'observation'; ref?: string; values: DG.DomainTxValues<ObservationInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'observation'; id: string; values: DG.DomainTxValues<Partial<ObservationRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'observation'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -2116,6 +2181,9 @@ export const portalDb = {
   },
   get parkedFolders() {
     return grok.dapi.domains.table<ParkedFolderRow, ParkedFolderInsert, ParkedFolderColumn, ParkedFolderExpand>('portal.parked_folder');
+  },
+  get observations() {
+    return grok.dapi.domains.table<ObservationRow, ObservationInsert, ObservationColumn, ObservationExpand>('portal.observation');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

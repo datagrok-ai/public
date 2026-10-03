@@ -35,6 +35,7 @@ import './tests/pinning-tests';
 import './tests/flow-folder-tests';
 import './tests/data-package-tests';
 import './tests/compare-runs-tests';
+import './tests/observation-tests';
 
 export let _package = new DG.Package();
 export { tests };

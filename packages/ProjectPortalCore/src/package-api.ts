@@ -262,6 +262,35 @@ export namespace funcs {
   }
 
   /**
+   * Records an observation (F-26): a curated conclusion on the program, one of its series, campaigns or studies, or one of its compounds, as you, with optional evidence (a saved run by run_id or title, a snapshot id, a URL or a file path). Contributors and approvers
+   * @param {string} subject
+   *   choices: ["program", "series", "compound", "campaign", "study"]
+   * @param {string} code - The series, campaign, study or compound code (none for the program)
+   * @param {string} evidenceKind
+   *   choices: ["model_run", "snapshot", "url", "file"]
+   * @param {string} evidenceTarget - run_id or title, snapshot id, URL or file path
+   */
+  export async function addObservation(portfolio: string , program: string , subject: string , code: string | undefined, title: string , finding: string , evidenceKind?: string , evidenceTarget?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:AddObservation', { portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget });
+  }
+
+  /**
+   * Retracts an observation: kept, marked retracted, with who, when and why. Its author or an approver
+   */
+  export async function retractObservation(id: string , reason: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:RetractObservation', { id, reason });
+  }
+
+  /**
+   * A program's observations, current first, newest first: about, title, finding, evidence, status, by, on, id. Narrowed to a subject when given
+   * @param {string} subject
+   *   choices: ["program", "series", "compound", "campaign", "study"]
+   */
+  export async function observations(portfolio: string , program: string , subject?: string , code?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:Observations', { portfolio, program, subject, code });
+  }
+
+  /**
    * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

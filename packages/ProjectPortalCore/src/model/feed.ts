@@ -1,21 +1,22 @@
 /** Activity feed (F-21, FR-81): what happened to a program, assembled from the portal's own records
  * rather than a separate event store. Each record kind already says who did what and when: the gate
  * log, evidence, saved and selected runs, documents, snapshots, compound role changes, the sync
- * history (registry and work-unit changes, new data), the follows' last news, program roles and the
- * approved cards of the models the program used. Pure: the caller
+ * history (registry and work-unit changes, new data), the follows' last news, program roles, the
+ * approved cards of the models the program used, and observations. Pure: the caller
  * reads the records; this turns them into entries, merges, filters and pages them. */
 import type {ProgramChange} from './sync-runs';
 
 export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'prediction' | 'document' | 'snapshot' |
-  'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card';
+  'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card' | 'observation';
 
 export const FEED_KINDS: FeedKind[] = ['decision', 'evidence', 'run', 'selection', 'prediction', 'document', 'snapshot', 'compound',
-  'work_unit', 'registry', 'new_data', 'role', 'model_card'];
+  'work_unit', 'registry', 'new_data', 'role', 'model_card', 'observation'];
 
 export const FEED_KIND_LABELS: Record<FeedKind, string> = {
   decision: 'Gate decisions', evidence: 'Evidence', run: 'Runs saved', selection: 'Runs selected',
   prediction: 'Predictions', document: 'Documents', snapshot: 'Snapshots', compound: 'Compound roles',
   work_unit: 'Work units', registry: 'Registry', new_data: 'New data', role: 'Program roles', model_card: 'Model cards',
+  observation: 'Observations',
 };
 
 /** The record an entry opens, by the kinds provenance starts from. */
@@ -71,6 +72,9 @@ export interface FeedRecords {
   programRoles?: {id: string, group: string, role: string, active: boolean, by: string | null, on: When}[];
   /** Approved cards of the models the program's runs and predictions used (F-30): who approved, when. */
   modelCards?: {id: string, model: string, version: string, by: string | null, on: When}[];
+  /** Observations (F-26): recorded, and retracted when they were. */
+  observations?: {id: string, subject: string, code: string | null, title: string, by: string | null, on: When,
+    retractedBy?: string | null, retractedOn?: When, retraction?: string | null}[];
 }
 
 /** Evidence attached this close to its decision belongs to the decision; later, it is an entry. */
@@ -148,6 +152,16 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
   for (const c of r.modelCards ?? []) {
     push({key: `model-card:${c.id}`, at: c.on, kind: 'model_card', who: c.by,
       text: `Model card approved: ${c.model} ${c.version}`});
+  }
+  for (const o of r.observations ?? []) {
+    const about = o.subject === 'program' || !o.code ? '' : ` on ${o.subject} ${o.code}`;
+    const tags = {unit: o.subject === 'series' || o.subject === 'campaign' || o.subject === 'study' ? `${o.subject} ${o.code}` : null,
+      compounds: o.subject === 'compound' && o.code ? [o.code] : undefined};
+    push({key: `observation:${o.id}`, at: o.on, kind: 'observation', who: o.by, ...tags, text: `Observation${about}: ${o.title}`});
+    if (o.retractedOn) {
+      push({key: `observation-retracted:${o.id}`, at: o.retractedOn, kind: 'observation', who: o.retractedBy ?? null, ...tags,
+        text: `Observation retracted${about}: ${o.title}${o.retraction ? ` — ${o.retraction}` : ''}`});
+    }
   }
   for (const c of r.roleChanges) {
     push({key: `role:${c.id}`, at: c.on, kind: 'compound', who: c.by, compounds: [c.compound],

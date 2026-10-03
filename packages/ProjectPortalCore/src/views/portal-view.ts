@@ -57,6 +57,9 @@ import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
 import {openDataPackageDialog} from './data-package-dialog';
 import {openCompareRunsDialog} from './compare-runs-dialog';
+import {observationsOf} from '../observations';
+import {checkObservationAccess, ObservationView, subjectLabel} from '../model/observations';
+import {openObservationDialog, openRetractDialog} from './observation-dialog';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
@@ -149,6 +152,9 @@ export class PortalView {
   private approvals: {rows: ApprovalRequestRow[], names: Map<string, string>} = {rows: [], names: new Map()};
   /** What the last proposal or review on this page did, by program id. */
   private approvalLine = new Map<string, string>();
+  /** The selected program's observations (F-26), who wrote them, and whether the user may add one. */
+  private observations: {list: ObservationView[], names: Map<string, string>, refused: string[], approver: boolean} =
+    {list: [], names: new Map(), refused: [], approver: false};
   /** The folders pinned in the user's Workspace, by space id: read with the board and on each program open. */
   private pins = new Map<string, PinHolders>();
   /** The open portfolio's viewers group, which an approver may pin a program for. */
@@ -381,9 +387,15 @@ export class PortalView {
     const requests = await requestsOf(id).catch(() => [] as ApprovalRequestRow[]);
     const approvalNames = await userNames(requests.flatMap((r) =>
       [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])).catch(() => new Map<string, string>());
+    // observations (F-26): curated conclusions on the program, its units and compounds
+    const observations = await observationsOf(id).catch(() => [] as ObservationView[]);
+    const obsAccess = await programAccess(ctx.portfolio, id).catch(() => null);
+    const obsNames = await userNames(observations.flatMap((o) => [o.by, o.retractedBy])).catch(() => new Map<string, string>());
     // another program was opened meanwhile: its page is not this one's to draw
     if (this.selected !== id)
       return;
+    this.observations = {list: observations, names: obsNames, approver: obsAccess?.approver ?? false,
+      refused: checkObservationAccess({isApprover: obsAccess?.approver ?? false, isContributor: obsAccess?.contributor ?? false})};
     this.follows = follows;
     this.roles = roles;
     this.pins = pins;
@@ -674,6 +686,7 @@ export class PortalView {
       ...(documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : []),
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
+      ...this.observationsSection(ctx),
       ...(more ? [divH([more], 'pp-actions')] : []),
       ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
       ...(shown('predictions') && (ctx.portfolio.setting === 'discovery' || this.predictions.length) ? this.predictionsSection(ctx) : []),
@@ -1407,6 +1420,45 @@ export class PortalView {
     if (this.roleLine.has(program.id))
       out.push(named(span(this.roleLine.get(program.id)!, 'pp-muted'), 'role-result'));
     return out;
+  }
+
+  /** Observations (F-26): curated conclusions, current first; retracted ones stay, marked. Add
+   * observation for contributors and approvers; Retract for its author or an approver. */
+  private observationsSection(ctx: ProgramContext): HTMLElement[] {
+    const {program} = ctx;
+    const o = this.observations;
+    const me = DG.User.current().id;
+    const reopen = () => this.openProgram(program.id, this.viewedStage);
+    const add = named(button('Add observation…', () => void openObservationDialog({portfolio: ctx.portfolio, program,
+      onAdded: reopen}).catch(this.failed)), 'add-observation-button');
+    add.disabled = o.refused.length > 0;
+    add.title = o.refused.join('; ') || 'A curated conclusion on the program, a series, campaign or study, or a compound';
+    const current = o.list.filter((x) => x.status === 'current').length;
+    const items = o.list.map((x, i) => {
+      const who = [o.names.get(x.by ?? '') ?? '', x.on?.slice(0, 10) ?? ''].filter((s) => s).join(', ');
+      const head = divH([
+        span(`${subjectLabel(x.subject, x.code)} · ${x.title}`, x.status === 'retracted' ? 'pp-muted' : ''),
+        ...(x.status === 'retracted' ? [badge('retracted', {variant: 'default'})] : []),
+        span(who, 'pp-muted'),
+      ], 'pp-unit');
+      if (x.status === 'current' && (x.by === me || o.approver)) {
+        const retract = named(span('Retract', 'pp-link'), `retract-observation-${i}`);
+        retract.onclick = () => openRetractDialog(x, reopen);
+        head.append(retract);
+      }
+      return named(divV([
+        head,
+        span(x.finding, x.status === 'retracted' ? 'pp-muted' : ''),
+        ...(x.evidence.length ? [span(`Rests on: ${x.evidence.map((e) => e.name).join('; ')}`, 'pp-muted')] : []),
+        ...(x.status === 'retracted' ? [span(`Retracted${x.retractedBy ? ` by ${o.names.get(x.retractedBy) ?? ''}` : ''}` +
+          `${x.retractedOn ? ` ${x.retractedOn.slice(0, 10)}` : ''}${x.retraction ? `: ${x.retraction}` : ''}`, 'pp-gap')] : []),
+      ], 'pp-observation'), `observation-${i}`);
+    });
+    return [
+      named(span(`Observations (${current})`, 'pp-heading'), 'observations-heading'),
+      divH([add], 'pp-actions'),
+      named(divV(items.length ? items : [span('No observations yet', 'pp-muted')], 'pp-units'), 'observations'),
+    ];
   }
 
   /** Activity: the program's feed, newest first, filtered by kind and narrowed to one series. */

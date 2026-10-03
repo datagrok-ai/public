@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.27",
+  "version": "0.2.28",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -710,6 +710,27 @@
         "status": {"type": "string", "choices": ["parked", "restored"], "required": true, "default": "parked"},
         "restored_by": {"type": "user"},
         "restored_on": {"type": "datetime"}
+      }
+    },
+    "observation": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "friendlyName": "Observations",
+      "description": "A curated conclusion on a program, series, compound, campaign or study (F-26, FR-76/106): a title, the finding, who and when, and the evidence it rests on. Kept when retracted, with who, when and why. Written by addObservation and retractObservation, which check that the user is one of the program's contributors or approvers.",
+      "filters": [{"column": "subject_kind"}, {"column": "status"}],
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "subject_kind": {"type": "string", "choices": ["program", "series", "compound", "campaign", "study"], "required": true, "immutable": true, "description": "What the observation is about"},
+        "subject_code": {"type": "string", "immutable": true, "searchable": true, "description": "The work unit's or compound's code; empty for the program itself"},
+        "title": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "finding": {"type": "string", "required": true, "editor": "textarea", "description": "The conclusion, in the author's words"},
+        "evidence": {"type": "json", "description": "What it rests on: {items: [{kind, target, name}]} (a run's run_id, a snapshot's id, a file path, a URL), names frozen when written"},
+        "status": {"type": "string", "choices": ["current", "retracted"], "required": true, "default": "current"},
+        "observed_by": {"type": "user", "immutable": true},
+        "observed_on": {"type": "datetime", "immutable": true},
+        "retracted_by": {"type": "user"},
+        "retracted_on": {"type": "datetime"},
+        "retraction": {"type": "string", "description": "Why it was retracted"}
       }
     }
   }

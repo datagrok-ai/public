@@ -38,6 +38,8 @@ import {provenanceOf} from './provenance';
 import {dataPackageFrame, dataPackageOf} from './data-package';
 import {manifestCsv} from './model/data-package';
 import {comparePlanFrame, criterionComparePlan} from './compare-runs';
+import {addObservation as addObs, observationsFrame, observationsOf, retractObservation as retractObs} from './observations';
+import {describeObservation, observationsAbout, ObservationSubject} from './model/observations';
 import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
@@ -446,6 +448,48 @@ export async function criterionRunsToCompare(portfolio: string, program: string,
   if (!c)
     throw new Error(`${program} has no criterion ${criterion} that rests on a run`);
   return comparePlanFrame(criterionComparePlan(await criterionRuns(p.id, c.id)), `${program} · ${criterion} runs`);
+}
+
+//name: addObservation
+//description: Records an observation (F-26): a curated conclusion on the program, one of its series, campaigns or studies, or one of its compounds, as you, with optional evidence (a saved run by run_id or title, a snapshot id, a URL or a file path). Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string subject {choices: ["program", "series", "compound", "campaign", "study"]}
+//input: string code {optional: true; description: The series, campaign, study or compound code (none for the program)}
+//input: string title
+//input: string finding
+//input: string evidenceKind {optional: true; choices: ["model_run", "snapshot", "url", "file"]}
+//input: string evidenceTarget {optional: true; description: run_id or title, snapshot id, URL or file path}
+//output: string report
+export async function addObservation(portfolio: string, program: string, subject: string, code: string | undefined,
+  title: string, finding: string, evidenceKind?: string, evidenceTarget?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const evidence = evidenceKind && evidenceTarget ? [await evidenceItemFor(p, evidenceKind as EvidenceKind, evidenceTarget)] : [];
+  const o = await addObs(p.id, {subject: subject as ObservationSubject, code: code || null, title, finding, evidence});
+  return `${p.code}: observation recorded on ${describeObservation(o)} (${o.id})`;
+}
+
+//name: retractObservation
+//description: Retracts an observation: kept, marked retracted, with who, when and why. Its author or an approver
+//input: string id
+//input: string reason
+//output: string report
+export async function retractObservation(id: string, reason: string): Promise<string> {
+  const o = await retractObs(id, reason);
+  return `observation retracted: ${describeObservation(o)}`;
+}
+
+//name: observations
+//description: A program's observations, current first, newest first: about, title, finding, evidence, status, by, on, id. Narrowed to a subject when given
+//input: string portfolio
+//input: string program
+//input: string subject {optional: true; choices: ["program", "series", "compound", "campaign", "study"]}
+//input: string code {optional: true}
+//output: dataframe result
+export async function observations(portfolio: string, program: string, subject?: string, code?: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  const list = observationsAbout(await observationsOf(p.id), (subject || null) as ObservationSubject | null, code || null);
+  return observationsFrame(list, await userNames(list.map((o) => o.by)), `${p.code} observations`);
 }
 
 //name: showProvenance

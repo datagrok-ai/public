@@ -306,12 +306,23 @@ the same pin.
 What happened to a program, newest first, read from the portal's own records (F-21, FR-81). No
 event store: each record already says who did what and when.
 
-- **Kinds.** Gate decisions (by an approver, the registry or the data), evidence, runs saved, runs selected for a criterion, documents linked and approved, snapshots, compound role changes, registry changes and work-unit changes the sync saw, new data, program roles (`role`), and approved model cards (`model_card`). Evidence attached within two minutes of its decision is folded into the decision's entry ("with 2 pieces of evidence"); evidence added later is its own entry.
+- **Kinds.** Gate decisions (by an approver, the registry or the data), evidence, runs saved, runs selected for a criterion, documents linked and approved, snapshots, compound role changes, registry changes and work-unit changes the sync saw, new data, program roles (`role`), approved model cards (`model_card`), and observations (`observation`). Evidence attached within two minutes of its decision is folded into the decision's entry ("with 2 pieces of evidence"); evidence added later is its own entry.
 - **Sources.** `stage_transition`, `evidence`, `model_run`, `criterion_artifact`, `document`, `program_snapshot`, `compound_role_change`, the portfolio's last 50 `sync_run` rows (each run's change for the program, and the new-data lines followers were told, kept in `sync_run.changes.newData`), and each follow's last news with `follow.news_on`. Program roles come from `program_role` as they stand: the latest grant or removal per group, by `granted_by` at `granted_on`; the table keeps no history, so an earlier role of the same group is not an entry. Model cards: the approved cards of the models the program's runs and predictions used, at `approved_on`, by the last reviewer of the approval request when the workflow approved it. The same news line told twice within 15 minutes (two followers, or a sync and a check) is one entry. Stage moves and role changes are read from the gate log and the role history, not from the sync's changes, so nothing shows twice.
 - **A series.** Narrowed to a series, the feed keeps what is tagged with it (`series KIN-A: new`, `EXS-KIN1 series KIN-A: 2 new values`) and what is about its compounds (from the program dataset's `series` and `compound` columns): the series' "what is new".
 - **Program page.** *Activity (n)* with a kind filter (each kind with its count), a series filter when the program has series, eight entries a page, Newer/Older. An entry over a record has **Provenance**. Each series row has **Activity**, which narrows the section to it. In Simple mode the section is behind More.
 - **My feed.** The ribbon's **My feed** opens everything the user follows: each followed program's feed, or for a program followed only by series, the series' part. A click on the program code opens it.
 - **Functions.** `programFeed(portfolio, program, series, kinds, limit)` and `myFeed(kinds, limit)` return the feed as a table (at, portfolio, program, kind, what, who, work unit, record); `kinds` is comma-separated.
+
+### Observations
+
+A curated conclusion on a program, one of its series, campaigns or studies, or a compound it holds
+(F-26, FR-76/106): "KIN-A: para-substitution buys potency, not solubility."
+- **What it holds.** What it is about, a title, the finding, who and when, and the evidence it rests on: the program's saved runs (by run id) and snapshots, a link or a file path, names frozen when written. Table `observation`, master-secured through the program.
+- **Who.** The program's contributors and approvers record them, also where the registry owns the stage and after the program ended. It must be about something the program holds: its own series, campaigns or studies (the kinds its portfolio enables) or its compounds.
+- **Never edited.** Its author or an approver retracts it, with a reason; it stays, marked, with who and when.
+- **Program page.** *Observations (n)*, current first and newest first, with **Add observation…** and **Retract**.
+- **Activity feed.** Kind `observation`: recorded, and retracted. One about a series, campaign or study is tagged with it, and one about a compound with the compound, so a series' feed shows both.
+- **Functions.** `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)`, `retractObservation(id, reason)`, `observations(portfolio, program, subject, code)`.
 
 ### Modes and quick actions per persona
 
@@ -582,6 +593,9 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `showProvenance(kind, id)` | The same in a dialog, each record clickable |
 | `dataPackage(portfolio, program)` | A program's data package manifest: criteria to the next gate, documents, evidence tables, runs, datasets, snapshots, with status and source |
 | `dataPackageCsv(portfolio, program)` | The same as CSV text |
+| `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)` | Records an observation on the program, a series, campaign, study or compound, with one piece of evidence; contributors and approvers |
+| `retractObservation(id, reason)` | Retracts an observation, kept and marked; its author or an approver |
+| `observations(portfolio, program, subject, code)` | A program's observations as a table, current first |
 | `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
@@ -656,6 +670,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Activity feed: the rules (entries from each kind of record, evidence folded into its decision, news told twice counted once, newest first, a series' part, kinds, pages), and on EXS-KIN1 new data a check found in the program's feed and the follower's, a series follow that sees only its series, and the functions.
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
+  - Observations: the rules (subjects the program holds, what an observation needs, evidence outside the gate, who records and retracts, order, the feed's entries tagged with the series or compound), and on EXS-KIN1 its series, campaigns and compounds offered, one on series KIN-A with a link in the list, the function's table and the series' feed, one on a compound of another program refused, one retracted once with its feed entry, and the dialog.
   - Comparing runs in Compute2: the rules (runs grouped by model, across models, a run without a saved call, the tool missing or fewer than two runs, the steps), and on EX-BIOC a scratch project's two process description candidates as a plan and as the function's table, and the dialog with Open Compare Runs on only where Compute2 is installed.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.
@@ -716,3 +731,5 @@ the acceptance check; `saveModelRun` falls back to `run_id` meanwhile (see Model
 16. **`in (...)` over a string column of uuid-shaped values fails.** `space_id in ("…", "…")` on `program.space_id`
    (a string) answers `operator does not exist: text = uuid`; `space_id = "…"` works. The pinned programs are read
    with `=` joined by `or`, 50 at a time.
+17. **A `json` column holds a map, not a list.** Writing a JSON array to a domain `json` column fails with
+   `Cannot convert '[...]' to map`. `observation.evidence` keeps its list under `items`.

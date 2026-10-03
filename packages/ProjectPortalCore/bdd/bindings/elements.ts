@@ -225,3 +225,15 @@ app.element('compare runs dialog', {selector: u2('compare-runs-dialog')});
 app.element('compare runs summary', {selector: u2('compare-runs-summary')});
 app.element('compare runs groups', {selector: u2('compare-runs-groups')});
 app.element('open compare runs as table button', {selector: u2('compare-runs-table')});
+
+app.element('scratch observation project card', {selector: u2('program-bdd-obs')});
+app.element('add observation button', {selector: u2('add-observation-button')});
+app.element('observation dialog', {selector: u2('observation-dialog')});
+app.element('observation title input', {selector: u2('observation-title-input')});
+app.element('observation finding input', {selector: u2('observation-finding-input')});
+app.element('record observation button', {selector: u2('record-observation-button')});
+app.element('observations heading', {selector: u2('observations-heading')});
+app.element('observations', {selector: u2('observations')});
+app.element('first retract observation link', {selector: u2('retract-observation-0')});
+app.element('retraction input', {selector: u2('retraction-input')});
+app.element('retract button', {selector: u2('retract-button')});
