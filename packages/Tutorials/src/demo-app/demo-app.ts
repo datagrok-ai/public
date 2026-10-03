@@ -36,6 +36,8 @@ export class DemoView extends DG.ViewBase {
   currentView: DG.ViewBase | null = null;
   private focusSub: { unsubscribe(): void } | null = null;
   private _focusGuardCleanup: (() => void) | null = null;
+  private _lastSelectedNode: DG.TreeViewNode | null = null;
+  private _selectionDone: Promise<void> = Promise.resolve();
   DEMO_APP_PATH: string = 'apps/Tutorials/Demo';
 
   private _addedProjectIds = new Set<string>();
@@ -248,7 +250,6 @@ export class DemoView extends DG.ViewBase {
       ui.setUpdateIndicator(updateIndicatorRoot, true);
       const prevAutoShowToolbox = grok.shell.windows.autoShowToolbox;
       grok.shell.windows.autoShowToolbox = false;
-      const viewBeforeApply = grok.shell.v;
       try {
         await func.apply();
         this._closePrevDemoViews();
@@ -263,9 +264,10 @@ export class DemoView extends DG.ViewBase {
       }
       this.tree.rootNode.root.focus();
       this._guardTreeFocus();
-      if (grok.shell.v !== viewBeforeApply) {
-        grok.shell.v.name = splitViewPath[splitViewPath.length - 1].trim();
-        grok.shell.v.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
+      const demoView = grok.shell.v;
+      if (demoView != null && !viewsBefore.has(demoView as DG.View)) {
+        demoView.name = splitViewPath[splitViewPath.length - 1].trim();
+        demoView.path = `${this.DEMO_APP_PATH}/${path.replaceAll(' ', '-')}`;
         this._setBreadcrumbsInViewName(viewPath.split('|').map((s) => s.trim()));
       }
       grok.events.fireCustomEvent('demo-loaded', {path: viewPath, func: func.name});
@@ -611,41 +613,54 @@ export class DemoView extends DG.ViewBase {
     DG.debounce(this.tree.rootNode.onSelectedNodeChanged, 300).subscribe(async (value) => {
       if (!value || !this.tree.root.contains(value.root) || value.text === 'Demo')
         return;
-
-      this._closeDemoScript();
-      const panelRoot = this.tree.rootNode.root.parentElement!;
-      treeNodeY = panelRoot.scrollTop!;
-
-      if (DemoScript.currentObject) {
-        DemoScript.currentObject.cancelScript();
-        grok.shell.v = new DemoView() as unknown as DG.View;
-        panelRoot.scrollTo(0, treeNodeY);
+      this._lastSelectedNode = value;
+      const prevSelection = this._selectionDone;
+      let selectionDone: () => void;
+      this._selectionDone = new Promise((resolve) => selectionDone = resolve);
+      try {
+        await prevSelection;
+        if (value === this._lastSelectedNode)
+          await this._openTreeNode(value);
+      } finally {
+        selectionDone!();
       }
-
-      this.focusSub?.unsubscribe();
-      if (value.root.classList.contains('d4-tree-view-item')) {
-        this.focusSub = grok.events.onCurrentViewChanged.subscribe(() => {
-          this.focusSub?.unsubscribe();
-          this.focusSub = null;
-          this._initWindowOptions();
-          this.tree.rootNode.root.focus();
-        });
-        const demoFunc = this.funcs.find((f) => f.path === value.value.path)?.func ?? DemoView.findDemoFunc(value.value.path);
-        await this.startDemoFunc(demoFunc, value.value.path);
-      } else {
-        this.focusSub = grok.events.onCurrentViewChanged.subscribe(() => {
-          this.focusSub?.unsubscribe();
-          this.focusSub = null;
-          this._initWindowOptions();
-          this.tree.rootNode.root.focus();
-          this._guardTreeFocus();
-        });
-        this.nodeView(value.text, value.value.path);
-      }
-      this.close();
-
-      panelRoot.scrollTo(0, treeNodeY);
     });
+  }
+
+  private async _openTreeNode(value: DG.TreeViewNode): Promise<void> {
+    this._closeDemoScript();
+    const panelRoot = this.tree.rootNode.root.parentElement!;
+    treeNodeY = panelRoot.scrollTop!;
+
+    if (DemoScript.currentObject) {
+      DemoScript.currentObject.cancelScript();
+      grok.shell.v = new DemoView() as unknown as DG.View;
+      panelRoot.scrollTo(0, treeNodeY);
+    }
+
+    this.focusSub?.unsubscribe();
+    if (value.root.classList.contains('d4-tree-view-item')) {
+      this.focusSub = grok.events.onCurrentViewChanged.subscribe(() => {
+        this.focusSub?.unsubscribe();
+        this.focusSub = null;
+        this._initWindowOptions();
+        this.tree.rootNode.root.focus();
+      });
+      const demoFunc = this.funcs.find((f) => f.path === value.value.path)?.func ?? DemoView.findDemoFunc(value.value.path);
+      await this.startDemoFunc(demoFunc, value.value.path);
+    } else {
+      this.focusSub = grok.events.onCurrentViewChanged.subscribe(() => {
+        this.focusSub?.unsubscribe();
+        this.focusSub = null;
+        this._initWindowOptions();
+        this.tree.rootNode.root.focus();
+        this._guardTreeFocus();
+      });
+      this.nodeView(value.text, value.value.path);
+    }
+    this.close();
+
+    panelRoot.scrollTo(0, treeNodeY);
   }
 
   /** Redirects focus back to the browse tree if anything steals it (e.g. grid auto-focus
