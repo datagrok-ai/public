@@ -237,3 +237,10 @@ app.element('observations', {selector: u2('observations')});
 app.element('first retract observation link', {selector: u2('retract-observation-0')});
 app.element('retraction input', {selector: u2('retraction-input')});
 app.element('retract button', {selector: u2('retract-button')});
+
+app.element('design sets', {selector: u2('design-sets')});
+app.element('selection sets', {selector: u2('selection-sets')});
+app.element('para design set link', {selector: u2('design-set-kin-a-2026-04-20')});
+app.element('design set dialog', {selector: u2('design-set-dialog')});
+app.element('design proposals', {selector: u2('design-proposals')});
+app.element('design set summary', {selector: u2('design-set-summary')});

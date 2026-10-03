@@ -1,0 +1,28 @@
+{
+  "designSets": [
+    {"portfolio": "EX-SMD", "program": "EXS-KIN1", "code": "KIN-A-2026-04-20", "name": "KIN-A para-substituents",
+      "series": "KIN-A", "source": "enumerated", "scoreName": "predicted pIC50", "designedOn": "2026-04-20T09:00:00Z",
+      "description": "Para-substituted phenyls on the aminopyrimidine core. Synthetic example.",
+      "proposals": [
+        {"label": "KIN-A-D01", "structure": "Nc1nccc(-c2ccc(F)cc2)n1", "score": 7.6, "chosenOn": "2026-04-22T10:00:00Z", "compound": "EXC-1001"},
+        {"label": "KIN-A-D02", "structure": "Nc1nccc(-c2ccc(Cl)cc2)n1", "score": 7.4, "chosenOn": "2026-04-22T10:00:00Z"},
+        {"label": "KIN-A-D03", "structure": "Nc1nccc(-c2ccc(C)cc2)n1", "score": 7.2, "chosenOn": "2026-04-22T10:00:00Z"},
+        {"label": "KIN-A-D04", "structure": "Nc1nccc(-c2ccc(Br)cc2)n1", "score": 7.3, "chosenOn": "2026-04-22T10:00:00Z"},
+        {"label": "KIN-A-D05", "structure": "Nc1nccc(-c2ccc(C(F)(F)F)cc2)n1", "score": 6.9},
+        {"label": "KIN-A-D06", "structure": "Nc1nccc(-c2ccc(N)cc2)n1", "score": 6.1}
+      ]},
+    {"portfolio": "EX-SMD", "program": "EXS-KIN1", "code": "KIN-A-2026-09-01", "name": "KIN-A cycle 7, permeability",
+      "series": "KIN-A", "source": "generative", "scoreName": "predicted pIC50", "designedOn": "2026-09-01T09:00:00Z",
+      "description": "Generated around EXC-1001 for permeability at the same potency. Synthetic example.",
+      "proposals": [
+        {"label": "KIN-A-G01", "structure": "Nc1nccc(-c2ccc(F)c(F)c2)n1", "score": 7.8, "chosenOn": "2026-09-03T10:00:00Z"},
+        {"label": "KIN-A-G02", "structure": "Nc1nccc(-c2ccc(OC(F)F)cc2)n1", "score": 7.1},
+        {"label": "KIN-A-G03", "structure": "Nc1nccc(-c2cnc(F)cc2)n1", "score": 6.8, "chosenOn": "2026-09-03T10:00:00Z"}
+      ]}
+  ],
+  "selectionSets": [
+    {"portfolio": "EX-SMD", "program": "EXS-KIN1", "code": "HTS-K1-HITS", "name": "K1 screen: indazole hits", "campaign": "HTS-K1",
+      "rationale": "IC50 under 15 uM on the indazole core; the series to back up KIN-A. Synthetic example.",
+      "compounds": ["EXC-1101", "EXC-1102", "EXC-1103"], "selectedOn": "2026-01-30T09:00:00Z"}
+  ]
+}

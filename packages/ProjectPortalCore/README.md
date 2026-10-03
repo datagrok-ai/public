@@ -324,6 +324,16 @@ A curated conclusion on a program, one of its series, campaigns or studies, or a
 - **Activity feed.** Kind `observation`: recorded, and retracted. One about a series, campaign or study is tagged with it, and one about a compound with the compound, so a series' feed shows both.
 - **Functions.** `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)`, `retractObservation(id, reason)`, `observations(portfolio, program, subject, code)`.
 
+### Design sets and selection sets
+
+Discovery records of what was proposed and picked (F-23, FR-101/102). Never folders.
+- **A design set** extends one series of the program: a name, its source (`enumerated`, `generative`, `manual`), what the score is, and the proposals (`design_proposal`: label, SMILES, score, rank). Ranked by score when written, higher first unless lower is better; ties share a rank; unscored ones are last. Each proposal is chosen for synthesis or not, with who and when of the last change; it records its compound's code once registered.
+- **A selection set** is a hit list: compounds of the program, the campaign they were picked from, the rationale, who and when.
+- **Who.** Contributors and approvers, not on an ended program.
+- **Program page.** *Design sets (n)* where the portfolio has series: each set with its series, source and `6 proposed · 4 chosen for synthesis · best KIN-A-D01`; a click opens its proposals by rank, with Chosen ticks and **Save**, and **Open as table** (the structures as a Molecule column). **New design set…** takes a table open in the platform: a Molecule column (or one named smiles or structure), labels from label/id/name/code (else numbered), a score column. **New selection set…** ticks the program's compounds. *Selection sets* lists the hit lists.
+- **Functions.** `createDesignSet(portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter)`, `designSets(portfolio, program)`, `chooseForSynthesis(portfolio, program, designSet, labels, chosen)`, `createSelectionSet(portfolio, program, name, campaign, rationale, compounds)`, `selectionSets(portfolio, program)`, `loadExampleDesignSets()`.
+- **Example.** EXS-KIN1: *KIN-A para-substituents* (enumerated, six proposals, four chosen; three of them are the registered EXC-1001 to EXC-1003) and *KIN-A cycle 7, permeability* (generative, three), and the hit list *K1 screen: indazole hits* from HTS-K1. `loadExampleDesignSets` loads them, EX-* only, once.
+
 ### Modes and quick actions per persona
 
 The board has a **Mode** and a **Persona** select (F-08, FR-30–32). Both are the user's own and are
@@ -596,6 +606,12 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)` | Records an observation on the program, a series, campaign, study or compound, with one piece of evidence; contributors and approvers |
 | `retractObservation(id, reason)` | Retracts an observation, kept and marked; its author or an approver |
 | `observations(portfolio, program, subject, code)` | A program's observations as a table, current first |
+| `createDesignSet(portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter)` | Proposed structures for a series from a table, ranked by score; contributors and approvers |
+| `designSets(portfolio, program)` | The program's design proposals by set and rank, with what was chosen for synthesis |
+| `chooseForSynthesis(portfolio, program, designSet, labels, chosen)` | Marks proposals chosen for synthesis, or not |
+| `createSelectionSet(portfolio, program, name, campaign, rationale, compounds)` | A hit list of the program's compounds |
+| `selectionSets(portfolio, program)` | The program's hit lists |
+| `loadExampleDesignSets()` | The synthetic KIN-A design sets and K1 hit list on EXS-KIN1. EX-* only; idempotent |
 | `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
@@ -671,6 +687,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
   - Model recommendation: the rules (applicability keys, missing assays per criterion and series, matching and order, a dialog's prefill), and on EX-SMD the gaps of EXS-KIN1 towards Lead Optimization and the model that predicts one, the functions, a stage no model is for, a task filter, an EX-BIOC program offered only its own catalogue, and the example models run on the SAR table.
   - Program data: the rules (the dataset list, what a further dataset needs, the table's name, default viewers), and on EX-SMD the SAR table and assay results of EXS-KIN1, what is refused, and the table view.
   - Observations: the rules (subjects the program holds, what an observation needs, evidence outside the gate, who records and retracts, order, the feed's entries tagged with the series or compound), and on EXS-KIN1 its series, campaigns and compounds offered, one on series KIN-A with a link in the list, the function's table and the series' feed, one on a compound of another program refused, one retracted once with its feed entry, and the dialog.
+  - Design sets: the rules (a series of the program, labels once, sources, ranking with ties and lower-is-better, columns from a table, made-up labels, codes, the summary, a hit list's checks), and on EXS-KIN1 the examples loaded once (ranks, chosen, the hit list), a set from a table through the function chosen and unchosen with who, the table's Molecule column, a hit list of another program's compound refused, and the dialog.
   - Comparing runs in Compute2: the rules (runs grouped by model, across models, a run without a saved call, the tool missing or fewer than two runs, the steps), and on EX-BIOC a scratch project's two process description candidates as a plan and as the function's table, and the dialog with Open Compare Runs on only where Compute2 is installed.
   - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
   - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.

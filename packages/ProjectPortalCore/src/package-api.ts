@@ -291,6 +291,56 @@ export namespace funcs {
   }
 
   /**
+   * Proposes structures for a series of a program (F-23): one row each of [proposals] (a Molecule column or one named smiles/structure; label/id/name; a score column), ranked by score. Contributors and approvers
+   * @param {string} source
+   *   choices: ["enumerated", "generative", "manual"]
+   * @param {string} scoreColumn - Default: a column named score
+   * @param {string} scoreName - What the score is, e.g. predicted pIC50
+   */
+  export async function createDesignSet(portfolio: string , program: string , series: string , name: string , source: string , proposals: DG.DataFrame , scoreColumn?: string , scoreName?: string , lowerIsBetter?: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:CreateDesignSet', { portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter });
+  }
+
+  /**
+   * A program's design proposals, by set (newest first) and rank: set, series, label, structure, score, rank, chosen, compound
+   */
+  export async function designSets(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DesignSets', { portfolio, program });
+  }
+
+  /**
+   * Marks proposals of a design set chosen for synthesis, or not, with who and when. Contributors and approvers
+   * @param {string} designSet - The design set code
+   * @param {string} labels - Proposal labels, comma-separated
+   * @param {boolean} chosen - Default true. False unmarks
+   */
+  export async function chooseForSynthesis(portfolio: string , program: string , designSet: string , labels: string , chosen?: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:ChooseForSynthesis', { portfolio, program, designSet, labels, chosen });
+  }
+
+  /**
+   * A hit list (F-23): compounds of a program picked from a campaign, with the rationale. Contributors and approvers
+   * @param {string} compounds - Compound codes, comma-separated
+   */
+  export async function createSelectionSet(portfolio: string , program: string , name: string , campaign: string | undefined, rationale: string , compounds: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:CreateSelectionSet', { portfolio, program, name, campaign, rationale, compounds });
+  }
+
+  /**
+   * A program's selection sets (hit lists), newest first: name, campaign, compounds, rationale, on
+   */
+  export async function selectionSets(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:SelectionSets', { portfolio, program });
+  }
+
+  /**
+   * Loads the synthetic design sets and selection set the package ships into EXS-KIN1. EX-* portfolios only; idempotent
+   */
+  export async function loadExampleDesignSets(): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:LoadExampleDesignSets', {});
+  }
+
+  /**
    * Opens the provenance of a portal object in a dialog: two indented trees, each node clickable
    * @param {string} kind
    *   choices: ["program", "decision", "evidence", "model_run", "snapshot", "document", "compound"]

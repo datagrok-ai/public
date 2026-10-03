@@ -60,6 +60,10 @@ import {openCompareRunsDialog} from './compare-runs-dialog';
 import {observationsOf} from '../observations';
 import {checkObservationAccess, ObservationView, subjectLabel} from '../model/observations';
 import {openObservationDialog, openRetractDialog} from './observation-dialog';
+import {DesignSetItem, designRefusal, designSetsOf, selectionSetsOf} from '../design-sets';
+import {describeDesignSet, selectionCompounds, summarizeDesignSet} from '../model/design-sets';
+import {openDesignSetDialog, openNewDesignSetDialog, openNewSelectionSetDialog} from './design-set-dialog';
+import {SelectionSetRow} from '../generated/db';
 import {programFeedOf, feedUserNames, seriesCompounds} from '../feed';
 import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
@@ -155,6 +159,8 @@ export class PortalView {
   /** The selected program's observations (F-26), who wrote them, and whether the user may add one. */
   private observations: {list: ObservationView[], names: Map<string, string>, refused: string[], approver: boolean} =
     {list: [], names: new Map(), refused: [], approver: false};
+  /** The selected program's design and selection sets (F-23), and why the user may not add one. */
+  private designs: {sets: DesignSetItem[], selections: SelectionSetRow[], refused: string[]} = {sets: [], selections: [], refused: []};
   /** The folders pinned in the user's Workspace, by space id: read with the board and on each program open. */
   private pins = new Map<string, PinHolders>();
   /** The open portfolio's viewers group, which an approver may pin a program for. */
@@ -390,10 +396,15 @@ export class PortalView {
     // observations (F-26): curated conclusions on the program, its units and compounds
     const observations = await observationsOf(id).catch(() => [] as ObservationView[]);
     const obsAccess = await programAccess(ctx.portfolio, id).catch(() => null);
+    // design and selection sets (F-23), where the portfolio has series or the program has sets
+    const designSets = await designSetsOf(id).catch(() => [] as DesignSetItem[]);
+    const selections = await selectionSetsOf(id).catch(() => [] as SelectionSetRow[]);
+    const designRefused = await designRefusal(ctx.program);
     const obsNames = await userNames(observations.flatMap((o) => [o.by, o.retractedBy])).catch(() => new Map<string, string>());
     // another program was opened meanwhile: its page is not this one's to draw
     if (this.selected !== id)
       return;
+    this.designs = {sets: designSets, selections, refused: designRefused};
     this.observations = {list: observations, names: obsNames, approver: obsAccess?.approver ?? false,
       refused: checkObservationAccess({isApprover: obsAccess?.approver ?? false, isContributor: obsAccess?.contributor ?? false})};
     this.follows = follows;
@@ -687,6 +698,7 @@ export class PortalView {
       ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
       ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
       ...this.observationsSection(ctx),
+      ...this.designSection(ctx, units, compounds),
       ...(more ? [divH([more], 'pp-actions')] : []),
       ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
       ...(shown('predictions') && (ctx.portfolio.setting === 'discovery' || this.predictions.length) ? this.predictionsSection(ctx) : []),
@@ -1420,6 +1432,48 @@ export class PortalView {
     if (this.roleLine.has(program.id))
       out.push(named(span(this.roleLine.get(program.id)!, 'pp-muted'), 'role-result'));
     return out;
+  }
+
+  /** Design sets and selection sets (F-23): what was proposed per series, ranked, and chosen for
+   * synthesis; hit lists picked from campaigns. Shown where the portfolio has series, or sets exist. */
+  private designSection(ctx: ProgramContext, units: {kind: WorkUnitKind, rows: Record<string, any>[]}[],
+    compounds: {link: any, compound: any}[]): HTMLElement[] {
+    const {program} = ctx;
+    const d = this.designs;
+    const series = units.find((u) => u.kind === 'series')?.rows.map((r) => String(r.code)) ?? [];
+    const campaigns = units.find((u) => u.kind === 'campaign')?.rows.map((r) => String(r.code)) ?? [];
+    if (!enabledWorkUnits(ctx.portfolio).includes('series') && !d.sets.length && !d.selections.length)
+      return [];
+    const reopen = () => this.openProgram(program.id, this.viewedStage);
+    const newDesign = named(button('New design set…', () => openNewDesignSetDialog(program, series, reopen)), 'new-design-set-button');
+    newDesign.disabled = d.refused.length > 0 || !series.length;
+    newDesign.title = d.refused.join('; ') || (!series.length ? 'The program has no series' :
+      'Proposed structures for a series, from a table open in the platform: scored, ranked, chosen for synthesis');
+    const newSelection = named(button('New selection set…', () => openNewSelectionSetDialog(program, campaigns,
+      compounds.map((c) => String(c.compound.code)).sort(), reopen)), 'new-selection-set-button');
+    newSelection.disabled = d.refused.length > 0 || !compounds.length;
+    newSelection.title = d.refused.join('; ') || (!compounds.length ? 'The program holds no compounds' :
+      'A hit list: compounds picked from a campaign, with the rationale');
+    const sets = d.sets.map((x) => {
+      const open = named(span(x.set.name, 'pp-link'), `design-set-${slug(x.set.code)}`);
+      open.onclick = () => openDesignSetDialog(program, x, d.refused, reopen);
+      return named(divH([open, span(`series ${x.set.series_code} · ${x.set.source}`, 'pp-muted'),
+        span(describeDesignSet(summarizeDesignSet(x.proposals)))], 'pp-unit'), `design-set-row-${slug(x.set.code)}`);
+    });
+    const hits = d.selections.map((x) => {
+      const list = selectionCompounds(x.compounds);
+      const row = named(divH([span(x.name), span(`${x.campaign_code ? `from ${x.campaign_code} · ` : ''}${list.length} compound${list.length === 1 ? '' : 's'}`,
+        'pp-muted'), span(x.rationale, 'pp-muted')], 'pp-unit'), `selection-set-${slug(x.code)}`);
+      row.title = list.join(', ');
+      return row;
+    });
+    return [
+      named(span(`Design sets (${d.sets.length})`, 'pp-heading'), 'design-sets-heading'),
+      divH([newDesign, newSelection], 'pp-actions'),
+      named(divV(sets.length ? sets : [span('No design sets yet', 'pp-muted')], 'pp-units'), 'design-sets'),
+      ...(hits.length ? [named(span(`Selection sets (${hits.length})`, 'pp-heading'), 'selection-sets-heading'),
+        named(divV(hits, 'pp-units'), 'selection-sets')] : []),
+    ];
   }
 
   /** Observations (F-26): curated conclusions, current first; retracted ones stay, marked. Add

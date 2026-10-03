@@ -40,6 +40,9 @@ import {manifestCsv} from './model/data-package';
 import {comparePlanFrame, criterionComparePlan} from './compare-runs';
 import {addObservation as addObs, observationsFrame, observationsOf, retractObservation as retractObs} from './observations';
 import {describeObservation, observationsAbout, ObservationSubject} from './model/observations';
+import {chooseForSynthesis as choose, createDesignSet as newDesignSet, createSelectionSet as newSelectionSet, designSetsFrame,
+  designSetsOf, loadExampleDesignSets as loadDesignExamples, selectionSetsFrame, selectionSetsOf} from './design-sets';
+import {DesignSource, describeDesignSet, proposalColumns, proposalsFromRows, summarizeDesignSet} from './model/design-sets';
 import {checkEvidenceChangesOf, generateEvidenceTableFor, summarizeGenerated} from './evidence-tables';
 import {openProvenanceDialog} from './views/provenance-dialog';
 import {predictionsFrame, scoreCompounds as scoreProgram} from './predictions';
@@ -490,6 +493,91 @@ export async function observations(portfolio: string, program: string, subject?:
   const p = await programByCode(portfolio, program);
   const list = observationsAbout(await observationsOf(p.id), (subject || null) as ObservationSubject | null, code || null);
   return observationsFrame(list, await userNames(list.map((o) => o.by)), `${p.code} observations`);
+}
+
+//name: createDesignSet
+//description: Proposes structures for a series of a program (F-23): one row each of [proposals] (a Molecule column or one named smiles/structure; label/id/name; a score column), ranked by score. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string series
+//input: string name
+//input: string source {choices: ["enumerated", "generative", "manual"]}
+//input: dataframe proposals
+//input: string scoreColumn {optional: true; description: Default: a column named score}
+//input: string scoreName {optional: true; description: What the score is, e.g. predicted pIC50}
+//input: bool lowerIsBetter {optional: true}
+//output: string report
+export async function createDesignSet(portfolio: string, program: string, series: string, name: string, source: string,
+  proposals: DG.DataFrame, scoreColumn?: string, scoreName?: string, lowerIsBetter?: boolean): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const cols = proposalColumns(proposals.columns.toList().map((c) => ({name: c.name, semType: c.semType})), scoreColumn || null);
+  const rows = Array.from({length: proposals.rowCount}, (_, i) =>
+    Object.fromEntries(proposals.columns.names().map((c) => [c, proposals.get(c, i)])));
+  const r = await newDesignSet(p, {name, series, source: source as DesignSource, scoreName: scoreName || null,
+    higherIsBetter: !lowerIsBetter, proposals: proposalsFromRows(rows, cols, `${series}-D`)});
+  return `${p.code}: design set ${r.set.code} created: ${describeDesignSet(summarizeDesignSet(r.proposals))}`;
+}
+
+//name: designSets
+//description: A program's design proposals, by set (newest first) and rank: set, series, label, structure, score, rank, chosen, compound
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function designSets(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return designSetsFrame(await designSetsOf(p.id), `${p.code} design sets`);
+}
+
+//name: chooseForSynthesis
+//description: Marks proposals of a design set chosen for synthesis, or not, with who and when. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string designSet {description: The design set code}
+//input: string labels {description: Proposal labels, comma-separated}
+//input: bool chosen {optional: true; description: Default true. False unmarks}
+//output: string report
+export async function chooseForSynthesis(portfolio: string, program: string, designSet: string, labels: string,
+  chosen?: boolean): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const set = (await designSetsOf(p.id)).find((x) => x.set.code === designSet);
+  if (!set)
+    throw new Error(`${p.code} has no design set ${designSet}`);
+  const n = await choose(p, set.set.id, labels.split(',').map((x) => x.trim()).filter((x) => x), chosen !== false);
+  return `${p.code} ${designSet}: ${n} proposal(s) ${chosen !== false ? 'chosen for synthesis' : 'no longer chosen'}`;
+}
+
+//name: createSelectionSet
+//description: A hit list (F-23): compounds of a program picked from a campaign, with the rationale. Contributors and approvers
+//input: string portfolio
+//input: string program
+//input: string name
+//input: string campaign {optional: true}
+//input: string rationale
+//input: string compounds {description: Compound codes, comma-separated}
+//output: string report
+export async function createSelectionSet(portfolio: string, program: string, name: string, campaign: string | undefined,
+  rationale: string, compounds: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const r = await newSelectionSet(p, {name, campaign: campaign || null, rationale,
+    compounds: compounds.split(',').map((x) => x.trim()).filter((x) => x)});
+  return `${p.code}: selection set ${r.code} created`;
+}
+
+//name: selectionSets
+//description: A program's selection sets (hit lists), newest first: name, campaign, compounds, rationale, on
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function selectionSets(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  return selectionSetsFrame(await selectionSetsOf(p.id), `${p.code} selection sets`);
+}
+
+//name: loadExampleDesignSets
+//description: Loads the synthetic design sets and selection set the package ships into EXS-KIN1. EX-* portfolios only; idempotent
+//output: string report
+export async function loadExampleDesignSets(): Promise<string> {
+  return loadDesignExamples(_package);
 }
 
 //name: showProvenance

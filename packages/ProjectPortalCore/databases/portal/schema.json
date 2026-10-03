@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.28",
+  "version": "0.2.29",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -731,6 +731,64 @@
         "retracted_by": {"type": "user"},
         "retracted_on": {"type": "datetime"},
         "retraction": {"type": "string", "description": "Why it was retracted"}
+      }
+    },
+    "design_set": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Design sets",
+      "description": "Compounds proposed for a series (F-23, FR-101): enumerated, generated or drawn by hand, each scored and ranked, and the ones chosen for synthesis marked. The proposals are design_proposal rows.",
+      "filters": [{"column": "series_code"}, {"column": "source"}],
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true, "immutable": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "series_code": {"type": "string", "required": true, "immutable": true, "description": "The series of the program the designs extend"},
+        "source": {"type": "string", "choices": ["enumerated", "generative", "manual"], "required": true, "default": "manual"},
+        "score_name": {"type": "string", "description": "What the score is, e.g. predicted pIC50"},
+        "higher_is_better": {"type": "bool", "default": true, "description": "Rank by score descending; false ranks ascending"},
+        "description": {"type": "string", "editor": "textarea"},
+        "designed_by": {"type": "user", "immutable": true},
+        "designed_on": {"type": "datetime", "immutable": true}
+      }
+    },
+    "design_proposal": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["design_set_id", "label"],
+      "friendlyName": "Design proposals",
+      "description": "One proposed compound of a design set: its structure, score and rank, and whether it was chosen for synthesis, by whom and when. Once registered, the compound's code.",
+      "filters": [{"column": "chosen"}],
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "design_set_id": {"type": "ref", "ref": "design_set", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Design set"},
+        "label": {"type": "string", "required": true, "immutable": true, "isName": true, "description": "The proposal's name within its set, e.g. KIN-A-D07"},
+        "structure": {"type": "string", "semType": "Molecule", "required": true, "immutable": true, "description": "SMILES"},
+        "score": {"type": "float"},
+        "rank": {"type": "int", "description": "1 is best; ties share a rank"},
+        "chosen": {"type": "bool", "default": false, "description": "Chosen for synthesis"},
+        "chosen_by": {"type": "user", "description": "Who last chose or unchose it"},
+        "chosen_on": {"type": "datetime", "description": "When it was last chosen or unchosen"},
+        "compound_code": {"type": "string", "searchable": true, "description": "The registered compound, once made"},
+        "note": {"type": "string"}
+      }
+    },
+    "selection_set": {
+      "securityMode": "master",
+      "delegate": "program_id",
+      "businessKey": ["program_id", "code"],
+      "friendlyName": "Selection sets",
+      "description": "A hit list (F-23, FR-102): compounds picked from a campaign, with the rationale and who picked them.",
+      "columns": {
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "code": {"type": "string", "required": true, "immutable": true},
+        "name": {"type": "string", "required": true, "isName": true, "searchable": true},
+        "campaign_code": {"type": "string", "description": "The campaign the compounds were picked from"},
+        "rationale": {"type": "string", "required": true, "editor": "textarea"},
+        "compounds": {"type": "json", "description": "{items: [compound codes]}"},
+        "selected_by": {"type": "user", "immutable": true},
+        "selected_on": {"type": "datetime", "immutable": true}
       }
     }
   }

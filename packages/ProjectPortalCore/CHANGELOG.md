@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Design sets and selection sets (F-23, FR-101/102), discovery: a design set holds the structures proposed for a series (enumerated, generative or manual), each scored and ranked (ties share a rank), and the ones chosen for synthesis, with who and when; a proposal records its compound once registered. A selection set is a hit list: compounds of the program picked from a campaign, with the rationale. Program page: *Design sets* with **New design set…** (from a table open in the platform), **New selection set…**, and a set's proposals with Chosen ticks and **Save**. Functions `createDesignSet`, `designSets`, `chooseForSynthesis`, `createSelectionSet`, `selectionSets`, `loadExampleDesignSets`. EXS-KIN1 gets two KIN-A design sets and a hit list from its screen (synthetic). Pure rules in `src/model/design-sets.ts`
+- `portal` schema 0.2.29: tables `design_set`, `design_proposal`, `selection_set`. Additive, no migration script
+
 - Observations (F-26, FR-76/106): a curated conclusion on a program, one of its series, campaigns or studies, or a compound it holds: title, finding, who, when, and the evidence it rests on (saved runs, snapshots, a link or file). Never edited; retracted with a reason by its author or an approver, and kept. Program page: *Observations* with **Add observation…** (contributors and approvers) and **Retract**. Activity feed: kind `observation`, recorded and retracted, tagged with the series or the compound so a series' feed shows them. Functions `addObservation`, `retractObservation`, `observations`. Pure rules in `src/model/observations.ts`
 - `portal` schema 0.2.28: table `observation`. Additive, no migration script
 

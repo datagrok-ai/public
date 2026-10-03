@@ -95,6 +95,8 @@ export type ObservationSubjectKind = 'program' | 'series' | 'compound' | 'campai
 
 export type ObservationStatus = 'current' | 'retracted';
 
+export type DesignSetSource = 'enumerated' | 'generative' | 'manual';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -468,6 +470,9 @@ export type ProgramExpand = {
   'details:prediction': {prediction?: PredictionRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
   'details:observation': {observation?: ObservationRow[]};
+  'details:design_set': {design_set?: DesignSetRow[]};
+  'details:design_proposal': {design_proposal?: DesignProposalRow[]};
+  'details:selection_set': {selection_set?: SelectionSetRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -1971,6 +1976,158 @@ export type ObservationExpand = {
     'retracted_by.picture'?: string; 'retracted_by.group'?: string; 'retracted_by.author'?: string};
 };
 
+/** Row of `portal.design_set`. */
+export interface DesignSetRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  series_code: string;
+  source: DesignSetSource;
+  score_name?: string;
+  higher_is_better?: boolean;
+  description?: string;
+  designed_by?: string;
+  designed_on?: Dayjs;
+}
+
+/** Insert payload for `portal.design_set`. */
+export interface DesignSetInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  series_code: string;
+  source: DesignSetSource;
+  score_name?: string;
+  higher_is_better?: boolean;
+  description?: string;
+  designed_by?: string;
+  designed_on?: Dayjs | string;
+}
+
+export type DesignSetColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' | 'code' |
+  'name' | 'series_code' | 'source' | 'score_name' | 'higher_is_better' | 'description' | 'designed_by' |
+  'designed_on';
+
+/** Expand keys of `portal.design_set` → fields each adds to the row (consumed by query()/builder). */
+export type DesignSetExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'designed_by': {'designed_by.login'?: string; 'designed_by.firstName'?: string; 'designed_by.lastName'?: string;
+    'designed_by.status'?: string; 'designed_by.createdOn'?: Dayjs; 'designed_by.picture'?: string;
+    'designed_by.group'?: string; 'designed_by.author'?: string};
+  'details:design_proposal': {design_proposal?: DesignProposalRow[]};
+};
+
+/** Row of `portal.design_proposal`. */
+export interface DesignProposalRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  design_set_id: string;
+  label: string;
+  structure: string;
+  score?: number;
+  rank?: number;
+  chosen?: boolean;
+  chosen_by?: string;
+  chosen_on?: Dayjs;
+  compound_code?: string;
+  note?: string;
+}
+
+/** Insert payload for `portal.design_proposal`. */
+export interface DesignProposalInsert {
+  program_id: string;
+  design_set_id: string;
+  label: string;
+  structure: string;
+  score?: number;
+  rank?: number;
+  chosen?: boolean;
+  chosen_by?: string;
+  chosen_on?: Dayjs | string;
+  compound_code?: string;
+  note?: string;
+}
+
+export type DesignProposalColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'design_set_id' | 'label' | 'structure' | 'score' | 'rank' | 'chosen' | 'chosen_by' | 'chosen_on' |
+  'compound_code' | 'note';
+
+/** Expand keys of `portal.design_proposal` → fields each adds to the row (consumed by query()/builder). */
+export type DesignProposalExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'design_set_id': {'design_set_id.program_id'?: string; 'design_set_id.code'?: string;
+    'design_set_id.name'?: string; 'design_set_id.series_code'?: string; 'design_set_id.source'?: DesignSetSource;
+    'design_set_id.score_name'?: string; 'design_set_id.higher_is_better'?: boolean;
+    'design_set_id.description'?: string; 'design_set_id.designed_by'?: string; 'design_set_id.designed_on'?: Dayjs};
+  'chosen_by': {'chosen_by.login'?: string; 'chosen_by.firstName'?: string; 'chosen_by.lastName'?: string;
+    'chosen_by.status'?: string; 'chosen_by.createdOn'?: Dayjs; 'chosen_by.picture'?: string;
+    'chosen_by.group'?: string; 'chosen_by.author'?: string};
+};
+
+/** Row of `portal.selection_set`. */
+export interface SelectionSetRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  program_id: string;
+  code: string;
+  name: string;
+  campaign_code?: string;
+  rationale: string;
+  compounds?: {[key: string]: any};
+  selected_by?: string;
+  selected_on?: Dayjs;
+}
+
+/** Insert payload for `portal.selection_set`. */
+export interface SelectionSetInsert {
+  program_id: string;
+  code: string;
+  name: string;
+  campaign_code?: string;
+  rationale: string;
+  compounds?: {[key: string]: any};
+  selected_by?: string;
+  selected_on?: Dayjs | string;
+}
+
+export type SelectionSetColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
+  'code' | 'name' | 'campaign_code' | 'rationale' | 'compounds' | 'selected_by' | 'selected_on';
+
+/** Expand keys of `portal.selection_set` → fields each adds to the row (consumed by query()/builder). */
+export type SelectionSetExpand = {
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'selected_by': {'selected_by.login'?: string; 'selected_by.firstName'?: string; 'selected_by.lastName'?: string;
+    'selected_by.status'?: string; 'selected_by.createdOn'?: Dayjs; 'selected_by.picture'?: string;
+    'selected_by.group'?: string; 'selected_by.author'?: string};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -2076,7 +2233,16 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'parked_folder'; id: string} |
   {op: 'insert'; table: 'observation'; ref?: string; values: DG.DomainTxValues<ObservationInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'observation'; id: string; values: DG.DomainTxValues<Partial<ObservationRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'observation'; id: string};
+  {op: 'delete'; table: 'observation'; id: string} |
+  {op: 'insert'; table: 'design_set'; ref?: string; values: DG.DomainTxValues<DesignSetInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'design_set'; id: string; values: DG.DomainTxValues<Partial<DesignSetRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'design_set'; id: string} |
+  {op: 'insert'; table: 'design_proposal'; ref?: string; values: DG.DomainTxValues<DesignProposalInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'design_proposal'; id: string; values: DG.DomainTxValues<Partial<DesignProposalRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'design_proposal'; id: string} |
+  {op: 'insert'; table: 'selection_set'; ref?: string; values: DG.DomainTxValues<SelectionSetInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'selection_set'; id: string; values: DG.DomainTxValues<Partial<SelectionSetRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'selection_set'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -2184,6 +2350,15 @@ export const portalDb = {
   },
   get observations() {
     return grok.dapi.domains.table<ObservationRow, ObservationInsert, ObservationColumn, ObservationExpand>('portal.observation');
+  },
+  get designSets() {
+    return grok.dapi.domains.table<DesignSetRow, DesignSetInsert, DesignSetColumn, DesignSetExpand>('portal.design_set');
+  },
+  get designProposals() {
+    return grok.dapi.domains.table<DesignProposalRow, DesignProposalInsert, DesignProposalColumn, DesignProposalExpand>('portal.design_proposal');
+  },
+  get selectionSets() {
+    return grok.dapi.domains.table<SelectionSetRow, SelectionSetInsert, SelectionSetColumn, SelectionSetExpand>('portal.selection_set');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

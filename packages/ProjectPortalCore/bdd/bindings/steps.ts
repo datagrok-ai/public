@@ -463,3 +463,8 @@ export const selectInWorkspace = When('user selects the {string} model in the Wo
     const row = page.locator(`.pp-workspace-item[data-entity-id="${id}"]`).first();
     await row.click({timeout: 60000});
   }, {tier: 'ui', description: 'Home, its Spotlight widget\'s Workspace tab, the model\'s row (PowerPack addresses the rows by entity id)'});
+
+export const exampleDesignSets = Given('the example design sets are loaded', async (page: Page) => {
+  silent(page);
+  await page.evaluate(async () => grok.functions.call('ProjectPortalCore:loadExampleDesignSets', {}));
+}, {tier: 'api', description: 'the synthetic KIN-A design sets and the K1 hit list on EXS-KIN1; idempotent'});
