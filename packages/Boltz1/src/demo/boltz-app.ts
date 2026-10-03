@@ -284,8 +284,14 @@ export async function openBoltzDemo(): Promise<void> {
     take(1),
   ).subscribe((acc) => setTimeout(() => acc.getPane('Boltz-1').expanded = true));
 
+  const tableId = project.children.find((e) => e instanceof DG.TableInfo)?.id;
+  const tv = Array.from(grok.shell.tableViews).find((v) => tableId != null && v.dataFrame?.id === tableId);
+  if (!tv)
+    return;
+  grok.shell.v = tv;
+
   setTimeout(() => {
-    const df = grok.shell.tv.dataFrame;
+    const df = tv.dataFrame;
     const complexCell = df.cell(0, 'Complex');
     df.currentCell = complexCell;
     grok.shell.o = DG.SemanticValue.fromTableCell(complexCell);
