@@ -18,7 +18,8 @@
   },
   "personas": {
     "default": "chemist",
-    "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}]
+    "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}],
+    "panels": {"biologist": ["quick_actions", "data", "dmta", "observations", "compounds", "feed"]}
   },
   "workUnits": ["campaign", "series"],
   "seriesMaturity": ["hit", "validated", "lead", "optimized", "candidate"],

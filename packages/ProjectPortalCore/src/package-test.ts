@@ -38,6 +38,7 @@ import './tests/compare-runs-tests';
 import './tests/observation-tests';
 import './tests/design-set-tests';
 import './tests/dmta-tests';
+import './tests/panel-tests';
 
 export let _package = new DG.Package();
 export { tests };

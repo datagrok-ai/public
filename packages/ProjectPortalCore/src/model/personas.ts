@@ -63,6 +63,9 @@ export interface PersonaConfig {
   groups?: {group: string, persona: Persona}[];
   /** Cards per persona, in order; a persona left out keeps the defaults. */
   cards?: Partial<Record<Persona, CardConfig[]>>;
+  /** Program-page panels per persona, in order (F-31); the rest go behind More. A persona left out
+   * keeps the whole page and the mode decides. */
+  panels?: Partial<Record<Persona, PagePanel[]>>;
 }
 
 /** Problems with a portfolio's `personas`, as sentences. */
@@ -78,6 +81,20 @@ export function validatePersonas(p: PersonaConfig | undefined): string[] {
       errors.push('personas: a group mapping needs a group name');
     if (!isPersona(g?.persona))
       errors.push(`personas: group "${g?.group}" maps to "${g?.persona}", which is not one of ${PERSONAS.join(', ')}`);
+  }
+  for (const [persona, panels] of Object.entries(p.panels ?? {})) {
+    if (!isPersona(persona))
+      errors.push(`personas: panels for "${persona}", which is not one of ${PERSONAS.join(', ')}`);
+    if (!Array.isArray(panels)) {
+      errors.push(`personas: panels for ${persona} must be a list`);
+      continue;
+    }
+    for (const x of panels) {
+      if (!PAGE_PANELS.includes(x as PagePanel))
+        errors.push(`personas: ${persona} panel "${x}" is not one of ${PAGE_PANELS.join(', ')}`);
+    }
+    if (new Set(panels).size !== panels.length)
+      errors.push(`personas: ${persona} lists a panel twice`);
   }
   for (const [persona, cards] of Object.entries(p.cards ?? {})) {
     if (!isPersona(persona))
@@ -162,3 +179,42 @@ export const ADVANCED_BOARD_BUTTONS: BoardButton[] = ['sync_history', 'export', 
 /** Whether a section shows: always in Advanced; in Simple only once More is open. */
 export const sectionShown = (mode: PortalMode, section: PageSection, moreOpen: boolean): boolean =>
   mode === 'advanced' || !MORE_SECTIONS.includes(section) || moreOpen;
+
+/** The program page's panels, in the page's own order (F-31). The header (title, status, the
+ * program's actions, what is new) is not a panel: it always shows. */
+export type PagePanel = 'quick_actions' | 'data' | 'gate' | 'approvals' | 'documents' | 'work_units' | 'compounds' |
+  'observations' | 'design_sets' | 'dmta' | PageSection;
+export const PAGE_PANELS: PagePanel[] = ['quick_actions', 'data', 'gate', 'approvals', 'documents', 'work_units', 'compounds',
+  'observations', 'design_sets', 'dmta', 'recommendation', 'predictions', 'attention', 'saved_runs', 'roles', 'snapshots',
+  'feed', 'history'];
+export const PANEL_LABELS: Record<PagePanel, string> = {
+  quick_actions: 'Quick actions', data: 'Program data', gate: 'Gate', approvals: 'Waiting for approval', documents: 'Documents',
+  work_units: 'Work units', compounds: 'Compounds', observations: 'Observations', design_sets: 'Design sets', dmta: 'DMTA',
+  recommendation: 'Missing assays and suggested models', predictions: 'Predictions', attention: 'Needs attention',
+  saved_runs: 'Saved runs', roles: 'Program roles', snapshots: 'Snapshots', feed: 'Activity', history: 'History',
+};
+
+export interface PanelLayout {
+  /** Shown now, in order. */
+  shown: PagePanel[];
+  /** Behind More (shown after it once More is open), in the page's order. */
+  more: PagePanel[];
+  /** Whether the portfolio composed the page for this persona. */
+  composed: boolean;
+}
+
+/** Which panels the program page shows for [persona], in which order. When the portfolio lists
+ * panels for the persona, those show in its order in both modes and the rest go behind More.
+ * Otherwise the page is as before: every panel in the page's order, Simple mode keeping
+ * MORE_SECTIONS behind More. [moreOpen] moves what is behind More into `shown`, after the rest. */
+export function panelLayout(persona: Persona | null, config: PersonaConfig | null | undefined, mode: PortalMode,
+  moreOpen: boolean): PanelLayout {
+  const declared = persona ? config?.panels?.[persona]?.filter((x) => PAGE_PANELS.includes(x)) : undefined;
+  if (declared?.length) {
+    const listed = [...new Set(declared)];
+    const rest = PAGE_PANELS.filter((x) => !listed.includes(x));
+    return {shown: moreOpen ? [...listed, ...rest] : listed, more: rest, composed: true};
+  }
+  const hidden = PAGE_PANELS.filter((x) => !sectionShown(mode, x as PageSection, false));
+  return {shown: PAGE_PANELS.filter((x) => sectionShown(mode, x as PageSection, moreOpen)), more: hidden, composed: false};
+}

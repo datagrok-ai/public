@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Program-page panels per persona (F-31, FR-34): `personas.panels` in a portfolio file lists, per persona, the program-page panels to show and their order (quick actions, data, gate, approvals, documents, work units, compounds, observations, design sets, DMTA, the analytics, saved runs, roles, snapshots, activity, history); the rest wait behind **More (n)**, in either mode. A persona left out keeps the whole page and the mode decides, as before. Checked with the portfolio file. EX-SMD composes the biologist's page around DMTA, observations, compounds and activity. Pure layout in `src/model/personas.ts` (`panelLayout`). No schema change
+
 - DMTA status (F-24, FR-105), discovery: per compound, designed → requested → made → tested → analyzed with dates, and per series the compounds at each stage and the median cycle time designed → tested. Request objects (F-49) do not exist yet, so each stage is derived from what the portal has: design sets and their choices for synthesis, the registry projection, the first dated row of the assay results, observations and roles set by hand. Sources are pluggable: `registerDmtaSource` in code, and functions a portfolio names in `dmta.sources`. Program page: *DMTA (n)* with a line per series and **Open status**. Functions `dmtaStatus`, `dmtaCycles`. Pure rules in `src/model/dmta.ts`
 - `portal` schema 0.2.30: `portfolio.dmta` (optional `{tested: {dataset, compoundColumn, dateColumn}, sources}`). Additive, no migration script
 

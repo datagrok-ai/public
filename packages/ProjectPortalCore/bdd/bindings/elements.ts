@@ -248,3 +248,5 @@ app.element('design set summary', {selector: u2('design-set-summary')});
 app.element('dmta heading', {selector: u2('dmta-heading')});
 app.element('dmta cycles', {selector: u2('dmta-cycles')});
 app.element('open dmta status button', {selector: u2('dmta-open-table')});
+
+app.element('panels note', {selector: u2('panels-composed')});

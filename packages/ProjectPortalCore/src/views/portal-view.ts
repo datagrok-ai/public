@@ -33,7 +33,7 @@ import {describeMissing} from '../model/recommend';
 import {follow, myFollows, unfollow, whatsNew, WorkUnitRef} from '../new-data';
 import {FollowRow} from '../generated/db';
 import {ADVANCED_BOARD_BUTTONS, BoardButton, MORE_SECTIONS, PageSection, Persona, PERSONA_LABELS, PERSONAS, PORTAL_MODES,
-  PersonaConfig, PortalMode, QuickActionCode, QuickCard, quickCards, sectionShown} from '../model/personas';
+  PersonaConfig, PortalMode, QuickActionCode, QuickCard, quickCards, PagePanel, PANEL_LABELS, panelLayout} from '../model/personas';
 import {personaIn, runFunctionCard, savedMode, saveMode, savePersona} from '../personas';
 import {missingAssayFrame, recommendationFrame} from '../recommend';
 import {attentionFrame} from '../attention';
@@ -676,13 +676,74 @@ export class PortalView {
       }});
 
     // Simple mode keeps the heavier sections behind More
-    const shown = (x: PageSection) => sectionShown(this.mode, x, this.moreOpen);
-    const more = this.mode === 'simple' ? named(button(this.moreOpen ? 'Less' : `More (${MORE_SECTIONS.length})`, () => {
+    // the page's panels (F-31): the persona's composition from the portfolio, else the mode's
+    const panels: Record<PagePanel, () => HTMLElement[]> = {
+      quick_actions: () => quick,
+      data: () => data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : [],
+      gate: () => [
+        ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
+        ...lineage,
+        track,
+        gateHeading,
+        ...(score && readiness!.criteria.length ? [score] : []),
+        readiness?.criteria.length ? criteriaList : span('No criteria declared', 'pp-muted'),
+        ...(readiness?.dataError ? [named(span(`Program data could not be read: ${readiness.dataError}`, 'pp-reason'),
+          'data-error')] : []),
+        reasons,
+        rationale,
+        ...(picker ? [picker] : []),
+        divH([advance, hold, terminate], 'pp-actions'),
+      ],
+      approvals: () => this.approvalSection(ctx, approval),
+      documents: () => documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : [],
+      work_units: () => units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : [],
+      compounds: () => compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : [],
+      observations: () => this.observationsSection(ctx),
+      design_sets: () => this.designSection(ctx, units, compounds),
+      dmta: () => this.dmtaSection(ctx),
+      recommendation: () => recommendation ? this.recommendation(recommendation) : [],
+      predictions: () => ctx.portfolio.setting === 'discovery' || this.predictions.length ? this.predictionsSection(ctx) : [],
+      attention: () => attention ? this.attention(ctx.portfolio.code, program.code, attention) : [],
+      saved_runs: () => [
+        named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
+        divH([saveRun], 'pp-actions'),
+        ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
+        runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
+      ],
+      roles: () => this.programRoles(ctx),
+      snapshots: () => this.snapshots(ctx, snapshots),
+      feed: () => this.activity(ctx, units.find((u) => u.kind === 'series')?.rows.map((r) => String(r.code)) ?? []),
+      history: () => [
+        span('History', 'pp-heading'),
+        transitions.length ? history : span('No transitions yet', 'pp-muted'),
+      ],
+    };
+    const layout = panelLayout(this.persona?.persona ?? null, ctx.portfolio.personas as PersonaConfig | undefined,
+      this.mode, this.moreOpen);
+    // a composed page counts what is behind More and has something to show
+    const behind = layout.composed ? layout.more.filter((x) => panels[x]().length) : [];
+    const more = layout.composed ? (behind.length ? named(button(this.moreOpen ? 'Less' : `More (${behind.length})`, () => {
+      this.moreOpen = !this.moreOpen;
+      this.redraw?.();
+    }), 'more-button') : null) : this.mode === 'simple' ? named(button(this.moreOpen ? 'Less' : `More (${MORE_SECTIONS.length})`, () => {
       this.moreOpen = !this.moreOpen;
       this.redraw?.();
     }), 'more-button') : null;
-    if (more)
-      more.title = this.moreOpen ? 'Back to the simple page' : 'Missing assays and suggested models, attention, saved runs, roles, snapshots, activity, history';
+    if (more) {
+      more.title = this.moreOpen ? (layout.composed ? 'Back to this persona\'s panels' : 'Back to the simple page') :
+        layout.composed ? behind.map((x) => PANEL_LABELS[x]).join(', ') :
+          'Missing assays and suggested models, attention, saved runs, roles, snapshots, activity, history';
+    }
+    // More sits after the panels shown first, before the ones it opens
+    const firstBehind = layout.shown.findIndex((x) => layout.more.includes(x));
+    const body: HTMLElement[] = [];
+    layout.shown.forEach((x, i) => {
+      if (i === firstBehind && more)
+        body.push(divH([more], 'pp-actions'));
+      body.push(...panels[x]());
+    });
+    if (more && firstBehind < 0)
+      body.push(divH([more], 'pp-actions'));
 
     this.detail.replaceChildren(
       named(span(program.name, 'pp-title'), 'program-title'),
@@ -693,44 +754,9 @@ export class PortalView {
         this.dataPackageButton(program.id)],
       'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
-      ...quick,
-      ...(data.length ? [named(divH(data, 'pp-actions pp-data-actions'), 'program-data-actions')] : []),
-      ...(program.source_stage ? [span(`Registry stage: ${program.source_stage}`, 'pp-muted')] : []),
-      ...lineage,
-      track,
-      gateHeading,
-      ...(score && readiness!.criteria.length ? [score] : []),
-      readiness?.criteria.length ? criteriaList : span('No criteria declared', 'pp-muted'),
-      ...(readiness?.dataError ? [named(span(`Program data could not be read: ${readiness.dataError}`, 'pp-reason'),
-        'data-error')] : []),
-      reasons,
-      rationale,
-      ...(picker ? [picker] : []),
-      divH([advance, hold, terminate], 'pp-actions'),
-      ...this.approvalSection(ctx, approval),
-      ...(documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : []),
-      ...(units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : []),
-      ...(compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : []),
-      ...this.observationsSection(ctx),
-      ...this.designSection(ctx, units, compounds),
-      ...this.dmtaSection(ctx),
-      ...(more ? [divH([more], 'pp-actions')] : []),
-      ...(recommendation && shown('recommendation') ? this.recommendation(recommendation) : []),
-      ...(shown('predictions') && (ctx.portfolio.setting === 'discovery' || this.predictions.length) ? this.predictionsSection(ctx) : []),
-      ...(attention && shown('attention') ? this.attention(ctx.portfolio.code, program.code, attention) : []),
-      ...(shown('saved_runs') ? [
-        named(span(`Saved runs (${runs.length})`, 'pp-heading'), 'saved-runs-heading'),
-        divH([saveRun], 'pp-actions'),
-        ...(this.savedLine.has(program.id) ? [named(span(this.savedLine.get(program.id)!, 'pp-muted'), 'save-run-result')] : []),
-        runs.length ? this.savedRuns(runs) : named(span('No runs saved to this program yet', 'pp-muted'), 'no-saved-runs'),
-      ] : []),
-      ...(shown('roles') ? this.programRoles(ctx) : []),
-      ...(shown('snapshots') ? this.snapshots(ctx, snapshots) : []),
-      ...(shown('feed') ? this.activity(ctx, units.find((u) => u.kind === 'series')?.rows.map((r) => String(r.code)) ?? []) : []),
-      ...(shown('history') ? [
-        span('History', 'pp-heading'),
-        transitions.length ? history : span('No transitions yet', 'pp-muted'),
-      ] : []),
+      ...(layout.composed ? [named(span(`Panels for ${PERSONA_LABELS[this.persona!.persona]}, from ${ctx.portfolio.code}`, 'pp-muted'),
+        'panels-composed')] : []),
+      ...body,
     );
   }
 
