@@ -98,12 +98,9 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     } = await page.evaluate(async () => {
       const g = (window as any).grok;
       let addCopyMenuRegistered = false;
-      try {
-        const find = (g as any).functions && (g as any).functions.find;
-        for (const candidate of ['Bio:addCopyMenu', 'addCopyMenu']) {
-          try { if (find && find(candidate)) { addCopyMenuRegistered = true; break; } } catch {  }
-        }
-      } catch {  }
+      for (const candidate of ['Bio:addCopyMenu', 'addCopyMenu']) {
+        try { if (await g.functions.find(candidate)) { addCopyMenuRegistered = true; break; } } catch {  }
+      }
       const df = g.shell.tv.dataFrame;
       const macroCol = Array.from({length: df.columns.length}, (_: unknown, i: number) =>
         df.columns.byIndex(i)).find((c: any) => c.semType === 'Macromolecule') as any;
