@@ -147,6 +147,12 @@ category('Grid', () => {
     }
   });
 
+  test('GridCell.renderer of an unregistered value cell', async () => {
+    const gc = DG.GridCell.fromValue('');
+    gc.cellType = 'api-tests-unregistered-cell-type';
+    expect(gc.renderer.cellType, DG.TYPE.STRING);
+  });
+
   test('getOptions', async () => {
     expect(Object.keys(grid.getOptions().look).length, 2);
   });
