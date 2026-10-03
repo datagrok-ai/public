@@ -327,6 +327,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } //checkScatterAxes
 
   private removeResultingCols(): void {
+    // Removing the columns notifies listeners that may write objectives back while detaching
+    this.isApplicable = false;
     this.dataFrame.columns.remove(this.resultColName);
     this.dataFrame.columns.remove(this.sizeColName);
   }

@@ -6,10 +6,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {getParetoMask} from '../pareto-optimization/pareto-computations';
 import {OPT_TYPE, NumericArray} from '../pareto-optimization/defs';
+import {ParetoFrontViewer} from '../pareto-optimization/pareto-front-viewer';
 
 const TIMEOUT = 5000;
 
@@ -247,5 +248,27 @@ category('Pareto optimization', () => {
     const optimalCount = mask!.filter((x) => x).length;
     expect(optimalCount > 0, true, 'At least some identical points should be optimal');
     expect(error === null, true, error?.message ?? '');
+  }, {timeout: TIMEOUT});
+
+  test('Viewer: objectives set while the view is closing', async () => {
+    const df = grok.data.demo.demog(100);
+    const colNames = df.columns.names();
+    const tv = grok.shell.addTableView(df);
+    const viewer = new ParetoFrontViewer();
+    tv.addViewer(viewer);
+    const sub = df.onColumnsRemoved.subscribe(() => viewer.setOptions({
+      minimizeColumnNames: ['age'],
+      maximizeColumnNames: ['weight'],
+    }));
+
+    try {
+      tv.close();
+      await awaitCheck(() => viewer.isDetached, 'Pareto front viewer is not detached', TIMEOUT);
+      viewer.setOptions({maximizeColumnNames: ['height']});
+    } finally {
+      sub.unsubscribe();
+    }
+
+    expect(df.columns.names().join(','), colNames.join(','), 'Pareto columns are left in the table');
   }, {timeout: TIMEOUT});
 });
