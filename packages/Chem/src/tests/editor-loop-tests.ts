@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {createTableView} from './utils';
+import {DimReductionBaseEditor} from '@datagrok-libraries/ml/src/functionEditors/dimensionality-reduction-editor';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 
@@ -185,3 +186,28 @@ category('Editors: no infinite loop', () => {
 // clear: false — the runner closes views between tests by default, and these tests share the
 // table view created in before(); editors read grok.shell.tv when the call has no table input
 }, {clear: false});
+
+category('Editors: Chem Space', () => {
+  // regression: the late semantic type detection callback rebuilt the column input for a table
+  // that had meanwhile been closed and threw on the null table
+  test('Chem Space editor ignores detection finishing after the table is gone', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', ['CCO', 'c1ccccc1', 'CC(=O)O'])]);
+    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+    grok.shell.addTableView(df);
+    for (const col of df.columns)
+      col.setTag(DG.Tags.SemanticDetectionDuration, '');
+    const metaProto = Object.getPrototypeOf(df.meta);
+    const detect = metaProto.detectSemanticTypes;
+    const onDetected: (() => void)[] = [];
+    metaProto.detectSemanticTypes = () => ({then: (callback: () => void) => onDetected.push(callback)});
+    try {
+      const editor = new DimReductionBaseEditor({semtype: DG.SEMTYPE.MOLECULE});
+      expect(onDetected.length, 1, 'semantic type detection was not started');
+      editor.tableInput.value = null;
+      onDetected[0]();
+      expect(editor.colInput.value?.name, 'smiles', 'column input was rebuilt for a missing table');
+    } finally {
+      metaProto.detectSemanticTypes = detect;
+    }
+  });
+});
