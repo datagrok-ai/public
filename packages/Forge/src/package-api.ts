@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * Predictive modeling: engines and the model catalog
+   * Predictive modeling: methods and the model catalog
    */
   export async function forgeApp(): Promise<DG.View> {
     return await grok.functions.call('Forge:ForgeApp', {});
@@ -20,5 +20,12 @@ export namespace funcs {
    */
   export async function forgeModels(): Promise<void> {
     return await grok.functions.call('Forge:ForgeModels', {});
+  }
+
+  /**
+   * Trains a predictive model on the current table
+   */
+  export async function forgeTrain(): Promise<void> {
+    return await grok.functions.call('Forge:ForgeTrain', {});
   }
 }

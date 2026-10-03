@@ -3,7 +3,9 @@ import * as DG from 'datagrok-api/dg';
 export const ENGINE_ROLES = ['train', 'apply', 'isApplicable', 'isInteractive', 'visualize'] as const;
 export type EngineRole = typeof ENGINE_ROLES[number];
 export type EngineKind = 'function' | 'script';
+export type Hyperparameters = {[name: string]: number | string | boolean};
 const TRAIN_DATA_INPUTS = ['df', 'predictColumn'] as const;
+const NUMBER_TYPES: string[] = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.NUM, DG.TYPE.QNUM];
 
 export interface Engine {
   name: string;
@@ -21,6 +23,31 @@ export function isComplete(engine: Engine): boolean {
 export function hyperparametersOf(engine: Engine): DG.Property[] {
   const inputs = engine.functions.train?.inputs ?? [];
   return inputs.filter((p) => !TRAIN_DATA_INPUTS.some((name) => name === p.name));
+}
+
+export function defaultHyperparameters(engine: Engine): Hyperparameters {
+  const values: Hyperparameters = {};
+  for (const p of hyperparametersOf(engine)) {
+    const value = initialValueOf(p);
+    if (value !== undefined)
+      values[p.name] = value;
+  }
+  return values;
+}
+
+// A header default (`= 20`) is kept as the input's initial value, in text; `defaultValue` stays empty.
+function initialValueOf(p: DG.Property): number | string | boolean | undefined {
+  const text: unknown = p.initialValue;
+  if (typeof text !== 'string' || text === '')
+    return undefined;
+  if (p.propertyType === DG.TYPE.BOOL)
+    return text.toLowerCase() === 'true';
+  if (p.propertyType === DG.TYPE.STRING)
+    return text.replace(/^"(.*)"$/, '$1');
+  if (!NUMBER_TYPES.includes(p.propertyType))
+    return undefined;
+  const value = Number(text);
+  return Number.isNaN(value) ? undefined : value;
 }
 
 export function rolesOf(engine: Engine): EngineRole[] {

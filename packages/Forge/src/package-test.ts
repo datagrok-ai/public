@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import './tests/engines-tests';
+import './tests/metrics-tests';
+import './tests/training-tests';
 import './tests/storage-tests';
 import './tests/ui-tests';
 

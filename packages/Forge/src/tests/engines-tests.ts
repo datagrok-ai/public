@@ -1,18 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {Engine, hyperparametersOf, isComplete, rolesOf} from '../engines/engine';
+import {defaultHyperparameters, hyperparametersOf, isComplete, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {isApplicable, isInteractive} from '../engines/engine-calls';
+import {engineByName, IRIS} from './test-data';
 
 const EDA_ENGINES = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM'];
-const IRIS = 'System:DemoFiles/iris.csv';
-
-function engineByName(engines: Engine[], name: string): Engine {
-  const engine = engines.find((e) => e.name === name);
-  if (engine === undefined)
-    throw new Error(`Engine '${name}' is not discovered`);
-  return engine;
-}
 
 category('Engines', () => {
   test('discovers the EDA engines', async () => {
@@ -39,6 +32,12 @@ category('Engines', () => {
   test('hyperparameters exclude the table and the target', async () => {
     const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
     expectArray(hyperparametersOf(xgboost).map((p) => p.name), ['iterations', 'eta', 'maxDepth', 'lambda', 'alpha']);
+  });
+
+  test('default hyperparameters are the train inputs\' initial values', async () => {
+    const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
+    expect(JSON.stringify(defaultHyperparameters(xgboost)),
+      JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0}));
   });
 
   test('isApplicable and isInteractive through the contract', async () => {
