@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Approval workflow: a new proposal, document submission or model-card submission tells its approvers in the platform's notifications (the portfolio's approvers group and the program's approver roles, never the proposer). `Proposal.notified` says how it went; `approverUsers(portfolio, programId)` lists them
+
 - Quality pass (review of 0.3.0 so far):
   - Every list read passes a row limit: a `query({filter})` without one gets the server's 100 rows, silently (the sync history of EX-SMD had 234). `src/rows.ts`
   - Values put into filter strings are escaped (`filterValue`): a `"` in a program code or an id can no longer widen a filter

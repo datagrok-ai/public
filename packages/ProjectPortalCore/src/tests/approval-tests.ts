@@ -1,15 +1,15 @@
 import dayjs from 'dayjs';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {
-  approvalOf, checkProposal, checkReview, checkWithdraw, describeApproval, describeProgress, needsApproval, RequestRef,
-  statusAfter, validateApproval, waitingFor,
+  approvalOf, approversToTell, checkProposal, checkReview, checkWithdraw, describeApproval, describeProgress, needsApproval,
+  RequestRef, requestNotice, statusAfter, validateApproval, waitingFor,
 } from '../model/approvals';
 import {validatePortfolio} from '../model/config';
 import {describeAutoAdvance} from '../model/auto-advance';
 import {documentCards} from '../model/documents';
 import {ApprovalRequestRow, portalDb, PortfolioRow, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, readPortfolioFiles, recordDecision, setCriterion, stagesOf} from '../portal';
-import {decideOrPropose, requestsOf, reviewRequest, submitDocument, submitModelCard, waitingForMe, withdrawRequest} from '../approvals';
+import {approverUsers, decideOrPropose, requestsOf, reviewRequest, submitDocument, submitModelCard, waitingForMe, withdrawRequest} from '../approvals';
 import {documentsOf, linkDocumentTo, PACKAGE_FILES} from '../documents';
 import {loadCatalogues} from '../catalogue';
 import {autoAdvance} from '../auto-advance';
@@ -77,6 +77,15 @@ category('Portal: approval rules', () => {
     expect(statusAfter([review('bob'), review('cy')], 2), 'approved');
     expect(statusAfter([review('bob'), review('cy', 'reject')], 2), 'rejected');
     expect(describeProgress({reviews: [review('bob')], needed: 2, status: 'pending'}), '1 of 2 approvals');
+  });
+
+  test('a new request tells each approver once, never the proposer; the notice says what, by whom and why', async () => {
+    expect(approversToTell(['ann', 'bob', 'ann', null, 'cy'], 'bob').join(), 'ann,cy');
+    expect(approversToTell(['a', 'b', 'c'], null, 2).join(), 'a,b');
+    expect(requestNotice({title: 'EXB-101: advance to Lead Generation', rationale: ' binders found '}, 'Ann'),
+      'EXB-101: advance to Lead Generation: waits for your approval, proposed by Ann — binders found');
+    expect(requestNotice({title: 'EXB-101: advance to Lead Generation', source: 'data'}, 'Ann'),
+      'EXB-101: advance to Lead Generation: waits for your approval, proposed by data');
   });
 
   test('waiting for me: pending, not mine unless by data, not reviewed by me, where I approve', async () => {
@@ -189,6 +198,28 @@ category('Portal: approval workflow', () => {
       if (ran === null)
         console.log('skipped the two-person half: no self-signup on this stand');
       expect(biod.code, 'EX-BIOD');
+    });
+  });
+
+  test('a proposal tells the approvers in the platform\'s notifications: a program approver role counts', async () => {
+    await scratchProgram('TI', async (p, biod, stage) => {
+      const lg = (await portalDb.gateCriterions.query({filter: `stage_id = "${stage('LG')}"`})).find((c) => c.code === 'binding')!;
+      await setCriterion(p.id, lg.id, 'met');
+      const ran = await withRestrictedUser('ppnote', async (user) => {
+        const [role] = await portalDb.programRoles.insert({program_id: p.id, group_id: user.group, role: 'approver', active: true});
+        try {
+          expect((await approverUsers(biod, p.id)).includes(user.id), true, 'the program\'s approver role is an approver');
+          const out = await decideOrPropose(p.id, 'advance', 'binders found');
+          expect(/^[1-9]\d* of \d+ approver\(s\) notified/.test(out.proposed!.notified ?? ''), true, out.proposed!.notified);
+        } finally {
+          await portalDb.programRoles.delete(role.id).catch(() => undefined);
+        }
+        return true;
+      });
+      if (ran === null) {
+        const out = await decideOrPropose(p.id, 'advance', 'binders found');
+        expect(typeof out.proposed!.notified, 'string');
+      }
     });
   });
 

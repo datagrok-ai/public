@@ -532,7 +532,7 @@ export class PortalView {
         this.picked = {programId: program.id, off: new Set(), links: []};
         if (out.proposed) {
           this.approvalLine.set(program.id, out.proposed.line);
-          grok.shell.info(out.proposed.line);
+          grok.shell.info([out.proposed.line, ...(out.proposed.notified ? [`Approvers: ${out.proposed.notified}`] : [])].join('\n'));
           await this.openProgram(program.id);
           return;
         }

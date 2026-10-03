@@ -12,7 +12,7 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {ApprovalRequestRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isApprover, isContributor, programContext, recordDecision, RecordedDecision, verdictFor} from './portal';
-import {programAccess} from './program-roles';
+import {programAccess, rolesOf} from './program-roles';
 import {notifyUser} from './notify';
 // evidence.ts and snapshots.ts reach portal.ts, which does not import this file
 import {suggestedEvidence} from './evidence';
@@ -23,8 +23,8 @@ import {describeDocument} from './model/documents';
 import {EvidenceItem} from './model/evidence';
 import {Decision} from './model/gates';
 import {
-  approvalOf, approvalsNeeded, checkProposal, checkReview, checkWithdraw, decisionTitle, describeProgress, RequestKind,
-  RequestRef, Review, reviewsOf, ReviewVerdict, statusAfter, waitingFor,
+  approvalOf, approvalsNeeded, approversToTell, checkProposal, checkReview, checkWithdraw, decisionTitle, describeProgress,
+  RequestKind, RequestRef, requestNotice, Review, reviewsOf, ReviewVerdict, statusAfter, waitingFor,
 } from './model/approvals';
 import {newestFirstBy, oldestFirstBy} from './model/time';
 import {filterValue, ROW_LIMIT} from './rows';
@@ -50,6 +50,62 @@ async function requestsFor(kind: RequestKind, target: string): Promise<ApprovalR
 export interface Proposal {
   request: ApprovalRequestRow;
   line: string;
+  /** How telling the approvers went: `2 of 2 approver(s) notified`. */
+  notified?: string;
+}
+
+/** Groups are walked this deep for their users: a group of groups of users. */
+const GROUP_DEPTH = 4;
+
+/** The users in [groupIds], nested groups included, by user id. */
+async function usersOfGroups(groupIds: string[]): Promise<string[]> {
+  const users: string[] = [];
+  const seen = new Set<string>();
+  let frontier = groupIds;
+  for (let depth = 0; depth < GROUP_DEPTH && frontier.length; depth++) {
+    const next: string[] = [];
+    for (const id of frontier) {
+      if (seen.has(id))
+        continue;
+      seen.add(id);
+      const g = await grok.dapi.groups.find(id).catch(() => null);
+      if (!g)
+        continue;
+      if (g.personal) {
+        const u = await grok.dapi.groups.getUser(g).catch(() => null);
+        if (u)
+          users.push(u.id);
+      } else
+        next.push(...(g.members ?? []).map((m) => m.id));
+    }
+    frontier = next;
+  }
+  return users;
+}
+
+/** The users who review a request about [programId]: the portfolio's approvers group and the
+ * program's approver roles; for a model card (no program), the portfolio's approvers. */
+export async function approverUsers(portfolio: PortfolioRow, programId: string | null): Promise<string[]> {
+  const roles = programId ? (await rolesOf(programId).catch(() => [])).filter((r) => r.role === 'approver') : [];
+  return usersOfGroups([portfolio.approvers, ...roles.map((r) => r.group_id)].filter((x): x is string => !!x));
+}
+
+/** Tells the approvers of [request], in the platform's notifications, that it waits for them. The
+ * proposer is not told. Never throws: says how it went. The server lets a user notify others only
+ * when they may edit users; otherwise each approver finds it under Waiting for me. */
+export async function tellApprovers(request: ApprovalRequestRow, portfolio: PortfolioRow): Promise<string> {
+  try {
+    const me = DG.User.current();
+    const ids = approversToTell(await approverUsers(portfolio, request.program_id ?? null), me.id);
+    if (!ids.length)
+      return 'no other approver to tell';
+    const text = requestNotice(request, me.friendlyName);
+    const results = await Promise.all(ids.map((id) => notifyUser(id, text)));
+    const failed = results.find((r) => !r.ok);
+    return `${results.filter((r) => r.ok).length} of ${ids.length} approver(s) notified` + (failed ? `; ${failed.detail}` : '');
+  } catch (e: any) {
+    return `approvers not notified (${e?.message ?? e})`;
+  }
 }
 
 /** Proposes a gate decision in a portfolio that asks for approval of it. Checked like the decision
@@ -79,7 +135,8 @@ export async function proposeDecision(programId: string, decision: Decision, rat
     rationale, source: by.source ?? 'person', evidence: {items, ...(by.evidence ? {text: by.evidence} : {})},
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(config), status: 'pending'});
   const request = await portalDb.approvalRequests.get(r.id);
-  return {request, line: `${request.title}: proposed; waits for ${describeProgress(requestRef(request)).replace(/^0 of /, '')}`};
+  return {request, line: `${request.title}: proposed; waits for ${describeProgress(requestRef(request)).replace(/^0 of /, '')}`,
+    notified: await tellApprovers(request, ctx.portfolio)};
 }
 
 /** What a gate decision does: recorded at once, or proposed when the portfolio asks for approval of
@@ -119,7 +176,7 @@ export async function submitDocument(program: ProgramRow, documentId: string, ra
   // the request first, then the document: a failed insert leaves no document stuck as submitted
   await markSubmitted(r.id, () => portalDb.documents.update(doc.id, {status: 'submitted'}));
   const request = await portalDb.approvalRequests.get(r.id);
-  return {request, line: `${request.title}: submitted for approval`};
+  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, ctx.portfolio)};
 }
 
 /** Marks the target of request [id] as waiting; if that fails, the request is removed again. */
@@ -158,7 +215,7 @@ export async function submitModelCard(portfolio: PortfolioRow, modelCode: string
     status: 'pending'});
   await markSubmitted(r.id, () => portalDb.modelCards.update(card.id, {approval: 'in_review'}));
   const request = await portalDb.approvalRequests.get(r.id);
-  return {request, line: `${request.title}: submitted for approval`};
+  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, portfolio)};
 }
 
 /** Whether the current user reviews [r]: an approver of its program (portfolio or program role),

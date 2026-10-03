@@ -188,3 +188,20 @@ export function describeApproval(config: ApprovalConfig | null): string {
  * (status approved, not yet closed) and the effect is being applied. */
 export const takesEffect = (r: {status: string, closed_on?: unknown}): boolean =>
   r.status === 'pending' || (r.status === 'approved' && !r.closed_on);
+
+/** At most this many approvers are told about one new request. */
+export const MAX_APPROVERS_TOLD = 25;
+
+/** The notice an approver gets in the platform's notifications when a request starts waiting:
+ * what, who proposed it, and why. */
+export function requestNotice(r: {title: string, source?: string | null, rationale?: string | null},
+  proposer: string | null): string {
+  const by = r.source === 'data' ? 'by data' : `by ${proposer || 'someone'}`;
+  return `${r.title}: waits for your approval, proposed ${by}${r.rationale?.trim() ? ` — ${r.rationale.trim()}` : ''}`;
+}
+
+/** Who is told about a new request: each approver once, never the proposer, at most [max]. */
+export function approversToTell(approvers: (string | null | undefined)[], proposer: string | null,
+  max = MAX_APPROVERS_TOLD): string[] {
+  return [...new Set(approvers.filter((x): x is string => !!x && x !== proposer))].slice(0, max);
+}

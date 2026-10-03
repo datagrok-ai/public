@@ -450,7 +450,8 @@ export async function submitDocument(portfolio: string, program: string, path: s
   const doc = (await documentsOf(p.id)).find((d) => d.path === path.trim());
   if (!doc)
     throw new Error(`${program} has no document at ${path}`);
-  return (await submitDoc(p, doc.id, rationale || undefined)).line;
+  const r = await submitDoc(p, doc.id, rationale || undefined);
+  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : [])].join('\n');
 }
 
 //name: submitModelCard
@@ -461,7 +462,8 @@ export async function submitDocument(portfolio: string, program: string, path: s
 //input: string rationale {optional: true}
 //output: string report
 export async function submitModelCard(portfolio: string, model: string, version?: string, rationale?: string): Promise<string> {
-  return (await submitCard(await portfolioByCode(portfolio), model, version || null, rationale || undefined)).line;
+  const r = await submitCard(await portfolioByCode(portfolio), model, version || null, rationale || undefined);
+  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : [])].join('\n');
 }
 
 //name: reviewRequest
