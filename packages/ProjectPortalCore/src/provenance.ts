@@ -9,6 +9,7 @@ import {portalDb} from './generated/db';
 import {stagesOf} from './portal';
 import {datasetsOf} from './program-data';
 import {MAIN_DATASET} from './model/program-data';
+import type {RecordedSource} from './model/evidence-tables';
 import {
   Provenance, provenanceGraph, ProvenanceRecords, ProvenanceStart, PROVENANCE_STARTS, startKey, traverse,
 } from './model/provenance';
@@ -110,7 +111,8 @@ export async function provenanceRecords(programIds: string[], compound?: string)
     return s ? [{programId: a.program_id, criterionId: s.gate_criterion_id, runId: a.model_run_id}] : [];
   });
   r.documents = documents.map((d) => ({id: d.id, programId: d.program_id, title: d.title, version: d.doc_version ?? null,
-    status: d.status, criterionId: d.gate_criterion_id ?? null, path: d.path}));
+    status: d.status, criterionId: d.gate_criterion_id ?? null, path: d.path,
+    generatedFrom: ((d.generated as {sources?: RecordedSource[]} | undefined)?.sources ?? []).map((x) => ({kind: x.kind, ref: x.ref}))}));
   const scored = new Map<string, {runId: string, predicts: string, count: number}>();
   for (const p of predictions.filter((x) => x.model_run_id)) {
     const k = `${p.model_run_id}|${p.predicts}`;

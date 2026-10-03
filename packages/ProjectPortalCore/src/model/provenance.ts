@@ -9,6 +9,7 @@
  * - a run reads its input tables and the model, and writes its output tables;
  * - a run selected for a criterion feeds the documents answering that criterion (or the criterion
  *   when none does); a document answers its criterion;
+ * - a generated document rests on the run, snapshot, data conditions and decisions it was written from;
  * - every piece of a decision's evidence points at the decision; a decision moves the program.
  * Evidence is the edge, not a node: starting from a piece of evidence starts from its target.
  * Pure: the caller reads the records. */
@@ -55,7 +56,9 @@ export interface ProvenanceRecords {
   /** The run selected for a criterion: model_run row id and criterion id. */
   selections: {programId: string, criterionId: string, runId: string}[];
   documents: {id: string, programId: string, title: string, version?: string | null, status: string,
-    criterionId?: string | null, path: string}[];
+    criterionId?: string | null, path: string,
+    /** For a generated evidence table (F-40): the evidence it was written from, as it recorded it. */
+    generatedFrom?: {kind: 'run' | 'snapshot' | 'data_condition' | 'decision', ref: string}[] | null}[];
   snapshots: {id: string, programId: string, label: string, takenOn: string}[];
   criteria: {id: string, code: string, name: string, stage?: string}[];
   /** The program dataset of each program, when the portfolio declares one. */
@@ -147,6 +150,17 @@ export function provenanceGraph(r: ProvenanceRecords): ProvenanceGraph {
     if (d.criterionId && nodes.has(nodeKey('criterion', d.criterionId)))
       link(k, nodeKey('criterion', d.criterionId), 'answers');
   }
+  // a generated document rests on what it was written from: the run, the snapshot, the gate's data
+  // conditions and the decisions it lists. Only those still among the records are linked; before the
+  // selections, so the edge from the run says it was generated into the document.
+  for (const d of r.documents) {
+    for (const src of d.generatedFrom ?? []) {
+      const from = src.kind === 'run' ? nodeKey('model_run', r.runs.find((x) => x.runId === src.ref || x.id === src.ref)?.id ?? src.ref) :
+        src.kind === 'snapshot' ? nodeKey('snapshot', src.ref) : src.kind === 'data_condition' ? nodeKey('criterion', src.ref) : null;
+      if (from && nodes.has(from))
+        link(from, nodeKey('document', d.id), 'generated into');
+    }
+  }
   for (const s of r.selections) {
     const run = nodeKey('model_run', s.runId);
     if (!nodes.has(run))
@@ -162,6 +176,13 @@ export function provenanceGraph(r: ProvenanceRecords): ProvenanceGraph {
       detail: d.from || d.to ? `${d.from ?? '—'} → ${d.to ?? '—'}` : undefined});
     if (nodes.has(nodeKey('program', d.programId)))
       link(k, nodeKey('program', d.programId), 'moved');
+  }
+  // the decisions a generated document lists, now that they are nodes
+  for (const d of r.documents) {
+    for (const src of (d.generatedFrom ?? []).filter((x) => x.kind === 'decision')) {
+      if (nodes.has(nodeKey('decision', src.ref)))
+        link(nodeKey('decision', src.ref), nodeKey('document', d.id), 'generated into');
+    }
   }
   for (const e of r.evidence) {
     if (!e.decisionId || !nodes.has(nodeKey('decision', e.decisionId)))

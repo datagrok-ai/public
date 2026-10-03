@@ -59,6 +59,21 @@ category('Portal: provenance rules', () => {
     expect(g.nodes.has('criterion:c-tox'), true);
   });
 
+  test('a generated document rests on what it was written from: its run, snapshot, data conditions, decisions', async () => {
+    const r = records();
+    r.criteria.push({id: 'c-dc', code: 'titer', name: 'Titer above 2 g/L', stage: 'D5'});
+    r.documents.push({id: 'g', programId: 'p', title: 'Evidence table', version: '1', status: 'draft', criterionId: 'c-tox',
+      path: 'X:evidence.md', generatedFrom: [{kind: 'run', ref: 'call-1'}, {kind: 'snapshot', ref: 's'},
+        {kind: 'data_condition', ref: 'c-dc'}, {kind: 'decision', ref: 'y'}, {kind: 'run', ref: 'call-gone'}]});
+    const g = provenanceGraph(r);
+    const into = g.edges.filter((e) => e.to === 'document:g' && e.relation === 'generated into').map((e) => e.from).sort();
+    expect(into.join(), 'criterion:c-dc,decision:y,model_run:r,snapshot:s', 'a run no longer recorded is not linked');
+    const up = traverse(g, nodeKey('document', 'g'), 2).nodes.filter((n) => n.direction === 'up').map((n) => n.key);
+    expect(up.includes('model:Pkg:M') && up.includes('table:t1'), true, 'through the run to its model and input');
+    const down = traverse(g, nodeKey('model_run', 'r'), 1).nodes.filter((n) => n.direction === 'down').map((n) => n.key);
+    expect(down.includes('document:g'), true, 'the run leads to the table generated from it');
+  });
+
   test('a walk from a decision: what it rests on, up to the data, and the program it moved', async () => {
     const r = records();
     const g = provenanceGraph(r);

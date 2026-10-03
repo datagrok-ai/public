@@ -15,6 +15,7 @@ import {snapshotsOf, takeSnapshot} from '../snapshots';
 import {documentCardsOf, documentsOf, folderFiles} from '../documents';
 import {checkOf, evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFor} from '../evidence-tables';
 import {programFeedOf} from '../feed';
+import {provenanceOf} from '../provenance';
 import {PortalView} from '../views/portal-view';
 import {_package} from '../package-test';
 
@@ -203,6 +204,10 @@ category('Portal: evidence tables', () => {
     expect(files.filter((f) => f.startsWith('evidence-process_description-') && f.includes('-v1-')).length, 2, files.join());
     expect((await grok.dapi.files.readAsText(d.path)).includes('| Feed 4 | Feed rate | 4 | % v/v per day |'), true);
     expect((await evidenceTableOf(d)).rowCount, df.rowCount);
+    // provenance runs through the generated document: up to the run and the snapshot it was written from
+    const prov = await provenanceOf('document', d.id, 1);
+    expect(prov.nodes.filter((n) => n.direction === 'up' && n.relation === 'generated into').map((n) => n.kind).sort().join(),
+      'model_run,snapshot');
     // the card shows it, with its table
     const card = (await documentCardsOf(await programContext(program.id))).find((c) => c.code === 'process_description')!;
     expect(card.documents.map((x) => x.title).join(), 'Evidence table, Locked process description');
