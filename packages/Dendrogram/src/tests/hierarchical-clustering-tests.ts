@@ -98,6 +98,54 @@ category('hierarchicalClustering', () => {
     tv.close();
   });
 
+  async function runInitScriptClosingView(closeInApply: boolean): Promise<void> {
+    const df: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
+    df.name = 'testHCInitScript';
+    const tv: DG.TableView = grok.shell.addTableView(df);
+    await hierarchicalClusteringUI(df, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+    const grid = tv.grid;
+    const closeView = () => {
+      tv.close();
+      grok.shell.closeTable(df);
+    };
+    const find = DG.Func.find;
+    let found = false;
+    let applied: Promise<any> | null = null;
+    DG.Func.find = (params) => {
+      found = true;
+      const func = find(params)[0];
+      if (!closeInApply)
+        closeView();
+      return [{apply: (p: any) => {
+        if (closeInApply)
+          closeView();
+        return applied = func.apply(p);
+      }} as unknown as DG.Func];
+    };
+    try {
+      const viewCount = Array.from(grok.shell.tableViews).length - 1;
+      new Function('v', grid.props.onInitializedScript)(grid);
+      await awaitCheck(() => found, 'The init script did not look up hierarchicalClustering', 5000);
+      await DG.delay(100);
+      expect(applied == null, !closeInApply);
+      await applied;
+      expect(Array.from(grok.shell.tableViews).length, viewCount);
+      expect(Array.from(grok.shell.tables).some((t) => t.dart === df.dart), false);
+    } finally {
+      DG.Func.find = find;
+      tv.close();
+      grok.shell.closeTable(df);
+    }
+  }
+
+  test('UI-init-script-view-closed-before-apply', async () => {
+    await runInitScriptClosingView(false);
+  });
+
+  test('UI-init-script-view-closed-during-apply', async () => {
+    await runInitScriptClosingView(true);
+  });
+
   test('UI-no-table', async () => {
     const viewCount = Array.from(grok.shell.tableViews).length;
     await hierarchicalClusteringUI(null as unknown as DG.DataFrame, ['a', 'b'], DistanceMetric.Euclidean, 'average');
