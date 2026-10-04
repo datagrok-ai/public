@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21106: Sketcher: Fixed the "Molecule is possibly malformed" error when you press OK on a sketcher holding a SMILES that RDKit cannot parse
 * Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
 * Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
 * Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space

@@ -54,6 +54,21 @@ category('sketcher testing', () => {
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
   });
+
+  test('malformed smiles to recent', async () => {
+    const saved = localStorage.getItem(Sketcher.RECENT_KEY);
+    try {
+      const malformed = '(N(C)C)=O';
+      localStorage.setItem(Sketcher.RECENT_KEY, JSON.stringify(['CCC(N(C)C)=O', malformed]));
+      Sketcher.addToCollection(Sketcher.RECENT_KEY, malformed);
+      await awaitCheck(() => Sketcher.getCollection(Sketcher.RECENT_KEY)[0] === malformed,
+        'malformed molecule has not been added to recent', 3000);
+      expect(JSON.stringify(Sketcher.getCollection(Sketcher.RECENT_KEY)),
+        JSON.stringify([malformed, 'CCC(N(C)C)=O']));
+    } finally {
+      saved === null ? localStorage.removeItem(Sketcher.RECENT_KEY) : localStorage.setItem(Sketcher.RECENT_KEY, saved);
+    }
+  });
 });
 
 
