@@ -39,9 +39,9 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const columnCount = table.columns.length + formulas.length;
     const start = performance.now();
     view.loadLayout(DG.ViewLayout.fromJson(layout));
-    await awaitCheck(() => table.columns.length === columnCount, 'formula columns were not added', 100000, 20);
+    await awaitCheck(() => table.columns.length === columnCount, 'formula columns were not added', 60000, 20);
     df = table;
-    return await waitIdle(start);
+    return await waitIdle(start, 200, 30000);
   }
 
   async function tableWithFormulas(): Promise<DG.DataFrame> {
