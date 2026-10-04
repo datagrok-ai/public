@@ -550,7 +550,7 @@ export class AddNewColumnDialog {
       const v = saved.valueOnError;
       const value = v == null ? null : col?.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
         col?.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
-      this.errorBehavior = {useValue: value != null, value, valueType: col?.type,
+      this.errorBehavior = {useValue: value != null, value, valueType: col?.type ?? this.getErrorValueType(),
         errorColumn: !!saved.errorColName, errorColName: saved.errorColName ?? ''};
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
