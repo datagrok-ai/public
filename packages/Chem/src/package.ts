@@ -2759,7 +2759,7 @@ export class PackageFunctions {
   static removeDuplicates(molecules: string[], molecule: string): string[] {
     const mol1 = checkMoleculeValid(molecule);
     if (!mol1)
-      throw new Error(`Molecule is possibly malformed`);
+      return molecules.filter((m) => m !== molecule);
     const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
     mol1.delete();
     return filteredMolecules;
