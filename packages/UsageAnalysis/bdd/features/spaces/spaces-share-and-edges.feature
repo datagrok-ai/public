@@ -46,7 +46,7 @@ Feature: Sharing a space, and what it refuses
     And user clicks on OK button in Create Space dialog
     When user double-clicks on BDD-Share tree node inside browse tree
     Then the "BDD-Share" view should be current
-    And BDD-Share-Child link in space gallery should be visible
+    And BDD-Share-Child link in gallery should be visible
 
   Scenario: The Share dialog asks who and how much
     When user picks "Share..." from the context menu of BDD-Share tree node inside browse tree
@@ -72,7 +72,7 @@ Feature: Sharing a space, and what it refuses
   Scenario: A child space can be shared on its own
     When user double-clicks on BDD-Share tree node inside browse tree
     Then the "BDD-Share" view should be current
-    When user picks "Share..." from the context menu of BDD-Share-Child link in space gallery
+    When user picks "Share..." from the context menu of BDD-Share-Child link in gallery
     Then "Share BDD-Share-Child" dialog should be visible
     When user clicks on CANCEL button in "Share BDD-Share-Child" dialog
     Then "Share BDD-Share-Child" dialog should be hidden

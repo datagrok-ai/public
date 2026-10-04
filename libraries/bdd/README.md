@@ -287,8 +287,8 @@ list is the reference; this is the map:
   other open tables, links between tables, the filter panel's cards through its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
-- **Package functions and their results** (`platform/functions.ts`: empty, text, a number or a
-  range, methods, a list, a table, a returned column's length, rows and prefix), **custom platform events**
+- **A package function the UI offers no entry to**, called for what it shows (`platform/functions.ts`;
+  what it returns is a package test), **custom platform events**
   and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
   (`common/steps.ts`).
 - **The `viewers` tier** (below).

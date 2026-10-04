@@ -161,8 +161,10 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
   row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step.
-- **`expect` comes from `src/runtime/patience.js`** in every check: a `@known-failure` scenario
-  narrows it to 3 s, and a check that names its own timeout wraps it in `pollMs`.
+- **`expect` comes from `src/runtime/patience.js`** in every check — package bindings included, through
+  `@datagrok-libraries/bdd/runtime`: a `@known-failure` scenario narrows it to 3 s, a check that names its own
+  timeout wraps it in `pollMs`, and `expect.poll` reads every 100 ms, then every 250 ms, instead of Playwright's backoff to 1 s
+  (a state at 0.9 s was seen at 1.85 s).
 - **A throw inside an `expect.poll` callback ends the poll.** A read the viewer may be between
   layouts of returns `false` and keeps the reason for the failure message.
 - **Every check is one sentence naming the alternatives** (`has no "x" area; it has: …`); a
@@ -222,6 +224,18 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
   and the count arrives asynchronously: Activity on a space created a second ago is `present`,
   not `visible`, until the server has logged the creation.
+- **A navigation leaves the page as a person who chose to**: the harness accepts `beforeunload` ("Warn on
+  unsaved changes" asks once the scratchpad is dirty, and Playwright's default dismissal cancels the reload, which
+  then waits out 180 s) and dismisses every other native dialog, since a listener ends Playwright's own dismissal.
+- **The Browse tree is built once and settled**: `the browse panel is open` builds the panel only when it is not
+  on the page — a rebuild reopens its groups, whose rows arrive under the next gesture — and waits for the groups
+  still fetching children (`settleBrowseTree`, shared with the Refresh); `user expands` waits for the children of a
+  group it finds open too. A double click and a context menu still check what they reached and aim again at a
+  row that moved (a Recent group taking the view just closed), and the menu aims at the match a pointer can
+  reach (`onReachable`): Favorites under My stuff repeats a space's row under the My stuff row.
+- **A query run from a link or an icon is awaited to its end** (`user clicks on … and the query it runs completes`,
+  `armQuery`): Run query... shows its result view at once and opens it again when the call ends if no view shows it,
+  so a view closed in between comes back.
 - **Escape goes to the topmost dialog** (`press`): the dialog closes on a keydown inside its own
   root, and the focus is not reliably there (the grid's 1 s timer, a menu that just closed).
 - **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
@@ -253,7 +267,8 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
+  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`, by `the Sticky Meta schema … and entity type … are
+  removed now and at feature end` (a schema has no creation date: the name's own suffix dates it)
   (the server stamps `createdOn` when it saves an entity, whatever the client set, so a claim about
   what was made since a step compares with the server's clock, `serverNow`, less a margin for the
   proxy's clock), by the project save (`isStaleFixture`, platform/steps.ts), and once per worker

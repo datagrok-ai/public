@@ -8,7 +8,7 @@ import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {exactText} from './locate.js';
 import {evaluate} from './viewer-runtime.js';
-import {onViewer} from './viewers.js';
+import {onReachable, onViewer} from './viewers.js';
 import * as guide from './guide.js';
 
 const POPUP = '.d4-menu-popup';
@@ -53,7 +53,7 @@ export async function openContextMenuAt(page: Page, x: number, y: number): Promi
  * right-click reached, and a click that missed the element is aimed again. */
 export async function openContextMenuOf(page: Page, target: ElementRef, area?: string): Promise<Locator> {
   for (let attempt = 1; ; attempt++) {
-    const {x, y, token} = await onViewer(page, target, (el, [a, cap]) => {
+    const {x, y, token} = await onReachable(page, target, (el, [a, cap]) => {
       const w = window as any;
       w.__bddMenuHit = undefined;
       document.addEventListener('contextmenu', (e) => { w.__bddMenuHit = el.contains(e.target as Node); }, {capture: true, once: true});

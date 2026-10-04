@@ -32,8 +32,8 @@ Feature: What the context panel says about a space
     Then the "Create Space" dialog should close
     When user double-clicks on BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
-    And BDD-CP-One link in space gallery should be visible
-    And BDD-CP-Two link in space gallery should be visible
+    And BDD-CP-One link in gallery should be visible
+    And BDD-CP-Two link in gallery should be visible
 
   Scenario: Selecting a space shows its details
     When user clicks on BDD-CP-Root tree node inside browse tree
@@ -56,11 +56,11 @@ Feature: What the context panel says about a space
   Scenario: Clicking one child, then the other, switches the panel
     When user double-clicks on BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
-    When user clicks on BDD-CP-One link in space gallery
+    When user clicks on BDD-CP-One link in gallery
     Then the context panel should show "BDD-CP-One"
-    When user clicks on BDD-CP-Two link in space gallery
+    When user clicks on BDD-CP-Two link in gallery
     Then the context panel should show "BDD-CP-Two"
     And context panel should not contain text "BDD-CP-One"
-    When user clicks on BDD-CP-One link in space gallery
+    When user clicks on BDD-CP-One link in gallery
     Then the context panel should show "BDD-CP-One"
     And context panel should not contain text "BDD-CP-Two"

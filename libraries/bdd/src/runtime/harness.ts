@@ -177,6 +177,10 @@ export function watchErrors(page: Page): void {
   });
   page.on('pageerror', (e) => list.push(String(e)));
   page.on('crash', () => crashed.add(page));
+  // A reload or a sign-in leaves the page the way a person who chose to does: "Warn on unsaved changes" asks
+  // through beforeunload, and dismissing it, Playwright's default, cancels the navigation, which then waits
+  // out its timeout. A listener ends that default for every dialog, so the others are dismissed here.
+  page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => undefined));
 }
 
 /** The errors logged since the last call (or since the page opened), and clears them. */

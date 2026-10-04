@@ -11,14 +11,15 @@ Feature: An entity type and a metadata schema, from creation to deletion
   a search for its name. The type matches molecules ("semtype=molecule"), as the case asks.
 
   Everything is made through the UI under names unique to the run, and the last two scenarios
-  delete it through the UI as well; a journey runs them even when an earlier scenario failed. What
-  the library does not have yet — reading the type and the schema back from the server, and sweeping
-  them at the feature's start and end — is listed in sticky-meta/MISSING.md, as are the property
+  delete it through the UI as well; a journey runs them even when an earlier scenario failed, and the
+  Background's sweep removes both at feature end and an earlier run's after an hour. Reading the type
+  and the schema back from the server is listed in sticky-meta/MISSING.md, as are the property
   types the Edit dialog shows (the case's "rating/int, notes/string…" is claimed for the names and
   the order only).
 
   Background:
     Given user is logged in
+    And the Sticky Meta schema "bdd-sm-schema-{time}" and entity type "bdd-sm-type-{time}" are removed now and at feature end
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree

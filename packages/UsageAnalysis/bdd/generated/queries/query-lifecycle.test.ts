@@ -9,7 +9,6 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -18,6 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, followingShouldBe, holdsCode, isExpanded, replaceCode, shouldBe, shouldContainText, shouldHaveValue, textAreaHolds} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickRunsQuery} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeCurrentView, contextPanelOpen, contextPanelShows, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, refreshBrowse, toolboxPaneHidden, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -43,7 +43,7 @@ test.describe("A SQL query from creation to deletion", () => {
       await session.step(34, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
       await session.step(35, "And the \"rows\" reading of grid should be 77", () => readingIs(page, "rows", el("grid"), 77));
       await session.step(36, "Given the toolbox pane is shown", () => toolboxPaneShown(page));
-      await session.step(37, "When user clicks on \"Run query...\" action in toolbox", () => clickOn(page, el("\"Run query...\" action in toolbox")));
+      await session.step(37, "When user clicks on \"Run query...\" action in toolbox and the query it runs completes", () => clickRunsQuery(page, el("\"Run query...\" action in toolbox")));
       await session.step(38, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
       await session.step(39, "And the table should have 77 rows", () => rowCount(page, 77));
       await session.step(40, "When user closes the current view", () => closeCurrentView(page));

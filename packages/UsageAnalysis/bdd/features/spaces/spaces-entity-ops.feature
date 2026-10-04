@@ -72,16 +72,16 @@ Feature: Working with what a space holds
       And TSLA.csv link in gallery should be absent
 
     Scenario: The search inside a space filters what it holds
-      When user enters "acidiq" into space search
+      When user enters "acidiq" into gallery search
       Then acidiq.csv link in gallery should be visible
       And BDD-Ops-renamed link in gallery should be absent
-      When user enters "aci" into space search
+      When user enters "aci" into gallery search
       Then acidiq.csv link in gallery should be visible
       And BDD-Ops-renamed link in gallery should be absent
-      When user enters "zzz-no-such-file" into space search
+      When user enters "zzz-no-such-file" into gallery search
       Then acidiq.csv link in gallery should be absent
       And BDD-Ops-renamed link in gallery should be absent
-      When user clears space search
+      When user clears gallery search
       Then acidiq.csv link in gallery should be visible
       And BDD-Ops-renamed link in gallery should be visible
 

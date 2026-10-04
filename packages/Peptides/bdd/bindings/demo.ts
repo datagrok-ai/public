@@ -1,4 +1,5 @@
-import {expect, type Page} from '@playwright/test';
+import {type Page} from '@playwright/test';
+import {expect} from '@datagrok-libraries/bdd/runtime';
 import {Then} from '@datagrok-libraries/bdd';
 
 declare const DG: any;
