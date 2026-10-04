@@ -107,6 +107,21 @@ category('Shell', () => {
     expect(grok.shell.project.isDirty, false);
   }, {skipReason: nodeSkip});
 
+  test('createByType', async () => {
+    const host = ui.div();
+    for (const type of DG.View.ALL_VIEW_TYPES)
+      host.appendChild(DG.View.createByType(type).root);
+    expect(host.children.length, DG.View.ALL_VIEW_TYPES.length);
+    let error = '';
+    try {
+      DG.View.createByType('unknown-view-type');
+    }
+    catch (e: any) {
+      error = `${e?.message ?? e}`;
+    }
+    expect(error.includes('Unknown view type: unknown-view-type'), true);
+  }, {skipReason: nodeSkip});
+
   test('sideBar', async () => {
     grok.shell.sidebar.addPane('testSideBarElement', ()=>ui.div());
     let pane = document.querySelector('[name="testSideBarElement"]');
