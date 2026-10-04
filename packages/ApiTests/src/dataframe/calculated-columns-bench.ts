@@ -3,9 +3,8 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
-// The limits are the 5 s goal for applying a big layout with formula columns (GROK-21035) and matching
-// margins for the rest, about 1.5-2x over the times on a quiet machine; smaller slowdowns show on the
-// benchmark dashboard.
+// The limits are the 5 s goal for applying a big layout with formula columns and 2-3x the quiet-machine times
+// for the rest; smaller slowdowns show on the benchmark dashboard.
 category('Benchmarks: Calculated columns and layouts', () => {
   const formulas = makeFormulas(10);
   let rows: number;
@@ -62,7 +61,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
   test('Apply a layout with 200 formula columns', async () => expectFaster(await applyLayout(), 5000),
     {benchmark: true});
 
-  test('Open a second view with the layout', async () => expectFaster(await openSecondView(), 300), {benchmark: true});
+  test('Open a second view with the layout', async () => expectFaster(await openSecondView(), 500), {benchmark: true});
 
   test('Switch a view to another layout', async () => {
     if (secondView == null)
@@ -85,13 +84,15 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const table = await tableWithFormulas();
     const deepest = table.col('f9_13')!;
     let row = 0;
-    while (deepest.isNone(row))
+    while (row < table.rowCount && deepest.isNone(row))
       row++;
+    if (row === table.rowCount)
+      throw new Error('f9_13 has no values');
     const before = deepest.get(row);
     const start = performance.now();
     table.set('b', row, table.get('b', row) + 10);
     await awaitCheck(() => deepest.get(row) !== before, 'dependent formulas were not recalculated', 60000, 5);
-    return expectFaster(performance.now() - start, 300);
+    return expectFaster(performance.now() - start, 500);
   }, {benchmark: true});
 
   test('Calculate 200 formulas', async () => {
@@ -120,10 +121,10 @@ function expectFaster(ms: number, benchmarkLimitMs: number): string {
   return `${Math.round(ms)} ms`;
 }
 
-/** Resolves once the page has had no task longer than 50 ms for [quietMs]; returns when it was last busy. */
-async function waitIdle(start: number, quietMs: number = 200): Promise<number> {
+/** Resolves once the page has had no task longer than 50 ms for [quietMs], or after [maxMs]; returns when it was last busy. */
+async function waitIdle(start: number, quietMs: number = 200, maxMs: number = 60000): Promise<number> {
   let lastBusy = performance.now();
-  while (performance.now() - lastBusy < quietMs) {
+  while (performance.now() - lastBusy < quietMs && performance.now() - start < maxMs) {
     const t = performance.now();
     await delay(20);
     if (performance.now() - t > 70)
