@@ -140,8 +140,8 @@ function makeTable(rowCount: number): DG.DataFrame {
     {length: rowCount}, () => random() < emptyShare ? DG.FLOAT_NULL : Math.round(random() * 10000) / 100));
   const ints = (name: string, emptyShare: number) => DG.Column.fromInt32Array(name,
     Int32Array.from({length: rowCount}, () => random() < emptyShare ? DG.INT_NULL : (random() * 1000) | 0));
-  const categories = (name: string, values: string[]) => DG.Column.fromIndexes(name, values,
-    Int32Array.from({length: rowCount}, () => (random() * values.length) | 0));
+  const categories = (name: string, values: string[]) => DG.Column.fromStrings(name,
+    Array.from({length: rowCount}, () => values[(random() * values.length) | 0]));
   const flags = Array.from({length: rowCount}, () => random() < 0.5);
   const dates = Array.from({length: rowCount},
     () => random() < 0.75 ? null : dayjs(Date.UTC(2015, 0, 1) + random() * 3e11));

@@ -650,7 +650,7 @@ export class AddNewColumnDialog {
   createErrorValueInput(onChanged: () => void): DG.InputBase<ErrorValue | null> {
     const b = this.errorBehavior;
     const type = this.getErrorValueType();
-    if (b.valueType !== type)
+    if (b.valueType != null && b.valueType !== type)
       b.value = type === DG.COLUMN_TYPE.BOOL ? false : null;
     b.valueType = type;
     const onValueChanged = (v: ErrorValue | null) => {
