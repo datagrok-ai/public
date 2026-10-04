@@ -125,7 +125,7 @@ type ErrorBehaviorParam = {valueOnError?: number | string | boolean, errorColNam
 type ErrorBehaviorSettings = {
   useValue: boolean,
   value: ErrorValue | null,
-  /** The column type [value] was entered for; a value of another type is not used. */
+  /** The column type [value] was entered for; a value of another type is not used. Unset for a value a call brought. */
   valueType?: string,
   errorColumn: boolean,
   errorColName: string,
@@ -550,7 +550,7 @@ export class AddNewColumnDialog {
       const v = saved.valueOnError;
       const value = v == null ? null : col?.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
         col?.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
-      this.errorBehavior = {useValue: value != null, value, valueType: col?.type ?? this.getErrorValueType(),
+      this.errorBehavior = {useValue: value != null, value, valueType: col?.type,
         errorColumn: !!saved.errorColName, errorColName: saved.errorColName ?? ''};
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
@@ -569,7 +569,7 @@ export class AddNewColumnDialog {
   /** The value that failed rows get; null when they are left empty. */
   getErrorValue(): ErrorValue | null {
     const b = this.errorBehavior;
-    return b.useValue && b.value != null && b.valueType === this.getErrorValueType() ? b.value : null;
+    return b.useValue && b.value != null && (b.valueType == null || b.valueType === this.getErrorValueType()) ? b.value : null;
   }
 
   /** [getErrorValue] as a column stores it: the date input edits local time, and date columns keep the time as UTC. */

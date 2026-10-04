@@ -39,7 +39,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const columnCount = table.columns.length + formulas.length;
     const start = performance.now();
     view.loadLayout(DG.ViewLayout.fromJson(layout));
-    await awaitCheck(() => table.columns.length === columnCount, 'formula columns were not added', 300000, 20);
+    await awaitCheck(() => table.columns.length === columnCount, 'formula columns were not added', 100000, 20);
     df = table;
     return await waitIdle(start);
   }
@@ -88,10 +88,10 @@ category('Benchmarks: Calculated columns and layouts', () => {
       row++;
     if (row === table.rowCount)
       throw new Error('f9_13 has no values');
-    const before = deepest.get(row);
+    const was = deepest.get(row);
     const start = performance.now();
     table.set('b', row, table.get('b', row) + 10);
-    await awaitCheck(() => deepest.get(row) !== before, 'dependent formulas were not recalculated', 60000, 5);
+    await awaitCheck(() => deepest.get(row) !== was, 'dependent formulas were not recalculated', 60000, 5);
     return expectFaster(performance.now() - start, 500);
   }, {benchmark: true, timeout: 120000});
 
