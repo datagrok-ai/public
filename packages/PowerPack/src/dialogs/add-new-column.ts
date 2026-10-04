@@ -543,12 +543,14 @@ export class AddNewColumnDialog {
       return;
     const col = this.edit ? this.sourceDf!.col(this.call.getParamValue('name')) : null;
     this.initialErrorBehavior = col?.getTag(DG.Tags.FormulaErrorBehavior) || null;
-    if (col && this.initialErrorBehavior) {
-      const saved: ErrorBehaviorParam = JSON.parse(this.initialErrorBehavior);
+    // an edit starts from the column's tag, an add from what the call it was opened with already carries
+    const saved: ErrorBehaviorParam | null = this.initialErrorBehavior ? JSON.parse(this.initialErrorBehavior) :
+      this.edit ? null : this.call.getParamValue('errorBehavior') ?? null;
+    if (saved) {
       const v = saved.valueOnError;
-      const value = v == null ? null : col.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
-        col.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
-      this.errorBehavior = {useValue: value != null, value, valueType: col.type,
+      const value = v == null ? null : col?.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
+        col?.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
+      this.errorBehavior = {useValue: value != null, value, valueType: col?.type,
         errorColumn: !!saved.errorColName, errorColName: saved.errorColName ?? ''};
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
