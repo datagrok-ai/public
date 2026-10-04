@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject, Observable, interval} from 'rxjs';
 import $ from 'cash-dom';
 import { _package } from '../../../package';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -55,7 +55,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', this.getMenuItem('Chem', true));
+    'Activity Cliffs', () => this.getMenuItem('Chem', true));
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>
@@ -88,9 +88,10 @@ export class ActivityCliffsTutorial extends Tutorial {
     await this.action('Hover over data points for molecule information',
       grok.events.onTooltipShown.pipe(filter(() => v.root.matches(':hover'))));
 
-    await this.action('To view only the cliffs, toggle Show only cliffs.', new Observable((subscriber: any) => {
-      $('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $('.ui-input-switch').get(0));
+    // the switch filters the table to the cliffs and says so in a tag; any other switch on the page does not
+    await this.action('To view only the cliffs, toggle Show only cliffs.',
+      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))),
+      () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null);
 
     this.title('Zoom in on the area of interest', true);
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents

@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {type Locator, type Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
+import {cssString, escapeRegExp, exactText, locateActionable as locate, reachable, refOf, withAttr} from './locate.js';
 import * as guide from './guide.js';
 
 // a real control before the generic `.ui-input-editor`: a Dart float input puts a `div.ui-input-editor`
@@ -56,10 +56,31 @@ export async function click(page: Page, target: ElementRef): Promise<void> {
   await loc.click();
 }
 
+/** A list that reflows between the two clicks (a tree whose groups above it are still filling in, a Recent group
+ * taking the view just closed) puts another row under the second click, and that row gets the double click: the
+ * gesture arms a check of what the double click reached, and one that missed the element is aimed again, as a
+ * person would double-click again on the row they meant. A third miss fails, naming what it reached. */
 export async function dblclick(page: Page, target: ElementRef): Promise<void> {
-  const loc = await locate(page, target);
-  await approach(page, loc);
-  await loc.dblclick();
+  for (let attempt = 1; ; attempt++) {
+    const loc = await reachable(page, target);
+    await approach(page, loc);
+    await loc.evaluate((el) => {
+      const w = window as any;
+      w.__bddDblHit = undefined;
+      document.addEventListener('dblclick', (e) => {
+        const t = e.target as Element;
+        const named = t.closest?.('[name]');
+        w.__bddDblHit = el.contains(t) ||
+          `${named ? `[name="${named.getAttribute('name')}"]` : t.tagName?.toLowerCase()} "${(t.textContent ?? '').trim().slice(0, 40)}"`;
+      }, {capture: true, once: true});
+    });
+    await loc.dblclick();
+    const hit = await page.evaluate(() => (window as any).__bddDblHit);
+    if (hit === true || hit === undefined)
+      return;
+    if (attempt === 3)
+      throw new Error(`the double click on ${target.phrase} reached ${hit} instead, three times: the rows kept moving under the pointer`);
+  }
 }
 
 export async function rightclick(page: Page, target: ElementRef): Promise<void> {
@@ -296,8 +317,10 @@ export async function press(page: Page, key: string): Promise<void> {
  * over whatever landed. Enter is pressed ON the box, because the grid moves the focus while it
  * filters. */
 export async function typeInColumnGrid(page: Page, option: string, what: string, selector?: Locator): Promise<Locator> {
-  // a picker another selector left hidden in the page (a closed dialog's) is not the one this opened
-  const popup = page.locator('.d4-column-grid').filter({visible: true}).last();
+  // the picker's column grid holds the backdrop grid; a column list on the page (the Aggregation
+  // Editor's, the column manager) is a column grid too, and must not be taken for it; nor is a picker
+  // another selector left hidden in the page (a closed dialog's)
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 10000});
   await (selector ? selector.press(option[0]) : page.keyboard.press(option[0]));
   const search = page.locator('input.d4-column-selector-search-input');
@@ -367,7 +390,7 @@ export async function openColumnSelector(page: Page, selector: Locator, leave = 
 /** A guide's pointer steps just off the selector, clear of the picker it opened: the page's corner,
  * where a test's goes, is a flight across the video and back. */
 async function besidePicker(page: Page, box: guide.GuideBox): Promise<{x: number; y: number}> {
-  const popup = page.locator('.d4-column-grid').filter({visible: true}).last();
+  const popup = page.locator('.d4-column-grid:has(.d4-column-selector-backdrop)').filter({visible: true}).last();
   await popup.waitFor({state: 'visible', timeout: 5000}).catch(() => undefined);
   const picker = await popup.boundingBox().catch(() => null);
   const view = page.viewportSize() ?? {width: 1920, height: 1080};
@@ -503,6 +526,15 @@ export async function focus(page: Page, target: ElementRef): Promise<void> {
 }
 
 export async function pressIn(page: Page, target: ElementRef, key: string): Promise<void> {
+  // a d4 grid (the spreadsheet, a categorical filter card) listens for keys on its overlay canvas,
+  // which is what a click focuses: the element's root never sees them. Other viewers have an overlay
+  // too (the box plot's T) and listen on their root, so only the grid's — beside its scroll bars — counts
+  const overlay = (await locate(page, target)).locator(':has(> .d4-grid-horz-scroll) > canvas[name="overlay"]')
+    .filter({visible: true}).first();
+  if (await overlay.count() > 0) {
+    await overlay.press(normalizeKey(key));
+    return;
+  }
   await (await editorOf(page, target)).press(normalizeKey(key));
 }
 
@@ -542,18 +574,19 @@ export function readChildrenState(loc: Locator): Promise<string | null> {
 
 /** Reads where the element is first, so a tree row that is already open stays open — without
  * that, "user expands" would close it. An expanded Dart group is also waited for until its
- * children are loaded (or their fetch failed), so the step after can address them. */
+ * children are loaded (or their fetch failed), so the step after can address them — one found
+ * open too: a rebuilt tree reopens its groups and refetches their children. */
 export async function setExpanded(page: Page, target: ElementRef, expanded: boolean): Promise<void> {
   const self = (await locate(page, target)).first();
-  if (await readExpanded(self) === expanded)
-    return;
-  const inner = self.locator('[aria-expanded]').first();
-  const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
-  // a tree row selects on click and toggles on its twistie
-  const twistie = control.locator(TWISTIE).first();
-  await (await twistie.count() > 0 ? twistie : control).click();
-  await expect.poll(() => readExpanded(self),
-    {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+  if (await readExpanded(self) !== expanded) {
+    const inner = self.locator('[aria-expanded]').first();
+    const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
+    // a tree row selects on click and toggles on its twistie
+    const twistie = control.locator(TWISTIE).first();
+    await (await twistie.count() > 0 ? twistie : control).click();
+    await expect.poll(() => readExpanded(self),
+      {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+  }
   if (expanded)
     await expect.poll(() => readChildrenState(self), {message: `the children of ${target.phrase} after expanding it`}).not.toBe('loading');
 }
@@ -618,6 +651,52 @@ export async function insertLine(page: Page, target: ElementRef, text: string): 
   await page.keyboard.type(text);
   await page.keyboard.press('Enter');
   await expect(loc, `${target.phrase} after the line was typed`).toContainText(text);
+}
+
+/** A line of a code editor (CodeMirror 5 or 6), found by how it starts — whitespace ignored, as a
+ * reader copies it — and replaced, or followed by a new line. The caret goes to the end of that line
+ * by a click there and End; the line is selected with Shift+Home, which both editors keep to the line. */
+async function caretAtLineStarting(page: Page, target: ElementRef, start: string): Promise<Locator> {
+  const loc = (await locate(page, target)).first();
+  const want = start.replace(/\s+/g, '');
+  const lines = loc.locator('.cm-line, .CodeMirror-line');
+  let line: Locator | null = null;
+  await expect.poll(async () => {
+    const texts = await lines.allTextContents();
+    const i = texts.findIndex((t) => t.replace(/\s+/g, '').startsWith(want));
+    line = i < 0 ? null : lines.nth(i);
+    return i >= 0 ? 'found' : `no line of ${target.phrase} starts with "${start}"; it has: ${texts.slice(0, 30).join(' | ')}`;
+  }, {message: `the line starting with "${start}" in ${target.phrase}`}).toBe('found');
+  await line!.click();
+  await page.keyboard.press('End');
+  return loc;
+}
+
+/** A line of the editor reads exactly the text typed: text found anywhere in the document would also pass
+ * when the typing landed elsewhere or the editor added to it. Home stops at a line's indentation, which
+ * the line keeps. */
+async function expectWholeLine(loc: Locator, text: string, what: string): Promise<void> {
+  const lines = loc.locator('.cm-line, .CodeMirror-line');
+  await expect.poll(async () => {
+    const texts = (await lines.allTextContents()).map((t) => t.replace(/\u200b/g, '').trim());
+    return texts.includes(text.trim()) ? 'found' : `it has: ${texts.slice(0, 30).join(' | ')}`;
+  }, {message: `a line of ${what} reading exactly "${text}" after its indentation`}).toBe('found');
+}
+
+export async function replaceLine(page: Page, target: ElementRef, start: string, text: string): Promise<void> {
+  const loc = await caretAtLineStarting(page, target, start);
+  await page.keyboard.press('Shift+Home');
+  await page.keyboard.type(text);
+  await expectWholeLine(loc, text, `${target.phrase} after the line was replaced`);
+}
+
+export async function insertLineAfter(page: Page, target: ElementRef, start: string, text: string): Promise<void> {
+  const loc = await caretAtLineStarting(page, target, start);
+  await page.keyboard.press('Enter');
+  // an editor that indents or closes brackets on Enter would change the typed line; start it clean
+  await page.keyboard.press('Shift+Home');
+  await page.keyboard.type(text);
+  await expectWholeLine(loc, text, `${target.phrase} after the line was added`);
 }
 
 /** A value set by dragging the slider of an input, not by typing into it: a real pointer press on

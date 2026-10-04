@@ -9,7 +9,6 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -20,6 +19,7 @@ import {openAction} from '../../bindings/queries.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, hoverOver, isExpanded, replaceCode, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasColumn, hasNoColumn, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
+import {clickRunsQuery} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, closeCurrentView, currentViewType, dialogCloses, noQueryOnServer, queriesOnServer, queryNoTransformations, queryTransformations, toolboxPaneShown} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noBalloons, noErrors, pickFromContextMenu, pointerAway, readingIs} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -55,7 +55,7 @@ test.describe("Transformations saved with a query", () => {
       await session.step(41, "Then 1 query named \"BDD-Q-tr-{time}\" should be on the server", () => queriesOnServer(page, 1, session.text("BDD-Q-tr-{time}")));
       await session.step(44, "And the query \"BDD-Q-tr-{time}\" on the server should have transformations containing \"doubled\"", () => queryTransformations(page, session.text("BDD-Q-tr-{time}"), "doubled"));
       await session.step(45, "Given the toolbox pane is shown", () => toolboxPaneShown(page));
-      await session.step(46, "When user clicks on \"Run query...\" action in toolbox", () => clickOn(page, el("\"Run query...\" action in toolbox")));
+      await session.step(46, "When user clicks on \"Run query...\" action in toolbox and the query it runs completes", () => clickRunsQuery(page, el("\"Run query...\" action in toolbox")));
       await session.step(47, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
       await session.step(48, "And the table should have 77 rows", () => rowCount(page, 77));
       await session.step(49, "And the table should have a column \"doubled\"", () => hasColumn(page, "doubled"));
@@ -71,7 +71,7 @@ test.describe("Transformations saved with a query", () => {
       await session.step(60, "And user clicks on last \"Remove step\" icon", () => clickOn(page, el("last \"Remove step\" icon")));
       await session.step(61, "And user clicks on Save button", () => clickOn(page, el("Save button")));
       await session.step(62, "Then the query \"BDD-Q-tr-{time}\" on the server should not have transformations containing \"doubled\"", () => queryNoTransformations(page, session.text("BDD-Q-tr-{time}"), "doubled"));
-      await session.step(63, "When user clicks on \"Run query...\" action in toolbox", () => clickOn(page, el("\"Run query...\" action in toolbox")));
+      await session.step(63, "When user clicks on \"Run query...\" action in toolbox and the query it runs completes", () => clickRunsQuery(page, el("\"Run query...\" action in toolbox")));
       await session.step(64, "Then the current view should be a TableView view", () => currentViewType(page, "TableView"));
       await session.step(65, "And the table should have 77 rows", () => rowCount(page, 77));
       await session.step(66, "And the table should not have a column \"doubled\"", () => hasNoColumn(page, "doubled"));

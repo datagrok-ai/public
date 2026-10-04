@@ -118,6 +118,7 @@ class TutorialCard {
 
     (async () => {
       await tutorial.updateStatus();
+      this.root.dataset.status = tutorial.status == true ? 'done' : 'not done';
       if (tutorial.status == true) {
         $(icon).show();
         $(title).css('color', 'var(--grey-4)');
@@ -138,6 +139,8 @@ class TutorialCard {
       icon,
     ], 'tutorials-card');
     this.root.setAttribute('data-name', tutorial.name);
+    this.root.setAttribute('role', 'button');
+    this.root.setAttribute('aria-label', tutorial.name);
   }
 }
 

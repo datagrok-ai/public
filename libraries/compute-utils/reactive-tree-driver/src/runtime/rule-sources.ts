@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleSource} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
@@ -76,7 +77,7 @@ function resolveValidators(
 }
 
 export type ChoicesVerdict = {
-  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null,
+  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null, rowErrors: string[],
 };
 type ChoicesResult = Awaited<ReturnType<DG.FuncCall['evalParamChoices']>>;
 type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResult>, landed?: ChoicesResult};
@@ -86,12 +87,61 @@ type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResul
 const choicesCache = new WeakMap<DG.FuncCall, Map<string, ChoicesEntry>>();
 let warnedNoChoices = false;
 
-function choicesVerdict(r: ChoicesResult, value: any): ChoicesVerdict {
+const notConverted = Symbol('notConverted');
+
+// mirrors the form, which parses the cell's text with the input's editor; a cell it would empty is reported
+function convertCell(cell: any, type: string): any {
+  if (cell == null)
+    return null;
+  if (type === DG.TYPE.BOOL)
+    return cell === true || cell === 'true';
+  if (cell === '' && type !== DG.TYPE.STRING)
+    return null;
+  switch (type) {
+  case DG.TYPE.INT:
+  case DG.TYPE.FLOAT:
+  case DG.TYPE.NUM: {
+    const num = typeof cell === 'number' ? cell : typeof cell === 'string' && cell.trim() ? Number(cell) : NaN;
+    return Number.isFinite(num) && (type !== DG.TYPE.INT || Number.isInteger(num)) ? num : notConverted;
+  }
+  case DG.TYPE.STRING:
+    if (typeof cell === 'string')
+      return cell;
+    return typeof cell === 'number' || typeof cell === 'boolean' ? String(cell) : notConverted;
+  case DG.TYPE.DATE_TIME: {
+    // evalParamChoices leaves datetime cells as platform objects, which toJs turns into dayjs
+    const date = typeof cell === 'string' || typeof cell === 'number' || cell instanceof Date ? dayjs(cell) :
+      dayjs.isDayjs(cell) ? cell : DG.toJs(cell);
+    return dayjs.isDayjs(date) && date.isValid() ? date : notConverted;
+  }
+  default:
+    return cell;
+  }
+}
+
+function convertRow(call: DG.FuncCall, cells: Record<string, any>) {
+  const types = new Map(call.func.inputs.map((prop) => [prop.name.toLowerCase(), prop.propertyType as string]));
+  const row: Record<string, any> = {};
+  const rowErrors: string[] = [];
+  for (const [column, cell] of Object.entries(cells)) {
+    const type = types.get(column.toLowerCase());
+    const value = type ? convertCell(cell, type) : cell;
+    if (value === notConverted)
+      rowErrors.push(`${column}: ${JSON.stringify(cell)} is not a valid ${type}`);
+    else
+      row[column] = value;
+  }
+  return {row, rowErrors};
+}
+
+function choicesVerdict(call: DG.FuncCall, r: ChoicesResult, value: any): ChoicesVerdict {
   const key = value == null || value === '' ? undefined : String(value);
+  const cells = key === undefined ? undefined : r.lookup?.[key];
+  const {row, rowErrors} = cells ? convertRow(call, cells) : {row: null, rowErrors: []};
   return {
     items: r.items, values: r.values,
     inList: key === undefined || r.items.includes(key),
-    row: key === undefined ? null : r.lookup?.[key] ?? null,
+    row, rowErrors,
   };
 }
 
@@ -112,21 +162,30 @@ function resolveChoices(
     return undefined;
   }
   const value = controller.getFirst(spec.input);
+  const choices = evalChoices(call, io);
+  return choices instanceof Promise ?
+    choices.then((r) => choicesVerdict(call, r, value)) :
+    choicesVerdict(call, choices, value);
+}
+
+// a pending evaluation does not know its dependencies yet, so a run waits for it and checks them then
+function evalChoices(call: DG.FuncCall, io: string): ChoicesResult | Promise<ChoicesResult> {
   const byIo = choicesCache.get(call) ?? new Map<string, ChoicesEntry>();
   choicesCache.set(call, byIo);
-  let entry = byIo.get(io);
-  if (!entry || entry.deps.some((dep, idx) => call.inputs[dep] !== entry!.values[idx])) {
-    const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
-    const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
-    created.result.then((r) => {
-      created.deps = r.dependsOn;
-      created.values = r.dependsOn.map((dep) => snapshot[dep]);
-      created.landed = r;
-    }, () => byIo.delete(io));
-    byIo.set(io, created);
-    entry = created;
-  }
-  return entry.landed ? choicesVerdict(entry.landed, value) : entry.result.then((r) => choicesVerdict(r, value));
+  const entry = byIo.get(io);
+  if (entry && !entry.landed)
+    return entry.result.then(() => evalChoices(call, io));
+  if (entry?.landed && entry.deps.every((dep, idx) => call.inputs[dep] === entry.values[idx]))
+    return entry.landed;
+  const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
+  const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
+  created.result.then((r) => {
+    created.deps = r.dependsOn;
+    created.values = r.dependsOn.map((dep) => snapshot[dep]);
+    created.landed = r;
+  }, () => byIo.delete(io));
+  byIo.set(io, created);
+  return created.result;
 }
 
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
@@ -150,8 +209,10 @@ function resolveFile(path: string) {
 function isConstant(source: RuleSource) {
   if ('file' in source || 'table' in source)
     return true;
-  const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
-  return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
+  if (!('func' in source) && !('query' in source))
+    return false;
+  const args = 'func' in source ? source.func.args : source.query.args;
+  return Object.values(args ?? {}).every((expr) => !usedAliases(expr).length);
 }
 
 function resolveJs(controller: IControllerBase, spec: JsSource) {
@@ -195,7 +256,7 @@ const sourceKinds = ['validators', 'choices', 'js', 'func', 'query', 'file', 'ta
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
-  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {all: {}},
+  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
 ): Record<string, any> | Promise<Record<string, any>> {
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];

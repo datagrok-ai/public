@@ -52,11 +52,12 @@ export const checkOptionKeys: (keyof CheckOptions)[] =
   ['nullable', 'optional', 'min', 'max', 'validator', 'validators', 'visible', 'choices', 'type', 'semType', 'table', 'allowNulls'];
 
 // aliases shared by annotation-derived and config checks
+// `value` follows the platform's validator expressions; the rest are the driver's own names
 export const VALUE = 'value';
-export const TABLE = 'table';
-export const TARGET = 'target';
-export const CALL = 'call';
-const VERDICTS = 'verdicts';
+export const TABLE = '$table';
+export const TARGET = '$target';
+export const CALL = '$call';
+const VERDICTS = '$verdicts';
 
 const present = {'!': {missing: [VALUE]}};
 const value = {var: VALUE};
@@ -230,8 +231,10 @@ export function parseAnnotationChecks(prop: DG.Property): CheckOptions {
   }
   if (options.validator)
     checks.validator = options.validator;
-  if (options.visible)
-    checks.visible = options.visible;
+  // workflows hide an input the form would disable: a disable without a value has no place in data links
+  const shown = [options.visible, options.enabled].filter(Boolean);
+  if (shown.length)
+    checks.visible = shown.length > 1 ? `(${shown[0]}) && (${shown[1]})` : shown[0];
   // the platform keeps `validators` as an array; other options arrive as strings
   const validators = Array.isArray(options.validators) ? options.validators : parseChoices(options.validators);
   if (validators?.length && validators.every((name: unknown) => typeof name === 'string'))

@@ -58,7 +58,7 @@ servers:
 
 - `grok login <server>` is the way to add a server: it registers a keypair and writes the
   entry for you. The private key stays in `~/.grok/keys/<alias>.json`.
-  See [keypair authentication](../help/govern/access-control/keypair-authentication.md).
+  See [keypair authentication](https://datagrok.ai/help/govern/access-control/keypair-authentication).
 - `grok config add --alias <name> --server <url> [--key <developer-key>]` writes an entry by
   hand. The developer key is deprecated; omit it when the server is reached with a keypair.
 - Add `--default` to make it the active server.

@@ -114,7 +114,7 @@ category('ComputeUtils: Driver rule js sources', async () => {
   test('A func source calls a platform function', async () => {
     const controller = (values: Record<string, any>) => ({getFirst: (name: string) => values[name]}) as any;
     const sum = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 5}}};
-    const pending = resolveSources(controller({}), {sum}, {all: {}, x: 1});
+    const pending = resolveSources(controller({}), {sum}, {$all: {}, x: 1});
     expect(pending instanceof Promise, true);
     expectDeepEqual(await pending, {sum: 6});
     const presets = {func: {name: 'LibTests:TestPresets'}};
@@ -130,14 +130,14 @@ category('ComputeUtils: Driver rule js sources', async () => {
       sql: 'select login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {users: df} = await resolveSources(controller(), {users}, {all: {}, login: me.login}) as any;
+    const {users: df} = await resolveSources(controller(), {users}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df.col('login').toList(), [me.login]);
     const declared = {query: {
       connection: 'System:Datagrok',
       sql: '--input: string login\nselect login from users where login = @login',
       args: {login: {var: 'login'}},
     }};
-    const {declared: df2} = await resolveSources(controller(), {declared}, {all: {}, login: me.login}) as any;
+    const {declared: df2} = await resolveSources(controller(), {declared}, {$all: {}, login: me.login}) as any;
     expectDeepEqual(df2.rowCount, 1);
   });
 
@@ -211,8 +211,8 @@ category('ComputeUtils: Driver rule js sources', async () => {
       const controller = () => ({getFirst: () => undefined, sourceCache: cache}) as any;
       const fixed = {func: {name: 'LibTests:TestAdd2', args: {a: 1, b: 2}}};
       const varying = {func: {name: 'LibTests:TestAdd2', args: {a: {var: 'x'}, b: 2}}};
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 1}), {fixed: 3, varying: 3});
-      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {all: {}, x: 5}), {fixed: 3, varying: 7});
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 1}), {fixed: 3, varying: 3});
+      expectDeepEqual(await resolveSources(controller(), {fixed, varying}, {$all: {}, x: 5}), {fixed: 3, varying: 7});
       expect(calls, 3);
       expect(cache.has('fixed'), true);
       expect(cache.has('varying'), false);
@@ -221,7 +221,7 @@ category('ComputeUtils: Driver rule js sources', async () => {
     }
   });
 
-  test('A func source without args runs on every run', async () => {
+  test('A func source without args resolves once per link', async () => {
     const original = grok.functions.call;
     let calls = 0;
     (grok.functions as any).call = (name: string, params: any) => {
@@ -234,8 +234,8 @@ category('ComputeUtils: Driver rule js sources', async () => {
       const presets = {func: {name: 'LibTests:TestPresets'}};
       await resolveSources(controller(), {presets});
       await resolveSources(controller(), {presets});
-      expect(calls, 2);
-      expect(cache.has('presets'), false);
+      expect(calls, 1);
+      expect(cache.has('presets'), true);
     } finally {
       (grok.functions as any).call = original;
     }
@@ -335,5 +335,124 @@ category('ComputeUtils: Driver rule js sources', async () => {
     const list = {js: {args: ['x'], fn: (x: number) => [x]}};
     expectDeepEqual(resolveSources(controller({x: 7}), {list}), {list: [7]});
     expectDeepEqual(resolveSources(controller({x: undefined}), {list}), {list: [undefined]});
+  });
+});
+
+// evaluated choices need platform 1.28.0 or later
+category('ComputeUtils: Driver rule choices sources', async () => {
+  const cities = {c: {choices: {input: 'city', call: '$call'}}};
+  const controller = (call: DG.FuncCall) => ({
+    hasCall: () => true,
+    getFirst: (name: string) => name === '$call' ? call : call.inputs[name],
+    getMatchedPositions: () => [{path: [], position: 0, ioName: 'city'}],
+  }) as any;
+  const items = async (call: DG.FuncCall): Promise<string[]> => (await resolveSources(controller(call), cities)).c.items;
+  const prepare = (region: string) => DG.Func.byName('LibTests:TestCountingChoices').prepare({region, n: 1});
+
+  test('Choices are evaluated again only when a dependency changes', async () => {
+    const call = prepare('FR');
+    const [first] = await items(call);
+    call.inputs['n'] = 2;
+    expectDeepEqual(await items(call), [first]);
+    call.inputs['region'] = 'DE';
+    const [changed] = await items(call);
+    expect(changed.startsWith('DE-'), true);
+    call.inputs['region'] = 'FR';
+    const [back] = await items(call);
+    expect(back.startsWith('FR-') && back !== first, true);
+  });
+
+  test('Steps of one function keep their own choices', async () => {
+    const frCall = prepare('FR');
+    const usCall = prepare('US');
+    const [fr] = await items(frCall);
+    const [us] = await items(usCall);
+    expect(fr.startsWith('FR-') && us.startsWith('US-'), true);
+    expectDeepEqual(await items(frCall), [fr]);
+  });
+});
+
+type Deferred<T> = {promise: Promise<T>, resolve: (value: T) => void, reject: (error: any) => void};
+
+function deferred<T>(): Deferred<T> {
+  let resolve!: (value: T) => void;
+  let reject!: (error: any) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return {promise, resolve, reject};
+}
+
+// a FuncCall stand-in whose evaluations wait until the test answers them
+function stubChoicesCall(inputs: Record<string, any>) {
+  const evaluations: {region: string, answer: Deferred<any>}[] = [];
+  let started = deferred<void>();
+  const call = {
+    inputs,
+    func: {inputs: Object.keys(inputs).map((name) => ({name}))},
+    evalParamChoices: () => {
+      const answer = deferred<any>();
+      evaluations.push({region: inputs.region, answer});
+      started.resolve();
+      started = deferred<void>();
+      return answer.promise;
+    },
+  } as unknown as DG.FuncCall;
+  return {
+    call,
+    evaluations,
+    nextEvaluation: () => started.promise,
+    answer: (idx: number) => evaluations[idx].answer.resolve(
+      {items: [`${evaluations[idx].region}-${idx}`], values: {}, lookup: null, dependsOn: ['region']}),
+    fail: (idx: number) => evaluations[idx].answer.reject(new Error('Choices failed')),
+  };
+}
+
+category('ComputeUtils: Driver rule choices in flight', async () => {
+  const cities = {c: {choices: {input: 'city', call: '$call'}}};
+  const controller = (call: DG.FuncCall) => ({
+    hasCall: () => true,
+    getFirst: (name: string) => name === '$call' ? call : call.inputs[name],
+    getMatchedPositions: () => [{path: [], position: 0, ioName: 'city'}],
+  }) as any;
+  const items = async (call: DG.FuncCall): Promise<string[]> => (await resolveSources(controller(call), cities)).c.items;
+
+  test('A dependency change during an evaluation evaluates again', async () => {
+    const {call, evaluations, nextEvaluation, answer} = stubChoicesCall({region: 'EU', n: 1});
+    const inFlight = items(call);
+    call.inputs['region'] = 'US';
+    const latest = items(call);
+    const second = nextEvaluation();
+    answer(0);
+    await second;
+    answer(1);
+    expectDeepEqual(await latest, ['US-1']);
+    expectDeepEqual(await inFlight, ['EU-0']);
+    expectDeepEqual(await items(call), ['US-1']);
+    expect(evaluations.length, 2);
+  });
+
+  test('An unrelated change during an evaluation shares it', async () => {
+    const {call, evaluations, answer} = stubChoicesCall({region: 'EU', n: 1});
+    const inFlight = items(call);
+    call.inputs['n'] = 2;
+    const shared = items(call);
+    answer(0);
+    expectDeepEqual(await shared, ['EU-0']);
+    expectDeepEqual(await inFlight, ['EU-0']);
+    expect(evaluations.length, 1);
+  });
+
+  test('A failed evaluation fails its waiters and the next run evaluates again', async () => {
+    const {call, evaluations, answer, fail} = stubChoicesCall({region: 'EU', n: 1});
+    const runs = Promise.allSettled([items(call), items(call)]);
+    fail(0);
+    const errors = (await runs).map((run) => run.status === 'rejected' ? run.reason.message : run.status);
+    expectDeepEqual(errors, ['Choices failed', 'Choices failed']);
+    const retry = items(call);
+    answer(1);
+    expectDeepEqual(await retry, ['EU-1']);
+    expect(evaluations.length, 2);
   });
 });

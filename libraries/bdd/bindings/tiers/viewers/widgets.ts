@@ -13,6 +13,7 @@ import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
 import {el} from '../../../src/runtime/args.js';
+import {atFeatureEnd} from '../../../src/runtime/harness.js';
 import {cssString, exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as guide from '../../../src/runtime/guide.js';
@@ -271,6 +272,44 @@ export const pickInColumnSelector = When('user picks {string} in the {string} co
     await expect(selector.locator('.d4-column-selector-column')).toHaveText(column, {timeout: pollMs(5000)});
     await settle(page, target);
   }, {tier: 'ui', description: 'the column re-picked on the chart itself, the way a user re-picks it'});
+
+/* The trellis plot's axis selectors all carry the same empty name (`div-column-combobox-`), so they
+   are told apart by the hit area each one reports (`x selector 1`, `y selector 2`). */
+export const pickInAreaSelector = When('user picks {string} in the column selector at the {string} area of {widget}',
+  async (page: Page, column: string, area: string, target: ElementRef) => {
+    const c = v.centerOf(await v.hitArea(page, target, area, true));
+    const loc = await v.viewerLocator(page, target);
+    const found = await loc.evaluate((root, p) => {
+      for (const marked of Array.from(document.querySelectorAll('[data-bdd-selector]')))
+        marked.removeAttribute('data-bdd-selector');
+      for (const s of Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]) {
+        const r = s.getBoundingClientRect();
+        if (p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom) {
+          s.setAttribute('data-bdd-selector', '');
+          return true;
+        }
+      }
+      return false;
+    }, c);
+    if (!found)
+      throw new Error(`${target.phrase}: no column selector lies under its "${area}" area`);
+    const selector = loc.locator('[data-bdd-selector]');
+    await guide.located(page, selector);
+    await g.openColumnSelector(page, selector, false);
+    await g.pickInColumnGrid(page, column, `the column selector at the "${area}" area of ${target.phrase}`, selector);
+    // the viewer rebuilds its selectors after a pick: read the one that now lies under the area
+    await expect.poll(async () => {
+      const at = v.centerOf(await v.hitArea(page, target, area, true));
+      return loc.evaluate((root, p) => {
+        const s = (Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]).find((e) => {
+          const r = e.getBoundingClientRect();
+          return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+        });
+        return s?.querySelector('.d4-column-selector-column')?.textContent ?? 'no selector';
+      }, at);
+    }, {timeout: pollMs(5000), message: `the column selector at the "${area}" area of ${target.phrase}`}).toBe(column);
+    await settle(page, target);
+  }, {tier: 'ui', description: 'a column selector the viewer names only by its hit area'});
 
 /** The same selector, typed into and committed, with no claim about the result: a selector that
  * offers only some columns leaves the column it had, and the feature reads it afterwards. */
@@ -1040,3 +1079,154 @@ export const areaLies = Then('the {string} area of {widget} should lie {word} th
 export const areaLiesBeside = Then('the {string} area of {widget} should lie to the {word} of the {string} area',
   (page: Page, a: string, target: ElementRef, side: string, b: string) => expectAreaRelation(page, target, a, side, b),
   {description: 'left or right — a vertical band title in the strip the layout reserved to the right of the plot'});
+
+// --- the row a click made current -------------------------------------------------------------------
+
+/* A click on a crowded canvas makes current whatever row the viewer hit-tests on top at that point,
+   not necessarily the marker aimed at. What the click claims is that the row under the pointer — the
+   viewer's own `hovered row` (from 1, 0 for none) — is the table's current row now. */
+export const currentRowIsHovered = Then('the {string} reading of {widget} should be the current row', async (page: Page, name: string, target: ElementRef) => {
+  await expect.poll(async () => {
+    const reading = await v.readingOf(page, target, name);
+    if (reading instanceof v.MissingReading)
+      return String(reading);
+    const current = await page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx + 1);
+    return Number(reading) > 0 && Number(reading) === current ? 'same' : `the ${name} is ${reading}, the current row is ${current}`;
+  }, {message: `the ${name} of ${target.phrase} against the current row`}).toBe('same');
+}, {description: 'a row reading counted from 1 (`hovered row`) names the table\'s current row, and is not 0'});
+
+// --- result cards ---------------------------------------------------------------------------------
+
+/* A search viewer (similarity, diversity) reports each result card as `card <row>`, the table row it
+   shows (from 0), in the order the cards are laid out; which rows they are depends on the data, so a
+   card is named by its place: "card 2 of <viewer>" is the second card drawn. */
+async function nthCard(page: Page, target: ElementRef, n: number): Promise<{name: string; row: number}> {
+  let names: string[] = [];
+  // a search viewer lays its cards out again after a click: their order is read off a finished frame
+  await settle(page, target);
+  await expect.poll(async () => {
+    names = Object.keys(await v.hitAreas(page, target)).filter((k) => /^card \d+$/.test(k));
+    return names.length >= n;
+  }, {message: `${target.phrase} showing ${n} result card(s)`, timeout: pollMs(10000)}).toBe(true);
+  const name = names[n - 1];
+  return {name, row: Number(name.slice('card '.length))};
+}
+
+const clickedCardRow = new WeakMap<Page, number>();
+
+function rememberClickedCard(page: Page, row: number): void {
+  if (!clickedCardRow.has(page))
+    atFeatureEnd(page, async () => { clickedCardRow.delete(page); });
+  clickedCardRow.set(page, row);
+}
+
+/* A click on the molecule drawing of a card makes the molecule current through `grok.shell.o`, which
+   freezes the context panel for a second and drops a gear or a card clicked within it; a click on the
+   card beside the drawing (its score, its margin) only moves the current row. */
+export const clickNthCardBesideDrawing = When('user clicks on card {int} of {widget} beside its drawing', async (page: Page, n: number, target: ElementRef) => {
+  const {name, row} = await nthCard(page, target, n);
+  rememberClickedCard(page, row);
+  const r = await v.hitArea(page, target, name, true);
+  const point = await page.evaluate(([x, y, w, h]) => {
+    const card = document.elementFromPoint(x + w / 2, y + h / 2)?.closest('[name^="card-"]');
+    // from the bottom up, where the score and the properties sit under the drawing
+    for (let dy = h - 2; dy > 1; dy -= 2) {
+      for (const dx of [w / 2, w / 4, 3 * w / 4, 2, w - 2]) {
+        const e = document.elementFromPoint(x + dx, y + dy);
+        if (e && card?.contains(e) && e.tagName !== 'CANVAS' && !e.closest('.chem-canvas'))
+          return {x: x + dx, y: y + dy};
+      }
+    }
+    return null;
+  }, [r.x, r.y, r.width, r.height]);
+  if (!point)
+    throw new Error(`${name} of ${target.phrase} has no point outside its drawing`);
+  await page.mouse.click(point.x, point.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the Nth result card, clicked on a point of the card that is not the molecule drawing (its score, its margin); its row is remembered'});
+
+/* A click on a similarity card makes its row current, and the viewer then searches again around it,
+   so the claim is made against the row the card showed when it was clicked. */
+export const currentRowIsClickedCard = Then('the current row should be the row of the clicked card', async (page: Page) => {
+  const row = clickedCardRow.get(page);
+  if (row === undefined)
+    throw new Error('no result card was clicked in this scenario');
+  await expect.poll(() => page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx), {message: `the current row against the clicked card (row ${row + 1})`}).toBe(row);
+}, {description: 'the table row the last clicked result card showed is the current row'});
+
+export const hoverNthCard = When('user hovers over card {int} of {widget}', async (page: Page, n: number, target: ElementRef) => {
+  const {name} = await nthCard(page, target, n);
+  const c = v.centerOf(await v.hitArea(page, target, name, true));
+  await page.mouse.move(c.x, c.y);
+}, {tier: 'ui', description: 'the pointer on the Nth result card, which shows the icons a card reveals on hover'});
+
+// --- the grid's current cell -----------------------------------------------------------------------
+
+/* A column far to the right is reached the way a user reaches it from the keyboard: the current cell
+   walks there one arrow press at a time and the grid scrolls to keep it in view. */
+export const walkToColumn = When('user moves the current cell of {widget} to the {string} column', async (page: Page, target: ElementRef, column: string) => {
+  const steps = await v.onViewer(page, target, (root, column) => {
+    const grid = (window as any).DG.Widget.find(root);
+    const names: string[] = [];
+    for (let i = 0; i < grid.columns.length; i++) {
+      const c = grid.columns.byIndex(i);
+      if (c.visible && c.column != null)
+        names.push(c.name);
+    }
+    const to = names.indexOf(column);
+    if (to < 0)
+      throw new Error(`the grid shows no "${column}" column; it shows: ${names.join(', ')}`);
+    return to - names.indexOf(grid.dataFrame.currentCol?.name);
+  }, column) as number;
+  for (let i = 0; i < Math.abs(steps); i++)
+    await g.pressIn(page, target, steps > 0 ? 'ArrowRight' : 'ArrowLeft');
+  await expect.poll(() => v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentCol?.name),
+    {message: `the current column of ${target.phrase}`}).toBe(column);
+  await settle(page, target);
+}, {tier: 'ui', description: 'arrow presses in the grid from the current column; the grid scrolls the column into view'});
+
+/* Where the grid is scrolled depends on the row a card or a search made current, so the cell is the
+   first one of the column the grid shows, skipping the current row: a click must move the current cell. */
+export const clickOtherCell = When('user clicks on a {string} cell of {widget} other than the current one', async (page: Page, column: string, target: ElementRef) => {
+  await settle(page, target);
+  const current = await v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentRowIdx + 1) as number;
+  const re = new RegExp(`^cell (\\d+) of ${column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+  const cells = Object.keys(await v.hitAreas(page, target)).filter((k) => re.test(k) && Number(re.exec(k)![1]) !== current);
+  if (cells.length === 0)
+    throw new Error(`${target.phrase} shows no "${column}" cell other than the current row's`);
+  const c = v.centerOf(await v.hitArea(page, target, cells[0], true));
+  await page.mouse.click(c.x, c.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'a click on the first cell of the column the grid shows that is not in the current row'});
+
+// --- the dock around a viewer ----------------------------------------------------------------------
+
+/* The border between a docked viewer and what is docked above it is the dock manager's horizontal
+   splitbar: a sibling of the container the viewer sits in, or of one of that container's ancestors.
+   The step drags it and claims the viewer grew. */
+export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', async (page: Page, target: ElementRef, px: number) => {
+  const loc = await v.viewerLocator(page, target);
+  const before = (await loc.boundingBox())!;
+  const bar = await loc.evaluate((root) => {
+    const top = root.getBoundingClientRect().top;
+    for (let e: Element | null = root; e != null; e = e.parentElement) {
+      const prev = e.previousElementSibling as HTMLElement | null;
+      if (prev != null && prev.classList.contains('splitbar-horizontal')) {
+        const r = prev.getBoundingClientRect();
+        if (Math.abs(r.bottom - top) < 40)
+          return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+      }
+    }
+    return null;
+  });
+  if (bar == null)
+    throw new Error(`${target.phrase} has no dock border above it: it is not docked below another panel`);
+  await page.mouse.move(bar.x, bar.y);
+  await page.mouse.down();
+  await page.mouse.move(bar.x, bar.y - px / 2);
+  await page.mouse.move(bar.x, bar.y - px);
+  await page.mouse.up();
+  await expect.poll(async () => Math.round((await loc.boundingBox())?.height ?? 0),
+    {message: `the height of ${target.phrase} after the drag (was ${Math.round(before.height)})`}).toBeGreaterThan(Math.round(before.height) + px / 2);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});

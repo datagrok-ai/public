@@ -32,7 +32,7 @@ ArgsAnd ::= WS* Id WS* ('&' WS* Id WS*)* {fragment=true}
 RefArg ::= WS* '@' Ref WS* {fragment=true}
 Ref ::= IDENTIFIER
 Id ::= IDENTIFIER
-Name ::= IDENTIFIER
+Name ::= '$'? IDENTIFIER
 IDENTIFIER ::= [_a-zA-Z][a-zA-Z_0-9]*
 WS ::= ' '
 `;

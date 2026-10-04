@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
 * GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages
 * Tests: Added the `bdd/` project: the TestTrack PowerPack section translated into features — Add New Column (the dialog, the formula editor, the functions panel, formula refreshing, persistence over a file and over Northwind query results), the Home widgets, Enter in the Home search, a project opened by its direct link, XLSX opened five ways, data enrichment; the annotation regions and formula lines features moved here from UsageAnalysis, plus the Formula Lines regressions #2487, #671 and #2747
 * Formula Lines: Added the item the dialog's preview was handed to its widget status (`current item`)

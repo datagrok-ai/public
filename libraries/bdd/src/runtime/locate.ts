@@ -94,6 +94,22 @@ export async function locateActionable(page: Page, target: ElementRef | string, 
   return actionable;
 }
 
+/** Of the visible matches, the one a pointer can reach: a visible match can lie under another element (a tree
+ * row repeated in a group the platform lays out under its parent's row, as Favorites under My stuff), and a
+ * gesture aimed at it lands on what covers it. One reachable match is the element; none or several leave the
+ * matches as they are, still ambiguous. */
+export async function reachable(page: Page, target: ElementRef | string): Promise<Locator> {
+  const loc = await locateActionable(page, target);
+  const hits: number[] = await loc.evaluateAll((els) => els.map((el, i) => {
+    const r = el.getBoundingClientRect();
+    return [0.5, 0.25, 0.75, 0.1].some((f) => {
+      const hit = document.elementFromPoint(r.left + r.width * f, r.top + r.height / 2);
+      return hit !== null && (hit === el || el.contains(hit));
+    }) ? i : -1;
+  }).filter((i) => i >= 0));
+  return hits.length === 1 ? loc.nth(hits[0]) : loc;
+}
+
 export async function locateRef(page: Page, ref: NounRef, within?: Locator): Promise<Locator> {
   let base: Base = within ?? page;
   let scope: Locator | undefined;

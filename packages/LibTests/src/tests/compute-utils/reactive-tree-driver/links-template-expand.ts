@@ -153,13 +153,16 @@ category('ComputeUtils: Driver template expansion config-time', async () => {
     expectDeepEqual(links[0].to.map((io) => io.name), ['out_a', 'out_b']);
   });
 
-  test('Expansion drops non-scalar ios and marks linked entries optional', async () => {
+  test('Expansion drops non-scalar ios, keeps dates and marks linked entries optional', async () => {
     const ios = expandDeferredIOs(
       parseLinkIO('_(template):step/inputs(LibTests:TestAnnotatedInputs, a|$nonscalar|$linked)', 'output'), 'l');
     expectDeepEqual(ios.map((io) => io.name), ['b', 'c', 'v', 'code', 'mode']);
     expectDeepEqual(ios.map((io) => [io.unlinked, io.flags?.includes('optional')]), ios.map(() => [true, true]));
     const plain = expandDeferredIOs(parseLinkIO('_(template):step/inputs(LibTests:TestMul2, $nonscalar)', 'output'), 'l');
     expectDeepEqual(plain.map((io) => [io.name, io.unlinked]), [['a', undefined], ['b', undefined]]);
+    const dates = expandDeferredIOs(
+      parseLinkIO('_(template):step/inputs(LibTests:TestLookupAnnotations, $nonscalar)', 'output'), 'l');
+    expectDeepEqual(dates.map((io) => io.name), ['model', 'engine', 'cyl', 'mpg', 'name', 'flag', 'when', 'made']);
   });
 
   test('Error: base with more than one entry', async () => {

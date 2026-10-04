@@ -31,7 +31,8 @@ bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart con
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
                         account and signing in as another), data (rows, filter, links between tables), columns, commands,
                         functions, events, workspace (open tables and views, direct links, files in the user's files or a
-                        space, a dropped or chosen file) — always loaded
+                        space, a dropped or chosen file), browse (the tree's loading state, favorites,
+                        moving by address) — always loaded
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
                         per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
                         what a viewer draws of its lines), filter-panel
@@ -76,6 +77,22 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
 filtering, editing and removing nodes), which no package test reaches. Similar things should stay/be translated as well, as long as they actually test ui.
+
+A UI walk that an outside dependency interrupts halfway (a tutorial whose last step runs SQL on an
+outside host) keeps its UI part: a capability gate (`the stand runs the {string} service`, `the stand
+can reach the database of the {string} connection`) goes right before the step that needs it and skips
+the rest of the test where the stand has not got it (`test.skip`; `isSkip` in `failure.ts` lets it
+through the harness; a journey that skips after a failed scenario reports that failure). Python in
+Jupyter stays out even behind a gate (the lead, 2026-10-01): the Scripting tutorial ends before its
+run. The service gate reads the health the stand reports (`serviceGap` in `server.ts`); a dev stack
+reports none (datlas runs without `checkHealth`), and that lets the test go on rather than skip — a
+tutorial, which itself refuses to start on such a stand, gates with the Tutorials project's strict copy. A third gate, `the {string} package is
+installed`, is for a package a feature needs but does not test (a Chem demo on a stand without Chem,
+as the minimal CI stack is); it may sit in the Background when every scenario needs that package, and
+never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
+a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
+own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
+serves none). Nothing else skips.
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
@@ -144,8 +161,10 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
   row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step.
-- **`expect` comes from `src/runtime/patience.js`** in every check: a `@known-failure` scenario
-  narrows it to 3 s, and a check that names its own timeout wraps it in `pollMs`.
+- **`expect` comes from `src/runtime/patience.js`** in every check — package bindings included, through
+  `@datagrok-libraries/bdd/runtime`: a `@known-failure` scenario narrows it to 3 s, a check that names its own
+  timeout wraps it in `pollMs`, and `expect.poll` reads every 100 ms, then every 250 ms, instead of Playwright's backoff to 1 s
+  (a state at 0.9 s was seen at 1.85 s).
 - **A throw inside an `expect.poll` callback ends the poll.** A read the viewer may be between
   layouts of returns `false` and keeps the reason for the failure message.
 - **Every check is one sentence naming the alternatives** (`has no "x" area; it has: …`); a
@@ -205,6 +224,18 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
   and the count arrives asynchronously: Activity on a space created a second ago is `present`,
   not `visible`, until the server has logged the creation.
+- **A navigation leaves the page as a person who chose to**: the harness accepts `beforeunload` ("Warn on
+  unsaved changes" asks once the scratchpad is dirty, and Playwright's default dismissal cancels the reload, which
+  then waits out 180 s) and dismisses every other native dialog, since a listener ends Playwright's own dismissal.
+- **The Browse tree is built once and settled**: `the browse panel is open` builds the panel only when it is not
+  on the page — a rebuild reopens its groups, whose rows arrive under the next gesture — and waits for the groups
+  still fetching children (`settleBrowseTree`, shared with the Refresh); `user expands` waits for the children of a
+  group it finds open too. A double click and a context menu still check what they reached and aim again at a
+  row that moved (a Recent group taking the view just closed), and the menu aims at the match a pointer can
+  reach (`onReachable`): Favorites under My stuff repeats a space's row under the My stuff row.
+- **A query run from a link or an icon is awaited to its end** (`user clicks on … and the query it runs completes`,
+  `armQuery`): Run query... shows its result view at once and opens it again when the call ends if no view shows it,
+  so a view closed in between comes back.
 - **Escape goes to the topmost dialog** (`press`): the dialog closes on a keydown inside its own
   root, and the focus is not reliably there (the grid's 1 s timer, a menu that just closed).
 - **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
@@ -236,7 +267,8 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
+  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`, by `the Sticky Meta schema … and entity type … are
+  removed now and at feature end` (a schema has no creation date: the name's own suffix dates it)
   (the server stamps `createdOn` when it saves an entity, whatever the client set, so a claim about
   what was made since a step compares with the server's clock, `serverNow`, less a margin for the
   proxy's clock), by the project save (`isStaleFixture`, platform/steps.ts), and once per worker

@@ -149,7 +149,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
-  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io)];
+  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
   const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
   const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
@@ -302,6 +302,9 @@ function checkUniqId(items: {id: string}[], logger?: DriverLogger) {
 // Deferred IO selector expansion
 // ---------------------------------------------------------------------------
 
+// `$nonscalar` keeps dates, which the platform's scalar list leaves out
+const templateScalarTypes = new Set<string>([...DG.TYPES_SCALAR, DG.TYPE.DATE_TIME]);
+
 export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkIOParsed[] {
   const seenTemplateNames = new Set<string | number>();
   let anonIdx = 0;
@@ -325,7 +328,7 @@ export function expandDeferredIOs(ioList: LinkIOParsed[], linkId: string): LinkI
     }
     return targetIO
       .filter((d) => d.direction === direction && !excludeSet.has(d.id) &&
-        !(kinds.has('nonscalar') && !DG.TYPES_SCALAR.has(d.type as DG.TYPE)))
+        !(kinds.has('nonscalar') && !templateScalarTypes.has(d.type)))
       .map((d) => {
         const nname = isAnonymous ? d.id : io.name + d.id;
         const nlastSegment: LinkSelectorSegment = {type: 'selector', selector: 'first', ids: [d.id], stopIds: []};

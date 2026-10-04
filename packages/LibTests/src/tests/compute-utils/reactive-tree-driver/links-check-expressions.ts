@@ -51,13 +51,13 @@ category('ComputeUtils: Driver links check expressions', async () => {
     expect(visible.family, 'meta');
     expect(visible.needsInputs, true);
     expectDeepEqual(visible.params,
-      {when: {'==': [{script: 'k > 1'}, false]}, effects: [{effect: 'hide', targets: ['target']}]});
+      {when: {'==': [{script: 'k > 1'}, false]}, effects: [{effect: 'hide', targets: ['$target']}]});
     const [validator] = expandChecks({validator: 'bar > 3'});
     expect(validator.family, 'validator');
     expect(validator.needsInputs, true);
     expectDeepEqual(validator.params, {
       when: {and: [{'!': {missing: ['value']}}, {'!!': {scriptVerdict: 'bar > 3'}}]},
-      effects: [{effect: 'error', targets: ['target'], message: {scriptVerdict: 'bar > 3'}}],
+      effects: [{effect: 'error', targets: ['$target'], message: {scriptVerdict: 'bar > 3'}}],
     });
     const [regex] = expandChecks({validator: '/^a/'});
     expect(regex.needsInputs, false);
@@ -66,7 +66,7 @@ category('ComputeUtils: Driver links check expressions', async () => {
   });
 
   test('Script operations', async () => {
-    const ctx = (data: Record<string, any>) => ({all: {}, ...data});
+    const ctx = (data: Record<string, any>) => ({$all: {}, ...data});
     expect(evaluate({script: 'k > 1'}, ctx({k: 2})), true);
     expect(evaluate({script: 'k > 1'}, ctx({k: 1})), false);
     expect(evaluate({script: 'k + value'}, ctx({k: 1, value: 2})), 3);
@@ -76,6 +76,25 @@ category('ComputeUtils: Driver links check expressions', async () => {
     expect(evaluate({scriptVerdict: 'startsWith(value, "12")'}, ctx({value: '12ab'})) === null, true);
     expect(evaluate({scriptVerdict: 'startsWith(value, "12")'}, ctx({value: 'ab'})), 'startsWith(value, "12")');
     expect(evaluate({scriptVerdict: 'nope > 1'}, ctx({bar: 2})), 'Error during validation: "nope > 1"');
+  });
+
+  test('Enabled hides an input, combined with visible', async () => {
+    const pconf =
+      await getProcessedConfig({id: 'p', type: 'static', steps: [{id: 's', nqName: 'LibTests:TestEnabledInputs'}]});
+    const hidden: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      StateTree.loadOrCreateCalls(tree, true).subscribe();
+      tree.init().subscribe();
+      const bridge = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      const snap = () => hidden.push([bridge.meta.en.value?.hidden, bridge.meta.both.value?.hidden]);
+      [2, 1, 0].forEach((k, idx) => {
+        cold(`${'-'.repeat(2 * idx + 1)}a`).subscribe(() => bridge.setState('k', k, 'none'));
+        cold(`${'-'.repeat(2 * idx + 2)}a`).subscribe(snap);
+      });
+    });
+    expectDeepEqual(hidden, [[false, false], [true, true], [true, true]]);
   });
 
   test('Expression checks run as default links', async () => {
@@ -124,7 +143,7 @@ category('ComputeUtils: Driver links check expressions', async () => {
       ['vis::visible', 'meta', ['value', 'other']],
     ]);
     expect(pconf.links[1].debounce === 100, false);
-    expectDeepEqual(pconf.links[1].params.effects, [{effect: 'hide', targets: ['target']}]);
+    expectDeepEqual(pconf.links[1].params.effects, [{effect: 'hide', targets: ['$target']}]);
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;

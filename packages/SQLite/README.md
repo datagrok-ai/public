@@ -7,6 +7,6 @@ that provides support for importing and previewing SQLite files.
 
 See also:
 
-* [Custom file handlers](../../help/develop/how-to/files/file-handlers.md)
-* [Browsing files](../../help/access/files/files.md)
+* [Custom file handlers](https://datagrok.ai/help/develop/how-to/files/file-handlers)
+* [Browsing files](https://datagrok.ai/help/access/files)
 * [SQLite home page](https://www.sqlite.org/index.html)
