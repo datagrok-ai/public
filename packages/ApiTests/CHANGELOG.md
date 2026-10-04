@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21094: Make View.createByType work for every type in ALL_VIEW_TYPES and fail clearly on unknown types
+
 ## 1.10.3 (WIP)
 
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)
