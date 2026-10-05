@@ -239,16 +239,13 @@ export function parseAnnotationChecks(prop: DG.Property): CheckOptions {
   const validators = Array.isArray(options.validators) ? options.validators : parseChoices(options.validators);
   if (validators?.length && validators.every((name: unknown) => typeof name === 'string'))
     checks.validators = validators;
-  const choices = parseChoices(options.choices);
-  if (choices && DG.TYPES_SCALAR.has(prop.propertyType))
-    checks.choices = choices;
+  // `choices` and a column's `table` only shape the picker, so checking them is left to explicit check links
   if (isColumn) {
     // the platform stores a column `type:` annotation as the `columns` option and the type filter
     const type = options.type ?? options.columns ?? prop.columnTypeFilter;
     if (type) checks.type = type;
     const semType = options.semType || prop.semType;
     if (semType) checks.semType = semType;
-    if (options.table) checks.table = options.table;
     if (parseBool(options.allowNulls) === false) checks.allowNulls = false;
   }
   return checks;

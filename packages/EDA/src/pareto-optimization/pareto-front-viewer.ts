@@ -35,6 +35,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   private numColsCount: number = 0;
   private rowCount: number = 0;
   private isApplicable: boolean = false;
+  private isDetaching = false;
   private errMsg: string = '';
   private resultColName: string = '';
   private sizeColName: string = '';
@@ -279,6 +280,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } // setScatterOptions
 
   onTableAttached() {
+    this.isDetaching = false;
     this.initializeData();
     if (this.isApplicable) {
       this.scatter = DG.Viewer.scatterPlot(this.dataFrame, {
@@ -303,8 +305,6 @@ export class ParetoFrontViewer extends DG.JsViewer {
         autoLabelsSelection: AUTO_LABELS_SELECTION,
       });
     } // if
-
-    this.subs.push(this.onDetached.subscribe(() => this.removeResultingCols()));
   } // onTableAttached
 
   private checkScatterAxes(): void {
@@ -327,6 +327,8 @@ export class ParetoFrontViewer extends DG.JsViewer {
   } //checkScatterAxes
 
   private removeResultingCols(): void {
+    // Removing the columns notifies listeners that may write objectives back while detaching
+    this.isDetaching = true;
     this.dataFrame.columns.remove(this.resultColName);
     this.dataFrame.columns.remove(this.sizeColName);
   }
@@ -343,9 +345,9 @@ export class ParetoFrontViewer extends DG.JsViewer {
       gridCol.visible = false;
   } // hideCol
 
-  // Cancel subscriptions when the viewer is detached
   detach() {
-    this.subs.forEach((sub) => sub.unsubscribe());
+    if (this.dataFrame != null)
+      this.removeResultingCols();
     super.detach();
   }
 
@@ -357,7 +359,7 @@ export class ParetoFrontViewer extends DG.JsViewer {
 
   // Override to handle property changes
   onPropertyChanged(property: DG.Property) {
-    if (!this.isApplicable)
+    if (!this.isApplicable || this.isDetaching)
       return;
 
     switch (property.name) {
