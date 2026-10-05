@@ -13,8 +13,8 @@ import {tryGetRxn} from './enumerate';
 import {MountedViewerRegistry} from './viewer-mount';
 import {ChipEl, EnumeratorNav} from './enumerator-nav';
 import {
-  combinationLimitsChanged, estimateProductCount, MAX_ROUNDS, Mode, MODE_LABEL,
-  productFiltersChangedCount, roundsLabel,
+  combinationLimitsChanged, estimateProductCount, MAX_CYCLES, MAX_ROUNDS, Mode, MODE_LABEL,
+  productFiltersChangedCount, cyclesLabel, roundsLabel,
 } from './shared';
 import {loadEnumerationDefaults} from './default-files';
 import {PropagatedColumnsPicker} from './propagation';
@@ -142,6 +142,8 @@ export class EnumeratorConfigForm {
   readonly exclusionInput: DG.InputBase<DG.DataFrame | null>;
   readonly numRoundsInput: DG.InputBase<number | null>;
   readonly depthFirstInput: DG.InputBase<boolean>;
+  readonly applyUntilFailsInput: DG.InputBase<boolean>;
+  readonly maxCyclesInput: DG.InputBase<number | null>;
 
   private readonly smartsColInput: DG.InputBase<DG.Column | null>;
   private readonly blockingColInput: DG.InputBase<DG.Column | null>;
@@ -315,6 +317,34 @@ export class EnumeratorConfigForm {
       'BBs (linear chain extension, no merging two complex products). Off (breadth-first) allows any ' +
       'combination from steps 0..r-1 — typically explodes the search space and produces convergent routes.');
 
+    this.applyUntilFailsInput = ui.input.bool('Repeat until it stops',
+      {value: this.config.enumeration.apply_until_fails});
+    this.applyUntilFailsInput.setTooltip('Re-applies each single-reactant reaction to its own products within ' +
+      'one step and keeps only the end products. Reactions with two or more reactants run once.');
+
+    const MAX_CYCLES_TOOLTIP = `How many times one reaction may run within a step (1–${MAX_CYCLES}).`;
+    this.maxCyclesInput = ui.input.int('Max cycles', {
+      value: this.config.enumeration.max_cycles, nullable: true, min: 1, max: MAX_CYCLES,
+      showPlusMinus: true});
+    fixNullableIntStepper(this.maxCyclesInput, 1);
+    this.maxCyclesInput.addValidator((v) => {
+      if (!this.applyUntilFailsInput.value) return null;
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 1) return 'Must be at least 1.';
+      if (n > MAX_CYCLES) return `Must be at most ${MAX_CYCLES}.`;
+      return null;
+    });
+    // The number has no effect with the checkbox off.
+    const syncMaxCyclesEnabled = (): void => {
+      const on = !!this.applyUntilFailsInput.value;
+      this.maxCyclesInput.enabled = on;
+      this.maxCyclesInput.setTooltip(on ? MAX_CYCLES_TOOLTIP : 'Turn on "Repeat until it stops" first.');
+      // Disabling clears the red mark; the input's own min/max check ignores the checkbox.
+      if (on) this.maxCyclesInput.validate();
+    };
+    syncMaxCyclesEnabled();
+    this.deps.view.subs.push(this.applyUntilFailsInput.onChanged.subscribe(syncMaxCyclesEnabled));
+
     // Bound to live factories so hovering always reflects current state.
     const mkIcon = (): HTMLElement => {
       const i = ui.iconFA('info-circle');
@@ -333,6 +363,7 @@ export class EnumeratorConfigForm {
     // Re-validate on every input change so the Run button stays accurate.
     [this.smartsColInput, this.blockingColInput, this.rxnNameColInput, this.bbColInput, this.reagentsColInput,
       this.exclusionInput, this.exclusionColInput, this.numRoundsInput, this.depthFirstInput,
+      this.applyUntilFailsInput, this.maxCyclesInput,
     ].forEach((inp) => this.deps.view.subs.push(this.wireValidationOne(inp)));
     [...this.combinationLimitFields.inputs, ...this.productFilterFields.inputs].forEach((inp) =>
       this.limitFieldSubs.push(this.wireValidationOne(inp)));
@@ -371,6 +402,7 @@ export class EnumeratorConfigForm {
       templatePropagation: this.templatePropagation, bbPropagation: this.bbPropagation,
       reagentPropagation: this.reagentPropagation, reagentsInput: this.reagentsInput,
       numRoundsInput: this.numRoundsInput, depthFirstInput: this.depthFirstInput,
+      applyUntilFailsInput: this.applyUntilFailsInput, maxCyclesInput: this.maxCyclesInput,
       configInfoIcon: this.configInfoIcon,
       getCombinationLimitInputs: () => this.combinationLimitFields.inputs,
       getProductFilterInputs: () => this.productFilterFields.inputs,
@@ -417,6 +449,8 @@ export class EnumeratorConfigForm {
     const config = this.config;
     config.enumeration.num_rounds = this.numRoundsInput.value ?? config.enumeration.num_rounds;
     config.enumeration.depth_first = !!this.depthFirstInput.value;
+    config.enumeration.apply_until_fails = !!this.applyUntilFailsInput.value;
+    config.enumeration.max_cycles = this.maxCyclesInput.value ?? config.enumeration.max_cycles;
     // Column inputs hold a Column; persist its name, keeping the previous value if unselected.
     config.enumeration.smarts_col = this.smartsColInput.value?.name ?? config.enumeration.smarts_col;
     config.enumeration.reactant_blocking_groups_per_template_column =
@@ -455,8 +489,11 @@ export class EnumeratorConfigForm {
       const config = this.config;
       // Clamp on load too — a hand-edited/older YAML could carry num_rounds above the UI's max.
       if (config.enumeration.num_rounds > MAX_ROUNDS) config.enumeration.num_rounds = MAX_ROUNDS;
+      if (config.enumeration.max_cycles > MAX_CYCLES) config.enumeration.max_cycles = MAX_CYCLES;
       this.setAndFire(this.numRoundsInput, config.enumeration.num_rounds);
       this.setAndFire(this.depthFirstInput, config.enumeration.depth_first);
+      this.setAndFire(this.applyUntilFailsInput, config.enumeration.apply_until_fails);
+      this.setAndFire(this.maxCyclesInput, config.enumeration.max_cycles);
       const tDf = this.templatesInput.value;
       if (tDf) {
         const sc = tDf.col(config.enumeration.smarts_col);
@@ -536,6 +573,12 @@ export class EnumeratorConfigForm {
     if (rounds < 1) return 'Number of steps must be at least 1.';
     if (rounds > MAX_ROUNDS) return `Number of steps must be at most ${MAX_ROUNDS}.`;
 
+    if (this.config.enumeration.apply_until_fails) {
+      const cycles = this.maxCyclesInput.value ?? 0;
+      if (cycles < 1) return 'Max cycles must be at least 1.';
+      if (cycles > MAX_CYCLES) return `Max cycles must be at most ${MAX_CYCLES}.`;
+    }
+
     // Blank is -1 (no cap) in every limit below; only a typed or loaded 0 is rejected.
     const caps: [number, string][] = [
       [this.config.max_num_components, 'Max # components'],
@@ -579,6 +622,7 @@ export class EnumeratorConfigForm {
         <li><b>Breadth-first</b> — each step may combine any products from earlier steps with BBs (convergent routes possible).</li>
         <li><b>Reagents</b> — active whenever a reagents file is selected; overrides depth/breadth-first.</li>
       </ul>
+      <p style="margin: 6px 0 0 0;"><b>Repeat until it stops</b> re-applies single-reactant templates to their own products within one step and keeps only the end products: a triene gives the fully reduced product in step 1. Leave it off where the separate mono-products are the point, e.g. a hydroxylation.</p>
       <div style="font-weight: bold; margin-top: 8px; margin-bottom: 2px;">Tips</div>
       <ul style="margin: 0 0 0 16px; padding: 0;">
         <li>Select rows on the right-pane grids and click <i>Subset by selection</i> to enumerate only a subset.</li>
@@ -614,6 +658,7 @@ export class EnumeratorConfigForm {
     card.appendChild(sectionTitle('Enumeration'));
     card.appendChild(row('Steps', String(en.num_rounds)));
     card.appendChild(row('Mode', modeLabel));
+    card.appendChild(row('Repeat until it stops', yn(en.apply_until_fails) + cyclesLabel(config)));
     card.appendChild(row('Max components', fmtNum(config.max_num_components)));
     card.appendChild(row('Max combinations / template', fmtNum(config.max_num_combinations_per_template)));
     card.appendChild(row('Max routes / compound', fmtNum(config.max_num_routes_per_compound)));
@@ -662,7 +707,7 @@ export class EnumeratorConfigForm {
     const tDf = this.templatesInput.value; const bDf = this.bbsInput.value; const rDf = this.reagentsInput.value;
     const mode = this.currentMode();
     const MODE_ABBR = {depth: 'DF', breadth: 'BF', reagents: 'RM'} as const;
-    const roundsText = roundsLabel(this.currentRounds());
+    const roundsText = roundsLabel(this.currentRounds()) + cyclesLabel(config);
     const n = estimateProductCount(tDf, bDf);
     const combChanged = combinationLimitsChanged(config);
     const prodChangedCount = productFiltersChangedCount(config);

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Added the `skipLogic` option to `InputForm.forFuncCall`: the form renders inputs and binds them to the call, nothing else (no default or auto-filled values, no choice or default functions, no validation, no `visible`/`enabled` expressions); implies `skipDefaultInit` and `skipTableAutoFill`
+* GROK-21019: Added `ColumnList.addNewCalculated(name, expression, options)` with `onError`: leave the rows the formula fails on empty, fill them with a value, or reject on the first one; `errorColumn` adds a column of per-row messages
 * Added `grok.userSettings.flush()`, which sends pending user settings to the server now instead of waiting for the periodic sync; it resolves once the attempt finishes, and a failed save is queued again for the next periodic sync
 * GROK-20864: Added `DataFrame.appendAsync`, `DataFrame.appendMergeAsync`, `DataFrame.recalculateFormulaColumns` and `grok.data.appendTables`, which calculate formula columns for the appended rows; `append` and `appendMerge` still move rows only
 * GROK-20924: `ObjectHandler.getCaption` defaults to the value for a `SemanticValue` or a `GridCell` instead of `[object Object]`, so a handler that does not override it captions cells readably (the ribbon's current object dropdown, tooltips)

@@ -110,13 +110,23 @@ export const rowsRangeSelected = Then('rows {int} to {int} should be selected', 
   await expect.poll(() => page.evaluate(([a, b]) => {
     const df = grok.shell.t;
     let inRange = 0;
-    for (let i = a - 1; i < b && i < df.rowCount; i++) {
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
       if (df.selection.get(i))
         inRange++;
-    }
     return `${inRange} of ${b - a + 1} in the range, ${df.selection.trueCount} in all`;
   }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range, ${to - from + 1} in all`);
 }, {description: 'rows counted from 1 as the grid shows them, every row of the range and nothing else'});
+
+export const rowsRangeAllSelected = Then('rows {int} to {int} should all be selected', async (page: Page, from: number, to: number) => {
+  await expect.poll(() => page.evaluate(([a, b]) => {
+    const df = grok.shell.t;
+    let inRange = 0;
+    for (let i = a - 1; i < b && i < df.rowCount; i++)
+      if (df.selection.get(i))
+        inRange++;
+    return `${inRange} of ${b - a + 1} in the range`;
+  }, [from, to] as [number, number]), {message: `rows ${from} to ${to} selected`}).toBe(`${to - from + 1} of ${to - from + 1} in the range`);
+}, {description: 'every row of the range is selected, whatever else is — pair it with the total count when a selection spans several ranges'});
 
 export const selectedPassFilter = Then('every selected row should pass the filter', async (page: Page) => {
   const off = await page.evaluate(() => {
@@ -585,9 +595,10 @@ export const tableFilterCount = Then('{int} rows of table {string} should pass t
 /** The filters of the current view's filter panel, by column name. */
 const filterColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
   // getFiltersGroup creates one when the view has none, which would make "0 filters" resurrect a panel
-  const open = Array.from(grok.shell.tv?.viewers ?? []).some((v: any) => String(v.type) === 'Filters');
-  const group = open ? grok.shell.tv.getFiltersGroup({createDefaultFilters: false}) : null;
-  return group ? (group.filters as any[]).map((f) => String(f.columnName ?? f.column?.name ?? '')) : [];
+  const panel: any = Array.from(grok.shell.tv?.viewers ?? []).find((v: any) => String(v.type) === 'Filters');
+  // the look lists every card by its column; a card added from the panel's menu has a JS wrapper
+  // with no columnName, so the wrappers alone read it as ""
+  return panel ? ((panel.getOptions().look.filters ?? []) as any[]).map((f) => String(f.column ?? f.columnName ?? '')) : [];
 });
 
 export const filterPanelCount = Then('the filter panel should have {int} filter(s)', async (page: Page, count: number) => {

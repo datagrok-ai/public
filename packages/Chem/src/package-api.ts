@@ -1070,6 +1070,15 @@ export namespace funcs {
   }
 
   /**
+   * Copies structure as smiles
+   * @param {any} value
+   *   semType: Molecule
+   */
+  export async function copyAsCXSmiles(value: any ): Promise<void> {
+    return await grok.functions.call('Chem:CopyAsCXSmiles', { value });
+  }
+
+  /**
    * Copies structure as molfile V2000
    * @param {any} value
    *   semType: Molecule

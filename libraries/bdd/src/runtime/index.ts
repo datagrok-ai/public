@@ -8,9 +8,10 @@ export * as gestures from './gestures.js';
 export * as viewers from './viewers.js';
 export {expect, pollMs, KNOWN_FAILURE_MS} from './patience.js';
 export * from './failure.js';
-export {callFunction, readResult} from './functions.js';
+export {callFunction} from './functions.js';
 export {columnsSince, menuNames, openTopMenu, pickTopMenu, waitCommand} from './menus.js';
 export {expectCustomEvent, listenCustomEvent} from './events.js';
 export {silent} from './guide.js';
-export {serverRequests, chatIdsOf, deleteChatsOf, deleteLayoutsAtEnd, serverNow, fixtureFamilies, isStaleFixture,
-  RUN_SUFFIX, STALE_AFTER_MS} from './server.js';
+export {serverRequests, chatIdsOf, deleteChatsOf, deleteLayoutsAtEnd, serverNow, fixtureFamilies, isStaleFixture, savedScriptOf,
+  type SavedScript,
+  RUN_SUFFIX, STALE_AFTER_MS, serviceGap, reportedServices} from './server.js';

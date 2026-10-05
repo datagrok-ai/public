@@ -15,7 +15,8 @@ Feature: The Properties pane of a HELM cell
     Then "HELM" column should have units "helm"
 
   Scenario: The current cell's formula, weight and extinction coefficient
-    When user clicks on the "cell 1 of HELM" area of grid
+    When user waits 1 second
+    And user clicks on the "cell 1 of HELM" area of grid
     Then row 1 should be current
     And "Properties" section in context panel should be visible
     Given "Properties" section in context panel is expanded

@@ -437,7 +437,10 @@ export class PackageFunctions {
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
     grok.events.onViewAdded.subscribe((view) => configViewerGallery(view));
-    configViewerGallery(grok.shell.v);
+    // a table view opened before this autostart ran (a tutorial started right after login) is
+    // configured too, or it keeps the core icon, which neither opens the gallery nor carries its name
+    for (const view of grok.shell.views)
+      configViewerGallery(view);
   }
 
   @grok.decorators.fileViewer({

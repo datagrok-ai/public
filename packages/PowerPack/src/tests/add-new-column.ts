@@ -3,7 +3,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {after, awaitCheck, before, category, expect,
   isDialogPresent, test} from '@datagrok-libraries/test/src/test';
-import {AddNewColumnDialog} from '../dialogs/add-new-column';
+import dayjs from 'dayjs';
+import {AddNewColumnDialog, prepareAddNewColumnFuncCall} from '../dialogs/add-new-column';
 import {FUNC_HINTS, FUNC_TESTS, FUNC_VALIDATION} from './utils';
 import { expectTyped } from './dialogs';
 
@@ -104,6 +105,33 @@ category('Add new column', () => {
     await dlg.addNewColumnAction();
     expect(call.getParamValue('expression'), `\${${numeric}} > 30`);
     expect(df.columns.length, columnsBefore, 'the table gained a column');
+  });
+
+  test('rows that fail', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a', '2023-03-07', 'pending'])]);
+    const expression = 'DateParse(${s})';
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0]
+      .prepare({table: t, name: 'parsed', expression}));
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+
+    Object.assign(dlg.errorBehavior, {useValue: true, value: dayjs('1900-01-01'), valueType: DG.COLUMN_TYPE.DATE_TIME, errorColumn: true, errorColName: 'parsed errors'});
+    await dlg.updatePreview(expression, false);
+    expect(dlg.previewFailure?.failed, 2, 'the preview does not report the failed rows');
+    expect(dlg.gridPreview!.dataFrame.col('parsed errors') != null, true, 'the preview has no error column');
+    await dlg.addNewColumnAction();
+    dlg.close();
+    expect(t.col('parsed')!.get(1).valueOf(), dayjs.utc('1900-01-01').valueOf());
+    expect(t.col('parsed errors')!.get(1).includes('n/a'), true);
+
+    const edit = new AddNewColumnDialog(prepareAddNewColumnFuncCall(t.col('parsed')!));
+    await awaitCheck(() => edit.codeMirror != null, 'cannot load CodeMirror', 5000);
+    expect(edit.errorBehavior.errorColumn && edit.errorBehavior.useValue, true, 'the edit dialog lost the behavior');
+    Object.assign(edit.errorBehavior, {useValue: false, errorColumn: false});
+    await edit.addNewColumnAction();
+    edit.close();
+    expect(t.col('parsed')!.isNone(1), true);
+    expect(t.col('parsed')!.getTag(DG.Tags.FormulaErrorBehavior) == null, true, 'the reset kept the behavior');
+    expect(t.col('parsed errors'), null);
   });
 
   test('hints', async () => {

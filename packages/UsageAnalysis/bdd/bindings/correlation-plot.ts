@@ -10,9 +10,9 @@
    What is left is the one claim the plot cannot make about itself: that the number in a cell is
    the coefficient of THOSE TWO COLUMNS over THOSE ROWS, computed by something other than the
    viewer. `DG.Stats` is that something; the pivot table's `aggregationMatches` is the precedent. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 /** The coefficient one cell holds, against `DG.Stats` over the rows the viewer's Row Source names.
  * Both are pairwise-complete, so a pair with blanks is compared over the same rows on both sides;

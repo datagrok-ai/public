@@ -9,20 +9,18 @@ sub_features_covered: [viewers.filters]
 import {test} from '@playwright/test';
 import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clearCardSearch, openCardIndicatorMenu, pasteIntoCardSearch, pickCardIndicatorMenu, typeIntoCardSearch} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, pressKey, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {addCalculated, allOfFiltered, clearSelection, filterIsExactlyCategory, filterIsExactlyContains, filterPasses, filterPassesAll, noneOfFiltered, openEmptyFilterPanel, removeColumn, rowCount, selectWhereIs} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
+import {addCardFor, clearCardSearch, openCardIndicatorMenu, pasteIntoCardSearch, pickCardIndicatorMenu, typeIntoCardSearch} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {clickArea, closeContextMenu, hasArea, hasNoArea, menuDoesNotList, menuLists, noErrors, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

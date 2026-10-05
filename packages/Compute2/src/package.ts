@@ -557,6 +557,7 @@ export class PackageFunctions {
       nqName: 'Compute2:MockSingleStepPipeline',
       version: '1.0',
       type: 'static',
+      compactView: true,
       steps: [{
         id: 'cooling',
         nqName: 'Compute2:ObjectCooling2',
@@ -622,6 +623,7 @@ export class PackageFunctions {
       nqName: 'Compute2:MockSingleStepNested',
       version: '1.0',
       type: 'static',
+      compactView: true,
       steps: [{
         type: 'ref',
         provider: 'Compute2:MockSingleStepPipeline',

@@ -27,28 +27,28 @@ Feature: Searching spaces
   Scenario: The Spaces list shows both
     When user clicks on Spaces tree node inside browse tree
     And user clicks on "Refresh" icon
-    Then BDD-Find link in space gallery should be visible
-    And BDD-Miss link in space gallery should be visible
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
 
   Scenario: A whole name keeps only that space
-    When user enters "BDD-Find" into space search
-    Then BDD-Find link in space gallery should be visible
-    And BDD-Miss link in space gallery should be absent
+    When user enters "BDD-Find" into gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be absent
 
   Scenario: Part of a name still matches
-    When user enters "BDD-Fi" into space search
-    Then BDD-Find link in space gallery should be visible
-    And BDD-Miss link in space gallery should be absent
+    When user enters "BDD-Fi" into gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be absent
 
   Scenario: A name nothing carries empties the list
-    When user enters "zzz-no-such-space" into space search
-    Then BDD-Find link in space gallery should be absent
-    And BDD-Miss link in space gallery should be absent
+    When user enters "zzz-no-such-space" into gallery search
+    Then BDD-Find link in gallery should be absent
+    And BDD-Miss link in gallery should be absent
 
   Scenario: Clearing the search brings both back
-    When user clears space search
-    Then BDD-Find link in space gallery should be visible
-    And BDD-Miss link in space gallery should be visible
+    When user clears gallery search
+    Then BDD-Find link in gallery should be visible
+    And BDD-Miss link in gallery should be visible
 
   Scenario: A child space is searchable inside its parent
     When user picks "Create Child Space..." from the context menu of BDD-Find tree node inside browse tree
@@ -56,8 +56,8 @@ Feature: Searching spaces
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     When user double-clicks on BDD-Find tree node inside browse tree
-    Then BDD-Find-Child link in space gallery should be visible
-    When user enters "zzz-no-such-space" into space search
-    Then BDD-Find-Child link in space gallery should be absent
-    When user clears space search
-    Then BDD-Find-Child link in space gallery should be visible
+    Then BDD-Find-Child link in gallery should be visible
+    When user enters "zzz-no-such-space" into gallery search
+    Then BDD-Find-Child link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Find-Child link in gallery should be visible

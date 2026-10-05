@@ -1,8 +1,8 @@
 /* The steps only Dendrogram can define: the tree table its newick viewers show (TreeHelper.newickToDf:
    a row per node, with node, parent and leaf columns). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 /** Open and double-click in Browse show a newick file's preview; the view the file handler builds
  * (a tree table with a Dendrogram) is reached from the handler itself. */

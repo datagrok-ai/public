@@ -294,6 +294,9 @@ importers:
       '@datagrok-libraries/utils':
         specifier: workspace:^
         version: link:../utils
+      '@types/json-logic-js':
+        specifier: ^2.0.8
+        version: 2.0.8
       '@types/lodash.clonedeepwith':
         specifier: ^4.5.9
         version: 4.5.9
@@ -361,9 +364,6 @@ importers:
       '@datagrok-libraries/codegen-async-to-sync':
         specifier: workspace:^
         version: link:../codegen-async-to-sync
-      '@types/json-logic-js':
-        specifier: ^2.0.8
-        version: 2.0.8
       '@types/lodash.isequal':
         specifier: ^4.5.8
         version: 4.5.8
@@ -997,7 +997,7 @@ importers:
         specifier: 'catalog:'
         version: 8.1.5
       datagrok-api:
-        specifier: workspace:^
+        specifier: ^1.27.0
         version: link:../../js-api
       dayjs:
         specifier: 'catalog:'
@@ -3618,6 +3618,12 @@ importers:
         specifier: 'catalog:'
         version: 2.1.0
     devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.62.1
+        version: 1.63.0
       '@types/wu':
         specifier: 'catalog:'
         version: 2.1.44
