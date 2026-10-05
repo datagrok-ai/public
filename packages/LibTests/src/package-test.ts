@@ -58,6 +58,7 @@ import './tests/compute-utils/fitting/pool-multi-session';
 import './tests/compute-utils/fitting/formula-resolver';
 import './tests/compute-utils/history-file-inputs';
 import './tests/compute-utils/history-new-id';
+import './tests/compute-utils/model-handler-icon';
 import './tests/arrow/roundtrip';
 import './tests/arrow/titanic';
 import './tests/webcomponents/viewer-host';

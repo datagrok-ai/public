@@ -211,12 +211,15 @@ export class ModelHandler extends DG.ObjectHandler {
     if (func instanceof DG.Script && (fpackage == null || func.options['icon'] == null))
       return this.getLanguageIcon(func.language);
 
-    func = DG.Func.find({package: func.package.name, name: func.name})[0];
+    if (fpackage == null)
+      return ui.iconSvg('project');
+
+    func = DG.Func.find({package: fpackage.name, name: func.name})[0];
     fpackage = getPackage(func);
     if (!fpackage)
       return ui.iconSvg('project');
 
-    let iconUrl = fpackage?.getIconUrl();
+    let iconUrl = fpackage.getIconUrl();
 
     if (func.options['icon'] != null) {
       const packagePathSegments = iconUrl.split('/');
@@ -224,7 +227,7 @@ export class ModelHandler extends DG.ObjectHandler {
       packagePathSegments.push(func.options['icon']);
       iconUrl = packagePathSegments.join('/');
     }
-    return ui.iconImage(func.package.name, iconUrl);
+    return ui.iconImage(fpackage.name, iconUrl);
   }
 
   override renderView(x: DG.Func) {
