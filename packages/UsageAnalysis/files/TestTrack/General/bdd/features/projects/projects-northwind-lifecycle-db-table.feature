@@ -19,8 +19,10 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   The second account (the library's sharing user) signs in on the feature's page and opens the
   shared project with its 830 rows. Parked (see the request document): the md's recipient without
   access to the connection (the Data loading error with OPEN ANYWAY and CLOSE PROJECT, no EDIT
-  SCRIPT...) and the connection shared with it afterwards — on dev the sharing account already
-  reads NorthwindTest, so the open gets the data and the precondition does not hold. The
+  SCRIPT...) and the connection shared with it afterwards — on dev the sharing account has no
+  grant on NorthwindTest (Dbtests:PostgresTest; its share list, 2026-10-05), yet the table
+  project opens for it with the 830 rows, so the md's error never comes (unlike the query project
+  of projects-northwind-lifecycle-query, which needs the connection shared). The
   System:Datagrok version for other stands is parked too (its row counts differ per server and
   need a remembered row count).
 

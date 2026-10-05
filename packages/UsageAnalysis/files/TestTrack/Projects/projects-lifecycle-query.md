@@ -27,8 +27,10 @@ instead of showing the saved rows.
 
 ## Setup
 
-1. Two accounts: the **owner** (test user) and a **second user** who
-   can access the **NorthwindTest** Postgres connection.
+1. Two accounts: the **owner** (test user) and a **second user**. The
+   second user gets the **NorthwindTest** connection in step 4: sharing
+   a project shares its query but not the query's connection, and
+   without the connection the recipient's open does not finish.
 2. **NorthwindTest** exists only on dev.
 3. Names in this test: query `lifecycleQuery`, project
    `lifecycleQueryProj`.
@@ -61,9 +63,16 @@ instead of showing the saved rows.
    - In the **Share** dialog, click **CANCEL**.
    - Right-click the left sidebar and select **Close All**.
 
-4. **Share the project only.**
+4. **Share the project, then the connection.**
    - Go to **Browse > Dashboards**.
    - Right-click the `lifecycleQueryProj` tile and choose **Share...**.
+   - Type the second user into **User, group, or email**.
+   - Pick the second user from the suggestion list.
+   - Leave **View and use** selected.
+   - Switch **Send notifications** off.
+   - Click **OK**.
+   - Go to **Browse > Databases > Postgres**.
+   - Right-click **NorthwindTest** and choose **Share...**.
    - Type the second user into **User, group, or email**.
    - Pick the second user from the suggestion list.
    - Leave **View and use** selected.
@@ -145,6 +154,10 @@ instead of showing the saved rows.
     - **Verify:** the dialog says *Delete query
       "lifecycleQueryRenamed"?*.
     - Click **DELETE**.
+    - In **Browse > Databases > Postgres**, right-click **NorthwindTest**
+      and choose **Share...**.
+    - Hover the second user's row and click its remove icon.
+    - Click **OK**.
 
 ## Expected results
 

@@ -10,7 +10,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
 
   As written in the md: a query is made in the Browse tree with New SQL Query... on NorthwindTest >
   Schemas > public > orders (select * from public.orders), saved under its own name, run from the
-  tree (830 rows), and its result saved as a project with Data sync on. The project alone is shared
+  tree (830 rows), and its result saved as a project with Data sync on. The project is shared
   with the second account (notifications off). Then the query is renamed (github-3550): the owner
   opens the project again and gets the 830 rows re-read from the database. The project goes through
   Delete Project and the query through its Delete. Translated from the TestTrack case
@@ -19,14 +19,16 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
   The query's SQL is then changed to "limit 100" in its editor and, after the page is reloaded as
   the md does, the owner's reopen shows 100 rows.
 
-  Parked (see the request document): the recipient's opens (before the rename, and after the
-  rename and the SQL change). Signed in as the sharing user on dev (1.28.0), the double-click on the
-  card leaves "Opening project" in the task bar for over two minutes with the Dashboards view
-  current, and no table and no message come — a suspected defect, described outside the
-  repository. Kept without one claim, restored with the phrase: that the Save dialog lists only the
-  query's table (the project-table rows cannot be counted apart from the dialog's other rows with
-  library phrases). The System:Datagrok version for other stands is parked (row counts differ per
-  server).
+  The project is shared with the second account (the library's sharing user), and so is the
+  NorthwindTest connection, from its Browse tree node: sharing a project shares its query, not the
+  query's connection, and without the connection the recipient's open never finishes. The second
+  account signs in on the feature's page and opens the project before the rename, and after the rename
+  and the SQL change. The connection's grant is taken back through its Share dialog after the second
+  open; a grant left by a run that failed before that point is not swept (no step reads or removes a
+  connection grant outside the dialog — see the request document). Kept without one claim, restored
+  with the phrase: that the Save dialog lists only the query's table (the project-table rows cannot be
+  counted apart from the dialog's other rows with library phrases). The System:Datagrok version for
+  other stands is parked (row counts differ per server).
 
   The query and the project are named with the run's time (letters and digits only) and removed,
   the query under both its names, at the start and at the end. It is serial: the Dashboards search
@@ -84,7 +86,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Only the project is shared with the second account, without notifications
+  Scenario: The project is shared with the second account, without notifications
     When user closes all views
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -101,7 +103,39 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     Then the context panel should show "BDDNwLifeQProj{time}"
     And the sharing pane should list the sharing user
 
+  Scenario: The NorthwindTest connection is shared with the second account
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "Share..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then "Share NorthwindTest" dialog should be visible
+    And share access selector should contain text "View and use"
+    When user picks the sharing user in "User, group, or email" input in "Share NorthwindTest" dialog
+    And user unchecks "Send notifications" input in "Share NorthwindTest" dialog
+    And user clicks on OK button in "Share NorthwindTest" dialog
+    Then the "Share NorthwindTest" dialog should close
+    When user clicks on Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then the sharing pane should list the sharing user
+
+  Scenario: The second account opens the shared project
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeQProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    Then the current view should be a TableView view
+    And the table should have 830 rows
+    And the table should have been reloaded by data sync
+    And "Data loading error" dialog should be absent
+    When user closes all views
+    And user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: The query is renamed in the Browse tree
+    Then the running account should be signed in
     When user closes all views
     Given the browse panel is open
     When user clicks on "Refresh" icon inside browse toolbar
@@ -143,7 +177,10 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
     When user collapses Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree
-    And user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree
+    # the refreshed tree lists the connection's children again after the collapse: claim the node there before aiming at it
+    Then Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree should be visible
+    And Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree should be visible
+    When user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree
     Then the current view should be a DataQueryView view
     When user replaces the code of code editor with "select * from public.orders limit 100"
     And user clicks on Save button
@@ -159,6 +196,35 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And the table should have 100 rows
     And "Data loading error" dialog should be absent
     And no error or warning balloon should have been shown
+
+  Scenario: The second account opens the project after the rename and the SQL change (github-3550)
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeQProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    Then the current view should be a TableView view
+    And the table should have 100 rows
+    And "Data loading error" dialog should be absent
+    When user closes all views
+    And user signs in as themselves again
+    Then the running account should be signed in
+
+  Scenario: The owner takes the connection's share back
+    Then the running account should be signed in
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    When user picks "Share..." from the context menu of Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then "Share NorthwindTest" dialog should be visible
+    When user removes the sharing user from "Share NorthwindTest" dialog
+    And user clicks on OK button in "Share NorthwindTest" dialog
+    Then the "Share NorthwindTest" dialog should close
+    When user clicks on Databases---Postgres---NorthwindTest tree node inside browse tree
+    Then the sharing pane should not list the sharing user
 
   Scenario: Delete Project removes the project, and Delete the renamed query
     When user closes all views
