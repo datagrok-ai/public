@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 
 ## 1.9.1 (WIP)
