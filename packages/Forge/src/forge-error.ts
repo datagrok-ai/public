@@ -4,3 +4,7 @@ export class ForgeError extends Error {
     this.name = 'ForgeError';
   }
 }
+
+export function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}

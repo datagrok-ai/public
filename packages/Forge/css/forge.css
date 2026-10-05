@@ -2,3 +2,45 @@
   align-items: baseline;
   gap: 8px;
 }
+
+.forge-apply-rows {
+  overflow-y: auto;
+}
+
+.forge-group-header {
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--text-color);
+}
+
+.forge-group-chevron {
+  flex: 0 0 14px;
+  width: 14px;
+  display: flex;
+  justify-content: center;
+}
+
+.forge-group-summary {
+  font-weight: normal;
+  color: var(--text-color-light);
+}
+
+.forge-group-summary.forge-group-invalid {
+  color: var(--failure);
+}
+
+.ui-input-radio.forge-inline-radio > .ui-input-editor {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: 8px;
+}
+
+/* 350px is the platform's column input width (ui.css), so Train ends under the Target and Features inputs. */
+.ui-form > .ui-input-buttons.forge-train-row > div.ui-input-editor {
+  flex: 0 1 350px;
+  box-sizing: border-box;
+  justify-content: flex-end;
+}

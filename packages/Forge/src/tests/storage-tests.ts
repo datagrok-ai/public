@@ -44,7 +44,12 @@ category('Storage', () => {
         started_on: new Date().toISOString(),
       });
       await forgeDb.applications.insert({model_id: modelId, row_count: 150, source: 'api', status: 'completed'});
-      expect(await applicationCount(), 1);
+      const [{id: cancelledId}] = await forgeDb.applications.insert({model_id: modelId, row_count: 150,
+        skipped_rows: 3, source: 'ui', status: 'cancelled'});
+      expect(await applicationCount(), 2);
+      const cancelled = await forgeDb.applications.get(cancelledId);
+      expect(cancelled.status, 'cancelled');
+      expect(cancelled.skipped_rows, 3);
     } finally {
       try {
         if (runId !== undefined)
@@ -75,7 +80,7 @@ category('Storage', () => {
   test('saveModel writes the blob and the row in no-data mode', async () => {
     const stamp = Date.now();
     const iris = await openIris();
-    const request = requestOf(iris.clone(null, MEASUREMENTS), iris.getCol('Species'));
+    const request = await requestOf(iris.clone(null, MEASUREMENTS), iris.getCol('Species'));
     const result = await trainModel(request);
     const id = await saveModel(modelFieldsOf({name: `forge-test-model-${stamp}`, description: '',
       engine: request.engine, datasetName: iris.name, result,
@@ -138,7 +143,7 @@ category('Storage', () => {
     const values = Array.from({length: 12}, (_, i) => i + 1);
     const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', values);
     const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', values.map((v) => v * 2));
-    const request = requestOf(DG.DataFrame.fromColumns([x]), y);
+    const request = await requestOf(DG.DataFrame.fromColumns([x]), y);
     const runId = await recordTrainingRun(trainingRunOf({request, datasetName: `forge-test-run-${stamp}`,
       fingerprint: datasetFingerprint(request.features, y), status: 'completed',
       startedOn: new Date().toISOString(), durationMs: 0}));

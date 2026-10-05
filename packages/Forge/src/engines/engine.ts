@@ -26,8 +26,12 @@ export function hyperparametersOf(engine: Engine): DG.Property[] {
 }
 
 export function defaultHyperparameters(engine: Engine): Hyperparameters {
+  return defaultValuesOf(hyperparametersOf(engine));
+}
+
+export function defaultValuesOf(props: DG.Property[]): Hyperparameters {
   const values: Hyperparameters = {};
-  for (const p of hyperparametersOf(engine)) {
+  for (const p of props) {
     const value = initialValueOf(p);
     if (value !== undefined)
       values[p.name] = value;
@@ -36,6 +40,7 @@ export function defaultHyperparameters(engine: Engine): Hyperparameters {
 }
 
 // A header default (`= 20`) is kept as the input's initial value, in text; `defaultValue` stays empty.
+// The server keeps a string default in single quotes (`'RBF'`), an annotation in double quotes.
 function initialValueOf(p: DG.Property): number | string | boolean | undefined {
   const text: unknown = p.initialValue;
   if (typeof text !== 'string' || text === '')
@@ -43,7 +48,7 @@ function initialValueOf(p: DG.Property): number | string | boolean | undefined {
   if (p.propertyType === DG.TYPE.BOOL)
     return text.toLowerCase() === 'true';
   if (p.propertyType === DG.TYPE.STRING)
-    return text.replace(/^"(.*)"$/, '$1');
+    return text.replace(/^(["'])(.*)\1$/, '$2');
   if (!NUMBER_TYPES.includes(p.propertyType))
     return undefined;
   const value = Number(text);

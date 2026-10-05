@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "tables": {
     "model": {
       "securityMode": "row",
@@ -13,17 +13,17 @@
       "columns": {
         "name": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
         "description": {"type": "string", "editor": "textarea", "searchable": true, "friendlyName": "Description"},
-        "engine_name": {"type": "string", "required": true, "friendlyName": "Method", "description": "Engine id: the mlname meta of its functions"},
-        "engine_namespace": {"type": "string", "required": true, "friendlyName": "Package", "description": "Package of the train function (function engines) or its namespace (script engines)"},
+        "engine_name": {"type": "string", "required": true, "friendlyName": "Method", "description": "Method id: the mlname meta of its functions"},
+        "engine_namespace": {"type": "string", "required": true, "friendlyName": "Package", "description": "Package of the method's train function, or the namespace of a script method"},
         "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"], "friendlyName": "Method type"},
         "task": {"type": "string", "required": true, "choices": ["regression", "classification"], "friendlyName": "Task"},
         "target_name": {"type": "string", "required": true, "friendlyName": "Target"},
         "target": {"type": "json", "friendlyName": "Target details", "description": "{name, type, semType?, categories?}"},
         "features": {"type": "json", "friendlyName": "Features", "description": "{columns: [{name, type, semType?}]} in training order"},
         "feature_count": {"type": "int", "min": 0, "friendlyName": "Feature count"},
-        "options": {"type": "json", "friendlyName": "Preparation", "description": "Preparation replay; keys compatible with the old models: preprocessingInfo, postprocessingInfo, positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls"},
+        "options": {"type": "json", "friendlyName": "Preparation", "description": "Preparation replay; keys compatible with the old models: preprocessingInfo, postprocessingInfo, positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls. missingValues: {mode, neighbors?, distance?, skippedRows}; the preprocessingInfo ids ignore-missing and impute-missing record the missing-value handling and are not replayed"},
         "hyperparameters": {"type": "json", "friendlyName": "Hyperparameters", "description": "{<train function input>: value}"},
-        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{validation: {<metric id>: number}, train?: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc"},
+        "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv (auc reserved, not written yet)"},
         "seed": {"type": "int", "friendlyName": "Seed"},
         "splitting": {"type": "json", "friendlyName": "Data split", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
         "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage"},
@@ -31,7 +31,7 @@
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
         "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, id?, path?, params?, script?}"},
         "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the uploaded table; no foreign key, existence is checked on read"},
-        "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, min?, max?, mean?, categories?}]}"},
+        "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},
         "blob": {"type": "file", "friendlyName": "Model file", "description": "file://System:DomainFiles/forge/model/<uuid>/model.bin"},
         "has_training_rows": {"type": "bool", "default": false, "friendlyName": "Contains training rows", "description": "The blob embeds training rows (SVM, KNN)"},
         "legacy_id": {"type": "string", "unique": true, "friendlyName": "Legacy id", "description": "Id of the migrated core model"}
@@ -77,16 +77,17 @@
       "delegate": "model_id",
       "audit": false,
       "friendlyName": "Applications",
-      "description": "One application of a model to a table: who, when, how many rows; secured by the model",
+      "description": "One application of a model to a table: who, when, how many rows, the prediction column and the outcome; secured by the model",
       "columns": {
         "model_id": {"type": "ref", "ref": "model", "required": true, "onDelete": "cascade", "friendlyName": "Model"},
-        "table_name": {"type": "string"},
-        "row_count": {"type": "int", "required": true, "min": 0},
-        "column_name": {"type": "string", "description": "Name of the prediction column"},
-        "source": {"type": "string", "required": true, "choices": ["ui", "api"], "default": "ui"},
-        "status": {"type": "string", "required": true, "choices": ["completed", "failed"], "default": "completed"},
-        "error": {"type": "string"},
-        "duration_ms": {"type": "int", "min": 0}
+        "table_name": {"type": "string", "friendlyName": "Table"},
+        "row_count": {"type": "int", "required": true, "min": 0, "friendlyName": "Rows"},
+        "skipped_rows": {"type": "int", "min": 0, "friendlyName": "Skipped rows", "description": "Rows left without a prediction because of missing values"},
+        "column_name": {"type": "string", "friendlyName": "Prediction column", "description": "Name of the prediction column"},
+        "source": {"type": "string", "required": true, "choices": ["ui", "api"], "default": "ui", "friendlyName": "Source"},
+        "status": {"type": "string", "required": true, "choices": ["completed", "failed", "cancelled"], "default": "completed", "friendlyName": "Status"},
+        "error": {"type": "string", "friendlyName": "Error"},
+        "duration_ms": {"type": "int", "min": 0, "friendlyName": "Duration (ms)"}
       }
     }
   }

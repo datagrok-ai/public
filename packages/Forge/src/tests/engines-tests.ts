@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {defaultHyperparameters, hyperparametersOf, isComplete, rolesOf} from '../engines/engine';
+import {defaultHyperparameters, defaultValuesOf, hyperparametersOf, isComplete, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {isApplicable, isInteractive} from '../engines/engine-calls';
 import {engineByName, IRIS} from './test-data';
@@ -38,6 +38,14 @@ category('Engines', () => {
     const xgboost = engineByName(EngineRegistry.discover(), 'XGBoost');
     expect(JSON.stringify(defaultHyperparameters(xgboost)),
       JSON.stringify({iterations: 20, eta: 0.3, maxDepth: 6, lambda: 1, alpha: 0}));
+  });
+
+  test('a string default loses the quotes the server keeps it in', async () => {
+    const kernel = hyperparametersOf(engineByName(EngineRegistry.discover(), 'SVM')).find((p) => p.name === 'kernel');
+    if (kernel === undefined)
+      throw new Error('SVM has no kernel input');
+    expect(/^["']RBF["']$|^RBF$/.test(kernel.initialValue), true, `Initial value ${kernel.initialValue}`);
+    expect(defaultValuesOf([kernel])['kernel'], 'RBF');
   });
 
   test('isApplicable and isInteractive through the contract', async () => {

@@ -1,7 +1,8 @@
 import {Engine} from '../engines/engine';
 import {ModelInsert, TrainingRunInsert, TrainingRunStatus} from '../generated/db';
-import {FeaturesSchema, MetricsRecord, PreparationOptions, Splitting, TargetSchema, TrainingRequest, TrainingResult,
-  trainingSetupOf} from '../training/train-model';
+import {PreparationOptions} from '../preparation/preparation-options';
+import {FeaturesSchema, MetricsRecord, Splitting, TargetSchema, TrainingRequest, TrainingResult, trainingSetupOf}
+  from '../training/train-model';
 import {DatasetFingerprint} from './dataset-fingerprint';
 
 type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint';

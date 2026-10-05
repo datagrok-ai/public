@@ -5,17 +5,22 @@ import * as rxjs from 'rxjs';
 import {randomInt} from '@datagrok-libraries/utils/src/random';
 import {defaultHyperparameters, Engine, Hyperparameters, hyperparametersOf, isComplete} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {ForgeError} from '../forge-error';
+import {errorMessage, ForgeError} from '../forge-error';
 import {TrainingRunStatus} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId} from '../metrics/metrics';
 import {DatasetFingerprint, datasetFingerprint} from '../storage/dataset-fingerprint';
 import {modelFieldsOf, trainingRunOf} from '../storage/model-fields';
 import {saveModel} from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
+import {missingColumnsOf} from '../preparation/missing-values';
+import {releaseFrame} from '../preparation/shared-frame';
 import {defaultFeatures} from '../training/default-features';
-import {checkTrainable, MetricsRecord, TrainingProblems, trainingProblems, TrainingRequest, TrainingResult,
-  trainModel} from '../training/train-model';
-import {errorMessage, reportError} from './report-error';
+import {checkTrainable, MetricsRecord, prepareTraining, TrainingProblems, trainingProblems, TrainingRequest,
+  TrainingResult, TrainingSelection, trainModel} from '../training/train-model';
+import {ButtonGate} from './button-gate';
+import {CollapsibleGroup} from './collapsible-group';
+import {MissingValuesInputs} from './missing-values-inputs';
+import {reportError} from './report-error';
 import {saveModelDialog} from './save-model-dialog';
 
 const TRAIN_ENGINE = 'XGBoost';
@@ -26,12 +31,16 @@ const RESULTS_HINT = 'Choose the target and the features, then click Train.';
 const CHECKING = 'Checking the selection...';
 const TRAINING = 'Training is in progress.';
 const NO_TARGET = 'Choose a target.';
+const TARGET_TOOLTIP = 'The column the model learns to predict.';
 
 interface TrainForm {
   table: DG.DataFrame;
+  tableInput: DG.InputBase<DG.DataFrame | null>;
   target: DG.InputBase<DG.Column | null>;
   features: DG.InputBase<DG.Column[]>;
+  missingValues: MissingValuesInputs;
   hyperparameters: Map<string, DG.InputBase>;
+  groups: CollapsibleGroup[];
 }
 
 export interface Training {
@@ -46,15 +55,17 @@ export class TrainView extends DG.ViewBase {
   readonly trainButton: HTMLButtonElement;
   readonly saveButton: HTMLButtonElement;
   lastTraining: Training | undefined;
+  private readonly trainGate: ButtonGate;
   private readonly engine: Engine;
   private readonly formPane: HTMLDivElement;
   private readonly resultsHost: HTMLDivElement;
   private readonly changes = new rxjs.Subject<void>();
   private form: TrainForm;
+  // The current form's subscriptions: a Table change rebuilds the form and drops the old ones.
+  private formSubs: rxjs.Subscription[] = [];
   private problems: TrainingProblems | undefined;
   private checkNumber = 0;
   private trainBlocker: string | null = null;
-  private hasTrainTooltip = false;
   private isTraining = false;
 
   private constructor(table: DG.DataFrame, engine: Engine) {
@@ -63,6 +74,7 @@ export class TrainView extends DG.ViewBase {
     this.box = true;
     this.engine = engine;
     this.trainButton = ui.bigButton('Train', () => this.train());
+    this.trainGate = new ButtonGate(this.trainButton, () => this.isTraining ? TRAINING : this.trainBlocker);
     this.saveButton = ui.bigButton('Save', () => this.save());
     this.setRibbonPanels([[this.saveButton]]);
     this.formPane = ui.panel([]);
@@ -76,6 +88,15 @@ export class TrainView extends DG.ViewBase {
     return ui.iconSvg('model');
   }
 
+  detach(): void {
+    this.unsubscribeForm();
+    super.detach();
+  }
+
+  get tableInput(): DG.InputBase<DG.DataFrame | null> {
+    return this.form.tableInput;
+  }
+
   get targetInput(): DG.InputBase<DG.Column | null> {
     return this.form.target;
   }
@@ -86,6 +107,15 @@ export class TrainView extends DG.ViewBase {
 
   get hyperparameterInputs(): ReadonlyMap<string, DG.InputBase> {
     return this.form.hyperparameters;
+  }
+
+  get missingValuesInputs(): MissingValuesInputs {
+    return this.form.missingValues;
+  }
+
+  /** **Data** and **Method**. */
+  get groups(): readonly CollapsibleGroup[] {
+    return this.form.groups;
   }
 
   static async create(table: DG.DataFrame): Promise<TrainView> {
@@ -114,13 +144,18 @@ export class TrainView extends DG.ViewBase {
     this.updateButtons();
     let progress: DG.TaskBarProgressIndicator | undefined;
     try {
-      const request = this.request(randomInt(2 ** 31));
-      if (request === null)
+      const selection = this.selection(randomInt(2 ** 31));
+      if (selection === null)
         throw new ForgeError(NO_TARGET);
-      await checkTrainable(request);
+      await checkTrainable(selection);
       this.clearResults();
-      progress = DG.TaskBarProgressIndicator.create(`Training ${request.engine.name} model`, {cancelable: true});
-      this.lastTraining = await this.trainAndRecord(request, progress);
+      progress = DG.TaskBarProgressIndicator.create(`Training ${selection.engine.name} model`, {cancelable: true});
+      const request = await prepareTraining(selection);
+      try {
+        this.lastTraining = await this.trainAndRecord(request, progress);
+      } finally {
+        releaseFrame(request.features);
+      }
       this.showResults(this.lastTraining);
     } catch (e) {
       reportError(e);
@@ -163,10 +198,19 @@ export class TrainView extends DG.ViewBase {
     const target = table.columns.byIndex(table.columns.length - 1);
     const onChanged = () => this.requestCheck();
     const targetInput = ui.input.column('Target', {table, value: target, nullable: false,
-      tooltipText: 'The column the model learns to predict.', onValueChanged: onChanged});
+      tooltipText: TrainView.targetTooltip(target), onValueChanged: (t, input) => {
+        input.setTooltip(TrainView.targetTooltip(t));
+        onChanged();
+      }});
     const checked = defaultFeatures(table, target).map((c) => c.name);
+    const missingValues = new MissingValuesInputs(onChanged,
+      () => TrainView.messageOf(this.problems?.missingValues));
     const featuresInput = ui.input.columns('Features', {table, checked, nullable: false,
-      tooltipText: 'Columns the model uses to make predictions.', onValueChanged: onChanged});
+      tooltipText: 'Columns the model uses to make predictions.', onValueChanged: (columns) => {
+        missingValues.update(missingColumnsOf(columns));
+        onChanged();
+      }});
+    missingValues.update(missingColumnsOf(featuresInput.value));
     targetInput.addValidator(() => TrainView.messageOf(this.problems?.target));
     featuresInput.addValidator(() => TrainView.messageOf(this.problems?.features));
     const tableInput = ui.input.table('Table', {items: grok.shell.tables, value: table,
@@ -188,28 +232,41 @@ export class TrainView extends DG.ViewBase {
       hyperparameters.set(p.name, input);
     }
 
-    const form = ui.form([tableInput, targetInput, featuresInput, methodInput, ...hyperparameters.values()]);
-    form.append(ui.buttonsInput([this.trainButton]));
+    const dataInputs = [tableInput, targetInput, featuresInput, ...missingValues.inputs];
+    const methodInputs = [methodInput, ...hyperparameters.values()];
+    const groups = [new CollapsibleGroup('Data', [ui.form(dataInputs)]),
+      new CollapsibleGroup('Method', [ui.form(methodInputs)])];
+    this.unsubscribeForm();
+    this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError(methodInputs)];
+    const trainRow = ui.buttonsInput([this.trainButton]);
+    trainRow.classList.add('forge-train-row');
+    const buttons = ui.form([]);
+    buttons.append(trainRow);
     ui.empty(this.formPane);
-    this.formPane.append(form);
+    this.formPane.append(...groups.map((g) => g.root), buttons);
     this.clearResults();
     this.requestCheck();
-    return {table, target: targetInput, features: featuresInput, hyperparameters};
+    return {table, tableInput, target: targetInput, features: featuresInput, missingValues, hyperparameters, groups};
   }
 
-  private request(seed: number): TrainingRequest | null {
+  private unsubscribeForm(): void {
+    for (const sub of this.formSubs)
+      sub.unsubscribe();
+    this.formSubs = [];
+  }
+
+  private selection(seed: number): TrainingSelection | null {
     const target = this.form.target.value;
     if (target === null)
       return null;
-    const featureNames = this.form.features.value.map((c) => c.name);
     const hyperparameters: Hyperparameters = {};
     for (const [name, input] of this.form.hyperparameters) {
       const value: unknown = input.value;
       if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean')
         hyperparameters[name] = value;
     }
-    return {engine: this.engine, features: this.form.table.clone(null, featureNames), target, hyperparameters, seed,
-      folds: FOLDS};
+    return {engine: this.engine, features: this.form.features.value, target, hyperparameters, seed, folds: FOLDS,
+      missingValues: this.form.missingValues.settings()};
   }
 
   private requestCheck(): void {
@@ -223,14 +280,18 @@ export class TrainView extends DG.ViewBase {
   private async revalidate(): Promise<void> {
     const checkNumber = this.checkNumber;
     try {
-      const request = this.request(0);
-      const problems = request === null ? {target: [NO_TARGET], features: []} : await trainingProblems(request);
+      const selection = this.selection(0);
+      const problems = selection === null ? {target: [NO_TARGET], features: [], missingValues: []} :
+        await trainingProblems(selection);
       if (checkNumber !== this.checkNumber)
         return;
       this.problems = problems;
-      this.form.target.validate();
-      this.form.features.validate();
-      this.trainBlocker = [...problems.target, ...problems.features][0] ?? null;
+      const settings = this.form.missingValues.visibleInputs;
+      for (const input of [this.form.target, this.form.features, ...settings])
+        input.validate();
+      const invalidSettings = settings.map((input) => input.validity).filter((v): v is string => v !== null);
+      this.trainBlocker = [...problems.target, ...problems.features, ...problems.missingValues,
+        ...invalidSettings][0] ?? null;
       this.updateButtons();
     } catch (e) {
       if (checkNumber !== this.checkNumber)
@@ -242,14 +303,7 @@ export class TrainView extends DG.ViewBase {
   }
 
   private updateButtons(): void {
-    const reason = () => this.isTraining ? TRAINING : this.trainBlocker;
-    const isBlocked = reason() !== null;
-    // A disabled button shows its tooltip through an overlay, built once per disabled period on the attached button.
-    if (isBlocked && !this.hasTrainTooltip)
-      ui.setDisabled(this.trainButton, true, reason);
-    else if (!isBlocked)
-      ui.setDisabled(this.trainButton, false);
-    this.hasTrainTooltip = isBlocked;
+    this.trainGate.update();
     const training = this.lastTraining;
     ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved);
   }
@@ -287,9 +341,13 @@ export class TrainView extends DG.ViewBase {
     const ids = METRIC_IDS.filter((id) => validation[id] !== undefined);
     const label = (id: MetricId) => ui.tooltip.bind(ui.label(METRIC_LABELS[id]), METRIC_DESCRIPTIONS[id]);
     const format = (value: number | undefined) => value === undefined ? '' : value.toFixed(3);
+    const skippedRows = result.options.missingValues?.skippedRows ?? 0;
+    const rows = skippedRows === 0 ? [] :
+      [ui.divText(`Rows: ${result.rowCount} used, ${skippedRows} skipped (missing values).`)];
     ui.empty(this.resultsHost);
     this.resultsHost.append(
       ui.table(ids, (id) => [label(id), format(train[id]), format(validation[id])], ['Metric', 'Train', 'Validation']),
+      ...rows,
       ui.divText(`Validation: ${FOLDS}-fold cross-validation on ${result.rowCount} rows, seed ${result.seed}.`),
       ...(positiveClass === undefined ? [] : [ui.divText(`Positive class: ${positiveClass}.`)]),
     );
@@ -300,6 +358,14 @@ export class TrainView extends DG.ViewBase {
     const shortened = features.length > NAME_FEATURES_LENGTH ? `${features.substring(0, NAME_FEATURES_LENGTH)}...` :
       features;
     return `Predict ${result.target.name} by ${shortened}`;
+  }
+
+  private static targetTooltip(target: DG.Column | null): string {
+    const count = target?.stats.missingValueCount ?? 0;
+    if (target === null || count === 0)
+      return TARGET_TOOLTIP;
+    const skipped = count === 1 ? '1 row without a value is skipped' : `${count} rows without a value are skipped`;
+    return `${TARGET_TOOLTIP} ${target.name}: ${skipped}.`;
   }
 
   private static messageOf(messages: string[] | undefined): string | null {

@@ -7,12 +7,14 @@ import {Engine, hyperparametersOf, rolesOf} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {forgeDb} from '../generated/db';
 import {deleteModel, modelsChanged} from '../storage/model-store';
+import {openApplyDialog} from './apply-model-dialog';
 import {reportError} from './report-error';
 import '../../css/forge.css';
 
 const CATALOG_COLUMNS = ['name', 'engine_name', 'task', 'target_name', 'storage_mode', 'row_count'] as const;
 
 export class ForgeApp extends DG.ViewBase {
+  readonly applyIcon: HTMLElement;
   readonly deleteIcon: HTMLElement;
   private readonly grid: DG.Grid;
   private readonly emptyHint: HTMLElement;
@@ -31,10 +33,13 @@ export class ForgeApp extends DG.ViewBase {
     ]);
 
     this.grid = DG.Viewer.grid(models);
+    // Inline: the platform's 400px width for a box in a panel (ui.css) gives way only to an element style.
+    this.grid.root.style.width = '100%';
     this.emptyHint = ui.divText('No models yet.');
+    this.applyIcon = ui.iconFA('play', () => this.applyCurrentModel(), 'Apply model');
     this.deleteIcon = ui.icons.delete(() => this.deleteCurrentModel(), 'Delete model');
-    const header = ui.divH([ui.h2('Models'), ui.icons.sync(() => this.refresh(), 'Refresh'), this.deleteIcon],
-      'forge-pane-header');
+    const header = ui.divH([ui.h2('Models'), ui.icons.sync(() => this.refresh(), 'Refresh'), this.applyIcon,
+      this.deleteIcon], 'forge-pane-header');
     const modelsPane = ui.panel([header, this.emptyHint, this.grid.root]);
     this.bindCatalog();
     this.subs.push(modelsChanged.subscribe(() => this.refresh()));
@@ -97,12 +102,23 @@ export class ForgeApp extends DG.ViewBase {
     this.grid.columns.setVisible(visibleColumns);
     ui.setDisplay(this.emptyHint, this.models.rowCount === 0);
     this.currentRowSub?.unsubscribe();
-    this.currentRowSub = this.models.onCurrentRowChanged.subscribe(() => this.updateDeleteIcon());
-    this.updateDeleteIcon();
+    this.currentRowSub = this.models.onCurrentRowChanged.subscribe(() => this.updateRowIcons());
+    this.updateRowIcons();
   }
 
-  private updateDeleteIcon(): void {
-    ui.setDisabled(this.deleteIcon, this.models.currentRowIdx < 0);
+  private updateRowIcons(): void {
+    const hasRow = this.models.currentRowIdx >= 0;
+    ui.setDisabled(this.applyIcon, !hasRow);
+    ui.setDisabled(this.deleteIcon, !hasRow);
+  }
+
+  private async applyCurrentModel(): Promise<void> {
+    const row = this.models.currentRowIdx;
+    if (row < 0)
+      return;
+    // The catalog is not a table view, so there is often no current table: then the first open table.
+    await openApplyDialog(grok.shell.currentTable ?? grok.shell.tables[0] ?? null,
+      {modelId: this.models.getCol('id').get(row), switchToTable: true});
   }
 
   private deleteCurrentModel(): void {

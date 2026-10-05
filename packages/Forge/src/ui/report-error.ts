@@ -1,10 +1,6 @@
 import * as grok from 'datagrok-api/grok';
-import {ForgeError} from '../forge-error';
+import {errorMessage, ForgeError} from '../forge-error';
 import {_package} from '../package';
-
-export function errorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
-}
 
 export function reportError(e: unknown, isRepeating: boolean = false): void {
   const message = errorMessage(e);

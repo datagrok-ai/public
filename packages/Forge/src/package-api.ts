@@ -28,4 +28,20 @@ export namespace funcs {
   export async function forgeTrain(): Promise<void> {
     return await grok.functions.call('Forge:ForgeTrain', {});
   }
+
+  /**
+   * Applies a saved Forge model to the current table
+   */
+  export async function forgeApply(): Promise<void> {
+    return await grok.functions.call('Forge:ForgeApply', {});
+  }
+
+  /**
+   * Applies a saved Forge model to a table and adds the prediction column
+   * @param {string} model - Model id or name
+   * @param {any} columnNamesMap - Model feature name -> table column name
+   */
+  export async function applyModel(model: string , table: DG.DataFrame , columnNamesMap?: any , showProgress?: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Forge:ApplyModel', { model, table, columnNamesMap, showProgress });
+  }
 }

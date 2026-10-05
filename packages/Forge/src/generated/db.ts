@@ -21,7 +21,7 @@ export type TrainingRunStatus = 'completed' | 'failed' | 'cancelled';
 
 export type ApplicationSource = 'ui' | 'api';
 
-export type ApplicationStatus = 'completed' | 'failed';
+export type ApplicationStatus = 'completed' | 'failed' | 'cancelled';
 
 /** Row of `forge.model`. */
 export interface ModelRow {
@@ -176,6 +176,7 @@ export interface ApplicationRow {
   model_id: string;
   table_name?: string;
   row_count: number;
+  skipped_rows?: number;
   column_name?: string;
   source: ApplicationSource;
   status: ApplicationStatus;
@@ -188,6 +189,7 @@ export interface ApplicationInsert {
   model_id: string;
   table_name?: string;
   row_count: number;
+  skipped_rows?: number;
   column_name?: string;
   source: ApplicationSource;
   status: ApplicationStatus;
@@ -196,7 +198,7 @@ export interface ApplicationInsert {
 }
 
 export type ApplicationColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'model_id' |
-  'table_name' | 'row_count' | 'column_name' | 'source' | 'status' | 'error' | 'duration_ms';
+  'table_name' | 'row_count' | 'skipped_rows' | 'column_name' | 'source' | 'status' | 'error' | 'duration_ms';
 
 /** Expand keys of `forge.application` → fields each adds to the row (consumed by query()/builder). */
 export type ApplicationExpand = {
