@@ -65,6 +65,26 @@ export async function deleteChatsOf(page: Page, id: string): Promise<void> {
     await api.remove(`/chats/${chat}`);
 }
 
+/** The script the script view's Save made in a feature: its id for the cleanup, its name and grok name for
+ * the claims that look for it elsewhere (a gallery card links to the grok name). */
+export type SavedScript = {id: string; name: string; nqName: string};
+const savedScripts = new WeakMap<Page, SavedScript>();
+
+/** The page outlives the feature: the script is forgotten when the feature that saved it ends. */
+export function rememberSavedScript(page: Page, script: SavedScript | null): void {
+  if (script)
+    savedScripts.set(page, script);
+  else
+    savedScripts.delete(page);
+}
+
+export function savedScriptOf(page: Page): SavedScript {
+  const script = savedScripts.get(page);
+  if (!script)
+    throw new Error('no script has been saved in this feature yet: "user saves the script" comes first');
+  return script;
+}
+
 /** The picture the Save dialog or the Layouts pane stores for an entity (`<pictureId>.png`): the server
  * keeps it when it deletes the entity, so the feature that made the entity deletes it, read back gone.
  * The thumbnails the server cuts from it (`<pictureId>_<width>.png`) have no delete of their own. A copy
@@ -103,6 +123,24 @@ export async function serverNow(page: Page): Promise<number> {
     throw new Error('server clock response has no valid Date header');
   return time;
 }
+
+/** What a capability gate makes of the service health a stand reports (`grok.dapi.admin.getServiceInfos()`):
+ * '' when the named service is enabled and Running, else why not. A stand that reports no health at all (a
+ * dev stack whose datlas runs without `checkHealth`) says nothing about the service: a lenient gate lets the
+ * test go on, a strict one (a tutorial, which refuses to start on such a stand) counts it as absent. */
+export function serviceGap(services: {name: string; enabled: boolean; status: string}[], name: string, strict = false): string {
+  if (services.length === 0)
+    return strict ? 'the stand reports no service health' : '';
+  const service = services.find((s) => s.name === name);
+  if (service == null)
+    return 'absent';
+  return service.enabled && service.status === 'Running' ? '' : `${service.enabled ? '' : 'disabled, '}${service.status}`;
+}
+
+/** The service health the page's stand reports, for `serviceGap`. */
+export const reportedServices = (page: Page): Promise<{name: string; enabled: boolean; status: string}[]> =>
+  page.evaluate(async () => (await grok.dapi.admin.getServiceInfos())
+    .map((s: any) => ({name: String(s.name), enabled: !!s.enabled, status: String(s.status)})));
 
 /* A fixture name ends in its run's {run} or {time}. A run that was killed never reached its
    feature-end cleanup, so the fixtures of the same family that are older than any live feature go too. */

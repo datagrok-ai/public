@@ -1,8 +1,0 @@
-name: help
-
-environment:
-  sdk: '>=1.0.0 <2.0.0'
-
-dev_dependencies:
-  args: any
-  path: any

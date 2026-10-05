@@ -17,6 +17,10 @@ element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases:
 element('browse tree', {selector: '.grok-view-browse [role="tree"], .layout-browse [role="tree"]',
   description: 'the tree inside the browse panel — the scope for a node phrase ("Files tree node inside browse tree")'});
 element('context panel', {selector: '.grok-prop-panel', aliases: ['property panel']});
+element('favorite star', {selector: '.d4-star', aliases: ['favorites star'],
+  description: 'the star beside an entity\'s name in the context panel that adds it to favorites and takes it out; it carries no aria state, only `fas` (a favorite) or `fal`, so claim the favorites on the server'});
+element('browse panel close icon', {selector: '.grok-browse-header .panel-titlebar-button-close',
+  description: 'the close button of the title bar of the Browse panel (aria-label "Close Browse")'});
 element('console', {selector: '.d4-console-wrapper'});
 element('status bar', {selector: '.layout-status-bar', aliases: ['statusbar'],
   parts: {'view panel': '.d4-view-status-panel'}});
@@ -24,6 +28,8 @@ element('column manager', {selector: '.panel-content > .d4-column-grid', aliases
   description: 'the Columns pane a click on "Columns: N" in the status bar docks: a search, a type filter and a grid of the current table\'s columns (`column_grid.dart`)'});
 element('open tableview', {selector: '.d4-table-view, .grok-table-view', aliases: ['current table view', 'table view']});
 element('grid', {selector: '[name="viewer-Grid"]', aliases: ['the grid'], gestures: {click: 'mouse'}});
+element('viewer selector', {selector: '[name="viewer selector"]', aliases: ['inner viewer selector'],
+  description: 'the viewer-type combo of a viewer that hosts others (the control panel of a Trellis plot); scope it: "viewer selector in trellis plot viewer"'});
 element('gallery', {selector: '.grok-gallery-grid', aliases: ['item gallery'],
   parts: {card: '.grok-gallery-grid-item-wrapper'},
   description: 'the card gallery of the platform — the contents of a Files folder, a space, the Apps list; '
@@ -78,6 +84,24 @@ element('column picker popup', {selector: '.d4-column-grid', aliases: ['column g
   description: 'the column grid a Dart column selector or a + icon opens (the platform appends it to the page body); absent once a column is taken or the picker is dismissed'});
 element('help panel', {selector: '.grok-help', aliases: ['help pane'],
   description: 'the help the shell shows for the current object (a viewer\'s "?" icon opens its page)'});
+
+/* The Add viewer gallery (PowerPack's `viewers-gallery.ts`, opened by the ribbon's "Add viewer" icon):
+   the recently used cards are a copy of the others under `viewer-card-recent-<name>`, left out here. */
+element('viewer gallery', {selector: '[name="viewer-gallery-root"]', aliases: ['add viewer gallery']});
+element('viewer gallery search', {selector: '[name="viewer-gallery-search"]', aliases: ['viewer gallery search box']});
+kind('viewer card', {aliases: ['viewer cards'], selector: '[name^="viewer-card-"]:not([name^="viewer-card-recent-"])', match: ['label'],
+  labelSelector: '.card-label', description: 'a card of the Add viewer gallery, by the viewer name it shows ("Radar" viewer card)'});
+kind('viewer tag', {aliases: ['viewer tags'], selector: '[name^="viewer-tag-"]', match: ['text'],
+  description: 'a tag of the Add viewer gallery that filters its cards ("Charts" viewer tag)'});
+
+/* The model cards of the Diff Studio hub (templates and the library), by the label in the card's header. A
+   model run before has a second card in the account's Recent section, which is left out. */
+kind('model card', {aliases: ['model cards', 'hub card', 'hub cards'],
+  selector: '.diff-studio-hub-card:not([name="section-Recent"] > .diff-studio-hub-card)',
+  match: ['label'], labelSelector: '.diff-studio-hub-card-header'});
+
+element('hint popup', {selector: '.ui-hint-popup', aliases: ['hint balloon'],
+  description: 'a popup ui.hints.addHint shows beside an element (the tour of the viewers a tutorial added)'});
 element('column name input', {selector: '[name="input-Add-New-Column---Name"]',
   description: 'the Name field of the Add New Column dialog (Edit > Add New Column), which has neither a label nor a placeholder of its own; while it is empty its placeholder follows the formula'});
 element('input history menu', {selector: '[name="input-history"]',

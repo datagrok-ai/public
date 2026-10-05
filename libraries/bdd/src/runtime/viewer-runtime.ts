@@ -1174,22 +1174,23 @@ function install(): void {
     if ((e.target as Element | null)?.closest?.('.d4-dialog [name="button-OK"], .d4-dialog [name="button-RUN"]'))
       dialogOkAt = Date.now();
   }, true);
-  const armCommand = (path: string): void => {
+  /** `path` is a top menu path; `null` arms the next data query call (a query run from a link or an icon). */
+  const armCommand = (path: string | null): void => {
     const t = grok.shell.t;
     columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
     command = undefined;
     commandArm?.unsubscribe();
-    const want = norm(path);
+    const want = path === null ? null : norm(path);
     const sub = grok.functions.onBeforeRunAction.subscribe((fc: any) => {
       const menu = fc?.func?.topMenu;
-      if (!menu || norm(menu) !== want)
+      if (want === null ? !(fc?.func instanceof (window as any).DG.DataQuery) : !menu || norm(menu) !== want)
         return;
       sub.unsubscribe();
       if (commandArm === sub)
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
-      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()} as NonNullable<typeof command>;
+      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path ?? 'the query'), done, started: Date.now()} as NonNullable<typeof command>;
       // an unsaved call has no id: two undefined ids are not the same call (a transform the
       // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {

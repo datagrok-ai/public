@@ -18,7 +18,7 @@ To convert sequences, go to **Bio** > **Convert** > **Notation...** and configur
 - **Target Notation**: Select the desired output format (fasta, helm, separator).
 - **Separator**: If converting to **separator**, specify the delimiter (e.g., `-`, `.`, `/`).
 
-![Notation converter](../../help/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
+![Notation converter](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/macromolecules-notation-converter-800.gif "Notation converter")
 
 See: 
 
@@ -31,11 +31,11 @@ For linear sequences, the linear form (see the illustration below) of molecules 
 for better visual inspection of sequence and duplex comparison. Structure at the atomic level could be saved in available
 notations.
 
-![Datagrok-generated atom structure for the ATGCATGC sequence](../../help/uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
+![Datagrok-generated atom structure for the ATGCATGC sequence](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/macromolecules-7.png "Datagrok-generated atom structure for the ATGCATGC sequence")
 
 You can easily run this feature for any sequence data using the Bio package and accessing it from the top menu.
 
-![Restoring structure atomic level](../../help/uploads/macromolecules/restore-structures-800.gif)
+![Restoring structure atomic level](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/restore-structures-800.gif)
 
 See:
 
@@ -59,7 +59,7 @@ See:
 
 Splitting to monomers allows splitting aligned sequences in separate monomers.
 
-![Splitting to monomers](../../help/uploads/macromolecules/splitting-to-monomers-800.gif)
+![Splitting to monomers](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/splitting-to-monomers-800.gif)
 
 See:
 
@@ -111,13 +111,13 @@ is not specified, then the Logo will be plotted from the first (till the last) p
 | positionMargin       | 0 or 4   | 4 - for sequences of multichar monomers, 0 - single char                                                                |
 | positionHeight       | '100%'   | choices: ['100%', 'Entropy'] The way to calculate overall monomers stack height at position                             |
 
-![Web Logo](../../help/visualize/viewers/img/weblogo.gif "Web Logo")
+![Web Logo](https://raw.githubusercontent.com/datagrok-ai/help/master/visualize/viewers/img/weblogo.gif "Web Logo")
 
 See also:
 
-* [WebLogo](../../help/visualize/viewers/web-logo.md)
-* [Viewers](../../help/visualize/viewers/viewers.md)
-* [Table view](../../help/datagrok/concepts/table.md)
+* [WebLogo](https://datagrok.ai/help/visualize/viewers/web-logo)
+* [Viewers](https://datagrok.ai/help/visualize/viewers)
+* [Table view](https://datagrok.ai/help/datagrok/concepts/table)
 
 ## Sequence space
 
@@ -129,7 +129,7 @@ the Bio package. Depending on the sequence type, different distance functions wi
 
 To launch the analysis from the top menu, select Bio | Structure | Sequence space.
 
-![Sequence space](../../help/uploads/macromolecules/sequence_space-800.gif)
+![Sequence space](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/sequence_space-800.gif)
 
 See:
 
@@ -145,7 +145,7 @@ A custom scatter plot with cliffs will be added to the right side of the grid. T
 
 To launch the analysis from the top menu, select Bio | SAR | Sequence Activity Cliffs.
 
-![Running activity cliffs](../../help/uploads/macromolecules/activity_cliffs_open-800.gif)
+![Running activity cliffs](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/activity_cliffs_open-800.gif)
 
 See:
 
@@ -157,7 +157,7 @@ Similarity Search tool allows users to find sequences that are most similar to t
 
 To launch the search from the top menu, select Bio | Search | Similarity Search
 
-![Running similarity search](../../help/uploads/macromolecules/similarity_search-800.gif)
+![Running similarity search](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/similarity_search-800.gif)
 
 ## Diversity Search
 
@@ -165,7 +165,7 @@ Diversity Search tool allows users to find sequences that are most diverse in th
 
 To launch the search from the top menu, select Bio | Search | Diversity Search
 
-![Running diversity search](../../help/uploads/macromolecules/diversity_search-800.gif)
+![Running diversity search](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/diversity_search-800.gif)
 
 ## Sequence scoring
 
@@ -177,7 +177,7 @@ The identity score represents a fraction of the identical monomers in correspond
 
 Identity scoring can be found in the top menu: **Bio → Calculate → Identity...**.
 
-![Running identity scoring](../../help/uploads/macromolecules/identity_scoring-800.gif)
+![Running identity scoring](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/identity_scoring-800.gif)
 
 ### Similarity
 
@@ -185,4 +185,4 @@ The similarity score represents the sum of fingerprint similarity of monomers in
 
 Similarity scoring can be found in the top menu: **Bio → Calculate → Similarity...**.
 
-![Running similarity scoring](../../help/uploads/macromolecules/similarity_scoring-800.gif)
+![Running similarity scoring](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/macromolecules/similarity_scoring-800.gif)

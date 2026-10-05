@@ -1,2 +1,0 @@
-mcr.microsoft.com/mssql/server:2019-latest
-ibmcom/db2:11.5.8.0

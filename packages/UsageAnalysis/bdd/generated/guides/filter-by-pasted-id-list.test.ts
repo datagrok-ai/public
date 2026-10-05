@@ -8,19 +8,17 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {pasteIntoCardSearch} from '../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterIsExactlyAnyOf, filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
+import {addCardFor, pasteIntoCardSearch} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 

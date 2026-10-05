@@ -1,4 +1,4 @@
-# Biostructure Viewer
+# BiostructureViewer
 
 Biostructure Viewer is a [package](https://datagrok.ai/help/develop/#packages) for
 the [Datagrok](https://datagrok.ai/) platform that enables visualization of biological structures.
@@ -21,11 +21,11 @@ The Biostructure Viewer package enables detection and handling of the Molecule3D
 Grid cells of columns with the Molecule3D semantic type are drawn using a designated NGL-based cell renderer. Clicking
 on a cell opens a Biostructure Viewer to explore the structure details.
 
-![pdb_data](../../help/uploads/gifs/biostructure-viewer-pdb-data.gif)
+![pdb_data](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/biostructure-viewer-pdb-data.gif)
 
 ## Viewers
 
-Both [Biostructure Viewer](#BiostructureViewer) and [NGL Viewer](#NglViewer) use the same method to obtain
+Both [Biostructure Viewer](#biostructure-viewer) and [NGL Viewer](#ngl-viewer) use the same method to obtain
 a structural data into the viewer from different sources (in order of priority) controlled by
 properties of the 'Data' category:
 
@@ -38,7 +38,7 @@ properties of the 'Data' category:
 [NGL Viewer](./src/viewers/ngl-viewer.ts) is a Datagrok [DG.JsViewer](../../js-api/src/viewer.ts) derived
 component based on the NGL Viewer [nglviewer.org](https://nglviewer.org/) library developed by Alexander Rose.
 
-![ngl-viewer](../../help/uploads/gifs/ngl-viewer-open-PDB.gif)
+![ngl-viewer](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/ngl-viewer-open-PDB.gif)
 
 ### Biostructure Viewer
 
@@ -59,11 +59,11 @@ ball+stick, licorice, hyperball, and surface.
 
 ## File previews and File handlers
 
-Files with handled extensions are previewed and opened with the [Biostructure Viewer](#BiostructureViewer).
+Files with handled extensions are previewed and opened with the [Biostructure Viewer](#biostructure-viewer).
 
 This package implements file viewers for supported file types. This is how it looks in action:
 
-![preview-view](../../help/uploads/gifs/biostructure-viewer-preview-view-PDB-mmcif.gif)
+![preview-view](https://raw.githubusercontent.com/datagrok-ai/help/master/uploads/gifs/biostructure-viewer-preview-view-PDB-mmcif.gif)
 
 See also:
 

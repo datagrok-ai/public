@@ -16,6 +16,8 @@ Feature: Names To Smiles over a column of compound names
       | aspirin  | CCO |
       | caffeine | CCC |
     And user sets the semantic type of "mol" column to "Molecule"
+    Given the "Chembl" package is installed
+    And the stand has a reachable "ChemblSql" connection
     When user picks "Chem > Transform > Names To Smiles..." from the top menu
     Then "Names To Smiles" dialog should be visible
     When user clicks on OK button in "Names To Smiles" dialog
@@ -33,6 +35,8 @@ Feature: Names To Smiles over a column of compound names
       | aspirin  | CCO              |
       | caffeine | CCC              |
     And user sets the semantic type of "canonical_smiles" column to "Molecule"
+    Given the "Chembl" package is installed
+    And the stand has a reachable "ChemblSql" connection
     When user picks "Chem > Transform > Names To Smiles..." from the top menu
     And user clicks on OK button in "Names To Smiles" dialog
     Then the top menu command should have completed

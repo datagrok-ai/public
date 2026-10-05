@@ -1,5 +1,9 @@
 # webcomponents changelog
 
+## v.next
+
+* InputForm: Added the `skipLogic` property, passed to `DG.InputForm.forFuncCall`
+
 ## 0.3.7 (2026-09-23)
 
 * InputForm: Fixed rapid funcCall swaps racing (a stale form could land in the DOM and win over the newer one)

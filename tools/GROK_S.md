@@ -58,7 +58,7 @@ servers:
 
 - `grok login <server>` is the way to add a server: it registers a keypair and writes the
   entry for you. The private key stays in `~/.grok/keys/<alias>.json`.
-  See [keypair authentication](../help/govern/access-control/keypair-authentication.md).
+  See [keypair authentication](https://datagrok.ai/help/govern/access-control/keypair-authentication).
 - `grok config add --alias <name> --server <url> [--key <developer-key>]` writes an entry by
   hand. The developer key is deprecated; omit it when the server is reached with a keypair.
 - Add `--default` to make it the active server.
@@ -905,6 +905,9 @@ only ever read from.
   URL, the key, and basic connectivity, and returns per-module status if the server is
   reachable. Fall back to `grok s raw GET /users/current` to isolate auth issues. A `--host`
   URL that is not the API base fails at login with the reason (`should end with /api`).
-- Cross-instance sync (1.28 servers): `grok s sync pairs list`, `sync setups list --pair <id>`,
-  `sync setup get <id>`, `sync run <id>`; on 1.27 the routes do not exist and the commands
-  answer "not found".
+- Cross-instance sync (1.28 servers): `grok s sync pairs list` (`/sync/pairs`),
+  `sync setups list --pair <id>`, `sync setup get <id>` and `sync setup runs <id>`
+  (`/entity_sync_funcs`; a setup is an `EntitySyncFunc`, each run a `FuncCall` whose
+  `options.syncResult` holds the per-item outcome). The server has no run route: runs start
+  from the setup's **Run** button or its schedule. On 1.27 the routes do not exist and the
+  commands answer "not found".

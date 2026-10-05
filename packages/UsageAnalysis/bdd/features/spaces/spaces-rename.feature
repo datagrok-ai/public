@@ -71,13 +71,13 @@ Feature: Renaming a space
     And user clicks on OK button in Create Space dialog
     Then BDD-Ren-Child tree node inside browse tree should be visible
     When user double-clicks on BDD-Ren-Parent tree node inside browse tree
-    Then BDD-Ren-Child link in space gallery should be visible
-    When user picks "Rename..." from the context menu of BDD-Ren-Child link in space gallery
+    Then BDD-Ren-Child link in gallery should be visible
+    When user picks "Rename..." from the context menu of BDD-Ren-Child link in gallery
     Then Name input in Rename project dialog should have value "BDD-Ren-Child"
     When user enters "BDD-Ren-ChildNew" into Name input in Rename project dialog
     And user clicks on OK button in Rename project dialog
-    Then BDD-Ren-ChildNew link in space gallery should be visible
-    And BDD-Ren-Child link in space gallery should be absent
+    Then BDD-Ren-ChildNew link in gallery should be visible
+    And BDD-Ren-Child link in gallery should be absent
     When user expands BDD-Ren-Parent tree node inside browse tree
     Then BDD-Ren-ChildNew tree node inside browse tree should be visible
     And BDD-Ren-Child tree node inside browse tree should be absent

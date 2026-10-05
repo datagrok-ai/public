@@ -6,13 +6,15 @@ import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleTargets} from '../config/PipelineConfiguration';
 
 export type RuleContext = Record<string, any> & {
-  all: Record<string, any[]>,
+  $all: Record<string, any[]>,
 };
 
 let opsRegistered = false;
 
 // the context of the expression being evaluated, read by the script ops
-let activeCtx: RuleContext = {all: {}};
+let activeCtx: RuleContext = {$all: {}};
+// the literals of the expression being evaluated, read by the $literal op
+let activeLiterals: any[] = [];
 let scriptSupport: boolean | undefined;
 
 // GrokScript with a variables map is js-api 1.28+; the same method ignores the map on
@@ -27,7 +29,7 @@ function hasScriptSupport(): boolean {
 }
 
 function scriptVariables(ctx: RuleContext): Record<string, any> {
-  return Object.fromEntries(Object.entries(ctx).filter(([key]) => key !== 'all' && key !== 'literals'));
+  return Object.fromEntries(Object.entries(ctx).filter(([key]) => !key.startsWith('$')));
 }
 
 /** Evaluates a GrokScript expression over the rule context; `undefined` when unsupported or failing. */
@@ -77,25 +79,23 @@ function columnsOf(df: any, kind?: string): DG.Column[] {
   return kind == null ? cols : cols.filter((col) => columnIs(col, kind));
 }
 
-function registerOps() {
-  if (opsRegistered)
-    return;
-  opsRegistered = true;
-  jsonLogic.add_operation('columns', (df: any, kind?: string) => columnsOf(df, kind).map((col) => col.name));
-  jsonLogic.add_operation('columnsMissing', (df: any, spec: any[]) => {
+// the driver's own JSON Logic operations; formulas may call exactly these names
+const driverOps: Record<string, (...args: any[]) => any> = {
+  columns: (df: any, kind?: string) => columnsOf(df, kind).map((col) => col.name),
+  columnsMissing: (df: any, spec: any[]) => {
     const missing: string[] = [];
     for (const entry of spec ?? []) {
       const [name, kind] = Array.isArray(entry) ? entry : [entry];
-      if (!columnsOf(df, kind).some((col) => col.name === name))
+      const col = df instanceof DG.DataFrame ? df.col(name) : null;
+      if (!col || (kind != null && !columnIs(col, kind)))
         missing.push(kind == null ? name : `${name} (${kind})`);
     }
     return missing;
-  });
-  jsonLogic.add_operation('columnIs', columnIs);
-  jsonLogic.add_operation('nulls', (col: any) => col instanceof DG.Column ? col.stats.missingValueCount : 0);
-  jsonLogic.add_operation('column', (df: any, name: string) =>
-    df instanceof DG.DataFrame ? df.col(name)?.toList() ?? [] : []);
-  jsonLogic.add_operation('row', (df: any, keyColumn: string, key: any) => {
+  },
+  columnIs,
+  nulls: (col: any) => col instanceof DG.Column ? col.stats.missingValueCount : 0,
+  column: (df: any, name: string) => df instanceof DG.DataFrame ? df.col(name)?.toList() ?? [] : [],
+  row: (df: any, keyColumn: string, key: any) => {
     const col = df instanceof DG.DataFrame ? df.col(keyColumn) : null;
     if (!col || key == null)
       return null;
@@ -105,18 +105,29 @@ function registerOps() {
         return Object.fromEntries(df.columns.names().map((name: string) => [name, df.get(name, i)]));
     }
     return null;
-  });
-  jsonLogic.add_operation('regex', (val: any, pattern: string, flags?: string) =>
-    typeof val === 'string' && new RegExp(pattern, flags ?? '').test(val));
-  jsonLogic.add_operation('script', (expr: string) => runScript(expr, activeCtx));
-  jsonLogic.add_operation('scriptVerdict', (expr: string) => scriptVerdict(expr, activeCtx));
-  jsonLogic.add_operation('len', (val: any) => {
+  },
+  regex: (val: any, pattern: string, flags?: string) =>
+    typeof val === 'string' && new RegExp(pattern, flags ?? '').test(val),
+  script: (expr: string) => runScript(expr, activeCtx),
+  scriptVerdict: (expr: string) => scriptVerdict(expr, activeCtx),
+  len: (val: any) => {
     if (val == null)
       return 0;
     if (val instanceof DG.DataFrame)
       return val.rowCount;
     return val.length ?? 0;
-  });
+  },
+};
+
+export const driverOpNames = Object.keys(driverOps);
+
+function registerOps() {
+  if (opsRegistered)
+    return;
+  opsRegistered = true;
+  for (const [name, op] of Object.entries(driverOps))
+    jsonLogic.add_operation(name, op);
+  jsonLogic.add_operation(LITERAL_OP, (idx: number) => activeLiterals[idx]);
 }
 
 export function ruleTargets(targets: RuleTargets): string[] {
@@ -124,14 +135,15 @@ export function ruleTargets(targets: RuleTargets): string[] {
 }
 
 const LITERAL = 'literal';
+const LITERAL_OP = '$literal';
 
-function isLiteral(node: any): boolean {
+export function isLiteral(node: any): boolean {
   return node != null && typeof node === 'object' && !Array.isArray(node) &&
     Object.keys(node).length === 1 && LITERAL in node;
 }
 
-// `{literal: x}` shields x from JSON Logic, which would otherwise read any
-// one-key object as an operation; the value is moved into the data context
+// `{literal: x}` shields x from JSON Logic, which would otherwise read any one-key object as an
+// operation; an op returns the value, so it also works where map and the like replace the data with the element
 function extractLiterals(expr: any, literals: any[]): any {
   if (Array.isArray(expr))
     return expr.map((item) => extractLiterals(item, literals));
@@ -139,7 +151,7 @@ function extractLiterals(expr: any, literals: any[]): any {
     return expr;
   if (isLiteral(expr)) {
     literals.push(expr[LITERAL]);
-    return {var: `literals.${literals.length - 1}`};
+    return {[LITERAL_OP]: [literals.length - 1]};
   }
   return Object.fromEntries(Object.entries(expr).map(([key, value]) => [key, extractLiterals(value, literals)]));
 }
@@ -148,12 +160,14 @@ export function evaluate(expr: RuleExpr, ctx: RuleContext): any {
   registerOps();
   const literals: any[] = [];
   const logic = extractLiterals(expr, literals);
-  const previous = activeCtx;
+  const [previousCtx, previousLiterals] = [activeCtx, activeLiterals];
   activeCtx = ctx;
+  activeLiterals = literals;
   try {
-    return jsonLogic.apply(logic, literals.length ? {...ctx, literals} : ctx);
+    return jsonLogic.apply(logic, ctx);
   } finally {
-    activeCtx = previous;
+    activeCtx = previousCtx;
+    activeLiterals = previousLiterals;
   }
 }
 
@@ -162,43 +176,48 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 }
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
-  const ctx: RuleContext = {all: {}};
+  const ctx: RuleContext = {$all: {}};
   for (const name of controller.getMatchedInputs()) {
     const all = controller.getAll(name) ?? [];
     ctx[name] = all[0];
-    ctx.all[name] = all;
+    ctx.$all[name] = all;
   }
   return ctx;
 }
 
 const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
-/** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `all.` prefix stripped. */
-export function usedAliases(expr: RuleExpr): string[] {
+/** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `$all.` prefix stripped.
+ *  `fields` collects the roots read as `{var: 'name'}` in the element argument of an array op, which JSON Logic
+ *  reads from the element, not from the rule context; `{var: ['name']}` (formula `var("name")`) is left out. */
+export function usedAliases(expr: RuleExpr | undefined, fields?: Set<string>): string[] {
   const aliases = new Set<string>();
   const addPath = (path: any) => {
     if (typeof path !== 'string' || !path)
       return;
     const segments = path.split('.');
-    const root = segments[0] === 'all' ? segments[1] : segments[0];
+    const root = segments[0] === '$all' ? segments[1] : segments[0];
     if (root)
       aliases.add(root);
   };
-  const visit = (node: any) => {
+  const visit = (node: any, inElement: boolean) => {
     if (Array.isArray(node)) {
-      node.forEach(visit);
+      node.forEach((item) => visit(item, inElement));
       return;
     }
     if (node == null || typeof node !== 'object' || isLiteral(node))
       return;
     const keys = Object.keys(node);
     if (keys.length !== 1) {
-      Object.values(node).forEach(visit);
+      Object.values(node).forEach((value) => visit(value, inElement));
       return;
     }
     const op = keys[0];
     const values: any[] = Array.isArray(node[op]) ? node[op] : [node[op]];
-    if (op === 'var')
+    if (inElement) {
+      if (op === 'var' && typeof node.var === 'string' && node.var)
+        fields?.add(node.var.split('.')[0]);
+    } else if (op === 'var')
       addPath(values[0]);
     else if (op === 'missing')
       values.forEach(addPath);
@@ -206,13 +225,13 @@ export function usedAliases(expr: RuleExpr): string[] {
       (Array.isArray(values[1]) ? values[1] : [values[1]]).forEach(addPath);
     // the second argument of an array operation runs over the element, not the rule context
     if (scopedOps.has(op)) {
-      visit(values[0]);
-      if (op === 'reduce')
-        visit(values[2]);
+      visit(values[0], inElement);
+      visit(values[1], true);
+      visit(values[2], inElement);
       return;
     }
-    values.forEach(visit);
+    values.forEach((value) => visit(value, inElement));
   };
-  visit(expr);
+  visit(expr, false);
   return [...aliases];
 }
