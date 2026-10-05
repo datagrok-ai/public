@@ -84,7 +84,10 @@ says what is missing.
    - **Verify:** the parameter form opens; nothing runs.
 
 6. **A required value is missing.**
-   - Open `<server>/func/Admin.urlRunRequired?label=y&run=true`.
+   - Open `<server>/func/Admin.urlRunRequired?label=%22y%22&run=true`
+     (a string value in the address is quoted, as the copy icon writes
+     it: an unquoted `label=y` is read as an expression and fails with
+     *Variable "y" not found*).
    - **Verify:** a warning balloon starting with *Unable to run
      "urlRunRequired"* appears and names `rows`.
    - **Verify:** the parameter form opens with **Label** = `y`; nothing

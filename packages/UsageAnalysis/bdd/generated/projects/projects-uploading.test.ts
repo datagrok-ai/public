@@ -9,20 +9,19 @@ sub_features_covered: [views.projects, data.menu.link-tables, file.menu.save.tab
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clearSavedParameters} from '../../bindings/pivot-table.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, doubleClickOn, enterInto, isExpanded, selectIn, shouldBe, shouldBeSwitchedOff, shouldBeSwitchedOn, shouldContainText, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount, selectedInTable, setLinkKeyPair, setLinkTables, tableFilterCount, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, dialogCloses, loadedAsSnapshot, noProjectOnServer, projectsOnServer, reloadedByDataSync, savedAsSnapshot, savedWithDataSync, simpleModeOff, switchTableView, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
+import {clearSavedParameters} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {clickArea, clickAreaHolding, infoBalloonText, noBalloons, pickFromContextMenu, readingReads, setProperties} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 

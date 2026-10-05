@@ -106,6 +106,9 @@ from the **Dashboards** panel.
    - Switch **Presentation mode** ON.
    - Click **OK**.
    - In the **Share** dialog, click **OK**.
+   - **Verify:** the new project is the open one, and the shell goes
+     into presentation mode at once.
+   - Click **back to design mode**.
    - Right-click the left sidebar and select **Close All**.
    - Go to **Browse > Dashboards**, type `present` into the search box
      and click the refresh icon.

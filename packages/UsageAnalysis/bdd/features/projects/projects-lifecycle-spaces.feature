@@ -6,7 +6,7 @@ Feature: A project built from a file in a space, shared, and reopened after the 
   card. Then the space is renamed and the owner reopens the project. Translated from the TestTrack
   case Projects/projects-lifecycle-spaces.
 
-  Parked until the library can sign in as the second account (see the request document): the
+  The second account (the library's sharing user) signs in on the feature's page for the
   recipient's opens of the project (GROK-18345), before and after the space rename.
 
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
@@ -15,12 +15,14 @@ Feature: A project built from a file in a space, shared, and reopened after the 
   starts and ends. It is serial: the Dashboards search is shared with every feature that saves a
   project.
 
-  Known failure GROK-21025 (reproduced on localhost and on dev 1.28.0): once the space is renamed,
-  the project no longer opens. The table's creation script keeps the old namespace
-  (OpenFile("<old space>:Files/demog.csv")); the open ends in a "Data loading error" dialog that
-  quotes that line and the Dashboards view stays current. The owner's open after the rename is a
-  known failure that claims the demog view with its rows re-read by data sync; the scenario after it
-  closes the dialog with Escape and claims it gone before going on.
+  Known failure GROK-21025: once the space is renamed, the project no longer opens (the table's
+  creation script keeps the old namespace, OpenFile("<old space>:Files/demog.csv")). The ticket and
+  the runs of 1.28.0 in September saw the open end in a "Data loading error" dialog quoting that
+  line; on localhost 1.28.0 f98337ae1b (2026-10-05) no dialog comes — "Opening project" stays in
+  the task bar for over two minutes and the Dashboards view stays current — so the defect has no
+  readable signature to claim, and each known failure (the owner's and the second account's open)
+  claims only the demog view with its rows re-read by data sync. The scenario after the owner's
+  signs the second account in, and the one after the second account's signs the owner back in.
 
   Background:
     Given user is logged in
@@ -102,7 +104,25 @@ Feature: A project built from a file in a space, shared, and reopened after the 
     Then the context panel should show "BDDLifeSpaceProj{time}"
     And the sharing pane should list the sharing user
 
+  Scenario: The second account opens the shared project (GROK-18345)
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeSpaceProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeSpaceProj{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 5850 rows
+    And the table should have been reloaded by data sync
+    And "Data loading error" dialog should be absent
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: The owner renames the space
+    Then the running account should be signed in
     Given the browse panel is open
     And Spaces tree node inside browse tree is expanded
     When user picks "Rename..." from the context menu of BDDLifeSpace{time} tree node inside browse tree
@@ -113,20 +133,37 @@ Feature: A project built from a file in a space, shared, and reopened after the 
     Then the "Rename project" dialog should close
     And 1 space named "BDDLifeSpaceRen{time}" should be on the server
     And 0 spaces named "BDDLifeSpace{time}" should be on the server
-
-  @known-failure @realizes:GROK-21025
-  Scenario: After the space rename, the owner opens the project with its rows
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDLifeSpaceProj{time}" into gallery search
     And user clicks on Refresh icon in gallery toolbar
-    And user double-clicks on BDDLifeSpaceProj{time} gallery card
+    Then BDDLifeSpaceProj{time} gallery card should be visible
+
+  @known-failure @realizes:GROK-21025
+  Scenario: After the space rename, the owner opens the project with its rows
+    When user double-clicks on BDDLifeSpaceProj{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 5850 rows
+    And the table should have been reloaded by data sync
+
+  Scenario: The second account signs in after the space rename
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeSpaceProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDLifeSpaceProj{time} gallery card should be visible
+
+  @known-failure @realizes:GROK-21025
+  Scenario: After the space rename, the second account opens the project with its rows
+    When user double-clicks on BDDLifeSpaceProj{time} gallery card
     Then the "demog" view should be current
     And the table should have 5850 rows
     And the table should have been reloaded by data sync
 
   Scenario: The owner deletes the project and the space
-    When user presses Escape
-    Then "Data loading error" dialog should be absent
+    When user signs in as themselves again
+    Then the running account should be signed in
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDLifeSpaceProj{time}" into gallery search

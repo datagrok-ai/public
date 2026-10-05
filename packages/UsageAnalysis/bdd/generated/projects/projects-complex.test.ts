@@ -9,21 +9,19 @@ sub_features_covered: [views.projects, data.menu.join-tables, views.space, GROK-
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clearSavedParameters} from '../../bindings/pivot-table.js';
-import {saveScript} from '../../bindings/scripts.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {appendToEditor, clearField, clickOn, collapse, doubleClickOn, dragTo, enterInto, isExpanded, pressKey, replaceCode, selectIn, shouldBe, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount, tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeCurrentView, currentViewType, dialogCloses, noProjectOnServer, noQueryOnServer, noScriptOnServer, noSpaceOnServer, projectsOnServer, queriesOnServer, saveDialogDataSync, scriptsOnServer, scriptsView, simpleModeOff, spacesOnServer, switchTableView, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeCurrentView, currentViewType, dialogCloses, noProjectOnServer, noQueryOnServer, noScriptOnServer, noSpaceOnServer, projectsOnServer, queriesOnServer, saveDialogDataSync, saveScript, scriptsOnServer, scriptsView, simpleModeOff, spacesOnServer, switchTableView, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
+import {clearSavedParameters} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {clickArea, infoBalloonText, noBalloons, noErrors, pickFromContextMenu, pickFromOpenMenu, readingAtLeast, readingReads, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

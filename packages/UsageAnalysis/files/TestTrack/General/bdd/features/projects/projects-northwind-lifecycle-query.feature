@@ -16,12 +16,17 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
   Delete Project and the query through its Delete. Translated from the TestTrack case
   Projects/projects-lifecycle-query.
 
-  Parked (see the request document): the recipient's opens (before and after the rename, and after
-  the SQL change), which need signing in as the sharing user; the query's SQL changed to "limit 100"
-  and the owner's reopen with 100 rows, which needs the page reloaded as the md does. Kept without
-  one claim, restored with the phrase: that the Save dialog lists only the query's table (the
-  project-table rows cannot be counted apart from the dialog's other rows with library phrases).
-  The System:Datagrok version for other stands is parked too (row counts differ per server).
+  The query's SQL is then changed to "limit 100" in its editor and, after the page is reloaded as
+  the md does, the owner's reopen shows 100 rows.
+
+  Parked (see the request document): the recipient's opens (before the rename, and after the
+  rename and the SQL change). Signed in as the sharing user on dev (1.28.0), the double-click on the
+  card leaves "Opening project" in the task bar for over two minutes with the Dashboards view
+  current, and no table and no message come — a suspected defect, described outside the
+  repository. Kept without one claim, restored with the phrase: that the Save dialog lists only the
+  query's table (the project-table rows cannot be counted apart from the dialog's other rows with
+  library phrases). The System:Datagrok version for other stands is parked (row counts differ per
+  server).
 
   The query and the project are named with the run's time (letters and digits only) and removed,
   the query under both its names, at the start and at the end. It is serial: the Dashboards search
@@ -130,6 +135,30 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And no errors should have been logged
     And no error or warning balloon should have been shown
     When user closes all views
+
+  Scenario: With the query's SQL changed, the reopened project shows the new result
+    Given the browse panel is open
+    When user clicks on "Refresh" icon inside browse toolbar
+    Given Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
+    When user collapses Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree
+    And user picks "Edit..." from the context menu of Databases---Postgres---NorthwindTest---BDDNwLifeQRenamed{time} tree node inside browse tree
+    Then the current view should be a DataQueryView view
+    When user replaces the code of code editor with "select * from public.orders limit 100"
+    And user clicks on Save button
+    Then code editor should hold the code "select * from public.orders limit 100"
+    When user closes the current view
+    And user reloads the page
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeQProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeQProj{time} gallery card
+    Then the current view should be a TableView view
+    And the table should have 100 rows
+    And "Data loading error" dialog should be absent
+    And no error or warning balloon should have been shown
 
   Scenario: Delete Project removes the project, and Delete the renamed query
     When user closes all views

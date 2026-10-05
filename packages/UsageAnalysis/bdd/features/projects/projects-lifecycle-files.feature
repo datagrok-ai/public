@@ -5,11 +5,15 @@ Feature: A project built from a file, shared, renamed and deleted
   off) from its Dashboards card, renamed from the card and reopened under its new name, and deleted
   through Delete Project. Translated from the TestTrack case Projects/projects-lifecycle-files.
 
-  Parked (see the request document): the recipient's opens (with View and use it cannot save the
-  original; with Full access it can), which need signing in as the second account, and the grant
-  raised to Full access, which needs the access level of the sharing user's row in the Share dialog
-  and its privilege tree. The words of the recipient's line in the Sharing pane ("has special
-  permissions") are claimed on the pane as a whole.
+  The second account (the library's sharing user) signs in on the feature's page and opens the
+  project with View and use, and again after the rename, finding it under its new name.
+
+  Parked (see the request document): the grant raised to Full access, which needs the access level
+  of the sharing user's row in the Share dialog and its privilege tree, and with it the recipient's
+  save of the original. Kept without: the Save dialog's radio choices for the View and use
+  recipient (Save original project disabled, Save a copy selected), which need a reading of one
+  option of the dialog's radio group. The words of the recipient's line in the Sharing pane ("has
+  special permissions") are claimed on the pane as a whole.
 
   The recipient of the share is the library's sharing user. Names are letters and digits only (the
   Dashboards search misses "-" and "_") and carry the run's time. The project, under both names, is
@@ -63,7 +67,28 @@ Feature: A project built from a file, shared, renamed and deleted
     And the sharing pane should list the sharing user
     And Sharing pane in context panel should contain text "has special permissions"
 
+  Scenario: With View and use the second account opens the project
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeFiles{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeFiles{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 5850 rows
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as themselves again
+    Then the running account should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeFiles{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDLifeFiles{time} gallery card should be visible
+
   Scenario: The project is renamed from its card and opens under its new name
+    Then the running account should be signed in
     When user picks "Rename..." from the context menu of BDDLifeFiles{time} gallery card
     Then Rename project dialog should be visible
     And Name input in Rename project dialog should have value "BDDLifeFiles{time}"
@@ -81,7 +106,26 @@ Feature: A project built from a file, shared, renamed and deleted
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  Scenario: After the rename, the second account finds the project under its new name and opens it
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeFiles" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDLifeFilesRenamed{time} gallery card should be visible
+    And BDDLifeFiles{time} gallery card should be absent
+    When user double-clicks on BDDLifeFilesRenamed{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 5850 rows
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: The owner deletes the project from its card
+    Then the running account should be signed in
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open

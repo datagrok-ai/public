@@ -10,11 +10,16 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
   the sliders icon of Source asks for a save ("Save dashboard to apply changes") that clears the hint. Translated
   from the TestTrack case Projects/project-url-parameters.
 
-  Parked (see the request document): every step that opens an address — the copied links in a new
-  tab, the project's URL from Links... with ?type=, ?typeName= and no parameter, and after the
-  parameter is taken out (steps 5, 7-10, 12 and 16 of the md in part); the typeName check box of the
-  Save dialog's URL Parameters (a bare check box no element reaches) and the check mark of typeName
-  in the sliders icon's menu (`checked` does not read a Dart menu item's aria-checked).
+  The project's address (/p/<namespace>.<name>, the namespace being the part of the Grok name the
+  Links... dialog shows before the colon) is opened with ?type=, ?typeName= and no parameter, and
+  after the parameter is taken out. Every open of an address follows a Close All, as a new tab
+  starts with nothing open: an address of a project already open does not reopen it.
+
+  Parked (see the request document): the copied links opened in a new tab (steps 5 and 10 of the
+  md: no step opens the address on the clipboard); the typeName check box of the Save dialog's URL
+  Parameters (a bare check box no element reaches) and the check mark of typeName in the sliders
+  icon's menu (`checked` does not read a Dart menu item's aria-checked). Kept without: the copy
+  icon of the URL row of Links... (the address is typed instead).
 
   Known failures: no ticket (the md's note asks to record it) — right after the first save the Source
   link carries the parameter's own name (?typeName=Project), not the alias "type" set in the Save
@@ -117,6 +122,37 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     When user hovers over sliders-h icon in Source pane in toolbox
     Then tooltip should contain text "Choose which parameters the dashboard link carries"
 
+  Scenario: The project's address takes the alias, ignores the parameter's own name, and falls back to the saved value
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDUrlParamProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user clicks on BDDUrlParamProj{time} gallery card
+    Then the context panel should show "BDDUrlParamProj{time}"
+    When user clicks on "Links..." link in Details pane in context panel
+    Then "Links to BDDUrlParamProj{time}" dialog should be visible
+    And "Grok name" input in "Links to BDDUrlParamProj{time}" dialog should have value "Admin:BDDUrlParamProj{time}"
+    When user presses Escape
+    Then the "Links to BDDUrlParamProj{time}" dialog should close
+    When user opens the address "/p/Admin.BDDUrlParamProj{time}?type=Script"
+    Then the "BDDUrlParamQuery{time}" view should be current
+    And the "text of cell 1 of name" reading of grid should be "Script"
+    Given the toolbox pane is shown
+    Then "Type Name" input in Source pane in toolbox should have value "Script"
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user opens the address "/p/Admin.BDDUrlParamProj{time}"
+    Then the "BDDUrlParamQuery{time}" view should be current
+    And the "text of cell 1 of name" reading of grid should be "Project"
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user opens the address "/p/Admin.BDDUrlParamProj{time}?typeName=Script"
+    Then the "BDDUrlParamQuery{time}" view should be current
+    And the "text of cell 1 of name" reading of grid should be "Project"
+
   Scenario: Reopened, Source offers the sliders icon, and the link follows a new value before REFRESH
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
@@ -211,6 +247,13 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And user hovers over copy icon in Source pane in toolbox
     Then tooltip should contain text "/p/"
     And tooltip should not contain text "?type="
+
+  Scenario: With the parameter taken out, the address no longer takes it
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user opens the address "/p/Admin.BDDUrlParamProj{time}?type=Project"
+    Then the "BDDUrlParamQuery{time}" view should be current
+    And the "text of cell 1 of name" reading of grid should be "Script"
 
   Scenario: The query and the projects are deleted
     When user picks "Close All" from the context menu of browse tab

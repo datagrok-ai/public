@@ -7,11 +7,11 @@ Feature: A project built from the user's own script, shared, then the script ren
   (demog(100)) and broken with a throw; Delete Project and the script's Delete remove both.
   Translated from the TestTrack case Projects/projects-lifecycle-script.
 
-  Parked (see the request document): the recipient's opens (GROK-19403: it gets the data;
-  GROK-19728: it gets no EDIT SCRIPT... for the broken script), which need signing in as the second
-  account; the owner's reopen after the rename (100 rows) and the owner's Data loading error dialog
-  for the broken script (OPEN ANYWAY, EDIT SCRIPT..., CLOSE PROJECT), which need the page reloaded
-  as the md does: the session that saved the script keeps running its old body for a while.
+  The second account signs in on the feature's page (the library's sharing user) for the
+  recipient's opens: GROK-19403 (it gets the data) and GROK-19728 (for the broken script it is told
+  to ask the owner and gets no EDIT SCRIPT...). After the rename the page is reloaded before the
+  owner's reopen, as the md does: the session that saved the script keeps running its old body for
+  a while; the owner's open of the broken script follows signing back in, which loads a fresh page.
 
   The script runs in the page (grok.data reads demog), so no script container is involved. The
   editor has no line-replacing gesture, so each edit types the whole text again (with the new name
@@ -96,7 +96,26 @@ Feature: A project built from the user's own script, shared, then the script ren
     Then the context panel should show "BDDLifeScriptProj{time}"
     And the sharing pane should list the sharing user
 
+  Scenario: The second account gets the data of the shared project (GROK-19403)
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeScriptProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 5850 rows
+    And the table should have been reloaded by data sync
+    And "Data loading error" dialog should be absent
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: The script is renamed in its editor with a new body
+    Then the running account should be signed in
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
     And user opens the Scripts view
@@ -116,6 +135,19 @@ Feature: A project built from the user's own script, shared, then the script ren
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  Scenario: After a reload, the project runs the renamed script's new body
+    When user reloads the page
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeScriptProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    Then the "demog" view should be current
+    And the table should have 100 rows
+    And the table should have been reloaded by data sync
+    And "Data loading error" dialog should be absent
+    And no error or warning balloon should have been shown
+
   Scenario: The script is broken with a throw before its df line
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
@@ -133,6 +165,41 @@ Feature: A project built from the user's own script, shared, then the script ren
     And user saves the script
     Then the script "BDDLifeScriptRenamed{time}" on the server should contain "throw new Error('intentional break');"
     And no errors should have been logged
+
+  Scenario: The second account is told to ask the owner and gets no EDIT SCRIPT... (GROK-19728)
+    When user picks "Close All" from the context menu of browse tab
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeScriptProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    Then "Data loading error" dialog should be visible
+    And "Data loading error" dialog should contain text "Ask the project owner to fix the script"
+    And "OPEN ANYWAY" button in "Data loading error" dialog should be visible
+    And "CLOSE PROJECT" button in "Data loading error" dialog should be visible
+    And "EDIT SCRIPT..." button in "Data loading error" dialog should be absent
+    When user clicks on "CLOSE PROJECT" button in "Data loading error" dialog
+    Then the "Data loading error" dialog should close
+    When user signs in as themselves again
+    Then the running account should be signed in
+
+  Scenario: The owner is offered OPEN ANYWAY, EDIT SCRIPT... and CLOSE PROJECT
+    Then the running account should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDLifeScriptProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDLifeScriptProj{time} gallery card
+    Then "Data loading error" dialog should be visible
+    And "Data loading error" dialog should contain text "could not load some of its data"
+    And "Data loading error" dialog should contain text "Error: intentional break"
+    And "OPEN ANYWAY" button in "Data loading error" dialog should be visible
+    And "EDIT SCRIPT..." button in "Data loading error" dialog should be visible
+    And "CLOSE PROJECT" button in "Data loading error" dialog should be visible
+    When user clicks on "CLOSE PROJECT" button in "Data loading error" dialog
+    Then the "Data loading error" dialog should close
 
   Scenario: Delete Project and the script's Delete remove both
     When user picks "Close All" from the context menu of browse tab

@@ -9,17 +9,16 @@ sub_features_covered: [views.projects, GROK-19580]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clearSavedParameters} from '../../bindings/pivot-table.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, doubleClickOn, downloadContains, enterInto, fileDownloaded, isExpanded, shouldBe, watchDownloads} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {browsePanelOpen, closeAllViews, dialogCloses, noProjectOnServer, savedWithDataSync, toolboxPaneShown, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clearSavedParameters} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {clickArea, noBalloons, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature} from '@datagrok-libraries/bdd/runtime';
 

@@ -16,11 +16,13 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   TestTrack case Projects/projects-lifecycle-db; Test 1 (the PostgresAll query) is
   projects-northwind-lifecycle-db-query.
 
-  Parked (see the request document): the recipient's opens — without access to the connection (the
-  Data loading error with OPEN ANYWAY and CLOSE PROJECT, no EDIT SCRIPT...) and after the
-  connection is shared with it — which need signing in as the sharing user, and the connection's
-  share with its removal, which only those opens need. The System:Datagrok version for other stands
-  is parked too (its row counts differ per server and need a remembered row count).
+  The second account (the library's sharing user) signs in on the feature's page and opens the
+  shared project with its 830 rows. Parked (see the request document): the md's recipient without
+  access to the connection (the Data loading error with OPEN ANYWAY and CLOSE PROJECT, no EDIT
+  SCRIPT...) and the connection shared with it afterwards — on dev the sharing account already
+  reads NorthwindTest, so the open gets the data and the precondition does not hold. The
+  System:Datagrok version for other stands is parked too (its row counts differ per server and
+  need a remembered row count).
 
   The project name carries the run's time (letters and digits only); the project (with its table,
   view and grant) is removed at the start and at the end. It is serial: the Dashboards search is
@@ -100,7 +102,24 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     Then the context panel should show "BDDNwLifeDbTable{time}"
     And the sharing pane should list the sharing user
 
+  Scenario: The second account opens the shared project with its rows
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeDbTable{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDNwLifeDbTable{time} gallery card
+    Then the "orders" view should be current
+    And the table should have 830 rows
+    And "Data loading error" dialog should be absent
+    When user closes all views
+    And user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: Delete Project removes the table project
+    Then the running account should be signed in
     When user closes all views
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
