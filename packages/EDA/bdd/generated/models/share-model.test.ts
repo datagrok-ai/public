@@ -20,7 +20,7 @@ import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Sharing a predictive model", () => {
   const session = feature(test, "features/models/share-model.feature", import.meta.url);
-  test("Sharing a predictive model", {tag: ["@journey", "@eda", "@realizes:sharing.share-dialog"]}, async ({browser}) => {
+  test("Sharing a predictive model", {tag: ["@journey", "@serial", "@eda", "@realizes:sharing.share-dialog"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 5, page);
     await session.step(25, "Given user is logged in", () => loggedIn(page));

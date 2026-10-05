@@ -1,4 +1,4 @@
-@journey @eda @realizes:ml.menu.models.train-model @realizes:ml.menu.models.apply-model @realizes:eda.model.pls-regression @realizes:eda.model.linear-regression
+@journey @serial @eda @realizes:ml.menu.models.train-model @realizes:ml.menu.models.apply-model @realizes:eda.model.pls-regression @realizes:eda.model.linear-regression
 Feature: Saved models applied to new data and deleted from the gallery
   Two regression models — Petal.Width predicted from Sepal.Length, Sepal.Width and Petal.Length, by PLS
   Regression and by Linear Regression — trained on iris, saved, applied through ML | Models | Apply
@@ -21,6 +21,8 @@ Feature: Saved models applied to new data and deleted from the gallery
   Components claim reads the value the view offers, which is the default only on a fresh account.
 
   Both models are removed through the gallery in the last scenario, and by name now and at feature end.
+  Serial, with share-model: a model another feature saves meanwhile enters the Apply list and shifts the
+  positions the choice is reached by (MISSING.md, choosing a model by name).
 
   Background:
     Given user is logged in
