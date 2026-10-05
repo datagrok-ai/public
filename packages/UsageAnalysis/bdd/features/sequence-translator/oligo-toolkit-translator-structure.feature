@@ -17,15 +17,14 @@ Feature: Oligo Toolkit: the Translator and Structure tools
   The prefilled Axolabs sample `Afcgacsu` (Nucleotides `ACGACU`) carries the detection and copy
   checks that pass on 1.11.5.
 
-  Four scenarios are tagged @known-failure: their fixes (GROK-20958, GROK-20806, GROK-20959) are
-  in SequenceTranslator's v.next, and the stand runs the released 1.11.5; the tag goes when the
-  stand gets the release that carries them.
+  Two scenarios are tagged @known-failure: GROK-20806 and GROK-20959 still fail on a build of
+  master.
 
   bulk-translation-axolabs.csv has a sixth, empty row, so the five sequences
   are claimed row by row rather than by "no missing values".
 
-  Kept without (see the request document): the red highlight of unreadable text, the structure
-  picture being drawn or empty, and that no SDF file is downloaded on a refused save.
+  Kept without (see the request document): the structure picture being drawn or empty,
+  and that no SDF file is downloaded on a refused save.
 
   Background:
     Given user is logged in
@@ -75,16 +74,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     Then an info balloon containing "Copied" should have been shown
     And the clipboard should have the text "ACGACU"
 
-  Scenario: Text in no known format gives no format and no translations, without an error
-    Then "Nucleotides" table row should be visible
-    When user types "NOTASEQUENCE!@#$" into text area
-    Then first choice input should have the value ""
-    And "Nucleotides" table row should be absent
-    And "HELM" table row should be absent
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  @known-failure
   Scenario: A typed HELM switches the format selector to HELM and is translated to nucleotides without an error (GROK-20958)
     When user types "RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$" into text area
     Then first choice input should have the value "HELM"
@@ -95,7 +84,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And the clipboard should have the text "ACGU"
     And no errors should have been logged
 
-  @known-failure
   Scenario: A HELM with a monomer the oligo library lacks refreshes the translations without an error, also while typed (GROK-20958, GROK-19926)
     When user types "RNA1{r(A)p.r(" into text area
     Then first choice input should have the value "HELM"

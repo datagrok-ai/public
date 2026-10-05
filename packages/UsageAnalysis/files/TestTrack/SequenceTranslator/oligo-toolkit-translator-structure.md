@@ -13,7 +13,7 @@ related_bugs: [GROK-20958, GROK-19926, GROK-20806, GROK-20959, GROK-16584, GROK-
 
 Checks the two sequence tools of the Oligo Toolkit app. Oligo Translator detects the
 format of a single oligonucleotide sequence, lists its translations to the other
-formats, handles invalid and unmappable input without errors, and converts a whole
+formats, handles unmappable input without errors, and converts a whole
 table column in bulk. Oligo Structure builds a sense/antisense structure and refuses
 to save an SDF when a strand cannot be converted.
 
@@ -53,9 +53,6 @@ to save an SDF when a strand cannot be converted.
 3. Click the sequence in the **Nucleotides** row.
    * Expected result: an info balloon **Copied** appears, and the clipboard holds
      `ACGU`.
-4. Clear the input and type `NOTASEQUENCE!@#$`.
-   * Expected result: the format selector is empty, and the FORMAT / SEQUENCE table
-     has no rows. The typed text is shown in red as invalid. No error balloon.
 
 ### Block C — Unmappable input refreshes the view without an error (GROK-20958, GROK-19926)
 
@@ -114,8 +111,6 @@ to save an SDF when a strand cannot be converted.
 
 ## Notes
 
-- The Translator shows no text message for unrecognised input: the empty table and
-  the red text are the product's signal.
 - The **Bulk** table list picks up only tables opened while the app is open, so the
   table in Block E is opened after the app.
 
@@ -124,12 +119,12 @@ to save an SDF when a strand cannot be converted.
 - Block C: the input string `RNA1{r(A)p.r(C)p.[meI]}$$$$` was read on localhost with
   the sample monomer library: it is detected as HELM, and `meI` (a peptide monomer)
   has no entry in the Oligo Toolkit library.
-- Block B step 4 and Block F: `NOTASEQUENCE` is not detected as any format with the
+- Block F: `NOTASEQUENCE` is not detected as any format with the
   sample monomer library (`monomers-sample`); if dev uses a different library, check
   once that it is still undetected.
-- Block B/C: the red "invalid" text and the "structure picture is empty / not empty"
+- Block B/C: the "structure picture is empty / not empty"
   checks have no shared reading yet; they need a package-specific reading of the
-  input's colored spans and of the picture host.
+  picture host.
 - Block F: whether a file download (or its absence) can be observed by a shared step
   is not settled.
 

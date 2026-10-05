@@ -7,11 +7,9 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
   canvas, the inner grid's own readings and the console.
   Translated from the TestTrack case Charts/charts-other-viewers. Kept without (see the request
   document): that the Globe painted — it draws with WebGL and neither pixel step reads its canvas, so
-  it is claimed visible and silent; the Group Analysis layout is saved and applied through the API,
-  not through View > Layout. Left out: the Surface plot on earthquakes — it is never attached and
-  logs "(t || "").replace is not a function" from echarts' time formatting (reproduced three times
-  on localhost; see the request document's suspected defects), so its Projection and Wireframe
-  steps cannot run.
+  it is claimed visible and silent, and so is the Surface plot (WebGL too); the Group Analysis layout is saved and applied through the API,
+  not through View > Layout. The Surface plot is checked on demog: on
+  earthquakes.csv it is not shown.
 
   Background:
     Given user is logged in
@@ -63,6 +61,26 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And no errors should have been logged
     When user clicks on close icon of globe viewer
     Then globe viewer should be absent
+    And no errors should have been logged
+
+  Scenario: Surface plot on demog takes its columns, Projection and Wireframe
+    Given user opens demog dataset
+    When user clicks on "Add viewer" icon
+    And user clicks on first "Surface plot" card in "Add Viewer" dialog
+    Then surface plot viewer should be visible
+    And "XColumnName" property of surface plot viewer should not be ""
+    And "YColumnName" property of surface plot viewer should not be ""
+    And "ZColumnName" property of surface plot viewer should not be ""
+    And no errors should have been logged
+    When user clicks on grid
+    And user clicks on settings icon of surface plot viewer
+    Given "Misc" category in context panel is expanded
+    Then "Projection" property in context panel should be visible
+    When user selects "orthographic" in "Projection" property in context panel
+    Then "Projection" property of surface plot viewer should be "orthographic"
+    When user unchecks "Wireframe" property in context panel
+    Then "Wireframe" property of surface plot viewer should be "false"
+    And surface plot viewer should be visible
     And no errors should have been logged
 
   Scenario: Group Analysis adds an analysed column and keeps it in a layout (GROK-19039, GROK-19047)

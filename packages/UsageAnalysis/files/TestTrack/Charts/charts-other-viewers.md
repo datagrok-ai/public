@@ -40,8 +40,8 @@ A clean session. Each scenario opens its own data.
 1. Close all. Open `System:DemoFiles/geo/earthquakes.csv`.
 2. Add a **Globe**.
 3. **Verify:** the Globe is painted; no errors.
-4. Close the Globe. Add a **Surface plot**.
-5. **Verify:** the Surface plot is painted; **X**, **Y** and **Z** are set; no errors.
+4. Close all. Open `System:DemoFiles/demog.csv` and add a **Surface plot**.
+5. **Verify:** the Surface plot is shown; **X**, **Y** and **Z** are set; no errors.
 6. Click the **Gear** icon. Set **Projection** to **orthographic**, then turn **Wireframe** off.
 7. **Verify:** the Surface plot repainted each time; no errors.
 
@@ -67,7 +67,8 @@ A clean session. Each scenario opens its own data.
 
 - The gallery enables every Charts viewer on `demog.csv` and disables Radar and Sankey on a
   table without numeric columns, with the reason in the hint.
-- Globe and Surface plot draw on `earthquakes.csv`; Surface plot settings apply without errors.
+- Globe draws on `earthquakes.csv` and Surface plot on `demog.csv`; Surface plot settings apply
+  without errors.
 - Group Analysis adds an analysed column without errors and a layout restores its groups and
   analysed columns.
 

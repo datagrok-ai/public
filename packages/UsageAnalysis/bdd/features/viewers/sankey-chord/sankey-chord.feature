@@ -10,12 +10,12 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
   document): which columns the Source and Target lists offer and that neither has an empty choice
   (no step reads the choices of a column property), hovering the Sankey's individual flows (they
   are not areas; the pointer goes to the middle of the viewer, where it meets the F → Caucasian
-  flow, whose row-group tooltip reads "2823 rows"). Left out: the md's filter that no row passes —
-  with a Sankey open it logs "Invalid argument(s): Invalid array length" (reproduced twice on
-  localhost, not without the Sankey); it is in the request document's suspected defects. The Chord
+  flow, whose row-group tooltip reads "2823 rows"). The md's filter that no row passes is a
+  scenario of its own, tagged @known-failure: with a Sankey open it logs "Invalid argument(s):
+  Invalid array length" (GROK-21110). The Chord
   is switched to From RACE, To DIS_POP with To set first: setting From to RACE while To is still
-  RACE logs "Column '' not found" twice (suspected defect in the request document), and the md's
-  order passes through that state.
+  RACE logs "Column '' not found" twice, so the md's order is a scenario of its own,
+  tagged @known-failure (GROK-21111).
 
   Background:
     Given user is logged in
@@ -76,6 +76,18 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And "M" text in sankey viewer should be visible
     And no errors should have been logged
 
+  @known-failure
+  Scenario: Sankey with a filter no row passes logs no error (GROK-21110)
+    When user clicks on "Add viewer" icon
+    And user clicks on first "Sankey" card in "Add Viewer" dialog
+    Then "M" text in sankey viewer should be visible
+    When user clicks on filter icon in toolbar
+    Then filter panel should be visible
+    When user clicks on the "category true of CONTROL" area of filter panel
+    And user clicks on the "category Asian of RACE" area of filter panel
+    Then 0 rows should pass the filter
+    And no errors should have been logged
+
   Scenario: Chord redraws on a filter change without a click (GROK-17772)
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
@@ -113,4 +125,16 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     And user clicks on reset icon of filter panel
     Then 5850 rows should pass the filter
     And "Black" text in chord viewer should be visible
+    And no errors should have been logged
+
+  @known-failure
+  Scenario: Setting the Chord's From to the column To holds logs no error (GROK-21111)
+    When user clicks on "Add viewer" icon
+    And user clicks on first "Chord" card in "Add Viewer" dialog
+    Then chord viewer should be visible
+    When user clicks on grid
+    And user clicks on settings icon of chord viewer
+    Then "From" property in context panel should be visible
+    When user selects "RACE" in "From" property in context panel
+    Then "From" property of chord viewer should be "RACE"
     And no errors should have been logged

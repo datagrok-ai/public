@@ -17,9 +17,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
   "segment S_PART | ", cannot be told apart from "segment S_PART" by the area lookup, which ignores
   punctuation; the Select columns dialog is claimed by how many columns it lists and by searching
   for the ones it must not list, not by a reading of the listed names; the layout of the last
-  scenario is saved and applied through the API, not through View > Layout. Left out: switching
-  Table while the Hierarchy dialog is open (GROK-18009) — after Cancel the hierarchy is empty and
-  the viewer shows its message (a suspected defect, reproduced twice, in the request document).
+  scenario is saved and applied through the API, not through View > Layout.
 
   Background:
     Given user is logged in

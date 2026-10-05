@@ -11,6 +11,8 @@ related_bugs:
   - GROK-18036
   - GROK-18042
   - GROK-18048
+  - GROK-21110
+  - GROK-21111
 ---
 
 # Sankey and Chord viewers
@@ -38,7 +40,7 @@ A clean session. Each scenario opens its own data.
 8. Set **Source** to **RACE**, **Target** to **DIS_POP**, **Value** to **WEIGHT**.
 9. **Verify:** the Sankey repainted; no errors.
 
-### 2. Sankey follows the filter, including a filter with no rows (GROK-18035)
+### 2. Sankey follows the filter, including a filter with no rows (GROK-18035, GROK-21110)
 
 1. Continue from scenario 1.
 2. Open the Filter Panel and keep only **F** in the **SEX** filter.
@@ -50,7 +52,7 @@ A clean session. Each scenario opens its own data.
 8. Reset the filters.
 9. **Verify:** 5850 rows pass the filter; the Sankey is painted.
 
-### 3. Chord redraws on filter without a click (GROK-17772)
+### 3. Chord redraws on filter without a click (GROK-17772, GROK-21111)
 
 1. Close all. Open `System:DemoFiles/demog.csv` and add a **Chord**.
 2. **Verify:** the Chord is painted with **From** SEX and **To** RACE; no errors.

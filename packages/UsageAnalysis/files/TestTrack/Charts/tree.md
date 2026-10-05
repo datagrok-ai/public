@@ -114,9 +114,6 @@ sets **Row Source** to match.
 - The Tree has no widget status for its branches or counts, so these scenarios can only show that
   a setting applied and the viewer drew without an error; "repainted" is a pixel comparison.
 - Branch clicks with Shift are in `charts-ui.md` (manual).
-- The Tree in a saved layout (GROK-19226) is not checked here; the project round trip in
-  scenario 4 covers saving the Tree. A layout step can be added once the Tree is checked
-  manually in a layout on dev.
 - Setup step 3 depends on the **Select columns...** dialog keeping the order the columns are
   checked in; no row needs dragging.
 

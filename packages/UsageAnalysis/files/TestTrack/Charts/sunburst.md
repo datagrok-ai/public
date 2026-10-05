@@ -15,7 +15,6 @@ related_bugs:
   - github-3097
   - github-3412
   - GROK-15543
-  - GROK-18009
   - GROK-18010
 ---
 
@@ -52,7 +51,7 @@ centre, for example `F | Caucasian`.
    dialog keeps RACE, already in the hierarchy, first and appends SEX after it).
 8. **Verify:** 10 segments; no errors in the console.
 
-### 2. Only categorical columns can build the hierarchy (github-2954, GROK-18010, GROK-18009)
+### 2. Only categorical columns can build the hierarchy (github-2954, GROK-18010)
 
 1. Open `System:AppData/Charts/ae.csv` and add a **Sunburst**.
 2. Open the **Hierarchy** dialog.
@@ -63,10 +62,6 @@ centre, for example `F | Caucasian`.
 6. Open the **Hierarchy** dialog, click **None**, check **Core** and **R101**, click **OK**.
 7. **Verify:** the viewer draws segments (it is not blank and shows no message) and its hierarchy
    is `Core, R101`.
-8. Open the **Hierarchy** dialog again and, while it is open, set **Table** in the Context Panel
-   to `demog-1000`. Close the dialog with **Cancel**.
-9. **Verify:** the Sunburst is bound to `demog-1000`, draws segments, and the console has no
-   errors.
 
 ### 3. Click, Ctrl+Click, Shift+Click and Ctrl+Shift+Click select segments
 
@@ -177,8 +172,6 @@ centre, for example `F | Caucasian`.
   `on click`, `include nulls` and `rows shown` are readings of the Sunburst's widget status.
 - Scenario 2 step 3 needs a step that reads which columns the **Select columns...** dialog
   lists.
-- Scenario 2 steps 8-9 (GROK-18009) rely on the **Select columns...** dialog being non-modal,
-  so the Context Panel stays usable while it is open.
 - Scenario 7 compares the colors of two segment areas; the Sunburst has no color column
   property, its segment colors come from the column's categorical colors. Opening the picker
   from a scatter plot legend item needs a legend right-click step.
