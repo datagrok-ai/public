@@ -25,6 +25,7 @@ const testsExclude = [
     'shell/settings.ts', // client shell settings object — browser-only
     'shell/ml.ts',       // registers client JS funcs at import (grok.functions.register)
     'dataframe/add-new-column.ts', // dialog-driven (PowerPack addNewColumnDialog)
+    'dataframe/calculated-columns-bench.ts', // table views and layouts
 ];
 
 // UI-independent test folders that run under Node; grid/, widgets/, ai/, packages/

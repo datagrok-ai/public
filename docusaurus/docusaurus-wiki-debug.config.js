@@ -15,6 +15,9 @@ const config = {
     onBrokenMarkdownLinks: 'warn',
     onBrokenAnchors: 'warn',
     onDuplicateRoutes: 'warn',
+    markdown: {
+        format: 'detect',
+    },
     favicon: 'favicon/favicon.ico',
     staticDirectories: ['static'],
 
@@ -101,10 +104,10 @@ const config = {
             ({
                 docs: {
                     sidebarPath: require.resolve('./sidebars.js'),
-                    editUrl: 'https://github.com/datagrok-ai/public/tree/master/help',
+                    editUrl: 'https://github.com/datagrok-ai/help/tree/master',
                     path: '../help',
                     routeBasePath: 'help',
-                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md'],
+                    exclude: ['**/_*/**', '_*/**', '**/_*', '**/*-test.md', '**/CLAUDE.md', '**/.claude/**'],
                     beforeDefaultRemarkPlugins: [imagePlaceholder],
                 },
                 blog: {

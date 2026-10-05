@@ -110,12 +110,72 @@ export namespace funcs {
     return await grok.functions.call('LibTests:TestAnnotatedInputs', { a, b, c, v, code, mode, df, col, mol });
   }
 
+  /**
+   * @param {string} city
+   *   choices: LibTests:MockCities
+   */
+  export async function testReservedNames(region: string , city: string , call: string , all: string , table: number , target: number , literals: number , x: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestReservedNames', { region, city, call, all, table, target, literals, x });
+  }
+
   export async function mockValidator(x: number ): Promise<string> {
     return await grok.functions.call('LibTests:MockValidator', { x });
   }
 
   export async function testNamedValidators(x: number , y: number ): Promise<number> {
     return await grok.functions.call('LibTests:TestNamedValidators', { x, y });
+  }
+
+  export async function mockCities(region: string ): Promise<any> {
+    return await grok.functions.call('LibTests:MockCities', { region });
+  }
+
+  export async function mockCountingCities(region: string ): Promise<any> {
+    return await grok.functions.call('LibTests:MockCountingCities', { region });
+  }
+
+  /**
+   * @param {string} city
+   *   choices: LibTests:MockCountingCities
+   */
+  export async function testCountingChoices(region: string , city: string , n: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestCountingChoices', { region, city, n });
+  }
+
+  export async function mockCars(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockCars', {});
+  }
+
+  /**
+   * @param {string} metric
+   *   choices: ["euclidean", "minkowski"]
+   * @param {string} speed
+   *   choices: ["slow", "fast"]
+   * @param {string} city
+   *   choices: LibTests:MockCities
+   * @param {string} model
+   *   choices: LibTests:MockCars()
+   */
+  export async function testValueAnnotations(calc: number , bare: string , metric: string , speed: string , region: string , city: string , model: string , mpg: number , cyl: number ): Promise<string> {
+    return await grok.functions.call('LibTests:TestValueAnnotations', { calc, bare, metric, speed, region, city, model, mpg, cyl });
+  }
+
+  export async function mockCarsTyped(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockCarsTyped', {});
+  }
+
+  export async function mockEngines(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:MockEngines', {});
+  }
+
+  /**
+   * @param {string} model
+   *   choices: LibTests:MockCarsTyped()
+   * @param {string} engine
+   *   choices: LibTests:MockEngines()
+   */
+  export async function testLookupAnnotations(model: string , engine: string , cyl: number , mpg: number , name: string , flag: boolean , when: any , made: any ): Promise<string> {
+    return await grok.functions.call('LibTests:TestLookupAnnotations', { model, engine, cyl, mpg, name, flag, when, made });
   }
 
   export async function mockValidatorBool(x: number ): Promise<boolean> {
@@ -128,5 +188,35 @@ export namespace funcs {
 
   export async function testExpressionInputs(k: number , hv: number , foo: number , bar: number , code: string ): Promise<number> {
     return await grok.functions.call('LibTests:TestExpressionInputs', { k, hv, foo, bar, code });
+  }
+
+  export async function testEnabledInputs(k: number , en: number , both: number ): Promise<number> {
+    return await grok.functions.call('LibTests:TestEnabledInputs', { k, en, both });
+  }
+
+  export async function loadProfile(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:LoadProfile', {});
+  }
+
+  /**
+   * @param {string} subject
+   *   choices: []
+   * @param {string} route
+   *   choices: ["iv", "oral"]
+   * @param {string} doseUnit
+   *   choices: ["mg", "mg/kg"]
+   * @param {string} method
+   *   choices: ["LSODA", "RK45"]
+   */
+  export async function pkModel(profile: DG.DataFrame , time: DG.Column , subject: string | null, route: string , dose: number , doseUnit: string , weight: number | null, ka: number | null, compound: string | null, clearance: number , volume: number , duration: number , method: string , tolerance: number | null): Promise<number> {
+    return await grok.functions.call('LibTests:PkModel', { profile, time, subject, route, dose, doseUnit, weight, ka, compound, clearance, volume, duration, method, tolerance });
+  }
+
+  export async function allometricClearance(weight: number | null): Promise<number> {
+    return await grok.functions.call('LibTests:AllometricClearance', { weight });
+  }
+
+  export async function checkTolerance(tolerance: number ): Promise<string> {
+    return await grok.functions.call('LibTests:CheckTolerance', { tolerance });
   }
 }

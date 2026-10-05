@@ -108,6 +108,8 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
+const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
+
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   constructor(module: RDModule, webRoot: string) {
     super(module, webRoot);
@@ -380,8 +382,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           case MolNotation.Smarts:
             results[i] = rdMol.get_smarts();
             break;
-          case MolNotation.CxSmiles:
-            results[i] = rdMol.get_cxsmiles();
+          case MolNotation.CxSmiles: // @ts-ignore temporary
+            results[i] = rdMol.get_cxsmiles(cxWithoutCoordsJSON);
             break;
           case MolNotation.CxSmarts:
             results[i] = rdMol.get_cxsmarts();

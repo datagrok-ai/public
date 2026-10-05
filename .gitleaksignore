@@ -56,9 +56,6 @@ packages/Samples/connections/postgres-northwind.json:generic-api-key:15
 packages/Samples/connections/postgres-world.json:generic-api-key:15
 packages/Samples/projects/coffee-company/connections/postgres-starbucks.json:generic-api-key:15
 
-# --- documentation example ---
-help/govern/_deprecated/group.md:generic-api-key:57
-
 # --- localhost demo default ---
 packages/NodeJSDemo/dockerfiles/todo-app/src/server.ts:generic-api-key:8
 

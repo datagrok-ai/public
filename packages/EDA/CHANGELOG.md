@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 * GROK-20932: Added the knnImpute function: headless k-NN imputation of chosen columns, used by Forge
 

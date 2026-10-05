@@ -114,8 +114,15 @@ export const ruleDataHandler: Handler = ({controller}) => {
         else if (effect.effect === 'assign') {
           if (!on)
             controller.clearRestriction(target);
-          else if (values != null && typeof values === 'object' && target in values)
-            controller.setAll(target, values[target], effect.restriction ?? 'none');
+          else if (values != null && typeof values === 'object') {
+            const key = effect.ignoreCase ?
+              Object.keys(values).find((name) => name.toLowerCase() === target.toLowerCase()) :
+              target in values ? target : undefined;
+            if (key !== undefined)
+              controller.setAll(target, values[key], effect.restriction ?? 'none');
+            else
+              controller.clearRestriction(target);
+          }
         }
       }
     }

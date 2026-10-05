@@ -1,5 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import dayjs from 'dayjs';
 import {IControllerBase} from '../RuntimeControllers';
 import {RuleExpr, RuleSource} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
@@ -75,10 +76,130 @@ function resolveValidators(
   return annotationVerdicts(controller, spec);
 }
 
+export type ChoicesVerdict = {
+  items: string[], values: Record<string, any>, inList: boolean, row: Record<string, any> | null, rowErrors: string[],
+};
+type ChoicesResult = Awaited<ReturnType<DG.FuncCall['evalParamChoices']>>;
+type ChoicesEntry = {deps: string[], values: any[], result: Promise<ChoicesResult>, landed?: ChoicesResult};
+
+// one evaluation per call and io, shared by the links reading it and redone only when a param
+// named in its `dependsOn` changes, as the function form does
+const choicesCache = new WeakMap<DG.FuncCall, Map<string, ChoicesEntry>>();
+let warnedNoChoices = false;
+
+const notConverted = Symbol('notConverted');
+
+// mirrors the form, which parses the cell's text with the input's editor; a cell it would empty is reported
+function convertCell(cell: any, type: string): any {
+  if (cell == null)
+    return null;
+  if (type === DG.TYPE.BOOL)
+    return cell === true || cell === 'true';
+  if (cell === '' && type !== DG.TYPE.STRING)
+    return null;
+  switch (type) {
+  case DG.TYPE.INT:
+  case DG.TYPE.FLOAT:
+  case DG.TYPE.NUM: {
+    const num = typeof cell === 'number' ? cell : typeof cell === 'string' && cell.trim() ? Number(cell) : NaN;
+    return Number.isFinite(num) && (type !== DG.TYPE.INT || Number.isInteger(num)) ? num : notConverted;
+  }
+  case DG.TYPE.STRING:
+    if (typeof cell === 'string')
+      return cell;
+    return typeof cell === 'number' || typeof cell === 'boolean' ? String(cell) : notConverted;
+  case DG.TYPE.DATE_TIME: {
+    // evalParamChoices leaves datetime cells as platform objects, which toJs turns into dayjs
+    const date = typeof cell === 'string' || typeof cell === 'number' || cell instanceof Date ? dayjs(cell) :
+      dayjs.isDayjs(cell) ? cell : DG.toJs(cell);
+    return dayjs.isDayjs(date) && date.isValid() ? date : notConverted;
+  }
+  default:
+    return cell;
+  }
+}
+
+function convertRow(call: DG.FuncCall, cells: Record<string, any>) {
+  const types = new Map(call.func.inputs.map((prop) => [prop.name.toLowerCase(), prop.propertyType as string]));
+  const row: Record<string, any> = {};
+  const rowErrors: string[] = [];
+  for (const [column, cell] of Object.entries(cells)) {
+    const type = types.get(column.toLowerCase());
+    const value = type ? convertCell(cell, type) : cell;
+    if (value === notConverted)
+      rowErrors.push(`${column}: ${JSON.stringify(cell)} is not a valid ${type}`);
+    else
+      row[column] = value;
+  }
+  return {row, rowErrors};
+}
+
+function choicesVerdict(call: DG.FuncCall, r: ChoicesResult, value: any): ChoicesVerdict {
+  const key = value == null || value === '' ? undefined : String(value);
+  const cells = key === undefined ? undefined : r.lookup?.[key];
+  const {row, rowErrors} = cells ? convertRow(call, cells) : {row: null, rowErrors: []};
+  return {
+    items: r.items, values: r.values,
+    inList: key === undefined || r.items.includes(key),
+    row, rowErrors,
+  };
+}
+
+function resolveChoices(
+  controller: IControllerBase, spec: ChoicesSource,
+): ChoicesVerdict | Promise<ChoicesVerdict> | undefined {
+  if (!spec.call || !controller.hasCall(spec.call))
+    return undefined;
+  const call = controller.getFirst<DG.FuncCall | undefined>(spec.call);
+  const io = controller.getMatchedPositions(spec.input)[0]?.ioName;
+  if (!call || !io)
+    return undefined;
+  if (typeof (call as any).evalParamChoices !== 'function') {
+    if (!warnedNoChoices) {
+      warnedNoChoices = true;
+      console.warn('RTD: FuncCall.evalParamChoices is not available on this platform, annotation choices are skipped');
+    }
+    return undefined;
+  }
+  const value = controller.getFirst(spec.input);
+  const choices = evalChoices(call, io);
+  return choices instanceof Promise ?
+    choices.then((r) => choicesVerdict(call, r, value)) :
+    choicesVerdict(call, choices, value);
+}
+
+// a pending evaluation does not know its dependencies yet, so a run waits for it and checks them then
+function evalChoices(call: DG.FuncCall, io: string): ChoicesResult | Promise<ChoicesResult> {
+  const byIo = choicesCache.get(call) ?? new Map<string, ChoicesEntry>();
+  choicesCache.set(call, byIo);
+  const entry = byIo.get(io);
+  if (entry && !entry.landed)
+    return entry.result.then(() => evalChoices(call, io));
+  if (entry?.landed && entry.deps.every((dep, idx) => call.inputs[dep] === entry.values[idx]))
+    return entry.landed;
+  const snapshot = Object.fromEntries(call.func.inputs.map((prop) => [prop.name, call.inputs[prop.name]]));
+  const created: ChoicesEntry = {deps: [], values: [], result: call.evalParamChoices(io)};
+  created.result.then((r) => {
+    created.deps = r.dependsOn;
+    created.values = r.dependsOn.map((dep) => snapshot[dep]);
+    created.landed = r;
+  }, () => byIo.delete(io));
+  byIo.set(io, created);
+  return created.result;
+}
+
 type ValidatorsSource = Extract<RuleSource, {validators: any}>['validators'];
+type ChoicesSource = Extract<RuleSource, {choices: any}>['choices'];
 type JsSource = Extract<RuleSource, {js: any}>['js'];
 type FuncSource = Extract<RuleSource, {func: any}>['func'];
 type QuerySource = Extract<RuleSource, {query: any}>['query'];
+type TableSource = Extract<RuleSource, {table: any}>['table'];
+
+function resolveTable(spec: TableSource) {
+  if (spec instanceof DG.DataFrame)
+    return spec;
+  return typeof spec === 'string' ? DG.DataFrame.fromCsv(spec) : DG.DataFrame.fromCsv(spec.csv, spec.options);
+}
 
 function resolveFile(path: string) {
   return /^[a-z][a-z0-9+.-]*:\/\//i.test(path) ? grok.data.loadTable(path) : grok.data.files.openTable(path);
@@ -86,10 +207,12 @@ function resolveFile(path: string) {
 
 // a source that reads no input is loaded once per link
 function isConstant(source: RuleSource) {
-  if ('file' in source)
+  if ('file' in source || 'table' in source)
     return true;
-  const args = 'func' in source ? source.func.args : 'query' in source ? source.query.args : undefined;
-  return args !== undefined && Object.values(args).every((expr) => !usedAliases(expr).length);
+  if (!('func' in source) && !('query' in source))
+    return false;
+  const args = 'func' in source ? source.func.args : source.query.args;
+  return Object.values(args ?? {}).every((expr) => !usedAliases(expr).length);
 }
 
 function resolveJs(controller: IControllerBase, spec: JsSource) {
@@ -128,15 +251,17 @@ async function resolveQuery(spec: QuerySource, ctx: RuleContext) {
   return connection.query('adhoc', sql).apply(args);
 }
 
+const sourceKinds = ['validators', 'choices', 'js', 'func', 'query', 'file', 'table'];
+
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
 export function resolveSources(
-  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {all: {}},
+  controller: IControllerBase, sources: Record<string, RuleSource> | undefined, ctx: RuleContext = {$all: {}},
 ): Record<string, any> | Promise<Record<string, any>> {
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!('validators' in source) && !('js' in source) && !('func' in source) && !('query' in source) && !('file' in source))
+    if (!sourceKinds.some((kind) => kind in source))
       throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
     const cache = controller.sourceCache;
     const constant = !!cache && isConstant(source);
@@ -148,7 +273,9 @@ export function resolveSources(
         'func' in source ? resolveFunc(source.func, ctx) :
           'query' in source ? resolveQuery(source.query, ctx) :
             'file' in source ? resolveFile(source.file) :
-              resolveValidators(controller, source.validators);
+              'table' in source ? resolveTable(source.table) :
+                'choices' in source ? resolveChoices(controller, source.choices) :
+                  resolveValidators(controller, source.validators);
       if (constant) {
         cache.set(alias, value);
         if (value instanceof Promise)

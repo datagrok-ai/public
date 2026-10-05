@@ -125,7 +125,7 @@ type ErrorBehaviorParam = {valueOnError?: number | string | boolean, errorColNam
 type ErrorBehaviorSettings = {
   useValue: boolean,
   value: ErrorValue | null,
-  /** The column type [value] was entered for; a value of another type is not used. */
+  /** The column type [value] was entered for; a value of another type is not used. Unset for a value a call brought. */
   valueType?: string,
   errorColumn: boolean,
   errorColName: string,
@@ -543,12 +543,14 @@ export class AddNewColumnDialog {
       return;
     const col = this.edit ? this.sourceDf!.col(this.call.getParamValue('name')) : null;
     this.initialErrorBehavior = col?.getTag(DG.Tags.FormulaErrorBehavior) || null;
-    if (col && this.initialErrorBehavior) {
-      const saved: ErrorBehaviorParam = JSON.parse(this.initialErrorBehavior);
+    // an edit starts from the column's tag, an add from what the call it was opened with already carries
+    const saved: ErrorBehaviorParam | null = this.initialErrorBehavior ? JSON.parse(this.initialErrorBehavior) :
+      this.edit ? null : this.call.getParamValue('errorBehavior') ?? null;
+    if (saved) {
       const v = saved.valueOnError;
-      const value = v == null ? null : col.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
-        col.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
-      this.errorBehavior = {useValue: value != null, value, valueType: col.type,
+      const value = v == null ? null : col?.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
+        col?.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
+      this.errorBehavior = {useValue: value != null, value, valueType: col?.type,
         errorColumn: !!saved.errorColName, errorColName: saved.errorColName ?? ''};
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
@@ -567,7 +569,7 @@ export class AddNewColumnDialog {
   /** The value that failed rows get; null when they are left empty. */
   getErrorValue(): ErrorValue | null {
     const b = this.errorBehavior;
-    return b.useValue && b.value != null && b.valueType === this.getErrorValueType() ? b.value : null;
+    return b.useValue && b.value != null && (b.valueType == null || b.valueType === this.getErrorValueType()) ? b.value : null;
   }
 
   /** [getErrorValue] as a column stores it: the date input edits local time, and date columns keep the time as UTC. */
@@ -648,7 +650,7 @@ export class AddNewColumnDialog {
   createErrorValueInput(onChanged: () => void): DG.InputBase<ErrorValue | null> {
     const b = this.errorBehavior;
     const type = this.getErrorValueType();
-    if (b.valueType !== type)
+    if (b.valueType != null && b.valueType !== type)
       b.value = type === DG.COLUMN_TYPE.BOOL ? false : null;
     b.valueType = type;
     const onValueChanged = (v: ErrorValue | null) => {

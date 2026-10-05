@@ -7,8 +7,8 @@ import {getRdKitModule} from '../chem-common-rdkit';
 import {MountedViewerRegistry} from './viewer-mount';
 import {PropagationSnapshot, propagatedColumns, snapshotPropagation} from './propagation';
 import {
-  BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, DataKey, MAX_ROUNDS, Mode, MODE_LABEL, panelHeader,
-  roundsLabel, tabPanel,
+  BuiltInputs, buildInputs, buildResultDataFrame, clampRounds, cyclesLabel, DataKey, MAX_ROUNDS, Mode, MODE_LABEL,
+  panelHeader, roundsLabel, tabPanel,
 } from './shared';
 
 // Small enough to compute fast, large enough to show a representative mixed sample.
@@ -89,7 +89,7 @@ export class PreviewPanel {
       ], {style: {gap: '8px', padding: '2px 0'}}));
     };
 
-    addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`);
+    addRow('Strategy', `${MODE_LABEL[mode]} · ${roundsLabel(rounds)}${cyclesLabel(this.deps.getConfig())}`);
     if (rounds > MAX_ROUNDS) addRow('', `Showing the first ${MAX_ROUNDS} steps — capped at ${MAX_ROUNDS}.`);
 
     // Only rounds with a custom subset get a row; the rest would just repeat the total.

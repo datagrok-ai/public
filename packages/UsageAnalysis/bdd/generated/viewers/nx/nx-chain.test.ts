@@ -8,14 +8,12 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 import {test} from '@playwright/test';
 import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {dragCard, pickCardIndicatorMenu} from '../../../bindings/filter-panel.js';
 import {clickCardStructure, clickScaffoldFilterArea, pickFromLongestCellMenu, rememberScaffoldReading, rowsContainPicked, scaffoldFilterReading, scaffoldFilterReadingAtLeast, scaffoldFilterReadingText, scaffoldReadingLower, scaffoldTreeUncolored, setScaffoldBitOperation, viewerShowsFormulaRows} from '../../../bindings/nx.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clearField, clickOn, doubleClickOn, enterInto, hoverOver, isExpanded, pasteInto, pressKey, pressKeyIn, selectIn, shouldBe, shouldContainText, shouldNotContainText, typeInto, uncheck, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';
@@ -24,7 +22,7 @@ import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/command
 import {allRowsSelected, categoricalColorIs, colorCodedAs, colorCodedCategorically, colorConditional, colorLinear, filterMatchesLinkedSelection, filterPanelCount, filterPasses, filterPassesAll, filterPassesFewer, noneOfFiltered, noneOfSelected, noneSelected, passingAsRemembered, passingFewer, passingMore, rememberPassing, selectedInTable, selectedPassFilter, selectedRowCount, selectionMatchesLinkedSelection, setLinkKeyPair, setLinkTables, someSelected, tableFilterCount, tableOpen, tableTagContains} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, browsePanelOpen, clickPlainCheckbox, clickViewTab, closeAllViews, contextPanelShows, dialogCloses, noProjectOnServer, openProjectWithTable, openSaveDialog, pickViewTabMenu, projectLinks, projectsOnServer, reloadedByDataSync, saveDialogDataSync, saveFromDialog, savedWithDataSync, simpleModeOff, sketcherIs, switchToLastView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
-import {addCardFor, filtersDoneComputing, panelStatesAsRemembered, pickPanelMenu, rememberPanelStates} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
+import {addCardFor, dragCard, filtersDoneComputing, panelStatesAsRemembered, pickCardIndicatorMenu, pickPanelMenu, rememberPanelStates} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {addFormulaLine, drawsFormulaLines, editFormulaLine, formulaLineRanges, setFormulaLineRange, tableFormulasLack, viewerFormulasLack} from '@datagrok-libraries/bdd/bindings/tiers/viewers/formula-lines';
 import {applyNamedLayout, areaColor, areaNotColor, boundTable, clickArea, clickLegendItem, closeContextMenu, doubleClickArea, dragAreaBy, dragAreaToArea, dragSelectionOverArea, hasArea, hasNoArea, hoverArea, legendDocked, legendItemColor, legendLists, legendPlacedNowhere, legendSide, narrowerRange, noBalloons, noErrors, noViewerError, pickColorSwatch, pickFromAreaContextMenu, pickFromContextMenu, pickFromOpenMenu, propertiesShouldBe, propertyShouldBe, propertyShouldContain, readingAtLeast, readingIs, readingLowerThanRemembered, readingNotAsRemembered, readingReads, rememberRange, rememberReading, rememberedRange, repainted, reportsNoError, saveNamedLayout, setProperties, setProperty, showsFilteredRows, showsRows, showsSelectedRows, viewerCount, wheelOverAreaTimes, zoomedToFilter} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {addLineChartSplit, areaPlacedAsRemembered, dockToViewEdge, dockedAtViewEdge, doubleClickEmptySpace, gridPins, noTabbedPanel, notDockedAtViewEdge, pickFromViewerMenu, pickInColumnSelector, readingIncludes, rememberAreaPlace, scrollGridTo, stackViewer, switchTab, toggleInColumnList, viewersTabbed} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';

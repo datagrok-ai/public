@@ -1,11 +1,9 @@
 /* The names this package's features use. Platform names (toolbox, browse tab, context panel,
    console, status bar, open tableview, grid) are reserved; most of a model view needs no entry —
    "Fit ribbon item", "dose input" or "Multiaxis tab" resolve from the platform's kinds alone. */
-import {element, kind} from '@datagrok-libraries/bdd';
+import {element} from '@datagrok-libraries/bdd';
 
-/* The hub's cards: a template or a library model, named by the label in the card's header. */
-kind('hub card', {selector: '.diff-studio-hub-card', match: ['label'], labelSelector: '.diff-studio-hub-card-header'});
-/* A model opened earlier has a second card under Recent, which the hub lists as well. */
+/* The hub's model cards are the library's `model card` kind (alias `hub card`), shared with the Tutorials project. */
 element('library section', {selector: '[name="section-Library"]', description: 'the Library cards of the hub'});
 
 /* The folder icon on the ribbon that opens the model menu — it has no name of its own, only the

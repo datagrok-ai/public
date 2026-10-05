@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Demo: Fixed Similarity & Diversity Search, Matched Molecular Pairs and Scaffold Tree returning before their layouts were applied, which then landed on whatever view was open next
+* Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
+* Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
 * Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space
 * SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
 * SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point

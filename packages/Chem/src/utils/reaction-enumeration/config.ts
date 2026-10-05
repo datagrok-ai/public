@@ -38,6 +38,8 @@ export interface EnumerationSpecs {
   reagent_propagated_columns: PropagatedColumns;
   depth_first: boolean;
   num_rounds: number;
+  apply_until_fails: boolean;
+  max_cycles: number;
 }
 
 export interface EnumeratorConfig {
@@ -86,6 +88,8 @@ export const DEFAULT_CONFIG: EnumeratorConfig = {
     reagent_propagated_columns: {},
     depth_first: true,
     num_rounds: 2,
+    apply_until_fails: false,
+    max_cycles: 5,
   },
 };
 

@@ -9,7 +9,6 @@ sub_features_covered: [sharing.share-dialog]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -42,7 +41,7 @@ test.describe("Sharing a space, and what it refuses", () => {
       await session.step(46, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(47, "When user double-clicks on BDD-Share tree node inside browse tree", () => doubleClickOn(page, el("BDD-Share tree node inside browse tree")));
       await session.step(48, "Then the \"BDD-Share\" view should be current", () => viewIsCurrent(page, "BDD-Share"));
-      await session.step(49, "And BDD-Share-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Share-Child link in space gallery"), "visible"));
+      await session.step(49, "And BDD-Share-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Share-Child link in gallery"), "visible"));
     });
     await run.scenario("The Share dialog asks who and how much", async () => {
       await session.step(52, "When user picks \"Share...\" from the context menu of BDD-Share tree node inside browse tree", () => pickFromContextMenu(page, "Share...", el("BDD-Share tree node inside browse tree")));
@@ -68,7 +67,7 @@ test.describe("Sharing a space, and what it refuses", () => {
     await run.scenario("A child space can be shared on its own", async () => {
       await session.step(73, "When user double-clicks on BDD-Share tree node inside browse tree", () => doubleClickOn(page, el("BDD-Share tree node inside browse tree")));
       await session.step(74, "Then the \"BDD-Share\" view should be current", () => viewIsCurrent(page, "BDD-Share"));
-      await session.step(75, "When user picks \"Share...\" from the context menu of BDD-Share-Child link in space gallery", () => pickFromContextMenu(page, "Share...", el("BDD-Share-Child link in space gallery")));
+      await session.step(75, "When user picks \"Share...\" from the context menu of BDD-Share-Child link in gallery", () => pickFromContextMenu(page, "Share...", el("BDD-Share-Child link in gallery")));
       await session.step(76, "Then \"Share BDD-Share-Child\" dialog should be visible", () => shouldBe(page, el("\"Share BDD-Share-Child\" dialog"), "visible"));
       await session.step(77, "When user clicks on CANCEL button in \"Share BDD-Share-Child\" dialog", () => clickOn(page, el("CANCEL button in \"Share BDD-Share-Child\" dialog")));
       await session.step(78, "Then \"Share BDD-Share-Child\" dialog should be hidden", () => shouldBe(page, el("\"Share BDD-Share-Child\" dialog"), "hidden"));

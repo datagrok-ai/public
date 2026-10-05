@@ -142,10 +142,10 @@ export class PeptidesSarTutorial extends Tutorial {
         this.describe(`The peptide column is split into positions; each cell is a monomer in that position.<br>
              Hover a monomer to preview its chemical structure.`);
         const step4Hint = greenHint(gridRoot, paragraphs([`Hover over a <i>monomer cell</i> in the <i>main grid</i> to see its structure`]),'right');
+        // a monomer's tooltip names the library it comes from, which differs between stands
         await this.action('Hover over a monomer cell in the main table grid',
-            grok.events.onTooltipShown.pipe(operators.filter(() => {
-                return ui.tooltip?.root?.textContent?.toLowerCase()?.includes('helmcore') ?? false;
-            })));
+            grok.events.onTooltipShown.pipe(operators.filter(() =>
+                gridRoot.matches(':hover') && ui.tooltip?.root?.querySelector('.ui-form.ui-tooltip') != null)));
 
         this._removeHints(step4Hint);
         step4Hint.remove();
@@ -385,7 +385,7 @@ function paragraphs(texts: string[], title?: string) {
     return ui.divV(items);
 }
 
-// observables, not promises: the tutorial unsubscribes a step's stream when it is closed, so no poll outlives it
+// observables rather than promises, since the tutorial unsubscribes a step's stream when it is closed, so no poll outlives it
 function poll(condition: () => boolean): rxjs.Observable<number> {
     return rxjs.interval(200).pipe(operators.filter(() => condition()));
 }

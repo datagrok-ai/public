@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import './dataframe/dataframe';
 import './dataframe/detector';
 import './dataframe/calculated-columns';
+import './dataframe/calculated-columns-bench';
 import './dataframe/events';
 import './dataframe/datetime-columns-join';
 import './dataframe/dataframe-join';

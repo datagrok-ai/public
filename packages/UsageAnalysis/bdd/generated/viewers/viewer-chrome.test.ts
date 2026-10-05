@@ -9,7 +9,6 @@ sub_features_covered: [viewers.chrome]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -18,7 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe, shouldContainText, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {openDataset, standServesHelp} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addViewer, closeContextMenu, menuLists, noErrors, painted, propertyShouldBe, propertyShouldNotBe, setProperties, setProperty, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {descriptionBelow, dockToViewEdge, dockedAtViewEdge, notDockedAtViewEdge, openViewerHelp, openViewerMenu, pickFromViewerMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
@@ -267,9 +266,10 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(117, "Then pc plot viewer should not be docked along the left edge of the view", () => notDockedAtViewEdge(page, el("pc plot viewer"), "left"));
     await session.step(118, "When user docks pc plot viewer to the left edge of the view", () => dockToViewEdge(page, el("pc plot viewer"), "left"));
     await session.step(119, "Then pc plot viewer should be docked along the left edge of the view", () => dockedAtViewEdge(page, el("pc plot viewer"), "left"));
-    await session.step(120, "When user opens the help of pc plot viewer", () => openViewerHelp(page, el("pc plot viewer")));
-    await session.step(121, "Then help panel should contain text \"Parallel coordinates plot\"", () => shouldContainText(page, el("help panel"), "Parallel coordinates plot"));
-    await session.step(122, "And no errors should have been logged", () => noErrors(page));
+    await session.step(120, "Given the stand serves the help pages", () => standServesHelp(page));
+    await session.step(121, "When user opens the help of pc plot viewer", () => openViewerHelp(page, el("pc plot viewer")));
+    await session.step(122, "Then help panel should contain text \"Parallel coordinates plot\"", () => shouldContainText(page, el("help panel"), "Parallel coordinates plot"));
+    await session.step(123, "And no errors should have been logged", () => noErrors(page));
   });
   test("The trellis plot docks along the left edge and opens its help from the title bar [viewer=trellis plot, help=Trellis]", {tag: ["@viewers", "@realizes:viewers.chrome"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -279,8 +279,9 @@ test.describe("Viewer chrome — title and description, Pick Up / Apply, the con
     await session.step(117, "Then trellis plot viewer should not be docked along the left edge of the view", () => notDockedAtViewEdge(page, el("trellis plot viewer"), "left"));
     await session.step(118, "When user docks trellis plot viewer to the left edge of the view", () => dockToViewEdge(page, el("trellis plot viewer"), "left"));
     await session.step(119, "Then trellis plot viewer should be docked along the left edge of the view", () => dockedAtViewEdge(page, el("trellis plot viewer"), "left"));
-    await session.step(120, "When user opens the help of trellis plot viewer", () => openViewerHelp(page, el("trellis plot viewer")));
-    await session.step(121, "Then help panel should contain text \"Trellis\"", () => shouldContainText(page, el("help panel"), "Trellis"));
-    await session.step(122, "And no errors should have been logged", () => noErrors(page));
+    await session.step(120, "Given the stand serves the help pages", () => standServesHelp(page));
+    await session.step(121, "When user opens the help of trellis plot viewer", () => openViewerHelp(page, el("trellis plot viewer")));
+    await session.step(122, "Then help panel should contain text \"Trellis\"", () => shouldContainText(page, el("help panel"), "Trellis"));
+    await session.step(123, "And no errors should have been logged", () => noErrors(page));
   });
 });

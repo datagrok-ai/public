@@ -230,7 +230,7 @@ export class ColumnList {
 
   /** Adds a column calculated by the formula `expression`, and resolves with it.
    * Rows the formula fails on stay empty unless `options.onError` says otherwise; `{mode: 'stop'}` rejects instead.
-   * The error behavior is kept with the column, so layouts and recalculations reuse it.
+   * The error behavior (other than `stop`) is kept with the column, so layouts and recalculations reuse it.
    * @param name  Name of the new column; a unique one is derived from it if the table already has it.
    * @param expression  Formula, such as `${AGE} * 2` or `InDays(DateDiff(${END}, ${START}))`.
    * @example

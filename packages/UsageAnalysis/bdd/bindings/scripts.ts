@@ -1,10 +1,10 @@
 /* What only the Scripts features need: the Results table the script view puts under the code, the
-   Save button's state while the core names it with a class alone, the editor's Save (DiffStudio's
-   bindings own that phrase too, with state of their own), and the layouts the view leaves behind.
-   Scripts on the server, the console, the alerts and the pane counts are the library's. */
+   Save button's state while the core names it with a class alone, and the layouts the view leaves
+   behind. Scripts on the server and their Save, the console, the alerts and the pane counts are the
+   library's. */
 import type {Page} from '@playwright/test';
-import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, deleteChatsOf, deleteLayoutsAtEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
+import {Given, Then} from '@datagrok-libraries/bdd';
+import {deleteLayoutsAtEnd, expect, pollMs} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -27,32 +27,6 @@ export const scriptResult = Then('the script results should show {string} as {st
 export const cleanLayouts = Given('the layouts saved for the script are deleted at the end', (page: Page) =>
   deleteLayoutsAtEnd(page, '^Df(_\\d+)?$'),
 {tier: 'api', description: 'every "Df"-named layout of this account made since the step ran, and the project it belongs to, go when the feature ends'});
-
-/* The editor's Save: the ribbon button, done when it reads "Saved"; the script it creates is
-   deleted with its chats at feature end. Not in the library: DiffStudio's bindings own the same
-   phrase with state of their own (the saved script its Model Hub claims read), and unifying the
-   two is a change to that suite. */
-export const saveScript = When('user saves the script', async (page: Page) => {
-  const save = page.locator('[name="button-Save"]').filter({visible: true}).first();
-  await save.click();
-  await expect(save, 'the Save button after the save').toHaveText('Saved', {timeout: pollMs(60000)});
-  let id = '';
-  await expect.poll(async () => {
-    id = await page.evaluate(async () => {
-      const found = String(grok.shell.v?.path ?? '').match(/^\/script\/([^/?#]+)/)?.[1] ?? '';
-      return found && (await grok.dapi.scripts.find(found).catch(() => null)) ? found : '';
-    });
-    return id !== '';
-  }, {message: "the script view's script on the server", timeout: pollMs(30000)}).toBe(true);
-  atFeatureEnd(page, async () => {
-    await deleteChatsOf(page, id);
-    await page.evaluate(async (scriptId) => {
-      const script = await grok.dapi.scripts.find(scriptId).catch(() => null);
-      if (script)
-        await grok.dapi.scripts.delete(script);
-    }, id);
-  });
-}, {tier: 'ui', description: 'the ribbon Save of the script view, done when it reads "Saved"; the script is deleted with its chats at feature end'});
 
 /* The Signature Editor keeps the ribbon it finds when it opens and puts that back when it is left
    (DevTools `function-signature-editor.ts`), and a view switched to a moment ago still has the
