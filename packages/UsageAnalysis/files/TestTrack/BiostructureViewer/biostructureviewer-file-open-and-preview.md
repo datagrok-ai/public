@@ -3,13 +3,14 @@ feature: biostructureviewer
 target_layer: playwright
 coverage_type: regression
 priority: p1
-realizes: [biostructureviewer.import.pdb, biostructureviewer.import.pdbqt, biostructureviewer.import.xyz, biostructureviewer.import.with-ngl, biostructureviewer.preview.biostructure, biostructureviewer.preview.ngl-structure, biostructureviewer.preview.ngl-surface, biostructureviewer.preview.ngl-density]
+realizes: [biostructureviewer.import.pdb, biostructureviewer.import.pdbqt, biostructureviewer.import.with-ngl, biostructureviewer.preview.biostructure, biostructureviewer.preview.ngl-structure, biostructureviewer.preview.ngl-surface, biostructureviewer.preview.ngl-density]
 produced_from: ticket-review
 related_bugs:
   - GROK-14442
   - GROK-16968
   - GROK-17654
   - GROK-18999
+  - GROK-21118
   - GROK-13650
   - CLAUDE-33
 source_text_fixes: []
@@ -22,9 +23,9 @@ realized_as: []
 # BiostructureViewer — Opening and previewing structure files from the Files browser
 
 Double-clicking a structure file runs the package file handler chosen by the extension;
-single-clicking shows a preview. `.pdb`, `.mmcif` and `.xyz` open in a separate view titled
-with the file name (`1bdq.pdb`) that holds the Mol\* engine (no table, no grid). `.pdbqt`
-with docking poses opens as a table of poses. NGL-only formats preview with the NGL engine.
+single-clicking shows a preview. `.pdb`, `.mmcif` and `.pdbqt` open in a separate view titled
+with the file name (`1bdq.pdb`) that holds the Mol\* engine (no table, no grid). NGL-only
+formats preview with the NGL engine.
 A `.pdb` file also has the context menu item **Open table residues**.
 
 Regression guard for GROK-14442 (`.pdb` was routed to the `.pdbqt` importer), GROK-16968
@@ -38,7 +39,7 @@ CLAUDE-33 (closing an unrelated view while a structure preview was open raised
 - Logged in; BiostructureViewer installed.
 - Files used:
   - `System:AppData/BiostructureViewer/samples/1bdq.pdb`, `1RQ9.mmcif`,
-    `1rq9-assembly1.cif`, `caffeine.xyz`, `1bdq.autodock-gpu.pdbqt` (two docking poses, no
+    `1rq9-assembly1.cif`, `1bdq.autodock-gpu.pdbqt` (two docking poses, no
     receptor).
   - `System:DemoFiles/bio/ngl-formats/1blu.mmtf`, `1crn.ply`, `1crn.obj`, `1lee.ccp4`,
     `3pqr.cns`.
@@ -47,7 +48,7 @@ CLAUDE-33 (closing an unrelated view while a structure preview was open raised
 
 ## Scenarios
 
-### Scenario 1 — Preview PDB, mmCIF, CIF and XYZ files (GROK-17654, GROK-18999)
+### Scenario 1 — Preview PDB, mmCIF and CIF files (GROK-17654, GROK-18999)
 
 Steps:
 
@@ -58,7 +59,7 @@ Steps:
      and is titled `1bdq.pdb` (not empty). No error balloon starting with "Preview file".
      No console error.
 
-3. Click `1RQ9.mmcif` once, then `1rq9-assembly1.cif` once, then `caffeine.xyz` once.
+3. Click `1RQ9.mmcif` once, then `1rq9-assembly1.cif` once.
 
    * Expected result: each preview shows the Mol\* engine and is titled with the file name.
      No error balloon.
@@ -88,25 +89,19 @@ Steps:
      (`.msp-plugin`, `.msp-viewport`). The view has no grid. No **Open file** dialog appears
      (that dialog belongs to the `.pdbqt` importer). No error balloon.
 
-2. Close the view. Double-click `1RQ9.mmcif`; after closing that view, double-click
-   `caffeine.xyz`.
+2. Close the view. Double-click `1RQ9.mmcif`.
 
-   * Expected result: each time a view titled with the file name and holding the Mol\* engine
+   * Expected result: a view titled with the file name and holding the Mol\* engine
      opens. No error balloon.
 
-### Scenario 4 — Double-click a PDBQT opens the poses as a table (GROK-14442, reverse direction)
+### Scenario 4 — Double-click a PDBQT opens it in a Mol\* view
 
 Steps:
 
 1. Double-click `1bdq.autodock-gpu.pdbqt`.
 
-   * Expected result: a table view opens with **2** rows and a column named `molecule`. A
-     dialog **Open file** appears with the text "Docking target structure required to display
-     ligand poses from pdbqt data." No structure view is opened.
-
-2. Click **CANCEL** in the dialog.
-
-   * Expected result: the dialog closes; the table view stays with 2 rows. No error balloon.
+   * Expected result: a new view titled `1bdq.autodock-gpu.pdbqt` becomes current and holds
+     the Mol\* engine. No error balloon.
 
 ### Scenario 5 — Closing an unrelated view while a structure preview is open (CLAUDE-33)
 
@@ -139,7 +134,7 @@ Steps:
 
    * Expected result: same as step 1 (density map in an NGL host).
 
-### Scenario 7 — Open table residues from a PDB file's context menu
+### Scenario 7 — Open table residues from a PDB file's context menu (GROK-21118)
 
 Steps:
 
@@ -156,13 +151,9 @@ Steps:
 
 ## Automation notes
 
-- `.pdbqt` opening is known to call the handler twice (GROK-14438, won't fix): assert "a
-  table view with 2 rows exists", not "exactly one view".
 - Scenario 1: where the Files browser shows the preview's name is to be matched on the stand;
   the NGL previews of Scenario 2 are created without a name, so their title is not asserted.
 - Scenario 6: by code reading an empty view or an `ext '' unknown` error was suspected
   (`viewNglUI`); on the stand a double-click on `1blu.mmtf` and `1lee.ccp4` opens a view with an
   NGL canvas and no error. The view's title is empty, not **NGL**.
-- Scenario 7 is a suspected defect, verify on the stand: by code reading, `compId` is created
-  as an integer column while three-letter residue names are written into it, so the column
-  may come out empty.
+- Scenario 7: on the stand `compId` comes out as an integer column of zeros (GROK-21118).

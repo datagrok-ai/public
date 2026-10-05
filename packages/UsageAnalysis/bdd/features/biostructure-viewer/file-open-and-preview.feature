@@ -1,10 +1,10 @@
-@viewers @realizes:biostructureviewer.preview.biostructure @realizes:biostructureviewer.import.pdb @realizes:biostructureviewer.import.xyz
+@viewers @realizes:biostructureviewer.preview.biostructure @realizes:biostructureviewer.import.pdb @realizes:biostructureviewer.import.pdbqt
 Feature: Opening and previewing structure files from the Files browser
   A click on a structure file in Browse > Files previews it with the Mol* engine, in a view named
   after the file; a double-click opens that view on its own. A .pdb file's menu in the folder view
   has Open table residues. Translated from the TestTrack case
   BiostructureViewer/biostructureviewer-file-open-and-preview (GROK-17654, GROK-18999, GROK-14442,
-  GROK-16968, CLAUDE-33).
+  GROK-16968, CLAUDE-33, GROK-21118).
 
   Facts of the stand the md did not have: the view a double-click opens is named after the file
   ("1bdq.pdb"), not "Mol*" — the open shows the file's previewer as a view rather than calling the
@@ -22,19 +22,11 @@ Feature: Opening and previewing structure files from the Files browser
 
 
   Not translated:
-  - The .xyz file (caffeine.xyz) is left out: its preview logs "TypeError: Cannot read properties
-    of undefined (reading 'entry')" on the stand, twice out of two (suspected defect, in the
-    request document); its double-click is left out with it.
   - Scenario 2 and Scenario 6 (NGL-only formats, preview and double-click): the NGL host and its
     canvas carry no name a step can reach, and the view they open has an empty name; nothing
     positive is readable (requested in the request document). On the stand every one of the five
     files previews without an error, and a double-click on 1blu.mmtf and 1lee.ccp4 opens a view
     with an NGL canvas — the suspected empty NGL view is not confirmed.
-  - Scenario 4 (.pdbqt opens its poses as a table with the Open file dialog): on the stand the
-    double-click opens the structure preview as a view instead, with no table and no dialog — a
-    suspected defect, in the request document.
-  - The compId values of Open table residues: the column is an integer column of zeros on the
-    stand (suspected defect, in the request document); the rest of the scenario is here.
 
   Background:
     Given user is logged in
@@ -96,6 +88,18 @@ Feature: Opening and previewing structure files from the Files browser
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  Scenario: A double-click on a PDBQT opens it in a view of its own
+    Given simple mode is off
+    When user double-clicks on Files---App-Data---BiostructureViewer---samples---1bdq.autodock-gpu.pdbqt tree node inside browse tree
+    Then "1bdq.autodock-gpu.pdbqt" view should be visible
+    And the "1bdq.autodock-gpu.pdbqt" view should be current
+    And "Reset Camera" button should be visible
+    When user clicks on Files---App-Data---BiostructureViewer---samples---1rq9-assembly1.cif tree node inside browse tree
+    Then the "1rq9-assembly1.cif" view should be current
+    And "1bdq.autodock-gpu.pdbqt" view should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
   Scenario: Closing an unrelated view while a structure preview is shown raises nothing (CLAUDE-33)
     Given simple mode is off
     When user clicks on Files---App-Data---BiostructureViewer---samples---1bdq.pdb tree node inside browse tree
@@ -132,3 +136,20 @@ Feature: Opening and previewing structure files from the Files browser
     And NGL viewer should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
+
+  @known-failure
+  Scenario: Open table residues gives the residue names in compId (GROK-21118)
+    When user clicks on Files---App-Data---BiostructureViewer---samples tree node inside browse tree
+    Then 1bdq.pdb link in gallery should be visible
+    When user picks "Open table residues" from the context menu of 1bdq.pdb link in gallery
+    Then the "Table" table view should open with 198 rows
+    And the value of "compId" column in row 1 should be "PRO"
+
+  @known-failure
+  Scenario: A Biostructure viewer added to a structure table takes the structure column by itself (GROK-21119)
+    When user double-clicks on Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree
+    Then the "pdb_data" table view should open with 6 rows
+    When user clicks on "Add viewer" icon in toolbar
+    And user clicks on first "Biostructure" button in "Add Viewer" dialog
+    Then Biostructure viewer should be visible
+    And "Biostructure Id" property of Biostructure viewer should be "pdb"

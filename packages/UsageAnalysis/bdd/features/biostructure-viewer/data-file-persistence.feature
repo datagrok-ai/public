@@ -8,8 +8,8 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
 
   The Mol* engine is claimed by its Reset Camera overlay button; the empty state by the Data file
   input. Kept without one line of Scenario 1: that Ligand Column Name names the molecule column —
-  on the stand the viewer leaves it empty (the same suspected defect as the structure column not
-  being taken, in the request document).
+  on the stand the viewer leaves it empty (the same defect as the structure column not
+  being taken, GROK-21119).
 
   Not translated: Scenario 2 (GROK-17967, only the current row's ligand is shown, in Mol* and in
   NGL): how many structures a viewer has loaded is not on the page — a package reading is

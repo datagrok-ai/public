@@ -6,8 +6,8 @@ Feature: Biostructure viewer on a structure table — structure column, represen
   case BiostructureViewer/biostructure-viewer (GROK-11759 for the representation switch).
 
   The md expects the viewer to take the `pdb` column by itself. On the stand it does not: the
-  viewer added from the gallery keeps Biostructure Id empty and shows its Data file input (a
-  suspected defect, described with its UI steps in the request document). The Background therefore
+  viewer added from the gallery keeps Biostructure Id empty and shows its Data file input
+  (GROK-21119; its known-failure scenario is in file-open-and-preview). The Background therefore
   picks `pdb` in Biostructure Id through the settings, as a user facing the empty viewer does; what
   the viewer then shows is the subject of the scenarios.
 

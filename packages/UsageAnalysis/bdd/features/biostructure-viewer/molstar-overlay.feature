@@ -15,7 +15,7 @@ Feature: Mol* viewport overlay buttons of the Biostructure viewer
   by their going away with the table view still current.
 
   The Background picks the `pdb` column in Biostructure Id through the settings, because the viewer
-  does not take it by itself on the stand (a suspected defect, in the request document). Adding the
+  does not take it by itself on the stand (GROK-21119). Adding the
   viewer and building its engine are checked for errors and balloons at the end of the Background.
 
   Layout Show Controls drives the Mol* layout, but the Toggle Controls Panel button does not write

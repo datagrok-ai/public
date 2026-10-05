@@ -14,6 +14,7 @@ unresolved_ambiguities: []
 scope_reductions: []
 related_bugs:
   - GROK-11759
+  - GROK-21119
 realized_as:
   - biostructure-viewer-spec.ts
 ---

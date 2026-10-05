@@ -14,7 +14,7 @@ Feature: Context panel of a Molecule3D cell — 3D Structure and PDB Information
   never expanded here: a pane's expanded state persists for the page, and both are manual-only
   (biostructureviewer-network-ui). PDB Information stays expanded from the first scenario into the
   second: a click on a pane header made right after the click on the next cell keeps the context
-  panel on the previous cell (seen on the stand, in the request document), so the second scenario
+  panel on the previous cell (a click faster than a user makes), so the second scenario
   only reads the pane after its row changes. The last scenario collapses what is still expanded.
 
   Background:

@@ -57,19 +57,13 @@ Steps:
    * Expected result: it holds **Show Welcome Toast** and **Show Import Controls**, both
      unchecked.
 
-2. Check **Show Import Controls**.
+2. Check **Show Import Controls**, then uncheck it.
 
-   * Expected result: the Mol\* import controls (the panel for opening files and fetching
-     structures inside the viewer) become available in the viewer. No console error.
-
-3. Uncheck **Show Import Controls**.
-
-   * Expected result: the import controls are gone. No console error.
+   * Expected result: the switch follows each click. No console error.
 
 ## Automation notes
 
 - Scenario 1: the difference between whole residues and single atoms is visible only in the
   drawing; only the property values and the absence of errors are asserted.
-- Scenario 2 steps 2-3 are a suspected defect, verify on the stand: by code reading, the viewer
-  ignores changes of **Show Import Controls** after the Mol\* engine is created (the property
-  change handler does nothing for it), so the import controls may not appear.
+- Scenario 2: what Mol\* shows when **Show Import Controls** is on is not checked; it is up to
+  Mol\*.

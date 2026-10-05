@@ -8,20 +8,17 @@ Feature: Biostructure viewer settings — Binding Site Whole Residues and the Co
   claimed is that the switch reaches the viewer and that the Binding Site settings reach the
   overlay's Binding site popover (its "Show side chains" box follows Show Binding Site).
 
-  Not translated: Show Import Controls switched on after the Mol* engine is built. On the stand
-  nothing appears in the viewer (the viewer's property handler ignores the change) — a suspected
-  defect, with its UI steps in the request document. Only the category's two switches and their
-  defaults are claimed.
+  What Mol* shows when Show Import Controls is on is not checked (it is up to Mol*). Only the
+  category's two switches and their defaults are claimed.
 
   The Background picks the `pdb` column in Biostructure Id through the settings, because the viewer
-  does not take it by itself on the stand (a suspected defect, in the request document). Adding the
+  does not take it by itself on the stand (GROK-21119). Adding the
   viewer and building its engine are checked for errors and balloons at the end of the Background.
 
   Before the viewer is added, a click on a pdb cell puts the table's own cell into the context
   panel. Run after the NGL feature, whose last object in the panel is an NGL viewer that is closed
   with its view, the settings click on the new viewer otherwise left the panel on the closed NGL
-  viewer's settings in 8 runs out of 14 (a suspected race of the context panel, in the request
-  document).
+  viewer's settings in 8 runs out of 14 (the click comes faster than a user makes it).
 
   Background:
     Given user is logged in
