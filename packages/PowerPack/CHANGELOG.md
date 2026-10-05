@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups
 * Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
 * GROK-21019: Add New Column: Fixed the dialog dropping the error behavior of the call it was opened with
 * GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages
