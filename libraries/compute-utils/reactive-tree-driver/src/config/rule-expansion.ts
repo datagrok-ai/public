@@ -29,8 +29,8 @@ export function isCheckLink(
 }
 
 /** The rules a step's annotations stand for: for each input whose choices the platform evaluates,
- *  the item list and a warning for a value outside it, and for the first
- *  `propagateChoice: all` input the lookup writing the picked row into the other scalar inputs. */
+ *  the item list, and for the first `propagateChoice: all` input the lookup writing the picked row
+ *  into the other scalar inputs, with a warning for cells that do not fit their inputs. */
 export function annotationRules(
   nqName: string, io: FuncCallIODescription[], logger?: DriverLogger,
 ): PipelineRuleConfiguration<LinkSpecString>[] {
@@ -63,11 +63,6 @@ export function annotationRules(
       sources: source,
       effects: [
         {effect: 'items', targets: target, items: {var: `${choices}.items`}, when: {'!!': {var: choices}}},
-        {
-          effect: 'warning', targets: target,
-          message: lookup ? 'Not in the lookup table' : 'Not in the list of choices',
-          when: {and: [{'!!': {var: choices}}, {'!': {var: `${choices}.inList`}}]},
-        },
         ...(lookup ? [{
           effect: 'warning' as const, targets: target, message: {var: `${choices}.rowErrors`},
           when: {'!!': {var: choices}},

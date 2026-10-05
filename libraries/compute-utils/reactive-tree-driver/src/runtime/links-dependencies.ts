@@ -7,7 +7,7 @@ import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
 import {parseLinkIO} from '../config/LinkSpec';
 import {ruleMetaHandler, ruleValidatorHandler} from './rule-handlers';
-import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE} from '../config/checks';
+import {CALL, CheckOptions, expandChecks, TARGET, VALUE} from '../config/checks';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -143,10 +143,6 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
       // the annotation's validators are run by the platform, through the step's FuncCall
       const annotationValidators = options.validators;
       delete options.validators;
-      const tableIo = options.table == null ? undefined :
-        ios.find((other) => other.id === options.table && other.direction === 'input');
-      if (!tableIo)
-        delete options.table;
       const expanded = expandChecks(options);
       if (annotationValidators?.length) {
         expanded.push({
@@ -160,12 +156,11 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
       }
       // a GrokScript expression sees every input of the step under its own name; `value` is the checked one
       const stepInputs = ios.filter((other) => other.direction === 'input' && other.id !== VALUE);
-      return expanded.map(({key, family, needsTable, needsCall, needsInputs, params}) => {
+      return expanded.map(({key, family, needsCall, needsInputs, params}) => {
         const spec: LinkSpec = {
           id: `::${io.id}:${key}`,
           from: [
             ...parseLinkIO(`${VALUE}:${io.id}`, 'input'),
-            ...(needsTable ? parseLinkIO(`${TABLE}:${tableIo!.id}`, 'input') : []),
             ...(needsCall ? parseLinkIO(`${CALL}(call,optional):.`, 'input') : []),
             ...(needsInputs ? stepInputs.flatMap((other) => parseLinkIO(`${other.id}:${other.id}`, 'input')) : []),
           ],
@@ -175,8 +170,6 @@ export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?:
           params,
         } as LinkSpec;
         const inputs: MatchInfo['inputs'] = {[VALUE]: [{path: [], ioName: io.id}]};
-        if (needsTable)
-          inputs[TABLE] = [{path: [], ioName: tableIo!.id}];
         if (needsCall)
           inputs[CALL] = [{path: []}];
         if (needsInputs) {

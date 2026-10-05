@@ -281,8 +281,6 @@ category('ComputeUtils: Driver rule formulas', async () => {
     same(choices.sources!.region_choices, compileSource('choices(region)'), 'choices source');
     same(choices.effects, [
       compileEffect('items(region_target, region_choices.items, when: bool(region_choices))'),
-      compileEffect('warning(region_target, "Not in the lookup table", ' +
-        'when: and(bool(region_choices), not(region_choices.inList)))'),
       compileEffect('warning(region_target, region_choices.rowErrors, when: bool(region_choices))'),
     ], 'choices effects');
     same(lookup.effects, [compileEffect(
