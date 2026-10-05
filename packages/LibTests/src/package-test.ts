@@ -20,6 +20,7 @@ import './tests/compute-utils/reactive-tree-driver/links-rule-formula';
 import './tests/compute-utils/reactive-tree-driver/links-value-annotations';
 import './tests/compute-utils/reactive-tree-driver/links-reserved-names';
 import './tests/compute-utils/reactive-tree-driver/links-docs-cases';
+import './tests/compute-utils/reactive-tree-driver/links-rules-guide';
 import './tests/compute-utils/reactive-tree-driver/links-batching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-actions';
 import './tests/compute-utils/reactive-tree-driver/instance-additional';

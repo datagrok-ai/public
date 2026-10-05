@@ -110,6 +110,31 @@ export function bioreactorWorkflow(params: {version?: string}): PipelineConfigur
             to: 'next:after+(@base, dayCalculation)/incomingSubstrate',
             defaultRestrictions: {next: 'disabled'},
           },
+          {
+            id: 'day-title',
+            type: 'nodemeta',
+            base: 'base:expand(dayCalculation)',
+            from: 'biomass:same(@base, dayCalculation)/finalBiomass',
+            to: 'title:same(@base, dayCalculation)/title',
+            handler: ({controller}) => {
+              const day = controller.getBasePosition()!.position + 1;
+              const biomass = controller.getFirst<number>('biomass');
+              controller.setDescriptionItem('title',
+                biomass == null ? `Day ${day}` : `Day ${day} - Biomass ${biomass.toFixed(1)} g/L`);
+            },
+          },
+          {
+            id: 'days-required',
+            type: 'pipelineValidator',
+            from: [],
+            to: 'days',
+            handler: ({controller}) => {
+              const outline = controller.getOutline();
+              const dayCount = 'steps' in outline ? outline.steps.length : 0;
+              controller.setValidation('days',
+                dayCount === 0 ? {errors: ['Add at least one cultivation day']} : undefined);
+            },
+          },
         ],
       },
       {
@@ -119,6 +144,36 @@ export function bioreactorWorkflow(params: {version?: string}): PipelineConfigur
       },
     ],
     links: [
+      {
+        id: 'volume-limit',
+        type: 'validator',
+        from: ['initial:bioreactorConfiguration/initialVolume', 'max:bioreactorConfiguration/maxVolume'],
+        to: 'target:bioreactorConfiguration/maxVolume',
+        handler: ({controller}) => {
+          const initial = controller.getFirst<number>('initial')!;
+          const max = controller.getFirst<number>('max')!;
+          controller.setValidation('target',
+            max <= initial ? {errors: ['The maximum volume must exceed the initial volume']} : undefined);
+        },
+      },
+      {
+        id: 'volume-plan',
+        type: 'pipelineValidator',
+        from: [
+          'initial:bioreactorConfiguration/initialVolume',
+          'max:bioreactorConfiguration/maxVolume',
+          'added:dailyCultivation/all(dayCalculation)/solutionAdded',
+        ],
+        to: 'days:dailyCultivation',
+        handler: ({controller}) => {
+          const max = controller.getFirst<number>('max')!;
+          const added = controller.getAll<number>('added') ?? [];
+          let volume = controller.getFirst<number>('initial')!;
+          const day = added.findIndex((v) => (volume += v) > max);
+          controller.setValidation('days', day < 0 ? undefined :
+            {warnings: [`Day ${day + 1}: volume reaches ${volume.toFixed(1)} L, above the ${max} L limit`]});
+        },
+      },
       {
         id: 'initial-volume',
         from: 'source:bioreactorConfiguration/volume',
