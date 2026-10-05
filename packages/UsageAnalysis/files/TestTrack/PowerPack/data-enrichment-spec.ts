@@ -733,13 +733,23 @@ test('PowerPack: Data enrichment — DB Explorer create/edit/apply/remove + mult
         if (!id) return;
         try { const e = await dapi.find(id); if (e) await dapi.delete(e); } catch (_) {  }
       };
+      // an enrichment is a file, System:AppData/PowerPack/enrichments/<connection>/<db>/<schema>/<table>/<column>/<name>.json
+      const dropEnrichments = async () => {
+        try {
+          for (const f of await grok.dapi.files.list('System:AppData/PowerPack/enrichments/', true))
+            if (!f.isDirectory && ids.enrichments.includes(String(f.name).replace(/\.json$/, '')))
+              await grok.dapi.files.delete(f.fullPath);
+        } catch (_) {  }
+      };
       w.__pendingDeletes = w.__pendingDeletes ?? [];
       w.__pendingDeletes.push(Promise.all([
         drop(grok.dapi.projects, ids.projectId),
         drop(grok.dapi.layouts, ids.layoutId),
         drop(grok.dapi.queries, ids.queryId),
+        dropEnrichments(),
       ]));
-    }, {projectId, layoutId, queryId: provisionedQueryId}).catch(() => {});
+    }, {projectId, layoutId, queryId: provisionedQueryId,
+      enrichments: [enrichmentName1, enrichmentName2, enrichmentName3, `PersistEnrich${stamp}`]}).catch(() => {});
 
     if (stepErrors.length > 0) {
       const summary = stepErrors.map((e) => `  - ${e.step}: ${e.error}`).join('\n');

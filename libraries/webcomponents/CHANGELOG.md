@@ -2,6 +2,10 @@
 
 ## v.next
 
+* InputForm: Added the `skipLogic` property, passed to `DG.InputForm.forFuncCall`
+
+## 0.3.7 (2026-09-23)
+
 * InputForm: Fixed rapid funcCall swaps racing (a stale form could land in the DOM and win over the newer one)
 * InputForm: Setting funcCall to undefined no longer permanently kills the input/validation event streams
 * ValidationIcon: Fixed unbounded status retention and stuck hover/scalar modes (distinct -> distinctUntilChanged); clearing the status hides the icon; severity colors actually apply (setProperty important instead of the dropped '!important' string)

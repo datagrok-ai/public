@@ -7,19 +7,20 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.filters]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clearCardSearch, clickHierarchicalCheckbox, clickHierarchicalRow, expandHierarchicalRow, hierarchicalHidesRow, hierarchicalListsRow, hierarchicalRowCounts, hierarchicalRowState, pickPanelMenu, typeIntoCardSearch} from '../../../bindings/filter-panel.js';
+import {clickHierarchicalCheckbox, clickHierarchicalRow, expandHierarchicalRow, hierarchicalHidesRow, hierarchicalListsRow, hierarchicalRowCounts, hierarchicalRowState} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, shouldBe, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {configureHierarchical, filterIsExactlyCategory, filterPanelCount, filterPasses, filterPassesAll, noneOfFiltered, openEmptyFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {clearCardSearch, pickPanelMenu, typeIntoCardSearch} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {loadLayout, noErrors, readingIs, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

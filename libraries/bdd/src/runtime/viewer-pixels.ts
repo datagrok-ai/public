@@ -84,8 +84,8 @@ export async function expectAreaInk(page: Page, target: ElementRef, area: string
 
 export async function expectAreaPainted(page: Page, target: ElementRef, area: string): Promise<void> {
   await hitArea(page, target, area);
-  await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaInk(el, a), area),
-    {timeout: pollMs(5000), message: `the "${area}" area of ${target.phrase} is blank`}).toBeGreaterThan(0);
+  await expect.poll(() => onViewer(page, target, (el, a) => (window as any).__bdd.areaInk(el, a, 2), area),
+    {timeout: pollMs(5000), message: `the "${area}" area of ${target.phrase} is blank inside its edges`}).toBeGreaterThan(0);
 }
 
 export async function expectPalette(page: Page, target: ElementRef, min: number): Promise<void> {
@@ -129,6 +129,15 @@ export function parseHex(color: string): string {
   return want;
 }
 
+/** A color the area claims can see: the pixel reader skips white (every channel at 250 or above) as
+ * the blank, so a claim on it would read the light greys near it (gridlines) and could not fail. */
+function paintHex(color: string): string {
+  const want = parseHex(color);
+  if (parseInt(want.slice(1, 3), 16) >= 250 && parseInt(want.slice(3, 5), 16) >= 250 && parseInt(want.slice(5, 7), 16) >= 250)
+    throw new Error(`${want} is the blank the color steps skip; claim a hue ("painted in at least N colors") or "painted in no color"`);
+  return want;
+}
+
 function areaColors(page: Page, target: ElementRef, area: string): Promise<AreaColors> {
   return onViewer(page, target, (el, a) => (window as any).__bdd.areaColors(el, a), area);
 }
@@ -140,7 +149,7 @@ const pixelsNear = (colors: AreaColor[], want: string): number => colors.filter(
 
 /** The color (within a shade of anti-aliasing) covers some pixels of the area. */
 export async function expectAreaColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
-  const want = parseHex(color);
+  const want = paintHex(color);
   await hitArea(page, target, area);
   let last: AreaColors | undefined;
   try {
@@ -153,7 +162,7 @@ export async function expectAreaColor(page: Page, target: ElementRef, area: stri
 
 /** No pixel of the color (nor a shade of it) inside the area, read once. */
 export async function expectAreaNotColor(page: Page, target: ElementRef, area: string, color: string): Promise<void> {
-  const want = parseHex(color);
+  const want = paintHex(color);
   await hitArea(page, target, area);
   const read = await areaColors(page, target, area);
   const count = pixelsNear(read.colors, want);
@@ -232,23 +241,36 @@ export function highlightMargin(c: CanvasChange): number {
   return Math.min(Math.max(HIGHLIGHT_FLOOR, HIGHLIGHT_PER_ROW * c.selected) * c.dpr * c.dpr, c.viewPx / 4);
 }
 
-/** Pixels in the selection hue against the snapshot: `more`/`less` than before by the margin the
- * selection warrants, `some`, or `none`. */
+/** Pixels in the selection hue: `more`/`less` than the snapshot by the margin the selection
+ * warrants, or `some`/`none` in the canvas as it is, which needs no snapshot. */
 export async function expectHighlight(page: Page, target: ElementRef, compare: 'more' | 'less' | 'some' | 'none'): Promise<void> {
   const wrong = {none: 'shows a selection highlight', some: 'shows no selection highlight',
     more: 'does not show more selection highlight than before', less: 'does not show less selection highlight than before'};
   let last: CanvasChange | undefined;
+  let hue: number | undefined;
+  let why = '';
   const holds = async (): Promise<boolean> => {
-    const c = last = await canvasChange(page, target);
-    const margin = highlightMargin(c);
-    return compare === 'none' ? c.hue === 0 : compare === 'some' ? c.hue > 0 : compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
+    try {
+      if (compare === 'some' || compare === 'none') {
+        hue = await onViewer(page, target, (el) => (window as any).__bdd.hue(el), undefined);
+        return compare === 'some' ? hue! > 0 : hue === 0;
+      }
+      const c = last = await canvasChange(page, target);
+      const margin = highlightMargin(c);
+      return compare === 'more' ? c.hue >= c.hueBefore + margin : c.hue <= c.hueBefore - margin;
+    }
+    catch (e) {
+      why = reasonOf(e as Error);
+      return false;
+    }
   };
   try {
     await expect.poll(holds, {timeout: pollMs(10000)}).toBe(true);
   }
   catch {
-    throw new Error(`${target.phrase} ${wrong[compare]}` +
-      (last ? ` (${last.hueBefore} px in the selection color before, ${last.hue} now, ${last.selected} rows selected, margin ${Math.round(highlightMargin(last))})` : ''));
+    const detail = last ? ` (${last.hueBefore} px in the selection color before, ${last.hue} now, ${last.selected} rows selected, margin ${Math.round(highlightMargin(last))})`
+      : hue !== undefined ? ` (${hue} px in the selection color)` : why !== '' ? `: ${why}` : '';
+    throw new Error(`${target.phrase} ${wrong[compare]}${detail}`);
   }
 }
 

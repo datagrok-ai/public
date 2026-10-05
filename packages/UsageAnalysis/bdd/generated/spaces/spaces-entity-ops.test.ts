@@ -7,8 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -17,6 +17,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, doubleClickOn, dragTo, enterInto, isExpanded, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {browsePanelOpen, dialogCloses, noSpaceOnServer, spacesOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {closeContextMenu, menuLists, openContextMenu, pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -85,16 +86,16 @@ test.describe("Working with what a space holds", () => {
     });
     await run.scenario("The search inside a space filters what it holds", async () => {
       await session.step(48, "Then the \"BDD-Ops\" view should be current", () => viewIsCurrent(page, "BDD-Ops"));
-      await session.step(75, "When user enters \"acidiq\" into space search", () => enterInto(page, "acidiq", el("space search")));
+      await session.step(75, "When user enters \"acidiq\" into gallery search", () => enterInto(page, "acidiq", el("gallery search")));
       await session.step(76, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(77, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(78, "When user enters \"aci\" into space search", () => enterInto(page, "aci", el("space search")));
+      await session.step(78, "When user enters \"aci\" into gallery search", () => enterInto(page, "aci", el("gallery search")));
       await session.step(79, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(80, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(81, "When user enters \"zzz-no-such-file\" into space search", () => enterInto(page, "zzz-no-such-file", el("space search")));
+      await session.step(81, "When user enters \"zzz-no-such-file\" into gallery search", () => enterInto(page, "zzz-no-such-file", el("gallery search")));
       await session.step(82, "Then acidiq.csv link in gallery should be absent", () => shouldBe(page, el("acidiq.csv link in gallery"), "absent"));
       await session.step(83, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(84, "When user clears space search", () => clearField(page, el("space search")));
+      await session.step(84, "When user clears gallery search", () => clearField(page, el("gallery search")));
       await session.step(85, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(86, "And BDD-Ops-renamed link in gallery should be visible", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "visible"));
     });
@@ -136,7 +137,8 @@ test.describe("Working with what a space holds", () => {
     await run.scenario("A file opens as a table", async () => {
       await session.step(117, "Then the \"BDD-Ops-Copy\" view should be current", () => viewIsCurrent(page, "BDD-Ops-Copy"));
       await session.step(125, "When user double-clicks on acidiq.csv link in gallery", () => doubleClickOn(page, el("acidiq.csv link in gallery")));
-      await session.step(126, "Then grid should be visible", () => shouldBe(page, el("grid"), "visible"));
+      await session.step(126, "Then the \"acidiq\" view should be current", () => viewIsCurrent(page, "acidiq"));
+      await session.step(127, "And the table should have 180 rows", () => rowCount(page, 180));
     });
     run.finish();
   });

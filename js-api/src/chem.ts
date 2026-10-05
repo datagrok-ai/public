@@ -483,7 +483,9 @@ export namespace chem {
     };
 
     createMoleculeTooltip(currentMolfile: string): HTMLElement{
-      const molfileHandler = MolfileHandler.getInstance(currentMolfile);
+      // a molecule typed as SMILES is held as it was typed, and the handler reads molblocks only
+      const molfile = isMolBlock(currentMolfile) ? currentMolfile : convert(currentMolfile, Notation.Smiles, Notation.MolBlock);
+      const molfileHandler = MolfileHandler.getInstance(molfile);
       const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
@@ -495,7 +497,7 @@ export namespace chem {
           Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
         const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
         const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
-        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, molfile) : ui.divText('Click to edit');
       } else {
         tooltip = ui.divText('Click to edit');
       }
@@ -609,6 +611,7 @@ export namespace chem {
         
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
+          .item('Copy as CXSMILES', () => navigator.clipboard.writeText(convert(this.getMolFile(), Notation.Unknown, Notation.CxSmiles)))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
           .items(Sketcher.getCollection(Sketcher.RECENT_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })

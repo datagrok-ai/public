@@ -148,7 +148,7 @@ test('Peptide Space — top-menu SAR launch with sequence-space + MCL clustering
   });
   await softStep('Scenario 2 (step 5): verify the MCL Viewer re-renders after the settings change', async () => {
     await page.waitForTimeout(12000);
-    const state = await page.evaluate(() => {
+    const state = await page.evaluate(async () => {
       const tv = Array.from(grok.shell.tableViews).find((v) => v.dataFrame.temp['peptidesModel']) ?? grok.shell.tv;
       const viewers = Array.from(tv.viewers).map((v) => v.type);
       const model = tv.dataFrame.temp['peptidesModel'] as any;
@@ -170,7 +170,7 @@ test('Peptide Space — top-menu SAR launch with sequence-space + MCL clustering
           } catch (e) { mclHasRender = false; }
         }
       }
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : '';
+      const lastError = String((await grok.shell.lastError) ?? '');
       return {viewers, modelPresent: !!model, inflationAfter, mclHasRender, lastError};
     });
     expect(state.inflationAfter, 'MCL Inflation Factor change did not propagate to the model').toBe(2.5);

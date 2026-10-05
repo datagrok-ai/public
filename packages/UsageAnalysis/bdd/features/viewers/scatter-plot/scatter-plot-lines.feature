@@ -1,7 +1,8 @@
 @journey @viewers @realizes:viewers.scatter-plot
 Feature: Scatter plot trend lines
   The lines the plot draws over the markers: a regression line, one fit per color category under
-  Regression Per Category (on by default) with the equation table, the R key as the shortcut for
+  Regression Per Category (on by default) with the stats table, which stays while it shows the
+  equation or any metric (r² has its own toggle, on by default), the R key as the shortcut for
   the same property, a regression over a datetime axis with a time unit, and the moving average
   ladder — the line, its window, the split by category and the deviation band. Read from what the
   plot reports: the `regression lines` and `formula lines` readings and the `regression line`,
@@ -37,22 +38,27 @@ Feature: Scatter plot trend lines
     And scatter plot viewer should not have a "regression line" area
     And no errors should have been logged
 
-  Scenario: Regression Per Category fits one line per color, and the equation table is drawn
+  Scenario: Regression Per Category fits one line per color, and the stats table is drawn
     Then "Regression Per Category" property of scatter plot viewer should be "true"
     When user sets properties of scatter plot viewer:
       | Color                | RACE |
       | Show Regression Line | true |
     Then the "regression lines" reading of scatter plot viewer should be 4
     And "Show Regression Line Equation" property of scatter plot viewer should be "true"
+    And "Show Determination Coefficient" property of scatter plot viewer should be "true"
     When user sets "Regression Per Category" property of scatter plot viewer to "false"
     Then the "regression lines" reading of scatter plot viewer should be 1
     And scatter plot viewer should have a "regression stats" area
     And the "regression stats" area of scatter plot viewer should be painted
     When user sets "Show Regression Line Equation" property of scatter plot viewer to "false"
+    Then scatter plot viewer should have a "regression stats" area
+    And the "regression stats" area of scatter plot viewer should be painted
+    When user sets "Show Determination Coefficient" property of scatter plot viewer to "false"
     Then scatter plot viewer should not have a "regression stats" area
     When user sets properties of scatter plot viewer:
-      | Show Regression Line Equation | true |
-      | Regression Per Category       | true |
+      | Show Regression Line Equation  | true |
+      | Show Determination Coefficient | true |
+      | Regression Per Category        | true |
     Then the "regression lines" reading of scatter plot viewer should be 4
     When user sets properties of scatter plot viewer:
       | Show Regression Line | false |

@@ -3,9 +3,11 @@
    added to the table read against the columns it started with. A dialog a command shows in
    between is driven with the base steps (`OK button in "Sequence Space" dialog`). */
 import {Page} from '@playwright/test';
-import {expect} from '../../src/runtime/patience.js';
+import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
+import type {ElementRef} from '../../src/runtime/args.js';
+import {click} from '../../src/runtime/gestures.js';
+import {armQuery, closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
 const PATH = '"Bio > Analyze > Sequence Space..." — the labels as the menu shows them, separated by ">" or "|"';
 // the time a command may run before that is a platform failure (a WASM alignment, a dimensionality reduction)
@@ -37,14 +39,25 @@ export const topMenuLists = Then('the top menu should list:', async (page: Page,
   }
 }, {tier: 'ui', description: `one path per row (${PATH}); every group opens once and each of its leaves is found visible, then the menu closes`});
 
+/* A query view's Run query... shows the result as soon as it has one and opens it again when the call ends if no
+   view shows it then: a view closed in between comes back. */
+export const clickRunsQuery = When('user clicks on {element} and the query it runs completes', async (page: Page, target: ElementRef) => {
+  await armQuery(page);
+  await click(page, target);
+  await waitCommand(page, COMMAND_CAP);
+}, {tier: 'ui', description: 'the next data query call is watched from before the click to its end (onAfterRunAction of the platform)'});
+
 export const commandCompleted = Then('the top menu command should have completed', async (page: Page) => {
   await waitCommand(page, COMMAND_CAP);
-}, {description: 'the function call the last picked menu item started has ended (the platform\'s onAfterRunAction), dialog and all — up to two minutes'});
+}, {description: 'the function call the last picked menu item started has ended (the platform\'s onAfterRunAction), dialog and all — up to two minutes; fails when that call had ended before its dialog\'s OK, which only a package\'s own dialog opener does — claim what the OK produces instead'});
 
 /** The columns the current table gained since the last menu command; polled, since a command
  * that returned at once (a dialog of its own) may still be at work. */
 async function expectAdded(page: Page, predicate: (added: string[]) => string | null, what: string): Promise<void> {
   let shown = '';
+  // a command that computes in the browser (a descriptor batch, a toxicity run over a thousand
+  // molecules) keeps working well past the shared expect budget
+  const budget = pollMs(Number(process.env.BDD_COMMAND_TIMEOUT ?? 180000));
   try {
     await expect.poll(async () => {
       const c = await columnsSince(page);
@@ -55,12 +68,12 @@ async function expectAdded(page: Page, predicate: (added: string[]) => string | 
       const added = c.now.filter((n) => !c.before!.includes(n));
       shown = added.length === 0 ? 'no column was added' : `added: ${added.join(', ')}`;
       return predicate(added) ?? 'ok';
-    }, {timeout: 60000}).toBe('ok');
+    }, {timeout: budget}).toBe('ok');
   }
   catch (e) {
     if (!shown)
       throw e;
-    throw new Error(`${what} — ${shown} (within 60 s of the command)`);
+    throw new Error(`${what} — ${shown} (within ${Math.round(budget / 1000)} s of the command)`);
   }
 }
 
@@ -111,9 +124,15 @@ export const newestMatchingDistinct = Then('the newest column matching {string} 
 }, {description: 'the last column of the current table whose name matches the regular expression; missing values are not a value'});
 
 export const newestMatchingFilled = Then('the newest column matching {string} should have no missing values', async (page: Page, pattern: string) => {
-  const facts = await newestMatching(page, pattern);
-  expect(facts.missing, `missing values in "${facts.name}"`).toBe(0);
-});
+  let seen = '';
+  await expect.poll(async () => {
+    const facts = await newestMatching(page, pattern);
+    seen = `"${facts.name}"`;
+    return facts.missing;
+  }, {message: `missing values in the newest column matching /${pattern}/`}).toBe(0).catch(() => {
+    throw new Error(`missing values in ${seen}`);
+  });
+}, {description: 'polled: a column a command adds is filled a moment after it appears'});
 
 export const noNewColumn = Then('no new column should have been added', async (page: Page) => {
   const c = await columnsSince(page);

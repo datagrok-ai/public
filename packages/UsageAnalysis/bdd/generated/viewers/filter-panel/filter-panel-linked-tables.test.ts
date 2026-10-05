@@ -7,20 +7,21 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.filters]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addCardFor, linkTables} from '../../../bindings/filter-panel.js';
+import {linkTables} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {clearSelection, filterIsExactlyCategory, filterPasses, noneOfFiltered, openEmptyFilterPanel, selectFirstRows, selectedRowCount, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, switchTableView} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {clickArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

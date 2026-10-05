@@ -8,7 +8,8 @@ features: the data and the viewer opened once, the scenarios in order as soft st
 `viewers/grid/grid-context-menu.feature` is not a translation but the reproduction of a bug
 (2026-09-22: a right click put the current row back where it was and scrolled there), kept as the
 proof that a right-clicked cell becomes current and that the Current Value actions of Chem and Helm
-act on it — the stand needs those two packages;
+act on it — the stand needs those two packages; annotation regions and formula lines are PowerPack's
+and live in `packages/PowerPack/bdd/features/`;
 `features/viewers/legend/` the Legend TestTrack section, translated from its manual-case md files
 (seven viewers sharing one legend column, the legend under filters, its placement, molecules in
 it; the section's scatter plot and line chart cases went into those viewers' legend features);
@@ -27,8 +28,14 @@ panel itself (its toolbar, the tree and its keyboard, browsing versus persistent
 stuff, Platform, Databases, Apps, Dashboards, the context panel and menus, and the per-section
 error matrix), translated from the manual cases, each feature naming what it left out and why.
 Two of its scenarios are `@full-stand` (they name the providers and the Platform sections a full
-stand carries) and one is `@compute` (the Model Hub needs the Compute package): a smaller stand
-runs with `grok-bdd run --grep-invert "@full-stand|@compute"`. `features/guides/` holds the
+stand carries): a smaller stand runs with `grok-bdd run --grep-invert "@full-stand"`, and a scenario
+whose package the stand lacks skips at its package gate.
+`features/sticky-meta/` the Sticky Meta TestTrack section (an entity type and a schema from creation
+to deletion, metadata on a molecule cell, as sticky columns and on selected rows, what survives a
+clone, a new view, an exported file, a project, a space, a reload and another account signing
+in on the page, and the Database meta of a NorthwindTest schema, table and column); written with the
+library's vocabulary only, they make and delete their type and schema through the UI, and
+`features/sticky-meta/MISSING.md` lists the steps and signals they still need. `features/guides/` holds the
 answers to "how do I …" questions as scenarios: `grok-bdd guide features/guides/<name>.feature`
 films one into `guides/<feature>/<scenario>/guide.mp4` with the numbered steps and pictures beside
 it (`steps.md`), `--help-pages` re-films every `@help:`-tagged one into the help tree; `INDEX.md`
@@ -39,9 +46,34 @@ aggregation against a `groupBy`, the correlation plot's coefficient against `DG.
 Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
 rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 
+`features/queries/`, `features/scripts/` and `features/connections/` are the TestTrack Queries,
+Scripts and Connections cases: the query editor (typed, visual, Transformations, Post-Process,
+Layout), a query's result saved as a project, the schema's columns in the context panel, the
+Scripts view and editor (the Signature Editor, a run from every table source and the console),
+and the connection dialogs, browser, schema view, SPARQL provider and OpenAPI import. The queries
+run on the Postgres NorthwindTest connection of the Dbtests package; the scripts are JavaScript and
+Grok ones, which run in the page. Left out by the scope rule: runs of R, Python, Octave, Julia,
+NodeJS and Pyodide scripts, what a connection TEST answers, the other providers' repeats of the
+same dialogs, and the cases that need database credentials the suite does not hold (identifiers,
+an external provider's writes); the MS SQL catalogs case needs a connection set to browse
+catalogs, which the Dbtests one is not. Every query, script, connection, layout, project and chat
+a feature makes is deleted at its end and swept at its start; the features that save into the
+shared NorthwindTest connection or search the Scripts view (an account setting) are `@serial`.
+
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.
+
+`features/viewers/nx/` holds the TestTrack Viewers/NX section. `nx-chain.feature` is its five
+chained md files as one journey on the full SPGI and its two linked tables: each part opens the
+project the one before saved through the Save dialog with data sync, and the last part deletes the
+five projects (their names carry the run's suffix, so parallel runs stay apart). It takes about three
+minutes on a local stand and needs the ApiTests datasets on the stand and a Chem package whose Scaffold Tree reports
+its readings. `legend-backward-compatibility.feature` applies the pre-legend-position layout of
+github #3203 to spgi-100 (the first 100 rows of SPGI). Their fixtures (two saved scaffold trees and
+the layout) are in `fixtures/nx/`, their steps (the Link Tables key pairs, the Formula Lines dialog,
+the Scaffold Tree filter card, rows and filter panels compared across views and a project round
+trip) in `bindings/nx.ts`.
 
 The grid folder, `features/viewers/grid/`, holds ten features on demog-1000. They replace the
 TestTrack grid scenarios `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`,
@@ -63,6 +95,7 @@ PowerGrid and are claimed in `packages/PowerGrid/bdd/features/grid/summary-colum
 | `grid-persistence` | four colour codings, row height, missing-value colour, min/max stats rows, a moved, a hidden, a widened and a pinned column, two pinned rows and a sort, all back from a layout loaded over a fresh view and from a project |
 | `grid-forms-column` | Design a Form... (the designer view, Close and Apply, Edit), Default HTML Form, Custom HTML Form... |
 | `grid-context-menu` | a right click below the current row makes the clicked row current and keeps the scroll; the Current Value actions act on the right-clicked cell — Chem's Copy as SMILES on the `smiles` demo file, Helm's Edit Helm... on the `helm-peptides` one (the stand needs both packages) |
+
 `features/viewers/filter-panel/` stands in for the TestTrack scenarios of
 `files/TestTrack/Viewers/FilterPanel/` — `panel-core-ladder.md`, `add-remove-entry-points.md`,
 `filter-type-selection-modes.md`, `hierarchical-and-combined-boolean.md`,
@@ -128,6 +161,43 @@ grok s files put public/packages/ApiTests/files/datasets/demog-1000.csv "System:
 
 Editing: change a feature, `npx grok-bdd compile`, commit the regenerated spec with it;
 `npx grok-bdd compile --verbose` prints how every element phrase resolves; `npx grok-bdd run
---trace on` records a trace with DOM snapshots; `PLAYWRIGHT_JSON_OUTPUT_NAME=run.json npx grok-bdd
-run --reporter=list,json` gives per-step timings. A failed step reports its feature line, the
+--trace on` records a trace with DOM snapshots; every run leaves Playwright's JSON report, per-step
+timings included, in `test-results/report.json`. A failed step reports its feature line, the
 step, the reason, and what the page shows instead — see "Reading a failure" in the library README.
+
+## Run history
+
+`history/` keeps the timings and outcomes of full runs of every bdd project in the repository, so
+a slowdown, a new failure or a flake shows against the runs before it. A record is made only when
+someone asks for one: after the suites have run (each project leaves its report in its
+`bdd/test-results/report.json`), from this directory
+
+```bash
+node history/history.mjs record --note "after the chem-gaps review"
+node history/history.mjs html
+```
+
+`record` keeps each project's last report as one dated file in `history/runs/` (commit it): every
+test with its outcome, time, worker and start, a journey's scenarios with theirs, the failed step
+and error of a failure, and where the run ran — the machine (host, CPU, threads, memory, OS), the
+stand and the branch and commit. A project whose last report is more than 12 hours older than the
+newest, or that covered only some of its specs, is left out and named (`--partial` keeps a partial
+one; a run narrowed with `--grep-invert`, such as `@full-stand` on a stand without that capability,
+counts as full and the record says what it excluded). Reports saved elsewhere are recorded by naming
+the files or their directory: `record <dir-or-report.json>...`.
+
+`html` writes `history/history.html` (not committed), a standalone page over every record:
+
+- **Timeline**: the wall time of the runs over time, one line per machine and stand, with the
+  failed and flaky tests under it; the tree below goes from all suites to projects, folders,
+  features, tests and a journey's scenarios, each row with its latest time, the change against the
+  previous run in the same place, a trend line and the outcome of the last 30 runs. A row chosen in
+  the tree becomes the subject of the charts.
+- **Compare**: two runs side by side at any level of the tree, sorted by the change in time, with
+  the tests that started or stopped failing, appeared or went away. Runs from different places are
+  flagged: a slower machine is not a regression.
+- **Failures and flakes**: every test or scenario that failed or was flaky in the runs shown, how
+  often, how often it flipped between passing and failing, and the step and error it last stopped
+  at.
+
+"Where the runs ran" narrows every view to one machine and stand.

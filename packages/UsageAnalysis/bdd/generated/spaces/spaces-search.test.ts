@@ -7,8 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -44,28 +44,28 @@ test.describe("Searching spaces", () => {
     await run.scenario("The Spaces list shows both", async () => {
       await session.step(28, "When user clicks on Spaces tree node inside browse tree", () => clickOn(page, el("Spaces tree node inside browse tree")));
       await session.step(29, "And user clicks on \"Refresh\" icon", () => clickOn(page, el("\"Refresh\" icon")));
-      await session.step(30, "Then BDD-Find link in space gallery should be visible", () => shouldBe(page, el("BDD-Find link in space gallery"), "visible"));
-      await session.step(31, "And BDD-Miss link in space gallery should be visible", () => shouldBe(page, el("BDD-Miss link in space gallery"), "visible"));
+      await session.step(30, "Then BDD-Find link in gallery should be visible", () => shouldBe(page, el("BDD-Find link in gallery"), "visible"));
+      await session.step(31, "And BDD-Miss link in gallery should be visible", () => shouldBe(page, el("BDD-Miss link in gallery"), "visible"));
     });
     await run.scenario("A whole name keeps only that space", async () => {
-      await session.step(34, "When user enters \"BDD-Find\" into space search", () => enterInto(page, "BDD-Find", el("space search")));
-      await session.step(35, "Then BDD-Find link in space gallery should be visible", () => shouldBe(page, el("BDD-Find link in space gallery"), "visible"));
-      await session.step(36, "And BDD-Miss link in space gallery should be absent", () => shouldBe(page, el("BDD-Miss link in space gallery"), "absent"));
+      await session.step(34, "When user enters \"BDD-Find\" into gallery search", () => enterInto(page, "BDD-Find", el("gallery search")));
+      await session.step(35, "Then BDD-Find link in gallery should be visible", () => shouldBe(page, el("BDD-Find link in gallery"), "visible"));
+      await session.step(36, "And BDD-Miss link in gallery should be absent", () => shouldBe(page, el("BDD-Miss link in gallery"), "absent"));
     });
     await run.scenario("Part of a name still matches", async () => {
-      await session.step(39, "When user enters \"BDD-Fi\" into space search", () => enterInto(page, "BDD-Fi", el("space search")));
-      await session.step(40, "Then BDD-Find link in space gallery should be visible", () => shouldBe(page, el("BDD-Find link in space gallery"), "visible"));
-      await session.step(41, "And BDD-Miss link in space gallery should be absent", () => shouldBe(page, el("BDD-Miss link in space gallery"), "absent"));
+      await session.step(39, "When user enters \"BDD-Fi\" into gallery search", () => enterInto(page, "BDD-Fi", el("gallery search")));
+      await session.step(40, "Then BDD-Find link in gallery should be visible", () => shouldBe(page, el("BDD-Find link in gallery"), "visible"));
+      await session.step(41, "And BDD-Miss link in gallery should be absent", () => shouldBe(page, el("BDD-Miss link in gallery"), "absent"));
     });
     await run.scenario("A name nothing carries empties the list", async () => {
-      await session.step(44, "When user enters \"zzz-no-such-space\" into space search", () => enterInto(page, "zzz-no-such-space", el("space search")));
-      await session.step(45, "Then BDD-Find link in space gallery should be absent", () => shouldBe(page, el("BDD-Find link in space gallery"), "absent"));
-      await session.step(46, "And BDD-Miss link in space gallery should be absent", () => shouldBe(page, el("BDD-Miss link in space gallery"), "absent"));
+      await session.step(44, "When user enters \"zzz-no-such-space\" into gallery search", () => enterInto(page, "zzz-no-such-space", el("gallery search")));
+      await session.step(45, "Then BDD-Find link in gallery should be absent", () => shouldBe(page, el("BDD-Find link in gallery"), "absent"));
+      await session.step(46, "And BDD-Miss link in gallery should be absent", () => shouldBe(page, el("BDD-Miss link in gallery"), "absent"));
     });
     await run.scenario("Clearing the search brings both back", async () => {
-      await session.step(49, "When user clears space search", () => clearField(page, el("space search")));
-      await session.step(50, "Then BDD-Find link in space gallery should be visible", () => shouldBe(page, el("BDD-Find link in space gallery"), "visible"));
-      await session.step(51, "And BDD-Miss link in space gallery should be visible", () => shouldBe(page, el("BDD-Miss link in space gallery"), "visible"));
+      await session.step(49, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(50, "Then BDD-Find link in gallery should be visible", () => shouldBe(page, el("BDD-Find link in gallery"), "visible"));
+      await session.step(51, "And BDD-Miss link in gallery should be visible", () => shouldBe(page, el("BDD-Miss link in gallery"), "visible"));
     });
     await run.scenario("A child space is searchable inside its parent", async () => {
       await session.step(54, "When user picks \"Create Child Space...\" from the context menu of BDD-Find tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Find tree node inside browse tree")));
@@ -73,11 +73,11 @@ test.describe("Searching spaces", () => {
       await session.step(56, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(57, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
       await session.step(58, "When user double-clicks on BDD-Find tree node inside browse tree", () => doubleClickOn(page, el("BDD-Find tree node inside browse tree")));
-      await session.step(59, "Then BDD-Find-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Find-Child link in space gallery"), "visible"));
-      await session.step(60, "When user enters \"zzz-no-such-space\" into space search", () => enterInto(page, "zzz-no-such-space", el("space search")));
-      await session.step(61, "Then BDD-Find-Child link in space gallery should be absent", () => shouldBe(page, el("BDD-Find-Child link in space gallery"), "absent"));
-      await session.step(62, "When user clears space search", () => clearField(page, el("space search")));
-      await session.step(63, "Then BDD-Find-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Find-Child link in space gallery"), "visible"));
+      await session.step(59, "Then BDD-Find-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Find-Child link in gallery"), "visible"));
+      await session.step(60, "When user enters \"zzz-no-such-space\" into gallery search", () => enterInto(page, "zzz-no-such-space", el("gallery search")));
+      await session.step(61, "Then BDD-Find-Child link in gallery should be absent", () => shouldBe(page, el("BDD-Find-Child link in gallery"), "absent"));
+      await session.step(62, "When user clears gallery search", () => clearField(page, el("gallery search")));
+      await session.step(63, "Then BDD-Find-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Find-Child link in gallery"), "visible"));
     });
     run.finish();
   });

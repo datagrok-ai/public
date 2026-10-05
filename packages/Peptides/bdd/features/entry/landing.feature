@@ -9,7 +9,11 @@ Feature: Peptides landing view
   Background:
     Given user is logged in
     And the Peptides package is initialized
-    And user opens the Peptides landing view
+    And the context panel is open
+    And the toolbox pane is shown
+    Then context panel should be visible
+    And toolbox should be visible
+    Given user opens the Peptides landing view
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 

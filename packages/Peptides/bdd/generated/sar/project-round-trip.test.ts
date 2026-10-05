@@ -85,7 +85,7 @@ test.describe("Save and reopen a peptide SAR analysis", () => {
       await session.step(67, "When user expands Selection pane in context panel", () => expand(page, el("Selection pane in context panel")));
       await session.step(68, "Then grid in Selection pane in context panel should show 299 rows", () => showsRows(page, el("grid in Selection pane in context panel"), 299));
       await session.step(69, "When user collapses Selection pane in context panel", () => collapse(page, el("Selection pane in context panel")));
-      await session.step(70, "Then \"Mutation Cliffs pairs\" pane in context panel should be present", () => shouldBe(page, el("\"Mutation Cliffs pairs\" pane in context panel"), "present"));
+      await session.step(70, "Then \"Mutation Cliffs pairs\" pane in context panel should be visible", () => shouldBe(page, el("\"Mutation Cliffs pairs\" pane in context panel"), "visible"));
       await session.step(71, "And no errors should have been logged", () => noErrors(page));
       await session.step(72, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });

@@ -5,3 +5,7 @@ src/**/*.js
 test-report.html
 test-console-output.log
 
+# bdd (grok-bdd) run artifacts
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

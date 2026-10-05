@@ -29,6 +29,8 @@ test('an action reads as an instruction: the verb imperative, "inside" as "in", 
     'Double-click on Files › Demo tree node');
   assert.equal(captionOf('user hovers over the "stats" area of box plot viewer', 'action'),
     'Hover over the "stats" area of box plot viewer');
+  assert.equal(captionOf('user pastes "A-1\\nB-2\\n" into the search of the "Id" filter card', 'action'),
+    'Paste "A-1, B-2" into the search of the "Id" filter card');
   assert.equal(captionOf('user applies the layout', 'action'), 'Apply the layout');
   assert.equal(captionOf('user pushes the button', 'action'), 'Push the button');
   assert.equal(captionOf('user copies the cell', 'action'), 'Copy the cell');
@@ -49,6 +51,8 @@ test('a check reads as the fact it verifies', () => {
     'The filter passes exactly the rows where "SEX" is "F"');
   assert.equal(captionOf('the tooltip should not show columns "AGE"', 'check'), 'The tooltip does not show columns "AGE"');
   assert.equal(captionOf('no rows should be selected', 'check'), 'No rows are selected');
+  assert.equal(captionOf('only the rows with "N" at position 3 of "sequence" column should be selected', 'check'),
+    'Only the rows with "N" at position 3 of "sequence" column are selected');
   assert.equal(captionOf('the status should be "ready"', 'check'), 'The status is "ready"');
   assert.equal(captionOf('rows 1 to 5 should be selected', 'check'), 'Rows 1 to 5 are selected');
   assert.equal(captionOf('the value of "AGE" column in row 3 should be "5"', 'check'),
@@ -92,7 +96,9 @@ test('checks a person has no use for are hidden from a guide; what the page show
     'scatter plot viewer should be painted in at least 3 colors', 'scatter plot viewer should have repainted',
     'box plot viewer should show fewer rows than before', '"Value" property of box plot viewer should be "AGE"',
     'the current view should hold at least 5 viewers', 'scatter plot viewer should have a "view" area',
-    'the "spgi-100" view should be current', 'the top menu command should have completed'])
+    'the "spgi-100" view should be current', 'the top menu command should have completed',
+    '"R-Groups Analysis" dialog should have finished updating', 'a new column matching "^R1" should have been added',
+    'every value of "x_smiles" column should match "^[A-Za-z0-9]+$"'])
     assert.ok(hiddenInGuide(hidden), hidden);
   for (const shown of ['"Link Tables" dialog should be visible', 'grid should show 5 rows', '2550 rows should pass the filter',
     'the table should have a column "canonical_smiles"', 'the "Series" item in the legend of scatter plot viewer should be colored "#ff0000"',

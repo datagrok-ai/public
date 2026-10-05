@@ -21,6 +21,7 @@ export class ClicksView extends UaView {
   tabControl?: DG.TabControl;
   followedView: string = '';
   private refreshers: (() => void)[] = [];
+  private clicksDf?: DG.DataFrame;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
@@ -45,6 +46,10 @@ export class ClicksView extends UaView {
       refresh();
     });
     this.uaToolbox.viewHandler.view.tabs.onTabChanged.subscribe(() => refresh());
+  }
+
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles({'clicks': this.clicksDf});
   }
 
   /** A sub-tab built for the applied filter, rebuilt when it is shown after the filter changed or
@@ -167,6 +172,7 @@ export class ClicksView extends UaView {
   async getClickAnalysisTab(filter: UaFilter): Promise<HTMLDivElement> {
     const table = await queries.getAggregatedClicks(filter.date!);
     table.name = 'Click Analysis';
+    this.clicksDf = table;
     const descriptionCol = table.col('description');
     if (!descriptionCol)
       throw new Error('Description column is missing in the Click Analysis table');

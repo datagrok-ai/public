@@ -7,8 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -46,8 +46,8 @@ test.describe("What the context panel says about a space", () => {
       await session.step(32, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
       await session.step(33, "When user double-clicks on BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-CP-Root tree node inside browse tree")));
       await session.step(34, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
-      await session.step(35, "And BDD-CP-One link in space gallery should be visible", () => shouldBe(page, el("BDD-CP-One link in space gallery"), "visible"));
-      await session.step(36, "And BDD-CP-Two link in space gallery should be visible", () => shouldBe(page, el("BDD-CP-Two link in space gallery"), "visible"));
+      await session.step(35, "And BDD-CP-One link in gallery should be visible", () => shouldBe(page, el("BDD-CP-One link in gallery"), "visible"));
+      await session.step(36, "And BDD-CP-Two link in gallery should be visible", () => shouldBe(page, el("BDD-CP-Two link in gallery"), "visible"));
     });
     await run.scenario("Selecting a space shows its details", async () => {
       await session.step(39, "When user clicks on BDD-CP-Root tree node inside browse tree", () => clickOn(page, el("BDD-CP-Root tree node inside browse tree")));
@@ -62,12 +62,12 @@ test.describe("What the context panel says about a space", () => {
     await run.scenario("Clicking one child, then the other, switches the panel", async () => {
       await session.step(57, "When user double-clicks on BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-CP-Root tree node inside browse tree")));
       await session.step(58, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
-      await session.step(59, "When user clicks on BDD-CP-One link in space gallery", () => clickOn(page, el("BDD-CP-One link in space gallery")));
+      await session.step(59, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
       await session.step(60, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
-      await session.step(61, "When user clicks on BDD-CP-Two link in space gallery", () => clickOn(page, el("BDD-CP-Two link in space gallery")));
+      await session.step(61, "When user clicks on BDD-CP-Two link in gallery", () => clickOn(page, el("BDD-CP-Two link in gallery")));
       await session.step(62, "Then the context panel should show \"BDD-CP-Two\"", () => contextPanelShows(page, "BDD-CP-Two"));
       await session.step(63, "And context panel should not contain text \"BDD-CP-One\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-One"));
-      await session.step(64, "When user clicks on BDD-CP-One link in space gallery", () => clickOn(page, el("BDD-CP-One link in space gallery")));
+      await session.step(64, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
       await session.step(65, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
       await session.step(66, "And context panel should not contain text \"BDD-CP-Two\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-Two"));
     });

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {failure, isWaitFailure, journeyFailure, reasonOf, StepFailure} from '../src/runtime/failure.js';
+import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from '../src/runtime/failure.js';
 
 const IN_PAGE = 'locator.evaluate: Error: Box plot has no "statsff" area right now; it has: view, x axis, stats\n' +
   '    at hitArea (eval at evaluate (:311:30), <anonymous>:152:27)\n' +
@@ -55,4 +55,19 @@ test('a journey lists the failed scenarios with their step reports', () => {
     'Menu regions\n  f.feature:43\n    When user right-clicks\n\n  Box plot has no "statsff" area right now; it has: view, x axis, stats\n\n' +
     'Coloring\n  boom');
   assert.equal(e.stack, e.message);
+});
+
+test('a capability gate\'s skip is told apart from a failure, so the harness lets it through', () => {
+  class TestSkipError extends Error {}
+  assert.ok(isSkip(new TestSkipError('the stand does not run the Jupyter service')));
+  assert.ok(isSkip(new Error('Test is skipped: the stand cannot reach the database of "Starbucks"')));
+  assert.ok(!isSkip(new Error(IN_PAGE)));
+  assert.ok(!isSkip(null));
+});
+
+test('a journey a gate cut short still reports the scenarios that failed before it, and where it stopped', () => {
+  const e = journeyFailure([{name: 'Coloring', error: new Error('boom')}], 4,
+    'the rest was skipped at "Generate": the stand does not run the Jupyter service');
+  assert.equal(e.message, '1 of 4 scenarios failed\n\nColoring\n  boom\n\n' +
+    'the rest was skipped at "Generate": the stand does not run the Jupyter service');
 });

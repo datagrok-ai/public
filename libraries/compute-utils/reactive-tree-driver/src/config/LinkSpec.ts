@@ -15,7 +15,10 @@ IOSegment ::= WS* IOSelector WS* {fragment=true}
 TagSpec ::= WS* '#' WS* TagSelectorType '(' TagSelectorArgs ')' WS*
 TagSelectorArgs ::= (RefArg (',' TagIds)?) | TagIds {fragment=true}
 TagSelectorType ::= "after*" | "after" | "before*" | "before" | "same" | "first" | "last" | "all" | "expand"
-IOSelector ::= IOSelectorType '(' WS* IOSelectorNqName WS* (',' WS* TargetIds?)? WS* ')'
+IOSelector ::= IOSelectorType '(' WS* IOSelectorNqName WS* (',' WS* ExcludeIds?)? WS* ')'
+ExcludeIds ::= WS* ExcludeArg WS* ('|' WS* ExcludeArg WS*)*
+ExcludeArg ::= Id | ExcludeKind {fragment=true}
+ExcludeKind ::= '$' Id
 IOSelectorType ::= "inputs" | "outputs"
 IOSelectorNqName ::= Id ':' Id
 Selector ::= SelectorType '(' SelectorArgs? ')'
@@ -29,7 +32,7 @@ ArgsAnd ::= WS* Id WS* ('&' WS* Id WS*)* {fragment=true}
 RefArg ::= WS* '@' Ref WS* {fragment=true}
 Ref ::= IDENTIFIER
 Id ::= IDENTIFIER
-Name ::= IDENTIFIER
+Name ::= '$'? IDENTIFIER
 IDENTIFIER ::= [_a-zA-Z][a-zA-Z_0-9]*
 WS ::= ' '
 `;
@@ -41,6 +44,8 @@ export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'befo
 export type TagRefSelectors = 'after*' | 'after' | 'before*' | 'before' | 'same';
 export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
 export type IOExpandSelectors = 'inputs' | 'outputs';
+export type IOExcludeKind = 'nonscalar' | 'linked';
+const ioExcludeKinds: IOExcludeKind[] = ['nonscalar', 'linked'];
 export type LinkFlags = 'call' | 'optional' | 'template';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 export type TagSelectors = LinkNonRefSelectors | TagRefSelectors;
@@ -58,6 +63,7 @@ export type LinkSelectorSegment = {
   ioExpand?: IOExpandSelectors,
   nqName?: NqName,
   excludeIds?: ItemId[],
+  excludeKinds?: IOExcludeKind[],
 }
 
 export type LinkTagSegment = {
@@ -78,6 +84,9 @@ export type LinkIOParsed = {
   // anonymous operator on its side — using a number prevents any collision
   // with user-typed prefix strings (grammar identifiers cannot be pure digits).
   templateName?: string | number;
+  // Set on entries expanded from a wildcard with `$linked`: after matching, the ios
+  // that other data links write are dropped from the link's outputs.
+  unlinked?: boolean;
 }
 
 const nonRefSelectors = ['first', 'last', 'all', 'expand'];
@@ -147,11 +156,19 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
     } else if (node.type === 'IOSelector') {
       const ioExpand = node.children[0].text as IOExpandSelectors;
       const nqName = node.children.find((c) => c.type === 'IOSelectorNqName')!.text.trim();
-      const targetIdsNode = node.children.find((c) => c.type === 'TargetIds');
-      const excludeIds = targetIdsNode ? targetIdsNode.children.map((c) => c.text) : [];
+      const excludeArgs = node.children.find((c) => c.type === 'ExcludeIds')?.children ?? [];
+      const excludeIds = excludeArgs.filter((c) => c.type === 'Id').map((c) => c.text);
+      const excludeKinds = excludeArgs.filter((c) => c.type === 'ExcludeKind').map((c) => c.text.slice(1).trim());
+      const unknownKind = excludeKinds.find((kind) => !ioExcludeKinds.includes(kind as IOExcludeKind));
+      const kindList = ioExcludeKinds.map((k) => '$' + k).join(' or ');
+      if (unknownKind)
+        throw new Error(`Link io ${io}: unknown exclusion $${unknownKind}, use ${kindList}`);
       if (isBase || isAction || isNot || isVisibility)
         throw new Error(`Link io ${io}: '${ioExpand}' selector is not allowed in ${ioType} queries`);
-      return {type: 'selector' as const, selector: 'first', ids: [], stopIds: [], ioExpand, nqName, excludeIds};
+      return {
+        type: 'selector' as const, selector: 'first', ids: [], stopIds: [], ioExpand, nqName, excludeIds,
+        ...(excludeKinds.length ? {excludeKinds: excludeKinds as IOExcludeKind[]} : {}),
+      };
     } else if (node.type === 'TargetIds') {
       const ids = node.children.map((cnode) => cnode.text);
       return {type: 'selector' as const, ids, selector: 'first', stopIds: []};

@@ -1,0 +1,144 @@
+import {category, test, before} from '@datagrok-libraries/test/src/test';
+import {getProcessedConfig} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
+import {FuncCallInstancesBridge} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineLinkConfigurationInput} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {TestScheduler} from 'rxjs/testing';
+import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import * as DG from 'datagrok-api/dg';
+import {createTestScheduler} from '../../../test-utils';
+
+// the advanced examples of help/compute/workflows/link-query-language-advanced.mdx, on LibTests mocks:
+// load = TestDF1 (out res), solver and analysis = TestAnnotatedInputs (in a, b, c, v, mode, df; out res),
+// reset and metrics = TestAdd2
+
+const DEFAULT_STEPS = ['load', 'solver', 'analysis', 'analysis', 'summary'];
+
+const screening = (
+  links: PipelineLinkConfigurationInput<string | string[]>[], initialSteps = DEFAULT_STEPS,
+): PipelineConfiguration => ({
+  id: 'screening',
+  type: 'dynamic',
+  stepTypes: [
+    {id: 'load', nqName: 'LibTests:TestDF1'},
+    {id: 'solver', nqName: 'LibTests:TestAnnotatedInputs', tags: ['report']},
+    {id: 'analysis', nqName: 'LibTests:TestAnnotatedInputs'},
+    {id: 'reset', nqName: 'LibTests:TestAdd2'},
+    {id: 'summary', type: 'static', steps: [{id: 'metrics', nqName: 'LibTests:TestAdd2', tags: ['report']}]},
+  ],
+  initialSteps,
+  links,
+});
+
+const table = (...names: string[]) =>
+  DG.DataFrame.fromColumns(names.map((name) => DG.Column.fromList('double', name, [1, 2, 3])));
+
+const bridgeAt = (tree: StateTree, ...idx: number[]) =>
+  tree.nodeTree.getNode(idx.map((i) => ({idx: i}))).getItem().getStateStore() as FuncCallInstancesBridge;
+
+category('ComputeUtils: Driver docs cases', async () => {
+  let testScheduler: TestScheduler;
+
+  before(async () => {
+    testScheduler = createTestScheduler();
+  });
+
+  test('Chain each analysis to the next one', async () => {
+    const pconf = await getProcessedConfig(screening([{
+      id: 'chain',
+      base: 'base:expand(analysis)',
+      from: 'prev:same(@base)/res',
+      to: 'next:after+(@base, analysis)/c',
+    }]));
+    const values: any[] = [];
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const [first, second] = [bridgeAt(tree, 2), bridgeAt(tree, 3)];
+      cold('-a').subscribe(() => {
+        first.setState('res', 4);
+        second.setState('res', 5);
+      });
+      cold('--a').subscribe(() => values.push([first.getState('c'), second.getState('c')]));
+    });
+    expectDeepEqual(values, [[null, 4]]);
+  });
+
+  test('Feed each analysis from the load of its section', async () => {
+    const pconf = await getProcessedConfig(screening([{
+      id: 'feed',
+      base: 'base:expand(analysis)',
+      from: 'table:before(@base, load, reset)/res',
+      to: 'input:same(@base)/df',
+    }], ['load', 'analysis', 'reset', 'analysis']));
+    const values: any[] = [];
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      cold('-a').subscribe(() => bridgeAt(tree, 0).setState('res', table('x')));
+      cold('--a').subscribe(() => values.push([1, 3].map((i) => bridgeAt(tree, i).getState('df')?.columns.names())));
+    });
+    expectDeepEqual(values, [[['x'], undefined]]);
+  });
+
+  test('Collect every score before the summary', async () => {
+    const pconf = await getProcessedConfig(screening([{
+      id: 'collect',
+      base: 'base:expand(summary)',
+      from: 'scores:before*(@base, analysis)/res',
+      to: 'target:same(@base)/metrics/a',
+      handler: ({controller}) => controller.setAll('target', controller.getAll('scores')),
+    }]));
+    const values: any[] = [];
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      cold('-a').subscribe(() => {
+        bridgeAt(tree, 2).setState('res', 1);
+        bridgeAt(tree, 3).setState('res', 2);
+      });
+      cold('--a').subscribe(() => values.push(bridgeAt(tree, 4, 0).getState('a')));
+    });
+    expectDeepEqual(values, [[1, 2]]);
+  });
+
+  test('Tags match across nesting', async () => {
+    const pconf = await getProcessedConfig(screening([{
+      id: 'reportsReady',
+      type: 'pipelineValidator',
+      debounce: 0,
+      from: 'results:#all(report)/res',
+      to: 'self',
+      handler: ({controller}) => {
+        const ready = (controller.getAll('results') ?? []).filter((result: any) => result != null).length;
+        controller.setValidation('self', ready === 2 ? undefined : {errors: [`${ready} of 2 reports ready`]});
+      },
+    }]));
+    const values: any[] = [];
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const snap = () => values.push((tree.toState({skipFuncCalls: true}) as any).structureCheckResults?.errors);
+      cold('-a').subscribe(() => bridgeAt(tree, 1).setState('res', 1));
+      cold('--a').subscribe(snap);
+      cold('---a').subscribe(() => bridgeAt(tree, 4, 0).setState('res', 2));
+      cold('----a').subscribe(snap);
+    });
+    expectDeepEqual(values, [['1 of 2 reports ready'], undefined]);
+  });
+
+  test('Wildcard io selectors expand at config time', async () => {
+    const pconf: any = await getProcessedConfig(screening([{
+      id: 'loadToSolver',
+      from: 'in_(template):load/outputs(LibTests:TestDF1)',
+      to: 'out_(template):solver/inputs(LibTests:TestAnnotatedInputs, a|b|c|v|code|mode|col|mol)',
+    }]));
+    const names = (ios: any[]) => ios.map((io) => io.name);
+    expectDeepEqual(names(pconf.links[0].from), ['in_res']);
+    expectDeepEqual(names(pconf.links[0].to), ['out_df']);
+  });
+});

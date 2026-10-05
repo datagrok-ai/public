@@ -293,6 +293,10 @@ export class MetricsView extends UaView {
     }
   }
 
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return this.collectSnapshotAttachments();
+  }
+
   private async refresh(): Promise<void> {
     if (this.refreshing)
       return;
@@ -1042,29 +1046,31 @@ export class MetricsView extends UaView {
 
   private async collectSnapshotAttachments(): Promise<DG.FileInfo[]> {
     const date = this.uaToolbox.getFilter().date!;
-    const m = await MetricsView.safeCall(() => this.fetchMetrics(EMAIL_LIMIT), 'getMetrics');
+    const metrics = MetricsView.safeCall(() => this.fetchMetrics(EMAIL_LIMIT), 'getMetrics');
+    const storage = grok.dapi.info.getStorageStats();
 
-    type Src = {name: string, fn: () => Promise<DG.DataFrame | string | null>};
+    type Src = {name: string, fn: () => Promise<DG.DataFrame>};
     const sources: Src[] = [
       {name: 'table_health.csv',          fn: () => queries.metricsTableHealth(EMAIL_LIMIT)},
+      {name: 'table_health_summary.csv',  fn: () => queries.metricsTableHealthSummary(EMAIL_LIMIT)},
       {name: 'largest_tables.csv',        fn: () => queries.metricsLargestTables(20)},
       {name: 'cache_miss_tables.csv',     fn: () => queries.metricsCacheMissTables()},
       {name: 'connections_offenders.csv', fn: () => queries.metricsConnectionsOffenders(20, 60, 30)},
       {name: 'errors.csv',                fn: () => queries.metricsErrorsCount(date)},
       {name: 'sessions.csv',              fn: () => queries.metricsSessionsCount(date)},
-      {name: 'storage.json',              fn: async () => JSON.stringify(await grok.dapi.info.getStorageStats())},
-      {name: 'disk.json',                 fn: () => grok.functions.call('DiskStats') as Promise<string>},
+      {name: 'storage.csv',               fn: () => storage.then(({topPrefixes, ...totals}) => DG.DataFrame.fromObjects([totals])!)},
+      {name: 'storage_prefixes.csv',      fn: () => storage.then((s) => DG.DataFrame.fromObjects(s.topPrefixes)!)},
+      {name: 'disk.csv',                  fn: async () => DG.DataFrame.fromObjects([JSON.parse(await grok.functions.call('DiskStats'))])!},
     ];
 
-    const results = await Promise.all(sources.map((s) => MetricsView.safeCall(s.fn, s.name)));
+    const [m, results] = await Promise.all([metrics, Promise.all(sources.map((s) => MetricsView.safeCall(s.fn, s.name)))]);
 
     const files: DG.FileInfo[] = [];
     for (let i = 0; i < sources.length; i++) {
       const r = results[i];
       if (r == null)
         continue;
-      const csv = typeof r === 'string' ? r : (r as DG.DataFrame).toCsv();
-      files.push(DG.FileInfo.fromString(sources[i].name, csv));
+      files.push(DG.FileInfo.fromString(sources[i].name, r.toCsv()));
     }
     if (m) {
       const {window: w, http, queue, database: db} = m;

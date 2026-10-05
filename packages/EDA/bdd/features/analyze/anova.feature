@@ -20,8 +20,7 @@ Feature: One-way ANOVA
     And Alpha input in "ANOVA" dialog should have value "0.05"
     And Run button in "ANOVA" dialog should be enabled
     When user clicks on Run button in "ANOVA" dialog
-    Then the top menu command should have completed
-    And "ANOVA" dialog should be hidden
+    Then "ANOVA" dialog should be hidden
     And box plot viewer should be visible
     And description of box plot viewer should be visible
     And description of box plot viewer should contain text "doesn't affect"

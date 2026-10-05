@@ -201,15 +201,28 @@ test('Trellis plot: click-to-filter, click-to-select, events, keyboard navigatio
           return h;
         } catch { return null; }
       }
+      // Under load the cells are still painting when onViewerRendered fires (or its cap expires), so
+      // compare only once both cell canvases have held still for a few frames.
+      const quiet = async (): Promise<[number | null, number | null]> => {
+        let prev: string | null = null;
+        let same = 0;
+        for (let i = 0; i < 60 && same < 3; i++) {
+          await new Promise((r) => setTimeout(r, 200));
+          const cur = `${cellHash(idxA)}|${cellHash(idxB)}`;
+          same = cur === prev ? same + 1 : 0;
+          prev = cur;
+        }
+        return [cellHash(idxA), cellHash(idxB)];
+      };
       const noneSettled = rendered(2500);
       tp.props.onClick = 'None';
       await noneSettled;
-      const beforeA = cellHash(idxA), beforeB = cellHash(idxB);
+      const [beforeA, beforeB] = await quiet();
 
       const filterSettled = rendered(2500);
       tp.props.onClick = 'Filter';
       await filterSettled;
-      const afterA = cellHash(idxA), afterB = cellHash(idxB);
+      const [afterA, afterB] = await quiet();
       return {
         read: beforeA !== null && beforeB !== null && afterA !== null && afterB !== null,
 

@@ -12,9 +12,17 @@ export const KNOWN_FAILURE_MS = 3000;
 let current = playwright;
 let narrowed = false;
 
+/** Playwright backs a poll off to a second between reads, so a state that arrives at 0.9 s is seen at
+ * 1.85 s; most of what the steps poll for is a render or a server round trip that lands within a few
+ * seconds, and a read in the page costs milliseconds. A check that lists the server names its own
+ * intervals and keeps them. */
+const POLL_INTERVALS = [100, 100, 100, 100, 100, 250];
+
 export const expect: typeof playwright = new Proxy(playwright, {
   apply: (_t, _this, args: unknown[]) => (current as (...a: unknown[]) => unknown)(...args),
-  get: (_t, prop) => Reflect.get(current, prop),
+  get: (_t, prop) => prop === 'poll'
+    ? (fn: () => unknown, options: {intervals?: number[]} = {}) => current.poll(fn, {intervals: POLL_INTERVALS, ...options})
+    : Reflect.get(current, prop),
 }) as typeof playwright;
 
 /** Runs a scenario whose failure is expected, with the narrowed budget. */

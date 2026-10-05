@@ -346,7 +346,7 @@ export class ExecutionController {
         const node = this.flow.getNodeById(restorePreviewId);
         const state = this.state.getNodeState(restorePreviewId);
         if (node && state?.status === NodeExecStatus.completed)
-          this.outputPreview.showForNode(node, state);
+          this.showRunResult(node);
       },
     });
     return 'started';
@@ -392,7 +392,7 @@ export class ExecutionController {
         const node = this.flow.getNodeById(restorePreviewId);
         const state = this.state.getNodeState(restorePreviewId);
         if (node && state?.status === NodeExecStatus.completed)
-          this.outputPreview.showForNode(node, state);
+          this.showRunResult(node);
       },
     });
     return 'started';
@@ -538,6 +538,13 @@ export class ExecutionController {
     this.outputPreview.showForNode(node, state);
   }
 
+  /** A run's fresh result: a node showing it in its own in-node preview never
+   *  pops the bottom panel open — only a panel already showing it updates. */
+  private showRunResult(node: FlowNode): void {
+    if (inlinePreviewEnabled(node) && !node.collapsed && this.outputPreview.currentNodeId !== node.id) return;
+    this.showOutputsForNode(node);
+  }
+
   private handleEvent(event: ExecEvent): void {
     switch (event.type) {
     case 'run-start':
@@ -568,7 +575,7 @@ export class ExecutionController {
         const sel = this.flow.getSelectedNodeIds();
         if (sel.length === 1 && sel[0] === event.nodeId) {
           const node = this.flow.getNodeById(event.nodeId);
-          if (node) this.showOutputsForNode(node);
+          if (node) this.showRunResult(node);
         }
       }
       break;
@@ -684,8 +691,13 @@ export class ExecutionController {
    *  node ids whose results must be recomputed. */
   applyGraphEdit(edit: GraphEdit): Set<string> {
     switch (edit.kind) {
-    case 'node-added':
-      return new Set();
+    case 'node-added': {
+      // Not wired yet — only a node ready as dropped (every input defaulted) has
+      // a result to compute; an input node without a value would block the run.
+      const node = this.flow.getNodeById(edit.nodeId);
+      return node && this.readyForLiveRun(node.id) && inputBlockReason(node) == null ?
+        new Set([node.id]) : new Set();
+    }
     case 'node-removed':
       this.forgetNode(edit.nodeId);
       return new Set();

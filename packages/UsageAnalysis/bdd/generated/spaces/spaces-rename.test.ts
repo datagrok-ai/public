@@ -7,8 +7,8 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -84,13 +84,13 @@ test.describe("Renaming a space", () => {
       await session.step(71, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(72, "Then BDD-Ren-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren-Child tree node inside browse tree"), "visible"));
       await session.step(73, "When user double-clicks on BDD-Ren-Parent tree node inside browse tree", () => doubleClickOn(page, el("BDD-Ren-Parent tree node inside browse tree")));
-      await session.step(74, "Then BDD-Ren-Child link in space gallery should be visible", () => shouldBe(page, el("BDD-Ren-Child link in space gallery"), "visible"));
-      await session.step(75, "When user picks \"Rename...\" from the context menu of BDD-Ren-Child link in space gallery", () => pickFromContextMenu(page, "Rename...", el("BDD-Ren-Child link in space gallery")));
+      await session.step(74, "Then BDD-Ren-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Ren-Child link in gallery"), "visible"));
+      await session.step(75, "When user picks \"Rename...\" from the context menu of BDD-Ren-Child link in gallery", () => pickFromContextMenu(page, "Rename...", el("BDD-Ren-Child link in gallery")));
       await session.step(76, "Then Name input in Rename project dialog should have value \"BDD-Ren-Child\"", () => shouldHaveValue(page, el("Name input in Rename project dialog"), "BDD-Ren-Child"));
       await session.step(77, "When user enters \"BDD-Ren-ChildNew\" into Name input in Rename project dialog", () => enterInto(page, "BDD-Ren-ChildNew", el("Name input in Rename project dialog")));
       await session.step(78, "And user clicks on OK button in Rename project dialog", () => clickOn(page, el("OK button in Rename project dialog")));
-      await session.step(79, "Then BDD-Ren-ChildNew link in space gallery should be visible", () => shouldBe(page, el("BDD-Ren-ChildNew link in space gallery"), "visible"));
-      await session.step(80, "And BDD-Ren-Child link in space gallery should be absent", () => shouldBe(page, el("BDD-Ren-Child link in space gallery"), "absent"));
+      await session.step(79, "Then BDD-Ren-ChildNew link in gallery should be visible", () => shouldBe(page, el("BDD-Ren-ChildNew link in gallery"), "visible"));
+      await session.step(80, "And BDD-Ren-Child link in gallery should be absent", () => shouldBe(page, el("BDD-Ren-Child link in gallery"), "absent"));
       await session.step(81, "When user expands BDD-Ren-Parent tree node inside browse tree", () => expand(page, el("BDD-Ren-Parent tree node inside browse tree")));
       await session.step(82, "Then BDD-Ren-ChildNew tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Ren-ChildNew tree node inside browse tree"), "visible"));
       await session.step(83, "And BDD-Ren-Child tree node inside browse tree should be absent", () => shouldBe(page, el("BDD-Ren-Child tree node inside browse tree"), "absent"));

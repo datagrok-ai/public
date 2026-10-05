@@ -7,20 +7,21 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.filters]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addCardFor, openCardIndicatorMenu, openSharedTable, pickCardIndicatorMenu} from '../../../bindings/filter-panel.js';
+import {openSharedTable} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, hoverOver, shouldBe, shouldHaveText, shouldNotBe, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {addCategoricalFilter, addRangeFilter, filterPasses, filterPassesAll, filterPassesFewer, noneOfFiltered, openEmptyFilterPanel, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openDatasetRowsAs, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addCardFor, openCardIndicatorMenu, pickCardIndicatorMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
 import {clickArea, closeContextMenu, loadLayout, menuLists, noErrors, readingAsRemembered, readingAtLeast, readingNotAsRemembered, readingReads, rememberReading, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {dragAreaOntoWidget} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';

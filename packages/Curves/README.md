@@ -227,5 +227,5 @@ is extensible, so you can easily write your own reader - [see examples](src/plat
 
 See also:
 
-- [Packages](../../help/develop/develop.md#packages)
-- [JavaScript API](../../help/develop/packages/js-api.md)
+- [Packages](https://datagrok.ai/help/develop#packages)
+- [JavaScript API](https://datagrok.ai/help/develop/packages/js-api)

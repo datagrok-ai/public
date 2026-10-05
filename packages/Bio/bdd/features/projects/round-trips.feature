@@ -48,8 +48,7 @@ Feature: Bio results survive a project save and reopen
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
     And user selects "kabat" in Scheme input in "Apply Antibody Numbering" dialog
     And user clicks on OK button in "Apply Antibody Numbering" dialog
-    Then the top menu command should have completed
-    And a new column "AntibodyHC (aligned)" should have been added
+    Then a new column "AntibodyHC (aligned)" should have been added
     When user saves the current view as project "bdd-bio-numbering-{run}"
     And user closes all views
     And user opens the "bdd-bio-numbering-{run}" project
@@ -62,8 +61,7 @@ Feature: Bio results survive a project save and reopen
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
     And user selects "kabat" in Scheme input in "Apply Antibody Numbering" dialog
     And user clicks on OK button in "Apply Antibody Numbering" dialog
-    Then the top menu command should have completed
-    And a new column "AntibodyHC (aligned) (2)" should have been added
+    Then a new column "AntibodyHC (aligned) (2)" should have been added
     And "AntibodyHC (aligned) (2)" column should hold the same values as "AntibodyHC (aligned)" column
     And no error or warning balloon should have been shown
     And no errors should have been logged

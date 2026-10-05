@@ -1,10 +1,12 @@
 import {execFile} from 'node:child_process';
+import * as path from 'node:path';
 import {promisify} from 'node:util';
 import {WORKSPACE} from '../constants';
 import {buildHelpIndex} from '../help-index';
 
 const exec = promisify(execFile);
 const SYNC_INTERVAL_MS = 30 * 60 * 1000;
+const HELP_WORKSPACE = path.join(WORKSPACE, 'help');
 
 let activeCount = 0;
 let syncing = false;
@@ -30,6 +32,17 @@ export function markQueryEnd(): void {
   }
 }
 
+async function syncRepo(dir: string): Promise<boolean> {
+  const oldSha = (await exec('git', ['-C', dir, 'rev-parse', 'HEAD'])).stdout.trim();
+  await exec('git', ['-C', dir, 'fetch', '--depth=1', 'origin', 'master']);
+  await exec('git', ['-C', dir, 'reset', '--hard', 'FETCH_HEAD']);
+  const newSha = (await exec('git', ['-C', dir, 'rev-parse', 'HEAD'])).stdout.trim();
+  if (oldSha === newSha)
+    return false;
+  console.log(`workspace: synced ${path.basename(dir)} ${oldSha.slice(0, 7)} → ${newSha.slice(0, 7)}`);
+  return true;
+}
+
 async function syncWorkspace(): Promise<void> {
   if (syncing)
     return;
@@ -38,17 +51,13 @@ async function syncWorkspace(): Promise<void> {
   syncDone = new Promise((r) => (resolve = r));
   try {
     await allQueriesIdle;
-    const oldSha = (await exec('git', ['-C', WORKSPACE, 'rev-parse', 'HEAD'])).stdout.trim();
-    await exec('git', ['-C', WORKSPACE, 'fetch', '--depth=1', 'origin', 'master']);
-    await exec('git', ['-C', WORKSPACE, 'reset', '--hard', 'FETCH_HEAD']);
-    const newSha = (await exec('git', ['-C', WORKSPACE, 'rev-parse', 'HEAD'])).stdout.trim();
-
-    if (oldSha === newSha) {
+    const publicChanged = await syncRepo(WORKSPACE);
+    const helpChanged = await syncRepo(HELP_WORKSPACE);
+    if (!publicChanged && !helpChanged) {
       console.log('workspace: already up to date');
       return;
     }
 
-    console.log(`workspace: synced ${oldSha.slice(0, 7)} → ${newSha.slice(0, 7)}`);
     try {
       buildHelpIndex(WORKSPACE);
     } catch (e: any) {

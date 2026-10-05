@@ -7,18 +7,18 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.pivot-table]
 --- */
 import {test} from '@playwright/test';
+import '../../../bindings/connections.js';
 import '../../../bindings/grid.js';
-import '../../../bindings/spaces.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {addViewerColumn} from '../../../bindings/pivot-table.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clickPlainCheckbox, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addViewerColumn} from '@datagrok-libraries/bdd/bindings/tiers/viewers/pivot-table';
 import {addViewer, areaColor, clickArea, dragAreaBy, hasArea, hasNoArea, noErrors, pickFromAreaContextMenu, readingDoesNotRead, readingHigher, readingIs, readingLower, readingReads, readingsDiffer, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {readingContains} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
