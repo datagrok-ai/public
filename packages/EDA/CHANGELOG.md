@@ -2,7 +2,7 @@
 
 ## v.next
 
-* GROK-21061: Stop Pareto front recomputes once detach cleanup starts
+* GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 
 ## 1.9.1 (WIP)
