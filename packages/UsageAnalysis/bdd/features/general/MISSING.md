@@ -106,6 +106,15 @@ is in the shell. Wanted: when the page is not in the shell and the context has a
 it back in (`signInWithSession`) instead of loading `/`. Until then every login scenario signs the
 running account back in as its own last steps (as `login-logout.feature` does).
 
+Also for the login form: `{element} should be enabled` reads `aria-disabled`, native `disabled` and a few
+d4/u2 classes, but the form disables itself by putting `.disabled` (`pointer-events: none`) on
+`#signup-form` (`signup_login.dart:436`, `signup_login.css:395`), so a Login button stuck unusable reads
+"enabled". Wanted (library): the state check notices an ancestor with `.disabled` or `pointer-events: none`.
+And a server claim that a logout ended exactly its own session:
+`Then the session the sharing user signed in with should be ended on the server` (the server ends only the
+request's session, `user_management_service.dart:1722`), plus a reload after a sign-in made through the
+form itself (first-login-case-ui.md 7), which needs section 2.
+
 ## 6. A user's name put back at feature end (profile-settings.md)
 
 `profile.feature` puts the fixture's name back through the same dialog in its last steps; a run killed
@@ -119,6 +128,10 @@ Then the user "bddprofile" should have the name "Prof{time} Ile{time}" on the se
 Read `firstName`/`lastName` with `grok.dapi.users.find` at the Given, write them back with
 `grok.dapi.users.save` at feature end and read them back. The server claim pairs the UI one read after
 the reload.
+
+Also wanted: a name on the profile's own name element (`div.grok-user-profile-name`,
+`core/client/xamgle/lib/src/views/user_profile.dart:353`), so the shown name is claimed there rather than
+anywhere on the page (the view's tab title carries the same display name).
 
 ## 7. The profile picture (profile-settings-ui.md, photo)
 
@@ -274,60 +287,27 @@ Embed..., Presentation Mode, Full Screen), although `show_tables_pane.dart` stil
 `core/client/xamgle/lib/src/commands/view/*.dart`): the window toggles left the top menu. Alt+T
 (`show_tables_pane.dart`) is the way in; the md should say so.
 
+The manager's identity is not claimed either: `Grid viewer in "Tables" dock panel` resolves to any grid
+docked under a panel titled Tables. The old spec checked the `.grok-tables-manager` class, which no kind
+or registered element reaches. Wanted: a registered element `table manager` (`.grok-tables-manager
+[name="viewer-Grid"]`, `core/client/d4/lib/src/common/table_manager.dart`), so the feature claims that
+Alt+T shows the Table Manager, not merely a grid.
+
 ## 10. The order of the view tabs (tabs-reordering-ui.md; tabs-order-and-projects.feature)
+
+Translated with today's steps (Pass 2, 5 Oct): the drag is `user drags "<name>" view tab to "<name>" view
+tab`, and the order is read position by position as `Nth view tab should have text`. Measured on the
+local stand: a tab dropped on the middle of another lands right after it, and dropping it on a tab of
+another dock group (Browse, Toolbox) moves the view into that group. What is still wanted:
 
     Then the view tabs should be in the order {string}
 
-The visible view tabs of the document strip, left to right, by their titles (comma-separated, Home
-excluded). Signal: the DOM order of `.tab-handle[name^="view-handle: "]` inside the document manager's
-tab list (dock_spawn `tab/tab_host.dart`; `tab_handle.dart` `changeTabPosition` moves the element and
-reorders `host.pages`). `the open table views should be exactly` cannot stand in: it reads
-`grok.shell.tableViews`, the order the views opened, which a drag does not change. The drag needs nothing
-new: DOM mouse events on the handle (`undock_initiator.dart`: mousedown, a move past 10 px inside the strip,
-mouseup); a move that leaves the strip undocks the view into a dialog, so the drag stays horizontal.
-Which side of the target the tab lands on depends on the half of the target it is released over
-(`_getBeforeTabPos`) — measure once and fix the orders below, or drag by a pixel offset.
-
-    @serial
-    Feature: Dataset tabs reordered by drag and drop keep their order through a project
-      Background:
-        Given user is logged in
-        And the user's own project "BDD-TabOrder-{time}" is removed now and at feature end
-        When user drops the "fixtures/browse-import.csv" file of the project onto status bar
-        And user drops the "fixtures/cars-small.csv" file of the project onto status bar
-        And user opens smiles dataset
-        And user opens curves dataset
-        Then the view tabs should be in the order "browse-import, cars-small, smiles, curves"
-
-      Scenario: A tab dragged left lands where it was dropped, and back again
-        When user drags "curves" view tab to "browse-import" view tab
-        Then the view tabs should be in the order "curves, browse-import, cars-small, smiles"
-        When user drags "curves" view tab to "smiles" view tab
-        Then the view tabs should be in the order "browse-import, cars-small, smiles, curves"
-        And no errors should have been logged
-
-      Scenario: A dataset opened later goes to the end and leaves the new order alone
-        When user drags "smiles" view tab to "browse-import" view tab
-        Then the view tabs should be in the order "smiles, browse-import, cars-small, curves"
-        When user opens demog dataset
-        Then the view tabs should be in the order "smiles, browse-import, cars-small, curves, demog"
-        When user switches to the "cars-small" table view
-        And user closes the current view
-        Then the view tabs should be in the order "smiles, browse-import, curves, demog"
-        And no errors should have been logged
-
-      Scenario: The reordered tabs come back in that order from the saved project
-        When user drags "smiles" view tab to "browse-import" view tab
-        Then the view tabs should be in the order "smiles, browse-import, cars-small, curves"
-        When user opens the Save project dialog from the ribbon
-        And user types "BDD-TabOrder-{time}" into text input in "Save project" dialog
-        And user clicks on OK in the Save project dialog and the project uploads
-        Then the "Save project" dialog should close
-        When user presses Escape
-        And user closes all views
-        And user opens the "BDD-TabOrder-{time}" project and waits for its table
-        Then the view tabs should be in the order "smiles, browse-import, cars-small, curves"
-        And no errors should have been logged
+The table tabs of the document strip, left to right, by their titles. The ordinals the feature uses count
+every visible view tab in page order — the Browse and Toolbox pane tabs, then Home — so they hold only
+because the Background pins the shell (simple mode off, Browse open, Toolbox shown): a stand or a later
+setting that docks those panes elsewhere shifts every position. Signal: the DOM order of
+`.tab-handle[name^="view-handle: "]` inside the document manager's tab list (dock_spawn
+`tab/tab_host.dart`; `tab_handle.dart` `changeTabPosition` moves the element).
 
 ## 11. A folder's lifecycle on a file share (files-cache.md, files-cache-spec.ts)
 
@@ -464,6 +444,36 @@ The negative of the existing `an error or warning balloon matching {string}` (vi
 of kind error since the scenario's floor whose text matches. The md tolerates a UMAP warning on the
 showcase; on the local stand no such balloon appeared, so the feature claims "no errors logged" only.
 
+Since Pass 2 the feature claims every scenario stricter instead: no error or warning balloon of any
+kind (`no error or warning balloon should have been shown`); the showcase showed no tolerated warning,
+so the filtered negative is not needed yet.
+
+### 13c. The cells of the search viewers' result grids
+
+Similarity Search and Diversity Search copy the column's renderer to their own result grid
+(`similar (HELM)`, `diverse (HELM)`; `Bio/src/analysis/sequence-similarity-viewer.ts:83`), which is the
+Helm side of those two leaves. The viewers report no canvas of their own, so a pixel claim reads the
+result grid's chrome, and no step reaches the inner grid's cells. Wanted:
+
+```gherkin
+Then the "cell type of similar (HELM)" reading of the result grid of "Sequence Similarity Search" viewer should be "helm"
+Then the "cell 1 of similar (HELM)" area of the result grid of "Sequence Similarity Search" viewer should be painted in at least 3 colors
+```
+
+The inner grid is a `DG.Grid` inside the viewer root; a scope phrase that resolves a grid inside a viewer
+(`DG.Widget.find` on the nested `[name="viewer-Grid"]`) would make the existing grid readings work there.
+
+### 13d. Bio: the MSA dialog's values reaching PepSeA (Bio/bdd/features/analyze/msa-helm-dialog.feature)
+
+Gap Open, Gap Extend, Method and the cluster column are claimed as offered with their defaults, but
+whether they reach the engine call is observable only through OK: `doEngineMsa` reads the editor's
+`currentFuncCall.inputs` and the Clusters value
+(`Bio/src/utils/multiple-sequence-alignment-ui.ts:146-151, 248-256`), and OK runs the PepSeA Docker
+container. That binding is a Bio package test (open the dialog, edit Gap Open and Clusters, stub the
+engine, assert the call's inputs) — today's package tests write `currentFuncCall.inputs` directly and
+skip the dialog. For the same reason the feature claims nothing about CANCEL adding no column: no end
+signal follows a Cancel (the MSA function's promise resolves only on OK).
+
 ## 14. Predictive models (EDA/bdd/features/models/apply-and-delete.feature)
 
 ### 14a. The old spec's dataset
@@ -486,6 +496,15 @@ ends with / contains the name (or a name/value on the option, e.g. the model id,
 Also: the dialog's default choice does not become the current object until the choice changes
 (the panel reads `Dialog "Dialog"` while it opens) — `fillOptions()` runs before the dialog shows and
 the dialog takes the current object after; worth a core look, not a defect a user sees.
+
+Which model OK applied: each prediction column carries the tag `predictive.model` = the model's markup,
+which holds its friendly name and id (`core/client/xamgle/lib/src/features/predictive_modeling/engines.dart:96-103`).
+The library compares a tag only for equality, so the feature claims the two prediction columns differ
+instead (PLS trained with two components). Wanted:
+
+```gherkin
+Then the "predictive.model" tag of "Petal.Width (3)" column should contain "BDD-Iris-PLS-{run}"
+```
 
 ### 14c. A generated table (old spec step 3, grok.data.testData random walk)
     Given user opens the "random walk" test dataset with 1000 rows and 10 columns
@@ -582,6 +601,21 @@ or not the Notebooks package or the capability exists. What would mean something
   apply-and-delete fails its error floor there. With Samples published with its container (5 Oct) the
   feature is green on localhost and on dev. (train-on-cars and share-model, also EDA, do not hit it on
   the same stand — why their feature changes do not reach PyKNN was not established.)
+
+## 18. Toolbox Search: what a year alone means (toolbox-search.feature)
+
+Not a missing step but an open expectation for GROK-20229: the feature claims `STARTED > 1990` reads the
+year as its first day (5573 rows on demog, the same as `STARTED > 1/1/1990`). Reading it as "after the
+whole year" would give 2674. Both differ from today's 0, so the known failure flips whichever way it is
+fixed; if the fix chooses "after the year", the expected count in the feature changes to 2674.
+
+## 19. How the reopened molecule column is drawn (molecule-in-exported-csv.md)
+
+The md asks that the column be "correctly visualized as SMILES". The feature claims what the column is
+(semantic type Molecule, units smiles, 100 distinct non-empty values, no MOLBLOCK in the file), not how the
+grid draws it: no step reads a grid cell's renderer or what it painted for a molecule. Wanted:
+`Then the "Structure" column of grid should be drawn by the "Molecule" renderer` (the grid's cell type
+reading for the column) and a claim that a cell painted a structure (ink in the cell area beyond text).
 
 ## Not translated by rule
 

@@ -9,7 +9,9 @@ Feature: The Table Manager is docked and closed with Alt+T
   current and the table the current object, Open as table, several rows selected for the "N tables"
   submenu, Show > All adding and removing the attribute columns — needs the rows and cells of the
   manager's grid, and the widget on that element is the TableManager, which reports no readings and no
-  areas (MISSING.md). The old spec's check that each name was "rendered" searched the whole page's
+  areas (MISSING.md). That the grid in the Tables panel is the Table Manager's, and not any grid docked
+  under that title, is not claimable either: no phrase reaches its .grok-tables-manager host
+  (MISSING.md). The old spec's check that each name was "rendered" searched the whole page's
   text, and its toggle check read back the setter it had just called; neither is kept. Nothing is put
   on the server; the pane's shown state is the browser's (grok-settings), and the scenario closes it.
 

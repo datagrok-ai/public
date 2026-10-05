@@ -13,9 +13,10 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
   lead's rule; the dialog itself is claimed in Bio's analyze/msa-helm-dialog); Activity Cliffs — the
   showcase has no numeric column to take as the activity; Apply Numbering Scheme, Manage Annotations,
   PolyTool Convert and Enumerate HELM — the old spec claimed nothing for them, and Bio's annotate
-  features and SequenceTranslator own them; the md's per-command "no Helm-related balloon" filter
-  (tolerating other balloons) has no step — each scenario claims no error was logged instead. The
-  table has 53 rows, not the 55 of the old md and spec.
+  features and SequenceTranslator own them. The md's per-command "no Helm-related balloon" is claimed
+  stricter, as no error or warning balloon of any kind; the md's tolerance for a non-Helm warning was
+  not needed on the showcase. The cells of the search viewers' own result grids are not claimed
+  (MISSING.md). The table has 53 rows, not the 55 of the old md and spec.
 
   Background:
     Given user is logged in
@@ -31,7 +32,9 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And "Sequence Column Name" property of WebLogo viewer should be "HELM"
     And WebLogo viewer should be painted
     And WebLogo viewer should have a "position 1" area
+    And the "rows shown" reading of WebLogo viewer should be 53
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user clicks on close icon of WebLogo viewer
     Then WebLogo viewer should be absent
 
@@ -46,10 +49,12 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And a new column "Embed_Y_1" should have been added
     And "Embed_X_1" column should have no missing values
     And "Embed_X_1" column should have at least 10 distinct values
+    And "Embed_Y_1" column should have no missing values
     And scatter plot viewer should be visible
     And "X" property of scatter plot viewer should be "Embed_X_1"
-    And scatter plot viewer should be painted
+    And scatter plot viewer should show 53 rows
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user clicks on close icon of scatter plot viewer
     And user removes "Embed_X_1" column
     And user removes "Embed_Y_1" column
@@ -64,6 +69,7 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And the task bar should have finished "Creating dendrogram"
     And the "tree leaves" reading of grid should be 53
     And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: Convert Sequence Notation writes the column in the notation asked for
     When user picks "Bio > Transform > Convert Sequence Notation..." from the top menu
@@ -76,6 +82,7 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And "separator(HELM)" column should have units "separator"
     And the value of "separator(HELM)" column in row 2 should be "A-C-D-E-F-G-H-I-K-L"
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user removes "separator(HELM)" column
 
   Scenario: Extract Region cuts a HELM region
@@ -88,9 +95,10 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     Then the top menu command should have completed
     And 1 new column should have been added
     And "region 1-2" column should have units "helm"
-    And the value of "region 1-2" column in row 1 should be "PEPTIDE1{A.C}$$$$"
+    And the value of "region 1-2" column in row 5 should be "PEPTIDE1{A.A}$$$$"
     And the value of "region 1-2" column in row 2 should be "PEPTIDE1{A.C}$$$$"
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user removes "region 1-2" column
 
   Scenario: Scan Liabilities annotates the showcase column
@@ -98,7 +106,10 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     Then "Scan Sequence Liabilities" dialog should be visible
     When user clicks on OK button in "Scan Sequence Liabilities" dialog
     Then a new column "~HELM_annotations" should have been added
+    And some value of "~HELM_annotations" column should contain "oxid-m"
+    And some value of "~HELM_annotations" column should contain "oxid-w"
     And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: Similarity Search lists the neighbours of a HELM row
     When user picks "Bio > Search > Similarity Search" from the top menu
@@ -106,8 +117,9 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And "Sequence Similarity Search" viewer should be visible
     And the "source column" reading of "Sequence Similarity Search" viewer should be "HELM"
     And the "neighbours" reading of "Sequence Similarity Search" viewer should be 11
-    And "Sequence Similarity Search" viewer should be painted
+    And the "target row" reading of "Sequence Similarity Search" viewer should be 0
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user clicks on close icon of "Sequence Similarity Search" viewer
     Then "Sequence Similarity Search" viewer should be absent
 
@@ -117,15 +129,20 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And "Sequence Diversity Search" viewer should be visible
     And the "source column" reading of "Sequence Diversity Search" viewer should be "HELM"
     And the "subset size" reading of "Sequence Diversity Search" viewer should be 10
+    And the "distinct sequences" reading of "Sequence Diversity Search" viewer should be 10
     And no errors should have been logged
+    And no error or warning balloon should have been shown
     When user clicks on close icon of "Sequence Diversity Search" viewer
     Then "Sequence Diversity Search" viewer should be absent
 
   Scenario: Subsequence Search adds a filter on the HELM column
     When user picks "Bio > Search > Subsequence Search ..." from the top menu
     Then filters viewer should be visible
+    And the filter panel should have 1 filter
     And the filter panel should have a filter on "HELM" column
+    And the "type of HELM" reading of filter panel should be "Bio:bioSubstructureFilter"
     And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: Split to Monomers gives a Monomer column per position
     When user picks "Bio > Transform > Split to Monomers..." from the top menu
@@ -137,13 +154,17 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
     And the value of "1" column in row 2 should be "A"
     And the value of "10" column in row 2 should be "L"
     And no errors should have been logged
+    And no error or warning balloon should have been shown
 
   Scenario: After the sweep the column is still a HELM column painted by Helm
     When user moves the current cell of grid to the "HELM" column
-    Then the table should have 53 rows
+    # the hues are read off row 2, so no current-row tint can supply them
+    Then the "current row" reading of grid should be 1
+    And the table should have 53 rows
     And "HELM" column should have semantic type "Macromolecule"
     And "HELM" column should have units "helm"
     And "HELM" column should have tag "cell.renderer" equal to "helm"
     And the "cell type of HELM" reading of grid should be "helm"
     And the "cell 2 of HELM" area of grid should be painted in at least 3 colors
     And no errors should have been logged
+    And no error or warning balloon should have been shown

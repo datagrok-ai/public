@@ -15,7 +15,7 @@ Feature: The table view's Search box filters by compound and date conditions
     And the toolbox pane is shown
     And user opens demog dataset
     When user presses Control+f in grid overlay
-    Then table search should be visible
+    Then table search should be focused
 
   Scenario: A single condition filters the rows it names
     When user types "AGE > 50" into table search
@@ -27,6 +27,13 @@ Feature: The table view's Search box filters by compound and date conditions
     When user types "CONTROL = true" into table search
     And user presses Enter in table search
     Then 39 rows should pass the filter
+    # the halves the known failures below compare against, proven here where nothing swallows a failure
+    When user types "STARTED > 1/1/1990" into table search
+    And user presses Enter in table search
+    Then 5573 rows should pass the filter
+    When user types "RACE = Asian" into table search
+    And user presses Enter in table search
+    Then 72 rows should pass the filter
     And no errors should have been logged
 
   # GROK-20229: "and" is not split: the search gives 0 rows
@@ -56,18 +63,19 @@ Feature: The table view's Search box filters by compound and date conditions
     Then all rows should pass the filter
     And no errors should have been logged
 
-  # GROK-20229: a year alone is not parsed as a date: 0 rows
+  # GROK-20229: a year alone is not parsed as a date: 0 rows. 1990 is the ticket's own example and keeps the
+  # readings apart: 5573 as its first day, 2674 as after the whole year, 0 today (MISSING.md asks which is meant)
   @known-failure
   Scenario: A year alone compares a date column as the first day of that year does
-    When user types "STARTED > 1/1/1991" into table search
+    When user types "STARTED > 1/1/1990" into table search
     And user presses Enter in table search
-    Then 2667 rows should pass the filter
+    Then 5573 rows should pass the filter
     When user clears table search
     And user presses Enter in table search
     Then all rows should pass the filter
-    When user types "STARTED > 1991" into table search
+    When user types "STARTED > 1990" into table search
     And user presses Enter in table search
-    Then 2667 rows should pass the filter
+    Then 5573 rows should pass the filter
     And no errors should have been logged
 
   Scenario: Text padded with spaces matches as the text itself
@@ -120,12 +128,17 @@ Feature: The table view's Search box filters by compound and date conditions
     Then "EVENT_DATE" column should have type "datetime"
     And "EVENT_DATE" column should have missing values
     When user presses Control+f in grid overlay
-    And user types "NUM > 4" into table search
+    Then table search should be focused
+    When user types "NUM > 4" into table search
     And user presses Enter in table search
     Then 2 rows should pass the filter
     When user types "EVENT_DATE > 1/1/2019" into table search
     And user presses Enter in table search
     Then 3 rows should pass the filter
+    # the ticket's own repro: a bare year typed into Search
+    When user types "2019" into table search
+    And user presses Enter in table search
+    Then 2 rows should pass the filter
     When user clears table search
     And user presses Enter in table search
     Then all rows should pass the filter

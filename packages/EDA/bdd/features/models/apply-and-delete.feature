@@ -20,7 +20,11 @@ Feature: Saved models applied to new data and deleted from the gallery
   stand where Samples is installed without its container logs "Container is not started". The view remembers hyperparameters, so the
   Components claim reads the value the view offers, which is the default only on a fresh account.
 
-  Both models are removed through the gallery in the last scenario, and by name now and at feature end.
+  PLS is trained with two components: with three on three features it spans them all and predicts as the
+  linear regression does, so the two applied columns could not be told apart. Which model OK applied is
+  claimed by the two prediction columns differing; the model a column names in its predictive.model tag
+  is not readable by any step (MISSING.md). Both models are removed through the gallery in the last
+  scenario, and by name now and at feature end.
   Serial, with share-model: a model another feature saves meanwhile enters the Apply list and shifts the
   positions the choice is reached by (MISSING.md, choosing a model by name).
 
@@ -47,6 +51,10 @@ Feature: Saved models applied to new data and deleted from the gallery
     Then editor of Features input should contain text "(3)"
     When user selects "Eda: PLS Regression" in "Model Engine" input
     Then Components input should have value "3"
+    And model preview should be ready
+    # three components on three features would span them all and predict as the linear regression does
+    When user enters "2" into Components input
+    Then Components input should have value "2"
     And model preview should be ready
     And "Eda: PLS Regression" heading should be visible
     And "R squared" table row should be visible
@@ -78,10 +86,12 @@ Feature: Saved models applied to new data and deleted from the gallery
     Then the context panel should show "BDD-Iris-PLS-{run}"
     When user presses ArrowUp in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-LR-{run}"
+    And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog
     Then the "Apply predictive model" dialog should close
     And 1 new column should have been added
     And the table should have 7 columns
+    And the newest column matching "^Petal\.Width" should have no missing values
     And no errors should have been logged
 
   Scenario: The model saved before it is one ArrowDown away and adds its prediction beside it
@@ -89,10 +99,16 @@ Feature: Saved models applied to new data and deleted from the gallery
     Then "Apply predictive model" dialog should be visible
     When user presses ArrowDown in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-PLS-{run}"
+    And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog
     Then the "Apply predictive model" dialog should close
     And 1 new column should have been added
     And the table should have 8 columns
+    And the newest column matching "^Petal\.Width" should have no missing values
+    # the linear regression wrote "Petal.Width (2)" one scenario earlier; with two components the PLS predicts otherwise
+    And some value of "Petal.Width (3)" column should differ from "Petal.Width (2)" column in the same row
+    And every value of "Petal.Width (2)" column should lie between -1 and 4
+    And every value of "Petal.Width (3)" column should lie between -1 and 4
     And no errors should have been logged
 
   Scenario: A model applies to another table that has its input columns
@@ -106,10 +122,12 @@ Feature: Saved models applied to new data and deleted from the gallery
     When user presses ArrowDown in Model input in "Apply predictive model" dialog
     And user presses ArrowUp in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-LR-{run}"
+    And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog
     Then the "Apply predictive model" dialog should close
     And 1 new column should have been added
     And the table should have 4 columns
+    And the newest column matching "^Petal\.Width" should have no missing values
     And no errors should have been logged
 
   Scenario: The gallery shows the model's details and performance, and deletes it
@@ -128,8 +146,10 @@ Feature: Saved models applied to new data and deleted from the gallery
     Then the "Are you sure?" dialog should close
     And "BDD-Iris-LR-{run}" label in gallery should be absent
     And 0 predictive models named "BDD-Iris-LR-{run}" should be on the server
+    And 1 predictive model named "BDD-Iris-PLS-{run}" should be on the server
     When user picks "Delete" from the context menu of "BDD-Iris-PLS-{run}" label in gallery
     And user clicks on DELETE button in "Are you sure?" dialog
     Then the "Are you sure?" dialog should close
+    And "BDD-Iris-PLS-{run}" label in gallery should be absent
     And 0 predictive models named "BDD-Iris-PLS-{run}" should be on the server
     And no errors should have been logged

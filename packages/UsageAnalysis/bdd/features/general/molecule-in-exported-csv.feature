@@ -15,8 +15,8 @@ Feature: A molecule column exported to CSV as SMILES reads back as molecules
     And user opens spgi dataset
     When user clicks on the "header Id" area of grid holding Control
     And user clicks on the "header Structure" area of grid holding Control
-    And user clicks on the "header CAST Idea ID" area of grid holding Control
-    Then columns "Id, Structure, CAST Idea ID" should be selected
+    And user clicks on the "header Chemist" area of grid holding Control
+    Then columns "Id, Structure, Chemist" should be selected
 
   Scenario: Selected columns exported with Molecules as SMILES, and the file opened again
     Given user watches downloads
@@ -25,21 +25,26 @@ Feature: A molecule column exported to CSV as SMILES reads back as molecules
     Then "Save as CSV" dialog should be visible
     When user checks "Molecules as Smiles" checkbox in "Save as CSV" dialog
     And user checks "Selected Columns Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Selected Rows Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Filtered Rows Only" checkbox in "Save as CSV" dialog
     And user downloads a file through OK button in "Save as CSV" dialog
     Then a file "spgi-100.csv" should have been downloaded
-    And the downloaded file "spgi-100.csv" should contain text "Id,Structure,CAST Idea ID"
+    And the downloaded file "spgi-100.csv" should contain text "Id,Structure,Chemist"
     And the downloaded file "spgi-100.csv" should contain 100 occurrences of "CAST-"
     And the downloaded file should not contain "M  END"
     And the downloaded file should not contain "Last Published Date"
+    And the downloaded file should not contain "CAST Idea ID"
     When user closes all views
     And user uploads the downloaded file through "Open local file" icon inside browse toolbar
     Then the table should have 100 rows
     And the table should have 3 columns
-    And the table should have the columns "Id, Structure, CAST Idea ID"
+    And the table should have the columns "Id, Structure, Chemist"
     And the value of "Id" column in row 1 should be "CAST-634783"
     And "Structure" column should have semantic type "Molecule"
     And "Structure" column should have units "smiles"
     And every value of "Structure" column should match "^\S+$"
+    And "Structure" column should have no missing values
+    And "Structure" column should have at least 100 distinct values
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -50,8 +55,12 @@ Feature: A molecule column exported to CSV as SMILES reads back as molecules
     Then "Save as CSV" dialog should be visible
     When user unchecks "Molecules as Smiles" checkbox in "Save as CSV" dialog
     And user checks "Selected Columns Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Selected Rows Only" checkbox in "Save as CSV" dialog
+    And user unchecks "Filtered Rows Only" checkbox in "Save as CSV" dialog
     And user downloads a file through OK button in "Save as CSV" dialog
-    Then the downloaded file "spgi-100.csv" should contain text "Id,Structure,CAST Idea ID"
+    Then the downloaded file "spgi-100.csv" should contain text "Id,Structure,Chemist"
     And the downloaded file should contain "M  END"
     And the downloaded file should not contain "Last Published Date"
+    And the downloaded file should not contain "CAST Idea ID"
     And no errors should have been logged
+    And no error or warning balloon should have been shown

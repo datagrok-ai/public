@@ -13,7 +13,10 @@ Feature: The MSA dialog on a HELM column, before the PepSeA engine runs
   which can give one cluster) is a deterministic length parity here. The lifecycle spec's claim of a
   second, kalign engine is stale: PepSeA is the only engine registered for non-canonical sequences, and
   kalign is the dialog's other mode, for canonical columns. The JS API checks of the lifecycle spec
-  (initBio, getSeqHelper, saving the project through the API) are not UI.
+  (initBio, getSeqHelper, saving the project through the API) are not UI. Whether the values set in the
+  dialog (Gap Open, Gap Extend, Method, the cluster column) reach the PepSeA call is observable only
+  through OK, so it belongs in a Bio package test (MISSING.md in UsageAnalysis/bdd/features/general);
+  for the same reason nothing claims that CANCEL added no column — no end signal follows a Cancel.
 
   The project the second scenario saves is removed now and at feature end.
 
@@ -25,9 +28,10 @@ Feature: The MSA dialog on a HELM column, before the PepSeA engine runs
     Given user opens filter_HELM dataset
     When user adds a calculated column "Clusters" with formula "Length(${HELM string}) % 2"
     Then "Clusters" column should have type "int"
-    And "Clusters" column should have at least 2 distinct values
+    And the newest column matching "^Clusters$" should have 2 distinct values
     When user picks "Bio > Analyze > MSA..." from the top menu
     Then MSA dialog should be visible
+    And Engine input in MSA dialog should be visible
     And Engine input in MSA dialog should have value "PepSeA"
     And Clusters input in MSA dialog should be visible
     When user selects "Clusters" in Clusters input in MSA dialog
@@ -42,7 +46,6 @@ Feature: The MSA dialog on a HELM column, before the PepSeA engine runs
     And "Gap Extend" input in MSA dialog should be visible
     When user clicks on CANCEL button in MSA dialog
     Then MSA dialog should be hidden
-    And no new column should have been added
     And no errors should have been logged
 
   Scenario: A HELM table reopened from a project offers the same engine
@@ -56,9 +59,10 @@ Feature: The MSA dialog on a HELM column, before the PepSeA engine runs
     When user picks "Bio > Analyze > MSA..." from the top menu
     Then MSA dialog should be visible
     And editor of Sequence input in MSA dialog should have text "HELM string"
+    And Engine input in MSA dialog should be visible
     And Engine input in MSA dialog should have value "PepSeA"
     And Method input in MSA dialog should have value "mafft --auto"
+    And "Gap Open" input in MSA dialog should be visible
     When user clicks on CANCEL button in MSA dialog
     Then MSA dialog should be hidden
-    And no new column should have been added
     And no errors should have been logged
