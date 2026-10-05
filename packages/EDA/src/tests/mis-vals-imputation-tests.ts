@@ -8,7 +8,7 @@ import {_package} from '../package-test';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {MetricInfo, DISTANCE_TYPE, impute} from '../missing-values-imputation/knn-imputer';
-import {getFeatureInputSettings} from '../missing-values-imputation/ui';
+import {getFeatureInputSettings, imputeColumns} from '../missing-values-imputation/impute-columns';
 import {dataWithMissingVals} from './utils';
 
 const ROWS_K = 100;
@@ -55,4 +55,29 @@ const testKNN = (dist: DISTANCE_TYPE) => {
 category(`Missing values imputation`, () => {
   testKNN(DISTANCE_TYPE.EUCLIDEAN);
   testKNN(DISTANCE_TYPE.MANHATTAN);
+
+  test('Impute columns in place', async () => {
+    const rows = 30;
+    const allNullRow = 12;
+    const values = (f: (i: number) => number, nullRows: number[]) =>
+      Array.from({length: rows}, (_, i) => nullRows.includes(i) ? null : f(i));
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', values((i) => i, [3, allNullRow])),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', values((i) => 2 * i, [7, allNullRow])),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'c', values((i) => rows - i, [allNullRow])),
+    ]);
+    const nullRows = (name: string) => Array.from({length: rows}, (_, i) => i).filter((i) => df.getCol(name).isNone(i));
+
+    const failed = imputeColumns(df, ['a', 'b'], ['a', 'b', 'c'], 4, DISTANCE_TYPE.EUCLIDEAN);
+
+    expect(df.columns.names().join(), 'a,b,c');
+    expect(df.get('a', 3), 3);
+    expect(df.get('b', 7), 14);
+    expect(nullRows('a').join(), `${allNullRow}`);
+    expect(nullRows('b').join(), `${allNullRow}`);
+    expect(nullRows('c').join(), `${allNullRow}`);
+    expect([...failed.keys()].join(), 'a,b');
+    expect(failed.get('a')?.join(), `${allNullRow}`);
+    expect(failed.get('b')?.join(), `${allNullRow}`);
+  });
 });

@@ -165,6 +165,18 @@ export namespace funcs {
   }
 
   /**
+   * Fills missing values in place using the k-nearest neighbors method; cells with no usable neighbors stay empty
+   * @param {any} columns - Columns to fill, an empty list fills every feature with missing values
+   * @param {any} features - Columns used to find the nearest rows
+   * @param {number} neighbors - Nearest rows used to fill a value.
+   * @param {string} distance - How the distance between rows is measured.
+   *   choices: ["Euclidean","Manhattan"]
+   */
+  export async function knnImpute(table: DG.DataFrame , columns: any , features: any , neighbors: number , distance: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('EDA:KnnImpute', { table, columns, features, neighbors, distance });
+  }
+
+  /**
    * @param {number} rate - Gradient descent learning rate.
    * @param {number} iterations - Largest number of training steps before training stops.
    * @param {number} alpha - L1 (Lasso) regularization term. 0 means plain ordinary least squares.

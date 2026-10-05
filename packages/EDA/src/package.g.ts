@@ -205,6 +205,17 @@ export async function kNNImputationForTable(table: DG.DataFrame) : Promise<void>
   await PackageFunctions.kNNImputationForTable(table);
 }
 
+//description: Fills missing values in place using the k-nearest neighbors method; cells with no usable neighbors stay empty
+//input: dataframe table 
+//input: list<string> columns { description: Columns to fill, an empty list fills every feature with missing values }
+//input: list<string> features { description: Columns used to find the nearest rows }
+//input: int neighbors = 4 { min: 1; description: Nearest rows used to fill a value. }
+//input: string distance = 'Euclidean' { choices: ["Euclidean","Manhattan"]; description: How the distance between rows is measured. }
+//output: dataframe result
+export function knnImpute(table: DG.DataFrame, columns: string[], features: string[], neighbors: number, distance: string) : any {
+  return PackageFunctions.knnImpute(table, columns, features, neighbors, distance);
+}
+
 //input: dataframe df 
 //input: column predictColumn 
 //input: double rate = 0.1 { caption: Rate; min: 0; max: 10; step: 0.01; description: Gradient descent learning rate. }

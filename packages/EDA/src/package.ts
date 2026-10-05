@@ -25,6 +25,8 @@ import {KnownMetrics} from '@datagrok-libraries/ml/src/typed-metrics';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 
 import {runKNNImputer} from './missing-values-imputation/ui';
+import {imputeColumns} from './missing-values-imputation/impute-columns';
+import {DISTANCE_TYPE} from './missing-values-imputation/knn-imputer';
 import {MCLEditor} from '@datagrok-libraries/ml/src/MCL/mcl-editor';
 import {MCLViewer} from '@datagrok-libraries/ml/src/MCL/mcl-viewer';
 import {MCLSerializableOptions} from '@datagrok-libraries/ml/src/MCL';
@@ -451,6 +453,25 @@ export class PackageFunctions {
   static async kNNImputationForTable(
     table: DG.DataFrame) {
     await runKNNImputer(table);
+  }
+
+
+  @grok.decorators.func({
+    'name': 'knnImpute',
+    'description': 'Fills missing values in place using the k-nearest neighbors method; cells with no usable neighbors stay empty',
+    'outputs': [{'type': 'dataframe', 'name': 'result'}],
+  })
+  static knnImpute(
+    table: DG.DataFrame,
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Columns to fill, an empty list fills every feature with missing values'}}) columns: string[],
+    @grok.decorators.param({'type': 'list<string>', 'options': {'description': 'Columns used to find the nearest rows'}}) features: string[],
+    @grok.decorators.param({'type': 'int', 'options': {'initialValue': '4', 'min': '1', 'description': 'Nearest rows used to fill a value.'}}) neighbors: number,
+    @grok.decorators.param({'type': 'string', 'options': {'choices': ['Euclidean', 'Manhattan'], 'initialValue': 'Euclidean', 'description': 'How the distance between rows is measured.'}}) distance: string): DG.DataFrame {
+    const distances: string[] = Object.values(DISTANCE_TYPE);
+    if (!distances.includes(distance))
+      throw new Error(`knnImpute: unknown distance "${distance}"; use ${distances.join(' or ')}`);
+    imputeColumns(table, columns?.length ? columns : features, features, neighbors, distance as DISTANCE_TYPE);
+    return table;
   }
 
 
