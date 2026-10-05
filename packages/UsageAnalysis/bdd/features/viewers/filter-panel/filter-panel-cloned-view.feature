@@ -174,6 +174,9 @@ Feature: Filter panel of a cloned view
     When user opens a table "shared SEX" that shares the "SEX" column of the current table
     Then 1000 rows of table "shared SEX" should pass the filter
     When user switches to the "demog-missing" view
+    # the panel keeps its scroll across a view switch (since GROK-21109), and the HEIGHT card scrolled it
+    # down earlier in the journey: SEX's F row is above the top edge until the panel is scrolled back up
+    And user scrolls the mouse wheel up 10 times over the "view" area of filter panel
     And user clicks on the "category F of SEX" area of filter panel
     Then fewer than 553 rows should pass the filter
     And the "rows shown" reading of filter panel should be at least 1

@@ -22,7 +22,7 @@ import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/command
 import {addCategoricalFilter, addRangeFilter, filterPasses, filterPassesAll, filterPassesFewer, noneOfFiltered, openEmptyFilterPanel, tableFilterCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, openDatasetRowsAs, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addCardFor, openCardIndicatorMenu, pickCardIndicatorMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
-import {clickArea, closeContextMenu, loadLayout, menuLists, noErrors, readingAsRemembered, readingAtLeast, readingNotAsRemembered, readingReads, rememberReading, saveLayoutToServer} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickArea, closeContextMenu, loadLayout, menuLists, noErrors, readingAsRemembered, readingAtLeast, readingNotAsRemembered, readingReads, rememberReading, saveLayoutToServer, wheelOverAreaTimes} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {dragAreaOntoWidget} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -183,12 +183,13 @@ test.describe("Filter panel of a cloned view", () => {
       await session.step(174, "When user opens a table \"shared SEX\" that shares the \"SEX\" column of the current table", () => openSharedTable(page, "shared SEX", "SEX"));
       await session.step(175, "Then 1000 rows of table \"shared SEX\" should pass the filter", () => tableFilterCount(page, 1000, "shared SEX"));
       await session.step(176, "When user switches to the \"demog-missing\" view", () => switchView(page, "demog-missing"));
-      await session.step(177, "And user clicks on the \"category F of SEX\" area of filter panel", () => clickArea(page, "category F of SEX", el("filter panel")));
-      await session.step(178, "Then fewer than 553 rows should pass the filter", () => filterPassesFewer(page, 553));
-      await session.step(179, "And the \"rows shown\" reading of filter panel should be at least 1", () => readingAtLeast(page, "rows shown", el("filter panel"), 1));
-      await session.step(180, "And no rows where \"SEX\" is \"M\" should pass the filter", () => noneOfFiltered(page, "SEX", "M"));
-      await session.step(181, "And 1000 rows of table \"shared SEX\" should pass the filter", () => tableFilterCount(page, 1000, "shared SEX"));
-      await session.step(182, "And no errors should have been logged", () => noErrors(page));
+      await session.step(179, "And user scrolls the mouse wheel up 10 times over the \"view\" area of filter panel", () => wheelOverAreaTimes(page, "up", 10, "view", el("filter panel")));
+      await session.step(180, "And user clicks on the \"category F of SEX\" area of filter panel", () => clickArea(page, "category F of SEX", el("filter panel")));
+      await session.step(181, "Then fewer than 553 rows should pass the filter", () => filterPassesFewer(page, 553));
+      await session.step(182, "And the \"rows shown\" reading of filter panel should be at least 1", () => readingAtLeast(page, "rows shown", el("filter panel"), 1));
+      await session.step(183, "And no rows where \"SEX\" is \"M\" should pass the filter", () => noneOfFiltered(page, "SEX", "M"));
+      await session.step(184, "And 1000 rows of table \"shared SEX\" should pass the filter", () => tableFilterCount(page, 1000, "shared SEX"));
+      await session.step(185, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });
