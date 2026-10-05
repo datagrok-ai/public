@@ -4,6 +4,9 @@ upload.keys.json
 # Dependency directories
 node_modules/
 
+# Design docs: read in the repo, not needed at runtime
+docs/
+
 # IDEs
 # VS Code (https://github.com/github/gitignore/blob/master/Global/VisualStudioCode.gitignore)
 .vscode/*
