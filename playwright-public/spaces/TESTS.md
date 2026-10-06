@@ -80,8 +80,8 @@ Setup: create space via UI; `afterEach` API delete.
 
 | # | Test name | What it verifies |
 |---|-----------|-----------------|
-| 22 | Add to favorites — space appears under My stuff / Favorites | Right-click → "Add to favorites" → navigate to Favorites → space name visible |
-| 23 | Remove from favorites — space no longer under Favorites | Add to favorites, then right-click → "Remove from favorites" → navigate to Favorites → space name absent |
+| 22 | Add To Favorites — space appears under My stuff / Favorites | Right-click → "Add To Favorites" → navigate to Favorites → space name visible |
+| 23 | Remove from favorites — space no longer under Favorites | Add To Favorites, then right-click → "Remove from favorites" → navigate to Favorites → space name absent |
 
 ---
 
@@ -101,7 +101,7 @@ Setup: create space via UI; `afterEach` API delete.
 
 | # | Test name | What it verifies |
 |---|-----------|-----------------|
-| 25 | Root space context menu has all expected items | Right-click on a root space: all five items present — Share..., Rename..., Delete Space, Create Child Space..., Add to favorites |
+| 25 | Root space context menu has all expected items | Right-click on a root space: all five items present — Share..., Rename..., Delete Space, Create Child Space..., Add To Favorites |
 
 ---
 

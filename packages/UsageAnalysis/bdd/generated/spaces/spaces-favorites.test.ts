@@ -36,7 +36,7 @@ test.describe("A space in favorites", () => {
       await session.step(20, "Then 1 space named \"BDD-Fav\" should be on the server", () => spacesOnServer(page, 1, "BDD-Fav"));
       await session.step(21, "And the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
       await session.step(22, "And \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "absent"));
-      await session.step(23, "When user picks \"Add to favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Add to favorites", el("BDD-Fav tree node inside browse tree")));
+      await session.step(23, "When user picks \"Add To Favorites\" from the context menu of BDD-Fav tree node inside browse tree", () => pickFromContextMenu(page, "Add To Favorites", el("BDD-Fav tree node inside browse tree")));
       await session.step(24, "Then \"My stuff > Favorites > BDD-Fav\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites > BDD-Fav\" tree node inside browse tree"), "present"));
     });
     await run.scenario("A space is removed from favorites", async () => {

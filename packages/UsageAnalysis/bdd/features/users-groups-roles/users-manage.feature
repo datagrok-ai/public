@@ -120,14 +120,14 @@ Feature: Managing a user
 
   Scenario: A user is added to favorites and removed again (Users-21)
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
-    When user picks "Add to favorites" from the context menu of "bddmanaged" link in gallery
+    When user picks "Add To Favorites" from the context menu of "bddmanaged" link in gallery
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be present
     When user opens the context menu of "bddmanaged" link in gallery
     Then the open menu should list "Remove from favorites"
     When user picks "Remove from favorites" from the open menu
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
     When user opens the context menu of "bddmanaged" link in gallery
-    Then the open menu should list "Add to favorites"
+    Then the open menu should list "Add To Favorites"
     When user closes the context menu
     And user clears gallery search
     Then no errors should have been logged

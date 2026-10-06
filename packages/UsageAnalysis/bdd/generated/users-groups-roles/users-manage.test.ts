@@ -126,14 +126,14 @@ test.describe("Managing a user", () => {
     });
     await run.scenario("A user is added to favorites and removed again (Users-21)", async () => {
       await session.step(122, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "absent"));
-      await session.step(123, "When user picks \"Add to favorites\" from the context menu of \"bddmanaged\" link in gallery", () => pickFromContextMenu(page, "Add to favorites", el("\"bddmanaged\" link in gallery")));
+      await session.step(123, "When user picks \"Add To Favorites\" from the context menu of \"bddmanaged\" link in gallery", () => pickFromContextMenu(page, "Add To Favorites", el("\"bddmanaged\" link in gallery")));
       await session.step(124, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "present"));
       await session.step(125, "When user opens the context menu of \"bddmanaged\" link in gallery", () => openContextMenu(page, el("\"bddmanaged\" link in gallery")));
       await session.step(126, "Then the open menu should list \"Remove from favorites\"", () => menuLists(page, "Remove from favorites"));
       await session.step(127, "When user picks \"Remove from favorites\" from the open menu", () => pickFromOpenMenu(page, "Remove from favorites"));
       await session.step(128, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "absent"));
       await session.step(129, "When user opens the context menu of \"bddmanaged\" link in gallery", () => openContextMenu(page, el("\"bddmanaged\" link in gallery")));
-      await session.step(130, "Then the open menu should list \"Add to favorites\"", () => menuLists(page, "Add to favorites"));
+      await session.step(130, "Then the open menu should list \"Add To Favorites\"", () => menuLists(page, "Add To Favorites"));
       await session.step(131, "When user closes the context menu", () => closeContextMenu(page));
       await session.step(132, "And user clears gallery search", () => clearField(page, el("gallery search")));
       await session.step(133, "Then no errors should have been logged", () => noErrors(page));

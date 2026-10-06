@@ -67,7 +67,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Delete..."
     And the open menu should list "Clear cache"
     # the anchor for the file scenario's negative: an entity is offered this, a file is not
-    And the open menu should list "Add to favorites"
+    And the open menu should list "Add To Favorites"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -81,7 +81,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should not list "New Query..."
     And the open menu should not list "Clear cache"
     # Browse-Fav-05: a file is not an entity, so it cannot be made a favourite of its own
-    And the open menu should not list "Add to favorites"
+    And the open menu should not list "Add To Favorites"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
