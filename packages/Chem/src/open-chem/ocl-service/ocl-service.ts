@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {MolNotationType, OCLServiceCall} from './consts';
@@ -11,7 +12,7 @@ export class OCLService {
 
   private async _doParallel(
     molCol:DG.Column, argList: any[], op: OCLServiceCall,
-  ): Promise<{[key: string]: Array<number>}> {
+  ): Promise<{[key: string]: Array<number | string>}> {
     const molList = molCol.toList();
     // detect if the column is smiles or molblock notation
     const notationType = DG.chem.isMolBlock(molList[0]) ? MolNotationType.MOLBLOCK : MolNotationType.SMILES;
@@ -89,15 +90,15 @@ export class OCLService {
     return this.doParallelArrayResult(molCol, [], OCLServiceCall.RECALCULATE_COORDINATES, notationType);
   }
 
-  async getChemProperties(molCol: DG.Column, propList: string[]): Promise<{[key: string]: Array<number>}> {
+  async getChemProperties(molCol: DG.Column, propList: string[]): Promise<{[key: string]: Array<number | string>}> {
     return this._doParallel(molCol, propList, OCLServiceCall.CHEM_PROPERTIES);
   }
 
-  async getChemToxicity(molCol: DG.Column, riskTypes: number[]): Promise<{[key: string]: Array<number>}> {
+  async getChemToxicity(molCol: DG.Column, riskTypes: number[]): Promise<{[key: string]: Array<number | string>}> {
     return this._doParallel(molCol, riskTypes, OCLServiceCall.TOXICITY);
   }
 
-  async getDrugLikeness(molCol: DG.Column): Promise<{[key: string]: Array<number>}> {
+  async getDrugLikeness(molCol: DG.Column): Promise<{[key: string]: Array<number | string>}> {
     return this._doParallel(molCol, [], OCLServiceCall.DRUG_LIKENESS);
   }
 
