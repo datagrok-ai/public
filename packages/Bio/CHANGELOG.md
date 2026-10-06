@@ -2,7 +2,6 @@
 
 ## v.next
 
-* Tests: Added the BDD feature `analyze/msa-helm-dialog` — the MSA dialog on a HELM column (clusters, PepSeA gap penalties) and again after a project round trip (from TestTrack General/pepsea)
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
 
 ## 2.28.4 (2026-09-29)

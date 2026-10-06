@@ -2,13 +2,11 @@
 Feature: Multiple sequence alignment with kalign
   Bio | Analyze | MSA... on a canonical peptide column runs kalign in the browser: the dialog
   offers the sequence and cluster columns and the kalign penalties behind a toggle, and the
-  result is an aligned column — every sequence padded to one width within its cluster. A HELM
-  column switches the dialog to the non-canonical engines (PepSeA) and their own parameters.
+  result is an aligned column — every sequence padded to one width within its cluster.
 
-  Not translated, and why: running PepSeA itself (and the container's lifecycle) needs the PepSeA
-  Docker container deployed and started on the stand, which the suite cannot assume; the HELM scenario
-  stops at the dialog, which needs no container. The MSA header's WebLogo (msa.md step 8) is
-  claimed in render/msa-header, on the antibody chains.
+  Not translated, and why: PepSeA, the engine a HELM column switches the dialog to, runs in a Docker
+  container, and Docker-based engines are kept out of BDD (the lead's rule), the dialog included. The
+  MSA header's WebLogo (msa.md step 8) is claimed in render/msa-header, on the antibody chains.
 
   Background:
     Given user is logged in
@@ -66,28 +64,5 @@ Feature: Multiple sequence alignment with kalign
     And "msa(fasta) (2)" column should have no missing values
     And every value of "msa(fasta) (2)" column should have the same length within each "Clusters" value
     And the values of "msa(fasta) (2)" column should have at least 2 distinct lengths
-    And no error or warning balloon should have been shown
-    And no errors should have been logged
-
-  Scenario: A HELM column opens the dialog on the non-canonical engines, PepSeA among them
-    Given user opens filter_HELM dataset
-    Then "HELM string" column should have units "helm"
-    When user picks "Bio > Analyze > MSA..." from the top menu
-    Then MSA dialog should be visible
-    And editor of Sequence input in MSA dialog should have text "HELM string"
-    And Engine input in MSA dialog should be visible
-    When user selects "PepSeA" in Engine input in MSA dialog
-    Then Engine input in MSA dialog should have value "PepSeA"
-    And Method input in MSA dialog should have value "mafft --auto"
-    And Method input in MSA dialog should offer "mafft --auto, mafft, linsi, ginsi, einsi, fftns, fftnsi, nwns, nwnsi"
-    And "Gap Extend" input in MSA dialog should be visible
-    When user clicks on "Alignment parameters" button in MSA dialog
-    Then Method input in MSA dialog should be hidden
-    And "Gap Extend" input in MSA dialog should be hidden
-    When user clicks on "Alignment parameters" button in MSA dialog
-    Then Method input in MSA dialog should be visible
-    When user clicks on CANCEL button in MSA dialog
-    Then MSA dialog should be hidden
-    And no new column should have been added
     And no error or warning balloon should have been shown
     And no errors should have been logged

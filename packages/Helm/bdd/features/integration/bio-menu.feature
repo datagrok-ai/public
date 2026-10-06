@@ -10,7 +10,7 @@ Feature: The Bio menu on the HELM showcase leaves the Helm renderer intact
   another on the same table.
 
   Not translated, and why: MSA — on a HELM column its only engine is PepSeA, a Docker container (the
-  lead's rule; the dialog itself is claimed in Bio's analyze/msa-helm-dialog); Activity Cliffs — the
+  lead's rule: no Docker-based engines in BDD); Activity Cliffs — the
   showcase has no numeric column to take as the activity; Apply Numbering Scheme, Manage Annotations,
   PolyTool Convert and Enumerate HELM — the old spec claimed nothing for them, and Bio's annotate
   features and SequenceTranslator own them. The md's per-command "no Helm-related balloon" is claimed

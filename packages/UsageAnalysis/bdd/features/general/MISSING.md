@@ -457,17 +457,6 @@ Then the "cell 1 of similar (HELM)" area of the result grid of "Sequence Similar
 The inner grid is a `DG.Grid` inside the viewer root; a scope phrase that resolves a grid inside a viewer
 (`DG.Widget.find` on the nested `[name="viewer-Grid"]`) would make the existing grid readings work there.
 
-### 13d. Bio: the MSA dialog's values reaching PepSeA (Bio/bdd/features/analyze/msa-helm-dialog.feature)
-
-Gap Open, Gap Extend, Method and the cluster column are claimed as offered with their defaults, but
-whether they reach the engine call is observable only through OK: `doEngineMsa` reads the editor's
-`currentFuncCall.inputs` and the Clusters value
-(`Bio/src/utils/multiple-sequence-alignment-ui.ts:146-151, 248-256`), and OK runs the PepSeA Docker
-container. That binding is a Bio package test (open the dialog, edit Gap Open and Clusters, stub the
-engine, assert the call's inputs) — today's package tests write `currentFuncCall.inputs` directly and
-skip the dialog. For the same reason the feature claims nothing about CANCEL adding no column: no end
-signal follows a Cancel (the MSA function's promise resolves only on OK).
-
 ## 14. Predictive models (EDA/bdd/features/models/apply-and-delete.feature)
 
 ### 14a. The old spec's dataset
@@ -640,7 +629,5 @@ Missing:
 - profile-settings-spec.ts: a JS API round trip, nothing UI-specific (ApiTests).
 - Chemprop (chemprop-spec.ts): trains and predicts in the chem-chemprop Docker container; the Train Model
   UI before it is covered by EDA's model features.
-- MSA OK on a HELM column (pepsea-spec.ts, bio-lifecycle-pepsea-container-spec.ts): PepSeA is the only
-  engine for HELM and runs in a Docker container; the dialog is claimed in Bio's msa-helm-dialog.feature.
 - Notebooks lifecycle (notebooks-lifecycle-jupyter-container): every step past the gallery runs the
   Jupyter container or is API-only (section 16).
