@@ -8,6 +8,10 @@ Feature: A space in favorites
   that is merely inside a collapsed group would satisfy "absent" without anything having been
   removed.
 
+  For an account that administers a group, as the running one does, "Add to favorites" is a submenu
+  of "Only for me" and the groups, and its item is a check: picking it again takes the space out
+  (GROK-21108 replaced "Remove from favorites" with it).
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -20,11 +24,11 @@ Feature: A space in favorites
     Then 1 space named "BDD-Fav" should be on the server
     And the "Create Space" dialog should close
     And "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
-    When user picks "Add to favorites" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add to favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be present
 
   Scenario: A space is removed from favorites
-    When user picks "Remove from favorites" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add to favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     And "My stuff > Favorites" tree node inside browse tree should be present
     And 1 space named "BDD-Fav" should be on the server

@@ -611,6 +611,23 @@ grid draws it: no step reads a grid cell's renderer or what it painted for a mol
 `Then the "Structure" column of grid should be drawn by the "Molecule" renderer` (the grid's cell type
 reading for the column) and a claim that a cell painted a structure (ink in the cell area beyond text).
 
+## 20. Favorites after GROK-21108 (browse, spaces, users-groups-roles features)
+
+GROK-21108 made "Add to favorites" a check: a plain item for an account that administers no group,
+otherwise a submenu of "Only for me" and the groups it administers (`Favorites.buildMenu`,
+`core/client/xamgle/lib/src/features/favorites.dart`); "Remove from favorites" is gone, and files are
+favorites too. The four features that used it (browse-context-panel-and-menus, browse-my-stuff,
+spaces-favorites, users-manage Users-21) now pick "Add to favorites > Only for me" to add and pick it
+again to take out, and claim the result on the server or in Browse > My stuff > Favorites.
+
+Missing:
+- A step that reads whether a menu item is checked, e.g. `the open menu item "Add to favorites > Only
+  for me" should be checked` / `... should not be checked` (the check mark of the d4 menu item). Without
+  it the check the menu shows after adding is not claimed, only its effect.
+- The path assumes the running account administers a group (admin does on dev, the local stand and CI).
+  An account without one gets the plain item, and the submenu path fails. A step choosing the path by
+  the account, or a precondition step `the account administers a group`, would make it explicit.
+
 ## Not translated by rule
 
 - Login with Google (login-ui.md 1-4): Google's consent screen is an outside service.
