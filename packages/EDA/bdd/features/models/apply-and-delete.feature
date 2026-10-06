@@ -1,14 +1,13 @@
-@journey @serial @eda @realizes:ml.menu.models.train-model @realizes:ml.menu.models.apply-model @realizes:eda.model.pls-regression @realizes:eda.model.linear-regression
+@journey @eda @realizes:ml.menu.models.train-model @realizes:ml.menu.models.apply-model @realizes:eda.model.pls-regression @realizes:eda.model.linear-regression
 Feature: Saved models applied to new data and deleted from the gallery
   Two regression models — Petal.Width predicted from Sepal.Length, Sepal.Width and Petal.Length, by PLS
   Regression and by Linear Regression — trained on iris, saved, applied through ML | Models | Apply
   Model... to a fresh copy of the table and to another table that has the input columns, then deleted
   from Browse > Platform > Predictive models. Translated from TestTrack General/predictive-models-spec.ts.
 
-  The Apply dialog offers the models suggested for the table, newest first, each as "<saved at>: <name>"
-  cut at 40 characters, so no option can be named; a change of the choice makes the chosen model the
-  current object, so the model is claimed in the context panel, reached from the newest (the default)
-  with ArrowDown and ArrowUp as a person browses the list.
+  The Apply dialog offers the models suggested for the table, each shown as "<saved at>: <name>" cut at
+  40 characters and keyed by its id, so the model is chosen by name through its id; a change of the
+  choice makes the chosen model the current object, which the context panel shows.
 
   Not translated, and why: General/chemprop-spec.ts — the Chemprop engine trains and predicts in the
   chem-chemprop Docker container (the lead's rule); its in-browser half (the Train Model view, Predict
@@ -23,10 +22,9 @@ Feature: Saved models applied to new data and deleted from the gallery
   PLS is trained with two components: with three on three features it spans them all and predicts as the
   linear regression does, so the two applied columns could not be told apart. Which model OK applied is
   claimed by the two prediction columns differing; the model a column names in its predictive.model tag
-  is not readable by any step (MISSING.md). Both models are removed through the gallery in the last
-  scenario, and by name now and at feature end.
-  Serial, with share-model: a model another feature saves meanwhile enters the Apply list and shifts the
-  positions the choice is reached by (MISSING.md, choosing a model by name).
+  is not readable by any step. How well a model predicts is the EDA package tests' claim, not this
+  feature's. Both models are removed through the gallery in the last scenario, and by name now and at
+  feature end.
 
   Background:
     Given user is logged in
@@ -77,14 +75,14 @@ Feature: Saved models applied to new data and deleted from the gallery
     And 1 predictive model named "BDD-Iris-LR-{run}" should be on the server
     And no errors should have been logged
 
-  Scenario: Apply Model offers the newest model first, the earlier one below it, and adds the prediction
+  Scenario: Apply Model offers the saved models and adds the chosen one's prediction
     Given user opens iris dataset
     And the context panel is open
     When user picks "ML > Models > Apply Model..." from the top menu
     Then "Apply predictive model" dialog should be visible
-    When user presses ArrowDown in Model input in "Apply predictive model" dialog
+    When user selects the predictive model "BDD-Iris-PLS-{run}" in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-PLS-{run}"
-    When user presses ArrowUp in Model input in "Apply predictive model" dialog
+    When user selects the predictive model "BDD-Iris-LR-{run}" in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-LR-{run}"
     And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog
@@ -94,10 +92,10 @@ Feature: Saved models applied to new data and deleted from the gallery
     And the newest column matching "^Petal\.Width" should have no missing values
     And no errors should have been logged
 
-  Scenario: The model saved before it is one ArrowDown away and adds its prediction beside it
+  Scenario: The other model adds its own prediction beside it
     When user picks "ML > Models > Apply Model..." from the top menu
     Then "Apply predictive model" dialog should be visible
-    When user presses ArrowDown in Model input in "Apply predictive model" dialog
+    When user selects the predictive model "BDD-Iris-PLS-{run}" in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-PLS-{run}"
     And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog
@@ -107,8 +105,6 @@ Feature: Saved models applied to new data and deleted from the gallery
     And the newest column matching "^Petal\.Width" should have no missing values
     # the linear regression wrote "Petal.Width (2)" one scenario earlier; with two components the PLS predicts otherwise
     And some value of "Petal.Width (3)" column should differ from "Petal.Width (2)" column in the same row
-    And every value of "Petal.Width (2)" column should lie between -1 and 4
-    And every value of "Petal.Width (3)" column should lie between -1 and 4
     And no errors should have been logged
 
   Scenario: A model applies to another table that has its input columns
@@ -119,8 +115,7 @@ Feature: Saved models applied to new data and deleted from the gallery
       | 6.3          | 3.3         | 6.0          |
     When user picks "ML > Models > Apply Model..." from the top menu
     Then "Apply predictive model" dialog should be visible
-    When user presses ArrowDown in Model input in "Apply predictive model" dialog
-    And user presses ArrowUp in Model input in "Apply predictive model" dialog
+    When user selects the predictive model "BDD-Iris-LR-{run}" in Model input in "Apply predictive model" dialog
     Then the context panel should show "BDD-Iris-LR-{run}"
     And Inputs input in "Apply predictive model" dialog should contain text "(3/3)"
     When user clicks on OK button in "Apply predictive model" dialog

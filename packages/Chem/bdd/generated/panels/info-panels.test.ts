@@ -16,8 +16,6 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {canvasColors} from '@datagrok-libraries/bdd/bindings/common/pixels';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {expand, shouldBe, shouldContainText, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {columnSemType, columnUnits} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {cellIsCurrentObject} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, contextPanelOpen, contextPanelShows, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
@@ -26,7 +24,7 @@ test.describe("The Chemistry, Biology and Structure panes of the Chem context pa
   const session = feature(test, "features/panels/info-panels.feature", import.meta.url);
   test("The Chemistry, Biology and Structure panes of the Chem context panel", {tag: ["@journey", "@realizes:chem.cell.molecule", "@realizes:chem.panel.chemistry.rendering", "@realizes:chem.panel.chemistry.highlight", "@realizes:chem.panel.biology.toxicity", "@realizes:chem.panel.biology.drug-likeness", "@realizes:chem.panel.structure.2d-structure"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 6, page);
+    const run = journey(test, 3, page);
     await session.step(19, "Given user is logged in", () => loggedIn(page));
     await session.step(20, "And the package autostarts have completed", () => autostartsCompleted(page));
     await session.step(21, "And user opens smiles-50 dataset", () => openDataset(page, ds("smiles-50")));
@@ -66,46 +64,6 @@ test.describe("The Chemistry, Biology and Structure panes of the Chem context pa
       await session.step(59, "Then the canvases of \"2D Structure\" pane in context panel should be painted in at least 1 colors", () => canvasColors(page, el("\"2D Structure\" pane in context panel"), 1));
       await session.step(60, "And \"2D Structure\" pane in context panel should not contain the text \"Molecule is possibly malformed\"", () => shouldNotContainText(page, el("\"2D Structure\" pane in context panel"), "Molecule is possibly malformed"));
       await session.step(61, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("A V2000 molblock cell gets the same three groups", async () => {
-      await session.step(65, "Given user opens mol1K.sdf dataset", () => openDataset(page, ds("mol1K.sdf")));
-      await session.step(66, "Then \"molecule\" column should have semantic type \"Molecule\"", () => columnSemType(page, "molecule", "Molecule"));
-      await session.step(67, "And \"molecule\" column should have units \"molblock\"", () => columnUnits(page, "molecule", "molblock"));
-      await session.step(68, "Given the \"molecule\" cell of row 1 is the current object", () => cellIsCurrentObject(page, "molecule", 1));
-      await session.step(69, "Then Chemistry accordion header in context panel should be visible", () => shouldBe(page, el("Chemistry accordion header in context panel"), "visible"));
-      await session.step(70, "When user expands Chemistry accordion header in context panel", () => expand(page, el("Chemistry accordion header in context panel")));
-      await session.step(71, "And user expands Properties accordion header in context panel", () => expand(page, el("Properties accordion header in context panel")));
-      await session.step(72, "Then \"Properties\" pane in context panel should contain the text \"MW\"", () => shouldContainText(page, el("\"Properties\" pane in context panel"), "MW"));
-      await session.step(73, "And \"Properties\" pane in context panel should not contain the text \"Molecule is possibly malformed\"", () => shouldNotContainText(page, el("\"Properties\" pane in context panel"), "Molecule is possibly malformed"));
-      await session.step(74, "When user expands Structure accordion header in context panel", () => expand(page, el("Structure accordion header in context panel")));
-      await session.step(75, "And user expands \"2D Structure\" accordion header in context panel", () => expand(page, el("\"2D Structure\" accordion header in context panel")));
-      await session.step(76, "Then the canvases of \"2D Structure\" pane in context panel should be painted in at least 1 colors", () => canvasColors(page, el("\"2D Structure\" pane in context panel"), 1));
-      await session.step(77, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("A V3000 molblock cell gets the same three groups", async () => {
-      await session.step(80, "Given user opens ApprovedDrugs2015 dataset", () => openDataset(page, ds("ApprovedDrugs2015")));
-      await session.step(81, "Then \"molecule\" column should have semantic type \"Molecule\"", () => columnSemType(page, "molecule", "Molecule"));
-      await session.step(82, "Given the \"molecule\" cell of row 1 is the current object", () => cellIsCurrentObject(page, "molecule", 1));
-      await session.step(83, "When user expands Chemistry accordion header in context panel", () => expand(page, el("Chemistry accordion header in context panel")));
-      await session.step(84, "And user expands Properties accordion header in context panel", () => expand(page, el("Properties accordion header in context panel")));
-      await session.step(85, "Then \"Properties\" pane in context panel should contain the text \"MW\"", () => shouldContainText(page, el("\"Properties\" pane in context panel"), "MW"));
-      await session.step(86, "And \"Properties\" pane in context panel should not contain the text \"Molecule is possibly malformed\"", () => shouldNotContainText(page, el("\"Properties\" pane in context panel"), "Molecule is possibly malformed"));
-      await session.step(87, "When user expands Structure accordion header in context panel", () => expand(page, el("Structure accordion header in context panel")));
-      await session.step(88, "And user expands \"2D Structure\" accordion header in context panel", () => expand(page, el("\"2D Structure\" accordion header in context panel")));
-      await session.step(89, "Then the canvases of \"2D Structure\" pane in context panel should be painted in at least 1 colors", () => canvasColors(page, el("\"2D Structure\" pane in context panel"), 1));
-      await session.step(90, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("A SMARTS cell gets its properties and its picture", async () => {
-      await session.step(93, "Given user opens ex-smarts dataset", () => openDataset(page, ds("ex-smarts")));
-      await session.step(94, "Then \"SMARTS\" column should have semantic type \"Molecule\"", () => columnSemType(page, "SMARTS", "Molecule"));
-      await session.step(95, "Given the \"SMARTS\" cell of row 1 is the current object", () => cellIsCurrentObject(page, "SMARTS", 1));
-      await session.step(96, "When user expands Chemistry accordion header in context panel", () => expand(page, el("Chemistry accordion header in context panel")));
-      await session.step(97, "And user expands Properties accordion header in context panel", () => expand(page, el("Properties accordion header in context panel")));
-      await session.step(98, "Then \"Properties\" pane in context panel should contain the text \"MW\"", () => shouldContainText(page, el("\"Properties\" pane in context panel"), "MW"));
-      await session.step(99, "And \"Properties\" pane in context panel should not contain the text \"Molecule is possibly malformed\"", () => shouldNotContainText(page, el("\"Properties\" pane in context panel"), "Molecule is possibly malformed"));
-      await session.step(100, "When user expands Structure accordion header in context panel", () => expand(page, el("Structure accordion header in context panel")));
-      await session.step(101, "And user expands \"2D Structure\" accordion header in context panel", () => expand(page, el("\"2D Structure\" accordion header in context panel")));
-      await session.step(102, "Then the canvases of \"2D Structure\" pane in context panel should be painted in at least 1 colors", () => canvasColors(page, el("\"2D Structure\" pane in context panel"), 1));
     });
     run.finish();
   });

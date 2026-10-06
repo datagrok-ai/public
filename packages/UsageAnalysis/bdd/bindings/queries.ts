@@ -21,14 +21,11 @@ const inspected = new WeakMap<Page, InspectedColumn[]>();
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-// package: the columns-inspect loop (the survey's step 11)
-export const clickEveryColumn = When('user clicks every column of every table under {element}', async (page: Page, target: ElementRef) => {
-  const schema = (await locate(page, target)).first();
-  const prefix = String(await schema.getAttribute('name'));
-  const directChildren = (p: string) => page.evaluate((pre) => Array.from(document.querySelectorAll(`[name^="${pre}---"]`))
-    .map((e) => e.getAttribute('name')!).filter((n) => !n.slice(pre.length + 3).includes('---')), p);
-  const tables = [...new Set(await directChildren(prefix))];
-  expect(tables.length, `tables under ${target.phrase}`).toBeGreaterThan(0);
+const directChildren = (page: Page, p: string) => page.evaluate((pre) => Array.from(document.querySelectorAll(`[name^="${pre}---"]`))
+  .map((e) => e.getAttribute('name')!).filter((n) => !n.slice(pre.length + 3).includes('---')), p);
+
+/** Expands each table node in turn, clicks each of its columns and records what the context panel shows. */
+async function clickColumnsOf(page: Page, tables: string[], prefix: string): Promise<void> {
   await page.evaluate(() => {
     const w = window as any;
     w.__bddPanelAccordions = 0;
@@ -46,8 +43,8 @@ export const clickEveryColumn = When('user clicks every column of every table un
     const tri = node.locator('.d4-tree-view-tri').first();
     if (!await tri.evaluate((e) => e.classList.contains('d4-tree-view-tri-expanded')))
       await tri.click();
-    await expect.poll(async () => (await directChildren(table)).length, {message: `the columns listed under ${table}`, timeout: pollMs(15000)}).toBeGreaterThan(0);
-    for (const col of [...new Set(await directChildren(table))]) {
+    await expect.poll(async () => (await directChildren(page, table)).length, {message: `the columns listed under ${table}`, timeout: pollMs(15000)}).toBeGreaterThan(0);
+    for (const col of [...new Set(await directChildren(page, table))]) {
       const colNode = page.locator(`[name="${col}"]`).first();
       await colNode.scrollIntoViewIfNeeded();
       const want = col.slice(table.length + 3);
@@ -71,12 +68,26 @@ export const clickEveryColumn = When('user clicks every column of every table un
   }
   await page.evaluate(() => (window as any).__bddPanelAccordionSub?.unsubscribe());
   inspected.set(page, results);
+}
+
+// package: the columns-inspect loop (the survey's step 11)
+export const clickEveryColumn = When('user clicks every column of every table under {element}', async (page: Page, target: ElementRef) => {
+  const prefix = String(await (await locate(page, target)).first().getAttribute('name'));
+  const tables = [...new Set(await directChildren(page, prefix))];
+  expect(tables.length, `tables under ${target.phrase}`).toBeGreaterThan(0);
+  await clickColumnsOf(page, tables, prefix);
 }, {tier: 'ui', description: 'expands each table of the schema node in turn, clicks each of its columns and records what the context panel then shows'});
+
+// package
+export const clickEveryColumnOfTable = When('user clicks every column of {element}', async (page: Page, target: ElementRef) => {
+  const table = String(await (await locate(page, target)).first().getAttribute('name'));
+  await clickColumnsOf(page, [table], table.slice(0, table.lastIndexOf('---')));
+}, {tier: 'ui', description: 'expands the table node, clicks each of its columns and records what the context panel then shows'});
 
 // package
 export const everyColumnShown = Then('every clicked column should have been shown in the context panel with {string}', async (page: Page, list: string) => {
   const results = inspected.get(page) ?? [];
-  expect(results.length, 'columns clicked by "user clicks every column of every table under …"').toBeGreaterThan(0);
+  expect(results.length, 'columns clicked by "user clicks every column of …"').toBeGreaterThan(0);
   const want = list.split(',').map((s) => s.trim());
   const bad = results.filter((r) => norm(r.shown) !== norm(r.column) || want.some((p) => !r.panes.includes(p)))
     .map((r) => `${r.table}.${r.column}: panel shows "${r.shown}" with ${r.panes.join(', ') || 'no panes'}`);

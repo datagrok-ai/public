@@ -74,8 +74,17 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
   A pane builds when expanded, and the expanded state persists in `localStorage` (`Accordion:<key>`);
   the shell reset clears it, but within a journey a scenario that expands a server-backed pane makes
   it build in the later scenarios too.
-- **Anything with nothing UI-specific**: a function called with arguments and its result checked,
-  a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
+- **Anything an API test can check** (lead's ruling, 2026-10-06): a function called and its result
+  checked, a server outcome no UI shows, a permission or sharing matrix, the cases of a parser or a
+  search syntax, the rows a query returns, the numbers an analysis computes, a model's predictions, a
+  file's content, what a layout or a project stores. That is an `ApiTests` test
+  (`public/packages/ApiTests/src/`), the package's own test (`src/tests/`, `grok test`) or a datlas
+  test (`core/server/datlas/test/`). A feature claims the UI part once — the dialog's OK made it, the
+  view shows it — and a server read-back stands as the proof of a gesture, never as the subject.
+  Before writing, or keeping, a scenario whose Thens are mostly "on the server", or an Outline whose
+  Examples permute one rule, find the API test; where there is none, write it there and keep the
+  feature to the gesture. A UI scenario an API test already covers is deleted, not kept "for safety";
+  the moves still waiting for their test are listed in `API_TESTS_TO_WRITE.md`.
 - **What a grid cell renderer draws** (an oligonucleotide duplex, a sparkline, a molecule picture).
   A renderer runs for every visible cell on every paint and also outside the grid (forms, tooltips,
   exports), so it stays fast and keeps nothing for a test; a status provider fed from it costs every
@@ -127,6 +136,28 @@ prove it is gone. That covers:
 
 A feature that cannot undo what it does (a user cannot be deleted) works on a fixed fixture it makes
 once and reuses, never one per run. A change nothing can undo does not go in a feature.
+
+## A feature is fast — hard rule
+
+The whole suite runs on every change, so every second a feature waits is paid on every run (lead's
+ruling, 2026-10-06). A feature spends its time on the gestures it tests:
+
+- **Nothing waits a fixed time.** A step waits for the signal that the work is done; a negative
+  reads once the source is quiet. A wait that has no signal to end on is a missing signal in the core.
+- **Round trips are the expensive steps** — a reload, a sign-in as another account, a project saved,
+  closed and reopened, a server computation (a query over a remote database, a model trained, a
+  script run): a few seconds each. One is used when it is the subject, never as a proof another
+  claim gives (a server read-back proves a save; a reload does not need to).
+- **Fixtures go in through the API** (`… is on the server`, `a … named … is on the server`), and are
+  put back the same way at feature end; the UI walk that makes them is another feature's subject.
+- **Scenarios that share their setup are a `@journey`**: a Background that opens three tables runs
+  once, not once per scenario.
+- **The smallest table that shows the behaviour**: cars (30 rows), iris (150), demog-1000, not
+  demog (5850) or spgi-full, unless the size is the point.
+- **`@serial` only when features collide on a shared fixture** — it takes the feature out of the
+  parallel lanes.
+- **Read the run's JSON report**: a scenario over 10 s or a feature over 30 s is looked at, and its
+  slowest step explained (a missing signal, a round trip, a large table, a server computation).
 
 ## Invariants — what must not regress
 
@@ -414,6 +445,19 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   gallery reloads after an order pick the counter reads "..." and the first item is empty, which is
   not "another item". A user's personal group (friendly name = login) is not listed by the Groups
   view; `user.tag()` throws on a User, so no feature can tag one.
+- A JS `tags` bag (`TableInfo.tags`, `ColumnInfo.tags`, `df.tags`) is a map proxy whose own methods
+  shadow tags of the same name: `tags['values']` is the `values()` method, not the Database meta
+  Values — read a tag with `tags.get(name)`. A database table's `TableInfo.name` is its friendly name
+  ("Categories"); a table's and a column's tags mix Datagrok's annotations with what the platform
+  reads off the database (row counts, min/max), so "nothing stored" is claimed on the annotations only.
+  `grok.data.db.getInfo(conn)` lists every database the server holds as a catalog: pick the one named
+  by `conn.parameters.db`.
+- A space made through the API is not revealed in the Browse tree as one made through Create Space
+  is: expand Spaces after the fixture, and name a root space by its path (`Spaces---BDD-X`) — My stuff >
+  Recent lists a space of the same name from an earlier run. A renamed node keeps its old `name`
+  attribute until the tree is rebuilt, so a claim on a renamed node goes by its label.
+- The table view's Search box applies `NumericMatcher` / `StringMatcher` / `DateTimeMatcher` to each
+  column of their type; its syntax is ddt's `matcher_test.dart` claim, not a feature's.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
   dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
   its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
@@ -471,6 +515,10 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   setting toggled through the UI (pin it with a Given that restores it at feature end).
 - **Package bindings take `expect` and `pollMs` from `@datagrok-libraries/bdd/runtime`**, never from
   `@playwright/test`: the `@known-failure` narrowing and `BDD_EXPECT_TIMEOUT` go through them.
+- **A reload as the proof of a save** rebuilds whatever the page kept, and with it the bug a person meets
+  without reloading: the Database meta pane deleted nothing cleared after a save in the same pane
+  (its baseline was the values it opened with) and every reload-based check passed. Prove a save on
+  the server and keep using the same pane.
 - **Titles and descriptions that promise more than the Thens claim** ("…and dropping the tree
   removes it", "builds a ball-and-stick view" checked as "shows no error") — trim the text or add
   the claim.

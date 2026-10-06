@@ -10,7 +10,8 @@ Feature: A group's members
   refills while it reloads, and an absence read off it would prove nothing.
 
   Every user has a personal security group, named by the login; the Groups view does not list those,
-  so the user's own group is claimed on the server and its login found nowhere in the gallery.
+  so the user's login is found nowhere in the gallery. That the personal group is made is tested in
+  datlas users_groups/users_test.dart 'Save user'.
 
   Background:
     Given user is logged in
@@ -80,8 +81,7 @@ Feature: A group's members
     Then no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A user's personal group is on the server but not in the Groups view (Groups-18)
-    Then the user "bddmanaged" should have a personal group on the server
+  Scenario: A user's personal group is not in the Groups view (Groups-18)
     When user types "bddmanaged" into gallery search
     Then gallery counter should have text "0"
     When user clears gallery search

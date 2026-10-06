@@ -10,10 +10,13 @@ Feature: Creating a space
   and neither projects.list() nor the parent's `children` holds it, so "how many are on the
   server" cannot be asked about a child.
 
+  A second child of the same name and a name with spaces are server rules, tested in datlas
+  spaces/spaces_test.dart ('forbid duplicate subspace names', 'create space with space in name and verify files').
+
   Background:
     Given user is logged in
     And the browse panel is open
-    And no space named "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child, BDD Name With Spaces" is on the server
+    And no space named "BDD-Root, BDD-Dup, BDD-Parent, BDD-Child" is on the server
 
   Scenario: A root space is created from the Spaces node
     When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
@@ -22,10 +25,10 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And 1 space named "BDD-Root" should be on the server
-    And BDD-Root tree node inside browse tree should be visible
+    And Spaces---BDD-Root tree node inside browse tree should be visible
 
   Scenario: The space offers its actions
-    When user opens the context menu of BDD-Root tree node inside browse tree
+    When user opens the context menu of Spaces---BDD-Root tree node inside browse tree
     Then the open menu should list "Share..."
     And the open menu should list "Rename..."
     And the open menu should list "Delete Space"
@@ -65,25 +68,8 @@ Feature: Creating a space
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Parent" should be on the server
     And the "Create Space" dialog should close
-    When user picks "Create Child Space..." from the context menu of BDD-Parent tree node inside browse tree
+    When user picks "Create Child Space..." from the context menu of Spaces---BDD-Parent tree node inside browse tree
     And user enters "BDD-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And BDD-Child tree node inside browse tree should be visible
-
-  Scenario: A second child of the same name is refused
-    When user picks "Create Child Space..." from the context menu of BDD-Parent tree node inside browse tree
-    And user enters "BDD-Child" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then an error balloon containing "already exists" should have been shown
-    And Create Space dialog should be visible
-    When user clicks on CANCEL button in Create Space dialog
-    Then the "Create Space" dialog should close
-
-  Scenario: A name with spaces is kept as typed
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    And user enters "BDD Name With Spaces" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then 1 space named "BDD Name With Spaces" should be on the server
-    And the "Create Space" dialog should close
-    And BDD Name With Spaces tree node inside browse tree should be visible

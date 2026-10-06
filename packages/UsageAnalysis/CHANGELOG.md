@@ -2,7 +2,8 @@
 
 ## v.next
 
-* Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager, the toolbox Search (GROK-20229 cases as known failures), molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` listing the steps and signals still needed (login fields, tab order, Table Manager rows, file share folders and cache, profile picture and password, and the Helm, EDA, BiostructureViewer and Notebooks cases)
+* Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open
+* Tests: BDD features keep to what only the browser shows and stay fast — scenarios an API or package test covers removed (spaces, roles, users, connections, scripts, sticky meta, Biostructure, sequence translator), spaces made through the API, Database meta claimed on the server instead of after five reloads and swept when a feature starts, the queries gated on PostgresTest
 * GROK-21108: Tests: The favorites features follow Add To Favorites becoming a submenu ("Only for me" and every group the account may edit; picking a target again takes the entity out, as Remove from favorites did) and files getting the star and the menu item
 * Tests: Translated the Charts, BiostructureViewer and SequenceTranslator TestTrack sections into BDD (`bdd/features/viewers/{sunburst,radar,timelines,tree,sankey-chord,charts-gallery}`, `bdd/features/biostructure-viewer`, `bdd/features/sequence-translator`)
 * GROK-21098: Toolbox: Fixed the app failing to load when a filter-options query was cancelled during startup

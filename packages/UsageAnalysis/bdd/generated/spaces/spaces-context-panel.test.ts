@@ -17,9 +17,8 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, doubleClickOn, enterInto, followingShouldBe, shouldBe, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {browsePanelOpen, contextPanelOpen, contextPanelShows, dialogCloses, noSpaceOnServer, spacesOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {pickFromContextMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {clickOn, doubleClickOn, followingShouldBe, isExpanded, shouldBe, shouldNotContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {browsePanelOpen, childSpaceOnServer, contextPanelOpen, contextPanelShows, spaceOnServer, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("What the context panel says about a space", () => {
@@ -27,50 +26,40 @@ test.describe("What the context panel says about a space", () => {
   test("What the context panel says about a space", {tag: ["@journey", "@spaces", "@realizes:views.space"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 4, page);
-    await session.step(14, "Given user is logged in", () => loggedIn(page));
-    await session.step(15, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(16, "And the context panel is open", () => contextPanelOpen(page));
-    await session.step(17, "And no space named \"BDD-CP-Root, BDD-CP-One, BDD-CP-Two\" is on the server", () => noSpaceOnServer(page, "BDD-CP-Root, BDD-CP-One, BDD-CP-Two"));
-    await run.scenario("Two children to switch between", async () => {
-      await session.step(20, "When user picks \"Create Space...\" from the context menu of Spaces tree node inside browse tree", () => pickFromContextMenu(page, "Create Space...", el("Spaces tree node inside browse tree")));
-      await session.step(21, "And user enters \"BDD-CP-Root\" into Name input in Create Space dialog", () => enterInto(page, "BDD-CP-Root", el("Name input in Create Space dialog")));
-      await session.step(22, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(23, "Then 1 space named \"BDD-CP-Root\" should be on the server", () => spacesOnServer(page, 1, "BDD-CP-Root"));
-      await session.step(24, "And the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
-      await session.step(25, "When user picks \"Create Child Space...\" from the context menu of BDD-CP-Root tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-CP-Root tree node inside browse tree")));
-      await session.step(26, "And user enters \"BDD-CP-One\" into Name input in Create Space dialog", () => enterInto(page, "BDD-CP-One", el("Name input in Create Space dialog")));
-      await session.step(27, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(28, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
-      await session.step(29, "When user picks \"Create Child Space...\" from the context menu of BDD-CP-Root tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-CP-Root tree node inside browse tree")));
-      await session.step(30, "And user enters \"BDD-CP-Two\" into Name input in Create Space dialog", () => enterInto(page, "BDD-CP-Two", el("Name input in Create Space dialog")));
-      await session.step(31, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
-      await session.step(32, "Then the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
-      await session.step(33, "When user double-clicks on BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-CP-Root tree node inside browse tree")));
-      await session.step(34, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
-      await session.step(35, "And BDD-CP-One link in gallery should be visible", () => shouldBe(page, el("BDD-CP-One link in gallery"), "visible"));
-      await session.step(36, "And BDD-CP-Two link in gallery should be visible", () => shouldBe(page, el("BDD-CP-Two link in gallery"), "visible"));
+    await session.step(15, "Given user is logged in", () => loggedIn(page));
+    await session.step(16, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(17, "And the context panel is open", () => contextPanelOpen(page));
+    await session.step(18, "And a space named \"BDD-CP-Root\" is on the server", () => spaceOnServer(page, "BDD-CP-Root"));
+    await session.step(19, "And a space named \"BDD-CP-One\" under \"BDD-CP-Root\" is on the server", () => childSpaceOnServer(page, "BDD-CP-One", "BDD-CP-Root"));
+    await session.step(20, "And a space named \"BDD-CP-Two\" under \"BDD-CP-Root\" is on the server", () => childSpaceOnServer(page, "BDD-CP-Two", "BDD-CP-Root"));
+    await session.step(21, "And Spaces tree node inside browse tree is expanded", () => isExpanded(page, el("Spaces tree node inside browse tree")));
+    await run.scenario("The root's view lists its two children", async () => {
+      await session.step(24, "When user double-clicks on Spaces---BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("Spaces---BDD-CP-Root tree node inside browse tree")));
+      await session.step(25, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
+      await session.step(26, "And BDD-CP-One link in gallery should be visible", () => shouldBe(page, el("BDD-CP-One link in gallery"), "visible"));
+      await session.step(27, "And BDD-CP-Two link in gallery should be visible", () => shouldBe(page, el("BDD-CP-Two link in gallery"), "visible"));
     });
     await run.scenario("Selecting a space shows its details", async () => {
-      await session.step(39, "When user clicks on BDD-CP-Root tree node inside browse tree", () => clickOn(page, el("BDD-CP-Root tree node inside browse tree")));
-      await session.step(40, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-      await session.step(41, "And the context panel should show \"BDD-CP-Root\"", () => contextPanelShows(page, "BDD-CP-Root"));
-      await session.step(42, "And \"Details\" accordion header in context panel should be visible", () => shouldBe(page, el("\"Details\" accordion header in context panel"), "visible"));
+      await session.step(30, "When user clicks on Spaces---BDD-CP-Root tree node inside browse tree", () => clickOn(page, el("Spaces---BDD-CP-Root tree node inside browse tree")));
+      await session.step(31, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+      await session.step(32, "And the context panel should show \"BDD-CP-Root\"", () => contextPanelShows(page, "BDD-CP-Root"));
+      await session.step(33, "And \"Details\" accordion header in context panel should be visible", () => shouldBe(page, el("\"Details\" accordion header in context panel"), "visible"));
     });
     await run.scenario("The panel carries the sections a space has", async () => {
-      await session.step(49, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]), [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]);
-      await session.step(54, "And \"Activity\" accordion header in context panel should be present", () => shouldBe(page, el("\"Activity\" accordion header in context panel"), "present"));
+      await session.step(40, "Then the following elements should be visible:", () => followingShouldBe(page, "visible", [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]), [["\"Details\" accordion header in context panel"],["\"Content\" accordion header in context panel"],["\"Sharing\" accordion header in context panel"],["\"Chats\" accordion header in context panel"]]);
+      await session.step(45, "And \"Activity\" accordion header in context panel should be present", () => shouldBe(page, el("\"Activity\" accordion header in context panel"), "present"));
     });
     await run.scenario("Clicking one child, then the other, switches the panel", async () => {
-      await session.step(57, "When user double-clicks on BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-CP-Root tree node inside browse tree")));
-      await session.step(58, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
-      await session.step(59, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
-      await session.step(60, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
-      await session.step(61, "When user clicks on BDD-CP-Two link in gallery", () => clickOn(page, el("BDD-CP-Two link in gallery")));
-      await session.step(62, "Then the context panel should show \"BDD-CP-Two\"", () => contextPanelShows(page, "BDD-CP-Two"));
-      await session.step(63, "And context panel should not contain text \"BDD-CP-One\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-One"));
-      await session.step(64, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
-      await session.step(65, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
-      await session.step(66, "And context panel should not contain text \"BDD-CP-Two\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-Two"));
+      await session.step(48, "When user double-clicks on Spaces---BDD-CP-Root tree node inside browse tree", () => doubleClickOn(page, el("Spaces---BDD-CP-Root tree node inside browse tree")));
+      await session.step(49, "Then the \"BDD-CP-Root\" view should be current", () => viewIsCurrent(page, "BDD-CP-Root"));
+      await session.step(50, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
+      await session.step(51, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
+      await session.step(52, "When user clicks on BDD-CP-Two link in gallery", () => clickOn(page, el("BDD-CP-Two link in gallery")));
+      await session.step(53, "Then the context panel should show \"BDD-CP-Two\"", () => contextPanelShows(page, "BDD-CP-Two"));
+      await session.step(54, "And context panel should not contain text \"BDD-CP-One\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-One"));
+      await session.step(55, "When user clicks on BDD-CP-One link in gallery", () => clickOn(page, el("BDD-CP-One link in gallery")));
+      await session.step(56, "Then the context panel should show \"BDD-CP-One\"", () => contextPanelShows(page, "BDD-CP-One"));
+      await session.step(57, "And context panel should not contain text \"BDD-CP-Two\"", () => shouldNotContainText(page, el("context panel"), "BDD-CP-Two"));
     });
     run.finish();
   });

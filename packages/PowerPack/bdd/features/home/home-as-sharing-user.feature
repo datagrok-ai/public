@@ -27,6 +27,8 @@ Feature: The Home page of a user who is neither a developer nor an administrator
 
   Background:
     Given user is logged in
+    # the last scenario claims the running account's Home page, which shows what its stored settings let it
+    And every widget of the Home page is stored as shown, now and when the feature ends
 
   Scenario: A project shared with the sharing user, with notifications on
     Given the sharing user has no notifications, now and when the feature ends

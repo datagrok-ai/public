@@ -17,7 +17,7 @@ import {openWorkbench} from '../bindings/steps.js';
 import {clickOn, fillIn, followingShouldBe, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
-test.describe("Forms, tables and outlines", () => {
+test.describe("Forms and tables", () => {
   const session = feature(test, "features/forms-and-tables.feature", import.meta.url);
   test("Filling the form from a table", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -31,16 +31,7 @@ test.describe("Forms, tables and outlines", () => {
     await session.step(20, "And label of name input in alignment panel should have text \"Name\"", () => shouldHaveText(page, el("label of name input in alignment panel"), "Name"));
     await session.step(21, "And the following elements should be visible:", () => followingShouldBe(page, "visible", [["toolbar"],["alignment panel"],["results"]]), [["toolbar"],["alignment panel"],["results"]]);
   });
-  test("Every method reports itself [method=kalign]", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(7, "Given user opens the MSA workbench", () => openWorkbench(page));
-    enter(page, "MSA workbench");
-    await session.step(27, "When user selects \"kalign\" in method input in alignment panel", () => selectIn(page, "kalign", el("method input in alignment panel")));
-    await session.step(28, "And user clicks on run msa button in alignment panel", () => clickOn(page, el("run msa button in alignment panel")));
-    await session.step(29, "And user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));
-    await session.step(30, "Then status line should contain text \"with kalign\"", () => shouldContainText(page, el("status line"), "with kalign"));
-  });
-  test("Every method reports itself [method=muscle]", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
+  test("The chosen method is the one that runs", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(7, "Given user opens the MSA workbench", () => openWorkbench(page));
     enter(page, "MSA workbench");
@@ -48,14 +39,5 @@ test.describe("Forms, tables and outlines", () => {
     await session.step(28, "And user clicks on run msa button in alignment panel", () => clickOn(page, el("run msa button in alignment panel")));
     await session.step(29, "And user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));
     await session.step(30, "Then status line should contain text \"with muscle\"", () => shouldContainText(page, el("status line"), "with muscle"));
-  });
-  test("Every method reports itself [method=clustal]", {tag: ["@demo", "@realizes:u2.form"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(7, "Given user opens the MSA workbench", () => openWorkbench(page));
-    enter(page, "MSA workbench");
-    await session.step(27, "When user selects \"clustal\" in method input in alignment panel", () => selectIn(page, "clustal", el("method input in alignment panel")));
-    await session.step(28, "And user clicks on run msa button in alignment panel", () => clickOn(page, el("run msa button in alignment panel")));
-    await session.step(29, "And user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));
-    await session.step(30, "Then status line should contain text \"with clustal\"", () => shouldContainText(page, el("status line"), "with clustal"));
   });
 });

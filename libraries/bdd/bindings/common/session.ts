@@ -88,9 +88,14 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
   // dialog, a docked panel, a sticky option) reaches the next one; BDD_FRESH_PAGE starts each
   // feature from a reload, at the cost of a shell load per feature
   guide.silent(page);
-  const inShell = process.env.BDD_FRESH_PAGE !== '1' &&
+  const fresh = process.env.BDD_FRESH_PAGE === '1';
+  const inShell = !fresh &&
     await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
-  if (!inShell) {
+  const first = startedAs.get(page.context());
+  // a scenario that failed on the login page leaves the page signed out, where "/" never shows the shell
+  const signedOut = !inShell && first != null &&
+    await page.locator('input[placeholder="Login or Email"]').filter({visible: true}).count().catch(() => 0) > 0;
+  if (!inShell && !signedOut) {
     // a dev stand's pub serve can take minutes to hand out the bundle while it recompiles or is
     // starved: that is a delay once per page, not a failure of the feature
     const start = Date.now();
@@ -100,13 +105,13 @@ export const loggedIn = Given('user is logged in', async (page: Page) => {
     if (seconds >= 30)
       console.warn(`bdd: the shell took ${seconds} s to load (a dev stand serving a bundle it is recompiling?)`);
   }
-  const now = await page.evaluate(() => ({token: localStorage.getItem('auth') ?? String(grok.dapi.token ?? ''),
+  const now = signedOut ? {token: '', login: ''} : await page.evaluate(() => ({token: localStorage.getItem('auth') ?? String(grok.dapi.token ?? ''),
     login: String(grok.shell.user?.login ?? '')}));
-  const first = startedAs.get(page.context());
   if (!first)
     startedAs.set(page.context(), now);
   if (first && first.login !== now.login) {
-    console.warn(`bdd: the page was left signed in as ${now.login}; signing ${first.login} back in`);
+    if (!signedOut)
+      console.warn(`bdd: the page was left signed in as ${now.login}; signing ${first.login} back in`);
     await signInWithSession(page, first.token, first.login, guide.shellSimpleMode());
   }
   else

@@ -1,4 +1,4 @@
-@journey @serial @eda @realizes:sharing.share-dialog
+@journey @eda @realizes:sharing.share-dialog
 Feature: Sharing a predictive model
   A model its owner trains and saves, shared with a second account and taken back. Translated from
   playwright-public/Sharing/share-model-permissions.md and the package's

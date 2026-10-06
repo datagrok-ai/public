@@ -19,18 +19,15 @@ Feature: A space in favorites
     And no space named "BDD-Fav" is on the server
 
   Scenario: A space is added to favorites
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    And user enters "BDD-Fav" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then 1 space named "BDD-Fav" should be on the server
-    And the "Create Space" dialog should close
+    Given a space named "BDD-Fav" is on the server
+    And Spaces tree node inside browse tree is expanded
     And "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
-    When user picks "Add To Favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of Spaces---BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be present
 
   Scenario: A space is removed from favorites
-    When user picks "Add To Favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of Spaces---BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     And "My stuff > Favorites" tree node inside browse tree should be present
     And 1 space named "BDD-Fav" should be on the server
-    And BDD-Fav tree node inside browse tree should be visible
+    And Spaces---BDD-Fav tree node inside browse tree should be visible

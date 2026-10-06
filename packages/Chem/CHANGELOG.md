@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added the `save as csv` test category (MOLBLOCK columns exported as SMILES read back as molecules); the BDD features no longer repeat the notation permutations and renderer checks the package tests cover
 * GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
 * Sketcher: Added Crux, the Crux Sketch molecule sketcher on the Crux chemistry engine (WebAssembly), to the choices of the Sketcher setting (crux-sketch cc02f26, engine c1aadacd3b91; vendored in `vendor/crux-sketch/`, loaded at its first use); in the substructure filter it opens in query mode
 * Sketcher: The 400px minimum width given back to a sketcher dialog opened from a popup no longer applies to a sketcher with no minimum size
