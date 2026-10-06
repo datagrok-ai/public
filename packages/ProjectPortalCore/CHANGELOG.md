@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Fix: **My feed** failed with `Cannot parse filter: "id in ()"` when every program the user follows is gone or not visible to them; the provenance walk and the run selections could fail the same way. Every `in (...)` read of a list of ids now goes through `queryIn` (`src/rows.ts`), which asks nothing and returns no rows for an empty list
+
 - A plain portfolio viewer sees its programs. Before, a program row was visible only to its author (the admin who ran the sync), because the server refuses a grant on a domain row (GROK-21041), so a viewer's board was empty. Now each program row is linked into its own workspace folder: the server lets whoever may view a space view the domain rows linked into it, View only. The folder already carries the portfolio's groups and the program's roles, so the row reaches exactly them; another portfolio's users still see nothing, and nobody gains a write. The workspace builder links a program when it makes or reuses its folder; `linkProgramRows(portfolio, dryRun)` links a portfolio's existing folders. A program without a folder stays private to its author. Proved with a throwaway viewer. One of the three known test failures now passes. Pure plan in `src/model/program-rows.ts`
 
 - Tidy-ups from the branch scan: a code comment and two test fixtures use generic example names (`Program A`, `EX-BIOC`)

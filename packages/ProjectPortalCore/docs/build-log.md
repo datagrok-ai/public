@@ -466,3 +466,13 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - A plain user also needs the package released (`grok publish --release`): a debug publish is visible to its
   publisher only (platform finding 28), and the app answers "Application not found".
 
+## Empty lists in filters
+
+*Fix. Schema: none.*
+
+- `queryIn` covers the reads that built `id in (...)` from a list (feed, provenance, evidence, run selections).
+  Reads that build the list by hand and already skip an empty one (workspace flows, new-data, evidence tables,
+  profile, portfolio table batches) were left as they are.
+- My feed now says nothing for a follow whose program is gone. Such follows are not turned off; a clean-up of
+  follows on deleted programs is not built.
+

@@ -19,10 +19,9 @@ import {snapshotEvidence} from './model/snapshots';
 import {documentsOf, toRef} from './documents';
 import {documentEvidence} from './model/documents';
 import {newestFirstBy} from './model/time';
-import {filterValue, ROW_LIMIT} from './rows';
+import {filterValue, queryIn, ROW_LIMIT} from './rows';
 import {userNames} from './users';
 
-const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 
 /** The run selected now for each criterion of the program, with the names the evidence freezes. */
 export async function selectedRunsOf(programId: string): Promise<SelectedRun[]> {
@@ -31,11 +30,10 @@ export async function selectedRunsOf(programId: string): Promise<SelectedRun[]> 
   if (!picks.length)
     return [];
   const [statuses, runs] = await Promise.all([
-    portalDb.criterionStatuses.query({filter: `id in (${inList([...new Set(picks.map((p) => p.criterion_status_id))])})`, limit: ROW_LIMIT}),
-    portalDb.modelRuns.query({filter: `id in (${inList([...new Set(picks.map((p) => p.model_run_id))])})`, limit: ROW_LIMIT}),
+    queryIn(portalDb.criterionStatuses, 'id', picks.map((p) => p.criterion_status_id)),
+    queryIn(portalDb.modelRuns, 'id', picks.map((p) => p.model_run_id)),
   ]);
-  const criteria = await portalDb.gateCriterions.query(
-    {filter: `id in (${inList([...new Set(statuses.map((s) => s.gate_criterion_id))])})`});
+  const criteria = await queryIn(portalDb.gateCriterions, 'id', statuses.map((s) => s.gate_criterion_id));
   const users = await userNames(picks.map((x) => x.selected_by));
   const out: SelectedRun[] = [];
   for (const p of picks) {
@@ -105,14 +103,14 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
   }
   const criteria = of('criterion');
   if (criteria.length) {
-    const found = await portalDb.gateCriterions.query({filter: `id in (${inList([...new Set(criteria.map((r) => r.target))])})`, limit: ROW_LIMIT})
+    const found = await queryIn(portalDb.gateCriterions, 'id', criteria.map((r) => r.target))
       .catch(() => null);
     if (found)
       for (const r of criteria) out.set(r.id, found.find((x) => x.id === r.target)?.name ?? null);
   }
   const snapshots = of('snapshot');
   if (snapshots.length) {
-    const found = await portalDb.programSnapshots.query({filter: `id in (${inList([...new Set(snapshots.map((r) => r.target))])})`, limit: ROW_LIMIT})
+    const found = await queryIn(portalDb.programSnapshots, 'id', snapshots.map((r) => r.target))
       .catch(() => null);
     if (found)
       for (const r of snapshots) out.set(r.id, found.find((x) => x.id === r.target)?.label ?? null);
@@ -120,7 +118,7 @@ export async function currentNames(rows: EvidenceRow[]): Promise<Map<string, str
   // a document is looked up by its record: its title now, or gone
   const docs = of('file').filter((r) => (r.context as any)?.document);
   if (docs.length) {
-    const found = await portalDb.documents.query({filter: `id in (${inList([...new Set(docs.map((r) => String((r.context as any).document)))])})`, limit: ROW_LIMIT})
+    const found = await queryIn(portalDb.documents, 'id', docs.map((r) => String((r.context as any).document)))
       .catch(() => null);
     if (found)
       for (const r of docs) out.set(r.id, found.find((x) => x.id === (r.context as any).document)?.title ?? null);

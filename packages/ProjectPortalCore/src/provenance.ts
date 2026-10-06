@@ -14,9 +14,8 @@ import {
   Provenance, provenanceGraph, ProvenanceRecords, ProvenanceStart, PROVENANCE_STARTS, startKey, traverse,
 } from './model/provenance';
 import {newestFirstBy} from './model/time';
-import {filterValue, ROW_LIMIT} from './rows';
+import {filterValue, inFilter, queryIn, ROW_LIMIT} from './rows';
 
-const inList = (ids: string[]) => ids.map(filterValue).join(', ');
 const iso = (d: any) => d ? dayjs(d).toISOString() : '';
 
 /** Runs whose saved calls are read for their tables; more are shown without them. */
@@ -72,8 +71,8 @@ export async function provenanceRecords(programIds: string[], compound?: string)
     snapshots: [], criteria: [], datasets: [], compounds: []};
   if (!programIds.length)
     return r;
-  const by = `program_id in (${inList(programIds)})`;
-  const programs = await portalDb.programs.query({filter: `id in (${inList(programIds)})`, limit: ROW_LIMIT});
+  const by = inFilter('program_id', programIds)!;
+  const programs = await queryIn(portalDb.programs, 'id', programIds);
   const [transitions, evidence, runs, artifacts, statuses, documents, snapshots] = await Promise.all([
     portalDb.stageTransitions.query({filter: by, limit: ROW_LIMIT}), portalDb.evidences.query({filter: by, limit: ROW_LIMIT}),
     portalDb.modelRuns.query({filter: by, limit: ROW_LIMIT}), portalDb.criterionArtifacts.query({filter: by, limit: ROW_LIMIT}),
@@ -83,10 +82,10 @@ export async function provenanceRecords(programIds: string[], compound?: string)
   const predictions = await portalDb.predictions.query({filter: by, limit: ROW_LIMIT}).catch(() => []);
   const stages = (await Promise.all([...new Set(programs.map((p) => p.stage_model_id))].map((m) => stagesOf(m)))).flat();
   const stageCode = (id?: string | null) => stages.find((s) => s.id === id)?.code ?? null;
-  const criteria = stages.length ? await portalDb.gateCriterions.query({filter: `stage_id in (${inList(stages.map((s) => s.id))})`, limit: ROW_LIMIT}) : [];
+  const criteria = await queryIn(portalDb.gateCriterions, 'stage_id', stages.map((s) => s.id));
   const modelIds = [...new Set(runs.map((x) => x.model_id).filter((x): x is string => !!x))];
-  const models = modelIds.length ? await portalDb.models.query({filter: `id in (${inList(modelIds)})`, limit: ROW_LIMIT}) : [];
-  const portfolios = await portalDb.portfolios.query({filter: `id in (${inList([...new Set(programs.map((p) => p.portfolio_id))])})`, limit: ROW_LIMIT});
+  const models = await queryIn(portalDb.models, 'id', modelIds);
+  const portfolios = await queryIn(portalDb.portfolios, 'id', programs.map((p) => p.portfolio_id));
 
   r.programs = programs.map((p) => ({id: p.id, code: p.code, name: p.name}));
   r.datasets = programs.flatMap((p) => {

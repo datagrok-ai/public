@@ -41,6 +41,7 @@ import './tests/dmta-tests';
 import './tests/panel-tests';
 import './tests/write-grant-tests';
 import './tests/program-row-tests';
+import './tests/empty-filter-tests';
 
 export let _package = new DG.Package();
 export { tests };
