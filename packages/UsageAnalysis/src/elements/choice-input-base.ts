@@ -15,7 +15,7 @@ export abstract class ChoiceInputBase {
 
     static async queryValues(funcName: string, colName: string): Promise<string[]> {
         const df: DG.DataFrame | null = await grok.functions.call(funcName);
-        return df?.getCol(colName).toList() ?? [];
+        return df?.col(colName)?.categories ?? [];
     }
 
     getSelectedItems(): string[] {

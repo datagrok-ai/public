@@ -22,7 +22,7 @@ export class ChoiceInputPackagesCategories extends ChoiceInputBase {
         });
         field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
-        const categories = await ChoiceInputBase.queryValues('UsageAnalysis:PackagesCategories', 'category');
+        const categories: string[] = await ChoiceInputBase.queryValues('UsageAnalysis:PackagesCategories', 'category');
 
         choices.setChoices(() => categories.map((p: string) => {
             return {value: p, label: p};

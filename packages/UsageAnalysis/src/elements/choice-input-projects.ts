@@ -22,7 +22,7 @@ export class ChoiceInputProjects extends ChoiceInputBase {
         });
         field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
-        const projects = await ChoiceInputBase.queryValues('UsageAnalysis:ProjectsList', 'project_name');
+        const projects: string[] = await ChoiceInputBase.queryValues('UsageAnalysis:ProjectsList', 'project_name');
 
         choices.setChoices(() => projects.map((p: string) => {
             return {value: p, label: p};

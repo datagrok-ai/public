@@ -22,7 +22,7 @@ export class ChoiceInputTags extends ChoiceInputBase {
         });
         field.input.addEventListener('change', (_) =>
             (document.querySelector('.ua-apply-button') as HTMLButtonElement).disabled = false);
-        const tags = await ChoiceInputBase.queryValues('UsageAnalysis:EntitiesTags', 'tag');
+        const tags: string[] = await ChoiceInputBase.queryValues('UsageAnalysis:EntitiesTags', 'tag');
 
         choices.setChoices(() => tags.map((p: string) => {
             return {value: p, label: p};
