@@ -472,3 +472,20 @@ export const exampleDesignSets = Given('the example design sets are loaded', asy
   silent(page);
   await page.evaluate(async () => grok.functions.call('ProjectPortalCore:loadExampleDesignSets', {}));
 }, {tier: 'api', description: 'the synthetic KIN-A design sets and the K1 hit list on EXS-KIN1; idempotent'});
+
+/** Forgets the programs the user opened last. */
+async function clearRecents(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    if (grok.userSettings.getValue('ProjectPortalCore', 'recent') != null)
+      grok.userSettings.delete('ProjectPortalCore', 'recent');
+    await grok.userSettings.flush();
+  });
+}
+
+export const recentsCleared = Given('the user\'s recent programs are cleared', async (page: Page) => {
+  silent(page);
+  await clearRecents(page);
+  atFeatureEnd(page, async () => {
+    await clearRecents(page);
+  });
+}, {tier: 'api', description: 'clears the programs the user opened last from their settings, now and at the end of the feature'});

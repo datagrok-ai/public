@@ -12,6 +12,13 @@ const CSS = `
 .pp-portfolio:hover, .pp-card:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
 .pp-portfolio.pp-selected, .pp-card.pp-selected { border-color: var(--u2-accent, #2083d5); box-shadow: 0 0 0 1px var(--u2-accent, #2083d5); }
 .pp-portfolio-name { font-weight: 600; }
+.pp-search-box { gap: 4px; margin-bottom: 6px; }
+.pp-search { flex: 0 0 auto; width: 100%; box-sizing: border-box; }
+.pp-search-results, .pp-recent { gap: 3px; }
+.pp-search-hit { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 1px; }
+.pp-search-hit:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
+.pp-search-hit .pp-card-title { font-size: 12px; }
+.pp-search-hit .pp-muted { font-size: 11px; }
 .pp-board-header { gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
 .pp-board-header .pp-title { white-space: nowrap; }
 .pp-columns { gap: 8px; overflow-x: auto; flex: 1 1 auto; align-items: flex-start; padding-bottom: 8px; }

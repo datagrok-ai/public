@@ -476,3 +476,16 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - My feed now says nothing for a follow whose program is gone. Such follows are not turned off; a clean-up of
   follows on deleted programs is not built.
 
+## Finding a program and recents
+
+*Landing page. Schema: none.*
+
+- Searching is in the browser over every visible program, read once when the app opens (one query). Fine for
+  hundreds of programs; thousands would want a server-side search.
+- Aliases are every short `details` value, not a declared list. A portfolio cannot yet say "search only these
+  keys" or label them; one optional `search` key in the portfolio file would do it.
+- Recents are per user, not per portfolio, capped at 8, and recorded when a program page opens (not on a redraw).
+  They are not cleared when a user loses access; they are filtered out when shown.
+- Recommended actions on the landing page (point 2's second half) are not built: the persona's quick actions stay
+  on the program page.
+

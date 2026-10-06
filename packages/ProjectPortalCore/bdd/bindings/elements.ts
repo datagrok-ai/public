@@ -251,3 +251,9 @@ app.element('dmta cycles', {selector: u2('dmta-cycles')});
 app.element('open dmta status button', {selector: u2('dmta-open-table')});
 
 app.element('panels note', {selector: u2('panels-composed')});
+
+app.element('program search input', {selector: u2('program-search-input')});
+app.element('search results', {selector: u2('search-results')});
+app.element('EXB-201 search hit', {selector: u2('search-hit-ex-bioc-exb-201')});
+app.element('recent programs', {selector: u2('recent-programs')});
+app.element('EXB-201 recent', {selector: u2('recent-ex-bioc-exb-201')});

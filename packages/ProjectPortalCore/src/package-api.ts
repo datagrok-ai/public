@@ -453,6 +453,20 @@ export namespace funcs {
   }
 
   /**
+   * The programs a text finds across every portfolio the current user can see: by code, name, target or a registry alias (a value in the program's details), best match first
+   */
+  export async function findPrograms(query: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:FindPrograms', { query });
+  }
+
+  /**
+   * The programs the current user opened last in the portal that they can still see, newest first
+   */
+  export async function recentPrograms(): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:RecentPrograms', {});
+  }
+
+  /**
    * Makes a portfolio's program rows visible to whoever may view their workspace folders (the portfolio's groups and the program roles) by linking each row into its folder. View only. Creates no folder. Idempotent
    */
   export async function linkProgramRows(portfolio: string , dryRun: boolean ): Promise<string> {

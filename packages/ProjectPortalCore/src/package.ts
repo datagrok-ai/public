@@ -54,6 +54,8 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
 import {reviewsOf} from './model/approvals';
 import {secureWriteTables} from './write-grants';
 import {linkProgramRows as linkRows} from './program-rows';
+import {findablePrograms, recentPrograms as savedRecents} from './find';
+import {FindProgram, findPrograms as find, matchedBy, resolveRecents} from './model/find';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
 import {ApprovalRequestRow} from './generated/db';
 import {pinByCode} from './pinning';
@@ -730,6 +732,33 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 export async function securePortalTables(dryRun: boolean = true): Promise<string> {
   const lines = await secureWriteTables(undefined, dryRun);
   return lines.length ? lines.join('\n') : 'write permissions already in place';
+}
+
+const findFrame = (rows: {p: FindProgram, matched: string}[], name: string): DG.DataFrame => {
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('portfolio', rows.map((r) => r.p.portfolio)),
+    DG.Column.fromStrings('program', rows.map((r) => r.p.code)),
+    DG.Column.fromStrings('name', rows.map((r) => r.p.name)),
+    DG.Column.fromStrings('matched', rows.map((r) => r.matched)),
+  ]);
+  df.name = name;
+  return df;
+};
+
+//name: findPrograms
+//description: The programs a text finds across every portfolio the current user can see: by code, name, target or a registry alias (a value in the program's details), best match first
+//input: string query
+//output: dataframe programs
+export async function findPrograms(query: string): Promise<DG.DataFrame> {
+  const hits = find(query, await findablePrograms());
+  return findFrame(hits.map((h) => ({p: h.program, matched: matchedBy(h) ?? h.term.field})), `Find ${query}`);
+}
+
+//name: recentPrograms
+//description: The programs the current user opened last in the portal that they can still see, newest first
+//output: dataframe programs
+export async function recentPrograms(): Promise<DG.DataFrame> {
+  return findFrame(resolveRecents(savedRecents(), await findablePrograms()).map((p) => ({p, matched: ''})), 'Recent programs');
 }
 
 //name: linkProgramRows

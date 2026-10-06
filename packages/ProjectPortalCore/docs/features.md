@@ -21,6 +21,14 @@ All examples use the synthetic portfolios the package ships (EX-SMD, EX-BIOD, EX
 - **Deleting is out of scope.** Nothing here deletes a workspace folder; removing a parked folder is a person's call, by hand.
 - **In the app.** The ribbon's **Workspace** (Advanced mode) shows the orphan report with **Preview park**, **Park** on each folder and **Park all** for approvers, and the parked folders with **Unpark**.
 
+## Finding a program
+
+- **One box, every portfolio.** The top of the landing column searches the programs of every portfolio the user can see (what the server lets them read; nothing else is searched). It matches the code, the name, the target and every short text or number in the program's `details`, which is where a registry feed puts extra columns. So an alias such as a molecule number is searchable without any configuration. Texts over 60 characters are prose and not searched.
+- **Order.** Exact match first, then the start of the code, the start of another term, the start of a word, anywhere. Case, dashes, underscores and dots are ignored ("abc-12" finds "ABC_12"). At least two characters; at most 12 hits. A hit found by an alias says which ("molecule code: …").
+- **Opening.** A hit opens the program in its own portfolio, switching the board. Enter opens the first hit; Escape clears the box.
+- **Recent.** The 8 programs the user opened last, newest first, kept in the platform's user settings (`ProjectPortalCore` / `recent`), so they follow the user to another browser. A program that is gone or no longer shared is skipped, not shown.
+- `findPrograms(query)` and `recentPrograms()` return the same lists as tables.
+
 ## Work units
 
 A portfolio enables the work units it uses (`workUnits`): discovery typically campaign and series,

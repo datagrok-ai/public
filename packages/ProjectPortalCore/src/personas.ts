@@ -12,7 +12,7 @@ export const PREFERENCES = 'ProjectPortalCore';
 /** Advanced until the user chooses: the program page shows everything, as it did before modes. */
 export const DEFAULT_MODE: PortalMode = 'advanced';
 
-const read = (key: string): string | null => {
+export const readPreference = (key: string): string | null => {
   try {
     return grok.userSettings.getValue(PREFERENCES, key) ?? null;
   } catch {
@@ -22,23 +22,23 @@ const read = (key: string): string | null => {
 
 /** Writes a preference and saves it to the server in the background; a failed save is retried
  * by the platform, so the page never waits for it. */
-const write = (key: string, value: string | null): void => {
+export const writePreference = (key: string, value: string | null): void => {
   if (value === null) {
     // deleting a key that is not there throws
-    if (read(key) !== null)
+    if (readPreference(key) !== null)
       grok.userSettings.delete(PREFERENCES, key);
   } else
     grok.userSettings.add(PREFERENCES, key, value);
   void grok.userSettings.flush().catch((e) => grok.log.warning(`Project Portal: preference ${key} not saved: ${e?.message ?? e}`));
 };
 
-export const savedMode = (): PortalMode => asMode(read('mode')) ?? DEFAULT_MODE;
-export const saveMode = (mode: PortalMode): void => write('mode', mode);
+export const savedMode = (): PortalMode => asMode(readPreference('mode')) ?? DEFAULT_MODE;
+export const saveMode = (mode: PortalMode): void => writePreference('mode', mode);
 
 /** The persona the user chose, or null when they never did. */
-export const savedPersona = (): Persona | null => asPersona(read('persona'));
+export const savedPersona = (): Persona | null => asPersona(readPreference('persona'));
 /** Remembers the user's persona; null forgets it, so the portfolio's mapping decides again. */
-export const savePersona = (persona: Persona | null): void => write('persona', persona);
+export const savePersona = (persona: Persona | null): void => writePreference('persona', persona);
 
 let groupNames: Promise<string[]> | null = null;
 

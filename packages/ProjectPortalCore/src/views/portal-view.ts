@@ -81,6 +81,8 @@ import {PinHolders, whyNotPinnable} from '../model/pinning';
 import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
 import {newestFirstBy} from '../model/time';
 import {filterValue, ROW_LIMIT} from '../rows';
+import {findablePrograms, recentPrograms, rememberProgram} from '../find';
+import {FindProgram, findPrograms, matchedBy, MIN_QUERY, resolveRecents} from '../model/find';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -104,6 +106,12 @@ export class PortalView {
   private readonly portfolioList = named(divV([], 'pp-portfolios'), 'portfolio-list');
   private readonly board = named(divV([], 'pp-board'), 'stage-board');
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
+  /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
+  private readonly searchInput = named(document.createElement('input'), 'program-search-input');
+  private readonly searchResults = named(divV([], 'pp-search-results'), 'search-results');
+  private readonly recentList = named(divV([], 'pp-recent'), 'recent-programs');
+  /** The programs the user can see, every portfolio, read once per load. */
+  private findable: FindProgram[] = [];
   readonly status = signal('Loading portfolios…');
   /** The app's address: the open portfolio's code is its last segment, so a board can be linked. */
   readonly path = signal(APP_PATH);
@@ -174,6 +182,22 @@ export class PortalView {
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.detail);
+    this.searchInput.className = 'pp-text pp-search';
+    this.searchInput.placeholder = 'Find a program: code, name, alias';
+    this.searchInput.title = 'Searches every portfolio you can see, by code, name, target or a registry alias';
+    let timer: any = null;
+    this.searchInput.oninput = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => this.renderSearch(), 150);
+    };
+    this.searchInput.onkeydown = (e) => {
+      if (e.key === 'Enter')
+        (this.searchResults.querySelector('.pp-search-hit') as HTMLElement | null)?.click();
+      else if (e.key === 'Escape') {
+        this.searchInput.value = '';
+        this.renderSearch();
+      }
+    };
   }
 
   /** The program page; the portfolio table docks it beside its grid. */
@@ -199,6 +223,7 @@ export class PortalView {
     this.models = new Map(models.map((m) => [m.id, m]));
     const counts = await Promise.all(this.portfolios.map((p) =>
       portalDb.programs.count({filter: `portfolio_id = ${filterValue(p.id)}`}).catch(() => 0)));
+    this.findable = await findablePrograms().catch(() => []);
     this.renderPortfolios(counts);
     const first = this.portfolios.find((p) => p.code === portfolioCode) ?? this.portfolios[0];
     if (first)
@@ -207,8 +232,37 @@ export class PortalView {
       this.status.value = 'No portfolios are loaded; run ProjectPortalCore:loadPortfolios';
   }
 
+  /** The search's results under the box: each opens its program, in its portfolio. */
+  private renderSearch(): void {
+    const q = this.searchInput.value;
+    const hits = findPrograms(q, this.findable);
+    this.searchResults.replaceChildren(...(q.trim().length < MIN_QUERY ? [] : hits.length ? hits.map((h) => {
+      const why = matchedBy(h);
+      return this.programLink(h.program, 'search-hit', why ? `${h.program.portfolioName} · ${why}` : h.program.portfolioName);
+    }) : [named(span(`Nothing matches "${q.trim()}" in the portfolios you can see`, 'pp-muted'),
+      'search-empty')]));
+  }
+
+  /** The programs the user opened last that they can still see. */
+  private renderRecent(): void {
+    const recent = resolveRecents(recentPrograms(), this.findable);
+    this.recentList.replaceChildren(...(recent.length ? [span('Recent', 'pp-heading'),
+      ...recent.map((p) => this.programLink(p, 'recent', p.portfolioName))] : []));
+  }
+
+  /** A line that opens [p] in its portfolio; named `<kind>-<portfolio>-<code>`. */
+  private programLink(p: FindProgram, kind: string, sub: string): HTMLElement {
+    const el = named(divV([span(p.name, 'pp-card-title'), span(sub, 'pp-muted')], `pp-search-hit pp-${kind}`),
+      `${kind}-${slug(p.portfolio)}-${slug(p.code)}`);
+    el.title = `${p.code} in ${p.portfolioName}`;
+    el.onclick = () => void this.showProgram(p.portfolio, p.id).catch(this.failed);
+    return el;
+  }
+
   private renderPortfolios(counts: number[]): void {
-    this.portfolioList.replaceChildren(span('Portfolios', 'pp-heading'));
+    this.renderRecent();
+    this.portfolioList.replaceChildren(named(divV([this.searchInput, this.searchResults], 'pp-search-box'), 'program-search'),
+      this.recentList, span('Portfolios', 'pp-heading'));
     this.portfolios.forEach((p, i) => {
       const model = this.models.get(p.stage_model_id);
       const card = named(divV([
@@ -306,7 +360,8 @@ export class PortalView {
   }
 
   async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
-    if (id !== this.selected) {
+    const opened = id !== this.selected;
+    if (opened) {
       this.data = undefined;
       this.news = undefined;
     }
@@ -320,8 +375,13 @@ export class PortalView {
     if (program) {
       this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
       // .../Portal/<portfolio>/<program>: the program's page can be linked
-      if (this.portfolio)
+      if (this.portfolio) {
         this.path.value = `${APP_PATH}/${this.portfolio.code}/${program.code}`;
+        if (opened) {
+          rememberProgram(this.portfolio.code, program.id);
+          this.renderRecent();
+        }
+      }
     }
     const ctx = await programContext(id);
     const transitions = (await portalDb.stageTransitions.query({filter: `program_id = ${filterValue(id)}`, limit: ROW_LIMIT}))
