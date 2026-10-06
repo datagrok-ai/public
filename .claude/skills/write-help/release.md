@@ -1,7 +1,7 @@
 # Updating the help for a release
 
-Part of the `write-help` skill. The job: find what shipped, decide what the help needs and what
-only the community post needs, then write and verify it (SKILL.md sections 2–6).
+Part of the `write-help` skill. The job: find what shipped, decide what the help needs, write and
+verify it (SKILL.md sections 2–6), and list what deserves a community post.
 
 ## Scope: what shipped
 
@@ -14,7 +14,6 @@ Collect one list with a ticket key per item:
 - Commits since the previous release: in core, from the previous release branch point; in this
   repository, `git log --since=<date of the previous release> origin/master`.
 - Plugin `CHANGELOG.md` files: dated versions are released, `## v.next` is not.
-- The community post drafts, if the team keeps them: they show what matters to users.
 
 For each item, with evidence:
 
@@ -31,7 +30,7 @@ in parallel with read-only agents. Each returns, per item: in master (evidence, 
 defaults), help coverage (page#anchor: covered, partial, missing, or wrong), and the best place.
 Agent claims are leads: re-check everything you will write.
 
-## Triage: help or community post
+## Triage: help, community post, or both
 
 Document in the help, in this order:
 
@@ -40,7 +39,7 @@ Document in the help, in this order:
 2. Capabilities the help doesn't describe at all, even old ones.
 3. Settings whose meaning isn't obvious from their name in the properties table.
 
-Leave to the community post:
+Leave out of the help, and list for the community post:
 
 - A capability every viewer shares, when adding it to one page would duplicate it.
 - Small UX improvements that need no instructions.
@@ -48,8 +47,9 @@ Leave to the community post:
 - Changes that affect existing results (recalculated statistics, models that must be retrained,
   upgraded runtimes): these are announcements, and belong in the post first.
 
-For every item left out of the help, check the post covers it. If it doesn't, propose a note in
-the post's style and add it only after the reviewer agrees.
+Independently of the help decision, mark every item that deserves a community post: new and
+noticeable to users, changing existing results, or requiring an action from users or
+administrators.
 
 Admin-facing changes (users, permissions, deployment, configuration) go into a separate commit,
 so an administrator can review them on their own.
@@ -57,6 +57,10 @@ so an administrator can review them on their own.
 ## Report
 
 A candidates table with, per item: area, change, evidence (sha or key, date), UI labels, help
-now (page#anchor and state), recommendation. List separately: help that describes unreleased
-work, items waiting for owner confirmation, community-post-only items, unfinished items, and
+now (page#anchor and state), recommendation, community post (yes or no). List separately: help
+that describes unreleased work, items waiting for owner confirmation, unfinished items, and
 exclusions decided by the reviewer.
+
+End with the list of updates for the community post: every item marked yes, whether or not it
+went into the help. Per item: one line in the reader's words, the ticket key, and the help page
+and anchor if there is one.

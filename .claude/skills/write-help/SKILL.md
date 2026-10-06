@@ -54,6 +54,9 @@ what the help needs:
    that already covers the area. A help page that now says something wrong comes first.
 5. **Propose, verify, write** as in sections 1–6. Put the ticket key at the start of the commit
    message.
+6. **Suggest a community post** when the change is new and noticeable to users, changes existing
+   results, or requires an action: one line in the reader's words, with the help page and anchor
+   if there is one.
 
 ## 2. Verify every claim
 
