@@ -200,8 +200,14 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     // 2026-06-18): the context-panel accordion exposes section toggles [name="div-section--<Name>"]
     // (there is NO [name="pane-<Name>"] element on this build); the rendered body is the adjacent
     // .d4-accordion-pane-content reachable via the section's .closest('.d4-accordion-pane').
-    for (const section of ['div-section--Details', 'div-section--Actions', 'div-section--Activity', 'div-section--Sharing', 'div-section--Chats'])
-      await expect(page.locator(`[name="${section}"]`).first()).toBeVisible();
+    // The context panel hides a pane whose count is 0 (accordion.css, d4-info="0"), and the count
+    // arrives async: a fresh notebook on a fresh stand has no Activity yet.
+    for (const section of ['div-section--Details', 'div-section--Actions', 'div-section--Activity', 'div-section--Sharing', 'div-section--Chats']) {
+      const header = page.locator(`.grok-prop-panel [name="${section}"]`).first();
+      await expect(header).toBeAttached();
+      await expect.poll(() => header.evaluate((e) => (e as HTMLElement).offsetParent !== null ||
+        e.closest('.d4-accordion-pane')?.getAttribute('d4-info') === '0'), {message: `${section} is shown, or empty`}).toBe(true);
+    }
 
     // Details pane renders its Created/Modified content (notebooks.meta.render-details). The pane body
     // loads async after the section expands; poll on the rendered text rather than reading after a delay.
