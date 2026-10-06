@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21074: Migrate legacy pie chart subsectors without functionType when reading settings
 * Tests: Added `bdd/features/grid/summary-columns.feature` (14 tests), translating the summary-column scenarios of the TestTrack grid specs: every renderer item of Add > Summary Columns with its renderer read from the grid, the top-panel remove icon (GROK-18256), a Tags column whose source column is removed (GROK-19942), a renamed source column, the columns across a layout and a project, and what a Tags column draws (GROK-20888)
 * Summary columns: Fixed the autostart failing with "Cannot read properties of undefined (reading 'dataFrame')" when it landed while a table view was still being built
 * Summary columns: Fixed the source-column rename and remove handler skipping Tags columns — it looked the settings up under the grid's lower-case cell type, where the Tags renderer keeps them under `Tags`; a removed source column now leaves the Tags column's settings
