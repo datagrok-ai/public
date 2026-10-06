@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
 * GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
 

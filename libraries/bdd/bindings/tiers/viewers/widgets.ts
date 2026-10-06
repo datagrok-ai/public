@@ -18,6 +18,7 @@ import {cssString, exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
 import * as guide from '../../../src/runtime/guide.js';
 import * as v from '../../../src/runtime/viewers.js';
+import {openContextMenuAt} from '../../../src/runtime/viewer-menus.js';
 
 const settle = v.settle;
 
@@ -431,6 +432,21 @@ export const scrollGridTo = When('user scrolls the grid to the {string} column',
   await v.settleAll(page);
 }, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
 
+/** The grid draws nothing to the right of its last column when the columns are narrower than the
+ * view: a right-click there, in a row, once failed. The point is the middle of that
+ * space, at the height of the row's cells. */
+export const rightClickRowSpace = When('user right-clicks on empty space of row {int} of {widget}', async (page: Page, row: number, target: ElementRef) => {
+  const areas = await v.hitAreas(page, target);
+  const cells = Object.entries(areas).filter(([name]) => name.startsWith(`cell ${row} of `)).map(([, box]) => box);
+  if (cells.length === 0)
+    throw new Error(`${target.phrase} shows no cell of row ${row}`);
+  const right = Math.max(...cells.map((b) => b.x + b.width));
+  const canvas = await (await v.viewerLocator(page, target)).locator('canvas[name="canvas"]').first().boundingBox();
+  if (!canvas || canvas.x + canvas.width - right < 8)
+    throw new Error(`row ${row} of ${target.phrase} has no empty space past its last column`);
+  await openContextMenuAt(page, (right + canvas.x + canvas.width) / 2, cells[0].y + cells[0].height / 2);
+}, {tier: 'ui', description: 'the space past the last column of a grid narrower than its view, in that row; leaves the menu open'});
+
 export const gridPins = Then('the grid should pin the columns {string}', async (page: Page, list: string) => {
   const want = list.split(/\s*,\s*/).filter(Boolean);
   await expect.poll(() => v.onViewer(page, el('grid'), (e) => {
@@ -753,11 +769,42 @@ export const checkedInColumnList = Then('the {string} column should be checked i
 export const uncheckedInColumnList = Then('the {string} column should not be checked in the column list of {element}',
   (page: Page, column: string, target: ElementRef) => expectChecked(page, column, target, false));
 
+/** Every column the list holds, in its order. */
+async function columnListNames(page: Page, target: ElementRef): Promise<string[]> {
+  const host = (await locate(page, target)).filter({visible: true}).first();
+  const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
+  await grid.waitFor({timeout: pollMs(5000)});
+  return g.columnGridNames(grid);
+}
+
+export const columnListExactly = Then('the column list of {element} should be exactly {string}',
+  async (page: Page, target: ElementRef, list: string) => {
+    const want = list.split(/\s*,\s*/).filter(Boolean);
+    await expect.poll(() => columnListNames(page, target), {message: `the column list of ${target.phrase}`}).toEqual(want);
+  }, {description: 'every column the list offers, comma-separated and in its order'});
+
+export const columnListLacks = Then('the column list of {element} should not list {string}',
+  async (page: Page, target: ElementRef, column: string) => {
+    const message = `the column list of ${target.phrase}`;
+    await expect.poll(async () => (await columnListNames(page, target)).length, {message: `${message}: any`}).toBeGreaterThan(0);
+    await expect.poll(() => columnListNames(page, target), {message}).not.toContain(column);
+  }, {description: 'a column the list leaves out; the list must hold others, so an empty one cannot pass'});
+
+export const offersColumns = Then('{element} should offer the columns {string}', async (page: Page, target: ElementRef, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  expect((await g.columnSelectorChoices(page, target)).filter((c) => c !== ''), `the columns ${target.phrase} offers`).toEqual(want);
+}, {tier: 'ui', description: 'opens the column picker of a column property or selector, reads every column it offers in its order and dismisses it; the empty choice of a nullable property is left out (claim it with "should not offer the column \'\'")'});
+
+export const doesNotOfferColumn = Then('{element} should not offer the column {string}', async (page: Page, target: ElementRef, column: string) => {
+  const offered = await g.columnSelectorChoices(page, target);
+  expect(offered.length, `the columns ${target.phrase} offers`).toBeGreaterThan(0);
+  expect(offered, `the columns ${target.phrase} offers`).not.toContain(column);
+}, {tier: 'ui', description: 'opens the column picker, reads what it offers and dismisses it; "" is the empty choice of a nullable column property'});
+
 export const columnListStartsWith = Then('the column list of {element} should start with {string}',
   async (page: Page, target: ElementRef, column: string) => {
-    let rows: ColumnListRow[] = [];
-    await expect.poll(async () => namesOf((rows = await columnListRows(page, target)).slice(0, 1)),
-      {timeout: pollMs(5000), message: `the first row of the column list of ${target.phrase} (it shows: ${namesOf(rows)})`}).toBe(column);
+    await expect.poll(async () => namesOf((await columnListRows(page, target)).slice(0, 1)),
+      {timeout: pollMs(5000), message: `the first row of the column list of ${target.phrase}`}).toBe(column);
   }, {description: 'the row the search puts first'});
 
 // --- one element inside another -------------------------------------------------------------------

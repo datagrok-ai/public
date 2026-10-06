@@ -1,104 +1,110 @@
 ---
 feature: charts
 target_layer: playwright
-coverage_type: smoke
+pyramid_layer: ui-smoke
+coverage_type: regression
 priority: p0
-realizes_atlas: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel]
+realizes_atlas: [charts.cp.open-viewer-with-required-columns, charts.cp.configure-via-property-panel, charts.cp.persist-via-project-save-reopen]
 realizes: [charts.viewer.radar]
 realized_as:
   - radar-spec.ts
-pyramid_layer: ui-smoke
-ui_coverage_responsibility:
-  - add-viewer-radar
-  - viewer-property-panel-gear
-ui_coverage_delegated_to: null
-produced_from: migrated
-original_path: public/packages/UsageAnalysis/files/TestTrack/Charts/radar.md
-migration_date: 2026-05-07
-source_text_fixes: []
-candidate_helpers: []
-unresolved_ambiguities: []
-scope_reductions: []
 related_bugs:
+  - GROK-17999
   - GROK-18085
+  - GROK-18408
+  - GROK-18576
+  - GROK-18935
+  - GROK-19376
 ---
 
-# Radar viewer (Charts package)
+# Radar viewer
 
-Smoke scenario for the Charts package Radar viewer. Verifies the
-"Add Viewer → Radar" entry point on two distinct datasets, and the
-property panel (Gear icon → Context Panel) for four representative
-properties: switching the bound table, selection check-boxes, the
-chosen Values count, and style/color changes. This is the primary
-Add-Viewer + property-panel smoke test for the Charts section;
-sibling scenarios `sunburst.md` and `tree.md` cover their own
-specialty UI surfaces.
-
-Note: GROK-18085 (Radar table-rebind breaking on project save/reopen)
-is related to this viewer but is not exercised by this scenario — see
-`radar-save-reopen-bug.md` for that reproduction.
+The Radar draws one line per row over up to ten numeric axes (**Values**), with percentile bands
+(**Min**, **Max**). It draws at most 1000 rows and says so when the table has more. It highlights
+the current row and the row under the mouse; it does not draw the selection.
 
 ## Setup
 
-A clean Datagrok session is the only shared setup. Each step opens
-its own dataset; no fixture chaining required (`depends_on: []` per
-chain rev 1).
+A clean session. Each scenario opens its own data.
 
 ## Scenarios
 
-### Add Radar viewer to two datasets and exercise the property panel
+### 1. Add the Radar and switch its table (GROK-18576, GROK-18935)
 
-1. Open `System:DemoFiles/geo/earthquakes.csv` (e.g. via
-   **Browse** > **Files**, or **File** > **Open**).
+1. Open `System:DemoFiles/demog-1000.csv`.
 2. On the Menu Ribbon, click **Add viewer** and select **Radar**.
-3. **Verify:** the Radar viewer opens for `earthquakes.csv` with
-   no errors.
-4. Open `System:DemoFiles/demog.csv`.
-5. On the Menu Ribbon, click **Add viewer** and select **Radar**.
-6. **Verify:** the Radar viewer opens for `demog.csv` with no errors.
-7. On the Radar viewer (on `demog.csv`), click the **Gear** icon.
-8. **Verify:** the **Context Panel** opens with the Radar viewer's
-   properties.
-9. **Switching tables:** in the Context Panel, change the bound
-   `table` property between `earthquakes` and `demog`.
-   **Verify:** the Radar viewer rebinds and re-renders against the
-   new table without errors.
-10. **Check-boxes in selection:** select two or more rows in the
-    bound table (Ctrl+Click in the grid, or
-    `df.selection.set(...)` equivalent UI gesture).
-    **Verify:** the selected-row lines are reflected on the Radar
-    viewer (current / mouseover row lines).
-11. **Increasing and decreasing the amount of chosen Values:** in
-    the Context Panel, change the columns chosen as Values (the
-    color column / values bag).
-    **Verify:** the Radar viewer redraws with more / fewer axes
-    matching the chosen Values.
-12. **Style (color) changes:** in the Context Panel, change a
-    Style-category color (e.g. `currentRowColor`,
-    `mouseOverRowColor`, `lineColor`, or `backgroundMinColor` /
-    `backgroundMaxColor`).
-    **Verify:** the Radar viewer redraws with the new color.
-13. **Check all properties (broad sweep):** scroll through the
-    Context Panel and confirm every Radar property is visible
-    and editable. Spot-check that toggling representative
-    properties does not throw console errors. (See Notes — this
-    step preserves the original scenario's broad "Check all
-    properties" instruction without enumerating each radar.*
-    property; the four bullets above are the explicit Main things
-    the original calls out as MUST be reflected on the viewer.)
+3. Click the **Gear** icon of the Radar.
+4. **Verify:** the Radar is shown; **Values** lists AGE, HEIGHT, WEIGHT; the viewer shows no
+   message.
+5. Open `System:DemoFiles/geo/earthquakes.csv`.
+6. Go back to the `demog-1000` view. In the Radar's Context Panel, set **Table** to
+   `earthquakes`.
+7. **Verify:** the Radar is bound to `earthquakes`, **Values** lists earthquakes columns (none of
+   AGE, HEIGHT, WEIGHT), and the console has no errors.
+8. Set **Table** back to `demog-1000`.
+9. **Verify:** **Values** lists AGE, HEIGHT, WEIGHT again; no errors.
 
-## Notes
+### 2. Values, Title, Normalization, Color and the 1000-row notice (GROK-18408, GROK-17999)
 
-- Step 13 ("check all properties") is a representative sweep, not an
-  exhaustive one — it doesn't enumerate every `radar.*` property
-  (title, min/max percentile, show-current-row, show-tooltip,
-  color-column, color-palette, show-min-max, legend-visibility)
-  individually. Steps 3 and 9-12 already verify the specific
-  properties the manual scenario calls out; the sweep covers the
-  rest at a shallower level.
+1. Open `System:DemoFiles/demog.csv` (5850 rows) and add a **Radar**.
+2. **Verify:** the viewer shows the message `Only first 1000 shown`.
+3. Click the **Gear** icon. Click the **...** button of **Values**; in the **Select columns...**
+   dialog click **None**, then **OK**.
+4. **Verify:** the viewer shows `The Radar viewer requires a minimum of 1 numerical column.`;
+   the console has no errors.
+5. Open the **Values** dialog again, check **AGE** and **HEIGHT**, click **OK**.
+6. **Verify:** **Values** is AGE, HEIGHT; the viewer is drawn and the message is gone.
+7. Set **Title** to `Body measures`.
+8. **Verify:** the viewer's title reads `Body measures`.
+9. Set **Normalization** to **Global**, then back to **Column**.
+10. **Verify:** the viewer repainted each time; no errors.
+11. Set **Color** to **SEX**.
+12. **Verify:** the Radar legend lists 2 items, `F` and `M`.
+13. Click `M` in the legend.
+14. **Verify:** the viewer has less ink than before; 5850 rows pass the table filter; no errors.
+15. Click `M` in the legend again.
+16. **Verify:** the viewer has more ink than before; no errors.
+
+### 3. A Radar rebound to another table survives project save and reopen (GROK-18085, GROK-19376)
+
+1. Close all. Open `System:DemoFiles/demog-1000.csv` and `System:AppData/Chem/tests/spgi-100.csv`.
+2. On the `spgi-100` view, add a **Radar**.
+3. In its Context Panel, set **Table** to `demog-1000`.
+4. **Verify:** the Radar is bound to `demog-1000`.
+5. Click **SAVE** on the ribbon, enter `RadarRebind1` as the name, click **OK**. In the **Share**
+   dialog, click **Cancel**.
+6. Close all. Go to **Browse > Dashboards**, find `RadarRebind1` and double-click it; wait for
+   both tables to open.
+7. **Verify:** the `spgi-100` view has a Radar bound to `demog-1000`, **Values** lists AGE,
+   HEIGHT, WEIGHT, and the console has no errors.
+
+## Cleanup
+
+1. Close all.
+2. In **Browse > Dashboards**, right-click `RadarRebind1`, choose **Delete Project** and click
+   **DELETE**.
+
+## Expected results
+
+- The Radar rebinds to another table and back without errors, and its axes follow the table.
+- With no Values the viewer shows its message instead of failing; the chosen Values become the
+  axes.
+- Title, Normalization and Color apply; the legend lists the Color categories and a legend click
+  narrows what the Radar draws without changing the table filter.
+- The notice `Only first 1000 shown` appears on a table of more than 1000 rows only.
+- A Radar rebound to another table reopens from a project bound to that table.
+
+## Automation notes
+
+- The notice `Only first 1000 shown` is a warning element of the Radar (`radar-warning`), not a
+  viewer error; the error-message step may not see it.
+- Ink comparisons are the only reading of the drawn lines; the Radar has no widget status for
+  its axes or lines.
+- Column names of `earthquakes.csv` come from the server file and are not in the repository, so
+  scenario 1 step 7 checks only that the demog columns are gone.
 
 ---
 {
   "order": 28,
-  "datasets": ["System:DemoFiles/demog.csv"]
+  "datasets": ["System:DemoFiles/demog-1000.csv", "System:DemoFiles/demog.csv", "System:DemoFiles/geo/earthquakes.csv", "System:AppData/Chem/tests/spgi-100.csv"]
 }

@@ -261,7 +261,10 @@ list is the reference; this is the map:
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts, a visible count remembered and then
-  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list), a value
+  remembered and claimed again after a reload (`should (not) have the remembered value`), one choice
+  a dropdown does or does not offer, and the downloads (none at all, a file by a name pattern, the
+  occurrences of a text in the last one). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
   collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
   `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
@@ -282,9 +285,10 @@ list is the reference; this is the map:
   files or a space for the feature (deleted at feature end), a file dropped from disk, the file
   chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
-  equal row by row), calculated and renamed columns, colour coding,
-  other open tables, links between tables, the filter panel's cards through its own API.
+  filter set and checked row by row (and how many selected rows the filter lets through), cells
+  (every value, some value, distinct lengths, two columns equal row by row), calculated and renamed
+  columns, colour coding, other open tables, links between tables, the filter panel's cards through
+  its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **A package function the UI offers no entry to**, called for what it shows (`platform/functions.ts`;
@@ -349,7 +353,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins, a right-click
+  on the empty space past a grid row's last column, the columns a column picker offers (read from
+  its own table and dismissed), and a Select columns list exactly or without a column.
 - **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
   viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
   it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.

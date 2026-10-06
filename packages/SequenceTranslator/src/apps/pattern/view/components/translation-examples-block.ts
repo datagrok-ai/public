@@ -6,7 +6,7 @@ import {StringInput} from '../types';
 
 import $ from 'cash-dom';
 import {NUCLEOTIDES} from '../../../common/model/const';
-import {STRAND, STRANDS, STRAND_LABEL} from '../../model/const';
+import {STRAND, STRANDS, STRAND_LABEL, STRAND_NAME} from '../../model/const';
 import {DataManager} from '../../model/data-manager';
 import {EventBus} from '../../model/event-bus';
 import {applyPatternToRawSequence} from '../../model/translator';
@@ -87,7 +87,7 @@ class StrandExample {
   }
 
   private createInputExample(): StringInput {
-    const input = this.createTextInputForExamples();
+    const input = this.createTextInputForExamples('input');
 
     const exampleInputSequence = this.generateExampleSequence();
     input.value = exampleInputSequence;
@@ -107,7 +107,7 @@ class StrandExample {
   }
 
   private createOutputExample(exampleInputSequence: string): StringInput {
-    const output = this.createTextInputForExamples();
+    const output = this.createTextInputForExamples('output');
     output.value = this.computeOutputValue(exampleInputSequence);
 
     output.setTooltip(`Pattern applied to the example input for ${STRAND_LABEL[this.strand]}`);
@@ -124,8 +124,9 @@ class StrandExample {
     );
   }
 
-  private createTextInputForExamples(): StringInput {
+  private createTextInputForExamples(role: 'input' | 'output'): StringInput {
     const input = ui.input.textArea('', {value: ''});
+    input.root.setAttribute('name', `input-host-${STRAND_NAME[this.strand]}-example-${role}`);
     this.applyStylingToInput(input);
 
     return input;

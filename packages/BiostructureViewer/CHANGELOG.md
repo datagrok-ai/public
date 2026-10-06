@@ -3,6 +3,10 @@
 ## v.next
 
 * Molstar viewer: Fixed a crash when closing an unrelated view while a structure preview was open
+* Biostructure, NGL: Added automation status (readings, render-pending)
+* Biostructure: Fixed the Representation property skipping structures not yet interacted with in the 3D view, and a structure loaded later (current-row reload) keeping the default representation
+* Fixed Show > Biostructure / Show > NGL docking the viewer's root instead of a viewer (no title bar, not listed)
+* NGL: Fixed the double-click view not attaching its viewer host; the file preview view is named after the file
 
 ## 1.4.11 (2026-07-13)
 

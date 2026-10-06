@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.browse]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
@@ -28,7 +29,7 @@ test.describe("The Apps and Dashboards sections of the Browse tree", () => {
     await session.step(28, "Given user is logged in", () => loggedIn(page));
     await session.step(29, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(33, "Given Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
-    await session.step(34, "Then Tutorials tree node inside browse tree should be visible", () => shouldBe(page, el("Tutorials tree node inside browse tree"), "visible"));
+    await session.step(34, "Then Apps---Tutorials tree node inside browse tree should be visible", () => shouldBe(page, el("Apps---Tutorials tree node inside browse tree"), "visible"));
     await session.step(35, "And Misc tree node inside browse tree should be visible", () => shouldBe(page, el("Misc tree node inside browse tree"), "visible"));
     await session.step(36, "And no errors should have been logged", () => noErrors(page));
     await session.step(37, "And no error or warning balloon should have been shown", () => noBalloons(page));
@@ -38,7 +39,7 @@ test.describe("The Apps and Dashboards sections of the Browse tree", () => {
     await session.step(28, "Given user is logged in", () => loggedIn(page));
     await session.step(29, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(40, "Given Apps tree node inside browse tree is expanded", () => isExpanded(page, el("Apps tree node inside browse tree")));
-    await session.step(41, "When user clicks on Tutorials tree node inside browse tree", () => clickOn(page, el("Tutorials tree node inside browse tree")));
+    await session.step(41, "When user clicks on Apps---Tutorials tree node inside browse tree", () => clickOn(page, el("Apps---Tutorials tree node inside browse tree")));
     await session.step(42, "Then the \"Tutorials\" view should be current", () => viewIsCurrent(page, "Tutorials"));
     await session.step(43, "And no errors should have been logged", () => noErrors(page));
     await session.step(44, "And no error or warning balloon should have been shown", () => noBalloons(page));

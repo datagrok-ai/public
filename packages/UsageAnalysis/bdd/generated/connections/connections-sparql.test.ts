@@ -6,6 +6,7 @@ generated: features/connections/connections-sparql.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';

@@ -9,7 +9,8 @@ import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectOption, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, readValue,
+  State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
@@ -213,6 +214,31 @@ export const rememberSize = When('user remembers the size of {element}', async (
   rememberedBoxes.get(page)!.set(target.phrase, {width: box.width, height: box.height});
 }, {tier: 'api', description: 'kept under the phrase, so several elements can be remembered at once'});
 
+/* An input's value before a change that should move it or leave it, kept under its phrase. */
+const rememberedValues = new WeakMap<Page, Map<string, string>>();
+
+export const rememberValue = When('user remembers the value of {element}', async (page: Page, target: ElementRef) => {
+  let value: string | undefined;
+  await expect.poll(async () => (value = await readValue(page, target)) !== undefined, {message: `the value of ${target.phrase}`}).toBe(true);
+  if (!rememberedValues.has(page)) {
+    rememberedValues.set(page, new Map());
+    atFeatureEnd(page, async () => { rememberedValues.delete(page); });
+  }
+  rememberedValues.get(page)!.set(target.phrase, value!);
+}, {tier: 'api', description: 'kept under the phrase until the feature ends, so a reload or a reopened view can be compared with it'});
+
+function rememberedValue(page: Page, target: ElementRef): string {
+  const kept = rememberedValues.get(page)?.get(target.phrase);
+  if (kept === undefined)
+    throw new Error(`no value of ${target.phrase} was remembered — "user remembers the value of ${target.phrase}" comes first`);
+  return kept;
+}
+
+export const hasRememberedValue = Then('{element} should have the remembered value', (page: Page, target: ElementRef) =>
+  expectValue(page, target, rememberedValue(page, target)));
+export const lacksRememberedValue = Then('{element} should not have the remembered value', (page: Page, target: ElementRef) =>
+  expectValue(page, target, rememberedValue(page, target), true));
+
 function rememberedBox(page: Page, target: ElementRef): {width: number; height: number} {
   const kept = rememberedBoxes.get(page)?.get(target.phrase);
   if (!kept)
@@ -269,6 +295,10 @@ export const fillsParent = Then('{element} should fill its parent', async (page:
 }, {description: 'as wide and as tall as the content box of the element it sits in, to a pixel'});
 export const shouldOffer = Then('{element} should offer {string}', (page: Page, target: ElementRef, list: string) => expectOptions(page, target, list),
   {description: 'the choices of a dropdown, comma-separated, exactly and in this order; the blank option of a nullable dropdown is not a choice'});
+export const shouldOfferChoice = Then('{element} should offer the choice {string}', (page: Page, target: ElementRef, option: string) =>
+  expectOption(page, target, option, true), {description: 'one choice among the others a dropdown offers — an entry just saved'});
+export const shouldNotOfferChoice = Then('{element} should not offer the choice {string}', (page: Page, target: ElementRef, option: string) =>
+  expectOption(page, target, option, false), {description: 'one choice missing from a dropdown that offers others — a deleted entry gone from a list'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 
@@ -429,6 +459,27 @@ export const downloadedContains = Then('the downloaded file should contain {stri
   const file = await lastDownloaded(page);
   expect(readFileSync(file, 'utf8'), `the downloaded file ${file}`).toContain(text);
 }, {description: 'the file downloaded last'});
+
+export const lastDownloadCount = Then('the downloaded file should contain {int} occurrences of {string}', async (page: Page, count: number, text: string) => {
+  const file = await lastDownloaded(page);
+  expect(readFileSync(file, 'utf8').split(text).length - 1, `occurrences of "${text}" in the downloaded file ${file}`).toBe(count);
+}, {description: 'the file downloaded last — a record terminator counts the records'});
+
+export const fileMatchingDownloaded = Then('a file matching {string} should have been downloaded', async (page: Page, pattern: string) => {
+  await expect.poll(() => {
+    const list = downloads.get(page);
+    if (!list)
+      throw new Error('"user watches downloads" did not run in this scenario');
+    return list.map((d) => d.name);
+  }, {message: `the files downloaded, one named like /${pattern}/`}).toContainEqual(expect.stringMatching(new RegExp(pattern)));
+}, {description: 'a file whose name the page makes up (a date and a time in it), by a regular expression over the name'});
+
+export const noFileDownloaded = Then('no file should have been downloaded', async (page: Page) => {
+  const list = downloads.get(page);
+  if (!list)
+    throw new Error('"user watches downloads" did not run in this scenario');
+  expect(list.map((d) => d.name), 'the files downloaded since "user watches downloads"').toEqual([]);
+}, {description: 'read at once, so it follows the claim a refused action ends with (its warning), never the gesture itself'});
 
 export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
   const file = await lastDownloaded(page);
