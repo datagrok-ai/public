@@ -1,4 +1,4 @@
-# Major release format (X.Y.0)
+# Minor release format (1.Y.0, for example 1.28.0)
 
 ## Classification: which section a ticket belongs in
 
@@ -29,13 +29,14 @@ Determine section by priority:
    - Other `core/client/` or `core/server/` → Platform
 
 **Bug vs Feature classification:**
+- Jira: `issuetype.name` == "Bug" → `* Fixed:` subsection
 - GitHub: title starts with "Fix" / contains "Fixed" / has label "bug"
 - Commit: message contains "Fixed" / "Fix" prefix
 
-## Main updates section
+## Main updates section (Jira label `main`)
 
-- Propose the Main updates from the release's most important user-facing features (GitHub issues
-  labeled `main`, if the team uses the label). They also stay in their category section.
+- Tickets with label `main` go into the "Main updates" section AND their respective category section.
+  If none is labeled, propose the largest user-facing items of the draft.
 - **Ordering**: group related items thematically (AI-related items together,
   then infrastructure, then UX). Most impactful / user-visible items first.
   Present the proposed order to the user for confirmation.
@@ -53,7 +54,7 @@ Determine section by priority:
 - Use **em dash (`—`)** to append secondary context or benefit:
   `**Feature name** lets you do X — which improves Y`.
 - If a related doc page exists, add `For details, see [link]` at the end of the item.
-- **Do not include viewer-specific improvements** even if those issues have label `main`.
+- **Do not include viewer-specific improvements** even if those tickets have label `main`.
 
 Example:
 ```markdown
@@ -66,10 +67,10 @@ Example:
 
 ## Reformulation rules (general)
 
-Source of text: the **GitHub issue title**, not the commit message. Commit messages are only for
-classification and issue extraction, and the text source for items without an issue.
+Source of text: the **ticket summary** (GitHub issue title or Jira summary), not the
+commit message. Commit messages are only for classification and ticket extraction.
 
-- Convert the issue title to a past-tense completed action.
+- Convert the ticket summary to a past-tense completed action.
 - **Vary the leading verb** — never repeat "Added" on every line:
   - `Introduced` — brand-new features
   - `Improved` — enhancements to existing functionality
@@ -80,8 +81,8 @@ classification and issue extraction, and the text source for items without an is
 - **Avoid "Added the ability to"** — use `Enabled`, `Introduced`, or `Extended` instead.
 - GitHub issues: `[#NNN](https://github.com/datagrok-ai/public/issues/NNN): ` + reformulated title.
 - GitHub bug issues under `* Fixed:`: `[#NNN](link): ` + rewrite as positive outcome.
-- Commits without a GitHub issue: reformulate the commit message as completed action, no ticket
-  reference.
+- Jira-only items: reformulated summary, no ticket reference.
+- Commits without any ticket: reformulate the commit message as completed action.
 
 **Bug descriptions under `* Fixed:` must NOT start with "Fixed":**
 - Wrong: `* Fixed: \n  * Fixed correct state application`
@@ -164,7 +165,7 @@ Group items under nested bullet sub-headers instead of a flat list:
 * Fixed:
   * items...
 
-### [JS API](https://datagrok.ai/help/develop/js-api)
+### [JS API](https://datagrok.ai/help/develop/packages/js-api)
 
 * items...
 * Fixed:
@@ -187,7 +188,7 @@ Group items under nested bullet sub-headers instead of a flat list:
 
 ### Packages
 
-#### [PackageName](https://github.com/datagrok-ai/public/tree/master/packages/PackageName/CHANGELOG.md)
+#### [PackageName](https://github.com/datagrok-ai/public/tree/master/packages/PackageName)
 
 * items compiled from submodule commits
 ```
@@ -213,7 +214,7 @@ These links are provided by the user or found in commit messages — do not fabr
 | Tile Viewer | `../../visualize/viewers/tile-viewer.md` |
 | Pie chart | `../../visualize/viewers/pie-chart.md` |
 
-Package link pattern: `https://github.com/datagrok-ai/public/tree/master/packages/<Name>/CHANGELOG.md`
+Package link pattern: `https://github.com/datagrok-ai/public/tree/master/packages/<Name>`
 
 ## Latest version Docker image table
 

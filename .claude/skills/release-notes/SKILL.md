@@ -2,6 +2,7 @@
 name: release-notes
 description: Explicit `/release-notes` invocation only — generate release notes for a Datagrok platform release. Do NOT auto-trigger.
 argument-hint: "<version> [release-date]"
+disable-model-invocation: true
 ---
 
 # Generate Release Notes
@@ -11,11 +12,16 @@ argument-hint: "<version> [release-date]"
 > Always wait for the user to type `/release-notes`.
 
 Generate a structured release notes draft by analyzing git commits from both the
-core repository and the `public` submodule, resolving GitHub issues, and compiling
+core repository and the `public` submodule, resolving GitHub issues and Jira tickets, and compiling
 package changes.
 
 Requires a checkout of the core repository (the monorepo that holds `public` as a submodule):
-core commits and release branches live there. Run the commands below from its root.
+core commits and release branches live there. Run the commands below from its root, and use
+`git -C public` for the submodule: a `cd` does not carry over between shell calls.
+
+GitHub issues are read with the `gh` CLI. Without it, use
+`curl -s https://api.github.com/repos/datagrok-ai/public/issues/NNN` (60 requests an hour without a
+token).
 
 ## Usage
 
@@ -26,12 +32,14 @@ core commits and release branches live there. Run the commands below from its ro
 - `version` — release version (e.g. `1.27.0`, `1.27.1`)
 - `release-date` — optional, ISO `YYYY-MM-DD`. Default: date of latest commit on the release branch.
 
-Patch releases (Z > 0) use a simplified format. Major releases (Z = 0) use the full structure.
+Patch releases (`1.Y.Z`, Z > 0) use a simplified format. Minor releases (`1.Y.0`, for example
+`1.28.0`, the main releases) use the full structure. A minor release includes every patch of the
+previous one. Major releases (`2.0.0`) have no format yet: ask the user.
 
 ## Reference files (read on demand)
 
 - `references/patch-format.md` — patch release structure, rules, examples.
-- `references/major-format.md` — section classification, Main updates style, reformulation rules,
+- `references/minor-format.md` — section classification, Main updates style, reformulation rules,
   thematic sub-groups, viewer structure rule, full document template, viewer help link table,
   Latest version Docker table format.
 
@@ -43,23 +51,34 @@ Read whichever applies to the version being generated.
 
 Commits are selected based on **release branches**, not date ranges. Branch naming: `release/<version>`.
 
-**Determine the previous release branch:**
-- Major (`1.27.0`): previous is `1.26.0` (decrement minor, reset patch).
-- Patch (`1.27.1`): previous is `1.27.0`. (`1.27.2` → previous `1.27.1`.)
-- Verify: `git rev-parse --verify origin/release/<prev-version>`.
+**Determine the base release:** the latest earlier release that has notes in
+`public/help/deploy/releases/release-history.md`. Changes announced there are not repeated; changes
+of patches that got no notes go into these notes.
+- Minor (`1.28.0`): the latest `1.27.*` with notes, or `1.27.0`.
+- Patch (`1.27.12`): the latest `1.27.*` below it with notes. Patch numbers skip (there is no
+  `1.27.10`), so take versions from the branch list, not by decrementing:
+  `git branch -r --list 'origin/release/1.27.*' | grep -E '/[0-9.]+$' | sort -V`.
+- Verify: `git rev-parse --verify origin/release/<base-version>`.
+
+Release branches are not ancestors of each other: patches are cherry-picked. Use the symmetric
+range with `--cherry-pick --right-only`, which drops commits already shipped under another sha.
 
 **Core repository commits:**
 ```bash
-git log --oneline --no-merges origin/release/<prev-version>..origin/release/<version>
+git log --oneline --no-merges --cherry-pick --right-only origin/release/<base-version>...origin/release/<version>
 ```
 
 **Submodule commits** — `public/` is a submodule; the core log only shows pointer changes:
 ```bash
-OLD_SHA=$(git ls-tree origin/release/<prev-version> public | awk '{print $3}')
+OLD_SHA=$(git ls-tree origin/release/<base-version> public | awk '{print $3}')
 NEW_SHA=$(git ls-tree origin/release/<version> public | awk '{print $3}')
-cd public
-git log --oneline --no-merges $OLD_SHA..$NEW_SHA
+git -C public log --oneline --no-merges --cherry-pick --right-only $OLD_SHA...$NEW_SHA
 ```
+
+The pointers are what shipped. If one is missing from `public` (`git -C public cat-file -e $OLD_SHA`
+fails, as for some 1.26 patches), use `public`'s own branch instead: `git -C public fetch origin
+release/<base-version>`, then `OLD_SHA=origin/release/<base-version>`. Its tip can be a few
+commits past the shipped pointer.
 
 **Both sources must be analyzed.** Submodule typically holds ~80% of the content
 (packages, JS API, GitHub issues). Do NOT skip submodule analysis. Documentation lives in the
@@ -67,30 +86,52 @@ git log --oneline --no-merges $OLD_SHA..$NEW_SHA
 
 **Filter noise commits** before analysis:
 - `Help:` prefix (docs-only)
-- Test-related: `Test:`, `Tests:`, `ApiTests:`, `TestTrack:`, `UiTests:`, `StressTests:`, `BDD:`
-- Trivial: `WIP`-only, `Removed print`, `Fixed build`, `Merged branch`, `GitHub Actions:`, `CICD:`, `version bump`, `autogenerated`, `Build fix`
+- Test-related: `Test:`, `Tests:`, `ApiTests:`, `TestTrack:`, `Test Track:`, `UiTests:`,
+  `StressTests:`, `BDD:`
+- Trivial: `WIP`-only, `Removed print`, `Fixed build`, `Build fix`, `Merged branch`, `Merged in`,
+  `GitHub Actions:`, `CICD:`, `Release:`, `Claude:`, `version bump`, `autogenerated`
+- Commits that change only `*.md` files or lockfiles
 
 Extract from each remaining commit:
-- `#NNN` — GitHub issue (repo: `datagrok-ai/public`)
-- Commit message prefix before `:` (e.g. `Grid:`, `Scatterplot:`, `JS API:`, `Bio:`)
+- `#NNN` — a GitHub issue or a pull request (squash merges end with `(#NNN)`); Step 2 tells them
+  apart
+- `GROK-NNNNN` — Jira ticket (project: GROK, instance: `reddata.atlassian.net`)
+- Commit message prefix (e.g. `Grid:`, `Scatterplot:`, `JS API:`, `Bio:`). Skip a leading ticket
+  key: in `GROK-12345: Grid: ...` the prefix is `Grid:`
 - Any `BREAKING` keyword
 
-Deduplicate issues across commits. Track prefixes / file paths per issue.
+Deduplicate tickets across commits: commits with the same ticket are one item. Track prefixes /
+file paths per ticket.
 
 **Windows note:** no `grep -P`. Use `grep -oE` or `awk`.
 
 ---
 
-## Step 2: Resolve GitHub issues
+## Step 2: Resolve ticket metadata
 
-| Commit has   | Source                                                                    |
-|--------------|---------------------------------------------------------------------------|
-| `#NNN`       | `gh issue view NNN --repo datagrok-ai/public --json title,labels,state`   |
-| no issue     | the commit message                                                        |
+Load Atlassian MCP tools via `ToolSearch` first.
 
-Every item that has a GitHub issue shows its number with a link:
-`[#NNN](https://github.com/datagrok-ai/public/issues/NNN): ...`. Items without an issue get no
-ticket reference. Other tracker keys in commit messages (such as `GROK-NNNNN`) are never shown.
+| Commit has         | Source        | Why                                                         |
+|--------------------|---------------|-------------------------------------------------------------|
+| `#NNN` only        | `gh api repos/datagrok-ai/public/issues/NNN` | Fast, no rate limit. |
+| `GROK-N` and `#N`  | GitHub for text **and** Jira for `labels`/`issuetype`/Client | Need both for classification + display. |
+| `GROK-N` only      | Jira (`mcp__claude_ai_Atlassian__getJiraIssue`)            | Only source of summary.        |
+| no ticket          | commit message                                             | Fall back.                     |
+
+A `#NNN` whose GitHub response has `pull_request` is a pull request, not an issue: use the issue
+it references, if any, or treat the commit as having no GitHub issue.
+
+Always link GitHub: `[#NNN](https://github.com/datagrok-ai/public/issues/NNN): ...`. Jira numbers
+and pull request numbers are **never** shown in the output text.
+
+**Jira fetching:** `cloudId` from `getAccessibleAtlassianResources` (pick `reddata.atlassian.net`).
+Fields: `summary`, `issuetype`, `labels`, `components`, `customfield_10573` (Client).
+Fetch in parallel batches of 5–10.
+
+**Inclusion rules for Jira-only tickets:**
+- Has Client field set → **include**.
+- Client empty + `issuetype.name` == "Bug" → **exclude**.
+- Client empty + non-Bug → **include**.
 
 Skip internal work: tests, CI, refactoring, and fixes of bugs that never reached a release.
 
@@ -123,7 +164,7 @@ Collect findings — they will be presented for explicit user confirmation in St
 
 **For patch releases:** read `references/patch-format.md` and follow it. Skip Steps 4b and 5.
 
-**For major releases:** read `references/major-format.md` for:
+**For minor releases:** read `references/minor-format.md` for:
 - Section classification by prefix / summary / file path
 - Bug vs Feature classification
 - Main updates section rules and writing style
@@ -133,30 +174,33 @@ Collect findings — they will be presented for explicit user confirmation in St
 - Full document template
 - Viewer help link table
 
-### Step 4b: Compile package changes (major only)
+### Step 4b: Compile package changes (minor only)
 
 Use submodule commits to find what changed, then check the package changelogs for what was
 released:
 
 ```bash
-cd public
-git diff --name-only $OLD_SHA..$NEW_SHA -- packages/ \
-  | sed 's|packages/\([^/]*\)/.*|\1|' | sort | uniq -c | sort -rn
-git log --oneline --no-merges $OLD_SHA..$NEW_SHA -- packages/<Name>/
+git -C public log --no-merges --cherry-pick --right-only --format=@%h --name-only $OLD_SHA...$NEW_SHA -- packages/ \
+  | awk '/^@/{split("",seen);next} match($0,/^packages\/[^\/]+/){p=substr($0,10,RLENGTH-9); if(!seen[p]++) print p}' \
+  | sort | uniq -c | sort -rn
+git -C public log --oneline --no-merges --cherry-pick --right-only $OLD_SHA...$NEW_SHA -- packages/<Name>/
 ```
+
+The first command ranks packages by commits, not by changed files. Leave out test packages
+(`ApiTests`, `ApiSamples`, `UITests`, `CVMTests`).
 
 For each package with > 3 non-trivial commits: extract feature/fix messages, group, format
 into the Packages section. Skip packages where all commits are trivial.
 
-A package change is released only when its `CHANGELOG.md` lists it under a dated version.
-Changes still under `## v.next` are not in any published package version: leave them out, or list
-them separately for the user to decide.
+A package change is released when its `CHANGELOG.md` lists it under a dated version. Changes still
+under `## v.next` are not in any published package version: leave them out, or list them separately
+for the user to decide. A feature found in commits but in no changelog entry: ask the user.
 
 ---
 
-## Step 5: Major release Main updates ordering (major only)
+## Step 5: Minor release Main updates ordering (minor only)
 
-Propose the Main updates (see `references/major-format.md`), group them thematically (AI together,
+Propose the Main updates (see `references/minor-format.md`), group them thematically (AI together,
 infra together, UX together), and present the proposed selection and order to the user for
 confirmation.
 
@@ -196,7 +240,7 @@ Only after user confirmation:
 
 The `## Latest version` table holds Docker image versions for core services. These are
 published **at the very end** of the release process. Remind the user to update the table
-once the images are pushed (format and `curl` recipe in `references/major-format.md`).
+once the images are pushed (format and `curl` recipe in `references/minor-format.md`).
 
 ---
 
@@ -205,6 +249,7 @@ once the images are pushed (format and `curl` recipe in `references/major-format
 | Tool                                         | Purpose                          |
 |----------------------------------------------|----------------------------------|
 | Bash (`git log`, `git show`, `git ls-tree`)  | Extract commits and pointers     |
-| Bash (`gh issue view`)                       | Fetch GitHub issue metadata      |
+| Bash (`gh api`, or `curl`)                   | Fetch GitHub issue metadata      |
+| Atlassian MCP (`getJiraIssue`)               | Fetch Jira ticket metadata       |
 | `Read`                                       | Read references and target file  |
 | `Edit`                                       | Insert into release-history.md   |

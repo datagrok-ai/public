@@ -1,8 +1,8 @@
 ---
 name: write-help
-description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature or a GitHub issue, for bringing the help up to date with a release, and for recording or replacing help GIFs.
-when-to-use: A feature or a GitHub issue (#1234) needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
-argument-hint: "<topic, page, GitHub issue (#1234), or release version>"
+description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature, a GitHub issue, or a Jira ticket, for bringing the help up to date with a release, and for recording or replacing help GIFs.
+when-to-use: A feature, a GitHub issue (#1234), or a Jira ticket (GROK-12345) needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
+argument-hint: "<topic, page, ticket (#1234 or GROK-12345), or release version>"
 effort: medium
 ---
 
@@ -38,23 +38,27 @@ Companion files in this skill's folder:
    plain commit messages.
 5. **Finish with a reading list**: for each topic, the page and anchor that now covers it.
 
-### Starting from an issue
+### Starting from a ticket
 
-When the argument is an issue, learn the feature from the issue and the code before deciding what
+When the argument is a ticket, learn the feature from the ticket and the code before deciding what
 the help needs:
 
-1. **Read the issue**: `gh issue view <N> --repo datagrok-ai/public --comments`: description,
-   comments, state, labels, and linked PRs.
-2. **Find the change**: `git log origin/master --grep="#<N>"` in `public`, `help`, and core if you
-   have access. Read the diffs, then the current code on master: commits after the issue may have
+1. **Read the ticket**: description, comments, state, labels, and linked tickets and PRs.
+   - GitHub issue: `gh issue view <N> --repo datagrok-ai/public --comments` (without `gh`:
+     `curl -s https://api.github.com/repos/datagrok-ai/public/issues/<N>` and `.../<N>/comments`).
+   - Jira ticket: the Atlassian MCP (`getJiraIssue`, instance `reddata.atlassian.net`). A linked
+     GitHub issue is the one to cite.
+
+2. **Find the change**: `git log origin/master --grep="#<N>"` (or `--grep=GROK-<N>`) in `public`, `help`, and core if you
+   have access. Read the diffs, then the current code on master: commits after the ticket may have
    changed it.
 3. **Decide whether it belongs in the help**: user-facing, finished, and released (see the table in
    `release.md`). Internal changes, unfinished work, and unreleased plugin versions get no help.
    Report the decision with the evidence.
 4. **Find the place**: grep the help for the area and its UI labels. Prefer updating the section
    that already covers the area. A help page that now says something wrong comes first.
-5. **Propose, verify, write** as in sections 1–6. Reference the issue (`#<N>`) at the start of
-   the commit message.
+5. **Propose, verify, write** as in sections 1–6. Start the commit message with the ticket:
+   `GROK-<N>: Help: …` or `#<N>: Help: …`.
 6. **Suggest a community post** when the change is new and noticeable to users, changes existing
    results, or requires an action: one line in the reader's words, with the help page and anchor
    if there is one.
@@ -74,7 +78,7 @@ the help needs:
   `gifs.md`) or the browser, and record what you observed.
 - **Numbers come from the data**, not from assumptions.
 - **Released, finished, user-facing.** Plugin changes under `## v.next` in a `CHANGELOG.md` are
-  not released. Ask before documenting a feature whose issue is open; its developer may own the
+  not released. Ask before documenting a feature whose ticket is open; its developer may own the
   docs.
 - **Never write an unverified claim as fact.** Keep a list of claims checked only in the code or
   not checked at all, and show it. If a check is impossible, drop the claim.
@@ -124,8 +128,7 @@ the help needs:
 - **Keep the order of related sections the same across sibling pages** (for viewers: trend lines,
   then formula lines and annotations). Don't restructure page templates unless asked.
 - **Alternative GIFs of one section go into tabs** (for example, regression line and moving
-  average in `visualize/viewers/line-chart.md`). `help/CLAUDE.md` reserves tabs for OS or language
-  variants: when publishing this skill, add this case there. A page with tabs needs
+  average in `visualize/viewers/line-chart.md`). A page with tabs needs
   `mdx:\n  format: mdx` in the front matter and the `Tabs` / `TabItem` import block.
 - **No troubleshooting sections in reference pages.** Non-obvious questions go to
   `datagrok/resources/faq.md`.

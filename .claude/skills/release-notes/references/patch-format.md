@@ -1,4 +1,4 @@
-# Patch release format (X.Y.Z, Z > 0)
+# Patch release format (1.Y.Z, Z > 0, for example 1.27.12)
 
 Patch releases use a **simplified format** — no intro paragraph, no Main updates,
 no thematic sub-groups, no viewer sub-sections, no Packages section.
@@ -36,7 +36,7 @@ no thematic sub-groups, no viewer sub-sections, no Packages section.
 7. **Omit sections if empty** — if there are no improvements, omit `### Improvements:`;
    if there are no fixes, omit `### Fixed:`.
 
-## Reformulation rules (apply to patch and major)
+## Reformulation rules (apply to patch and minor)
 
 - Vary the leading verb (Introduced, Improved, Implemented, Exposed, etc.).
 - Bug-fix phrasing: describe the positive outcome, not the problem
