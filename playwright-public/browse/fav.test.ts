@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 import {
   CONTEXT_MENU,
-  CONTEXT_MENU_ADD_FAVORITES,
   CONTEXT_PANEL_STAR,
   SIDEBAR_FAVORITES_ICON,
-  contextMenuItem,
   treeGroupByName,
   treeNodeByPath,
 } from './selectors';
@@ -15,6 +13,7 @@ import {
   watchErrors,
   expectNoErrors,
   expandTreeGroup,
+  setPersonalFavorite,
 } from './helpers';
 
 // Fav tests toggle the same shared Favorites state on Tutorials — keep them serial
@@ -44,27 +43,13 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
         .toBeVisible({ timeout: 5_000 });
     }
 
-    /** Closes any open menu by pressing Escape (no-op if nothing's open). */
-    async function closeMenu(): Promise<void> {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(300);
-    }
-
     // Step 0: ensure the entity is NOT in favorites (cleanup from prior runs).
     await openContextMenu();
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-      await page.waitForTimeout(1000);
-    } else {
-      await closeMenu();
-    }
+    await setPersonalFavorite(page, false);
 
     // Step 1: add to favorites.
     await openContextMenu();
-    await expect(contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES),
-      'After cleanup, "Add To Favorites" must be present').toBeVisible({ timeout: 5_000 });
-    await contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES).click();
-    await page.waitForTimeout(1500);
+    await setPersonalFavorite(page, true);
 
     // Step 2: verify the entity is now listed under My stuff > Favorites.
     await expandTreeGroup(page, 'My stuff');
@@ -82,11 +67,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     await ensureBrowsePanelOpen(page);
     await expandTreeGroup(page, 'Apps');
     await openContextMenu();
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-    } else {
-      await closeMenu();
-    }
+    await setPersonalFavorite(page, false);
   });
 
   test('Browse-Fav-02 — toggle favorite via the Context Panel star (add + remove roundtrip)', async ({ page }) => {
@@ -131,12 +112,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     const sourceLabel = source.locator('.d4-tree-view-item-label, .d4-tree-view-group-label').first();
     await sourceLabel.click({ button: 'right' });
     await expect(page.locator(CONTEXT_MENU)).toBeVisible({ timeout: 5_000 });
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-      await page.waitForTimeout(800);
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    await setPersonalFavorite(page, false);
 
     // Open the Favorites panel — this is the drop zone.
     await page.locator(SIDEBAR_FAVORITES_ICON).click();
@@ -163,38 +139,36 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     await ensureBrowsePanelOpen(page);
     await expandTreeGroup(page, 'Apps');
     await sourceLabel.click({ button: 'right' });
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    await setPersonalFavorite(page, false);
   });
 
-  test('Browse-Fav-05 — file / cell context menu does not expose Add To Favorites', async ({ page }) => {
+  test('Browse-Fav-06 — file context menu adds and removes a file from favorites (GROK-21108)', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // Open the Files > Demo folder and right-click on a plain file (non-entity).
     await page.goto(`${process.env.DATAGROK_URL!}/files/System.DemoFiles/?browse=files`);
     await page.waitForSelector('.d4-ribbon', { timeout: 30_000 });
     const demog = page.locator('label', { hasText: /^demog\.csv$/ }).first();
     await expect(demog).toBeVisible({ timeout: 15_000 });
 
-    await demog.evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      el.dispatchEvent(new MouseEvent('contextmenu', {
-        bubbles: true, cancelable: true, button: 2, clientX: r.left + 5, clientY: r.top + 5,
-      }));
-    });
+    async function openContextMenu(): Promise<void> {
+      await demog.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        el.dispatchEvent(new MouseEvent('contextmenu', {
+          bubbles: true, cancelable: true, button: 2, clientX: r.left + 5, clientY: r.top + 5,
+        }));
+      });
+      await expect(page.locator(CONTEXT_MENU), 'Context menu must open').toBeVisible({ timeout: 5_000 });
+    }
 
-    await expect(page.locator(CONTEXT_MENU), 'Context menu must open').toBeVisible({ timeout: 5_000 });
+    await openContextMenu();
+    await setPersonalFavorite(page, false);
+    await openContextMenu();
+    await setPersonalFavorite(page, true);
+    await openContextMenu();
+    expect(await setPersonalFavorite(page, false), 'after adding, the file must be a favorite').toBe(true);
+    await openContextMenu();
+    expect(await setPersonalFavorite(page, false), 'after removing, the file must not be a favorite').toBe(false);
 
-    // For a plain file, "Add To Favorites" should not be among visible menu items.
-    const addItems = page.locator(`${CONTEXT_MENU} .d4-menu-item-label`,
-      { hasText: /^Add To Favorites$/i });
-    expect(await addItems.count(),
-      '"Add To Favorites" must not appear for a non-entity file').toBe(0);
-
-    await page.keyboard.press('Escape');
     await expectNoErrors(page, sink);
   });
 });
