@@ -19,11 +19,11 @@ const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Sc
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
 const COMMANDS = ['shares', 'domains', 'raw', 'api', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle',
-  'token', 'o'];
+  'token', 'o', 'observe'];
 
 type Handler = (connect: Connect, verb: string | undefined, rest: string[], argv: any, output: OutputFormat) => Promise<boolean>;
 
-/** `grok s o <command>`: observability. They open their own sessions; `alerts`, `problems`, `errors` and `logger`
+/** `grok s o <command>` (or `grok s observe <command>`): observability. They open their own sessions; `alerts`, `problems`, `errors` and `logger`
  * may address several `--host`s. */
 const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
   alerts: {handle: handleAlerts, usage: ALERTS_USAGE},
@@ -36,18 +36,32 @@ const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export const O_USAGE = `Usage: grok s o <command> <verb> [args]
+       grok s observe <command> <verb> [args]
+
+Observability: what the deployment detects, the alerts it raised, its errors, logging and captures.
   alerts      the alerts the deployment's problems raised; who holds detection
   problems    what the deployment detects, and what people decided about it
   errors      platform errors as data: list, top, show, diff, export, save
   logger      the logging policy: get, set, diff, overrides, history, revert
   capture     capture rules for a user, group, package or everyone
   timeline    clicks, requests, calls and server lines in time order
-grok s o <command> --help prints the full options of one command.`;
+grok s o <command> --help (or grok s o help <command>) prints the full options of one command.
+Several --host flags address several servers at once for alerts, problems, errors and logger.
+
+Examples:
+  grok s o problems list --status active
+  grok s observe alerts list --since 24h
+  grok s o errors top --since 7d --by signature,package
+  grok s o logger set server --debug-flags +query --scope package:Chem --for 30m --reason "ticket 123"`;
 
 export async function server(argv: any): Promise<boolean> {
   const all: string[] = argv['_'].slice(1);
-  const o = all[0] === 'o';
-  const args: string[] = o ? all.slice(1) : all;
+  const o = all[0] === 'o' || all[0] === 'observe';
+  let args: string[] = o ? all.slice(1) : all;
+  if (o && args[0] === 'help') {
+    args = args.slice(1);
+    argv.help = true;
+  }
   const entity: string | undefined = args[0];
   const verb: string | undefined = args[1];
   const rest: string[] = args.slice(2);
@@ -60,7 +74,7 @@ export async function server(argv: any): Promise<boolean> {
   const hosts = hostList(argv.host);
   const recursive: boolean = !!(argv.r ?? argv.recursive);
 
-  if (o && (!entity || argv.help)) {
+  if (o && (!entity || argv.help || verb === 'help')) {
     console.log(OBSERVABILITY[entity ?? '']?.usage ?? O_USAGE);
     return true;
   }
@@ -82,7 +96,7 @@ export async function server(argv: any): Promise<boolean> {
     return fail(new Error(`grok s ${entity} is now grok s o ${entity}`));
   if (o) {
     if (!observability)
-      return fail(new Error(`Unknown command 'o ${entity}'.\n${O_USAGE}`));
+      return fail(new Error(`Unknown command '${all[0]} ${entity}'.\n${O_USAGE}`));
     const connect: Connect = async (h) => new NodeDapi(await createClient(h, !!argv.admin));
     try {
       return await observability.handle(connect, verb, rest, argv, output);
@@ -936,8 +950,8 @@ Manage a Datagrok server from the command line.
 
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
-  (plus domains, shares, batch, raw/api, describe, healthcheck, sync, alerts, errors, logger, capture,
-  timeline, pull/push/migrate/diff/bundle below)
+  (plus domains, shares, batch, raw/api, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
+  o, observe: observability (problems, alerts, errors, logger, capture, timeline); grok s o --help
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -1044,6 +1058,7 @@ Special commands:
   grok s o timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
                                                       Clicks, requests, calls and server lines in time order
   grok s o <alerts|problems|errors|logger|capture|timeline> --help   Full options of one command
+  grok s observe ...                                  The same as grok s o ...
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)

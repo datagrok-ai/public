@@ -469,17 +469,18 @@ module the server does not report exits 1. Requires a valid dev key (standard `g
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
 
-## Alerts, errors, logging and capture (`grok s o`)
+## Alerts, errors, logging and capture (`grok s o`, `grok s observe`)
 
-The observability commands live under `grok s o` (`grok s o --help` lists them). They read and change the deployment's observability state: the alerts every server
+The observability commands live under `grok s o`, or its long form `grok s observe` (`grok s o --help`
+or `grok s o help` lists them). They read and change the deployment's observability state: the alerts every server
 shares, errors as query results, the logging policy with its time-boxed overrides, and capture
 rules that record one user's or group's activity for a while. Times are UTC, as in the UI and the
 REST API: tables print `HH:MMZ` when today, else `MM-DD HH:MMZ`, and a time given without an offset
 (`--until 14:00`, `--from 2026-09-21T06:00`) is read as UTC. Request ids are shortened to their last
 six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
 `--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
-leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s o errors --help`) prints
-all of its options.
+leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s o errors --help`, `grok s o help errors`)
+prints all of its options.
 
 ### Problems and alerts
 
