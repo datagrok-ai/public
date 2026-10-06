@@ -39,7 +39,7 @@ interface FuncCache {
 /** Utility node type names that have no creation-script (function) form. */
 const UNSUPPORTED_UTILITY_TYPES = new Set([
   'Utilities/Log', 'Utilities/Info', 'Utilities/Warning', 'Utilities/Add Table View',
-  'Utilities/ToString', 'Utilities/FromJSON', 'Utilities/ToJSON',
+  'Utilities/ToString', 'Utilities/To Semantic Value', 'Utilities/FromJSON', 'Utilities/ToJSON',
 ]);
 
 export function emitCreationScript(flow: FlowEditor): CreationScriptResult {

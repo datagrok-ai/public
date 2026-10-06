@@ -152,7 +152,7 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
   const saliMinMax = getSaliMinMax(cliffsMetrics.saliVals);
   const saliOpacityCoef = 0.8 / (saliMinMax.max - saliMinMax.min);
 
-  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.getTableView(df.name);
+  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.tableView(df.name);
   const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {
     xColumnName: axesNames[0],
     yColumnName: axesNames[1],
@@ -191,6 +191,12 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
     }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  listCliffsLink.setAttribute('name', 'button-cliffs');
+  // what the run found, on the plot it drew it onto: the link's caption carries the same number
+  sp.addStatusProvider('activity cliffs', () => ({values: {
+    'cliffs': linesRes.linesDf.rowCount,
+    'only cliffs': sp.dataFrame.getTag(CLIFFS_FILTER_APPLIED) === axesNames[0],
+  }}));
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
@@ -262,6 +268,8 @@ export async function getActivityCliffs(df: DG.DataFrame, seqCol: DG.Column,
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
+        if (sp.dataFrame == null)
+          return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
           seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);
@@ -384,7 +392,7 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
   // eslint-disable-next-line prefer-const
   let acc: DG.Accordion;
   let clickedSp = false;
-  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.getTableView(df.name);
+  const view = grok.shell.tv?.dataFrame === df ? grok.shell.tv : grok.shell.tableView(df.name);
 
   let sparseMatrixRes: SparseMatrixResult | null = null;
   if (seqSpaceOptions.useWebGPU) {
@@ -446,6 +454,12 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
     }
   });
   listCliffsLink.classList.add('scatter_plot_link', 'cliffs_grid');
+  listCliffsLink.setAttribute('name', 'button-cliffs');
+  // what the run found, on the plot it drew it onto: the link's caption carries the same number
+  sp.addStatusProvider('activity cliffs', () => ({values: {
+    'cliffs': linesRes.linesDf.rowCount,
+    'only cliffs': sp.dataFrame.getTag(CLIFFS_FILTER_APPLIED) === axesNames[0],
+  }}));
 
   /* in case several activity cliffs viewers are opened cliffs filtering can
   be applyed only to one of the viewers. When 'Show only cliffs' is switched on one of the viewers
@@ -519,6 +533,8 @@ export async function runActivityCliffs(sp: DG.ScatterPlotViewer, df: DG.DataFra
       if (filterCliffsButton.enabled === true)
         df.filter.setAll(true);
       setTimeout(() => {
+        if (sp.dataFrame == null)
+          return;
         updatePropertyPanel(df, acc, linesRes.lines.from[lineIdx], linesRes.lines.to[lineIdx], lineIdx,
           seqCol, activities, linesRes.linesDf.get(LINES_DF_SALI_COL_NAME, lineIdx), propertyPanelFunc);
         const order = sp.dataFrame.getSortedOrder(view.grid.sortByColumns, view.grid.sortTypes);

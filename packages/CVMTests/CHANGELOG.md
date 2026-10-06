@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Raised the first `Celery: datagrok-celery-task` call to 15 min. On CI the cold start builds the worker image and overran the 300s budget, which timed out that case and took the other thirteen with it; the stand now allows 20 min for the container to reach STARTED
 * GROK-20642: Tests: `Docker`'s `Proxy WebSocket` now waits for the container to answer before opening the socket — `run(id, true)` returns when the platform marks it started, which is earlier than the app inside binding its port, so the proxy failed with `Connection refused, errno = 111` on a loaded stand
 * GROK-20642: Tests: Gave the per-language `Escaping` test a 180s budget (it makes one server round-trip per string against the 30s default) and raised the first test of each language category to 300s, since it pays the kernel cold start while the rest of the suite loads the same stand
 * Tests: Fixed the container-start flakes — `Docker`'s `before()` no longer awaits a start over the framework's fixed 100s budget (which failed the whole category), and `Proxy WebSocket`, `Get response: On demand` and the first Celery call in each worker category now get budgets that cover a cold start instead of reporting EXECUTION TIMEOUT on one still in progress
@@ -18,8 +19,11 @@
 
 * Tests: fixed Docker tests — the container-name filter never matched. Platform registers package containers as `kebab(package.name)-<dockerfileFolder>` (`cvm-tests-cvmtests-docker-test1/2`); the test queried `cvmtests-Cvmtests-...`, so `before()` got `undefined` and all 5 Docker tests failed. Also added a clear not-found error instead of a cryptic undefined cascade.
 * Tests: fixed `Column list` script tests — JS `column_list` input is a name array (`string[]`), so use `cols[0]` not `cols.toList()[0]`; Grok script now `DeleteColumns(df, Named([cols.first]))` — a runtime list value isn't coerced to a column filter (only parse-time list literals are), so the prior `DeleteColumns(df, [cols.first])` threw `Class 'List' has no instance method 'makePredicate'`. Wrapping in `Named(...)` builds the predicate explicitly.
-* Security: rebuilt `cvmtests-docker-test1` (`python:3.12-alpine`) and `cvmtests-docker-test2` (`python:3.11-alpine`) on current bases (+ `apk upgrade`, refreshed pip/setuptools/wheel) to clear base-OS CVEs (expat/krb5/openssl/musl) and stale Python tooling.
 * Docker: cvmtests-docker-test2 — raised Quart (>=0.20) and Werkzeug (>=3.1.6) floors to clear their CVEs (VEX)
+
+## 1.5.1 (2026-07-08)
+
+* Security: rebuilt `cvmtests-docker-test1` (`python:3.12-alpine`) and `cvmtests-docker-test2` (`python:3.11-alpine`) on current bases (+ `apk upgrade`, refreshed pip/setuptools/wheel) to clear base-OS CVEs (expat/krb5/openssl/musl) and stale Python tooling.
 * Added datagrok-celery-task integration tests via the python/ celery worker
 
 # 1.4.0 (28-07-2025)

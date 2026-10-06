@@ -401,8 +401,8 @@ category('Flow: creation script import', () => {
       expect(errors.length, 0, `validation errors: ${errors.map((x) => x.message).join('; ')}`);
 
       const script = emitScript(e.flow, SETTINGS);
-      expect(script.includes('grok.shell.tableByName("demog")'), true, 'table1 via tableByName');
-      expect(script.includes('grok.shell.tableByName("demog (2)")'), true, 'table2 via tableByName');
+      expect(script.includes('grok.shell.table("demog")'), true, 'table1 via tableByName');
+      expect(script.includes('grok.shell.table("demog (2)")'), true, 'table2 via tableByName');
       expect(script.includes('ResolveTable'), false, 'no ResolveTable in generated script');
       expect(script.includes(`.col('USUBJID')`), true, 'key columns via table.col()');
     } finally {

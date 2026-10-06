@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as fs from 'node:fs';
 
 // ---------------------------------------------------------------------------
@@ -134,7 +135,8 @@ function loadInlinedSkills(): string {
       // silently matches nothing and inlines each skill's YAML frontmatter into the system prompt.
       const body = raw.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n+/, '').trim();
       sections.push(`### ${name}\n\n${body}`);
-    } catch {
+    } catch (e: any) {
+      console.error(`inlined skill '${name}' failed to load from ${skillPath} — system prompt ships without it:`, e.message);
     }
   }
   return sections.join('\n\n---\n\n');
@@ -144,9 +146,9 @@ const INLINED_SKILLS = loadInlinedSkills();
 
 // Build once at module load so the system prompt prefix is byte-stable across every turn and
 // every user — required for Anthropic prompt-cache hits on the ~20-30 KB prefix.
-const DATAGROK_SYSTEM_PROMPT = INLINED_SKILLS
-  ? `${DATAGROK_PROMPT}\n\n## Inlined Skills\n\nThese skills are available in this context — invoke them directly without loading via the Skill tool. Each section gives the canonical signatures, conventions, and examples for one capability.\n\n${INLINED_SKILLS}`
-  : DATAGROK_PROMPT;
+const DATAGROK_SYSTEM_PROMPT = INLINED_SKILLS ?
+  `${DATAGROK_PROMPT}\n\n## Inlined Skills\n\nThese skills are available in this context — invoke them directly without loading via the Skill tool. Each section gives the canonical signatures, conventions, and examples for one capability.\n\n${INLINED_SKILLS}` :
+  DATAGROK_PROMPT;
 
 export function buildSystemPrompt(mode?: string): string {
   if (mode === 'bash') return BASH_EXEC_PROMPT;

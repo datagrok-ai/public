@@ -91,16 +91,16 @@ category('AI: Viewers: Confusion Matrix', () => {
     const pos = v.categories[0];
     const neg = v.categories[1];
     expectFloat(v.sensitivity, rowShare(pos));
-    expectFloat(v.specificity, rowShare(neg));
-    expectFloat(v.precision, colShare(pos));
-    expectFloat(v.negativePredictedValue, colShare(neg));
+    expectFloat(v.specificity!, rowShare(neg));
+    expectFloat(v.precision!, colShare(pos));
+    expectFloat(v.negativePredictedValue!, colShare(neg));
   });
 
   test('getRowShare and getColumnShare per index match hand-computed shares', async () => {
-    expectFloat(v.getRowShare(0), rowShare(v.categories[0]));
-    expectFloat(v.getRowShare(1), rowShare(v.categories[1]));
-    expectFloat(v.getColumnShare(0), colShare(v.categories[0]));
-    expectFloat(v.getColumnShare(1), colShare(v.categories[1]));
+    expectFloat(v.getRowShare(0)!, rowShare(v.categories[0]));
+    expectFloat(v.getRowShare(1)!, rowShare(v.categories[1]));
+    expectFloat(v.getColumnShare(0)!, colShare(v.categories[0]));
+    expectFloat(v.getColumnShare(1)!, colShare(v.categories[1]));
   });
 
   test('non-binary 3-class frame: isBinary false, three categories, binary stats degrade to 0', async () => {

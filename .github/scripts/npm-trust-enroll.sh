@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+# Enroll Datagrok npm packages in npm trusted publishing (OIDC).
+#
+# Maps every publishable package in this repo to the workflow that publishes it
+# and registers it with `npm trust github`. Idempotent: packages that already
+# have a trusted publisher, are not on the registry yet, or are not ours are
+# skipped.
+#
+# Usage:
+#   ./.github/scripts/npm-trust-enroll.sh                 # everything
+#   ./.github/scripts/npm-trust-enroll.sh --dry-run       # show what would happen
+#   ./.github/scripts/npm-trust-enroll.sh @datagrok/chem  # one package
+#
+# Requires npm >= 11.15.0, `npm login` as a user with write access to the
+# @datagrok / @datagrok-libraries / @datagrok-misc orgs, and account-level 2FA.
+# See .github/NPM_TRUSTED_PUBLISHING.md.
+set -uo pipefail
+
+REPO='datagrok-ai/public'
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+
+DRY_RUN=''
+ONLY=''
+REFRESH=''
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN='--dry-run' ;;
+    --refresh) REFRESH=1 ;;
+    -*) echo "unknown option: $arg" >&2; exit 2 ;;
+    *) ONLY="$arg" ;;
+  esac
+done
+
+npm_major_minor="$(npm --version | awk -F. '{printf "%d%03d", $1, $2}')"
+if [ "$npm_major_minor" -lt 11015 ]; then
+  echo "npm $(npm --version) is too old; 'npm trust' needs >= 11.15.0. Run: npm install -g npm@latest" >&2
+  exit 1
+fi
+
+enrolled=0 cached=0 skipped=0 failed=0
+
+# Every npm trust call needs a fresh OTP, and the "skip 2FA" grace period is only
+# five minutes — not enough for the whole fleet. Remember what is already trusted
+# so a re-run resumes instead of re-verifying, and write after each change so an
+# aborted run keeps its progress. Shared with the PowerShell script.
+CACHE_FILE="$HOME/.datagrok-npm-trust.json"
+declare -A CACHE
+if [ -f "$CACHE_FILE" ] && [ -z "$REFRESH" ]; then
+  while IFS="$(printf '\t')" read -r k v; do
+    [ -n "$k" ] && CACHE["$k"]="$v"
+  done < <(jq -r --arg r "$REPO" '(.[$r] // {}) | to_entries[] | [.key, .value] | @tsv' "$CACHE_FILE" 2>/dev/null)
+fi
+
+save_cache() {
+  local tmp prev
+  tmp="$(mktemp)"
+  prev="$CACHE_FILE"
+  [ -f "$prev" ] || prev='/dev/null'
+  # jq reads the previous file directly: process substitution with a fallback
+  # fails with EPERM under git-bash on Windows. /dev/null slurps to an empty
+  # array, so the // {} below still gives a fresh object on first write.
+  for k in "${!CACHE[@]}"; do printf '%s\t%s\n' "$k" "${CACHE[$k]}"; done \
+    | jq -R -s --arg r "$REPO" --slurpfile prev "$prev" '
+        (($prev[0] // {})) as $p
+        | $p + { ($r): (
+            split("\n") | map(select(length > 0) | split("\t") | {key: .[0], value: .[1]}) | from_entries
+          ) }
+      ' > "$tmp" 2>/dev/null && mv "$tmp" "$CACHE_FILE" || rm -f "$tmp"
+}
+
+enroll() {
+  local dir="$1" workflow="$2"
+  [ -f "$dir/package.json" ] || return 0
+
+  local name
+  name="$(jq -r '.name // empty' "$dir/package.json")"
+  [ -n "$name" ] || return 0
+  [ -z "$ONLY" ] || [ "$ONLY" = "$name" ] || return 0
+
+  case "$name" in
+    @datagrok/*|@datagrok-libraries/*|@datagrok-misc/*|datagrok-api|datagrok-tools) ;;
+    *) echo "SKIP  $name — not a Datagrok-owned name ($dir)"; skipped=$((skipped + 1)); return 0 ;;
+  esac
+
+  if [ "$(jq -r '.private // false' "$dir/package.json")" = 'true' ]; then
+    echo "SKIP  $name — private"; skipped=$((skipped + 1)); return 0
+  fi
+
+  # Cheapest check first — a cache hit costs no network and no OTP at all.
+  if [ "${CACHE[$name]:-}" = "$workflow" ]; then
+    echo "CACHED $name — already trusted ($workflow)"
+    cached=$((cached + 1)); return 0
+  fi
+
+  local escaped code
+  escaped="${name//\//%2f}"
+  code="$(curl -s -o /dev/null -w '%{http_code}' --retry 2 "https://registry.npmjs.org/${escaped}")"
+  if [ "$code" != '200' ]; then
+    echo "SKIP  $name — not on the registry yet (publish its first version by hand, then re-run)"
+    skipped=$((skipped + 1)); return 0
+  fi
+
+  # Ask before writing: the registry allows only one publisher per package and
+  # answers a repeat create with 409. Checking also catches a config pointing at
+  # the wrong workflow, which would silently break publishing.
+  local existing ex_id ex_file ex_repo
+  if existing="$(npm trust list "$name" --json 2>/dev/null)"; then
+    ex_id="$(jq -r '.id // empty' 2>/dev/null <<<"$existing")"
+    if [ -n "$ex_id" ]; then
+      ex_file="$(jq -r '.file // empty' <<<"$existing")"
+      ex_repo="$(jq -r '.repository // empty' <<<"$existing")"
+      if [ "$ex_file" = "$workflow" ] && [ "$ex_repo" = "$REPO" ]; then
+        echo "SKIP  $name — already trusted ($ex_repo/$ex_file)"
+        skipped=$((skipped + 1))
+        CACHE["$name"]="$workflow"; save_cache
+      else
+        echo "FAIL  $name — trusted via $ex_repo/$ex_file, expected $REPO/$workflow; fix with: npm trust revoke $name --id $ex_id" >&2
+        failed=$((failed + 1))
+      fi
+      return 0
+    fi
+  fi
+
+  local out rc err_code err_text
+  # shellcheck disable=SC2086
+  # stderr is deliberately not redirected: npm prints the OTP approval URL there
+  # and waits, so swallowing it would look like a silent hang.
+  out="$(npm trust github "$name" --repo "$REPO" --file "$workflow" \
+    --allow-publish --yes --json $DRY_RUN)"
+  rc=$?
+  err_code="$(jq -r '.error.code // empty' 2>/dev/null <<<"$out")"
+  err_text="$(jq -r '.error.summary // .error.detail // empty' 2>/dev/null <<<"$out")"
+  auth_url="$(jq -r '.error.authUrl // empty' 2>/dev/null <<<"$out")"
+  # npm masks the UUID in its human-readable output but not in --json, so
+  # recover the approval URL even when the payload will not parse.
+  [ -n "$auth_url" ] || auth_url="$(grep -oE 'https://www\.npmjs\.com/auth/cli/[0-9a-fA-F-]{36}' <<<"$out" | head -1)"
+  # The create path emits two concatenated JSON objects, which jq will not parse
+  # as one, so fall back to matching the fields directly.
+  [ -n "$err_code" ] || err_code="$(sed -n 's/.*"code"[[:space:]]*:[[:space:]]*"\([A-Z][A-Z0-9_]*\)".*/\1/p' <<<"$out" | head -1)"
+  [ -n "$err_text" ] || err_text="$(sed -n 's/.*"summary"[[:space:]]*:[[:space:]]*"\(.*\)".*/\1/p' <<<"$out" | head -1)"
+
+  if [ "$rc" -eq 0 ]; then
+    echo "TRUST $name -> $workflow"
+    enrolled=$((enrolled + 1))
+    [ -n "$DRY_RUN" ] || { CACHE["$name"]="$workflow"; save_cache; }
+  elif [ "$err_code" = 'EOTP' ]; then
+    echo >&2
+    echo "npm requires two-factor approval before it will accept trust changes." >&2
+    echo "Open this URL, tick 'skip two-factor authentication for the next" >&2
+    echo "5 minutes', approve, then re-run this script:" >&2
+    echo >&2
+    echo "    $auth_url" >&2
+    echo >&2
+    echo "(npm hides this UUID in its own error output; it is read from --json.)" >&2
+    echo "The URL is single-use and expires in a few minutes." >&2
+    exit 3
+  elif [ "$err_code" = 'E409' ] || { [ -n "$err_text" ] && grep -qiE 'already|exists|conflict' <<<"$err_text"; }; then
+    echo "SKIP  $name — already has a trusted publisher"; skipped=$((skipped + 1))
+    CACHE["$name"]="$workflow"; save_cache
+  else
+    echo "FAIL  $name — ${err_code:-exit $rc}: ${err_text:-see npm output above}" >&2
+    failed=$((failed + 1))
+    # A failure before anything has succeeded is systemic (auth, network,
+    # permissions) — bail rather than replay it across every package.
+    if [ "$enrolled" -eq 0 ]; then
+      echo >&2
+      echo "Stopping: first package failed and nothing has succeeded yet." >&2
+      echo "If npm printed an auth URL above, open it, tick 'skip two-factor" >&2
+      echo "authentication for the next 5 minutes', then re-run this script." >&2
+      exit 3
+    fi
+  fi
+  # Stay under the registry rate limit; pointless when nothing is being written.
+  [ -n "$DRY_RUN" ] || sleep 2
+}
+
+enroll "$ROOT/js-api" 'js-api.yml'
+enroll "$ROOT/tools" 'tools.yml'
+for d in "$ROOT"/libraries/*/; do enroll "$d" 'libraries.yaml'; done
+for d in "$ROOT"/misc/*/; do enroll "$d" 'misc.yaml'; done
+for d in "$ROOT"/packages/*/; do enroll "$d" 'packages.yaml'; done
+
+echo
+echo "enrolled=$enrolled cached=$cached skipped=$skipped failed=$failed"
+[ "${#CACHE[@]}" -eq 0 ] || echo "${#CACHE[@]} trusted package(s) remembered in $CACHE_FILE (--refresh to re-verify)."
+
+if [ -n "$ONLY" ] && [ $((enrolled + cached + skipped + failed)) -eq 0 ]; then
+  echo "No package matched '$ONLY'." >&2
+  exit 2
+fi
+[ "$failed" -eq 0 ]

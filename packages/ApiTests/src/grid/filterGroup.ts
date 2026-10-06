@@ -141,4 +141,23 @@ category('FilterGroup', () => {
         fg.setExpanded(fg.filters[0], true);
         expect(fg.filters[0].root.style.display, '');
     });
+
+    test('two filters on one column survive a layout round-trip', async () => {
+        tv = grok.shell.addTableView(grok.data.demo.demog(100));
+        fg = tv.getFiltersGroup();
+        await DG.delay(50);
+        // the default panel already has a histogram on age; a categorical filter on the same column is a second one
+        fg.add({type: DG.FILTER_TYPE.CATEGORICAL, column: 'age'});
+        await DG.delay(50);
+        expect(fg.getStates('age', DG.FILTER_TYPE.HISTOGRAM).length, 1);
+        expect(fg.getStates('age', DG.FILTER_TYPE.CATEGORICAL).length, 1);
+
+        const json = tv.saveLayout().toJson();
+        const tv2 = grok.shell.addTableView(grok.data.demo.demog(100));
+        tv2.loadLayout(DG.ViewLayout.fromJson(json));
+        await DG.delay(200);
+        const fg2 = tv2.getFiltersGroup();
+        expect(fg2.getStates('age', DG.FILTER_TYPE.HISTOGRAM).length, 1);
+        expect(fg2.getStates('age', DG.FILTER_TYPE.CATEGORICAL).length, 1);
+    });
 }, { clear: true });

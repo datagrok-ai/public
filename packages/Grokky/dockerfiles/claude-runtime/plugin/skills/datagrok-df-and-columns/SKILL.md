@@ -1,12 +1,12 @@
 ---
 name: datagrok-df-and-columns
-description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame inside a datagrok-exec block. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, or copy a DataFrame. Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
+description: Find, describe, add, remove, rename, clone, or set metadata on columns of a Datagrok DataFrame via the datagrok_exec tool. Use whenever the user asks to locate "the X column", summarize a column, add a typed/empty/values-filled/virtual column, set semantic type / units / format / friendly name, apply linear or categorical or conditional color coding, drop or rename columns, or copy a DataFrame. Covers everything in DataFrame.columns and Column.meta — but not row filtering/selection (datagrok-filtering, datagrok-selection) and not formula-only columns (datagrok-calc-column).
 ---
 
 # datagrok-df-and-columns
 
-Use the `DG.DataFrame` / `DG.Column` js-api inside a `datagrok-exec` block.
-Globals available in the block: `grok`, `ui`, `DG`, `view`, `t` (the current
+Use the `DG.DataFrame` / `DG.Column` js-api via the `datagrok_exec` tool.
+Globals available in the code: `grok`, `ui`, `DG`, `view`, `t` (the current
 `DG.DataFrame`, when `view.type === 'TableView'`).
 
 For **formula-driven** columns (recompute on source change), use
@@ -58,13 +58,13 @@ and `datagrok-selection`.
 `t.col` and `t.columns.byName` are case-insensitive. Always pass the semType
 *constant* (`DG.SEMTYPE.MOLECULE`), never the string literal `'Molecule'`.
 
-```datagrok-exec
+```js
 // Find the molecule column. bySemType returns the first match or null.
 const molCol = t.columns.bySemType(DG.SEMTYPE.MOLECULE);
 return ui.divText(molCol ? `Molecule column: ${molCol.name}` : 'No molecule column');
 ```
 
-```datagrok-exec
+```js
 // User said "mw" but the DF has "Molecular Weight" — try exact first, then
 // fall back to a name substring match.
 const wanted = 'mw';
@@ -101,7 +101,7 @@ Do **not** compute these by hand:
 - Distinct count: `col.stats.uniqueCount`, not `new Set(col.toList()).size`.
 - For string columns, `col.categories.length === col.stats.uniqueCount`.
 
-```datagrok-exec
+```js
 // Build a key-value summary of one numeric column.
 const col = t.getCol('age');
 const s = col.stats;
@@ -116,7 +116,7 @@ return ui.tableFromMap({
 });
 ```
 
-```datagrok-exec
+```js
 // Summarize every numeric column. t.columns.numerical is Iterable<Column>
 // (not an Array) — convert via Array.from to get .map etc.
 const rows = Array.from(t.columns.numerical, (c) => ({
@@ -129,7 +129,7 @@ return DG.Viewer.grid(DG.DataFrame.fromObjects(rows)).root;
 
 No built-in top-N for a string column. Tally into a `Map<string, number>`:
 
-```datagrok-exec
+```js
 const col = t.getCol('class');
 const counts = new Map();
 for (let i = 0; i < col.length; i++) {
@@ -160,7 +160,7 @@ sorted alphabetically.
 | Filtered rows + column subset       | `t.clone(t.filter, ['a', 'b'])`               |
 | Preserve selection bits             | `t.clone(t.filter, null, true)`               |
 
-```datagrok-exec
+```js
 // Just SMILES and activity, filtered rows only.
 const small = t.clone(t.filter, ['smiles', 'activity']);
 return DG.Viewer.grid(small).root;
@@ -186,7 +186,7 @@ attached to any DataFrame**. Call `df.columns.add(clonedCol)` to attach it.
 > (no such type) or `'double'` (works but brittle). Use the constant, or the
 > typed shorthand `addNewFloat`.
 
-```datagrok-exec
+```js
 // Typed empty column with metadata applied in the same block.
 const col = t.columns.addNewFloat('Ki');
 col.semType = DG.SEMTYPE.Ki;
@@ -195,7 +195,7 @@ col.meta.format = '0.00';
 return ui.divText(`Added ${col.name} (${col.type})`);
 ```
 
-```datagrok-exec
+```js
 // Add a column from an array of values. fromList infers length from the array.
 const values = [1.2, 3.4, null, 5.6];
 const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'score', values);
@@ -203,7 +203,7 @@ t.columns.add(col);
 return ui.divText(`Added ${col.name}`);
 ```
 
-```datagrok-exec
+```js
 // Virtual column — recomputed on every access, not stored. Type argument is
 // DG.TYPE.* (not DG.COLUMN_TYPE.*) — addNewVirtual takes the broader enum.
 const labels = t.columns.addNewVirtual('Label',
@@ -212,7 +212,7 @@ const labels = t.columns.addNewVirtual('Label',
 return ui.divText(`Added virtual column ${labels.name}`);
 ```
 
-```datagrok-exec
+```js
 // Avoid name collisions explicitly.
 const name = t.columns.getUnusedName('Ki');  // returns 'Ki' or 'Ki (1)' etc.
 const col = t.columns.addNewFloat(name);
@@ -221,12 +221,12 @@ return ui.divText(`Final name: ${col.name}`);
 
 ## Removing & renaming
 
-```datagrok-exec
+```js
 // Remove one column. Accepts string, index, or Column instance.
 t.columns.remove('temp');
 ```
 
-```datagrok-exec
+```js
 // Remove several. Loop — no bulk remove call exists.
 for (const name of ['_tmp1', '_tmp2', 'temp3'])
   if (t.columns.contains(name))
@@ -235,7 +235,7 @@ for (const name of ['_tmp1', '_tmp2', 'temp3'])
 
 To target **calculated columns**, check `col.meta.formula`:
 
-```datagrok-exec
+```js
 // Drop every calculated column.
 const names = t.columns.toList().filter((c) => c.meta.formula != null).map((c) => c.name);
 for (const n of names) t.columns.remove(n);
@@ -244,7 +244,7 @@ return ui.divText(`Removed: ${names.join(', ') || '(none)'}`);
 
 Rename: assign `col.name` directly.
 
-```datagrok-exec
+```js
 t.getCol('pIC50').name = 'pIC50_old';
 ```
 
@@ -272,7 +272,7 @@ Assign `null` to a `col.meta.*` accessor to **clear** the underlying tag.
 > Friendly name / format / units / description go through `col.meta.*`, not
 > through `setTag`.
 
-```datagrok-exec
+```js
 // Set several metadata fields at once.
 const col = t.getCol('Ki');
 col.semType = DG.SEMTYPE.Ki;
@@ -281,7 +281,7 @@ col.meta.format = '0.00';
 col.meta.description = null;  // null clears
 ```
 
-```datagrok-exec
+```js
 // Clear all custom (user-facing) metadata. Do NOT call col.tags.clear() —
 // that also nukes system tags like .color-coding-type.
 const col = t.getCol('activity');
@@ -301,12 +301,12 @@ Lives under `col.meta.colors`. Four shapes:
 
 ### Linear (numeric only)
 
-```datagrok-exec
+```js
 // Default: no palette — the platform's standard linear scheme is used.
 t.getCol('weight').meta.colors.setLinear();
 ```
 
-```datagrok-exec
+```js
 // User asked for red → yellow → green, with min/max pinned.
 t.getCol('age').meta.colors.setLinear(
   ['#ff0000', '#ffff00', '#00ff00'],
@@ -322,12 +322,12 @@ throw; guard with `col.isNumerical` if uncertain.
 
 ### Categorical
 
-```datagrok-exec
+```js
 // Default: no map — every category gets a color from the platform palette.
 t.getCol('race').meta.colors.setCategorical();
 ```
 
-```datagrok-exec
+```js
 // User asked for specific colors per category.
 t.getCol('race').meta.colors.setCategorical(
   {'Asian': '#0000FF', 'Black': '#FF0000'},
@@ -337,12 +337,12 @@ t.getCol('race').meta.colors.setCategorical(
 
 ### Conditional (range-based rules)
 
-```datagrok-exec
+```js
 // Default: no rules — the platform bins the values into 4 ranges automatically.
 t.getCol('height').meta.colors.setConditional();
 ```
 
-```datagrok-exec
+```js
 // User specified the thresholds. '20-170' means "value in the range 20..170".
 // '<100' / '>50' also work.
 t.getCol('height').meta.colors.setConditional({
@@ -353,7 +353,7 @@ t.getCol('height').meta.colors.setConditional({
 
 ### Off
 
-```datagrok-exec
+```js
 t.getCol('activity').meta.colors.setDisabled();
 ```
 
@@ -367,7 +367,7 @@ t.getCol('activity').meta.colors.setDisabled();
 Bulk init: `col.init(scalar | (i) => value)` is the right shape for an
 already-allocated column.
 
-```datagrok-exec
+```js
 const col = t.columns.addNewInt('rowSquared');
 col.init((i) => i * i);
 ```
@@ -375,7 +375,7 @@ col.init((i) => i * i);
 For hot paths, mutate values with `notify=false` and call
 `col.fireValuesChanged()` once at the end:
 
-```datagrok-exec
+```js
 const src = t.getCol('input');
 const dst = t.getCol('output');
 for (let i = 0; i < t.rowCount; i++)

@@ -1,6 +1,14 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
+  # Secret scanning — blocks commits that introduce credentials/tokens.
+  # Config + allowlist: .gitleaks.toml. Server-side backstop: the
+  # "Secret scan (gitleaks)" GitHub Actions workflow + GitHub push protection.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        stages: [commit, merge-commit, manual]
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:

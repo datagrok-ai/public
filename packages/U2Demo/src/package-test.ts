@@ -1,6 +1,14 @@
 import { runTests, tests, TestContext , initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 import * as DG from 'datagrok-api/dg';
 import './tests/demo-tests';
+import './tests/designer-tests';
+import './tests/domain-source';
+import './tests/domain-session';
+import './tests/domain-app';
+import './tests/domain-trash';
+import './tests/domain-bulk';
+import './tests/domain-import';
+import './tests/domain-conformance';
 
 export let _package = new DG.Package();
 export { tests };

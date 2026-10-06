@@ -4,7 +4,7 @@ import {McpServer} from '@modelcontextprotocol/sdk/server/mcp.js';
 import {WebStandardStreamableHTTPServerTransport} from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
 import {z} from 'zod/v4';
 import * as api from './api-client.js';
-import {DOMAINS, catalog, opMenu, missingParams, type Domain} from './ops.js';
+import {DOMAINS, catalog, opMenu, missingParams, confirmTokenFor, type Domain} from './ops.js';
 import {formatResult, formatError} from './format.js';
 
 const PORT = 3003;
@@ -25,6 +25,18 @@ async function runOp(d: Domain, op: string | undefined, args: Record<string, unk
   const startMs = Date.now();
   console.log(`${tag} ...`);
   try {
+    if (spec.preview) {
+      const {confirm, ...rest} = args;
+      const token = confirmTokenFor(d.tool, op, rest);
+      if (confirm !== token) {
+        return formatResult({
+          dryRun: true, wouldDelete: await spec.preview(rest), confirmToken: token,
+          note: 'Nothing was deleted. Ask the user for approval (via the datagrok_confirm tool ' +
+            'when available — it displays the summary, so do not restate it in text); repeat the ' +
+            'call with `confirm` only after they approve.',
+        });
+      }
+    }
     const result = formatResult(await spec.run(args), {paged: !spec.raw, raw: spec.raw, args});
     console.log(`${tag} OK ${result.content[0]?.text.length ?? 0} chars in ${Date.now() - startMs}ms`);
     return result;

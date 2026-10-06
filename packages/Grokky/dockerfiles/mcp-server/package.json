@@ -5,7 +5,13 @@
   "type": "module",
   "main": "dist/index.js",
   "bin": { "datagrok-mcp": "dist/index.js" },
-  "scripts": { "start": "node dist/index.js", "build": "tsc", "test": "tsc && node --test test/" },
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "lint": "eslint \"src/**/*.ts\" \"test/*.js\"",
+    "lint-fix": "eslint \"src/**/*.ts\" \"test/*.js\" --fix",
+    "test": "tsc && node --test test/"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@hono/node-server": "^1.19.14",
@@ -18,5 +24,12 @@
     "qs": "^6.15.2",
     "ip-address": "^10.1.1"
   },
-  "devDependencies": { "@types/node": "^20.3.1", "typescript": "^5.1.3" }
+  "devDependencies": {
+    "@types/node": "^20.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.67.0",
+    "@typescript-eslint/parser": "^8.67.0",
+    "eslint": "^8.57.1",
+    "eslint-config-google": "^0.14.0",
+    "typescript": "^5.1.3"
+  }
 }

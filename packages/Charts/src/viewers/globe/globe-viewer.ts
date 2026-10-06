@@ -8,6 +8,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 import {scaleLinear, scaleSqrt, scaleSequential, interpolateYlOrRd, ScaleLinear} from 'd3';
 
 import {_package} from '../../package';
+import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 
 
 @grok.decorators.viewer({
@@ -36,6 +37,7 @@ export class GlobeViewer extends DG.JsViewer {
   scene?: THREE.Scene;
   camera?: THREE.PerspectiveCamera;
   orbControls?: OrbitControls;
+  animationFrameId?: number;
 
   constructor() {
     super();
@@ -83,11 +85,12 @@ export class GlobeViewer extends DG.JsViewer {
     this.orbControls.autoRotate = true;
     this.orbControls.autoRotateSpeed = 2.2;
 
-    (function animate(this: any) {
-      this.orbControls.update();
-      this.renderer.render(this.scene, this.camera);
-      requestAnimationFrame(animate.bind(this));
-    }).bind(this)();
+    const animate = () => {
+      this.orbControls!.update();
+      this.renderer!.render(this.scene!, this.camera!);
+      this.animationFrameId = requestAnimationFrame(animate);
+    };
+    animate();
 
     this.initialized = true;
   }
@@ -156,7 +159,12 @@ export class GlobeViewer extends DG.JsViewer {
   }
 
   detach() {
+    if (this.animationFrameId !== undefined)
+      cancelAnimationFrame(this.animationFrameId);
+    this.orbControls?.dispose();
+    this.renderer?.dispose();
     this.subs.forEach((sub) => sub.unsubscribe());
+    super.detach();
   }
 
   getCoordinates() {
@@ -201,13 +209,12 @@ export class GlobeViewer extends DG.JsViewer {
     return numColumns.length >= 1;
   }
 
-  _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
-
   render() {
     if (!this._testColumns()) {
-      this._showErrorMessage('The Globe viewer requires a minimum of 1 numerical column.');
+      MessageHandler._showMessage(this.root, 'The Globe viewer requires a minimum of 1 numerical column.', ERROR_CLASS);
       return;
     }
+    MessageHandler._removeMessage(this.root, ERROR_CLASS);
 
     this.getCoordinates();
     this.globe!

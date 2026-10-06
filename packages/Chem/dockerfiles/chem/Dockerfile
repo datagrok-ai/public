@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm as pip_builder
+FROM python:3.12-slim-trixie as pip_builder
 
 ARG VIRTUAL_ENV=/app/venv
 ENV PATH "${VIRTUAL_ENV}/bin:$PATH"
@@ -11,7 +11,7 @@ RUN python -m venv ${VIRTUAL_ENV} && \
     rm -rf /tmp/*
 
 
-FROM python:3.11-slim-bookworm
+FROM python:3.12-slim-trixie
 
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get upgrade -y && \
@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
 ARG CHEM_USER=chem
 RUN adduser --system --group $CHEM_USER
+RUN dpkg --purge --force-remove-essential --force-depends perl-base
 USER $CHEM_USER
 
 WORKDIR /app

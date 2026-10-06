@@ -6,6 +6,7 @@ import '@he-tree/vue/style/default.css';
 import '@he-tree/vue/style/material-design.css';
 import {TreeWizard} from '../components/TreeWizard/TreeWizard';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {useDgView} from '@datagrok-libraries/webcomponents-vue';
 
 export const TreeWizardApp = Vue.defineComponent({
   name: 'TreeWizardApp',
@@ -25,9 +26,9 @@ export const TreeWizardApp = Vue.defineComponent({
       type: Object as Vue.PropType<PipelineInstanceConfig>,
       required: false,
     },
-    view: {
-      type: DG.View,
-      required: true,
+    initialRunId: {
+      type: String,
+      required: false,
     },
     resolve: {
       type: Function,
@@ -35,16 +36,15 @@ export const TreeWizardApp = Vue.defineComponent({
     },
   },
   setup(props) {
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const currentView = useDgView();
     const resolve = Vue.computed(() => props.resolve ? Vue.markRaw(props.resolve) : undefined);
     const onReturn = (data: any) => {
       if (resolve.value)
         resolve.value(data);
-      if (currentView.value)
-        currentView.value.close();
+      currentView.close();
     };
     return () => (
-      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} modelName={props.modelName} view={currentView.value} showReturn={!!resolve.value} onReturn={onReturn}/>
+      <TreeWizard providerFunc={props.providerFunc} version={props.version} instanceConfig={props.instanceConfig} initialRunId={props.initialRunId} modelName={props.modelName} showReturn={!!resolve.value} onReturn={onReturn}/>
     );
   },
 });

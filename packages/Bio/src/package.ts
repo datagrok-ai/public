@@ -70,7 +70,7 @@ import {addCopyMenuUI} from './utils/context-menu';
 import {getRegionDo} from './utils/get-region';
 import {GetRegionApp} from './apps/get-region-app';
 import {GetRegionFuncEditor} from './utils/get-region-func-editor';
-import {FuncCallParamsEditor, MessageFuncCallEditor} from './utils/func-call-params-editor';
+import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
 import {sequenceToMolfile} from './utils/sequence-to-mol';
 import {detectMacromoleculeProbeDo} from './utils/detect-macromolecule-probe';
 import {getMolColumnFromHelm} from './utils/helm-to-molfile/utils';
@@ -177,7 +177,7 @@ export class PackageFunctions {
     return await standardizeMonomerLibrary(library);
   }
 
-  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)',})
+  @grok.decorators.func({'top-menu': 'Bio | Manage | Match with Monomer Library...', description: 'Matches molecules in a column with monomers from the selected library(s)', name: 'Match with Monomer Library'})
   static async matchWithMonomerLibrary(table: DG.DataFrame,
       @grok.decorators.param({type: 'column', options: {semType: 'Molecule'}})molecules: DG.Column,
       @grok.decorators.param({type: 'string', options: {choices: ['PEPTIDE', 'RNA', 'CHEM'], initialValue: 'PEPTIDE', caption: 'Polymer Type'}})polymerType: PolymerType = 'PEPTIDE') {
@@ -1419,7 +1419,7 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    name: 'Bio: getHelmMonomers',
+    name: 'getHelmMonomers',
     outputs: [{name: 'result', type: 'object'}]
   })
   static getHelmMonomers(
@@ -1899,8 +1899,7 @@ async function initBioInt() {
   // first make sure chem and rdkit module are loaded
   const rdKitModule = await getRdKitModule();
   // then load package settings
-  const pkgProps = await _package.getProperties();
-  const bioPkgProps = new BioPackageProperties(pkgProps);
+  const bioPkgProps = new BioPackageProperties(_package.settings ?? {});
   _package.properties = bioPkgProps;
   // then load monomer lib
   const libHelper = await MonomerLibManager.getInstance();

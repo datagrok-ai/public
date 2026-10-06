@@ -324,12 +324,12 @@ category('Utils: expectDeepEqual', async () => {
   });
 
   test('dayjs non-equal', async () => {
-    const d1 = dayjs('2025-01-01');
-    const d2 = dayjs('2025-01-02');
+    const d1 = dayjs('2025-01-01T00:00:00Z');
+    const d2 = dayjs('2025-01-02T00:00:00Z');
     throwTester(
       () => {
         expectDeepEqual(d1, d2);
-      }, `Different date, expected 2025-01-01T21:00:00.000Z actual 2024-12-31T21:00:00.000Z`);
+      }, `Different date, expected 2025-01-02T00:00:00.000Z actual 2025-01-01T00:00:00.000Z`);
   });
 
   test('dataframe equal', async () => {

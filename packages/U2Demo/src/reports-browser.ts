@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {
-  signal, computed, Component, Scope, VirtualList, TextInput, Splitter,
+  signal, computed, Control, Scope, VirtualList, TextInput, Splitter,
   divV, divH, span, button, dot, loader, tableFromMap, iconButton, rowActions, timestamp,
 } from '@datagrok-libraries/u2';
 import type {Action, ReadonlySignal} from '@datagrok-libraries/u2';
@@ -14,7 +14,7 @@ const ROW_HEIGHT = 44;
 /** The view content plus the chrome that belongs to the shell (see the shell-integration
  * recipe): ribbon groups for the main view controls, a signal for the per-view status bar. */
 export interface ReportsBrowserParts {
-  content: Component;
+  content: Control;
   ribbon: HTMLElement[][];
   status: ReadonlySignal<string>;
 }
@@ -63,7 +63,7 @@ function reportDetails(r: DG.UserReport): HTMLElement {
 export function buildReportsBrowser(): ReportsBrowserParts {
   let ribbon!: HTMLElement[][];
   let status!: ReadonlySignal<string>;
-  const content = Component.build(() => {
+  const content = Control.build(() => {
     const scope = Scope.ambient!;
     const query = signal('');
     // reporter/assignee are stubs unless asked for; description is not a filterable field on

@@ -51,18 +51,36 @@ export async function openPlatformView(page: Page, name: PlatformView): Promise<
   await page.waitForTimeout(400);
 }
 
-/** Parse the "shown / total" gallery counter into numbers, polling until it settles. */
+/** Parse the gallery counter into numbers, polling until it settles. */
 export async function readGalleryCount(page: Page): Promise<{ shown: number; total: number }> {
+  // Three shapes, and only the first carries two numbers: "25 / 2155" while a filter constrains
+  // the list, "50 of 78" while it is still loading, plain "78" once it is whole. "..." means the
+  // total is not known yet.
+  const parse = (text: string): { shown: number; total: number } | null => {
+    const pair = text.match(/(\d+)\s*(?:\/|of)\s*(\d+)/);
+    if (pair)
+      return { shown: Number(pair[1]), total: Number(pair[2]) };
+    const single = text.match(/^(\d+)$/);
+    return single ? { shown: Number(single[1]), total: Number(single[1]) } : null;
+  };
+  // The counter is parseable long before it is final — a gallery still loading reads "2" and
+  // only later "3" — so wait for the same text twice rather than taking the first match.
   const counter = page.locator(GALLERY_COUNTS).first();
-  let m: RegExpMatchArray | null = null;
-  for (let i = 0; i < 20; i++) {
+  let m: { shown: number; total: number } | null = null;
+  let last = '';
+  let repeats = 0;
+  for (let i = 0; i < 40; i++) {
     const text = (await counter.textContent().catch(() => ''))?.trim() ?? '';
-    m = text.match(/(\d+)\s*\/\s*(\d+)/);
-    if (m) break;
+    const parsed = parse(text);
+    if (parsed) {
+      m = parsed;
+      repeats = text === last ? repeats + 1 : 0;
+      if (repeats >= 2) break;
+    }
+    last = text;
     await page.waitForTimeout(250);
   }
-  if (!m) return { shown: NaN, total: NaN };
-  return { shown: Number(m[1]), total: Number(m[2]) };
+  return m ?? { shown: NaN, total: NaN };
 }
 
 /** Type into the gallery search and wait for the count to settle. */
@@ -95,7 +113,11 @@ export async function clearGallerySearch(page: Page, kind: 'users' | 'groups' | 
 export async function searchAndWaitCard(
   page: Page, kind: 'users' | 'groups' | 'roles', search: string, matchName: string = search,
 ): Promise<void> {
-  for (let i = 0; i < 8; i++) {
+  // A fixed attempt count spends about half a minute and then gives up; on a loaded CI agent the
+  // search index sometimes takes longer than that, which is the only way this has ever failed.
+  // Bound the wait by time instead, so a slow indexer costs patience rather than a red run.
+  const deadline = Date.now() + 120_000;
+  for (let i = 0; i === 0 || Date.now() < deadline; i++) {
     await searchGallery(page, kind, search);
     const card = galleryCardByName(page, matchName);
     if (await card.isVisible().catch(() => false)) {

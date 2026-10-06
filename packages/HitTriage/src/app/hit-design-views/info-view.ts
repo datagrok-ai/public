@@ -20,6 +20,7 @@ import {newHitDesignCampaignAccordeon} from '../accordeons/new-hit-design-campai
 import {newHitDesignTemplateAccordeon} from '../accordeons/new-hit-design-template-accordeon';
 import {HitBaseView} from '../base-view';
 import {defaultPermissions, PermissionsDialog} from '../dialogs/permissions-dialog';
+import {hitInfoAiDescription} from '../ai/view-functions';
 
 export class HitDesignInfoView
   <T extends HitDesignTemplate = HitDesignTemplate, K extends HitDesignApp = HitDesignApp>
@@ -30,6 +31,8 @@ export class HitDesignInfoView
   constructor(app: K) {
     super(app);
     this.name = 'Hit Design';
+    // TODO: Remove before api release
+    (this as any).aiDescription = hitInfoAiDescription(app.appName);
     this._appHeader = this.getAppHeader();
     this.root.appendChild(ui.div([this._appHeader], {style: {marginLeft: '10px'}}));
     this.root.appendChild(this._contentRoot);
@@ -307,9 +310,7 @@ export class HitDesignInfoView
         ui.dialog('Delete campaign')
           .add(ui.divText(`Are you sure you want to delete campaign ${info.name}?`))
           .onOK(async () => {
-            await this.deleteCampaign(this.app.appName, info.name);
-            this.deletedCampaigns.push(info.name);
-            await this.init();
+            await this.deleteCampaignAndRefresh(this.app.appName, info.name);
           })
           .show();
       }, 'Delete campaign');

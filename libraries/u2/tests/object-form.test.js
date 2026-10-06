@@ -1,13 +1,15 @@
 /* Schema-driven form tests. datagrok-api cannot load in node, so the properties here are minimal
-   fakes of the `PropertyLike` shape the generator consumes — a real DG.Property satisfies it
+   fakes of the `IProperty` shape the generator consumes — a real DG.Property satisfies it
    structurally (checked at compile time, see src/dg/README.md). */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
-import {TextInput} from '../src/components/text-input.js';
-import {propertyForm, objectForm} from '../src/dg/object-form.js';
+import {TextInput} from '../src/components/inputs/text-input.js';
+import {propertyForm, objectForm, inputForProperty, PlatformInputs} from '../src/dg/forms/object-form.js';
+import {QNum} from '../src/core/qnum.js';
+import {Access} from '../src/core/access.js';
 
 /** Every test runs against a clean document and must leave the live-scope count where it was. */
 function form(name, body) {
@@ -23,7 +25,7 @@ function form(name, body) {
   });
 }
 
-/** A `PropertyLike` over a plain field, as `DG.Property.js` builds one. */
+/** An `IProperty` over a plain field, as `DG.Property.js` builds one. */
 function prop(name, propertyType, options = {}) {
   return {
     name, propertyType,
@@ -56,7 +58,7 @@ const PROPS = [
   prop('weight', 'double'),
   prop('active', 'bool'),
   prop('series', 'string', {choices: ['a', 'b', 'c']}),
-  prop('payload', 'map'),
+  prop('payload', 'graphics'),
 ];
 
 function sample() {
@@ -183,19 +185,27 @@ form('nullable: false becomes a required validator and drops the empty choice', 
   f.dispose();
 });
 
-form('min and max clamp the generated number input', () => {
+form('min and max flag the generated number input instead of clamping it', () => {
   const source = sample();
   const f = mount(propertyForm(PROPS, source));
   const count = editorOf(f, 'count');
   count.value = '42';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, 10);
+  assert.equal(source.count, 42, 'the out-of-range value reaches the target');
+  assert.equal(f.input('count').validity.value, 'Value must be at most 10');
+  assert.equal(f.validity.value, 'Value must be at most 10', 'and the form is invalid');
 
   count.value = '-1';
   fire(count, 'input');
   fire(count, 'blur');
-  assert.equal(source.count, 0);
+  assert.equal(source.count, -1);
+  assert.equal(f.input('count').validity.value, 'Value must be at least 0');
+
+  count.value = '5';
+  fire(count, 'input');
+  fire(count, 'blur');
+  assert.equal(f.validity.value, null);
 
   const weight = editorOf(f, 'weight');
   weight.value = '-3.5';
@@ -230,7 +240,7 @@ form('an override replaces the input, other keys merge into the generated one', 
       count: {label: 'How many', inline: true},
     },
   }));
-  assert.equal(f.root.classList.contains('u2-form-condensed'), true);
+  assert.equal(f.root.classList.contains('u2-form-tall'), true, 'condensed maps to the tall layout');
   assert.equal(inputOf(f, 'Structure'), custom, 'the caller-supplied input is laid out as is');
   assert.equal(custom.value.value, 'Aspirin', 'and seeded from the property');
   assert.equal(custom.root.parentNode, f.root.querySelector('.u2-form-rows'));
@@ -286,4 +296,326 @@ form('disposing the form disposes every input it generated', () => {
   f.dispose();
   for (const input of inputs)
     assert.equal(input.scope.isDisposed, true, `${input.name} disposed`);
+});
+
+function clickers(input) {
+  return input.root.querySelectorAll('.u2-number-click');
+}
+
+function sliderOf(input) {
+  return input.root.querySelector('.u2-number-slider');
+}
+
+form('number metadata rides the property into the generated editor', () => {
+  const props = [
+    prop('count', 'int', {min: 1, max: 10}),
+    prop('free', 'int'),
+    prop('dose', 'double', {min: 0, max: 1000, units: 'mg'}),
+    prop('ratio', 'double'),
+    prop('manual', 'int', {min: 1, max: 10, showPlusMinus: false, showSlider: true}),
+  ];
+  const f = mount(propertyForm(props, {count: 3, free: 1, dose: 250, ratio: 0.5, manual: 2}));
+  assert.equal(clickers(inputOf(f, 'count')).length, 2, 'a bounded int gets the platform default clicker');
+  assert.equal(clickers(inputOf(f, 'free')).length, 0, 'an unbounded one does not');
+  assert.notEqual(sliderOf(inputOf(f, 'dose')), null, 'a bounded float gets the slider');
+  assert.equal(inputOf(f, 'dose').root.querySelector('.u2-input-postfix').textContent, 'mg');
+  assert.equal(sliderOf(inputOf(f, 'ratio')), null, 'no bounds, no slider');
+  assert.equal(clickers(inputOf(f, 'manual')).length, 0, 'showPlusMinus: false wins over the default');
+  assert.notEqual(sliderOf(inputOf(f, 'manual')), null, 'showSlider: true reaches an int too');
+  f.dispose();
+});
+
+form('a format string goes through DG.format wherever the platform is loaded', () => {
+  const props = [prop('dose', 'double', {format: '#0.00', step: 0.1})];
+  try {
+    globalThis.DG = {format: (value, format) => `${value} as ${format}`};
+    const formatted = mount(propertyForm(props, {dose: 2.5}));
+    assert.equal(editorOf(formatted, 'dose').value, '2.5 as #0.00');
+    formatted.dispose();
+  } finally {
+    delete globalThis.DG;
+  }
+  const plain = mount(propertyForm(props, {dose: 2.5}));
+  assert.equal(editorOf(plain, 'dose').value, '2.5', 'off-platform the input keeps its own precision');
+  plain.dispose();
+});
+
+form('inputForProperty is that same mapping, for editors that learn the property late', () => {
+  const unbound = mount(inputForProperty(null));
+  assert.equal(unbound.root.dataset.u2, 'text-input', 'nothing bound, nothing to map');
+  unbound.dispose();
+
+  const series = mount(inputForProperty(prop('series', 'string', {choices: ['a', 'b'], nullable: false})));
+  assert.equal(series.root.dataset.u2, 'choice-input', 'choices win over the type, as they do in Dart');
+  assert.equal(series.nullable, false);
+  series.dispose();
+
+  const count = mount(inputForProperty(prop('count', 'int', {min: 1, max: 10})));
+  assert.equal(count.root.dataset.u2, 'number-input');
+  assert.equal(clickers(count).length, 2);
+  count.value.value = 11;
+  assert.equal(count.validity.value, 'Value must be at most 10');
+  count.dispose();
+
+  const labelled = mount(inputForProperty(prop('count', 'int'), {label: 'Count'}));
+  assert.equal(labelled.root.querySelector('.u2-input-label').textContent, 'Count', 'options still win');
+  labelled.dispose();
+});
+
+form('assumeWritable: a property with no setter still gets the editor its type asks for', () => {
+  const param = {name: 'count', propertyType: 'int', min: 1, max: 10};
+  const readonly = mount(inputForProperty(param));
+  assert.equal(readonly.root.dataset.u2, 'text-input', 'nothing can be written back — a form shows it');
+  assert.equal(readonly.enabled, false);
+  readonly.dispose();
+
+  const editor = mount(inputForProperty(param, {assumeWritable: true}));
+  assert.equal(editor.root.dataset.u2, 'number-input', 'a value editor owns the value itself');
+  assert.equal(editor.enabled, true);
+  assert.equal(clickers(editor).length, 2, 'and gets the metadata with it');
+  editor.dispose();
+});
+
+form('bigint and qnum get their own editors, not a number input', () => {
+  const source = {id: 123456789012345678901234567890n, ic50: QNum.less(5.2)};
+  const f = mount(propertyForm([prop('id', 'bigint'), prop('ic50', 'qnum')], source));
+  assert.deepEqual(kinds(f), ['bigint-input', 'qnum-input']);
+  assert.equal(editorOf(f, 'id').value, '123456789012345678901234567890');
+  assert.equal(editorOf(f, 'ic50').value.startsWith('<5.2'), true);
+
+  const id = inputOf(f, 'id');
+  id.value.value = 42n;
+  assert.equal(source.id, 42n, 'a bigint reaches the property as a bigint');
+
+  const ic50 = inputOf(f, 'ic50');
+  ic50.value.value = QNum.greater(7);
+  assert.equal(QNum.getValue(source.ic50), 7, 'a qnum reaches it as the packed double');
+  f.dispose();
+});
+
+form('a bigint property that hands over its digits as text is read all the same', () => {
+  const f = mount(propertyForm([prop('id', 'bigint')], {id: '900719925474099101'}));
+  assert.equal(inputOf(f, 'id').value.value, 900719925474099101n);
+  f.dispose();
+
+  const empty = mount(propertyForm([prop('id', 'bigint')], {}));
+  assert.equal(inputOf(empty, 'id').value.value, null);
+  empty.dispose();
+});
+
+form('a postfix override wins over the property units', () => {
+  const dose = prop('dose', 'double', {units: 'mg'});
+  const f = mount(propertyForm([dose], {dose: 1}, {overrides: {dose: {postfix: 'mg/kg'}}}));
+  assert.equal(inputOf(f, 'dose').root.querySelector('.u2-input-postfix').textContent, 'mg/kg');
+  f.dispose();
+
+  const plain = mount(propertyForm([dose], {dose: 1}));
+  assert.equal(inputOf(plain, 'dose').root.querySelector('.u2-input-postfix').textContent, 'mg');
+  plain.dispose();
+});
+
+/** Every route the property metadata can ask for: `data-u2` names the editor that was built. */
+function routes(cases) {
+  for (const [property, kind, check] of cases) {
+    const input = mount(inputForProperty(property));
+    assert.equal(input.root.dataset.u2, kind, property.name);
+    if (check)
+      check(input);
+    input.dispose();
+  }
+}
+
+form('inputType picks the editor, ahead of every other hint', () => {
+  routes([
+    [prop('style', 'string', {inputType: 'Radio', choices: ['a', 'b']}), 'radio-input',
+      (i) => assert.equal(i.root.querySelectorAll('input[type=radio]').length, 2)],
+    [prop('shade', 'string', {inputType: 'Color'}), 'color-input'],
+    [prop('face', 'string', {inputType: 'Font'}), 'font-input'],
+    [prop('logo', 'string', {inputType: 'Image'}), 'image-input'],
+    [prop('glyph', 'string', {inputType: 'Icon'}), 'icon-input'],
+    [prop('labels', 'list', {inputType: 'Tags', choices: ['a', 'b']}), 'tags-input'],
+    [prop('note', 'string', {inputType: 'TextArea', editor: 'password'}), 'text-area'],
+    [prop('grade', 'int', {inputType: 'Slider', min: 1, max: 5}), 'slider-input'],
+    [prop('series', 'string', {inputType: 'Choice', choices: ['a'], editor: 'textarea'}), 'choice-input'],
+  ]);
+});
+
+form('the editor hint picks it next, ahead of the choices and the type', () => {
+  routes([
+    [prop('note', 'string', {editor: 'textarea', choices: ['a', 'b']}), 'text-area'],
+    // the platform's own `description` option carries the InputType spelling (property.ts:326)
+    [prop('summary', 'string', {editor: 'TextArea'}), 'text-area'],
+    [prop('secret', 'string', {editor: 'password'}), 'text-input',
+      (i) => assert.equal(i.root.querySelector('input').type, 'password')],
+    [prop('active', 'bool', {editor: 'switch'}), 'bool-input',
+      (i) => assert.notEqual(i.root.querySelector('.u2-input-switch'), null)],
+    [prop('dose', 'double', {editor: 'slider', min: 0, max: 10, step: 0.5}), 'slider-input',
+      (i) => assert.deepEqual([i.root.querySelector('input').min, i.root.querySelector('input').max,
+        i.root.querySelector('input').step], ['0', '10', '0.5'])],
+  ]);
+});
+
+form('an editor hint the type does not accept is ignored, as the platform ignores it', () => {
+  routes([
+    // textarea and password are reached under `pt == Types.STRING` (input_base.dart:725-728)
+    [prop('count', 'int', {editor: 'textarea'}), 'number-input'],
+    [prop('count', 'int', {editor: 'password'}), 'number-input'],
+    [prop('when', 'datetime', {editor: 'textarea'}), 'datetime-input'],
+    // switch under `pt == Types.BOOL` (:702)
+    [prop('count', 'int', {editor: 'switch'}), 'number-input'],
+    [prop('label', 'string', {editor: 'switch'}), 'text-input'],
+    // the slider (:705) is reached by everything the two bool branches above it did not take
+    [prop('active', 'bool', {editor: 'slider'}), 'bool-input',
+      (i) => assert.equal(i.root.querySelector('.u2-input-switch'), null)],
+    [prop('grade', 'int', {editor: 'slider', min: 1, max: 5}), 'slider-input'],
+  ]);
+});
+
+form('list, map and file route off the type, choices splitting the two list editors', () => {
+  routes([
+    [prop('labels', 'list'), 'list-input'],
+    [prop('labels', 'list', {choices: ['a', 'b']}), 'multi-choice-input'],
+    [prop('meta', 'map'), 'map-input'],
+  ]);
+});
+
+form('a file property goes to the editor the platform layer registered', () => {
+  const built = [];
+  const unregister = PlatformInputs.register('file', (property, options) => {
+    built.push(property.name);
+    return new TextInput({...options, name: 'stub-file'});
+  });
+  try {
+    const input = mount(inputForProperty(prop('report', 'file')));
+    assert.deepEqual(built, ['report'], 'the property reaches the registered factory');
+    assert.equal(input.name, 'stub-file');
+    input.dispose();
+  } finally {
+    unregister();
+  }
+
+  const unwired = mount(inputForProperty(prop('report', 'file')));
+  assert.equal(unwired.root.dataset.u2, 'text-input', 'off the platform, a read-only field');
+  assert.equal(unwired.enabled, false);
+  unwired.dispose();
+});
+
+form('lists and maps round-trip through the property without reporting a change', () => {
+  const source = {labels: ['a', 'b'], meta: {x: '1'}, report: {path: 'demo.csv'}};
+  const changes = [];
+  const props = [prop('labels', 'list'), prop('meta', 'map'), prop('report', 'file')];
+  const f = mount(propertyForm(props, source, {onChanged: (name, value) => changes.push([name, value])}));
+  assert.deepEqual(kinds(f), ['list-input', 'map-input', 'text-input']);
+  assert.deepEqual(f.getValues(), {labels: ['a', 'b'], meta: {x: '1'}, report: {path: 'demo.csv'}});
+  assert.deepEqual(changes, [], 'generation is not a change, arrays and records included');
+
+  inputOf(f, 'labels').value.value = ['c'];
+  inputOf(f, 'meta').value.value = {y: '2'};
+  assert.deepEqual(source.labels, ['c']);
+  assert.deepEqual(source.meta, {y: '2'});
+  assert.deepEqual(changes, [['labels', ['c']], ['meta', {y: '2'}]]);
+
+  source.labels = ['d'];
+  f.refresh();
+  assert.deepEqual(inputOf(f, 'labels').value.value, ['d']);
+  assert.deepEqual(changes.length, 2, 'refresh is echo-suppressed');
+  f.dispose();
+});
+
+form('a list property that hands over its items as text is read all the same', () => {
+  const f = mount(propertyForm([prop('labels', 'list')], {labels: 'a,"b,c"'}));
+  assert.deepEqual(inputOf(f, 'labels').value.value, ['a', 'b,c']);
+  f.dispose();
+
+  const empty = mount(propertyForm([prop('labels', 'list'), prop('meta', 'map')], {}));
+  assert.deepEqual(empty.getValues(), {labels: [], meta: {}});
+  empty.dispose();
+});
+
+/* WO-6 — access-aware forms: a hidden field is absent, a readonly one is caption + value text
+   (never an input, so neither `getValues()` nor the validity see it), the default `Access.full`
+   changes nothing, and the widget status says which level each field got. */
+
+const ACCESS = Access.from({can: {view: true, edit: true},
+  fields: {name: 'editable', count: 'readonly', active: 'editable', series: 'readonly'}});
+
+form('access: hidden fields are absent, readonly ones are text outside getValues and the validity', () => {
+  const source = sample();
+  const f = mount(propertyForm(PROPS, source, {access: ACCESS}));
+  assert.deepEqual(f.properties.map((p) => p.name), ['name', 'count', 'active', 'series'],
+    'weight and payload are hidden: not rendered at all');
+  assert.deepEqual(kinds(f), ['text-input', 'bool-input'], 'the readonly fields are not inputs');
+  assert.equal(f.input('count'), undefined);
+  assert.deepEqual(f.getValues(), {name: 'Aspirin', active: true});
+
+  const rows = [...f.root.querySelector('.u2-form-rows').children].map((el) => el.dataset.u2);
+  assert.deepEqual(rows, ['text-input', 'readonly-field', 'bool-input', 'readonly-field'], 'in layout order');
+  const count = f.root.querySelector('[data-u2-name="count"]');
+  assert.equal(count.querySelector('.u2-input-label').textContent, 'count');
+  assert.equal(count.querySelector('[data-u2-part="readonly-value"]').textContent, '3');
+  assert.equal(count.querySelector('input'), null, 'text, not a dead input');
+  assert.equal(f.root.querySelector('[data-u2-name="series"] [data-u2-part="readonly-value"]').textContent, 'b');
+
+  source.count = 7;
+  f.refresh();
+  assert.equal(count.querySelector('[data-u2-part="readonly-value"]').textContent, '7');
+  f.dispose();
+});
+
+form('access: a required readonly field never invalidates the form; include and exclude still apply', () => {
+  const props = [prop('name', 'string', {nullable: false}), prop('code', 'string', {nullable: false})];
+  const f = mount(propertyForm(props, {name: 'x', code: ''},
+    {access: Access.from({can: {}, fields: {name: 'editable', code: 'readonly'}})}));
+  assert.equal(f.validity.value, null, 'the empty readonly value is the server\'s business');
+  assert.equal(f.validate(), true);
+  f.dispose();
+
+  const narrowed = mount(propertyForm(PROPS, sample(), {access: ACCESS, include: ['series', 'weight', 'name'],
+    exclude: ['name']}));
+  assert.deepEqual(narrowed.properties.map((p) => p.name), ['series'], 'include order, exclude and hidden combined');
+  narrowed.dispose();
+});
+
+form('access: the default is Access.full — nothing changes for a form that names none', () => {
+  const plain = mount(propertyForm(PROPS, sample()));
+  const explicit = mount(propertyForm(PROPS, sample(), {access: Access.full}));
+  assert.deepEqual(kinds(explicit), kinds(plain));
+  assert.deepEqual(explicit.getValues(), plain.getValues());
+  assert.deepEqual(kinds(plain), ['text-input', 'number-input', 'number-input', 'bool-input',
+    'choice-input', 'text-input'], 'the snapshot the first test pins');
+  assert.equal(plain.root.querySelector('[data-u2="readonly-field"]'), null);
+  assert.deepEqual(plain.getWidgetStatus().inputs.map((i) => i.access), Array(6).fill('editable'));
+  plain.dispose();
+  explicit.dispose();
+});
+
+form('access: getWidgetStatus().inputs reports the level applied to every rendered field', () => {
+  const f = mount(propertyForm(PROPS, sample(), {access: ACCESS}));
+  const status = f.getWidgetStatus();
+  assert.deepEqual(status.inputs.map((i) => [i.name, i.access, i.value]),
+    [['name', 'editable', 'Aspirin'], ['count', 'readonly', '3'], ['active', 'editable', true],
+      ['series', 'readonly', 'b']]);
+  const count = status.inputs[1];
+  assert.equal(count.caption, 'count');
+  assert.equal(count.type, 'int');
+  assert.equal(count.required, false);
+  assert.equal(count.valid, true);
+  assert.equal(status.inputs[0].caption, 'Compound');
+  assert.equal(status.inputs[0].description, 'Registered name');
+  assert.deepEqual(status.inputs[3].choices, ['a', 'b', 'c']);
+  assert.equal(status.inputs.some((i) => i.name === 'weight'), false, 'hidden: no status either');
+  f.dispose();
+});
+
+form('a column named description is a textarea unless an editor hint says otherwise', async () => {
+  const target = {description: 'long', note: 'short', other: 'x'};
+  const f = propertyForm([
+    prop('description', 'string'),
+    prop('note', 'string'),
+    {...prop('other', 'string'), name: 'description', editor: 'password'},
+  ], target);
+  assert.equal(f.inputs[0].root.dataset.u2, 'text-area');
+  assert.equal(f.inputs[1].root.dataset.u2, 'text-input');
+  assert.equal(f.inputs[2].root.dataset.u2, 'text-input', 'the hint wins');
+  f.dispose();
 });

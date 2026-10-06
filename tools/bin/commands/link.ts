@@ -2,7 +2,7 @@
 /* eslint-disable valid-jsdoc */
 import fs from 'fs';
 import path from 'path';
-import { runScript } from '../utils/utils';
+import { isPnpmWorkspace, runScript } from '../utils/utils';
 import { glob } from 'glob';
 
 const excludedPackages: string[] = ['@datagrok-misc/eslint-plugin-config', 'wiki-merge', 'datagrok-tools', ''];
@@ -35,12 +35,17 @@ let devMode = false;
 let unlink = false;
 
 export async function link(args: LinkArgs) {
+  if (isPnpmWorkspace(curDir)) {
+    console.log('This checkout is a pnpm workspace: in-repo dependencies are linked by `pnpm install` ' +
+      '(workspace:^), and `grok link` is not needed. Run `pnpm install` at the repository root.');
+    return true;
+  }
   verbose = args.verbose ?? false;
   devMode = args.dev ?? false;
   pathMode = args.path ?? false;
   unlink = args.unlink ?? false; 
 
-  let collectedPackages = collectAvaliablePackages(args['repo-only']);
+  const collectedPackages = collectAvaliablePackages(args['repo-only']);
   packagesInRepo = collectedPackages.packagesInRepo;
   packagesOutOfRepo = collectedPackages.packagesOutOfRepo;
 
@@ -51,8 +56,7 @@ export async function link(args: LinkArgs) {
   if (unlink) {
     await unlinkPackages();
     console.log('Package unlinked')
-  }
-  else {
+  } else {
     await linkPackages();
     if (pathMode)
       console.log('Updated dependencies to local in package.json')
@@ -77,7 +81,7 @@ function collectPackagesData(packagePath: string = curDir): { dependencies: stri
 
 function collectPacakgeDataFromJsonObject(object: any): string[] {
   let result: string[] = [];
-  for (let dependencyName of Object.keys(object ?? {})) {
+  for (const dependencyName of Object.keys(object ?? {})) {
     if (packagesInRepo[dependencyName])
       result = result.concat(parsePackageDependencies(dependencyName, path.dirname(packagesInRepo[dependencyName].path)));
     else if (packagesOutOfRepo[dependencyName])
@@ -87,15 +91,8 @@ function collectPacakgeDataFromJsonObject(object: any): string[] {
   return result;
 }
 
-function toCamelCase(input: string): string {
-  return input
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
-}
-
 function parsePackageDependencies(dependencyName: string, pathToLink: string): string[] {
-  let result: string[] = [];
+  const result: string[] = [];
   if (!packagesToLink.has(dependencyName)) {
     packagesToLink.add(dependencyName);
     localPackageDependencies.push(new PackageData(pathToLink));
@@ -105,8 +102,8 @@ function parsePackageDependencies(dependencyName: string, pathToLink: string): s
 }
 
 function collectAvaliablePackages(noOutLink: boolean = false): { packagesInRepo: Record<string, { path: string, version: string }>, packagesOutOfRepo: Record<string, { path: string, version: string }> } {
-  let repositoryPackages = collectAvaliablePackagesPathesFromDir(repositoryDir);
-  let commonPakcages = collectAvaliablePackagesPathesFromDir(containerDir, repositoryDir);
+  const repositoryPackages = collectAvaliablePackagesPathesFromDir(repositoryDir);
+  const commonPakcages = collectAvaliablePackagesPathesFromDir(containerDir, repositoryDir);
 
   const packagesInRepoBaseInfo = parsePackages(repositoryPackages);
   const packagesOutOfRepoBaseInfo = noOutLink? [] : parsePackages(commonPakcages);
@@ -126,8 +123,8 @@ function collectAvaliablePackagesPathesFromDir(dir: string, dirToExclude: string
 }
 
 function parsePackages(packagPathes: string[]) {
-  let res = packagPathes.map((e) => {
-    let packageData: any = {};
+  const res = packagPathes.map((e) => {
+    const packageData: any = {};
     if (fs.existsSync(e)) {
       packageData.path = e;
       const packageJson = JSON.parse(fs.readFileSync(e, 'utf8'));
@@ -143,7 +140,7 @@ async function unlinkPackages() {
   const packages = [...localPackageDependencies];
   if (currentPackage)
     packages.push(currentPackage);
-  for (let packageData of packages) {
+  for (const packageData of packages) {
     if (excludedPackages.includes(packageData.name))
       continue;
 
@@ -162,14 +159,14 @@ async function unlinkPackages() {
 }
 
 function updateDependenciesToVersion(packageData: PackageData, dependecyNode: any) {
-  for (let dependency of packageData.dependencies) {
+  for (const dependency of packageData.dependencies) {
     if (excludedPackages.includes(dependency))
       continue;
     if (dependecyNode[dependency] && !versionDependencyRegex.test(dependecyNode[dependency])) {
       const packageToLink = (localPackageDependencies.filter((e) => e.name === dependency) ?? [])[0];
-      if (packageToLink) {
+      if (packageToLink) 
         dependecyNode[dependency] = `^${packagesInRepo[dependency]?.version ?? packagesOutOfRepo[dependency]?.version}`;
-      }
+      
     }
   }
   return dependecyNode;
@@ -177,7 +174,7 @@ function updateDependenciesToVersion(packageData: PackageData, dependecyNode: an
 
 async function linkPackages() {
   let anyChanges = true;
-  for (let element of excludedPackages)
+  for (const element of excludedPackages)
     packagesToLink.delete(element);
 
   if (verbose) {
@@ -187,10 +184,10 @@ async function linkPackages() {
 
   while (anyChanges && packagesToLink.size > 0) {
     anyChanges = false;
-    let mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name) && !excludedPackages.includes(x.name));
+    const mapElements = localPackageDependencies.filter(x => x.dependencies.every(i => !packagesToLink.has(i)) && packagesToLink.has(x.name) && !excludedPackages.includes(x.name));
     if (mapElements.length === 0)
       break;
-    for (let element of mapElements) {
+    for (const element of mapElements) {
 
       if (verbose)
         console.log(`Package ${element.name} is linking`)
@@ -210,7 +207,7 @@ async function linkPackages() {
       throw (new Error(`There is loop with next packages: ${JSON.stringify(Array.from(packagesToLink)).toString()}`));
   }
 
-  let names = localPackageDependencies.map(x => x.name);
+  const names = localPackageDependencies.map(x => x.name);
 
   if (currentPackage && pathMode)
     await linkPathMode(currentPackage);
@@ -241,7 +238,7 @@ function updateDependenciesToLocal(packageData: PackageData, dependecyNode: any)
   const backRouteForCont = `../`.repeat(packageData.packagePath.replace(containerDir, '').split(path.sep).length - 1);
   const backRouteForRepo = `../`.repeat(packageData.packagePath.replace(repositoryDir, '').split(path.sep).length - 1);
 
-  for (let dependency of packageData.dependencies) {
+  for (const dependency of packageData.dependencies) {
     if (excludedPackages.includes(dependency))
       continue;
     if (dependecyNode[dependency]) {
@@ -265,7 +262,7 @@ class PackageData {
   version: string;
 
   constructor(packagePath: string) {
-    let packageJsonData = collectPackagesData(packagePath);
+    const packageJsonData = collectPackagesData(packagePath);
     this.name = packageJsonData.name;
     this.packagePath = packagePath;
     this.dependencies = packageJsonData.dependencies;

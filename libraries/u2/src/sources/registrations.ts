@@ -1,0 +1,152 @@
+/* The four platform-backed v1 sources (DD14), on the same tray `u2-state` lives on. All
+   `visual: false` and `category: 'Data'`, so the palette groups them into one pane; with no
+   platform behind them they render the standard broken-chip containment, which is exactly what
+   the gallery and the headless tests see. */
+import {FuncSource} from './func-source.js';
+import {EntitySource} from './entity-source.js';
+import {TableSource} from './table-source.js';
+import {EntityRef} from './entity-ref.js';
+import {DomainSource} from './domain-source.js';
+import {ComponentMeta, Registry, registry as globalRegistry} from '../spec/registry.js';
+
+/** The `grok.dapi.*` collections a spec may list — every one of them a paged entity source. */
+export const COLLECTIONS = ['users', 'groups', 'projects', 'queries', 'connections', 'scripts',
+  'spaces'];
+
+const DESIGN_DATA = {
+  name: 'designData', type: 'string', choices: ['live', 'schema', 'sample'],
+  description: 'What the designer shows: real runs, the declared shape without running, or ' +
+    'the stored `sample`.',
+};
+
+const SAMPLE = {
+  name: 'sample', type: 'object',
+  description: 'The preview the `sample` policy builds its outputs from; rows become a table.',
+};
+
+const METAS: ComponentMeta[] = [
+  {
+    tag: 'u2-func-source',
+    category: 'Data',
+    visual: false,
+    createComponent: (props, env) => new FuncSource(props, env),
+    description: 'A function, query or script run as data: its outputs are what the form binds to.',
+    usage: 'The default source for anything computed or queried. Bind a param to an input and the ' +
+      'source re-runs as that input changes; bind a DataFrame output\'s `currentRow` to reach ' +
+      'the fields of the current record.',
+    props: [
+      {name: 'func', type: 'string',
+        description: 'The function name, `Package:Name` for a package function.'},
+      {name: 'params', type: 'object', subBindable: true,
+        description: 'What it is called with; a `params.<name>` bind makes that param reactive.'},
+      {name: 'auto', type: 'bool',
+        description: 'Run at construction and whenever a bound param changes (default true).'},
+      {name: 'debounce', type: 'int',
+        description: 'Milliseconds a param change waits before the re-run (default 300).'},
+      DESIGN_DATA,
+      SAMPLE,
+    ],
+    designPreview: [{name: 'Sample row', value: 1}],
+    example: {tag: 'u2-func-source', name: 'orders', props: {func: 'U2demo:demoOrders'}},
+  },
+  {
+    tag: 'u2-entity-source',
+    category: 'Data',
+    visual: false,
+    createComponent: (props, env) => new EntitySource(props, env),
+    description: 'A paged listing of a server collection: users, groups, projects and the rest.',
+    usage: 'For a picker over server entities, or a list of them. `names` feeds a choice input ' +
+      'directly; `items` carries the entities themselves.',
+    props: [
+      {name: 'entity', type: 'string', choices: COLLECTIONS,
+        description: 'The `grok.dapi` collection to list.'},
+      {name: 'filter', type: 'string', bindable: true,
+        description: 'A smart-search filter; changing it reloads the collection from the first page.'},
+      {name: 'order', type: 'string', description: 'The field to order by.'},
+      {name: 'pageSize', type: 'int', description: 'How many entities one page loads (default 20).'},
+    ],
+    defaults: {entity: 'users', pageSize: 20},
+    example: {tag: 'u2-entity-source', name: 'people', props: {entity: 'users', pageSize: 20}},
+  },
+  {
+    tag: 'u2-table-source',
+    category: 'Data',
+    visual: false,
+    createComponent: (props) => new TableSource(props),
+    description: 'An open workspace table, by name — the whole DataFrame binding surface.',
+    usage: 'For a form over a table the user already has open. It references the table BY NAME, ' +
+      'so prefer a query or a project table for a form that must keep working tomorrow.',
+    props: [
+      {name: 'table', type: 'string', description: 'The name of the open table.'},
+    ],
+    example: {tag: 'u2-table-source', name: 'demog', props: {table: 'demog'}},
+  },
+  {
+    tag: 'u2-entity-ref',
+    category: 'Data',
+    visual: false,
+    createComponent: (props, env) => new EntityRef(props, env),
+    description: 'One server entity, looked up by id — the object a details form shows.',
+    usage: 'For a form about a single entity. Bind `id` to whatever selects it and every bound ' +
+      'field follows; the entity\'s own properties are binding steps.',
+    props: [
+      {name: 'entityType', type: 'string', choices: COLLECTIONS,
+        description: 'Which collection the id belongs to.'},
+      {name: 'id', type: 'string', bindable: true, description: 'The entity id to look up.'},
+      DESIGN_DATA,
+      SAMPLE,
+    ],
+    defaults: {entityType: 'users', designData: 'live'},
+    designPreview: {name: 'Sample entity', friendlyName: 'Sample entity'},
+    example: {tag: 'u2-entity-ref', name: 'author', props: {entityType: 'users', id: 'current'}},
+  },
+  {
+    tag: 'u2-domain-source',
+    category: 'Data',
+    visual: false,
+    createComponent: (props, env) => new DomainSource(props, env),
+    description: 'A domain (EMS) table as data: its rows, the current row a form edits, the ' +
+      'caller\'s access, and every pending change until `save`.',
+    usage: 'The one source every domain control binds to. Bind `query` to a filter input and ' +
+      '`search` to a search box to narrow the rows; bind a form\'s inputs under `currentRow` to edit ' +
+      'the current row; wire Save and Discard to the `save` and `discard` functions (they go through ' +
+      'the session), and `newRow` to a Create button; `draft: true` is the source of a create form. ' +
+      'Every source in one spec shares the ambient session, so one Save writes them all as one ' +
+      'transaction. Prefer it over a query source for anything a user edits.',
+    props: [
+      {name: 'table', type: 'string', description: 'The table address, `<schema>.<table>`.'},
+      {name: 'query', type: 'string', bindable: true,
+        description: 'A smart-filter string; changing it reloads the rows from the first page.'},
+      {name: 'search', type: 'string', bindable: true,
+        description: 'A case-insensitive text over the table\'s searchable columns, ANDed with the query.'},
+      {name: 'pageSize', type: 'int', description: 'How many rows one page loads (default 50).'},
+      {name: 'withAccess', type: 'bool',
+        description: 'Fetch the per-row access columns with every row (default true); the table-level ' +
+          'access is always fetched.'},
+      {name: 'captions', type: 'string_list',
+        description: 'Ref columns whose target names ride with the rows; every visible ref column by default.'},
+      {name: 'defaults', type: 'object',
+        description: 'Column values every draft row starts with — a parent\'s id on a child table.'},
+      {name: 'empty', type: 'bool',
+        description: 'Load no rows; drafts can still be added — a child collection under a draft parent.'},
+      {name: 'draft', type: 'bool',
+        description: 'Load nothing and start on one pristine draft — what a create form binds to.'},
+      {name: 'deleted', type: 'string', choices: ['exclude', 'include', 'only'],
+        description: 'Which rows the source answers: the live ones (default), the live and the ' +
+          'soft-deleted, or the deleted alone — a trash list, read-only until its rows are restored.'},
+      {name: 'live', type: 'bool', bindable: true,
+        description: 'Follow the server: the source probes the table every 30 s and reloads while there ' +
+          'is nothing unsaved to lose, marking itself stale while there is.'},
+    ],
+    defaults: {pageSize: 50, withAccess: true, empty: false, draft: false, deleted: 'exclude', live: false},
+    example: {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 50}},
+  },
+];
+
+/** Called once per registry by `registerAll`, whose WeakSet is what makes a repeated import safe —
+ * `Registry.register` itself refuses a tag that is already there. The manifest, the gallery and the
+ * designer palette all see the sources alongside every visual tag. */
+export function registerDataSources(reg: Registry = globalRegistry): void {
+  for (const meta of METAS)
+    reg.register(meta);
+}

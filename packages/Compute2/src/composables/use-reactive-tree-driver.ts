@@ -7,7 +7,7 @@ import {BehaviorSubject, MonoTypeOperatorFunction, merge, Observable} from 'rxjs
 import {audit, distinctUntilChanged, filter, switchMap, map, take} from 'rxjs/operators';
 import {bufferKeysDuringLock} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
-import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
+import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {ItemMetadata} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/view/ViewCommunication';
 import {PipelineInstanceConfig, PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -152,8 +152,11 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'loadDynamicItem', parentUuid, dbId, itemId, position, readonly: true, isReplace: true});
   };
 
-  const savePipeline = (metaData?: ItemMetadata) => {
-    driver.sendCommand({event: 'savePipeline', ...metaData});
+  // Resolves with the saved meta-call data, or null when the save fails or the command is
+  // dropped (locked driver).
+  const savePipeline = async (metaData?: ItemMetadata): Promise<MetaCallInfo | null> => {
+    const call = await driver.sendCommand({event: 'savePipeline', ...metaData});
+    return call == null ? null : driver.currentMetaCallData$.value;
   };
 
   const saveDynamicItem = (uuid:string, metaData?: ItemMetadata) => {

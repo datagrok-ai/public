@@ -1,5 +1,10 @@
 # HitTriage changelog
 
+## v.next
+
+* Hit Design, PeptiHit: Fixed the "Campaing Name" typo in the new-campaign form
+* AI: Exposed AI view functions on all four Hit apps — the landing views list/open/create/delete campaigns and templates, and the campaign table views get a hit-specific vocabulary (state, molecules, stages, status, save, submit) plus a search/call bridge to the standard table commands.
+
 ## 1.10.6 (2026-07-16)
 
 * Hit Design: Added a "Re-run when campaign opens" option per compute function/script/query, available both in a campaign's compute dialog and at template creation. When enabled, the function is recomputed over the whole molecule column every time the campaign is opened — useful for database lookups that resolve after a molecule was first drawn.

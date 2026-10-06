@@ -8,13 +8,6 @@ import {
   readInputTooltip, inputEditor, inputHost,
 } from './helpers/diff-studio';
 
-/**
- * Test Track scenario: DiffStudio/cyclic-models.md
- * 1. Open Diff Studio + PK-PD from Library.
- * 2. Check Multiaxis and Facet tabs are updated.
- * 3. Modify Count via clickers; solution updates in real time.
- * 4. Hover Begin, End, Step inputs — tooltips appear with relevant info.
- */
 test('DiffStudio Cyclic Models — PK-PD: Multiaxis/Facet tabs, Count clickers live update, input tooltips',
   async ({ page }) => {
     test.setTimeout(300_000);
@@ -36,7 +29,7 @@ test('DiffStudio Cyclic Models — PK-PD: Multiaxis/Facet tabs, Count clickers l
 
     await softStep('Step 3: Modify Count via clickers; URL, value AND chart redraw live', async () => {
       const before = await page.locator(inputEditor('count')).inputValue();
-      // Make the Multiaxis chart the active tab so we hash the canvas the user sees.
+
       await clickTab(page, 'Multiaxis');
       await page.waitForTimeout(800);
       const chartBefore = await canvasHash(page, '.d4-viewer');
@@ -51,9 +44,7 @@ test('DiffStudio Cyclic Models — PK-PD: Multiaxis/Facet tabs, Count clickers l
     });
 
     await softStep('Step 4: Tooltips on Begin, End, Step inputs MATCH expected text', async () => {
-      // Read the source IVP file and extract `[tooltip]` annotations — the platform displays
-      // these verbatim when the user hovers an input label. Falls back to known expected
-      // values if the file isn't reachable on this environment.
+
       let tooltips = await readIvpTooltips(page, 'System:AppData/DiffStudio/library/pk-pd.ivp');
       if (tooltips.size === 0) {
         tooltips = new Map([

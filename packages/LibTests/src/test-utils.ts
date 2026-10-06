@@ -44,6 +44,7 @@ export function createTestScheduler(): TestScheduler {
   scheduler.run = ((callback: any) => {
     scheduler.frame = 0;
     (scheduler as any).index = -1;
+    (scheduler as any).flushTests = [];
     return origRun(callback);
   }) as typeof scheduler.run;
   return scheduler;
@@ -82,6 +83,19 @@ export async function runRXTreeSnapshotTest(testName: string, fn: (expectObserva
       expectDeepEqual(actual.data, expected.data, {prefix: `${idx} ${expected.expectName}`});
     }
   }
+}
+
+export async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegExp) {
+  let threw = false;
+  let err: unknown = undefined;
+  try {
+    await fn();
+  } catch (e) {
+    threw = true;
+    err = e;
+  }
+  expectDeepEqual(threw, true);
+  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
 }
 
 export function getTreeStates(config: PipelineConfigurationProcessed): [StateTree, Observable<StateTree>] {

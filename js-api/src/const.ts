@@ -118,6 +118,7 @@ export enum TYPE {
   DYNAMIC = 'dynamic',
   VIEWER = 'viewer',  // [ViewerBase] subclasses
   LIST = 'list',
+  /** @deprecated Use {@link TYPE.SEMANTIC_VALUE}. Removed in 1.29. */
   SEM_VALUE = 'semantic_value',
   FUNC = 'func',
   FUNC_CALL = 'funccall',
@@ -140,8 +141,17 @@ export enum TYPE {
   NOTEBOOK = 'Notebook'
 }
 
-export enum GRID_COLUMN_TAGS {
-
+/** How a property relates to its owner in the database ({@link Property.relationKind}).
+ * @enum {RELATION_KIND} */
+export enum RELATION_KIND {
+  FIELD = 'Field',
+  BELONGS_TO = 'BelongsTo',
+  USES = 'Uses',
+  OWNS = 'Owns',
+  USED_BY = 'UsedBy',
+  USES_MANY = 'UsesMany',
+  CALCULATED_FIELD = 'CalculatedField',
+  INHERITS = 'Inherits',
 }
 
 /** Commonly used options on the function level */
@@ -255,6 +265,10 @@ export const SEMTYPE = {
   IC50: 'IC50',  //	[nM, µM] Half-maximal inhibitory concentration (lower = more potent)
   EC50: 'EC50',  // [nM, µM] Half-maximal effective concentration
   Ki: 'Ki',      // [nM, µM] Inhibition constant (binding affinity to target)
+
+  FUNCTION_NAME: 'FunctionName',  // namespace-qualified function name, such as 'Chem:SmilesToMw'
+  COLUMN_NAME: 'ColumnName',      // a string parameter that names a column; `options.table` names the parameter that supplies its table
+  TABLE_NAME: 'TableName',        // a string parameter that names an open table
 }
 
 export const UNITS = {
@@ -442,6 +456,9 @@ export const FUNC_TYPES = {
   MONOMER_LIB_PROVIDER: 'monomer-lib-provider',
 
   SEARCH_PROVIDER: 'searchProvider',
+
+  AI_ENGINE: 'aiEngine',
+
   NOTATION_REFINER: 'notationRefiner',
 }
 
@@ -618,6 +635,11 @@ export const functionRoles: FuncRoleDescription[] = [
     role: FUNC_TYPES.SEARCH_PROVIDER,
     description: 'Marks a function to be used as a search provider in the global search.',
     signature: 'searchProvider(): SearchProvider'
+  },
+  {
+    role: FUNC_TYPES.AI_ENGINE,
+    description: 'Provides an AI backend (engine) discoverable through grok.ai.',
+    signature: 'aiEngine(): AIEngine'
   },
   {
     role: FUNC_TYPES.NOTATION_REFINER,
@@ -844,6 +866,7 @@ export enum EVENT_TYPE {
   // Context menu events
   CONTEXT_MENU = 'd4-context-menu',
   CONTEXT_MENU_CLOSED = 'd4-menu-closed',
+  CONTEXT_MENU_SHOWN = 'd4-menu-shown',
 
   // View events
   CURRENT_VIEW_CHANGED = 'd4-current-view-changed',
@@ -855,6 +878,10 @@ export enum EVENT_TYPE {
   VIEW_RENAMED = 'grok-view-renamed',
   VIEW_CHANGED = 'grok-view-changed',
   VIEW_CHANGING = 'grok-view-changing',
+
+  // Browse events
+  BROWSE_TREE_REFRESHED = 'd4-browse-tree-refreshed',
+  TREE_NODE_CHILDREN_LOADED = 'd4-tree-view-child-node-children-loaded',
 
   // Object events
   CURRENT_OBJECT_CHANGED = 'd4-current-object-changed',
@@ -932,41 +959,16 @@ export enum EVENT_TYPE {
   PANELS_CHANGED = 'grok-panels-changed',
 }
 
-/**
- * @typedef {string} AggregationType
- * @typedef {string} SyncType
- * @typedef {string} JoinType
- * @typedef {string} ColumnType
- * @typedef {string} ViewerType
- * @typedef {string} ObjectType
- * @typedef {string} ViewerPropertyType
- * @typedef {string} Type
- * @typedef {string} SemType
- * @typedef {string} SimilarityMetric
- * @typedef {string} DockType
- *
- * @typedef {Object} ElementOptions
- * @property {string} id
- * @property {string} classes
- * @property {Object} style
- *
- * @typedef {Object} CsvImportOptions
- * @property {string} delimiter
- * @property {string} decimalSeparator
- * @property {string} thousandSeparator
- *
- * @typedef {function(number): boolean} IndexPredicate
- * @typedef {function(String): boolean} StringPredicate
- **/
+
 
 export type AggregationType = `${AGG}`;
-export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | string;
+export type ColumnAggregationType = `${AGG}` | `${STR_AGG}` | (string & {});
 export type SyncType = `${SYNC_TYPE}`;
 export type JoinType = `${JOIN_TYPE}`;
 export type ColumnType = `${COLUMN_TYPE}`;
 export type ColumnTypeFilter = ColumnType | `${COLUMN_TYPE_FILTER}`;
-export type ViewerType = `${VIEWER}` | string;
-export type ViewType = `${VIEW_TYPE}` | string;
+export type ViewerType = `${VIEWER}` | (string & {});
+export type ViewType = `${VIEW_TYPE}` | (string & {});
 export type ObjectType = string;
 export type ViewerPropertyType = string;
 export type Type = `${TYPE}`;
@@ -987,6 +989,11 @@ export type IndexPredicate = (ind: number) => boolean;
 export type StringPredicate = (str: string) => boolean;
 export type ScriptingLanguage = `${SCRIPT_LANGUAGE}`;
 type CSSProperties = Partial<Record<keyof CSSStyleDeclaration, string>>;
+
+/** A handler the platform invokes with no arguments; a parameter, if declared, stays undefined.
+ * `Function` is accepted so handlers kept in `Function`-typed fields still pass. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+export type Callback = ((...ignored: never[]) => void) | Function;
 
 export type ElementOptions = {
   id?: string;

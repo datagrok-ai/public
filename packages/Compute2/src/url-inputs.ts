@@ -4,7 +4,6 @@ import dayjs from 'dayjs';
 
 export interface UrlInputsResult {
   patch: Map<string, any>;
-  entityIds: Map<string, string>;
   warnings: string[];
 }
 
@@ -48,7 +47,6 @@ function parseScalar(type: string, raw: string): {ok: boolean, value?: any} {
  *  (dataframe/file params carry entity ids), so the patch can later be applied synchronously. */
 export async function parseUrlInputs(call: DG.FuncCall, urlParams: URLSearchParams): Promise<UrlInputsResult> {
   const patch = new Map<string, any>();
-  const entityIds = new Map<string, string>();
   const warnings: string[] = [];
   const byName = new Map([...call.inputParams.values()].map((p) => [p.property.name, p]));
 
@@ -63,17 +61,15 @@ export async function parseUrlInputs(call: DG.FuncCall, urlParams: URLSearchPara
     if (type === DG.TYPE.DATA_FRAME) {
       try {
         patch.set(name, await grok.dapi.tables.getTable(raw));
-        entityIds.set(name, raw);
       } catch {
         warnings.push(`Failed to load table "${raw}" for input "${name}"`);
       }
     } else if (type === DG.TYPE.FILE) {
       try {
         const entity = await grok.dapi.entities.find(raw);
-        if (entity instanceof DG.FileInfo) {
+        if (entity instanceof DG.FileInfo)
           patch.set(name, entity);
-          entityIds.set(name, raw);
-        } else
+        else
           warnings.push(`Entity "${raw}" for input "${name}" is not a file`);
       } catch {
         warnings.push(`Failed to load file "${raw}" for input "${name}"`);
@@ -87,7 +83,7 @@ export async function parseUrlInputs(call: DG.FuncCall, urlParams: URLSearchPara
     } else
       warnings.push(`Input "${name}" of type ${type} is not supported in URL`);
   }
-  return {patch, entityIds, warnings};
+  return {patch, warnings};
 }
 
 export function applyUrlInputs(call: DG.FuncCall, patch: Map<string, any>) {
@@ -104,8 +100,8 @@ export function missingMandatoryInputs(call: DG.FuncCall): string[] {
 }
 
 /** Current view URL with input values as search params; dataframe/file inputs are included
- *  only when their entity id is known (loaded from a URL), others are reported as skipped. */
-export function buildInputsUrl(call: DG.FuncCall, entityIds: Map<string, string>): {url: string, skipped: string[]} {
+ *  only when their current value carries an entity id, others are reported as skipped. */
+export function buildInputsUrl(call: DG.FuncCall): {url: string, skipped: string[]} {
   const url = new URL(window.location.href);
   url.search = '';
   url.hash = '';
@@ -117,7 +113,9 @@ export function buildInputsUrl(call: DG.FuncCall, entityIds: Map<string, string>
       continue;
     const type = param.property.propertyType as string;
     if (type === DG.TYPE.DATA_FRAME || type === DG.TYPE.FILE) {
-      const id = entityIds.get(name);
+      // the id is read off the live value, so a replaced table/file contributes
+      // its own id (or is skipped) instead of a stale id recorded at load time
+      const id = value.id;
       if (id)
         url.searchParams.set(name, id);
       else

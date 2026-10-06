@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -8,7 +9,6 @@ test('Pareto Front viewer scenario', async ({page}) => {
 
   await loginToDatagrok(page);
 
-  // Baseline setup: selenium class, Tabs mode, close everything.
   await page.evaluate(async () => {
     const g: any = (window as any).grok;
     document.body.classList.add('selenium');
@@ -18,8 +18,7 @@ test('Pareto Front viewer scenario', async ({page}) => {
   });
 
   await softStep('Step 1 — Open cars-with-missing.csv from Demo Files', async () => {
-    // 2b observed: readCsv returned a bare 502 and cars-with-missing.csv is not present
-    // under System:DemoFiles on dev (only cars.csv exists). Record that verbatim.
+
     const result = await page.evaluate(async () => {
       const g: any = (window as any).grok;
       const out: {opened: boolean; error?: string; listed?: string[]} = {opened: false};
@@ -35,7 +34,7 @@ test('Pareto Front viewer scenario', async ({page}) => {
         out.listed = items
           .map((f: any) => (f?.fileName ?? f?.name ?? String(f)))
           .filter((n: string) => typeof n === 'string' && n.toLowerCase().includes('car'));
-      } catch { /* ignore secondary listing failure */ }
+      } catch {  }
       return out;
     });
     if (result.opened)
@@ -69,8 +68,11 @@ test('Pareto Front viewer scenario', async ({page}) => {
         setTimeout(resolve, 3000);
       });
       const paretoV = tv.addViewer('Pareto Front');
-      // Allow a brief settle for viewer props to populate.
-      await new Promise((r) => setTimeout(r, 1500));
+
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
       return {
         type: paretoV.type,
         labelColumnsColumnNames: paretoV.props.labelColumnsColumnNames,
@@ -82,7 +84,6 @@ test('Pareto Front viewer scenario', async ({page}) => {
       };
     });
 
-    // Scenario expectation: "model" column automatically selected as Label on cars.csv.
     expect(info.labelColumnsColumnNames).toContain('model');
   });
 
@@ -97,7 +98,10 @@ test('Pareto Front viewer scenario', async ({page}) => {
         setTimeout(resolve, 3000);
       });
       const paretoV = tv.addViewer('Pareto Front');
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
 
       const labelCols: string[] = paretoV.props.labelColumnsColumnNames ?? [];
       const rowCount: number = df.rowCount;
@@ -112,7 +116,6 @@ test('Pareto Front viewer scenario', async ({page}) => {
       return {labelCols, rowCount, uniqueCounts};
     });
 
-    // Scenario allows: (a) empty by default, OR (b) every auto-selected column has unique values.
     if (info.labelCols.length === 0)
       return;
     for (const name of info.labelCols) {
@@ -133,7 +136,10 @@ test('Pareto Front viewer scenario', async ({page}) => {
         setTimeout(resolve, 3000);
       });
       const paretoV = tv.addViewer('Pareto Front');
-      await new Promise((r) => setTimeout(r, 1500));
+      for (let i = 0; i < 30; i++) {
+        if (paretoV.root?.querySelector('canvas')) break;
+        await new Promise((r) => setTimeout(r, 50));
+      }
       const allProps = paretoV.props.getProperties() as Array<any>;
       const categories = new Set<string>(
         allProps.map((p: any) => p?.category ?? p?._category ?? '').filter((c: string) => !!c));

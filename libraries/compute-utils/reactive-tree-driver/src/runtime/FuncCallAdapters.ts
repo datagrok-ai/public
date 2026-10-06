@@ -159,7 +159,8 @@ export class FuncCallMockAdapter extends MemoryStore implements IFuncCallAdapter
     );
   }
 
+  // mocks have no DG.FuncCall; toState consumers already treat funcCall as optional
   getFuncCall(): DG.FuncCall {
-    throw new Error(`getFuncCall is not implemented for mocks`);
+    return undefined as unknown as DG.FuncCall;
   }
 }

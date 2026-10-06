@@ -15,7 +15,6 @@ import {
   createDefaultNumerical,
   getMpoScoreColumnName,
   isMpoNumericColumn,
-  migrateProfile,
 } from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 export {MPO_PROFILE_CHANGED_EVENT, MPO_PROFILE_DELETED_EVENT} from '@datagrok-libraries/statistics/src/mpo/utils';
@@ -35,11 +34,10 @@ export function isEdaPackageInstalled(): boolean {
   return true;
 }
 
-export type MpoProfileInfo = DesirabilityProfile & {
-  fileName: string;
-};
+/** Identity of a stored profile row; `rowVersion` is the optimistic-concurrency token for updates. */
+export type MpoProfileRef = {id: string; rowVersion: number};
 
-export type MpoSaveResult = {saved: boolean; fileName: string};
+export type MpoProfileInfo = DesirabilityProfile & MpoProfileRef;
 
 export enum MpoPathMode {
   List = 'list',
@@ -47,46 +45,9 @@ export enum MpoPathMode {
   Create = 'create',
 }
 
-export enum MpoUploadConflictAction {
-  Replace = 'replace',
-  KeepBoth = 'keep-both',
-  Cancel = 'cancel',
-}
-
-export const MPO_TEMPLATE_PATH = 'System:AppData/Chem/mpo';
 export const MPO_PATH = 'MPOProfiles';
 export const MPO_PROFILES_NAME = 'MPO Profiles';
 export const MAX_MPO_PROPERTIES = 10;
-
-export async function loadMpoProfiles(): Promise<MpoProfileInfo[]> {
-  const files = await grok.dapi.files.list(MPO_TEMPLATE_PATH);
-  const profiles: MpoProfileInfo[] = [];
-
-  for (const file of files) {
-    try {
-      const text = await grok.dapi.files.readAsText(`${MPO_TEMPLATE_PATH}/${file.name}`);
-      const content = migrateProfile(JSON.parse(text) as DesirabilityProfile);
-
-      profiles.push({
-        type: DESIRABILITY_PROFILE_TYPE,
-        version: content.version,
-        fileName: file.name,
-        name: content.name ?? file.name.replace(/\.json$/i, ''),
-        description: content.description ?? '',
-        aggregation: content.aggregation,
-        properties: content.properties,
-      });
-    } catch (e) {
-      grok.shell.warning(`Failed to load MPO profile "${file.name}": ${e instanceof Error ? e.message : e}`);
-    }
-  }
-
-  return profiles;
-}
-
-export async function deleteMpoProfile(profile: MpoProfileInfo): Promise<void> {
-  await grok.dapi.files.delete(`${MPO_TEMPLATE_PATH}/${profile.fileName}`);
-}
 
 export async function computeMpo(
   df: DG.DataFrame,

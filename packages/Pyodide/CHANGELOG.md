@@ -1,5 +1,9 @@
 # Pyodide package changelog
 
+## 1.4.1 (2026-09-16)
+
+* GROK-18695: Updated npm dependencies to clear reported vulnerabilities
+
 ## 1.4.0 (2026-03-20)
 
 * [#3604](https://github.com/datagrok-ai/public/issues/3604): Migrated tags to roles

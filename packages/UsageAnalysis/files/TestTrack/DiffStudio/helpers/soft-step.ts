@@ -2,7 +2,6 @@ import { test } from '@playwright/test';
 
 export interface StepError { step: string; error: string; }
 
-/** Returns a per-test soft-step collector that captures failures and asserts them at the end. */
 export function createSoftStepCollector() {
   const errors: StepError[] = [];
 

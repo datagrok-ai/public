@@ -1,19 +1,39 @@
+import * as DG from 'datagrok-api/dg';
 import {fromEvent, Observable, timer} from 'rxjs';
-import {filter, map, switchMap, take, timeout} from 'rxjs/operators';
+import {debounceTime, distinctUntilChanged, filter, map, switchMap, take, timeout} from 'rxjs/operators';
 
 /**
  * Emits (and completes) when the element returned by `get` is clicked.
- * Polls for the element so it also works when it renders slightly later,
- * attaches the click listener the moment the element exists, and errors out
- * after `timeoutMs` instead of waiting forever. Returning an Observable lets the
- * tutorial engine cancel the step (via `firstEvent`) when the tutorial is closed.
+ *
+ * `get` is re-run on every tick rather than resolved once, so a target that is rebuilt while the
+ * step is up — a ribbon item, a re-rendered toolbar — gets the listener too; binding once leaves
+ * the step unfinishable on the node that was replaced.
+ *
+ * The timeout sits after the null filter, so it counts only while `get` returns nothing: once the
+ * element exists the step waits for the click for as long as the learner needs.
+ *
+ * Returning an Observable lets the tutorial engine cancel the step (via `firstEvent`) when the
+ * tutorial is closed.
  */
 export function elementClick(get: () => HTMLElement | null, timeoutMs = 30000): Observable<Event> {
   return timer(0, 100).pipe(
     map(() => get()),
     filter((el): el is HTMLElement => el != null),
-    take(1),
     timeout(timeoutMs),
-    switchMap((el) => fromEvent(el, 'click').pipe(take(1))),
+    distinctUntilChanged(),
+    // capture: a control that stops the click's propagation (a tree row) must still be seen clicked
+    switchMap((el) => fromEvent(el, 'click', {capture: true})),
+    take(1),
   );
+}
+
+/**
+ * Emits when the learner has made a selection in this step: the selection settles (the events of one
+ * drag arrive as one) on rows other than the ones selected when the step began, so the tail of the
+ * previous step's gesture does not complete it.
+ */
+export function selectionMade(t: DG.DataFrame): Observable<unknown> {
+  const before = t.selection.toBinaryString();
+  return t.onSelectionChanged.pipe(debounceTime(300),
+    filter(() => t.selection.anyTrue && t.selection.toBinaryString() !== before));
 }

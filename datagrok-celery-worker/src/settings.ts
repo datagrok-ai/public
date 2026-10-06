@@ -19,6 +19,7 @@ export class Settings {
   paramTimeoutMinutes: number;
   wsMessageTimeoutSeconds: number;
   healthPort: number;
+  maxConcurrentTasks: number;
 
   constructor(values: {
     taskQueueName: string,
@@ -38,6 +39,7 @@ export class Settings {
     paramTimeoutMinutes: number,
     wsMessageTimeoutSeconds: number,
     healthPort: number,
+    maxConcurrentTasks?: number,
   }) {
     this.taskQueueName = values.taskQueueName;
     this.celeryHostname = values.celeryHostname;
@@ -56,6 +58,7 @@ export class Settings {
     this.paramTimeoutMinutes = values.paramTimeoutMinutes;
     this.wsMessageTimeoutSeconds = values.wsMessageTimeoutSeconds;
     this.healthPort = values.healthPort;
+    this.maxConcurrentTasks = Math.max(1, values.maxConcurrentTasks ?? 1);
   }
 
   static fromEnv(env: NodeJS.ProcessEnv = process.env): Settings {
@@ -89,6 +92,7 @@ export class Settings {
       paramTimeoutMinutes: intEnv('DATAGROK_PARAM_TIMEOUT', 5),
       wsMessageTimeoutSeconds: intEnv('DATAGROK_WS_MESSAGE_TIMEOUT', 30),
       healthPort: intEnv('HEALTH_PORT', 8000),
+      maxConcurrentTasks: intEnv('DATAGROK_MAX_CONCURRENT_TASKS', 1),
     });
     if (missing.length > 0)
       throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
@@ -99,7 +103,8 @@ export class Settings {
    *  are URL-encoded here because amqplib parses the string as a URL). */
   get brokerUrl(): string {
     const protocol = this.amqpTls ? 'amqps' : 'amqp';
-    return `${protocol}://${encodeURIComponent(this.amqpUser)}:${encodeURIComponent(this.amqpPassword)}@${this.amqpHost}:${this.amqpPort}`;
+    const auth = `${encodeURIComponent(this.amqpUser)}:${encodeURIComponent(this.amqpPassword)}`;
+    return `${protocol}://${auth}@${this.amqpHost}:${this.amqpPort}`;
   }
 
   get pipeUrl(): string {

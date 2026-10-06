@@ -1,0 +1,75 @@
+/* Radio group skin — inline items, plus the raised-button variant (Dart `buttonStyle`).
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+/* the platform stacks radio items, one 20px row each, with the button 4px in and 8px off its label
+   (ui.css:933-943) */
+.u2-input-editor.u2-radio {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: auto;
+  min-height: var(--dg-control-height);
+  padding: 0;
+}
+
+.u2-radio-item {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  margin-right: var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-radio-item > .u2-input-radio {
+  margin: 0 var(--dg-space-m) 0 var(--dg-space-s);
+}
+
+.u2-input-radio {
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  border: none;
+  accent-color: var(--dg-accent);
+  cursor: pointer;
+}
+
+/* button variant: the radio itself is off-screen, the label is the target; laid out as a row of
+   buttons 4px apart, raised ones white on the accent (ui.css:945-959) */
+.u2-radio-buttons {
+  flex-direction: row;
+  align-items: center;
+  padding: var(--dg-space-xs) 0;
+}
+
+.u2-radio-buttons .u2-radio-item {
+  height: var(--dg-button-height);
+  margin: 0 var(--dg-space-s);
+  padding: 0 var(--dg-space-m);
+  color: var(--dg-accent-secondary);
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+}
+
+.u2-radio-buttons .u2-radio-item:hover {
+  background: var(--dg-hover);
+}
+
+.u2-radio-buttons .u2-input-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+.u2-radio-buttons .u2-radio-pressed {
+  color: var(--dg-white);
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}
+
+.u2-radio-buttons .u2-radio-item:focus-within {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-xs);
+}

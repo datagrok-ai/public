@@ -3,6 +3,10 @@
     overflow-y: scroll;
 }
 
+.d4-g-cell .macromolecule-cell-comp-analysis-host{
+    max-height: unset;
+}
+
 .macromolecule-cell-comp-analysis-bar{
     height: inherit;
     display: block;

@@ -54,6 +54,15 @@ export namespace scripts {
   }
 
   /**
+   * Generates IUPAC names for molecules deterministically using openclatura (Blue Book 2013 rules).
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   */
+  export async function iupacName(table: DG.DataFrame , molecules: DG.Column ): Promise<DG.DataFrame> {
+    return await grok.functions.call('Chem:IUPACName', { table, molecules });
+  }
+
+  /**
    * Standardizes the dataset
    * @param {DG.Column} molecules
    *   semType: Molecule
@@ -281,6 +290,13 @@ export namespace funcs {
     return await grok.functions.call('Chem:SubstructureFilter', {});
   }
 
+  /**
+   * Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder
+   */
+  export async function moleculeFilterOperators(): Promise<any> {
+    return await grok.functions.call('Chem:MoleculeFilterOperators', {});
+  }
+
   export async function canvasMol(x: number , y: number , w: number , h: number , canvas: any , molString: string , scaffoldMolString: string , options?: any , renderingOptions?: any ): Promise<void> {
     return await grok.functions.call('Chem:CanvasMol', { x, y, w, h, canvas, molString, scaffoldMolString, options, renderingOptions });
   }
@@ -436,7 +452,7 @@ export namespace funcs {
   }
 
   /**
-   * Calculates molecular descriptors for the molecules column
+   * Calculates molecular descriptors for the molecules column using RDKit
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules
    *   semType: Molecule
@@ -990,6 +1006,13 @@ export namespace funcs {
   }
 
   /**
+   * Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)
+   */
+  export async function cruxSketcher(): Promise<any> {
+    return await grok.functions.call('Chem:CruxSketcher', {});
+  }
+
+  /**
    * Opens SDF file
    */
   export async function importSdf(bytes: any ): Promise<any> {
@@ -1051,6 +1074,15 @@ export namespace funcs {
    */
   export async function copyAsSmiles(value: any ): Promise<void> {
     return await grok.functions.call('Chem:CopyAsSmiles', { value });
+  }
+
+  /**
+   * Copies structure as smiles
+   * @param {any} value
+   *   semType: Molecule
+   */
+  export async function copyAsCXSmiles(value: any ): Promise<void> {
+    return await grok.functions.call('Chem:CopyAsCXSmiles', { value });
   }
 
   /**
@@ -1135,13 +1167,13 @@ export namespace funcs {
   }
 
   /**
-   * Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+   * Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
    * @param {DG.DataFrame} table - Input data table
    * @param {DG.Column} molecules
    *   semType: Molecule
    */
-  export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
+  export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean , molecularFormula: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula });
   }
 
   /**
@@ -1205,6 +1237,45 @@ export namespace funcs {
   }
 
   /**
+   * SAR Matrix viewer
+   */
+  export async function sarMatrixViewer(): Promise<any> {
+    return await grok.functions.call('Chem:SarMatrixViewer', {});
+  }
+
+  /**
+   * Column names available for SAR Matrix series grouping
+   */
+  export async function sarSeriesColumnChoices(): Promise<any> {
+    return await grok.functions.call('Chem:SarSeriesColumnChoices', {});
+  }
+
+  export async function sarMatrixEditor(call: any ): Promise<any> {
+    return await grok.functions.call('Chem:SarMatrixEditor', { call });
+  }
+
+  /**
+   * Groups related compound series into potency-colored matrices and predicts virtual analogs.
+   * @param {DG.Column} molecules
+   *   semType: Molecule
+   * @param {string} scaling - Activity scaling before assembly
+   *   choices: ["none","lg","-lg"]
+   * @param {string} activityDirection - Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)
+   *   choices: ["Auto (from scaling)","Higher is better","Lower is better"]
+   * @param {number} fragmentCutoff - Maximum fragment size relative to core
+   * @param {number} fragmentationLevels - Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader
+   * @param {boolean} useMcsAnchors - Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets
+   * @param {string} seriesColumn - Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure
+   *   choices: Chem:sarSeriesColumnChoices()
+   * @param {DG.Column} coreColumn - Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules
+   * @param {string[]} rGroupColumns - Columns with the substituent at each attachment point of the core
+   * @param {string} matrixColumns - The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows
+   */
+  export async function sarMatrixAnalysis(table: DG.DataFrame , molecules: DG.Column , activity: DG.Column , scaling: string , activityDirection: string , fragmentCutoff: number , fragmentationLevels: number , predictVirtual: boolean , useMcsAnchors: boolean , seriesColumn: string | null, coreColumn: DG.Column | null, rGroupColumns: string[] | null, matrixColumns: string | null): Promise<void> {
+    return await grok.functions.call('Chem:SarMatrixAnalysis', { table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns });
+  }
+
+  /**
    * Scaffold Tree filter
    */
   export async function scaffoldTreeFilter(): Promise<any> {
@@ -1235,6 +1306,13 @@ export namespace funcs {
    */
   export async function demoMMPA(): Promise<void> {
     return await grok.functions.call('Chem:DemoMMPA', {});
+  }
+
+  /**
+   * Group analog series into potency matrices and predict the analogs worth making next
+   */
+  export async function demoSarMatrix(): Promise<void> {
+    return await grok.functions.call('Chem:DemoSarMatrix', {});
   }
 
   /**
@@ -1450,6 +1528,20 @@ export namespace funcs {
    */
   export async function biochemPropsWidget(): Promise<void> {
     return await grok.functions.call('Chem:BiochemPropsWidget', {});
+  }
+
+  /**
+   * Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+   */
+  export async function saveMpoProfile(profileJson: string ): Promise<string> {
+    return await grok.functions.call('Chem:SaveMpoProfile', { profileJson });
+  }
+
+  /**
+   * Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+   */
+  export async function seedMpoProfiles(): Promise<string> {
+    return await grok.functions.call('Chem:SeedMpoProfiles', {});
   }
 
   export async function mpoProfilesApp(path?: string ): Promise<DG.View> {

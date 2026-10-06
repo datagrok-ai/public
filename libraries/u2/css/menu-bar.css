@@ -35,8 +35,8 @@
 }
 
 .u2-menu-bar-item-open {
-  color: var(--dg-accent);
-  background: var(--dg-steel-1);
+  color: var(--dg-selection-text);
+  background: var(--dg-selection-bg);
 }
 
 .u2-menu-bar-item:focus-visible {

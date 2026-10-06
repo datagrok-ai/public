@@ -2,12 +2,44 @@
 
 ## v.next
 
+* Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+
+## 2.28.4 (2026-09-29)
+
+* MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)
+* MSA header: Fixed long columns sometimes left without the header: it now repaints once installed, shows on a column wider than the view, and a new column no longer shrinks the shared header height; a scrolled-away header no longer blocks clicks on other columns' headers (in `@datagrok-libraries/bio`)
+* Tests: Added `render/msa-header.feature` — both chains get the header, and CDR3 extracted either way is ruled from 105; the header reports its tracks, ruler names and positions through the grid's status
+
+* Manage Monomer Libraries: Deleting a library removes its file first, so its row leaves the list as soon as the file is gone instead of after a settings save and a reload of every library
+* Similarity scoring: Fixed blank scores for sequences whose length differs from the reference's; the score covers the reference's positions, as identity does (in `@datagrok-libraries/bio`)
+* Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: HELM and MSA runs of Analyze and Convert, the empty current row (GROK-16111), Molecules to HELM, the FASTA file handler and exporter, project round-trips, monomer library CRUD, BILN rendering; every feature states what it does not translate
+* Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
+* Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
+* Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.
+* Fixed WebAssembly asset URLs in package workers so sequence-space clustering loads the DBSCAN binary from the published package.
+
+* Tests: Added the package's Gherkin features under `bdd/` (analyze, transform, calculate, search, annotate, top menu, service surface, monomer libraries and collections, cell renderers and cell actions) on `@datagrok-libraries/bdd`
+* Tests: Kept the sequence helper in the page in the init step (returned to Node it serialized the RDKit heap, ten seconds per feature) and listed each top-menu group's commands in one walk
+* Monomer libraries: Fired the `bio-monomer-lib-loaded` custom event after every library load and awaited the library update before reporting the load complete
+* Monomer Collections: Named the cards for automation and marked the selected ones with `aria-selected`
+* Diversity Search: Fixed the "importScripts failed to load" errors of the distance-matrix workers spawned beyond the job's size and terminated mid-load (in `@datagrok-libraries/ml`)
+* WebLogo, Similarity Search, Diversity Search: Exposed widget status (hit areas and readings), a render-pending flag and a rendered event for automation
+* Subsequence Search: Fixed the filter dropping keystrokes typed while a search was applied
+* Manage Annotations: Named the annotation list, its rows and the delete icon
+* Registered `getHelmMonomers` under its plain name and gave `Match with Monomer Library` its dialog title
+* Extract Region: Fixed disabled Start/End position selectors for columns without region annotations
+* AI: Exposed AI view functions on the monomer-management views — Manage Monomer Libraries (activate/deactivate, delete, merge, resolve duplicates), Manage Monomers (browse, edit-form fill/save, delete, create library), and Monomer Collections (list, create, update, delete).
+
+* To Atomic Level panel: Added scrollable windowed structure view for long linear single-chain sequences — shows a 20-monomer window with a slider and 1-based start/end position indicators
 * Flow: Added table-aware twins of the `Bio | Transform` entries, which mutate the input frame and return void (or hand the same frame back) — unusable on a pipeline canvas, where the node shows a bare pass-through arrow instead of a named result: Extract Sequence Region, To Atomic Level Column, Molecules to HELM Column, and Split to Monomers Columns (which returns the per-position monomer columns as a table of their own). All share the original implementation
 * Flow: Added Convert Sequence Notation `(table, sequence, targetNotation{fasta,separator,helm}, separator?) -> column`, wrapping `ISeqHandler.convert()`. Notation conversion previously existed only behind a dialog
 * Flow: Added Tag as Macromolecule `(table, sequence) -> column`, which runs sequence detection on a plain string column. Nothing could tag a column built inside a flow, so every semType-dependent bio function silently no-opped on derived data
 * Flow: Added Motif Search `(table, sequence, motif) -> dataframe`, returning the matching rows; reuses `linearSubstructureSearch`
 * Flow: Added Apply Antibody Numbering `(table, sequence, scheme{imgt,kabat})`, the canonical non-interactive entry point — it applies the annotations and the aligned column to the table. `immunumAntibodyNumbering` is the ENGINE, and its DataFrame of position maps and annotation JSON is dialog plumbing, not a pipeline result
 * Scripts: Renamed the sequence generator function to `Generate Sequences`. Its previous name camelized to `SequenceGenerator`, colliding with the sibling `sequence_generator.md` (a script with no `#name:` falls back to its filename), so the real generator was pushed to a server-assigned `SequenceGenerator_1` while the parameterless doc entity held the name callers reach for — including the generated `package-api.ts`
+
+## 2.28.3 (2026-07-12)
+
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages (also inherits the patched `datagrok/python` base)
 * GROK-18695: PepSeA Docker: raised security floors for the web stack (fastapi/starlette/h11/uvicorn/gunicorn/ujson/certifi/urllib3/requests/idna/pydantic/numpy) over the pinned PepSeA requirements (VEX)
 * Moved the Bio Playwright E2E suite into the package (playwright/); helpers from @datagrok-libraries/test/src/playwright

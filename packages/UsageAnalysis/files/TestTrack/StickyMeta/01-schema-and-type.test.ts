@@ -1,8 +1,6 @@
 import { test, expect } from '@playwright/test';
 import * as H from './helpers';
 
-// One server-side lifecycle (create type -> create schema -> edit -> delete) driven through the
-// UI. Run as a single test with a finally-block safety net so leftover state is always removed.
 test.describe.configure({ mode: 'serial' });
 
 test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async ({ page }) => {
@@ -16,21 +14,19 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
   try {
     await H.gotoHome(page);
     await H.setupEnv(page);
-    await H.apiDeleteAllTestSchemas(page); // defensive: clear leftover PW_SM_ schemas from crashed runs
+    await H.apiDeleteAllTestSchemas(page); 
 
-    // ---- 1.1 Create an entity type (Name + Matching expression, both required) ----
     await H.gotoStickyMeta(page, 'Types');
     await page.locator('[name="button-New-Entity-Type..."]').click();
     const typeDialog = page.locator('.d4-dialog[name="dialog-Create-a-new-entity-type"]');
     await typeDialog.locator('[name="input-Name"]').waitFor({ timeout: 10_000 });
 
-    // OK disabled while empty.
     expect(await typeDialog.locator('[name="button-OK"]').evaluate((b) => b.classList.contains('disabled'))).toBe(true);
 
     await typeDialog.locator('[name="input-Name"]').click();
     await page.keyboard.press('Control+A');
     await page.keyboard.type(typeName, { delay: 10 });
-    // Still disabled with name only.
+
     expect(await typeDialog.locator('[name="button-OK"]').evaluate((b) => b.classList.contains('disabled'))).toBe(true);
 
     await typeDialog.locator('[name="input-Matching-expression"]').click();
@@ -44,7 +40,6 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     await H.searchList(page, typeName);
     expect(await H.listHasCard(page, typeName)).toBe(true);
 
-    // ---- 1.2 Create a schema associated with the type, with four properties ----
     await H.gotoStickyMeta(page, 'Schemas');
     await page.locator('[name="button-New-Schema..."]').click();
     const schemaDialog = page.locator('.d4-dialog[name="dialog-Create-a-new-schema"]');
@@ -54,7 +49,6 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     await page.keyboard.press('Control+A');
     await page.keyboard.type(schemaName, { delay: 10 });
 
-    // Open the type picker and check our type.
     await schemaDialog.locator('[name="div-Associated-with-"] .d4-link-action').click();
     await page.waitForTimeout(800);
     await page.evaluate((cbSel) => {
@@ -69,11 +63,10 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     await page.waitForTimeout(600);
     expect(await schemaDialog.locator('[name="div-Associated-with-"]').textContent()).toContain(typeName);
 
-    // Add the four properties.
     const props: [string, string][] = [
       ['rating', 'int'], ['notes', 'string'], ['verified', 'bool'], ['review_date', 'datetime'],
     ];
-    // Verify the available property-type options once.
+
     const typeOptions = await schemaDialog.locator('select[name="input-Property-Type"]').first()
       .evaluate((s) => Array.from((s as HTMLSelectElement).options).map((o) => o.value));
     for (const t of ['string', 'int', 'bool', 'double', 'datetime', 'string_list'])
@@ -105,16 +98,12 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     await H.searchList(page, schemaName);
     expect(await H.listHasCard(page, schemaName)).toBe(true);
 
-    // ---- 1.3 Edit the schema and verify its content ----
-    // Close any lingering dialog first so only the Edit dialog is open.
     await page.evaluate(() => document.querySelectorAll('.d4-dialog')
       .forEach((d) => (d.querySelector('[name="button-CANCEL"]') as HTMLElement | null)?.click()));
     await page.waitForTimeout(500);
     await H.cardContextMenu(page, schemaName, 'Edit');
     await page.waitForTimeout(1500);
-    // The Edit-schema dialog exposes property names and the association in the DOM, but renders
-    // the property type without a readable <select>. Verify names + association via the UI here,
-    // and the property *types* via the API below (a verification read).
+
     const content = await page.evaluate(() => {
       const dialog = Array.from(document.querySelectorAll('.d4-dialog'))
         .find((d) => d.querySelector('.d4-dialog-title')?.textContent?.trim() === 'Edit schema');
@@ -136,7 +125,6 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     });
     await page.waitForTimeout(500);
 
-    // Property types via API (the Edit dialog has no readable type control).
     const apiRows = await page.evaluate(async (schemaName) => {
       const g = (window as any).grok;
       const schema = (await g.dapi.stickyMeta.getSchemas()).find((s: any) => s.name === schemaName);
@@ -149,7 +137,6 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
       { name: 'review_date', type: 'datetime' },
     ]);
 
-    // ---- 1.4 Delete the schema, then the entity type (via UI) ----
     await H.searchList(page, schemaName);
     await H.cardContextMenu(page, schemaName, 'Delete');
     await page.waitForTimeout(600);
@@ -166,15 +153,15 @@ test('Sticky Meta: entity type & schema lifecycle (create, edit, delete)', async
     await H.searchList(page, typeName);
     expect(await H.listHasCard(page, typeName)).toBe(false);
   } finally {
-    // Safety net: remove anything the test left behind.
+
     await H.apiDeleteSchema(page, schemaName).catch(() => {});
     await page.evaluate(async (typeName) => {
       try {
-        // Best-effort: delete a leftover entity type via the Types view is UI-only; skip if unreachable.
+
         const g = (window as any).grok;
-        // entity types created via UI are not in getSchemas(); nothing to do here if already deleted.
+
         void g; void typeName;
-      } catch { /* ignore */ }
+      } catch {  }
     }, typeName).catch(() => {});
   }
 });

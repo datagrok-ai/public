@@ -16,6 +16,7 @@ category('AI: Viewers: PieChart JS API', () => {
     const v = DG.Viewer.pieChart(demog(), {category: 'race'});
     expectRoundTripPropAndLook(v, {
       pieSortType: 'by category', pieSortOrder: 'desc', includeNulls: false, labelPosition: 'Outside',
+      mode: 'Donut', showCenterLabel: false, centerLabel: 'Total', centerLabelFont: 'bold normal 24px "Roboto"',
     });
   });
 
@@ -36,6 +37,7 @@ category('AI: Viewers: PieChart JS API', () => {
       'segmentAngleColumnName', 'segmentLengthColumnName', 'includeNulls'])
       expect(findProp(v, name) != null, true);
     expectChoices(v, 'pieSortType', ['by value', 'by category']);
+    expectChoices(v, 'mode', ['Pie', 'Donut']);
   });
 
   test('onSegmentClicked is an rxjs Observable', async () => {

@@ -11,7 +11,8 @@ import {HistoryTestApp as HistoryAppInstance} from './apps/HistoryTestApp';
 import {TreeWizardApp as TreeWizardAppInstance} from './apps/TreeWizardApp';
 import {RunComparisonApp as RunComparisonAppInstance} from './apps/RunComparisonApp';
 import {RFVApp} from './apps/RFVApp';
-import {CustomFunctionView as CustomFunctionViewInst} from '@datagrok-libraries/compute-utils';
+import {provideDgViewService} from '@datagrok-libraries/webcomponents-vue';
+import {CustomFunctionView as CustomFunctionViewInst, historyUtils} from '@datagrok-libraries/compute-utils';
 import type {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import type {IRuntimePipelineMutationController} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/RuntimeControllers';
 import './tailwind.css';
@@ -188,10 +189,12 @@ export class PackageFunctions {
     const view = DG.toJs(DG.toDart(new DG.ViewBase())) as DG.View;
     setViewHierarchyData(call, view);
 
-    const app = Vue.createApp(RFVApp, {funcCall: Vue.markRaw(call), view: Vue.markRaw(view)});
+    const app = Vue.createApp(RFVApp,
+      {funcCall: Vue.markRaw(call), initialRunId: call.aux.initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
+    const viewService = provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -202,6 +205,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
+      viewService.dispose();
     });
 
     grok.shell.windows.showHelp = false;
@@ -226,12 +230,13 @@ export class PackageFunctions {
     if (instanceConfig)
       instanceConfig = Vue.markRaw(instanceConfig);
 
-    const {resolve} = call.aux;
+    const {resolve, initialRunId} = call.aux;
 
-    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, view: Vue.markRaw(view)});
+    const app = Vue.createApp(TreeWizardAppInstance, {providerFunc, modelName, version, instanceConfig, resolve, initialRunId});
     view.root.classList.remove('ui-panel');
     view.root.classList.remove('ui-box');
     setVueAppOptions(app);
+    const viewService = provideDgViewService(app, view);
 
     app.mount(view.root);
 
@@ -242,6 +247,7 @@ export class PackageFunctions {
       take(1),
     ).subscribe(() => {
       app.unmount();
+      viewService.dispose();
       if (resolve)
         resolve();
     });
@@ -269,6 +275,19 @@ export class PackageFunctions {
     call.aux.resolve = resolve;
     call.edit();
     return promise;
+  }
+
+
+  @grok.decorators.func({
+    name: 'OpenWorkflowRun',
+    description: 'Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.',
+  })
+  static async OpenWorkflowRun(
+    @grok.decorators.param({options: {description: 'Meta FuncCall id of the saved workflow run'}}) id: string) {
+    const metaCall = await historyUtils.shallowLoadRun(id);
+    const call = metaCall.func.prepare({});
+    call.aux.initialRunId = id;
+    call.edit();
   }
 
 
@@ -518,6 +537,97 @@ export class PackageFunctions {
           } else
             controller.setValidation('toInitTemp');
         },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Single Step Pipeline',
+    description: 'Single-step workflow used for testing the compact Tree Wizard view.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockSingleStepPipeline(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'singleStep',
+      friendlyName: 'Single Step',
+      nqName: 'Compute2:MockSingleStepPipeline',
+      version: '1.0',
+      type: 'static',
+      compactView: true,
+      steps: [{
+        id: 'cooling',
+        nqName: 'Compute2:ObjectCooling2',
+        friendlyName: 'Cooling',
+        initialValues: {ambTemp: 20},
+        inputRestrictions: {ambTemp: 'restricted'},
+        actions: [{
+          id: 'doubleInitTemp',
+          from: 'in:initTemp',
+          to: 'out:initTemp',
+          position: 'buttons',
+          friendlyName: 'Double initial temperature',
+          handler({controller}) {
+            controller.setAll('out', controller.getFirst('in') * 2);
+          },
+        }, {
+          id: 'resetSimTime',
+          from: 'in:simTime',
+          to: 'out:simTime',
+          position: 'menu',
+          menuCategory: 'Test',
+          friendlyName: 'Reset simulation time',
+          handler({controller}) {
+            controller.setAll('out', 3600);
+          },
+        }],
+      }],
+      links: [{
+        id: 'initTempValidator',
+        type: 'validator',
+        from: ['initTemp:cooling/initTemp', 'ambTemp:cooling/ambTemp'],
+        to: 'toInitTemp:cooling/initTemp',
+        handler({controller}) {
+          const tooCold = controller.getFirst('initTemp') < controller.getFirst('ambTemp');
+          controller.setValidation('toInitTemp',
+            tooCold ? {errors: [{description: 'Initial temperature should be above ambient'}]} : undefined);
+        },
+      }, {
+        id: 'hideArea',
+        type: 'meta',
+        from: 'desiredTemp:cooling/desiredTemp',
+        to: 'area:cooling/area',
+        handler({controller}) {
+          controller.setViewMeta('area', {hidden: controller.getFirst('desiredTemp') > 1000});
+        },
+      }],
+    };
+    return c;
+  }
+
+
+  @grok.decorators.func({
+    name: 'Mock Single Step Nested',
+    description: 'Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.',
+    editor: 'Compute2:TreeWizardEditor',
+    outputs: [{type: 'object', name: 'result'}],
+  })
+  static async MockSingleStepNested(
+    @grok.decorators.param({type: 'object'}) params: any) {
+    const c: PipelineConfiguration = {
+      id: 'singleStepNested',
+      friendlyName: 'Single Step Nested',
+      nqName: 'Compute2:MockSingleStepNested',
+      version: '1.0',
+      type: 'static',
+      compactView: true,
+      steps: [{
+        type: 'ref',
+        provider: 'Compute2:MockSingleStepPipeline',
+        version: '1.0',
       }],
     };
     return c;

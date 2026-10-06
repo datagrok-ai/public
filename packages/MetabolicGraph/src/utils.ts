@@ -5,9 +5,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {_package} from './package';
 import type {BuilderType} from '../escher_src/src/Builder';
-import type {CobraModelData, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
+import type {CobraModelData, FluxHistogram, ReactionBounds, SamplingFunctionResult} from '../escher_src/src/ts/types';
 import {WorkerCobraSolver} from './cobra';
+import type {PrecomputedWarmup} from './cobra/sampler-wrapper';
 import {ItemsGrid} from '@datagrok-libraries/utils/src/items-grid';
+import {solveUsingGLPKJvail} from './cobra/glpkJS';
+import {openTimeCourseDialog, clearTimeCourseSlider} from './timeCourse';
 
 export function parsePath(path?: string): string | null {
   if (!path)
@@ -22,7 +25,16 @@ export type MetabolicAnalysisState = {
   description?: string,
 } & Record<string, any>;
 
+/** Name of the analysis last saved/loaded per builder — the single source the UI dialogs,
+ * the URL path loader, and the AI view functions all report and update. */
+const currentAnalysisByBuilder = new WeakMap<BuilderType, string>();
+
+export function getCurrentAnalysis(builder: BuilderType): string | null {
+  return currentAnalysisByBuilder.get(builder) ?? null;
+}
+
 export async function saveStateDialog(builder: BuilderType, currentCampaign?: string) {
+  currentCampaign ??= getCurrentAnalysis(builder) ?? undefined;
   const dialog = ui.dialog('Save Analysis');
   const existingCampaigns: string[] = [];
   let currentExists = false;
@@ -90,11 +102,8 @@ export async function saveStateDialog(builder: BuilderType, currentCampaign?: st
       grok.shell.warning('Name is required for analysis');
       return;
     }
-    const state = builder.getSavingState();
-    state.description = descriptionInput.value;
-    await _package.files.writeAsText(`campaigns/${name}.json`, JSON.stringify(state));
+    await saveAnalysisState(builder, name, descriptionInput.value);
     grok.shell.info(`Analysis ${name} saved`);
-    replaceUrlPath(name);
   });
   dialog.show();
   dialog.root.addEventListener('keydown', (e) => {
@@ -119,7 +128,7 @@ function replaceUrlPath(curAnalysisName: string) {
   }
 }
 
-async function loadCampaigns() {
+export async function loadCampaigns() {
   // ui.setUpdateIndicator(dialog.root, true);
   const pg = DG.TaskBarProgressIndicator.create('Loading analysis list');
   try {
@@ -135,6 +144,22 @@ async function loadCampaigns() {
   return null;
 }
 
+export function analysisExists(name: string): Promise<boolean> {
+  return _package.files.exists(`campaigns/${name}.json`);
+}
+
+export function readAnalysis(name: string): Promise<string> {
+  return _package.files.readAsText(`campaigns/${name}.json`);
+}
+
+export async function saveAnalysisState(builder: BuilderType, name: string, description?: string | null) {
+  const state = builder.getSavingState();
+  state.description = description ?? '';
+  await _package.files.writeAsText(`campaigns/${name}.json`, JSON.stringify(state));
+  currentAnalysisByBuilder.set(builder, name);
+  replaceUrlPath(name);
+}
+
 export async function loadAnalisisDialog(builder: BuilderType) {
   const campList = await loadCampaigns();
   if (!campList || campList.length < 1) {
@@ -147,19 +172,29 @@ export async function loadAnalisisDialog(builder: BuilderType) {
   dialog.addButton('Load', async () => {
     dialog.close();
     const camp = campList.find((c) => c === campaignChoicInput.value);
-    if (camp) {
-      const campJSON = await _package.files.readAsText(`campaigns/${camp}.json`);
-      loadStateProxy(builder, campJSON, camp);
-    }
+    if (camp)
+      loadStateProxy(builder, await readAnalysis(camp), camp);
   });
   dialog.show();
 }
 
 export async function loadStateProxy(builder: BuilderType, campJSON: string, path?: string) {
   builder.loadSavingState(campJSON);
+  if (path)
+    currentAnalysisByBuilder.set(builder, path);
   replaceUrlPath(path ?? '');
   builder.settings.set('loadAction', () => loadAnalisisDialog(builder));
   builder.settings.set('saveAction', () => saveStateDialog(builder, path));
+}
+
+/** cobra's own OptGP warmup points, computed on the server (ComputeExtremePoints.py). */
+export async function computeWarmupPython(cobraModel: CobraModelData): Promise<PrecomputedWarmup> {
+  const func = DG.Func.find({package: 'MetabolicGraph', name: 'ComputeExtremePoints'})[0];
+  if (!func)
+    throw new Error('ComputeExtremePoints Python function not found');
+  const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
+  const resultString: string = await func.apply({cobraModel: modelString});
+  return JSON.parse(resultString) as PrecomputedWarmup;
 }
 
 export async function sampleReactions(cobraModel: CobraModelData, builder: BuilderType): Promise<SamplingFunctionResult> {
@@ -167,45 +202,80 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
     const samplesInput = ui.input.int('Number of samples', {value: 10000, nullable: false});
     const binsInput = ui.input.int('Number of bins', {value: 20, nullable: false, tooltipText: 'Number of bins for histogram in the reaction tooltips'});
     const thinningInput = ui.input.int('Thinning', {value: 10, nullable: false, tooltipText: 'Thinning interval for the sampler'});
+    const aggregationInput = ui.input.choice<FluxAggregation>('Aggregation', {items: FLUX_AGGREGATIONS, value: 'Mean',
+      nullable: false, tooltipText: 'How each reaction\'s samples are reduced to the single flux shown on the map. ' +
+        'Mean keeps the fluxes mass-balanced, Median resists skewed distributions, Mode is the histogram peak'});
     const addDfInput = ui.input.bool('Add DataFrame', {value: false, tooltipText: 'Add a DataFrame with all sampled fluxes to the workspace'});
     const runUsingPythonInput = ui.input.bool('Run using Python', {value: false, tooltipText: 'Use Python OptGpSampling script instead of WebAssembly sampler'});
+    const usePythonFBAInput = ui.input.bool('Use Python FBA', {value: false, tooltipText: 'Compute the warmup points (cobra\'s minimum and maximum of every flux) with cobra in Python, then sample using WebAssembly. The browser computes the same points itself, so this only adds a server round trip'});
     const getInput = () => {
-      return {samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value, addDf: addDfInput.value, runInPython: runUsingPythonInput.value};
+      return {samples: samplesInput.value, thinning: thinningInput.value, bins: binsInput.value,
+        aggregation: aggregationInput.value ?? 'Mean', addDf: addDfInput.value, runInPython: runUsingPythonInput.value,
+        usePythonFBA: usePythonFBAInput.value};
     };
     const applyInput = (x: Partial<ReturnType<typeof getInput>>) => {
       x.samples && (samplesInput.value = x.samples);
       x.thinning && (thinningInput.value = x.thinning);
       x.bins && (binsInput.value = x.bins);
+      x.aggregation && FLUX_AGGREGATIONS.includes(x.aggregation) && (aggregationInput.value = x.aggregation);
       x.addDf != undefined && (addDfInput.value = x.addDf);
       x.runInPython != undefined && (runUsingPythonInput.value = x.runInPython);
+      x.usePythonFBA != undefined && (usePythonFBAInput.value = x.usePythonFBA);
     };
     const innerLocalStorageKey = 'metabolic-graph-reaction-sampling-dialog-inner-last-input';
-    ui.dialog('Sample Reactions')
+    runUsingPythonInput.onChanged.subscribe(() => {
+      if (runUsingPythonInput.value) {
+        usePythonFBAInput.value = false;
+        usePythonFBAInput.enabled = false;
+      } else
+        usePythonFBAInput.enabled = true;
+    });
+
+    const dlg = ui.dialog('Sample Reactions')
       .add(samplesInput)
       .add(thinningInput)
       .add(binsInput)
+      .add(aggregationInput)
       .add(addDfInput)
       .add(runUsingPythonInput)
-      .onOK(async () => {
+      .add(usePythonFBAInput);
+    dlg.addButton('Time-course…', () => {
+      // hand off to the interpolated-bounds flow, reusing the parameters set above;
+      // resolve the single-reaction sampling promise as cancelled so its distribution is left untouched
+      resolve({data: new Map(), cancled: true});
+      dlg.close();
+      openTimeCourseDialog(cobraModel, builder, getInput());
+    });
+    dlg.onOK(async () => {
+      try {
         try {
+          const toSave = getInput();
+          localStorage.setItem(innerLocalStorageKey, JSON.stringify(toSave));
+        } catch (_) {}
+        let precomputedWarmup: PrecomputedWarmup | undefined;
+        if (usePythonFBAInput.value) {
+          const pg = DG.TaskBarProgressIndicator.create('Computing warmup points with cobra (Python)');
           try {
-            const toSave = getInput();
-            localStorage.setItem(innerLocalStorageKey, JSON.stringify(toSave));
-          } catch (_) {}
-          const result = runUsingPythonInput.value ?
-            await runReactionSamplingPython(cobraModel, builder, samplesInput.value, thinningInput.value) :
-            await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value);
-          resolve(result);
-        } catch (e) {
-          grok.shell.error('Error sampling reactions');
-          console.error(e);
-          reject(e);
+            precomputedWarmup = await computeWarmupPython(cobraModel);
+          } finally {
+            pg.close();
+          }
         }
-      })
+        const aggregation = aggregationInput.value ?? 'Mean';
+        const result = runUsingPythonInput.value ?
+          await runReactionSamplingPython(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value, aggregation) :
+          await runReactionSampling(cobraModel, builder, binsInput.value, addDfInput.value, samplesInput.value, thinningInput.value, aggregation, precomputedWarmup);
+        resolve(result);
+      } catch (e) {
+        grok.shell.error('Error sampling reactions');
+        console.error(e);
+        reject(e);
+      }
+    })
       .onCancel(() => {
-        resolve({upper_bound: 10, lower_bound: -10, data: new Map<string, number[]>(), cancled: true});
+        resolve({data: new Map(), cancled: true});
       })
-      .show()
+      .show({center: true})
       .history(() => getInput(),
         (x) => {
           applyInput(x);
@@ -220,135 +290,212 @@ export async function sampleReactions(cobraModel: CobraModelData, builder: Build
   });
 }
 
-export async function runReactionSampling(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20, addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 20): Promise<SamplingFunctionResult> {
-  if (!cobraModel)
-    throw new Error('Cannot run optimization without a model loaded');
+/**
+ * Statistic that reduces a reaction's samples to the one flux shown on the map: the central statistics
+ * of the COBRA Toolbox's calcSampleStats. Harmonic/geometric means are left out: fluxes are signed and
+ * often zero.
+ */
+export type FluxAggregation = 'Mean' | 'Median' | 'Mode';
+export const FLUX_AGGREGATIONS: FluxAggregation[] = ['Mean', 'Median', 'Mode'];
 
-  const pg = DG.TaskBarProgressIndicator.create('Sampling reactions');
-  const sampleMap = new Map<string, number[]>();
-  const lower_bound = cobraModel.reactions.reduce((min, r) => Math.min(min, r.lower_bound ?? 0), 0);
-  const upper_bound = cobraModel.reactions.reduce((max, r) => Math.max(max, r.upper_bound ?? 0), 0);
-  if (lower_bound >= upper_bound) {
-    grok.shell.error('Invalid reaction bounds in the model. Check reaction lower and upper bounds');
-    pg.close();
-    return {upper_bound: 10, lower_bound: -10, data: sampleMap};
+/** 'median flux' etc., for data source captions. */
+export const aggregatedFluxLabel = (aggregation: FluxAggregation) => `${aggregation.toLowerCase()} flux`;
+
+/** With every reaction fixed at zero there is nothing to sample. */
+const allFluxesFixedAtZero = (cobraModel: CobraModelData) =>
+  cobraModel.reactions.every((r) => (r.lower_bound ?? 0) >= 0 && (r.upper_bound ?? 0) <= 0);
+
+/**
+ * Bin one reaction's samples over their own [min, max] and reduce them to a single flux.
+ * Takes ownership of `values`: the median sorts it in place.
+ */
+function summarizeFluxes(values: Float32Array | Float64Array, bins: number, aggregation: FluxAggregation):
+  {histogram: FluxHistogram, flux: number} | null {
+  const n = values.length;
+  if (n === 0)
+    return null;
+  let min = Infinity;
+  let max = -Infinity;
+  let sum = 0;
+  for (let i = 0; i < n; i++) {
+    const v = values[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+    sum += v;
+  }
+  // a spread within float noise is one fixed flux: a single bin at its value
+  if (max - min <= 1e-6 * Math.max(1, Math.abs(min), Math.abs(max))) {
+    min = max = (min + max) / 2;
+    bins = 1;
+  }
+  const counts = new Array<number>(bins).fill(0);
+  const binWidth = (max - min) / bins;
+  if (bins === 1)
+    counts[0] = n;
+  else {
+    for (let i = 0; i < n; i++)
+      counts[Math.min(bins - 1, Math.floor((values[i] - min) / binWidth))]++;
   }
 
+  let flux = sum / n;
+  if (aggregation === 'Median') {
+    values.sort();
+    const mid = n >> 1;
+    flux = n % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
+  } else if (aggregation === 'Mode') {
+    // center of the fullest bin: the peak of the tooltip histogram
+    let top = 0;
+    for (let b = 1; b < bins; b++) {
+      if (counts[b] > counts[top])
+        top = b;
+    }
+    flux = min + (top + 0.5) * binWidth;
+  }
+  return {histogram: {min, max, counts}, flux};
+}
+
+/** Per-reaction histograms (tooltips) and aggregated fluxes (map colors); `column(i)` returns a fresh copy. */
+function reduceSamples(ids: string[], column: (i: number) => Float32Array | Float64Array, bins: number,
+  aggregation: FluxAggregation) {
+  const reactionData: {[key: string]: number} = {};
+  const distribution: SamplingFunctionResult = {data: new Map()};
+  const binCount = Math.max(1, Math.floor(bins));
+  ids.forEach((id, i) => {
+    const summary = summarizeFluxes(column(i), binCount, aggregation);
+    if (summary) {
+      reactionData[id] = summary.flux;
+      distribution.data.set(id, summary.histogram);
+    }
+  });
+  return {reactionData, distribution};
+}
+
+/** Build a DataFrame (one column per reaction) from raw stacked flux samples. */
+export function samplesToDataFrame(cobraModel: CobraModelData, results: Float32Array, nSamples: number): DG.DataFrame {
+  const reactions = cobraModel.reactions;
+  const columns = reactions.map((r, j) => {
+    const col = DG.Column.float(r.id, nSamples);
+    col.init((i) => results[i * reactions.length + j]);
+    return col;
+  });
+  return DG.DataFrame.fromColumns(columns);
+}
+
+export type FluxSamplingResult = {
+  reactionData: {[key: string]: number}; // per-reaction aggregated flux (drives map colors)
+  distribution: SamplingFunctionResult; // per-reaction histograms over their own ranges (drives tooltips)
+  results?: Float32Array; // raw samples (WASM path), stacked row-wise
+  df?: DG.DataFrame; // raw samples as a DataFrame (Python path)
+};
+
+/** Run the WebAssembly sampler and reduce to aggregated fluxes + histograms. No UI/builder side effects. */
+export async function sampleFluxesWasm(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 20,
+  aggregation: FluxAggregation = 'Mean', precomputedWarmup?: PrecomputedWarmup): Promise<FluxSamplingResult | null> {
+  if (allFluxesFixedAtZero(cobraModel))
+    return null;
+  const results = await WorkerCobraSolver.runSampling(cobraModel, nSamples, thinning, precomputedWarmup);
+  const reactionCount = cobraModel.reactions.length;
+  const {reactionData, distribution} = reduceSamples(cobraModel.reactions.map((r) => r.id), (i) => {
+    const values = new Float32Array(nSamples);
+    for (let j = 0; j < nSamples; j++)
+      values[j] = results[j * reactionCount + i];
+    return values;
+  }, bins, aggregation);
+  return {reactionData, distribution, results};
+}
+
+/** Run the Python OptGpSampling function and reduce to aggregated fluxes + histograms. No UI/builder side effects. */
+export async function sampleFluxesPython(cobraModel: CobraModelData, bins = 20, nSamples = 1000, thinning = 10,
+  aggregation: FluxAggregation = 'Mean'): Promise<FluxSamplingResult | null> {
+  const func = DG.Func.find({package: 'MetabolicGraph', name: 'OptGpSampling'})[0];
+  if (!func) {
+    grok.shell.error('OptGpSampling function not found');
+    return null;
+  }
+  if (allFluxesFixedAtZero(cobraModel))
+    return null;
+  const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
+  const resDf: DG.DataFrame = await func.apply({cobraModel: modelString, nSamples: nSamples, thinning: thinning});
+  const {reactionData, distribution} = reduceSamples(resDf.columns.names(), (i) => {
+    const col = resDf.columns.byIndex(i);
+    // the raw buffer can outlive the column length, and marks missing values in-band
+    const values = Float64Array.from(col.getRawData().subarray(0, col.length));
+    return col.stats.missingValueCount ? values.filter((_, r) => !col.isNone(r)) : values;
+  }, bins, aggregation);
+  return {reactionData, distribution, df: resDf};
+}
+
+export async function runReactionSampling(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20,
+  addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 20, aggregation: FluxAggregation = 'Mean',
+  precomputedWarmup?: PrecomputedWarmup): Promise<SamplingFunctionResult> {
+  if (!cobraModel)
+    throw new Error('Cannot run optimization without a model loaded');
+  clearTimeCourseSlider(); // a fresh single-shot sampling supersedes any time-course animation
+  const pg = DG.TaskBarProgressIndicator.create('Sampling reactions');
   try {
-    // first run FBA to get a feasible solution
-    const results = await WorkerCobraSolver.runSampling(cobraModel, nSamples, thinning);
-    const range = upper_bound - lower_bound;
-    const step = range / bins;
-    const reactionCount = cobraModel.reactions.length;
-
-    for (let i = 0; i < reactionCount; i++)
-      sampleMap.set(cobraModel.reactions[i].id, new Array(bins).fill(0));
-
-
-    const reactionAverages = new Float32Array(reactionCount).fill(0);
-    const reactionData: {[key: string]: number} = {};
-
-    for (let i = 0; i < cobraModel.reactions.length; i++) {
-      for (let j = 0; j < nSamples; j++) {
-        const indexInResult = j * reactionCount + i;
-        const flux = results[indexInResult];
-        const binIndex = Math.min(bins - 1, Math.max(0, Math.floor((flux - lower_bound) / step)));
-        const reactionId = cobraModel.reactions[i].id;
-        sampleMap.get(reactionId)![binIndex]++;
-        reactionAverages[i] += flux;
-      }
+    const res = await sampleFluxesWasm(cobraModel, bins, nSamples, thinning, aggregation, precomputedWarmup);
+    if (!res) {
+      grok.shell.error('Invalid reaction bounds in the model. Check reaction lower and upper bounds');
+      return {data: new Map()};
     }
-    // calculate averages
-    for (let i = 0; i < cobraModel.reactions.length; i++) {
-      const reactionId = cobraModel.reactions[i].id;
-      reactionAverages[i] /= nSamples;
-      reactionData[reactionId] = reactionAverages[i];
-    }
-
-    builder.set_reaction_data(reactionData, 'Sampling Histogram');
-
+    builder.set_reaction_data(res.reactionData, `Sampling, ${aggregatedFluxLabel(aggregation)}`);
     if (addDataFrame) {
-      const reactions = cobraModel.reactions;
-      const columns = reactions.map((r, j) => {
-        const col = DG.Column.float(r.id, nSamples);
-        col.init((i) => results[i * reactions.length + j]);
-        return col;
-      });
-      const table = DG.DataFrame.fromColumns(columns);
+      const table = samplesToDataFrame(cobraModel, res.results!, nSamples);
       table.name = 'Sampler results';
       grok.shell.addTableView(table);
     }
+    return res.distribution;
   } catch (e) {
     grok.shell.error('Error sampling reactions');
     console.error(e);
+    return {data: new Map()};
+  } finally {
+    pg.close();
   }
-
-
-  pg.close();
-  return {upper_bound, lower_bound, data: sampleMap};
 }
 
-/// Deprecated. Use runReactionSampling instead
-export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, nSamples: number = 1000, thinning: number = 10): Promise<SamplingFunctionResult> {
-  const func = DG.Func.find({package: 'MetabolicGraph', name: 'OptGpSampling'})[0];
-  const sampleMap = new Map<string, number[]>();
-  let lower_bound = -10;
-  let upper_bound = 10;
-  if (!func) {
-    grok.shell.error('OptGpSampling function not found');
-    return {upper_bound, lower_bound, data: sampleMap};
-  }
-  const pg = DG.TaskBarProgressIndicator.create('Sampling reactions');
+export async function runReactionSamplingPython(cobraModel: CobraModelData, builder: BuilderType, bins: number = 20,
+  addDataFrame: boolean = false, nSamples: number = 1000, thinning: number = 10,
+  aggregation: FluxAggregation = 'Mean'): Promise<SamplingFunctionResult> {
+  clearTimeCourseSlider(); // a fresh single-shot sampling supersedes any time-course animation
+  const pg = DG.TaskBarProgressIndicator.create('Sampling reactions (Python)');
   try {
-    const modelString = JSON.stringify(cobraModel).replaceAll(`'{}'`, '{}').replaceAll('"{}"', '{}');
-    const resDf: DG.DataFrame = await func.apply({cobraModel: modelString, nSamples: nSamples, thinning: thinning});
-    for (const col of resDf.columns) {
-      if (col.name?.toLowerCase() === 'bin range')
-        continue;
-      sampleMap.set(col.name, col.toList().slice(0, resDf.rowCount - 1)); // get only the first nSamples values
+    const res = await sampleFluxesPython(cobraModel, bins, nSamples, thinning, aggregation);
+    if (!res) {
+      grok.shell.error('Invalid reaction bounds in the model. Check reaction lower and upper bounds');
+      return {data: new Map()};
     }
-    // there is a column with the bounds called 'Bin Range'
-    // parse the column and get the bounds. its format is '[-10, 10)'
-    const boundsCol = resDf.col('Bin Range');
-    if (boundsCol) {
-      const lower: string = boundsCol.get(0);
-      const upper: string = boundsCol.get(boundsCol.length - 2); // -2 because the last value is the average, so we need the second last
-      lower_bound = Math.floor(parseFloat(lower.trim().substring(1, lower.indexOf(','))));
-      upper_bound = Math.ceil(parseFloat(upper.trim().substring(upper.indexOf(',') + 1, upper.length - 1)));
+    builder.set_reaction_data(res.reactionData, `Sampling (Python), ${aggregatedFluxLabel(aggregation)}`);
+    if (addDataFrame && res.df) {
+      res.df.name = 'Sampler results (Python)';
+      grok.shell.addTableView(res.df);
     }
-
-    // average results using samples for each reaction to get average flux
-    const reactionData: {[key: string]: number} = {};
-    for (const col of resDf.columns) {
-      if (col.name?.toLowerCase() === 'bin range')
-        continue;
-      const reaction = col.name;
-      // the last row is the average, so we need to put that into the reactionData
-      const averageFlux = col.get(resDf.rowCount - 1);
-      reactionData[reaction] = averageFlux;
-    }
-    builder.set_reaction_data(reactionData, 'Samling Average');
+    return res.distribution;
   } catch (e) {
     grok.shell.error('Error sampling reactions');
     console.error(e);
+    return {data: new Map()};
+  } finally {
+    pg.close();
   }
-  // calculate average reaction flux for each reaction
-  pg.close();
-  return {upper_bound, lower_bound, data: sampleMap};
 }
 
-export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
+export function handleReactionDataUpload(view: DG.ViewBase, builder: BuilderType) {
   // // @ts-ignore
   // window.currentBuilder = builder; // for debugging purposes, to access the builder from the console
 
   // // @ts-ignore
   // window.solver = WorkerCobraSolver;
 
-  grok.events.onFileImportRequest.subscribe(async (ff) => {
+  view.subs.push(grok.events.onFileImportRequest.subscribe(async (ff) => {
     const f = ff as unknown as DG.EventData<DG.FileImportArgs>;
-    if ((grok.shell.v as DG.View)?.id !== view.id || (!f.args.file?.name?.endsWith('.json') && !f.args.file?.name?.endsWith('.csv')))
+    // the current view can be the JS view itself or the Dart host wrapping it
+    const cur = grok.shell.v as any;
+    const isCurrent = cur != null && (cur === view || cur.jsView === view);
+    if (!isCurrent || (!f.args.file?.name?.endsWith('.json') && !f.args.file?.name?.endsWith('.csv')))
       return;
     f.preventDefault();
+    clearTimeCourseSlider(); // dropping new data supersedes any time-course animation
     const fileString = await f.args.file.text();
     // check JSON
     if (f.args.file.name?.endsWith('.json')) {
@@ -408,7 +555,7 @@ export function handleReactionDataUpload(view: DG.View, builder: BuilderType) {
         return;
       }
     }
-  });
+  }));
 }
 
 export async function runFBADialog(builder: BuilderType) {
@@ -427,6 +574,7 @@ export async function runFBADialog(builder: BuilderType) {
   dialog.add(propGrid.root);
 
   dialog.addButton('Run', async () => {
+    clearTimeCourseSlider(); // running FBA supersedes any time-course animation
     const validItems = [...propGrid.items, propGrid.addingItem].filter((i) => i.Reaction && i.Objective);
     // go through existing reactions and delete all the objective coefficients
     for (const r of reactions) {
@@ -442,7 +590,6 @@ export async function runFBADialog(builder: BuilderType) {
     dialog.close();
     // run FBA
     try {
-      const {solveUsingGLPKJvail} = await import('./cobra/glpkJS');
       console.log(await solveUsingGLPKJvail(builder.model_data));
       // const solution = await runGLPKFBA(builder.model_data);
       const solution = await WorkerCobraSolver.run_optimization(builder.model_data);

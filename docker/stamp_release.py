@@ -44,7 +44,11 @@ TRAIN_SERVICES = {
     'grok_spawner': 'GROK_SPAWNER_VERSION',
     'grok_connect': 'GROK_CONNECT_VERSION',
     'grok_connect_adbc': 'GROK_CONNECT_ADBC_VERSION',
-    'jupyter_kernel_gateway': 'JUPYTER_KERNEL_GATEWAY_VERSION',
+    'jkg_python': 'JKG_PYTHON_VERSION',
+    'jkg_r': 'JKG_R_VERSION',
+    'jkg_octave': 'JKG_OCTAVE_VERSION',
+    'jkg_julia': 'JKG_JULIA_VERSION',
+    'jkg_nodejs': 'JKG_NODEJS_VERSION',
 }
 
 COMPOSE_GLOB = 'localhost*.docker-compose.yaml'

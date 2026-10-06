@@ -2,12 +2,12 @@ import * as DG from 'datagrok-api/dg';
 
 import {registerAssays, registerBulk, registerMolTrackProperties} from '../package';
 import {Scope} from './constants';
-import {fetchCsv, fetchSchema} from './fetch-utils';
+import {fetchGithubFile} from './fetch-utils';
 
 export async function updateAllMolTrackSchemas(): Promise<void> {
   for (const scope of Object.values(Scope)) {
     try {
-      const schemaPayload = await fetchSchema(`${scope}_schema.json`);
+      const schemaPayload = await fetchGithubFile(`${scope}_schema.json`);
       await registerMolTrackProperties(schemaPayload);
     } catch (err) {
       console.error(`Error updating ${scope}:`, err);
@@ -18,8 +18,8 @@ export async function updateAllMolTrackSchemas(): Promise<void> {
 export async function registerAllData(): Promise<void> {
   for (const scope of Object.values(Scope)) {
     if (scope !== Scope.ASSAYS) {
-      const csvText = await fetchCsv(scope);
-      const mappingJson = await fetchSchema(`${scope}_mapping.json`);
+      const csvText = await fetchGithubFile(`${scope}.csv`);
+      const mappingJson = await fetchGithubFile(`${scope}_mapping.json`);
       const fileInfo = DG.FileInfo.fromString(`${scope}.csv`, csvText);
       await registerBulk(fileInfo, scope, mappingJson, 'reject_row');
     }
@@ -27,6 +27,6 @@ export async function registerAllData(): Promise<void> {
 }
 
 export async function registerAssayData(): Promise<void> {
-  const assayPayload = await fetchSchema(`${Scope.ASSAYS}.json`);
+  const assayPayload = await fetchGithubFile(`${Scope.ASSAYS}.json`);
   await registerAssays(assayPayload);
 }

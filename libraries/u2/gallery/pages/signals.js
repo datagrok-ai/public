@@ -1,4 +1,4 @@
-import {signal, computed, Scope, Component, bindText, bindValue} from '../../src/index.js';
+import {signal, computed, Scope, Control, bindText, bindValue} from '../../src/index.js';
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -17,7 +17,7 @@ export async function render(main) {
   main.append(el('h1', null, 'Signals & lifecycle'));
   const intro = el('p');
   intro.innerHTML = 'L1 reactive core: vendored signals engine behind <code>u2.signal</code>, ' +
-    'effects owned by <code>Scope</code>/<code>Component</code>, disposal releases everything. ' +
+    'effects owned by <code>Scope</code>/<code>Control</code>, disposal releases everything. ' +
     'In Datagrok the same disposal rides <code>DG.Widget.kill</code> via <code>u2/dg host()</code>.';
   main.append(intro);
 
@@ -30,7 +30,7 @@ export async function render(main) {
   main.append(el('h2', null, 'Derived state'));
   const count = signal(0);
   const doubled = computed(() => count.value * 2);
-  const counter = new Component();
+  const counter = new Control();
   const countText = el('b');
   const doubledText = el('b');
   bindText(counter.scope, countText, count);
@@ -43,7 +43,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Two-way binding, echo-suppressed'));
   const name = signal('world');
-  const form = new Component();
+  const form = new Control();
   const a = el('input');
   const b = el('input');
   bindValue(form.scope, a, name);

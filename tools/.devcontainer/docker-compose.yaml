@@ -8,6 +8,29 @@
 # On Windows, use `grok claude` instead — it handles path conversion
 # and Docker socket mapping automatically.
 
+# Shared by every jkg_* gateway below. They differ only in image and network alias.
+x-jkg: &jkg
+  platform: linux/amd64
+  environment:
+    GROK_PARAMETERS: |
+      {
+        "queueSettings": {
+          "useQueue": true,
+          "amqpHost": "rabbitmq",
+          "amqpUser": "guest",
+          "amqpPassword": "guest",
+          "amqpPort": 5672,
+          "pipeHost": "grok_pipe",
+          "pipePort": 3000,
+          "pipeKey": "test-key",
+          "maxConcurrentCalls": 16
+        }
+      }
+  restart: unless-stopped
+  depends_on:
+    rabbitmq:
+      condition: service_started
+
 services:
   postgres:
     image: pgvector/pgvector:pg17
@@ -118,33 +141,54 @@ services:
     restart: unless-stopped
     profiles: ["full"]
 
-  jupyter_kernel_gateway:
-    image: datagrok/jupyter_kernel_gateway:${DG_VERSION:-latest}
-    platform: linux/amd64
-    depends_on:
-      rabbitmq:
-        condition: service_started
-    environment:
-      GROK_PARAMETERS: |
-        {
-          "queueSettings": {
-            "useQueue": true,
-            "amqpHost": "rabbitmq",
-            "amqpUser": "guest",
-            "amqpPassword": "guest",
-            "amqpPort": 5672,
-            "pipeHost": "grok_pipe",
-            "pipePort": 3000,
-            "pipeKey": "test-key",
-            "maxConcurrentCalls": 16
-          }
-        }
+  # Per-language kernel gateways, which replaced the single all-languages
+  # datagrok/jupyter_kernel_gateway image. They version with the Scripting package, not with
+  # the platform, so they take their own JKG_VERSION. `scripting`/`full` starts Python and R;
+  # add `jkg_octave`, `jkg_julia` or `jkg_nodejs` when a package needs those languages.
+  jkg_python:
+    <<: *jkg
+    image: datagrok/jkg_python:${JKG_VERSION:-latest}
     networks:
       dg:
         aliases:
-          - jupyter_kernel_gateway
-    restart: unless-stopped
-    profiles: ["scripting", "full"]
+          - jkg_python
+    profiles: ["scripting", "full", "jkg_python"]
+
+  jkg_r:
+    <<: *jkg
+    image: datagrok/jkg_r:${JKG_VERSION:-latest}
+    networks:
+      dg:
+        aliases:
+          - jkg_r
+    profiles: ["scripting", "full", "jkg_r"]
+
+  jkg_octave:
+    <<: *jkg
+    image: datagrok/jkg_octave:${JKG_VERSION:-latest}
+    networks:
+      dg:
+        aliases:
+          - jkg_octave
+    profiles: ["jkg_octave"]
+
+  jkg_julia:
+    <<: *jkg
+    image: datagrok/jkg_julia:${JKG_VERSION:-latest}
+    networks:
+      dg:
+        aliases:
+          - jkg_julia
+    profiles: ["jkg_julia"]
+
+  jkg_nodejs:
+    <<: *jkg
+    image: datagrok/jkg_nodejs:${JKG_VERSION:-latest}
+    networks:
+      dg:
+        aliases:
+          - jkg_nodejs
+    profiles: ["jkg_nodejs"]
 
   world:
     image: datagrok/demo_db_postgres:12-1.1.0

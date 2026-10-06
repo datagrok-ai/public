@@ -11,6 +11,12 @@ export const demog = (n: number = 50): DG.DataFrame => grok.data.demo.demog(n);
 
 export const look = (v: DG.Viewer): {[k: string]: any} => v.getOptions(true).look;
 
+// Once a legend has been shown, hiding it collapses the element to zero width instead of
+// detaching it — so presence in the DOM proves nothing. Corner/mini mode shows the icon instead.
+export const legendPresent = (v: DG.Viewer): boolean =>
+  (v.root.querySelector('.d4-legend')?.clientWidth ?? 0) > 0 ||
+  (v.root.querySelector('.d4-corner-legend-icon')?.clientWidth ?? 0) > 0;
+
 export function expectLook(v: DG.Viewer, partial: {[k: string]: any}): void {
   expectObject(look(v), partial);
 }

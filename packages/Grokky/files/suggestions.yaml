@@ -12,6 +12,9 @@
 #   Extra path segments read column props, e.g. {x.stats.med}. A suggestion whose slot
 #   finds no matching column is dropped (and its block hides if all its suggestions drop),
 #   so type-specific blocks appear only when the data supports them.
+#
+# requires: [Pkg, ...] on a block or a suggestion hides it unless every listed package has
+#   registered functions on this deployment. Omit for prompts served by core or the LLM itself.
 # =====================================================================================
 
 # ---------------------------------------------------------------------------- powerSearch
@@ -21,11 +24,16 @@
   label: Function chaining
   suggestions:
     - prompt: ADME properties for aspirin
+      requires: [Admetica, Chem, Chembl]
     - prompt: Gasteiger for CHEMBL1234
+      requires: [Chem, Chembl]
     - prompt: Gasteiger for Apremilast
+      requires: [Chem, Chembl]
     - label: Convert SMILES to HELM
       prompt: Convert C[C@H](N)C(=O)N(C)CC(=O)N[C@@H](Cc1ccc(N)cc1)C(=O)O to HELM
+      requires: [Bio]
     - prompt: 'Convert to SMILES: GATTACA'
+      requires: [Bio, Chem]
 
 - context: powerSearch
   scope: global
@@ -33,10 +41,15 @@
   label: Database queries
   suggestions:
     - prompt: ADCs with IC50 above 400
+      requires: [Biologics]
     - prompt: ADCs with caspase activity > 8
+      requires: [Biologics]
     - prompt: Shigella bioactivity
+      requires: [Chembl]
     - prompt: PK for LEVOFLOXACIN
+      requires: [Chembl]
     - prompt: CHO assay data
+      requires: [Biologics]
 
 - context: powerSearch
   scope: global
@@ -56,6 +69,7 @@
   label: Molecules
   icon: atom
   color: var(--blue-1)
+  requires: [Chem]
   suggestions:
     - label: Explore the chemical space
       prompt: Show the chemical space of {mol.semType} — reduce structures to 2D and plot them with structure previews
@@ -88,6 +102,7 @@
   label: Sequences
   icon: dna
   color: var(--steel-4)
+  requires: [Bio]
   suggestions:
     - label: Explore the sequence space
       prompt: Show the sequence space of {seq.semType} with clustering and previews
@@ -110,6 +125,7 @@
   label: 3D structures
   icon: cube
   color: var(--green-3)
+  requires: [BiostructureViewer]
   suggestions:
     - label: Show 3D structures
       prompt: Render the 3D structures in {mol.semType}
@@ -131,6 +147,7 @@
       prompt: Flag the most potent compounds by {act.semType} and select them
     - label: Potency vs size
       prompt: Plot potency ({act.semType}) against molecular weight and look for a size trend
+      requires: [Chem]
 
 - context: panel
   scope: column
@@ -157,6 +174,7 @@
       prompt: Show the distribution of {conc.semType} and flag out-of-range values
     - label: Dose–response
       prompt: Fit a dose–response curve using {conc.semType} as the dose
+      requires: [Curves]
 
 # --- Geospatial --------------------------------------------------------------------------
 - context: panel
@@ -166,6 +184,7 @@
   label: Geospatial
   icon: map-marker
   color: var(--steel-3)
+  requires: [GIS]
   suggestions:
     - label: Plot on a map
       prompt: Plot the rows on a map using the latitude and longitude columns
@@ -259,6 +278,7 @@
       prompt: Reduce the numerical columns to 2D with PCA (or UMAP) and plot the result
     - label: Predict {y.isNumerical}
       prompt: Build a model to predict {y.isNumerical} from the other columns and report the important features
+      requires: [EDA]
       prefer:
         y: 'name~="affinity|ic50|ec50|ki|potency|activity|yield|target|label"'
     - label: What correlates with {y.isNumerical}?
@@ -328,6 +348,7 @@
   suggestions:
     - label: 'JS: interactive sketcher with molecule properties'
       prompt: 'JS: Add a view with the sketcher on the left, and the molecule properties on the right. As user sketches the molecule, the right part should update interactively'
+      requires: [Chem]
     - label: 'Python: render Gasteiger partial charges'
       prompt: 'Python: write a script that accepts a molecule and renders Gasteiger partial charges as a result'
     - label: 'JS: build a custom viewer'

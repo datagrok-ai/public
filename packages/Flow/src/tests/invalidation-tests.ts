@@ -102,7 +102,7 @@ category('Flow: invalidation', () => {
     expect(state.getNodeState('n')!.error, 'boom', 'a stale node keeps what went wrong');
   });
 
-  test('adding a node invalidates nothing', async () => {
+  test('adding a node invalidates nothing; only a node ready as dropped is its own work', async () => {
     const e = makeEditor();
     try {
       const {a, b, c} = await makeChain(e);
@@ -110,9 +110,16 @@ category('Flow: invalidation', () => {
       seedCompleted(ctrl, [a, b, c]);
       const lone = await addNode(e.flow, 'Constants/String', 500, 0);
       const affected = ctrl.applyGraphEdit({kind: 'node-added', nodeId: lone.id});
-      expect(affected.size, 0, 'nothing to recompute');
+      expect([...affected].join(), lone.id, 'a ready node computes itself, nothing else');
       for (const id of [a, b, c])
         expect(status(ctrl, id), NodeExecStatus.completed, 'results survive an unrelated node');
+
+      const plot = await addNode(e.flow, 'Viewers/Scatter Plot', 500, 200);
+      expect(ctrl.applyGraphEdit({kind: 'node-added', nodeId: plot.id}).size, 0,
+        'a node still missing its table waits for the wiring');
+      const tableIn = await addNode(e.flow, 'Inputs/Table Input', 500, 400);
+      expect(ctrl.applyGraphEdit({kind: 'node-added', nodeId: tableIn.id}).size, 0,
+        'an input without a value would only block the run');
     } finally {
       destroyEditor(e);
     }
@@ -465,7 +472,7 @@ category('Flow: autorun', () => {
     expect([...runs[0]].sort().join(), 'a,b,c', 'dirty sets are unioned');
   });
 
-  test('disabled scheduler never runs; node-added never schedules', async () => {
+  test('disabled scheduler never runs; a node-added with nothing ready never schedules', async () => {
     let runs = 0;
     const s = new AutorunScheduler(() => {
       runs++;
@@ -473,9 +480,23 @@ category('Flow: autorun', () => {
     }, 20);
     s.onEdit(edit('a'), new Set(['a'])); // disabled
     s.toggle();
-    s.onEdit({kind: 'node-added', nodeId: 'x'}, new Set()); // non-invalidating
+    s.onEdit({kind: 'node-added', nodeId: 'x'}, new Set()); // not ready as dropped
     await sleep(60);
     expect(runs, 0);
+  });
+
+  test('toggle on: a node ready as dropped schedules a normal autorun of itself', async () => {
+    const runs: Array<{dirty: string[]; liveOnly: boolean}> = [];
+    const s = new AutorunScheduler((dirty, liveOnly) => {
+      runs.push({dirty: [...dirty].sort(), liveOnly});
+      return 'started';
+    }, 20);
+    s.toggle();
+    s.onEdit({kind: 'node-added', nodeId: 'ready'}, new Set(['ready']));
+    await sleep(60);
+    expect(runs.length, 1, 'the drop alone schedules');
+    expect(runs[0].dirty.join(), 'ready');
+    expect(runs[0].liveOnly, false, 'flagged as a normal autorun');
   });
 
   test('live-by-default nodes schedule runs even while the toggle is off', async () => {
@@ -520,7 +541,7 @@ category('Flow: autorun', () => {
     s.toggle();
     s.onEdit({kind: 'node-added', nodeId: 'live3'}, new Set());
     await sleep(60);
-    expect(runs.length, 2, 'toggle on → node-added still never schedules');
+    expect(runs.length, 2, 'toggle on → a live node not ready as dropped does not schedule');
   });
 
   test('runLiveNodes executes only the ready live nodes, never the rest of the canvas', async () => {

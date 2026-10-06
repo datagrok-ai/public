@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -77,7 +78,7 @@ async function clickBioPolyToolItem(page: Page, itemName: string): Promise<void>
 }
 
 test('SequenceTranslator — Macromolecule HELM column lifecycle: init, converters, PolyTool, API', async ({page}) => {
-  // Two CSV loads + converters + three PolyTool dialogs + enumerate + API calls; 4 min is sufficient.
+
   test.setTimeout(240_000);
   stepErrors.length = 0;
   await loginToDatagrok(page);

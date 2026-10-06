@@ -36,7 +36,7 @@ category('Packages: Properties', () => {
 async function changeProp(name: string, value: any): Promise<void> {
   //@ts-ignore
   await _package.setSettings({[name]: value}, group);
-  const props = await _package.getSettings();
+  const props = _package.settings;
   //@ts-ignore
   expect(props[name], value);
 }

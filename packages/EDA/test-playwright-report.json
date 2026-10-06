@@ -2,17 +2,17 @@
   "config": {
     "argv": [
       "C:\\Program Files\\nodejs\\node.exe",
-      "C:\\Users\\vmaka\\Datagrok\\public-copy\\public\\packages\\EDA\\node_modules\\@playwright\\test\\cli.js",
+      "C:\\Users\\vmaka\\Datagrok\\public\\packages\\EDA\\node_modules\\@playwright\\test\\cli.js",
       "test",
-      "--config=C:\\Users\\vmaka\\Datagrok\\public-copy\\public\\packages\\eda\\playwright\\playwright.config.ts",
+      "--config=C:\\Users\\vmaka\\Datagrok\\public\\packages\\EDA\\playwright\\playwright.config.ts",
       "--reporter=json"
     ],
-    "configFile": "C:\\Users\\vmaka\\Datagrok\\public-copy\\public\\packages\\eda\\playwright\\playwright.config.ts",
-    "rootDir": "C:/Users/vmaka/Datagrok/public-copy/public/packages/eda/playwright",
+    "configFile": "C:\\Users\\vmaka\\Datagrok\\public\\packages\\EDA\\playwright\\playwright.config.ts",
+    "rootDir": "C:/Users/vmaka/Datagrok/public/packages/EDA/playwright",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
-    "globalSetup": "C:\\Users\\vmaka\\Datagrok\\public-copy\\public\\packages\\eda\\node_modules\\@datagrok-libraries\\test\\src\\playwright\\global-setup.js",
+    "globalSetup": "C:\\Users\\vmaka\\Datagrok\\public\\packages\\EDA\\node_modules\\@datagrok-libraries\\test\\src\\playwright\\global-setup.js",
     "globalTeardown": null,
     "globalTimeout": 0,
     "grep": {},
@@ -22,13 +22,13 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "C:/Users/vmaka/Datagrok/public-copy/public/packages/eda/playwright/test-output",
+        "outputDir": "C:/Users/vmaka/Datagrok/public/packages/EDA/playwright/test-output",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {},
         "id": "chromium",
         "name": "chromium",
-        "testDir": "C:/Users/vmaka/Datagrok/public-copy/public/packages/eda/playwright",
+        "testDir": "C:/Users/vmaka/Datagrok/public/packages/EDA/playwright",
         "testIgnore": [],
         "testMatch": [
           "**/*.test.ts"
@@ -58,12 +58,12 @@
   "errors": [
     {
       "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\vmaka\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1228\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝",
-      "stack": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\vmaka\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1228\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝\n    at globalSetup (C:\\Users\\vmaka\\Datagrok\\public-copy\\public\\packages\\eda\\node_modules\\@datagrok-libraries\\test\\src\\playwright\\global-setup.js:43:43)"
+      "stack": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\vmaka\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1228\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝\n    at globalSetup (C:\\Users\\vmaka\\Datagrok\\public\\packages\\EDA\\node_modules\\@datagrok-libraries\\test\\src\\playwright\\global-setup.js:43:43)"
     }
   ],
   "stats": {
-    "startTime": "2026-08-10T16:33:47.022Z",
-    "duration": 20.004999999999995,
+    "startTime": "2026-08-24T17:08:15.999Z",
+    "duration": 25.62099999999998,
     "expected": 0,
     "skipped": 0,
     "unexpected": 0,

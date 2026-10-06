@@ -12,6 +12,7 @@ const COLS_EXTRA = 2;
 const MIN_COLS_COUNT = 1 + COLS_EXTRA;
 const AVGS_NAME = 'Avg-s';
 const STDEVS_NAME = 'Stddev-s';
+const FEATURES_NAME = 'Features';
 const PRED_NAME = 'predicted';
 const DEFAULT_LEARNING_RATE = 1;
 const DEFAULT_ITER_COUNT = 100;
@@ -66,6 +67,8 @@ export class SoftmaxClassifier {
   private featuresCount = 1;
   /** True if the original target was a boolean column (trained as a 2-class string target) */
   private targetIsBool = false;
+  /** Feature names (training order), used to match apply-time columns by name. */
+  private featureNames: string[] | undefined = undefined;
 
   constructor(specification?: DataSpecification, packedModel?: Uint8Array) {
     if (specification !== undefined) { // Create empty model
@@ -142,6 +145,18 @@ export class SoftmaxClassifier {
         const flagIdx = BYTES_PER_MODEL_SIZE + bytesCount;
         if (packedModel.byteLength > flagIdx)
           this.targetIsBool = (packedModel[flagIdx] === 1);
+
+        // Feature-names block (DataView: the size read isn't 4-byte aligned).
+        const featuresSizeIdx = flagIdx + 1;
+        if (packedModel.byteLength > featuresSizeIdx) {
+          const featuresBytesCount =
+            new DataView(packedModel.buffer, packedModel.byteOffset).getUint32(featuresSizeIdx, true);
+          if (featuresBytesCount > 0) {
+            const featuresDf = DG.DataFrame.fromByteArray(new Uint8Array(packedModel.buffer,
+              packedModel.byteOffset + featuresSizeIdx + BYTES_PER_MODEL_SIZE, featuresBytesCount));
+            this.featureNames = featuresDf.col(FEATURES_NAME)?.toList();
+          }
+        }
       } catch (e) {
         throw new Error(`Failed to load model: ${(e instanceof Error ? e.message : 'the platform issue')}`);
       }
@@ -172,9 +187,15 @@ export class SoftmaxClassifier {
     const modelBytes = modelDf.toByteArray();
     const bytesCount = modelBytes.length;
 
-    // Packed model bytes: model size, model bytes, and a trailing bool flag byte.
-    // Older models lack the trailing byte; the constructor treats its absence as false.
-    const packedModel = new Uint8Array(bytesCount + BYTES_PER_MODEL_SIZE + 1);
+    // Feature names (training order) as a serialized single-column DataFrame.
+    const featuresBytes = (this.featureNames !== undefined) ? DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, FEATURES_NAME, this.featureNames),
+    ]).toByteArray() : undefined;
+    const featuresBytesSize = (featuresBytes !== undefined) ? featuresBytes.length : 0;
+
+    // Trailing bool flag + optional feature-names block; both optional for back-compat.
+    const packedModel = new Uint8Array(BYTES_PER_MODEL_SIZE + bytesCount + 1 +
+      (featuresBytes !== undefined ? BYTES_PER_MODEL_SIZE + featuresBytesSize : 0));
 
     // 4 bytes for storing model's bytes count
     const sizeArr = new Uint32Array(packedModel.buffer, 0, 1);
@@ -184,7 +205,14 @@ export class SoftmaxClassifier {
     packedModel.set(modelBytes, BYTES_PER_MODEL_SIZE);
 
     // Trailing bool flag
-    packedModel[BYTES_PER_MODEL_SIZE + bytesCount] = this.targetIsBool ? 1 : 0;
+    const flagIdx = BYTES_PER_MODEL_SIZE + bytesCount;
+    packedModel[flagIdx] = this.targetIsBool ? 1 : 0;
+
+    // Feature-names block
+    if (featuresBytes !== undefined) {
+      new DataView(packedModel.buffer).setUint32(flagIdx + 1, featuresBytesSize, true);
+      packedModel.set(featuresBytes, flagIdx + 1 + BYTES_PER_MODEL_SIZE);
+    }
 
     return packedModel;
   } // toBytes
@@ -204,6 +232,7 @@ export class SoftmaxClassifier {
     const tgt = this.targetIsBool ? target.convertTo(DG.COLUMN_TYPE.STRING) : target;
 
     // Extract statistics & categories
+    this.featureNames = features.names();
     this.extractStats(features);
     const rowsCount = tgt.length;
     const classesCount = tgt.categories.length;
@@ -269,17 +298,35 @@ export class SoftmaxClassifier {
     }
   } // extractStats
 
+  /** Apply-time columns in training order, matched by name (legacy: positional). */
+  private orderedFeatures(features: DG.ColumnList): DG.Column[] {
+    if (this.featureNames === undefined) {
+      if (features.length !== this.featuresCount)
+        throw new Error('Predcition fails: incorrect features count');
+      return features.toList();
+    }
+    const byName = new Map<string, DG.Column>();
+    for (const col of features)
+      byName.set(col.name, col);
+    return this.featureNames.map((name) => {
+      const col = byName.get(name);
+      if (col === undefined)
+        throw new Error(`Softmax: model feature is missing in the table: "${name}"`);
+      return col;
+    });
+  }
+
   /** Retrun normalized features */
-  private normalized(features: DG.ColumnList): Array<Float32Array> {
-    const m = features.byIndex(0).length;
+  private normalized(cols: DG.Column[]): Array<Float32Array> {
+    const m = cols[0].length;
 
     const X = new Array<Float32Array>(m);
 
     for (let i = 0; i < m; ++i)
       X[i] = new Float32Array(this.featuresCount);
 
-    let j = 0;
-    for (const col of features) {
+    for (let j = 0; j < cols.length; ++j) {
+      const col = cols[j];
       if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT))
         throw new Error('Training failes - incorrect features type');
 
@@ -294,16 +341,14 @@ export class SoftmaxClassifier {
         for (let i = 0; i < m; ++i)
           X[i][j] = 0;
       }
-
-      ++j;
     }
 
     return X;
   } // normalized
 
   /** Retrun normalized & transposed features */
-  private transposed(features: DG.ColumnList): Array<Float32Array> {
-    const m = features.byIndex(0).length;
+  private transposed(cols: DG.Column[]): Array<Float32Array> {
+    const m = cols[0].length;
     const n = this.featuresCount;
 
     const X = new Array<Float32Array>(n);
@@ -311,8 +356,8 @@ export class SoftmaxClassifier {
     for (let i = 0; i < n; ++i)
       X[i] = new Float32Array(m);
 
-    let j = 0;
-    for (const col of features) {
+    for (let j = 0; j < cols.length; ++j) {
+      const col = cols[j];
       if ((col.type !== DG.COLUMN_TYPE.INT) && (col.type !== DG.COLUMN_TYPE.FLOAT))
         throw new Error('Training failes - incorrect features type');
 
@@ -327,8 +372,6 @@ export class SoftmaxClassifier {
         for (let i = 0; i < m; ++i)
           X[j][i] = 0;
       }
-
-      ++j;
     }
 
     return X;
@@ -365,11 +408,8 @@ export class SoftmaxClassifier {
     if (this.params === undefined)
       throw new Error('Non-trained model');
 
-    if (features.length !== this.featuresCount)
-      throw new Error('Predcition fails: incorrect features count');
-
-    // Normalize features
-    const X = this.normalized(features);
+    // Normalize features (matched to the training order by name)
+    const X = this.normalized(this.orderedFeatures(features));
 
     // Routine items
     const m = X.length;
@@ -433,8 +473,8 @@ export class SoftmaxClassifier {
     return new Promise((resolve, reject) => {
       const worker = new Worker(new URL('./workers/softmax-worker.ts', import.meta.url));
       worker.postMessage({
-        features: this.normalized(features),
-        transposed: this.transposed(features),
+        features: this.normalized(features.toList()),
+        transposed: this.transposed(features.toList()),
         oneHot: targetData.oneHot,
         classesWeights: targetData.weights,
         targetRaw: target.getRawData(),

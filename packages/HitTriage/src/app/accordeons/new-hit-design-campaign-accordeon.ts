@@ -19,7 +19,8 @@ type HitDesignCampaignAccordeon = {
     cancelPromise: Promise<void>
 }
 
-export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, peptiHit = false): HitDesignCampaignAccordeon {
+/** The initial one-row dataframe a new Hit Design / PeptiHit campaign starts from. */
+export function createNewHitDesignDataFrame(template: HitDesignTemplate, peptiHit = false): DG.DataFrame {
   const df = DG.DataFrame.create(1);
   if (peptiHit) {
     const pepCol = df.columns.addNew(PeptiHitHelmColName, DG.TYPE.STRING);
@@ -39,6 +40,11 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
     tileCategoryCol.set(0, template.stages[0]);
   }
   df.columns.addNew(ViDColName, DG.TYPE.STRING);
+  return df;
+}
+
+export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, peptiHit = false): HitDesignCampaignAccordeon {
+  const df = createNewHitDesignDataFrame(template, peptiHit);
 
   // campaign properties. each template might have number of additional fields that should
   // be filled by user for the campaign. they are cast into DG.Property objects and displayed as a form
@@ -50,7 +56,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
         {name: field.name, type: CampaignFieldTypes[field.type as keyof typeof CampaignFieldTypes],
           nullable: !field.required, ...(field.semtype ? {semType: field.semtype} : {})}));
   const campaignPropsObject: {[key: string]: any} = {};
-  const campaignNameInput = ui.input.string('Campaing Name', {tooltipText: 'New campaign name. If empty, campaign code will be used.'});
+  const campaignNameInput = ui.input.string('Campaign Name', {tooltipText: 'New campaign name. If empty, campaign code will be used.'});
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
   campaignPropsForm.prepend(campaignNameInput.root);
   campaignPropsForm.classList.remove('ui-form');

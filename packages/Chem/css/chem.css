@@ -1173,6 +1173,12 @@
 .chem-profile-description.chem-placeholder:focus::before {
   display: none;
 }
+.chem-profile-name-error {
+  color: var(--red-3);
+  font-size: 12px;
+  margin: -8px 0 8px;
+}
+
 .chem-profile-field-desc {
   color: var(--grey-4);
   font-size: 12px;
@@ -1182,6 +1188,14 @@
 
 .chem-profile-view-loading {
   visibility: hidden;
+}
+
+.chem-profile-content {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
 }
 
 .chem-profile-editor-container {
@@ -1310,6 +1324,13 @@
   width: auto;
 }
 
+/* One row: five stacked checkboxes per propagated column would push the rest of the pane off screen. */
+.chem-enumerator .chem-enum-aggregation .ui-input-multi-choice-checks {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
 /* Pane content is a row-flex container, so the form needs to grow into it explicitly. */
 .chem-enum-combine-pane .d4-accordion .d4-accordion-pane-content > .ui-div {
   flex: 1 1 auto;
@@ -1318,7 +1339,8 @@
 
 /* "How to combine" holds three separate forms, which size their columns independently. The width
    below keeps them out of .ui-form-condensed; the pins that follow align their columns with each
-   other. !important beats the platform's own per-form inline widths, applied async after layout. */
+   other. !important beats the platform's own per-form inline widths, applied async after layout.
+   A checkbox's editor is only the box, so it keeps its own width. */
 .chem-enumerator .chem-enum-combine-pane .ui-form {
   min-width: var(--chem-enum-form-min-width);
 }
@@ -1330,7 +1352,7 @@
   text-align: right !important;
   margin-right: 8px !important;
 }
-.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root > .ui-input-editor {
+.chem-enumerator .chem-enum-combine-pane .ui-form .ui-input-root:not(.ui-input-bool) > .ui-input-editor {
   flex-grow: 0 !important;
   width: var(--chem-enum-editor-width) !important;
   min-width: var(--chem-enum-editor-width) !important;
@@ -1473,3 +1495,9 @@
   vertical-align: middle;
 }
 
+/* A sketcher dialog opened from a thumbnail in a popup (the SAR Matrix's filters) gets the popup's zero minimum width
+   on platforms whose Sketcher.isInPopupContainer checks the thumbnail: restore it, unless the sketcher has no minimum
+   at all (0 x 0). */
+.d4-dialog .d4-dialog-contents .grok-sketcher[style*="min-width: 0px"]:not([style*="min-height: 0px"]) {
+  min-width: 400px !important;
+}

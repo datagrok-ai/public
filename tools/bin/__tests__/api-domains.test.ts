@@ -12,7 +12,7 @@ const testsDir = path.dirname(fileURLToPath(import.meta.url));
 const fixtureDir = path.join(testsDir, 'fixtures', 'domain-package');
 const toolsDir = path.dirname(path.dirname(testsDir));
 const jsApiDir = path.resolve(toolsDir, '..', 'js-api');
-const domainUiDir = path.resolve(toolsDir, '..', 'libraries', 'domain-ui');
+const u2Dir = path.resolve(toolsDir, '..', 'libraries', 'u2');
 const dbPath = (dir: string) => path.join(dir, 'src', 'generated', 'db.ts');
 const dbUiPath = (dir: string) => path.join(dir, 'src', 'generated', 'db-ui.ts');
 
@@ -31,8 +31,7 @@ function mutateManifest(dir: string, mutate: (manifest: any) => void): void {
 
 /** Adds a `label` target table, a `sample_label` junction, and the `labels` many-to-many
  * relation on `sample` — the fixture every relation test starts from. */
-function addRelation(manifest: any,
-  relation: {[key: string]: string} = {via: 'sample_label', target: 'label'}): void {
+function addRelation(manifest: any): void {
   manifest.tables.label = {
     businessKey: ['name'], columns: {name: {type: 'string', required: true}}};
   manifest.tables.sample_label = {
@@ -41,7 +40,7 @@ function addRelation(manifest: any,
       sample_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
       label_id: {type: 'ref', ref: 'label', onDelete: 'cascade', required: true},
     }};
-  manifest.tables.sample.relations = {labels: relation};
+  manifest.tables.sample.relations = {labels: {via: 'sample_label', target: 'label'}};
 }
 
 /** Runs the generator with console output captured, so error-message tests stay quiet. */
@@ -72,7 +71,8 @@ function copyDts(src: string, dst: string): void {
 /** Stages the local js-api types into `<dir>/node_modules/datagrok-api`. */
 function stageDatagrokApiTypes(dir: string): void {
   const dstRoot = path.join(dir, 'node_modules', 'datagrok-api');
-  copyDts(jsApiDir, dstRoot);
+  // js-api emits its declarations into dist/ (see js-api/package.json "exports")
+  copyDts(path.join(jsApiDir, 'dist'), dstRoot);
   fs.writeFileSync(path.join(dstRoot, 'package.json'),
     '{"name": "datagrok-api", "version": "0.0.0", "types": "datagrok.d.ts"}');
   // dayjs types (the generated db.ts imports `type {Dayjs}`).
@@ -87,32 +87,35 @@ function stageDatagrokApiTypes(dir: string): void {
     path.join(dayjsDst, 'locale', 'types.d.ts'));
 }
 
-/** Stages the local domain-ui types (what the generated db-ui.ts imports) into
- * `<dir>/node_modules/@datagrok-libraries/domain-ui`. Its own `rxjs` imports stay
- * unresolved on purpose — `skipLibCheck` covers them, and staging 670 rxjs
- * declarations per test would not check anything this file cares about. */
-function stageDomainUiTypes(dir: string): void {
-  const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', 'domain-ui');
-  copyDts(path.join(domainUiDir, 'src'), path.join(dstRoot, 'src'));
+/** Stages the local u2 types (what the generated db-ui.ts imports) into
+ * `<dir>/node_modules/@datagrok-libraries/u2`. Its own `rxjs` / `@floating-ui` imports stay
+ * unresolved on purpose — `skipLibCheck` covers them, and staging their declarations per
+ * test would not check anything this file cares about. */
+function stageU2Types(dir: string): void {
+  const dstRoot = path.join(dir, 'node_modules', '@datagrok-libraries', 'u2');
+  copyDts(path.join(u2Dir, 'dist', 'src'), path.join(dstRoot, 'src'));
   fs.writeFileSync(path.join(dstRoot, 'package.json'),
-    '{"name": "@datagrok-libraries/domain-ui", "version": "0.0.0", "types": "./src/index.d.ts"}');
+    '{"name": "@datagrok-libraries/u2", "version": "0.0.0", "types": "./src/index.d.ts"}');
 }
 
 /** Typechecks the generated files plus one usage fixture against the local js-api (and,
- * for the `--ui` fixtures, domain-ui) types. */
+ * for the `--ui` fixtures, u2) types. */
 function runTsc(dir: string, usageFile: string): {status: number | null, output: string} {
   stageDatagrokApiTypes(dir);
   const ui = fs.existsSync(dbUiPath(dir));
   if (ui)
-    stageDomainUiTypes(dir);
+    stageU2Types(dir);
   fs.writeFileSync(path.join(dir, 'tsconfig.json'), JSON.stringify({
     compilerOptions: {
       target: 'es2020',
       module: 'es2020',
       moduleResolution: 'bundler',
+      lib: ['ES2022', 'ESNext.Disposable', 'DOM'],
       strict: true,
       noEmit: true,
       skipLibCheck: true,
+      // u2 reaches the platform's u2core through the same path a consumer package maps
+      paths: {'datagrok-api/u2core': ['./node_modules/datagrok-api/src/u2core/index']},
     },
     include: ['src/generated/db.ts', ...(ui ? ['src/generated/db-ui.ts'] : []), usageFile],
   }, null, 2));
@@ -179,7 +182,7 @@ describe('generateDomainClients', () => {
     // transaction union: one insert/update/delete arm per table
     expect(code).toContain('export type TestdbTransactionOp =');
     expect(code).toContain(
-      `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>} |`);
+      `  {op: 'insert'; table: 'sample'; ref?: string; values: DG.DomainTxValues<SampleInsert>; onDuplicate?: 'error'} |`);
     expect(code).toContain(`  {op: 'delete'; table: 'sample_event'; id: string};`);
 
     // per-schema typed clients: LAZY getters (no import-time side effects), four
@@ -268,29 +271,7 @@ describe('generateDomainClients', () => {
     expect(code).toContain(`  'details:sample_label': {sample_label?: SampleLabelRow[]};`);
   });
 
-  it('relations: an ambiguous junction side must be named explicitly', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample_label.columns.other_label_id = {type: 'ref', ref: 'label', onDelete: 'cascade'};
-    });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(`has more than one ref column targeting 'label'`);
-    expect(output).toContain(`declare 'viaTarget' explicitly`);
-    expect(fs.existsSync(dbPath(dir))).toBe(false);
-
-    // naming the side resolves it; a name that is not a ref to the target does not
-    mutateManifest(dir, (m) => m.tables.sample.relations.labels.viaTarget = 'label_id');
-    expect(generateDomainClients(dir)).toBe(true);
-    mutateManifest(dir, (m) => m.tables.sample.relations.labels.viaTarget = 'sample_id');
-    const bad = runCapturingLog(dir);
-    expect(bad.result).toBe(false);
-    expect(bad.output).toContain(
-      `'sample_id' is not a ref column of junction table 'sample_label' targeting 'label'`);
-  });
-
-  it('relations: via and target must be declared in the same manifest', () => {
+  it('relations: the two checks the generator still makes', () => {
     const missingTarget = makePackage();
     mutateManifest(missingTarget, (m) => {
       addRelation(m);
@@ -301,69 +282,155 @@ describe('generateDomainClients', () => {
     expect(res.output).toContain(`target table 'nope' is not declared in this manifest`);
     expect(fs.existsSync(dbPath(missingTarget))).toBe(false);
 
-    const missingVia = makePackage();
-    mutateManifest(missingVia, (m) => {
-      addRelation(m);
-      m.tables.sample.relations.labels.via = 'nope';
-    });
-    res = runCapturingLog(missingVia);
-    expect(res.result).toBe(false);
-    expect(res.output).toContain(`junction table 'nope' is not declared in this manifest`);
-  });
-
-  it('relations: the junction business key must cover both FKs', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample_label.businessKey = ['sample_id'];
-    });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(
-      `must declare a 'businessKey' containing both 'sample_id' and 'label_id'`);
-  });
-
-  it('relations: a name may not collide with a column, and self-referential needs both sides', () => {
     const collision = makePackage();
     mutateManifest(collision, (m) => {
       addRelation(m);
       m.tables.sample.relations = {name: {via: 'sample_label', target: 'label'}};
     });
-    let res = runCapturingLog(collision);
+    res = runCapturingLog(collision);
     expect(res.result).toBe(false);
     expect(res.output).toContain(`relation 'sample.name' collides with a column of 'sample'`);
+  });
 
-    // a relation back at its own table cannot auto-resolve the two sides
-    const self = makePackage();
-    mutateManifest(self, (m) => {
+  it('relations: a self-referential relation expands under its own name', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
       addRelation(m);
       m.tables.sample_link = {businessKey: ['from_id', 'to_id'], columns: {
         from_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
         to_id: {type: 'ref', ref: 'sample', onDelete: 'cascade', required: true},
       }};
-      m.tables.sample.relations = {blocks: {via: 'sample_link', target: 'sample'}};
-    });
-    res = runCapturingLog(self);
-    expect(res.result).toBe(false);
-    expect(res.output).toContain(`a self-referential relation must name both 'viaSelf' and 'viaTarget'`);
-
-    mutateManifest(self, (m) =>
       m.tables.sample.relations = {blocks:
-        {via: 'sample_link', target: 'sample', viaSelf: 'from_id', viaTarget: 'to_id'}});
-    expect(generateDomainClients(self)).toBe(true);
-    expect(fs.readFileSync(dbPath(self), 'utf8'))
+        {via: 'sample_link', target: 'sample', viaSelf: 'from_id', viaTarget: 'to_id'}};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir), 'utf8'))
       .toContain(`  'blocks': {blocks?: {id: string; name: string}[]};`);
   });
 
-  it('relations: the junction must differ from the owner and the target', () => {
+  it('qualified refs: a Core target types the expand from the sealed Core declaration', () => {
     const dir = makePackage();
     mutateManifest(dir, (m) => {
-      addRelation(m);
-      m.tables.sample.relations.labels.target = 'sample_label';
+      m.tables.sample.columns.source_query = {type: 'ref', ref: 'Core.queries'};
+      m.tables.sample.columns.package = {type: 'ref', ref: 'Core.packages', required: true};
     });
-    const {result, output} = runCapturingLog(dir);
-    expect(result).toBe(false);
-    expect(output).toContain(`must differ from the owner and the target table`);
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain('  source_query?: string;');
+    expect(code).toContain('  package: string;');
+    // the expand entry lists the target's declared columns with the same tsTypes
+    expect(code).toContain(`  'source_query': {'source_query.friendlyName'?: string; 'source_query.createdOn'?: Dayjs;`);
+    expect(code).toContain(`'source_query.updatedOn'?: Dayjs; 'source_query.author'?: string; ` +
+      `'source_query.connection'?: string};`);
+    // a Core column named like a generated system column is the target's own, not a collision
+    expect(code).toMatch(/'package': \{[^}]*'package\.version'\?: string;/);
+    // the external table exists only to type the expand: no accessor, types, or tx arms
+    expect(code).not.toContain('QueriesRow');
+    expect(code).not.toContain('PackagesRow');
+    expect(code).not.toMatch(/table: '(queries|packages)'/);
+    expect(code).not.toContain('Core.');
+  });
+
+  it('autoNumber: server-assigned on insert — present on Row, optional on Insert', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample_event.columns.number = {type: 'int', autoNumber: {scope: 'sample_id', start: 1000}};
+      m.tables.sample.columns.seq = {type: 'int', autoNumber: true};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toMatch(/interface SampleEventRow \{[^}]*  number: number;/);
+    expect(code).toMatch(/interface SampleEventInsert \{[^}]*  number\?: number;/);
+    expect(code).toMatch(/interface SampleRow \{[^}]*  seq: number;/);
+    expect(code).toMatch(/interface SampleInsert \{[^}]*  seq\?: number;/);
+  });
+
+  it('autoNumber: the JSON Schema rejects false, unknown keys and start below 1', () => {
+    for (const bad of [false, {step: 1}, {start: 0}]) {
+      const dir = makePackage();
+      mutateManifest(dir, (m) => m.tables.sample.columns.count.autoNumber = bad);
+      expect(runCapturingLog(dir).result).toBe(false);
+      expect(fs.existsSync(dbPath(dir))).toBe(false);
+    }
+  });
+
+  it('qualified refs: another plugin\'s table resolves from its installed manifest', () => {
+    const dir = makePackage();
+    const depDir = path.join(dir, 'node_modules', '@datagrok', 'other-plugin', 'databases', 'other');
+    fs.mkdirSync(depDir, {recursive: true});
+    fs.writeFileSync(path.join(depDir, 'schema.json'), JSON.stringify({
+      name: 'other', version: '1.0.0',
+      tables: {thing: {
+        columns: {name: {type: 'string', required: true}, kind: {type: 'string', choices: ['a', 'b']}},
+        schemas: ['extra', 'sealed'],
+      }},
+      // a manifest keys property-schema columns by name; a sealed declaration lists them
+      propertySchemas: {extra: {weight: {type: 'float'}}, sealed: [{name: 'rank', type: 'int'}]},
+    }));
+    mutateManifest(dir, (m) => m.tables.sample.columns.thing_id = {type: 'ref', ref: 'other.thing'});
+    expect(generateDomainClients(dir)).toBe(true);
+    const code = fs.readFileSync(dbPath(dir), 'utf8');
+    expect(code).toContain(`export type OtherThingKind = 'a' | 'b';`);
+    expect(code).toContain(`  'thing_id': {'thing_id.name'?: string; 'thing_id.kind'?: OtherThingKind; ` +
+      `'thing_id.weight'?: number;`);
+    expect(code).toContain(`'thing_id.rank'?: number};`);
+    expect(code).not.toContain('ThingRow');
+  });
+
+  it('qualified refs: type user/group is the same column as ref Core.users/Core.groups', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.owner = {type: 'user', onDelete: 'setnull'};
+      m.tables.sample.columns.team = {type: 'group'};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    const aliased = fs.readFileSync(dbPath(dir));
+    expect(aliased.toString()).toContain(`  'owner': {'owner.login'?: string; 'owner.firstName'?: string;`);
+    expect(aliased.toString()).toMatch(/'team': \{'team\.friendlyName'\?: string;/);
+
+    mutateManifest(dir, (m) => {
+      m.tables.sample.columns.owner = {type: 'ref', ref: 'Core.users'};
+      m.tables.sample.columns.team = {type: 'ref', ref: 'Core.groups'};
+    });
+    expect(generateDomainClients(dir)).toBe(true);
+    expect(fs.readFileSync(dbPath(dir)).equals(aliased)).toBe(true);
+  });
+
+  it('qualified refs: an unresolvable target is an error', () => {
+    const dir = makePackage();
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref', ref: 'nope.t'});
+    let res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`table 'sample' column 'x' references 'nope.t', but no installed dependency ` +
+      `declares schema 'nope'`);
+    expect(res.output).toContain(`install the package that declares schema 'nope' as a dependency`);
+    expect(fs.existsSync(dbPath(dir))).toBe(false);
+
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref', ref: 'Core.nope'});
+    res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`schema 'Core' declares no table 'nope'`);
+
+    mutateManifest(dir, (m) => m.tables.sample.columns.x = {type: 'ref'});
+    res = runCapturingLog(dir);
+    expect(res.result).toBe(false);
+    expect(res.output).toContain(`table 'sample' column 'x' is a ref column without a 'ref' target`);
+  });
+
+  it('qualified refs: a missing sealed Core declaration is an error, not a crash', () => {
+    // the fixture's `owner: {type: user}` is the first Core ref the generator meets
+    const dir = makePackage();
+    const exists = fs.existsSync;
+    const spy = vi.spyOn(fs, 'existsSync').mockImplementation((p) => !String(p).endsWith('Core.json') && exists(p));
+    try {
+      const {result, output} = runCapturingLog(dir);
+      expect(result).toBe(false);
+      expect(output).toMatch(
+        /column 'owner' references 'Core\.users', but the sealed Core declaration is missing: .*Core\.json/);
+      expect(fs.existsSync(dbPath(dir))).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('relation usage compiles under strict tsc', {timeout: 180_000}, () => {
@@ -520,61 +587,40 @@ describe('generateDomainClients --ui', () => {
     expect(fs.existsSync(dbUiPath(dir))).toBe(true);
     // data-only consumers are unaffected: same db.ts, and it imports nothing UI
     expect(fs.readFileSync(dbPath(dir)).equals(dbOnly)).toBe(true);
-    expect(fs.readFileSync(dbPath(dir), 'utf8')).not.toContain('domain-ui');
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).not.toContain('@datagrok-libraries/u2');
   });
 
-  it('emits per-table option types and a <table>Ui wrapper over domain-ui', () => {
+  it('emits the typed schema handle: <Schema>Db with a DomainTable<Row> per table, opened by get<Schema>Db', () => {
     const dir = makePackage();
     expect(generateDomainClients(dir, {ui: true})).toBe(true);
     const code = fs.readFileSync(dbUiPath(dir), 'utf8');
 
     expect(code).toContain('auto-generated by the grok api command (--ui)');
-    expect(code).toContain(`from '@datagrok-libraries/domain-ui';`);
+    expect(code).toContain(`import {domains, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';`);
     // the typed names it reuses come from db.ts — nothing is re-derived here
-    expect(code).toMatch(/import \{testdbDb, SampleColumn, SampleExpand, SampleInsert, SampleRow,/);
-    expect(code).toMatch(/from '\.\/db';/);
+    expect(code).toContain(`import {testdbDb, SampleRow, SampleEventRow} from './db';`);
 
-    // per-table option types narrowed to this table's columns / insert payload
-    expect(code).toContain(
-      'export type SampleQuerySpec = DG.DomainQuerySpec<SampleColumn, keyof SampleExpand & string>;');
-    expect(code).toContain(`  columns?: SampleColumn[];`);
-    expect(code).toContain(
-      `export interface SampleGridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {`);
-    expect(code).toContain('  defaults?: Partial<SampleInsert>;');
-    expect(code).toContain(`export interface SampleListOptions extends Omit<EntityListOptions, 'query'> {`);
-    expect(code).toContain(`export interface SampleAppViewOptions extends Omit<DomainAppViewOptions, 'query'> {`);
-    expect(code).toContain(`export interface SampleFormOptions extends Omit<DomainFormOptions, 'values'> {`);
-    expect(code).toContain('  values?: Partial<SampleInsert>;');
+    expect(code).toContain('export interface TestdbDb {');
+    expect(code).toContain(`  readonly schema: 'testdb';`);
+    expect(code).toContain('  readonly data: typeof testdbDb;');
+    expect(code).toContain('  readonly tables: {');
+    expect(code).toContain('    readonly samples: DomainTable<SampleRow>;');
+    expect(code).toContain('    readonly sampleEvents: DomainTable<SampleEventRow>;');
 
-    // the wrapper itself: typed client + the typed handle every factory delegates to
-    expect(code).toContain('export class SampleUi {');
-    expect(code).toContain(`  readonly address: string = 'testdb.sample';`);
-    expect(code).toContain(
-      '  get client(): DG.DomainTableClient<SampleRow, SampleInsert, SampleColumn, SampleExpand> {');
-    expect(code).toContain('    return testdbDb.samples;');
-    expect(code).toContain(
-      '  table(): Promise<DomainTable<SampleRow, SampleInsert, SampleColumn, SampleExpand>> {');
-    expect(code).toContain(
-      '    return domains.table<SampleRow, SampleInsert, SampleColumn, SampleExpand>(this.client);');
-    // every widget member goes through that handle — no class constructor is named here
-    expect(code).toContain('  async form(options?: SampleFormOptions): Promise<DomainForm> {');
-    expect(code).toContain('    return (await this.table()).form(options);');
-    expect(code).toContain(
-      '  async formDialog(options?: SampleFormOptions & DomainDialogOptions): Promise<boolean> {');
-    expect(code).toContain('  async listView(options?: SampleAppViewOptions): Promise<DomainAppView> {');
-    expect(code).toContain('  app(options?: SampleAppViewOptions): Promise<DomainAppView> {');
-    expect(code).toContain('  async grid(options?: SampleGridOptions): Promise<DomainGrid> {');
-    // WO-9R reverted EntityListWidget.create's null return — the nit is gone
-    expect(code).toContain('  async list(options?: SampleListOptions): Promise<EntityListWidget> {');
-    expect(code).not.toContain('EntityListWidget | null');
-    expect(code).not.toMatch(/new Domain(AppView|EntityAppView)\(/);
-    expect(code).toContain('  row(values: Partial<SampleRow> | null): DG.DomainRow {');
-    expect(code).toContain(
-      `    return new DG.DomainQuery({...params, schema: 'testdb', table: 'sample'});`);
-    expect(code).toContain('export const sampleUi = new SampleUi();');
-    // the snake_case table gets the camelCase client getter and its own wrapper
-    expect(code).toContain('    return testdbDb.sampleEvents;');
-    expect(code).toContain('export const sampleEventUi = new SampleEventUi();');
+    // one await: every table opened in parallel, the promise cached per page
+    expect(code).toContain('let _testdbDb: Promise<TestdbDb> | undefined;');
+    expect(code).toContain('export function getTestdbDb(): Promise<TestdbDb> {');
+    expect(code).toContain('  return _testdbDb ??= Promise.all([');
+    expect(code).toContain(`    domains.table<SampleRow>('testdb.sample'),`);
+    expect(code).toContain(`    domains.table<SampleEventRow>('testdb.sample_event'),`);
+    expect(code).toContain('  ]).then(([samples, sampleEvents]): TestdbDb => ({');
+    expect(code).toContain(`    schema: 'testdb',`);
+    expect(code).toContain('    data: testdbDb,');
+    expect(code).toContain('    tables: {samples, sampleEvents},');
+    expect(code).toContain('  })).catch((e) => {');
+    // a failed open is not cached
+    expect(code).toContain('    _testdbDb = undefined;');
+    expect(code).not.toContain('domain-ui');
 
     expect(code).not.toMatch(/[^\r]\n/);   // CRLF, per the repo code style
   });
@@ -587,14 +633,13 @@ describe('generateDomainClients --ui', () => {
     expect(generateDomainClients(dir)).toBe(true);
     expect(fs.readFileSync(dbUiPath(dir)).equals(first)).toBe(true);
 
-    mutateManifest(dir, (m) => m.tables.sample.columns.extra_note = {type: 'string'});
+    mutateManifest(dir, (m) => m.tables.note = {columns: {text: {type: 'string'}}});
     expect(generateDomainClients(dir)).toBe(true);
-    expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('SampleUi');
-    expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('export function testdbUiDb(): Promise<TestdbUiDb>');
-    expect(fs.readFileSync(dbPath(dir), 'utf8')).toContain('extra_note?: string;');
+    expect(fs.readFileSync(dbUiPath(dir), 'utf8')).toContain('    readonly notes: DomainTable<NoteRow>;');
+    expect(fs.readFileSync(dbPath(dir), 'utf8')).toContain('export interface NoteRow {');
   });
 
-  it('typed UI usage compiles under strict tsc', {timeout: 180_000}, () => {
+  it('typed handle usage compiles under strict tsc', {timeout: 180_000}, () => {
     const dir = makePackage();
     expect(generateDomainClients(dir, {ui: true})).toBe(true);
     const res = runTsc(dir, 'usage-ui-good.ts');
@@ -602,65 +647,24 @@ describe('generateDomainClients --ui', () => {
     expect(res.status).toBe(0);
   });
 
-  it('relations: the handle takes the update payload as its fifth generic', () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => addRelation(m));
-    expect(generateDomainClients(dir, {ui: true})).toBe(true);
-    const code = fs.readFileSync(dbUiPath(dir), 'utf8');
-
-    expect(code).toMatch(/SampleRow, SampleUpdate,/);
-    expect(code).toContain('  get client(): DG.DomainTableClient<SampleRow, SampleInsert, ' +
-      'SampleColumn, SampleExpand, SampleUpdate> {');
-    expect(code).toContain('  table(): Promise<DomainTable<SampleRow, SampleInsert, ' +
-      'SampleColumn, SampleExpand, SampleUpdate>> {');
-    expect(code).toContain('    return domains.table<SampleRow, SampleInsert, ' +
-      'SampleColumn, SampleExpand, SampleUpdate>(this.client);');
-    // the schema handle's per-table property carries it too
-    expect(code).toContain('  readonly samples: DomainTable<SampleRow, SampleInsert, ' +
-      'SampleColumn, SampleExpand, SampleUpdate>;');
-    // a relation-less table keeps four — its update payload is the client's Partial<Row>
-    expect(code).toContain(
-      '  get client(): DG.DomainTableClient<LabelRow, LabelInsert, LabelColumn, LabelExpand> {');
-    expect(code).not.toContain('LabelUpdate');
-  });
-
-  it('relation UI usage compiles under strict tsc', {timeout: 180_000}, () => {
-    const dir = makePackage();
-    mutateManifest(dir, (m) => addRelation(m));
-    expect(generateDomainClients(dir, {ui: true})).toBe(true);
-    const res = runTsc(dir, 'usage-ui-relations.ts');
-    expect(res.output.trim(), res.output).toBe('');
-    expect(res.status).toBe(0);
-  });
-
-  it('wrong-typed UI usage fails tsc: columns, expand, filter, insert defaults, choices',
+  it('wrong-typed handle usage fails tsc: schema, table, row columns, draft values, query columns',
     {timeout: 180_000}, () => {
       const dir = makePackage();
       expect(generateDomainClients(dir, {ui: true})).toBe(true);
       const res = runTsc(dir, 'usage-ui-bad.ts');
       expect(res.status).not.toBe(0);
       // exactly one error per intended negative — no accidental extra breakage
-      expect(res.output.match(/error TS/g)).toHaveLength(14);
-      // a wrong column name in a query spec, an expand key, and a condition
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(5,.*'"nope"' is not assignable to type 'SampleColumn'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(8,.*'"details:nope"' is not assignable/);
+      expect(res.output.match(/error TS/g)).toHaveLength(7);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(6,.*'"testdb"' is not assignable to type '"other"'/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(7,.*Property 'nope' does not exist/);
+      // the action's and the validator's row is the table's row type
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(8,.*Type 'string' is not assignable to type 'number'/);
       expect(res.output).toMatch(/usage-ui-bad\.ts\(9,/);
-      expect(res.output).toMatch(/Type '"nope"' is not assignable to type 'DomainColumnRef<SampleColumn>/);
-      // insert defaults: unknown column, wrong type, a column of ANOTHER table
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(6,.*'nope' does not exist in type 'Partial<SampleInsert>'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(7,/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(11,.*'kind' does not exist in type 'Partial<SampleInsert>'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(12,/);
-      // rowFrom values and DomainQuery columns are this table's too
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(13,.*'nope' does not exist in type 'Partial<SampleRow>'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(14,.*'"nope"' is not assignable to type 'SampleColumn'/);
-      // choices stay the generated literal union
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(16,.*'"bogus"' is not assignable to type 'SampleStatus/);
-      // Â§1.7: the form's seed values are this table's insert payload
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(18,.*'nmae' does not exist in type 'Partial<SampleInsert>'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(19,/);
-      // the schema handle's per-table properties carry the same typing
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(22,.*'nmae' does not exist in type 'Partial<SampleInsert>'/);
-      expect(res.output).toMatch(/usage-ui-bad\.ts\(23,/);
+      // draft values: a wrong type, and a column of ANOTHER table
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(10,/);
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(11,/);
+      // the data client keeps the db.ts column union
+      expect(res.output).toMatch(/usage-ui-bad\.ts\(12,.*No overload matches this call/);
+      expect(res.output).toMatch(/Type '"nope"' is not assignable to type 'SampleColumn'/);
     });
 });

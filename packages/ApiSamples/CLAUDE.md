@@ -12,6 +12,11 @@ code when invoked by the platform.
 
 Keep them very short and clean.
 
+Optional first line `//api: DG.Viewer.fromType, ui.input.string` names the members the sample demonstrates
+(qualified names, comma-separated). The JS API inventory (`core/docs/reviews/js-api-audit/data/inventory.cjs`)
+builds its samples-per-member index from that line, and falls back to the qualified `DG.`/`ui.`/`grok.` usages in
+the source when it is absent.
+
 ### Script categories
 
 | Folder         | What belongs here                                                   |

@@ -33,7 +33,7 @@ export class ParetoOptimizer {
     this.numColNames = this.numCols.map((col) => col.name);
     this.numColsCount = this.numCols.length;
     this.rowCount = df.rowCount;
-    this.view = grok.shell.getTableView(df.name);
+    this.view = grok.shell.tableView(df.name);
 
     this.paretoFrontViewer = DG.Viewer.fromType('Pareto front', df);
 
@@ -92,7 +92,7 @@ export class ParetoOptimizer {
           this.inputFormNode = null;
         }
 
-        this.numCols.forEach((col) => col.colors.setDisabled());
+        this.numCols.forEach((col) => col.meta.colors.setDisabled());
         this.features.clear();
       }),
     ];
@@ -212,7 +212,7 @@ export class ParetoOptimizer {
   }
 
   private markOptColsWithColor(): void {
-    this.numCols.forEach((col) => col.colors.setDisabled());
+    this.numCols.forEach((col) => col.meta.colors.setDisabled());
 
     this.features.forEach((fea, name) => {
       if (!fea.toOptimize)
@@ -221,7 +221,7 @@ export class ParetoOptimizer {
       const col = this.df.col(name);
 
       if (col != null)
-        col.colors.setLinear(getOutputPalette(fea.optType), {min: col.stats.min, max: col.stats.max});
+        col.meta.colors.setLinear(getOutputPalette(fea.optType), {min: col.stats.min, max: col.stats.max});
     });
   } // markOptColsWithColor
 

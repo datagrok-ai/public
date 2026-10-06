@@ -37,6 +37,27 @@ the view's kill-walk alone would never reach them).
 - Empty / loading / error-with-retry states belong in the content area (the user acts
   there); the status bar carries the one-line summary.
 
+## Routing
+
+`appView({path})` writes the view's URL. A JS app owns the whole string — the platform
+prefixes nothing — so **include the app root** (`/apps/<Package>/<App>`). Pass a `computed`
+and every in-app navigation round-trips to the address bar; the shell replaces rather than
+pushes, so it costs no history entries. From U2Demo's `package.ts`:
+
+```ts
+const APP_PATH = '/apps/U2demo/U2Demo';
+const {content, shell, status} = buildDemo({initial: leafForPath(path)?.id});
+return appView({
+  name: 'U2 Demo', content, status,
+  ribbon: [[bar], demoRibbon(shell)],
+  path: computed(() => APP_PATH + pathOf(shell.current.value)),
+});
+```
+
+The inbound direction is the platform's: give the app function a
+`//input: string path { meta.url: true; optional: true }` parameter and the tail of the URL
+arrives in it — resolve it to your initial state.
+
 ## Anti-pattern
 
 ```ts

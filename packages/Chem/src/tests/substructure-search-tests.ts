@@ -3,8 +3,9 @@ import * as grok from 'datagrok-api/grok';
 import {readDataframe, _testSearchSubstructure, _testSearchSubstructureAllParameters,
   _testSearchSubstructureSARSmall,
   checkBitSetIndices} from './utils';
-import {before, category, test} from '@datagrok-libraries/test/src/test';
+import {before, category, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
 import {_package} from '../package-test';
+import {PackageFunctions} from '../package';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import { SubstructureSearchType } from '../constants';
@@ -291,6 +292,41 @@ category('substructure search: stereo agnostic', () => {
   test('flat_query', async () => {
     // Query without stereo -> should still match all stereoisomers (indices 0, 1, 2)
     await testStereoAgnosticSearch('CC(O)F', [0, 1, 2]);
+  });
+});
+
+category('substructure search: filter operators', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('descriptor', async () => {
+    const funcs = DG.Func.find({package: 'Chem', meta: {role: 'filterOperators'}});
+    expect(funcs.length, 1);
+    expect(funcs[0].options['semType'], DG.SEMTYPE.MOLECULE);
+    const set = await funcs[0].apply();
+    expect(set.semType, DG.SEMTYPE.MOLECULE);
+    expect(set.exclusive, true);
+    expectArray(set.operators.map((o: any) => o.id),
+      [SubstructureSearchType.CONTAINS, SubstructureSearchType.INCLUDED_IN, SubstructureSearchType.EXACT_MATCH,
+        SubstructureSearchType.STEREO_AGNOSTIC, SubstructureSearchType.IS_SIMILAR]);
+  });
+
+  test('contains_matches_searchSubstructure', async () => {
+    const col = grok.data.demo.molecules(200).col('smiles')!;
+    col.semType = DG.SEMTYPE.MOLECULE;
+    const contains = PackageFunctions.moleculeFilterOperators().operators
+      .find((o) => o.id === SubstructureSearchType.CONTAINS)!;
+    const mask = await contains.bitset(col, {property: col.name, operator: contains.id, value: 'c1ccccc1'},
+      new AbortController().signal);
+    const expected: DG.BitSet = (await PackageFunctions.searchSubstructure(col, 'c1ccccc1', '')).get(0);
+    expect(mask.length, col.length);
+    const actual = DG.BitSet.fromBytes(mask.bits.buffer as ArrayBuffer, mask.length);
+    expect(actual.trueCount > 0 && actual.trueCount < col.length, true);
+    expect(actual.toBinaryString(), expected.toBinaryString());
   });
 });
 

@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 
@@ -165,7 +166,7 @@ async function runActivityCliffsWalk(page: Page, label: string, datasetPath: str
 }
 
 test('Chem: Activity Cliffs multi-format walk (D1-D5)', async ({page}) => {
-  test.setTimeout(1_500_000); // 25 min for 5 × 12-step walks on cold session
+  test.setTimeout(1_500_000); 
 
   await loginToDatagrok(page);
   await page.waitForTimeout(3000);

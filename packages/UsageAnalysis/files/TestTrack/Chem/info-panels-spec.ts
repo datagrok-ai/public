@@ -1,6 +1,8 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {settleContextPanes, waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -21,7 +23,7 @@ async function expandAndVerifyPanes(
       }
     }
   });
-  await page.waitForTimeout(2500);
+  await settleContextPanes(page, 2500);
   const seen = await page.evaluate(() =>
     Array.from(document.querySelectorAll('.d4-accordion-pane-header'))
       .map(h => h.textContent!.trim()));
@@ -34,9 +36,8 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   test.setTimeout(600_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
-
-  // ===== Phase A — smiles-50 column + cell walk =====
+  // What the flat post-login settle covered is the Chem menubar root being in the DOM.
+  await waitForChemMenuRoot(page);
 
   await softStep('Phase A — Step 1: Open smiles-50.csv', async () => {
     await page.evaluate(async () => {
@@ -66,18 +67,26 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
   });
 
   await softStep('Phase A — Step 3: Click canonical_smiles column header → column-context Panel', async () => {
-    await page.evaluate(() => {
+    // The first grok.shell.o assignment after a table opens can be dropped while the shell is
+    // still binding its own current object, which leaves the TABLE context panel up and the
+    // column panes below reading off the wrong context. Set and re-check.
+    await page.evaluate(async () => {
       const col = grok.shell.t.col('canonical_smiles');
-      grok.shell.o = col;
+      grok.shell.windows.showContextPanel = true;
+      const deadline = Date.now() + 5000;
+      while (Date.now() < deadline) {
+        grok.shell.o = col;
+        await new Promise((r) => setTimeout(r, 200));
+        if (grok.shell.o === col) return;
+      }
     });
-    await page.waitForTimeout(2500);
+    await settleContextPanes(page, 2500);
   });
 
   await softStep('Phase A — Step 4: Walk Chemistry/Biology/Structure info panels (column context)', async () => {
     const {found, seen} = await expandAndVerifyPanes(
       page, 'A4 column', [...CHEMISTRY_PANES, ...BIOLOGY_PANES, ...STRUCTURE_PANES]);
-    // The named behavior is "walk Chem info panels": at least some of the expected panes must render
-    // (a zero-match pass would mean the Chem info-panel pipeline never produced any pane).
+
     expect(found.length,
       `No expected Chem info panels rendered on the column context. seen=${JSON.stringify(seen)}`)
       .toBeGreaterThan(0);
@@ -99,7 +108,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       grok.shell.addTableView(df);
     });
     await waitForChemMenu(page);
-    // SR-DEFERRED scaffold alignment + Highlight custom color: applied via JS API column tags.
+
     await page.evaluate(async () => {
       const tv = grok.shell.tv;
       const molCol = tv.dataFrame.columns.toList().find((c: any) => c.semType === 'Molecule');
@@ -136,8 +145,6 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
       `No expected Chem cell-context info panels rendered. seen=${JSON.stringify(seen)}`)
       .toBeGreaterThan(0);
   });
-
-  // ===== Phase B — Multi-format coverage =====
 
   type Variant = {id: string; format: string; path: string; opener: 'csv' | 'openFile'};
   const variants: Variant[] = [
@@ -176,7 +183,7 @@ test('Chem: Info Panels Phase A column+cell walk + Phase B multi-format', async 
         tv.dataFrame.currentRowIdx = 0;
         grok.shell.o = tv.dataFrame.currentCell;
       });
-      await page.waitForTimeout(2500);
+      await settleContextPanes(page, 2500);
       await expandAndVerifyPanes(page, v.id, ['Descriptors', '2D Structure', 'Properties']);
     });
   }

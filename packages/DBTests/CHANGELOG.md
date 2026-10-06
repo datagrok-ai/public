@@ -2,15 +2,21 @@
 
 ## v.next
 
+* Tests: Removed the `grok test` Node pass — `grok test` runs DBTests in the browser only. `package-test.ts` no longer exports `testNode()` or takes an `excludeNodeTests` input, and every `{node: true}` annotation is gone. ApiTests' standalone stress runner still merges these categories into its Node sweep via `extraTestPackages`.
+* Tests: unmarked the `Benchmarks` category as `stressTest`. Each of those tests fires 25-100 sequential queries by design, so at 91 concurrent threads they time out - build 171 measured `Performance: TestNormal` at 100% failure, `TestLong` 94%, `TestWide` 88%, `Sequential select 1` 62%, EXECUTION TIMEOUT throughout, and they accounted for essentially every failure in the sweep. The mark was inert until DBTests joined the stress suite.
+* Tests: marked the read-only Postgres categories (`Connections` queries, `TableQueryBuilder`) as `stressTest` - 12 tests, so the nightly Stress-Tests sweep exercises grok_connect query load and not only the platform API. Excluded: `Docker connection` (the stress stand runs no grok_spawner), `Server cache` (shared cache state) and `Database Meta: *` (its tests annotate and clear shared schema metadata - measured at 19-56% pass under concurrency in build 169, all of it threads overwriting each other rather than real failures).
 * Tests: Fixed `Docker connection / Connection test` timing out at exactly 300s — its budget equalled datlas' own containerStatusTimeout, so a slow on-demand container start left nothing for the connection test
 * Tests: annotated API-only categories (queries, TableQueryBuilder, server cache, benchmarks, DB annotations, provider connectivity) with `node: true` — `grok test` now runs them headless in Node; the data-sync view test and the IndexedDB-backed client cache stay in the browser
 * Tests: the query `-- test:` auto tests (~200) also run headless now that the Node runtime provides the shared `OpenFile` fallback
 * Tests: moved the 5 browser-bound tests (data sync, client cache ×2, cached TestWide benchmarks ×2) to ApiTests (`DB: *` categories) — DBTests now runs fully headless, `grok test` never launches a browser for it
 * Tests: grouped connectivity tests by provider (`Providers: <dataSource>`) via `initPackageTests`; removed the dead `tests/categories.ts` whose provider categories held a `before` but no tests.
 * Tests: skip all ClickHouse tests — the connectivity check (`initPackageTests` skipReason) and the 31 query round-trip tests (`skip:` on the `-- test:` annotations in `clickhouse-*.sql`). The ClickHouse demo DB is down (failing on dev + CI since ~2026-07-12); remove the `skip:` tokens to re-enable once it's restored.
-* Security: pinned the DB test image to `postgres:17-bookworm` and added `apt-get upgrade` to clear stale Debian base CVEs (gnutls28/perl/glibc).
 * Tests: added ClickHouseADBC coverage — connection, mock_data pattern tests, per-type output tests (full mirror of the ClickHouse suite), and category guard for the experimental ADBC/Arrow connector.
 * GROK-20379: Fixed DBTests failing to publish — migrated the ClickHouseADBC test connection to the merged `ClickHouse` data source (`connectionType: ADBC`), since the connector no longer advertises `ClickHouseADBC` once the engine suffix is stripped
+
+## 1.4.1 (2026-07-08)
+
+* Security: pinned the DB test image to `postgres:17-bookworm` and added `apt-get upgrade` to clear stale Debian base CVEs (gnutls28/perl/glibc).
 
 ## 1.3.0 (2025-07-28)
 

@@ -4,6 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {desirabilityScore, isNumerical, PropertyDesirability} from '@datagrok-libraries/statistics/src/mpo/mpo';
 
 import {
+  ColumnGroup,
   createBaseInputs,
   createTooltip, getRenderColor,
   getSettingsBase,
@@ -14,7 +15,9 @@ import {
   SummarySettingsBase,
   NormalizationType, getScaledNumber, scaleSettings, getSparklinesContextPanel
 } from './shared';
-import {VlaaiVisManager} from '../utils/vlaaivis-manager';
+import {VlaaiVisEditor} from '../vlaaivis/editor';
+import {VlaaiVisModel} from '../vlaaivis/model';
+import {DEFAULTS, LABELS, STYLE_INFO} from '../vlaaivis/constants';
 
 let minRadius: number;
 
@@ -40,6 +43,7 @@ export interface PieChartSettings extends SummarySettingsBase {
   radius: number;
   style: PieChartStyle.Radius | PieChartStyle.Angle | PieChartStyle.Vlaaivis;
   sectors?: {
+      name?: string;
       lowerBound: number;
       upperBound: number;
       sectors: Sector[]; // Use the Sector interface here
@@ -49,12 +53,19 @@ export interface PieChartSettings extends SummarySettingsBase {
 
 function getSettings(gc: DG.GridColumn): PieChartSettings {
   const sectors = gc.settings.sectors;
+  const isVlaaivis = gc.cellType === SparklineType.VlaaiVis;
+  const type = isVlaaivis ? SparklineType.VlaaiVis : SparklineType.PieChart;
   const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
-    gc.settings[SparklineType.PieChart] ??= getSettingsBase(gc, SparklineType.PieChart);
-  settings.style ??= PieChartStyle.Radius;
+    gc.settings[type] ??= getSettingsBase(gc, type);
+  settings.style ??= isVlaaivis ? PieChartStyle.Vlaaivis : PieChartStyle.Radius;
   settings.sectors ??= sectors;
   settings.colorCode ??= SummaryColumnColoringType.Bins;
   settings.normalization ??= NormalizationType.Column;
+  if (isVlaaivis && !settings.sectors) {
+    const model = new VlaaiVisModel(settings, gc.grid.dataFrame);
+    if (model.sectors.length === 0)
+      model.autoGroup(DEFAULTS.AUTO_GROUP_COLUMNS);
+  }
   return settings;
 }
 
@@ -68,9 +79,14 @@ function getColumnsSum(cols: DG.Column[], row: number) {
   return sum;
 }
 
-function normalizeValue(value: number, subsector: Subsector): number {
-  if (!isNumerical(subsector) || !subsector.line) return 0;
-  return desirabilityScore(value, subsector.line);
+function normalizeValue(subsector: Subsector, col: DG.Column, row: number): number | null {
+  if (col.isNone(row)) {
+    const missing = subsector.missingValues;
+    return missing?.strategy === 'default' ? missing.score : null;
+  }
+  if (!isNumerical(subsector))
+    return subsector.categories.find((c) => c.name === col.get(row))?.desirability ?? null;
+  return desirabilityScore(subsector, col.getNumber(row));
 }
 
 function renderSubsector(
@@ -81,16 +97,11 @@ function renderSubsector(
 ): number {
   const normalizedSubsectorWeight = subsector.weight / sectorWeight;
   const subsectorAngle = sectorAngle * normalizedSubsectorWeight;
-  let r = Math.max(Math.min(box.width, box.height) / 2, minRadius);
-  const subsectorName = subsector.name;
-  const subsectorCol = cols.find((col) => col.name === subsectorName);
-  let value;
-  if (subsectorCol) {
-    value = subsectorCol.get(row);
-    const normalizedValue = value ? normalizeValue(value, subsector) : 1;
-    r = normalizedValue * (Math.min(box.width, box.height) / 2);
-    r = Math.max(r, minRadius);
-  }
+  const radiusFactor = Math.min(box.width, box.height) / 2;
+  const subsectorCol = cols.find((col) => col.name === subsector.name);
+  const score = subsectorCol ? normalizeValue(subsector, subsectorCol, row) : null;
+  const r = Math.max((score ?? 0) * radiusFactor, minRadius);
+
   g.beginPath();
   g.moveTo(box.midX, box.midY);
   g.arc(box.midX, box.midY, r, currentAngle, currentAngle + subsectorAngle);
@@ -98,8 +109,10 @@ function renderSubsector(
   g.strokeStyle = DG.Color.toRgb(DG.Color.lightGray);
   g.lineWidth = 0.6;
   g.stroke();
-  g.fillStyle = hexToRgbA(sectorColor, 0.6);
-  g.fill();
+  if (score !== null) {
+    g.fillStyle = hexToRgbA(sectorColor, 0.6);
+    g.fill();
+  }
   return currentAngle + subsectorAngle;
 }
 
@@ -115,9 +128,12 @@ function calculateSectorWeight(sector: { sectorColor: string; subsectors: Subsec
   return sector.subsectors.reduce((acc, subsector) => acc + subsector.weight, 0);
 }
 
-function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
-  const settings = getSettings(gridCell.gridColumn);
-  const cols = gridCell.grid.dataFrame.columns.byNames(settings.columnNames).filter((c) => c != null);
+function getColumns(gridCell: DG.GridCell, settings: PieChartSettings): DG.Column[] {
+  return gridCell.grid.dataFrame.columns.byNames(settings.columnNames).filter((c) => c != null);
+}
+
+function onHit(gridCell: DG.GridCell, e: MouseEvent, settings: PieChartSettings): Hit {
+  const cols = getColumns(gridCell, settings);
   const vectorX = e.offsetX - gridCell.bounds.midX;
   const vectorY = e.offsetY - gridCell.bounds.midY;
   const distance = Math.sqrt(vectorX * vectorX + vectorY * vectorY);
@@ -191,6 +207,18 @@ function onHit(gridCell: DG.GridCell, e: MouseEvent): Hit {
   };
 }
 
+function columnGroups(settings: PieChartSettings, cols: DG.Column[]): ColumnGroup[] {
+  if (!settings.sectors)
+    return [{name: '', cols}];
+  const sectors = settings.sectors.sectors;
+  const assigned = new Set(sectors.flatMap((s) => s.subsectors.map((p) => p.name)));
+  return [
+    ...sectors.map((s) => ({name: s.name, color: s.sectorColor,
+      cols: s.subsectors.flatMap((p) => cols.filter((c) => c.name === p.name))})),
+    {name: LABELS.UNASSIGNED, cols: cols.filter((c) => !assigned.has(c.name))},
+  ].filter((g) => g.cols.length > 0);
+}
+
 export class PieChartCellRenderer extends DG.GridCellRenderer {
   get name() { return 'pie ts'; }
 
@@ -205,11 +233,14 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   get defaultHeight(): number | null { return 80; }
 
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
-    const hitData = onHit(gridCell, e);
-    if (hitData.isHit)
-      ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row), e.x + 16, e.y + 16);
-    else
+    const settings = getSettings(gridCell.gridColumn);
+    const hitData = onHit(gridCell, e, settings);
+    if (!hitData.isHit) {
       ui.tooltip.hide();
+      return;
+    }
+    const groups = columnGroups(settings, hitData.cols);
+    ui.tooltip.show(createTooltip(hitData.cols, hitData.activeColumn, hitData.row, groups), e.x + 16, e.y + 16);
   }
 
   render(
@@ -223,7 +254,7 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
 
     const settings = getSettings(gridCell.gridColumn);
     let row: number = gridCell.cell.row.idx;
-    let cols = df.columns.byNames(settings.columnNames).filter((c) => c != null);
+    let cols = getColumns(gridCell, settings);
     const box = new DG.Rect(x, y, w, h).fitSquare().inflate(-2, -2);
     minRadius = Math.min(box.width, box.height) / 10;
     if (settings.style == PieChartStyle.Radius && !settings.sectors) {
@@ -251,8 +282,6 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
       const {lowerBound, upperBound, sectors, values} = settings.sectors;
       cols = values ? Array.from(DG.DataFrame.fromCsv(values).columns) : cols;
       row = values ? 0 : row;
-      sectors.sort((a, b) => calculateSectorWeight(b) - calculateSectorWeight(a));
-
       let currentAngle = 0;
       const totalSectorWeight = sectors.reduce((acc, sector) => acc + calculateSectorWeight(sector), 0);
 
@@ -300,35 +329,74 @@ export class PieChartCellRenderer extends DG.GridCellRenderer {
   }
 
   renderSettings(gc: DG.GridColumn): Element {
-    const settings: PieChartSettings = isSummarySettingsBase(gc.settings) ? gc.settings :
-      gc.settings[SparklineType.PieChart] ??= getSettings(gc);
+    const settings = getSettings(gc);
 
     const elementsDiv = ui.div([]);
-    const inputs = ui.inputs([
-      ...createBaseInputs(gc, settings),
-      ui.input.choice('Style', {value: settings.style ?? PieChartStyle.Radius, items: [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
-        onValueChanged: (value) => {
-          settings.style = value;
-          ui.empty(elementsDiv);
-          if (value === PieChartStyle.Vlaaivis) {
-            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-          } else {
-            delete settings.sectors;
-            gc.grid.invalidate();
-          }
-        },
-        onCreated: (input) => {
-          if (input.value === PieChartStyle.Vlaaivis)
-            elementsDiv.appendChild(new VlaaiVisManager(settings, gc).createTreeGroup());
-        }
-      }),
-    ]);
+    const styleInfo = ui.icons.info(() => {});
+    styleInfo.hidden = true;
+    ui.tooltip.bind(styleInfo,
+      () => ui.divV([ui.divText(STYLE_INFO.SUMMARY), ui.link(STYLE_INFO.LEARN_MORE, STYLE_INFO.HELP_URL)]));
+    let editor: VlaaiVisEditor | null = null;
+    let stashedSectors: PieChartSettings['sectors'];
 
-    return ui.divV([inputs, elementsDiv]);
+    const showEditor = (style: PieChartStyle) => {
+      editor?.detach();
+      editor = null;
+      ui.empty(elementsDiv);
+      const isVlaaivis = style === PieChartStyle.Vlaaivis;
+      styleInfo.hidden = !isVlaaivis;
+      for (const input of scalingInputs)
+        input.visible = !isVlaaivis;
+      if (!isVlaaivis) {
+        if (settings.sectors)
+          stashedSectors = settings.sectors;
+        delete settings.sectors;
+        gc.grid.invalidate();
+        return;
+      }
+      settings.sectors ??= stashedSectors;
+      editor = new VlaaiVisEditor(settings, gc);
+      inputs.append(editor.profileInput.root, ...editor.boundsInputs.map((input) => input.root));
+      elementsDiv.appendChild(editor.root);
+      gc.grid.invalidate();
+    };
+
+    const [columnsInput, ...scalingInputs] = createBaseInputs(gc, settings);
+    columnsInput.onChanged.subscribe(() => {
+      if (editor)
+        editor.refresh();
+    });
+
+    const style = settings.style ?? PieChartStyle.Radius;
+    const styleInput = ui.input.choice('Style', {value: style,
+      items: gc.cellType === SparklineType.VlaaiVis ? [PieChartStyle.Vlaaivis] :
+        [PieChartStyle.Angle, PieChartStyle.Radius, PieChartStyle.Vlaaivis],
+      onValueChanged: (value) => {
+        settings.style = value;
+        showEditor(value);
+      }});
+    styleInput.addOptions(styleInfo);
+    const inputs = ui.inputs([
+      styleInput,
+      columnsInput,
+      ...scalingInputs,
+    ]);
+    if (style === PieChartStyle.Vlaaivis)
+      showEditor(style);
+
+    return ui.divV([inputs, elementsDiv], 'power-grid-pie-settings');
   }
 
   hasContextValue(gridCell: DG.GridCell): boolean { return true; }
   async getContextValue(gridCell: DG.GridCell): Promise<any> {
-    return getSparklinesContextPanel(gridCell, getSettings(gridCell.gridColumn).columnNames);
+    const settings = getSettings(gridCell.gridColumn);
+    const groups = columnGroups(settings, getColumns(gridCell, settings));
+    return getSparklinesContextPanel(gridCell, settings.columnNames, groups);
   }
+}
+
+export class VlaaiVisCellRenderer extends PieChartCellRenderer {
+  get name() { return 'vlaaivis ts'; }
+
+  get cellType() { return SparklineType.VlaaiVis; }
 }

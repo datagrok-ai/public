@@ -2,6 +2,7 @@
 --friendlyName: UA | Tests | Tests
 --connection: System:Datagrok
 --input: string instanceFilter = 'dev' {choices: ['', 'dev', 'release', 'public', 'release-ec2']}
+--input: string branchFilter = 'master' {nullable: true; choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")}
 --input: int lastBuildsNum = 3
 --input: string versionFilter {nullable: true}
 --input: string packageFilter {nullable: true}
@@ -9,9 +10,12 @@
 --input: bool showBenchmarks = false {optional: true}
 --input: bool showNotCiCd = false {optional: true}
 WITH last_builds AS (
-    SELECT name AS build_name, build_date, commit
+    -- Branch-scoped: the same pipelines run on every branch, so an unscoped "last N builds"
+    -- interleaves trunk with whatever feature branch happened to run last night.
+    SELECT name AS build_name, build_date, commit, branch
     FROM builds b
-    WHERE EXISTS (
+    WHERE (@branchFilter IS NULL OR b.branch = @branchFilter)
+      AND EXISTS (
         SELECT 1 FROM test_runs r
         JOIN tests t ON r.test_name = t.name
         WHERE t.type = 'package'
@@ -25,7 +29,7 @@ WITH last_builds AS (
     LIMIT @lastBuildsNum
 ),
 last_builds_indexed AS (
-    SELECT build_name, ROW_NUMBER() OVER (ORDER BY build_date DESC) AS build_index, build_date, commit
+    SELECT build_name, ROW_NUMBER() OVER (ORDER BY build_date DESC) AS build_index, build_date, commit, branch
     FROM last_builds
 ),
 latest_runs AS (
@@ -46,6 +50,7 @@ SELECT
   t.type,
   r.date_time,
   r.instance AS instance,
+  b.branch AS branch,
   b.commit AS build_commit,
   CASE WHEN r.passed IS NULL THEN 'did not run' WHEN r.skipped THEN 'skipped' WHEN r.passed THEN 'passed' WHEN NOT r.passed THEN 'failed' ELSE 'unknown' END AS status,
   COALESCE(r.params->>'flaking', 'false')::bool AS flaking,

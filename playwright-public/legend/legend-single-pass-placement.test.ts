@@ -75,13 +75,11 @@ async function legendState(page: any, viewerType: string) {
 async function expectSinglePassResize(page: any, viewerType: string,
   from: [number, number], to: [number, number], label: string) {
   await v.resizeViewer(page, viewerType, from[0], from[1]);
-  await page.waitForTimeout(2000);
   const initial = await legendState(page, viewerType);
   await recordPlacements(page);
   await page.evaluate(() => { (window as any).__legendMoves = []; });
   await startSampler(page, viewerType);
   await v.resizeViewer(page, viewerType, to[0], to[1]);
-  await page.waitForTimeout(1500);
   const samples = await stopSampler(page);
   const m = await moves(page);
 
@@ -116,11 +114,10 @@ test('Trellis resize decides the legend slot in one pass (SPGI)', async ({page})
   await page.evaluate(() => {
     (window as any).grok.shell.tv.addViewer('Trellis plot');
   });
-  await page.waitForTimeout(4000);
+  await v.waitForLegendIdle(page, 'Trellis plot');
 
   await softStep('A tall trellis docks its legend on top', async () => {
     await v.resizeViewer(page, 'Trellis plot', 460, 640);
-    await page.waitForTimeout(2000);
     const s = await legendState(page, 'Trellis plot');
     expect(s.mode, JSON.stringify(s)).toBe('docked');
     expect(s.slot, JSON.stringify(s)).toBe('top');
@@ -136,7 +133,6 @@ test('Trellis resize decides the legend slot in one pass (SPGI)', async ({page})
     });
     await startSampler(page, 'Trellis plot');
     await v.resizeViewer(page, 'Trellis plot', 1000, 640);
-    await page.waitForTimeout(1500);
     const samples = await stopSampler(page);
     const m = await moves(page);
 
@@ -164,33 +160,30 @@ test('Trellis resize decides the legend slot in one pass (SPGI)', async ({page})
       const tv = (window as any).grok.shell.tv;
       tv.viewers.find((q: any) => q.type === 'Trellis plot')?.close();
     });
-    await page.waitForTimeout(500);
 
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Line chart',
         {yColumnNames: ['Average Mass'], splitColumnNames: ['Series']});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Line chart');
     await expectSinglePassResize(page, 'Line chart', [460, 640], [1000, 460], 'line chart');
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((q: any) => q.type === 'Line chart')?.close();
     });
-    await page.waitForTimeout(500);
 
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Scatter plot', {colorColumnName: 'Series'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Scatter plot');
     await expectSinglePassResize(page, 'Scatter plot', [600, 640], [1100, 500], 'scatter plot');
     await page.evaluate(() => {
       (window as any).grok.shell.tv.viewers.find((q: any) => q.type === 'Scatter plot')?.close();
     });
-    await page.waitForTimeout(500);
 
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Bar chart', {stackColumnName: 'Series'});
     });
-    await page.waitForTimeout(2500);
+    await v.waitForLegendIdle(page, 'Bar chart');
     await expectSinglePassResize(page, 'Bar chart', [600, 640], [1100, 500], 'bar chart');
   });
 

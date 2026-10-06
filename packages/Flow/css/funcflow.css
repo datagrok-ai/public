@@ -862,6 +862,15 @@
   border-bottom-right-radius: 6px;
 }
 
+/* Pinned: not movable/resizable — body drags pan the canvas instead. */
+.ff-annotation[data-pinned="true"] {
+  cursor: default;
+}
+
+.ff-annotation[data-pinned="true"] .ff-annotation-resize {
+  display: none;
+}
+
 /* ---------- node groups (collapsible frames, see rete/node-group.ts) ---------- */
 
 /* Expanded: a background frame hugging the member bbox, under the nodes. */
@@ -1584,6 +1593,117 @@
   background: rgba(0, 0, 0, 0.08);
 }
 
+/* ===== In-node viewer/widget preview ===== */
+
+/* The 300px default preview must not be clipped by the card's 280px cap. */
+.ff-node[data-inline-preview="true"] {
+  max-width: none;
+}
+
+.ff-node-preview-toggle {
+  flex: 0 0 auto;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  color: #455a64;
+  padding: 2px 3px;
+  margin: -2px 0;
+  border-radius: 4px;
+  user-select: none;
+  opacity: 0.8;
+}
+
+.ff-node-preview-toggle:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.ff-node-preview-toggle[data-on="true"] {
+  color: #1976d2;
+  opacity: 1;
+}
+
+/* User-resizable via the native corner handle; the size persists per node. */
+.ff-node-inline-preview {
+  position: relative;
+  margin: 6px 8px 8px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  resize: both;
+  min-width: 180px;
+  min-height: 120px;
+  max-width: 900px;
+  max-height: 900px;
+  cursor: default;
+}
+
+/* Screen-space portal layer: preview content must sit OUTSIDE the transformed
+   canvas subtree — DG viewer popups are position:fixed and a transformed
+   ancestor becomes their containing block. Above nodes, below the minimap. */
+.ff-preview-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ff-node-preview-portal {
+  position: absolute;
+  box-sizing: border-box; /* the 1px border must not outgrow the tracked box */
+  pointer-events: auto;
+  background: #ffffff;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Replaces the native CSS resize handle the portal would cover. */
+.ff-node-preview-grip {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+  z-index: 2;
+  background: linear-gradient(135deg, transparent 55%, var(--grey-3, #b8bac0) 55%);
+  border-bottom-right-radius: 4px;
+  opacity: 0.7;
+}
+
+.ff-node-preview-grip:hover {
+  opacity: 1;
+}
+
+.ff-node-inline-preview[data-empty="true"],
+.ff-node-inline-preview[data-empty="loading"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ff-node-preview-placeholder {
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+  user-select: none;
+}
+
+/* Bottom-panel stand-in for an output whose live root the node preview hosts. */
+.ff-preview-inline-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--grey-4, #9497a0);
+  font-size: 12px;
+  text-align: center;
+  padding: 16px;
+}
+
 /* Info line — fixed 1-line height so run-state changes never resize the card; kind via data-kind. */
 .ff-node-infoline {
   padding: 2px 10px 3px 10px;
@@ -1822,6 +1942,106 @@
 .ff-value-missing select,
 .ff-value-missing textarea {
   border-bottom: 1px solid #ffb300 !important;
+}
+
+/* ===== Sketcher Input: compact preview that expands into an in-node sketcher ===== */
+
+/* The expanded sketcher (and the helm box) must not be clipped by the 280px cap. */
+.ff-node:has(.ff-sketcher-expanded),
+.ff-node:has(.ff-helm-box) {
+  max-width: none;
+}
+
+.ff-sketcher-compact {
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ff-sketcher-compact:hover {
+  border-color: var(--blue-1, #2083d5);
+}
+
+.ff-sketcher-empty {
+  color: var(--blue-1, #2083d5);
+  font-size: 12px;
+  padding: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ff-sketcher-preview {
+  display: block;
+  max-width: 100%;
+}
+
+/* Expanded: a fixed 500×500 box (INLINE_SKETCHER_SIZE in rete/scheme.ts).
+ * The sketcher only exists at native zoom — expanding snaps the canvas to
+ * zoom 1 and pans it into view; a user zoom folds it back to the preview. */
+.ff-sketcher-full {
+  display: flex;
+  flex-direction: column;
+  width: 500px;
+  height: 500px;
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ff-sketcher-header {
+  flex: 0 0 auto;
+  justify-content: flex-end;
+  padding: 2px 4px;
+  border-bottom: 1px solid var(--grey-1, #f2f2f5);
+}
+
+.ff-sketcher-full .grok-sketcher,
+.ff-sketcher-full > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.ff-inline-sketcher.ff-value-missing .ff-sketcher-compact {
+  border-color: #ffb300;
+}
+
+/* ===== Helm Input: the HELM editor in a resizable in-card box ===== */
+
+/* Default dimensions mirror INLINE_HELM_WIDTH/HEIGHT in rete/scheme.ts; the
+ * native resize handle writes inline width/height, persisted to editorSize. */
+.ff-helm-box {
+  position: relative;
+  margin-top: 4px;
+  border: 1px solid var(--grey-2, #dbdcdf);
+  border-radius: 4px;
+  background: #ffffff;
+  overflow: hidden;
+  resize: both;
+  min-width: 150px;
+  min-height: 120px;
+  max-width: 900px;
+  max-height: 900px;
+}
+
+/* Stretch the DG input chrome to the box; the editor host itself is stretched
+ * by JS (inline !important — it carries fixed inline defaults of its own). */
+.ff-helm-box > div,
+.ff-helm-box .ui-input-root,
+.ff-helm-box .ui-input-helm {
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 /* Connection paths */
@@ -3059,8 +3279,8 @@ div.ui-box>div.ui-div.funcflow-canvas-container {
 }
 
 .ff-node-input[data-node-type-name="Inputs/Helm Input"] .ui-input-editor.ui-div {
-  width: 75px !important;
-  height: 75px !important;
+  width: 100% !important;
+  height: 90% !important;
   min-width: 75px !important;
   min-height: 75px !important;
 }

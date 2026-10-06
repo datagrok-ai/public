@@ -9,11 +9,13 @@ import {FlowEditor, GraphEdit} from '../rete/flow-editor';
 import {ExecutionState, NodeExecStatus, ExecEvent} from './execution-state';
 import {ExecutionVisualizer, errorSummary, normalizeErrorMessage} from './execution-visualizer';
 import {OutputPreviewPanel} from './output-preview';
+import {graphicsElement} from './value-inspector';
 import {emitScript, ScriptSettings, EmitOptions} from '../compiler/script-emitter';
 import {validateGraph} from '../compiler/validator';
 import {sliceUpTo, sliceDownFrom} from '../compiler/graph-compiler';
 import {ValueSummary} from './execution-state';
-import {FlowNode, isExecKey, nodeMissingRequirements} from '../rete/scheme';
+import {FlowNode, isExecKey, nodeMissingRequirements, inlinePreviewEnabled,
+  INLINE_HOSTED_DATA_KEY} from '../rete/scheme';
 import {resolveInputValue, inputBlockReason} from '../utils/input-values';
 
 /** Grow a dirty node set upstream until every crossing connection comes from a
@@ -185,6 +187,71 @@ export class ExecutionController {
     });
   }
 
+  /** Elements built from captured graphics outputs, one per summary — React
+   *  re-renders must re-attach the same element, never rebuild it. */
+  private readonly graphicsPreviewEls = new WeakMap<ValueSummary, HTMLElement>();
+
+  /** The in-node preview content for a node: the first captured live
+   *  viewer/widget root, else an element built from a graphics output. Kept
+   *  through `stale` — like the bottom panel, the node shows the last result. */
+  inlinePreviewRoot(nodeId: string): HTMLElement | null {
+    const live = this.liveObjectRoot(nodeId);
+    if (live) return live;
+    const outputs = this.state.getNodeState(nodeId)?.outputs;
+    if (!outputs) return null;
+    // Graphics arrive as data (SVG markup / base64 PNG), not a live object — the
+    // node gets its own element and the bottom panel keeps its own copy too.
+    for (const s of Object.values(outputs)) {
+      if (s != null && s.type === 'graphics' && typeof s.value === 'string') {
+        let el = this.graphicsPreviewEls.get(s);
+        if (!el) {
+          el = graphicsElement(s.value as string);
+          el && (el.style.removeProperty('min-height'));
+          this.graphicsPreviewEls.set(s, el);
+        }
+        return el;
+      }
+    }
+    return null;
+  }
+
+  /** First captured live viewer/widget root — the only content the node and the
+   *  bottom panel would otherwise fight over (graphics is copied, not shared). */
+  private liveObjectRoot(nodeId: string): HTMLElement | null {
+    const outputs = this.state.getNodeState(nodeId)?.outputs;
+    if (!outputs) return null;
+    for (const s of Object.values(outputs)) {
+      if (s != null && (s.type === 'viewer' || s.type === 'widget') &&
+          s.value?.root instanceof HTMLElement)
+        return s.value.root as HTMLElement;
+    }
+    return null;
+  }
+
+  /** True while a run in progress still has this node ahead of it (part of the
+   *  run set, neither completed nor errored yet) — drives the in-node preview's
+   *  loader so an upstream computation never reads as a blank box. */
+  inlinePreviewPending(nodeId: string): boolean {
+    if (!this.state.isRunning) return false;
+    if (this.runNodeIds && !this.runNodeIds.has(nodeId)) return false;
+    const s = this.state.getNodeState(nodeId)?.status;
+    return s !== NodeExecStatus.completed && s !== NodeExecStatus.errored;
+  }
+
+  /** Stamp/clear the hosted marker on the node's live root. A stamped root makes
+   *  the bottom panel render a note instead of stealing the element the node
+   *  preview is showing; stamping happens BEFORE any panel build so the outcome
+   *  never depends on render order. */
+  syncInlinePreviewOwnership(nodeId: string): void {
+    const root = this.liveObjectRoot(nodeId);
+    if (!root) return;
+    const node = this.flow.getNodeById(nodeId);
+    if (node && inlinePreviewEnabled(node) && !node.collapsed)
+      root.dataset[INLINE_HOSTED_DATA_KEY] = 'true';
+    else
+      delete root.dataset[INLINE_HOSTED_DATA_KEY];
+  }
+
   /** Whether the `__ff_stash` live-value registry holds this node's output. */
   hasLiveValue(nodeId: string, outputKey: string): boolean {
     const reg = (globalThis as {__ffFlowLive?: Record<string, Record<string, unknown>>}).__ffFlowLive;
@@ -279,7 +346,7 @@ export class ExecutionController {
         const node = this.flow.getNodeById(restorePreviewId);
         const state = this.state.getNodeState(restorePreviewId);
         if (node && state?.status === NodeExecStatus.completed)
-          this.outputPreview.showForNode(node, state);
+          this.showRunResult(node);
       },
     });
     return 'started';
@@ -325,7 +392,7 @@ export class ExecutionController {
         const node = this.flow.getNodeById(restorePreviewId);
         const state = this.state.getNodeState(restorePreviewId);
         if (node && state?.status === NodeExecStatus.completed)
-          this.outputPreview.showForNode(node, state);
+          this.showRunResult(node);
       },
     });
     return 'started';
@@ -471,6 +538,13 @@ export class ExecutionController {
     this.outputPreview.showForNode(node, state);
   }
 
+  /** A run's fresh result: a node showing it in its own in-node preview never
+   *  pops the bottom panel open — only a panel already showing it updates. */
+  private showRunResult(node: FlowNode): void {
+    if (inlinePreviewEnabled(node) && !node.collapsed && this.outputPreview.currentNodeId !== node.id) return;
+    this.showOutputsForNode(node);
+  }
+
   private handleEvent(event: ExecEvent): void {
     switch (event.type) {
     case 'run-start':
@@ -485,6 +559,9 @@ export class ExecutionController {
       this.state.setNodeStatus(event.nodeId, NodeExecStatus.completed, {
         endTime: event.timestamp, outputs: event.outputs,
       });
+      // Claim a fresh viewer/widget root for the in-node preview before any
+      // panel below could mount it.
+      this.syncInlinePreviewOwnership(event.nodeId);
       this.visualizer.highlightNode(event.nodeId, NodeExecStatus.completed, summarizeOutputs(event.outputs));
       this.labelOutgoingConnections(event.nodeId, event.outputs);
       this.onNodeStateChanged?.(event.nodeId);
@@ -498,7 +575,7 @@ export class ExecutionController {
         const sel = this.flow.getSelectedNodeIds();
         if (sel.length === 1 && sel[0] === event.nodeId) {
           const node = this.flow.getNodeById(event.nodeId);
-          if (node) this.showOutputsForNode(node);
+          if (node) this.showRunResult(node);
         }
       }
       break;
@@ -614,8 +691,13 @@ export class ExecutionController {
    *  node ids whose results must be recomputed. */
   applyGraphEdit(edit: GraphEdit): Set<string> {
     switch (edit.kind) {
-    case 'node-added':
-      return new Set();
+    case 'node-added': {
+      // Not wired yet — only a node ready as dropped (every input defaulted) has
+      // a result to compute; an input node without a value would block the run.
+      const node = this.flow.getNodeById(edit.nodeId);
+      return node && this.readyForLiveRun(node.id) && inputBlockReason(node) == null ?
+        new Set([node.id]) : new Set();
+    }
     case 'node-removed':
       this.forgetNode(edit.nodeId);
       return new Set();

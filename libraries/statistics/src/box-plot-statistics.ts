@@ -8,8 +8,11 @@ export type BoxPlotStatistics = {
 };
 
 
-export function calculateBoxPlotStatistics(values: number[]): BoxPlotStatistics {
-  values.sort();
+export function calculateBoxPlotStatistics(rawValues: number[]): BoxPlotStatistics {
+  // a copy, sorted numerically: the default sort is lexicographic and would reorder the caller's array
+  const values = rawValues.slice().sort((a, b) => a - b);
+
+  // quartiles by index into the sorted values, q2 averaging the middle pair for an even count
 
   const q1 = values[Math.trunc(values.length / 4)];
   const q2 = values.length % 2 === 0 ?
@@ -53,7 +56,7 @@ function arrayBinarySearch(items: number[], value: number, left: number = 0, rig
   if (value < items[left])
     return -1; //~left;
   if (value > items[right])
-    return -(right + 1); //~(right+1);
+    return -(right + 2); //~(right+1) - the insertion point is past the last item
 
   while (right! - left > 1) {
     const mid = Math.trunc((right + left) / 2);
@@ -67,7 +70,7 @@ function arrayBinarySearch(items: number[], value: number, left: number = 0, rig
 
   if (items[left] === value)
     return left;
-  if (items[right] === 0)
+  if (items[right] === value)
     return right;
 
   // no match - returning inverted index

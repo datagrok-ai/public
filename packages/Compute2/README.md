@@ -82,20 +82,12 @@ Compute2/
 
 ## Build
 
-```bash
-npm install
-npm run build              # grok api && grok check --soft && webpack
-npm run build-all          # Build js-api, libraries, and this package in order
-npm run lint               # ESLint check
-npm run lint-fix           # ESLint auto-fix
-```
-
-## Development
-
-Link local dependencies for development:
+`public/` is one pnpm workspace (see `packages/BUILD.MD`). Run `grok setup` once at the repository root.
 
 ```bash
-npm run link-all           # Links datagrok-api and @datagrok-libraries/*
+grok build                 # This package and the libraries it depends on, in order, cached
+grok build --typecheck     # Build and type-check
+pnpm run lint              # ESLint check
 ```
 
 ## See also

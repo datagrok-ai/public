@@ -21,8 +21,10 @@ import {
   hiddenOutputsOf, effectiveFuncInputs, funcWrapperOf,
 } from '../utils/func-input-overrides';
 import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
-import {inputValueProperty} from '../utils/input-values';
-import {missingRequiredInputs, nodeMissingRequirements, FlowNode} from '../rete/scheme';
+import {inputValueProperty, buildInputValueEditor, resolveInputValue} from '../utils/input-values';
+import {missingRequiredInputs, nodeMissingRequirements, FlowNode,
+  hostsInlineSketcher} from '../rete/scheme';
+import {estimateNodeWidth} from '../rete/graph-layout';
 import type {FlowEditor} from '../rete/flow-editor';
 import {tid} from '../utils/test-ids';
 import {makeEditor, destroyEditor, addNode, until} from './test-utils';
@@ -553,6 +555,139 @@ category('Flow: sketcher input', () => {
       'a semType-specialized input never outranks the general one for a bare drag');
     expect(inputs.some((p) => p.typeName === 'Inputs/Sketcher Input'), true, 'but it is still offered');
   });
+
+  test('the node body starts compact and expands into an in-node sketcher — no dialog', async () => {
+    const node = createNode('Inputs/Sketcher Input')!;
+    const ed = buildInputValueEditor(node, () => {}, {host: 'node'})!;
+    document.body.appendChild(ed.root);
+    try {
+      expect(ed.root.classList.contains('ff-inline-sketcher'), true);
+      const compact = ed.root.querySelector<HTMLElement>('[data-testid="ff-sketcher-compact"]')!;
+      const full = ed.root.querySelector<HTMLElement>('[data-testid="ff-sketcher-full"]')!;
+      expect(compact != null && full != null, true, 'both states exist');
+      expect(full.style.display, 'none', 'starts compact');
+      expect(compact.textContent, 'Sketch', 'an empty value shows the sketch invitation');
+      expect(ed.sketcher == null, true, 'the sketcher is built lazily, on first expand');
+      const dialogsBefore = DG.Dialog.getOpenDialogs().length;
+      compact.click();
+      expect(DG.Dialog.getOpenDialogs().length, dialogsBefore, 'expanding opens NO dialog');
+      expect(ed.sketcher != null, true, 'the click built the inplace DG.chem.Sketcher');
+      expect(full.style.display !== 'none', true, 'the sketcher state is shown');
+      expect(compact.style.display, 'none', 'the compact preview folds away');
+      expect(ed.root.classList.contains('ff-sketcher-expanded'), true);
+      expect(ed.root.querySelector('[data-testid="ff-sketcher-done"]') != null, true, 'a Done control');
+      (ed.root.querySelector<HTMLElement>('[data-testid="ff-sketcher-done"]'))!.click();
+      expect(full.style.display, 'none', 'Done folds back to the compact preview');
+      expect(compact.style.display !== 'none', true);
+      // The panel Value row keeps the standard editor.
+      const panelEd = buildInputValueEditor(node, () => {})!;
+      expect(panelEd.root.classList.contains('ff-inline-sketcher'), false,
+        'the panel Value row stays the standard molecule input');
+      // The routing reads the semType qualifier, not the node type.
+      const tagged = createNode('Inputs/String Input')!;
+      tagged.properties['semType'] = 'Molecule';
+      expect(hostsInlineSketcher(tagged), true, 'semType drives it');
+      expect(hostsInlineSketcher(createNode('Inputs/Helm Input')!), false, 'Macromolecule routes to Helm, not chem');
+    } finally {
+      ed.root.remove();
+    }
+  });
+
+  test('sketching writes SMILES into the configured value and reports the edit', async () => {
+    const node = createNode('Inputs/Sketcher Input')!;
+    let edits = 0;
+    const ed = buildInputValueEditor(node, () => edits++, {host: 'node'})!;
+    document.body.appendChild(ed.root);
+    try {
+      ed.root.querySelector<HTMLElement>('[data-testid="ff-sketcher-compact"]')!.click();
+      // A sketch gesture = a real interaction followed by the sketcher's change event.
+      // setSmiles, not setMolecule — the latter routes through the synchronous
+      // Chem:isSmarts, which throws when the harness hasn't loaded Chem yet.
+      ed.root.dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}));
+      ed.sketcher!.setSmiles('c1ccccc1');
+      ed.sketcher!.onChanged.next(null);
+      expect(String(node.properties['defaultValue'] ?? '') !== '', true, 'the SMILES landed in the value');
+      expect(edits, 1, 'exactly one reported edit');
+      const r = resolveInputValue(node);
+      expect(r.ok, true, 'the run can feed the sketched molecule to the prepared call');
+      expect(String(r.value).includes('\n'), false, 'SMILES, never a multiline molfile (header emission)');
+      // The same molecule again is not another edit.
+      ed.sketcher!.onChanged.next(null);
+      expect(edits, 1, 'an unchanged value never re-reports');
+    } finally {
+      ed.root.remove();
+    }
+  });
+
+  test('programmatic loads and syncs never report an edit', async () => {
+    const node = createNode('Inputs/Sketcher Input')!;
+    node.properties['defaultValue'] = 'CCO';
+    let edits = 0;
+    const ed = buildInputValueEditor(node, () => edits++, {host: 'node'})!;
+    document.body.appendChild(ed.root);
+    try {
+      ed.root.querySelector<HTMLElement>('[data-testid="ff-sketcher-compact"]')!.click();
+      // The sketcher echoes programmatic sets through onChanged (async, canonicalized) —
+      // untouched, those echoes must stay silent or merely loading a flow marks it dirty.
+      ed.sketcher!.onChanged.next(null);
+      expect(edits, 0, 'the load echo is not an edit');
+      node.properties['defaultValue'] = 'CCC';
+      ed.sync(); // the panel wrote a new value — programmatic too
+      ed.sketcher!.onChanged.next(null);
+      expect(edits, 0, 'the sync echo is not an edit');
+      expect(ed.root.classList.contains('ff-value-missing'), false, 'a configured value is not flagged');
+      node.properties['defaultValue'] = '';
+      ed.sync();
+      expect(ed.root.classList.contains('ff-value-missing'), true, 'an empty required value gets the amber cue');
+    } finally {
+      ed.root.remove();
+    }
+  });
+
+  test('expanding snaps to native zoom, shows the whole 500×500 sketcher; a user zoom folds it', async () => {
+    // The sketcher only exists at zoom 1 — its chrome is not built to be scaled.
+    const e = makeEditor();
+    try {
+      // Bottom-right-ish so the visibility pan actually has work to do.
+      const node = await addNode(e.flow, 'Inputs/Sketcher Input', 700, 400);
+      const compactSel = `.ff-node[data-node-id="${node.id}"] [data-testid="ff-sketcher-compact"]`;
+      expect(await until(() => e.container.querySelector(compactSel) != null, 10000), true,
+        'the compact preview renders in the card');
+      expect(estimateNodeWidth(node) <= 280, true, 'compact never lifts the card cap');
+      e.flow.setZoom(0.5); // the user had zoomed out before clicking
+      expect(await until(() => Math.abs(e.flow.getZoom() - 0.5) < 0.001, 2000), true, 'zoomed out');
+      e.container.querySelector<HTMLElement>(compactSel)!.click();
+      expect(await until(() => Math.abs(e.flow.getZoom() - 1) < 0.001, 3000), true,
+        'expanding snaps the canvas to native zoom');
+      const full = e.container.querySelector<HTMLElement>(
+        `.ff-node[data-node-id="${node.id}"] [data-testid="ff-sketcher-full"]`)!;
+      expect(full != null && full.style.display !== 'none', true, 'expanded in place');
+      const r = full.getBoundingClientRect();
+      expect(Math.abs(r.width - 500) <= 3 && Math.abs(r.height - 500) <= 3, true,
+        `a fixed 500×500 box (was ${r.width}×${r.height})`);
+      // The visibility pan is async — poll until the box settles inside the viewport.
+      const inViewport = (): boolean => {
+        const b = full.getBoundingClientRect();
+        const c = e.container.querySelector<HTMLElement>('.ff-canvas')!.getBoundingClientRect();
+        return b.left >= c.left - 1 && b.top >= c.top - 1 &&
+          b.right <= c.right + 1 && b.bottom <= c.bottom + 1;
+      };
+      const ok = await until(inViewport, 3000);
+      const b = full.getBoundingClientRect();
+      const c = e.container.querySelector<HTMLElement>('.ff-canvas')!.getBoundingClientRect();
+      expect(ok, true, 'the sketcher is panned fully into the viewport — box ' +
+        `${JSON.stringify({l: b.left, t: b.top, r: b.right, b: b.bottom, display: full.style.display})} vs canvas ` +
+        `${JSON.stringify({l: c.left, t: c.top, r: c.right, b: c.bottom})} zoom ${e.flow.getZoom()}`);
+      // A user zoom hides the sketcher — back to the compact preview.
+      e.flow.setZoom(1.5);
+      expect(await until(() => full.style.display === 'none', 3000), true,
+        'zooming away folds the sketcher back');
+      const compact = e.container.querySelector<HTMLElement>(compactSel)!;
+      expect(compact.style.display !== 'none', true, 'the compact preview is back');
+    } finally {
+      destroyEditor(e);
+    }
+  }, {timeout: 30000});
 });
 
 category('Flow: chem nodes', () => {

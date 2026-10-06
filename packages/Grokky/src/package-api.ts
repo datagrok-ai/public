@@ -20,6 +20,14 @@ export namespace funcs {
     return await grok.functions.call('Grokky:CombinedLLMSearchProvider', {});
   }
 
+  export async function gemmaEngine(): Promise<any> {
+    return await grok.functions.call('Grokky:GemmaEngine', {});
+  }
+
+  export async function claudeEngine(): Promise<any> {
+    return await grok.functions.call('Grokky:ClaudeEngine', {});
+  }
+
   /**
    * Get answers from AI assistant based on Datagrok documentation and public code.
    */
@@ -37,6 +45,13 @@ export namespace funcs {
    */
   export async function runBenchmark(label: string , reps?: number , model?: string , only?: string ): Promise<string> {
     return await grok.functions.call('Grokky:RunBenchmark', { label, reps, model, only });
+  }
+
+  /**
+   * Holds the admission slot for one AI chat turn streaming over the browser WebSocket - see queue-task.ts
+   */
+  export async function aiChatTurnTask(sessionId: string , taskId: string ): Promise<string> {
+    return await grok.functions.call('Grokky:AiChatTurnTask', { sessionId, taskId });
   }
 
   /**

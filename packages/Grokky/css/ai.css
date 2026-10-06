@@ -550,17 +550,27 @@
   margin-top: 8px;
 }
 
-.grokky-auth-strip-pending {
+.grokky-strip {
   padding: 8px 12px;
-  border-left: 3px solid #e6a817;
+  border-left: 3px solid;
   border-bottom: 1px solid var(--grey-2);
+}
+
+.grokky-strip-pending {
+  border-left-color: #e6a817;
   background: var(--grey-1);
 }
 
-.grokky-auth-strip-success {
-  padding: 8px 12px;
-  border-left: 3px solid var(--green-2);
+.grokky-strip-success {
+  border-left-color: var(--green-2);
+  border-bottom: none;
   background: var(--green-1);
+}
+
+.grokky-strip-danger {
+  border-left-color: var(--red-3);
+  background: var(--red-1);
+  color: var(--red-4);
 }
 
 .grokky-auth-error {

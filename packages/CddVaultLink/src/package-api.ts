@@ -16,6 +16,10 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:CddVaultAppTreeBrowser', { treeNode });
   }
 
+  /**
+   * @param {string} mol
+   *   semType: Molecule
+   */
   export async function molColumnPropertyPanel(mol: string ): Promise<any> {
     return await grok.functions.call('CDDVaultLink:MolColumnPropertyPanel', { mol });
   }
@@ -64,14 +68,61 @@ export namespace funcs {
     return await grok.functions.call('CDDVaultLink:GetSavedSearchResults', { vaultId, searchId, timeoutMinutes });
   }
 
+  /**
+   * @param {string} structure
+   *   semType: Molecule
+   * @param {string} structure_search_type
+   *   choices: ["exact","similarity","substructure"]
+   * @param {number} structure_similarity_threshold - A number between 0 and 1
+   * @param {number} protocol - Protocol id
+   * @param {number} run - Specific run id
+   */
   export async function cDDVaultSearchAsync(vaultId: number | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, protocol: number | null, run: number | null): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:CDDVaultSearchAsync', { vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run });
   }
 
+  /**
+   * @param {string} molecules - Comma separated list of ids
+   * @param {string} names - Comma separated list of names/synonyms
+   * @param {boolean} include_original_structures - If true,include the original user defined structure for each molecule
+   * @param {boolean} only_ids - If true,only the Molecule IDs are returned,allowing for a smaller and faster response
+   * @param {boolean} only_batch_ids - If true,the full Molecule details are still returned but the Batch-level information is left out of the JSON results. (Only the IDs of the Batches belonging to the Molecules are still included.)
+   * @param {string} created_before - ISO 8601 date
+   * @param {string} created_after - ISO 8601 date
+   * @param {string} modified_before - ISO 8601 date
+   * @param {string} modified_after - ISO 8601 date
+   * @param {string} batch_created_before - ISO 8601 date. A molecule with any batch that has a creation date on or before the parameter will be included
+   * @param {string} batch_created_after - ISO 8601 date. A molecule with any batch that has a creation date on or after the parameter will be included
+   * @param {string} batch_field_before_name - Specifes a user-defined batch field for batch_field_before_date
+   * @param {string} batch_field_before_date - ISO 8601 date. A molecule with any batch that has a batch_field_before_name value date on or before the parameter will be included
+   * @param {string} batch_field_after_name - Specifes a user-defined batch field for batch_field_after_date
+   * @param {string} batch_field_after_date - ISO 8601 date. A molecule with any batch that has a batch_field_after_name value date on or after the parameter will be included
+   * @param {string} projects - Comma separated list of project ids
+   * @param {string} data_sets - Comma separated list of dataset ids
+   * @param {string} structure - SMILES,cxsmiles or mol string
+   *   semType: Molecule
+   * @param {string} structure_search_type - SMILES,cxsmiles or mol string
+   *   choices: ["exact","similarity","substructure"]
+   * @param {number} structure_similarity_threshold - A number between 0 and 1
+   * @param {string} inchikey - Use this parameter instead of the 'structure' and 'structure_search_type' parameters
+   * @param {any} molecule_fields - Use this parameter to limit the number of Molecule UDF Fields to return
+   * @param {any} batch_fields - Use this parameter to limit the number of Batch UDF Fields to return
+   * @param {any} fields_search - This parameter is used for searching across the custom user-defined Molecule fields created by your Vault Administrator
+   */
   export async function cDDVaultSearch2(vaultId: number | null, molecules: string | null, names: string | null, include_original_structures: boolean | null, only_ids: boolean | null, only_batch_ids: boolean | null, created_before: string | null, created_after: string | null, modified_before: string | null, modified_after: string | null, batch_created_before: string | null, batch_created_after: string | null, batch_field_before_name: string | null, batch_field_before_date: string | null, batch_field_after_name: string | null, batch_field_after_date: string | null, projects: string | null, data_sets: string | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, inchikey: string | null, molecule_fields: any | null, batch_fields: any | null, fields_search: any | null): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:CDDVaultSearch2', { vaultId, molecules, names, include_original_structures, only_ids, only_batch_ids, created_before, created_after, modified_before, modified_after, batch_created_before, batch_created_after, batch_field_before_name, batch_field_before_date, batch_field_after_name, batch_field_after_date, projects, data_sets, structure, structure_search_type, structure_similarity_threshold, inchikey, molecule_fields, batch_fields, fields_search });
   }
 
+  /**
+   * @param {string} structure - SMILES,cxsmiles or mol string
+   *   semType: Molecule
+   * @param {string} structure_search_type - SMILES,cxsmiles or mol string
+   *   choices: ["exact","similarity","substructure"]
+   * @param {number} structure_similarity_threshold - A number between 0 and 1
+   * @param {number} protocol - Protocol id
+   * @param {number} run - Specific run id
+   * @param {number} page_size - Page size for preview (defaults to PREVIEW_ROW_NUM if omitted)
+   */
   export async function cDDVaultSearch(vaultId: number | null, structure: string | null, structure_search_type: string | null, structure_similarity_threshold: number | null, protocol: number | null, run: number | null, page_size: number | null): Promise<DG.DataFrame> {
     return await grok.functions.call('CDDVaultLink:CDDVaultSearch', { vaultId, structure, structure_search_type, structure_similarity_threshold, protocol, run, page_size });
   }

@@ -363,8 +363,8 @@ export function modifySelection(selection: type.Selection, clusterOrMonomerPosit
  * @param monomerPositionStats - Object with statistics for monomer-positions.
  */
 export function highlightMonomerPosition(monomerPosition: type.SelectionItem, dataFrame: DG.DataFrame,
-  monomerPositionStats: MonomerPositionStats): void {
-  if (!dataFrame) return;
+  monomerPositionStats: MonomerPositionStats): number {
+  if (!dataFrame) return 0;
   const bitArray = new BitArray(dataFrame.rowCount);
   if (monomerPosition.positionOrClusterType === C.COLUMNS_NAMES.MONOMER) {
     const positionStats = Object.values(monomerPositionStats);
@@ -383,6 +383,7 @@ export function highlightMonomerPosition(monomerPosition: type.SelectionItem, da
   }
 
   dataFrame.rows.highlight((i) => bitArray.getBit(i));
+  return bitArray.trueCount();
 }
 
 /**
@@ -509,4 +510,3 @@ export function dartLike<T extends any>(obj: T) {
     },
   };
 }
-

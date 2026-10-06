@@ -29,8 +29,10 @@ export namespace funcs {
   }
 
   /**
-  Fetches a field value from Jira for each ticket key in a column
-  */
+   * Fetches a field value from Jira for each ticket key in a column
+   * @param {DG.Column} ticketColumn - Column of Jira ticket keys (e.g. PROJ-123)
+   * @param {string} field - Field path to extract, colon-separated for nested fields (e.g. status:name)
+   */
   export async function getJiraField(ticketColumn: DG.Column , field: string ): Promise<DG.Column> {
     return await grok.functions.call('JiraConnect:GetJiraField', { ticketColumn, field });
   }

@@ -35,7 +35,7 @@ test('Legend stability — a slow resize does not make the legend hop', async ({
   await v.openTable(page);
   await v.addLegendViewers(page, {column: 'Stereo Category',
     viewers: ['Scatter plot', 'Box plot']});
-  await page.waitForTimeout(2000);
+  await v.waitForLegendIdle(page, 'Box plot');
   await recordPlacements(page);
 
   const heights: number[] = [];
@@ -77,7 +77,6 @@ test('Legend stability — panning and zooming never move the legend', async ({p
   await v.openTable(page);
   await v.addLegendViewers(page, {column: 'Stereo Category', viewers: ['Scatter plot']});
   await v.resizeViewer(page, 'Scatter plot', 900, 600);
-  await page.waitForTimeout(2000);
   await recordPlacements(page);
 
   const result = await page.evaluate(async () => {
@@ -135,7 +134,6 @@ test('Legend list — hundreds of categories stay virtualised and scrollable', a
   await v.addLegendViewers(page, {column: 'ManyCats', viewers: ['Scatter plot']});
   await v.setViewerProps(page, 'Scatter plot', [{set: {legendPosition: 'Right'}, wait: 2000}]);
   await v.resizeViewer(page, 'Scatter plot', 900, 600);
-  await page.waitForTimeout(2500);
 
   const list = await page.evaluate(async () => {
     const tv = (window as any).grok.shell.tv;

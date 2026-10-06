@@ -1,5 +1,5 @@
 import {Scope} from '../../src/index.js';
-import {VirtualTree} from '../../src/components/tree.js';
+import {VirtualTree} from '../../src/components/collections/tree.js';
 
 const FOLDERS = 100;
 const SUBFOLDERS = 10;

@@ -89,6 +89,21 @@ category('hierarchicalClustering', () => {
     await hierarchicalClusteringUI(dataDf, ['HEIGHT'], DistanceMetric.Euclidean, 'average');
   });
 
+  test('UI-unattached-table', async () => {
+    const dataDf: DG.DataFrame = DG.DataFrame.fromCsv('a,b\n1,2\n2,3\n3,4\n4,5');
+    dataDf.name = 'testHCUnattached';
+    await hierarchicalClusteringUI(dataDf, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+    const tv: DG.TableView = grok.shell.tableView(dataDf.name);
+    expect(tv != null, true);
+    tv.close();
+  });
+
+  test('UI-no-table', async () => {
+    const viewCount = Array.from(grok.shell.tableViews).length;
+    await hierarchicalClusteringUI(null as unknown as DG.DataFrame, ['a', 'b'], DistanceMetric.Euclidean, 'average');
+    expect(Array.from(grok.shell.tableViews).length, viewCount);
+  });
+
   // test('hierarchicalClustering1', async () => {
   //   await _testHierarchicalClustering(data1, 'euclidean', 'average', tgt1NewickAverage);
   // });

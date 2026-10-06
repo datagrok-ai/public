@@ -1,0 +1,299 @@
+/* Module hooks that serve a minimal `datagrok-api` to node, so the dg modules that need the
+   platform at runtime can be tested headlessly. The real package does not load in node (its dayjs
+   plugin imports carry no extension), and the platform base classes call into dart in their
+   constructors.
+
+   The stub is the platform's own contract, nothing more: the real `DG.TYPE` / `DG.SEMTYPE` constants
+   (through `datagrok-api/u2core`), the `JsInputBase` surface `DartInput` uses (root, caption, addValidator,
+   fireInput/fireChanged, and `property`, which throws off a dart handle when nothing is bound),
+   the base classes u2 subclasses, and the `grok.dapi.files` / `grok.shell` calls the inputs make.
+   The entities, the widgets, the viewers and the shell are the getter-backed doubles of
+   tests/platform-doubles.mjs, served here so an `instanceof` in the module under test and a `new`
+   in the test meet the same class; the kill-walk globals u2 feature-detects (`grok_Widget_Kill`,
+   `grok_Widget_RegisterCleanup`, `grok_Property_Get_PropertySubType`, `grok_Viewer_Get_Look`,
+   `grok_PropertyGrid_Update`) are installed when `datagrok-api/dg` loads, and what they did is on
+   `DG.platform`; `toDart` answers a double's handle, as js-api's does.
+   Everything on `dapi`, `shell` and `ui` is a field a test replaces with its own function.
+
+   Register it with `register('./dg-stub.mjs', import.meta.url)` before importing the module under
+   test. */
+
+const DOUBLES = new URL('./platform-doubles.mjs', import.meta.url).href;
+/** The real compiled implementation (a dependency-free js-api module), so the auto-pick pins
+ * compute the SAME distances the platform does — requires a built datagrok-api. */
+const DISTANCES = new URL('../node_modules/datagrok-api/dist/src/utils/string-distances.js',
+  import.meta.url).href;
+
+const STUB = `
+import {DartWidget, JsViewer, Viewer, platform} from '${DOUBLES}';
+import {levenshteinDistance, jaroWinklerDistance} from '${DISTANCES}';
+export {BitSet, Column, DartWidget, DataFrame, DataQuery, Entity, EventType, FileInfo, FilterGroup, Func,
+  Grid, JsViewer, ObjectPropertyBag, Package, Property, PropertyGrid, Script, TableQuery, User, View, Viewer,
+  ViewerMetaHelper, Widget, WidgetDescriptor, platform,
+  FuncCall, FuncCallParam, FuncParam} from '${DOUBLES}';
+
+export const toDart = (x) => x?.dart ?? x;
+
+export class StringUtils {
+  static levenshteinDistance = levenshteinDistance;
+  static jaroWinklerDistance = jaroWinklerDistance;
+}
+
+export {TYPE, COLUMN_TYPE, SEMTYPE, TAGS} from '${DOUBLES}';
+
+/** A 2-role sample of js-api's \`functionRoles\` (const.ts:456) — what the functions browser's
+ * roles pane is fed. */
+export const functionRoles = [
+  {role: 'app', description: 'An application that gets shown in the app store.'},
+  {role: 'panel', description: 'Context-specific widget that appears on the context panel.'},
+];
+
+/** What the column selectors read at import (columns.ts:30-43), copied from js-api's const.ts. */
+export const AGG = {
+  KEY: 'key', PIVOT: 'pivot', FIRST: 'first', TOTAL_COUNT: 'count', VALUE_COUNT: 'values',
+  UNIQUE_COUNT: 'unique', MISSING_VALUE_COUNT: 'nulls', MIN: 'min', MAX: 'max', SUM: 'sum',
+  MED: 'med', AVG: 'avg', STDEV: 'stdev', VARIANCE: 'variance', SKEW: 'skew', KURT: 'kurt',
+  Q1: 'q1', Q2: 'q2', Q3: 'q3', SELECTED_ROWS_COUNT: '#selected',
+};
+
+/** The interop u2 reaches through feature-detected globals (P9, P10). A kill records the element,
+ * runs the cleanups registered on it or under it (once — they are gone afterwards), then detaches
+ * every registered widget under it: a Dart-owned one is marked, a JS-owned one gets its \`detach()\`
+ * as the Dart proxy would call it, and a viewer's \`onDetached\` fires. */
+Object.assign(globalThis, {
+  grok_Widget_Kill(element) {
+    platform.kills.push(element);
+    const due = platform.cleanups.filter((c) => element === c.element || element.contains(c.element));
+    for (const c of due) {
+      platform.cleanups.splice(platform.cleanups.indexOf(c), 1);
+      c.cleanup();
+    }
+    for (const w of platform.widgets) {
+      if (w.isDetached || !(element === w.root || element.contains(w.root)))
+        continue;
+      if (w instanceof DartWidget || (w instanceof Viewer && !(w instanceof JsViewer)))
+        w.isDetached = true;
+      else
+        w.detach();
+      if (w instanceof Viewer)
+        w.onDetached.fire();
+    }
+  },
+  grok_Widget_RegisterCleanup(element, cleanup) { platform.cleanups.push({element, cleanup}); },
+  grok_Property_Get_PropertySubType: (dart) => dart.subType ?? null,
+  // the generic metadata door (grok_api.dart:898): doubles carry the keys as own \`dart\` keys
+  grok_Property_Get: (dart, key) => dart?.[key] ?? null,
+  grok_Viewer_Get_Look: (dart) => dart.look,
+  grok_PropertyGrid_Update: (dart, src, props, table) => dart.updates.push({src, props, table}),
+});
+
+/** The base a handler subclasses (js-api ui.ts:1687): what it must override throws, what it may
+ * override has the platform's default, and the registry is the list \`register\` appends to. */
+export class ObjectHandler {
+  static registered = [];
+
+  get type() { throw 'Not defined.'; }
+
+  get name() { return \`\${this.type} handler\`; }
+
+  isApplicable(_x) { throw 'Not defined.'; }
+
+  getCaption(x) { return \`\${x}\`; }
+
+  static register(handler) { ObjectHandler.registered.push(handler); }
+
+  static forEntity(x) { return ObjectHandler.registered.find((h) => h.isApplicable(x)) ?? null; }
+}
+
+/** The js-api domain handler's slice the domain handle uses (domains-ui.ts): rows built locally
+ * off a values map, the entity view opened by row. Never registered by itself — a test that wants
+ * handler-backed rendering registers one. */
+export class DomainObjectHandler extends ObjectHandler {
+  static opened = [];
+  /** Every \`decorateGrid\` call — what a grid was decorated for, over which frame, and whether the
+   * grid HELD that frame at the time (the platform decorates what the grid holds). */
+  static decorated = [];
+  /** The names the platform's DomainNameCache would have resolved: '<schema>.<table>|<id>' → name. */
+  static names = {};
+
+  /** The platform's ref-cell decoration (DomainRefCellRenderer): a column whose semType is a
+   * '<schema>.<table>' row type draws the target row's name instead of its id, an id with no name
+   * keeps the id. The platform resolves those renderers against the frame the GRID HOLDS, so a
+   * frame decorated before the grid points at it is left alone. */
+  static decorateGrid(grid, table, dataFrame) {
+    const df = dataFrame ?? grid.dataFrame;
+    const held = df != null && grid.dataFrame?.dart === df.dart;
+    DomainObjectHandler.decorated.push({grid, table, dataFrame: df, held});
+    if (!held)
+      return;
+    for (const column of df.columns.toList()) {
+      if (column.semType == null || !column.semType.includes('.'))
+        continue;
+      const gc = grid.columns.byName(column.name);
+      for (let row = 0; row < column.length; row++) {
+        const name = DomainObjectHandler.names[column.semType + '|' + column.get(row)];
+        if (name != null)
+          gc.setCellText(row, name);
+      }
+    }
+  }
+
+  constructor(table) {
+    super();
+    this.table = table;
+  }
+
+  get type() { return this.table; }
+
+  isApplicable(x) { return x?.typeName === this.table; }
+
+  rowFrom(values) { return {typeName: this.table, values: values ?? {}, id: values?.id ?? null}; }
+
+  openRow(row) { DomainObjectHandler.opened.push(row); }
+
+  getCaption(x) { return String(x.values?.name ?? x.values?.title ?? x.id ?? ''); }
+
+  renderListItem(x) {
+    const el = document.createElement('span');
+    el.className = 'test-handler-item';
+    el.textContent = this.getCaption(x);
+    return el;
+  }
+}
+
+export class JsInputBase {
+  constructor() {
+    this.root = document.createElement('div');
+    this.root.classList.add('ui-input-root');
+    // validators live dart-side, on the proxy \`grok_InputBase_FromJS\` builds — a second proxy
+    // (\`JsInputProxy.fromFunc\`) re-homes the input and carries its own list
+    this.dart = {validators: []};
+    this.fired = {input: 0, changed: 0};
+  }
+
+  /** The platform reads it off the dart handle, which throws when the proxy bound nothing. */
+  get property() {
+    if (this._property === undefined)
+      throw new Error('no dart handle');
+    return this._property;
+  }
+
+  set property(x) { this._property = x; }
+
+  addValidator(v) { this.dart.validators.push(v); }
+
+  fireInput() { this.fired.input++; }
+
+  fireChanged() { this.fired.changed++; }
+}
+
+/** A test-installable stand-in for the platform ColumnGrid the column combo feature-detects
+ * (plan-pickers FP-P-4). Absent by default, so every suite exercises the native backend; the
+ * export is a live binding, so a swap mid-test reaches modules that imported the namespace. */
+export let ColumnGrid = undefined;
+export function _installColumnGrid(cls) { ColumnGrid = cls; }
+`;
+
+const GROK_STUB = `
+import {DataFrame, Func, Shell, Stream} from '${DOUBLES}';
+
+export const dapi = {
+  files: {
+    exists: async () => false,
+    list: async () => [],
+    readAsText: async () => '',
+  },
+  /** What the domain error mapping and the user/group pickers reach; a test replaces the fields. */
+  domains: {
+    invalidated: 0,
+    invalidateUiCaches() { dapi.domains.invalidated++; },
+  },
+  users: {find: async () => null},
+  groups: {find: async () => null},
+};
+
+export const shell = new Shell();
+
+/** What pickers.tableInput's follow and import action read (the platform-stub shapes). */
+export const events = {onTableAdded: shell.dart.tableAdded, onTableRemoved: shell.dart.tableRemoved,
+  onViewAdded: new Stream(), onViewRemoving: new Stream(), onCurrentViewChanged: new Stream()};
+
+export const data = {parseCsv: () => new DataFrame()};
+
+/** Ad-hoc function registration (js-api functions.ts:137): every registration, newest last, and
+ * the Func it hands back — the platform's own is a dart wrapper over the same record. */
+export const functions = {
+  registrations: [],
+  register(data) {
+    functions.registrations.push(data);
+    return new Func(data.signature.split(/[ (]/)[1]);
+  },
+};
+`;
+
+const UI_STUB = `
+/** Every registration, newest last — a test drives the platform drop channel through it. */
+export const drops = [];
+
+export function makeDroppable(element, options) {
+  drops.push({element, ...options});
+}
+
+/** The platform inputs u2 bridges through \`fromDartInput\`, as much of \`DG.InputBase\` as the
+ * bridge reads: a root carrying the platform editor, a value that notifies, and no dart handle
+ * (so the bridge skips the Dart-side validation hookup). A test picks by writing \`value\`. */
+export const input = {
+  table(name) {
+    const root = document.createElement('div');
+    root.className = 'ui-input-root ui-input-table';
+    const editor = document.createElement('select');
+    editor.className = 'ui-input-editor';
+    root.append(editor);
+    const listeners = [];
+    let held = null;
+    return {
+      root, caption: name, dart: null,
+      get value() { return held; },
+      set value(x) {
+        held = x;
+        for (const fn of listeners.slice())
+          fn(x);
+      },
+      onChanged: {
+        subscribe(fn) {
+          listeners.push(fn);
+          return {unsubscribe() {
+            const at = listeners.indexOf(fn);
+            if (at >= 0)
+              listeners.splice(at, 1);
+          }};
+        },
+      },
+    };
+  },
+};
+`;
+
+const URLS = {
+  'datagrok-api/dg': ['u2-test:datagrok-api-dg', STUB],
+  'datagrok-api/grok': ['u2-test:datagrok-api-grok', GROK_STUB],
+  'datagrok-api/ui': ['u2-test:datagrok-api-ui', UI_STUB],
+};
+const SOURCES = new Map(Object.values(URLS));
+
+export async function resolve(specifier, context, next) {
+  const stub = URLS[specifier];
+  if (stub)
+    return {url: stub[0], format: 'module', shortCircuit: true};
+  // js-api's compiled ESM sits under a typeless package.json — a node without syntax detection reads it as CommonJS
+  if (specifier === DISTANCES)
+    return {url: DISTANCES, format: 'module', shortCircuit: true};
+  return next(specifier, context);
+}
+
+export async function load(url, context, next) {
+  const source = SOURCES.get(url);
+  if (source)
+    return {source, format: 'module', shortCircuit: true};
+  return next(url, context);
+}

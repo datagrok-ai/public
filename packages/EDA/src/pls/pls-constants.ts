@@ -110,7 +110,6 @@ export const MVA_INIT_FUNC = 'mvaModelInitFunction';
 
 export const INT = 'Int';
 export const TIMEOUT = 6;
-export const RADIUS = [0.49, 0.79, 0.99];
 export const LINE_WIDTH = 1;
 export const X_COORD = 200;
 export const Y_COORD = 200;
@@ -123,11 +122,16 @@ export const NUMS_AFTER_COMMA = 3;
 /** Curves colors */
 export enum COLOR {
   AXIS = '#838383',
-  CIRCLE = '#0000FF',
   INVALID = '#EB6767',
   VALID_TEXT = '#4d5261',
   VALID_LINE = '#dbdcdf',
 };
+
+/** Hotelling's T-squared confidence ellipses drawn on the PLS scores plot */
+export const ELLIPSES: {conf: number, color: string}[] = [
+  {conf: 0.95, color: '#FF8C00'},
+  {conf: 0.99, color: '#0000FF'},
+];
 
 /** Intro markdown for demo app */
 export const DEMO_INTRO_MD = `# Data
@@ -156,7 +160,9 @@ export const DEMO_RESULTS = [
   {
     caption: TITLE.SCORES,
     text: 'Every car placed by its first two latent factors. Nearby cars are similar; clusters, trends, ' +
-      'and outliers show up as patterns.',
+      'and outliers show up as patterns. ' +
+      'The orange 95% and blue 99% Hotelling’s T² ellipses mark the confidence limits — ' +
+      'cars outside them are outliers.',
   },
   {
     caption: TITLE.LOADINGS,

@@ -8,10 +8,14 @@ import {findNodeTypesProducingOutput} from '../rete/node-factory';
 import {PropertyPanel} from '../panel/property-panel';
 import {effectiveFuncInputs} from '../utils/func-input-overrides';
 import {INCLUDED_FUNC_NQNAMES} from '../rete/included-funcs';
-import {inputValueProperty} from '../utils/input-values';
+import {inputValueProperty, buildInputValueEditor, resolveInputValue} from '../utils/input-values';
+import {emitScript} from '../compiler/script-emitter';
+import {hostsHelmEditor, editorBoxSize,
+  INLINE_HELM_WIDTH, INLINE_HELM_HEIGHT} from '../rete/scheme';
+import {estimateNodeHeight} from '../rete/graph-layout';
 import {isLiteralChoiceList} from '../utils/choice-refs';
 import {tid} from '../utils/test-ids';
-import {makeEditor, destroyEditor, addNode} from './test-utils';
+import {makeEditor, destroyEditor, addNode, until} from './test-utils';
 
 function typeNameOf(nqName: string): string | null {
   return getRegisteredFuncs().find((f) => {
@@ -178,6 +182,136 @@ category('Flow: helm input', () => {
     expect(inputs[0].typeName, 'Inputs/String Input', 'the specializations rank below the general one');
     expect(matches.some((m) => m.typeName === 'Inputs/Helm Input'), true, 'Helm Input is still offered');
   });
+
+  test('an editor reporting a rich value still lands the string (the HELM dialog OK path)', async () => {
+    // Helm's registered value editor holds a SeqValueBase — its `value` is an object,
+    // and the string form lives in `stringValue`. Storing `value` raw serialized as
+    // "[object Object]"; combined with the editor never firing changed on the dialog's
+    // OK (fixed in Helm), this is why a sketched HELM read back as an empty output.
+    const node = createNode('Inputs/Helm Input')!;
+    let edits = 0;
+    const ed = buildInputValueEditor(node, () => edits++)!;
+    try {
+      const helm = 'PEPTIDE1{A.C.D}$$$$';
+      const input = ed.input!;
+      // Helm's editor materializes asynchronously (the platform binds the JS input
+      // proxy once the package loads) — poll until the set lands. Programmatic — silent.
+      const ready = await until(() => {
+        try {
+          input.stringValue = helm;
+          return true;
+        } catch {
+          return false;
+        }
+      }, 20000);
+      expect(ready, true, 'the value editor materialized');
+      expect(edits, 0, 'a programmatic set is not an edit');
+      input.fireChanged(); // exactly what the Helm editor dialog's OK now fires
+      expect(await until(() => edits === 1, 3000), true, 'the change was reported once');
+      expect(String(node.properties['defaultValue'] ?? ''), helm,
+        'the HELM string (never "[object Object]") lands in the configured value');
+      const r = resolveInputValue(node);
+      expect(r.ok, true, 'the run can feed it to the prepared call');
+      expect(r.value, helm);
+    } finally {
+      ed.root.remove();
+    }
+  });
+
+  test('the Helm node hosts its editor in a resizable in-card box that it actually fills', async () => {
+    const e = makeEditor();
+    try {
+      const node = await addNode(e.flow, 'Inputs/Helm Input', 100, 100);
+      expect(hostsHelmEditor(node), true, 'Macromolecule routes to the helm box');
+      const boxSel = `.ff-node[data-node-id="${node.id}"] [data-testid="ff-helm-box"]`;
+      expect(await until(() => e.container.querySelector(boxSel) != null, 10000), true,
+        'the box renders inside the card — no portal involved');
+      expect(e.container.querySelector('.ff-node-preview-portal'), null, 'no portal for value editors');
+      const box = e.container.querySelector<HTMLElement>(boxSel)!;
+      expect(box.style.width, `${INLINE_HELM_WIDTH}px`, 'the HELM default box');
+      expect(box.style.height, `${INLINE_HELM_HEIGHT}px`);
+      // A user resize (native CSS handle writes inline style) persists into the
+      // node properties and drives the layout estimates.
+      box.style.width = '480px';
+      box.style.height = '400px';
+      expect(await until(() => editorBoxSize(node).width === 480, 5000), true,
+        'the resize landed in the node properties');
+      expect(estimateNodeHeight(node) > 400, true, 'the card estimate follows the box');
+      // THE reported bug: the HELM editor pinned itself to 250×250 and never
+      // tracked its container. Once it materializes (async package load), its
+      // host must fill the box — at the resized 480px, not the built-in 250.
+      const helmMounted = await until(() =>
+        e.container.querySelector(`${boxSel} .ui-input-helm`) != null, 20000);
+      if (!helmMounted) {
+        console.warn('Flow: helm input: the HELM editor did not materialize — fill-the-box unverified');
+        return;
+      }
+      const filled = await until(() => {
+        const host = e.container.querySelector<HTMLElement>(`${boxSel} .ui-input-helm .ui-input-editor`);
+        return host != null && host.clientWidth >= box.clientWidth - 10;
+      }, 10000);
+      const host = e.container.querySelector<HTMLElement>(`${boxSel} .ui-input-helm .ui-input-editor`);
+      expect(filled, true,
+        `the editor host tracks the box (${host?.clientWidth}px vs box ${box.clientWidth}px — was stuck at 250)`);
+    } finally {
+      destroyEditor(e);
+    }
+  }, {timeout: 60000});
+
+  test('a value loaded before the editor materializes still renders (async-bind retry)', async () => {
+    // The reported bug: a flow loaded with a HELM in `defaultValue` ran fine
+    // (the value channel reads the node), but the helm editor itself rendered
+    // empty — the initial sync landed on the still-unbound async editor proxy,
+    // threw, and nothing retried once the editor materialized.
+    const node = createNode('Inputs/Helm Input')!;
+    const helm = 'PEPTIDE1{A.C.D}$$$$';
+    node.properties['defaultValue'] = helm; // exactly what deserializeFlow leaves behind
+    const ed = buildInputValueEditor(node, () => {}, {host: 'node'})!;
+    document.body.appendChild(ed.root);
+    try {
+      const landed = await until(() => {
+        try {
+          return ed.input!.stringValue === helm;
+        } catch {
+          return false;
+        }
+      }, 20000);
+      expect(landed, true,
+        'the stored value reaches the editor once the async proxy binds — a loaded flow used to show an empty helm');
+    } finally {
+      ed.root.remove();
+    }
+  }, {timeout: 30000});
+
+  test('a HELM value runs end to end — braces never ride the header', async () => {
+    // The platform's ScriptParser (`_validateParamLine`) takes the span from the
+    // line's FIRST `{` to its LAST `}` as the options block, with no string-awareness:
+    // `//input: string sequence = "PEPTIDE1{A.C}$$$$" {semType: Macromolecule}` parses
+    // its options as `A.C}$$$$" {semType: Macromolecule` and errors out. A
+    // brace-carrying default must stay out of the header; every run path goes
+    // through DG.Script.create, so this breaks Run/autorun/save alike.
+    const e = makeEditor();
+    try {
+      const helm = 'PEPTIDE1{A.C.D}$$$$';
+      const input = await addNode(e.flow, 'Inputs/Helm Input');
+      input.properties['defaultValue'] = helm;
+      const out = await addNode(e.flow, 'Outputs/Value Output');
+      await e.flow.addConnectionByKeys(input.id, 'sequence', out.id, 'value');
+      const script = emitScript(e.flow, {name: 'HelmE2E', description: 'test', tags: ['funcflow']});
+      const line = script.split('\n').find((l) => l.startsWith('//input:'))!;
+      expect(line.includes('{semType: Macromolecule}'), true, 'the qualifier block is intact');
+      expect(line.includes('PEPTIDE1'), false, 'the HELM default is omitted, not mangled in place');
+      const func = DG.Script.create(script);
+      const seq = func.inputs.find((p) => p.name === 'sequence');
+      expect(seq != null, true, 'the platform parsed the input parameter');
+      expect(seq!.semType, 'Macromolecule', 'the semType survived the parse');
+      const fc = func.prepare({sequence: helm});
+      await fc.call(undefined, undefined, {processed: true});
+      expect(fc.outputs['result'], helm, 'the configured value flowed through the whole run');
+    } finally {
+      destroyEditor(e);
+    }
+  }, {timeout: 30000});
 });
 
 category('Flow: bio functions', () => {

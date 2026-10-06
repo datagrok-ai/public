@@ -7,6 +7,7 @@ import {debounceTime} from 'rxjs/operators';
 import {powerSearch} from './search/power-search';
 import {getSettings, saveSettings, UserWidgetsSettings, widgetHostFromFunc} from './utils';
 import {setWorkspacePreviewHost, setWorkspaceCustomizeEl} from './spotlight/preview-host';
+import {getCurrentUserGroup} from './spotlight/group-favorites';
 
 export function welcomeView(): DG.View | undefined {
   let searchStr = null;
@@ -43,6 +44,7 @@ export function welcomeView(): DG.View | undefined {
   suggestionMenuKeyNavigation(inputContainer);
 
   const searchHost = ui.block([], 'power-pack-search-host');
+  searchHost.setAttribute('aria-busy', 'false');
   const widgetsHost = ui.div([], 'power-pack-widgets-host');
   const previewHost = ui.div([], 'power-pack-workspace-preview');
   previewHost.style.display = 'none';
@@ -61,14 +63,15 @@ export function welcomeView(): DG.View | undefined {
   const settings: UserWidgetsSettings = getSettings();
 
   function refresh() {
-    grok.dapi.groups.find(DG.User.current().group.id).then((userGroup: DG.Group) => {
+    getCurrentUserGroup().then((userGroup) => {
+      const userGroups = [...userGroup?.memberships ?? [], ...userGroup?.adminMemberships ?? []];
+
       while (widgetsHost.firstChild)
         widgetsHost.removeChild(widgetsHost.firstChild);
 
       for (const f of widgetFunctions) {
         const canView: string[] = f.options['canView']?.split(',') ?? [];
-        if (canView.length === 0 || (userGroup.memberships.some((g) => canView.includes(g.friendlyName)) ||
-            userGroup.adminMemberships.some((g) => canView.includes(g.friendlyName)))) {
+        if (canView.length === 0 || userGroups.some((g) => canView.includes(g.friendlyName))) {
           if (!settings[f.name] || !settings[f.name].ignored)
             widgetsHost.appendChild(widgetHosts[f.name] ??= widgetHostFromFunc(f));
         }
@@ -108,6 +111,7 @@ export function welcomeView(): DG.View | undefined {
     view.path = search ? `search?q=${encodeURIComponent(s)}` : 'search';
   }
 
+  input.addEventListener('input', () => searchHost.setAttribute('aria-busy', 'true'));
   rxjs.fromEvent(input, 'input').pipe(debounceTime(500)).subscribe((_) => doSearch(input.value));
 
   if (searchStr != null)

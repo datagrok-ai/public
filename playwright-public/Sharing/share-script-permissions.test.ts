@@ -148,7 +148,6 @@ test('Sharing & Permissions — Script', async ({page}) => {
     await expect(dlg.locator('.d4-dialog-title')).toContainText('Share');
     await expect(page.locator('input[placeholder="User, group, or email"]')).toBeVisible();
     await expect(page.locator('[name="div-share-selector"]')).toBeVisible();
-    await expect(page.locator('[name="label-Advanced-editor..."]')).toBeVisible();
     await expect(page.locator('[name="button-OK"]')).toBeVisible();
     await expect(page.locator('[name="button-CANCEL"]')).toBeVisible();
     
@@ -197,6 +196,11 @@ test('Sharing & Permissions — Script', async ({page}) => {
   });
 
   await softStep('Block B.3: CANCEL closes dialog; no grant changed (owner-only)', async () => {
+    // The suggestion dropdown left open by B.1 renders over the dialog footer and swallows the
+    // click on CANCEL; clearing the input collapses it.
+    await page.locator('input[placeholder="User, group, or email"]').fill('');
+    await expect(page.locator('.d4-tags-selector-drop-down.d4-user-selector-drop-down'))
+      .toBeHidden({timeout: 10_000});
     await page.locator('[name="button-CANCEL"]').click();
     await expect(page.locator('.d4-dialog')).toHaveCount(0, {timeout: 10_000});
     

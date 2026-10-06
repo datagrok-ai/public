@@ -49,6 +49,7 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
   stepErrors.length = 0;
 
   let newNotebookId: string | null = null;
+  let seededDemogId: string | null = null;
 
   await loginToDatagrok(page);
   await page.evaluate(() => {
@@ -80,6 +81,28 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     });
     await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
     expect(info.rows).toBeGreaterThan(0);
+  });
+
+  // ---- Setup: a Demog notebook must exist; a fresh CI stand has none and create.test.ts deletes its own ----
+  await softStep('Setup: ensure a "Demog" notebook exists (seed via Open in Notebook when absent)', async () => {
+    seededDemogId = await page.evaluate(async () => {
+      const grok = (window as any).grok;
+      const existing = await grok.dapi.notebooks.filter('friendlyName = "Demog"').list({pageSize: 5}).catch(() => [] as any[]);
+      if (existing.some((n: any) => (n.friendlyName || n.name) === 'Demog')) return null;
+      const before = new Set((await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10})).map((n: any) => n.id));
+      await (window as any).DG.Func.find({name: 'CmdOpenInNotebook'})[0].apply();
+      for (let i = 0; i < 40; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
+        const fresh = cur.find((n: any) => !before.has(n.id));
+        if (fresh) {
+          fresh.friendlyName = 'Demog';
+          await grok.dapi.notebooks.save(fresh);
+          return fresh.id as string;
+        }
+      }
+      throw new Error('Open in Notebook did not persist a notebook within 20 s');
+    });
   });
 
   // ---- S1: Navigate to the Notebooks browser (Browse Notebooks command) ----
@@ -344,18 +367,19 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     expect(persisted).toBe(true);
   });
 
-  // ---- Cleanup: delete the new notebook created in S6 ----
+  // ---- Cleanup: delete the notebook created in S6 and the Demog seeded in setup ----
   // dapi.notebooks.delete needs the resolved entity object (passing the id string throws).
-  await page.evaluate(async (id) => {
+  await page.evaluate(async (ids) => {
     const grok = (window as any).grok;
     try {
-      if (id) {
+      for (const id of ids) {
+        if (!id) continue;
         const nb = await grok.dapi.notebooks.find(id);
         if (nb) await grok.dapi.notebooks.delete(nb);
       }
       grok.shell.closeAll();
     } catch (e) { /* best-effort cleanup */ }
-  }, newNotebookId).catch(() => {});
+  }, [newNotebookId, seededDemogId]).catch(() => {});
 
   if (stepErrors.length > 0)
     throw new Error('Step failures:\n' + stepErrors.map((e) => `- ${e.step}: ${e.error}`).join('\n'));

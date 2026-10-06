@@ -68,7 +68,7 @@ describe('FuncCall', () => {
     const source = sampleCallJson();
     const call = new FuncCall(source);
     call.params[1].value = new Uint8Array([1, 2, 3]); // streamed + marshaled input
-    call.params[2].value = {'id': 'some-uuid'};       // marshaled df output
+    call.params[2].value = {'id': 'some-uuid'}; // marshaled df output
     call.status = FuncCallStatus.COMPLETED;
     const json = call.toJson();
     expect(json['id']).toBe('call-1');

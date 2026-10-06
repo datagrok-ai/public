@@ -10,6 +10,16 @@ import {deleteProjectWithCleanup} from '@datagrok-libraries/test/src/playwright/
 
 test.use(projectsTestOptions);
 
+/**
+ * Projects created by THIS run, found by the stamp every entity it creates carries — including a
+ * stray project named after the joined table, which is what the invariant is looking for.
+ * Counting all projects instead cannot work: dev holds 5000+ of them, and anyone saving one
+ * concurrently moves the number.
+ */
+function readRunProjectCount(page: Page, stamp: number): Promise<number> {
+  return evalJs(page, `(async () => (await grok.dapi.projects.filter('${stamp}').list({pageSize: 100})).length)()`);
+}
+
 async function closeAll(page: Page) {
   await evalJs(page, 'grok.shell.closeAll()');
 }
@@ -84,10 +94,8 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('Step 2: capture project-count baseline before Save (GROK-19103 invariant prep)', async () => {
-      baselineCount = await evalJs(page,
-        `(async () => (await grok.dapi.projects.list({limit: 1000})).length)()`,
-      );
-      expect(baselineCount).toBeGreaterThanOrEqual(0);
+      baselineCount = await readRunProjectCount(page, stamp);
+      expect(baselineCount, 'nothing carrying this run\'s stamp should exist before Save').toBe(0);
     });
 
     await softStep('Step 2: Save current project with Data Sync ON', async () => {
@@ -127,9 +135,11 @@ test('Projects / Complex derived-tables: Join lands in active project (GROK-1910
     });
 
     await softStep('GROK-19103 INVARIANT: exactly ONE new project created (no stray join-only project)', async () => {
-      const afterCount = await evalJs(page,
-        `(async () => (await grok.dapi.projects.list({limit: 1000})).length)()`,
-      );
+      // The project list is eventually consistent after save: read it too soon and the project
+      // the previous step just confirmed exists is still absent, which reads as "none created".
+      await expect.poll(() => readRunProjectCount(page, stamp), {timeout: 60_000, intervals: [1000, 2000, 3000]})
+        .toBeGreaterThan(baselineCount);
+      const afterCount = await readRunProjectCount(page, stamp);
       // GROK-19103: a stray join-only project would push delta to 2+.
       expect(afterCount - baselineCount).toBe(1);
     });

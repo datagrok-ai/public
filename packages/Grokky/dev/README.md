@@ -101,6 +101,31 @@ d.close();
 Pass `sessionId` to continue a conversation (exercises the resume path), `model` to pin a tier,
 and `apiKey` + `mcpServerUrl` to the constructor when a case needs the real Datagrok MCP tools.
 
+## Load testing — N concurrent users
+
+[`harness/load-test.mjs`](harness/load-test.mjs) answers "what happens when N users hit the one
+runtime container at once". Each virtual user is its own WS connection + sessionId (turns run
+concurrently in the runtime exactly like distinct users — only same-session turns queue). All
+users start together, then each loops: prompt from the pool → wait for the answer → think → next.
+Every event (prompt sent, answer received with TTFT/total, errors, `docker stats` samples, a
+5-second status line with the live in-flight count) is printed as it happens and appended to
+`dev/harness/results/<label>.jsonl` — full answer texts included, so a run is directly observable.
+
+```bash
+cd dev/harness
+node load-test.mjs --users 10                     # full Datagrok prompt, pool from suite.yaml
+node load-test.mjs --users 100 --mode bash        # cheap echo turns (~$0.07/turn) — infra limits
+node load-test.mjs --users 50 --turns 5 --think 0-0 --yes   # max sustained pressure
+```
+
+`--prompts <file>` swaps the pool (one prompt per line), `--seed` makes prompt choice and think
+times reproducible, `--url` picks the runtime (a platform container works too — find its host
+port with `docker port <name>`), `--container` names which container `docker stats` samples,
+`--host <alias>` sends the config.yaml key as `apiKey` so per-user file sync is exercised too.
+The summary reports peak observed concurrency (so you can verify the run really had N turns in
+flight) and scrapes watchdog/reaper kills from the container log — correlating "client saw
+timeout" with "watchdog fired at 95% CPU" is the point of the exercise.
+
 ## Notes
 
 - The dev container is deliberately separate from the platform's spawned

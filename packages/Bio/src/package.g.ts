@@ -27,6 +27,7 @@ export async function standardiseMonomerLibrary(library: string) : Promise<strin
   return await PackageFunctions.standardiseMonomerLibrary(library);
 }
 
+//name: Match with Monomer Library
 //description: Matches molecules in a column with monomers from the selected library(s)
 //input: dataframe table 
 //input: column molecules { semType: Molecule }
@@ -623,7 +624,6 @@ export async function applyAntibodyNumbering(table: DG.DataFrame, sequence: DG.C
   await PackageFunctions.applyAntibodyNumbering(table, sequence, scheme);
 }
 
-//name: Bio: getHelmMonomers
 //input: column sequence { semType: Macromolecule }
 //output: object result
 export function getHelmMonomers(sequence: DG.Column<any>) : string[] {

@@ -15,18 +15,12 @@ const packageFuncDirs = ['package.ts', 'package.g.ts'];
 const apiFile = 'package-api.ts';
 const dbFile = 'db.ts';
 const dbUiFile = 'db-ui.ts';
-/** What `db-ui.ts` imports from `@datagrok-libraries/domain-ui`. */
-const domainUiImports = ['domainHandler', 'domains', 'DomainAppView', 'DomainAppViewOptions',
-  'DomainDb', 'DomainDialogOptions', 'DomainEntityAppView', 'DomainEntityAppViewOptions', 'DomainForm',
-  'DomainFormOptions', 'DomainGrid', 'DomainGridOptions', 'DomainTable', 'EntityListOptions',
-  'EntityListWidget'];
-/** {@link DomainDb} members a table's camelCase property name must not shadow. */
-const domainDbReservedProps = ['name', 'tables', 'table', 'acquire'];
+/** Where `db-ui.ts` takes the u2 domain stack from — the same specifier Grit and Stockroom use
+ * (u2 is a relative-path dependency without a `dg` subpath export). */
+const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
 
 /** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
- * `boxes`, `category` → `categories`. MUST match domain-ui's `pluralizeTableName`:
- * the runtime `DomainDb` assigns its per-table properties with the same rule, so the
- * generated typed interfaces bind to it. */
+ * `boxes`, `category` → `categories`. */
 function pluralizeTableName(name: string): string {
   if (/(s|x|z|ch|sh)$/.test(name))
     return name + 'es';
@@ -35,12 +29,17 @@ function pluralizeTableName(name: string): string {
   return name + 's';
 }
 
-/** The camelCase plural property name a table gets on the schema client and the
- * schema UI handle (`issue_label` → `issueLabels`). */
-function tableProp(tableName: string): string {
+/** The camelCase plural property name a table gets on the schema client and under the
+ * schema handle's `tables` (`issue_label` → `issueLabels`). */
+export function tableProp(tableName: string): string {
   return utils.snakeToCamelCase(pluralizeTableName(tableName), false);
 }
 const domainSchemaPath = path.join(path.dirname(path.dirname(__dirname)), 'domain-schema.schema.json');
+/** The platform's own schema, whose tables a qualified ref may target (`Core.users`, ...). */
+const CORE_SCHEMA = 'Core';
+/** The sealed Core declaration (a copy of core/server/db/snapshots/Core.json, pinned equal by the
+ * server's seal test) — what a `ref: <CORE_SCHEMA>.<table>` resolves against at build time. */
+const coreDeclarationPath = path.join(path.dirname(path.dirname(__dirname)), `${CORE_SCHEMA}.json`);
 
 const domainSystemColumns: [string, string][] = [
   ['id', 'string'], ['version', 'number'], ['created_on', 'Dayjs'],
@@ -49,8 +48,19 @@ const domainSystemColumns: [string, string][] = [
 
 const domainTypeMap: {[type: string]: string} = {
   string: 'string', int: 'number', float: 'number', bool: 'boolean', datetime: 'Dayjs',
-  string_list: 'string[]', ref: 'string', user: 'string', group: 'string', file: 'string',
+  string_list: 'string[]', ref: 'string', file: 'string', json: '{[key: string]: any}',
 };
+
+/** `type: user` / `type: group` are aliases of a Core ref (the server's
+ * `DomainTableColumn.canonicalize`); codegen spells them the same way so both generate alike. */
+const coreRefAliases: {[type: string]: string} = {
+  user: `${CORE_SCHEMA}.users`, group: `${CORE_SCHEMA}.groups`};
+
+/** The sealed declaration lists a table's columns and a property schema's columns as
+ * `[{name, ...}]`; manifests key them by name. */
+function columnsByName(columns: any): {[name: string]: any} {
+  return Array.isArray(columns) ? Object.fromEntries(columns.map((c: any) => [c.name, c])) : columns;
+}
 
 function normEol(s: string): string {
   return s.replace(/\r\n/g, '\n');
@@ -220,8 +230,8 @@ function checkNameColision(name: string) {
 
 /** Generates `src/generated/db.ts` with typed clients for the package's domain schemas
  * (`databases/<schema>/schema.json` manifests), and — with [options].ui, or whenever the
- * file is already there — `src/generated/db-ui.ts` with the typed UI sugar over
- * `@datagrok-libraries/domain-ui`. No-op for packages without manifests. */
+ * file is already there — `src/generated/db-ui.ts` with the typed u2 handles
+ * (`get<Schema>Db()` → one `DomainTable<Row>` per table). No-op for packages without manifests. */
 export function generateDomainClients(packageDir: string = curDir, options?: {ui?: boolean}): boolean {
   const databasesDir = path.join(packageDir, 'databases');
   if (!fs.existsSync(databasesDir))
@@ -257,7 +267,7 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
         color.error(`${relPath}: ${err.instancePath || '/'} ${err.message}`);
       return false;
     }
-    const code = generateDomainSchemaCode(manifest, relPath, emittedTypes);
+    const code = generateDomainSchemaCode(manifest, relPath, emittedTypes, packageDir);
     if (code == null)
       return false;
     parts.push(code);
@@ -273,8 +283,7 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
 
   if (ui) {
     const uiContent = annotationForDbUiFile +
-      `import * as DG from 'datagrok-api/dg';${sep}` +
-      wrapTokens(`import {`, domainUiImports, ', ', `} from '@datagrok-libraries/domain-ui';`) + sep +
+      `import {domains, DomainTable} from '${u2DgModule}';${sep}` +
       wrapTokens(`import {`, dbImports, ', ', `} from './${dbFile.replace(/\.ts$/, '')}';`) + sep +
       sep + uiParts.join(sep);
     fs.writeFileSync(path.join(genDir, dbUiFile), normEol(uiContent).replace(/\n/g, '\r\n'), 'utf8');
@@ -289,7 +298,32 @@ interface DomainGenColumn {
   tsType: string;       // Row-side type (choices alias / Dayjs applied)
   insertType: string;   // Insert-side type (datetime accepts `Dayjs | string`)
   required: boolean;
-  ref?: string;         // in-manifest target table for 'ref' columns
+  autoNumber?: boolean; // counter-filled on insert: always present on Row, optional on Insert
+  ref?: string;         // target table for 'ref' columns: in-manifest name, or qualified '<Schema>.<table>'
+}
+
+/** Subdirectory names of [dir], or none when it does not exist. */
+function subdirs(dir: string): string[] {
+  return fs.existsSync(dir)
+    ? fs.readdirSync(dir, {withFileTypes: true}).filter((e) => e.isDirectory()).map((e) => e.name) : [];
+}
+
+/** The `databases/<schema>/schema.json` manifest named [schemaName] among the package's
+ * installed dependencies (scoped packages included), or null. */
+function findDependencyManifest(packageDir: string, schemaName: string): any | null {
+  const nm = path.join(packageDir, 'node_modules');
+  const pkgDirs = subdirs(nm).flatMap((d) => d.startsWith('@')
+    ? subdirs(path.join(nm, d)).map((s) => path.join(nm, d, s)) : [path.join(nm, d)]);
+  for (const pkgDir of pkgDirs)
+    for (const schemaDir of subdirs(path.join(pkgDir, 'databases'))) {
+      const manifestPath = path.join(pkgDir, 'databases', schemaDir, 'schema.json');
+      if (!fs.existsSync(manifestPath))
+        continue;
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+      if (manifest.name === schemaName)
+        return manifest;
+    }
+  return null;
 }
 
 /** A resolved many-to-many relation of one table: the expand key and the target
@@ -302,10 +336,13 @@ interface DomainGenRelation {
 /** Emits choices aliases, row/insert interfaces, column-name unions, expand maps, the
  * `<Schema>TransactionOp` union, and the lazy `<schema>Db` clients for one manifest.
  * Returns null on a semantic error (reported to the console). */
-function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTypes: Set<string>): string | null {
+function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTypes: Set<string>,
+  packageDir: string): string | null {
   const decls: string[] = [];
   const systemColumnNames = new Set(domainSystemColumns.map(([name]) => name));
   const tableNames = Object.keys(manifest.tables);
+  // Keyed by table name; a qualified ref target ('Core.queries', 'grit.issue') lands here
+  // under its qualified key so the expand map can list its columns — it gets no accessor.
   const tableColumns: {[table: string]: DomainGenColumn[]} = {};
   // Choices aliases are deduplicated by name: identical value sets share the first alias,
   // different sets fall back to a `<alias><PascalTable>` name (deterministic).
@@ -328,9 +365,104 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     return alias;
   };
 
+  // A qualified ref target, resolved from files: `Core.<table>` from the CLI's sealed Core
+  // declaration, any other schema from a dependency's databases/*/schema.json.
+  const externalManifests = new Map<string, any>();
+  function loadExternalTable(ref: string, where: string): boolean {
+    if (tableColumns[ref] != null)
+      return true;
+    const [schemaName, tableName] = ref.split('.');
+    const core = schemaName === CORE_SCHEMA;
+    if (!externalManifests.has(schemaName))
+      externalManifests.set(schemaName, core
+        ? (fs.existsSync(coreDeclarationPath) ? JSON.parse(fs.readFileSync(coreDeclarationPath, 'utf8')) : null)
+        : findDependencyManifest(packageDir, schemaName));
+    const owner = externalManifests.get(schemaName);
+    if (owner == null) {
+      color.error(`${where} references '${ref}', but ` + (core
+        ? `the sealed ${CORE_SCHEMA} declaration is missing: ${coreDeclarationPath}`
+        : `no installed dependency declares schema '${schemaName}' — install the package that declares ` +
+          `schema '${schemaName}' as a dependency`));
+      return false;
+    }
+    if (owner.tables[tableName] == null) {
+      color.error(`${where} references '${ref}', but schema '${schemaName}' declares no table '${tableName}'`);
+      return false;
+    }
+    const columns = collectColumns(tableName, {...owner, name: schemaName}, true);
+    if (columns == null)
+      return false;
+    tableColumns[ref] = columns;
+    return true;
+  }
+
   // Pass 1: resolve every table's full column list (relational + property-schema columns).
+  // [owner] is the manifest the table comes from; an external (qualified-ref target) table
+  // skips the system-column check — its declaration may legitimately name one (Core.packages
+  // has `version`) — and its own refs are never followed (no nested expand).
+  function collectColumns(tableName: string, owner: any, external: boolean): DomainGenColumn[] | null {
+    const table = owner.tables[tableName];
+    const key = external ? `${owner.name}.${tableName}` : tableName;
+    const columns: DomainGenColumn[] = [];
+    const columnNames = new Set(external ? [] : systemColumnNames);
+    const addColumn = (name: string, column: any): boolean => {
+      if (coreRefAliases[column.type] != null) {
+        column = {...column, type: 'ref', ref: coreRefAliases[column.type]};
+        delete column.onDelete;
+      }
+      if (columnNames.has(name)) {
+        color.error(systemColumnNames.has(name) && !external
+          ? `${manifestPath}: table '${key}' column '${name}' collides with a generated system column`
+          : `${manifestPath}: table '${key}' declares duplicate column '${name}'`);
+        return false;
+      }
+      columnNames.add(name);
+      let tsType = domainTypeMap[column.type];
+      if (Array.isArray(column.choices) && column.choices.length > 0) {
+        const alias = choicesAlias(key.replace('.', '_'), name, column.choices);
+        if (alias == null)
+          return false;
+        tsType = alias;
+      }
+      let ref: string | undefined;
+      if (column.type === 'ref' && !external) {
+        if (column.ref == null) {
+          color.error(`${manifestPath}: table '${tableName}' column '${name}' is a ref column without a 'ref' target`);
+          return false;
+        }
+        if (column.ref.includes('.')) {
+          if (!loadExternalTable(column.ref, `${manifestPath}: table '${tableName}' column '${name}'`))
+            return false;
+          ref = column.ref;
+        }
+        else if (manifest.tables[column.ref] != null)
+          ref = column.ref;
+      }
+      columns.push({
+        name: name, rawType: column.type, tsType: tsType,
+        insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
+        required: column.required === true, autoNumber: column.autoNumber != null, ref: ref,
+      });
+      return true;
+    };
+    const declared = columnsByName(table.columns);
+    for (const columnName of Object.keys(declared))
+      if (!addColumn(columnName, declared[columnName]))
+        return null;
+    for (const schemaName of table.schemas ?? []) {
+      const props = columnsByName(owner.propertySchemas?.[schemaName]);
+      if (props == null) {
+        color.error(`${manifestPath}: table '${key}' references unknown property schema '${schemaName}'`);
+        return null;
+      }
+      for (const propName of Object.keys(props))
+        if (!addColumn(propName, props[propName]))
+          return null;
+    }
+    return columns;
+  }
+
   for (const tableName of tableNames) {
-    const table = manifest.tables[tableName];
     const typeName = utils.snakeToCamelCase(tableName);
     if (emittedTypes.has(typeName)) {
       color.error(`${manifestPath}: table '${tableName}' emits interface '${typeName}Row' ` +
@@ -338,53 +470,17 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
       return null;
     }
     emittedTypes.add(typeName);
-    const columns: DomainGenColumn[] = [];
-    const columnNames = new Set(systemColumnNames);
-    const addColumn = (name: string, column: any): boolean => {
-      if (columnNames.has(name)) {
-        color.error(systemColumnNames.has(name)
-          ? `${manifestPath}: table '${tableName}' column '${name}' collides with a generated system column`
-          : `${manifestPath}: table '${tableName}' declares duplicate column '${name}'`);
-        return false;
-      }
-      columnNames.add(name);
-      let tsType = domainTypeMap[column.type];
-      if (Array.isArray(column.choices) && column.choices.length > 0) {
-        const alias = choicesAlias(tableName, name, column.choices);
-        if (alias == null)
-          return false;
-        tsType = alias;
-      }
-      columns.push({
-        name: name, rawType: column.type, tsType: tsType,
-        insertType: column.type === 'datetime' ? 'Dayjs | string' : tsType,
-        required: column.required === true,
-        ref: column.type === 'ref' && manifest.tables[column.ref] != null ? column.ref : undefined,
-      });
-      return true;
-    };
-    for (const columnName of Object.keys(table.columns))
-      if (!addColumn(columnName, table.columns[columnName]))
-        return null;
-    for (const schemaName of table.schemas ?? []) {
-      const props = manifest.propertySchemas?.[schemaName];
-      if (props == null) {
-        color.error(`${manifestPath}: table '${tableName}' references unknown property schema '${schemaName}'`);
-        return null;
-      }
-      for (const propName of Object.keys(props))
-        if (!addColumn(propName, props[propName]))
-          return null;
-    }
+    const columns = collectColumns(tableName, manifest, false);
+    if (columns == null)
+      return null;
     tableColumns[tableName] = columns;
   }
 
-  // Pass 1.5: resolve declared many-to-many relations. Same rules the server's
-  // manifest parser applies (manifest.dart 'relations'), so a manifest that
-  // generates here is one that deploys: via/target declared in this manifest,
-  // via distinct from owner and target, self-referential relations explicit,
-  // FK sides unique-or-explicit, and a junction business key covering both —
-  // that key is what keeps re-linking the same pair idempotent.
+  // Pass 1.5: declared many-to-many relations. Only what the generated code needs
+  // is checked here: the target table must be declared (its name lands in the
+  // generated doc comments) and the name must not collide with a column (relations
+  // and columns share one expand/filter namespace). Everything else about a
+  // relation (via, viaSelf/viaTarget, the junction business key) is the deploy's gate.
   const tableRelations: {[table: string]: DomainGenRelation[]} = {};
   for (const tableName of tableNames) {
     const relations: DomainGenRelation[] = [];
@@ -401,56 +497,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
           `share one expand/filter namespace`);
         return null;
       }
-      if (manifest.tables[r.via] == null) {
-        color.error(`${where}: junction table '${r.via}' is not declared in this manifest`);
-        return null;
-      }
       if (manifest.tables[r.target] == null) {
         color.error(`${where}: target table '${r.target}' is not declared in this manifest`);
-        return null;
-      }
-      if (r.via === tableName || r.via === r.target) {
-        color.error(`${where}: junction table '${r.via}' must differ from the owner and the target table`);
-        return null;
-      }
-      if (r.target === tableName && (r.viaSelf == null || r.viaTarget == null)) {
-        color.error(`${where}: a self-referential relation must name both 'viaSelf' and 'viaTarget'`);
-        return null;
-      }
-      // One side of the junction: the declared column when explicit, otherwise
-      // the single ref column of `via` pointing at `to`.
-      const resolveSide = (key: string, explicit: string | undefined, to: string): string | null => {
-        const candidates = tableColumns[r.via].filter((c) => c.ref === to).map((c) => c.name);
-        if (explicit != null) {
-          if (candidates.includes(explicit))
-            return explicit;
-          color.error(`${where}: '${explicit}' is not a ref column of junction table '${r.via}' ` +
-            `targeting '${to}'`);
-          return null;
-        }
-        if (candidates.length === 0) {
-          color.error(`${where}: junction table '${r.via}' has no ref column targeting '${to}'`);
-          return null;
-        }
-        if (candidates.length > 1) {
-          color.error(`${where}: junction table '${r.via}' has more than one ref column targeting ` +
-            `'${to}' (${candidates.join(', ')}) — declare '${key}' explicitly`);
-          return null;
-        }
-        return candidates[0];
-      };
-      const viaSelf = resolveSide('viaSelf', r.viaSelf, tableName);
-      const viaTarget = resolveSide('viaTarget', r.viaTarget, r.target);
-      if (viaSelf == null || viaTarget == null)
-        return null;
-      if (viaSelf === viaTarget) {
-        color.error(`${where}: 'viaSelf' and 'viaTarget' must be different columns of '${r.via}'`);
-        return null;
-      }
-      const businessKey: string[] = manifest.tables[r.via].businessKey ?? [];
-      if (!businessKey.includes(viaSelf) || !businessKey.includes(viaTarget)) {
-        color.error(`${where}: junction table '${r.via}' must declare a 'businessKey' containing ` +
-          `both '${viaSelf}' and '${viaTarget}', so linking the same pair twice stays idempotent`);
         return null;
       }
       relations.push({name: name, target: r.target});
@@ -470,7 +518,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     for (const [name, tsType] of domainSystemColumns)
       rowLines.push(`  ${name}: ${tsType};`);
     for (const c of columns)
-      rowLines.push(`  ${c.name}${c.required ? '' : '?'}: ${c.tsType};`);
+      rowLines.push(`  ${c.name}${c.required || c.autoNumber ? '' : '?'}: ${c.tsType};`);
     rowLines.push('}');
     decls.push(rowLines.join(sep));
 
@@ -537,7 +585,8 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
          `export type ${typeName}Expand = {`, ...expandEntries, '};'].join(sep));
 
     txArms.push(
-      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>} |`,
+      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
+        `onDuplicate?: 'error'} |`,
       `  {op: 'update'; table: '${tableName}'; id: string; ` +
         `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
         `expectedVersion?: number} |`,
@@ -572,162 +621,47 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   return decls.join(sep.repeat(2)) + sep;
 }
 
-/** Emits the typed UI sugar of one manifest: per-table option types and a `<table>Ui`
- * wrapper over the reflective `@datagrok-libraries/domain-ui` components, so app code gets
- * this table's columns and row type checked. Collects the names it needs from `db.ts` into
- * [dbImports]. Nothing here is imported by `db.ts` — data-only consumers gain no UI
- * dependency. */
+/** Emits the typed u2 handles of one manifest: a `<Schema>Db` interface — the schema name, the
+ * typed data clients of `db.ts` and one `DomainTable<Row>` per table — and `get<Schema>Db()`,
+ * which opens every table in parallel behind ONE await and caches the promise per page.
+ * Collects the names it needs from `db.ts` into [dbImports]. Nothing here is imported by
+ * `db.ts` — data-only consumers gain no UI dependency. */
 function generateDomainUiCode(manifest: any, dbImports: string[]): string {
-  const decls: string[] = [];
-  const schemaClient = `${utils.snakeToCamelCase(manifest.name, false)}Db`;
-  dbImports.push(schemaClient);
-  for (const tableName of Object.keys(manifest.tables)) {
-    const type = utils.snakeToCamelCase(tableName);
-    const address = `${manifest.name}.${tableName}`;
-    // The generics of the client and the handle, in DomainTableClient's order. The
-    // fifth — the update payload — exists only for a relation-bearing table, whose
-    // update() also takes the link sets; without relations the `Partial<Row>`
-    // default is it. Emitting four there would make `update(id, {labels: [...]})`
-    // an excess-property error against a payload that has no `labels`.
-    const hasRelations = Object.keys(manifest.tables[tableName].relations ?? {}).length > 0;
-    const generics = `${type}Row, ${type}Insert, ${type}Column, ${type}Expand` +
-      (hasRelations ? `, ${type}Update` : '');
-    const handle = `DomainTable<${generics}>`;
-    dbImports.push(`${type}Column`, `${type}Expand`, `${type}Insert`, `${type}Row`);
-    if (hasRelations)
-      dbImports.push(`${type}Update`);
-    decls.push(
-      [`/** Query spec of \`${address}\` — columns and expand keys are compile-checked. */`,
-        `export type ${type}QuerySpec = DG.DomainQuerySpec<${type}Column, keyof ${type}Expand & string>;`].join(sep),
-      [`/** {@link DG.DomainQuery} parameters of \`${address}\` (schema and table are implied). */`,
-        `export interface ${type}QueryParams extends`,
-        `    Omit<DG.DomainQueryParams, 'schema' | 'table' | 'columns'> {`,
-        `  columns?: ${type}Column[];`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.form} / {@link ${type}Ui.formDialog}. */`,
-        `export interface ${type}FormOptions extends Omit<DomainFormOptions, 'values'> {`,
-        `  values?: Partial<${type}Insert>;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.grid}. */`,
-        `export interface ${type}GridOptions extends Omit<DomainGridOptions, 'query' | 'defaults'> {`,
-        `  query?: ${type}QuerySpec;`, `  defaults?: Partial<${type}Insert>;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.list}. */`,
-        `export interface ${type}ListOptions extends Omit<EntityListOptions, 'query'> {`,
-        `  query?: ${type}QuerySpec;`, '}'].join(sep),
-      [`/** Options of {@link ${type}Ui.listView} / {@link ${type}Ui.app}. */`,
-        `export interface ${type}AppViewOptions extends Omit<DomainAppViewOptions, 'query'> {`,
-        `  query?: ${type}QuerySpec;`, '}'].join(sep),
-      ['/**',
-        ` * Typed UI over \`${address}\`: the reflective components of`,
-        ' * `@datagrok-libraries/domain-ui`, with this table\'s columns and row type checked at',
-        ` * compile time. Reach it through {@link ${utils.snakeToCamelCase(tableName, false)}Ui}.`,
-        ' */',
-        `export class ${type}Ui {`,
-        `  /** The table address, \`'<schema>.<table>'\`. */`,
-        `  readonly address: string = '${address}';`,
-        '',
-        `  /** The typed client — the same one \`${schemaClient}.${tableProp(tableName)}\` returns. */`,
-        `  get client(): DG.DomainTableClient<${generics}> {`,
-        `    return ${schemaClient}.${tableProp(tableName)};`,
-        '  }',
-        '',
-        `  /** The prefetched handle on \`${address}\` — THE async boundary, typed. Every`,
-        '   * widget factory on it is synchronous, so acquire it ONCE when a page builds',
-        '   * more than one widget; the shortcuts below acquire one of their own. */',
-        `  table(): Promise<${handle}> {`,
-        `    return domains.table<${generics}>(this.client);`,
-        '  }',
-        '',
-        '  /** The handler registered for the table (the reflective default when none is). */',
-        '  handler(): DG.DomainObjectHandler {',
-        '    return domainHandler(this.address);',
-        '  }',
-        '',
-        '  /** The property form of ONE row — a new one by default, an existing one with',
-        '   * `{row}` or `{id}`; the values are this table\'s. */',
-        `  async form(options?: ${type}FormOptions): Promise<DomainForm> {`,
-        '    return (await this.table()).form(options);',
-        '  }',
-        '',
-        '  /** {@link form} in a dialog; resolves to whether a row was saved. */',
-        `  async formDialog(options?: ${type}FormOptions & DomainDialogOptions): Promise<boolean> {`,
-        '    return (await this.table()).formDialog(options);',
-        '  }',
-        '',
-        '  /** The browse/CRUD page: list, search, New, and a deep-linkable query. */',
-        `  async listView(options?: ${type}AppViewOptions): Promise<DomainAppView> {`,
-        '    return (await this.table()).listView(options);',
-        '  }',
-        '',
-        '  /** THE app — {@link listView} under the name that says what it is. */',
-        `  app(options?: ${type}AppViewOptions): Promise<DomainAppView> {`,
-        '    return this.listView(options);',
-        '  }',
-        '',
-        '  /** The row page: form, detail tabs, history. Takes the row or its id. */',
-        '  async entityView(row: string | DG.DomainRow,',
-        '    options?: DomainEntityAppViewOptions): Promise<DomainEntityAppView> {',
-        '    return (await this.table()).entityView(row, options);',
-        '  }',
-        '',
-        '  /** An editable grid: batch editing, one-transaction save. */',
-        `  async grid(options?: ${type}GridOptions): Promise<DomainGrid> {`,
-        '    return (await this.table()).grid(options);',
-        '  }',
-        '',
-        '  /** A list of rows (cards / brief / grid). */',
-        `  async list(options?: ${type}ListOptions): Promise<EntityListWidget> {`,
-        '    return (await this.table()).list(options);',
-        '  }',
-        '',
-        '  /** Opens the platform\'s create dialog, or the edit dialog for [row]. */',
-        '  edit(row?: DG.DomainRow): Promise<boolean> {',
-        '    return this.handler().editRow(row);',
-        '  }',
-        '',
-        '  /** Opens the platform\'s row picker. */',
-        '  pick(): Promise<DG.DomainRow | null> {',
-        '    return this.handler().pickRow();',
-        '  }',
-        '',
-        '  /** Wraps one `query()` row as a {@link DG.DomainRow} — locally, no round trip. */',
-        `  row(values: Partial<${type}Row> | null): DG.DomainRow {`,
-        '    return this.handler().rowFrom(values);',
-        '  }',
-        '',
-        '  /** A serializable query over the table: deep links, saved filters, Open in Table View. */',
-        `  query(params?: ${type}QueryParams): DG.DomainQuery {`,
-        `    return new DG.DomainQuery({...params, schema: '${manifest.name}', table: '${tableName}'});`,
-        '  }',
-        '}'].join(sep),
-      [`/** Typed UI over \`${address}\` (see {@link ${type}Ui}). */`,
-        `export const ${utils.snakeToCamelCase(tableName, false)}Ui = new ${type}Ui();`].join(sep));
-  }
-
-  // The schema-level handle: every table's DomainTable under ONE await, typed
-  // (`const db = await <schema>UiDb(); db.<plural>.form(...)`).
   const schemaType = utils.snakeToCamelCase(manifest.name);
-  const tableProps = Object.keys(manifest.tables)
-    .filter((t) => !domainDbReservedProps.includes(tableProp(t)));
-  decls.push(
+  const schemaClient = `${utils.snakeToCamelCase(manifest.name, false)}Db`;
+  const getter = `get${schemaType}Db`;
+  const cache = `_${utils.snakeToCamelCase(manifest.name, false)}Db`;
+  const tables: string[] = Object.keys(manifest.tables);
+  dbImports.push(schemaClient, ...tables.map((t) => `${utils.snakeToCamelCase(t)}Row`));
+  return [
     ['/**',
-      ` * The typed schema handle over \`${manifest.name}\`: one prefetched {@link DomainTable}`,
-      ' * per table, resolved together by {@link ' + utils.snakeToCamelCase(manifest.name, false) + 'UiDb} —',
-      ' * the schema-level async boundary (see `domains.db`).',
+      ` * The typed u2 handles over \`${manifest.name}\`: one {@link DomainTable} per table, opened together by`,
+      ` * {@link ${getter}}, beside the typed data clients (\`${schemaClient}\`) — every action, validator,`,
+      ' * renderer and source an app declares on a table is checked against its row type.',
       ' */',
-      `export interface ${schemaType}UiDb extends DomainDb {`,
-      ...tableProps.map((t) => {
-        const type = utils.snakeToCamelCase(t);
-        const update = Object.keys(manifest.tables[t].relations ?? {}).length > 0
-          ? `, ${type}Update` : '';
-        return `  readonly ${tableProp(t)}: ` +
-          `DomainTable<${type}Row, ${type}Insert, ${type}Column, ${type}Expand${update}>;`;
-      }),
+      `export interface ${schemaType}Db {`,
+      `  readonly schema: '${manifest.name}';`,
+      `  readonly data: typeof ${schemaClient};`,
+      '  readonly tables: {',
+      ...tables.map((t) => `    readonly ${tableProp(t)}: DomainTable<${utils.snakeToCamelCase(t)}Row>;`),
+      '  };',
       '}'].join(sep),
-    [`/** Acquires the {@link ${schemaType}UiDb} handle — every table of`,
-      ` * \`${manifest.name}\`, prefetched together (see \`domains.db\`). */`,
-      `export function ${utils.snakeToCamelCase(manifest.name, false)}UiDb(): Promise<${schemaType}UiDb> {`,
-      `  return domains.db('${manifest.name}') as Promise<${schemaType}UiDb>;`,
-      '}'].join(sep));
-  return decls.join(sep.repeat(2)) + sep;
+    `let ${cache}: Promise<${schemaType}Db> | undefined;`,
+    [`/** Opens every table of \`${manifest.name}\` in parallel — the one await of an app over it; the`,
+      ' * result is cached per page, so every caller shares the same handles (and their registries). */',
+      `export function ${getter}(): Promise<${schemaType}Db> {`,
+      `  return ${cache} ??= Promise.all([`,
+      ...tables.map((t) => `    domains.table<${utils.snakeToCamelCase(t)}Row>('${manifest.name}.${t}'),`),
+      wrapTokens('  ]).then(([', tables.map(tableProp), ', ', `]): ${schemaType}Db => ({`, '    '),
+      `    schema: '${manifest.name}',`,
+      `    data: ${schemaClient},`,
+      wrapTokens('    tables: {', tables.map(tableProp), ', ', '},', '      '),
+      '  })).catch((e) => {',
+      `    ${cache} = undefined;`,
+      '    throw e;',
+      '  });',
+      '}'].join(sep),
+  ].join(sep.repeat(2)) + sep;
 }
 
 /** Joins [tokens] into `<prefix>t1<sepToken>t2...<suffix>` lines wrapped at the 120-char

@@ -1,4 +1,5 @@
 /* eslint-disable max-len */
+import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {ChoiceFuncRef, parseChoiceFuncRef, isChoiceQueryRef} from '../utils/choice-refs';
@@ -32,6 +33,47 @@ export function choiceValuesFrom(result: unknown): string[] {
   return [];
 }
 
+/** Resolve a choices REFERENCE (mangled func call or `query("…")` string) into literal
+ *  items; null when `raw` isn't one or can't be resolved. A query reference runs on
+ *  `connection` — without one it is unresolvable. */
+export async function resolveChoicesRef(raw: string, connection: DG.DataConnection | null): Promise<string[] | null> {
+  raw = raw.replaceAll('\\"', '"'); // the platform may hand the reference JSON-escaped
+  let choiceString = raw.toLowerCase();
+  // property tends to strip the ends...
+  if (choiceString.startsWith('uery("') && choiceString.endsWith('"'))
+    choiceString = `q${choiceString})`;
+  if (choiceString.startsWith('query("') && choiceString.endsWith('")')) {
+    if (!connection) return null;
+    const query =
+        '--name: choicesQuery\n--output: dataframe out\n' + choiceString.substring(7, choiceString.length - 2);
+    const chq = connection.query('choicesQuery', query);
+    return choiceValuesFrom(await chq.apply({}));
+  }
+  const ref = parseChoiceFuncRef(raw);
+  if (!ref) return null;
+  const choicesFunc = resolveChoiceFunc(ref);
+  if (!choicesFunc) {
+    console.warn(`Flow: choices function "${ref.funcName}" not found`);
+    return null;
+  }
+  return choiceValuesFrom(await choicesFunc.apply(ref.args));
+}
+
+/** Items for an input NODE's stored choices reference (`properties['choices']`);
+ *  query references resolve through the connection captured at adoption
+ *  (`properties['choicesConnection']`). Null → not resolvable. */
+export async function loadChoicesRefItems(raw: string, connectionId: string): Promise<string[] | null> {
+  let connection: DG.DataConnection | null = null;
+  if (connectionId) {
+    try {
+      connection = await grok.dapi.connections.find(connectionId);
+    } catch {
+      // connection gone — a func reference still resolves
+    }
+  }
+  return resolveChoicesRef(raw, connection);
+}
+
 export async function processChoiceInput(input: DG.ChoiceInput<any>, func: DG.Func, inputProperty: DG.Property) {
   ui.setUpdateIndicator(input.input, true, 'loadeing');
 
@@ -41,36 +83,13 @@ export async function processChoiceInput(input: DG.ChoiceInput<any>, func: DG.Fu
 
     const prevInputValue = input.value;
     const raw = String(inputProperty.choices[0]).replaceAll('\\"', '"');
-    // Always replace the item list, empty included — the single "choice" the input starts with IS the mangled reference string.
-    const applyItems = (items: string[]): void => {
+    const connection = func instanceof DG.DataQuery ? func.connection ?? null : null;
+    const items = await resolveChoicesRef(raw, connection);
+    if (items) {
+      // Always replace the item list, empty included — the single "choice" the input starts with IS the mangled reference string.
       input.items = items;
       if (prevInputValue && items.includes(prevInputValue) && input.value !== prevInputValue)
         input.value = prevInputValue;
-    };
-
-    let choiceString = raw.toLowerCase();
-    if (func instanceof DG.DataQuery && func.connection) {
-      // property tends to strip the ends...
-      if (choiceString.startsWith('uery("') && choiceString.endsWith('"'))
-        choiceString = `q${choiceString})`;
-      if (choiceString.startsWith('query("') && choiceString.endsWith('")')) {
-        const query =
-            '--name: choicesQuery\n--output: dataframe out\n' + choiceString.substring(7, choiceString.length - 2);
-        const chq = func.connection.query('choicesQuery', query);
-        const res = await chq.apply({});
-        applyItems(choiceValuesFrom(res));
-        return;
-      }
-    }
-
-    const ref = parseChoiceFuncRef(raw);
-    if (ref) {
-      const choicesFunc = resolveChoiceFunc(ref);
-      if (!choicesFunc) {
-        console.warn(`Flow: choices function "${ref.funcName}" not found for input ${input.caption}`);
-        return;
-      }
-      applyItems(choiceValuesFrom(await choicesFunc.apply(ref.args)));
     }
   } catch (e) {
     console.error('error loading options for input ' + input.caption, e);

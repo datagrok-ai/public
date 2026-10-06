@@ -4,7 +4,7 @@ import {EnumeratorConfig} from './config';
 import {PerRoundOverride} from './enumerate';
 import {
   CHANGED_DOT_STYLE, clampRounds, combinationLimitsChanged, DataKey, estimateProductCount, MAX_ROUNDS, Mode,
-  MODE_LABEL, panelHeader, productFiltersChangedCount, roundsLabel, tabPanel,
+  MODE_LABEL, panelHeader, productFiltersChangedCount, cyclesLabel, roundsLabel, tabPanel,
 } from './shared';
 
 export interface StrategySummaryDeps {
@@ -28,7 +28,7 @@ export class StrategySummary {
   constructor(private readonly deps: StrategySummaryDeps) {
     this.host = ui.div([], {style: {padding: '16px'}});
     this.panel = tabPanel(
-      panelHeader('How the current strategy and round count combine the reaction templates and building blocks.'),
+      panelHeader('How the current strategy and step count combine the reaction templates and building blocks.'),
       this.host, true);
   }
 
@@ -50,11 +50,11 @@ export class StrategySummary {
       this.deps.overrideCountFor(overrides, mode, r, key);
 
     const card = ui.div([], {style: {maxWidth: '480px'}});
-    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}`,
+    card.appendChild(ui.divText(`${MODE_LABEL[mode]} · ${roundsLabel(rounds)}${cyclesLabel(config)}`,
       {style: {fontWeight: 'bold', fontSize: '13px', marginBottom: '10px'}}));
     if (rounds > MAX_ROUNDS) {
       card.appendChild(ui.divText(
-        `Showing the first ${MAX_ROUNDS} rounds — Number of rounds is capped at ${MAX_ROUNDS}.`,
+        `Showing the first ${MAX_ROUNDS} steps — Number of steps is capped at ${MAX_ROUNDS}.`,
         {style: {fontSize: '11px', color: 'var(--grey-5)', marginBottom: '8px'}}));
     }
 
@@ -68,7 +68,7 @@ export class StrategySummary {
         for (let r = 1; r <= displayRounds; r++) {
           const oc = overrideCount(r, key);
           const rowChildren: HTMLElement[] = [
-            ui.divText(`Round ${r}`, {style: {color: 'var(--grey-6)', width: '64px', flex: '0 0 auto'}}),
+            ui.divText(`Step ${r}`, {style: {color: 'var(--grey-6)', width: '64px', flex: '0 0 auto'}}),
             ui.divText(oc != null ? `${oc} of ${total} (custom subset)` : `all ${total}`,
               oc != null ? {style: {fontWeight: '600'}} : undefined),
           ];
@@ -86,7 +86,7 @@ export class StrategySummary {
       if (mode === 'reagents' && rDf)
         card.appendChild(componentSection('Reagents', rDf.rowCount, 'reagents'));
     } else {
-      card.appendChild(ui.divText('Pick reaction templates and building blocks to see round-by-round details.',
+      card.appendChild(ui.divText('Pick reaction templates and building blocks to see step-by-step details.',
         {style: {color: 'var(--grey-5)', fontSize: '12px', marginTop: '4px'}}));
     }
 

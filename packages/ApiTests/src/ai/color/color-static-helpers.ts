@@ -50,13 +50,13 @@ category('AI: Color: static helpers', () => {
   test('hexToPercentRgb happy path', async () => {
     const res = DG.Color.hexToPercentRgb('#00bfff');
     expect(res != null, true);
-    expectArray(res!, [0 / 256, 0xbf / 256, 0xff / 256, 0.3]);
+    expectArray(res!, [0 / 255, 0xbf / 255, 0xff / 255, 0.3]);
   });
 
   test('hexToPercentRgb with explicit alpha', async () => {
     const res = DG.Color.hexToPercentRgb('#00bfff80');
     expect(res != null, true);
-    expectArray(res!, [0 / 256, 0xbf / 256, 0xff / 256, 0x80 / 256]);
+    expectArray(res!, [0 / 255, 0xbf / 255, 0xff / 255, 0x80 / 255]);
   });
 
   test('hexToPercentRgb invalid input', async () => {

@@ -130,16 +130,20 @@ export namespace historyUtils {
    * Saved given FuncCall.
    * FuncCall is only stores references to actual dataframes. Thus, we should upload them separately
    * @param callToSave FuncCall to save
+   * @param options audience: the group granted View on the uploaded dataframes (default: All users);
+   * newId: assign the call a fresh id before saving, leaving an already saved run with the old id untouched
    * @returns Saved FuncCall
    */
-  export async function saveRun(callToSave: DG.FuncCall) {
+  export async function saveRun(callToSave: DG.FuncCall, options?: {audience?: DG.Group, newId?: boolean}) {
     let allGroup = groupsCache.get('All users');
 
     if (!allGroup) {
       allGroup = await grok.dapi.groups.find(DG.Group.defaultGroupsIds['All users']);
       groupsCache.set('All users', allGroup);
     }
+    const audience = options?.audience ?? allGroup;
 
+    if (options?.newId) callToSave.newId();
     const callCopy = deepCopy(callToSave);
     if (isIncomplete(callCopy)) callCopy.options['createdOn'] = dayjs().utc(true).unix();
 
@@ -172,7 +176,7 @@ export namespace historyUtils {
     await Promise.all(dfOutputs
       .map(async (output) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.outputs[output.name]);
-        await grok.dapi.permissions.grant(callCopy.outputs[output.name].getTableInfo(), allGroup, false);
+        await grok.dapi.permissions.grant(callCopy.outputs[output.name].getTableInfo(), audience, false);
       }));
 
     const dfInputs = wu(callCopy.inputParams.values() as DG.FuncCallParam[])
@@ -184,10 +188,17 @@ export namespace historyUtils {
     await Promise.all(dfInputs
       .map(async (input) => {
         await grok.dapi.tables.uploadDataFrame(callCopy.inputs[input.name]);
-        await grok.dapi.permissions.grant(callCopy.inputs[input.name].getTableInfo(), allGroup, false);
+        await grok.dapi.permissions.grant(callCopy.inputs[input.name].getTableInfo(), audience, false);
       }));
 
     const fc = await grok.dapi.functions.calls.allPackageVersions().save(callCopy);
+    // await grok.dapi.permissions.grant(fc, audience, false);
+    //   ^ requires core work: FuncCall is not a full entity — it has no per-run ACL,
+    //     so only the uploaded dataframes are audience-scoped and the run itself
+    //     stays loadable by id for everyone.
+    // await grok.dapi.functions.calls.transferOwnership(fc, owner);
+    //   ^ requires core work: ownership hand-off, so published/frozen copies stop
+    //     being the author's to edit or soft-delete.
     grok.log.audit('@user saved run of the @model model', {
       'user': DG.User.current(),
       'model': fc.func,

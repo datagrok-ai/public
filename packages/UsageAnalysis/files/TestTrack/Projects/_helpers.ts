@@ -1,11 +1,3 @@
-// Shared helpers for Projects regression specs.
-// Auth is token-based: `gotoApp` injects DATAGROK_AUTH_TOKEN via
-// `loginToDatagrok` (spec-login.ts), the path `grok test` supports. The old
-// committed storageState (../e2e/.auth.json) is regenerated only locally and
-// goes stale fast on dev — there is no globalSetup to refresh it — so it is
-// no longer used here.
-// Helpers transcribed from .claude/skills/grok-browser/references/projects.md
-// and .claude/skills/grok-browser/references/widgets/dialog.md.
 import {Page, expect} from '@playwright/test';
 import {loginToDatagrok} from '../spec-login';
 
@@ -24,8 +16,7 @@ export async function evalJs<T = any>(page: Page, script: string): Promise<T> {
 }
 
 export async function gotoApp(page: Page) {
-  // Token injection (spec-login.ts) navigates to BASE_URL and waits for the
-  // Browse panel — the grok-test-compatible auth path.
+
   await loginToDatagrok(page);
 }
 
@@ -50,24 +41,12 @@ export async function openCsv(page: Page, path: string) {
   await page.waitForTimeout(1500);
 }
 
-// Drive the Save Project dialog. Per the platform's own UITests pattern
-// (scripts-layout.test.ts:415) the toolbar Save button is reachable as
-// `button[name="button-Save"]:visible` — explicit `button` element +
-// `:visible` filter + `.first()`. Bare `[name="button-Save"]` returns
-// undefined in Playwright (DOM has hidden duplicates that confuse the
-// resolver).
-//
-// Match the dialog in two stages:
-//   * `[name="dialog-Save-project"]` — name attribute (preferred when present)
-//   * `.d4-dialog:has-text("Save project")` — text-based fallback
 export async function saveProjectViaDialog(page: Page, name: string) {
-  // Wait for the toolbar to settle — under Playwright the toolbar render
-  // can lag the dataframe render by several seconds. Also guard against
-  // overlay banners that intercept pointer events on the toolbar.
+
   const saveBtn = page.locator('button[name="button-Save"]:visible').first();
   await saveBtn.waitFor({timeout: 30_000, state: 'visible'});
-  await page.waitForTimeout(500);  // settle render
-  // Try regular click first; fall back to JS DOM click if intercepted.
+  await page.waitForTimeout(500);  
+
   try {
     await saveBtn.click({timeout: 5_000});
   } catch (_) {
@@ -86,10 +65,7 @@ export async function saveProjectViaDialog(page: Page, name: string) {
   ).first();
   await nameInput.fill(name);
   await dialog.locator('button.ui-btn-ok, [name="button-OK"]').first().click();
-  // Save dialog auto-opens a Share dialog after OK. Match by name-attribute
-  // prefix `dialog-Share-*` (preferred) or by title-text prefix `^Share /`
-  // — the user-typed `name` is server-normalized (PascalCase, no dashes) in
-  // the share dialog title, so exact `Share ${name}` text match doesn't fire.
+
   const shareDialog = page.locator(
     '.d4-dialog[name^="dialog-Share-"], .d4-dialog:has-text("Share ")',
   ).first();
@@ -105,8 +81,6 @@ export async function saveProjectViaDialog(page: Page, name: string) {
   }
 }
 
-// Save via JS API (no UI). Use for setup state where the scenario doesn't
-// own the Save dialog.
 export async function saveProjectViaApi(page: Page, name: string): Promise<string> {
   return await evalJs<string>(page, `(async () => {
     const tv = grok.shell.tv;
@@ -140,44 +114,24 @@ export async function navigateToDashboards(page: Page) {
   await page.waitForSelector('.grok-gallery-grid', {timeout: 30_000});
 }
 
-// Spaces fixture provisioning. Creates a root Space and physically uploads a
-// file into the space's own storage via `client.files.write(name, bytes)`,
-// making it openable via `<spaceName>:Files/<name>` — the path-based open
-// flow scenarios use.
-//
-// Path format note: a Space exposes a child DataConnection literally named
-// `Files` (full name `<spaceName>:Files`); the file written via
-// `client.files.write(name, ...)` ends up at `<spaceName>:Files/<name>`.
-// `Spaces:<spaceName>/<name>` does NOT resolve — the global `Spaces:` namespace
-// is not the storage root. Verified empirically 2026-05-07 against dev:
-// `client.children.list()` returns the FileInfo with
-// `fullPath = "<spaceName>:Files/<fileName>"`, and that path opens cleanly
-// through the canonical `OpenFile` opener.
-//
-// Linked-entity provisioning (`addEntity(uuid, link=true)`) is intentionally
-// omitted: on dev/sandbox the test account doesn't own System:DemoFiles
-// FileInfos, so the server rejects the call with `Permission denied to change
-// entity`. Physical copy bypasses this — the bytes are uploaded fresh, the
-// space owns the resulting file outright.
 export interface SpaceFixture {
   spaceId: string;
-  spaceName: string;            // server-normalized (PascalCase, no dashes)
-  fileName: string;             // filename inside the space (e.g. 'cars.csv')
-  filePath: string;             // `<spaceName>:Files/<fileName>` — usable with OpenFile
+  spaceName: string;            
+  fileName: string;             
+  filePath: string;             
 }
 
 export interface ProvisionSpaceOptions {
-  namePrefix: string;          // suffixed with `-${Date.now()}` to avoid collisions
-  sourceDirectory?: string;    // default 'System:DemoFiles/'
-  fileName: string;            // file in sourceDirectory to copy into the space
-  asName?: string;             // override stored name in the space (default = fileName)
+  namePrefix: string;          
+  sourceDirectory?: string;    
+  fileName: string;            
+  asName?: string;             
 }
 
 export interface ProvisionSpaceResult {
   blocked: boolean;
   reason: string;
-  // Populated when the Space itself was created, even if the copy failed.
-  // Always pass to releaseSpaceFixture for cleanup, regardless of `blocked`.
+
   fixture: SpaceFixture | null;
 }
 

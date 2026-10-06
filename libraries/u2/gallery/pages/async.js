@@ -1,5 +1,5 @@
 import {AsyncSource, Scope} from '../../src/index.js';
-import {AsyncView, loader, skeleton} from '../../src/components/async-view.js';
+import {AsyncView, loader, skeleton} from '../../src/components/display/async-view.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;

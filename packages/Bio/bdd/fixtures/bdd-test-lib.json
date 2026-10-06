@@ -1,0 +1,18 @@
+[
+  {
+    "symbol": "BDD",
+    "name": "bdd test monomer (alanine)",
+    "molfile": "\n     RDKit          2D\n\n  7  6  0  0  0  0  0  0  0  0999 V2000\n    1.6702    1.3929    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    0.3712    0.6429    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9279    1.3929    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   -2.2269    0.6429    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n    0.3712   -0.8571    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   -0.9279   -1.6071    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n    1.6702   -1.6071    0.0000 R#  0  0  0  0  0  0  0  0  0  0  0  0\n  2  1  1  1\n  2  3  1  0\n  3  4  1  0\n  2  5  1  0\n  5  6  2  0\n  5  7  1  0\nM  RGP  2   4   1   7   2\nM  END\n",
+    "smiles": "C[C@H](N[*:1])C(=O)[*:2]",
+    "polymerType": "PEPTIDE",
+    "monomerType": "Backbone",
+    "naturalAnalog": "A",
+    "author": "bdd",
+    "id": 0,
+    "createDate": null,
+    "rgroups": [
+      {"alternateId": "R1-H", "capGroupName": "H", "capGroupSMILES": "[*:1][H]", "label": "R1"},
+      {"alternateId": "R2-OH", "capGroupName": "OH", "capGroupSMILES": "O[*:2]", "label": "R2"}
+    ]
+  }
+]

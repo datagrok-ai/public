@@ -74,7 +74,7 @@ async function openDemoData(chosenFile: string): Promise<void> {
   peptides.name = 'Peptides';
   const view = grok.shell.addTableView(peptides);
   view.name = 'PeptidesView';
-  grok.shell.windows.showProperties = true;
+  grok.shell.windows.showContextPanel = true;
   pi.close();
 }
 
@@ -108,7 +108,7 @@ export class PackageFunctions {
     const windows = grok.shell.windows;
     windows.showToolbox = false;
     windows.showHelp = false;
-    windows.showProperties = false;
+    windows.showContextPanel = false;
 
     const view = View.create();
     view.name = 'Peptides';

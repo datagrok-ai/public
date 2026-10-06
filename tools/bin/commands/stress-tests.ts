@@ -44,7 +44,9 @@ async function run(config: { url: string, key: string }, args: StressTestArgs): 
     processArgs.push('./node-test-loader/register.mjs');
     processArgs.push('src/package-test-node.ts');
     processArgs.push(`--apiUrl=${config.url}`);
-    processArgs.push(`--devKey=${config.key}`);
+    // A session token rather than the credential: it is short-lived, and with a keypair
+    // there is no reusable secret to put on a command line at all.
+    processArgs.push(`--token=${await testUtils.getToken(config.url, config.key)}`);
     // Explicit even though it's the runner default: the stress baseline must only run
     // stressTest-marked tests regardless of how the runner's default evolves.
     processArgs.push('--mode=stress');

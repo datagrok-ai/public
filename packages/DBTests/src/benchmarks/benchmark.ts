@@ -6,7 +6,7 @@ category('Benchmarks', () => {
   test('Sequential select 1', async () => {
     const count = DG.Test.isInBenchmark ? 100 : 25;
     return await benchmarkQuery('SimpleSelect', count);
-  }, {timeout: 120000, benchmark: true, stressTest: true});
+  }, {timeout: 120000, benchmark: true});
 
   test('Parallel select 1', async () => {
     const count = DG.Test.isInBenchmark ? 200 : 30;
@@ -25,26 +25,26 @@ category('Benchmarks', () => {
   test('Performance: TestNormal', async () => {
     const count = DG.Test.isInBenchmark ? 5 : 1;
     return await benchmarkQuery('PostgresqlTableNormal', count);
-  }, {timeout: 120000, benchmark: true, stressTest: true});
+  }, {timeout: 120000, benchmark: true});
 
   test('Performance: TestWide', async () => {
     const count = DG.Test.isInBenchmark ? 5 : 1;
     return await benchmarkQuery('PostgresqlTableWide', count);
-  }, {timeout: 120000, benchmark: true, stressTest: true});
+  }, {timeout: 120000, benchmark: true});
 
   // The two cached TestWide benchmarks live in ApiTests ('DB: Benchmarks'): client
   // cached needs the browser IndexedDB cache; server cached trips a Node-runtime bug
   // in batched cached-result delivery (appendMerge on null on cache hit).
   test('Performance: TestLong', async () => {
     return `Execution time: ${await getDataQueryTime('PostgresqlTableLong')}`;
-  }, {timeout: 120000, benchmark: true, stressTest: true});
+  }, {timeout: 120000, benchmark: true});
 
   test('Compression int', async () => {
     const compressionOnTime = await getDataQueryTime('PostgresqlCompressionIntOn');
     const compressionOffTime = await getDataQueryTime('PostgresqlCompressionIntOff');
     expect(compressionOnTime < compressionOffTime * 2, true);
   }, {skipReason: 'Feature of compression in development', benchmark: true});
-}, {node: true});
+});
 
 function getTestResult(times: number[], expectedCount: number): object {
   const totalTime = times.reduce((acc, currentValue) => acc + currentValue, 0);

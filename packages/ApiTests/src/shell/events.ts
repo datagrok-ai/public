@@ -21,6 +21,26 @@ category('Events', () => {
         expect(subscriptionPassed, true);
     })
 
+    test('onContextMenuShown / onContextMenuClosed', async () => {
+        let shown = false;
+        let closed = false;
+        let tv = grok.shell.addTableView(grok.data.demo.demog());
+        let barChart = tv.barChart();
+        let subShown = grok.events.onContextMenuShown.subscribe(() => {
+            shown = document.querySelectorAll('.d4-menu-popup').length > 0;
+        });
+        let subClosed = grok.events.onContextMenuClosed.subscribe(() => closed = true);
+        barChart.root.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: 100, clientY: 100}));
+        await delay(500);
+        document.body.click();
+        await delay(500);
+        subShown.unsubscribe();
+        subClosed.unsubscribe();
+        tv.close();
+        expect(shown, true);
+        expect(closed, true);
+    });
+
     test('onEvent', async () => {
         let subscriptionPassed = false;
         let subscription = grok.events.onCustomEvent("test").subscribe((e: any) => { subscriptionPassed = true; });

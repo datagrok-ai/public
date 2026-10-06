@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 
 import {FlowEditor} from '../rete/flow-editor';
 import {createNode, ensureFunctionsRegistered} from '../rete/node-factory';
+import {applyPropertyInputShape} from '../rete/nodes/input-nodes';
 import {FlowSettings, FuncFlowDocument, FuncFlowConnection} from './flow-schema';
 
 export function serializeFlow(flow: FlowEditor, settings: FlowSettings): FuncFlowDocument {
@@ -71,6 +72,8 @@ export async function deserializeFlow(doc: FuncFlowDocument, flow: FlowEditor): 
     node.description = docNode.description ?? String(docNode.properties?.description ?? '');
     delete (node.properties as Record<string, unknown>).description;
     node.collapsed = docNode.collapsed === true;
+    // A Property Input's live shape (type, socket, qualifier keys) derives from its properties.
+    applyPropertyInputShape(node);
     await flow.addNodeAt(node, docNode.pos?.x ?? 0, docNode.pos?.y ?? 0);
     idMap.set(docNode.id, node.id);
   }

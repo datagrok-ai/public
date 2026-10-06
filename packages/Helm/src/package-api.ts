@@ -24,6 +24,14 @@ export namespace funcs {
   }
 
   /**
+   * @param {DG.Column} col
+   *   semType: Macromolecule
+   */
+  export async function helmPanel(col: DG.Column ): Promise<any> {
+    return await grok.functions.call('Helm:HelmPanel', { col });
+  }
+
+  /**
    * Adds editor
    * @param {any} mol
    *   semType: Macromolecule

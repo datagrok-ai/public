@@ -86,12 +86,12 @@ export async function renderRestPanel(func: DG.Func): Promise<DG.Widget> {
   func.inputs.forEach((i) => (<any>params)[i.name] = null);
   const curl = `
 curl --location --request POST '${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run' \\
---header 'Authorization: ${getCookie('auth')}' \\
+--header 'Authorization: ${grok.dapi.token}' \\
 --header 'Content-Type: application/json' \\
 --data-raw '${JSON.stringify(params)}'`;
   const js = `
 var myHeaders = new Headers();
-myHeaders.append("Authorization", "${getCookie('auth')}");
+myHeaders.append("Authorization", "${grok.dapi.token}");
 myHeaders.append("Content-Type", "applicati4on/json");
 
 var raw = JSON.stringify(${JSON.stringify(params)});
@@ -109,13 +109,6 @@ fetch("${(<any>grok.settings).apiUrl}/v1/func/${func.nqName}/run", requestOption
   .catch(error => console.log('error', error));`;
   const tabs = ui.tabControl({'CURL': ui.div([ui.divText(curl)]), 'JS': ui.div([ui.divText(js)])});
   return DG.Widget.fromRoot(tabs.root);
-}
-
-function getCookie(name: string): string | undefined {
-  const matches = document.cookie.match(new RegExp(
-    '(?:^|; )' + name.replace(/([\.$?*|{}\(\)\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)',
-  ));
-  return matches ? decodeURIComponent(matches[1]) : undefined;
 }
 
 export function startModelCatalog(options: ModelCatalogConfig) {

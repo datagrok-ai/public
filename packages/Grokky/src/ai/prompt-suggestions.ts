@@ -17,6 +17,8 @@ export interface Suggestion {
   /** A client-side action key (see [SUGGESTION_ACTIONS]) — runs immediately instead of prompting the AI. */
   action?: string;
   prefer?: Record<string, string>;
+  /** Packages whose functions must be registered for this prompt to work (e.g. [Chem]). */
+  requires?: string[];
 }
 
 export interface Block {
@@ -27,6 +29,7 @@ export interface Block {
   label: string;
   icon?: string;
   color?: string;
+  requires?: string[];
   suggestions: Suggestion[];
 }
 
@@ -44,6 +47,17 @@ const SYNTHETIC_FILTERS: Record<string, (c: DG.Column) => boolean> = {
 function columnMatches(c: DG.Column, filter: string): boolean {
   const synthetic = SYNTHETIC_FILTERS[filter];
   return synthetic ? synthetic(c) : !!c[filter as keyof DG.Column];
+}
+
+const _pkgAvailable = new Map<string, boolean>();
+
+function requiresMet(req?: string[]): boolean {
+  return !req || req.every((p) => {
+    let ok = _pkgAvailable.get(p);
+    if (ok === undefined)
+      _pkgAvailable.set(p, ok = DG.Func.find({package: p}).length > 0);
+    return ok;
+  });
 }
 
 async function load(): Promise<Block[]> {
@@ -97,10 +111,10 @@ export async function resolveScopes(context: Context, view: DG.ViewBase | null =
     const applies = b.scope === 'global' ||
       (b.scope === 'view' && view?.type === b.match?.type) ||
       (b.scope === 'column' && !!df?.columns.bySemType(b.match?.semType ?? ''));
-    if (!applies) continue;
+    if (!applies || !requiresMet(b.requires)) continue;
 
     const suggestions = b.suggestions
-      .map((s) => resolveSuggestion(s, df))
+      .map((s) => requiresMet(s.requires) ? resolveSuggestion(s, df) : null)
       .filter((s): s is Suggestion => !!s);
     if (suggestions.length)
       out.push({...b, suggestions});

@@ -1,4 +1,5 @@
-import { test, expect } from "@playwright/test";
+import {expect} from '@playwright/test';
+import {test} from '../../shared-page';
 import {
   loginToDatagrok,
   specTestOptions,
@@ -41,7 +42,6 @@ test("Scripts Edit — testRscript", async ({ page }) => {
     },
   );
 
-  // Prerequisite — if testRscript was deleted by a previous run, seed it
   await softStep("[pre] Ensure testRscript exists", async () => {
     await page.evaluate(async () => {
       const existing = await grok.dapi.scripts
@@ -54,7 +54,7 @@ test("Scripts Edit — testRscript", async ({ page }) => {
         const s = DG.Script.create(body);
         await grok.dapi.scripts.save(s);
       }
-      // Full route round-trip so the gallery re-fetches
+
       grok.shell.route("/");
       await new Promise((r) => setTimeout(r, 400));
       grok.shell.route("/scripts");
@@ -124,7 +124,7 @@ test("Scripts Edit — testRscript", async ({ page }) => {
     await page.evaluate(() => {
       (document.querySelector('[name="button-Save"]') as HTMLElement)?.click();
     });
-    // Poll the server until the saved body reflects the edit
+
     const saved = await page.evaluate(async () => {
       for (let i = 0; i < 30; i++) {
         const s = await grok.dapi.scripts

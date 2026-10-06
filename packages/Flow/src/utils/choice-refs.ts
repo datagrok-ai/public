@@ -33,9 +33,18 @@ export function parseChoiceFuncRef(raw: string): ChoiceFuncRef | null {
   return {packagePrefix, funcName, args};
 }
 
-/** A SQL-query reference (`query("…")`, first char stripped). */
+/** A SQL-query reference (`query("…")`, first char stripped). The quote may arrive
+ *  JSON-escaped from the platform (`uery(\"SELECT …\"`) — both forms count. */
 export function isChoiceQueryRef(raw: string): boolean {
-  return /^q?uery\("/i.test((raw ?? '').trim());
+  return /^q?uery\(\\?"/i.test((raw ?? '').trim());
+}
+
+/** A stored `choices` string that is a single REFERENCE (func call / query) rather
+ *  than a literal comma list — resolved live by the value editors, kept out of
+ *  emitted headers (quotes/parens/commas would corrupt the options block). */
+export function isChoicesRefString(s: string): boolean {
+  const t = (s ?? '').trim();
+  return t !== '' && (isChoiceQueryRef(t) || parseChoiceFuncRef(t) !== null);
 }
 
 /** Literal selectable values vs a single reference to resolve first — seeding

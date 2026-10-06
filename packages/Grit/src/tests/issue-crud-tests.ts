@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {gritDb, CommentRow, IssueRow} from '../generated/db';
+import {gritDb, CommentRow, IssueInsert, IssueRow} from '../generated/db';
 
 // End-to-end issue CRUD over the typed clients generated from databases/grit/schema.json.
 category('Grit: issue CRUD', () => {
@@ -33,11 +33,12 @@ category('Grit: issue CRUD', () => {
     const bug = await lookupId(gritDb.issueTypes, {name: 'bug'});
     const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Test project'});
     const [issue] = await gritDb.issues.insert({
-      project_id: project.id, number: 1, title: 'First bug',
+      project_id: project.id, title: 'First bug',
       status_id: open, priority_id: high, type_id: bug, reporter: me.id, assignee: me.id,
     });
     try {
       const row = await gritDb.issues.get(issue.id);
+      expect(row.number, 1, 'the first issue of a project must be numbered 1 by the engine');
       expect(row.status_id, open, 'status ref not persisted');
       expect(row.reporter, me.id, 'user column not persisted');
 
@@ -73,22 +74,82 @@ category('Grit: issue CRUD', () => {
       'comments must cascade with their issue');
   });
 
-  test('per-project issue numbering is deduplicated', async () => {
+  test('issue numbers are server-assigned per project', async () => {
     const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Numbering'});
-    const [first] = await gritDb.issues.insert({project_id: project.id, number: 1, title: 'A'});
+    const [other] = await gritDb.projects.insert({key: unique('T'), name: 'Numbering 2'});
+    const numberOf = async (id: string): Promise<number> => (await gritDb.issues.get(id)).number;
+    const ids: string[] = [];
+    const insert = async (values: IssueInsert): Promise<string> => {
+      const [r] = await gritDb.issues.insert(values);
+      ids.push(r.id);
+      return r.id;
+    };
     try {
-      const [dup] = await gritDb.issues.insert({project_id: project.id, number: 1, title: 'B'});
-      expect(dup.status, 'duplicate');
-      expect(dup.existingId, first.id);
+      const a = await insert({project_id: project.id, title: 'A'});
+      const b = await insert({project_id: project.id, title: 'B'});
+      expect(await numberOf(a), 1);
+      expect(await numberOf(b), 2, 'numbers must be contiguous within a project');
+      expect(await numberOf(await insert({project_id: other.id, title: 'C'})), 1,
+        'each project counts on its own');
+
+      // A supplied number (imports) is kept and the counter catches up.
+      const supplied = await insert({project_id: project.id, number: 7, title: 'D'});
+      expect(await numberOf(supplied), 7);
+      expect(await numberOf(await insert({project_id: project.id, title: 'E'})), 8);
+
+      const [dup] = await gritDb.issues.insert({project_id: project.id, number: 1, title: 'F'});
+      expect(dup.status, 'duplicate', 'a supplied duplicate reports the existing row');
+      expect(dup.existingId, a);
+
+      expect(await throws(() => gritDb.issues.update(a, {number: 9})), true,
+        'an assigned number is immutable');
     } finally {
-      await gritDb.issues.delete(first.id);
+      for (const id of ids)
+        await gritDb.issues.delete(id);
+      await gritDb.projects.delete(project.id);
+      await gritDb.projects.delete(other.id);
+    }
+  });
+
+  // What the app's ⋯ > "Bulk edit…" posts: one value into the selected rows through
+  // POST .../issue/update, each row patched on its own so versions and audit lines are per row.
+  test('bulk close: updateWhere over a selection', async () => {
+    const open = await lookupId(gritDb.statuses, {name: 'open'});
+    const closed = await lookupId(gritDb.statuses, {name: 'closed'});
+    const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Bulk close'});
+    const ids: string[] = [];
+    try {
+      for (const title of ['A', 'B', 'C']) {
+        const [r] = await gritDb.issues.insert({project_id: project.id, title, status_id: open});
+        ids.push(r.id);
+      }
+      const selected = ids.slice(0, 2);
+      const report = await gritDb.issues.updateWhere(
+        `id in (${selected.map((id) => `"${id}"`).join(', ')})`, {status_id: closed});
+      expect(report.updated, 2);
+      expect(report.hasMore, false);
+
+      expect(await gritDb.issues.count(`project_id = "${project.id}" and status_id = "${closed}"`), 2);
+      expect((await gritDb.issues.get(ids[2])).status_id, open,
+        'a row outside the selection must not be touched');
+
+      const audit = await gritDb.issues.audit(selected[0]);
+      expect(audit.map((a) => a.op).join(','), 'insert,update');
+      expect(audit[1].after.status_id, closed);
+      expect((await gritDb.issues.get(selected[0])).version, 2, 'one version step per row');
+
+      expect(await throws(() => gritDb.issues.updateWhere(`id in ("${ids[2]}")`, {number: 9})), true,
+        'an assigned number stays immutable in bulk too');
+    } finally {
+      for (const id of ids)
+        await gritDb.issues.delete(id);
       await gritDb.projects.delete(project.id);
     }
   });
 
   test('labels: N:N join cascades with the issue', async () => {
     const [project] = await gritDb.projects.insert({key: unique('T'), name: 'Labels'});
-    const [issue] = await gritDb.issues.insert({project_id: project.id, number: 1, title: 'Labeled'});
+    const [issue] = await gritDb.issues.insert({project_id: project.id, title: 'Labeled'});
     const [label] = await gritDb.labels.insert({name: unique('bug'), color: '#ff0000'});
     try {
       await gritDb.issueLabels.insert({issue_id: issue.id, label_id: label.id});

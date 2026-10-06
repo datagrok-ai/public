@@ -124,6 +124,17 @@ export function piechartCellRenderer() {
   return PackageFunctions.piechartCellRenderer();
 }
 
+//name: VlaaiVis
+//tags: cellRenderer
+//output: grid_cell_renderer result
+//meta.cellType: vlaaivis
+//meta.gridChart: true
+//meta.virtual: true
+//meta.role: cellRenderer
+export function vlaaivisCellRenderer() {
+  return PackageFunctions.vlaaivisCellRenderer();
+}
+
 //name: Radar
 //tags: cellRenderer
 //output: grid_cell_renderer result

@@ -29,7 +29,7 @@ category('Tutorials', () => {
 
   test('Run a tutorial', async () => {
     try {
-      await tutorial.run();
+      await tutorial.start();
     } catch (e) {
       expect(e instanceof Error ? e.message : e, 'Method "_run" not implemented.');
     }

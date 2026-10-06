@@ -108,10 +108,17 @@ category('Flow: input values', () => {
       int.properties['defaultValue'] = 5;
       const out = await addNode(e.flow, 'Outputs/Table Output');
       await e.flow.addConnectionByKeys(table.id, 'table', out.id, 'table');
+      const braces = await addNode(e.flow, 'Inputs/String Input');
+      braces.properties['paramName'] = 'query';
+      braces.properties['defaultValue'] = 'a {b} c';
       const script = emitScript(e.flow, SETTINGS, {});
       expect(script.includes('//input: dataframe df\n'), true, 'no default on the dataframe header');
       expect(script.includes('//input: dataframe df ='), false, 'table name never leaks into the header');
       expect(script.includes('//input: int n = 5'), true, 'scalar default still emitted');
+      // The platform parses the line's first-{-to-last-} span as the options block —
+      // a brace-carrying default (HELM etc.) corrupts the line and must stay out.
+      expect(script.includes('//input: string query\n'), true, 'the param line survives bare');
+      expect(script.includes('{b}'), false, 'a brace-carrying default never rides the header');
     } finally {
       destroyEditor(e);
     }
@@ -198,6 +205,34 @@ category('Flow: input values', () => {
         return editor?.value === '123';
       }, 3000);
       expect(synced, true, 'panel-side edits sync into the node editor');
+    } finally {
+      destroyEditor(e);
+    }
+  });
+
+  test('a wheel over the on-node editor does not zoom the canvas', async () => {
+    const e = makeEditor();
+    try {
+      await addNode(e.flow, 'Inputs/Int Input');
+      const rendered = await until(() =>
+        e.container.querySelector('[data-testid="ff-node-value-input"] input') != null, 4000);
+      expect(rendered, true, 'the node body hosts a DG input');
+
+      const wheel = (el: Element): void => {
+        const r = el.getBoundingClientRect();
+        el.dispatchEvent(new WheelEvent('wheel', {bubbles: true, cancelable: true, deltaY: -120,
+          clientX: r.left + r.width / 2, clientY: r.top + r.height / 2}));
+      };
+      const before = e.flow.getZoom();
+      const moved = (): boolean => Math.abs(e.flow.getZoom() - before) > 1e-6;
+
+      wheel(e.container.querySelector('[data-testid="ff-node-value-input"] input')!);
+      await until(moved, 500);
+      expect(moved(), false, 'the editor keeps the wheel — the canvas must not zoom under the cursor');
+
+      // The same gesture on empty canvas still zooms — the guard is scoped, not global.
+      wheel(e.container.querySelector('.ff-canvas')!);
+      expect(await until(moved, 2000), true, 'the canvas itself still zooms on wheel');
     } finally {
       destroyEditor(e);
     }

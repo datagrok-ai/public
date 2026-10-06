@@ -5,7 +5,7 @@ import { filter, map } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
 import { fromEvent, interval, merge } from 'rxjs';
 import $ from 'cash-dom';
-import { elementClick } from './utils';
+import { elementClick, selectionMade } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
@@ -40,34 +40,36 @@ export class ViewersTutorial extends Tutorial {
 
     this.title('Selection and current records');
 
-    const ribbonPanels = grok.shell.v.getRibbonPanels();
-    const addViewerIcon = ribbonPanels[1][1];
+    // resolved on every use: the ribbon is rebuilt while this step is up, and a captured element
+    // leaves both the click listener and the highlight on the node that was replaced
+    const addViewerIcon = (): HTMLElement | null => grok.shell.v.getRibbonPanels().flat()
+      .find((item) => item.querySelector('i[aria-label="Add viewer"]') != null) ?? null;
     await this.action(
       'Click the Add viewer icon to open the gallery',
-      elementClick(() => addViewerIcon), addViewerIcon);
+      elementClick(addViewerIcon), addViewerIcon);
 
-    const getChartsTag = (): HTMLElement | null => Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
-      const span = div.querySelector('span');
-      return span && span.textContent === 'Charts';
-    }) as HTMLElement ?? null;
-    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag());
+    const getChartsTag = (): HTMLElement | null =>
+      document.querySelector('[name="viewer-tag-Charts"]');
+    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag);
 
-    await this.action('Select the Radar viewer',
-      elementClick(() => this.getViewerCard('Radar')), this.getViewerCard('Radar'));
+    const radarCard = () => this.getViewerCard('Radar');
+    await this.action('Select the Radar viewer', elementClick(radarCard), radarCard);
 
     const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
-    await this.action('Open the viewer gallery again', elementClick(() => addViewerIcon), addViewerIcon, sunburstInfo);
+    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), addViewerIcon, sunburstInfo);
 
-    const searchInput = document.querySelector('.vg-controls input.ui-input-editor') as HTMLInputElement;
+    // the gallery may be rebuilt while the step is up, so the box is found by the event, not captured
+    const searchInput = (): HTMLInputElement | null => document.querySelector('[name="viewer-gallery-search"]');
     await this.action('Type "Sunburst" in the search box',
-      fromEvent(searchInput, 'input').pipe(filter(() => searchInput.value.toLowerCase().includes('sunburst'))),
+      fromEvent<InputEvent>(document, 'input').pipe(filter((e) => (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
+        (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
       searchInput);
 
-    const sunburstViewerElement = this.getViewerCard('Sunburst');
+    // the card appears only once the search has filtered the gallery, so it is resolved per tick
     await this.action('Select the Sunburst viewer',
       grok.events.onViewerAdded.pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst')),
-      sunburstViewerElement);
+      () => this.getViewerCard('Sunburst'));
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
@@ -80,7 +82,7 @@ export class ViewersTutorial extends Tutorial {
       merge(this.t!.onMouseOverRowGroupChanged, this.t!.onMouseOverRowChanged), null, hover);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>.';
-    await this.action('Select points on the scatter plot', this.t!.onSelectionChanged, null, selection);
+    await this.action('Select points on the scatter plot', selectionMade(this.t!), null, selection);
 
     const selectionSync = 'Note that the selection is synchronized between ' +
       'all viewers. When you select one of the bins on the histogram by clicking on it, ' +
@@ -88,10 +90,10 @@ export class ViewersTutorial extends Tutorial {
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
       `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
-    await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync);
+    await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync);
 
     const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
-    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect);
+    await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect);
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +
@@ -137,7 +139,7 @@ export class ViewersTutorial extends Tutorial {
   }
 
   private getViewerCard(name: string): HTMLElement | null {
-    return Array.from(document.querySelectorAll<HTMLElement>('.viewer-gallery-root .d4-item-card.viewer-gallery'))
-      .find(card => card.offsetParent !== null && card.querySelector('.card-label')?.textContent === name) ?? null;
+    return Array.from(document.querySelectorAll<HTMLElement>(`[name="viewer-card-${name}"]`))
+      .find((card) => card.offsetParent !== null) ?? null;
   }
 }

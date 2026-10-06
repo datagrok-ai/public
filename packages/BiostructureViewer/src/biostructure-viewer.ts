@@ -53,7 +53,7 @@ export class BioStructureViewer {
       }
     });
 
-    grok.shell.windows.showProperties = false;
+    grok.shell.windows.showContextPanel = false;
     grok.shell.windows.showHelp = false;
     this.bsView.ribbonMenu.clear();
   };

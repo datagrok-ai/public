@@ -1,0 +1,41 @@
+/* u2 virtualized grid (see src/components/collections/grid.ts). Cells are absolutely positioned
+   inside a spacer sized to the row count; their size comes from an inline style set by JS. */
+.u2-grid {
+  position: relative;
+  overflow-y: auto;
+  border: var(--dg-border-width) solid var(--dg-border);
+  background: var(--dg-bg);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  outline: none;
+}
+
+.u2-grid:focus {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-grid-content {
+  position: relative;
+}
+
+.u2-grid-cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border-radius: var(--dg-radius);
+  cursor: pointer;
+}
+
+.u2-grid-cell:hover {
+  background: var(--dg-hover);
+}
+
+.u2-grid-cell-selected,
+.u2-grid-cell-selected:hover {
+  background: var(--dg-selection-bg);
+  color: var(--dg-selection-text);
+}

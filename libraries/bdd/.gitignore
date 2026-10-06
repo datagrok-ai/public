@@ -1,0 +1,8 @@
+node_modules/
+test-results/
+test-output/
+playwright-report/
+e2e/
+.auth.json
+npm-install.log
+dist/

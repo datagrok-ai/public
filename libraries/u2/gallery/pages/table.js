@@ -1,6 +1,6 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {div, divH, span, button} from '../../src/core/elements.js';
-import {BasicTable, tableFromMap} from '../../src/components/table.js';
+import {BasicTable, tableFromMap} from '../../src/components/collections/table.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -68,7 +68,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;

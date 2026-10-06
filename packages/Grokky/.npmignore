@@ -1,5 +1,9 @@
 # Developer keys
 upload.keys.json
+myKey.txt
+
+# Local benchmark data — files/ is otherwise shipped content
+files/benchmarks
 
 # Local dev-loop harness — never part of a published package. dev/.claude/ holds a copy of the
 # developer's Claude subscription credentials; .gitignore alone does NOT keep it out of a publish,

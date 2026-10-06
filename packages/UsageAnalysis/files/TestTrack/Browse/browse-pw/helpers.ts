@@ -16,41 +16,27 @@ import {
 
 export const BASE: string = process.env.DATAGROK_URL!;
 
-/** Recording sink for errors observed during a test scenario. */
 export interface ErrorSink {
   pageErrors: string[];
   consoleErrors: string[];
   balloonErrors: string[];
 }
 
-/**
- * Console messages we deliberately ignore for Browse tests — they are browser-level
- * noise unrelated to app behavior (missing resources, ad blockers, etc).
- */
 const IGNORED_CONSOLE_PATTERNS: RegExp[] = [
-  // Generic browser-level resource noise (missing icons, lazy-loaded assets, etc.).
+
   /Failed to load resource:\s*the server responded with a status of 404/i,
   /Failed to load resource:\s*net::ERR_/i,
-  // Aborted fetches during fast page navigation: fires when an in-flight request is
-  // cancelled because the user navigated away. Not a real failure.
+
   /TypeError:\s*Failed to fetch/i,
   /Error fetching .*:\s*TypeError:\s*Failed to fetch/i,
-  // Known platform noise from the global search "similarity" subroutine: fires on every
-  // keystroke, does not affect search results. Track separately if it becomes blocking.
+
   /Error during similarity search:/i,
-  // External images embedded in demo descriptions / Markup (e.g. Wikipedia) are CORS-blocked
-  // by the browser. This is demo-content noise, not a platform defect.
+
   /Access to image at .* has been blocked by CORS policy/i,
-  // PowerPack "spotlight" group-favorites indexer intermittently calls `.id` on a null element
-  // while mapping groups (powerpack/src/spotlight/group-favorites.ts). It is a background package
-  // bug unrelated to the view under test; it fires nondeterministically on Groups/Roles load.
+
   /powerpack\/src\/spotlight\/group-favorites/i,
 ];
 
-/**
- * Attach console.error / pageerror listeners and start watching for error balloons.
- * Call once per test; pass the returned sink to `expectNoErrors` at the end (or wherever needed).
- */
 export function watchErrors(page: Page, extraIgnore: RegExp[] = []): ErrorSink {
   const sink: ErrorSink = { pageErrors: [], consoleErrors: [], balloonErrors: [] };
   const ignored = (text: string): boolean =>
@@ -67,7 +53,6 @@ export function watchErrors(page: Page, extraIgnore: RegExp[] = []): ErrorSink {
   return sink;
 }
 
-/** Snapshot current visible error balloons and merge into the sink. */
 export async function collectBalloonErrors(page: Page, sink: ErrorSink): Promise<void> {
   const texts = await page
     .locator(`${BALLOON_CONTAINER} .d4-balloon-error, ${BALLOON_CONTAINER} .grok-balloon-error`)
@@ -79,7 +64,6 @@ export async function collectBalloonErrors(page: Page, sink: ErrorSink): Promise
   }
 }
 
-/** Assert no errors were collected. Convenience for `assertNoErrors(page)` calls. */
 export async function expectNoErrors(page: Page, sink: ErrorSink): Promise<void> {
   await collectBalloonErrors(page, sink);
   expect(
@@ -96,16 +80,11 @@ export async function expectNoErrors(page: Page, sink: ErrorSink): Promise<void>
   ).toEqual([]);
 }
 
-/**
- * Open the app, wait until the ribbon is visible (= app loaded).
- * Uses the storageState from global-setup, so no login is performed here.
- */
 export async function goHome(page: Page): Promise<void> {
   await page.goto(BASE);
   await page.waitForSelector(RIBBON, { timeout: 30_000 });
 }
 
-/** Ensure the Browse side panel is visible. Idempotent. */
 export async function ensureBrowsePanelOpen(page: Page): Promise<void> {
   const header = page.locator(BROWSE_HEADER);
   if (!(await header.isVisible().catch(() => false))) {
@@ -114,7 +93,6 @@ export async function ensureBrowsePanelOpen(page: Page): Promise<void> {
   }
 }
 
-/** Ensure the Context Panel (right side) is open and (optionally) all panes expanded. */
 export async function ensureContextPanelOpen(page: Page, expandAll = false): Promise<void> {
   const cp = page.locator(CONTEXT_PANEL);
   if (!(await cp.isVisible().catch(() => false))) {
@@ -127,16 +105,10 @@ export async function ensureContextPanelOpen(page: Page, expandAll = false): Pro
   }
 }
 
-/** Click the "Home" icon in the Browse header. */
 export async function clickHome(page: Page): Promise<void> {
   await page.locator(BROWSE_HEADER_HOME).click();
 }
 
-/**
- * Re-open Browse + ensure the parent group is expanded, then click the named item.
- * Convenient for tests that need to interact with multiple tree items in sequence,
- * because opening any item replaces the side panel with Toolbox.
- */
 export async function openTreeItem(
   page: Page,
   parent: string,
@@ -154,18 +126,16 @@ export async function openTreeItem(
   await page.waitForTimeout(1000);
 }
 
-/** Click the "Collapse all" icon in the Browse header. */
 export async function clickCollapseAll(page: Page): Promise<void> {
   await page.locator(BROWSE_HEADER_COLLAPSE_ALL).click();
   await page.waitForTimeout(400);
 }
 
-/** Expand a tree node (group) by name if not already expanded. Returns the label locator. */
 export async function expandTreeGroup(page: Page, name: string): Promise<Locator> {
   const label = treeGroupByName(page, name);
   await label.waitFor({ state: 'visible', timeout: 10_000 });
   await label.scrollIntoViewIfNeeded();
-  // Click the arrow if collapsed; click the label as a fallback.
+
   const node = label.locator('xpath=ancestor::*[contains(@class,"d4-tree-view-node")][1]');
   const tri = node.locator(TREE_EXPAND_ARROW).first();
   const expanded = await tri.evaluate((el) => el.classList.contains('d4-tree-view-tri-expanded')).catch(() => false);
@@ -175,7 +145,7 @@ export async function expandTreeGroup(page: Page, name: string): Promise<Locator
     } else {
       await label.click();
     }
-    // Wait for the arrow to flip to expanded; fall back to a short sleep if the wait misses.
+
     await tri.evaluate((el) => new Promise<void>((resolve) => {
       if (el.classList.contains('d4-tree-view-tri-expanded')) { resolve(); return; }
       const o = new MutationObserver(() => {
@@ -188,12 +158,10 @@ export async function expandTreeGroup(page: Page, name: string): Promise<Locator
   return label;
 }
 
-/** Returns how many tree-view nodes are currently in the "expanded" state. */
 export async function countExpandedNodes(page: Page): Promise<number> {
   return page.locator(TREE_EXPAND_ARROW_EXPANDED).count();
 }
 
-/** Returns the top-level Browse tree node names (depth 0 of the tree). */
 export async function getTopLevelTreeNames(page: Page): Promise<string[]> {
   return page.evaluate(() => {
     const labels = Array.from(document.querySelectorAll('.d4-tree-view-group-label, .d4-tree-view-item-label'));
@@ -201,7 +169,7 @@ export async function getTopLevelTreeNames(page: Page): Promise<string[]> {
       .map((el) => {
         const node = el.closest('.d4-tree-view-node');
         if (!node) return null;
-        // top-level node: no ancestor d4-tree-view-node above it (parents are tree-view-root-like)
+
         let p: HTMLElement | null = node.parentElement;
         while (p) {
           if (p.classList?.contains('d4-tree-view-node')) return null;

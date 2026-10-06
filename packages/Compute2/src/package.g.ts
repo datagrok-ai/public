@@ -63,6 +63,12 @@ export async function StartWorkflow(nqName: string, version: string, instanceCon
   return await PackageFunctions.StartWorkflow(nqName, version, instanceConfig);
 }
 
+//description: Open a saved run by its FuncCall id — a workflow run in the Tree Wizard, or a single function run in its editor.
+//input: string id { description: Meta FuncCall id of the saved workflow run }
+export async function OpenWorkflowRun(id: string) : Promise<void> {
+  await PackageFunctions.OpenWorkflowRun(id);
+}
+
 //name: Run Optimizer
 //description: Run parameter optimization (fitting) for a model and return the resulting function calls.
 //input: object params { description: Optimizer parameters: target function, variables, and objective }
@@ -108,6 +114,24 @@ export async function MockPipeline1(params: any) {
 //editor: Compute2:TreeWizardEditor
 export async function MockPipeline2(params: any) {
   return await PackageFunctions.MockPipeline2(params);
+}
+
+//name: Mock Single Step Pipeline
+//description: Single-step workflow used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepPipeline(params: any) {
+  return await PackageFunctions.MockSingleStepPipeline(params);
+}
+
+//name: Mock Single Step Nested
+//description: Single-step workflow reached through a ref, used for testing the compact Tree Wizard view.
+//input: object params 
+//output: object result
+//editor: Compute2:TreeWizardEditor
+export async function MockSingleStepNested(params: any) {
+  return await PackageFunctions.MockSingleStepNested(params);
 }
 
 //tags: stress

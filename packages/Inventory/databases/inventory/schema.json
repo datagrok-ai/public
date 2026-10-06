@@ -3,7 +3,7 @@
   "name": "inventory",
   "version": "1.0.0",
   "tables": {
-    "items": {
+    "item": {
       "securityMode": "table",
       "businessKey": ["sku"],
       "friendlyName": "Items",
@@ -16,14 +16,14 @@
       },
       "schemas": ["chemistry", "procurement", "quality"]
     },
-    "stock_movements": {
+    "stock_movement": {
       "securityMode": "master",
       "delegate": "item_id",
       "audit": false,
       "friendlyName": "Stock movements",
       "description": "High-churn movement log; audit is off deliberately (the movement IS the history).",
       "columns": {
-        "item_id": {"type": "ref", "ref": "items", "onDelete": "cascade", "required": true},
+        "item_id": {"type": "ref", "ref": "item", "onDelete": "cascade", "required": true},
         "delta": {"type": "int", "required": true, "description": "Signed quantity change"},
         "reason": {"type": "string", "choices": ["received", "shipped", "adjustment", "damaged", "returned"]},
         "moved_on": {"type": "datetime"}

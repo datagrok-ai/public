@@ -8,22 +8,19 @@ import $ from 'cash-dom';
 import dayjs from 'dayjs';
 import {historyUtils} from '../../history-utils';
 import {CARD_VIEW_TYPE} from '../../shared-utils/consts';
-import {deepCopy, getContextHelp, getCurrentUserGroups, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
-import {deserialize, serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {deepCopy, getContextHelp, getFeature, getFeatures, getStarted, hasContextHelp, isIncomplete, isRunningOnInput} from '../../shared-utils/utils';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
 import {RunComparisonView} from '../../function-views';
 import {HistoryPanel} from '../../old-components/src/history-panel';
 import {UiUtils} from '../../old-components';
 import {properUpdateIndicator} from '../../function-views/src/shared/utils';
-import {delay, distinctUntilChanged, filter, take} from 'rxjs/operators';
+import {distinctUntilChanged} from 'rxjs/operators';
 import {createPartialCopy, fcToSerializable} from './shared-utils/utils';
-import {FileInput} from '../../old-components/src/file-input';
-import {testFunctionView} from './shared-utils/function-views-testing';
 import {VIEW_STATE} from './shared-utils/consts';
 
 // Getting inital URL user entered with
 const startUrl = new URL(grok.shell.startUri);
 
-const DEVELOPERS_GROUP = 'Developers';
 
 const startRecording = async () => {
   const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -614,18 +611,6 @@ export abstract class FunctionView extends DG.ViewBase {
     if (this.getHelp)
       ribbonMenu.item('Help', () => this.getHelp!());
 
-    setTimeout(async () => {
-      const userGroups = await getCurrentUserGroups();
-
-      if (userGroups.find((group) => group.friendlyName === DEVELOPERS_GROUP)) {
-        const testingGroup = ribbonMenu.group('Test runner');
-        testingGroup.item('Run Data JSON', () => this.importRunJsonDialog());
-        testingGroup.item('Execute Test JSON', () => this.importRunJsonDialog());
-        testingGroup.item('Update Test JSON', () => this.importRunJsonDialog(true));
-        ribbonMenu.endGroup();
-      }
-    }, 0);
-
     ribbonMenu.item('Record the screen', startRecording);
 
     if (this.getAbout) {
@@ -805,38 +790,6 @@ export abstract class FunctionView extends DG.ViewBase {
     const data = await this.exportRunJson();
     if (data)
       DG.Utils.download(this.defaultExportFilename('', 'json'), data);
-  }
-
-  public async importRunJsonDialog(isUpdate = false) {
-    const fileInput = new FileInput('JSON file', null, null, 'application/json');
-    const showParams = {modal: true, fullScreen: true, width: 500, height: 200, center: true};
-    const confirmed = await new Promise((resolve, _reject) => {
-      ui.dialog({title: 'Import Run JSON'})
-        .add(ui.div([
-          ui.inputs([
-            fileInput,
-          ]),
-        ]))
-        .onOK(() => resolve(true))
-        .onCancel(() => resolve(false))
-        .show(showParams);
-    });
-    if (!confirmed || !fileInput.value)
-      return;
-
-    const spec = deserialize(await fileInput.value.text());
-    if (!isUpdate)
-      await this.executeTest(spec);
-    else {
-      await this.executeTest(spec, true);
-      // TODO: fix isHistorical in pipeline, not to emit before setting lastCall
-      await this.isHistorical.pipe(filter((x) => x), take(1), delay(0)).toPromise();
-      await this.getRunJSON();
-    }
-  }
-
-  protected async executeTest(spec: any, updateMode = false) {
-    await testFunctionView(spec, this, {updateMode, interactive: true});
   }
 
   public isHistorical = new BehaviorSubject<boolean>(false);

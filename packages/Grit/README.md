@@ -8,7 +8,7 @@ It demonstrates the relational-app story:
 
 * `project` — `table`-mode security, business key on `key`
 * `issue` — `row` mode with lazy promotion (an issue becomes shareable as an entity on first
-  share), per-project numbering (`GRIT-123`, assigned by the app), `user` columns
+  share), per-project numbering (`GRIT-123`, assigned by the engine: `autoNumber` scoped by `project_id`), `user` columns
   (reporter, assignee), `status`/`priority` choices dictionaries
 * `comment`, `issue_label` — `master` mode delegating security to the issue; cascade on
   issue delete

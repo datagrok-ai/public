@@ -27,14 +27,14 @@ interface MethodInfo {
 
 
 export async function biochemicalPropertiesDialog(): Promise<void> {
-  const calculatorFuncs = await DG.Func.find({meta: {function_family: 'biochem-calculator'}});
+  const calculatorFuncs = DG.Func.find({meta: {function_family: 'biochem-calculator'}});
 
   if (calculatorFuncs.length === 0) {
     grok.shell.warning('No biochemical calculators found.');
     return;
   }
 
-  const dialog = ui.dialog({title: 'Biochemical Properties'});
+  const dialog = ui.dialog({title: 'Chemical Properties'});
   dialog.root.classList.add('biochem-calc-dialog');
 
   let table = grok.shell.t;
@@ -79,7 +79,7 @@ export async function biochemicalPropertiesDialog(): Promise<void> {
   const desanitizeValue = (value: any): any => {
     if (value && value._type) {
       if (value._type === 'column' && table) return table.col(value.name);
-      if (value._type === 'dataframe') return grok.shell.tableByName(value.name);
+      if (value._type === 'dataframe') return grok.shell.table(value.name);
     }
     return value;
   };

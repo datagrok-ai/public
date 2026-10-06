@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import {getMyGroupFavorites, getAdminGroups, getMyPersonalFavorites, sortGroupsByFriendlyName, pinEntityToGroup}
   from './group-favorites';
 import {showManageFavoritesDialog} from './manage-favorites-dialog';
-import {SpotlightWidget} from './spotlight-widget';
+import type {SpotlightWidget} from './spotlight-widget';
+import {isApp, isModel, isRunnable, isSpotlightEntity} from './entity-kinds';
 import {
   clearWorkspacePreview, getWorkspacePreviewHost, showWorkspacePreview,
 } from './preview-host';
@@ -16,20 +17,6 @@ import type {GroupFavorites} from './group-favorites';
 /** Returns the platform icon for an entity via its registered EntityMeta handler. */
 export function entityIcon(entity: DG.Entity): HTMLElement {
   return DG.ObjectHandler.forEntity(entity)?.renderIcon(entity) ?? ui.iconFA('file');
-}
-
-export function isApp(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func && entity.options['role'] === DG.FUNC_TYPES.APP;
-}
-
-/** A model — a Func with the `model` role/tag. Launched via `prepare().edit()`, not run directly. */
-export function isModel(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func &&
-    ((((entity.options['role'] as string) ?? '').split(',').includes('model')) || entity.hasTag('model'));
-}
-
-function isRunnable(entity: DG.Entity): entity is DG.Func {
-  return entity instanceof DG.Func && !isApp(entity) && !isModel(entity);
 }
 
 /** Launches an app — apps return their View, which must be added to the shell to become visible. */
@@ -96,6 +83,8 @@ export class WorkspaceTab {
   private activeSpaceSub?: rxjs.Subscription;
   /** Project currently opened in preview mode for the bottom preview — closed when we move on / open it. */
   private previewedProject?: DG.Project;
+  /** In-flight project preview — a project can only be closed once its preview has finished opening it. */
+  private previewOpening?: Promise<void>;
 
   constructor(spotlight: SpotlightWidget) {
     this.spotlight = spotlight;
@@ -256,6 +245,17 @@ export class WorkspaceTab {
     return ui.divV([header, rows], 'pp-workspace-section');
   }
 
+  /** Makes a row select on click and open on double-click. Our dblclick listener has to be registered
+   * before `ui.bind`, which installs the platform's default double-click action on the same element. */
+  private bindRow(entity: DG.Entity, row: HTMLElement): void {
+    row.addEventListener('click', () => this.selectEntity(entity, row));
+    row.addEventListener('dblclick', (e) => {
+      e.stopImmediatePropagation();
+      this.open(entity);
+    });
+    ui.bind(entity, row, {contextMenu: true});
+  }
+
   private renderItemRow(entity: DG.Entity, group?: DG.Group): HTMLElement {
     const icon = entityIcon(entity);
     icon.classList.add('pp-workspace-item-icon');
@@ -263,10 +263,7 @@ export class WorkspaceTab {
     const row = ui.divH([icon, label], 'pp-workspace-item');
     row.dataset.entityId = entity.id;
     ui.tooltip.bind(row, entity.friendlyName);
-    ui.bind(entity, row, {contextMenu: true});
-
-    row.addEventListener('click', () => this.selectEntity(entity, row));
-    row.addEventListener('dblclick', () => this.open(entity));
+    this.bindRow(entity, row);
 
     if (group) {
       const removeBtn = ui.icons.close(async () => {
@@ -299,10 +296,7 @@ export class WorkspaceTab {
       const label = ui.div([entity.friendlyName], 'pp-workspace-item-label');
       const row = ui.divH([icon, label], 'pp-workspace-item pp-workspace-item-recent');
       row.dataset.entityId = entity.id;
-
-      row.addEventListener('click', () => this.selectEntity(entity, row));
-      row.addEventListener('dblclick', () => this.open(entity));
-      ui.bind(entity, row, {contextMenu: true});
+      this.bindRow(entity, row);
 
       const time = times[i];
       if (time) {
@@ -331,6 +325,7 @@ export class WorkspaceTab {
     this.selectedEntity = undefined;
     this.activeFuncCall = undefined;
     this.activePreviewToken = undefined;
+    this.previewOpening = undefined;
     this.statusEl = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
@@ -370,7 +365,8 @@ export class WorkspaceTab {
   }
 
   /** Opens an entity, first dropping any preview-opened project so a project opens fresh with all its views. */
-  private open(entity: DG.Entity): void {
+  private async open(entity: DG.Entity): Promise<void> {
+    await this.previewOpening;
     this.closePreviewedProject();
     openEntity(entity);
   }
@@ -401,6 +397,7 @@ export class WorkspaceTab {
     this.editorPane.innerHTML = '';
     this.statusEl = undefined;
     this.activePreviewToken = undefined;
+    this.previewOpening = undefined;
     this.detachSpaceView();
     this.closePreviewedProject();
     clearWorkspacePreview();
@@ -487,7 +484,7 @@ export class WorkspaceTab {
   private renderProjectEditor(project: DG.Project): void {
     if (project.description)
       this.editorPane.appendChild(ui.divText(project.description, 'pp-workspace-app-description'));
-    this.renderProjectPreview(project);
+    this.previewOpening = this.renderProjectPreview(project);
   }
 
   private async renderProjectPreview(project: DG.Project): Promise<void> {
@@ -513,7 +510,7 @@ export class WorkspaceTab {
       const opened = found ?? project;
       this.previewedProject = opened;
 
-      const onOpen = (): void => this.open(opened);
+      const onOpen = (): void => { this.open(opened); };
       const root = widget?.root;
       if (root instanceof HTMLElement)
         showWorkspacePreview(ui.div([root], 'pp-workspace-preview-project'), project.friendlyName, onOpen);
@@ -772,7 +769,7 @@ export class WorkspaceTab {
     ui.makeDroppable(root, {
       acceptDrag: (args) => {
         const o = args.dragObject;
-        if (o instanceof DG.Entity && SpotlightWidget.isSpotlightEntity(o))
+        if (o instanceof DG.Entity && isSpotlightEntity(o))
           this.showOverlay();
         return false;
       },
@@ -792,7 +789,7 @@ export class WorkspaceTab {
       ], 'pp-workspace-drop-zone');
       ui.makeDroppable(zone, {
         acceptDrop: (o) =>
-          o instanceof DG.Entity && SpotlightWidget.isSpotlightEntity(o),
+          o instanceof DG.Entity && isSpotlightEntity(o),
         doDrop: async (args) => {
           const entity = args.dragObject;
           if (!(entity instanceof DG.Entity))

@@ -1,0 +1,7 @@
+{
+  "cpu": 1,
+  "memory": 1024,
+  "env": {
+    "DATAGROK_MAX_CONCURRENT_TASKS": "12"
+  }
+}

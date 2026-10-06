@@ -1,6 +1,6 @@
 ---
 name: datagrok-filtering
-description: Filter rows of a Datagrok DataFrame inside a datagrok-exec block through the Filters panel — by range, equals/contains/in-set, multi-value, boolean, free-text row expressions, or substructure (SMILES / SMARTS / molblock). Also covers clearing, inverting, the show-only-filtered vs destructive-drop split, and the filter event lifecycle (onRowsFiltering / onFilterChanged / onRowsFiltered). Use whenever the user says "filter", "show only", "hide rows where", "narrow to subset", "find rows that", "contains", "substructure search", "categorical filter", "range filter", "invert", "clear the filter", "clear filters", "drop rows", or asks for the filtered subset as a new table. Does NOT cover selection (separate skill) or generic DataFrame cloning (datagrok-df-and-columns).
+description: Filter rows of a Datagrok DataFrame via the datagrok_exec tool through the Filters panel — by range, equals/contains/in-set, multi-value, boolean, free-text row expressions, or substructure (SMILES / SMARTS / molblock). Also covers clearing, inverting, the show-only-filtered vs destructive-drop split, and the filter event lifecycle (onRowsFiltering / onFilterChanged / onRowsFiltered). Use whenever the user says "filter", "show only", "hide rows where", "narrow to subset", "find rows that", "contains", "substructure search", "categorical filter", "range filter", "invert", "clear the filter", "clear filters", "drop rows", or asks for the filtered subset as a new table. Does NOT cover selection (separate skill) or generic DataFrame cloning (datagrok-df-and-columns).
 ---
 
 # datagrok-filtering
@@ -9,7 +9,7 @@ Row-shape filtering on `DG.DataFrame` through the **Filters panel**
 (`view.getFiltersGroup(...)` / `view.filters(...)`). Selection lives in
 `datagrok-selection`; generic dataFrame and column inspection in `datagrok-df-and-columns`.
 
-Globals inside every `datagrok-exec` block: `grok`, `ui`, `DG`, `view`,
+Globals inside every `datagrok_exec` call: `grok`, `ui`, `DG`, `view`,
 `t` (the current `DG.DataFrame`, when the view is a `TableView`).
 
 ## Always filter through the Filters panel
@@ -47,7 +47,7 @@ overwritten the moment any UI filter re-runs. The panel is always enough.
 | is row `i` passing?                   | `t.filter.get(i)`                            |
 | any rows passing / hidden?            | `t.filter.anyTrue` / `t.filter.anyFalse`     |
 
-```datagrok-exec
+```js
 return {visible: t.filter.trueCount, hidden: t.filter.falseCount, total: t.rowCount};
 ```
 
@@ -55,7 +55,7 @@ return {visible: t.filter.trueCount, hidden: t.filter.falseCount, total: t.rowCo
 
 Add several filters at once with `view.filters(...)`:
 
-```datagrok-exec
+```js
 view.filters({filters: [
   {type: DG.FILTER_TYPE.HISTOGRAM, column: 'height', min: 120, max: 150},
   {type: DG.FILTER_TYPE.FREE_TEXT},
@@ -104,7 +104,7 @@ SMILES or SMARTS into `molBlock` silently matches **zero** rows. Convert first.
 - Convert with `DG.chem.convert(s, fromNotation, toNotation)`. Notations live
   on `DG.chem.Notation` (`Smiles`, `Smarts`, `MolBlock`).
 
-```datagrok-exec
+```js
 // SMILES or SMARTS → molblock → UI substructure filter.
 const query = 'c1ccccc1';
 const molBlock = DG.chem.isMolBlock(query)
@@ -123,14 +123,14 @@ view.getFiltersGroup({createDefaultFilters: true}).updateOrAdd({
 `false` = **hidden**. So "show every row" is `setAll(true)`; `setAll(false)`
 hides everything.
 
-```datagrok-exec
+```js
 // Show every row again. Disable the UI filter widgets so they don't
 // immediately re-narrow the mask (they stay on screen, just inactive).
 view.getFiltersGroup({createDefaultFilters: true}).setActive(false);
 t.filter.setAll(true);
 ```
 
-```datagrok-exec
+```js
 // Invert the current mask. If UI filters are active they'll re-clobber the
 // inversion on the next filter pass — disable the group first if you want it to persist.
 t.filter.invert();
@@ -161,8 +161,8 @@ carry the selection mask onto the clone.
 | `onFilterChanged`    | Same as `df.filter.onChanged` — fires on any BitSet mutation.          | Most general — works for direct writes too.               |
 
 In a viewer / widget, push subscriptions onto `viewer.subs` — `DG.Widget`
-auto-cleans those on detach. Inside a `datagrok-exec` block, push onto
-`view.subs` to persist beyond the block.
+auto-cleans those on detach. In `datagrok_exec` code, push onto
+`view.subs` to persist beyond the call.
 
 ## Anti-patterns
 

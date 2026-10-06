@@ -351,8 +351,8 @@ category('bio-substructure-filters', async () => {
     const fSeq2Trues: number[] = df.getCol('trueSeq2').toList();
 
     const filterList: any[] = [
-      {type: 'Bio:bioSubstructureFilter', columnName: fSeq1ColName},
-      {type: 'Bio:bioSubstructureFilter', columnName: fSeq2ColName},
+      {type: 'Bio:bioSubstructureFilter', columnName: fSeq1ColName, column: fSeq1ColName},
+      {type: 'Bio:bioSubstructureFilter', columnName: fSeq2ColName, column: fSeq2ColName},
     ];
     const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
@@ -420,7 +420,7 @@ category('bio-substructure-filters', async () => {
     const fSubStr: string = 'MD';
     const fTrueCount: number = 3;
 
-    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: fSeqColName}];
+    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: fSeqColName, column: fSeqColName}];
     const fg = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;
     view.dockManager.dock(fg, DG.DOCK_TYPE.LEFT);
@@ -451,7 +451,7 @@ category('bio-substructure-filters', async () => {
     await grok.data.detectSemanticTypes(df);
     await df.meta.detectSemanticTypes();
 
-    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: 'fasta'}];
+    const filterList = [{type: 'Bio:bioSubstructureFilter', columnName: 'fasta', column: 'fasta'}];
 
     const fg1 = (await df.plot.fromType(DG.VIEWER.FILTERS,
       {filters: filterList})) as DG.FilterGroup;

@@ -1,6 +1,6 @@
 # CDD Vault Link changelog
 
-## v.next
+## 1.1.1 (2026-07-12)
 
 * Tests: Added basic smoke tests covering app launch, opening Molecules/Batches tabs, and the main `getVaults` / `getMolecules` / `getBatches` / `getProtocolsAsync` / `getCollectionsAsync` / `getSavedSearches` / `cDDVaultSearch` functions.
 * Molecules search: Remember the last search per vault and restore it when reopening the tab.

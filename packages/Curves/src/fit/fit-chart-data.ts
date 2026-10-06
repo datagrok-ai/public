@@ -272,16 +272,16 @@ export function getOrCreateCachedCurvesDataPoints(series: IFitSeries, idx: numbe
 /** Reads a level's options, migrating a value stored under the pre-`.%` tag name so that only one of
  * the two ever holds the options. */
 function readChartOptions(tags: any): IFitChartData {
-  // an empty tag parsed to an exception on every cell of the column
-  const stored = tags[FitConstants.TAG_FIT];
-  if (stored)
-    return JSON.parse(stored);
-  const legacy = tags[FitConstants.TAG_FIT_LEGACY];
-  const migrated = !!legacy;
-  tags[FitConstants.TAG_FIT] = migrated ? legacy : JSON.stringify(createDefaultChartData());
-  if (migrated)
-    delete tags[FitConstants.TAG_FIT_LEGACY];
-  return JSON.parse(tags[FitConstants.TAG_FIT]);
+  // TODO: once Curves requires platform 1.28, move '.fit' onto '.%fit' on read again, so an old
+  // table's options travel with its layouts without waiting for the next option change
+  return JSON.parse(tags[FitConstants.TAG_FIT] || tags[FitConstants.TAG_FIT_LEGACY] ||
+    JSON.stringify(createDefaultChartData()));
+}
+
+/** Stores a level's options, dropping the legacy copy so only one of the two tags ever holds them. */
+export function storeChartOptions(tags: any, chartOptions: IFitChartData): void {
+  tags[FitConstants.TAG_FIT] = JSON.stringify(chartOptions);
+  delete tags[FitConstants.TAG_FIT_LEGACY];
 }
 
 /** Returns existing, or creates new dataframe default chart options. */
@@ -309,12 +309,19 @@ export function substituteZeroes(data: IFitChartData): void {
         minNonZeroX = series.points[j].x;
       if (series.points[j].x > maxNonZeroX && series.points[j].x !== 0)
         maxNonZeroX = series.points[j].x;
-      if (!uniqueArr.includes(series.points[j].x)) {
+      if (series.points[j].x !== 0 && !uniqueArr.includes(series.points[j].x)) {
         uniqueArr[uniqueArr.length] = series.points[j].x;
         countOfDistNonZeroX++;
       }
     }
-    const zeroSubstitute = Math.pow(10, Math.log10(minNonZeroX) - (Math.log10(maxNonZeroX) - Math.log10(minNonZeroX) / (countOfDistNonZeroX - 1)));
+    if (countOfDistNonZeroX === 0)
+      continue;
+
+    // one dose step below the smallest tested dose, measured on the log scale the axis uses
+    const logMin = Math.log10(minNonZeroX);
+    const logStep = countOfDistNonZeroX > 1 ?
+      (Math.log10(maxNonZeroX) - logMin) / (countOfDistNonZeroX - 1) : 1;
+    const zeroSubstitute = Math.pow(10, logMin - logStep);
     for (let j = 0; j < series.points.length; j++) {
       if (series.points[j].x === 0)
         series.points[j].x = zeroSubstitute;

@@ -12,7 +12,7 @@ import {opticalDensityCalc, molecularMassCalc, nMoleCalc} from './calculations-s
 
 export const _package = new DG.Package();
 const windows = grok.shell.windows;
-windows.showProperties = false;
+windows.showContextPanel = false;
 windows.showToolbox = false;
 windows.showHelp = false;
 export * from './package.g';

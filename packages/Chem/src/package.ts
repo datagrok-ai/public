@@ -13,9 +13,10 @@ import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {CruxSketcher} from './crux/crux-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import Sketcher = DG.chem.Sketcher;
-import {FuncCallParamsEditor, MessageFuncCallEditor} from './analysis/func-call-params-editor';
+import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
 import {runActivityCliffs, getActivityCliffsEmbeddings, ISequenceSpaceResult} from '@datagrok-libraries/ml/src/viewers/activity-cliffs';
 import {ActivityCliffsEditor as ActivityCliffsFunctionEditor}
   from '@datagrok-libraries/ml/src/functionEditors/activity-cliffs-function-editor';
@@ -24,6 +25,8 @@ import {
   SMARTS_MOLECULE_MESSAGE, elementsTable,
   CHEM_SPACE_EMBEDDING_COL,
   CHEM_SPACE_CLUSTER_COL,
+  SubstructureSearchType,
+  FilterOperatorSet,
 } from './constants';
 import {MAX_SMILES_LENGTH} from './utils/chem-constants';
 import {similarityMetric} from '@datagrok-libraries/ml/src/distance-metrics-methods';
@@ -50,7 +53,7 @@ import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -65,6 +68,8 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixEditor} from './analysis/sar-matrix/sar-matrix-editor';
+import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
 import {_importTripos} from './file-importers/mol2-importer';
@@ -76,7 +81,7 @@ import {RDKitReactionRenderer} from './rendering/rdkit-reaction-renderer';
 import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
-  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA,
+  _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
@@ -114,7 +119,7 @@ import {MpoProfilesView} from './mpo/mpo-profiles-view';
 
 import $ from 'cash-dom';
 import {MpoProfileCreateView} from './mpo/mpo-create-profile';
-import {MpoProfileManager} from './mpo/mpo-profile-manager';
+import {mpoProfileStore, parseMpoProfile} from './mpo/mpo-profile-store';
 import {MpoProfileHandler} from './mpo/mpo-profile-handler';
 import {applyDesirabilityTags, collectMpoResultColumns, computeMpo, findSuitableProfiles, MPO_PROFILE_CHANGED_EVENT} from './mpo/utils';
 import {removeWaterAndSalts, runTransformationReaction} from './utils/reactions/reactions';
@@ -160,6 +165,7 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   Ketcher: 'Ketcher',
   Marvin: 'Marvin',
   ChemDraw: 'ChemDraw',
+  Crux: 'Crux',
 };
 
 const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
@@ -171,10 +177,25 @@ const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
 let container: DG.DockerContainer;
 
 export const _package: DG.Package = new DG.Package();
+
+const MOLECULE_FILTER_OPERATORS: [SubstructureSearchType, string][] = [
+  [SubstructureSearchType.CONTAINS, 'has substructure'],
+  [SubstructureSearchType.INCLUDED_IN, 'is substructure of'],
+  [SubstructureSearchType.EXACT_MATCH, 'matches exactly'],
+  [SubstructureSearchType.STEREO_AGNOSTIC, 'matches ignoring stereo'],
+  [SubstructureSearchType.IS_SIMILAR, 'is similar to'],
+];
 export let _properties: any;
 
 let _rdRenderer: RDKitCellRenderer;
 export let renderer: GridCellRendererProxy;
+
+/** The one molecule cell renderer the platform uses for every Molecule column, so callers that draw
+ *  molecules onto their own canvases (e.g. the SAR Matrix viewer) reuse its shared mol + raster LRU
+ *  caches instead of standing up a private one. Undefined until `initChemInt` has run. */
+export function getMoleculeRenderer(): RDKitCellRenderer | undefined {
+  return _rdRenderer;
+}
 let _initChemPromise: Promise<void> | null = null;
 
 let mpoTreeBrowserSub: Subscription | null = null;
@@ -182,7 +203,7 @@ let mpoTreeBrowserSub: Subscription | null = null;
 async function initChemInt(): Promise<void> {
   chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
   await chemCommonRdKit.initRdKitModuleLocal();
-  _properties = await _package.getProperties();
+  _properties = _package.settings;
   _rdRenderer = new RDKitCellRenderer(PackageFunctions.getRdKitModule());
   renderer = new GridCellRendererProxy(_rdRenderer, 'Molecule');
   let storedSketcherType = grok.userSettings.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '';
@@ -280,6 +301,24 @@ export class PackageFunctions {
   })
   static substructureFilter(): SubstructureFilter {
     return new SubstructureFilter();
+  }
+
+  @grok.decorators.func({
+    description: 'Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder',
+    meta: {role: 'filterOperators', semType: 'Molecule'},
+    outputs: [{name: 'result', type: 'object'}],
+  })
+  static moleculeFilterOperators(): FilterOperatorSet {
+    const operators: FilterOperatorSet['operators'] = MOLECULE_FILTER_OPERATORS.map(([searchType, label]) => ({
+      id: searchType, label, arity: 1,
+      bitset: async (col, cond) => {
+        const cutoff = searchType === SubstructureSearchType.IS_SIMILAR ? Number(cond.options?.threshold ?? 0.8) : undefined;
+        const result = await chemSearches.chemSubstructureSearchLibrary(col, String(cond.value ?? ''), '',
+          chemSearches.FILTER_TYPES.substructure, false, true, searchType, cutoff);
+        return {bits: result.buffer, length: col.length};
+      },
+    }));
+    return {semType: DG.SEMTYPE.MOLECULE, exclusive: true, operators};
   }
 
   @grok.decorators.func()
@@ -622,9 +661,9 @@ export class PackageFunctions {
 
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Descriptors...',
+    'top-menu': 'Chem | Calculate | Descriptors (RDKit)...',
     'name': 'Chemical Descriptors',
-    'description': 'Calculates molecular descriptors for the molecules column',
+    'description': 'Calculates molecular descriptors for the molecules column using RDKit',
     'editor': 'Chem:DescriptorsEditor',
   })
   static async descriptorsDocker(
@@ -747,7 +786,9 @@ export class PackageFunctions {
       grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
       return;
     }
-    const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    // a search leaves a hidden (~) canonical SMILES column that is detected as molecules too
+    const isMolecules = (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && !col.name.startsWith('~');
+    const molColumns = grok.shell.tv.dataFrame.columns.toList().filter(isMolecules);
     if (!molColumns.length) {
       grok.shell.warning(`Data doesn't contain molecule columns`);
       return;
@@ -755,7 +796,7 @@ export class PackageFunctions {
       call.func.prepare({molecules: molColumns[0]}).call(true);
     else {
       const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0],
-        filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+        filter: isMolecules});
       ui.dialog({title: 'Substructure search'})
         .add(colInput)
         .onOK(async () => {
@@ -2037,6 +2078,16 @@ export class PackageFunctions {
     return new OpenChemLibSketcher();
   }
 
+  @grok.decorators.func({
+    name: 'Crux',
+    description: 'Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)',
+    outputs: [{name: 'sketcher', type: 'widget'}],
+    meta: {role: 'moleculeSketcher'},
+  })
+  static cruxSketcher(): CruxSketcher {
+    return new CruxSketcher();
+  }
+
   @grok.decorators.fileHandler({
     description: 'Opens SDF file',
     ext: 'sdf,mol',
@@ -2170,7 +2221,7 @@ export class PackageFunctions {
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
-    const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
+    const formats = ['Smiles', 'CXSmiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
     const menu = DG.Menu.popup();
 
     formats.forEach((format) => {
@@ -2193,6 +2244,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    navigator.clipboard.writeText(smiles);
+    grok.shell.info('Smiles copied to clipboard');
+  }
+
+  @grok.decorators.func({
+    name: 'Copy as CXSMILES',
+    description: 'Copies structure as smiles',
+    meta: {'action': 'Copy as CXSMILES', 'exclude-actions-panel': 'true'},
+  })
+  static copyAsCXSmiles(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const smiles =
+      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.CxSmiles, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2298,7 +2362,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
   }
 
   @grok.decorators.func()
@@ -2344,9 +2408,8 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'top-menu': 'Chem | Calculate | Chemical Properties...',
-    'name': 'Chemical Properties',
-    'description': 'Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
+    'name': 'Chemical Properties (OCL)',
+    'description': 'Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.',
     'meta': {'function_family': 'biochem-calculator', 'method_info.author': 'Open Chem Lib Team', 'method_info.year': '2024', 'method_info.github': 'https://github.com/actelion/openchemlib', 'role': 'hitTriageFunction,transform'},
   })
   static async addChemPropertiesColumns(
@@ -2361,11 +2424,12 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Rotatable bonds'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Stereo centers'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecule charge'}}) moleculeCharge?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecular formula'}}) molecularFormula?: boolean,
   ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
-      moleculeCharge ? ['Molecule charge'] : []);
+      moleculeCharge ? ['Molecule charge'] : [], molecularFormula ? ['Molecular formula'] : []);
     const pb = DG.TaskBarProgressIndicator.create('Chemical properties ...');
     try {
       await addPropertiesAsColumns(table, molecules, propArgs);
@@ -2540,6 +2604,139 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
+    name: 'SAR Matrix Viewer',
+    description: 'SAR Matrix viewer',
+    outputs: [{name: 'result', type: 'viewer'}],
+    meta: {showInGallery: 'false', role: 'viewer'},
+  })
+  static sarMatrixViewer(): SarMatrixViewer {
+    return new SarMatrixViewer();
+  }
+
+  /** Column names offered for SAR Matrix's optional series grouping, led by a blank so "no grouping of
+   *  my own" is the value the dialog opens on. Read from the current table, which is the one the
+   *  dialog's Table input also defaults to; `sarMatrixAnalysis` re-resolves the name against whatever
+   *  table is actually chosen and reports it if the two disagree. */
+  @grok.decorators.func({
+    description: 'Column names available for SAR Matrix series grouping',
+    outputs: [{name: 'result', type: 'list<string>'}],
+  })
+  static sarSeriesColumnChoices(): string[] {
+    return ['', ...(grok.shell.t?.columns.names() ?? [])];
+  }
+
+  @grok.decorators.editor({
+    name: 'SarMatrixEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static sarMatrixEditor(call: DG.FuncCall): DG.Widget {
+    if (!call.inputs['table'] && !grok.shell.tv?.dataFrame)
+      return new MessageFuncCallEditor('SAR Matrix requires an open table');
+    return new SarMatrixEditor(call);
+  }
+
+  @grok.decorators.func({
+    'name': 'SAR Matrix',
+    'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
+    'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'editor': 'Chem:SarMatrixEditor',
+  })
+  static async sarMatrixAnalysis(
+    table: DG.DataFrame,
+    @grok.decorators.param({options: {semType: 'Molecule'}}) molecules: DG.Column,
+    @grok.decorators.param({type: 'column', options: {type: 'numerical'}}) activity: DG.Column,
+    @grok.decorators.param({
+      type: 'string',
+      // Same defaults the viewer's own properties carry, so adding it from the gallery and running it
+      // from this dialog read the assay the same way. They disagreed before, and the pair the dialog
+      // opened with — raw values called higher-is-better — inverts potency on a raw IC50 column.
+      options: {choices: ['none', 'lg', '-lg'], initialValue: '-lg', description: 'Activity scaling before assembly'},
+    }) scaling: string = '-lg',
+    @grok.decorators.param({
+      type: 'string',
+      options: {choices: ['Auto (from scaling)', 'Higher is better', 'Lower is better'],
+        initialValue: 'Auto (from scaling)',
+        description: 'Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi)'},
+    }) activityDirection: string = 'Auto (from scaling)',
+    @grok.decorators.param({
+      type: 'double',
+      options: {initialValue: '0.4', description: 'Maximum fragment size relative to core'},
+    }) fragmentCutoff: number = 0.4,
+    // The description has to be a single string literal with no ';' in it: the metadata generator
+    // evaluates literals only, so a '+'-joined one arrives empty, and the annotation it emits is
+    // itself ';'-separated, so a semicolon inside the text would read as the start of a new option.
+    @grok.decorators.param({
+      type: 'int',
+      options: {initialValue: '3', caption: 'Series levels', min: '1', max: '5',
+        description: 'Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader'},
+    }) fragmentationLevels: number = 3,
+    @grok.decorators.param({options: {initialValue: 'true'}}) predictVirtual: boolean = true,
+    @grok.decorators.param({
+      options: {initialValue: 'false', caption: 'Group leftovers by MCS',
+        description: 'Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets'},
+    }) useMcsAnchors: boolean = false,
+    // Last, and picked by name rather than as a column: a column-typed input cannot start empty here,
+    // because the column selector always resolves to the first matching column — which would silently
+    // group every compound by its own structure for anyone who left the field alone.
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, initialValue: '', caption: 'Series column (Optional)',
+        choices: 'Chem:sarSeriesColumnChoices()',
+        description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
+    }) seriesColumn: string = '',
+    @grok.decorators.param({
+      type: 'column',
+      options: {nullable: true, caption: 'Core',
+        description: 'Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules'},
+    }) coreColumn: DG.Column | null = null,
+    @grok.decorators.param({
+      type: 'column_list',
+      options: {nullable: true, caption: 'R-groups',
+        description: 'Columns with the substituent at each attachment point of the core'},
+    }) rGroupColumns: DG.Column[] = [],
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, caption: 'Matrix columns',
+        description: 'The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows'},
+    }) matrixColumns: string = '',
+  ): Promise<void> {
+    // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
+    // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
+    // timestamp would produce silent nonsense, so reject it here — this also covers programmatic
+    // callers, which never see the dialog at all.
+    if (!activity.isNumerical || activity.type === DG.COLUMN_TYPE.DATE_TIME) {
+      grok.shell.error(`SAR Matrix: "${activity.name}" is a ${activity.type} column. ` +
+        'Pick a numeric activity column (int, float, bigint or qnum).');
+      return;
+    }
+    // Omitted by a programmatic caller arrives as null, which is the same as "group by structure".
+    const seriesName = seriesColumn ?? '';
+    // The choices came from the current table; if a different one was picked the name may not exist
+    // there, and silently ignoring it would group by structure under a heading that says otherwise.
+    if (seriesName !== '' && !table.col(seriesName)) {
+      grok.shell.error(`SAR Matrix: "${seriesName}" is not a column of "${table.name}". ` +
+        'Pick a series column from that table, or leave it empty to group by structure.');
+      return;
+    }
+    const rgroups = rGroupColumns ?? [];
+    const axis = matrixColumns ?? '';
+    const named = coreColumn !== null || rgroups.length > 0;
+    if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
+      grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
+      return;
+    }
+    checkCurrentView(table);
+    const view = grok.shell.tv as DG.TableView;
+    const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
+      activityColumnName: activity.name,
+      seriesColumnName: seriesName,
+      coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
+      rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
+      scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
+    dockSarMatrixTabs(view, viewer);
+  }
+
+  @grok.decorators.func({
     name: 'Scaffold Tree Filter',
     description: 'Scaffold Tree filter',
     outputs: [{name: 'result', type: 'filter'}],
@@ -2586,8 +2783,15 @@ export class PackageFunctions {
   })
   static removeDuplicates(molecules: string[], molecule: string): string[] {
     const mol1 = checkMoleculeValid(molecule);
-    if (!mol1)
+    if (!mol1) {
+      // try to get qmol
+      const qMol = getQueryMolSafe(molecule, '', PackageFunctions.getRdKitModule());
+      if (qMol) {
+        qMol?.delete();
+        return molecules;
+      }
       throw new Error(`Molecule is possibly malformed`);
+    }
     const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
     mol1.delete();
     return filteredMolecules;
@@ -2609,6 +2813,15 @@ export class PackageFunctions {
   })
   static async demoMMPA(): Promise<void> {
     await _demoMMPA();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo SAR Matrix',
+    description: 'Group analog series into potency matrices and predict the analogs worth making next',
+    meta: {demoPath: 'Cheminformatics | SAR Matrix'},
+  })
+  static async demoSarMatrix(): Promise<void> {
+    await _demoSarMatrix();
   }
 
   @grok.decorators.func({
@@ -2661,6 +2874,7 @@ export class PackageFunctions {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
+    col.name = data.columns.getUnusedName(col.name);
     col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
     data.columns.add(col);
@@ -2979,7 +3193,7 @@ export class PackageFunctions {
     outputs: [{name: 'result', type: 'list<string>'}],
   })
   static async getMpoProfileNames(): Promise<string[]> {
-    return (await MpoProfileManager.load()).map((p) => p.name);
+    return (await mpoProfileStore.load()).map((p) => p.name);
   }
 
   /** The property names a profile scores — what a caller has to map to columns.
@@ -2991,7 +3205,7 @@ export class PackageFunctions {
   })
   static async getMpoProfileProperties(
     @grok.decorators.param({options: {caption: 'Profile', nullable: false, choices: 'Chem:getMpoProfileNames()'}}) profileName: string): Promise<string[]> {
-    const profile = (await MpoProfileManager.ensureLoaded()).find((p) => p.name === profileName);
+    const profile = (await mpoProfileStore.ensureLoaded()).find((p) => p.name === profileName);
     return profile ? Object.keys(profile.properties ?? {}) : [];
   }
 
@@ -3014,7 +3228,7 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {caption: 'Aggregation', nullable: false, initialValue: 'Average', choices: ['Average', 'Sum', 'Product', 'Geomean', 'Min', 'Max']}}) aggregation: WeightedAggregation = 'Average',
     @grok.decorators.param({options: {caption: 'Per-property columns', description: 'Also add one desirability column per scored property'}}) createDesirabilityColumns: boolean = false,
   ): Promise<DG.Column | null> {
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     const profile = profiles.find((p) => p.name === profileName);
     if (!profile)
       throw new Error(`MPO profile "${profileName}" not found. Available: ${profiles.map((p) => p.name).join(', ')}`);
@@ -3124,12 +3338,32 @@ export class PackageFunctions {
   }
 
   @grok.decorators.func({
-    'name': 'Biochemical Properties',
+    'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
-    'top-menu': 'Chem | Calculate | Biochemical Properties',
+    'top-menu': 'Chem | Calculate | Chemical Properties...',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
+  }
+
+  @grok.decorators.func({
+    description: 'Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.',
+    outputs: [{name: 'id', type: 'string'}],
+  })
+  static async saveMpoProfile(profileJson: string): Promise<string> {
+    const parsed = parseMpoProfile(profileJson);
+    if ('error' in parsed)
+      throw new Error(parsed.error);
+    const saved = await mpoProfileStore.save(parsed.profile);
+    return saved.id;
+  }
+
+  @grok.decorators.func({
+    description: 'Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.',
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async seedMpoProfiles(): Promise<string> {
+    return mpoProfileStore.seedDefaults();
   }
 
   @grok.decorators.app({
@@ -3150,10 +3384,10 @@ export class PackageFunctions {
     }
 
     const profileId = params.get('profileId');
-    const profiles = await MpoProfileManager.ensureLoaded();
+    const profiles = await mpoProfileStore.ensureLoaded();
     if (hasPath && profileId) {
       const profile = profiles.find((p) => p.name === decodeURIComponent(profileId));
-      const view = new MpoProfileCreateView(profile, false, profile?.fileName);
+      const view = new MpoProfileCreateView(profile, false);
       return view.view;
     }
 
@@ -3182,13 +3416,15 @@ export class PackageFunctions {
     const refresh = async () => {
       treeNode.items.forEach((item) => item.remove());
 
-      const profiles = await MpoProfileManager.ensureLoaded();
+      const profiles = await mpoProfileStore.ensureLoaded();
       for (const profile of profiles) {
         const item = treeNode.item(profile.name);
 
         item.onSelected.subscribe(() => {
+          if (MpoProfileCreateView.focusOpenEditor(profile.id))
+            return;
           openedView?.close();
-          const editView = new MpoProfileCreateView(profile, false, profile.fileName);
+          const editView = new MpoProfileCreateView(profile, false);
           openedView = editView.view;
           grok.shell.addPreview(editView.view);
           editView.setupBreadcrumbs();
@@ -3197,10 +3433,10 @@ export class PackageFunctions {
         item.captionLabel.addEventListener('contextmenu', (ev) => {
           ev.stopImmediatePropagation();
           ev.preventDefault();
-          DG.Menu.popup()
-            .item('Clone', () => MpoProfileHandler.clone(profile))
-            .item('Delete', () => MpoProfileHandler.delete(profile))
-            .show({x: ev.clientX, y: ev.clientY, causedBy: ev});
+          const menu = DG.Menu.popup();
+          menu.item('Clone', () => MpoProfileHandler.clone(profile));
+          menu.item('Delete', () => MpoProfileHandler.delete(profile));
+          menu.show({x: ev.clientX, y: ev.clientY, causedBy: ev});
         });
       }
     };
@@ -3323,7 +3559,7 @@ export class PackageFunctions {
     resultDiv.appendChild(loader);
 
     const dataFrame = semValue.cell?.dataFrame ?? grok.shell.t;
-    const profiles = await MpoProfileManager.load();
+    const profiles = await mpoProfileStore.load();
     const suitableProfiles = findSuitableProfiles(dataFrame, profiles);
 
     if (suitableProfiles.length === 0) {
@@ -3338,8 +3574,8 @@ export class PackageFunctions {
     }
 
     const profileInput = ui.input.choice('Profile', {
-      items: suitableProfiles.map((p) => p.fileName),
-      value: suitableProfiles[0].fileName,
+      items: suitableProfiles.map((p) => p.name),
+      value: suitableProfiles[0].name,
       onValueChanged: () => calculateMpo(),
     });
 
@@ -3353,7 +3589,7 @@ export class PackageFunctions {
       if (!profileInput.value)
         return;
 
-      const selected = suitableProfiles.find((p) => p.fileName === profileInput.value);
+      const selected = suitableProfiles.find((p) => p.name === profileInput.value);
       if (!selected)
         return;
 

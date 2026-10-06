@@ -25,9 +25,25 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
-import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight/group-favorites';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
+import {FilterBuilderFilter} from './filter/filter-builder-filter';
+import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+// every sheet the domain stack paints with, in one import
+import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/u2/css/tokens.css';
+import '@datagrok-libraries/u2/css/elements.css';
+import '@datagrok-libraries/u2/css/inputs.css';
+import '@datagrok-libraries/u2/css/number.css';
+import '@datagrok-libraries/u2/css/date.css';
+import '@datagrok-libraries/u2/css/tags.css';
+import '@datagrok-libraries/u2/css/choice.css';
+import '@datagrok-libraries/u2/css/buttons.css';
+import '@datagrok-libraries/u2/css/typeahead.css';
+import '@datagrok-libraries/u2/css/badge.css';
+import '@datagrok-libraries/u2/css/icons.css';
+import '@datagrok-libraries/u2/css/filter.css';
+import '@datagrok-libraries/u2/css/filter-query.css';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -180,6 +196,26 @@ export class PackageFunctions {
   })
   static cronInput(): DG.InputBase {
     return new CronInput();
+  }
+
+  @grok.decorators.func({
+    name: 'Filter Builder',
+    description: 'Schema-driven query builder (u2)',
+    meta: {role: 'filter', columnlessFilter: 'true'},
+    outputs: [{name: 'result', type: 'filter'}],
+  })
+  static filterBuilder(): DG.Filter {
+    return new FilterBuilderFilter();
+  }
+
+  @grok.decorators.func({
+    name: 'domainRouteView',
+    description: 'The u2 app behind a /domains/<schema>/<table>[/<keyOrId>] address',
+    tags: ['domainRoutes'],
+    outputs: [{name: 'result', type: 'view'}],
+  })
+  static async domainRouteView(address: string): Promise<DG.ViewBase | null> {
+    return domains.route(address);
   }
 
   @grok.decorators.func({})
@@ -357,7 +393,7 @@ export class PackageFunctions {
     setupDBQueryCellHandler(); // db-explorer for any query result - lazy without await
     initSearch();
 
-    _properties = await _package.getProperties();
+    _properties = _package.settings;
     registerDGUserHandler(); // lazy without await
 
     // saving and restoring the scrolls when changing views
@@ -399,7 +435,10 @@ export class PackageFunctions {
   @grok.decorators.autostart({description: 'ViewerGallery'})
   static viewerGallery(): void {
     grok.events.onViewAdded.subscribe((view) => configViewerGallery(view));
-    configViewerGallery(grok.shell.v);
+    // a table view opened before this autostart ran (a tutorial started right after login) is
+    // configured too, or it keeps the core icon, which neither opens the gallery nor carries its name
+    for (const view of grok.shell.views)
+      configViewerGallery(view);
   }
 
   @grok.decorators.fileViewer({
@@ -470,44 +509,6 @@ grok.events.onContextMenu.subscribe((args) => {
   }
 
   menu?.item('Formula Lines...', () => PackageFunctions.formulaLinesDialog(src));
-});
-
-function getEntity(x: any) {
-  if (x instanceof DG.TreeViewGroup)
-    return x.value;
-  return null;
-}
-
-grok.events.onContextMenu.subscribe((args) => {
-  const item = args?.args?.item;
-  const entity = DG.toJs(item?.value ?? item);
-  if (!(entity instanceof DG.Entity) || entity instanceof DG.User ||entity instanceof DG.Group)
-    return;
-
-  const menu: DG.Menu = args.args.menu;
-  Promise.all([getAdminGroups(), getMyGroupFavorites()]).then(([allAdminGroups, groupFavorites]) => {
-    if (allAdminGroups.length === 0)
-      return;
-    const pinnedGroupIds = new Set<string>();
-    for (const gf of groupFavorites)
-      if (gf.entities.some((e) => e.id === entity.id))
-        pinnedGroupIds.add(gf.group.id);
-
-    allAdminGroups.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
-    menu.group('Group favorites').items(allAdminGroups, async (group) => {
-      if (pinnedGroupIds.has(group.id)) {
-        await DG.Favorites.remove(entity, group);
-        grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
-      }
-      else {
-        await pinEntityToGroup(entity, group);
-        grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
-      }
-    }, {
-      isChecked: (group) => pinnedGroupIds.has(group.id),
-      toString: (group) => group.friendlyName,
-    }).endGroup();
-  });
 });
 
 //name: configViewerGallery

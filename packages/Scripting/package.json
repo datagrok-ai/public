@@ -1,7 +1,7 @@
 {
   "name": "@datagrok/scripting",
   "friendlyName": "Scripting",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": {
     "name": "Alexander Paramonov",
     "email": "aparamonov@datagrok.ai"
@@ -14,10 +14,7 @@
     "directory": "packages/Scripting"
   },
   "dependencies": {
-    "datagrok-api": "^1.27.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.9.2"
+    "datagrok-api": "workspace:^"
   },
   "scripts": {
     "debug-scripting": "grok publish",

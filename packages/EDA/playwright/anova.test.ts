@@ -7,12 +7,12 @@ import {
 // Test Track scenario: EDA/anova.md
 // 1. Open demog.csv from Demo Files.
 // 2. Top Menu > ML > Analyze > ANOVA...
-// 3. Click RUN. Box plot + Analysis + F-test tabs are added.
+// 3. Click RUN. A box plot is added, its description carrying the ANOVA conclusion.
 
 test.describe.serial('EDA / ANOVA', () => {
   test.afterEach(async ({ page }) => { await resetShell(page); });
 
-  test('ANOVA on demog.csv produces Box plot viewer with Analysis and F-test tabs', async ({ page }) => {
+  test('ANOVA on demog.csv produces a Box plot viewer carrying the analysis conclusion', async ({ page }) => {
     test.setTimeout(120_000);
 
     await openDemoCsv(page, 'demog.csv');

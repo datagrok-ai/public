@@ -425,7 +425,40 @@ category('fit', () => {
     expect(boxPlotStats.q2, 0.8257747292518616);
     expect(boxPlotStats.q3, 0.9558155536651611);
     expect(boxPlotStats.lowerAdjacentValue, 0.7654603719711304);
-    expect(boxPlotStats.upperAdjacentValue, 0.9558155536651611);
+    // the whisker is the largest value within q3 + 1.5*IQR, which here is every value
+    expect(boxPlotStats.upperAdjacentValue, 0.9596694707870483);
+  });
+
+  test('calculateBoxPlotStatistics sorts numerically', async () => {
+    // every value here is in [0, 1), so a lexicographic sort happens to agree with a numeric one;
+    // these cases are the ones that tell the two apart
+    const spread = calculateBoxPlotStatistics([2, 10, 1.5]);
+    expect(spread.q1, 1.5);
+    expect(spread.q2, 2);
+    expect(spread.q3, 10);
+
+    const unordered = calculateBoxPlotStatistics([5, 4, 3, 2, 1]);
+    const ordered = calculateBoxPlotStatistics([1, 2, 3, 4, 5]);
+    expect(unordered.q1, ordered.q1);
+    expect(unordered.q3, ordered.q3);
+    expect(ordered.upperAdjacentValue, 5);
+    expect(ordered.lowerAdjacentValue, 1);
+  });
+
+  test('calculateBoxPlotStatistics excludes an outlier from the whisker', async () => {
+    const stats = calculateBoxPlotStatistics([1, 2, 3, 4, 100]);
+    expect(stats.q1, 2);
+    expect(stats.q3, 4);
+    // 100 is beyond q3 + 1.5*IQR, so the whisker stops at 4 and 100 is drawn as an outlier
+    expect(stats.upperAdjacentValue, 4);
+  });
+
+  test('calculateBoxPlotStatistics leaves the caller array alone', async () => {
+    const values = [3, 1, 2];
+    calculateBoxPlotStatistics(values);
+    expect(values[0], 3);
+    expect(values[1], 1);
+    expect(values[2], 2);
   });
 
   test('ICxx is the x at that fraction of the curve', async () => {

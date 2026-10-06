@@ -1,14 +1,67 @@
 # Chem changelog
 
-## 1.17.14 (2026-08-13)
+## v.next
 
 * GROK-20436: Chem: Added `Molecular Property`, a vectorized single-property calculator that lets viewers order molecular categories by MW, LogP, PSA and the other OCL properties
+* Sketcher: Added Crux, the Crux Sketch molecule sketcher on the Crux chemistry engine (WebAssembly), to the choices of the Sketcher setting (crux-sketch cc02f26, engine c1aadacd3b91; vendored in `vendor/crux-sketch/`, loaded at its first use); in the substructure filter it opens in query mode
+* Sketcher: The 400px minimum width given back to a sketcher dialog opened from a popup no longer applies to a sketcher with no minimum size
+* Demo: Fixed Similarity & Diversity Search, Matched Molecular Pairs and Scaffold Tree returning before their layouts were applied, which then landed on whatever view was open next
+* Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
+* Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
+* Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space
+* SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
+* SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point
+* SAR Matrix: A series whose largest connected block has a single row or column now shows its largest block with at least two of each, instead of no matrix or a one-column one
+* SAR Matrix: The Core header marks the varied position on the series core, and the context panel shows the core and the row's own R-groups
+* Matched Molecular Pairs: Fixed missing values of an integer activity becoming -2147483648 when the activity is log-scaled
+
+* Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
+* Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
+* Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
+* Substructure Search: Added a fallback to RDKit when a Crux search fails (e.g. a worker runs out of memory); Crux restarts to free its memory
+* Improved RDKit start-up: the RDKit wasm is compiled once on the main thread and shared with the workers, and in Crux mode the substructure filter no longer starts the RDKit workers
+* Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
+* Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
+* Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry
+* GROK-20955: Names To Smiles: Fixed the run failing on a table that already has a canonical_smiles column; the structures go into a column of their own
+* GROK-18286: Scaffold Tree: Fixed removing a scaffold under a colored one taking the colors column away, and with it the coloring of a plot colored by that column
+* Scaffold Tree: Fixed a removed colored scaffold keeping its color: the removed node was still redrawn once and registered its color again, so the next update brought its highlighting back
+* Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
+* Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
+* Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
+* Substructure filter: Added the card's structure, search type, fingerprint, similarity cutoff, searching state and whether it is still drawing (the cards below it move until it has) as readings of the filter panel it sits in
+* Similarity and Diversity Search: Added a `chem-search` status beside `search-results` — metric, fingerprint, size, row source, header, the set of rows the cards show, card sizes and properties; Similarity adds the target row, cutoff and scores
+* Scaffold Tree: Added status readings of its nodes (count, checked, coloured, each node's scaffold, hits and colour), its message and why generation is blocked, hit areas for each node and its icons, and `aria-disabled` on a blocked icon
+* Matched Molecular Pairs: Added status readings of its activities, current tab, substitutions, pairs and generated molecules
+* Activity cliffs: Added the `only cliffs` reading beside `cliffs`, and named the cliff-count button `button-cliffs`
+* R-Groups Analysis: Fixed OK with an empty sketcher removing the latest analysis before reporting that no core was provided
+* Added BDD features for the Chem section of TestTrack
+* GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
+* GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
+* GROK-20829: Guard isBitsetStale against the valueless root tree group
+* GROK-20824: MPO: Fixed the profile description picking up the title's text styling when styled text was pasted into it
+* GROK-20821: MPO: Fixed the dataset list ignoring newly opened tables
+* GROK-20823: MPO: Fixed Edit opening duplicate editor tabs and leaving a stale profile preview in the context panel
+* GROK-20832: MPO: Fixed Save being disabled on a freshly cloned profile — the copy could not be kept
+* GROK-20831: MPO: Fixed truncated profile descriptions not expanding on click after saving a profile
+* GROK-20830: MPO: Fixed data-driven Save not using the name and description typed on the tab
+* GROK-20805: Chem: Butina cluster doesn't work in a project with datasync
+
+## 1.17.15 (2026-09-02)
+
+* Added SAR Matrix, rendered in a virtualized grid, with SAR Transfer to the grid
+* SAR Matrix: Fixed the SAR Transfer tab rebuilding the whole panel (grid flicker, list scroll jumping to the top) on expanding/collapsing a series or selecting a transfer — the list now toggles and swaps in place like the SAR Matrix navigator
+* Fixed the package build failing on `TS2610` — `name` is an accessor on the u2 `Component` base, so the viewer overrides it with its own accessor instead of redeclaring it as a property
+* Fixed Gasteiger Partial Charges panel on current RDKit — `GetSimilarityMapFromWeights` now requires an explicit `MolDraw2DCairo` drawer (passed by keyword, so pre-2023.09 RDKit still works)
+
+## 1.17.14 (2026-08-13)
+
 * Reaction Enumerator: Added package settings (category "Enumeration") letting admins set per-group default file paths for reaction templates, building blocks and reagents; missing files show a warning balloon and fall back to the bundled ones
 * Substructure filter: Added a 'Filter as you draw' checkbox to the sketcher dialog — when unchecked, filtering is deferred until OK is clicked instead of running on every sketch edit
 * Added `Filter by Substructure`, `Similarity To` and `Diverse Subset` — table-aware twins of `searchSubstructure`, `getSimilarities` and `getDiversities`, which take a bare column. They declare `(table, column {semType: Molecule}, …)` and return rows or a column added to the table, so a caller has something to carry on with instead of a detached frame or a boxed BitSet
 * Added `Apply Reaction` — the non-interactive twin of the Transformation dialog, applying a one-component reaction SMARTS to a molecule column
 * Added `To SDF`, which serializes a table to SDF text; the only SDF write path was a zero-argument file exporter reading the current table
-* Added `Chemical Space` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
+* Added `Chemical Space Columns` — Chem Space with typed, enumerated parameters that never plots and returns the X, Y, cluster and cluster-MCS columns it added
 * MPO Score by Profile: Refuses to run when a scored property has no column, naming the ones it couldn't resolve — the underlying `computeMpo` only warns and scores over the rest, which returns a plausible number computed from fewer properties than requested
 * Added `MPO Score by Profile`, `getMpoProfileNames` and `getMpoProfileProperties`: `mpoCalculate` scores columns that already carry desirability tags and `mpoTransformFunction` wants those tags as a JSON blob, so neither could be driven from a profile name. The new function also takes a property→column mapping, so a profile can score a table whose columns are named differently
 * Parameters with a default now declare `initialValue` — the metadata generator reads that, not the TypeScript default, so `aggregation = 'Average'` and friends were registering with no declared default at all

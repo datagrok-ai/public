@@ -54,17 +54,31 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
         .find((l) => l.textContent?.trim() === 'Edit for current cell...');
       (edit?.closest('.d4-menu-item') as HTMLElement)?.click();
       await new Promise((r) => setTimeout(r, 1500));
+      // The dialog stacks a flat section per matching schema — header, property hosts, Save — with
+      // no per-schema container. Mark ours (it owns the only Rating host, asserted below) so the
+      // reads and clicks cannot drift into a neighbour's: dev carries a second molecule schema, and
+      // an unscoped query there clicks its Save, leaving everything typed here unsaved.
+      const kids = Array.from(document.querySelectorAll('.d4-dialog .d4-build-root.ui-form > *'));
+      for (let i = kids.findIndex((el) => el.getAttribute('name') === 'input-host-Rating'); i >= 0 && i < kids.length; i++) {
+        kids[i].setAttribute('data-pw-mine', '');
+        if (kids[i].querySelector('[name="button-Save"]')) break;
+      }
       return document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim();
     });
 
     expect(await openCellEditor()).toBe('Sticky meta');
 
+    // What the marking above anchors on: a second schema carrying a `rating` would take it over.
+    // Spec 01 used to, and that is what broke this test in builds #357 and #360.
+    expect(await page.evaluate(() =>
+      document.querySelectorAll('.d4-dialog [name="input-host-Rating"]').length)).toBe(1);
+
     const readCellDialog = () => page.evaluate(() => {
       const d = document.querySelector('.d4-dialog') as HTMLElement;
       return {
-        rating: (d.querySelector('[name="input-host-Rating"] input') as HTMLInputElement).value,
-        notes: (d.querySelector('[name="input-host-Notes"] input') as HTMLInputElement).value,
-        verified: (d.querySelector('[name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement).checked,
+        rating: (d.querySelector('[data-pw-mine][name="input-host-Rating"] input') as HTMLInputElement).value,
+        notes: (d.querySelector('[data-pw-mine][name="input-host-Notes"] input') as HTMLInputElement).value,
+        verified: (d.querySelector('[data-pw-mine][name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement).checked,
       };
     });
     const closeDialog = async () => {
@@ -74,24 +88,24 @@ test('Sticky Meta: add & edit metadata (cell, sticky column, batch)', async ({ p
     const expected = { rating: '5', notes: 'test note', verified: true };
 
     // Fill rating, notes, verified.
-    await page.locator('.d4-dialog [name="input-host-Rating"] input').click();
+    await page.locator('.d4-dialog [data-pw-mine][name="input-host-Rating"] input').click();
     await page.keyboard.press('Control+a');
     await page.keyboard.type('5');
     await page.keyboard.press('Tab');
-    await page.locator('.d4-dialog [name="input-host-Notes"]').first().locator('input').click();
+    await page.locator('.d4-dialog [data-pw-mine][name="input-host-Notes"] input').click();
     await page.keyboard.press('Control+a');
     await page.keyboard.type('test note');
     await page.keyboard.press('Tab');
     await page.evaluate(() => {
-      const cb = document.querySelector('.d4-dialog [name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement;
+      const cb = document.querySelector('.d4-dialog [data-pw-mine][name="input-host-Verified"] input[type="checkbox"]') as HTMLInputElement;
       if (!cb.checked) cb.click();
     });
     await page.waitForTimeout(400);
     // Confirm the dialog holds the values before saving (catches fill failures distinctly).
     expect(await readCellDialog()).toEqual(expected);
 
-    // Click the schema section's Save and give the server round-trip time to commit.
-    await page.evaluate(() => (document.querySelector('.d4-dialog [name="button-Save"]') as HTMLElement | null)?.click());
+    // Click our schema section's Save and give the server round-trip time to commit.
+    await page.evaluate(() => (document.querySelector('.d4-dialog [data-pw-mine] [name="button-Save"]') as HTMLElement | null)?.click());
     await page.waitForTimeout(2500);
     await closeDialog();
 

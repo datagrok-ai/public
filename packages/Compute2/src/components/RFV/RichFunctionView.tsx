@@ -8,9 +8,10 @@ import {
   RibbonPanel, DockManager, MarkDown,
   RibbonMenu,
   ifOverlapping,
-  IconImage,
   useUnwrappedCallMeta,
+  useDgView,
   DEFAULT_FLOAT_FORMAT,
+  RibbonPanelItem, RibbonMenuItem,
 } from '@datagrok-libraries/webcomponents-vue';
 import './RichFunctionView.css';
 import * as Utils from '@datagrok-libraries/compute-utils/shared-utils/utils';
@@ -29,8 +30,9 @@ import {startWith, take, map} from 'rxjs/operators';
 import {useHelp} from '../../composables/use-help';
 import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
-import {applyDefaultGridFloatFormat, canUseResults, getViewers, pinView as pinViewHelper} from '../../utils';
+import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
+import {getShareAction} from '../../sharing/sharing';
 
 
 interface ScalarsState {
@@ -259,15 +261,11 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    historyEnabled: {
-      type: Boolean,
-      default: false,
-    },
-    // per-step history mode: adds a save-to-history icon (emits `saveToHistory`) and limits the
-    // history panel to runs explicitly saved for this step
-    stepHistory: {
-      type: Boolean,
-      default: false,
+    // run history and the save icon: 'function' lists the function's runs, 'step' only runs saved
+    // for this step (emits `saveToHistory`), 'workflow' the provider's saved runs (row emits
+    // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
+    history: {
+      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
     },
     showRunButton: {
       type: Boolean,
@@ -282,7 +280,12 @@ export const RichFunctionView = Vue.defineComponent({
     },
     skipInit: {
       type: Boolean,
-      dafault: true,
+      default: true,
+    },
+    // the host (the workflow driver) owns values, choices, validation, visibility and enabled state
+    skipLogic: {
+      type: Boolean,
+      default: false,
     },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
@@ -291,14 +294,16 @@ export const RichFunctionView = Vue.defineComponent({
     urlExportHandler: {
       type: Function as Vue.PropType<() => void>,
     },
-    view: {
-      type: DG.View,
-      required: true,
+    hideDefaultExport: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
+    'historyRunChosen': (_call: DG.FuncCall) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
+    'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
     'actionRequested': (_actionUuid: string) => true,
     'consistencyReset': (_ioName: string) => true,
@@ -321,7 +326,7 @@ export const RichFunctionView = Vue.defineComponent({
     const callMeta = Vue.toRef(props, 'callMeta');
 
     const currentCall = Vue.computed(() => Vue.markRaw(props.funcCall));
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const dgView = useDgView();
     const currentUuid = Vue.computed(() => props.uuid);
     const isFormValid = Vue.ref(false);
 
@@ -350,6 +355,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isFittingActive = Vue.ref(false);
     const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
+
+    const historyMode = Vue.computed(() => props.history?.mode);
+    const isWorkflowHistory = Vue.computed(() => historyMode.value === 'workflow');
+    const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
@@ -396,13 +405,21 @@ export const RichFunctionView = Vue.defineComponent({
       return true;
     }));
 
+    // tabToProperties subscribes to param changes via useObservable, which needs an
+    // active effect scope to register disposal — watcher callbacks have none, so each
+    // rebuild runs in its own scope and stopping it releases the previous build's
+    // subscriptions (down to the Dart-side param listeners)
+    let tabsScope: Vue.EffectScope | undefined;
     const rebuildTabs = (call: DG.FuncCall) => {
-      tabToPropertiesMap.value = tabToProperties(call);
+      tabsScope?.stop();
+      tabsScope = Vue.effectScope();
+      tabToPropertiesMap.value = tabsScope.run(() => tabToProperties(call))!;
       tabLabels.value = [
         ...tabToPropertiesMap.value.inputs.keys(),
         ...tabToPropertiesMap.value.outputs.keys(),
       ];
     };
+    Vue.onBeforeUnmount(() => tabsScope?.stop());
 
     // Per-function preferred tab, tracked separately for the input and output sides and pushed
     // to the dock as `preferredPanelTitle`. Restored only on function switch and run completion
@@ -491,28 +508,38 @@ export const RichFunctionView = Vue.defineComponent({
     const showRun = Vue.computed(() => props.showRunButton && (isOutputOutdated.value || allowRerun.value));
 
     const reportHandler = async (nqName: string) => {
-      await DG.Func.byName(nqName).apply({
-        startDownload: true,
-        funcCall: currentCall.value,
-        validationState: validationState.value,
-        consistencyState: consistencyState.value,
-        isOutputOutdated: isOutputOutdated.value,
-      });
+      try {
+        await DG.Func.byName(nqName).apply({
+          startDownload: true,
+          funcCall: currentCall.value,
+          validationState: validationState.value,
+          consistencyState: consistencyState.value,
+          isOutputOutdated: isOutputOutdated.value,
+        });
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     }
 
     const exports = Vue.computed(() => {
       const activeExports: ExportItem[] = [];
-      if (isReportEnabled.value) {
+      if (isReportEnabled.value && !props.hideDefaultExport) {
         const name = 'Default Excel';
         const handler = async () => {
-          const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
-          const [blob] = await richFunctionViewReport(
-            'Excel',
-            currentCall.value.func,
-            currentCall.value,
-            viewers,
-          );
-          DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+          try {
+            const viewers = await getViewers(currentCall.value, viewersHook.value, callMeta.value);
+            const [blob] = await richFunctionViewReport(
+              'Excel',
+              currentCall.value.func,
+              currentCall.value,
+              viewers,
+              validationState.value,
+              consistencyState.value,
+            ).finally(() => disposeViewers(viewers));
+            DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
+          } catch (e: any) {
+            grok.shell.error(e);
+          }
         }
         activeExports.push({name, handler});
       }
@@ -616,14 +643,18 @@ export const RichFunctionView = Vue.defineComponent({
       return targets;
     };
 
-    const pinView = () => pinViewHelper(props.view);
+    const pinView = () => pinViewHelper(dgView);
 
     const runSA = async () => {
-      pinView();
-      const ranges = getRanges('rangeSA');
-      const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
-      const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
-      SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+      try {
+        pinView();
+        const ranges = getRanges('rangeSA');
+        const diffGrok = await buildDiffGrokFromFunc(currentCall.value.func);
+        const inputsLookup = diffGrok?.ivp?.inputsLookup ?? undefined;
+        SensitivityAnalysisView.fromEmpty(currentCall.value.func, {ranges, diffGrok, inputsLookup, disableLookupDefault: true});
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
     };
 
     const runFitting = async () => {
@@ -642,6 +673,8 @@ export const RichFunctionView = Vue.defineComponent({
         grok.shell.v = currentView;
         if (call)
           emit('update:funcCall', Vue.markRaw(call));
+      } catch (e: any) {
+        grok.shell.error(e);
       } finally {
         isFittingActive.value = false;
       }
@@ -651,88 +684,84 @@ export const RichFunctionView = Vue.defineComponent({
     // render
     ////
 
-    const menuIconStyle = {width: '15px', display: 'inline-block', textAlign: 'center'};
+    const stepExportsItems = Vue.computed<RibbonMenuItem[]>(() => exports.value.map(({name, handler}) => ({
+      text: name,
+      onClick: () => guardedExport(handler),
+    })));
+
+    const panelsItems = Vue.computed<RibbonMenuItem[]>(() => [
+      {
+        text: 'Show form',
+        icon: 'sign-in',
+        check: !formHidden.value,
+        onClick: () => formHidden.value = !formHidden.value,
+      },
+      {
+        text: 'Show all viewers',
+        icon: 'sign-out',
+        check: userClosed.value.size === 0,
+        onClick: () => userClosed.value = new Set(),
+      },
+      {
+        text: 'Show help',
+        icon: 'question',
+        check: !helpHidden.value,
+        onClick: () => helpHidden.value = !helpHidden.value,
+      },
+      ...(props.history ? [{
+        text: 'Show history',
+        icon: 'history',
+        check: !historyHidden.value,
+        onClick: () => historyHidden.value = !historyHidden.value,
+      }] : []),
+    ]);
+
+    const ribbonItems = Vue.computed<RibbonPanelItem[]>(() => [
+      ...(exportsVisible.value && !uiBlocked.value && directExport.value ? [{
+        icon: 'arrow-to-bottom',
+        tooltip: 'Generate report for the current step',
+        onClick: () => guardedExport(directExport.value!.handler),
+      }] : []),
+      ...(isFittingEnabled.value && !uiBlocked.value ? [{
+        icon: {path: `${_package.webRoot}files/icons/icon-chart-dots.svg`, width: 24, height: 24},
+        tooltip: 'Fit inputs',
+        onClick: runFitting,
+      }] : []),
+      ...(isSAenabled.value && !uiBlocked.value ? [{
+        icon: {path: `${_package.webRoot}files/icons/icon-chart-sensitivity.svg`, width: 24, height: 24},
+        tooltip: 'Run sensitivity analysis',
+        onClick: runSA,
+      }] : []),
+      ...(props.history && (historyMode.value !== 'step' || exportsVisible.value) && !uiBlocked.value ? [{
+        icon: historyMode.value === 'step' ? 'cloud-upload-alt' : 'save',
+        tooltip: 'Save run to history',
+        onClick: () => emit('saveToHistory', currentCall.value),
+      }] : []),
+      ...(props.history && shareAction && !uiBlocked.value ? [{
+        icon: 'share-alt',
+        tooltip: shareAction.tooltip,
+        onClick: () => emit('publishRun', currentCall.value),
+      }] : []),
+      ...(props.history ? [{
+        icon: 'history',
+        tooltip: 'Open history panel',
+        active: !historyHidden.value,
+        onClick: () => historyHidden.value = !historyHidden.value,
+      }] : []),
+      {
+        icon: 'question',
+        tooltip: helpHidden.value ? 'Open help panel' : 'Close help panel',
+        active: !helpHidden.value,
+        onClick: () => helpHidden.value = !helpHidden.value,
+      },
+    ]);
 
     return () => (
-      Vue.withDirectives(<div class='w-full h-full flex'> { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
-        <RibbonMenu groupName='Step exports' view={currentView.value}>
-          {
-            exports.value.map(({ name, handler }) =>
-              <span onClick={() => guardedExport(handler)}>
-                <div> {name} </div>
-              </span>
-            )
-          }
-        </RibbonMenu> }
-        <RibbonMenu groupName='Panels' view={currentView.value}>
-          <span
-            onClick={() => formHidden.value = !formHidden.value}
-            class={'flex justify-between w-full'}
-          >
-            <div> <IconFA name='sign-in' style={menuIconStyle}/> Show form </div>
-            { !formHidden.value && <IconFA name='check'/>}
-          </span>
-          <span
-            onClick={() => userClosed.value = new Set()}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='sign-out'
-              style={menuIconStyle}/> Show all viewers </div>
-            { userClosed.value.size === 0 && <IconFA name='check'/>}
-          </span>
-          { <span
-            onClick={() => helpHidden.value = !helpHidden.value}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='question' style={menuIconStyle}/> Show help </div>
-            { !helpHidden.value && <IconFA name='check'/>}
-          </span> }
-          { (props.historyEnabled || props.stepHistory) && <span
-            onClick={() => historyHidden.value = !historyHidden.value}
-            class={'flex justify-between'}
-          >
-            <div> <IconFA name='history' style={menuIconStyle}/> Show history </div>
-            { !historyHidden.value && <IconFA name='check'/>}
-          </span> }
-        </RibbonMenu>
-        <RibbonPanel view={currentView.value}>
-          { exportsVisible.value && !uiBlocked.value && directExport.value && <IconFA
-            name='arrow-to-bottom'
-            onClick={() => guardedExport(directExport.value!.handler)}
-            tooltip='Generate report for the current step'
-          /> }
-          { isFittingEnabled.value && !uiBlocked.value && <IconImage
-            name='fitting'
-            path={`${_package.webRoot}files/icons/icon-chart-dots.svg`}
-            onClick={runFitting}
-            tooltip='Fit inputs'
-            style={{width: '24px', height: '24px'}}
-          /> }
-          { isSAenabled.value && !uiBlocked.value && <IconImage
-            name='sa'
-            path={`${_package.webRoot}files/icons/icon-chart-sensitivity.svg`}
-            onClick={runSA}
-            tooltip='Run sensitivity analysis'
-            style={{width: '24px', height: '24px'}}
-          /> }
-          { (props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value && <IconFA
-            name={props.stepHistory ? 'cloud-upload-alt' : 'save'}
-            tooltip='Save run to history'
-            onClick={() => emit('saveToHistory', currentCall.value)}
-          /> }
-          { (props.historyEnabled || props.stepHistory) && <IconFA
-            name='history'
-            tooltip='Open history panel'
-            onClick={() => historyHidden.value = !historyHidden.value}
-            style={{'background-color': !historyHidden.value ? 'var(--grey-1)': null}}
-          /> }
-          { <IconFA
-            name='question'
-            tooltip={ helpHidden.value ? 'Open help panel' : 'Close help panel' }
-            onClick={() => helpHidden.value = !helpHidden.value}
-            style={{'background-color': !helpHidden.value ? 'var(--grey-1)': null}}
-          /> }
-        </RibbonPanel>
+      Vue.withDirectives(<div class='w-full h-full flex'>
+        { exportsVisible.value && !uiBlocked.value && exports.value.length > 1 &&
+          <RibbonMenu groupName='Step exports' items={stepExportsItems.value}/> }
+        <RibbonMenu groupName='Panels' items={panelsItems.value}/>
+        <RibbonPanel items={ribbonItems.value}/>
         <DockManager class='block h-full'
           style={{overflow: 'hidden !important'}}
           onPanelClosed={handlePanelClose}
@@ -741,15 +770,19 @@ export const RichFunctionView = Vue.defineComponent({
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
-          { !historyHidden.value && (props.historyEnabled || props.stepHistory) &&
+          { !historyHidden.value && props.history &&
             <History
               key="__HISTORY__"
-              func={currentCall.value.func}
-              savedOnly={props.stepHistory}
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-              allowCompare={true}
-              forceHideInputs={false}
-              showIsComplete={true}
+              func={props.history.func ?? currentCall.value.func}
+              version={props.history.version}
+              allowOtherVersions={isWorkflowHistory.value}
+              savedOnly={historyMode.value === 'step'}
+              onRunChosen={(chosenCall) => isWorkflowHistory.value ?
+                emit('historyRunChosen', chosenCall) :
+                emit('update:funcCall', chosenCall)}
+              allowCompare={!isWorkflowHistory.value}
+              forceHideInputs={isWorkflowHistory.value}
+              showIsComplete={!isWorkflowHistory.value}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               dock-spawn-title='History'
@@ -794,9 +827,10 @@ export const RichFunctionView = Vue.defineComponent({
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     skipTableAutoFill={true}
+                    skipLogic={props.skipLogic}
                     isReadonly={isReadonly.value}
                   /> }
-                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': 'rgb(255,255,255,0.75)'}}>
+                <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
                   { slots.navigation ?
                     slots.navigation({runLabel: runLabel.value, allowRerun: allowRerun.value}) :
                     showRun.value ?

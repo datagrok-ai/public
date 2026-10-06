@@ -17,8 +17,9 @@ export function tTest(sample1: Population, sample2: Population, devKnown=false, 
 
   const mean1: number = jStat.mean(sample1);
   const mean2: number = jStat.mean(sample2);
-  const variance1: number = jStat.variance(sample1);
-  const variance2: number = jStat.variance(sample2);
+  // the flag selects the sample variance (n-1); without it jStat divides by n
+  const variance1: number = jStat.variance(sample1, true);
+  const variance2: number = jStat.variance(sample2, true);
   const length1 = sample1.length;
   const length2 = sample2.length;
 
@@ -40,7 +41,8 @@ export function tTest(sample1: Population, sample2: Population, devKnown=false, 
     } else {
       const dof = length1 + length2 - 2;
       const totalVariance = (variance1 * (length1 - 1) + variance2 * (length2 - 1)) / dof;
-      const criticalValue = Math.sqrt(length1 * length2 / (length1 + length2)) * (mean1 - mean2) / totalVariance;
+      const criticalValue = Math.sqrt(length1 * length2 / (length1 + length2)) *
+        (mean1 - mean2) / Math.sqrt(totalVariance);
 
       pMore = 1 - jStat.studentt.cdf(criticalValue, dof);
       pLess = jStat.studentt.cdf(criticalValue, dof);
@@ -51,7 +53,7 @@ export function tTest(sample1: Population, sample2: Population, devKnown=false, 
     const sampleVariance2 = variance2 / length2;
     const criticalValue = (mean1 - mean2) / Math.sqrt(sampleVariance1 + sampleVariance2);
 
-    pLess = jStat.normal.pdf(criticalValue, 0, 1);
+    pLess = jStat.normal.cdf(criticalValue, 0, 1);
     pMore = 1 - pLess;
     pTot = 2 * (pLess < pMore ? pLess : pMore);
   }
@@ -59,6 +61,9 @@ export function tTest(sample1: Population, sample2: Population, devKnown=false, 
 }
 
 export function uTest(x: number[], y: number[], continuity=true): testStats {
+  if (x.length <= 1 || y.length <= 1)
+    throw new Error(`StatisticsError: Wrong sample size; expected at least 2, got ${Math.min(x.length, y.length)})`);
+
   const xy = x.concat(y);
   const n1 = x.length;
   const n2 = y.length;
@@ -69,8 +74,6 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
 
   const R1 = jStat.sum(ranks.slice(0, n1));
   const U1 = R1 - n1 * (n1 + 1) / 2;
-  const U2 = n1 * n2 - U1;
-  const U = U1 > U2 ? U1 : U2;
 
   const mu = n1 * n2 / 2;
   const n = n1 + n2;
@@ -78,17 +81,19 @@ export function uTest(x: number[], y: number[], continuity=true): testStats {
   const tieTerm = _tieTerm(ranks);
   const s = Math.sqrt(n1 * n2 / 12 * ((n + 1) - tieTerm / (n* (n - 1))));
 
-  let numerator = U - mu;
+  // signed, so the one-tailed values mean what they mean in tTest
+  let numerator = U1 - mu;
 
   if (continuity)
-    numerator -= 0.5;
-
+    numerator = Math.sign(numerator) * Math.max(0, Math.abs(numerator) - 0.5);
 
   const z = numerator / s;
 
-  const p = 2 * (1 - jStat.normal.cdf(z, 0, 1));
+  const pLess = jStat.normal.cdf(z, 0, 1);
+  const pMore = 1 - pLess;
+  const p = 2 * (pLess < pMore ? pLess : pMore);
 
-  return {'p-value': p, 'Median difference': med1 - med2, 'p-value more': p, 'p-value less': p};
+  return {'p-value': p, 'Median difference': med1 - med2, 'p-value more': pMore, 'p-value less': pLess};
 }
 
 function _tieTerm(ranks: number[]): number {
@@ -98,5 +103,9 @@ function _tieTerm(ranks: number[]): number {
     ties[num] = (ties[num] || 0) + 1;
   });
 
-  return jStat.sum(Object.values(ties));
+  let sum = 0;
+  for (const t of Object.values(ties))
+    sum += t * t * t - t;
+
+  return sum;
 }

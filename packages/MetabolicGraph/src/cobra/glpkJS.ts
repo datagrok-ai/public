@@ -80,38 +80,3 @@ export async function solveUsingGLPKJvail(modelData: CobraModelData): Promise<{f
   const reactionNames = modelData.reactions.map((r) => r.id);
   return {fluxes: [new Float32Array(reactionNames.map((rName) => sol[rName]))], reactionNames};
 }
-
-export async function extremeSolveUsingGLPKJvail(modelData: CobraModelData, start?: number, end?: number): Promise<{fluxes: Float32Array[], reactionNames: string[]}> {
-  const glpk = await GLPKWrapper.getInstance();
-  start ??= 0;
-  end ??= modelData.reactions.length * 2;
-
-  // Build variables (reactions) with bounds
-  const lp = prepareProblem(modelData, glpk);
-
-  const options: Options = {
-    msglev: glpk.GLP_MSG_OFF, // Disable output
-    presol: true,
-  };
-
-  const fluxes: Float32Array[] = [];
-  let reactionNames: string[] = [];
-  // set objective to each reaction in the range
-  for (let i = start; i < end; i++) {
-    const reactionIndex = Math.floor(i / 2);
-    const isForward = (i % 2 === 0);
-    const reaction = modelData.reactions[reactionIndex];
-    // set objective
-    lp.objective.vars = [{name: reaction.id, coef: isForward ? 1 : -1}];
-    // solve, problem with types, need to be async
-    const result = await glpk.solve(lp, options);
-    // results.push(result.result.vars);
-    const vs = result.result.vars;
-    if (reactionNames.length == 0)
-      reactionNames = modelData.reactions.map((r) => r.id);
-    fluxes.push(new Float32Array(reactionNames.map((rName) => vs[rName])));
-    // if (result?.result?.status !== glpk.GLP_OPT)
-    //   throw new Error(`Optimization failed for reaction ${reaction.id} in ${isForward ? 'forward' : 'reverse'} direction.`);
-  }
-  return {fluxes, reactionNames};
-}

@@ -14,6 +14,16 @@ const skip = [
   'menu-customization', '10k-columns-updates', '100-million-rows',
   'sticky-meta-1-tags', 'sticky-meta-2-semtype', /* skipped as they spawn persisting data */
   'files' /* do not test manually */,
+  // Declare a required input that a bare script.apply() cannot supply. A default
+  // in the annotation does NOT help: it prefills the input form, but the server
+  // still rejects the call as "s: Value not defined" (verified in build 1267,
+  // where `string s = "abc"` changed nothing). Their #test: annotations —
+  // PythonDup("abc") == "abcabc" — are the real coverage.
+  'Pearson', 'PythonDup', 'RDup',
+  // Await a modal that only a user can dismiss. Driving them through `scriptViewer`
+  // is not an option: clicking the confirm button completes the flow and leaves
+  // server state behind (a published project, a grit.issue row).
+  'projects-save-dialog', 'facade-form-dialog', 'facade-list-view', 'row-editor', 'pick-table',
 
   // To fix
   'custom-viewer-properties',

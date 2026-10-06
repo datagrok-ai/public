@@ -23,7 +23,8 @@ const cfg = yaml.parse(fs.readFileSync(
   path.join(process.env.USERPROFILE ?? process.env.HOME, '.grok', 'config.yaml'), 'utf8'));
 const server = cfg.servers[cfg.default];
 const apiUrl = server.url.replace(/\/$/, '');
-const {token} = await (await fetch(`${apiUrl}/users/login/dev/${server.key}`, {method: 'POST'})).json();
+const {token} = await (await fetch(`${apiUrl}/users/login/dev`,
+  {method: 'POST', headers: {Authorization: `Dev ${server.key}`}})).json();
 const settings = await (await fetch(`${apiUrl}/admin/plugins/admin/settings`, {headers: {Authorization: token}})).json();
 const webUrl = settings.settings.webRoot.replace(/\/$/, '');
 

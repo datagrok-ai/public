@@ -94,7 +94,9 @@ The `publish` command executes these steps:
 3. Process environment variables in `/connections/*.json` files (replace `${VAR}`)
 4. **Process Docker images** (see below)
 5. Create ZIP archive with archiver-promise (includes `image.json` metadata per container)
-6. Upload to server: `POST ${host}/packages/dev/${devKey}/${packageName}`
+6. Upload to server: `POST ${host}/packages/dev/${packageName}` with `Authorization: Dev ${devKey}`
+   (older servers only know `POST ${host}/packages/dev/${devKey}/${packageName}`; `devKeyFetch` in
+   `bin/utils/dev-key.ts` falls back to it on 404/401)
 
 **Key flags:**
 - `--debug` (default) - Package visible only to developer
@@ -139,12 +141,11 @@ Tests use Puppeteer for headless browser automation:
 
 ### `grok build` Command
 
-Builds packages with `npm install` + `npm run build`. Supports:
-- Single package: `grok build` (from package directory)
-- Recursive: `grok build --recursive` (discovers and builds all packages in subdirectories)
-- `--filter "name:Chem"` - Filter packages by package.json fields (supports regex, `&&` for multiple conditions)
-- `--parallel N` - Max parallel build jobs (default 4)
-- `--no-incremental` - Force full rebuild (default uses `--env incremental`)
+A front for Turborepo inside the `public/` pnpm workspace (`pnpm exec turbo run build ...`), never prompting:
+- `grok build` (from a package directory): the package and everything it depends on, in dependency order, cached
+- `grok build --all`: the whole workspace; `grok build --affected`: everything the diff against `origin/master` touches
+- `--typecheck` adds the type-check task; `--filter <turbo filter>`; `--parallel N` (default 3); `--force` ignores the cache
+- Outside a workspace it explains that `pnpm run build` / `npm run build` in the package is the way
 
 ### `grok claude` Command
 
@@ -206,7 +207,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 #### Entrypoint (`entrypoint.sh`)
 
 1. **Repo detection:** checks if `/workspace/repo` is the public repo (has `.git` + `js-api/`) or monorepo (`public/js-api/`)
-2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `connectors/`, `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
+2. **Auto-clone:** if workspace is not the public repo, sparse-clones it to `$DG_PUBLIC_DIR` (default `/workspace/datagrok`) — excludes `docker/`, `environments/`, `python-api/`, etc. for speed. Branch resolved as: `DG_PUBLIC_BRANCH` > `DG_VERSION` mapped to branch > `master` fallback
 3. **Workspace linking:** for non-public repos, symlinks `/workspace/repo` into the cloned repo's `packages/` dir and links `.claude`/`CLAUDE.md` at `/workspace/` for context discovery
 4. **Grok config:** auto-creates `~/.grok/config.yaml` pointing to `http://datagrok:8080/api` with key `admin` (only if config doesn't already exist)
 
@@ -234,15 +235,17 @@ grok s groups save --json group.json --save-relations
 
 # Share entities
 grok s shares add "JohnDoe:MyConnection" Chemists,Admins --access Edit
-grok s shares list <entity-uuid>
+grok s shares list "JohnDoe:MyConnection"      # by name or UUID; includes inherited grants
 
-# List / inspect entities
+# List / count / inspect entities (--limit / --offset page, --filter is a smart filter)
 grok s users list
+grok s users count --filter 'status = "active"'
 grok s packages list --filter "MyPlugin"       # check if a plugin is published
 grok s connections list --output json
 grok s functions list --filter "Chem"          # find registered functions
-grok s connections get <id>
-grok s connections delete <id>
+grok s connections get <id-or-name>
+grok s connections delete <id-or-name>
+# users cannot be deleted (no server API) — `grok s users block <login>` instead
 grok s connections save --json conn.json --save-credentials   # create or update
 grok s connections test "JohnDoe:MyConnection"                # test by id or name
 grok s connections test --json conn.json                      # test a connection defined in JSON
@@ -250,6 +253,16 @@ grok s connections test --json conn.json                      # test a connectio
 # Call a server function
 grok s functions run 'Chem:smilesToMw("ccc")'
 grok s functions run 'Pkg:fn({a:5,b:22})'
+
+# Manage packages (server pulls released versions from the package repository / npm)
+grok s packages install Chem Bio PowerGrid     # install latest of each
+grok s packages install Chem --version 1.14.0  # pin a version
+grok s packages outdated                       # installed vs registry-latest
+grok s packages update --all                   # upgrade everything outdated
+grok s packages versions Chem                  # published versions + current/latest flags
+grok s packages set-version Chem 1.13.0        # activate a specific version
+grok s packages uninstall Chem                 # repo entry stays installable
+grok s packages share Chem Chemists --access View
 
 # Browse file storage
 grok s files list "System:AppData" -r          # list files recursively
@@ -265,11 +278,21 @@ grok s groups list-members Admins --admin               # admin members only
 grok s groups list-members Admins --no-admin            # non-admin members only
 grok s groups list-memberships alice                    # groups alice belongs to
 
-# Hit any API endpoint directly
-grok s raw GET /api/users/current
-grok s raw GET /api/packages/dev/MyPlugin
+# Domain schemas and their rows (entity-mapped domain tables)
+grok s domains list                            # registered schemas; `list grit` lists its tables
+grok s domains get grit.issue                  # a table's columns (`get grit` = manifest, `get grit.issue <id>` = one row)
+grok s domains query grit.issue --filter 'status = "open"' --sort '!created_on' --limit 20
+grok s domains insert grit.issue title="Crash" status=open
+grok s domains upload grit.issue ./issues.csv --upsert
+grok s domains grant grit.issue Chemists --access Edit
+grok s domains apply myschema --json schema.json --dry-run   # user-managed schema DDL
 
-# Describe entity JSON schema
+# Hit any API endpoint directly (API-relative path; a leading /api is accepted; exit 1 on failure)
+grok s raw GET /users/current
+grok s raw GET /packages/dev/MyPlugin
+grok s raw POST /public/v1/functions/Sin/call --data '{"x": 1}'
+
+# Fields of an entity type (registry record + a live sample)
 grok s describe connections
 
 # Target a specific server
@@ -282,7 +305,10 @@ grok s users list --output quiet | xargs ...   # pipe IDs
 ```
 
 **Windows Git Bash:** prefix raw paths with `MSYS_NO_PATHCONV=1` to prevent POSIX→Windows
-path conversion: `MSYS_NO_PATHCONV=1 grok s raw GET /api/users/current`
+path conversion: `MSYS_NO_PATHCONV=1 grok s raw GET /users/current`
+
+**Tests:** `npm run test:server` (unit, mocked client) and `HOST=<alias> npm run test:integration`
+(a live server; read-only apart from a `files.put` round trip).
 
 **Implementation:** `bin/commands/server.ts`, `bin/utils/node-dapi.ts` (Node.js REST client),
 `bin/utils/server-output.ts` (formatters). The Node.js dapi bypasses the Dart interop layer

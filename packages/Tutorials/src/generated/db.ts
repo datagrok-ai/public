@@ -426,94 +426,74 @@ export type OrderDetailsExpand = {
 };
 
 export type NorthwindTransactionOp =
-  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>} |
+  {op: 'insert'; table: 'categories'; ref?: string; values: DG.DomainTxValues<CategoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'categories'; id: string; values: DG.DomainTxValues<Partial<CategoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'categories'; id: string} |
-  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>} |
+  {op: 'insert'; table: 'suppliers'; ref?: string; values: DG.DomainTxValues<SuppliersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'suppliers'; id: string; values: DG.DomainTxValues<Partial<SuppliersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'suppliers'; id: string} |
-  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>} |
+  {op: 'insert'; table: 'products'; ref?: string; values: DG.DomainTxValues<ProductsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'products'; id: string; values: DG.DomainTxValues<Partial<ProductsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'products'; id: string} |
-  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>} |
+  {op: 'insert'; table: 'customers'; ref?: string; values: DG.DomainTxValues<CustomersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'customers'; id: string; values: DG.DomainTxValues<Partial<CustomersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'customers'; id: string} |
-  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>} |
+  {op: 'insert'; table: 'employees'; ref?: string; values: DG.DomainTxValues<EmployeesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employees'; id: string; values: DG.DomainTxValues<Partial<EmployeesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employees'; id: string} |
-  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>} |
+  {op: 'insert'; table: 'shippers'; ref?: string; values: DG.DomainTxValues<ShippersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'shippers'; id: string; values: DG.DomainTxValues<Partial<ShippersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'shippers'; id: string} |
-  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>} |
+  {op: 'insert'; table: 'regions'; ref?: string; values: DG.DomainTxValues<RegionsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'regions'; id: string; values: DG.DomainTxValues<Partial<RegionsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'regions'; id: string} |
-  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>} |
+  {op: 'insert'; table: 'territories'; ref?: string; values: DG.DomainTxValues<TerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'territories'; id: string; values: DG.DomainTxValues<Partial<TerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'territories'; id: string} |
-  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>} |
+  {op: 'insert'; table: 'employee_territories'; ref?: string; values: DG.DomainTxValues<EmployeeTerritoriesInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'employee_territories'; id: string; values: DG.DomainTxValues<Partial<EmployeeTerritoriesRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'employee_territories'; id: string} |
-  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>} |
+  {op: 'insert'; table: 'orders'; ref?: string; values: DG.DomainTxValues<OrdersInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'orders'; id: string; values: DG.DomainTxValues<Partial<OrdersRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'orders'; id: string} |
-  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>} |
+  {op: 'insert'; table: 'order_details'; ref?: string; values: DG.DomainTxValues<OrderDetailsInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'order_details'; id: string; values: DG.DomainTxValues<Partial<OrderDetailsRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'order_details'; id: string};
 
 /** Typed clients for the `northwind` domain schema tables (lazy — no import-time side effects). */
 export const northwindDb = {
-  get categories() {
-    return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>(
-      'northwind.categories', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'products': ['created_on', 'updated_on']}});
+  get categorieses() {
+    return grok.dapi.domains.table<CategoriesRow, CategoriesInsert, CategoriesColumn, CategoriesExpand>('northwind.categories');
   },
-  get suppliers() {
-    return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>(
-      'northwind.suppliers', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'products': ['created_on', 'updated_on']}});
+  get supplierses() {
+    return grok.dapi.domains.table<SuppliersRow, SuppliersInsert, SuppliersColumn, SuppliersExpand>('northwind.suppliers');
   },
-  get products() {
-    return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>(
-      'northwind.products', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'order_details': ['created_on', 'updated_on']}});
+  get productses() {
+    return grok.dapi.domains.table<ProductsRow, ProductsInsert, ProductsColumn, ProductsExpand>('northwind.products');
   },
-  get customers() {
-    return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>(
-      'northwind.customers', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
+  get customerses() {
+    return grok.dapi.domains.table<CustomersRow, CustomersInsert, CustomersColumn, CustomersExpand>('northwind.customers');
   },
-  get employees() {
-    return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>(
-      'northwind.employees', {datetimeColumns: ['created_on', 'updated_on', 'birth_date', 'hire_date', 'reports_to.birth_date', 'reports_to.hire_date'],
-        detailDatetimeColumns: {'employees': ['created_on', 'updated_on', 'birth_date', 'hire_date'], 'employee_territories': ['created_on', 'updated_on'], 'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
+  get employeeses() {
+    return grok.dapi.domains.table<EmployeesRow, EmployeesInsert, EmployeesColumn, EmployeesExpand>('northwind.employees');
   },
-  get shippers() {
-    return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>(
-      'northwind.shippers', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'orders': ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date']}});
+  get shipperses() {
+    return grok.dapi.domains.table<ShippersRow, ShippersInsert, ShippersColumn, ShippersExpand>('northwind.shippers');
   },
-  get regions() {
-    return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>(
-      'northwind.regions', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'territories': ['created_on', 'updated_on']}});
+  get regionses() {
+    return grok.dapi.domains.table<RegionsRow, RegionsInsert, RegionsColumn, RegionsExpand>('northwind.regions');
   },
-  get territories() {
-    return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>(
-      'northwind.territories', {datetimeColumns: ['created_on', 'updated_on'],
-        detailDatetimeColumns: {'employee_territories': ['created_on', 'updated_on']}});
+  get territorieses() {
+    return grok.dapi.domains.table<TerritoriesRow, TerritoriesInsert, TerritoriesColumn, TerritoriesExpand>('northwind.territories');
   },
-  get employeeTerritories() {
-    return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>(
-      'northwind.employee_territories', {datetimeColumns: ['created_on', 'updated_on', 'employee_id.birth_date', 'employee_id.hire_date']});
+  get employeeTerritorieses() {
+    return grok.dapi.domains.table<EmployeeTerritoriesRow, EmployeeTerritoriesInsert, EmployeeTerritoriesColumn, EmployeeTerritoriesExpand>('northwind.employee_territories');
   },
-  get orders() {
-    return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>(
-      'northwind.orders', {datetimeColumns: ['created_on', 'updated_on', 'order_date', 'required_date', 'shipped_date', 'employee_id.birth_date', 'employee_id.hire_date'],
-        detailDatetimeColumns: {'order_details': ['created_on', 'updated_on']}});
+  get orderses() {
+    return grok.dapi.domains.table<OrdersRow, OrdersInsert, OrdersColumn, OrdersExpand>('northwind.orders');
   },
-  get orderDetails() {
-    return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>(
-      'northwind.order_details', {datetimeColumns: ['created_on', 'updated_on', 'order_id.order_date', 'order_id.required_date', 'order_id.shipped_date']});
+  get orderDetailses() {
+    return grok.dapi.domains.table<OrderDetailsRow, OrderDetailsInsert, OrderDetailsColumn, OrderDetailsExpand>('northwind.order_details');
   },
   transaction<T extends NorthwindTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

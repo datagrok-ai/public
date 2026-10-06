@@ -18,7 +18,7 @@ export async function demoBio03UI(): Promise<void> {
     await new DemoScript('Atomic Level', 'Atomic level structure of Macromolecules', false, {autoStartFirstStep: true})
       .step(`Loading Macromolecules notation 'Helm'`, async () => {
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         df = await _package.files.readCsv(dataFn);
         view = grok.shell.addTableView(df);

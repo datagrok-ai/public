@@ -17,6 +17,7 @@ import {LIB_SETTINGS_FOR_TESTS} from './consts';
 
 import {_package} from '../../package';
 import {IMonomerLibHelper, IMonomerLibProvider} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {fireMonomerLibLoaded} from '@datagrok-libraries/bio/src/monomer-works/lib-events';
 import {merge, Observable, Subject} from 'rxjs';
 import {MonomerLibFromFilesProvider} from './library-file-manager/monomers-lib-provider';
 const MONOMER_COLLECTION_STORAGE_PATH = 'System:AppData/Bio/monomer-collections/';
@@ -218,10 +219,11 @@ export class MonomerLibManager implements IMonomerLibHelper {
         }
 
 
-        this._monomerLib.updateLibs(libs, reload);
+        await this._monomerLib.updateLibs(libs, reload);
         if (reload)
           this._monomerLib.clearSmilesMonomerCache();
         this._initialLoadCompleted = true;
+        fireMonomerLibLoaded({libraries: libs.map((lib) => lib.source), reload});
       } catch (err: any) {
         // WARNING: This function is not allowed to throw any exception,
         // because it will prevent further handling monomer library settings

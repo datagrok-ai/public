@@ -1,0 +1,72 @@
+{
+  "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
+  "name": "monomers",
+  "version": "1.0.0",
+  "tables": {
+    "library": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "businessKey": ["name"],
+      "friendlyName": "Monomer Libraries",
+      "singularName": "monomer library",
+      "pluralName": "Monomer libraries",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true},
+        "description": {"type": "string"},
+        "source": {"type": "string", "description": "Where the library came from (file name, vendor, URL)"}
+      }
+    },
+    "monomer": {
+      "securityMode": "master",
+      "delegate": "library_id",
+      "businessKey": ["library_id", "polymer_type", "symbol"],
+      "friendlyName": "Monomers",
+      "columns": {
+        "library_id": {"type": "ref", "ref": "library", "onDelete": "cascade", "required": true, "friendlyName": "Library"},
+        "symbol": {"type": "string", "required": true, "isName": true},
+        "name": {"type": "string"},
+        "polymer_type": {"type": "string", "required": true, "choices": ["PEPTIDE", "RNA", "CHEM", "BLOB"], "friendlyName": "Polymer type"},
+        "monomer_type": {"type": "string", "choices": ["Backbone", "Branch", "Terminal", "Undefined"], "friendlyName": "Monomer type"},
+        "molfile": {"type": "string", "description": "Molblock with R# attachment atoms"},
+        "smiles": {"type": "string", "semType": "Molecule"},
+        "natural_analog": {"type": "string", "friendlyName": "Natural analog"},
+        "author": {"type": "string"},
+        "create_date": {"type": "string", "friendlyName": "Create date", "description": "Original HELM createDate value, preserved verbatim"},
+        "helm_id": {"type": "int", "friendlyName": "HELM id", "description": "The numeric 'id' of the HELM JSON record"},
+        "rgroups": {"type": "string", "description": "JSON array of HELM R-group descriptors"},
+        "meta": {"type": "string", "description": "JSON object with optional monomer metadata (colors etc.)"}
+      },
+      "filters": [
+        {"column": "library_id.name", "label": "Library"},
+        {"column": "polymer_type", "label": "Polymer type"},
+        {"column": "monomer_type", "label": "Monomer type"},
+        {"column": "natural_analog", "label": "Natural analog"}
+      ]
+    },
+    "monomer_set": {
+      "securityMode": "row",
+      "promotion": "lazy",
+      "businessKey": ["name"],
+      "friendlyName": "Monomer Sets",
+      "singularName": "monomer set",
+      "pluralName": "Monomer sets",
+      "columns": {
+        "name": {"type": "string", "required": true, "unique": true, "isName": true},
+        "description": {"type": "string"}
+      }
+    },
+    "set_placeholder": {
+      "securityMode": "master",
+      "delegate": "set_id",
+      "businessKey": ["set_id", "symbol"],
+      "friendlyName": "Set Placeholders",
+      "columns": {
+        "set_id": {"type": "ref", "ref": "monomer_set", "onDelete": "cascade", "required": true, "friendlyName": "Set"},
+        "symbol": {"type": "string", "required": true, "isName": true},
+        "polymer_type": {"type": "string", "required": true, "choices": ["PEPTIDE", "RNA", "CHEM", "BLOB"], "friendlyName": "Polymer type"},
+        "monomer_type": {"type": "string", "choices": ["Backbone", "Branch", "Terminal", "Undefined"], "friendlyName": "Monomer type"},
+        "monomer_links": {"type": "string", "description": "JSON array of {source, symbol, notes} links to concrete monomers"}
+      }
+    }
+  }
+}

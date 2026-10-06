@@ -42,9 +42,10 @@ export class RevokedSet {
 
   private prune(): void {
     const now = Date.now();
-    for (const [id, expires] of this.entries)
+    for (const [id, expires] of this.entries) {
       if (expires <= now)
         this.entries.delete(id);
+    }
   }
 }
 
@@ -59,18 +60,18 @@ export class PidboxConsumer {
   private readonly settings: Settings;
   private readonly publisher: FanoutPublisher;
   private readonly revoked: RevokedSet;
-  private readonly getCurrent: () => RunningTask | null;
+  private readonly getTask: (taskId: string) => RunningTask | null;
   private readonly connectFn: (url: string) => Promise<any>;
   private conn: any = null;
   private stopped = false;
   private reconnectWaitMs = 0;
 
   constructor(settings: Settings, publisher: FanoutPublisher, revoked: RevokedSet,
-    getCurrent: () => RunningTask | null, connectFn?: (url: string) => Promise<any>) {
+    getTask: (taskId: string) => RunningTask | null, connectFn?: (url: string) => Promise<any>) {
     this.settings = settings;
     this.publisher = publisher;
     this.revoked = revoked;
-    this.getCurrent = getCurrent;
+    this.getTask = getTask;
     this.connectFn = connectFn ?? ((url: string) => amqplib.connect(url));
   }
 
@@ -97,6 +98,14 @@ export class PidboxConsumer {
     });
     const channel = await conn.createChannel();
     channel.on?.('error', (e: Error) => logWarn(`Pidbox channel error: ${e.message}`));
+    channel.on?.('close', () => {
+      if (!this.stopped && this.conn === conn) {
+        try {
+          conn.close()?.catch?.(() => {});
+        }
+        catch (_) {}
+      }
+    });
     await channel.assertExchange(PIDBOX_EXCHANGE, 'fanout', {durable: false});
     const queueName = `celery@${this.settings.celeryHostname}.celery.pidbox`;
     await channel.assertQueue(queueName, {durable: false, autoDelete: true, arguments: {'x-expires': 10000}});
@@ -143,16 +152,16 @@ export class PidboxConsumer {
   private revoke(taskId: string): void {
     logInfo('Revoke received', taskId);
     this.revoked.add(taskId);
-    const current = this.getCurrent();
-    if (current == null || current.call.id !== taskId)
+    const task = this.getTask(taskId);
+    if (task == null)
       return;
-    current.context.cancelled = true;
+    task.context.cancelled = true;
     // python send_canceled_call parity: publish the Canceled CALL immediately and
     // ALWAYS via AMQP, even for pipe calls; the runner then suppresses the duplicate
-    if (!current.context.cancelPublished && !isCompletedStatus(current.call.status)) {
-      current.call.status = FuncCallStatus.CANCELED;
-      current.context.cancelPublished = true;
-      void this.publisher.publish(current.call.toJson(), current.call.id, 'call');
+    if (!task.context.cancelPublished && !isCompletedStatus(task.call.status)) {
+      task.call.status = FuncCallStatus.CANCELED;
+      task.context.cancelPublished = true;
+      void this.publisher.publish(task.call.toJson(), task.call.id, 'call');
     }
   }
 

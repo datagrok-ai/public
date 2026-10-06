@@ -1,5 +1,7 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
+import {expectNoErrorBalloon, proveBalloonChannel} from '../helpers/balloons';
 
 test.use(specTestOptions);
 
@@ -177,14 +179,12 @@ async function waitForTipsContaining(page: Page, phrase: string, timeout = 30_00
 
 async function assertNonBlocking(page: Page) {
   await expect(page.locator('[name="button-Save"]')).toBeAttached({timeout: 5_000});
-  const errorBalloons = await page.locator('.d4-balloon-error').count();
-  expect(errorBalloons).toBe(0);
-  const errCount = await page.evaluate(() => {
-    const w: any[] = (window as any).grok.shell.warnings ?? [];
-    return w.filter((x) =>
-      x && typeof x === 'object' && (x.isError === true || x.level === 'error')).length;
-  });
-  expect(errCount).toBe(0);
+
+  // The absence claim is read FIRST, while the evidence is still on screen, and only then
+  // proved falsifiable by the positive control below — running the probe first would wait
+  // out (and so destroy) a real balloon raised by the validator several steps earlier.
+  await expectNoErrorBalloon(page, 'the validator must stay non-blocking — an error balloon means it blocked');
+  await proveBalloonChannel(page, 'validators-edge');
 }
 
 async function openInMemoryDataFrame(page: Page, builder: () => unknown) {
@@ -213,8 +213,7 @@ async function openInMemoryDataFrame(page: Page, builder: () => unknown) {
 }
 
 test('Models validators — pre-train edge surfaces (class-imbalance, string-features, too-many-unique, highly-correlated)', async ({page}) => {
-  // Pure pre-train validator spec: NO model is trained (each block stops at the Insights & Tips
-  // widget). Four blocks, each opening the train view + polling a tip up to 30s. 240s is ample.
+
   test.setTimeout(240_000);
 
   await loginToDatagrok(page);

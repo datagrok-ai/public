@@ -1,7 +1,8 @@
-// GROK-12758: Scaffold Tree node Edit→CANCEL then per-node filter checkbox must not corrupt substructure-search state.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
+import {waitForChemMenuRoot} from './chem-fast-helpers';
 
 test.use(specTestOptions);
 
@@ -9,7 +10,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
   test.setTimeout(180_000);
 
   await loginToDatagrok(page);
-  await page.waitForTimeout(3000);
+  await waitForChemMenuRoot(page);
 
   await softStep('Open spgi-100.csv + wait for Chem menu', async () => {
     await page.evaluate(async () => {
@@ -74,7 +75,6 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       }
     });
     expect((ok as any).ok, `Tree generation failed: ${JSON.stringify(ok)}`).toBe(true);
-    await page.waitForTimeout(3000);
   });
 
   await softStep('Wait for scaffold tree to populate with ≥4 visible nodes (poll up to 90s)', async () => {
@@ -126,7 +126,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
 
   await softStep('CANCEL the Edit Scaffold dialog (no edits applied)', async () => {
     await page.locator('.d4-dialog [name="button-CANCEL"]').click();
-    // Wait for the dialog to actually detach rather than sleeping a fixed interval before the count.
+
     await page.locator('.d4-dialog').waitFor({state: 'detached', timeout: 8000});
     const dialogCount = await page.evaluate(() => document.querySelectorAll('.d4-dialog').length);
     expect(dialogCount, 'Dialog did not close after CANCEL').toBe(0);
@@ -146,8 +146,7 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
       return {ok: true, beforeChecked, afterChecked: checkbox.checked};
     });
     expect((clicked as any).ok, `Checkbox click failed: ${JSON.stringify(clicked)}`).toBe(true);
-    // Substructure filter applies asynchronously — poll for it to settle (some rows masked, not all)
-    // instead of a blind sleep before the next step reads df.filter.
+
     await expect.poll(async () => page.evaluate(() => {
       const df = (window as any).__df;
       return df.filter.trueCount > 0 && df.filter.trueCount < df.rowCount;
@@ -167,18 +166,18 @@ test('Chem: GROK-12758 Scaffold Tree node Edit-then-Filter does not corrupt subs
         totalErrors: errs.length,
       };
     });
-    // (A1) No searchSubstructure-class errors
+
     expect(
       state.searchErrors.length,
       `GROK-12758 regression: searchSubstructure-class errors fired after Edit-Scaffold + checkbox sequence. errors=${JSON.stringify(state.searchErrors)}`,
     ).toBe(0);
-    // (A2) Filter applied cleanly: some rows masked, but not all-zero
+
     expect(
       state.filterTrue,
       `GROK-12758 regression: filter.trueCount=${state.filterTrue} of ${state.rowCount} — expected strictly between 0 and rowCount.`,
     ).toBeGreaterThan(0);
     expect(state.filterTrue).toBeLessThan(state.rowCount);
-    // (A3) Selection untouched (the bug surface includes "crossed-out" molecule rendering — selection BitSet pollution)
+
     expect(
       state.selectionTrue,
       `GROK-12758 regression: selection.trueCount=${state.selectionTrue} after checkbox click — should be 0 (selection BitSet must NOT be modified by filter action).`,

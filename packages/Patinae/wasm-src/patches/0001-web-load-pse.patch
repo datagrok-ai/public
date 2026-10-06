@@ -1,0 +1,22 @@
+diff --git a/web/src/bridge.rs b/web/src/bridge.rs
+index 5c4711c..a390aa9 100644
+--- a/web/src/bridge.rs
++++ b/web/src/bridge.rs
+@@ -1135,6 +1135,17 @@ impl WebViewer {
+             return Ok(());
+         }
+ 
++        if matches!(fmt.as_str(), "pse" | "pze") {
++            let pse = patinae_session::load_pse_bytes(data)
++                .map_err(|e| JsValue::from_str(&format!("PSE parse error: {}", e)))?;
++            let session = patinae_session::pse_to_session(&pse)
++                .map_err(|e| JsValue::from_str(&format!("PSE conversion error: {}", e)))?;
++            self.session.replace_contents(session);
++            self.session.refresh_movie_state_count();
++            self.needs_redraw = true;
++            return Ok(());
++        }
++
+         if matches!(fmt.as_str(), "ccp4" | "map" | "mrc") {
+             let ccp4 = patinae_io::ccp4::read_ccp4_from(std::io::Cursor::new(data))
+                 .map_err(|e| JsValue::from_str(&format!("CCP4 parse error: {}", e)))?;

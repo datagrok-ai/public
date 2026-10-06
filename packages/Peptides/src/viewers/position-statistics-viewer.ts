@@ -6,6 +6,7 @@ import wu from 'wu';
 import $ from 'cash-dom';
 import {PeptideUtils} from '../peptideUtils';
 import {TAGS as bioTAGS, MONOMER_MOTIF_SPLITTER} from '@datagrok-libraries/bio/src/utils/macromolecule';
+import {ViewerRenderState} from './viewer-render-state';
 
 export const POSITION_HIDDEN_NAME = '~sequence_position_monomers';
 
@@ -16,6 +17,24 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
   private _boxPlotViewer?: DG.Viewer;
   public valueColumnName: string;
   public showPositionInfo: boolean = true;
+  private readonly renderState = new ViewerRenderState();
+  private renderedPositions: number[] = [];
+
+  get isRenderPending(): boolean { return this.renderState.isPending; }
+  get onRendered() { return this.renderState.rendered.asObservable(); }
+  get immediateRendering(): boolean { return this.renderState.immediateRendering; }
+  set immediateRendering(value: boolean) { this.renderState.immediateRendering = value; }
+
+  getWidgetStatus(): any {
+    const status = (this._boxPlotViewer as any)?.getWidgetStatus() ?? {};
+    return {...status, values: {...status.values, positions: this.renderedPositions.join(', ')}};
+  }
+
+  detach(): void {
+    this.renderState.dispose();
+    this._boxPlotViewer = undefined;
+    super.detach();
+  }
   constructor() {
     super();
     this.positions = this.string('positions', '1', {description: 'Comma-separated sequence positions (1-based) to analyze'});
@@ -73,12 +92,12 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     this.getProperty('valueColumnName')!.set(this, wu(this.dataFrame.columns.numerical).next().value.name);
     this.getProperty('positions')!.set(this, String(this.getPositionFromColumn()));
 
-    this.subs.push(DG.debounce(this.dataFrame.onMetadataChanged, 200).subscribe((_) => {
+    this.subs.push(this.dataFrame.onMetadataChanged.subscribe(() => this.renderState.defer('metadata', () => {
       const curPosition = this.getPositionFromColumn();
       const currentPositions = this.parsePositions();
       if (!currentPositions.includes(curPosition))
         this._setPositions([curPosition]);
-    }));
+    }, 200)));
   }
 
   render(): void {
@@ -87,7 +106,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
       return;
 
     $(this.root).empty();
-    this._boxPlotViewer?.detach();
+    if (this._boxPlotViewer)
+      this.renderState.remove(this._boxPlotViewer);
     const seqHelper = PeptideUtils.getSeqHelper();
     const sequenceColumn = this.dataFrame.col(this.sequenceColumnName)!;
     const seqHandler = seqHelper.getSeqHandler(sequenceColumn);
@@ -101,6 +121,8 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
       legendVisibility: DG.VisibilityMode.Never, markerColorColumnName: this._positionColumn.name, title: 'Sequence Position Statistics',
       autoLayout: false, labelOrientation: 'Vert',
     });
+    this.renderedPositions = positions;
+    this.renderState.add(this._boxPlotViewer);
 
     if (this.showPositionInfo) {
       const selectorDiv = this._renderPositionSelector(positions, maxPos);
@@ -115,7 +137,7 @@ export class SequencePositionStatsViewer extends DG.JsViewer {
     this._boxPlotViewer.sub(this._boxPlotViewer.onPropertyValueChanged.subscribe((_e) => {
       if (this._boxPlotViewer?.props?.valueColumnName && this._boxPlotViewer?.props?.valueColumnName !== this.valueColumnName) {
         const value = this._boxPlotViewer.props.valueColumnName;
-        setTimeout(() => this.getProperty('valueColumnName')!.set(this, value), 10);
+        this.renderState.defer('value column', () => this.getProperty('valueColumnName')!.set(this, value), 10);
       }
     }));
   }

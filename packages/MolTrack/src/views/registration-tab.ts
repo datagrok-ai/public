@@ -189,7 +189,7 @@ export class RegistrationView {
       ui.empty(this.messageContainer);
       this.messageContainer.appendChild(loader);
 
-      const df: DG.DataFrame = await grok.functions.call('Moltrack:registerBulk', {
+      const df: DG.DataFrame = await grok.functions.call('MolTrack:registerBulk', {
         csvFile: csvFile,
         scope: ScopeLabels[this.entityTypeInput?.value],
         mapping: Object.keys(this.mappingDict).length === 0 ? '' : JSON.stringify(this.mappingDict),

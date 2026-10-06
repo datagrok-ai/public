@@ -1,5 +1,14 @@
 # Lib Tests changelog
 
+## v.next
+
+* GROK-21090: Model Hub: Fixed an error rendering the icon of model functions that don't belong to a package
+
+## 1.9.8 (2026-09-23)
+
+* Added webcomponents-vue ribbon service test suites (core, service, elements, components)
+* Arrow: Added round-trip regression tests for null int, float and datetime values
+
 ## 1.9.7 (2026-08-07)
 
 * Fixed worker fitting tests in CI builds: deterministic chunk ids keep the fitting-worker chunk name free of `node_modules`, which the server refuses to serve

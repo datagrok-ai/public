@@ -26,6 +26,8 @@ export class BarCellRenderer extends DG.GridCellRenderer {
 
     const ratio = gridCell.cell.value / gridCell.cell.column.max;
     g.fillStyle = '#006400';
-    g.roundRect(x + 2, y + 4, (w - 4) * ratio, h - 8, 4).fill();
+    g.beginPath();
+    g.roundRect(x + 2, y + 4, (w - 4) * ratio, h - 8, 4);
+    g.fill();
   }
 }

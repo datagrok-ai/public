@@ -4,6 +4,7 @@ import * as DG from 'datagrok-api/dg';
 
 import $ from 'cash-dom';
 import wu from 'wu';
+import * as rxjs from 'rxjs';
 import {Unsubscribable} from 'rxjs';
 
 import {intToHtmlA, setAlpha} from '@datagrok-libraries/utils/src/color';
@@ -387,6 +388,7 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.viewSubs.push(this._renderer.onCurrentChanged.subscribe(this.rendererOnCurrentChanged.bind(this)));
     this.viewSubs.push(this._renderer.onMouseOverChanged.subscribe(this.rendererOnMouseOverChanged.bind(this)));
     this.viewSubs.push(this._renderer.onSelectionChanged.subscribe(this.rendererOnSelectionChanged.bind(this)));
+    this.viewSubs.push(this._renderer.onAfterRender.subscribe(() => this._onRendered.next()));
     this._renderer.attach(this.treeDiv);
 
     this.viewSubs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
@@ -398,6 +400,33 @@ export class Dendrogram extends DG.JsViewer implements IDendrogram {
     this.viewSubs.push(this.dataFrame.onMouseOverRowChanged.subscribe(this.dataFrameOnMouseOverRowChanged.bind(this)));
 
     this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
+  }
+
+  private readonly _onRendered: rxjs.Subject<void> = new rxjs.Subject<void>();
+
+  get onRendered(): rxjs.Observable<void> { return this._onRendered; }
+
+  /** The tree draws synchronously on every change, so nothing is ever waiting to be drawn. */
+  override get isRenderPending(): boolean { return false; }
+
+  /** What the viewer shows, for automation: the canvas and the tree it draws — `leaves` in drawing
+   * order, `newick`, `current node`. */
+  override getWidgetStatus(): any {
+    const status = super.getWidgetStatus();
+    if (!this._renderer)
+      return status;
+    const canvas = this.treeDiv?.querySelector('canvas');
+    if (canvas)
+      status.parts = {...status.parts, canvas};
+    const th = new TreeHelper();
+    const root = this._renderer.treeRoot;
+    status.values = {
+      ...status.values,
+      'leaves': root ? th.getLeafList(root).map((n) => n.name).join(', ') : '',
+      'newick': this.treeNewick ?? '',
+      'current node': this._renderer.currentNode?.name ?? '',
+    };
+    return status;
   }
 
   private onContextMenuHandler(menu: DG.Menu): void {

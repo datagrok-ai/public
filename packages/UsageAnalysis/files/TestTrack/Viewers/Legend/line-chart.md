@@ -4,7 +4,9 @@ realizes_atlas: []
 realizes: [viewers.line-chart]
 realized_as:
   - line-chart-spec.ts
+  - line-chart-server-spec.ts
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p1
 pyramid_layer: integration

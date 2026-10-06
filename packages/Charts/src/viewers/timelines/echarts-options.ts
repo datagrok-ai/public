@@ -17,6 +17,7 @@ export const options = {
     type: 'value',
     min: 'dataMin',
     max: 'dataMax',
+    axisLabel: { hideOverlap: true },
   },
   yAxis: {
     type: 'category',
@@ -28,7 +29,7 @@ export const options = {
   dataZoom: [
     {
       type: 'inside',
-      xAxisIndex: [1, 2],
+      xAxisIndex: 0,
       filterMode: 'weakFilter',
     },
     {

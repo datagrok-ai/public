@@ -39,7 +39,9 @@ async function closeViewer(page: any, viewerType: string) {
     const tv = (window as any).grok.shell.tv;
     tv.viewers.find((q: any) => q.type === vt)?.close();
   }, viewerType);
-  await page.waitForTimeout(500);
+  await page.waitForFunction((t: string) =>
+    !(window as any).grok.shell.tv.viewers.find((q: any) => q.type === t), viewerType,
+    {timeout: 8000});
 }
 
 test('Box plot point occupancy, trellis splitter live drag (SPGI)', async ({page}) => {
@@ -54,11 +56,10 @@ test('Box plot point occupancy, trellis splitter live drag (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Box plot');
     });
-    await page.waitForTimeout(2000);
+    await v.waitForLegendIdle(page, 'Box plot');
     // set after adding — the box plot resets a color passed at construction to its category
     await v.setViewerProps(page, 'Box plot', [{set: {markerColorColumnName: 'Series'}, wait: 2000}]);
     await v.resizeViewer(page, 'Box plot', 950, 780);
-    await page.waitForTimeout(1500);
     const s = await legendState(page, 'Box plot');
     expect(s.mode, `legend went to a corner over the points: ${JSON.stringify(s)}`).toBe('docked');
     await closeViewer(page, 'Box plot');
@@ -68,9 +69,8 @@ test('Box plot point occupancy, trellis splitter live drag (SPGI)', async ({page
     await page.evaluate(() => {
       (window as any).grok.shell.tv.addViewer('Trellis plot');
     });
-    await page.waitForTimeout(4000);
+    await v.waitForLegendIdle(page, 'Trellis plot');
     await v.resizeViewer(page, 'Trellis plot', 1000, 700);
-    await page.waitForTimeout(2000);
     const before = await legendState(page, 'Trellis plot');
     expect(before.mode).toBe('docked');
 
@@ -120,9 +120,8 @@ test('Multi-axis legend selectors and split labels (SPGI)', async ({page}) => {
     (window as any).grok.shell.tv.addViewer('Line chart',
       {xColumnName: 'Competition assay Date', yColumnNames: cols, multiAxis: true});
   }, yCols);
-  await page.waitForTimeout(3000);
+  await v.waitForLegendIdle(page, 'Line chart');
   await v.resizeViewer(page, 'Line chart', 950, 620);
-  await page.waitForTimeout(2000);
 
   const selectorItems = async () => await page.evaluate(() => {
     const tv = (window as any).grok.shell.tv;
@@ -147,7 +146,6 @@ test('Multi-axis legend selectors and split labels (SPGI)', async ({page}) => {
 
   await softStep('Selectors survive a resize (no per-frame kill, no flicker)', async () => {
     await v.resizeViewer(page, 'Line chart', 780, 540);
-    await page.waitForTimeout(1500);
     const items = await selectorItems();
     expect(items.length).toBe(yCols.length);
     for (const it of items)

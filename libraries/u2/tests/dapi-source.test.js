@@ -4,7 +4,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {dapiSource, dapiPager, sanitizeFilterValue} from '../src/dg/dapi-source.js';
+import {dapiSource, dapiPager, sanitizeFilterValue} from '../src/dg/entities/dapi-source.js';
 
 function fake() {
   const calls = [];

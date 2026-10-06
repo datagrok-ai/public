@@ -225,12 +225,30 @@ class MutationObserver {
 }
 
 class ResizeObserver {
-  observe() {}
+  constructor(callback) {
+    this.callback = callback;
+    this.targets = [];
+    this.disconnected = false;
+    ResizeObserver.instances.push(this);
+  }
 
-  unobserve() {}
+  observe(target) {
+    if (!this.targets.includes(target))
+      this.targets.push(target);
+  }
 
-  disconnect() {}
+  unobserve(target) {
+    const i = this.targets.indexOf(target);
+    if (i >= 0)
+      this.targets.splice(i, 1);
+  }
+
+  disconnect() {
+    this.disconnected = true;
+    this.targets.length = 0;
+  }
 }
+ResizeObserver.instances = [];
 
 class ShadowRoot {}
 
@@ -589,7 +607,15 @@ class Element extends Node {
 
   select() {}
 
+  /** A checkbox or a radio activates before the event fires, as the browser does — a test that
+   * clicks one must see the same `checked` and the same `change` a user's click produces. */
   click() {
+    if (this.tagName === 'INPUT' && (this.type === 'checkbox' || this.type === 'radio')) {
+      this.checked = this.type === 'radio' ? true : !this.checked;
+      this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
+      this.dispatchEvent(new DomEvent('change', {bubbles: true}));
+      return;
+    }
     this.dispatchEvent(new MouseEvent('click', {bubbles: true}));
   }
 
@@ -811,14 +837,17 @@ function cancelAnimationFrame(id) {
 
 function getComputedStyle(el) {
   const computed = Object.assign({}, DEFAULT_STYLE, el.style);
-  computed.getPropertyValue = (name) => computed[camel(name)] ?? '';
+  // custom properties are stored (and looked up) under their raw -- name, never camelized
+  computed.getPropertyValue = (name) =>
+    computed[name.startsWith('--') ? name : camel(name)] ?? '';
   return computed;
 }
 
 const windowTarget = new EventTargetBase();
+const location = {href: 'http://localhost/', pathname: '/', search: '', hash: ''};
 
 Object.assign(globalThis, {
-  window: globalThis, document, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
+  window: globalThis, document, location, Node, Text, Element, HTMLElement, HTMLDivElement, HTMLInputElement,
   HTMLTextAreaElement, HTMLSelectElement, HTMLButtonElement, HTMLAnchorElement, HTMLOptionElement,
   ShadowRoot, DOMRect, Option, Event: DomEvent, CustomEvent, KeyboardEvent, MouseEvent, PointerEvent,
   WheelEvent, MutationObserver, ResizeObserver, getComputedStyle, requestAnimationFrame,
@@ -845,4 +874,5 @@ export function flush() {
 export function resetDom() {
   document.body.replaceChildren();
   document.activeElement = document.body;
+  location.search = '';
 }

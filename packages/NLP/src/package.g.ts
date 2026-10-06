@@ -62,7 +62,7 @@ export function similar(query: string) : any {
 //output: object result
 //meta.supportedSemTypes: Text
 //meta.supportedDistanceFunctions: Vector Cosine, Euclidean, Manhattan
-//meta.role: dimRedPreprocessingFunction
+//meta.role: dim-red-preprocessing-function
 export async function sentenceEmbeddingsPreprocessingFunction(col: DG.Column, metric: string) {
   return await PackageFunctions.sentenceEmbeddingsPreprocessingFunction(col, metric);
 }

@@ -57,7 +57,7 @@ describe('NodeSharesDataSource.share', () => {
 describe('NodeSharesDataSource.list', () => {
   it('GETs /privileges/permissions?entityId=<id>', async () => {
     const {client, calls} = makeMock((method, path) => {
-      if (method === 'GET' && path === `/privileges/permissions?entityId=${ENTITY_UUID}`)
+      if (method === 'GET' && path === `/privileges/permissions?entityId=${ENTITY_UUID}&all=true`)
         return [{id: 'p1', userGroup: {id: 'g1', friendlyName: 'Chemists'}, permission: {name: 'View'}}];
       throw new Error(`unexpected ${method} ${path}`);
     });
@@ -65,6 +65,6 @@ describe('NodeSharesDataSource.list', () => {
     const perms = await ds.list(ENTITY_UUID);
     expect(perms).toHaveLength(1);
     expect(perms[0].userGroup.friendlyName).toBe('Chemists');
-    expect(calls[0].path).toBe(`/privileges/permissions?entityId=${ENTITY_UUID}`);
+    expect(calls[0].path).toBe(`/privileges/permissions?entityId=${ENTITY_UUID}&all=true`);
   });
 });

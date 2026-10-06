@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {
@@ -12,6 +11,7 @@ import {
 } from './utils/admetica-utils';
 import { properties } from './utils/admetica-utils';
 import { AdmeticaBaseEditor } from './utils/admetica-editor';
+import { FuncCallParamsEditor, MessageFuncCallEditor } from '@datagrok-libraries/utils/src/func-call-params-editor';
 import { Model, Subgroup } from './utils/constants';
 import { AdmeticaViewApp } from './utils/admetica-app';
 
@@ -19,9 +19,6 @@ export * from './package.g';
 export const _package = new DG.Package();
 
 export class PackageFunctions {
-  // @grok.decorators.init()
-  // static async init() { }
-
   @grok.decorators.func()
   static info() {
     grok.shell.info(_package.webRoot);
@@ -64,37 +61,47 @@ export class PackageFunctions {
     @grok.decorators.param({options: {choices: 'Admetica:getModels(\'Excretion\')', nullable: true}}) excretion: string[],
   ): Promise<void> {
     const models: string[] = [
-      ...absorption,
-      ...distribution,
-      ...metabolism,
-      ...excretion,
+      ...(absorption ?? []),
+      ...(distribution ?? []),
+      ...(metabolism ?? []),
+      ...(excretion ?? []),
     ];
+    if (models.length === 0) {
+      grok.shell.warning('Admetica: no properties selected');
+      return;
+    }
     await performChemicalPropertyPredictions(molecules, table, models);
   }
 
-  @grok.decorators.editor({name: 'AdmeticaEditor'})
-  static admeticaEditor(call: DG.FuncCall): void {
+  @grok.decorators.editor({
+    name: 'AdmeticaEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static admeticaEditor(call: DG.FuncCall): DG.Widget {
+    const dataFrame = grok.shell.tv?.dataFrame;
+    if (!dataFrame || !dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE).length)
+      return new MessageFuncCallEditor('Admetica requires an open table with a Molecule column');
     const funcEditor = new AdmeticaBaseEditor();
-    ui.dialog({ title: 'Admetica' })
-      .add(funcEditor.getEditor())
-      .onOK(async () => {
-        const params = funcEditor.getParams();
-        call.func
-          .prepare({
-            table: params.table,
-            molecules: params.col,
-            template: params.templateContent,
-            models: params.models,
-            addPiechart: params.addPiechart,
-            addForm: params.addForm,
-          })
-          .call(true);
-      })
-      .show();
+    return new FuncCallParamsEditor(call, {
+      inner: funcEditor,
+      stableInputs: [funcEditor.tableInput, funcEditor.templatesInput,
+        funcEditor.addPiechartInput, funcEditor.addFormInput],
+      map: (p) => ({
+        table: p.table,
+        molecules: p.col,
+        template: p.templateContent,
+        models: p.models,
+        addPiechart: p.addPiechart,
+        addForm: p.addForm,
+      }),
+      isValid: (p) => !!p.table && !!p.col && p.models.length > 0,
+      inputFor: {table: funcEditor.tableInput},
+    });
   }
 
   @grok.decorators.func({
     'name': 'AdmeticaMenu',
+    'friendlyName': 'Admetica',
     'description': 'Predicts ADMET properties and appends result columns.',
     'top-menu': 'Chem | Admetica | Calculate...',
     'editor': 'Admetica:AdmeticaEditor',
@@ -121,19 +128,10 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule', description: 'Molecule column.'}}) molecules: DG.Column,
     @grok.decorators.param({type: 'list<string>', options: {optional: true, description: 'Properties to compute. All if omitted.'}}) props?: string[],
   ): Promise<DG.DataFrame> {
-    const isMolblock = molecules.meta.units === DG.UNITS.Molecule.MOLBLOCK ||
-      (!molecules.meta.units && DG.Detector.sampleCategories(molecules, (s) => s.includes('M  END'), 1));
-
-    const values = new Array(molecules.length + 1);
-    values[0] = molecules.name;
-    for (let i = 0; i < molecules.length; i++) {
-      const value = molecules.get(i);
-      values[i + 1] = isMolblock ? `"${value}"` : value;
-    }
-    const csv = values.join('\n');
+    const csv = table.toCsv({columns: [molecules.name]});
 
     // If no properties specified, use all available models
-    const models = (props ?? await this.getModels()).join(',');
+    const models = (props?.length ? props : await this.getModels()).join(',');
     const result = await grok.functions.call('Admetica:run_admetica', {csv, models, raiseException: false}) as DG.DataFrame;
     return await convertLD50(result, molecules);
   }

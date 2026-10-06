@@ -15,7 +15,7 @@ import { _testBilnDetection, detectorTestsDataForBiln } from './biln-tests';
 
 /*
 // snippet to list df columns of semType='Macromolecule' (false positive)
-const df = grok.shell.tableByName('SPGI');
+const df = grok.shell.table('SPGI');
 for (let i = 0; i < df.columns.length; i++) {
   const col = df.columns.byIndex(i);
   if (col.semType == 'Macromolecule') {

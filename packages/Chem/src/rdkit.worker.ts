@@ -1,9 +1,7 @@
-import {WORKER_CALL} from './rdkit-service/rdkit-service-worker-api';
+import {WORKER_CALL, initRdKitFrom} from './rdkit-service/rdkit-service-worker-api';
 import {RdKitServiceWorker as ServiceWorkerClass} from './rdkit-service/rdkit-service-worker';
 // @ts-ignore
 import initRDKitModule from './RDKit_minimal.js';
-//@ts-ignore
-import rdKitLibVersion from './rdkit_lib_version';
 import {RDModule} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 const ctx: Worker = self as any;
@@ -16,8 +14,8 @@ ctx.addEventListener('message', async (e: any) => {
   let result;
   try {
     if (op === 'module::init') {
-      const webRoot = args[0];
-      _rdKitModule = await initRDKitModule({locateFile: () => `${webRoot}/dist/${rdKitLibVersion}.wasm`});
+      const [webRoot, wasm] = args;
+      _rdKitModule = await initRdKitFrom(initRDKitModule, wasm);
       _rdKitModule.use_legacy_stereo_perception(false);
       // console.log('RDKit (worker) initialized');
       _rdKitServiceWorker = new ServiceWorkerClass(_rdKitModule, webRoot);
@@ -50,6 +48,8 @@ ctx.addEventListener('message', async (e: any) => {
       result = _rdKitServiceWorker!.mmpGetFragments(args[0]);
     else if (op === WORKER_CALL.MMP_LINK_FRAGMENTS)
       result = _rdKitServiceWorker!.mmpLinkFragments(args[0], args[1]);
+    else if (op === WORKER_CALL.LINK_R_GROUP_FRAGMENTS)
+      result = _rdKitServiceWorker!.linkRGroupFragments(args[0], args[1], args[2]);
     else if (op === WORKER_CALL.MMP_GET_MCS)
       result = _rdKitServiceWorker!.mmpGetMcs(args[0]);
     else if (op === WORKER_CALL.MOST_COMMON_STRUCTURE)

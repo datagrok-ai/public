@@ -240,6 +240,14 @@ export function expectFloat(actual: number, expected: number, tolerance = 0.001,
     throw new Error(`Expected ${expected}, got ${actual} (tolerance = ${tolerance})`);
 }
 
+/** grok_connect ships a `bigint` column as `int` while every value in it fits int32, and upgrades
+ * it back on the first chunk that overflows (`int8AsInt32`, streaming queries only — see
+ * core/docs/features/connector-streaming-optimization/RESULTS_P1.md WO-1.5). The narrowing is
+ * lossless, so a test that declares `bigint` must accept `int` for small values. */
+function isLosslessNarrowing(expected: string, actual: string): boolean {
+  return expected === DG.TYPE.BIG_INT && actual === DG.TYPE.INT;
+}
+
 export function expectTable(actual: _DG.DataFrame, expected: _DG.DataFrame, error?: string): void {
   const expectedRowCount = expected.rowCount;
   const actualRowCount = actual.rowCount;
@@ -249,7 +257,8 @@ export function expectTable(actual: _DG.DataFrame, expected: _DG.DataFrame, erro
     const actualColumn = actual.columns.byName(column.name);
     if (actualColumn == null)
       throw new Error(`Column ${column.name} not found`);
-    if (actualColumn.type != column.type)
+    const narrowed = isLosslessNarrowing(column.type, actualColumn.type);
+    if (actualColumn.type != column.type && !narrowed)
       throw new Error(`Column ${column.name} type expected ${column.type} got ${actualColumn.type}`);
     for (let i = 0; i < expectedRowCount; i++) {
       const value = column.get(i);
@@ -258,6 +267,9 @@ export function expectTable(actual: _DG.DataFrame, expected: _DG.DataFrame, erro
         expectFloat(actualValue, value, 0.0001, error);
       else if (column.type == DG.TYPE.DATE_TIME)
         expect(actualValue.isSame(value), true, error);
+      else if (narrowed)
+        // bigint reads back as a string, int as a number — compare the value, not the encoding.
+        expect(String(actualValue), String(value), error);
       else
         expect(actualValue, value, error);
     }
@@ -544,11 +556,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
-        // console.log(`********${isGBEnable}`);
-        // if (isGBEnable)
-        //   await (window as any).gc();
-        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(
             test,
             options?.test,
@@ -557,8 +564,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             options.verbose
         );
 
-        // if (isGBEnable)
-        //   await (window as any).gc();
+        if (!test.options?.skipReason && (window as any).gc)
+          await (window as any).gc();
         if (testRun) {
           res.push({ ...testRun,  widgetsDifference: getWidgetsCountSafe() - widgetsBefore });
           // Return early if returnOnFail is set and test failed (but ignore failure for the skipToTest test itself)
@@ -590,11 +597,6 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
         if (test?.options) {
           test.options.owner = t[i].options?.owner ?? category?.owner ?? packageOwner ?? '';
         }
-        // let isGBEnable = (window as any).gc && test.options?.skipReason == undefined;
-        // console.log(`********${isGBEnable}`);
-        // if (isGBEnable)
-        //   await (window as any).gc();
-        // memoryUsageBefore = (window?.performance as any)?.memory?.usedJSHeapSize;
         let testRun = await execTest(
             test,
             options?.test,
@@ -604,8 +606,8 @@ export async function runTests(options?: TestExecutionOptions) : Promise<TestRes
             options.verbose
         );
 
-        // if (isGBEnable)
-        //   await (window as any).gc();
+        if (!test.options?.skipReason && (window as any).gc)
+          await (window as any).gc();
 
         if (testRun) {
           res.push({ ...testRun, widgetsDifference: getWidgetsCountSafe() - widgetsBefore });

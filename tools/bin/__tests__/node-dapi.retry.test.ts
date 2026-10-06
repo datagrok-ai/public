@@ -1,0 +1,99 @@
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest';
+import {NodeApiClient} from '../utils/node-dapi';
+
+const URL = 'http://stand/api';
+const ok = (body: any) => new Response(JSON.stringify(body), {status: 200, headers: {'content-type': 'application/json'}});
+const shed = (status: number) => new Response('<html>503</html>', {status, headers: {'content-type': 'text/html'}});
+
+function stub(...responses: (() => Response | Promise<Response>)[]) {
+  let call = 0;
+  const spy = vi.fn(async () => responses[Math.min(call++, responses.length - 1)]());
+  vi.stubGlobal('fetch', spy);
+  return spy;
+}
+
+// The backoff is read per call, so the suite does not have to sleep through it.
+beforeEach(() => { process.env['GROK_HTTP_BACKOFF'] = '0'; });
+afterEach(() => { delete process.env['GROK_HTTP_BACKOFF']; vi.unstubAllGlobals(); });
+
+describe('fetchOrRetry', () => {
+  it('retries a load-shedding status and returns the answer that follows', async () => {
+    const spy = stub(() => shed(503), () => shed(503), () => ok({id: 'x'}));
+    const client = new NodeApiClient(URL, 'token');
+    expect(await client.get('/projects/x')).toEqual({id: 'x'});
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it('gives up after the retry budget and reports the status, not the HTML body', async () => {
+    stub(() => shed(503));
+    const client = new NodeApiClient(URL, 'token');
+    await expect(client.get('/projects/x')).rejects.toThrow('HTTP 503');
+  });
+
+  it('caps the wait between attempts so a long budget is not minutes asleep', async () => {
+    const waits: number[] = [];
+    vi.stubGlobal('setTimeout', ((fn: any, ms: number) => { waits.push(ms); return (fn(), 0); }) as any);
+    process.env['GROK_HTTP_BACKOFF'] = '1000';
+    process.env['GROK_HTTP_BACKOFF_MAX'] = '4000';
+    process.env['GROK_HTTP_RETRIES'] = '6';
+    try {
+      stub(() => shed(503));
+      await expect(new NodeApiClient(URL, 'token').get('/projects/x')).rejects.toThrow('HTTP 503');
+      expect(waits).toEqual([1000, 2000, 4000, 4000, 4000, 4000]);
+    } finally {
+      delete process.env['GROK_HTTP_BACKOFF_MAX'];
+      delete process.env['GROK_HTTP_RETRIES'];
+    }
+  });
+
+  it('does not retry a status the server meant', async () => {
+    const spy = stub(() => new Response('{"message":"nope"}', {status: 403, headers: {'content-type': 'application/json'}}));
+    const client = new NodeApiClient(URL, 'token');
+    await expect(client.get('/projects/x')).rejects.toThrow('nope');
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not retry a write — a POST the server may have applied is not repeated', async () => {
+    const spy = stub(() => shed(503));
+    const client = new NodeApiClient(URL, 'token');
+    await expect(client.post('/projects', {id: 'x'})).rejects.toThrow('HTTP 503');
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  // A stand serving several isolates can reject a session one of them does not know.
+  it('takes a new session when one is rejected mid-run, and replays the request', async () => {
+    const denied = () => new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}});
+    stub(denied, () => ok({token: 'fresh'}), () => ok({id: 'x'}));
+    const client = new NodeApiClient(URL, 'stale', 'dev-key');
+    expect(await client.get('/projects/x')).toEqual({id: 'x'});
+    expect(client.token).toBe('fresh');
+  });
+
+  it('gives up when it has no key to re-authenticate with', async () => {
+    stub(() => new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}}));
+    const client = new NodeApiClient(URL, 'stale');
+    await expect(client.get('/projects/x')).rejects.toThrow('Invalid session');
+  });
+
+  it('reads the body of every answer it does not return, so no connection is left checked out', async () => {
+    // undici holds the socket until the body is consumed; an abandoned one leaks a connection and
+    // the requests that follow queue before they start, where no deadline can reach them.
+    const seen: Response[] = [];
+    const make = (r: Response) => { seen.push(r); return r; };
+    stub(
+      () => make(new Response('{"message":"Invalid session"}', {status: 401, headers: {'content-type': 'application/json'}})),
+      () => make(ok({token: 'fresh'})),
+      () => make(new Response(null, {status: 204})),
+    );
+    const client = new NodeApiClient(URL, 'stale', 'dev-key');
+    expect(await client.get('/projects/x')).toBeNull();
+    const unread = seen.filter((r) => r.body && !r.bodyUsed);
+    expect(unread).toEqual([]);
+  });
+
+  it('names the route when a request never answers', async () => {
+    stub(() => { throw Object.assign(new Error('timed out'), {name: 'TimeoutError'}); });
+    const client = new NodeApiClient(URL, 'token');
+    await expect(client.get('/projects/x')).rejects.toThrow('GET http://stand/api/projects/x: no answer in');
+  });
+});

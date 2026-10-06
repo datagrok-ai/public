@@ -1,0 +1,40 @@
+/* u2 saved-run picker (see src/dg/inputs/func-call-input.ts): a button-like control showing the
+   picked run's label, and an anchored popup hosting the FuncCallHistoryBrowser. */
+.u2-input-editor.u2-func-call-input {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  border-bottom: var(--dg-input-border);
+  cursor: pointer;
+}
+
+.u2-input-editor.u2-func-call-input:focus {
+  border-bottom: var(--dg-input-border-focus);
+}
+
+.u2-func-call-input-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.u2-func-call-input-name.u2-func-call-input-empty {
+  color: var(--dg-text-color-light);
+}
+
+.u2-func-call-input-popup {
+  display: flex;
+  box-sizing: border-box;
+  width: 420px;
+  height: 320px;
+  padding: var(--dg-space-s);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  background: var(--dg-bg);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-func-call-input-popup .u2-fch {
+  flex: 1;
+  min-width: 0;
+}

@@ -3,6 +3,13 @@ import type {NodeApiError, BatchResponse} from './node-dapi';
 
 export type OutputFormat = 'table' | 'json' | 'csv' | 'quiet';
 
+let errorFormat: OutputFormat = 'table';
+
+/** Set once per run so every `printError` call site reports in the requested format. */
+export function setOutputFormat(format: OutputFormat): void {
+  errorFormat = format;
+}
+
 export function printOutput(data: any, format: OutputFormat): void {
   if (data === null || data === undefined) {
     if (format !== 'quiet') console.log('(empty)');
@@ -124,8 +131,66 @@ export function printBatchOutput(response: BatchResponse, format: OutputFormat):
     process.stderr.write(JSON.stringify(errors.map((r) => ({id: r.id, action: r.action, error: r.error})), null, 2) + '\n');
 }
 
-export function printError(err: any): void {
+export function printError(err: any, opts: {verbose?: boolean} = {}): void {
   const apiErr: NodeApiError | undefined = err?.apiError;
-  const out: any = apiErr ?? {error: String(err?.message ?? err)};
-  process.stderr.write(JSON.stringify(out, null, 2) + '\n');
+  const status = apiErr?.errorCode;
+  const base = apiErr?.error ?? String(err?.message ?? err);
+  const message = typeof status === 'number' && status >= 400 && !base.includes(String(status)) ? `${base} (HTTP ${status})` : base;
+  if (errorFormat === 'json') {
+    process.stderr.write(JSON.stringify({...apiErr, error: message}) + '\n');
+    return;
+  }
+  process.stderr.write(`${message}\n`);
+  printErrorDetails(apiErr?.body);
+  if (opts.verbose && apiErr?.stackTrace)
+    process.stderr.write(apiErr.stackTrace + '\n');
+}
+
+/** Structured fields of a domain error envelope: per-row validation errors, manifest errors, a plan awaiting confirmation. */
+function printErrorDetails(body: any): void {
+  if (!body || typeof body !== 'object') return;
+  for (const r of Array.isArray(body.rows) ? body.rows : [])
+    for (const e of Array.isArray(r?.errors) ? r.errors : [])
+      process.stderr.write(`  row ${r.index ?? ''}${e?.column ? ` ${e.column}` : ''}: ${e?.message ?? e?.code ?? ''}\n`);
+  for (const e of Array.isArray(body.errors) ? body.errors : [])
+    process.stderr.write(`  ${typeof e === 'string' ? e : (e?.message ?? JSON.stringify(e))}\n`);
+  if (body.plan)
+    process.stderr.write(JSON.stringify(body.plan, null, 2) + '\n');
+}
+
+/**
+ * Progress for the long migration walks. A whole-stand pull is minutes of network waiting with
+ * nothing to show for it, and silence is indistinguishable from a hang. Goes to stderr, so it
+ * shows even under `--output json` without disturbing the document, and rewrites a single line
+ * on a terminal.
+ */
+export function progressReporter(quiet: boolean = false): (stage: string, done?: number, total?: number) => void {
+  if (quiet) return () => {};
+  const tty = process.stderr.isTTY;
+  let last = '';
+  let drawn = 0;
+  return (stage: string, done?: number, total?: number) => {
+    const count = done === undefined ? '' : total === undefined ? ` ${done}` : ` ${done}/${total}`;
+    const line = `${stage}${count}`;
+    if (!tty) {
+      // A log cannot be rewritten in place, so it gets a line every so often rather than one per
+      // item — enough to show the run is alive, few enough to stay readable.
+      if (line !== last && (done === undefined || done === total || done % 250 === 0))
+        process.stderr.write(`${line}\n`);
+      last = line;
+      return;
+    }
+    // Redrawing on every item writes megabytes a minute into anything that is not really a
+    // terminal — a detached run produced a 7 GB file of carriage returns. The eye cannot
+    // follow faster than this anyway.
+    const finished = done !== undefined && done === total;
+    if (!finished && Date.now() - drawn < 100) return;
+    drawn = Date.now();
+    process.stderr.write(`\r${' '.repeat(last.length)}\r${line}`);
+    last = line;
+    if (finished) {
+      process.stderr.write('\n');
+      last = '';
+    }
+  };
 }

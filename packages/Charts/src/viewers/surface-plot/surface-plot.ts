@@ -18,7 +18,7 @@ export class SurfacePlot extends EChartViewer {
   YColumnName: string;
   ZColumnName: string;
   projection: string;
-  bkgcolor: string | number;
+  bkgcolor: number;
   visualMapComponent: boolean;
   grid: boolean;
   axisLabel: boolean;
@@ -63,7 +63,7 @@ export class SurfacePlot extends EChartViewer {
     this.YColumnName = this.string('YColumnName', null);
     this.ZColumnName = this.string('ZColumnName', null);
     this.projection = this.string('projection', 'perspective', {choices: ['perspective', 'orthographic']});
-    this.bkgcolor = this.int('backgroundColor', 0xFFF);
+    this.bkgcolor = this.int('backgroundColor', 0xFFFFFF);
     this.visualMapComponent = this.bool('legendVisualMapComponent', false);
     this.grid = this.bool('axisGrid', true);
     this.axisLabel = this.bool('axisLabel', true);
@@ -218,7 +218,7 @@ export class SurfacePlot extends EChartViewer {
         this.projection = newVal;
         break;
       case 'backgroundColor':
-        this.bkgcolor = DG.Color.toHtml(newVal);
+        this.bkgcolor = newVal;
         break;
       case 'legendVisualMapComponent':
         this.visualMapComponent = newVal;
@@ -254,7 +254,7 @@ export class SurfacePlot extends EChartViewer {
     // }
 
     this.option.grid3D.viewControl.projection = this.projection;
-    this.option.backgroundColor = this.bkgcolor;
+    this.option.backgroundColor = DG.Color.toHtml(this.bkgcolor);
     this.option.visualMap.show = this.visualMapComponent;
     this.option.grid3D.show = this.grid;
     this.option.grid3D.axisLabel.show = this.axisLabel;
@@ -269,13 +269,13 @@ export class SurfacePlot extends EChartViewer {
       this.option.xAxis3D.type = this.XArr.type;
       this.option.yAxis3D.type = this.YArr.type;
       this.option.zAxis3D.type = this.ZArr.type;
-      const s = Math.round(Math.sqrt(this.XArr.data.length));
-      this.option.series[0].dataShape = [s, s];
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 
-    if (filter) this.option.series[0].data = this.plotFilter().sort(this.sort);
-    else this.option.series[0].data = this.rawData.sort(this.sort);
+    const data = filter ? this.plotFilter().sort(this.sort) : this.rawData.sort(this.sort);
+    const s = Math.round(Math.sqrt(data.length));
+    this.option.series[0].dataShape = [s, s];
+    this.option.series[0].data = data;
     this.chart.resize();
     this.chart.setOption(this.option);
   }

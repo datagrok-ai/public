@@ -1,11 +1,9 @@
 ---
 feature: general
+realizes_atlas: []
+priority: p2
 target_layer: manual-only
 coverage_type: regression
-produced_from: split
-original_path: public/packages/UsageAnalysis/files/TestTrack/General/tabs-reordering.md
-split_date: 2026-06-16
-related_bugs: []
 manual_only_reason: |
   The core of this scenario is drag-and-drop reordering of table tabs, which is
   implemented by the custom dock_spawn docking layer (core/client/libs/dock_spawn).
@@ -16,6 +14,7 @@ manual_only_reason: |
   a *modified* order survives a reload requires first establishing that order
   via the manual drag in steps 1-2. Distinct from Viewers/grid-ui.md, which
   covers column reordering on the grid canvas — this is tab reordering.
+related_bugs: []
 ---
 
 # Tabs ordering and persistence
@@ -26,7 +25,7 @@ tab order survives saving and reopening the project.
 
 1. Open multiple datasets.
 - Drag and drop two different datasets into the workspace.
-- Open two additional random datasets from the demo files.
+- Open two additional datasets from the demo files (e.g. chem/SPGI.csv and curves.csv).
 - Expected result: All four datasets should open without errors.
 2. Rearrange datasets by drag-and-drop.
 - Hover over a dataset name, press and hold the left mouse button, then drag datasets left and right to reorder them randomly.
@@ -46,7 +45,13 @@ tab order survives saving and reopening the project.
 - Verify that datasets snap into place correctly when repositioned.
 - Check that closing and reopening datasets does not reset the order.
 
+## Cleanup
+
+1. Delete the project saved in step 3: Browse > Projects, right-click it > Delete.
+2. Files > Close all to discard the opened datasets.
+
 ---
 {
-  "order": 8
+  "order": 8,
+  "datasets": ["System:DemoFiles/demog.csv", "System:DemoFiles/chem/smiles.csv", "System:DemoFiles/chem/SPGI.csv", "System:DemoFiles/curves.csv"]
 }

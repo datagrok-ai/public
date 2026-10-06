@@ -156,7 +156,7 @@ export async function chemFunctionsDialog(
     }
   }
 
-  const tc = ui.tabControl(tabControlArgs, true);
+  const tc = ui.tabControl(tabControlArgs, {vertical: true});
   tc.onTabChanged.subscribe(() => {try {tc.currentPane.content.style.removeProperty('max-width');} catch (e) {}});
   tc.header.style.overflow = 'scroll';
   tc.root.style.width = '100%';

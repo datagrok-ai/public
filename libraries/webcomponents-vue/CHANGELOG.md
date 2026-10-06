@@ -1,5 +1,19 @@
 # webcomponents-vue changelog
 
+## v.next
+
+* InputForm: Added the `skipLogic` prop; literal `choices` fill the items under it, as under `skipInit`
+* RibbonPanel: an icon item carries its tooltip as `aria-label` (and drops it when an update removes the tooltip), so assistive tools and tests can name it
+* InputForm: In driver forms, choice inputs offer an empty option when annotated `nullable` or `optional`, or as the `emptyChoice` meta says
+* InputForm: Driver validation marks the caption label as well as the editor, matching the platform's own invalid styling
+
+## 0.4.0 (2026-09-23)
+
+* Introduced an injectable per-view service (`provideDgViewService`/`useViewService`/`useDgView`) that owns ribbon rendering and diffing
+* RibbonPanel/RibbonMenu: rewritten as thin descriptor-based wrappers over the view service; `view` prop removed, added `priority` ordering and built-in disabled state (debounced style, reason tooltip/popup)
+* wheelGuard: hint overlay colors use design tokens
+* ifOverlapping: a show scheduled within the debounce window no longer lands after unmount; the loader is removed on unmount
+
 ## 0.3.4 (2026-08-07)
 
 * `Viewer`: patch `dataFrame` before `options` so options referencing new columns don't hit the old frame

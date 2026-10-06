@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
@@ -31,12 +32,19 @@ test('Chem: Similarity Search', async ({page}) => {
   await softStep('Chem → Search → Similarity Search → viewer appears with hits', async () => {
     await page.evaluate(() => {
       const chemMenu = document.querySelector('[name="div-Chem"]') as HTMLElement;
+      // Labels from a previously opened menu stay in the document, so only a node that was not
+      // already there is this menu's leaf; clicking a stale one actuates nothing.
+      (window as any).__staleMenuLabels = new Set(Array.from(document.querySelectorAll('.d4-menu-item-label')));
       chemMenu.dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.locator('.d4-menu-item-label').filter({hasText: 'Similarity Search...'}).first().waitFor({state: 'attached', timeout: 30000});
+    await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-menu-item-label'))
+      .some(m => !(window as any).__staleMenuLabels.has(m) && m.textContent!.trim() === 'Similarity Search...'),
+    null, {timeout: 2000}).catch(() => {});
     await page.evaluate(() => {
-      const sim = Array.from(document.querySelectorAll('.d4-menu-item-label'))
-        .find(m => m.textContent!.trim() === 'Similarity Search...') as HTMLElement;
+      const labels = Array.from(document.querySelectorAll('.d4-menu-item-label'))
+        .filter(m => m.textContent!.trim() === 'Similarity Search...');
+      const sim = (labels.find(m => !(window as any).__staleMenuLabels.has(m)) ?? labels[0]) as HTMLElement;
       (sim.closest('.d4-menu-item') as HTMLElement).dispatchEvent(new MouseEvent('click', {bubbles: true}));
     });
     await page.waitForFunction(() =>

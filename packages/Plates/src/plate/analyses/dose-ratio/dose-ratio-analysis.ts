@@ -105,7 +105,7 @@ export class DoseRatioAnalysis extends AnalysisBase {
   }
 
 
-  private async saveAnalysisProperty(runId: number, propName: string, value: any, group: string[]): Promise<void> {
+  private async saveAnalysisProperty(runId: string, propName: string, value: any, group: string[]): Promise<void> {
     const prop = this._outputProperties.get(propName);
     if (prop && value !== null && value !== undefined)
       await saveAnalysisResult({runId, propertyId: prop.id, propertyName: prop.name, propertyType: prop.type, value, groupCombination: group});

@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 
 test.use(specTestOptions);
@@ -81,7 +82,7 @@ test('Sunburst — date-column hierarchy graceful handling (github-2954)', async
       };
     });
     expect(result.ok).toBe(true);
-    // github-2954 invariant: setOptions does NOT throw with date column.
+
     expect(result.setOptionsThrew).toBe(false);
     expect(result.hasContent).toBe(true);
     expect(result.width).toBeGreaterThan(0);

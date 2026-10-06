@@ -246,7 +246,7 @@ category('panel and renderer', () => {
     }
   });
 
-  test('options stored under the legacy tag are read and migrate onto the layout-carried one', async () => {
+  test('options stored under the legacy tag are read, and move onto the layout-carried one when written', async () => {
     // only '.%' tags reach a layout, so options in '.fit' never travelled to a fresh table
     expect(FitConstants.TAG_FIT.startsWith('.%'), true, 'the fit tag is no longer carried by layouts');
 
@@ -255,8 +255,15 @@ category('panel and renderer', () => {
     col.setTag(FitConstants.TAG_FIT_LEGACY, JSON.stringify({chartOptions: {logX: true}}));
 
     expect(getColumnChartOptions(col).chartOptions!.logX, true, 'options under the legacy tag were ignored');
-    expect(JSON.parse(col.getTag(FitConstants.TAG_FIT)).chartOptions.logX, true,
-      'reading did not migrate the options onto the layout-carried tag');
+    expect(col.getTag(FitConstants.TAG_FIT) == null, true, 'reading the options wrote a tag');
+
+    changeCurvesOptions(DG.Viewer.grid(df).cell('curve', 0),
+      {property: {name: 'showCurveConfidenceInterval'}, value: false} as unknown as DG.InputBase,
+      'seriesOptions', 'Column');
+    const stored = JSON.parse(col.getTag(FitConstants.TAG_FIT)) as IFitChartData;
+    expect(stored.chartOptions!.logX, true, 'the legacy options were lost when the column was written');
+    expect(stored.seriesOptions!.showCurveConfidenceInterval, false, 'the change was not stored');
+    expect(col.getTag(FitConstants.TAG_FIT_LEGACY) == null, true, 'both tags now hold the options');
   });
 
   test('the panel offers the label names the cell carries', async () => {

@@ -76,7 +76,7 @@ export async function getSdfString(
   const maskedTable = mask.anyFalse ? table.clone(mask) : table;
 
   const grid = grok.shell.tv != null && grok.shell.tv.dataFrame === table ? grok.shell.tv.grid :
-    table.name && grok.shell.getTableView(table.name) ? grok.shell.getTableView(table.name).grid : null;
+    table.name && grok.shell.tableView(table.name) ? grok.shell.tableView(table.name).grid : null;
   const selectedCols = Array.from(exportOptions.selectedColumnsOnly ? table.columns.selected : table.columns);
   const visibleCols = (exportOptions.visibleColumnsOnly && grid != null ? selectedCols.filter((col) => {
     const gridCol = grid.columns.byName(col.name);

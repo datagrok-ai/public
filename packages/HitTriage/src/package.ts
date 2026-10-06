@@ -134,7 +134,11 @@ async function hitAppTB(treeNode: DG.TreeViewGroup, name: AppName) {
 export class PackageFunctions {
   @grok.decorators.init()
   static async initHT() {
-    await grok.functions.call('Chem:init', {});
+    try {
+      await grok.functions.call('Chem:init', {});
+    } catch (e) {
+      console.error('error initializing chem package', e);
+    }
   }
   @grok.decorators.treeBrowser({meta: {app: 'Hit Triage'}})
   static async hitTriageAppTreeBrowser(treeNode: DG.TreeViewGroup) {

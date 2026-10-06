@@ -18,9 +18,9 @@ category('u2demo', () => {
   test('demo builds and disposes cleanly', async () => {
     const baseline = Scope.liveCount;
     const demo = buildDemo();
-    expect(demo.root.childElementCount > 0, true);
+    expect(demo.content.root.childElementCount > 0, true);
     expect(Scope.liveCount > baseline, true);
-    demo.dispose();
+    demo.content.dispose();
     expect(Scope.liveCount, baseline);
   });
 });

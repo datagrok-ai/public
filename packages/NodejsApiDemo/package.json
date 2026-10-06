@@ -8,11 +8,14 @@
     "url": "https://github.com/datagrok-ai/public.git",
     "directory": "packages/NodejsApiDemo"
   },
-  "dependencies": {},
   "scripts": {
     "build": "echo source-only package, no build step"
   },
-  "canEdit": ["Administrators"],
-  "canView": ["All users"],
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
   "category": "Development"
 }

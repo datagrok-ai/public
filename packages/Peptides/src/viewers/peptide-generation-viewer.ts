@@ -168,6 +168,13 @@ export class PeptideGenerationViewer extends DG.JsViewer {
       this._grid = null;
       this.render();
     }));
+    // Not debounced: a hover before the reset would highlight with a stale-length mask
+    this.subs.push(rxjs.merge(this.dataFrame.onRowsRemoved, this.dataFrame.onRowsAdded).subscribe(() => {
+      this._propChangeTimer && clearTimeout(this._propChangeTimer);
+      this._monomerPositionStats = null;
+      this._grid = null;
+      this.render();
+    }));
     this.render();
   }
 

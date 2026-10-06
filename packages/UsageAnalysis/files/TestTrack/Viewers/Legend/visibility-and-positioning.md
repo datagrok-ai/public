@@ -4,7 +4,9 @@ realizes_atlas: []
 realizes: [viewers.scatter-plot, viewers.histogram, viewers.line-chart, viewers.bar-chart, viewers.pie-chart, viewers.trellis-plot, viewers.box-plot]
 realized_as:
   - visibility-and-positioning-spec.ts
+  - visibility-and-positioning-server-spec.ts
 target_layer: playwright
+boot_lane: mixed
 coverage_type: smoke
 priority: p0
 pyramid_layer: ui-smoke

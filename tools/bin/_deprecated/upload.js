@@ -72,7 +72,8 @@ async function processPackage() {
   let timestamps = {};
   if (debug) {
     try {
-      timestamps = await (await fetch(`${host}/packages/dev/${devKey}/${packageName}/timestamps`)).json();
+      timestamps = await (await fetch(`${host}/packages/dev/${packageName}/timestamps`,
+        {headers: {Authorization: `Dev ${devKey}`}})).json();
       if (timestamps['#type'] === 'ApiError') {
         console.log(timestamps.message);
         return 1;
@@ -134,8 +135,9 @@ async function processPackage() {
 
   //upload
   const uploadPromise = new Promise((resolve, reject) => {
-    fetch(`${host}/packages/dev/${devKey}/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`, {
+    fetch(`${host}/packages/dev/${packageName}?debug=${debug.toString()}&rebuild=${rebuild.toString()}`, {
       method: 'POST',
+      headers: {Authorization: `Dev ${devKey}`},
       body: zip,
     }).then((body) => body.json()).then((j) => resolve(j)).catch((err) => {
       reject(err);

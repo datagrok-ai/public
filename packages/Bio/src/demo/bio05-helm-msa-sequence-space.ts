@@ -49,7 +49,7 @@ export async function demoBio05UI(): Promise<void> {
         view = grok.shell.addTableView(df);
 
         grok.shell.windows.showContextPanel = false;
-        grok.shell.windows.showProperties = false;
+        grok.shell.windows.showContextPanel = false;
 
         if (pepseaDcStatus === 'started' || pepseaDcStatus === 'checking') {
           _package.logger.debug(

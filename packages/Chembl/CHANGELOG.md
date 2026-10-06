@@ -1,5 +1,14 @@
 # ChEMBL changelog
 
+## v.next
+
+* Chembl: Enrichments: Fixed the "Add assay info" and "Add alerts" samples, which named columns ChEMBL does not have (the organism of an assay is `assay_organism`, and `set_name` belongs to `structural_alert_sets`), and added a test that applies every shipped enrichment
+
+## 37.0.0 (2026-08-31)
+
+* Chembl: Replaced the db.datagrok.ai demo database with a package-owned Docker container built on `datagrok/demo_db_chembl`
+* Chembl: Versioned the package after the ChEMBL release it ships — ChEMBL 37 is 37.0.0
+
 ## 1.4.12 (2026-03-16)
 
 * Chembl: Add descriptions to all queries

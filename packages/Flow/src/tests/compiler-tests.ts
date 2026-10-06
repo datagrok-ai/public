@@ -263,7 +263,7 @@ category('Flow: script emitter', () => {
       await e.flow.addConnectionByKeys(sel.id, 'table', out.id, 'table');
 
       const script = emitScript(e.flow, SETTINGS);
-      expect(script.includes('grok.shell.tableByName("My Table")'), true, 'name lookup emitted');
+      expect(script.includes('grok.shell.table("My Table")'), true, 'name lookup emitted');
       expect(script.includes('throw new Error("Select Table: no open table or variable named'), true,
         'a null table throws with the table name instead of failing downstream');
       const inst = emitScript(e.flow, SETTINGS, {instrumented: true, runId: 'run-sel'});

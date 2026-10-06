@@ -82,7 +82,7 @@ export function clearAtomPickerHighlights(smilesCol: DG.Column): void {
     });
     const dfName = smilesCol.dataFrame?.name;
     if (dfName) {
-      const tv = grok.shell.getTableView(dfName);
+      const tv = grok.shell.tableView(dfName);
       tv?.grid?.invalidate();
     }
   } catch (err: unknown) {

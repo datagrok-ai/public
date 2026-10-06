@@ -29,12 +29,13 @@ Pure TypeScript library of numerical methods for the [Datagrok](https://datagrok
   * covariate-adjusted analysis: ANCOVA (LS means, slope homogeneity, effect decomposition)
 
 * **[NCA (Non-Compartmental Analysis)](./src/nca/README.md):**
-  * 8 PK parameters: Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL, Vz
-  * 3 AUC methods (linear, log-linear, linear-up/log-down) × naive Float64 + Neumaier-compensated summation
-  * 4 BLQ-handling rules × 4 phases
+  * 15 PK parameters: Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL, Vz, AUMClast, AUMCinf, MRT, Vss (IV only), Tlag (extravascular only), %AUMCextrap
+  * 3 AUC/AUMC methods (linear, log-linear, linear-up/log-down) × naive Float64 + Neumaier-compensated summation
+  * 4 BLQ-handling rules × 4 phases, substituted values reaching AUC/AUMC and the λz filter
   * λz auto best-fit (subset search by adjusted R²) + manual
-  * IV bolus `c0` back-extrapolation (`logslope` / `c1` / `cmin` / `set0` chain), extravascular pre-dose insertion
-  * validated against [PKNCA](https://humanpred.github.io/pknca/) on 26 reference profiles (theophylline, indomethacin, synthetic rat)
+  * all routes: IV bolus with `c0` back-extrapolation (`logslope` / `c1` / `cmin` / `set0` chain), IV infusion with the `T_inf/2` MRT correction, extravascular (PO/SC/IM) with pre-dose insertion
+  * sparse destructive sampling: composite AUClast with Holder standard error, Nedelman-Jia df and Student-t CI; stratified bootstrap with BCa intervals for the nonlinear parameters
+  * validated against [PKNCA](https://humanpred.github.io/pknca/) on 27 reference profiles across 4 datasets (theophylline, indomethacin, synthetic rat, IV infusion), plus a sparse mouse dataset
 
 ## Installation
 
@@ -140,7 +141,7 @@ See [statistics docs](./src/stats/README.md) for
 * input types (`number[]`, `Float32Array`, `Float64Array`, `Int32Array`, …)
 * NaN handling (NaN as missing-value sentinel, stripped per-method)
 * worked examples reproducing published references (Dunnett 1955, NIST Iris, Williams 1971/1972, Young 1985, Montgomery 15.10 vs SAS PROC GLM)
-* validation against scipy via JSON fixtures (179 cases, 14 fixture files)
+* validation against scipy, R (`clinfun` / `PMCMRplus`) and SAS via JSON fixtures (517 cases, 18 fixture files)
 
 ### NCA
 
@@ -188,4 +189,26 @@ See [NCA docs](./src/nca/README.md) for
 
 * algorithm details (BLQ phasing, lambda_z best-fit search, IV bolus c0 back-extrapolation)
 * parameter contract (`ProfileInputs`, `NcaRules`, `ComputeResult`)
-* validation against fixtures (26 profiles across 3 datasets, all within §9.2 tolerances)
+* sparse destructive sampling (`sparseAuc`, `buildCompositeProfile`, `summarizeBootstrap`)
+* the individually exported kernels (AUC/AUMC integrators, derived parameters, seeding)
+* validation against fixtures (27 profiles across 4 datasets, all within §9.2 tolerances)
+
+## Development
+
+This library is a member of the `public/` pnpm workspace. Run `pnpm install` once at the repository
+root — never `npm install` inside the library.
+
+```bash
+npm run build          # grok tsc → dist/ with declarations
+npm test               # jest over src/**/__tests__/ (48 suites, ~1270 tests)
+npx jest src/nca       # one domain
+npx jest -t 'lambda_z' # one test or describe block
+npm run lint           # ESLint
+npm run lint-fix       # ESLint with --fix
+```
+
+Tests run on TypeScript 5 (`typescript` is pinned here as a devDependency), while `npm run build`
+compiles with the workspace catalog's TypeScript 7 — `grok tsc` resolves the compiler from
+`@datagrok/build-config`, not from this package. See [`CLAUDE.md`](./CLAUDE.md) for why the pin exists.
+
+When adding a numerical method, follow [`.claude/rules/new-method-checklist.md`](./.claude/rules/new-method-checklist.md).

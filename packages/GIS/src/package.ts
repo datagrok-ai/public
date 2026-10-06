@@ -443,7 +443,7 @@ export class PackageFunctions {
     'outputs': [{'name': 'result', 'type': 'viewer'}],
   })
   static gisViewer(): GisViewer {
-    // setTimeout(() => {grok.shell.windows.showProperties = true;}, 500);
+    // setTimeout(() => {grok.shell.windows.showContextPanel = true;}, 500);
     return new GisViewer();
   }
 

@@ -1,0 +1,51 @@
+/* Tour skin (see src/components/display/tour.ts). Tokens only; css/tokens.css and css/elements.css
+   must be loaded alongside. The dim layer never takes the pointer — a step may ask the user to
+   click the control it spotlights — so only the popup is interactive. */
+.u2-tour-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.u2-tour-overlay svg {
+  width: 100%;
+  height: 100%;
+}
+
+.u2-tour-popup {
+  box-sizing: border-box;
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  max-width: 360px;
+  padding: var(--dg-space-l);
+  pointer-events: auto;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  box-shadow: var(--dg-shadow-2);
+  outline: none;
+}
+
+.u2-tour-content {
+  overflow-wrap: anywhere;
+}
+
+.u2-tour-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-tour-counter {
+  margin-left: auto;
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}

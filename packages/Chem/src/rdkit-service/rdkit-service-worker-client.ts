@@ -9,9 +9,10 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
     super(new Worker(new URL('../rdkit.worker', import.meta.url)));
   }
 
-  moduleInit = (pathToRdkit: string): Promise<unknown> => {
+  /** `wasm`: the RDKit build compiled on the main thread, instead of each worker downloading and compiling it. */
+  moduleInit = (pathToRdkit: string, wasm: WebAssembly.Module): Promise<unknown> => {
     // Set readiness synchronously (ungated) so any call queued during a restart waits for this init.
-    const init = this.call('module::init', [pathToRdkit], false);
+    const init = this.call('module::init', [pathToRdkit, wasm], false);
     // A failed init must not leave _ready permanently rejected — that would block every future call.
     this._ready = init.catch((e) => console.error('Chem | worker module init failed:', e));
     return init; // raw promise, so restartWorker/init() still observe a real failure
@@ -56,6 +57,9 @@ export class RdKitServiceWorkerClient extends WorkerMessageBusClient {
 
   mmpLinkFragments = async (cores: string [], fragments: string []) =>
     this.call(WORKER_CALL.MMP_LINK_FRAGMENTS, [cores, fragments]);
+
+  linkRGroupFragments = async (cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]) =>
+    this.call(WORKER_CALL.LINK_R_GROUP_FRAGMENTS, [cores, fragmentColumns, attachIdx]);
 
   mmpGetMcs = async (molecules: [string, string][]) =>
     this.call(WORKER_CALL.MMP_GET_MCS, [molecules]);

@@ -1,0 +1,162 @@
+/* Font input skin — size box with its preset popup, B / I toggles, family select.
+   Tokens only; css/tokens.css and css/inputs.css must be loaded alongside. */
+/* the whole row runs one step smaller than the rest of the form, framed by transparent borders
+   the focus fills in rather than underlines (`d4/lib/src/widgets/widgets.css:1-15, 367-437`) */
+.u2-input-editor.u2-font {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  font-size: 11px;
+}
+
+.u2-font-size {
+  box-sizing: border-box;
+  width: 27px;
+  height: 16px;
+  padding: 0 3px;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  line-height: 14px;
+  text-align: left;
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid transparent;
+  border-radius: 2px;
+  outline: none;
+}
+
+.u2-font-size:focus {
+  border-color: var(--dg-steel-4);
+}
+
+.u2-font-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-left: var(--dg-space-xs);
+  padding: 0;
+  font-size: inherit;
+  color: var(--dg-accent);
+  background: none;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.u2-font-step > .u2-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  font-size: inherit;
+}
+
+.u2-font-step:hover {
+  background: var(--dg-steel-1);
+}
+
+.u2-font-family {
+  box-sizing: border-box;
+  width: 80px;
+  min-width: 0;
+  height: 18px;
+  margin-left: var(--dg-space-s);
+  padding: 0 12px 0 3px;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: var(--dg-bg);
+  /* the same solid caret the platform draws, at the same 8px box 2px off the right edge
+     (widgets.css:120-124); tinted --dg-steel-5, which is the `%2340607f` the platform encodes */
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dg-steel-5) 50%),
+    linear-gradient(135deg, var(--dg-steel-5) 50%, transparent 50%);
+  background-repeat: no-repeat;
+  background-position: right 6px center, right 2px center;
+  background-size: 4px 4px, 4px 4px;
+  border: var(--dg-border-width) solid transparent;
+  border-radius: 2px;
+  outline: none;
+}
+
+.u2-font-family:focus {
+  border-color: var(--dg-steel-4);
+}
+
+.u2-font-toggle {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin-left: var(--dg-space-s);
+  padding: 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: 14px;
+  color: var(--dg-text-color);
+  background: none;
+  border: var(--dg-border-width) solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.u2-font-bold {
+  font-weight: var(--dg-font-weight-bold);
+}
+
+.u2-font-italic {
+  font-family: 'Times New Roman', Georgia, serif;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.u2-font-toggle:hover:not(.u2-font-toggle-active) {
+  background: var(--dg-grey-1);
+  border-color: var(--dg-steel-4);
+}
+
+.u2-font-toggle-active {
+  background: var(--dg-grey-2);
+  border-color: var(--dg-grey-2);
+  box-shadow: var(--dg-shadow-1);
+}
+
+.u2-font-toggle:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: var(--dg-space-xs);
+}
+
+.u2-font-sizes {
+  box-sizing: border-box;
+  overflow-y: auto;
+  padding: var(--dg-space-xs) 0;
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  line-height: var(--dg-line-height);
+  color: var(--dg-text-color);
+  text-align: right;
+  background: var(--dg-bg);
+  border: var(--dg-overlay-border);
+  border-radius: var(--dg-radius-l);
+  box-shadow: var(--dg-shadow-2);
+}
+
+.u2-font-size-option {
+  padding: var(--dg-space-xs) var(--dg-space-m);
+  cursor: pointer;
+}
+
+.u2-font-size-option:hover {
+  background: var(--dg-hover-subtle);
+}

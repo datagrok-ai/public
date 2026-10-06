@@ -4,21 +4,16 @@
   "version": "0.0.1",
   "description": "#{PACKAGE_NAME} package",
   "dependencies": {
-    "datagrok-api": "^1.26.0",
-    "cash-dom": "^8.1.5",
-    "dayjs": "^1.11.13",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "datagrok-tools": "^5.1.5",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "datagrok-api": "workspace:^",
+    "cash-dom": "catalog:",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "debug-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish",
-    "release-#{PACKAGE_NAME_LOWERCASE}": "webpack && grok publish --release",
-    "build-#{PACKAGE_NAME_LOWERCASE}": "webpack",
-    "build": "grok api && grok check --soft && webpack",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test"
   },
   "canEdit": [

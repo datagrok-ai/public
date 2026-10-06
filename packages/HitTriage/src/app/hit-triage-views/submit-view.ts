@@ -26,19 +26,21 @@ export class SubmitView extends HitBaseView<HitTriageTemplate, HitTriageApp> {
     this.render();
   }
 
-  public async submit(): Promise<any> {
+  /** Resolves to whether the submit function ran and the campaign was saved. */
+  public async submit(): Promise<boolean> {
     const submitParams= this.app.submitParams;
     if (!submitParams)
-      return;
+      return false;
     const submitFn = DG.Func.find({name: submitParams.fName, package: submitParams.package})[0];
     if (!submitFn) {
       grok.shell.error(`Function ${submitParams.fName} not found.`);
-      return;
+      return false;
     }
     const filteredDf = DG.DataFrame.fromCsv(this.app.dataFrame!.toCsv({filteredRowsOnly: true}));
     await submitFn.apply({df: filteredDf, molecules: this.app.molColName});
     this.app.campaign && (this.app.campaign.status = 'Submitted');
-    this.app.saveCampaign('Submitted');
+    await this.app.saveCampaign('Submitted');
     grok.shell.info('Submitted successfully.');
+    return true;
   }
 }

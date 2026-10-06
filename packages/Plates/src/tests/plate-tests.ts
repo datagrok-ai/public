@@ -57,20 +57,20 @@ category('plates', () => {
   test('normalization', async () => {
     const plate = getPlate();
 
-    const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'High Control'}}));
-    const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
+    const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'role': 'High Control'}}));
+    const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'role': 'Low Control'}}));
     plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
   });
 
   test('use case', async () => {
     const plate = getPlate();
 
-    const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'High Control'}}));
-    const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'layout': 'Low Control'}}));
-    plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
+    const hcMean = jStat.mean(plate.fieldValues('readout', {match: {'role': 'High Control'}}));
+    const lcMean = jStat.mean(plate.fieldValues('readout', {match: {'role': 'Low Control'}}));
+    const normalized = plate.normalize('readout', (value) => (hcMean - value) / (hcMean - lcMean));
 
-    const drc = getDoseResponseSeries(plate); // if we get
-    // inspectSeries(drc['Compound 1'], '4pl-regression'); // TODO: somehow import it from curves
+    const drc = getDoseResponseSeries(plate, {value: normalized.name, groupBy: 'role'});
+    expect(Object.keys(drc).includes('Compound 1'), true);
   });
 
   test('render', async () => {

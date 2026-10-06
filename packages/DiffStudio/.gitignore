@@ -34,3 +34,8 @@ src/**/*.js
 # Claude Code local settings
 .claude/settings.local.json
 
+
+# bdd (grok-bdd) run artifacts
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

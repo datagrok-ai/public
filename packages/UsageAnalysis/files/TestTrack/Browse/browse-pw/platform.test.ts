@@ -21,7 +21,6 @@ test.describe('Browse Platform (Browse-Platform-*)', () => {
 
     await expandTreeGroup(page, 'Platform');
 
-    // The mandatory subnodes (subset of the full set documented in selectors.md).
     for (const name of ['Admin', 'Plugins', 'Functions', 'Users', 'Groups', 'Roles']) {
       await expect(
         treeNodeByPath(page, ['Platform', name]),
@@ -41,7 +40,6 @@ test.describe('Browse Platform (Browse-Platform-*)', () => {
     await users.click();
     await page.waitForTimeout(1500);
 
-    // Users view should be active (URL contains /users) and the view tab handle exists.
     await expect(page).toHaveURL(/\/users\b/, { timeout: 10_000 });
 
     await expectNoErrors(page, sink);

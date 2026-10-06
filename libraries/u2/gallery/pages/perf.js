@@ -1,12 +1,12 @@
-import {Scope, Component} from '../../src/index.js';
+import {Scope, Control} from '../../src/index.js';
 import {Perf} from '../../src/core/perf.js';
 import {divV, span, button as u2Button} from '../../src/core/elements.js';
-import {TextInput} from '../../src/components/text-input.js';
-import {BoolInput} from '../../src/components/bool-input.js';
-import {NumberInput} from '../../src/components/number-input.js';
-import {ChoiceInput} from '../../src/components/choice-input.js';
-import {TabStrip} from '../../src/components/tabs.js';
-import {VirtualList} from '../../src/components/list.js';
+import {TextInput} from '../../src/components/inputs/text-input.js';
+import {BoolInput} from '../../src/components/inputs/bool-input.js';
+import {NumberInput} from '../../src/components/inputs/number-input.js';
+import {ChoiceInput} from '../../src/components/inputs/choice-input.js';
+import {TabStrip} from '../../src/components/containers/tabs.js';
+import {VirtualList} from '../../src/components/collections/list.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -49,7 +49,7 @@ function ms(value) {
 
 /** 200 mixed widgets in one window: inputs, buttons, a tab strip and a small list. */
 function buildWindow() {
-  return Component.build(() => {
+  return Control.build(() => {
     const rows = [];
     for (let i = 0; i < 50; i++)
       rows.push(new TextInput({label: `Field ${i}`, value: `value ${i}`}));
@@ -101,7 +101,7 @@ function reportTable() {
 }
 
 export async function render(main) {
-  const page = new Component();
+  const page = new Control();
   main.append(el('h1', null, 'Performance & leak budgets'));
   const intro = el('p');
   intro.innerHTML = 'The P4 exit budgets, instrumented through <code>Perf.measure</code>: a ' +
@@ -146,7 +146,7 @@ export async function render(main) {
   main.append(button(`Build and dispose ${LEAK_ROUNDS} components`, () => {
     const before = Scope.liveCount;
     for (let i = 0; i < LEAK_ROUNDS; i++) {
-      const component = Component.build(() => [
+      const component = Control.build(() => [
         new TextInput({label: `Round ${i}`, value: String(i)}),
         new BoolInput({label: 'Flag', value: true}),
         u2Button('Act', () => {}),

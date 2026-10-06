@@ -1,6 +1,7 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {DateInput, DateTimeInput} from '../../src/components/date-input.js';
+import {DateInput, DateTimeInput} from '../../src/components/inputs/date-input.js';
+import {markSpan, spanOf} from '../../src/core/span.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -42,7 +43,9 @@ export async function render(main) {
     'marks the input invalid — the value signal keeps the last good date; min/max clamp on ' +
     'commit (blur, Enter), never mid-keystroke. In the calendar: arrows move the day, ' +
     'PageUp/PageDown change the month (Shift the year), Home/End jump to the week edges, ' +
-    'Enter or a click selects, Esc closes. v1 is single-date, local time — no ranges, no locales.';
+    'Enter or a click selects, Esc closes. v1 is single-date, local time — no ranges, no locales. ' +
+    'The <code>calendar-alt</code> icon sits on the options rail right of the 140px field and is ' +
+    'always visible, as the platform\'s <code>DateInput</code> shows it.';
   main.append(intro);
 
   const scopeCount = el('span', null, String(Scope.liveCount));
@@ -54,7 +57,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -94,6 +97,19 @@ export async function render(main) {
     ];
   });
 
+  const since = signal(markSpan(new Date(now.getTime() - 7 * 86400e3), '-1w'));
+  section('Relative (relative: true)', () => {
+    const input = new DateTimeInput({label: 'Since', bind: since, relative: true});
+    return [
+      input,
+      readout('since', computed(() => since.value === null ? 'null' :
+        `${spanOf(since.value) ?? 'absolute'} → ${iso(since.value)}`)),
+      span('The same box also takes a span relative to now — -1w, 2d, now — resolved on the spot ' +
+        'and kept as the value\'s spanOf tag, so it shows as typed; a picked calendar day is a plain ' +
+        'date again.', 'u2-gallery-status'),
+    ];
+  });
+
   const shared = signal(new Date(now.getFullYear(), now.getMonth(), 1));
   section('Two editors, one signal', () => [
     new DateInput({label: 'From', bind: shared}),
@@ -128,7 +144,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Each section is a Component.build(...) owner: disposing it closes any open calendar, ' +
+    'Each section is a Control.build(...) owner: disposing it closes any open calendar, ' +
     'releases the editors\' effects, their key/click listeners and the readout bindings, and ' +
     'live scopes drop back to the page baseline.'));
   main.append(button('Dispose sections', () => {

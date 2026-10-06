@@ -1,8 +1,0 @@
-{
-  "#type": "TruncateTable",
-  "name": "truncate orders",
-  "tableName": "orders",
-  "schema": "public",
-  "dryRun": true,
-  "confirmDestructive": false
-}

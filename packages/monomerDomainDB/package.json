@@ -1,0 +1,35 @@
+{
+  "name": "@datagrok/monomerdomaindb",
+  "friendlyName": "monomerDomainDB",
+  "version": "0.0.1",
+  "description": "Monomer library provider backed by Datagrok domain schemas (entity-mapped tables): server-enforced security, per-row CRUD, audit, dedup/upsert",
+  "author": {
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
+  },
+  "dependencies": {
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/monomerDomainDB"
+  }
+}

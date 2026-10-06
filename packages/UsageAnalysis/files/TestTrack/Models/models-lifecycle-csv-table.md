@@ -3,11 +3,23 @@ feature: models
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [train_and_save_model, apply_model_on_table, run_performance_evaluation, edit_model_metadata, share_model, delete_model]
+realizes_atlas: [models.op.train_and_save_model, models.op.apply_model_on_table, models.op.run_performance_evaluation, models.op.edit_model_metadata, models.op.share_model, models.op.delete_model]
 realizes: [views.models, eda.model.linear-regression, ml.menu.models.train-model, ml.menu.models.apply-model, sharing.share-dialog]
 realized_as:
   - models-lifecycle-csv-table-spec.ts
 related_bugs: []
+gate_verdicts:
+  b:
+    verdict: PASS
+    cycle_id: direct-gate-b-2026-08-24-models-lifecycle-csv-table-instrumented
+    timestamp: 2026-08-24T00:10:00Z
+    spec_runs:
+      - spec: models-lifecycle-csv-table-spec.ts
+        result: passed
+        attempts: 3
+        duration_seconds: 43
+        failure_keys: []
+        run_mode: headless-cold
 ---
 
 # Models — CSV-backed model: train, apply, evaluate, edit, share & delete

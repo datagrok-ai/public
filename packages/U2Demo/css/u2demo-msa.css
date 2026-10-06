@@ -1,0 +1,60 @@
+.u2demo-msa {
+  gap: var(--dg-space-l);
+}
+
+.u2demo-msa-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xl);
+}
+
+.u2demo-msa-header h1 {
+  margin: 0;
+  font-size: var(--dg-font-size-h1);
+}
+
+.u2demo-msa-layout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: var(--dg-space-xl);
+  align-items: start;
+}
+
+.u2demo-msa-card {
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+}
+
+.u2demo-msa-card h2 {
+  margin: 0;
+  font-size: var(--dg-font-size-h2);
+}
+
+.u2demo-msa-actions {
+  display: flex;
+  gap: var(--dg-space-m);
+  margin-top: var(--dg-space-m);
+}
+
+.u2demo-msa-status {
+  color: var(--dg-text-color-light);
+}
+
+.u2demo-msa-list {
+  height: 140px;
+}
+
+.u2demo-msa-log {
+  white-space: pre-wrap;
+  font-family: var(--dg-font-family-mono, monospace);
+  font-size: var(--dg-font-size-small);
+  padding: var(--dg-space-m) 0;
+}
+
+.u2demo-msa-sequence {
+  font-family: var(--dg-font-family-mono, monospace);
+}

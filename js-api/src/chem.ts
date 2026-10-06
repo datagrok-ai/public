@@ -132,9 +132,14 @@ export namespace chem {
   }
 
 
-  /**
-   * Molecule sketcher that supports multiple dynamically initialized implementations.
-   * */
+  /** Molecule sketcher with pluggable implementations (OpenChemLib, Ketcher, Marvin, ...), inplace or as a
+   * thumbnail that opens the sketcher in a dialog. Read the molecule with {@link getSmiles}, {@link getMolFile}
+   * or {@link getSmarts}, set it with {@link setMolecule}, listen on {@link onChanged}.
+   * @example
+   * const sketcher = new DG.chem.Sketcher();
+   * sketcher.setMolecule('c1ccccc1');
+   * sketcher.onChanged.subscribe(() => grok.shell.info(sketcher.getSmiles()));
+   * ui.dialog('Sketch').add(sketcher.root).show(); */
   export class Sketcher extends Widget {
 
     molInput: HTMLInputElement = ui.element('input');
@@ -142,8 +147,11 @@ export namespace chem {
     host: HTMLDivElement = ui.box(null, 'grok-sketcher chem-sketcher-host');
     changedSub: Subscription | null = null;
     sketcher: SketcherBase | null = null;
+    /** Fires on every change of the sketched molecule. */
     onChanged: Subject<any> = new Subject<any>();
+    /** Fires when the "align" substructure-filter option is toggled. */
     onAlignedChanged: Subject<boolean> = new Subject<boolean>();
+    /** Fires when the "highlight" substructure-filter option is toggled. */
     onHighlightChanged: Subject<boolean> = new Subject<boolean>();
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
@@ -151,12 +159,15 @@ export namespace chem {
     /** Whether the currently drawn molecule becomes the current object as you sketch it */
     syncCurrentObject: boolean = true;
 
-    listeners: Function[] = [];
+    listeners: (() => void)[] = [];
     _mode = SKETCHER_MODE.INPLACE;
     _smiles: string | null = null;
     _molfile: string | null = null;
     _smarts: string | null = null;
+    /** Molblock notation of the last value set: V2000 or V3000. */
     molFileUnits = Notation.MolBlock;
+    /** Counts the values set, so that one set while an implementation initializes is shown once it is ready. */
+    private _valuesSet = 0;
 
     loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -172,36 +183,44 @@ export namespace chem {
     _isSubstructureFilter = false;
     _align = true;
     _highlight = true;
+    /** Message from the validation function for the last value set, or null. */
     error: string | null = null;
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
     filterOnChangeInput: InputBase;
 
+    /** Switches the sketcher implementation by name (one of the registered sketcher functions). */
     set sketcherType(type: string) {
       this._setSketcherType(type);
     }
 
+    /** Width of the current implementation in pixels (500 before one is initialized). */
     get width(): number {
       return this.sketcher ? this.sketcher.width : 500;
     }
 
+    /** Height of the current implementation in pixels (400 before one is initialized). */
     get height(): number {
       return this.sketcher ? this.sketcher.height : 400;
     }
 
+    /** True once {@link resize} has been applied to an initialized implementation. */
     get isResizing(): boolean {
       return this.resized;
     }
 
+    /** Whether the sketcher sizes itself to its host. */
     get autoResized(): boolean {
       return this._autoResized;
     }
 
+    /** True after the user switched the implementation. */
     get sketcherTypeChanged(): boolean {
       return this._sketcherTypeChanged;
     }
 
+    /** Shows the loader while a value is being resolved (e.g. a compound name to a structure). */
     get calculating(): boolean {return this.loader.classList.contains('chem-sketcher-loader-show');}
     set calculating(value: boolean) {
       if (value) {
@@ -213,6 +232,7 @@ export namespace chem {
       }
     }
 
+    /** When true, the sketcher acts as a substructure filter and shows the align/highlight options. */
     get isSubstructureFilter(): boolean {return this._isSubstructureFilter;}
     set isSubstructureFilter(value: boolean) {
       this._isSubstructureFilter = value;
@@ -222,21 +242,28 @@ export namespace chem {
       } else
         ui.empty(this.filterOptionsDiv);
     }
+    /** Substructure-filter option: align matched molecules to the pattern. */
     get align(): boolean {return this.alighInput!.value!;}
     set align(value: boolean) {this.alighInput!.value = value;}
+    /** Substructure-filter option: highlight the matched substructure. */
     get highlight(): boolean {return this.highlightInput!.value!;}
     set highlight(value: boolean) {this.highlightInput!.value = value;}
+    /** Substructure-filter option: re-filter on every change instead of on demand. */
     get filterOnChange(): boolean {return this.filterOnChangeInput!.value!;}
     set filterOnChange(value: boolean) {this.filterOnChangeInput!.value = value;}
+    /** Host element of the substructure-filter options. */
     get filterOptions(): HTMLElement {return this.filterOptionsDiv;}
 
+    /** Current molecule as SMILES, converted from the stored molblock or SMARTS when needed. */
     getSmiles(): string {
       return this.sketcher?.isInitialized ? this.sketcher.smiles : this._smiles === null ?
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smiles) :
         this._smarts !== null ? smilesFromSmartsWarning() : '' : this._smiles;
     }
 
+    /** Sets the molecule from SMILES; runs validation. */
     setSmiles(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smiles = x;
       this._molfile = null;
@@ -245,6 +272,7 @@ export namespace chem {
         this.sketcher!.smiles = x;
     }
 
+    /** Current molecule as a molblock: V2000, or V3000 when the last value set was V3000. */
     getMolFile(): string {
       if (this.sketcher?.isInitialized) {
         return this.molFileUnits === Notation.MolBlock ? this.sketcher.molFile : this.sketcher.molV3000;
@@ -257,7 +285,9 @@ export namespace chem {
       }
     }
 
+    /** Sets the molecule from a molblock, V2000 or V3000; runs validation. */
     setMolFile(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._molfile = x;
       this._smiles = null;
@@ -268,13 +298,16 @@ export namespace chem {
       }
     }
 
+    /** Current molecule as SMARTS; async because some implementations compute it on demand. */
     async getSmarts(): Promise<string | null> {
       return this.sketcher?.isInitialized ? await this.sketcher.getSmarts() : this._smarts === null ?
         this._smiles !== null ? convert(this._smiles, Notation.Smiles, Notation.Smarts) :
         this._molfile !== null ? convert(this._molfile, Notation.MolBlock, Notation.Smarts) : '' : this._smarts;
     }
 
+    /** Sets the query pattern from SMARTS; runs validation. */
     setSmarts(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smarts = x;
       this._molfile = null;
@@ -283,15 +316,14 @@ export namespace chem {
         this.sketcher!.smarts = x;
     }
 
+    /** Export formats of the current implementation; empty before one is initialized. */
     get supportedExportFormats(): string[] {
       return this.sketcher ? this.sketcher.supportedExportFormats : [];
     }
 
+    /** True when nothing is drawn. */
     isEmpty(): boolean {
-      if (this.sketcher?.explicitMol?.value)
-        return false;
-      const molFile = this.getMolFile();
-      return Sketcher.isEmptyMolfile(molFile);
+      return Sketcher.isEmptyMolfile(this.sketcher?.explicitMol?.value ?? this.getMolFile());
     }
 
     /** Sets the molecule, supports either SMILES, SMARTS or MOLBLOCK formats */
@@ -305,6 +337,7 @@ export namespace chem {
       }
     }
 
+    /** Registers a change callback; only the latest one is wired to the current implementation. Prefer {@link onChanged}. */
     setChangeListenerCallback(callback: () => void) {
       this.changedSub?.unsubscribe();
       this.listeners.push(callback);
@@ -337,6 +370,7 @@ export namespace chem {
             this.setMolecule(x);
     }
 
+    /** Runs the validation function from the constructor, sets {@link error} and toggles the warning. */
     validate(x: string): void {
       if (Sketcher.isEmptyMolfile(x))
         this.molInput.value = '';
@@ -344,6 +378,7 @@ export namespace chem {
       this.updateInvalidMoleculeWarning();
     }
 
+    /** Creates a sketcher. [mode]: inplace (default) or external, a thumbnail that opens the sketcher in a dialog; [validationFunc] returns an error message or null. */
     constructor(mode?: SKETCHER_MODE, validationFunc?: (s: string) => string | null) {
       super(ui.div());
       if (mode)
@@ -408,11 +443,12 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
+    /** True when the implementation is shown in a popup (not in the dialog a thumbnail in a popup opens). */
     isInPopupContainer(): boolean {
-      console.log(this.root.closest('.d4-popup-host'))
-      return !!this.root.closest('.d4-popup-host');
+      return !!this.host.closest('.d4-popup-host');
     }
 
+    /** Resizes the current implementation to its host. */
     resize() {
       if (this.sketcher?.isInitialized) {
         this.sketcher?.resize();
@@ -452,7 +488,9 @@ export namespace chem {
     };
 
     createMoleculeTooltip(currentMolfile: string): HTMLElement{
-      const molfileHandler = MolfileHandler.getInstance(currentMolfile);
+      // a molecule typed as SMILES is held as it was typed, and the handler reads molblocks only
+      const molfile = isMolBlock(currentMolfile) ? currentMolfile : convert(currentMolfile, Notation.Smiles, Notation.MolBlock);
+      const molfileHandler = MolfileHandler.getInstance(molfile);
       const maxDelta = 10; // in case deltaX or deltaY exceeds maxDelata we assume molecule is large one and draw it in a tooltip
       const zoom = 20; // coefficient we use to calculate size of canvas to feet molecule
       const xCoords = molfileHandler.x;
@@ -464,7 +502,7 @@ export namespace chem {
           Math.pow((yCoords[bondedAtoms[0][0] - 1] - yCoords[bondedAtoms[0][1] - 1]), 2));
         const deltaX = (Math.max(...xCoords) - Math.min(...xCoords))/distance;
         const deltaY = (Math.max(...yCoords) - Math.min(...yCoords))/distance;
-        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, currentMolfile) : ui.divText('Click to edit');
+        tooltip = (deltaX > maxDelta || deltaY > maxDelta) ? this.drawToCanvas(deltaX*zoom, deltaY*zoom, molfile) : ui.divText('Click to edit');
       } else {
         tooltip = ui.divText('Click to edit');
       }
@@ -578,6 +616,7 @@ export namespace chem {
         
         Menu.popup()
           .item('Copy as SMILES', () => navigator.clipboard.writeText(this.getSmiles()))
+          .item('Copy as CXSMILES', () => navigator.clipboard.writeText(convert(this.getMolFile(), Notation.Unknown, Notation.CxSmiles)))
           .item('Copy as MOLBLOCK', () => navigator.clipboard.writeText(this.getMolFile()))
           .group('Recent')
           .items(Sketcher.getCollection(Sketcher.RECENT_KEY).map((m) => ui.tools.click(this.drawToCanvas(150, 60, m), () => this.setMolecule(m))), () => { })
@@ -620,6 +659,7 @@ export namespace chem {
     // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
     private _sketcherChangeId = 0; 
     private _setSketcherType(sketcherType: string): void {
+      const valuesSet = this._valuesSet;
       const getMolecule = async () => {
         //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
         if (this.sketcher?.explicitMol)
@@ -661,9 +701,21 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule)
+        // a value set while the implementation initialized was only stored, and is newer than the one taken above
+        if (this._valuesSet !== valuesSet)
+          this._setStoredMolecule();
+        else if (molecule)
           this.setMolecule(molecule!, this._smarts !== null);
       });
+    }
+
+    private _setStoredMolecule(): void {
+      if (this._molfile !== null)
+        this.setMolFile(this._molfile);
+      else if (this._smarts !== null)
+        this.setSmarts(this._smarts);
+      else if (this._smiles !== null)
+        this.setSmiles(this._smiles);
     }
 
     private _setSketcherSize() {
@@ -718,13 +770,11 @@ export namespace chem {
   /**
    * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-scores}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+   * @param column - Column with molecules to search in
+   * @param molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param {Object} settings - Properties for the similarity function (type, parameters, etc.)
-   * @returns {Promise<Column>} - Column of corresponding similarity scores
-   * */
+   * @param settings - Properties for the similarity function (type, parameters, etc.)
+   * @returns Column of corresponding similarity scores */
   export async function getSimilarities(column: Column, molecule: string = '', settings: object = {}): Promise<Column | null> {
 
     const result = await grok.functions.call('Chem:getSimilarities', {
@@ -739,19 +789,17 @@ export namespace chem {
   /**
    * Computes similarity scores for molecules in the input vector based on a preferred similarity score.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/similarity-scoring-sorted}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {string} molecule - Reference molecule in one of formats supported by RDKit:
+   * @param column - Column with molecules to search in
+   * @param molecule - Reference molecule in one of formats supported by RDKit:
    *   smiles, cxsmiles, molblock, v3Kmolblock, and inchi
-   * @param {Object} settings - Properties for the similarity function
-   * @param {int} settings.limit - Would return top limit molecules based on the score
-   * @param {int} settings.cutoff - Would drop molecules which score is lower than cutoff
-   * @returns {Promise<DataFrame>} - DataFrame with 3 columns:
+   * @param settings - Properties for the similarity function
+   * @param settings.limit - Would return top limit molecules based on the score
+   * @param settings.cutoff - Would drop molecules which score is lower than cutoff
+   * @returns DataFrame with 3 columns:
    *   - molecule: original molecules string representation from the input column
    *   - score: similarity scores within the range from 0.0 to 1.0;
    *            DataFrame is sorted descending by this column
-   *   - index: indices of the molecules in the original input column
-   * */
+   *   - index: indices of the molecules in the original input column */
   export async function findSimilar(column: Column, molecule: string = '', settings = {
     limit: Number.MAX_VALUE,
     cutoff: 0.0
@@ -769,13 +817,11 @@ export namespace chem {
   /**
    * Returns the specified number of most diverse molecules in the column.
    * See example: {@link https://datagrok.ai/help/datagrok/solutions/domains/chem/#similarity-and-diversity-search}
-   * @async
-   * @param {Column} column - Column with molecules to search in
-   * @param {Object} settings - Settings
-   * @param {int} settings.limit - Would return top limit molecules
-   * @returns {Promise<DataFrame>} - DataFrame with 1 column:
-   *   - molecule: set of diverse structures
-   * */
+   * @param column - Column with molecules to search in
+   * @param settings - Settings
+   * @param settings.limit - Would return top limit molecules
+   * @returns DataFrame with 1 column:
+   *   - molecule: set of diverse structures */
   export async function diversitySearch(column: Column, settings = {limit: Number.MAX_VALUE}): Promise<DataFrame> {
     const result = await grok.functions.call('Chem:getDiversities', {
       'molStringsColumn': column,
@@ -786,12 +832,10 @@ export namespace chem {
 
   /**
    * Searches for a molecular pattern in a given column, returning a bitset with hits.
-   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search-library}
-   * @async
-   * @param {Column} column - Column with molecules to search
-   * @param {string} pattern - Pattern, either one of which RDKit supports
-   * @param settings
-   * */
+   * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/substructure-search}
+   * @param column - Column with molecules to search
+   * @param pattern - Pattern, either one of which RDKit supports
+   * @param settings */
   export async function searchSubstructure(column: Column, pattern: string = '', settings: {
     molBlockFailover?: string;
   } = {}): Promise<BitSet> {
@@ -806,11 +850,9 @@ export namespace chem {
   /**
    * Performs R-group analysis.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
-   * @async
-   * @param {DataFrame} table - Table.
-   * @param {string} column - Column name with molecules to analyze.
-   * @param {string} core - Core molecule.
-   * */
+   * @param table - Table.
+   * @param column - Column name with molecules to analyze.
+   * @param core - Core molecule. */
   export async function rGroup(table: DataFrame, column: string, core: string): Promise<DataFrame> {
     return await grok.functions.call('Chem:FindRGroups', {
       molecules: column, df: table, core: core, prefix: 'R'
@@ -820,9 +862,7 @@ export namespace chem {
   /**
    * Finds Most Common Substructure in the specified column.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mcs}
-   * @async
-   * @param {Column} column - Column with SMILES to analyze.
-   * */
+   * @param column - Column with SMILES to analyze. */
   export async function mcs(table: DataFrame, column: string, returnSmarts: boolean = false,
     exactAtomSearch = true, exactBondSearch = true): Promise<string> {
     return await grok.functions.call('Chem:FindMCS', {
@@ -838,11 +878,9 @@ export namespace chem {
    * Calculates specified descriptors for the molecular column.
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/descriptors}
    *
-   * @async
-   * @param {DataFrame} table - Table.
-   * @param {string} column - Column name with SMILES to calculate descriptors for.
-   * @param {string[]} descriptors - RDKit descriptors to calculate.
-   * */
+   * @param table - Table.
+   * @param column - Column name with SMILES to calculate descriptors for.
+   * @param descriptors - RDKit descriptors to calculate. */
   export async function descriptors(table: DataFrame, column: string, descriptors: string[]): Promise<DataFrame> {
     await grok.functions.call('Chem:chemDescriptors', {'table': table,
       'molecules': table.columns.byName(column), 'descriptors': descriptors});
@@ -860,9 +898,8 @@ export namespace chem {
   /**
    * Renders a molecule to SVG
    * See example: {@link https://public.datagrok.ai/js/samples/domains/chem/mol-rendering}
-   * @param {string} smiles - accepts smiles/molfile format
-   * @param {object} options - OCL.IMoleculeToSVGOptions
-   * */
+   * @param smiles - accepts smiles/molfile format
+   * @param options - OCL.IMoleculeToSVGOptions */
   export function svgMol(
     smiles: string, width: number = 300, height: number = 200,
     options?: { [key: string]: boolean | number | string }
@@ -907,10 +944,9 @@ export namespace chem {
 
   /**
    * Sketches Molecule sketcher.
-   * @param {function} onChangedCallback - a function that accepts (smiles, molfile)
-   * @param {string} smiles Initial molecule
-   * */
-  export function sketcher(onChangedCallback: Function, smiles: string = ''): HTMLElement {
+   * @param onChangedCallback - a function that accepts (smiles, molfile)
+   * @param smiles - Initial molecule */
+  export function sketcher(onChangedCallback: (smiles: string, molfile: string) => void, smiles: string = ''): HTMLElement {
     return api.grok_Chem_Sketcher(onChangedCallback, smiles);
   }
 

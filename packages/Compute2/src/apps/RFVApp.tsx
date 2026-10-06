@@ -13,8 +13,11 @@ import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-drive
 import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
+import {getShareAction} from '../sharing/sharing';
+import {useDgView} from '@datagrok-libraries/webcomponents-vue';
 
 const RUN_DEBOUNCE_TIME = 250;
+const FUNCTION_HISTORY = {mode: 'function'} as const;
 const OUTPUT_OUTDATED_PATH = 'OUTPUT_OUTDATED';
 
 export const RFVApp = Vue.defineComponent({
@@ -24,9 +27,9 @@ export const RFVApp = Vue.defineComponent({
       type: Object as Vue.PropType<DG.FuncCall>,
       required: true,
     },
-    view: {
-      type: DG.View,
-      required: true,
+    initialRunId: {
+      type: String,
+      required: false,
     },
   },
   setup(props) {
@@ -59,7 +62,7 @@ export const RFVApp = Vue.defineComponent({
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
     const overlayActive = Vue.ref(false);
-    const currentView = Vue.computed(() => Vue.markRaw(props.view));
+    const currentView = useDgView();
 
     const func = Vue.shallowRef<DG.Func | undefined>(undefined);
     const isRunningOnInput = Vue.ref<boolean>(false);
@@ -72,13 +75,11 @@ export const RFVApp = Vue.defineComponent({
     const searchParams = useUrlSearchParams<{id?: string}>('history');
 
     const setViewName = (name: string = '') => {
-      if (props.view)
-        props.view.name = name;
+      currentView.name = name;
     };
 
     const setViewPath = (path: string = '') => {
-      if (props.view)
-        props.view.path = path;
+      currentView.path = path;
     };
 
     Vue.watch(searchParams, (params) => {
@@ -98,8 +99,6 @@ export const RFVApp = Vue.defineComponent({
     }, {immediate: true});
 
     const formReplaced$ = new BehaviorSubject<DG.InputForm | undefined>(undefined);
-    // dataframe/file inputs that came from URL entity ids, kept for link export
-    const urlEntityIds = new Map<string, string>();
 
     const clearUrlInputs = () => {
       for (const key of Object.keys(searchParams)) {
@@ -113,11 +112,9 @@ export const RFVApp = Vue.defineComponent({
     // patch is applied in one sync block after the form is built (defaults already in)
     const applyUrlInputsFlow = async (urlParams: URLSearchParams) => {
       const call = currentFuncCall.value;
-      const {patch, entityIds, warnings} = await parseUrlInputs(call, urlParams);
+      const {patch, warnings} = await parseUrlInputs(call, urlParams);
       for (const warning of warnings)
         grok.shell.warning(warning);
-      for (const [name, id] of entityIds)
-        urlEntityIds.set(name, id);
       if (patch.size > 0) {
         await formReplaced$.pipe(filter((form) => form != null), take(1)).toPromise();
         if (currentFuncCall.value !== call)
@@ -129,27 +126,34 @@ export const RFVApp = Vue.defineComponent({
       clearUrlInputs();
     };
 
-    Vue.watch(currentFuncCall, async () => {
-      if (globalThis.initialURLHandled)
-        return;
+    // Programmatic open (OpenWorkflowRun) passes the id via call.aux, deep links via the start URL
+    let initialRunId = props.initialRunId;
 
-      globalThis.initialURLHandled = true;
+    Vue.watch(currentFuncCall, async () => {
+      if (!initialRunId && globalThis.initialURLHandled)
+        return;
 
       const startUrl = new URL(grok.shell.startUri);
-      const loadingId = startUrl.searchParams.get('id');
+      const loadingId = initialRunId ?? startUrl.searchParams.get('id');
+      initialRunId = undefined;
+      globalThis.initialURLHandled = true;
 
-      if (loadingId) {
-        const fc = await historyUtils.loadRun(loadingId);
-        currentFuncCall.value = Vue.markRaw(fc);
-        return;
+      try {
+        if (loadingId) {
+          const fc = await historyUtils.loadRun(loadingId);
+          currentFuncCall.value = Vue.markRaw(fc);
+          return;
+        }
+
+        if ([...startUrl.searchParams.keys()].length > 0)
+          await applyUrlInputsFlow(startUrl.searchParams);
+      } catch (e: any) {
+        grok.shell.error(e);
       }
-
-      if ([...startUrl.searchParams.keys()].length > 0)
-        await applyUrlInputsFlow(startUrl.searchParams);
     }, {immediate: true});
 
     const copyUrlWithInputs = async () => {
-      const {url, skipped} = buildInputsUrl(currentFuncCall.value, urlEntityIds);
+      const {url, skipped} = buildInputsUrl(currentFuncCall.value);
       if (!await copyText(url)) {
         grok.shell.warning('Could not access the clipboard');
         return;
@@ -184,7 +188,7 @@ export const RFVApp = Vue.defineComponent({
     };
 
     const onInputChanged = () => {
-      pinView(props.view);
+      pinView(currentView);
       currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'true';
       updateCallState({isOutputOutdated: true});
       searchParams.id = undefined;
@@ -192,32 +196,38 @@ export const RFVApp = Vue.defineComponent({
         runRequests$.next(true);
     };
 
-    const saveRun = async () => {
-      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory). Block
-      // saving a stale/in-flight run with a shell message.
+    const saveRunWithDialog = async (): Promise<string | null> => {
+      // Invoked by RichFunctionView's shared save-to-history icon (onSaveToHistory) and by the
+      // save-then-share flow. Block saving a stale/in-flight run with a shell message.
       if (!canUseResults(currentCallState.value, 'saving'))
-        return;
+        return null;
       const dialog = new EditRunMetadataDialog({
         title: currentFuncCall.value.options['title'] ?? '',
         description: currentFuncCall.value.options['description'] ?? '',
         tags: currentFuncCall.value.options['tags'] ?? [],
       });
-      dialog.onMetadataEdit.pipe(take(1)).subscribe(async (editOptions) => {
-        currentFuncCall.value.options['title'] = editOptions.title;
-        currentFuncCall.value.options['description'] = editOptions.description;
-        currentFuncCall.value.options['tags'] = editOptions.tags;
-        currentFuncCall.value.newId();
+      const editOptions = await dialog.awaitMetadata();
+      if (!editOptions)
+        return null;
+      currentFuncCall.value.options['title'] = editOptions.title;
+      currentFuncCall.value.options['description'] = editOptions.description;
+      currentFuncCall.value.options['tags'] = editOptions.tags;
+      currentFuncCall.value.newId();
+      try {
         await historyUtils.saveRun(currentFuncCall.value);
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
-        // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
-        // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
-        // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
-        const fc = currentFuncCall.value;
-        const modelName = fc.func?.friendlyName ?? fc.func?.name;
-        setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
-        searchParams.id = fc.id;
-      });
-      dialog.show({center: true, width: 500});
+      } catch (e: any) {
+        grok.shell.error(e);
+        return null;
+      }
+      // saveRun persists the run under currentFuncCall's id (set by newId() above), so map that
+      // id straight to the URL. Set it here rather than via triggerRef -> the currentFuncCall
+      // watcher, whose `fc.author` gate would clear it (a just-saved call has no author yet).
+      const fc = currentFuncCall.value;
+      const modelName = fc.func?.friendlyName ?? fc.func?.name;
+      setViewName(fc.options['title'] ? `${modelName} - ${fc.options['title']}` : modelName);
+      searchParams.id = fc.id;
+      return fc.id;
     };
 
     const onUpdateForm = () => {
@@ -225,15 +235,40 @@ export const RFVApp = Vue.defineComponent({
         runRequests$.next(true);
     };
 
+    const shareAction = getShareAction();
+
+    const shareRun = async () => {
+      if (!canUseResults(currentCallState.value, 'sharing'))
+        return;
+      try {
+        await shareAction!.run({
+          liveCall: () => currentFuncCall.value,
+          savedCallId: () => searchParams.id ?? null,
+          saveRun: saveRunWithDialog,
+          defaultName: () => {
+            const fc = currentFuncCall.value;
+            return fc.options['title'] ?? fc.func?.friendlyName ?? fc.func?.name;
+          },
+        });
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
+    };
+
     Vue.onUnmounted(() => {
       sub.unsubscribe();
     });
 
-    // TODO: better async handling
-    if (viewersHookMakerName) {
-      const hookMaker = DG.Func.byName(viewersHookMakerName);
-      hookMaker.apply().then((hook) => viewersHook.value = hook)
-    }
+    const loadViewersHook = async () => {
+      if (!viewersHookMakerName)
+        return;
+      try {
+        viewersHook.value = await DG.Func.byName(viewersHookMakerName).apply();
+      } catch (e: any) {
+        grok.shell.error(e);
+      }
+    };
+    loadViewersHook();
 
     return () => (
       Vue.withDirectives(<div class='w-full h-full flex'>
@@ -250,13 +285,13 @@ export const RFVApp = Vue.defineComponent({
           urlExportHandler={copyUrlWithInputs}
           onFormValidationChanged={(val) => isFormValid$.next(val)}
           onFormInputChanged={onInputChanged}
-          onSaveToHistory={() => saveRun()}
-          historyEnabled={true}
+          onSaveToHistory={() => saveRunWithDialog()}
+          onPublishRun={() => shareRun()}
+          history={FUNCTION_HISTORY}
           localValidation={true}
           skipInit={false}
           showRunButton={!isRunningOnInput.value}
           keepExportsVisible={isRunningOnInput.value}
-          view={currentView.value}
         />
       </div>, [[compositorOverlay, overlayActive.value]])
     );

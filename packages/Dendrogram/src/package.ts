@@ -279,7 +279,8 @@ export class PackageFunctions {
     'type': 'list'
     }
     ],
-    'name': 'Import Newick',
+    'name': 'importNwk',
+    'friendlyName': 'Import Newick',
     'description': 'Parse a Newick (.nwk/.newick) tree file into a dataframe and open it as a dendrogram.'
     })
   static async importNewick(
@@ -310,6 +311,7 @@ export class PackageFunctions {
     const df = treeHelper.newickToDf(newickString, file.fileName.slice(0, -4));
 
     const viewerRoot = ((await df.plot.fromType('PhylocanvasGL', {})) as DG.JsViewer).root;
+    viewerRoot.setAttribute('name', 'viewer-PhylocanvasGL');
     viewerRoot.style.setProperty('width', '100%', 'important');
     viewerRoot.style.setProperty('height', '100%', 'important');
 

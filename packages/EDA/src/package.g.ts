@@ -382,6 +382,50 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
   return PackageFunctions.isApplicableXGBooster(df, predictColumn);
 }
 
+//input: dataframe df 
+//input: column predictColumn 
+//input: string kernel = 'RBF' { choices: ["Linear","Polynomial","RBF","Sigmoid"]; description: Kernel function: linear, polynomial, RBF (radial basis function), or sigmoid. }
+//input: double cost = 1 { caption: Penalty; min: 0.001; max: 1000; description: Penalty for misclassifying training points. Higher values fit the training data more tightly and risk overfitting, lower values give a smoother, more general model. }
+//input: double gamma = 0 { min: 0; max: 100; description: Kernel coefficient. Used by the RBF, polynomial, and sigmoid kernels. Leave 0 to use 1/number-of-features. }
+//input: int degree = 3 { min: 1; max: 10; description: Degree of the polynomial kernel. Higher values give a more flexible, curved decision boundary. Used by the polynomial kernel only. }
+//input: double coef0 = 0 { caption: Offset; min: -100; max: 100; description: Constant added inside the kernel before the polynomial power or the sigmoid. Used by the polynomial and sigmoid kernels only. }
+//input: double epsilon = 0.1 { min: 0; max: 10; description: Width of the error-insensitive tube in SVR regression. Training errors smaller than this are not penalized, so larger values give a smoother model with fewer support vectors. Used for regression targets only. }
+//output: dynamic model
+//meta.mlname: SVM
+//meta.mlrole: train
+export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kernel: string, cost: number, gamma: number, degree: number, coef0: number, epsilon: number) : Promise<Uint8Array> {
+  return await PackageFunctions.trainSVM(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon);
+}
+
+//name: Apply SVM
+//description: Predict the target for a table using a trained support vector machine (SVM) model.
+//input: dataframe df 
+//input: dynamic model { description: Trained SVM model to apply. }
+//output: dataframe result
+//meta.mlname: SVM
+//meta.mlrole: apply
+export function applySVM(df: DG.DataFrame, model: any) : any {
+  return PackageFunctions.applySVM(df, model);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: SVM
+//meta.mlrole: isApplicable
+export function isApplicableSVM(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isApplicableSVM(df, predictColumn);
+}
+
+//input: dataframe df 
+//input: column predictColumn 
+//output: bool result
+//meta.mlname: SVM
+//meta.mlrole: isInteractive
+export function isInteractiveSVM(df: DG.DataFrame, predictColumn: DG.Column) : boolean {
+  return PackageFunctions.isInteractiveSVM(df, predictColumn);
+}
+
 //name: Pareto Front
 //description: Perform optimization across multiple objectives: analyze trade-offs between conflicting objectives and identify Pareto-optimal points.
 //top-menu: ML | Pareto Front...

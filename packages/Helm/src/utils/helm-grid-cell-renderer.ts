@@ -359,6 +359,9 @@ export class HelmGridCellRenderer extends DG.GridCellRenderer {
     g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number,
     gridCell: DG.GridCell, cellStyle: DG.GridCellStyle
   ): void {
+    const minSize = 36 / window.devicePixelRatio;
+    if (w < minSize || h < minSize)
+      return;
     HelmGridCellRendererBack.getOrCreate(gridCell).render(g, x, y, w, h, gridCell, cellStyle);
   }
 }

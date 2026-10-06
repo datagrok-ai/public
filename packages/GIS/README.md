@@ -7,7 +7,7 @@ It is built on top of [OpenLayers](https://openlayers.org/), a flexible open-sou
 
 Map viewer displays geospatial data on a map as markers or a heatmap.
 
-![Map viewer](../../help/visualize/viewers/img/map-viewer.gif)
+![Map viewer](https://raw.githubusercontent.com/datagrok-ai/help/master/visualize/viewers/img/map-viewer.gif)
 
 ## File handler and file preview
 
@@ -21,4 +21,4 @@ To preview a file:
   * Navigate to the folder containing your data
  * Click on the file — it will open in the custom viewer automatically
 
-![Custom file viewer](../../help/visualize/viewers/img/map-custom-file-viewer.gif)
+![Custom file viewer](https://raw.githubusercontent.com/datagrok-ai/help/master/visualize/viewers/img/map-custom-file-viewer.gif)

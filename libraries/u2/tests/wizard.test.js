@@ -5,7 +5,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
-import {Wizard} from '../src/components/wizard.js';
+import {Wizard} from '../src/components/containers/wizard.js';
 
 function wizard(name, body) {
   test(name, async () => {
@@ -64,6 +64,10 @@ wizard('navigates forward and back, keeping panel state', () => {
   w.back();
   assert.equal(w.currentStep.value, 'two');
   assert.equal(panels[1].textContent, 'Two: gated', 'panels are hidden, never rebuilt');
+  assert.equal(markers(w)[2].classList.contains('u2-wizard-step-done'), false,
+    'a visited step ahead of the current one is not marked completed');
+  assert.equal(markers(w)[2].textContent.startsWith('3'), true, 'it shows its number again');
+  assert.equal(markers(w)[2].getAttribute('aria-disabled'), 'false', 'and stays reachable');
   w.dispose();
 });
 
@@ -205,5 +209,29 @@ wizard('dialog mode: finishes, cancels on close, and disposes clean', () => {
   assert.deepEqual(outcome, ['cancel', 'cancel', 'finish']);
   assert.equal(dialog.isOpen.value, false, 'FINISH closes the dialog');
 
+  scope.dispose();
+});
+
+wizard('a `done` step is terminal: no BACK, no CANCEL, and NEXT reads CLOSE', () => {
+  const scope = new Scope();
+  const outcome = [];
+  const w = Scope.runWith(scope, () => new Wizard({
+    steps: [
+      {id: 'one', title: 'One', content: content('One', 'free')},
+      {id: 'report', title: 'Report', content: content('Report', 'written'), done: true},
+    ],
+    onFinish: () => outcome.push('finish'),
+    onCancel: () => outcome.push('cancel'),
+  }));
+  w.openInDialog('Import');
+  assert.equal(footer(w, 'NEXT').textContent, 'NEXT');
+  assert.notEqual(footer(w, 'CANCEL').style.display, 'none');
+  w.next();
+  assert.equal(footer(w, 'FINISH'), undefined, 'the work is done: there is nothing to finish');
+  assert.equal(footer(w, 'CLOSE').textContent, 'CLOSE');
+  assert.equal(footer(w, 'BACK').style.display, 'none', 'nothing to go back to');
+  assert.equal(footer(w, 'CANCEL').style.display, 'none', 'and nothing to cancel');
+  footer(w, 'CLOSE').click();
+  assert.deepEqual(outcome, ['finish']);
   scope.dispose();
 });

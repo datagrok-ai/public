@@ -4,7 +4,9 @@ realizes_atlas: []
 realizes: [viewers.scatter-plot, viewers.box-plot, viewers.pc-plot]
 realized_as:
   - scatterplot-spec.ts
+  - scatterplot-server-spec.ts
 target_layer: playwright
+boot_lane: mixed
 coverage_type: regression
 priority: p1
 pyramid_layer: integration

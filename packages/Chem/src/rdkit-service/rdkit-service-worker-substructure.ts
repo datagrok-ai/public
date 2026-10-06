@@ -38,6 +38,65 @@ export type InverseSubstructureRes = {
   toAligned: string[]
 }
 
+// ── Ring-closure SMILES joining (see linkRGroupFragments) ───────────────────
+// Adapted from SequenceTranslator's PolyTool `buildJoinedSmiles` helpers
+// (packages/SequenceTranslator/src/polytool/pt-chem-enum.ts).
+
+/**
+ * `[*:N]X…` (optionally with a bond symbol) at SMILES start becomes `X([*:N])…` so every R-label
+ * is preceded by an atom — a ring-closure digit must attach to an atom, and a dummy opening the
+ * string has none.
+ */
+function moveStartRLabelToBranch(smi: string): string {
+  const m = smi.match(/^(\[\*:\d+\])([-=#:/\\])?(\[[^\]]+\]|Br|Cl|[BCNOPSFIbcnops])(.*)$/);
+  if (!m)
+    return smi;
+  const [, rlab, bondRaw, atomRaw, rest] = m;
+  // Moving the label swaps it with the atom's implicit H in neighbour order, which inverts `@`/`@@`;
+  // an atom without an implicit H keeps its order.
+  const chiral = /^\[[0-9]*[A-Za-z][a-z]?@{1,2}H/.test(atomRaw);
+  const atom = !chiral ? atomRaw :
+    atomRaw.includes('@@') ? atomRaw.replace('@@', '@') : atomRaw.replace('@', '@@');
+  // Moving the label into a branch swaps the bond's endpoints, so a directional bond flips.
+  const bond = bondRaw === '/' ? '\\' : bondRaw === '\\' ? '/' : bondRaw;
+  return `${atom}(${bond ?? ''}${rlab})${rest}`;
+}
+
+/** Replaces `[*:n]` — and its lone-branch form `([*:n])`, keeping any bond symbol — with a
+ *  ring-closure token: `X([*:n])` → `X<d>`, `X(=[*:n])` → `X=<d>`, `X[*:n]` → `X<d>`. */
+function substituteRLabelWithRingDigit(smi: string, n: number, digitToken: string): string {
+  // Collapse the lone-branch form first so `(` / `)` don't linger — `(<d>)` is not valid SMILES.
+  const branchForm = new RegExp(`\\(([-=#:/\\\\]?)\\s*\\[\\*:${n}\\]\\s*\\)`, 'g');
+  smi = smi.replace(branchForm, (_m, bond) => `${bond}${digitToken}`);
+  return smi.split(`[*:${n}]`).join(digitToken);
+}
+
+/** Picks `count` ring-closure digits not already in use in any of the pieces. */
+function pickFreeRingDigits(pieces: string[], count: number): number[] {
+  const used = new Set<number>();
+  for (const p of pieces) {
+    const stripped = p.replace(/\[[^\]]*\]/g, ''); // atoms are bracketed — ignore their digits
+    for (const m of stripped.matchAll(/%(\d{2})/g))
+      used.add(parseInt(m[1], 10));
+    for (const ch of stripped) {
+      const v = ch.charCodeAt(0) - 48;
+      if (v >= 0 && v <= 9)
+        used.add(v);
+    }
+  }
+  const free: number[] = [];
+  for (let d = 1; d < 100 && free.length < count; d++) {
+    if (!used.has(d))
+      free.push(d);
+  }
+  return free;
+}
+
+/** Ring-closure token: bare digit for 1-9, `%NN` for 10-99. */
+function formatRingDigit(n: number): string {
+  return n <= 9 ? `${n}` : `%${n.toString().padStart(2, '0')}`;
+}
+
 const MALFORMED_MOL_V2000 = `
 Malformed
 
@@ -48,6 +107,8 @@ Malformed
 
   0  0  0  0  0  0            999 V3000
 M  END`;
+
+const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
 
 export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity {
   constructor(module: RDModule, webRoot: string) {
@@ -321,8 +382,8 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
           case MolNotation.Smarts:
             results[i] = rdMol.get_smarts();
             break;
-          case MolNotation.CxSmiles:
-            results[i] = rdMol.get_cxsmiles();
+          case MolNotation.CxSmiles: // @ts-ignore temporary
+            results[i] = rdMol.get_cxsmiles(cxWithoutCoordsJSON);
             break;
           case MolNotation.CxSmarts:
             results[i] = rdMol.get_cxsmarts();
@@ -704,6 +765,74 @@ export class RdKitServiceWorkerSubstructure extends RdKitServiceWorkerSimilarity
       }
     }
 
+    return smiles;
+  }
+
+  /**
+   * Joins a multi-attachment-point core SMILES (bearing `[*:1]`, `[*:2]`, ... dummy atoms) with
+   * one fragment SMILES per attachment point, producing each assembled molecule's canonical
+   * SMILES — the `molzip` equivalent for a build of RDKit JS that does not expose it.
+   *
+   * Pure string assembly (same technique as PolyTool's `buildJoinedSmiles`): each core/fragment
+   * dummy pair is rewritten to a shared ring-closure digit across a dot-separated SMILES, and a
+   * single RDKit parse per row canonicalizes the assembled molecule. An empty fragment (the
+   * reference is H) replaces its dummy with an explicit hydrogen, which canonicalization strips.
+   * A position this core does not carry is skipped — a cluster anchored on a generic MCS gives
+   * every row its own concrete core, so cores within one matrix need not share attachment points.
+   * Attachment points not listed in `attachIdx` come through untouched (still `[*:N]`), which
+   * `buildRowKeys` relies on to keep the column-axis position open.
+   *
+   * `attachIdx[p]` is the attachment number of fragment column `p` (R7 -> 7), or several numbers for a
+   * fragment bonded to the core at more than one point (a bridge). It cannot be inferred from the
+   * fragments: an empty fragment carries no `[*:N]` label, yet must still name which dummy to erase.
+   */
+  linkRGroupFragments(cores: string[], fragmentColumns: string[][], attachIdx: (number | number[])[]): string[] {
+    const size = cores.length;
+    const smiles = new Array<string>(size);
+    const numbers = attachIdx.map((a) => Array.isArray(a) ? a : [a]);
+    for (let i = 0; i < size; i++) {
+      // Collect the joins this core actually supports; erase dummies whose fragment is H.
+      let core = cores[i];
+      const joins: {ns: number[], fragment: string}[] = [];
+      for (let p = 0; p < fragmentColumns.length; p++) {
+        const ns = numbers[p];
+        if (!ns.every((n) => core.includes(`[*:${n}]`)))
+          continue;
+        const fragment = fragmentColumns[p][i];
+        if (fragment)
+          joins.push({ns, fragment: moveStartRLabelToBranch(fragment)});
+        else {
+          for (const n of ns)
+            core = core.split(`[*:${n}]`).join('[H]');
+        }
+      }
+
+      const pieces = [moveStartRLabelToBranch(core), ...joins.map((j) => j.fragment)];
+      const bonds = joins.reduce((count, join) => count + join.ns.length, 0);
+      const digits = pickFreeRingDigits(pieces, bonds);
+      if (digits.length < bonds) {
+        smiles[i] = '';
+        continue;
+      }
+      let next = 0;
+      joins.forEach((join, j) => {
+        for (const n of join.ns) {
+          const digit = formatRingDigit(digits[next++]);
+          pieces[0] = substituteRLabelWithRingDigit(pieces[0], n, digit);
+          pieces[j + 1] = substituteRLabelWithRingDigit(pieces[j + 1], n, digit);
+        }
+      });
+
+      let mol: RDMol | null = null;
+      try {
+        mol = getMolSafe(pieces.join('.'), {}, this._rdKitModule).mol;
+        smiles[i] = mol ? mol.get_smiles() : '';
+      } catch {
+        smiles[i] = '';
+      } finally {
+        mol?.delete();
+      }
+    }
     return smiles;
   }
 

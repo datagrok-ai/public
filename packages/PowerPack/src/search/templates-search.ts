@@ -5,6 +5,7 @@ import {filter} from 'rxjs/operators';
 import * as DG from 'datagrok-api/dg';
 import {tryParseJson} from "@datagrok-libraries/utils/src/string-utils";
 import {FileInfo} from "datagrok-api/dg";
+import type {Track} from "./power-search";
 
 // Power Search: community-curated, template-based, widget-driven search engine
 
@@ -25,7 +26,7 @@ export async function initTemplates(): Promise<void> {
 
   return; //TODO: bring it back once we can cache app folders. We don't need to load it on each start.
 
-  //let templatesPath = (await _package.getProperties()).get('searchTemplatePaths');
+  //let templatesPath = (_package.settings).get('searchTemplatePaths');
   let templatesPath = 'System:AppData/PowerPack/search-templates';
 
   async function loadTemplates(): Promise<void> {
@@ -57,7 +58,7 @@ export async function initTemplates(): Promise<void> {
 }
 
 /// Community-curated template collection
-export function templatesSearch(s: string, host: HTMLDivElement): void {
+export function templatesSearch(s: string, host: HTMLDivElement, track: Track): void {
   for (let p of templates)
     for (let t of p.templates) {
       let x = <any>t;
@@ -77,10 +78,10 @@ export function templatesSearch(s: string, host: HTMLDivElement): void {
             widgetProperties[k] = v;
           }
 
-        DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
+        track(DG.Func.byName(p.widget).apply().then((w: DG.Widget) => {
           w.props.setAll(widgetProperties);
           host.appendChild(w.root);
-        });
+        }));
       }
     }
 }

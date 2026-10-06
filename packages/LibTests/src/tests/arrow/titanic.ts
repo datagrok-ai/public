@@ -4,7 +4,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import {before, category, expect, expectTable, test} from '@datagrok-libraries/test/src/test';
-import {fromFeather, toFeather} from '@datagrok-libraries/arrow';
+import {fromFeather, toFeather} from '@datagrok-libraries/arrow/src/index';
 import {_package} from '../../package-test';
 
 const expectedColumns = ['pclass', 'survived', 'name', 'sex', 'age',

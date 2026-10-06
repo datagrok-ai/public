@@ -1,6 +1,6 @@
-import {signal, computed, Scope, Component} from '../../src/index.js';
+import {signal, computed, Scope, Control} from '../../src/index.js';
 import {divH, span, button} from '../../src/core/elements.js';
-import {ChoiceInput, MultiChoiceInput} from '../../src/components/choice-input.js';
+import {ChoiceInput, MultiChoiceInput} from '../../src/components/inputs/choice-input.js';
 
 function injectOnce(id, href) {
   if (document.getElementById(id)) return;
@@ -14,6 +14,7 @@ function injectOnce(id, href) {
 injectOnce('u2-elements-css', '../../css/elements.css');
 injectOnce('u2-inputs-css', '../../css/inputs.css');
 injectOnce('u2-choice-css', '../../css/choice.css');
+injectOnce('u2-icons-css', '../../css/icons.css');
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -45,7 +46,7 @@ export async function render(main) {
   const parts = [];
   const section = (title, builder) => {
     main.append(el('h2', null, title));
-    const component = Component.build(builder);
+    const component = Control.build(builder);
     parts.push(component);
     main.append(component.root);
     return component;
@@ -99,6 +100,20 @@ export async function render(main) {
     ];
   });
 
+  const tissues = signal(['Liver', 'Kidney']);
+  section('Summary checkbox', () => {
+    const multi = new MultiChoiceInput({label: 'Tissues',
+      items: ['Liver', 'Kidney', 'Heart', 'Lung', 'Brain'],
+      bind: tissues, showSummaryCheckbox: true});
+    return [
+      multi,
+      readout('tissues', computed(() => tissues.value.length ? tissues.value.join(', ') : '(none)')),
+      el('p', 'u2-gallery-status', 'The tri-state summary reads "N of M"; its checkbox selects ' +
+        'all or none, and clicking the text or the chevron collapses the list. The summary ' +
+        'checkbox sits pixel-flush over the item checkboxes.'),
+    ];
+  });
+
   section('Validation', () => {
     const assay = new ChoiceInput({label: 'Assay', items: ['IC50', 'EC50', 'Ki']});
     assay.addValidator((v) => v === null ? 'Value is required' : null);
@@ -119,7 +134,7 @@ export async function render(main) {
 
   main.append(el('h2', null, 'Disposal'));
   main.append(el('p', 'u2-gallery-status',
-    'Each section was built inside a Component.build(...) builder, so its inputs — their effects and ' +
+    'Each section was built inside a Control.build(...) builder, so its inputs — their effects and ' +
     'change listeners — are owned by it: disposing the sections drops live scopes back to the page baseline.'));
   main.append(button('Dispose sections', () => {
     for (const part of parts)

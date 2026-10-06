@@ -39,7 +39,8 @@ export async function syncHomeFiles(
   for (const remote of remoteFiles) {
     remoteSet.add(remote.path);
     const cachedTs = cached.get(remote.path);
-    console.log(`user-files: checking ${remote.path} — remote ts=${remote.updatedOn || '<empty>'}, cached ts=${cachedTs ?? 'none'}, match=${cachedTs === remote.updatedOn}`);
+    console.log(`user-files: checking ${remote.path} — remote ts=${remote.updatedOn || '<empty>'}, ` +
+      `cached ts=${cachedTs ?? 'none'}, match=${cachedTs === remote.updatedOn}`);
     if (cachedTs === remote.updatedOn)
       continue;
 

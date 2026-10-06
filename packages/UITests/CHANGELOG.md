@@ -13,6 +13,10 @@
 * Tests: `View: Events` onViewLayoutApplying/onViewLayoutApplied now search the whole dock tree for the viewer — they only checked the top-level `children` (splitters), never the nested viewer leaves, so `viewerElement` was always null (chronic failure on dev too).
 * Tests: `Viewers: Core Viewers` runs Tile Viewer on a small demo df — the 100-row chemistry df made it build a DOM tile per row and freeze the browser past grok test's 180s inactivity watchdog, aborting the entire puppeteer pass (0 results).
 
+## 1.3.0 (2025-07-31)
+
+* Updated dependencies
+
 ## 1.0.12 (2024-09-02)
 
 * Test fixes update 

@@ -1,7 +1,5 @@
-// Source-matrix scenario covering uploading.md cases 1-6, 8, 9 in both Sync ON and Sync OFF variants.
-// Sync ON: source .script survives the save round-trip so reopen re-executes it. Sync OFF: .script stripped
-// before save, so reopen relies on persisted dataframe bytes (snapshot mode). Cases 4-6 use a transient Space.
-import {test, expect, type Page} from '@playwright/test';
+import {expect, type Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {
@@ -27,16 +25,15 @@ import {
   SYSTEM_DATAGROK_NQNAME,
   SYSTEM_DATAGROK_QUERIES,
 } from '../helpers/openers';
+import {deleteProjectWithCleanup, SavedAllTables} from '../helpers/projects';
 import {
   saveAllTablesWithProvenance,
   reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  SavedAllTables,
-} from '../helpers/projects';
+  deleteAtWorkerClose,
+} from './projects-shared';
 
 test.use(projectsTestOptions);
 
-// Strip the `.script` provenance tag from every open dataframe — emulates Data Sync OFF (snapshot mode).
 async function stripProvenance(page: Page): Promise<void> {
   await evalJs(page, `(async () => {
     for (const df of grok.shell.tables) {
@@ -45,29 +42,44 @@ async function stripProvenance(page: Page): Promise<void> {
   })()`);
 }
 
-// Provision a transient root Space with a copy of demog.csv. Returns a fixture or an env-skip blocker
-// (Spaces createRootSpace may not exist on older builds — callers should test.skip on a blocker).
+type SpaceProvisioning = {fixture: SpaceFixture} | {blocked: true; reason: string};
+
+// Six of the cases below open demog.csv "from a Space", and each was standing up a Space of
+// its own — 4-13s of createRootSpace + copy per test for a fixture none of them writes to.
+// One Space serves the file, and its delete is queued for the worker's close rather than run
+// between the tests that still need it.
+let sharedSpace: SpaceProvisioning | null = null;
+let sharedQuery: ProvisionedQuery | null = null;
+
 async function provisionSpaceWithDemog(
   page: Page, namePrefix: string,
-): Promise<{fixture: SpaceFixture} | {blocked: true; reason: string}> {
+): Promise<SpaceProvisioning> {
+  if (sharedSpace) return sharedSpace;
   const probe = await provisionSpaceFixture(page, {
     namePrefix,
     fileName: 'demog.csv',
   });
   if (probe.blocked || !probe.fixture) {
     if (probe.fixture) await releaseSpaceFixture(page, probe.fixture);
-    return {blocked: true, reason: probe.reason};
+    return (sharedSpace = {blocked: true, reason: probe.reason});
   }
-  return {fixture: probe.fixture};
+  await deleteAtWorkerClose(page, 'spaces', probe.fixture.spaceId);
+  return (sharedSpace = {fixture: probe.fixture});
+}
+
+async function provisionSharedQuery(page: Page, nameStem: string): Promise<ProvisionedQuery> {
+  if (sharedQuery) return sharedQuery;
+  const q = await provisionSystemDatagrokQuery(page, {
+    nameStem,
+    sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
+  });
+  await deleteAtWorkerClose(page, 'queries', q.queryId);
+  return (sharedQuery = q);
 }
 
 function throwOnStepErrors() {
   finishSpec();
 }
-
-// ---------------------------------------------------------------------------
-// Case 1 — Files + Files (Link Tables UI delegated to projects-ui-smoke)
-// ---------------------------------------------------------------------------
 
 async function runCase1(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -124,10 +136,6 @@ test('Projects / Uploading / Case 1: Files + Files (Sync OFF)', async ({page}) =
   await runCase1(page, 'off');
 });
 
-// ---------------------------------------------------------------------------
-// Case 2 — Query + Query (provisioned on System:Datagrok)
-// ---------------------------------------------------------------------------
-
 async function runCase2(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
   const projectName = `Test_Case2_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
@@ -140,10 +148,7 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
 
   try {
     await softStep('provision query and run twice (two query result tables)', async () => {
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case2_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case2_query');
       expect(provisioned.queryId).toBeTruthy();
       const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t1.rowCount).toBeGreaterThan(0);
@@ -172,7 +177,6 @@ async function runCase2(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
@@ -190,10 +194,6 @@ test('Projects / Uploading / Case 2: Query + Query (Sync OFF)', async ({page}) =
   await runCase2(page, 'off');
 });
 
-// ---------------------------------------------------------------------------
-// Case 3 — Query + File
-// ---------------------------------------------------------------------------
-
 async function runCase3(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
   const projectName = `Test_Case3_${sync === 'on' ? 'Sync' : 'NoSync'}_${stamp}`;
@@ -205,10 +205,7 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
 
   try {
     await softStep('provision query, run it, and open spgi-100 file', async () => {
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case3_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case3_query');
       expect(provisioned.queryId).toBeTruthy();
       const t1 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t1.rowCount).toBeGreaterThan(0);
@@ -236,7 +233,6 @@ async function runCase3(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
   }
 
   throwOnStepErrors();
@@ -253,10 +249,6 @@ test('Projects / Uploading / Case 3: Query + File (Sync OFF)', async ({page}) =>
   stepErrors.length = 0;
   await runCase3(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 4 — Spaces + Spaces (open demog.csv twice from the same Space)
-// ---------------------------------------------------------------------------
 
 async function runCase4(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -307,7 +299,6 @@ async function runCase4(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();
@@ -324,10 +315,6 @@ test('Projects / Uploading / Case 4: Spaces + Spaces (Sync OFF)', async ({page})
   stepErrors.length = 0;
   await runCase4(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 5 — Spaces + File (demog from Space + spgi-100 from System:AppData)
-// ---------------------------------------------------------------------------
 
 async function runCase5(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -367,8 +354,7 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
 
     await softStep('reopen verifies Space + File tables re-materialize', async () => {
       if (!saved) throw new Error('no saved project');
-      // Mixed sources — both happen to be `files` pattern but reopen verifies
-      // the active TableView only; pattern check is loose.
+
       const expectedPattern = sync === 'on' ? PROVENANCE_PATTERNS.files : undefined;
       const result = await reopenAndAssertProvenance(page, saved.projectId, expectedPattern);
       expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
@@ -380,7 +366,6 @@ async function runCase5(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();
@@ -397,10 +382,6 @@ test('Projects / Uploading / Case 5: Spaces + File (Sync OFF)', async ({page}) =
   stepErrors.length = 0;
   await runCase5(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 6 — Spaces + Query (demog from Space + provisioned System:Datagrok query)
-// ---------------------------------------------------------------------------
 
 async function runCase6(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -426,10 +407,7 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       const t1 = await openTableFromFile(page, fixture!.filePath);
       expect(t1.rowCount).toBeGreaterThan(0);
       await assertProvenanceScript(page, 'files', t1.script);
-      provisioned = await provisionSystemDatagrokQuery(page, {
-        nameStem: 'case6_query',
-        sql: SYSTEM_DATAGROK_QUERIES.GROUPS_SAMPLE,
-      });
+      provisioned = await provisionSharedQuery(page, 'case6_query');
       expect(provisioned.queryId).toBeTruthy();
       const t2 = await openTableFromDbQuery(page, provisioned.queryNqName);
       expect(t2.rowCount).toBeGreaterThan(0);
@@ -446,7 +424,7 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
 
     await softStep('reopen verifies Space + Query tables re-materialize', async () => {
       if (!saved) throw new Error('no saved project');
-      // Mixed sources — pattern check skipped; verify multi-table reopen.
+
       const result = await reopenAndAssertProvenance(page, saved.projectId);
       expect(result.tablesAfter).toBeGreaterThanOrEqual(2);
       expect(result.reopenedRowCount).toBeGreaterThan(0);
@@ -457,8 +435,6 @@ async function runCase6(page: Page, sync: 'on' | 'off') {
       for (const tableInfoId of saved.tableInfoIds)
         await deleteProjectWithCleanup(page, {tableInfoId});
     }
-    if (provisioned) await provisioned.cleanup();
-    if (fixture) await releaseSpaceFixture(page, fixture);
   }
 
   throwOnStepErrors();
@@ -475,10 +451,6 @@ test('Projects / Uploading / Case 6: Spaces + Query (Sync OFF)', async ({page}) 
   stepErrors.length = 0;
   await runCase6(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 8 — Files + Pivot Table (Add to workspace)
-// ---------------------------------------------------------------------------
 
 async function runCase8(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();
@@ -532,10 +504,6 @@ test('Projects / Uploading / Case 8: Files + Pivot Table > Add (Sync OFF)', asyn
   stepErrors.length = 0;
   await runCase8(page, 'off');
 });
-
-// ---------------------------------------------------------------------------
-// Case 9 — DB table (System:Datagrok / public.groups) + Aggregate Rows
-// ---------------------------------------------------------------------------
 
 async function runCase9(page: Page, sync: 'on' | 'off') {
   const stamp = Date.now();

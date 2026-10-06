@@ -31,6 +31,26 @@ Follow [`.claude/rules/new-method-checklist.md`](.claude/rules/new-method-checkl
 5. **The CLAUDE.md for the relevant domain** — update the architecture tree.
 6. `npm run lint-fix && npm run build && npm test` all pass.
 
+## Testing
+
+`npm test` runs jest (ts-jest transform) over `src/**/__tests__/`, per [`jest.config.js`](jest.config.js).
+
+```bash
+npm test                      # whole suite (48 suites, ~1270 tests, ~20 s)
+npx jest src/nca              # one domain — path substring
+npx jest -t 'lambda_z'        # one test or describe block — name substring
+npx jest -u                   # update snapshots: see src/nca/CLAUDE.md before doing this
+npx jest --coverage
+```
+
+This library pins its own `typescript` (`npm:typescript@^5.9.3`) instead of taking `catalog:`, which the
+workspace catalog holds at `^7.0.2`. TypeScript 7's CJS entry point is a version stub — the compiler API
+moved to `./unstable/*` — and ts-jest 29 requires the TS 5 API (peer range `>=4.3 <6`). Without the pin every
+suite dies in the transform with `Cannot read properties of undefined (reading 'Node16')`.
+
+The pin is confined to the test path: `grok tsc` resolves TypeScript from `@datagrok/build-config`'s own
+directory, not from this package, so `npm run build` still compiles with the catalog's TypeScript 7.
+
 ## Skills
 
 - `/add-optimizer <algorithm name>` — scaffold a new single-objective optimizer (see [`src/optimization/CLAUDE.md`](src/optimization/CLAUDE.md)).

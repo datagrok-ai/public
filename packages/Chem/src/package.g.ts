@@ -54,6 +54,14 @@ export function substructureFilter() : any {
   return PackageFunctions.substructureFilter();
 }
 
+//description: Substructure, superstructure, exact, stereo-agnostic and similarity operators for Molecule columns in the filter builder
+//output: object result
+//meta.role: filterOperators
+//meta.semType: Molecule
+export function moleculeFilterOperators() : any {
+  return PackageFunctions.moleculeFilterOperators();
+}
+
 //input: int x 
 //input: int y 
 //input: int w 
@@ -245,11 +253,11 @@ export async function similarityMatrixTopMenu(table: DG.DataFrame, molecules: DG
 }
 
 //name: Chemical Descriptors
-//description: Calculates molecular descriptors for the molecules column
+//description: Calculates molecular descriptors for the molecules column using RDKit
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: list<string> selected { caption: Descriptors }
-//top-menu: Chem | Calculate | Descriptors...
+//top-menu: Chem | Calculate | Descriptors (RDKit)...
 //editor: Chem:DescriptorsEditor
 export async function descriptorsDocker(table: DG.DataFrame, molecules: DG.Column, selected: string[]) : Promise<void> {
   await PackageFunctions.descriptorsDocker(table, molecules, selected);
@@ -895,6 +903,14 @@ export function openChemLibSketcher() : any {
   return PackageFunctions.openChemLibSketcher();
 }
 
+//name: Crux
+//description: Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)
+//output: widget sketcher
+//meta.role: moleculeSketcher
+export function cruxSketcher() : any {
+  return PackageFunctions.cruxSketcher();
+}
+
 //description: Opens SDF file
 //input: list bytes 
 //output: list<dataframe> result
@@ -963,6 +979,15 @@ export function copyAsAction(value: DG.SemanticValue) : void {
 //meta.exclude-actions-panel: true
 export function copyAsSmiles(value: DG.SemanticValue) : void {
   PackageFunctions.copyAsSmiles(value);
+}
+
+//name: Copy as CXSMILES
+//description: Copies structure as smiles
+//input: semantic_value value { semType: Molecule }
+//meta.action: Copy as CXSMILES
+//meta.exclude-actions-panel: true
+export function copyAsCXSmiles(value: DG.SemanticValue) : void {
+  PackageFunctions.copyAsCXSmiles(value);
 }
 
 //name: Copy as MOLFILE V2000
@@ -1053,8 +1078,8 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
   return await PackageFunctions.callChemDiversitySearch(col, metricName, fingerprint, limit);
 }
 
-//name: Chemical Properties
-//description: Calculates chemical properties and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
+//name: Chemical Properties (OCL)
+//description: Calculates chemical properties using OpenChemLib and adds them as columns to the input table. properties include Molecular Weight (MW), Hydrogen Bond Acceptors (HBA), Hydrogen Bond Donors (HBD), LogP (Partition), LogS (Solubility), Polar Surface Area (PSA), Rotatable Bonds, Stereo Centers, Molecule Charge.
 //input: dataframe table { description: Input data table }
 //input: column molecules { semType: Molecule }
 //input: bool MW = true 
@@ -1066,14 +1091,14 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //input: bool rotatableBonds = false { caption: Rotatable bonds }
 //input: bool stereoCenters = false { caption: Stereo centers }
 //input: bool moleculeCharge = false { caption: Molecule charge }
+//input: bool molecularFormula = false { caption: Molecular formula }
 //meta.function_family: biochem-calculator
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
 //meta.role: hitTriageFunction,transform
-//top-menu: Chem | Calculate | Chemical Properties...
-export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
-  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
+export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean, molecularFormula?: boolean) : Promise<void> {
+  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula);
 }
 
 //name: Chemical Properties
@@ -1086,13 +1111,15 @@ export async function getProperties(molecules: DG.Column, selected?: string[]) :
   return await PackageFunctions.getProperties(molecules, selected);
 }
 
-//name: Molecule Category Order
-//description: Orders the categories of a molecular column by Tanimoto similarity to its first molecule
+//name: Molecular Property
+//description: Computes one chemical property for a column of molecules so that the platform can sort and order them by it.
 //input: column molecules { semType: Molecule }
+//input: string property { choices: ["MW","HBA","HBD","LogP","LogS","PSA","Rotatable bonds","Stereo centers","Molecule charge"] }
 //output: column result
 //meta.role: categoryOrderer
-export async function orderMoleculeCategories(molecules: DG.Column) : Promise<any> {
-  return await PackageFunctions.orderMoleculeCategories(molecules);
+//meta.vectorFunc: true
+export async function molecularProperty(molecules: DG.Column, property: string) : Promise<any> {
+  return await PackageFunctions.molecularProperty(molecules, property);
 }
 
 //name: Toxicity Risks
@@ -1155,6 +1182,50 @@ export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, act
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
 
+//name: SAR Matrix Viewer
+//description: SAR Matrix viewer
+//output: viewer result
+//meta.showInGallery: false
+//meta.role: viewer
+export function sarMatrixViewer() : any {
+  return PackageFunctions.sarMatrixViewer();
+}
+
+//description: Column names available for SAR Matrix series grouping
+//output: list<string> result
+export function sarSeriesColumnChoices() : string[] {
+  return PackageFunctions.sarSeriesColumnChoices();
+}
+
+//name: SarMatrixEditor
+//input: funccall call 
+//output: widget result
+//meta.role: editor
+export function sarMatrixEditor(call: DG.FuncCall) : any {
+  return PackageFunctions.sarMatrixEditor(call);
+}
+
+//name: SAR Matrix
+//description: Groups related compound series into potency-colored matrices and predicts virtual analogs.
+//input: dataframe table 
+//input: column molecules { semType: Molecule }
+//input: column activity { type: numerical }
+//input: string scaling = '-lg' { choices: ["none","lg","-lg"]; description: Activity scaling before assembly }
+//input: string activityDirection = 'Auto (from scaling)' { choices: ["Auto (from scaling)","Higher is better","Lower is better"]; description: Which end of the activity is more potent (set explicitly for pre-computed pIC50/pKi) }
+//input: double fragmentCutoff = 0.4 { description: Maximum fragment size relative to core }
+//input: int fragmentationLevels = 3 { caption: Series levels; min: 1; max: 5; description: Nested series tiers (L1/L2/L3): 1 is a flat list, each level folds matrices one cut broader }
+//input: bool predictVirtual = true 
+//input: bool useMcsAnchors = false { caption: Group leftovers by MCS; description: Off leaves out the compounds no shared core could group. On searches those for a common core and adds the matrices it finds, keeping every matrix the core grouping already produced. Slower on large sets }
+//input: string seriesColumn { nullable: true; caption: Series column (Optional); choices: Chem:sarSeriesColumnChoices(); description: Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure }
+//input: column coreColumn { nullable: true; caption: Core; description: Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules }
+//input: column_list rGroupColumns { nullable: true; caption: R-groups; description: Columns with the substituent at each attachment point of the core }
+//input: string matrixColumns { nullable: true; caption: Matrix columns; description: The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows }
+//top-menu: Chem | Analyze | SAR Matrix...
+//editor: Chem:SarMatrixEditor
+export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string, coreColumn: any, rGroupColumns: DG.Column[], matrixColumns: string) : Promise<void> {
+  await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns);
+}
+
 //name: Scaffold Tree Filter
 //description: Scaffold Tree filter
 //output: filter result
@@ -1193,6 +1264,13 @@ export async function demoSimilarityDiversitySearch() : Promise<void> {
 //meta.demoPath: Cheminformatics | Matched Molecular Pairs
 export async function demoMMPA() : Promise<void> {
   await PackageFunctions.demoMMPA();
+}
+
+//name: Demo SAR Matrix
+//description: Group analog series into potency matrices and predict the analogs worth making next
+//meta.demoPath: Cheminformatics | SAR Matrix
+export async function demoSarMatrix() : Promise<void> {
+  await PackageFunctions.demoSarMatrix();
 }
 
 //name: Demo R Group Analysis
@@ -1445,11 +1523,24 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
   return await PackageFunctions.mixtureTreeWidget(mixture);
 }
 
-//name: Biochemical Properties
+//name: Chemical Properties
 //description: Dynamically discovers and executes tagged biochemical calculators
-//top-menu: Chem | Calculate | Biochemical Properties
+//top-menu: Chem | Calculate | Chemical Properties...
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
+}
+
+//description: Saves a DesirabilityProfile JSON as an MPO profile. Returns the profile id.
+//input: string profileJson 
+//output: string id
+export async function saveMpoProfile(profileJson: string) : Promise<string> {
+  return await PackageFunctions.saveMpoProfile(profileJson);
+}
+
+//description: Grants all users access to MPO profiles and seeds every profile in the System:AppData/Chem/mpo folder - the shipped defaults plus any profiles saved there by the old file-based storage. Idempotent - safe to run repeatedly.
+//output: string result
+export async function seedMpoProfiles() : Promise<string> {
+  return await PackageFunctions.seedMpoProfiles();
 }
 
 //name: MPO profiles

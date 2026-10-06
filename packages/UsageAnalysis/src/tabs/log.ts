@@ -1,11 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 
 import {UaView} from './ua';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {UaToolbox} from '../ua-toolbox';
-import {loadUsers, setupUserIconRenderer} from '../utils';
+import {loadUsers, setupUserIconRenderer, showEventDetails} from '../utils';
 import '../../css/usage_analysis.css';
 
 const filters = ui.box();
@@ -38,7 +37,7 @@ export class LogView extends UaView {
       name: 'Log',
       queryName: 'LogTail',
       processDataFrame: (t: DG.DataFrame) => {
-        t.onCurrentRowChanged.subscribe(() => this.showLogContextPanel(t));
+        t.onCurrentRowChanged.subscribe(() => showEventDetails(t));
         return t;
       },
       createViewer: (t: DG.DataFrame) => {
@@ -86,28 +85,5 @@ export class LogView extends UaView {
       filters,
       logViewer.root,
     ]));
-  }
-
-  showLogContextPanel(table: DG.DataFrame): void {
-    const rowIdx = table.currentRowIdx;
-    if (rowIdx < 0)
-      return;
-    const eventId = table.getCol('id').get(rowIdx);
-    if (!eventId)
-      return;
-    const accordion = DG.Accordion.create();
-    accordion.addPane('Details', () => ui.wait(async () => {
-      const t: DG.DataFrame = await grok.functions.call('UsageAnalysis:LogEventParameters', {eventId});
-      if (t.rowCount === 0)
-        return ui.divText('No details available');
-      const names = t.getCol('param_name').toList();
-      const values = t.getCol('value').toList();
-      const map: {[key: string]: string} = {};
-      for (let i = 0; i < names.length; i++)
-        map[names[i]] = values[i];
-      return ui.tableFromMap(map);
-    }), true);
-
-    grok.shell.o = accordion.root;
   }
 }

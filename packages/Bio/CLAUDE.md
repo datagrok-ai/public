@@ -167,7 +167,7 @@ Key methods: `detectSeparator()`, `detectAlphabet()`, `getAlphabetSimilarity()`,
 | `composition-analysis-widget.ts` | `getCompositionAnalysisWidget()` — monomer composition table with color-coded counts for a single cell value |
 | `representations.ts` | `getMacromoleculeColumnPropertyPanel()` — UI for renderer settings: font size, max monomer length, gap length, color coding scheme, reference sequence, multiline mode |
 | `to-atomic-level-widget.ts` | `toAtomicLevelSingle()` (seq→molfile), `toAtomicLevelWidget()` (2D molecule drawing), `molecular3DStructureWidget()` (3D NGL viewer) |
-| `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer |
+| `sequence-scrolling-widget.ts` | `handleSequenceHeaderRendering()` — MSA column header with WebLogo + conservation tracks, viewport-aware lazy caching (50-position chunks), click to dock position statistics viewer. Installs the headers of every long non-HELM, known-alphabet column of a grid in one synchronous pass (re-run on columns added/removed, semantic types detected, the grid's table changed) and repaints the grid after it; the ruler names positions by the column's `.positionNames`, so regions extracted from a numbered aligned column keep the scheme's numbering |
 | `monomer-info-widget.ts` | `getMonomerInfoWidget()` — info-panel widget for `Monomer` semtype cells; renders the monomer card with structure, library origin and R-group info |
 | `package-settings-editor-widget.ts` | `PackageSettingsEditorWidget` — Bio package global settings form |
 
@@ -381,6 +381,46 @@ Existing engines:
 | `bio03-atomic-level.ts` | HELM → atomic level conversion with monomer hover highlighting |
 | `bio05-helm-msa-sequence-space.ts` | HELM MSA via PepSeA + sequence space scatter plot |
 | `utils.ts` | Shared: `demoSequenceSpace()` (UMAP/tSNE + scatter), constants |
+
+## Automation surface (`bdd/`)
+
+The package's behavioral tests are Gherkin features under `bdd/features/` on
+`@datagrok-libraries/bdd` (`bdd/README.md`: how to run them; the library's README for the
+vocabulary). What the package exposes for them, and must keep:
+
+- `WebLogoViewer.getWidgetStatus()`: `parts.canvas`; hit areas `view`, `position <label>` and
+  `monomer <M> at position <label>` (CSS px of the canvas, the last laid-out range); readings
+  `positions shown`, `rows shown`, `rows selected`. `isRenderPending` is true from a render
+  request to the paint; `onRendered` fires after every render pass.
+- The MSA header over a long sequence column (`MSAScrollingHeader`, installed by
+  `widgets/sequence-scrolling-widget.ts`) adds to the grid's status, while the header is on screen,
+  the readings `header tracks of <col>` (the tracks shown, top to bottom: `Conservation, WebLogo,
+  Annotations`) and `header positions of <col>` (the names on its ruler), and a
+  `position <name> of <col> header` hit area over each visible position's WebLogo stack. Positions
+  are named by the column's `.positionLabels` / `.positionNames` tags (1-based indices without them).
+- `SequenceSearchBaseViewer` (similarity and diversity search): `isRenderPending` while a render
+  (the compute included) is on its way, `onRendered` after each; readings `source column` and
+  `limit`, plus `target row` / `neighbours` / `neighbour set` (similarity: the neighbour rows as
+  one string) and `subset size` / `subset` / `distinct sequences` (diversity).
+- Names: the Manage Annotations dialog's list is `data-u2="list"` / `data-u2-name="annotations"`,
+  each row `data-u2="item"` named by the annotation id, the delete icon
+  `name="icon-delete-annotation"`; dialogs and inputs carry the platform's `dialog-<Title>` /
+  `input-host-<Caption>` names, so a caption change is a feature change.
+- `Bio:getHelmMonomers` is registered under that name (it was `Bio: getHelmMonomers`);
+  `matchWithMonomerLibrary` has the friendly name `Match with Monomer Library` (its dialog).
+- `MonomerLibManager.loadMonomerLib` fires the `bio-monomer-lib-loaded` custom event after every
+  load (`@datagrok-libraries/bio/src/monomer-works/lib-events.ts`: `onMonomerLibLoaded`,
+  `fireMonomerLibLoaded`; args `{libraries, reload}`) — the signal a feature or another package
+  waits on after a library is toggled, added or deleted; the load awaits `updateLibs` first.
+- Monomer Collections cards are `data-u2="card"` named by the collection's display name with
+  spaces as dashes (`Canonical-AAs`, `New-Collection`) and carry `aria-selected`.
+- The Manage Monomer Libraries view keeps the platform's names: `<file>.json` checkboxes (the
+  label is the file name), `Add` / `Merge` buttons, `Delete` and `Edit monomer library` icons
+  by aria label, the `Warning` delete dialog; with two storage providers on the stand `Add`
+  asks which one in the `Select storage for new monomer library` dialog. `bdd/fixtures/` holds
+  the HELM JSON library the features upload (`bdd-test-lib.json`, one PEPTIDE monomer `BDD`).
+- The grid's `cell type of <column>` reading (core `getWidgetStatus`) is how the features name
+  the renderer a column got: `helm`, `sequence`, `Monomer`.
 
 ## Tests (`src/tests/`)
 

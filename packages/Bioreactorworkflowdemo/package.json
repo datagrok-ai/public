@@ -1,0 +1,34 @@
+{
+  "name": "@datagrok/bioreactorworkflowdemo",
+  "friendlyName": "BioreactorWorkflowDemo",
+  "author": {
+    "name": "Gennadii Zakharov",
+    "email": "gzakharov@datagrok.ai"
+  },
+  "version": "0.2",
+  "description": "Compute2 low-code workflow demo for simulating daily bacterial growth in a bioreactor",
+  "dependencies": {
+    "@datagrok-libraries/compute-api": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/Bioreactorworkflowdemo"
+  }
+}

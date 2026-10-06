@@ -1,6 +1,5 @@
-// Derived-source lifecycle via the UI Aggregate Rows / Pivot Table → Add to workspace flow.
-// GROK-19103 invariant: derivation lands in the active workspace (tables grows by 1), not a stray project.
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {projectsTestOptions, evalJs, gotoApp, setupSession} from './_helpers';
@@ -11,12 +10,8 @@ import {
   resetShell,
   PROVENANCE_PATTERNS,
 } from '../helpers/openers';
-import {
-  saveProjectWithProvenance,
-  reopenAndAssertProvenance,
-  deleteProjectWithCleanup,
-  shareWithSecondUserAndVerify,
-} from '../helpers/projects';
+import {deleteProjectWithCleanup} from '../helpers/projects';
+import {saveProjectWithProvenance, reopenAndAssertProvenance, shareWithSecondUserAndVerify} from './projects-shared';
 
 test.use(projectsTestOptions);
 
@@ -50,7 +45,6 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       expect(derived.script).toMatch(/Aggregate\("demog"/);
       derivedTableId = derived.tableInfoId;
 
-      // GROK-19103 invariant: tables.length grows by exactly 1, not a stray separate project.
       const tablesAfter = await evalJs<number>(page, '(grok.shell.tables?.length || 0)');
       expect(tablesAfter).toBe(tablesBefore + 1);
     });
@@ -75,7 +69,6 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
         return {tables: out};
       })()`);
 
-      // At least one table should match base or derived provenance (server may rematerialize in any order).
       const hasBaseProvenance = tagInspect.tables.some(t => /OpenFile\("System:DemoFiles\/demog\.csv"\)/.test(t.script));
       const hasDerivedProvenance = tagInspect.tables.some(t => /Aggregate\("demog"/.test(t.script));
       expect(hasBaseProvenance || hasDerivedProvenance).toBe(true);
@@ -94,7 +87,6 @@ test('Projects / Lifecycle Derived: Aggregate via menu + GROK-19103 invariant', 
       expect(renameR.ok).toBe(true);
     });
 
-    // Share is LAST step before finally — the helper reloads the page for second-user re-auth.
     await softStep('Step 5b: share with second user (View-and-Use + Full) + recipient open', async () => {
       if (!saved) return;
       const r = await shareWithSecondUserAndVerify(page, {id: saved.projectId, name: `${projectName}-renamed`}, {full: true});

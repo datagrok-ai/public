@@ -1,0 +1,154 @@
+/* Card skin — the shared surface, its header/media/body/footer sections, the click and selection
+   variants, and the KPI card that reuses the surface. Tokens only; css/tokens.css must be loaded
+   alongside, and css/async.css where a stat card takes its value from a source. */
+.u2-card {
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  gap: var(--dg-space-m);
+  padding: var(--dg-space-l);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size);
+  color: var(--dg-text-color);
+  background: var(--dg-bg);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: var(--dg-radius-l);
+}
+
+.u2-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+}
+
+.u2-card-icon {
+  flex-shrink: 0;
+  color: var(--dg-text-color-light);
+}
+
+.u2-card-titles {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--dg-space-xs);
+}
+
+.u2-card-title {
+  overflow: hidden;
+  font-size: var(--dg-font-size-h2);
+  font-weight: var(--dg-font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.u2-card-subtitle {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  margin-left: auto;
+}
+
+.u2-card-media {
+  overflow: hidden;
+  border-radius: var(--dg-radius);
+}
+
+.u2-card-media-img {
+  display: block;
+  width: 100%;
+  object-fit: cover;
+}
+
+.u2-card-body {
+  min-width: 0;
+}
+
+.u2-card-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  padding-top: var(--dg-space-m);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
+}
+
+.u2-card-clickable {
+  cursor: pointer;
+}
+
+.u2-card-clickable:hover {
+  background: var(--dg-hover);
+}
+
+.u2-card-clickable:focus-visible,
+.u2-card-selectable:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+.u2-card-selectable {
+  cursor: pointer;
+}
+
+.u2-card-selected {
+  outline: 2px solid var(--dg-accent-secondary);
+  outline-offset: calc(-1 * var(--dg-border-width));
+}
+
+.u2-stat-card {
+  position: relative;
+  gap: var(--dg-space-xs);
+}
+
+.u2-stat-value {
+  font-size: calc(var(--dg-font-size-h1) * 1.75);
+  font-weight: var(--dg-font-weight-medium);
+  line-height: 1.2;
+  color: var(--dg-text-color);
+}
+
+.u2-stat-value .u2-skeleton {
+  padding: 0;
+}
+
+.u2-stat-value .u2-skeleton-line {
+  height: var(--dg-space-xl);
+}
+
+.u2-stat-label {
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-stat-delta {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-text-color-light);
+}
+
+.u2-stat-delta-up {
+  color: var(--dg-success);
+}
+
+.u2-stat-delta-down {
+  color: var(--dg-failure);
+}
+
+.u2-stat-icon {
+  position: absolute;
+  top: var(--dg-space-l);
+  right: var(--dg-space-l);
+  color: var(--dg-text-color-light);
+}
+
+.u2-stat-error {
+  font-size: var(--dg-font-size-small);
+  line-height: var(--dg-line-height);
+  color: var(--dg-error);
+}

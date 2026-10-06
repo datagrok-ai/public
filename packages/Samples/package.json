@@ -13,37 +13,14 @@
     "directory": "packages/Samples"
   },
   "dependencies": {
-    "datagrok-api": "^1.27.0",
-    "rxjs": "^6.5.5",
-    "ts-loader": "^9.5.1",
-    "typescript": "^5.6.3",
-    "@datagrok-libraries/test": "^1.1.0"
-  },
-  "devDependencies": {
-    "@datagrok/api-tests": "^1.9.0",
-    "@datagrok/dendrogram": "^1.2.33",
-    "@typescript-eslint/eslint-plugin": "^5.32.0",
-    "@typescript-eslint/parser": "^5.32.0",
-    "datagrok-tools": "^5.0.0",
-    "eslint": "^8.21.0",
-    "eslint-config-google": "^0.14.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "datagrok-api": "workspace:^",
+    "rxjs": "catalog:",
+    "@datagrok-libraries/test": "workspace:^"
   },
   "scripts": {
-    "link-api": "npm link datagrok-api",
-    "lint": "eslint src --ext .ts",
-    "lint-fix": "eslint src --ext .ts --fix",
-    "debug-demo": "grok publish public --release",
-    "release-demo": "grok publish localhost --release",
-    "build-demo": "webpack",
-    "build": "grok api && grok check --soft && webpack",
-    "debug-demo-dev": "grok publish dev",
-    "release-demo-dev": "grok publish dev --release",
-    "debug-demo-public": "grok publish public",
-    "release-demo-public": "grok publish public --release",
-    "debug-demo-local": "grok publish local",
-    "release-demo-local": "grok publish local --release",
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
     "test": "grok test"
   },
   "canView": [
@@ -53,7 +30,10 @@
     "Administators",
     "Administrators"
   ],
-  "overrides": {
-    "datagrok-api": "$datagrok-api"
+  "grok": {
+    "testDependencies": [
+      "@datagrok/api-tests",
+      "@datagrok/dendrogram"
+    ]
   }
 }

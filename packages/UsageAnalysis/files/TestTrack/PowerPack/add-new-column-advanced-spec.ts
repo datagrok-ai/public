@@ -1,4 +1,5 @@
-import {test, expect, Page} from '@playwright/test';
+import {expect, Page} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 import {openTableFromFile, assertProvenanceScript} from '../helpers/openers';
@@ -19,14 +20,12 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
     grok.shell.windows.simpleMode = true;
     try { grok.shell.closeAll(); } catch (_) {}
   });
-  await page.waitForTimeout(500);
   try {
-    // Setup: open demog.csv with datasync provenance so the GROK-17109 invariant can be tested.
+
     await softStep('Setup: open System:DemoFiles/demog.csv with datasync provenance', async () => {
       const opened = await openTableFromFile(page, 'System:DemoFiles/demog.csv');
       await page.locator('[name="viewer-Grid"]').waitFor({timeout: 60_000});
-      await page.waitForTimeout(1000);
-      // Without wired provenance, save-with-datasync degrades to snapshot-only and GROK-17109 can't be tested.
+
       await assertProvenanceScript(page, 'files', opened.script);
       const cols = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
@@ -216,14 +215,17 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
       expect(renamed.ok).toBe(true);
       expect(renamed.names).toContain('BaseWeight');
       expect(renamed.names).not.toContain('WEIGHT');
-      await page.evaluate(() => {
+      await page.evaluate(async () => {
         const df = (window as any).grok.shell.tv?.dataFrame;
         const col = df.col('BaseWeight');
         const prev = col.get(0);
+        const before = df.col('Weight2').get(0);
         col.set(0, (prev ?? 100) + 50);
         df.fireValuesChanged?.();
+        const t0 = Date.now();
+        while (df.col('Weight2').get(0) === before && Date.now() - t0 < 1000)
+          await new Promise((r) => setTimeout(r, 25));
       });
-      await page.waitForTimeout(1000);
       const formula = await page.evaluate(() => {
         const df = (window as any).grok.shell.tv?.dataFrame;
         const w2 = df.col('Weight2');
@@ -247,13 +249,16 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
       expect(exists).toBe(true);
     });
     await softStep('Step 7: close all views before reopen', async () => {
-      await page.evaluate(() => {
-        try { (window as any).grok.shell.closeAll(); } catch (_) {}
-      });
-      await page.waitForTimeout(1000);
-      const tableCount = await page.evaluate(() => {
-        try { return Number((window as any).grok.shell.tables?.length) || 0; }
-        catch { return 0; }
+      const tableCount = await page.evaluate(async () => {
+        const grok = (window as any).grok;
+        try { grok.shell.closeAll(); } catch (_) {}
+        const count = () => {
+          try { return Number(grok.shell.tables?.length) || 0; } catch { return 0; }
+        };
+        const t0 = Date.now();
+        while (count() > 0 && Date.now() - t0 < 1000)
+          await new Promise((r) => setTimeout(r, 25));
+        return count();
       });
       expect(tableCount).toBe(0);
     });
@@ -263,12 +268,9 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
         const grok = (window as any).grok;
         const p = await grok.dapi.projects.find(pid);
         await p.open();
-        for (let i = 0; i < 40; i++) {
-          const tv = grok.shell.tv;
-          if (tv?.dataFrame) break;
-          await new Promise((r) => setTimeout(r, 500));
-        }
-        await new Promise((r) => setTimeout(r, 2000));
+        const t0 = Date.now();
+        while (!(grok.shell.tv?.dataFrame?.col('Weight3')) && Date.now() - t0 < 22_000)
+          await new Promise((r) => setTimeout(r, 100));
         const df = grok.shell.tv?.dataFrame;
         if (!df) return {ok: false, why: 'no df after reopen'};
         const names = df.columns.names();
@@ -305,13 +307,23 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
       }, target);
       expect(renamed.ok).toBe(true);
       expect(renamed.newNames).toContain(target);
-      await page.waitForTimeout(500);
-      const tags = await page.evaluate((t) => {
-        const df = (window as any).grok.shell.tv?.dataFrame;
-        const w2 = df.col('Weight2'); const w3 = df.col('Weight3');
-        const w2Tag = w2?.tags?.get?.('formula') ?? w2?.tags?.get?.('.formula') ?? '';
-        const w3Tag = w3?.tags?.get?.('formula') ?? w3?.tags?.get?.('.formula') ?? '';
-        return {w2Tag, w3Tag, target: t};
+      const tags = await page.evaluate(async (t) => {
+        const read = () => {
+          const df = (window as any).grok.shell.tv?.dataFrame;
+          const w2 = df.col('Weight2'); const w3 = df.col('Weight3');
+          return {
+            w2Tag: w2?.tags?.get?.('formula') ?? w2?.tags?.get?.('.formula') ?? '',
+            w3Tag: w3?.tags?.get?.('formula') ?? w3?.tags?.get?.('.formula') ?? '',
+            target: t,
+          };
+        };
+        const t0 = Date.now();
+        let v = read();
+        while (!v.w2Tag.includes(t) && Date.now() - t0 < 500) {
+          await new Promise((r) => setTimeout(r, 25));
+          v = read();
+        }
+        return v;
       }, target);
       expect(tags.w2Tag).toContain(target);
       expect(tags.w3Tag).toContain('Weight2');
@@ -329,12 +341,14 @@ test('PowerPack: Add New Column — multi-source datasync persistence + formula 
         df.fireValuesChanged?.();
         return {sourceName, preSrc, preW2, preW3, newSrc};
       });
-      await page.waitForTimeout(1000);
-      const post = await page.evaluate(() => {
+      const post = await page.evaluate(async (preW2) => {
         const df = (window as any).grok.shell.tv?.dataFrame;
         const w2 = df.col('Weight2'); const w3 = df.col('Weight3');
+        const t0 = Date.now();
+        while (w2.get(0) === preW2 && Date.now() - t0 < 1000)
+          await new Promise((r) => setTimeout(r, 25));
         return {postW2: w2.get(0), postW3: w3.get(0)};
-      });
+      }, result.preW2);
       expect(post.postW2).toBeCloseTo(result.newSrc + 100, 1);
       expect(post.postW3).toBeCloseTo(result.newSrc + 200, 1);
     });

@@ -199,7 +199,9 @@ category('Flow: node-factory', () => {
       expect(funcCategory(anc), 'Column Operations', 'AddNewColumn is a column operation');
     }
 
-    const catRe = /\((.+)\)$/;
+    // Only the TRAILING paren group is the category — a friendly name may itself
+    // carry parentheses ("Chemical Properties (OCL)"), so a greedy match is wrong.
+    const catRe = /\(([^()]+)\)$/;
     for (const c of candidates.filter((x) => !x.isBuiltin).slice(0, 50)) {
       const m = catRe.exec(c.label);
       expect(!!m, true, `label has a category: ${c.label}`);

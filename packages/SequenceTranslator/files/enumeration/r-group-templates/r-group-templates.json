@@ -1,7 +1,8 @@
 [
   {
-    "name": "Alkyl (C1–C8)",
+    "name": "Hydrogen and Alkyl (C1-C8)",
     "items": [
+      {"smiles": "[H][*:1]", "label": "hydrogen"},
       {"smiles": "C[*:1]", "label": "methyl"},
       {"smiles": "CC[*:1]", "label": "ethyl"},
       {"smiles": "CCC[*:1]", "label": "propyl"},

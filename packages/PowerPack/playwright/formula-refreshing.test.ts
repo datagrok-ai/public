@@ -7,8 +7,9 @@ sub_features_covered: [powerpack.dialogs, powerpack.dialogs.add-new-column, powe
 // Load-bearing facts:
 //   - The CM6 EditorView is exposed at `cmContent.cmTile.view` (NOT cmDiv.cmView.view, which is always
 //     undefined and falls through to the brittle keyboard fallback). Same surface for dialog + panel widget.
-//   - The Formula info panel widget renders `.add-new-column-dialog-cm-div` (NOT -widget-cm-div): the
-//     constructor reads this.widget BEFORE assigning it, so the -dialog- class wins. Scope to .grok-prop-panel.
+//   - The CM host class depends on the host: `-widget-cm-div` in the info panel, `-dialog-cm-div` in
+//     the dialog (add-new-column.ts:211). Both were `-dialog-` until 979ac738a8 fixed the constructor
+//     to read its `widget` argument, so match either. Scope to .grok-prop-panel.
 //   - Widget mode does NOT call prepareForSeleniumTests(), so button-Add-New-Column---OK is unset; the
 //     widget's Apply button carries [name="button-Apply"] (text-content lookup as fallback).
 //   - The Formula accordion-pane header click TOGGLES (not idempotent) and persists across column switches;
@@ -437,6 +438,9 @@ async function waitForColumnPresent(page: any, columnName: string): Promise<void
 
 // Edit a calc-column formula via the Formula info panel widget (PowerPack:formulaWidget spawns the same
 // AddNewColumnDialog pre-bound to the column). Accordion-pane-click path with a direct-JS-API fallback.
+// Matches the CM host in either place it can be rendered from — see the note at the top of the file.
+const CM_HOST = '.add-new-column-widget-cm-div .cm-content, .add-new-column-dialog-cm-div .cm-content';
+
 async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula: string): Promise<void> {
   // Set grok.shell.o to the column (same end state as a header click, deterministic under headless).
   await page.evaluate((n: string) => {
@@ -464,15 +468,14 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
   });
   await page.waitForTimeout(500); // accordion expansion + widget re-render settle
 
-  // Wait for the widget's CM host. It renders .add-new-column-dialog-cm-div (the constructor reads
-  // this.widget before assigning it, so -dialog- wins); scope to .grok-prop-panel.
+  // Wait for the widget's CM host, scoped to .grok-prop-panel.
   let widgetCmFound = false;
   if (accordionPathWorked) {
     for (let i = 0; i < 25; i++) {
-      widgetCmFound = await page.evaluate(() => {
+      widgetCmFound = await page.evaluate((sel: string) => {
         const propPanel = document.querySelector('.grok-prop-panel');
-        return !!propPanel?.querySelector('.add-new-column-dialog-cm-div .cm-content');
-      });
+        return !!propPanel?.querySelector(sel);
+      }, CM_HOST);
       if (widgetCmFound) break;
       await page.waitForTimeout(200);
     }
@@ -495,47 +498,47 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
       void DG; // silence unused
     }, columnName);
     for (let i = 0; i < 25; i++) {
-      widgetCmFound = await page.evaluate(() => {
+      widgetCmFound = await page.evaluate((sel: string) => {
         const propPanel = document.querySelector('.grok-prop-panel');
-        return !!propPanel?.querySelector('.add-new-column-dialog-cm-div .cm-content');
-      });
+        return !!propPanel?.querySelector(sel);
+      }, CM_HOST);
       if (widgetCmFound) break;
       await page.waitForTimeout(200);
     }
   }
 
   if (!widgetCmFound)
-    throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel .add-new-column-dialog-cm-div .cm-content) did not render for column "${columnName}"`);
+    throw new Error(`editFormulaViaInfoPanel: Formula widget CM host (.grok-prop-panel ${CM_HOST}) ` +
+      `did not render for column "${columnName}"`);
 
   // Dispatch the new formula via cmTile.view (same as composeAddNewColumn). Self-heal if the pane collapsed.
-  await page.evaluate(() => {
+  await page.evaluate((sel: string) => {
     const pp = document.querySelector('.grok-prop-panel');
     if (!pp) return;
-    const cm = pp.querySelector('.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+    const cm = pp.querySelector(sel) as HTMLElement | null;
     if (cm && cm.offsetWidth === 0 && cm.offsetHeight === 0) {
       const headers = Array.from(pp.querySelectorAll('.d4-accordion-pane-header, .d4-accordion-title'));
       const formulaHeader = headers.find((h) => (h.textContent || '').trim() === 'Formula') as HTMLElement | undefined;
       if (formulaHeader) formulaHeader.click();
     }
-  });
+  }, CM_HOST);
   await page.waitForTimeout(400);
   const panelCm = page.locator(
-    '.grok-prop-panel .add-new-column-dialog-cm-div .cm-content').first();
+    CM_HOST.split(', ').map((sel) => `.grok-prop-panel ${sel}`).join(', ')).first();
   await panelCm.waitFor({timeout: 15_000, state: 'visible'});
   await panelCm.click({force: true});
   await page.waitForTimeout(200);
   let composed: {ok: boolean; doc?: string} = {ok: false};
   for (let i = 0; i < 10; i++) {
-    composed = await page.evaluate((f: string) => {
+    composed = await page.evaluate(({f, sel}: {f: string, sel: string}) => {
       const propPanel = document.querySelector('.grok-prop-panel');
-      const cmContent = propPanel?.querySelector(
-        '.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+      const cmContent = propPanel?.querySelector(sel) as HTMLElement | null;
       if (!cmContent) return {ok: false};
       const view = (cmContent as any).cmTile?.view ?? null;
       if (!view) return {ok: false};
       view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: f}});
       return {ok: true, doc: view.state.doc.toString()};
-    }, newFormula);
+    }, {f: newFormula, sel: CM_HOST});
     if (composed.ok) break;
     await page.waitForTimeout(200);
   }
@@ -547,15 +550,14 @@ async function editFormulaViaInfoPanel(page: any, columnName: string, newFormula
     await page.waitForTimeout(100);
     await page.keyboard.type(newFormula, {delay: 30});
     await page.waitForTimeout(200);
-    composed = await page.evaluate(() => {
+    composed = await page.evaluate((sel: string) => {
       const propPanel = document.querySelector('.grok-prop-panel');
-      const cmContent = propPanel?.querySelector(
-        '.add-new-column-dialog-cm-div .cm-content') as HTMLElement | null;
+      const cmContent = propPanel?.querySelector(sel) as HTMLElement | null;
       if (!cmContent) return {ok: false};
       const view = (cmContent as any).cmTile?.view ?? null;
       const doc = view ? view.state.doc.toString() : (cmContent.innerText || '');
       return {ok: true, doc};
-    });
+    }, CM_HOST);
   }
   if (!composed.ok)
     throw new Error('editFormulaViaInfoPanel: CodeMirror cmTile.view not exposed on in-panel widget even after keyboard fallback');

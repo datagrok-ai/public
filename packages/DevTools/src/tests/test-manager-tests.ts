@@ -27,7 +27,10 @@ category('Test manager', () => {
     const devToolsNode = testManager.tree.items.filter((it) => it.text === 'Dev Tools')[0] as DG.TreeViewGroup;
     const f = testManager.testFunctions.filter((it) => it.package.name === 'DevTools')[0];
     await testManager.collectPackageTests(devToolsNode, f);
-    testManager.selectedNode = testManager.tree.items.filter((it) => it.text === '<div class=\"d4-flex-row ui-div\"><div>exist</div><div class=\"ui-div\"></div></div>')[0];
+    // TreeViewNode.text is the node's text, not its rendered HTML — matching markup here
+    // silently selected nothing, and runTestsForSelectedNode() then returned without running.
+    testManager.selectedNode = testManager.tree.items.filter((it) => it.text === 'exist')[0];
+    expect(testManager.selectedNode != null, true);
     await testManager.runTestsForSelectedNode();
     await delay(100);
     expect(testManager.testsResultsDf.get('package', 0), 'DevTools');

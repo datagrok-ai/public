@@ -34,3 +34,8 @@ test-console-output.log
 
 src/**/*.d.ts
 
+
+# bdd (grok-bdd) run artifacts
+bdd/test-results/
+bdd/e2e/
+bdd/.auth.json

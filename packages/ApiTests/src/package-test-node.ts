@@ -25,11 +25,18 @@ const testsExclude = [
     'shell/settings.ts', // client shell settings object — browser-only
     'shell/ml.ts',       // registers client JS funcs at import (grok.functions.register)
     'dataframe/add-new-column.ts', // dialog-driven (PowerPack addNewColumnDialog)
+    'dataframe/calculated-columns-bench.ts', // table views and layouts
 ];
 
 // UI-independent test folders that run under Node; grid/, widgets/, ai/, packages/
 // and utils/ stay browser-only (Dart client / DOM dependencies).
 const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher', 'property', 'stats', 'shell'];
+
+// Sibling packages whose tests join this suite, so the sweep covers more than
+// the platform API — DBTests contributes read-only Postgres queries through grok_connect.
+// Each package resolves its own copy of the test library, so their categories land in a
+// different registry object and have to be merged into the one this runner filters.
+const extraTestPackages = ['DBTests'];
 
 // 'functional': run every loaded test (UI-dependent ones self-skip via skipReason);
 // 'stress': only stressTest-marked tests — the concurrency-sweep baseline.
@@ -39,14 +46,19 @@ const nodeTestDirs = ['dapi', 'dataframe', 'functions', 'bitset', 'valuematcher'
 let mode: 'functional' | 'stress' = 'stress';
 
 async function main(): Promise<void> {
-    const { apiUrl, devKey, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
-    console.log('Exchanging devKey for token...');
-    const apiToken = await getToken(apiUrl, devKey);
+    const { apiUrl, devKey, token, concurrentRuns, categories, loop, concurrencyRange } = parseArgs();
+    const apiToken = token ?? await getToken(apiUrl, devKey);
     console.log('Received token.');
     // Loaded dynamically (not a static import) so Node/tsx resolve datagrok-api's
     // named exports through cjs-module-lexer instead of failing at link time.
     const { startDatagrok } = await import('datagrok-api/datagrok');
     await startDatagrok({apiUrl, apiToken});
+    // Bind datagrok-api/{dg,grok,ui} to the runtime objects startDatagrok() just produced,
+    // so every test file shares one copy of the js-api classes. Must precede any test-file
+    // import. Same module instance the --import already loaded.
+    const loader = await import(pathToFileURL(
+        join(dirname(fileURLToPath(import.meta.url)), '..', 'node-test-loader', 'register.mjs')).href);
+    loader.bindRuntimeGlobals();
     _package = await grok.dapi.packages.filter('shortName = "ApiTests"').first();
     if (!_package)
         throw new Error('ApiTests package should be installed.');
@@ -101,8 +113,11 @@ function parseArgs() {
         })
         .option('devKey', {
             type: 'string',
-            describe: 'Developer key for authentication',
-            demandOption: true,
+            describe: 'Developer key for authentication (deprecated - prefer --token)',
+        })
+        .option('token', {
+            type: 'string',
+            describe: 'Session token, e.g. from `grok s token`. Preferred over --devKey',
         })
         .option('concurrentRuns', {
             type: 'number',
@@ -168,6 +183,7 @@ function parseArgs() {
     const res: any = {
         apiUrl: argv.apiUrl,
         devKey: argv.devKey,
+        token: argv.token,
         concurrentRuns: argv.concurrentRuns,
         categories: argv.categories,
         loop: argv.loop
@@ -190,9 +206,12 @@ function parseArgs() {
 }
 
 async function getToken(url: string, key: string) {
+    if (!key)
+        throw new Error('No credentials: pass --token (from `grok s token`) or --devKey');
+    console.log('Exchanging devKey for token...');
     // Raw fetch is intentional here: this runs before startDatagrok(), so the grok
     // client (and grok.dapi) isn't initialized yet — there's no dapi layer to use.
-    const response = await fetch(`${url}/users/login/dev/${key}`, {method: 'POST'});
+    const response = await fetch(`${url}/users/login/dev`, {method: 'POST', headers: {'Authorization': `Dev ${key}`}});
     const json = await response.json();
     if (json.isSuccess == true)
         return json.token;
@@ -221,6 +240,19 @@ async function loadTestFiles(): Promise<void> {
                     console.error(`❌ Failed to load ${dir}/${baseName} (its tests will not run): ${e?.message ?? e}`);
                 }
             }
+        }
+    }
+    const {tests} = await import('@datagrok-libraries/test/src/test');
+    for (const pkg of extraTestPackages) {
+        try {
+            const entry = pathToFileURL(join(srcDir, '..', '..', pkg, 'src', 'package-test.ts')).href;
+            const loaded: any = await import(entry);
+            const added = Object.keys(loaded.tests ?? {});
+            Object.assign(tests, loaded.tests);
+            console.log(`Loaded ${added.length} categories from ${pkg}: ${added.join(', ')}`);
+        } catch (e: any) {
+            loadFailures.push(pkg);
+            console.error(`❌ Failed to load ${pkg} (its tests will not run): ${e?.message ?? e}`);
         }
     }
 }

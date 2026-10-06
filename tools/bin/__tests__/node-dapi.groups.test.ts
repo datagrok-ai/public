@@ -125,7 +125,8 @@ describe('NodeGroupsDataSource.addMembers', () => {
 
     const post = calls.find((c) => c.method === 'POST')!;
     expect(post.path).toBe('/public/v1/groups?saveRelations=true');
-    expect(post.body.children).toEqual([{parent: {id: PARENT_ID}, child: {id: ALICE_ID}, isAdmin: false}]);
+    expect(post.body.children).toEqual([expect.objectContaining({parent: {id: PARENT_ID}, child: {id: ALICE_ID}, isAdmin: false})]);
+    expect(post.body.children[0].id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('supports --admin by setting isAdmin on the new relation', async () => {

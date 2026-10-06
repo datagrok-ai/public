@@ -127,6 +127,12 @@ export function describeElements(roots: HTMLElement[], description: string[]): H
 
   const doneBtn = ui.button('done', () => popup.remove(), 'Go to the next step');
 
+  // named as runDescriber names its buttons, so a tour of either kind is walked the same way
+  for (const [btn, role] of [[nextBtn, 'next'], [prevBtn, 'prev'], [doneBtn, 'done']] as [HTMLButtonElement, string][]) {
+    btn.setAttribute('name', `button-tour-${role}`);
+    btn.setAttribute('aria-label', role);
+  }
+
   const btnsDiv = ui.divH([prevBtn, nextBtn, doneBtn]);
   btnsDiv.classList.add('tutorials-sci-comp-btns-div');
 
@@ -267,4 +273,17 @@ export function buildToggleOverlay(toggle: HTMLElement): HTMLElement {
   toggle.appendChild(overlay);
 
   return overlay;
+}
+
+/** An input row of a compute form, by the caption the model declares for it. Addressing these by
+ * child index shifts the moment the form gains, loses or reorders a parameter, and the step then
+ * drives the wrong control without saying so.
+ *
+ * The caption has to be the row's own (`:scope >`): sensitivity analysis nests its per-parameter
+ * toggle inside the row and ahead of the caption, and that toggle's caption is a blank `' '`, so a
+ * descendant search finds the wrong label and matches nothing. */
+export function inputRootByCaption(form: Element, caption: string): HTMLElement | null {
+  return Array.from(form.querySelectorAll<HTMLElement>('div.ui-input-root'))
+    .find((root) => root.querySelector(':scope > label.ui-label')?.textContent?.trim().toLowerCase()
+      === caption.toLowerCase()) ?? null;
 }

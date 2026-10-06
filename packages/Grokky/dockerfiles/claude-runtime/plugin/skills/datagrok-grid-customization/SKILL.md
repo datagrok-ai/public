@@ -1,15 +1,15 @@
 ---
 name: datagrok-grid-customization
-description: Sort, hide, show, reorder, resize, pin, format, and color-code columns in a Datagrok TableView grid from a datagrok-exec block. Use whenever the user asks to sort by a column (any direction), multi-sort, hide / show / reorder / pin / resize columns, freeze the first N columns, change number-format display, color-code cells (defaults and grid-only tint here; full per-type reference in datagrok-df-and-columns), set row height, or reset the grid back to defaults. Distinct from datagrok-df-and-columns (which owns column-level data metadata like semType, units, friendlyName, and is also where canonical color-coding lives) and from datagrok-viewers (which owns scatter plot / histogram / etc.). Does NOT cover filtering (`datagrok-filtering`), selection (`datagrok-selection`), custom cell renderer authoring (`create-cell-renderer`), saving / restoring layouts, or grid event handlers.
+description: Sort, hide, show, reorder, resize, pin, format, and color-code columns in a Datagrok TableView grid via the datagrok_exec tool. Use whenever the user asks to sort by a column (any direction), multi-sort, hide / show / reorder / pin / resize columns, freeze the first N columns, change number-format display, color-code cells (defaults and grid-only tint here; full per-type reference in datagrok-df-and-columns), set row height, or reset the grid back to defaults. Distinct from datagrok-df-and-columns (which owns column-level data metadata like semType, units, friendlyName, and is also where canonical color-coding lives) and from datagrok-viewers (which owns scatter plot / histogram / etc.). Does NOT cover filtering (`datagrok-filtering`), selection (`datagrok-selection`), custom cell renderer authoring (`create-cell-renderer`), saving / restoring layouts, or grid event handlers.
 ---
 
 # datagrok-grid-customization
 
-Customize a Datagrok grid inside a `datagrok-exec` block using `view.grid`,
+Customize a Datagrok grid via the `datagrok_exec` tool using `view.grid`,
 `grid.columns`, the per-`GridColumn` setters, and the data-side
 `col.meta.colors` / `col.meta.format`.
 
-Globals inside every `datagrok-exec` block: `grok`, `ui`, `DG`, `view`, `t`
+Globals inside every `datagrok_exec` call: `grok`, `ui`, `DG`, `view`, `t`
 (the active `DG.DataFrame` when `view` is a `TableView`).
 
 Color coding is canonically data-side (`col.meta.colors.set*`) because it
@@ -74,17 +74,17 @@ column; grid-side (`view.grid.*`) for this view's presentation only.**
 `grid.sort(columnNames, ascendingBooleans)`. Both arrays are parallel.
 `true` is ascending, `false` is descending.
 
-```datagrok-exec
+```js
 // Single column descending.
 view.grid.sort(['activity'], [false]);
 ```
 
-```datagrok-exec
+```js
 // Multi-column: class asc, then activity desc.
 view.grid.sort(['class', 'activity'], [true, false]);
 ```
 
-```datagrok-exec
+```js
 // Clear the sort.
 view.grid.sort([], []);
 ```
@@ -101,17 +101,17 @@ to them is a no-op. The only way to apply a sort is `grid.sort(...)`.
 
 ## Visibility and order
 
-```datagrok-exec
+```js
 // Hide a single column.
 view.grid.col('_internalId').visible = false;
 ```
 
-```datagrok-exec
+```js
 // Show only these (hides everything else).
 view.grid.columns.setVisible(['SMILES', 'MW', 'LogP', 'activity', 'class']);
 ```
 
-```datagrok-exec
+```js
 // Re-order: SMILES first, then MW, then LogP. Use gridCol.move(position) per
 // column. Index 0 is the row header, so the first data slot is 1. Apply the
 // list in order: each move(i) inserts at that position.
@@ -129,7 +129,7 @@ test calls `setOrder(['race', 'age'])` and asserts race lands at `byIndex(4)`, n
 To re-show every hidden column, loop `grid.columns` from index 1 (index 0 is
 the row header):
 
-```datagrok-exec
+```js
 const cols = view.grid.columns;
 for (let i = 1; i < cols.length; i++) {
   const gc = cols.byIndex(i);
@@ -139,13 +139,13 @@ for (let i = 1; i < cols.length; i++) {
 
 ## Widths
 
-```datagrok-exec
+```js
 // Per-column pixel widths.
 view.grid.col('SMILES').width = 250;
 view.grid.col('MW').width = 80;
 ```
 
-```datagrok-exec
+```js
 // Width policy for the whole grid. Values: Minimal | Compact | Optimal | Maximal.
 view.grid.setColumnsWidthType(DG.ColumnWidthType.Optimal);
 ```
@@ -158,7 +158,7 @@ the widest visible value; `Maximal` expands to fill remaining space.
 `gridCol.pin()` pins on the left. No positional argument — pin in
 left-to-right order. `gridCol.unpin()` reverses it.
 
-```datagrok-exec
+```js
 view.grid.col('SMILES').pin();
 view.grid.col('ID').pin();   // SMILES ends up leftmost.
 ```
@@ -166,13 +166,13 @@ view.grid.col('ID').pin();   // SMILES ends up leftmost.
 `frozenColumns` freezes the first N visible columns by position (different
 mechanism from `pin()`; do not mix them in one view):
 
-```datagrok-exec
+```js
 view.grid.setOptions({frozenColumns: 2});
 ```
 
 ## Row height
 
-```datagrok-exec
+```js
 // Tall rows — useful when rendering molecules or HTML in cells.
 view.grid.setOptions({rowHeight: 100});
 ```
@@ -181,7 +181,7 @@ view.grid.setOptions({rowHeight: 100});
 
 `col.meta.format` writes a format tag the grid honors:
 
-```datagrok-exec
+```js
 t.col('IC50').meta.format = '0.00';
 t.col('count').meta.format = '#,##0';
 ```
@@ -217,7 +217,7 @@ color axis on the same column will not pick up `gridCol.backColor` /
 
 There is no single "reset grid" API. Combine the relevant primitives:
 
-```datagrok-exec
+```js
 // Restore visibility (skip index 0 = row header), reset width policy, clear sort, drop color codings.
 const cols = view.grid.columns;
 for (let i = 1; i < cols.length; i++) {

@@ -8,20 +8,22 @@ import { funcs } from '../package-api';
 import { MOL_COL_NAME } from '../constants';
 import { getLibrariesWithEntityTypes } from '../libraries';
 
+const ciSkip = DG.Test.isCiCd ? 'needs Revvity Signals credentials, which CI does not have' : undefined;
+
 category('revvity signals app', () => {
 
   test('app initial statistics', async () => {
     const view = await funcs.revvitySignalsLinkApp();
     //check that statistics view has been created
     await awaitCheck(() => view.root.getElementsByTagName('table').length > 0, 'Initial statistics hasn\'t been loaded', 30000);
-  });
+  }, {skipReason: ciSkip});
 
   test('open compounds|assets node', async () => {
     const node = grok.shell.browsePanel.mainTree.getOrCreateGroup('Apps').getOrCreateGroup('Chem').getOrCreateGroup('Revvity Signals');
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset');
     await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node hasn\'t been loaded', 30000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('open compounds|assets with pre-defined query', async () => {
 
@@ -39,7 +41,7 @@ category('revvity signals app', () => {
     node.expanded = true;
     openRevvityNode(node, ['Compounds'], 'Assets', 'Compounds', 'asset', query);
     await awaitCheck(() => grok.shell.tv?.dataFrame.rowCount === 100, 'Compounds -> Assets node with pre-defined query hasn\'t been loaded', 30000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 });
 
 
@@ -57,7 +59,7 @@ category('revvity signals functions', () => {
     };
     const df = await funcs.searchEntities(JSON.stringify(query), '{}', 'assetType:686ecf60e3c7095c954bd94f', 'batch');
     expect(df.rowCount > 0, true, 'Returned empty dataframe');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('searchEntitiesWithStructures', async () => {
     const query = {
@@ -72,31 +74,31 @@ category('revvity signals functions', () => {
     const df = await funcs.searchEntitiesWithStructures(JSON.stringify(query), '{}', 'assetType:686ecf60e3c7095c954bd94f', 'asset');
     expect(df.rowCount > 0, true, 'Returned empty dataframe');
     await awaitCheck(() => !df.col(MOL_COL_NAME)!.isEmpty, 'Molecules column is not filling with values', 30000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('getLibrariesWithEntityTypes', async () => {
     const libs = await getLibrariesWithEntityTypes();
     expect(libs.length > 0, true, 'Returned empty libraries list');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('getUsers', async () => {
     const users = JSON.parse(await funcs.getUsers());
     expect(users.length > 0, true, 'Returned empty users list');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('getTags', async () => {
     const tags = JSON.parse(await funcs.getTags('batch', 'assetType:686ecf60e3c7095c954bd94f'));
     expect(Object.keys(tags).length > 0, true, 'Returned empty tags list');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('getTerms', async () => {
     const terms = await funcs.getTermsForField('materials.Batch Chemical Name', 'batch', 'assetType:686ecf60e3c7095c954bd94f', true);
     expect(terms.length > 0, true, 'Returned empty terms list');
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
   test('getWidget', async () => {
     const widget: DG.Widget = await funcs.entityTreeWidget(DG.SemanticValue.fromValueType('DGS-0000009-001', 'revvity-id'));
     await awaitCheck(() => widget.root.querySelector('table') != null, 'Widget hasn\'t been created', 30000);
-  }, {timeout: 60000});
+  }, {timeout: 60000, skipReason: ciSkip});
 
 });

@@ -1,5 +1,3 @@
-import * as grok from 'datagrok-api/grok';
-import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
 import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
@@ -418,6 +416,7 @@ export class StateTree {
   }
 
   public close() {
+    this.linksState.close();
     this.nodeTree.traverse(this.nodeTree.root, (acc, node) => {
       const item = node.getItem();
       if (isFuncCallNode(item))

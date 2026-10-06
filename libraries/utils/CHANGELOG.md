@@ -1,5 +1,21 @@
 # utils changelog
 
+## v.next
+
+* format-version-utils: Added `isClientAtLeast(version)`
+
+## 4.7.10 (WIP)
+
+* `ScatterPlotLinesRenderer`: Added the automation surface — a `lines-on-scatter-plot` status provider on the scatter plot the lines are drawn onto, reporting a `line <i>` / `line <from>-<to>` hit area per line the frame actually stroked plus `lines`, `lines drawn`, `current line` and `hovered line`
+* Forms viewer: Command-click toggles selection on macOS, and Command-Shift-click clears a row range.
+* Forms viewer: `getWidgetStatus` now also reports `record of pinned card <n>`
+* Forms viewer: `getWidgetStatus` now also reports `align of` / `font of <COL> of <label>`, `header labels`, `record of card <n>`, `card kind of card <n>`, `pinned pane shown`, `pinned values` and `pinned by`
+* GROK-20849: `BitArray` is a compatibility wrapper over `DG.BitArray` (old names kept); `trueCount()` is no longer stale after raw-buffer writes; callerless members removed
+
+## 4.7.9 (2026-08-27)
+
+* Added FuncCallParamsEditor: adapts a `getParams()`-style dialog editor to the canonical `DG.FuncCallEditor` contract
+
 ## 4.7.8 (2026-08-07)
 
 * #3765: Forms viewer: Added ability to pin the rows

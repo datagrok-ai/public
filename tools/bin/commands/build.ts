@@ -1,29 +1,137 @@
 import fs from 'fs';
 import path from 'path';
-import {promisify} from 'util';
-import {exec} from 'child_process';
 import * as readline from 'readline';
+import {spawnSync} from 'child_process';
 import * as utils from '../utils/utils';
 import * as color from '../utils/color-utils';
-
-const execAsync = promisify(exec);
+import {toolchain, copyLibraryAssets, ensureLibraryExports} from '../utils/toolchain';
 
 interface BuildArgs {
   _: string[];
+  all?: boolean;
   recursive?: boolean;
-  silent?: boolean;
+  affected?: boolean;
+  typecheck?: boolean;
   filter?: string;
-  verbose?: boolean;
-  'no-incremental'?: boolean;
   parallel?: number;
+  verbose?: boolean;
+  force?: boolean;
+  local?: boolean;
+  'skip-check'?: boolean;
+  [key: string]: any;
 }
 
-interface BuildResult {
-  name: string;
-  version: string;
-  buildTime: string;
-  bundleSize: string;
-  success: boolean;
+/** Walks up from `dir` to the pnpm workspace root (the directory holding pnpm-workspace.yaml). */
+export function findWorkspaceRoot(dir: string): string | null {
+  let d = path.resolve(dir);
+  for (;;) {
+    if (fs.existsSync(path.join(d, 'pnpm-workspace.yaml')))
+      return d;
+    const parent = path.dirname(d);
+    if (parent === d)
+      return null;
+    d = parent;
+  }
+}
+
+/**
+ * `grok build` in a workspace drives Turborepo: the package in cwd and everything it depends on,
+ * in dependency order, cached (`--all`, `--affected`, `--typecheck`, `--filter`). Inside a Turborepo
+ * task (TURBO_HASH is set), in a standalone package, or with `--local`, it builds just the package in
+ * cwd: an rspack bundle plus `grok check` for a plugin (src/package.ts or rspack.config.js), a
+ * TypeScript emit into dist/ for a library.
+ */
+export async function build(args: BuildArgs): Promise<boolean> {
+  const cwd = process.cwd();
+  const root = findWorkspaceRoot(cwd);
+  if (args.local || process.env.TURBO_HASH || !root)
+    return buildLocal(cwd, args);
+  return buildWithTurbo(cwd, root, args);
+}
+
+async function buildWithTurbo(cwd: string, root: string, args: BuildArgs): Promise<boolean> {
+  const filters: string[] = [];
+  if (args.affected)
+    filters.push('--filter=...[origin/master]');
+  else if (!(args.all || args.recursive)) {
+    const pkgPath = path.join(cwd, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      color.error('Not a package directory (no package.json). Use --all or --affected from anywhere in the workspace.');
+      return false;
+    }
+    filters.push(`--filter=${JSON.parse(fs.readFileSync(pkgPath, 'utf8')).name}...`);
+  }
+  if (args.filter)
+    filters.push(`--filter=${args.filter}`);
+
+  const tasks = ['build'];
+  if (args.typecheck)
+    tasks.push('typecheck');
+  const cmd = ['exec', 'turbo', 'run', ...tasks, ...filters, `--concurrency=${args.parallel ?? 3}`, '--continue'];
+  if (!args.verbose)
+    cmd.push('--output-logs=errors-only');
+  if (args.force)
+    cmd.push('--force');
+
+  const r = spawnSync('pnpm', cmd, {stdio: 'inherit', cwd: root, shell: true, env: {...process.env, TURBO_TELEMETRY_DISABLED: '1'}});
+  return r.status === 0;
+}
+
+async function buildLocal(dir: string, args: BuildArgs): Promise<boolean> {
+  if (!fs.existsSync(path.join(dir, 'package.json'))) {
+    color.error('Not a package directory (no package.json).');
+    return false;
+  }
+  const isPlugin = fs.existsSync(path.join(dir, 'rspack.config.js')) ||
+    ['ts', 'js'].some((e) => fs.existsSync(path.join(dir, 'src', `package.${e}`)));
+  return isPlugin ? bundle(dir, args) : emitLibrary(dir);
+}
+
+async function bundle(dir: string, args: BuildArgs): Promise<boolean> {
+  const {bundler, rspack} = toolchain(dir).buildConfig;
+  // --key=value arguments reach a config exported as a function, e.g. `grok build --only=browser`
+  const env: Record<string, any> = {};
+  for (const [k, v] of Object.entries(args))
+    if (!['_', 'local', 'verbose', 'skip-check', 'typecheck', 'all', 'affected', 'filter', 'parallel', 'force'].includes(k))
+      env[k] = v;
+  const cfgPath = path.join(dir, 'rspack.config.js');
+  let config = fs.existsSync(cfgPath) ? require(cfgPath) : bundler({dir});
+  if (typeof config === 'function')
+    config = config(env);
+  if (config && typeof config.then === 'function')
+    config = await config;
+
+  if (!args['skip-check'] && fs.existsSync(path.join(dir, 'src', 'package.ts'))) {
+    const {check} = require('./check');
+    if (check({_: ['check'], soft: true, 'no-exit': true}) === false) {
+      color.error('grok check failed');
+      return false;
+    }
+  }
+
+  const t0 = Date.now();
+  const ok = await new Promise<boolean>((resolve, reject) => {
+    rspack(config, (err: any, stats: any) => {
+      if (err) return reject(err);
+      const text = stats.toString({colors: process.stdout.isTTY, preset: 'errors-warnings'});
+      if (text.trim()) console.log(text);
+      resolve(!stats.hasErrors());
+    });
+  });
+  const dist = path.join(dir, 'dist', 'package.js');
+  const size = fs.existsSync(dist) ? `${(fs.statSync(dist).size / 1024).toFixed(0)} KB` : '';
+  console.log(`${ok ? 'bundled' : 'FAILED'} ${path.basename(dir)} in ${((Date.now() - t0) / 1000).toFixed(1)}s ${size}`);
+  return ok;
+}
+
+/** A library: `tsc -p tsconfig.json` into dist/, then the css/wasm/json assets its sources import. */
+function emitLibrary(dir: string): boolean {
+  ensureLibraryExports(dir);
+  const r = spawnSync(process.execPath, [toolchain(dir).tsc, '-p', 'tsconfig.json'], {stdio: 'inherit', cwd: dir});
+  if (r.status !== 0)
+    return false;
+  copyLibraryAssets(dir);
+  return true;
 }
 
 export interface PackageInfo {
@@ -34,229 +142,48 @@ export interface PackageInfo {
   packageJson: any;
 }
 
-export async function build(args: BuildArgs): Promise<boolean> {
-  if (args.verbose)
-    color.setVerbose(true);
-
-  const buildCmd = args['no-incremental'] ? 'npm run build' : 'npm run build -- --env incremental';
-
-  if (args.recursive)
-    return await buildRecursive(process.cwd(), args, buildCmd);
-  else
-    return await buildSingle(process.cwd(), buildCmd);
-}
-
-async function buildSingle(dir: string, buildCmd: string): Promise<boolean> {
-  if (!utils.isPackageDir(dir)) {
-    color.error('Not a package directory (no package.json found)');
-    return false;
-  }
-
-  const packageJson = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-  const name = packageJson.friendlyName || packageJson.name;
-  console.log(`Building ${name}...`);
-
-  try {
-    await utils.runScript('npm install', dir, color.isVerbose());
-    await utils.runScript(buildCmd, dir, color.isVerbose());
-    color.success(`Successfully built ${name}`);
-    return true;
-  }
-  catch (error: any) {
-    color.error(`Failed to build ${name}`);
-    if (error.message)
-      color.error(error.message);
-    return false;
-  }
-}
-
-async function buildRecursive(baseDir: string, args: BuildArgs, buildCmd: string): Promise<boolean> {
-  const packages = discoverPackages(baseDir);
-  if (packages.length === 0) {
-    color.warn('No packages found in the current directory');
-    return false;
-  }
-
-  const filtered = args.filter ? applyFilter(packages, args.filter) : packages;
-  if (filtered.length === 0) {
-    color.warn('No packages match the filter');
-    return false;
-  }
-
-  console.log(`Found ${filtered.length} package(s): ${filtered.map((p) => p.friendlyName).join(', ')}`);
-
-  if (!args.silent && !(args as any).s) {
-    const confirmed = await confirm(`\nBuild ${filtered.length} package(s)?`);
-    if (!confirmed) {
-      console.log('Aborted.');
-      return false;
-    }
-  }
-
-  const maxParallel = args.parallel || 4;
-  const results = await buildParallel(filtered, buildCmd, maxParallel);
-  return results.every((r) => r.success);
-}
-
+/** Packages directly under `baseDir` (used by `grok testall`). */
 export function discoverPackages(baseDir: string): PackageInfo[] {
-  const entries = fs.readdirSync(baseDir);
   const packages: PackageInfo[] = [];
-
-  for (const entry of entries) {
+  for (const entry of fs.readdirSync(baseDir)) {
     if (entry.startsWith('.') || entry === 'node_modules')
       continue;
-
     const dir = path.join(baseDir, entry);
-    try {
-      if (!fs.statSync(dir).isDirectory())
-        continue;
-    }
-    catch (_) {
-      continue;
-    }
-
     const packageJsonPath = path.join(dir, 'package.json');
     if (!fs.existsSync(packageJsonPath))
       continue;
-
     try {
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-      packages.push({
-        dir,
-        name: packageJson.name || entry,
-        friendlyName: packageJson.friendlyName || packageJson.name || entry,
-        version: packageJson.version || '0.0.0',
-        packageJson,
-      });
+      packages.push({dir, name: packageJson.name || entry, friendlyName: packageJson.friendlyName || packageJson.name || entry,
+        version: packageJson.version || '0.0.0', packageJson});
     }
-    catch (_) {
-      continue;
-    }
+    catch (_) { /* not a package */ }
   }
-
   return packages.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
 }
 
+/** `field:regex && field:regex` filter over package.json fields. */
 export function applyFilter(packages: PackageInfo[], filterStr: string): PackageInfo[] {
-  const conditions = filterStr.split('&&').map((s) => s.trim());
-  const parsedConditions = conditions.map((cond) => {
+  const conditions = filterStr.split('&&').map((s) => s.trim()).map((cond) => {
     const colonIdx = cond.indexOf(':');
-    if (colonIdx === -1)
-      return {field: cond, pattern: new RegExp('.')};
-
-    const field = cond.substring(0, colonIdx).trim();
-    const pattern = new RegExp(cond.substring(colonIdx + 1).trim());
-    return {field, pattern};
+    return colonIdx === -1 ? {field: cond, pattern: new RegExp('.')} :
+      {field: cond.substring(0, colonIdx).trim(), pattern: new RegExp(cond.substring(colonIdx + 1).trim())};
   });
-
-  return packages.filter((pkg) => {
-    for (const cond of parsedConditions) {
-      const value = getNestedValue(pkg.packageJson, cond.field);
-      if (value === undefined || !cond.pattern.test(String(value)))
-        return false;
-    }
-    return true;
-  });
+  return packages.filter((pkg) => conditions.every((cond) => {
+    const value = getNestedValue(pkg.packageJson, cond.field);
+    return value !== undefined && cond.pattern.test(String(value));
+  }));
 }
 
 export function getNestedValue(obj: any, path: string): any {
-  const parts = path.split('.');
   let current = obj;
-  for (const part of parts) {
+  for (const part of path.split('.')) {
     if (current == null || typeof current !== 'object')
       return undefined;
     current = current[part];
   }
   return current;
 }
-
-async function buildParallel(packages: PackageInfo[], buildCmd: string, maxParallel: number): Promise<BuildResult[]> {
-  const results: BuildResult[] = [];
-
-  const headers = ['Plugin', 'Version', 'Build time', 'Bundle size'];
-  const widths = [
-    Math.max(headers[0].length, ...packages.map((p) => p.friendlyName.length)),
-    Math.max(headers[1].length, ...packages.map((p) => p.version.length)),
-    Math.max(headers[2].length, 10),
-    Math.max(headers[3].length, 40),
-  ];
-  const pad = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - s.length));
-
-  console.log(`\nBuilding with ${maxParallel} parallel job(s)...`);
-  console.log(headers.map((h, i) => pad(h, widths[i])).join(' | '));
-  console.log(widths.map((w) => '-'.repeat(w)).join('-+-'));
-
-  const buildOne = async (pkg: PackageInfo): Promise<BuildResult> => {
-    const start = Date.now();
-    let success = true;
-    let buildTime = '';
-    let bundleSize = '';
-
-    try {
-      await execAsync('npm install', {cwd: pkg.dir, maxBuffer: 10 * 1024 * 1024});
-      await execAsync(buildCmd, {cwd: pkg.dir, maxBuffer: 10 * 1024 * 1024});
-      const elapsed = (Date.now() - start) / 1000;
-      buildTime = `${elapsed.toFixed(1)}s`;
-      bundleSize = getBundleSize(pkg.dir);
-    }
-    catch (error: any) {
-      success = false;
-      buildTime = 'Error';
-      const raw = (error.stderr || error.stdout || error.message || 'Unknown error').trim();
-      bundleSize = raw.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').substring(0, 40);
-    }
-
-    const result: BuildResult = {
-      name: pkg.friendlyName,
-      version: pkg.version,
-      buildTime,
-      bundleSize,
-      success,
-    };
-    results.push(result);
-
-    const cells = [result.name, result.version, result.buildTime, result.bundleSize];
-    const line = cells.map((cell, j) => pad(cell, widths[j])).join(' | ');
-    if (success)
-      color.info(line);
-    else
-      color.error(line);
-
-    return result;
-  };
-
-  let idx = 0;
-  const next = async (): Promise<void> => {
-    while (idx < packages.length) {
-      const pkg = packages[idx++];
-      await buildOne(pkg);
-    }
-  };
-  const workers = Array.from({length: Math.min(maxParallel, packages.length)}, () => next());
-  await Promise.all(workers);
-
-  const succeeded = results.filter((r) => r.success).length;
-  const failed = results.length - succeeded;
-  console.log('');
-  if (failed === 0)
-    color.success(`All ${results.length} package(s) built successfully`);
-  else
-    color.warn(`${succeeded} succeeded, ${failed} failed`);
-
-  return results;
-}
-
-function getBundleSize(dir: string): string {
-  const bundlePath = path.join(dir, 'dist', 'package.js');
-  try {
-    const stats = fs.statSync(bundlePath);
-    return `${(stats.size / 1024).toFixed(1)} KB`;
-  }
-  catch (_) {
-    return 'N/A';
-  }
-}
-
 
 export function confirm(message: string): Promise<boolean> {
   const rl = readline.createInterface({input: process.stdin, output: process.stdout});

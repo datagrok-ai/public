@@ -10,7 +10,7 @@ export interface DesirabilityEditor<T = any> {
   supportsModeDialog: boolean;
   root: HTMLElement;
   onChanged: Subject<T>;
-  redrawAll(): void;
+  redrawAll(notify?: boolean): void;
   resize?(width: number, height: number): void;
   setRange?(min: number, max: number): void;
   setColumn?(col: DG.Column | null): void;

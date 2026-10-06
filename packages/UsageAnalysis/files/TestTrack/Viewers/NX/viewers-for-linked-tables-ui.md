@@ -1,4 +1,12 @@
-1. Open the NxProjectCalcColumns project copy, check
+---
+feature: viewers
+realizes_atlas: []   # untyped: nx cross-viewer integration chain
+priority: p2
+target_layer: manual-only
+coverage_type: smoke
+---
+
+1. Open the NxProjectCalcColumns project (saved by the previous scenario) - it opens without errors
 1. Go to the last view (SPGI (2))
 1. View > Layout > Clone View
 1. Pin the Structure and ID columns
@@ -23,7 +31,10 @@
 1. Save a new copy of the project as 'NxProjectViewers'
 
 Close All
+
+Cleanup: deferred to the end of the NX chain (see filtering-ui.md).
 ---
 {
-  "order": 3
+  "order": 3,
+  "datasets": ["System:DemoFiles/chem/SPGI.csv", "System:AppData/ApiTests/datasets/SPGI-linked1.csv", "System:AppData/ApiTests/datasets/SPGI-linked2.csv"]
 }

@@ -19,22 +19,12 @@ export {tests};
 //input: string skipToCategory {optional: true}
 //input: string skipToTest {optional: true}
 //input: bool returnOnFail {optional: true}
-//input: bool excludeNodeTests {optional: true}
 //output: dataframe result
 export async function test(category: string, test: string, testContext: TestContext, stressTest?: boolean,
-                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean,
-                           excludeNodeTests?: boolean): Promise<DG.DataFrame> {
-    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests);
-    const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail, excludeNodeTests });
+                           skipToCategory?: string, skipToTest?: string, returnOnFail?: boolean): Promise<DG.DataFrame> {
+    console.log(category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail);
+    const data = await runTests({ category, test, testContext, stressTest, skipToCategory, skipToTest, returnOnFail });
     return DG.DataFrame.fromObjects(data)!;
-}
-
-/** Headless entry for the `grok test` Node pass — runs only tests marked {node: true}. */
-export async function testNode(pkg: DG.Package,
-    options: {category?: string, test?: string, stressTest?: boolean, verbose?: boolean}): Promise<any[]> {
-  await initPackageTests();
-  return await runTests({category: options.category, test: options.test, stressTest: options.stressTest,
-    verbose: options.verbose, nodeOnly: true, nodeOptions: {package: pkg}});
 }
 
 //name: testConnections
@@ -144,7 +134,7 @@ export async function initPackageTests() {
             throw new Error(res);
         }, {skipReason: skipReasons[cat]});
       }
-    }, {node: true});
+    });
 }
 
 //name: initAutoTests

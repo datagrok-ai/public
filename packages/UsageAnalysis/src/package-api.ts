@@ -220,10 +220,18 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:Groups', {});
   }
 
+  /**
+   * @param {string} id
+   *   semType: user_id
+   */
   export async function userById(id: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserById', { id });
   }
 
+  /**
+   * @param {string} email
+   *   semType: email
+   */
   export async function userInfoByEmailPanel(email: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:UserInfoByEmailPanel', { email });
   }
@@ -260,52 +268,20 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:LogEventParameters', { eventId });
   }
 
-  export async function metricsPgStatStatementsVersion(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsPgStatStatementsVersion', {});
-  }
-
   export async function metricsResetPgStatStatements(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsResetPgStatStatements', {});
   }
 
-  export async function metricsDbStats(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsDbStats', {});
+  export async function metricsCacheMissTables(): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:MetricsCacheMissTables', {});
   }
 
   export async function metricsTableHealthSummary(limit: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsTableHealthSummary', { limit });
   }
 
-  export async function metricsConnections(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsConnections', {});
-  }
-
   export async function metricsConnectionsOffenders(limit: number , idleXactSec: number , activeSec: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsConnectionsOffenders', { limit, idleXactSec, activeSec });
-  }
-
-  export async function metricsTopSlowestQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueries', { limit });
-  }
-
-  export async function metricsTopMostCalledQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueries', { limit });
-  }
-
-  export async function metricsWorstCacheHitQueries(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueries', { limit });
-  }
-
-  export async function metricsTopSlowestQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopSlowestQueriesPg12', { limit });
-  }
-
-  export async function metricsTopMostCalledQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsTopMostCalledQueriesPg12', { limit });
-  }
-
-  export async function metricsWorstCacheHitQueriesPg12(limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsWorstCacheHitQueriesPg12', { limit });
   }
 
   export async function metricsLargestTables(limit: number ): Promise<DG.DataFrame> {
@@ -322,14 +298,6 @@ export namespace queries {
 
   export async function metricsSessionsCount(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:MetricsSessionsCount', { date });
-  }
-
-  export async function metricsLatency(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsLatency', { date });
-  }
-
-  export async function metricsHttpRoutes(date: string , limit: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:MetricsHttpRoutes', { date, limit });
   }
 
   export async function uniqueUsersList(date: string ): Promise<DG.DataFrame> {
@@ -392,8 +360,28 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ProjectsList', {});
   }
 
-  export async function releaseTests(instanceFilter: string , lastBuildsNum: number ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ReleaseTests', { instanceFilter, lastBuildsNum });
+  /**
+   * @param {string} instanceFilter
+   *   choices: ["dev", "release", "public", "release-ec2"]
+   * @param {string} branchFilter
+   *   choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")
+   */
+  export async function releaseTests(instanceFilter: string , branchFilter: string | null, lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseTests', { instanceFilter, branchFilter, lastBuildsNum });
+  }
+
+  /**
+   * @param {string} instanceFilter
+   *   choices: ["dev", "release", "public", "release-ec2"]
+   * @param {string} branchFilter
+   *   choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")
+   */
+  export async function releaseBenchmarks(instanceFilter: string , branchFilter: string | null, lastBuildsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseBenchmarks', { instanceFilter, branchFilter, lastBuildsNum });
+  }
+
+  export async function releaseBenchmarkVersions(lastVersionsNum: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ReleaseBenchmarkVersions', { lastVersionsNum });
   }
 
   export async function releaseManualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
@@ -424,6 +412,14 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ReportDataMigration', { report_id, id, screenshot, details, client_settings, server_settings, errors, client_log, server_log, console, queries_log, containers_log, images_log, services });
   }
 
+  export async function systemActivity(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivity', { date, groups });
+  }
+
+  export async function systemActivitySummary(date: string , groups: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:SystemActivitySummary', { date, groups });
+  }
+
   export async function getSystemTableSizes(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:GetSystemTableSizes', {});
   }
@@ -432,22 +428,40 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:BenchmarkAnalysis', {});
   }
 
+  /**
+   * @param {string} instanceFilter
+   *   choices: ['', 'dev', 'release', 'public']
+   */
   export async function benchmarksDashboard(instanceFilter: string , lastBuildsNum: number , showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:BenchmarksDashboard', { instanceFilter, lastBuildsNum, showNotRun, showBenchmarks, showNotCiCd });
   }
 
-  export async function testsDashboard(instanceFilter: string , lastBuildsNum: number , versionFilter: string | null, packageFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, lastBuildsNum, versionFilter, packageFilter, showNotRun, showBenchmarks, showNotCiCd });
+  /**
+   * @param {string} instanceFilter
+   *   choices: ['', 'dev', 'release', 'public', 'release-ec2']
+   * @param {string} branchFilter
+   *   choices: Query("SELECT DISTINCT branch FROM builds WHERE branch IS NOT NULL AND branch <> '' ORDER BY branch")
+   */
+  export async function testsDashboard(instanceFilter: string , branchFilter: string | null, lastBuildsNum: number , versionFilter: string | null, packageFilter: string | null, showNotRun?: boolean , showBenchmarks?: boolean , showNotCiCd?: boolean ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TestsDashboard', { instanceFilter, branchFilter, lastBuildsNum, versionFilter, packageFilter, showNotRun, showBenchmarks, showNotCiCd });
   }
 
   export async function manualTests(lastBatchesNum: number ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ManualTests', { lastBatchesNum });
   }
 
+  /**
+   * @param {string} build
+   *   choices: Query("select b.name from builds b where exists (select 1 from stress_tests s where s.build_name = b.name) order by b.build_date desc")
+   */
   export async function stressTestsFailures(build: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:StressTestsFailures', { build });
   }
 
+  /**
+   * @param {string} build
+   *   choices: Query("select b.name from builds b where exists (select 1 from stress_tests s where s.build_name = b.name) order by b.build_date desc")
+   */
   export async function stressTestsRaw(build: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:StressTestsRaw', { build });
   }
@@ -490,6 +504,10 @@ export namespace queries {
 
   export async function builds(): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:Builds', {});
+  }
+
+  export async function testBranches(lastDays: number ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TestBranches', { lastDays });
   }
 
   export async function getTestStatusesAcordingDF(buildId: string , testslist: DG.DataFrame ): Promise<DG.DataFrame> {
@@ -598,6 +616,10 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:ServiceLogsApp', { path, params, limit });
   }
 
+  export async function cloudLogsApp(): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:CloudLogsApp', {});
+  }
+
   export async function serviceLogsAppTreeBrowser(treeNode: any ): Promise<void> {
     return await grok.functions.call('UsageAnalysis:ServiceLogsAppTreeBrowser', { treeNode });
   }
@@ -631,8 +653,8 @@ export namespace funcs {
   }
 
   /**
-  Creates JIRA ticket using current error log
-  */
+   * Creates JIRA ticket using current error log
+   */
   export async function createJiraTicket(): Promise<void> {
     return await grok.functions.call('UsageAnalysis:CreateJiraTicket', {});
   }

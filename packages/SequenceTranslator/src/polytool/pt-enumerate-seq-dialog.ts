@@ -30,6 +30,7 @@ import {PolyToolPlaceholdersBreadthInput} from './pt-placeholders-breadth-input'
 import {PT_ENUM_TYPE_TOOLTIPS, PT_HELM_UI_DIALOG_ENUMERATION, PT_UI_GET_HELM, PT_UI_HIGHLIGHT_MONOMERS, PT_UI_RULES_USED, PT_UI_USE_CHIRALITY} from './const';
 import {PolyToolDataRole, PolyToolTags} from '../consts';
 import {RuleInputs, RULES_PATH, RULES_STORAGE_NAME} from './conversion/pt-rules';
+import {attachHelmEnumeratorAi} from './ai-functions';
 import {Chain} from './conversion/pt-chain';
 import {polyToolConvert} from './pt-dialog';
 
@@ -320,13 +321,15 @@ async function getPolyToolEnumerateDialog(
 
     // Attach a "pick from column" icon button to the trivial name input
     if (cell?.dataFrame) {
+      // capture the launch cell: `cell` itself can be reset later (AI-provided sequences)
+      const srcCell = cell;
       const colIcon = ui.iconFA('columns', (e: MouseEvent) => {
         DG.Menu.popup()
-          .singleColumnSelector(cell.dataFrame, {
-            columnFilter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING && col !== cell.column,
+          .singleColumnSelector(srcCell.dataFrame, {
+            columnFilter: (col: DG.Column) => col.type === DG.COLUMN_TYPE.STRING && col !== srcCell.column,
             onChange: (_grid, col: DG.Column, currentRowChanged: boolean) => {
               if (currentRowChanged)
-                inputs.trivialName.value = col.get(cell.rowIndex) ?? '';
+                inputs.trivialName.value = col.get(srcCell.rowIndex) ?? '';
             },
           })
           .show({x: e.clientX, y: e.clientY});
@@ -670,7 +673,8 @@ async function getPolyToolEnumerateDialog(
 
     // === EXECUTION (OK button handler) ===
     // Pre-flight validates inputs, builds params, and runs enumeration.
-    const exec = async (): Promise<void> => {
+    // Returns the result dataframe (also delivered to the workspace), or null when nothing ran.
+    const exec = async (): Promise<DG.DataFrame | null> => {
       try {
         const srcHelm = inputs.macromolecule.stringValue;
         if (srcHelm === undefined || srcHelm === '') {
@@ -680,7 +684,7 @@ async function getPolyToolEnumerateDialog(
             Object.keys(inputs.placeholdersBreadth.placeholdersBreadthValue).length === 0
           ) {
             grok.shell.warning(`${PT_HELM_UI_DIALOG_ENUMERATION}: placeholders are empty`);
-            return;
+            return null;
           }
           await getHelmHelper(); // initializes JSDraw and org
 
@@ -693,7 +697,7 @@ async function getPolyToolEnumerateDialog(
               const firstCount = nonEmpty[0].monomers.length;
               if (nonEmpty.some((ph) => ph.monomers.length !== firstCount)) {
                 grok.shell.warning('Parallel mode requires all positions to have the same number of monomers');
-                return;
+                return null;
               }
             }
           }
@@ -739,10 +743,12 @@ async function getPolyToolEnumerateDialog(
           } else {
             grok.shell.addTableView(enumeratorResDf);
           }
+          return enumeratorResDf;
         }
       } catch (err: any) {
         defaultErrorHandler(err);
       }
+      return null;
     };
 
     // === DIALOG CONSTRUCTION AND LAYOUT ===
@@ -823,6 +829,86 @@ async function getPolyToolEnumerateDialog(
           updateResultCount();
         }, 100);
       });
+
+    // === AI ASSISTANT WIRING ===
+    const optionInputs: {[name: string]: DG.InputBase<any>} = {
+      enumeratorType: inputs.enumeratorType, keepOriginal: inputs.keepOriginal,
+      toAtomicLevel: inputs.toAtomicLevel, generateHelm: inputs.generateHelm,
+      chiralityEngine: inputs.chiralityEngine, highlightMonomers: inputs.highlightMonomers,
+      trivialName: inputs.trivialName,
+    };
+    attachHelmEnumeratorAi(dialog, {
+      getState: () => ({
+        macromolecule: inputs.macromolecule.stringValue,
+        placeholders: Object.fromEntries(inputs.placeholders.placeholdersValue
+          .map((p) => [String(p.position + 1), p.monomers])),
+        breadthPlaceholders: inputs.placeholdersBreadth.placeholdersBreadthValue
+          .map((p) => ({start: p.start + 1, end: p.end + 1, monomers: p.monomers})),
+        enumeratorType: inputs.enumeratorType.value,
+        keepOriginal: inputs.keepOriginal.value,
+        toAtomicLevel: inputs.toAtomicLevel.value,
+        generateHelm: inputs.generateHelm.value,
+        chiralityEngine: inputs.chiralityEngine.value,
+        highlightMonomers: inputs.highlightMonomers.value,
+        trivialName: inputs.trivialName.value,
+        appendToTable: inputs.appendToTable.value?.name ?? null,
+        ...(placeholdersValidity ? {validationError: placeholdersValidity} : {}),
+      }),
+      validationError: () => placeholdersValidity,
+      setMacromolecule: async (helm: string) => {
+        const seqCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'seq', [helm]);
+        seqCol.semType = DG.SEMTYPE.MACROMOLECULE;
+        DG.DataFrame.fromColumns([seqCol]); // the seq handler needs the column attached to a frame
+        seqCol.meta.units = NOTATION.HELM;
+        const sh = seqHelper.getSeqHandler(seqCol);
+        [seqValue, dataRole] = [sh.getValue(0), PolyToolDataRole.macromolecule];
+        // the AI-provided sequence has no source cell: drop the cell-derived id and notation provider
+        srcId = null;
+        cell = undefined;
+        fillForCurrentCell(seqValue, dataRole);
+        updateViewRules();
+        updateResultCount();
+      },
+      setPlaceholders: (placeholders) => {
+        const entries = Object.entries(placeholders)
+          .map(([pos, monomers]) => ({
+            position: parseInt(pos),
+            monomers: Array.isArray(monomers) ? monomers.join(', ') : String(monomers ?? ''),
+          }))
+          .sort((a, b) => a.position - b.position);
+        let removeCol: DG.Column;
+        inputs.placeholders.setValue(DG.DataFrame.fromColumns([
+          removeCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Remove', entries.map(() => '')),
+          DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Position', entries.map((e) => e.position)),
+          DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Monomers', entries.map((e) => e.monomers)),
+        ]));
+        removeCol.setTag(DG.TAGS.FRIENDLY_NAME, '');
+        inputs.placeholders.invalidateGrid();
+        updateResultCount();
+      },
+      setBreadthPlaceholders: (placeholders) => {
+        let removeCol: DG.Column;
+        inputs.placeholdersBreadth.setValue(DG.DataFrame.fromColumns([
+          removeCol = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Remove', placeholders.map(() => '')),
+          DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Start', placeholders.map((p) => Math.round(p.start))),
+          DG.Column.fromList(DG.COLUMN_TYPE.INT, 'End', placeholders.map((p) => Math.round(p.end))),
+          DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Monomers', placeholders.map((p) =>
+            Array.isArray(p.monomers) ? p.monomers.join(', ') : String(p.monomers ?? ''))),
+        ]));
+        removeCol.setTag(DG.TAGS.FRIENDLY_NAME, '');
+        inputs.placeholdersBreadth.invalidateGrid();
+        updateResultCount();
+      },
+      setOption: (name: string, value: unknown): boolean => {
+        const input = optionInputs[name];
+        if (!input)
+          return false;
+        input.value = value as any;
+        updateResultCount();
+        return true;
+      },
+      execute: () => exec(),
+    });
     return dialog;
   } catch (err: any) {
     destroy(); // on failing to build a dialog

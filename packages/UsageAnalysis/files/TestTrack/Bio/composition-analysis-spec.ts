@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '../shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '../spec-login';
 import {finishSpec} from '../helpers/viewers';
 test.use(specTestOptions);
@@ -19,29 +20,22 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
   });
   for (const ds of datasets) {
     await softStep(`[${ds.name}] Scenario 1 Step 1 — Open ${ds.path}`, async () => {
-      const result: {rows: number, hasMacromolecule: boolean} = await page.evaluate(async (path: string) => {
+      const rows: number = await page.evaluate(async (path: string) => {
         const g = (window as any).grok;
         g.shell.closeAll();
         const df = await g.dapi.files.readCsv(path);
         g.shell.addTableView(df);
-        await new Promise<void>((resolve) => {
-          const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
-          setTimeout(() => resolve(), 3000);
-        });
-        const cols = Array.from({length: df.columns.length}, (_: unknown, i: number) => df.columns.byIndex(i));
-        const hasBioChem = cols.some((c: any) => c.semType === 'Molecule' || c.semType === 'Macromolecule');
-        if (hasBioChem) {
-          for (let i = 0; i < 50; i++) {
-            if (document.querySelector('[name="viewer-Grid"] canvas')) break;
-            await new Promise((r) => setTimeout(r, 200));
-          }
-          await new Promise((r) => setTimeout(r, 5000));
-        }
-        return {rows: df.rowCount, hasMacromolecule: hasBioChem};
+        return df.rowCount;
       }, ds.path);
-      expect(result.rows).toBeGreaterThan(0);
-      expect(result.hasMacromolecule).toBe(true);
+      expect(rows, `${ds.name} dataset must load with rows`).toBeGreaterThan(0);
+      // Semantic-type detection is asynchronous and outruns any fixed in-page wait under load.
+      await page.waitForFunction(() => {
+        const t = (window as any).grok.shell.t;
+        return !!t && t.columns.toList().some((c: any) => c.semType === 'Macromolecule');
+      }, null, {timeout: 60_000});
       await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
+      await page.waitForFunction(() => Array.from(document.querySelectorAll('[name="viewer-Grid"] canvas'))
+        .some((c: any) => c.width > 0), null, {timeout: 30_000});
     });
     await softStep(`[${ds.name}] Scenario 1 Step 2 — Bio > Analyze > Composition; WebLogo viewer docks; no multi-column dialog`, async () => {
       await page.evaluate(async () => {
@@ -71,7 +65,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(result.dialogOpen).toBe(false);
     });
     await softStep(`[${ds.name}] Scenario 2 Step 3 — Click letter in WebLogo selects ≥1 row in source grid`, async () => {
-      // Settle: canvas may be in DOM before click handlers are bound.
+
       await page.waitForTimeout(4000);
       const selected: number = await page.evaluate(async () => {
         const g = (window as any).grok;
@@ -100,7 +94,7 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
             candidates.push({x: cx, y: cy, h: b.height});
           }
         }
-        // Tallest rect first — most frequent monomer is the largest hit target.
+
         candidates.sort((a, b) => b.h - a.h);
         for (const c of candidates) {
           df.selection.setAll(false);
@@ -117,30 +111,26 @@ test('Bio | Analyze | Composition — composition analysis integration', async (
       expect(selected).toBeGreaterThan(0);
     });
     await softStep(`[${ds.name}] Scenario 3 Step 4 — Gear icon on WebLogo opens Context Pane property grid`, async () => {
-      const opened: {found: boolean, pg: boolean} = await page.evaluate(async () => {
+      const found: boolean = await page.evaluate(() => {
         const g = (window as any).grok;
         g.shell.tv.dataFrame.selection.setAll(false);
         const w = g.shell.tv.viewers.find((v: any) => v.type === 'WebLogo');
-        // Gear lives on the outer docked-panel title bar (.panel-base ancestor).
+
         let panelBase: any = w.root;
         while (panelBase && !panelBase.classList?.contains('panel-base'))
           panelBase = panelBase.parentElement;
         const gear = panelBase?.querySelector(
           '.panel-titlebar [name="icon-font-icon-settings"]') as HTMLElement | null;
-        if (!gear) {
-          // Fallback: programmatic equivalent if the title-bar gear is absent.
-          g.shell.o = w;
-          await new Promise((r) => setTimeout(r, 600));
-          const pg2 = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
-          return {found: false, pg: !!pg2};
-        }
+        if (!gear) return false;
         gear.click();
-        await new Promise((r) => setTimeout(r, 600));
-        const pg = document.querySelector('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]');
-        return {found: true, pg: !!pg};
+        return true;
       });
-      expect(opened.pg).toBe(true);
-      // Property row sits in a collapsed accordion — wait for 'attached', not 'visible'.
+      expect(found, 'gear icon present in the WebLogo panel titlebar').toBe(true);
+      // The first gear click of the run also has to open the Context Pane, which the platform
+      // builds asynchronously; a short in-page poll raced it under load.
+      await page.locator('.grok-prop-panel .property-grid, .grok-prop-panel tr[name^="prop-"]')
+        .first().waitFor({state: 'attached', timeout: 30_000});
+
       await page.locator('tr[name="prop-show-position-labels"]').waitFor({
         state: 'attached', timeout: 10_000});
     });
