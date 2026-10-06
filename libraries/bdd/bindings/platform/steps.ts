@@ -11,8 +11,8 @@ import {shellSimpleMode, silent} from '../../src/runtime/guide.js';
 import {cssString, escapeRegExp, exactText, locate} from '../../src/runtime/locate.js';
 import {armEvent} from '../../src/runtime/viewer-menus.js';
 import {pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
-import {RUN_SUFFIX, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture, pictureIdOf,
-  reportedServices, serverNow, serverRequests, serviceGap} from '../../src/runtime/server.js';
+import {RUN_SUFFIX, type SavedScript, deleteChatsOf, deleteLayoutsAtEnd, deletePictures, fixtureFamilies, isStaleFixture,
+  pictureIdOf, rememberSavedScript, reportedServices, serverNow, serverRequests, serviceGap} from '../../src/runtime/server.js';
 import {signInWithSession} from '../common/session.js';
 import {taskBarFinished, watchTaskBar} from './events.js';
 
@@ -193,25 +193,31 @@ async function deleteLeftoverProjects(page: Page, names: string[], own = false):
 async function saveProject(page: Page, name: string, everyView: boolean): Promise<void> {
   await deleteLeftoverProjects(page, [name]);
   const ids: {project: string; tables: string[]; views: string[]} = await page.evaluate(async ([n, every]) => {
-    const project = DG.Project.create();
-    project.name = n;
-    const tables: string[] = [];
-    const views: string[] = [];
-    for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {
-      const tableInfo = tv.dataFrame.getTableInfo();
-      const viewInfo = DG.ViewInfo.fromJson(tv.saveLayout({saveWithData: true}).toJson());
-      project.addChild(tableInfo);
-      project.addChild(viewInfo);
-      await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
-      await grok.dapi.tables.save(tableInfo);
-      await grok.dapi.views.save(viewInfo);
-      tables.push(String(tableInfo.id));
-      views.push(String(viewInfo.id));
+    try {
+      const project = DG.Project.create();
+      project.name = n;
+      const tables: string[] = [];
+      const views: string[] = [];
+      for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {
+        const tableInfo = tv.dataFrame.getTableInfo();
+        const viewInfo = DG.ViewInfo.fromJson(tv.saveLayout({saveWithData: true}).toJson());
+        project.addChild(tableInfo);
+        project.addChild(viewInfo);
+        await grok.dapi.tables.uploadDataFrame(tv.dataFrame);
+        await grok.dapi.tables.save(tableInfo);
+        await grok.dapi.views.save(viewInfo);
+        tables.push(String(tableInfo.id));
+        views.push(String(viewInfo.id));
+      }
+      await grok.dapi.projects.save(project);
+      const w = window as any;
+      w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
+      return {project: String(project.id), tables, views};
     }
-    await grok.dapi.projects.save(project);
-    const w = window as any;
-    w.__bddProjects = {...(w.__bddProjects ?? {}), [n]: String(project.id)};
-    return {project: String(project.id), tables, views};
+    catch (error) {
+      // a Dart exception thrown as is reaches Playwright as an object graph it cannot serialize
+      throw new Error(`saving the project "${n}": ${(error as any)?.message ?? String(error)}`);
+    }
   }, [name, everyView] as [string, boolean]);
   atFeatureEnd(page, async () => {
     await page.evaluate(async (i) => {
@@ -414,21 +420,26 @@ export const clickPlainCheckbox = When('user clicks the plain checkbox in the {s
 const browseKept = new WeakSet<Page>();
 
 export const browsePanelOpen = Given('the browse panel is open', async (page: Page) => {
-  const found = await page.evaluate(() => {
+  const {found, rebuilt} = await page.evaluate(() => {
     const was = Boolean(grok.shell.windows.showBrowse);
     grok.shell.windows.simpleMode = false;
     // a panel left on by the account's settings reads as shown while simple mode kept it out of the
-    // page, and the setter ignores a value it already has: off, then on, builds it
-    grok.shell.windows.showBrowse = false;
-    grok.shell.windows.showBrowse = true;
+    // page, and the setter ignores a value it already has: off, then on, builds it. One on the page
+    // is left as it is: a rebuild reopens its groups, whose rows then arrive under the next gesture
+    const absent = !was || document.querySelector('.grok-view-browse [role="tree"], .layout-browse [role="tree"]') === null;
+    if (absent) {
+      grok.shell.windows.showBrowse = false;
+      grok.shell.windows.showBrowse = true;
+    }
     // a table view docks its Toolbox as a tab over Browse: bring the Browse tab to the front (a tab handle
     // selects on click; a mousedown would arm the dock's undock drag with nothing to release it)
     const tab = document.querySelector('.tab-handle[name="view-handle: Browse"]') as HTMLElement | null;
     if (tab && !tab.classList.contains('tab-handle-selected'))
       tab.click();
-    return was;
+    return {found: was, rebuilt: absent};
   });
   await expect(page.locator('.grok-view-browse [role="tree"], .layout-browse [role="tree"]').first(), 'the browse tree').toBeVisible({timeout: 60000});
+  await settleBrowseTree(page, rebuilt ? 'built' : 'shown');
   // showBrowse is a setting of the browser (localStorage grok-settings), whichever account is signed in:
   // left on, it opens the panel in every later page of the worker. What the first call found goes back once
   if (browseKept.has(page))
@@ -441,7 +452,7 @@ export const browsePanelOpen = Given('the browse panel is open', async (page: Pa
       grok.shell.windows.simpleMode = simple;
     }, [shellSimpleMode(), found] as const);
   });
-}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel and waits for its tree; puts the panel (as the feature first found it) and simple mode back at feature end'});
+}, {tier: 'api', description: 'idempotent: leaves simple mode, shows the panel (built only when it is not on the page) and waits for its tree to settle; puts the panel (as the feature first found it) and simple mode back at feature end'});
 
 export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: Page) => {
   await page.evaluate(() => {
@@ -989,13 +1000,21 @@ async function refreshBrowseTree(page: Page): Promise<boolean> {
   await click(page, el('"Refresh" icon inside browse toolbar'));
   if (!await refreshed())
     throw new Error('the Browse tree did not rebuild after its Refresh (no onBrowseTreeRefreshed)');
-  // the event comes once the tree is rebuilt, while the groups it reopens still fetch their children: a row
-  // found then moves as they arrive, and a click aimed at it lands on the row that took its place
+  await settleBrowseTree(page, 'refreshed');
+  return true;
+}
+
+/** The tree is (re)built, or shown as it was. The groups a build reopens still fetch their children when
+ * the tree is on the page: a row found then moves as they arrive, and a click aimed at it lands on the row
+ * that took its place. Groups filled without that state (Databases adds its sources when their list arrives,
+ * Apps its apps once the functions are in) add rows later still, so a built tree counts as settled once its
+ * rows have held for a second. */
+async function settleBrowseTree(page: Page, how: 'built' | 'refreshed' | 'shown'): Promise<void> {
   await expect.poll(() => page.evaluate(() => document.querySelectorAll('.grok-view-browse .d4-tree-view-group-host[data-state="loading"], ' +
     '.layout-browse .d4-tree-view-group-host[data-state="loading"]').length),
-  {message: 'Browse tree groups still fetching their children after the refresh', timeout: pollMs(30000)}).toBe(0);
-  // groups filled without that state (Databases adds its sources when their list arrives, Apps its apps once the
-  // functions are in) add rows later still: the tree counts as built once its rows have held for a second
+  {message: `Browse tree groups still fetching their children, the tree ${how}`, timeout: pollMs(30000)}).toBe(0);
+  if (how === 'shown')
+    return;
   let rows = -1;
   let since = Date.now();
   await expect.poll(async () => {
@@ -1005,8 +1024,7 @@ async function refreshBrowseTree(page: Page): Promise<boolean> {
       since = Date.now();
     }
     return Date.now() - since >= 1000;
-  }, {message: 'the Browse tree rows settling after the refresh', timeout: pollMs(30000), intervals: [200]}).toBe(true);
-  return true;
+  }, {message: `the Browse tree rows settling, the tree ${how}`, timeout: pollMs(30000), intervals: [200]}).toBe(true);
 }
 
 export const refreshBrowse = When('user refreshes the browse tree', async (page: Page) => {
@@ -1027,6 +1045,39 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   await cleanup();
   await refreshBrowseTree(page);
 }, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
+
+/** A schema goes before the entity type it applies to. A schema has no creation date, so a {time} name
+ * dates itself: its family's members over an hour old are what a run that was killed left. */
+async function removeStickyMetaFixtures(page: Page, schema: string, type: string): Promise<void> {
+  const families = fixtureFamilies([schema, type]);
+  const doomed = (name: string) => name === schema || name === type ||
+    isStaleFixture({name, friendlyName: '', createdOn: Number(RUN_SUFFIX.exec(name)?.[1]) || 0}, families);
+  const present = () => page.evaluate(async () => ({
+    schemas: (await grok.dapi.stickyMeta.getSchemas()).map((s: any) => String(s.name)),
+    types: (await grok.dapi.entityTypes.list()).map((t: any) => String(t.name)),
+  }));
+  const before = await present();
+  await page.evaluate(async ([schemas, types]) => {
+    // the JS Schema has no id getter although deleteSchema takes the id: read it off the Dart entity
+    const idOf = (s: any) => (window as any).grok_Entity_Get_Id(s.dart);
+    for (const s of await grok.dapi.stickyMeta.getSchemas())
+      if (schemas.includes(s.name))
+        await grok.dapi.stickyMeta.deleteSchema(idOf(s));
+    for (const t of await grok.dapi.entityTypes.list())
+      if (types.includes(t.name))
+        await grok.dapi.entityTypes.delete(t);
+  }, [before.schemas.filter(doomed), before.types.filter(doomed)]);
+  await expect.poll(async () => {
+    const now = await present();
+    return [...now.schemas, ...now.types].filter(doomed);
+  }, {message: `Sticky Meta schemas and entity types still on the server under ${schema}, ${type}`, intervals: [250, 500, 1000]}).toEqual([]);
+}
+
+export const stickyMetaFixturesGone = Given('the Sticky Meta schema {string} and entity type {string} are removed now and at feature end',
+  async (page: Page, schema: string, type: string) => {
+    await removeStickyMetaFixtures(page, schema, type);
+    atFeatureEnd(page, () => removeStickyMetaFixtures(page, schema, type));
+  }, {tier: 'api', description: 'by name, and for a {time} name its family\'s members over an hour old; each time read back from the server'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
@@ -1059,6 +1110,39 @@ export const noScriptOnServer = Given('no script named {string} is on the server
 
 export const scriptsOnServer = Then('{int} script(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
   expectNamedCount(page, 'scripts', 'scripts', name, count), {tier: 'api'});
+
+/* The script view's path names the script it shows, and the server listing can see a new script before the
+   client has its grok name: the script is read back by that id. A script the server had before the Save (one
+   the view opened) is not this feature's to delete. */
+export const saveScript = When('user saves the script', async (page: Page) => {
+  const scriptOfView = () => page.evaluate(async () => {
+    const id = String(grok.shell.v?.path ?? '').match(/^\/script\/([^/?#]+)/)?.[1];
+    const script = id ? await grok.dapi.scripts.find(id).catch(() => null) : null;
+    return script ? {id: String(script.id), name: String(script.name), nqName: String(script.nqName)} : null;
+  });
+  const opened = (await scriptOfView())?.id;
+  const save = page.locator('[name="button-Save"]').filter({visible: true}).first();
+  await save.click();
+  await expect(save, 'the Save button after the save').toHaveText('Saved', {timeout: pollMs(60000)});
+  let saved: SavedScript | null = null;
+  await expect.poll(async () => (saved = await scriptOfView()) !== null,
+    {message: "the script view's script on the server", timeout: pollMs(60000), intervals: [250, 500, 1000]}).toBe(true);
+  const script = saved!;
+  rememberSavedScript(page, script);
+  atFeatureEnd(page, async () => rememberSavedScript(page, null));
+  if (script.id === opened)
+    return;
+  atFeatureEnd(page, async () => {
+    await deleteChatsOf(page, script.id);
+    const gone = () => page.evaluate(async (id) => {
+      const found = await grok.dapi.scripts.find(id).catch(() => null);
+      if (found)
+        await grok.dapi.scripts.delete(found);
+      return found == null;
+    }, script.id);
+    await expect.poll(gone, {message: `the saved script "${script.name}" still on the server`, timeout: pollMs(30000), intervals: [250, 500, 1000]}).toBe(true);
+  });
+}, {tier: 'ui', description: 'the ribbon Save of the script view, done when it reads "Saved" and the server holds the script; a script it made goes with its chats at feature end'});
 
 export const noConnectionOnServer = Given('no connection named {string} is on the server', async (page: Page, name: string) => {
   const cleanup = namedCleanup(page, 'connections', 'connections', namesOf(name));

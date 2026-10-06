@@ -12,10 +12,10 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {deleteSavedScript, hubDoesNotListScript, hubListsScript, openLibraryModel, openModelHub, openSavedScript, saveScript} from '../bindings/diff-studio.js';
+import {deleteSavedScript, hubDoesNotListScript, hubListsScript, openLibraryModel, openModelHub, openSavedScript} from '../bindings/diff-studio.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, enterInto, insertLine, shouldBe, shouldContainText, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';
-import {viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {saveScript, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {noErrors, readingReads, repainted, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 

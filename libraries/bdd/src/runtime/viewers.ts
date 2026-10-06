@@ -9,7 +9,7 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
-import {locate} from './locate.js';
+import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
 export * from './viewer-runtime.js';
@@ -29,6 +29,12 @@ export async function onViewer<R>(page: Page, target: ElementRef, fn: (el: Eleme
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   return loc.evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
+}
+
+/** `onViewer` on the match a pointer can reach (`reachable`); of several, the first, as `onViewer` takes. */
+export async function onReachable<R>(page: Page, target: ElementRef, fn: (el: Element, arg: any) => R | Promise<R>, arg?: unknown): Promise<R> {
+  await installViewerRuntime(page);
+  return (await reachable(page, target)).first().evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
 }
 
 export function centerOf(box: Box): {x: number; y: number} {
@@ -206,7 +212,7 @@ export async function rememberReading(page: Page, target: ElementRef, name: stri
     const r = await readingOf(page, target, name);
     last = r instanceof MissingReading ? String(r) : '';
     return last === '';
-  }, {timeout: pollMs(5000)}).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
+  }).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 

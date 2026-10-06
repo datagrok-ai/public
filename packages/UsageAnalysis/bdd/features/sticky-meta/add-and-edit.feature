@@ -19,13 +19,14 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
   schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
 
   The entity type and the schema are made through the UI in the Background and deleted through the UI
-  in the last scenarios, which a journey runs even after a failure; the server-side sweep the library
-  does not have yet is in sticky-meta/MISSING.md. Serial: a schema matching molecules adds a section
+  in the last scenarios, which a journey runs even after a failure; the Background's sweep removes them
+  at feature end as well, and an earlier run's after an hour. Serial: a schema matching molecules adds a section
   to the Sticky meta pane of every molecule column on the stand.
 
   Background:
     Given user is logged in
     And the "Chem" package is installed
+    And the Sticky Meta schema "bdd-sm-cells-{time}" and entity type "bdd-sm-cells-type-{time}" are removed now and at feature end
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree

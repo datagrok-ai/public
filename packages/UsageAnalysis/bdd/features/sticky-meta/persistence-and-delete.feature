@@ -31,13 +31,15 @@ Feature: Sticky metadata belongs to the molecule, not to the table that shows it
   schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
 
   The entity type and the schema are made through the UI in the Background and deleted through the UI
-  in the last scenarios; the project and the space are removed by their steps when the feature ends.
+  in the last scenarios, and swept by the Background's step at feature end as well; the project and the
+  space are removed by their steps when the feature ends.
 
   Background:
     Given user is logged in
     And the "Chem" package is installed
     And no project named "bdd-sm-keep-{time}" is on the server
     And no space named "bdd-sm-space-{time}" is on the server
+    And the Sticky Meta schema "bdd-sm-keep-{time}" and entity type "bdd-sm-keep-type-{time}" are removed now and at feature end
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree

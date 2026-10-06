@@ -9,7 +9,6 @@ sub_features_covered: [views.space]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
@@ -87,16 +86,16 @@ test.describe("Working with what a space holds", () => {
     });
     await run.scenario("The search inside a space filters what it holds", async () => {
       await session.step(48, "Then the \"BDD-Ops\" view should be current", () => viewIsCurrent(page, "BDD-Ops"));
-      await session.step(75, "When user enters \"acidiq\" into space search", () => enterInto(page, "acidiq", el("space search")));
+      await session.step(75, "When user enters \"acidiq\" into gallery search", () => enterInto(page, "acidiq", el("gallery search")));
       await session.step(76, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(77, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(78, "When user enters \"aci\" into space search", () => enterInto(page, "aci", el("space search")));
+      await session.step(78, "When user enters \"aci\" into gallery search", () => enterInto(page, "aci", el("gallery search")));
       await session.step(79, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(80, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(81, "When user enters \"zzz-no-such-file\" into space search", () => enterInto(page, "zzz-no-such-file", el("space search")));
+      await session.step(81, "When user enters \"zzz-no-such-file\" into gallery search", () => enterInto(page, "zzz-no-such-file", el("gallery search")));
       await session.step(82, "Then acidiq.csv link in gallery should be absent", () => shouldBe(page, el("acidiq.csv link in gallery"), "absent"));
       await session.step(83, "And BDD-Ops-renamed link in gallery should be absent", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "absent"));
-      await session.step(84, "When user clears space search", () => clearField(page, el("space search")));
+      await session.step(84, "When user clears gallery search", () => clearField(page, el("gallery search")));
       await session.step(85, "Then acidiq.csv link in gallery should be visible", () => shouldBe(page, el("acidiq.csv link in gallery"), "visible"));
       await session.step(86, "And BDD-Ops-renamed link in gallery should be visible", () => shouldBe(page, el("BDD-Ops-renamed link in gallery"), "visible"));
     });

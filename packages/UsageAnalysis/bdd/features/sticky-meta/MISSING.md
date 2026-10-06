@@ -9,8 +9,9 @@ gap of the bdd library or of the core, not of the features.
 
 Every feature that needs a schema makes the entity type and the schema through the New Entity Type
 and New Schema dialogs, and deletes both through the Schemas and Types galleries in its last
-scenarios. A journey runs those scenarios after a failure, but a killed run leaves the fixtures
-behind, and the hard rule asks for a sweep at the feature's start as well. Wanted:
+scenarios. The sweep the hard rule asks for is in the library now (`the Sticky Meta schema {string}
+and entity type {string} are removed now and at feature end`, which also takes a `{time}` family's
+members over an hour old); what is still wanted is making them and reading them back:
 
 ```gherkin
 Given no Sticky Meta schema named "bdd-sm-cells-{time}" and no entity type named "bdd-sm-cells-type-{time}" are on the server
@@ -22,14 +23,10 @@ Then the Sticky Meta schema "bdd-sm-schema-{time}" should be on the server with 
 Then no Sticky Meta schema named "bdd-sm-schema-{time}" should be on the server
 ```
 
-- The Given registers its undo with `atFeatureEnd`, sweeps the `{time}` family older than an hour,
-  and deletes the schema before its type (a type a schema still uses is not deleted).
 - `grok.dapi.stickyMeta.deleteSchema(id)` takes an id the JS `Schema` has no getter for: the
-  Tutorials package reads it off the Dart entity (`grok_Entity_Get_Id(s.dart)`,
-  `packages/Tutorials/bdd/bindings/steps.ts` `removeStickyMetaFixtures`). Those Tutorials steps
-  (`the Sticky Meta schema {string} and entity type {string} are removed now and at feature end`,
-  `the entity type {string} should exist`, `the Sticky Meta schema {string} should exist`) are the
-  natural ones to promote to the library and extend with the negative and the property list.
+  library's sweep reads it off the Dart entity (`grok_Entity_Get_Id(s.dart)`). The Tutorials steps
+  `the entity type {string} should exist` and `the Sticky Meta schema {string} should exist` are the
+  natural ones to promote next, with the negative and the property list.
 - With the Given above, the Backgrounds of `add-and-edit` and `persistence-and-delete` shrink to it
   and their two delete scenarios go; `schema-and-type` keeps its UI walk, adds the server claims
   after each OK and DELETE, and claims the property types (the Edit schema dialog shows names in

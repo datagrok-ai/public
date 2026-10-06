@@ -55,11 +55,11 @@ const annotationsAsChecks: PipelineLinkConfigurationInput<string | string[]>[] =
   {id: 'c', type: 'check', io: 's/c', check: {nullable: false}},
   {id: 'v', type: 'check', io: 's/v', check: {nullable: false, min: 0, max: 10}},
   {id: 'code', type: 'check', io: 's/code', check: {nullable: false, validator: '/^[0-9]{4}$/i'}},
-  {id: 'mode', type: 'check', io: 's/mode', check: {nullable: false, choices: ['fast', 'exact']}},
+  {id: 'mode', type: 'check', io: 's/mode', check: {nullable: false}},
   {id: 'df', type: 'check', io: 's/df', check: {nullable: false}},
   {id: 'col', type: 'check', io: 's/col',
-    check: {nullable: false, type: 'numerical', table: 's/df', allowNulls: false}},
-  {id: 'mol', type: 'check', io: 's/mol', check: {nullable: false, semType: 'Molecule', table: 's/df'}},
+    check: {nullable: false, type: 'numerical', allowNulls: false}},
+  {id: 'mol', type: 'check', io: 's/mol', check: {nullable: false, semType: 'Molecule'}},
 ];
 
 category('ComputeUtils: Driver links check', async () => {
@@ -78,9 +78,11 @@ category('ComputeUtils: Driver links check', async () => {
     expect(io.res.nullable, false, 'output');
     expectDeepEqual(io.v.checks, {min: 0, max: 10});
     expectDeepEqual(io.code.checks, {validator: '/^[0-9]{4}$/i'});
-    expectDeepEqual(io.mode.checks, {choices: ['fast', 'exact']});
-    expectDeepEqual(io.col.checks, {type: 'numerical', table: 'df', allowNulls: false});
-    expectDeepEqual(io.mol.checks, {semType: 'Molecule', table: 'df'});
+    // choices only fill the dropdown
+    expect(io.mode.checks === undefined, true);
+    // a column's table only binds the picker, explicit or by default
+    expectDeepEqual(io.col.checks, {type: 'numerical', allowNulls: false});
+    expectDeepEqual(io.mol.checks, {semType: 'Molecule'});
     expect(io.c.checks === undefined, true);
     expect(io.df.checks === undefined, true);
     expect(io.a.checks === undefined, true);
@@ -298,9 +300,29 @@ category('ComputeUtils: Driver links check', async () => {
     expectDeepEqual(snapshots.slice(1), [
       {},
       {v: errors('Must be at most 10'), code: errors('Must match /^[0-9]{4}$/i'),
-        mode: errors('Must be one of: fast, exact'), mol: errors('Column must have semantic type Molecule')},
+        mol: errors('Column must have semantic type Molecule')},
       {code: errors('Must match /^[0-9]{4}$/i')},
     ]);
+  });
+
+  test('Annotation columns are not checked against a table', async () => {
+    const pconf = await getProcessedConfig(annotatedStep());
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      StateTree.loadOrCreateCalls(tree, true).subscribe();
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      const other = makeTable();
+      cold('-a').subscribe(() => {
+        node.getStateStore().setState('df', makeTable());
+        node.getStateStore().setState('col', DG.Column.fromList('int', 'z', [1, 2]));
+        node.getStateStore().setState('mol', other.col('mol'));
+      });
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expect(snapshots[0].col === undefined && snapshots[0].mol === undefined, true);
   });
 
   test('Annotations parse named validators', async () => {

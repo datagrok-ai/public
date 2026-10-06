@@ -181,7 +181,7 @@ export async function _demoSimilaritySearch(): Promise<void> {
 
 export async function _demoSimilarityDiversitySearch(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/smiles.csv');
-  _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
+  await _package.files.readAsText('demo_files/similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     await DG.delay(100);
     tv.loadLayout(layout);
@@ -466,7 +466,7 @@ export async function _demoSarMatrix(): Promise<void> {
 export async function _demoMMPA(): Promise<void> {
   const tv = await openMoleculeDataset('demo_files/mmp_demo.csv');
 
-  _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
+  await _package.files.readAsText('demo_files/mmp_demo.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
     tv.dataFrame.currentRowIdx = 0;
@@ -660,7 +660,7 @@ export async function _demoChemicalSpace(): Promise<void> {
 
 export async function _demoScaffoldTree(): Promise<void> {
   const tv = await openMoleculeDataset('mol1K.csv');
-  _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
+  await _package.files.readAsText('demo_files/mol1K.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     tv.loadLayout(layout);
 

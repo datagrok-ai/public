@@ -5,7 +5,7 @@ import {resolve} from 'node:path';
 import {type Locator, type Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {cssString, escapeRegExp, exactText, locateActionable as locate, refOf, withAttr} from './locate.js';
+import {cssString, escapeRegExp, exactText, locateActionable as locate, reachable, refOf, withAttr} from './locate.js';
 import * as guide from './guide.js';
 
 // a real control before the generic `.ui-input-editor`: a Dart float input puts a `div.ui-input-editor`
@@ -56,10 +56,31 @@ export async function click(page: Page, target: ElementRef): Promise<void> {
   await loc.click();
 }
 
+/** A list that reflows between the two clicks (a tree whose groups above it are still filling in, a Recent group
+ * taking the view just closed) puts another row under the second click, and that row gets the double click: the
+ * gesture arms a check of what the double click reached, and one that missed the element is aimed again, as a
+ * person would double-click again on the row they meant. A third miss fails, naming what it reached. */
 export async function dblclick(page: Page, target: ElementRef): Promise<void> {
-  const loc = await locate(page, target);
-  await approach(page, loc);
-  await loc.dblclick();
+  for (let attempt = 1; ; attempt++) {
+    const loc = await reachable(page, target);
+    await approach(page, loc);
+    await loc.evaluate((el) => {
+      const w = window as any;
+      w.__bddDblHit = undefined;
+      document.addEventListener('dblclick', (e) => {
+        const t = e.target as Element;
+        const named = t.closest?.('[name]');
+        w.__bddDblHit = el.contains(t) ||
+          `${named ? `[name="${named.getAttribute('name')}"]` : t.tagName?.toLowerCase()} "${(t.textContent ?? '').trim().slice(0, 40)}"`;
+      }, {capture: true, once: true});
+    });
+    await loc.dblclick();
+    const hit = await page.evaluate(() => (window as any).__bddDblHit);
+    if (hit === true || hit === undefined)
+      return;
+    if (attempt === 3)
+      throw new Error(`the double click on ${target.phrase} reached ${hit} instead, three times: the rows kept moving under the pointer`);
+  }
 }
 
 export async function rightclick(page: Page, target: ElementRef): Promise<void> {
@@ -553,18 +574,19 @@ export function readChildrenState(loc: Locator): Promise<string | null> {
 
 /** Reads where the element is first, so a tree row that is already open stays open — without
  * that, "user expands" would close it. An expanded Dart group is also waited for until its
- * children are loaded (or their fetch failed), so the step after can address them. */
+ * children are loaded (or their fetch failed), so the step after can address them — one found
+ * open too: a rebuilt tree reopens its groups and refetches their children. */
 export async function setExpanded(page: Page, target: ElementRef, expanded: boolean): Promise<void> {
   const self = (await locate(page, target)).first();
-  if (await readExpanded(self) === expanded)
-    return;
-  const inner = self.locator('[aria-expanded]').first();
-  const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
-  // a tree row selects on click and toggles on its twistie
-  const twistie = control.locator(TWISTIE).first();
-  await (await twistie.count() > 0 ? twistie : control).click();
-  await expect.poll(() => readExpanded(self),
-    {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+  if (await readExpanded(self) !== expanded) {
+    const inner = self.locator('[aria-expanded]').first();
+    const control = await self.getAttribute('aria-expanded') !== null ? self : await inner.count() > 0 ? inner : self;
+    // a tree row selects on click and toggles on its twistie
+    const twistie = control.locator(TWISTIE).first();
+    await (await twistie.count() > 0 ? twistie : control).click();
+    await expect.poll(() => readExpanded(self),
+      {message: `${target.phrase} after ${expanded ? 'expanding' : 'collapsing'} it`}).toBe(expanded);
+  }
   if (expanded)
     await expect.poll(() => readChildrenState(self), {message: `the children of ${target.phrase} after expanding it`}).not.toBe('loading');
 }

@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Sketcher: Added Crux, the Crux Sketch molecule sketcher on the Crux chemistry engine (WebAssembly), to the choices of the Sketcher setting (crux-sketch cc02f26, engine c1aadacd3b91; vendored in `vendor/crux-sketch/`, loaded at its first use); in the substructure filter it opens in query mode
+* Sketcher: The 400px minimum width given back to a sketcher dialog opened from a popup no longer applies to a sketcher with no minimum size
+* Demo: Fixed Similarity & Diversity Search, Matched Molecular Pairs and Scaffold Tree returning before their layouts were applied, which then landed on whatever view was open next
 * Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
 * Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
 * Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space

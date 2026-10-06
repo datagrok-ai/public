@@ -33,6 +33,27 @@ export const insertLineAfter = When('user puts {string} on a new line after the 
   (page: Page, text: string, start: string, target: ElementRef) => g.insertLineAfter(page, target, start, text),
   {tier: 'ui', description: 'a new line typed right after the first line of a code editor that starts with the text'});
 export const clearField = When('user clears {element}', (page: Page, target: ElementRef) => g.clear(page, target), {tier: 'ui'});
+/** One pass at a person's pace, never retyped: the typing above retypes until the field holds the text, which
+ * a field that drops keys only the first time would survive. */
+export const typeKeyByKey = When('user types {string} key by key into {element}', async (page: Page, text: string, target: ElementRef) => {
+  const editor = await g.editorOf(page, target);
+  await editor.click();
+  await editor.press('ControlOrMeta+A');
+  await page.keyboard.type(text, {delay: 120});
+}, {tier: 'ui', description: 'clicks the field, selects its text and types once at 120 ms a key; the field is not read back here'});
+/** For an element whose app takes the select-all key for itself: the text is selected the way a pointer does it. */
+export const selectTextOf = When('user selects the text of {element}', async (page: Page, target: ElementRef) => {
+  const loc = await locate(page, target);
+  await loc.click({clickCount: 3});
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString() ?? ''),
+    {message: `the selected text of ${target.phrase}`}).toBe((await loc.innerText()).trim());
+}, {tier: 'ui', description: 'a triple click on the element, checked by what the page reports as selected'});
+export const replaceTextOf = When('user replaces the text of {element} with {string}', async (page: Page, target: ElementRef, text: string) => {
+  const loc = await locate(page, target);
+  await loc.selectText();
+  await page.keyboard.type(text);
+  await expect(loc, `the text typed into ${target.phrase}`).toHaveText(text);
+}, {tier: 'ui', description: 'the text selected as a drag over it does, then typed: for a contenteditable whose app owns the select-all key; not committed'});
 export const pressKey = When('user presses {key}', (page: Page, key: string) => g.press(page, key), {tier: 'ui'});
 export const pressKeyIn = When('user presses {key} in {element}', (page: Page, key: string, target: ElementRef) => g.pressIn(page, target, key), {tier: 'ui'});
 export const selectIn = When('user selects {string} in {element}', (page: Page, option: string, target: ElementRef) => g.select(page, target, option), {tier: 'ui'});
@@ -484,11 +505,11 @@ export const recordAlerts = Given('browser alerts are recorded', async (page: Pa
     return;
   const list: string[] = [];
   alerts.set(page, list);
-  page.on('dialog', async (dialog) => {
-    list.push(dialog.message());
-    await dialog.dismiss().catch(() => undefined);
+  page.on('dialog', (dialog) => {
+    if (dialog.type() !== 'beforeunload')
+      list.push(dialog.message());
   });
-}, {tier: 'api', description: 'every native alert the page raises from now on is recorded and dismissed (an undismissed one blocks every later step)'});
+}, {tier: 'api', description: 'every native alert the page raises from now on is recorded; the harness dismisses it'});
 
 export const alertShown = Then('the browser should have shown the alert {string}', async (page: Page, text: string) => {
   await expect.poll(() => alerts.get(page) ?? [], {message: 'the native alerts the page raised'}).toContain(text);

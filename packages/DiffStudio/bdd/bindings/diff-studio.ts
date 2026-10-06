@@ -2,9 +2,9 @@
    model's charts are real viewers on a table view (a Grid and a Line chart on a table named after
    the model), so the `viewers` tier drives them, and the Open model menu carries the platform's own
    item names (div-Library---Bioreactor), so its entries are plain menu items. */
-import {expect, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, takeErrors} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, savedScriptOf, takeErrors} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -82,62 +82,16 @@ export const openModelHub = Given('user opens the Model Hub', async (page: Page)
   {message: 'cards in the Model Hub gallery', timeout: 120000}).toBeGreaterThan(0);
 }, {tier: 'api', description: 'the function the browse tree runs for Apps > Compute > Model Hub; done when the catalog has cards'});
 
-/* A script's friendly name can also label a built-in model. Remember its qualified name for the
-   card's platform link, and its ID for cleanup. The script view's path identifies the save,
-   so another user's concurrent save cannot be mistaken for this feature's script. */
-type SavedScript = {id: string; name: string; link: string};
-const savedScript = new WeakMap<Page, SavedScript>();
-
-const freshScript = (page: Page, known: string[]): Promise<SavedScript | null> =>
-  page.evaluate(async (ids) => {
-    const id = String(grok.shell.v?.path ?? '').match(/^\/script\/([^/?#]+)/)?.[1];
-    if (!id || ids.includes(id))
-      return null;
-    const script = (await grok.dapi.scripts.list({pageSize: 1000})).find((s: any) => String(s.id) === id);
-    return script ? {id, name: String(script.name), link: `/func/${script.nqName.replace(/:/g, '.')}`} : null;
-  }, known);
-
-async function removeSavedScript(page: Page, id: string): Promise<void> {
-  await page.evaluate(async (savedId) => {
-    const script = (await grok.dapi.scripts.list({pageSize: 1000}))
-      .find((s: any) => String(s.id) === savedId);
-    if (script)
-      await grok.dapi.scripts.delete(script);
-  }, id);
-}
-
-export const saveScript = When('user saves the script', async (page: Page) => {
-  const before: string[] = await page.evaluate(async () =>
-    (await grok.dapi.scripts.list({pageSize: 1000})).map((s: any) => String(s.id)));
-  const saveButton = page.locator('[name="button-Save"]').filter({visible: true});
-  await saveButton.click();
-  // The server listing can see the script before Save updates its qualified name in the client.
-  await expect(saveButton, 'the script save completed in the editor').toHaveText('Saved', {timeout: 60000});
-  let script: SavedScript | null = null;
-  await expect.poll(async () => {
-    script = await freshScript(page, before);
-    return script !== null;
-  }, {message: "the script view's new script saved on the stand", timeout: 60000}).toBe(true);
-  const saved = script!;
-  savedScript.set(page, saved);
-  atFeatureEnd(page, () => removeSavedScript(page, saved.id));
-}, {tier: 'ui', description: 'the Save button of the script view; the script it creates is deleted when the feature ends'});
-
-function getSavedScript(page: Page): SavedScript {
-  const script = savedScript.get(page);
-  if (!script)
-    throw new Error('no script has been saved in this feature yet');
-  return script;
-}
-
-/** The gallery exposes the entity's qualified link, independent of its duplicate display label. */
+/** A script's friendly name can also label a built-in model, so the card is found by the link the gallery
+ * gives it, the saved script's grok name; the library's "user saves the script" remembers the script and
+ * deletes it when the feature ends. */
 function savedCard(page: Page) {
-  const {link} = getSavedScript(page);
+  const link = `/func/${savedScriptOf(page).nqName.replace(/:/g, '.')}`;
   return page.locator(`.grok-gallery-grid .d4-link-label[data-link=${JSON.stringify(link)}]`);
 }
 
 export const hubListsScript = Then('the Model Hub should list the saved script', async (page: Page) => {
-  await expect(savedCard(page), `the card of the saved script (${getSavedScript(page).name}) in the Model Hub`)
+  await expect(savedCard(page), `the card of the saved script (${savedScriptOf(page).name}) in the Model Hub`)
     .toBeVisible({timeout: 60000});
 }, {tier: 'ui'});
 
@@ -149,15 +103,18 @@ export const openSavedScript = When('user opens the saved script from the Model 
 
 /** Refresh must notice the deletion of this feature's script; same-named models stay intact. */
 export const deleteSavedScript = When('the saved script is deleted on the server', async (page: Page) => {
-  const {id, name} = getSavedScript(page);
-  await removeSavedScript(page, id);
-  await expect.poll(() => page.evaluate(async (savedId) =>
-    (await grok.dapi.scripts.list({pageSize: 1000})).some((s: any) => String(s.id) === savedId), id),
+  const {id, name} = savedScriptOf(page);
+  await page.evaluate(async (savedId) => {
+    const script = await grok.dapi.scripts.find(savedId).catch(() => null);
+    if (script)
+      await grok.dapi.scripts.delete(script);
+  }, id);
+  await expect.poll(() => page.evaluate(async (savedId) => (await grok.dapi.scripts.find(savedId).catch(() => null)) != null, id),
   {message: `"${name}" (${id}) among the scripts on the stand`, timeout: 60000}).toBe(false);
 }, {tier: 'api', description: 'removed behind the back of the view, so the next Refresh has something to notice'});
 
 export const hubDoesNotListScript = Then('the Model Hub should not list the saved script', async (page: Page) => {
-  await expect(savedCard(page), `the card of the saved script (${getSavedScript(page).name}) in the Model Hub`)
+  await expect(savedCard(page), `the card of the saved script (${savedScriptOf(page).name}) in the Model Hub`)
     .toHaveCount(0, {timeout: 60000});
 }, {tier: 'ui'});
 

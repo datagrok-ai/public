@@ -188,15 +188,12 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
     throw new Error(`Function '${nqName}' not found`);
   const fc = func.prepare();
   const params = [...fc.inputParams.values()];
-  const defaultTable = params.find((p) => p.property.propertyType === DG.TYPE.DATA_FRAME)?.property.name;
   const inputs = params.map((p) => {
     const io: FuncCallIODescription = {
       id: p.property.name, type: p.property.propertyType as any, direction: 'input' as const,
       nullable: isOptionalAnnotation(p.property),
     };
     const checks = parseAnnotationChecks(p.property);
-    if (p.property.propertyType === DG.TYPE.COLUMN && checks.table == null && defaultTable)
-      checks.table = defaultTable;
     if (Object.keys(checks).length)
       io.checks = checks;
     const choices = p.property.options?.choices;

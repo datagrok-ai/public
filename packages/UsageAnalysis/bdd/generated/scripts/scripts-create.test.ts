@@ -9,18 +9,17 @@ sub_features_covered: [views.scripts]
 import {test} from '@playwright/test';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
-import '../../bindings/spaces.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {ribbonReady, saveScript, scriptResult} from '../../bindings/scripts.js';
+import {ribbonReady, scriptResult} from '../../bindings/scripts.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {alertShown, check, clickOn, enterInto, expand, recordAlerts, selectIn, shouldBe, shouldContainText, shouldHaveText, typeInto, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {tableOpen, tableRows} from '@datagrok-libraries/bdd/bindings/platform/data';
-import {browsePanelOpen, closeCurrentView, dialogCloses, noScriptOnServer, scriptHasParam, scriptsOnServer, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {browsePanelOpen, closeCurrentView, dialogCloses, noScriptOnServer, saveScript, scriptHasParam, scriptsOnServer, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {infoBalloonText, menuLists, noBalloons, noErrors, pickFromOpenMenu} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
