@@ -89,13 +89,15 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
       const grok = (window as any).grok;
       const existing = await grok.dapi.notebooks.filter('friendlyName = "Demog"').list({pageSize: 5}).catch(() => [] as any[]);
       if (existing.some((n: any) => (n.friendlyName || n.name) === 'Demog')) return null;
-      const before = new Set((await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10})).map((n: any) => n.id));
+      // The command makes the new notebook the current object of this page. Taking the newest one on
+      // the server instead picks up notebooks the other specs create in parallel workers.
+      const prevId = grok.shell.o?.id;
       await (window as any).DG.Func.find({name: 'CmdOpenInNotebook'})[0].apply();
       for (let i = 0; i < 40; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-        const fresh = cur.find((n: any) => !before.has(n.id));
-        if (fresh) {
+        const id = grok.shell.o?.id;
+        if (id && id !== prevId) {
+          const fresh = await grok.dapi.notebooks.find(id);
           fresh.friendlyName = 'Demog';
           await grok.dapi.notebooks.save(fresh);
           return fresh.id as string;
