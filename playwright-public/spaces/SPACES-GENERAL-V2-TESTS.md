@@ -117,7 +117,7 @@ Dispatches `contextmenu` on an item in the space content view.
 ### Test 6. Favorites: add and remove
 
 **Steps:**
-1. Add to favorites → verify in browse tree Favorites section
+1. Add To Favorites → verify in browse tree Favorites section
 2. Verify in sidebar favorites pane (star icon → `.grok-favorites-pane`)
 3. Remove from favorites → verify gone from both locations
 

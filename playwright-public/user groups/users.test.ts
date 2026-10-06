@@ -187,7 +187,7 @@ test.describe('Users View (Users-*)', () => {
 
   test('Users-14 — user context menu items', async ({ page }) => {
     await openCardContextMenu(page, TARGET_NAME);
-    for (const name of ['Details', 'Chat', 'Disable...', 'Groups...', 'Roles...', 'Add to favorites'])
+    for (const name of ['Details', 'Chat', 'Disable...', 'Groups...', 'Roles...', 'Add To Favorites'])
       await expect(contextMenuItemByName(page, name), `menu item "${name}" should be present`)
         .toBeVisible({ timeout: 5_000 });
     await closeMenu(page);
@@ -224,7 +224,7 @@ test.describe('Users View (Users-*)', () => {
 
     // Add, then confirm the menu flips to "Remove from favorites".
     await openCardContextMenu(page, TARGET_NAME);
-    await contextMenuItemByName(page, 'Add to favorites').click();
+    await contextMenuItemByName(page, 'Add To Favorites').click();
     await page.waitForTimeout(1000);
     await openCardContextMenu(page, TARGET_NAME);
     await expect(contextMenuItem(page, 'Remove from favorites'),
