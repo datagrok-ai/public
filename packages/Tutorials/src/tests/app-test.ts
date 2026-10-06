@@ -3,6 +3,7 @@ import * as grok from 'datagrok-api/grok';
 import {category, test, assure, expect, awaitCheck, after} from '@datagrok-libraries/test/src/test';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {eda} from '../tracks/eda';
+import {DemoEntryFunc, DemoView} from '../demo-app/demo-app';
 
 category('Tutorials App', () => {
   after(async () => grok.shell.dockManager.close(document.querySelector('.tutorials-root') as HTMLElement));
@@ -22,6 +23,27 @@ category('Tutorials App', () => {
       expect(tutorial.url, window.location.origin + tutorial.path);
     } finally {
       tutorial.close();
+    }
+  });
+});
+
+category('Demo App', () => {
+  const demoFunc = (name: string, apply: () => void): DemoEntryFunc =>
+    ({name, description: '', options: {}, package: {name: 'Tutorials'}, apply: async () => apply()});
+
+  test('Demo view closed while loading', async () => {
+    const demoApp = new DemoView(false);
+    const userView = grok.shell.addTableView(grok.data.demo.demog(10));
+    const names = new Map(Array.from(grok.shell.views).map((v) => [v, v.name] as [DG.View, string]));
+    try {
+      await demoApp.startDemoFunc(demoFunc('first', () => grok.shell.addView(DG.View.create())), 'Test | First');
+      expect(grok.shell.v.name, 'First');
+      const closedWhileLoading = demoFunc('second', () => grok.shell.addView(DG.View.create()).close());
+      await demoApp.startDemoFunc(closedWhileLoading, 'Test | Second');
+      for (const [view, name] of names)
+        expect(view.name, name);
+    } finally {
+      userView.close();
     }
   });
 });
