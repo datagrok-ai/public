@@ -105,6 +105,10 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
       }
       throw new Error('Open in Notebook did not persist a notebook within 20 s');
     });
+    // The command also opens the notebook editor, which can land after S1 opens the browser and take
+    // the current view from it. Let it open first; the notebook is already saved if it never does.
+    if (seededDemogId)
+      await page.waitForFunction(() => (window as any).grok.shell.v?.type === 'Notebook', null, {timeout: 60_000, polling: 250}).catch(() => {});
   });
 
   // ---- S1: Navigate to the Notebooks browser (Browse Notebooks command) ----
