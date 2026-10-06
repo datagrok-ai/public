@@ -86,7 +86,7 @@
 | Имя                              | Текст пункта         |
 | -------------------------------- | -------------------- |
 | `CONTEXT_MENU_BROWSE`            | `Browse`             |
-| `CONTEXT_MENU_ADD_FAVORITES`     | **`Add to favorites`** (нижний регистр `f`!) |
+| `CONTEXT_MENU_ADD_FAVORITES`     | **`Add To Favorites`** (заглавные `T` и `F` с 7265ecc639, GROK-21108) |
 | `CONTEXT_MENU_SHARE`             | `Share...`           |
 | `CONTEXT_MENU_RENAME`            | `Rename...`          |
 | `CONTEXT_MENU_DELETE`            | `Delete...`          |

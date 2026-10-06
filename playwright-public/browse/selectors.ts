@@ -101,7 +101,7 @@ export const contextMenuItem = (page: Page, text: string): Locator =>
 
 // Точные тексты пунктов меню на dev (важно: регистр и многоточия).
 export const CONTEXT_MENU_BROWSE = 'Browse';
-export const CONTEXT_MENU_ADD_FAVORITES = 'Add to favorites';
+export const CONTEXT_MENU_ADD_FAVORITES = 'Add To Favorites';
 export const CONTEXT_MENU_SHARE = 'Share...';
 export const CONTEXT_MENU_RENAME = 'Rename...';
 export const CONTEXT_MENU_DELETE = 'Delete...';
