@@ -166,6 +166,8 @@ export namespace chem {
     _smarts: string | null = null;
     /** Molblock notation of the last value set: V2000 or V3000. */
     molFileUnits = Notation.MolBlock;
+    /** Counts the values set, so that one set while an implementation initializes is shown once it is ready. */
+    private _valuesSet = 0;
 
     loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -261,6 +263,7 @@ export namespace chem {
 
     /** Sets the molecule from SMILES; runs validation. */
     setSmiles(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smiles = x;
       this._molfile = null;
@@ -284,6 +287,7 @@ export namespace chem {
 
     /** Sets the molecule from a molblock, V2000 or V3000; runs validation. */
     setMolFile(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._molfile = x;
       this._smiles = null;
@@ -303,6 +307,7 @@ export namespace chem {
 
     /** Sets the query pattern from SMARTS; runs validation. */
     setSmarts(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smarts = x;
       this._molfile = null;
@@ -438,9 +443,9 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
-    /** True when the sketcher is hosted in a popup. */
+    /** True when the implementation is shown in a popup (not in the dialog a thumbnail in a popup opens). */
     isInPopupContainer(): boolean {
-      return !!this.root.closest('.d4-popup-host');
+      return !!this.host.closest('.d4-popup-host');
     }
 
     /** Resizes the current implementation to its host. */
@@ -654,6 +659,7 @@ export namespace chem {
     // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
     private _sketcherChangeId = 0; 
     private _setSketcherType(sketcherType: string): void {
+      const valuesSet = this._valuesSet;
       const getMolecule = async () => {
         //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
         if (this.sketcher?.explicitMol)
@@ -695,9 +701,21 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule)
+        // a value set while the implementation initialized was only stored, and is newer than the one taken above
+        if (this._valuesSet !== valuesSet)
+          this._setStoredMolecule();
+        else if (molecule)
           this.setMolecule(molecule!, this._smarts !== null);
       });
+    }
+
+    private _setStoredMolecule(): void {
+      if (this._molfile !== null)
+        this.setMolFile(this._molfile);
+      else if (this._smarts !== null)
+        this.setSmarts(this._smarts);
+      else if (this._smiles !== null)
+        this.setSmiles(this._smiles);
     }
 
     private _setSketcherSize() {

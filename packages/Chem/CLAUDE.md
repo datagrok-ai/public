@@ -69,6 +69,7 @@ User documentation: [Cheminformatics](../../help/datagrok/solutions/domains/chem
 | `src/crux/crux-searches.ts`                              | Crux engine switch + Crux counterpart of `chemSubstructureSearchLibrary` |
 | `src/crux/crux-service.ts`, `src/crux/crux.worker.ts`    | Crux column indexes, segmented over a worker pool      |
 | `src/crux/crux-smarts.ts`                                | RDKit query mol → SMARTS crux matches the same way (null → RDKit) |
+| `src/crux/crux-sketcher.ts`                              | The Crux sketcher: `SketcherBase` over the vendored Crux Sketch |
 | `src/open-chem/ocl-sketcher.ts`                          | OpenChemLib sketcher wrapper                           |
 | `src/open-chem/sdf-importer.ts`                          | SDF file import                                        |
 | `src/open-chem/ocl-service/`                             | OCL property calculations in workers                   |
@@ -130,6 +131,19 @@ cd crux/crux-js   # beside crux-core, Rust toolchain from crux-core/rust-toolcha
 npx wasm-pack@0.13.1 build ../crux-core/crates/crux-wasm --target web --release --out-name crux_wasm --out-dir ../../../crux-js/src/wasm
 cp src/wasm/crux_wasm.js src/wasm/crux_wasm.d.ts src/wasm/crux_wasm_bg.wasm <reddata>/public/packages/Chem/src/crux/
 ```
+
+### Crux sketcher
+
+`Crux` is a molecule sketcher (`meta.role: moleculeSketcher`), a choice of the Sketcher setting, never the default.
+`src/crux/crux-sketcher.ts` is `CruxSketcher`, a `SketcherBase` over Crux Sketch's `createSketcher()`; it opens in query
+mode where the host is the substructure filter (`isSubstructureFilter`). Crux Sketch is vendored in
+`vendor/crux-sketch/`: the files of crux-sketch's `packages/sketch/dist/` as they are (its `VERSION` names the crux-sketch
+and crux-core revisions), bundled like any dependency, the sketcher a chunk of its own loaded at its first use, its
+WebAssembly (the sketch engine, and the CDXML and InChI modules, each lazy) emitted beside Chem's chunks; nothing of it
+loads until a Crux sketcher opens. It is a different module from `src/crux/crux_wasm*` (the substructure engine), built
+from another crux-core crate. To update it: copy the new dist into `vendor/crux-sketch/` (keep `VERSION`, update it),
+regenerate the Crux Sketch block of `CREDITS.md` from crux-sketch's notices, build, and run the `Crux sketcher` and
+`sketcher testing` categories. Tests: `src/tests/crux-sketcher-tests.ts`.
 
 ### Docker integration
 
