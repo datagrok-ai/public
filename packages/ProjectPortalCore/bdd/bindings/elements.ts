@@ -257,3 +257,12 @@ app.element('search results', {selector: u2('search-results')});
 app.element('EXB-201 search hit', {selector: u2('search-hit-ex-bioc-exb-201')});
 app.element('recent programs', {selector: u2('recent-programs')});
 app.element('EXB-201 recent', {selector: u2('recent-ex-bioc-exb-201')});
+
+app.element('scratch record project card', {selector: u2('program-bdd-rec')});
+app.element('gate D2 column', {selector: u2('stage-d2')});
+app.element('record outcome input', {selector: u2('record-outcome-input')});
+app.element('record decision button', {selector: u2('record-decision-button')});
+app.element('record note', {selector: u2('record-note')});
+app.element('decisions button', {selector: u2('decisions-button')});
+app.element('decision text input', {selector: u2('decision-text-input')});
+app.element('decision results', {selector: u2('decision-results')});

@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode, programContext} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode, programContext, stagesOf} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
@@ -54,6 +54,8 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
 import {reviewsOf} from './model/approvals';
 import {secureWriteTables} from './write-grants';
 import {linkProgramRows as linkRows} from './program-rows';
+import {decisionsOf, recordGateDecision} from './decision-records';
+import {DecisionOutcome, describeDecision, searchDecisions} from './model/decision-records';
 import {findablePrograms, recentPrograms as savedRecents} from './find';
 import {FindProgram, findPrograms as find, matchedBy, resolveRecents} from './model/find';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
@@ -335,6 +337,48 @@ export async function addEvidence(portfolio: string, program: string, kind: stri
   const p = await programByCode(portfolio, program);
   const item = await evidenceItemFor(p, kind as EvidenceKind, target, name || undefined);
   return summarizeAdded(p, await addEvidenceTo(p, [item], decision || null));
+}
+
+//name: recordGateDecisionRecord
+//description: Records a gate decision with its evidence where the registry owns the stage: outcome, rationale and the gate's suggested evidence (readiness, selected runs, documents). The program does not move: the registry sets the stage. The program's approvers only
+//input: string portfolio
+//input: string program
+//input: string outcome {choices: ["go", "hold", "no_go"]}
+//input: string rationale
+//input: string gate {optional: true; description: Code of the stage the gate leads into; default: the next stage}
+//output: string report
+export async function recordGateDecisionRecord(portfolio: string, program: string, outcome: string, rationale: string,
+  gate?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const gateStageId = gate ? (await stagesOf(p.stage_model_id)).find((s) => s.code === gate)?.id ?? 'unknown' : null;
+  const r = await recordGateDecision(p.id, {outcome: outcome as DecisionOutcome, rationale, gateStageId});
+  return [r.line, ...r.evidence.errors].join('\n');
+}
+
+//name: findDecisions
+//description: Gate decisions across the portfolios the current user can see, newest first: words in the rationale, outcome or evidence, a program (code or name), a gate (stage code or name), a portfolio. Registry moves are left out unless asked for
+//input: string text {optional: true}
+//input: string portfolio {optional: true}
+//input: string program {optional: true}
+//input: string gate {optional: true}
+//input: bool withSync = false
+//output: dataframe decisions
+export async function findDecisions(text?: string, portfolio?: string, program?: string, gate?: string,
+  withSync: boolean = false): Promise<DG.DataFrame> {
+  const found = searchDecisions(await decisionsOf(portfolio || null), {text, program, gate, withoutSync: !withSync});
+  const df = DG.DataFrame.fromColumns([
+    DG.Column.fromStrings('portfolio', found.map((d) => d.portfolio)),
+    DG.Column.fromStrings('program', found.map((d) => d.programCode)),
+    DG.Column.fromStrings('on', found.map((d) => d.on.slice(0, 10))),
+    DG.Column.fromStrings('decision', found.map((d) => d.decision)),
+    DG.Column.fromStrings('outcome', found.map((d) => d.outcome ?? '')),
+    DG.Column.fromStrings('gate', found.map((d) => d.to?.code ?? '')),
+    DG.Column.fromStrings('rationale', found.map((d) => d.rationale ?? '')),
+    DG.Column.fromStrings('evidence', found.map((d) => d.evidence.map((e) => e.name).join('; '))),
+    DG.Column.fromStrings('line', found.map(describeDecision)),
+  ]);
+  df.name = 'Decisions';
+  return df;
 }
 
 //name: snapshotProgram

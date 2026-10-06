@@ -63,7 +63,7 @@ export function checkDecision(g: GateInput): GateVerdict {
   let toStageId: string | null = null;
 
   if (g.stageAuthority === 'feed')
-    reasons.push('The registry owns this portfolio\'s stages; record the decision there and sync');
+    reasons.push('The registry owns this portfolio\'s stages: the registry moves the program on a sync; record the decision here with its evidence');
   if (!g.isApprover)
     reasons.push('Only the portfolio\'s approvers record gate decisions');
   if (['terminated', 'completed', 'transitioned'].includes(g.programStatus))

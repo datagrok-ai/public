@@ -181,6 +181,23 @@ export namespace funcs {
   }
 
   /**
+   * Records a gate decision with its evidence where the registry owns the stage: outcome, rationale and the gate's suggested evidence (readiness, selected runs, documents). The program does not move: the registry sets the stage. The program's approvers only
+   * @param {string} outcome
+   *   choices: ["go", "hold", "no_go"]
+   * @param {string} gate - Code of the stage the gate leads into
+   */
+  export async function recordGateDecisionRecord(portfolio: string , program: string , outcome: string , rationale: string , gate?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:RecordGateDecisionRecord', { portfolio, program, outcome, rationale, gate });
+  }
+
+  /**
+   * Gate decisions across the portfolios the current user can see, newest first: words in the rationale, outcome or evidence, a program (code or name), a gate (stage code or name), a portfolio. Registry moves are left out unless asked for
+   */
+  export async function findDecisions(text: string | undefined, portfolio: string | undefined, program: string | undefined, gate: string | undefined, withSync: boolean ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:FindDecisions', { text, portfolio, program, gate, withSync });
+  }
+
+  /**
    * Freezes a program now: stage, status, the state of each criterion, the runs selected, and the program dataset as a CSV file in the program's workspace folder, fingerprinted. Written once. Contributors and approvers
    * @param {string} label - Default: program code and time
    */

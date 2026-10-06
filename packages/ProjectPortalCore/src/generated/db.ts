@@ -25,9 +25,11 @@ export type ProgramStatus = 'active' | 'on_hold' | 'terminated' | 'completed' | 
 
 export type ProgramSource = 'feed' | 'manual';
 
-export type StageTransitionDecision = 'advance' | 'recycle' | 'hold' | 'terminate' | 'sync';
+export type StageTransitionDecision = 'advance' | 'recycle' | 'hold' | 'terminate' | 'sync' | 'record';
 
 export type StageTransitionSource = 'approver' | 'registry' | 'data';
+
+export type StageTransitionOutcome = 'go' | 'hold' | 'no_go';
 
 export type CriterionStatusStatus = 'not_started' | 'in_progress' | 'met' | 'not_met' | 'waived';
 
@@ -493,6 +495,7 @@ export interface StageTransitionRow {
   rationale?: string;
   source?: StageTransitionSource;
   evidence?: string;
+  outcome?: StageTransitionOutcome;
 }
 
 /** Insert payload for `portal.stage_transition`. */
@@ -506,10 +509,12 @@ export interface StageTransitionInsert {
   rationale?: string;
   source?: StageTransitionSource;
   evidence?: string;
+  outcome?: StageTransitionOutcome;
 }
 
 export type StageTransitionColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
-  'from_stage_id' | 'to_stage_id' | 'decision' | 'decided_by' | 'decided_on' | 'rationale' | 'source' | 'evidence';
+  'from_stage_id' | 'to_stage_id' | 'decision' | 'decided_by' | 'decided_on' | 'rationale' | 'source' | 'evidence' |
+  'outcome';
 
 /** Expand keys of `portal.stage_transition` → fields each adds to the row (consumed by query()/builder). */
 export type StageTransitionExpand = {
@@ -1554,7 +1559,7 @@ export type EvidenceExpand = {
     'stage_transition_id.to_stage_id'?: string; 'stage_transition_id.decision'?: StageTransitionDecision;
     'stage_transition_id.decided_by'?: string; 'stage_transition_id.decided_on'?: Dayjs;
     'stage_transition_id.rationale'?: string; 'stage_transition_id.source'?: StageTransitionSource;
-    'stage_transition_id.evidence'?: string};
+    'stage_transition_id.evidence'?: string; 'stage_transition_id.outcome'?: StageTransitionOutcome};
   'added_by': {'added_by.login'?: string; 'added_by.firstName'?: string; 'added_by.lastName'?: string;
     'added_by.status'?: string; 'added_by.createdOn'?: Dayjs; 'added_by.picture'?: string; 'added_by.group'?: string;
     'added_by.author'?: string};
@@ -1850,7 +1855,7 @@ export type ApprovalRequestExpand = {
     'stage_transition_id.to_stage_id'?: string; 'stage_transition_id.decision'?: StageTransitionDecision;
     'stage_transition_id.decided_by'?: string; 'stage_transition_id.decided_on'?: Dayjs;
     'stage_transition_id.rationale'?: string; 'stage_transition_id.source'?: StageTransitionSource;
-    'stage_transition_id.evidence'?: string};
+    'stage_transition_id.evidence'?: string; 'stage_transition_id.outcome'?: StageTransitionOutcome};
 };
 
 /** Row of `portal.parked_folder`. */

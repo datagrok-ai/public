@@ -5,6 +5,7 @@
  * approved cards of the models the program used, and observations. Pure: the caller
  * reads the records; this turns them into entries, merges, filters and pages them. */
 import type {ProgramChange} from './sync-runs';
+import {describeRecord} from './decision-records';
 
 export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'prediction' | 'document' | 'snapshot' |
   'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card' | 'observation';
@@ -51,7 +52,7 @@ export interface FeedRecords {
   program: {id: string, code: string, portfolio?: string | null};
   stages: {id: string, code: string, name: string}[];
   decisions: {id: string, decision: string, from: string | null, to: string | null, by: string | null, on: When,
-    source?: string | null, rationale?: string | null}[];
+    source?: string | null, rationale?: string | null, outcome?: string | null}[];
   evidence: {id: string, decisionId: string | null, kind: string, name: string, by: string | null, on: When}[];
   runs: {id: string, title: string, model: string, by: string | null, on: When}[];
   selections: {id: string, run: string, criterion: string, by: string | null, on: When, rationale?: string | null}[];
@@ -105,11 +106,14 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
   const decisionLabel = new Map<string, string>();
   for (const d of r.decisions) {
     const how = d.source === 'data' ? ' (by data)' : d.source === 'registry' || d.decision === 'sync' ? ' (registry)' : '';
-    decisionLabel.set(d.id, `${d.decision} ${stage(d.from)} → ${stage(d.to)}`);
+    const record = d.decision === 'record';
+    decisionLabel.set(d.id, record ? `the decision recorded for ${stage(d.to)}` : `${d.decision} ${stage(d.from)} → ${stage(d.to)}`);
     const withIt = r.evidence.filter((e) => e.decisionId === d.id && Math.abs(ms(e.on) - ms(d.on)) <= EVIDENCE_WINDOW_MS);
+    const pieces = withIt.length ? `, with ${plural(withIt.length, 'piece')} of evidence` : '';
     push({key: `decision:${d.id}`, at: d.on, kind: 'decision', who: d.by,
-      text: `${d.decision[0].toUpperCase()}${d.decision.slice(1)}: ${stage(d.from)} → ${stage(d.to)}${how}` +
-        (withIt.length ? `, with ${plural(withIt.length, 'piece')} of evidence` : '') + (d.rationale ? ` — ${d.rationale}` : ''),
+      text: record ? `Decision recorded: ${describeRecord(d.outcome, stage(d.to))}${pieces}${d.rationale ? ` — ${d.rationale}` : ''}` :
+        `${d.decision[0].toUpperCase()}${d.decision.slice(1)}: ${stage(d.from)} → ${stage(d.to)}${how}` +
+        pieces + (d.rationale ? ` — ${d.rationale}` : ''),
       ref: {kind: 'decision', id: d.id}});
   }
   for (const e of r.evidence) {

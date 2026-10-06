@@ -66,7 +66,7 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     stages: stages.map((s) => ({id: s.id, code: s.code, name: s.name})),
     decisions: decisions.map((t) => ({id: t.id, decision: t.decision, from: t.from_stage_id ?? null, to: t.to_stage_id ?? null,
       by: t.decided_by ?? (t.source === 'approver' ? t.author_id : null), on: iso(t.decided_on ?? t.created_on),
-      source: t.source ?? null, rationale: t.rationale ?? null})),
+      source: t.source ?? null, rationale: t.rationale ?? null, outcome: t.outcome ?? null})),
     evidence: evidence.map((e) => ({id: e.id, decisionId: e.stage_transition_id ?? null, kind: e.kind, name: e.name,
       by: e.added_by ?? e.author_id, on: iso(e.added_on ?? e.created_on)})),
     runs: runs.map((x) => ({id: x.id, title: x.title ?? x.run_id ?? x.model_name, model: x.model_name.split(':').pop()!,

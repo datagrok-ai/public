@@ -2,6 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
+- Decision records where the registry owns the stage: the gate panel of a registry-owned portfolio gets an **Outcome** (Go, Hold, No-go) and **Record decision for <gate>**, beside the disabled Advance. It writes a gate-log entry with decision `record` (from the program's stage to the gate's), the rationale and the ticked evidence (readiness, selected runs, documents, links, a snapshot), and moves nothing: the program's stage and status stay what the registry set. History and feed say "decision recorded; stage set by registry"; days in stage ignore records. The portfolio's or program's approvers only (app check); the server's write rule is the gate log's (Edit on the program row). Function `recordGateDecisionRecord`. Pure rules in `src/model/decision-records.ts`
+- Decision search: **Decisions** on the ribbon searches the gate decisions of every portfolio the user can see by words in the rationale, outcome or evidence, by program, by gate and by portfolio, newest first; a result opens its program. Registry moves are left out unless asked for. Function `findDecisions(text, portfolio, program, gate, withSync)`
+- `portal` schema 0.2.32: `stage_transition.decision` takes `record`; `stage_transition.outcome`. Additive, no migration script
+- `queryIn` reads a long id list in batches of 100
+
 - Find a program from the landing page: a search box at the top of the portfolio column finds programs across every portfolio the user can see, by code, name, target or any short value the registry delivered in `details` (an alias such as a molecule number, no configuration needed). Best match first; a hit says which alias matched and opens the program in its own portfolio; Enter opens the first. **Recent** under it lists the programs the user opened last (8), kept in their user settings, so they follow the user; a program no longer visible drops out. Functions `findPrograms(query)` and `recentPrograms()`. Pure rules in `src/model/find.ts`. No schema change
 
 - Fix: **My feed** failed with `Cannot parse filter: "id in ()"` when every program the user follows is gone or not visible to them; the provenance walk and the run selections could fail the same way. Every `in (...)` read of a list of ids now goes through `queryIn` (`src/rows.ts`), which asks nothing and returns no rows for an empty list

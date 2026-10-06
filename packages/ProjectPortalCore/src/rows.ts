@@ -13,12 +13,18 @@ export function inFilter(column: string, values: Iterable<string | null | undefi
   return vs.length ? `${column} in (${vs.map(filterValue).join(', ')})` : null;
 }
 
+/** Values per `in (...)`: keeps a filter short for a list of hundreds. */
+const IN_BATCH = 100;
+
 /** The rows of [table] whose [column] is one of [values], and [and] when given; none, without asking
- * the server, when there are no values. */
+ * the server, when there are no values. A long list is read in batches. */
 export async function queryIn<T>(table: {query(q: {filter: string, limit: number}): Promise<T[]>}, column: string,
   values: Iterable<string | null | undefined>, and?: string): Promise<T[]> {
-  const f = inFilter(column, values);
-  if (!f)
-    return [];
-  return table.query({filter: and ? `${and} and ${f}` : f, limit: ROW_LIMIT});
+  const vs = [...new Set([...values].filter((v): v is string => v != null && v !== ''))];
+  const out: T[] = [];
+  for (let i = 0; i < vs.length; i += IN_BATCH) {
+    const f = inFilter(column, vs.slice(i, i + IN_BATCH))!;
+    out.push(...await table.query({filter: and ? `${and} and ${f}` : f, limit: ROW_LIMIT}));
+  }
+  return out;
 }

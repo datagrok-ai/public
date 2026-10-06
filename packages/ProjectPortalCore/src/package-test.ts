@@ -43,6 +43,7 @@ import './tests/write-grant-tests';
 import './tests/program-row-tests';
 import './tests/empty-filter-tests';
 import './tests/find-tests';
+import './tests/decision-record-tests';
 
 export let _package = new DG.Package();
 export { tests };

@@ -489,3 +489,18 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - Recommended actions on the landing page (point 2's second half) are not built: the persona's quick actions stay
   on the program page.
 
+## Decision records and decision search
+
+*F-25 extended to registry-owned gates. Schema: 0.2.32: `stage_transition.decision` takes `record`, `stage_transition.outcome`.*
+
+- A record lives in the gate log rather than a new table, so evidence, provenance, the feed, evidence tables and the
+  data package pick it up unchanged. Readers that compute stage entry must skip `record` (the portfolio table does).
+- `to_stage_id` of a record is the gate's stage, not a stage the program entered. A record for a gate other than
+  the next one is possible by API (`gate`), not in the app.
+- Outcomes are Go, Hold, No-go. A conditional go, or a free outcome per portfolio, is not built.
+- Records need no approval workflow, even where the portfolio asks for approval of decisions: they move nothing.
+- The record does not compare itself with the registry: a "Go" that the registry never acts on is not flagged.
+- Approvers who are not the program row's author are refused by the server (Edit on the row, GROK-21041), as for
+  every gate-log write; on the stand only admins can record today.
+- The search reads every visible decision and its evidence in the browser on open. Fine for thousands of rows.
+

@@ -1,6 +1,6 @@
 # Schema notes
 
-The `portal` domain schema: `databases/portal/schema.json` (version 0.2.31, 38 tables). The design rules are in
+The `portal` domain schema: `databases/portal/schema.json` (version 0.2.32, 38 tables). The design rules are in
 [architecture.md](architecture.md#2-schema-design-rules). This page records how the tables group, who may write
 them, the choices made while building, and how the schema grew.
 
@@ -106,3 +106,4 @@ Every other change so far has been additive and deployed from `schema.json` alon
 | 0.2.29 | `design_set`, `design_proposal`, `selection_set` |
 | 0.2.30 | `portfolio.dmta` |
 | 0.2.31 | `program_role`, `parked_folder`, `approval_request`: View for all users (was View and Edit); metadata only |
+| 0.2.32 | `stage_transition.decision` takes `record`; `stage_transition.outcome` (go, hold, no_go) for decision records; additive |

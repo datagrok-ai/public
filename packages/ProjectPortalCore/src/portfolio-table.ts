@@ -140,7 +140,9 @@ export async function portfolioFacts(portfolioCode?: string, now = Date.now(), p
       program.stage_id ?? null);
     // the stage was entered by the last transition into it; a program never moved entered it when it was made
     const into = (transitionsOf.get(program.id) ?? [])
-      .filter((t) => (t.to_stage_id ?? null) === (program.stage_id ?? null) && (t.from_stage_id ?? null) !== (t.to_stage_id ?? null))
+      // a decision record names the gate's stage but moves nothing
+      .filter((t) => t.decision !== 'record' && (t.to_stage_id ?? null) === (program.stage_id ?? null) &&
+        (t.from_stage_id ?? null) !== (t.to_stage_id ?? null))
       .map((t) => ms(t.decided_on) ?? ms(t.created_on)).filter((t): t is number => t !== null);
     const enteredOn = into.length ? Math.max(...into) : ms(program.created_on);
     const roles: Record<string, number> = {};

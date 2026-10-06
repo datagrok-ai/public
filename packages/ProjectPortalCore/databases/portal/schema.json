@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.31",
+  "version": "0.2.32",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -168,12 +168,13 @@
         "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true},
         "from_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "From"},
         "to_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "To"},
-        "decision": {"type": "string", "choices": ["advance", "recycle", "hold", "terminate", "sync"], "required": true, "immutable": true},
+        "decision": {"type": "string", "choices": ["advance", "recycle", "hold", "terminate", "sync", "record"], "required": true, "immutable": true},
         "decided_by": {"type": "user", "immutable": true},
         "decided_on": {"type": "datetime", "immutable": true},
         "rationale": {"type": "string", "editor": "textarea", "immutable": true},
         "source": {"type": "string", "choices": ["approver", "registry", "data"], "immutable": true, "description": "Who moved the program: an approver in the app, the registry seen by a sync, or the program's data (auto-advance); empty on rows written before 0.2.12"},
-        "evidence": {"type": "string", "editor": "textarea", "immutable": true, "description": "What the data said when the program advanced by data: each required criterion and its result"}
+        "evidence": {"type": "string", "editor": "textarea", "immutable": true, "description": "What the data said when the program advanced by data: each required criterion and its result"},
+        "outcome": {"type": "string", "choices": ["go", "hold", "no_go"], "immutable": true, "description": "The outcome of a recorded decision (decision record): a gate decision recorded in the app where the registry owns the stage; empty on other rows"}
       }
     },
     "criterion_status": {

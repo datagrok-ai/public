@@ -82,6 +82,9 @@ import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
 import {newestFirstBy} from '../model/time';
 import {filterValue, ROW_LIMIT} from '../rows';
 import {findablePrograms, recentPrograms, rememberProgram} from '../find';
+import {recordGateDecision} from '../decision-records';
+import {DECISION_OUTCOMES, DecisionOutcome, describeRecord, OUTCOME_LABELS} from '../model/decision-records';
+import {openDecisionSearchDialog} from './decision-search-dialog';
 import {FindProgram, findPrograms, matchedBy, MIN_QUERY, resolveRecents} from '../model/find';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -664,8 +667,9 @@ export class PortalView {
       ` (proposed by ${r.source === 'data' ? 'data' : this.approvals.names.get(r.proposed_by ?? '') ?? 'someone'}, approved by ` +
       `${reviewsOf(r.reviews).filter((x) => x.verdict === 'approve').map((x) => this.approvals.names.get(x.by) ?? 'someone').join(', ')})`]));
     const history = named(divV(transitions.map((t, i) => {
-      const row = span(
-        `${(t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
+      const when = (t.decided_on ?? t.created_on)?.format?.('YYYY-MM-DD') ?? '';
+      const row = span(t.decision === 'record' ? `${when} · ${describeRecord(t.outcome, stageName(t.to_stage_id), t.rationale)}` :
+        `${when} · ${t.decision}: ${stageName(t.from_stage_id)} → ` +
         `${stageName(t.to_stage_id)}${t.source === 'data' ? ' (by data)' : ''}${approvedBy.get(t.id) ?? ''}` +
         `${t.rationale ? ` — ${t.rationale}` : ''}`,
         'pp-history-row');
@@ -680,7 +684,30 @@ export class PortalView {
         this.provenanceLink('evidence', l.row.id, `provenance-evidence-${i}-${j}`)], 'pp-unit')),
         'pp-evidence'), `decision-evidence-${i}`)]), `decision-${i}`);
     })), 'transition-history');
-    const picker = evidence.suggested.length || (ctx.approver && ctx.portfolio.stage_authority === 'portal') ?
+    // where the registry owns the stage, a decision is recorded here with its evidence, and nothing moves
+    let record: HTMLElement | null = null;
+    if (ctx.portfolio.stage_authority === 'feed' && next) {
+      const outcome = this.select('record-outcome', 'Outcome', DECISION_OUTCOMES.map((o) => ({code: o, name: OUTCOME_LABELS[o]})), 'go');
+      const rec = named(button(`Record decision for ${next.name}`, async () => {
+        try {
+          const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
+          const out = await recordGateDecision(program.id, {outcome: outcome.value as DecisionOutcome, rationale: rationale.value,
+            items, snapshot: !!this.picked.snapshot});
+          this.picked = {programId: program.id, off: new Set(), links: []};
+          grok.shell.info([out.line, ...out.evidence.errors].join('\n'));
+          await this.openProgram(program.id, this.viewedStage);
+        } catch (e: any) {
+          grok.shell.error(e?.message ?? String(e));
+        }
+      }), 'record-decision-button');
+      rec.disabled = !ctx.approver;
+      rec.title = ctx.approver ? 'Keep the gate review\'s outcome, rationale and evidence with the program. The stage does not move: ' +
+        'the registry sets it' : 'Only the portfolio\'s approvers record gate decisions';
+      record = named(divV([divH([outcome.parentElement!, rec], 'pp-actions'),
+        named(span('Recording keeps the decision and its evidence here; the stage is set by the registry', 'pp-muted'), 'record-note')]),
+      'record-decision');
+    }
+    const picker = evidence.suggested.length || ctx.approver ?
       this.evidencePicker(program.id, evidence.suggested, viewedStageName(ctx, ctx.readiness?.stageId ?? null)) : null;
 
     const lineage: HTMLElement[] = [];
@@ -753,6 +780,7 @@ export class PortalView {
         rationale,
         ...(picker ? [picker] : []),
         divH([advance, hold, terminate], 'pp-actions'),
+        ...(record ? [record] : []),
       ],
       approvals: () => this.approvalSection(ctx, approval),
       documents: () => documents.cards.length || documents.rows.length ? this.documents(ctx, documents) : [],
@@ -1780,6 +1808,13 @@ export class PortalView {
   }
 
   /** My feed: everything the user follows; a program in it opens here. */
+  /** Searching the decisions of every portfolio the user can see. */
+  decisions(): void {
+    void openDecisionSearchDialog({portfolios: this.portfolios.map((p) => ({code: p.code, name: p.name})),
+      current: this.portfolio?.code ?? null,
+      openProgram: (code, programId) => this.showProgram(code, programId)}).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }
+
   myFeed(): void {
     void openMyFeedDialog({
       openProgram: async (code, programId) => {
@@ -1862,8 +1897,10 @@ export async function portalAppView(portfolioCode?: string, programCode?: string
   const feed = named(button('My feed', () => portal.myFeed()), 'my-feed-button');
   feed.title = 'What happened in the programs and series you follow, newest first';
   const waiting = named(button('Waiting for me', () => portal.waitingForMe()), 'waiting-button');
+  const decisions = named(button('Decisions', () => portal.decisions()), 'decisions-button');
+  decisions.title = 'Search gate decisions by program, gate, rationale or evidence, across the portfolios you can see';
   waiting.title = 'Proposed decisions and submitted documents and model cards you may approve';
-  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, workspaceButton, exportButton], [table, all], [feed, waiting]],
+  const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, workspaceButton, exportButton], [table, all], [feed, waiting, decisions]],
     status: portal.status,
     path: portal.path});
   portal.boardButtons.set('sync_history', history);
