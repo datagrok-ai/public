@@ -418,34 +418,34 @@ export type AnalysisResultExpand = {
 };
 
 export type PltsTransactionOp =
-  {op: 'insert'; table: 'plate_type'; ref?: string; values: DG.DomainTxValues<PlateTypeInsert>} |
+  {op: 'insert'; table: 'plate_type'; ref?: string; values: DG.DomainTxValues<PlateTypeInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate_type'; id: string; values: DG.DomainTxValues<Partial<PlateTypeRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate_type'; id: string} |
-  {op: 'insert'; table: 'property'; ref?: string; values: DG.DomainTxValues<PropertyInsert>} |
+  {op: 'insert'; table: 'property'; ref?: string; values: DG.DomainTxValues<PropertyInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'property'; id: string; values: DG.DomainTxValues<Partial<PropertyRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'property'; id: string} |
-  {op: 'insert'; table: 'template'; ref?: string; values: DG.DomainTxValues<TemplateInsert>} |
+  {op: 'insert'; table: 'template'; ref?: string; values: DG.DomainTxValues<TemplateInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'template'; id: string; values: DG.DomainTxValues<Partial<TemplateRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'template'; id: string} |
-  {op: 'insert'; table: 'template_property'; ref?: string; values: DG.DomainTxValues<TemplatePropertyInsert>} |
+  {op: 'insert'; table: 'template_property'; ref?: string; values: DG.DomainTxValues<TemplatePropertyInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'template_property'; id: string; values: DG.DomainTxValues<Partial<TemplatePropertyRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'template_property'; id: string} |
-  {op: 'insert'; table: 'plate'; ref?: string; values: DG.DomainTxValues<PlateInsert>} |
+  {op: 'insert'; table: 'plate'; ref?: string; values: DG.DomainTxValues<PlateInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate'; id: string; values: DG.DomainTxValues<Partial<PlateRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate'; id: string} |
-  {op: 'insert'; table: 'analysis_run'; ref?: string; values: DG.DomainTxValues<AnalysisRunInsert>} |
+  {op: 'insert'; table: 'analysis_run'; ref?: string; values: DG.DomainTxValues<AnalysisRunInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'analysis_run'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'analysis_run'; id: string} |
-  {op: 'insert'; table: 'plate_detail'; ref?: string; values: DG.DomainTxValues<PlateDetailInsert>} |
+  {op: 'insert'; table: 'plate_detail'; ref?: string; values: DG.DomainTxValues<PlateDetailInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate_detail'; id: string; values: DG.DomainTxValues<Partial<PlateDetailRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate_detail'; id: string} |
-  {op: 'insert'; table: 'plate_well_value'; ref?: string; values: DG.DomainTxValues<PlateWellValueInsert>} |
+  {op: 'insert'; table: 'plate_well_value'; ref?: string; values: DG.DomainTxValues<PlateWellValueInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'plate_well_value'; id: string; values: DG.DomainTxValues<Partial<PlateWellValueRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'plate_well_value'; id: string} |
-  {op: 'insert'; table: 'analysis_run_parameter'; ref?: string; values: DG.DomainTxValues<AnalysisRunParameterInsert>} |
+  {op: 'insert'; table: 'analysis_run_parameter'; ref?: string; values: DG.DomainTxValues<AnalysisRunParameterInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'analysis_run_parameter'; id: string; values: DG.DomainTxValues<Partial<AnalysisRunParameterRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'analysis_run_parameter'; id: string} |
-  {op: 'insert'; table: 'analysis_result'; ref?: string; values: DG.DomainTxValues<AnalysisResultInsert>} |
+  {op: 'insert'; table: 'analysis_result'; ref?: string; values: DG.DomainTxValues<AnalysisResultInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'analysis_result'; id: string; values: DG.DomainTxValues<Partial<AnalysisResultRow>>; expectedVersion?: number} |
   {op: 'delete'; table: 'analysis_result'; id: string};
 
