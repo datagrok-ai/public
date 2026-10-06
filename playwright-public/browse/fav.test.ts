@@ -27,7 +27,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     await ensureContextPanelOpen(page);
   });
 
-  test('Browse-Fav-01 — Add to favorites from the tree context menu', async ({ page }) => {
+  test('Browse-Fav-01 — Add To Favorites from the tree context menu', async ({ page }) => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');

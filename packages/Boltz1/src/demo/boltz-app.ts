@@ -278,6 +278,9 @@ export async function openBoltzDemo(): Promise<void> {
   const p = await grok.functions.eval('Boltz1:BoltzDemo');
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
+  const tv = grok.shell.tv;
+  if (!(tv instanceof DG.TableView))
+    return;
 
   grok.events.onAccordionConstructed.pipe(
     filter((acc) => acc.getPane('Boltz-1') != null),
@@ -285,7 +288,7 @@ export async function openBoltzDemo(): Promise<void> {
   ).subscribe((acc) => setTimeout(() => acc.getPane('Boltz-1').expanded = true));
 
   setTimeout(() => {
-    const df = grok.shell.tv.dataFrame;
+    const df = tv.dataFrame;
     const complexCell = df.cell(0, 'Complex');
     df.currentCell = complexCell;
     grok.shell.o = DG.SemanticValue.fromTableCell(complexCell);

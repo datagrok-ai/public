@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
 
 ## 2.28.4 (2026-09-29)

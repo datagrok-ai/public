@@ -86,7 +86,7 @@ Investigation date: **2026-06-03** (dev.datagrok.ai, user `opavlenko+playwright@
 | Name                             | Item text            |
 | -------------------------------- | -------------------- |
 | `CONTEXT_MENU_BROWSE`            | `Browse`             |
-| `CONTEXT_MENU_ADD_FAVORITES`     | **`Add to favorites`** (lowercase `f`!) |
+| `CONTEXT_MENU_ADD_FAVORITES`     | **`Add To Favorites`** |
 | `CONTEXT_MENU_SHARE`             | `Share...`           |
 | `CONTEXT_MENU_RENAME`            | `Rename...`          |
 | `CONTEXT_MENU_DELETE`            | `Delete...`          |

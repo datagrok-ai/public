@@ -91,7 +91,7 @@ export const CONTEXT_MENU = '.d4-menu-item-container.d4-vert-menu.d4-menu-popup'
 export const CONTEXT_MENU_ITEM = '.d4-menu-item.d4-menu-item-vert';
 export const CONTEXT_MENU_ITEM_LABEL = '.d4-menu-item-label';
 
-// По атрибуту d4-name="<точное имя пункта>" (например d4-name="Add to favorites").
+// По атрибуту d4-name="<точное имя пункта>" (например d4-name="Add To Favorites").
 export const contextMenuItemByName = (page: Page, d4Name: string): Locator =>
   page.locator(`${CONTEXT_MENU_ITEM}[d4-name="${d4Name}"]`).first();
 

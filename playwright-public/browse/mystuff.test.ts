@@ -115,7 +115,7 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
     const sink = watchErrors(page);
 
     // My stuff > My files is an entity-like node — right-click should expose
-    // Add to favorites.
+    // Add To Favorites.
     await expandTreeGroup(page, 'My stuff');
     const myFiles = treeNodeByPath(page, ['My-stuff', 'My-files']);
     await myFiles.waitFor({ state: 'visible', timeout: 10_000 });
@@ -126,7 +126,7 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
     await expect(menu).toBeVisible({ timeout: 5_000 });
 
     await expect(contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES),
-      'My stuff > My files context menu must expose Add to favorites (ref: GROK-19848)').toBeVisible({ timeout: 5_000 });
+      'My stuff > My files context menu must expose Add To Favorites (ref: GROK-19848)').toBeVisible({ timeout: 5_000 });
 
     await page.keyboard.press('Escape');
     await expectNoErrors(page, sink);

@@ -244,11 +244,11 @@ of the suite has identical targets and case IDs line up across both sets.
 **Type:** functional
 **Preconditions:** Users View open.
 **Steps:**
-1. Right-click a user (e.g. `Admin`). → A context menu opens with: **Details**, **Chat**, **Block**, **Groups...**, **Roles...**, **ID** (copy id), **Add to favorites**.
+1. Right-click a user (e.g. `Admin`). → A context menu opens with: **Details**, **Chat**, **Block**, **Groups...**, **Roles...**, **ID** (copy id), **Add To Favorites**.
 
 **Final check:** all listed items are present.
 **Postconditions/cleanup:** close the menu (Esc).
-**Selectors:** user card, `.d4-menu-popup .d4-menu-item`, `d4-name="Details|Chat|Block|Groups...|Roles...|Add to favorites"`.
+**Selectors:** user card, `.d4-menu-popup .d4-menu-item`, `d4-name="Details|Chat|Block|Groups...|Roles...|Add To Favorites"`.
 
 ---
 
@@ -347,12 +347,12 @@ of the suite has identical targets and case IDs line up across both sets.
 **Type:** functional
 **Preconditions:** Users View open.
 **Steps:**
-1. Right-click a user → **Add to favorites**. → The user is starred (the Context Panel star becomes active when the user is selected).
+1. Right-click a user → **Add To Favorites**. → The user is starred (the Context Panel star becomes active when the user is selected).
 2. Open **Browse > My stuff > Favorites** (or the Favorites sidebar). → The user appears in the favorites list.
 
 **Final check:** the user is present in Favorites.
 **Postconditions/cleanup:** remove the user from favorites (toggle the star off).
-**Selectors:** context menu `d4-name="Add to favorites"`, `CONTEXT_PANEL_STAR`, Favorites list.
+**Selectors:** context menu `d4-name="Add To Favorites"`, `CONTEXT_PANEL_STAR`, Favorites list.
 
 ---
 
