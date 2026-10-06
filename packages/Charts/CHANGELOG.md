@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21101: Sunburst: Fixed an error when reordering columns in the Order or Hide Columns dialog
 * GROK-21110: Sankey: Fixed error when filtering out all rows
 * GROK-21111: Chord: Fixed the "Column '' not found" error when From and To are set to the same column
 * Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
