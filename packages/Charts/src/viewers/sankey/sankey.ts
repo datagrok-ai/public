@@ -242,6 +242,9 @@ export class SankeyViewer extends DG.JsViewer {
 
     this.prepareData();
 
+    if (this.graph.nodes.length === 0)
+      return;
+
     const cycles = this.detectGraphCycles(this.graph);
     if (cycles.length > 0) {
       MessageHandler._showMessage(this.root, 'The graph contains cycles. Please remove circular dependencies.', 'd4-viewer-error');
