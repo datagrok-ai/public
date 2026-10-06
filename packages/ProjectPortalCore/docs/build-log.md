@@ -446,3 +446,23 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - Not configurable per portfolio: there is no portfolio-level settings column to hold it without a schema change.
 - An ended program with no folder gets none, and its `space_id` stays empty.
 - Names are kept for the session; a renamed user shows the old name until reload (`clearUserNames()` resets).
+
+## Program rows visible through their folders
+
+*Security, GROK-21041 workaround. Schema: none.*
+
+- Verified on the stand with a plain user in one portfolio's viewers group: before, 0 programs on every board and a
+  program's address fell back to the empty board; after, the portfolio's programs and their children (gate log,
+  documents, evidence, runs), and none of another portfolio's.
+- The row reaches whoever may view its folder. Anyone an admin shares a program folder with by hand also sees the
+  program row. That is the intended rule (the folder is the program's), but it means folder sharing is now row
+  sharing.
+- View only. Contributors and approvers who are not the row's author still cannot write the master tables (gate
+  decisions, evidence, documents, criterion status) on the server. That needs Edit on the row: GROK-21041.
+- A program without a folder (a portfolio with no workspace, or before the builder runs) stays private to its
+  author. Linking into the portfolio's root instead was not done: it would show every row in the root.
+- `linkProgramRows` is per portfolio and not run on load; existing stands run it once per portfolio, or rebuild
+  the portfolio's workspace.
+- A plain user also needs the package released (`grok publish --release`): a debug publish is visible to its
+  publisher only (platform finding 28), and the app answers "Application not found".
+

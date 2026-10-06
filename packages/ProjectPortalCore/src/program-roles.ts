@@ -5,8 +5,9 @@
  * Only the portfolios' approvers groups may write `program_role` on the server (./write-grants);
  * that one approver manages only their own portfolio's programs is the app's check.
  *
- * Row grants wait on GROK-21041: the server refuses `permissions.grant` on a promoted domain row,
- * so a program role cannot make a program row visible yet. `syncRowGrants` applies the same grants
+ * Row grants wait on GROK-21041: the server refuses `permissions.grant` on a promoted domain row.
+ * Meanwhile the row is linked into its workspace folder (./program-rows), so a role's View on the
+ * folder reaches the row too; Edit does not (the server clamps that path to View). `syncRowGrants` applies the same grants
  * to the row as to the folder; it runs only when ROW_GRANTS is true. Once the platform accepts the
  * grant, set ROW_GRANTS to true: the `program_role` table then drives the row's grants too, with no
  * change to the table or to who manages it. */

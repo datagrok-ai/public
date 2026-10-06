@@ -53,9 +53,10 @@ the multi-portfolio board from a passing scenario.
 
 ## Known failures
 
-Three package tests fail on purpose until the platform is fixed; they are the acceptance checks:
-- the two isolation tests, on GROK-21041 (a domain row cannot be shared; see
-  [platform-findings.md](platform-findings.md), item 1);
+Two package tests fail on purpose until the platform is fixed; they are the acceptance checks:
+- `a manually created program stays private until shared`, on GROK-21041 (a domain row cannot be granted; see
+  [platform-findings.md](platform-findings.md), item 1). The other isolation test passes since program rows are
+  linked into their workspace folders;
 - saving a model run with its soft reference, on GROK-21042 (item 20). `saveModelRun` falls back to `run_id`
   meanwhile.
 

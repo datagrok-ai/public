@@ -8,10 +8,13 @@ are given where one was filed. Items 1 to 19 were first listed in the package RE
 1. **Sharing a domain row is refused (GROK-21041).** A promoted domain row cannot be shared through
    `grok.dapi.permissions.grant`, even by the row's author holding Share (`~can_share` true).
    `privileges_service.savePermission` checks Share against the projects repository, which never holds domain rows.
-   Program rows therefore stay private to their author, which fails closed: a portfolio viewer sees no programs,
-   not another portfolio's. Two package tests pin it as the acceptance check for the fix. Program roles wait on the
-   same fix for row grants (`ROW_GRANTS` in `src/program-roles.ts`). Workspaces are not affected: a space takes the
-   grant, so each portfolio's workspace is isolated today.
+   Program rows therefore stayed private to their author: a portfolio viewer saw no programs. **Workaround since
+   2026-10-06:** each program row is linked into its workspace folder. The server lets whoever may view a space view
+   the domain rows linked into it (View only; it clamps that path, so no write follows), so the row reaches the
+   portfolio's groups and the program's roles through the folder (`src/program-rows.ts`). A program without a folder
+   stays private, and Edit on a row still needs the fix: a contributor cannot write the master tables (gate log,
+   evidence, documents) of a program they did not author. One package test pins the grant itself. Workspaces are
+   not affected: a space takes the grant, so each portfolio's workspace is isolated today.
 2. **`string_list` columns can't be written from JS.**
    - `Types.fromValue` reports any `List` as `list`, so a JS array never validates against a `string_list` column.
    - The workaround is to hold stage spellings in `stage.spellings` as a `|`-separated string.

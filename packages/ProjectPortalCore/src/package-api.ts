@@ -453,6 +453,13 @@ export namespace funcs {
   }
 
   /**
+   * Makes a portfolio's program rows visible to whoever may view their workspace folders (the portfolio's groups and the program roles) by linking each row into its folder. View only. Creates no folder. Idempotent
+   */
+  export async function linkProgramRows(portfolio: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:LinkProgramRows', { portfolio, dryRun });
+  }
+
+  /**
    * Loads a model catalogue handed over without a portfolio file: unit operations, run types, models and their cards, as JSON. Checked before loading; idempotent
    * @param {string} catalogue - JSON object with unitOperations, runTypes, models
    * @param {string} portfolio - The portfolio the models belong to

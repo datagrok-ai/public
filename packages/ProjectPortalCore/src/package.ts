@@ -53,6 +53,7 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
   submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
 import {reviewsOf} from './model/approvals';
 import {secureWriteTables} from './write-grants';
+import {linkProgramRows as linkRows} from './program-rows';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
 import {ApprovalRequestRow} from './generated/db';
 import {pinByCode} from './pinning';
@@ -729,6 +730,16 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 export async function securePortalTables(dryRun: boolean = true): Promise<string> {
   const lines = await secureWriteTables(undefined, dryRun);
   return lines.length ? lines.join('\n') : 'write permissions already in place';
+}
+
+//name: linkProgramRows
+//description: Makes a portfolio's program rows visible to whoever may view their workspace folders (the portfolio's groups and the program roles) by linking each row into its folder. View only. Creates no folder. Idempotent
+//input: string portfolio
+//input: bool dryRun = true
+//output: string report
+export async function linkProgramRows(portfolio: string, dryRun: boolean = true): Promise<string> {
+  const lines = await linkRows(portfolio, dryRun);
+  return lines.length ? lines.join('\n') : 'no programs';
 }
 
 //name: loadModelCatalogue

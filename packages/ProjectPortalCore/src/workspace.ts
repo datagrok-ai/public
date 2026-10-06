@@ -17,6 +17,7 @@ import {findOrphans, findProgramFolder, isSpaceNamed, noNewFoldersReason, Orphan
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode} from './portal';
 import {syncFolderGrants} from './program-roles';
+import {linkProgramRow} from './program-rows';
 import {filterValue, ROW_LIMIT} from './rows';
 import {FlowFoldersConfig, flowFolderPaths, flowFoldersDue, flowsForProgram, ProgramFlow, TableFlow} from './model/flow-folders';
 
@@ -182,6 +183,7 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
   }
 
   let attributesWritten = 0;
+  let rowsLinked = 0;
   for (const p of programs) {
     const folderName = programFolderName(p);
     const path = `${rootName}/${folderName}`;
@@ -224,6 +226,13 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       }
       if (folder.id !== p.spaceId)
         await portalDb.programs.update(p.id, {space_id: folder.id});
+      // the row is private to its author; linked into its folder, whoever sees the folder sees it
+      try {
+        if (await linkProgramRow(p.id, folder.id))
+          rowsLinked++;
+      } catch (e: any) {
+        report.notes.push(`${p.code}: program row not linked into its folder (${e?.message ?? e})`);
+      }
       if (await writeAttributes(folder, programAttributes(portfolio.code, p)))
         attributesWritten++;
       if (withRoles.has(p.id)) {
@@ -251,6 +260,8 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
   }
   if (attributesWritten > 0)
     report.notes.push(`attributes written on ${attributesWritten} program folder(s)`);
+  if (rowsLinked > 0)
+    report.notes.push(`${rowsLinked} program row(s) linked into their folders, visible to the folder's groups`);
   if (!onlyProgramId)
     report.orphans = findOrphans(rootName, children.map(asRef), all);
   return report;

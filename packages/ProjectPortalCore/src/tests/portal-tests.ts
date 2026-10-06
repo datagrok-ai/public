@@ -169,6 +169,8 @@ category('Portal: isolation between portfolios', () => {
 
   test('a user sees only the portfolios whose groups they are in', async () => {
     const sm = await portfolioByCode('EX-SMD');
+    // program rows reach the portfolio's groups through their workspace folders
+    await buildPortfolioWorkspace('EX-SMD');
     const smCount = (await programsOf('EX-SMD')).length;
     const ran = await withRestrictedUser('pportal', async (u) => {
       // the table is readable by everyone (schema grant); its rows are not
@@ -179,9 +181,10 @@ category('Portal: isolation between portfolios', () => {
       const personal = await grok.dapi.groups.find(u.group);
       await grok.dapi.groups.includeTo(personal, viewers);
       try {
-        const seen = await u.asUser(() => portalDb.programs.query({}));
+        const all = await u.asUser(() => portalDb.programs.query({}));
+        const seen = all.filter((p) => p.source === 'feed');
         expect(seen.length, smCount, `saw: ${seen.map((p) => p.code).join()}`);
-        expect(seen.every((p) => p.portfolio_id === sm.id), true, 'a small-molecule viewer saw another portfolio');
+        expect(all.every((p) => p.portfolio_id === sm.id), true, 'a small-molecule viewer saw another portfolio');
       } finally {
         await grok.dapi.groups.excludeFrom(personal, viewers);
       }

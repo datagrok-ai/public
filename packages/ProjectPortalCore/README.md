@@ -41,7 +41,7 @@ one organization runs discovery and development together.
 - **Missing is not deleted.** A program that drops out of its feed is flagged `missing_from_feed`, never removed.
 - **Fail closed.**
   - `program` rows are private to their author until they are shared.
-  - Sync shares each new program with its portfolio's groups: approvers ⊂ contributors ⊂ viewers, with View to viewers and Edit to contributors.
+  - Sync shares each new program with its portfolio's groups: approvers ⊂ contributors ⊂ viewers, with View to viewers and Edit to contributors. The server refuses that grant today (GROK-21041), so the workspace builder links each program row into its folder: whoever may view the folder may view the row (`linkProgramRows`).
 - **A workspace per portfolio.**
   - `buildWorkspace` creates a Spaces tree: the portfolio's `workspaceRoot`, a folder per program named `CODE · Name`, and the portfolio's `workstreams` under each program. Stages add their folders as a program reaches them; a portfolio may add unit-operation folders from its process flows.
   - Compounds, plates, results and predictions are never folders. The builder is additive: it never renames, moves or deletes. Orphan folders are reported, and parked only when an approver asks.
@@ -192,8 +192,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 - **`npm run test:bdd`: Gherkin scenarios** in `bdd/features/`, compiled to Playwright by
   `@datagrok-libraries/bdd`. Features address controls only by their `data-u2-name`. Run with `--workers=1`.
 
-Three package tests fail until the platform is fixed, and stay as the acceptance checks: the two isolation tests
-(GROK-21041, a domain row cannot be shared) and saving a model run with its soft reference (GROK-21042).
+Two package tests fail until the platform is fixed, and stay as the acceptance checks: a manually created program
+shared by grant (GROK-21041, a domain row cannot be granted) and saving a model run with its soft reference (GROK-21042).
 `saveModelRun` falls back to `run_id` meanwhile.
 
 ## Known platform issues

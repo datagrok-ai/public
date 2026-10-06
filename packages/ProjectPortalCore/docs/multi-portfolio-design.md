@@ -39,8 +39,9 @@ example portfolios reproduce each of them on synthetic data.
 4. **Gates that do not resolve.** Some registry spellings match no stage. The board shows those programs under
    Unstaged, and an unresolvable spelling never clears a gate the program already has.
 5. **Isolation needs row grants.** Sharing a program row with its portfolio's groups is refused by the platform
-   today (GROK-21041), so isolation fails closed: a portfolio viewer sees no programs, not another portfolio's.
-   Workspaces are not affected: a space takes the grant.
+   today (GROK-21041). Each program row is linked into its workspace folder instead, and the server shows a
+   linked row to whoever may view the folder (View only). So a portfolio viewer sees its programs and not another
+   portfolio's; a program without a folder stays private. Workspaces take grants directly.
 6. **Approver scope is the app's.** Custom permissions are table-wide, so "approver in one portfolio but not
    another" is enforced by group membership in the app. The workflow tables are locked down per table on the
    server ([schema.md](schema.md#security-and-who-writes)); a row-scoped rule needs the platform.

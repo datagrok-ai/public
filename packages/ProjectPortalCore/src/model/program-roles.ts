@@ -8,8 +8,9 @@
  *   approvers select runs;
  * - in the program's workspace folder, which accepts grants: View to viewers, Edit to contributors
  *   and approvers.
- * Program rows do not take grants yet (GROK-21041), so a role does not yet make the program row
- * visible to someone outside the portfolio's groups. `grantsFor` says what the row grants will be.
+ * Program rows do not take grants yet (GROK-21041). The row is linked into its folder instead
+ * (./program-rows), so a role's View reaches the row through the folder; Edit on the row does not.
+ * `grantsFor` says what the row grants will be.
  * Pure: the caller reads the roles and the user's groups. */
 
 export type ProgramRole = 'viewer' | 'contributor' | 'approver';
