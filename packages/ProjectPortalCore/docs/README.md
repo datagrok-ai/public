@@ -4,6 +4,7 @@ The package [README](../README.md) is the usage guide. These pages hold the desi
 
 | Page | What it answers |
 |---|---|
+| [GOAL.md](GOAL.md) | What the portal is for, in 15 points, and who delivers each: the core, a customer package or the platform |
 | [multi-portfolio-design.md](multi-portfolio-design.md) | Why the portfolio is the unit of configuration, and what real registries raise when several portfolios share one instance |
 | [architecture.md](architecture.md) | The reference architecture: layers, the core/customer package split, schema design rules, the workspace builder contract, and where the build differs |
 | [features.md](features.md) | How each feature behaves, in detail |
