@@ -15,6 +15,7 @@ import {
   watchErrors,
   expectNoErrors,
   expandTreeGroup,
+  setPersonalFavorite,
 } from './helpers';
 
 const BASE: string = process.env.DATAGROK_URL!;
@@ -85,17 +86,11 @@ test.describe('Browse My stuff (Browse-MyStuff-*)', () => {
     // Ensure not already favorited.
     await targetLabel.click({ button: 'right' });
     await expect(page.locator(CONTEXT_MENU)).toBeVisible({ timeout: 5_000 });
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-      await page.waitForTimeout(800);
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    await setPersonalFavorite(page, false);
 
     // Now add.
     await targetLabel.click({ button: 'right' });
-    await contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES).click();
-    await page.waitForTimeout(1500);
+    await setPersonalFavorite(page, true);
 
     // Verify presence in My stuff > Favorites.
     await ensureBrowsePanelOpen(page);
@@ -113,18 +108,14 @@ test.describe('Browse My stuff (Browse-MyStuff-*)', () => {
     await ensureBrowsePanelOpen(page);
     await expandTreeGroup(page, 'Apps');
     await targetLabel.click({ button: 'right' });
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-    } else {
-      await page.keyboard.press('Escape');
-    }
+    await setPersonalFavorite(page, false);
   });
 
 test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My files', async ({ page }) => {
     const sink = watchErrors(page);
 
     // My stuff > My files is an entity-like node — right-click should expose
-    // Add to favorites (or Remove from favorites, depending on prior state).
+    // Add to favorites.
     await expandTreeGroup(page, 'My stuff');
     const myFiles = treeNodeByPath(page, ['My-stuff', 'My-files']);
     await myFiles.waitFor({ state: 'visible', timeout: 10_000 });
@@ -134,14 +125,8 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
     const menu = page.locator(CONTEXT_MENU);
     await expect(menu).toBeVisible({ timeout: 5_000 });
 
-    // Either "Add to favorites" or "Remove from favorites" must be present.
-    const add = contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES);
-    const remove = contextMenuItem(page, 'Remove from favorites');
-    const addVisible = await add.isVisible().catch(() => false);
-    const removeVisible = await remove.isVisible().catch(() => false);
-    expect(addVisible || removeVisible,
-      'My stuff > My files context menu must expose Add or Remove from favorites (ref: GROK-19848)')
-      .toBe(true);
+    await expect(contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES),
+      'My stuff > My files context menu must expose Add to favorites (ref: GROK-19848)').toBeVisible({ timeout: 5_000 });
 
     await page.keyboard.press('Escape');
     await expectNoErrors(page, sink);

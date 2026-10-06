@@ -254,6 +254,34 @@ export async function clickTreePath(
   else await locator.click();
 }
 
+/**
+ * Sets the personal favorite state of the object whose context menu is open, and closes the menu.
+ * "Add to favorites" is a check item, or, for a user who administers groups, a submenu whose
+ * "Only for me" item carries the check (GROK-21108). Returns the state before the change.
+ */
+export async function setPersonalFavorite(page: Page, on: boolean): Promise<boolean> {
+  // The label's parent, not `.d4-menu-item:has(label)`: a group item contains its submenu items.
+  const menuItem = (label: RegExp) => page.locator('.d4-menu-item-label', { hasText: label }).first().locator('xpath=..');
+  const add = menuItem(/^Add to favorites$/);
+  await expect(add, '"Add to favorites" must be in the context menu').toBeVisible({ timeout: 5_000 });
+  let item = add;
+  if (await add.evaluate((el) => el.classList.contains('d4-menu-group'))) {
+    await add.hover();
+    item = menuItem(/^Only for me$/);
+    await expect(item, '"Only for me" must be in the Add to favorites submenu').toBeVisible({ timeout: 5_000 });
+  }
+  const was = await item.locator('.d4-menu-item-check [name="icon-check"]').count() > 0;
+  if (was !== on) {
+    await item.click();
+    await page.waitForTimeout(1000);
+  }
+  else {
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+  }
+  return was;
+}
+
 /** Returns how many tree-view nodes are currently in the "expanded" state. */
 export async function countExpandedNodes(page: Page): Promise<number> {
   return page.locator(TREE_EXPAND_ARROW_EXPANDED).count();

@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
   CONTEXT_MENU,
-  contextMenuItem,
   contextMenuItemByName,
   GALLERY_GRID,
   GALLERY_COUNTS,
@@ -42,6 +41,7 @@ import {
   USER_LAST_NAME,
   watchErrors,
   expectNoErrors,
+  setPersonalFavorite,
 } from './helpers';
 
 // CI/CD variant of the dev `e2e/user groups/users.test.ts`. The fresh CI DB has none of the
@@ -215,24 +215,15 @@ test.describe('Users View (Users-*)', () => {
   test('Users-21 — add / remove a user from favorites (roundtrip)', async ({ page }) => {
     const sink = watchErrors(page);
 
-    // Pre-clean: if already a favorite, remove it first.
     await openCardContextMenu(page, TARGET_NAME);
-    if (await contextMenuItem(page, 'Remove from favorites').isVisible().catch(() => false)) {
-      await contextMenuItem(page, 'Remove from favorites').click();
-      await page.waitForTimeout(800);
-    } else await closeMenu(page);
+    await setPersonalFavorite(page, false);
 
-    // Add, then confirm the menu flips to "Remove from favorites".
     await openCardContextMenu(page, TARGET_NAME);
-    await contextMenuItemByName(page, 'Add to favorites').click();
-    await page.waitForTimeout(1000);
+    await setPersonalFavorite(page, true);
     await openCardContextMenu(page, TARGET_NAME);
-    await expect(contextMenuItem(page, 'Remove from favorites'),
-      'after adding, "Remove from favorites" must be present').toBeVisible({ timeout: 5_000 });
-
-    // Cleanup.
-    await contextMenuItem(page, 'Remove from favorites').click();
-    await page.waitForTimeout(500);
+    expect(await setPersonalFavorite(page, false), 'after adding, the favorite must be checked').toBe(true);
+    await openCardContextMenu(page, TARGET_NAME);
+    expect(await setPersonalFavorite(page, false), 'after removing, the favorite must be unchecked').toBe(false);
     await expectNoErrors(page, sink);
   });
 

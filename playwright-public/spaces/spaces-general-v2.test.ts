@@ -11,6 +11,7 @@
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'path';
+import { setPersonalFavorite } from '../browse/helpers';
 
 const BASE = process.env.DATAGROK_URL!;
 // CI default: share with the auto-provisioned `test2` user
@@ -633,7 +634,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
     await uiCreateRootSpace(page, FAV);
 
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Add to favorites');
+    await setPersonalFavorite(page, true);
 
     // Verify in browse tree Favorites section
     await page.evaluate(() => {
@@ -648,9 +649,9 @@ test('6. Favorites: add and remove space from favorites', async () => {
     await expect(page.locator('.grok-favorites-pane').first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.grok-favorites-pane').filter({ hasText: new RegExp(FAV) }).first()).toBeVisible({ timeout: 8_000 });
 
-    // Remove from favorites
+    // Remove from favorites (uncheck)
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Remove from favorites');
+    expect(await setPersonalFavorite(page, false), 'the space must be a favorite before removing').toBe(true);
 
     // Verify gone from browse tree Favorites
     await page.evaluate(() => {
