@@ -30,8 +30,8 @@ Companion files in this skill's folder:
    or workflow pages that restate other pages: the sidebar already links them.
 2. **Propose the structure first**: which pages and sections change, and where each fact will
    live. Wait for approval.
-3. **A question from the reviewer is a request for your opinion, not a command.** Say whether you
-   agree and why, propose the exact text, and wait for the decision.
+3. **When the reviewer questions a section**, answer with the evidence (is it new, is it covered
+   elsewhere, what the code says) before changing or removing it.
 4. **Work in small, reviewable edits** on a branch cut from the current master. `help/` is a
    submodule of the `datagrok-ai/help` repository: branch, commit, and open the PR there, never
    commit the `help` pointer in `public` (a bot bumps it). Commit and push only when asked, with
