@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.browse]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
@@ -147,7 +148,7 @@ test.describe("The context panel and the context menus of the Browse tree", () =
     await session.step(139, "And no errors should have been logged", () => noErrors(page));
     await session.step(140, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("A file has a favorite star, as a connection has", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
+  test("A file carries the favorite star, as a connection does (GROK-21108)", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(33, "Given user is logged in", () => loggedIn(page));
     await session.step(34, "And the browse panel is open", () => browsePanelOpen(page));

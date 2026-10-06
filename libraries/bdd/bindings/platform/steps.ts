@@ -196,6 +196,9 @@ async function saveProject(page: Page, name: string, everyView: boolean): Promis
     try {
       const project = DG.Project.create();
       project.name = n;
+      // as the Save dialog names it: the server's name filter misses a project listed under a
+      // friendly name derived from the name ("Radar Reopen…")
+      project.friendlyName = n;
       const tables: string[] = [];
       const views: string[] = [];
       for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {

@@ -5,10 +5,11 @@ Feature: The My stuff section of the Browse tree
 
   Recent and Favorites reload when they are opened again: the group goes loading → loaded, which the
   expand step waits for, so Browse-MyStuff-02 (a project just opened is in Recent), -03 and Fav-01
-  (an entity added from its context menu is in Favorites, and out of it when the same item is
-  picked again — "Add To Favorites > Only for me" is a check since GROK-21108) are claimed on
-  a reopened group. The favorite is a fixture connection the feature makes and deletes, taken out of
-  the account's favorites before and after. -05 (Add To Favorites from My Files, GROK-19848) needs
+  (an entity added from its context menu is in Favorites, and out of it when picked again) are claimed
+  on a reopened group. Add To Favorites is a submenu for an account that administers groups ("Only for
+  me" and every group it may edit), and picking a target the entity is already in takes it out. The
+  favorite is a fixture connection the feature makes and deletes, taken out of the account's
+  favorites before and after. -05 (Add To Favorites from My Files, GROK-19848) needs
   the user's home share, which a stand names itself ("My files" on dev) and a stand without home
   storage does not have, so it is @full-stand. -06 (a new script lands in My stuff) is claimed in
   browse-navigation.feature, where Refresh brings it in. -04 (Shared with me grouped by who shared)

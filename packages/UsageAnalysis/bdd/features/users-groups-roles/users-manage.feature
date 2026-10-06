@@ -10,6 +10,9 @@ Feature: Managing a user
   and deleted at its end, and its memberships go with them; the fixture step puts it back to active
   and out of the favorites when an earlier run died between the halves.
 
+  For an account that administers groups, Add To Favorites is a submenu: "Only for me" and every
+  group it may edit. Picking a target the user is already in takes it out again.
+
   The context menu of a disabled user offers Enable at once: the gallery card that stayed stale
   until a reload in the older suite follows the change now, and the claim that Disable... is gone
   holds it to that.
@@ -122,9 +125,8 @@ Feature: Managing a user
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
     When user picks "Add To Favorites > Only for me" from the context menu of "bddmanaged" link in gallery
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be present
-    # GROK-21108: the item is a check, picked again it takes the user out; there is no Remove any more
     When user opens the context menu of "bddmanaged" link in gallery
-    Then the open menu should not list "Remove from favorites"
+    Then the open menu should list "Add To Favorites > Only for me"
     When user picks "Add To Favorites > Only for me" from the open menu
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
     When user opens the context menu of "bddmanaged" link in gallery

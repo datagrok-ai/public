@@ -6,7 +6,8 @@ Feature: A space in favorites
 
   The claim is presence in the tree rather than visibility, because it is the stronger one: a node
   that is merely inside a collapsed group would satisfy "absent" without anything having been
-  removed.
+  removed. Add To Favorites is a submenu for an account that administers groups; "Only for me"
+  adds the space to the user's own favorites, and picking it again takes the space out.
 
   For an account that administers a group, as the running one does, "Add To Favorites" is a submenu
   of "Only for me" and the groups, and its item is a check: picking it again takes the space out

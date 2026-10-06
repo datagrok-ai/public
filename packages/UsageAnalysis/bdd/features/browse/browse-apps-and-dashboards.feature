@@ -31,14 +31,14 @@ Feature: The Apps and Dashboards sections of the Browse tree
   @full-stand
   Scenario: The Apps section lists the installed applications
     Given Apps tree node inside browse tree is expanded
-    Then Tutorials tree node inside browse tree should be visible
+    Then Apps---Tutorials tree node inside browse tree should be visible
     And Misc tree node inside browse tree should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
   Scenario: An application opens from the tree and becomes the current object
     Given Apps tree node inside browse tree is expanded
-    When user clicks on Tutorials tree node inside browse tree
+    When user clicks on Apps---Tutorials tree node inside browse tree
     Then the "Tutorials" view should be current
     And no errors should have been logged
     And no error or warning balloon should have been shown

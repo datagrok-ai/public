@@ -12,17 +12,25 @@ import {filter} from 'rxjs/operators';
 import {createPlatesView} from './views/plates-create-view';
 import {AnalysisManager} from '../plate/analyses/analysis-manager';
 import {searchAnalysesView} from './views/analyses-search-view';
+import {demoPlatesSeeding} from './plates-demo';
 
 export function platesAppView(): DG.TableView {
   const view = DG.TableView.create(DG.DataFrame.fromColumns([DG.Column.string('barcode', 0)]));
   view.name = 'Plates';
   ui.setUpdateIndicator(view.root, true);
-  crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers: []}).then((df: DG.DataFrame) => {
-    df.col('barcode')!.semType = 'Plate Barcode';
-    view.dataFrame = df;
-    view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
-      .onPrepareValueScript = `return (await plates.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
-  }).finally(() => ui.setUpdateIndicator(view.root, false));
+  Promise.resolve(demoPlatesSeeding?.catch(() => {}))
+    .then(() => crud.queryPlates({plateMatchers: [], wellMatchers: [], analysisMatchers: []}))
+    .then((df: DG.DataFrame) => {
+      if (df.rowCount === 0) {
+        grok.shell.info('No plates yet. Use Create in the app tree to add plates.');
+        return;
+      }
+      df.col('barcode')!.semType = 'Plate Barcode';
+      view.dataFrame = df;
+      view.grid.columns.add({gridColumnName: 'plate', cellType: 'Plate'})
+        .onPrepareValueScript = `return (await plates.getPlateByBarcode(gridCell.tableRow.get('barcode'))).data;`;
+    })
+    .finally(() => ui.setUpdateIndicator(view.root, false));
   return view;
 }
 

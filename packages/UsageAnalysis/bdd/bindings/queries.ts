@@ -12,7 +12,9 @@ declare const grok: any;
 /* --- columns of a schema ----------------------------------------------------------------------
    The case clicks every column of every table and watches the context panel follow. The tree is
    walked with real clicks; each column click is done when the current object (grok.shell.o) is
-   that column, and the panes the panel then shows are recorded for the claim that follows. */
+   that column and the panel's accordion has been constructed — the panes a feature adds on that
+   event (Database meta) come a task after the column is current — and the panes the panel then
+   shows are recorded for the claim that follows. */
 
 interface InspectedColumn {table: string; column: string; shown: string; panes: string[]}
 const inspected = new WeakMap<Page, InspectedColumn[]>();
@@ -27,6 +29,16 @@ export const clickEveryColumn = When('user clicks every column of every table un
     .map((e) => e.getAttribute('name')!).filter((n) => !n.slice(pre.length + 3).includes('---')), p);
   const tables = [...new Set(await directChildren(prefix))];
   expect(tables.length, `tables under ${target.phrase}`).toBeGreaterThan(0);
+  await page.evaluate(() => {
+    const w = window as any;
+    w.__bddPanelAccordions = 0;
+    w.__bddPanelAccordionSub?.unsubscribe();
+    w.__bddPanelAccordionSub = grok.events.onAccordionConstructed.subscribe((a: any) => {
+      if (a?.root?.closest?.('.grok-prop-panel'))
+        w.__bddPanelAccordions++;
+    });
+  });
+  const constructed = () => page.evaluate(() => (window as any).__bddPanelAccordions as number);
   const results: InspectedColumn[] = [];
   for (const table of tables) {
     const node = page.locator(`[name="${table}"]`).first();
@@ -40,6 +52,7 @@ export const clickEveryColumn = When('user clicks every column of every table un
       await colNode.scrollIntoViewIfNeeded();
       const want = col.slice(table.length + 3);
       let shown = '';
+      const before = await constructed();
       // the panel drops a change within 2 s of a property edit and while the object is frozen
       // (property_panel.dart), so a click that lands in that window makes nothing current: it is
       // made again before the column counts as one the panel did not follow
@@ -48,12 +61,15 @@ export const clickEveryColumn = When('user clicks every column of every table un
         await expect.poll(async () => (shown = await page.evaluate(() => String(grok.shell.o?.name ?? ''))) && norm(shown) === norm(want),
           {message: `the current object after clicking ${col}`, timeout: pollMs(attempt === 0 ? 5000 : 10000)}).toBe(true).catch(() => undefined);
       }
+      if (norm(shown) === norm(want))
+        await expect.poll(constructed, {message: `the context panel's accordion for ${col}`, timeout: pollMs(10000)}).toBeGreaterThan(before);
       const panes: string[] = await page.evaluate(() => Array.from(document.querySelectorAll('.grok-prop-panel .d4-accordion-pane-header'))
         .map((e) => (e.firstChild?.textContent ?? '').trim()));
       results.push({table: table.slice(prefix.length + 3), column: want, shown, panes});
     }
     await tri.click();
   }
+  await page.evaluate(() => (window as any).__bddPanelAccordionSub?.unsubscribe());
   inspected.set(page, results);
 }, {tier: 'ui', description: 'expands each table of the schema node in turn, clicks each of its columns and records what the context panel then shows'});
 

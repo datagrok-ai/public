@@ -139,7 +139,7 @@ Feature: The context panel and the context menus of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A file has a favorite star, as a connection has
+  Scenario: A file carries the favorite star, as a connection does (GROK-21108)
     Given the context panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded

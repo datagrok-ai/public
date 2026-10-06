@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Sketcher: Added `Sketcher.onSketcherReady` and `Sketcher.sketcherReady()`: the host announces each implementation once it is ready (initialized, listened to, showing the host's molecule), synchronously, once per implementation, so a switch in the ≡ menu announces the new one; await `sketcherReady()` instead of polling `sketcher.isInitialized`. `createSketcher()` builds the DOM once, so a host that needs it before the constructor's timer (the substructure filter) can build it at a known moment
+* Sketcher: `Sketcher.isEmptyMolfile` accepts the platform's own `WHITE_MOLBLOCK_V_3000` (its header is two lines, not three), so setting it clears a sketcher and the sketcher then reads as empty
 * Sketcher: A value set while the implementation initializes (an asynchronous one, such as Ketcher or Crux) is shown once it is ready instead of being lost, and `isInPopupContainer` checks where the implementation is shown, so a sketcher dialog opened from a thumbnail in a popup keeps its minimum width
 * Added the `skipLogic` option to `InputForm.forFuncCall`: the form renders inputs and binds them to the call, nothing else (no default or auto-filled values, no choice or default functions, no validation, no `visible`/`enabled` expressions); implies `skipDefaultInit` and `skipTableAutoFill`
 * GROK-21019: Added `ColumnList.addNewCalculated(name, expression, options)` with `onError`: leave the rows the formula fails on empty, fill them with a value, or reject on the first one; `errorColumn` adds a column of per-row messages

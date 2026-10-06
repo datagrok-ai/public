@@ -2,10 +2,16 @@
 
 ## v.next
 
+* Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
+* Sankey, Chord: Added the automation surface — node, link, category and chord hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
+* Globe: Added the `points` automation reading and `isRenderPending` / `onRendered`
+* Globe: Fixed a filter change not redrawing the globe
+* Tree: Fixed one failed render stopping every later render
+* GROK-21110: Sankey: Fixed "Invalid array length" when the filter leaves no rows; it now draws nothing, as it does when no row has both a source and a target
+* Sankey: Fixed nodes drawn with no height when the Value column has a missing value (demog's M and Caucasian)
 * GROK-21101: Sunburst: Fixed an error when reordering columns in the Order or Hide Columns dialog
-* GROK-21110: Sankey: Fixed error when filtering out all rows
 * GROK-21111: Chord: Fixed the "Column '' not found" error when From and To are set to the same column
-* Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
+* Sunburst: Added the automation surface — `getWidgetStatus` reports a `segment <path>` hit area per drawn sector (a point the sector confirms it contains, not its bounding box; an empty value as `(empty)`) plus `segments`, `segment names`, `rows of segment <path>`, `hierarchy columns`, `on click`, `include nulls` and `rows shown`; added `isRenderPending` / `onRendered` / `renderError`
 * Word cloud: Fixed two ways the viewer reported a cloud that was not there. A render on a host the dock has not sized yet emptied the root and then threw on the size, leaving no canvas, no message and a render that stayed pending for ever; it now measures the root as well as the host and keeps the picture that is up until a size it can use comes back. And a render declared itself finished on a canvas with no words in it — `echarts.init` creates the canvas, but the layout that places the words runs in the macrotask `setOption` queues — so it now waits for the boxes the layout leaves, which is what the automation surface reports
 * Word cloud: Added the automation surface — `getWidgetStatus` reports a `word "<name>"` hit area per laid-out word plus `words`, `word names`, `rows of word "<name>"`, `column`, `rows shown`, `font` and the message the viewer shows instead of a cloud; added `isRenderPending` / `onRendered`
 * GROK-20800: Timelines, Radar: Fixed the legend container placement — it is now a full-height strip on the right, filled by the legend
