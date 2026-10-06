@@ -43,22 +43,25 @@ Companion files in this skill's folder:
 When the argument is a ticket, learn the feature from the ticket and the code before deciding what
 the help needs:
 
-1. **Read the ticket**: description, comments, state, labels, and linked tickets and PRs.
+1. **Read the ticket**: description, comments, state, labels, linked tickets and PRs, and the
+   parent epic with its other tickets: they set the scope.
    - GitHub issue: `gh issue view <N> --repo datagrok-ai/public --comments` (without `gh`:
      `curl -s https://api.github.com/repos/datagrok-ai/public/issues/<N>` and `.../<N>/comments`).
    - Jira ticket: the Atlassian MCP (`getJiraIssue`, instance `reddata.atlassian.net`). A linked
-     GitHub issue is the one to cite.
-
-2. **Find the change**: `git log origin/master --grep="#<N>"` (or `--grep=GROK-<N>`) in `public`, `help`, and core if you
-   have access. Read the diffs, then the current code on master: commits after the ticket may have
-   changed it.
+     GitHub issue, or a `#<N>:` prefix in the summary, is the one to cite.
+2. **Find the change**: `git log origin/master --grep="#<N>"` (or `--grep=GROK-<N>`) in `public`,
+   `help`, and core if you have access. Read the diffs, then the current code on master: commits
+   after the ticket may have changed it. A ticket that asks for documentation or a docs review has
+   no change: find the features it names by their UI labels in the code, and check each one as in
+   the table in `release.md`.
 3. **Decide whether it belongs in the help**: user-facing, finished, and released (see the table in
    `release.md`). Internal changes, unfinished work, and unreleased plugin versions get no help.
    Report the decision with the evidence.
-4. **Find the place**: grep the help for the area and its UI labels. Prefer updating the section
-   that already covers the area. A help page that now says something wrong comes first.
-5. **Propose, verify, write** as in sections 1–6. Start the commit message with the ticket:
-   `GROK-<N>: Help: …` or `#<N>: Help: …`.
+4. **Find the place**: grep the help for the area and its UI labels, and check every page that
+   repeats the same claim. Prefer updating the section that already covers the area. A help page
+   that now says something wrong comes first.
+5. **Propose and wait for approval**, then verify and write as in sections 2–6. Start the commit
+   message with the ticket: `GROK-<N>: Help: …` or `#<N>: Help: …`.
 6. **Suggest a community post** when the change is new and noticeable to users, changes existing
    results, or requires an action: one line in the reader's words, with the help page and anchor
    if there is one.
