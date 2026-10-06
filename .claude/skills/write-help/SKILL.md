@@ -127,8 +127,10 @@ the help needs:
   table is supporting detail under `<details>`; on reference pages it stays open.
 - **Keep the order of related sections the same across sibling pages** (for viewers: trend lines,
   then formula lines and annotations). Don't restructure page templates unless asked.
-- **Alternative GIFs of one section go into tabs** (for example, regression line and moving
-  average in `visualize/viewers/line-chart.md`). A page with tabs needs
+- **Tabs when content varies by context**: variants or parts of one feature, each with its own GIF
+  and short text (for example, Expressions / Exact match / Partial match in
+  `visualize/viewers/filters.md#expression-filter`, regression line and moving average in
+  `visualize/viewers/line-chart.md`). The full rule is in `help/CLAUDE.md`. A page with tabs needs
   `mdx:\n  format: mdx` in the front matter and the `Tabs` / `TabItem` import block.
 - **No troubleshooting sections in reference pages.** Non-obvious questions go to
   `datagrok/resources/faq.md`.
