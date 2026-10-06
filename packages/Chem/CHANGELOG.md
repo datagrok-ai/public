@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20436: Chem: Added `Molecular Property`, a vectorized single-property calculator that lets viewers order molecular categories by MW, LogP, PSA and the other OCL properties
 * Sketcher: Added Crux, the Crux Sketch molecule sketcher on the Crux chemistry engine (WebAssembly), to the choices of the Sketcher setting (crux-sketch cc02f26, engine c1aadacd3b91; vendored in `vendor/crux-sketch/`, loaded at its first use); in the substructure filter it opens in query mode
 * Sketcher: The 400px minimum width given back to a sketcher dialog opened from a popup no longer applies to a sketcher with no minimum size
 * Demo: Fixed Similarity & Diversity Search, Matched Molecular Pairs and Scaffold Tree returning before their layouts were applied, which then landed on whatever view was open next
