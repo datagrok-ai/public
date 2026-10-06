@@ -10,7 +10,8 @@ Feature: Opening and previewing structure files from the Files browser
   ("1bdq.pdb"), not "Mol*" — the open shows the file's previewer as a view rather than calling the
   package's Import PDB handler; a preview becomes current under the file's name, which is how the
   preview title of GROK-18999 is claimed; Open table residues is offered in the folder view's
-  context menu, not in the Browse tree's.
+  context menu, not in the Browse tree's. The residue table's rows and columns are tested in
+  BiostructureViewer src/tests/pdb-helper-tests.ts 'pdbToDf'.
 
   The Mol* engine is claimed by its Reset Camera overlay button. A preview also gets a view tab
   under the file's name, so a double-clicked view is told from the preview by previewing another
@@ -170,10 +171,7 @@ Feature: Opening and previewing structure files from the Files browser
     When user clicks on Files---App-Data---BiostructureViewer---samples tree node inside browse tree
     Then 1bdq.pdb link in gallery should be visible
     When user picks "Open table residues" from the context menu of 1bdq.pdb link in gallery
-    Then the "Table" table view should open with 198 rows
-    And the table should have the columns "code, compId, seqId, label, seq, frame"
-    And the value of "code" column in row 1 should be "P"
-    And the value of "seqId" column in row 1 should be "1"
+    Then the "Table" view should be current
     And NGL viewer should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

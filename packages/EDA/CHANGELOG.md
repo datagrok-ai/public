@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: `models/apply-and-delete` chooses a model in the Apply dialog by name (the dialog keys its models by id), so it and `share-model` left the serial lane; the analysis features keep to what the dialog produced, the statistics being the package tests'
+* Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
 * GROK-21017: Skip adding MVA viewers when the source table view was closed during the analysis
 

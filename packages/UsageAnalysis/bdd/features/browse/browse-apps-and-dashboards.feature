@@ -1,9 +1,11 @@
 @browse @realizes:views.browse
 Feature: The Apps and Dashboards sections of the Browse tree
-  Opening an application from the tree, what the Dashboards node opens, and a dashboard that
-  survives a save and a reopen. Translated from the manual cases Browse-Apps-01, -02, -03 and
-  Browse-Dash-01, -02 (playwright-public/browse/apps.test.ts, dash.test.ts,
-  browse_manual_tests2.md sections 6 and 8).
+  Opening an application from the tree and what the Dashboards node opens. Translated from the
+  manual cases Browse-Apps-01, -02, -03 and Browse-Dash-01, -02 (playwright-public/browse/apps.test.ts,
+  dash.test.ts, browse_manual_tests2.md sections 6 and 8).
+
+  A dashboard saved from a table view and opened again with its viewers is an API test: Chem's
+  src/tests/projects-tests.ts 'chemical_space' saves and reopens one.
 
   Browse-Apps-03 (the tooltip and the details of an application, GROK-19638) is claimed on an app of
   the Chem package: the tooltip names the app, what it does and the package it comes from. The
@@ -13,7 +15,7 @@ Feature: The Apps and Dashboards sections of the Browse tree
   Browse-Dash-02 and -03 (a dashboard opened from the list, and the context panel following from one
   dashboard to the next, GROK-19934) are claimed on the dashboards the Chem package ships
   (chemical_space_demo, demo_activity_cliffs) — fixtures wherever Chem is, which the suite already
-  needs for spgi — besides the dashboard this feature saves itself and removes again.
+  needs for spgi.
 
   The Model Hub (Browse-ModelHub-01..04, GROK-17896, GROK-19740, GROK-19965, GROK-19628) is claimed on
   a JavaScript model the feature saves and deletes again: the catalog lists it, Uncategorized opens
@@ -60,16 +62,6 @@ Feature: The Apps and Dashboards sections of the Browse tree
     # the gallery's container is built with the view, so its presence says nothing: the claim is
     # on a card that has to have come from the server
     And card of gallery should be visible
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: A dashboard saved from a table view opens again with its viewers
-    Given user opens demog-1000 dataset
-    And user adds a scatter plot viewer
-    When user saves the current view as project "BDD-Browse-Dash-{run}"
-    And user closes all views
-    And user opens the "BDD-Browse-Dash-{run}" project
-    Then the current view should hold at least 2 viewers
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

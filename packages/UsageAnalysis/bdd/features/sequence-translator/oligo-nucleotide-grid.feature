@@ -12,9 +12,11 @@ Feature: OligoNucleotide duplex column: conversion, context panels and cell acti
   a second duplex column that the earlier scenarios' column counts do not expect.
 
   Rows used: 1 siR-0001 (19/19 duplex with a GalNAc-L3 conjugate), 2 siR-0002, 34 aso-0034
-  (single strand), 38 siR-0038 (3' overhangs), 40 siR-0040 (explicit HELM base pairs). The grid
-  rows of a HELM column are tall, so a row past the first screen is reached by the mouse wheel.
-  The Duplex texts of rows 38 and 40 were read on localhost (SequenceTranslator 1.11.5).
+  (single strand). The grid rows of a HELM column are tall, so a row past the first screen is
+  reached by the mouse wheel, or made the current cell when the pane is what the scenario reads.
+  The Duplex line of an overhang duplex and of explicit HELM base pairs is tested in
+  SequenceTranslator src/tests/oligo-renderer-tests.ts ('OligoRenderer: auto-alignment',
+  'OligoRenderer: HELM connections & strand types').
 
   Not here: Block B and the "renders as a duplex / single strand" parts of Blocks A and H, the
   monomer tooltip, and the structure pictures of the Oligo Structures pane and of the full-screen
@@ -67,29 +69,20 @@ Feature: OligoNucleotide duplex column: conversion, context panels and cell acti
     And "Conjugates" table row in "Oligo-Nucleotide" pane in context panel should contain the text "Cholesterol ×1, GalNAc-L3 linker ×1"
     And no errors should have been logged
 
-  Scenario: A single-strand ASO has no Duplex line; the Duplex line reports overhangs and HELM base pairs
+  Scenario: A single-strand ASO has no Duplex line
     Given the context panel is open
     When user scrolls the grid to the "oligo_helm (oligo)" column
     And user clicks on the "cell 1 of oligo_helm (oligo)" area of grid
     And user expands "Oligo-Nucleotide" accordion header in context panel
     Then "Duplex" table row in "Oligo-Nucleotide" pane in context panel should be visible
-    When user scrolls the mouse wheel down 40 times over the "cell 1 of oligo_helm (oligo)" area of grid
-    And user clicks on the "cell 38 of oligo_helm (oligo)" area of grid
-    Then row 38 should be current
-    And "Duplex" table row in "Oligo-Nucleotide" pane in context panel should contain the text "19 bp, overhangs: 3' antisense +2, 3' sense +2 (auto-aligned)"
-    When user clicks on the "cell 40 of oligo_helm (oligo)" area of grid
-    Then row 40 should be current
-    And "Duplex" table row in "Oligo-Nucleotide" pane in context panel should contain the text "19 bp, blunt (from HELM pairs)"
-    When user scrolls the mouse wheel up 1 times over the "cell 40 of oligo_helm (oligo)" area of grid
-    And user clicks on the "cell 34 of oligo_helm (oligo)" area of grid
+    Given the "oligo_helm (oligo)" cell of row 34 is the current object
     Then row 34 should be current
     And "Antisense length" table row in "Oligo-Nucleotide" pane in context panel should contain the text "single-strand"
     And "Modifications used" table row in "Oligo-Nucleotide" pane in context panel should contain the text "LNA ×6, PS ×18"
     And "Duplex" table row in "Oligo-Nucleotide" pane in context panel should be absent
-    When user scrolls the mouse wheel up 40 times over the "cell 34 of oligo_helm (oligo)" area of grid
+    Given the "oligo_helm (oligo)" cell of row 1 is the current object
     Then grid should have a "cell 1 of oligo_helm (oligo)" area
-    When user clicks on the "cell 1 of oligo_helm (oligo)" area of grid
-    Then row 1 should be current
+    And row 1 should be current
     And "Antisense length" table row in "Oligo-Nucleotide" pane in context panel should contain the text "19 nt"
     And no errors should have been logged
 

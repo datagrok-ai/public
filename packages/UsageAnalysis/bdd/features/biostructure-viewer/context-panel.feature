@@ -12,10 +12,10 @@ Feature: Context panel of a Molecule3D cell — 3D Structure and PDB Information
 
   The Protein-Ligand Interactions and PDB id viewer panes (a server-side Python script, RCSB) are
   never expanded here: a pane's expanded state persists for the page, and both are manual-only
-  (biostructureviewer-network-ui). PDB Information stays expanded from the first scenario into the
-  second: a click on a pane header made right after the click on the next cell keeps the context
-  panel on the previous cell (a click faster than a user makes), so the second scenario
-  only reads the pane after its row changes. The last scenario collapses what is still expanded.
+  (biostructureviewer-network-ui). The scenario collapses what it expanded.
+
+  The header values PDB Information reads (title, classification, PDB id) are tested in
+  BiostructureViewer src/tests/pdb-info-tests.ts ('PDB Header Parsing').
 
   Background:
     Given user is logged in
@@ -43,21 +43,6 @@ Feature: Context panel of a Molecule3D cell — 3D Structure and PDB Information
     And no errors should have been logged
     And no error or warning balloon should have been shown
     When user collapses "3D Structure" section in context panel
-    Then no errors should have been logged
-    And no error or warning balloon should have been shown
-
-  Scenario: PDB Information reads the header of the current cell's PDB text
-    When user clicks on the "cell 1 of pdb" area of grid
-    Then row 1 should be current
-    And "PDB Information" section in context panel should contain text "ASPARTYL PROTEASE"
-    And "PDB Information" section in context panel should contain text "HIV-1 PROTEASE INHIBITORS WIIH LOW NANOMOLAR POTENCY"
-    And "PDB Information" section in context panel should contain text "rcsb.org/structure/1QBS"
-    When user clicks on the "cell 2 of pdb" area of grid
-    Then row 2 should be current
-    And "PDB Information" section in context panel should contain text "HYDROLASE"
-    And "PDB Information" section in context panel should contain text "HIV PROTEASE WITH INHIBITOR AB-2"
-    And "PDB Information" section in context panel should contain text "rcsb.org/structure/1ZP8"
-    And "PDB Information" section in context panel should not contain text "ASPARTYL PROTEASE"
-    When user collapses "PDB Information" section in context panel
+    And user collapses "PDB Information" section in context panel
     Then no errors should have been logged
     And no error or warning balloon should have been shown

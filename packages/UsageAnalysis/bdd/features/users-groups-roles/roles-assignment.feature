@@ -13,6 +13,9 @@ Feature: Who holds a role, and what it grants
   lists the role's own grants only, which the scenario on a new role claims. The cleanup revokes the
   grant before it deletes the role.
 
+  Deleting a role that holds a global permission (GROK-20904) is tested in datlas
+  users_groups/groups_test.dart 'deleteGroupWithGlobalPermission'.
+
   Background:
     Given user is logged in
     And a user "bddmanaged" is on the server
@@ -101,16 +104,3 @@ Feature: Who holds a role, and what it grants
     Then the "BDD-RA-Role-{time}: Global Permissions" dialog should close
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  # GROK-20904, fixed 2026-09-22 by db_up/20260922_0_permissions_group_cascade.sql: deleting a role
-  # that held a global permission violated permissions_user_group_id_fkey and the role stayed; the
-  # key now cascades, so a group's grants go with it. This scenario needs the grant of the one before
-  # it. The feature's own cleanup still revokes the role's global permissions before it deletes the role.
-  Scenario: A role that grants a permission can still be deleted (Roles-14, Roles-15)
-    When user types "BDD-RA-Role-{time}" into gallery search
-    And user picks "Delete" from the context menu of "BDD-RA-Role-{time}" link in gallery
-    Then "Are you sure?" dialog should be visible
-    When user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And 0 roles named "BDD-RA-Role-{time}" should be on the server
-    And no errors should have been logged

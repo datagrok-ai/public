@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: The Home widget features read the stored widget settings after flushing the page's settings sync, pin the running account's widgets, and reload once instead of four times
 * Add New Column: Fixed Cmd+A in the formula editor (macOS) selecting every row and column of the table behind the dialog
 * Home: Fixed every Home page load writing back all the widget settings it had read, which undid a widget hidden or shown on another page of the same account
 * GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups

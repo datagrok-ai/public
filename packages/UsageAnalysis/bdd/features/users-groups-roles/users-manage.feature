@@ -130,7 +130,7 @@ Feature: Managing a user
     When user picks "Add To Favorites > Only for me" from the open menu
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
     When user opens the context menu of "bddmanaged" link in gallery
-    Then the open menu should list "Add To Favorites"
+    Then the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     And user clears gallery search
     Then no errors should have been logged

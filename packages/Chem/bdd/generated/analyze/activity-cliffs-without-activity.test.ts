@@ -13,12 +13,13 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {clickAtOnce, okDisabledThroughout, quietWindow, watchNextOk} from '../../bindings/dialogs.js';
+import {clickAtOnce, okDisabledThroughout, watchNextOk} from '../../bindings/dialogs.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {noNewColumn, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {rowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Activity Cliffs on a table with no numeric column", () => {
@@ -32,10 +33,11 @@ test.describe("Activity Cliffs on a table with no numeric column", () => {
     await session.step(22, "When user picks \"Chem > Analyze > Activity Cliffs...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > Activity Cliffs..."));
     await session.step(23, "And user clicks on OK button in \"Activity Cliffs\" dialog at once", () => clickAtOnce(page, el("OK button in \"Activity Cliffs\" dialog")));
     await session.step(24, "Then the OK button should have been disabled when it appeared and when it was clicked", () => okDisabledThroughout(page));
-    await session.step(25, "And no error or warning balloon and no error should appear for 2 seconds", () => quietWindow(page, 2));
-    await session.step(26, "And \"Activity Cliffs\" dialog should be visible", () => shouldBe(page, el("\"Activity Cliffs\" dialog"), "visible"));
-    await session.step(27, "And OK button in \"Activity Cliffs\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Activity Cliffs\" dialog"), "disabled"));
-    await session.step(28, "And no new column should have been added", () => noNewColumn(page));
-    await session.step(29, "And the table should have 1000 rows", () => rowCount(page, 1000));
+    await session.step(25, "And \"Activity Cliffs\" dialog should be visible", () => shouldBe(page, el("\"Activity Cliffs\" dialog"), "visible"));
+    await session.step(26, "And OK button in \"Activity Cliffs\" dialog should be disabled", () => shouldBe(page, el("OK button in \"Activity Cliffs\" dialog"), "disabled"));
+    await session.step(27, "And no new column should have been added", () => noNewColumn(page));
+    await session.step(28, "And the table should have 1000 rows", () => rowCount(page, 1000));
+    await session.step(29, "And no errors should have been logged", () => noErrors(page));
+    await session.step(30, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
 });

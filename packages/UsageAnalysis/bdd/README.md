@@ -61,6 +61,12 @@ catalogs, which the Dbtests one is not. Every query, script, connection, layout,
 a feature makes is deleted at its end and swept at its start; the features that save into the
 shared NorthwindTest connection or search the Scripts view (an account setting) are `@serial`.
 
+`features/general/` is the TestTrack General section: logout and the login form, a profile's name,
+the Table Manager, the table view's Search box, molecules exported to CSV as SMILES, and the tab
+order through a project. What the section asks that a UI test should not claim went elsewhere: the
+search syntax to ddt's matcher tests, the export's content to Chem's; the credential matrix belongs
+to the server's tests. `features/general/MISSING.md` keeps the gaps still open.
+
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:
 checkbox menu items keep the menu open, so close it before dragging on the chart.

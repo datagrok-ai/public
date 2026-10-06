@@ -16,7 +16,7 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, downloadThrough, downloadedContains, downloadedNotContains} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, downloadThrough, downloadedNotContains, lastDownloadCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {clickArea, pickFromOpenMenu, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -37,7 +37,7 @@ test.describe("Export only the filtered rows", () => {
     await session.step(18, "Then grid should show 2550 rows", () => showsRows(page, el("grid"), 2550));
     await session.step(19, "When user clicks on Export icon in toolbar", () => clickOn(page, el("Export icon in toolbar")));
     await session.step(20, "And user downloads a file through \"As CSV\" text in toolbar", () => downloadThrough(page, el("\"As CSV\" text in toolbar")));
-    await session.step(21, "Then the downloaded file should contain \"RA\"", () => downloadedContains(page, "RA"));
+    await session.step(21, "Then the downloaded file should contain 2550 occurrences of \",RA,\"", () => lastDownloadCount(page, 2550, ",RA,"));
     await session.step(22, "And the downloaded file should not contain \"Psoriasis\"", () => downloadedNotContains(page, "Psoriasis"));
   });
 });

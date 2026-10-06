@@ -62,7 +62,10 @@ Feature: The Filters tutorial
 
     When user clicks on the "category F of SEX" area of filter panel
     And user clicks on the "category Asian of RACE" area of filter panel
-    And user clicks on the "checkbox Black of RACE" area of filter panel
+    # a name click applies "only this one" on a debounce that reads the card's row when it fires: claimed
+    # before the next click on the same card moves that row
+    Then the "selected categories of RACE" reading of filter panel should be "Asian"
+    When user clicks on the "checkbox Black of RACE" area of filter panel
     Then the tutorial step "Filter the dataset to only females of Asian or Black origin" should be done
     And the "selected categories of SEX" reading of filter panel should be "F"
     And the "selected categories of RACE" reading of filter panel should be "Asian, Black"

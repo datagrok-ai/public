@@ -36,13 +36,13 @@ test.describe("Nested spaces and moving between them", () => {
       await session.step(21, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(22, "Then 1 space named \"BDD-Hier-Root\" should be on the server", () => spacesOnServer(page, 1, "BDD-Hier-Root"));
       await session.step(23, "And the \"Create Space\" dialog should close", () => dialogCloses(page, "Create Space"));
-      await session.step(24, "When user picks \"Create Child Space...\" from the context menu of BDD-Hier-Root tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("BDD-Hier-Root tree node inside browse tree")));
+      await session.step(24, "When user picks \"Create Child Space...\" from the context menu of Spaces---BDD-Hier-Root tree node inside browse tree", () => pickFromContextMenu(page, "Create Child Space...", el("Spaces---BDD-Hier-Root tree node inside browse tree")));
       await session.step(25, "And user enters \"BDD-Hier-Child\" into Name input in Create Space dialog", () => enterInto(page, "BDD-Hier-Child", el("Name input in Create Space dialog")));
       await session.step(26, "And user clicks on OK button in Create Space dialog", () => clickOn(page, el("OK button in Create Space dialog")));
       await session.step(27, "Then BDD-Hier-Child tree node inside browse tree should be visible", () => shouldBe(page, el("BDD-Hier-Child tree node inside browse tree"), "visible"));
     });
     await run.scenario("The parent's view lists the child", async () => {
-      await session.step(30, "When user double-clicks on BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-Hier-Root tree node inside browse tree")));
+      await session.step(30, "When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("Spaces---BDD-Hier-Root tree node inside browse tree")));
       await session.step(31, "Then the \"BDD-Hier-Root\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Root"));
       await session.step(32, "And gallery should be visible", () => shouldBe(page, el("gallery"), "visible"));
       await session.step(33, "And BDD-Hier-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Hier-Child link in gallery"), "visible"));
@@ -66,7 +66,7 @@ test.describe("Nested spaces and moving between them", () => {
       await session.step(51, "And BDD-Hier-Grand link in gallery should be absent", () => shouldBe(page, el("BDD-Hier-Grand link in gallery"), "absent"));
     });
     await run.scenario("Going back up the tree finds the content again", async () => {
-      await session.step(54, "When user double-clicks on BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("BDD-Hier-Root tree node inside browse tree")));
+      await session.step(54, "When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree", () => doubleClickOn(page, el("Spaces---BDD-Hier-Root tree node inside browse tree")));
       await session.step(55, "Then the \"BDD-Hier-Root\" view should be current", () => viewIsCurrent(page, "BDD-Hier-Root"));
       await session.step(56, "And BDD-Hier-Child link in gallery should be visible", () => shouldBe(page, el("BDD-Hier-Child link in gallery"), "visible"));
       await session.step(57, "When user double-clicks on BDD-Hier-Child link in gallery", () => doubleClickOn(page, el("BDD-Hier-Child link in gallery")));

@@ -24,9 +24,10 @@ Feature: The context panel and the context menus of the Browse tree
   panel carries a Back and a Forward too, hidden while it is closed, and the icons show only while
   the pointer is on the bar. Browse-Fav-02 (the star beside the object's name toggles it in and out
   of favorites) is claimed on the account's favorites on the server — the star publishes its state
-  only as a font class — and Browse-Fav-05b (a file has no star) is turned
-  around: since GROK-21108 a file is favorited too, so its star is claimed present. The
-  title bar's own "Favorites" icon is not a toggle: it lists the favorites.
+  only as a font class. Since GROK-21108 a file is a favorite too: Browse-Fav-05 and -05b, which
+  denied a file the menu item and the star, are claimed the other way round. For an account that
+  administers a group, as the running one does, "Add To Favorites" is a submenu of "Only for me"
+  and the groups. The title bar's own "Favorites" icon is not a toggle: it lists the favorites.
 
   Background:
     Given user is logged in
@@ -67,7 +68,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Clone..."
     And the open menu should list "Delete..."
     And the open menu should list "Clear cache"
-    And the open menu should list "Add To Favorites"
+    And the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -80,8 +81,8 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Download"
     And the open menu should not list "New Query..."
     And the open menu should not list "Clear cache"
-    # a file is favorited too: its record is made on the first favorite (GROK-21108)
-    And the open menu should list "Add To Favorites"
+    # Browse-Fav-05: a file is a favorite of its own since GROK-21108
+    And the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown

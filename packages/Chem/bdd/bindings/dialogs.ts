@@ -5,7 +5,7 @@
    window rather than read once. */
 import {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, expect, locate, takeErrors, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, locate} from '@datagrok-libraries/bdd/runtime';
 
 declare global {
   interface Window {__bddOkStates?: {appeared?: boolean; clicked?: boolean; hit?: boolean; under?: string}}
@@ -57,16 +57,3 @@ export const okDisabledThroughout = Then('the OK button should have been disable
   expect(states, `the OK button's state when it entered the page and when the click landed on it (under the click: ${under})`)
     .toEqual({appeared: true, clicked: true, hit: true});
 });
-
-export const quietWindow = Then('no error or warning balloon and no error should appear for {int} seconds', async (page: Page, seconds: number) => {
-  const seen: string[] = [];
-  const end = Date.now() + seconds * 1000;
-  while (Date.now() < end) {
-    seen.push(...(await viewers.takeBalloons(page)).filter((b) => b.type === 'error' || b.type === 'warning').map((b) => `${b.type}: ${b.message}`));
-    seen.push(...takeErrors(page));
-    if (seen.length > 0)
-      break;
-    await page.waitForTimeout(200);
-  }
-  expect(seen, `error and warning balloons and errors over ${seconds} s`).toEqual([]);
-}, {description: 'a zero held over the window, not read once: a balloon or error that lands a few tasks after the gesture is caught'});

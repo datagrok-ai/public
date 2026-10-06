@@ -9,6 +9,9 @@ Feature: A newick file opened from Browse and through its file handler
   The Phylocanvas GL viewer is the PhyloTreeViewer package's: on a stand without it the preview has
   no viewer to show, so the two Browse scenarios come after the handler's and are gated on it.
 
+  The table a newick file parses into, a row per node, is tested in Dendrogram
+  src/tests/tree-helper-tests.ts ('treeHelper' newickToDf).
+
   Background:
     Given user is logged in
     And the browse panel is open
@@ -19,8 +22,6 @@ Feature: A newick file opened from Browse and through its file handler
   Scenario: The file handler makes a tree table with a Dendrogram of the same leaves
     When user opens the newick file "System:AppData/Dendrogram/data/nwk1.nwk" with its file handler
     Then Dendrogram viewer should be visible
-    And table "Table" should have 5 rows
-    And table "Table" should have columns "node, parent, leaf, distance"
     And the table should have tag ".newick" equal to the text of "System:AppData/Dendrogram/data/nwk1.nwk" file
     And the "leaves" reading of Dendrogram viewer should be "leaf1, leaf2, leaf3"
     And no errors should have been logged
