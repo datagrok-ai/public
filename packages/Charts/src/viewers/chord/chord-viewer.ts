@@ -179,7 +179,7 @@ export class ChordViewer extends DG.JsViewer {
 
   _aggregate() {
     let aggregatedTable = this.dataFrame
-      .groupBy([this.fromColumnName!, (this.distinctCols) ? this.toColumnName! : ''])
+      .groupBy(this.distinctCols ? [this.fromColumnName!, this.toColumnName!] : [this.fromColumnName!])
       .whereRowMask(this.filter)
       .add(this.aggType as DG.AggregationType, this.chordLengthColumnName, 'result')
       .aggregate();

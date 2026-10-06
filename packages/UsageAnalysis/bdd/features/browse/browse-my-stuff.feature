@@ -6,9 +6,9 @@ Feature: The My stuff section of the Browse tree
   Recent and Favorites reload when they are opened again: the group goes loading → loaded, which the
   expand step waits for, so Browse-MyStuff-02 (a project just opened is in Recent), -03 and Fav-01
   (an entity added from its context menu is in Favorites, and out of it when the same item is
-  picked again — "Add to favorites > Only for me" is a check since GROK-21108) are claimed on
+  picked again — "Add To Favorites > Only for me" is a check since GROK-21108) are claimed on
   a reopened group. The favorite is a fixture connection the feature makes and deletes, taken out of
-  the account's favorites before and after. -05 (Add to favorites from My Files, GROK-19848) needs
+  the account's favorites before and after. -05 (Add To Favorites from My Files, GROK-19848) needs
   the user's home share, which a stand names itself ("My files" on dev) and a stand without home
   storage does not have, so it is @full-stand. -06 (a new script lands in My stuff) is claimed in
   browse-navigation.feature, where Refresh brings it in. -04 (Shared with me grouped by who shared)
@@ -72,12 +72,12 @@ Feature: The My stuff section of the Browse tree
     And "BDD-Browse-Fav-{run}" is not in favorites
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
-    When user picks "Add to favorites > Only for me" from the context menu of Databases---Postgres---BDD-Browse-Fav-{run} tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of Databases---Postgres---BDD-Browse-Fav-{run} tree node inside browse tree
     Then "BDD-Browse-Fav-{run}" should be in favorites on the server
     When user collapses My-stuff---Favorites tree node inside browse tree
     And user expands My-stuff---Favorites tree node inside browse tree
     Then My-stuff---Favorites---BDD-Browse-Fav-{run} tree node inside browse tree should be visible
-    When user picks "Add to favorites > Only for me" from the context menu of Databases---Postgres---BDD-Browse-Fav-{run} tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of Databases---Postgres---BDD-Browse-Fav-{run} tree node inside browse tree
     Then "BDD-Browse-Fav-{run}" should not be in favorites on the server
     When user collapses My-stuff---Favorites tree node inside browse tree
     And user expands My-stuff---Favorites tree node inside browse tree
@@ -89,7 +89,7 @@ Feature: The My stuff section of the Browse tree
   Scenario: The home share is added to favorites from its menu
     Given "My files" is not in favorites
     And Files tree node inside browse tree is expanded
-    When user picks "Add to favorites > Only for me" from the context menu of Files---My-files tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of Files---My-files tree node inside browse tree
     Then "My files" should be in favorites on the server
     When user collapses My-stuff---Favorites tree node inside browse tree
     And user expands My-stuff---Favorites tree node inside browse tree

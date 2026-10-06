@@ -465,7 +465,7 @@ Any one of these is enough to consider the case failed.
 
 ## 5. Favorites
 
-### Browse-Fav-01 — Add to favorites from the context menu (P1)
+### Browse-Fav-01 — Add To Favorites from the context menu (P1)
 **Goal:** Add to Favorites from the tree.
 **Type:** functional
 **Preconditions:** the tree contains a known entity that is not in favorites.
@@ -508,7 +508,7 @@ Any one of these is enough to consider the case failed.
 
 ---
 
-### Browse-Fav-04 — Add to favorites by dragging (P3)
+### Browse-Fav-04 — Add To Favorites by dragging (P3)
 **Goal:** favorite via drag-and-drop.
 **Type:** functional
 **Preconditions:** the Favorites Panel/view is open; the tree contains a known entity that is not in favorites.

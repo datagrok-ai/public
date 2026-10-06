@@ -124,7 +124,7 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
     const sink = watchErrors(page);
 
     // My stuff > My files is an entity-like node — right-click should expose
-    // Add to favorites (or Remove from favorites, depending on prior state).
+    // Add To Favorites (or Remove from favorites, depending on prior state).
     await expandTreeGroup(page, 'My stuff');
     const myFiles = treeNodeByPath(page, ['My-stuff', 'My-files']);
     await myFiles.waitFor({ state: 'visible', timeout: 10_000 });
@@ -134,7 +134,7 @@ test('Browse-MyStuff-05 — Add to Favorites is reachable from My stuff > My fil
     const menu = page.locator(CONTEXT_MENU);
     await expect(menu).toBeVisible({ timeout: 5_000 });
 
-    // Either "Add to favorites" or "Remove from favorites" must be present.
+    // Either "Add To Favorites" or "Remove from favorites" must be present.
     const add = contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES);
     const remove = contextMenuItem(page, 'Remove from favorites');
     const addVisible = await add.isVisible().catch(() => false);

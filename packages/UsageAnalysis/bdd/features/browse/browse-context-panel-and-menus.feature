@@ -26,7 +26,7 @@ Feature: The context panel and the context menus of the Browse tree
   of favorites) is claimed on the account's favorites on the server — the star publishes its state
   only as a font class. Since GROK-21108 a file is a favorite too: Browse-Fav-05 and -05b, which
   denied a file the menu item and the star, are claimed the other way round. For an account that
-  administers a group, as the running one does, "Add to favorites" is a submenu of "Only for me"
+  administers a group, as the running one does, "Add To Favorites" is a submenu of "Only for me"
   and the groups. The title bar's own "Favorites" icon is not a toggle: it lists the favorites.
 
   Background:
@@ -68,7 +68,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Clone..."
     And the open menu should list "Delete..."
     And the open menu should list "Clear cache"
-    And the open menu should list "Add to favorites > Only for me"
+    And the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -82,7 +82,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should not list "New Query..."
     And the open menu should not list "Clear cache"
     # Browse-Fav-05: a file is a favorite of its own since GROK-21108
-    And the open menu should list "Add to favorites > Only for me"
+    And the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown

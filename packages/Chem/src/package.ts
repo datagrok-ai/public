@@ -13,6 +13,7 @@ import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {CruxSketcher} from './crux/crux-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import Sketcher = DG.chem.Sketcher;
 import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
@@ -52,7 +53,7 @@ import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -164,6 +165,7 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   Ketcher: 'Ketcher',
   Marvin: 'Marvin',
   ChemDraw: 'ChemDraw',
+  Crux: 'Crux',
 };
 
 const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
@@ -1330,6 +1332,9 @@ export class PackageFunctions {
     }
 
     const runActCliffs = async (): Promise<void> => {
+      const axesNames = getEmbeddingColsNames(table);
+      for (const name of axesNames)
+        table.columns.addNewFloat(name);
       await DG.Func.find({name: 'activityCliffsTransform'})[0].prepare({
         table: table,
         molecules: molecules,
@@ -1363,7 +1368,6 @@ export class PackageFunctions {
       }) as DG.ScatterPlotViewer;
     };
 
-    const axesNames = getEmbeddingColsNames(table);
     if (table.rowCount > fastRowCount && !isTest) {
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
       Do you want to continue?`))
@@ -2076,6 +2080,16 @@ export class PackageFunctions {
     return new OpenChemLibSketcher();
   }
 
+  @grok.decorators.func({
+    name: 'Crux',
+    description: 'Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)',
+    outputs: [{name: 'sketcher', type: 'widget'}],
+    meta: {role: 'moleculeSketcher'},
+  })
+  static cruxSketcher(): CruxSketcher {
+    return new CruxSketcher();
+  }
+
   @grok.decorators.fileHandler({
     description: 'Opens SDF file',
     ext: 'sdf,mol',
@@ -2350,7 +2364,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
   }
 
   @grok.decorators.func()
@@ -2412,11 +2426,12 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Rotatable bonds'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Stereo centers'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecule charge'}}) moleculeCharge?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecular formula'}}) molecularFormula?: boolean,
   ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
-      moleculeCharge ? ['Molecule charge'] : []);
+      moleculeCharge ? ['Molecule charge'] : [], molecularFormula ? ['Molecular formula'] : []);
     const pb = DG.TaskBarProgressIndicator.create('Chemical properties ...');
     try {
       await addPropertiesAsColumns(table, molecules, propArgs);
@@ -2758,8 +2773,15 @@ export class PackageFunctions {
   })
   static removeDuplicates(molecules: string[], molecule: string): string[] {
     const mol1 = checkMoleculeValid(molecule);
-    if (!mol1)
+    if (!mol1) {
+      // try to get qmol
+      const qMol = getQueryMolSafe(molecule, '', PackageFunctions.getRdKitModule());
+      if (qMol) {
+        qMol?.delete();
+        return molecules;
+      }
       throw new Error(`Molecule is possibly malformed`);
+    }
     const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
     mol1.delete();
     return filteredMolecules;

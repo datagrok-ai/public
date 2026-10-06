@@ -120,15 +120,15 @@ Feature: Managing a user
 
   Scenario: A user is added to favorites and removed again (Users-21)
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
-    When user picks "Add to favorites > Only for me" from the context menu of "bddmanaged" link in gallery
+    When user picks "Add To Favorites > Only for me" from the context menu of "bddmanaged" link in gallery
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be present
     # GROK-21108: the item is a check, picked again it takes the user out; there is no Remove any more
     When user opens the context menu of "bddmanaged" link in gallery
     Then the open menu should not list "Remove from favorites"
-    When user picks "Add to favorites > Only for me" from the open menu
+    When user picks "Add To Favorites > Only for me" from the open menu
     Then "My stuff > Favorites > bddmanaged" tree node inside browse tree should be absent
     When user opens the context menu of "bddmanaged" link in gallery
-    Then the open menu should list "Add to favorites > Only for me"
+    Then the open menu should list "Add To Favorites > Only for me"
     When user closes the context menu
     And user clears gallery search
     Then no errors should have been logged

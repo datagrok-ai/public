@@ -126,14 +126,14 @@ test.describe("Managing a user", () => {
     });
     await run.scenario("A user is added to favorites and removed again (Users-21)", async () => {
       await session.step(122, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "absent"));
-      await session.step(123, "When user picks \"Add to favorites > Only for me\" from the context menu of \"bddmanaged\" link in gallery", () => pickFromContextMenu(page, "Add to favorites > Only for me", el("\"bddmanaged\" link in gallery")));
+      await session.step(123, "When user picks \"Add To Favorites > Only for me\" from the context menu of \"bddmanaged\" link in gallery", () => pickFromContextMenu(page, "Add To Favorites > Only for me", el("\"bddmanaged\" link in gallery")));
       await session.step(124, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be present", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "present"));
       await session.step(126, "When user opens the context menu of \"bddmanaged\" link in gallery", () => openContextMenu(page, el("\"bddmanaged\" link in gallery")));
       await session.step(127, "Then the open menu should not list \"Remove from favorites\"", () => menuDoesNotList(page, "Remove from favorites"));
-      await session.step(128, "When user picks \"Add to favorites > Only for me\" from the open menu", () => pickFromOpenMenu(page, "Add to favorites > Only for me"));
+      await session.step(128, "When user picks \"Add To Favorites > Only for me\" from the open menu", () => pickFromOpenMenu(page, "Add To Favorites > Only for me"));
       await session.step(129, "Then \"My stuff > Favorites > bddmanaged\" tree node inside browse tree should be absent", () => shouldBe(page, el("\"My stuff > Favorites > bddmanaged\" tree node inside browse tree"), "absent"));
       await session.step(130, "When user opens the context menu of \"bddmanaged\" link in gallery", () => openContextMenu(page, el("\"bddmanaged\" link in gallery")));
-      await session.step(131, "Then the open menu should list \"Add to favorites > Only for me\"", () => menuLists(page, "Add to favorites > Only for me"));
+      await session.step(131, "Then the open menu should list \"Add To Favorites > Only for me\"", () => menuLists(page, "Add To Favorites > Only for me"));
       await session.step(132, "When user closes the context menu", () => closeContextMenu(page));
       await session.step(133, "And user clears gallery search", () => clearField(page, el("gallery search")));
       await session.step(134, "Then no errors should have been logged", () => noErrors(page));
