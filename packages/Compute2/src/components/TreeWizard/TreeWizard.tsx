@@ -147,16 +147,16 @@ export const TreeWizard = Vue.defineComponent({
     // actions
     ////
 
-    const runActionWithConfirmation = (uuid: string) => {
+    const runActionWithConfirmation = (uuid: string, additionalParams?: Record<string, any>) => {
       const calledAction = chosenStepState.value?.actions?.find((action) => action.uuid === uuid);
       const confirmationMessage = calledAction?.confirmationMessage;
       if (confirmationMessage) {
         ui.dialog(`Action confirmation`)
           .add(ui.markdown(confirmationMessage))
-          .onOK(() => runAction(uuid))
+          .onOK(() => runAction(uuid, additionalParams))
           .show({center: true, modal: true});
       } else
-        runAction(uuid);
+        runAction(uuid, additionalParams);
     };
 
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {

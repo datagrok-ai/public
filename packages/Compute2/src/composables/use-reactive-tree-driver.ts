@@ -173,8 +173,8 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'runSequence', startUuid, rerunWithConsistent, includeNonNested, includeInfo});
   };
 
-  const runAction = (actionUuid: string) => {
-    driver.sendCommand({event: 'runAction', uuid: actionUuid});
+  const runAction = (actionUuid: string, additionalParams?: Record<string, any>) => {
+    driver.sendCommand({event: 'runAction', uuid: actionUuid, additionalParams});
   };
 
   const consistencyReset = (stepUuid: string, ioName: string) => {

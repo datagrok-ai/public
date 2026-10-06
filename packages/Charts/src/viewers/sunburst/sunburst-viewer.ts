@@ -16,7 +16,6 @@ import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
 const MAXIMUM_COLUMN_NUMBER = 20;
-let sunburstId = 0;
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All',
@@ -38,8 +37,6 @@ export class SunburstViewer extends EChartViewer {
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
   inheritFromGrid: boolean;
   title: string;
-  sunburstVersion: number | null = null;
-  currentVersion: number | null = null;
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
@@ -237,22 +234,6 @@ export class SunburstViewer extends EChartViewer {
         this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
-    this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
-      const {viewer} = args.args;
-      if (viewer instanceof SunburstViewer)
-        this.currentVersion = viewer.sunburstVersion;
-    }));
-    this.subs.push(grok.events.onEvent('d4-drag-drop').subscribe((args) => {
-      // every drag-and-drop in the app fires this; only a column list's carries the grid to reorder by
-      const grid: DG.Grid | undefined = args?.args?.dragObject?.grid;
-      if (this.sunburstVersion != this.currentVersion || grid == null) return;
-      const gridOrder: Int32Array = new Int32Array(grid.getRowOrder().buffer);
-      const names = this.hierarchyColumnNames;
-      this.hierarchyColumnNames = Array.from(gridOrder)
-        .map((index) => grid.table.row(index).get('name'))
-        .filter((columnName) => names.includes(columnName!));
-      this.render();
-    }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -279,8 +260,6 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-    this.sunburstVersion = sunburstId;
-    sunburstId++;
 
     this.addSubs();
     this.render();

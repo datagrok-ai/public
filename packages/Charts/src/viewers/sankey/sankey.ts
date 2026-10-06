@@ -265,15 +265,15 @@ export class SankeyViewer extends DG.JsViewer {
 
     this.prepareData();
 
+    // d3-sankey sizes the nodes by their links: with none it throws (no rows) or yields NaN heights
+    if (this.graph.links.length === 0)
+      return;
+
     const cycles = this.detectGraphCycles(this.graph);
     if (cycles.length > 0) {
       MessageHandler._showMessage(this.root, 'The graph contains cycles. Please remove circular dependencies.', 'd4-viewer-error');
       return;
     }
-
-    // d3-sankey sizes the nodes by their links: with none it throws (no rows) or yields NaN heights
-    if (this.graph.links.length === 0)
-      return;
 
     const width = this.root.parentElement!.clientWidth - this.margin!.left - this.margin!.right;
     const height = this.root.parentElement!.clientHeight - this.margin!.top - this.margin!.bottom;
