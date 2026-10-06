@@ -3,10 +3,9 @@ Feature: The Table Manager is docked and closed with Alt+T
   again. Translated from TestTrack General/table-manager.md, table-manager-spec.ts and the
   manual-only table-manager-ui.md (tried at the user's request).
 
-  Not translated, and why: the md and the old spec open the manager from View | Tables, which the
-  View menu no longer lists (GROK-21116; Alt+T is the command's shortcut).
-  Everything about the manager's rows — the tables it lists, a click on a row making that table's view
-  current and the table the current object, Open as table, several rows selected for the "N tables"
+  Not translated, and why: everything about the manager's rows — the tables it lists, a click on a
+  row making that table's view current and the table the current object, Open as table, several rows
+  selected for the "N tables"
   submenu, Show > All adding and removing the attribute columns — needs the rows and cells of the
   manager's grid, and the widget on that element is the TableManager, which reports no readings and no
   areas (MISSING.md). That the grid in the Tables panel is the Table Manager's, and not any grid docked

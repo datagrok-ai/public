@@ -281,12 +281,6 @@ second Show > All leaves the manager with no column at all, `name` included (`sh
 attribute columns to go — GROK-17558 (reopened 5 Oct 2026); the last scenario above claims the md's
 behaviour.
 
-TestTrack note: table-manager.md and the old spec open the manager from **View | Tables**. The View menu
-does not list it (checked on localhost in simple mode and full shell: Layout, Reset Filter, Edit Tooltip...,
-Embed..., Presentation Mode, Full Screen), although `show_tables_pane.dart` still registers `topMenu: 'View | Tables'` — filed as GROK-21116 (nor View | Context Panel / Console / Columns, registered the same way in
-`core/client/xamgle/lib/src/commands/view/*.dart`): the window toggles left the top menu. Alt+T
-(`show_tables_pane.dart`) is the way in; the md should say so.
-
 The manager's identity is not claimed either: `Grid viewer in "Tables" dock panel` resolves to any grid
 docked under a panel titled Tables. The old spec checked the `.grok-tables-manager` class, which no kind
 or registered element reaches. Wanted: a registered element `table manager` (`.grok-tables-manager
