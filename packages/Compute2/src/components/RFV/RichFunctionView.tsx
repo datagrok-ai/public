@@ -323,7 +323,7 @@ export const RichFunctionView = Vue.defineComponent({
     'saveToHistory': (_call: DG.FuncCall) => true,
     'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
-    'actionRequested': (_actionUuid: string) => true,
+    'actionRequested': (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
     'consistencyReset': (_ioName: string) => true,
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
@@ -838,7 +838,7 @@ export const RichFunctionView = Vue.defineComponent({
                     callMeta={callMeta.value}
                     validationStates={validationState.value}
                     consistencyStates={consistencyState.value}
-                    onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
+                    onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
                     onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
                     onFormReplaced={(ev) => emit('formReplaced', ev)}
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
