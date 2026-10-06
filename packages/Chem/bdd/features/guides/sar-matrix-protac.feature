@@ -18,20 +18,29 @@ Feature: SAR Matrix on a PROTAC set
     Given user is logged in
     And simple mode is off
     And user opens protac-degraders dataset
-    Given user watches the task bar
-    When user calls "Chem:SarMatrixAnalysis" function with:
-      | table             | table                            |
-      | molecules         | column:Compound                  |
-      | activity          | column:Solubility logS (pred)    |
-      | scaling           | none                             |
-      | activityDirection | Higher is better                 |
-      | predictVirtual    | true                             |
-      | coreColumn        | column:Linker                    |
-      | fragmentColumns   | columns:Warhead,E3 Ligand        |
-      | columnAxis        | Warhead                          |
-    Then the task bar should have finished "Building SAR matrices"
+    When user picks "Chem > Analyze > SAR Matrix..." from the top menu
+    Then "SAR Matrix" dialog should be visible
+    When user selects "Compound" in Molecules input in "SAR Matrix" dialog
+    And user selects "Solubility logS (pred)" in Activity input in "SAR Matrix" dialog
+    And user selects "none" in Scaling input in "SAR Matrix" dialog
+    And user selects "Higher is better" in Direction input in "SAR Matrix" dialog
+    And user checks "Use existing R-groups" input in "SAR Matrix" dialog
+    Then Core input in "SAR Matrix" dialog should be visible
+    When user selects "Linker" in Core input in "SAR Matrix" dialog
+    And user clicks on editor of R-groups input in "SAR Matrix" dialog
+    Then "Select columns..." dialog should be visible
+    When user clicks on None label in "Select columns..." dialog
+    And user toggles the "Warhead" column in the column list of grid viewer in "Select columns..." dialog
+    And user toggles the "E3 Ligand" column in the column list of grid viewer in "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
+    And user selects "Warhead" in "Matrix columns" input in "SAR Matrix" dialog
+    Then "SAR Matrix" dialog should contain text "Columns: Warhead"
+    When user clicks on OK button in "SAR Matrix" dialog
+    Then SAR Matrix Viewer viewer should be visible
+    And SAR Matrix Viewer viewer should have built its matrices
+    And the "source" reading of SAR Matrix Viewer viewer should be "R-group columns"
     And "Summary" tab should be visible
-    Then tab panel should contain text "core: Linker"
+    And tab panel should contain text "core: Linker"
     And tab panel should contain text "across the matrix columns: Warhead"
     And tab panel should contain text "folded into the row: E3 Ligand"
     And tab panel should contain text "What to change"
