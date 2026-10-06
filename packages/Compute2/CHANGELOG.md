@@ -8,6 +8,7 @@
 * Run compare: Fixed a fuzzy-named value taking a run's slot from an exact match declared after it
 * RFV: Graphics outputs (R/Python plots) render as images in their own panel instead of base64 text, and export to Excel
 * TreeWizard: Fixed validation advice actions running without their `additionalParams`
+* TreeWizard: The failed step tooltip shows the run error
 
 ## 1.6.0 (2026-09-23)
 

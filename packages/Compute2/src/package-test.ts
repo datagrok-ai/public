@@ -17,6 +17,7 @@ import './test/viewer-look-swap-probe';
 import './test/graphics-output';
 import './test/dock-layout';
 import './test/validation-actions';
+import './test/tree-node';
 
 export const _package = new DG.Package();
 export {tests};

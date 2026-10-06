@@ -10,6 +10,7 @@ import {catchError, debounceTime, filter, switchMap, take, withLatestFrom} from 
 import {useUrlSearchParams} from '@vueuse/core';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
 import {ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import type {FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {compositorOverlay} from '../directives/compositor-overlay';
 import {canUseResults, pinView} from '../utils';
 import {parseUrlInputs, applyUrlInputs, missingMandatoryInputs, buildInputsUrl, copyText} from '../url-inputs';
@@ -51,6 +52,7 @@ export const RFVApp = Vue.defineComponent({
         // Contain run() failures: an error reaching the outer subscription terminates it and kills autorun.
         return from(run()).pipe(
           catchError((err) => {
+            updateCallState({runError: String(err)});
             grok.shell.error(err instanceof Error ? err.message : `${err}`);
             return of(null);
           }),
@@ -58,7 +60,7 @@ export const RFVApp = Vue.defineComponent({
       }),
     ).subscribe();
 
-    const currentCallState = Vue.ref(
+    const currentCallState = Vue.ref<FuncCallStateInfo>(
       {isRunning: false, isOutputOutdated: true, isRunnable: false, runError: undefined, pendingDependencies: []},
     );
     const overlayActive = Vue.ref(false);
@@ -179,7 +181,7 @@ export const RFVApp = Vue.defineComponent({
         currentFuncCall.value.started = dayjs();
 
         currentFuncCall.value.options[OUTPUT_OUTDATED_PATH] = 'false';
-        updateCallState({isOutputOutdated: false, isRunning: false});
+        updateCallState({isOutputOutdated: false, isRunning: false, runError: undefined});
       } finally {
         if (currentCallState.value.isRunning)
           updateCallState({isRunning: false});

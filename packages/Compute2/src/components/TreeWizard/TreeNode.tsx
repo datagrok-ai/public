@@ -113,15 +113,18 @@ const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): stri
   return prop?.friendlyName ?? prop?.caption ?? ioName;
 };
 
-const getToolTip = (
+export const getToolTip = (
   status: Status,
   isReadonly: boolean,
   funcCall?: DG.FuncCall,
   validationStates?: Record<string, ValidationResult>,
   consistencyStates?: Record<string, ConsistencyInfo>,
+  runError?: string,
 ): string | undefined => {
   if (isReadonly && status === 'next') return 'This step is locked';
   const base = statusToTooltip[status];
+  if (status === 'failed' && runError)
+    return `${base}: ${runError}`;
   const ios = listContributingIos(status, validationStates, consistencyStates);
   if (!ios.length) return base;
   return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
@@ -209,7 +212,7 @@ export const TreeNode = Vue.defineComponent({
       return <IconFA
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
-        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates) ?? null}
+        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates, props.callState?.runError) ?? null}
         style={{
           color: statusToColor[status],
           alignSelf: 'center',
