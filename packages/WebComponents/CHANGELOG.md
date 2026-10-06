@@ -3,6 +3,7 @@
 ## v.next
 
 - InputForm: Added the `skipLogic` property
+- DockManager: Fixed views opened in the background splitting their panels evenly instead of by the declared ratios
 
 ## 1.4.6 (2026-09-23)
 
