@@ -1,8 +1,8 @@
 ---
 name: write-help
-description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature or a Jira ticket, for bringing the help up to date with a release, and for recording or replacing help GIFs.
-when-to-use: A feature or a ticket (GROK-12345) needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
-argument-hint: "<topic, page, ticket key (GROK-12345), or release version>"
+description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature or a GitHub issue, for bringing the help up to date with a release, and for recording or replacing help GIFs.
+when-to-use: A feature or a GitHub issue (#1234) needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
+argument-hint: "<topic, page, GitHub issue (#1234), or release version>"
 effort: medium
 ---
 
@@ -38,22 +38,23 @@ Companion files in this skill's folder:
    plain commit messages.
 5. **Finish with a reading list**: for each topic, the page and anchor that now covers it.
 
-### Starting from a ticket
+### Starting from an issue
 
-When the argument is a ticket key, learn the feature from the ticket and the code before deciding
-what the help needs:
+When the argument is an issue, learn the feature from the issue and the code before deciding what
+the help needs:
 
-1. **Read the ticket**: summary, description, comments, status, fix version, linked tickets, and
-   PRs (Jira, through the Atlassian tools if they are connected).
-2. **Find the change**: `git log origin/master --grep=<KEY>` in core, `public`, and `help`. Read
-   the diffs, then the current code on master: commits after the ticket may have changed it.
+1. **Read the issue**: `gh issue view <N> --repo datagrok-ai/public --comments`: description,
+   comments, state, labels, and linked PRs.
+2. **Find the change**: `git log origin/master --grep="#<N>"` in `public`, `help`, and core if you
+   have access. Read the diffs, then the current code on master: commits after the issue may have
+   changed it.
 3. **Decide whether it belongs in the help**: user-facing, finished, and released (see the table in
    `release.md`). Internal changes, unfinished work, and unreleased plugin versions get no help.
    Report the decision with the evidence.
 4. **Find the place**: grep the help for the area and its UI labels. Prefer updating the section
    that already covers the area. A help page that now says something wrong comes first.
-5. **Propose, verify, write** as in sections 1–6. Put the ticket key at the start of the commit
-   message.
+5. **Propose, verify, write** as in sections 1–6. Reference the issue (`#<N>`) at the start of
+   the commit message.
 6. **Suggest a community post** when the change is new and noticeable to users, changes existing
    results, or requires an action: one line in the reader's words, with the help page and anchor
    if there is one.
@@ -73,7 +74,7 @@ what the help needs:
   `gifs.md`) or the browser, and record what you observed.
 - **Numbers come from the data**, not from assumptions.
 - **Released, finished, user-facing.** Plugin changes under `## v.next` in a `CHANGELOG.md` are
-  not released. Ask before documenting a feature whose ticket is open; its developer may own the
+  not released. Ask before documenting a feature whose issue is open; its developer may own the
   docs.
 - **Never write an unverified claim as fact.** Keep a list of claims checked only in the code or
   not checked at all, and show it. If a check is impossible, drop the claim.
