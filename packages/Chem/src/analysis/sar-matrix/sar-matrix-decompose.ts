@@ -51,7 +51,7 @@ function isCleanSubstituent(fragment: string, expectedNumber: number): boolean {
   return dummies.length === 1 && Number.parseInt(dummies[0][1], 10) === expectedNumber;
 }
 
-function median(values: number[]): number {
+export function median(values: number[]): number {
   if (values.length === 0)
     return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -69,7 +69,7 @@ const DECOMPOSE_CACHE_MAX = 10000;
 /** Heavy atoms of a structure, memoised: keys recur heavily across clusters and each miss is a
  *  main-thread RDKit parse. `asQuery` reads the string as a SMARTS anchor, which carries no validity
  *  flag of its own; anything that will not parse counts zero. */
-function cachedAtomCount(smiles: string, rdkit: ReturnType<typeof getRdKitModule>,
+export function cachedAtomCount(smiles: string, rdkit: ReturnType<typeof getRdKitModule>,
   asQuery = false): number {
   const cache = asQuery ? anchorAtomCache : heavyAtomCache;
   const cached = cache.get(smiles);

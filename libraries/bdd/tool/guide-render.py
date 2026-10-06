@@ -2,7 +2,8 @@
 step-NN.png (the annotated picture of every step), steps.md, audit.png + audit.json, and with --gif
 also guide.gif and guide-thumb.png. Pillow does the drawing, ffmpeg the encoding (FFMPEG env,
 PATH, the imageio-ffmpeg package, or Playwright's own build, which can only write WebM). The video
-and the stills are 1600×1000 with the caption strip: the page is filmed at 1080p and downsampled.
+and the stills are 1600×1000 with the caption strip (--size overrides it): the page is filmed at 1080p
+and downsampled, never upsampled.
 
 The pointer goes where the page says it went, and never skips: every frame's pointer continues
 from the frame before, so an action starts where the one before it ended — a skip is an error,
@@ -12,6 +13,7 @@ audit.json how far the mark's centre and the pointer's tip are from the press.
 
     py tool/guide-render.py <scenario dir> [--gif] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
+        [--size <w>x<h>, default 1600x1000; filming the page at <w>x<h-strip> lands on it exactly]
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -111,13 +113,14 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H)):
         self.folder = folder
         self.fps = fps
         self.hold = hold
         self.travel = travel
         self.zoom = zoom
         self.zoom_time = zoom_time
+        self.video_w, self.video_h = size
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
@@ -131,9 +134,9 @@ class Renderer:
         # and zoom is in them); the strip is as tall as makes page plus strip the video's aspect
         # (120 px over a 1080p page), and the composed frame is downsampled to the video size —
         # never upsampled, so a small capture stays as it is
-        self.bar_h = max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
+        self.bar_h = max(int(self.h * 0.085), round(self.w * self.video_h / self.video_w) - self.h) & ~1
         self.out_h = self.h + self.bar_h
-        scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
+        scale = min(1.0, self.video_w / self.w, self.video_h / self.out_h)
         self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
         self.font = load_font(max(14, self.bar_h // 3))
         self.small = load_font(max(12, self.bar_h // 4))
@@ -692,6 +695,7 @@ def main(argv):
     travel = float(opt('--travel', 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
+    size = tuple(int(v) for v in opt('--size', f'{VIDEO_W}x{VIDEO_H}').lower().split('x'))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
     test_dir = opt('--selftest')
     if test_dir:
@@ -704,7 +708,7 @@ def main(argv):
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif)
     report = renderer.write_audit()

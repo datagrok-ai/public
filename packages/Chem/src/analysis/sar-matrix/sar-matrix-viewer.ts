@@ -4,8 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import '../../../css/sar-matrix.css';
+import {_package} from '../../package';
 import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
+import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {DEFAULT_TRANSFER_SIMILARITY} from './sar-matrix-transfer';
 import {SarFragmentColumns} from './sar-matrix-columns';
@@ -16,17 +18,16 @@ import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX,
   clearCssColorCache, COL_HEADER_H, CORE_BG_ARGB, CORE_W, MatrixCellRef, MatrixGridState,
   NAV_COLLAPSED_W, NAV_W,
   FrameFilter, paintMoleculeOnColor, PaneColumn, PaneGridSlot, PaneRow, renderMoleculeOnColor,
-  TAB_MAKELIST, TAB_MATRIX, TAB_TRANSFER, TABLE_CHROME} from './sar-matrix-ui-common';
+  TAB_MAKELIST, TAB_MATRIX, TAB_SUMMARY, TAB_TRANSFER, TABLE_CHROME} from './sar-matrix-ui-common';
 import {buildAlignmentTemplate, clearDepictionCaches, coreDepictionBlock, matrixCore} from './sar-matrix-depict';
 import {MakeListPanel} from './sar-matrix-make-list';
 import {MatrixPainter} from './sar-matrix-paint';
+import {SummaryPanel} from './sar-matrix-summary-panel';
 import {TransferPanel} from './sar-matrix-transfer-panel';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 // Above the filter popup that opened the sketcher, which the platform stacks at 10000.
 const SKETCHER_DIALOG_Z = 10001;
-// The popup host zeroes the sketcher's min-width and the zero reaches the dialog it opens.
-const SKETCHER_MIN_W = 500;
 
 type AnalogPanelBuilder = () => HTMLElement;
 
@@ -94,7 +95,17 @@ function substituentMW(smiles: string): number {
  *  gives each the view's full width; a split leaves the matrix showing two of its columns, and the
  *  navigator alone claims a fixed 320px of it. The table stays a tab away instead of being closed. */
 export function dockSarMatrixTabs(view: DG.TableView, viewer: DG.Viewer): void {
-  view.dockManager.dock(viewer, DG.DOCK_TYPE.FILL, null, 'SAR Matrix');
+  // Anchored to the grid's own node: a FILL into the container root re-forms the tab group from
+  // whatever the container holds at that moment, so a container-level change can leave one panel and
+  // the tab-handle strip with it.
+  const gridNode = view.dockManager.findNode(view.grid.root);
+  // A miss falls back to the container root, which is the shape above — so it is said out loud rather
+  // than left looking like the anchored call.
+  if (gridNode === undefined) {
+    _package.logger.warning('SAR Matrix | the grid has no dock node; docking into the container root, ' +
+      'which re-forms its tab group');
+  }
+  view.dockManager.dock(viewer, DG.DOCK_TYPE.FILL, gridNode ?? null, 'SAR Matrix');
 }
 
 
@@ -165,6 +176,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   private readonly painter = new MatrixPainter(this);
   private readonly makeListPanel = new MakeListPanel(this);
   private readonly transferPanel = new TransferPanel(this);
+  private readonly summaryPanel = new SummaryPanel(this);
   computing = false;
   /** A recompute was requested mid-compute; re-queued when the running one finishes. */
   private dirty = false;
@@ -228,6 +240,12 @@ export class SarMatrixViewer extends DG.JsViewer {
   private scaffoldRepsFor = '';
   /** Guards the one-time collapse-to-roots per analysis. */
   private collapseSeeded = false;
+  /** See {@link hierarchy}; null whenever `matrices` has been replaced or reordered. */
+  private hierarchyCache: {parents: number[], roots: string[], tiers: number[]} | null = null;
+  /** See {@link unscalableCount}. */
+  private unscalable = 0;
+  /** See {@link assayedCount}. */
+  private assayed = 0;
   get helpUrl() {
     return 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
   }
@@ -319,12 +337,18 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.host.style.height = '100%';
     this.transferPanel.root.style.height = '100%';
     this.makeListPanel.root.style.height = '100%';
+    this.summaryPanel.root.style.height = '100%';
     // Capture-phase reset runs before a cell's bubbling handler, so contextCell reflects only a
     // right-click on a virtual cell. Bound once: `host` outlives every attach, so re-binding stacks copies.
     this.host.addEventListener('contextmenu', () => this.contextCell = null, true);
 
     // Transfer detection is quadratic in the total row count, so that tab computes on first open.
     this.tabs = ui.tabControl(null, {vertical: false});
+    // First, so the analysis opens on what it found rather than on one arbitrary series.
+    const summaryPane = this.tabs.addPane(TAB_SUMMARY, () => this.summaryPanel.root);
+    ui.tooltip.bind(summaryPane.header, 'What the whole analysis found, on one screen: the scale it is ' +
+      'read on, the three answers, and which series to open — with the fitted effects, the analogs ' +
+      'worth making and the methodology each a segment away');
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferPanel.root);
@@ -335,10 +359,15 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.makeListPanel.renderMakeList();
     // Not on this.subs: tab switching must survive a detach/re-attach cycle.
     this.tabs.onTabChanged.subscribe(() => {
-      if (this.tabs.currentPane?.name === TAB_TRANSFER)
+      const name = this.tabs.currentPane?.name;
+      if (name === TAB_TRANSFER)
         this.transferPanel.activateTransferTab();
-      else {
-        // A pane rebuilt while hidden sat in a display:none host; repaint now it has real dimensions.
+      else if (name === TAB_SUMMARY)
+        this.summaryPanel.activateSummaryTab();
+      else if (name === TAB_MATRIX) {
+        // The matrix pane is now normally built behind the Summary tab, so its grid took both its
+        // column widths and its canvas metrics against a display:none host.
+        this.refitColumns();
         this.matrixSlot.state?.grid.invalidate();
       }
     });
@@ -401,6 +430,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.releaseMatrixGrid();
     this.transferPanel.release();
     this.makeListPanel.release();
+    this.summaryPanel.release();
     this.navCoreObserver?.disconnect();
     this.navCoreObserver = null;
     this.navPendingCores.clear();
@@ -478,6 +508,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     // Some properties don't change the fragmentation, so they must not trigger a full rebuild.
     if (property !== null && RENDER_ONLY_PROPS.includes(property.name)) {
       this.renderMatrixPane();
+      // Cards name rows by the Id column, and this branch never reaches render().
+      this.summaryPanel.invalidate();
+      if (this.summaryTabActive)
+        this.summaryPanel.activateSummaryTab();
       return;
     }
     if (property !== null && RERANK_ONLY_PROPS.includes(property.name)) {
@@ -488,6 +522,10 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.transferPanel.invalidateTransfers();
       if (this.transferTabActive)
         this.transferPanel.activateTransferTab();
+      // The summary's transfer card just went back to "not scanned".
+      this.summaryPanel.invalidate();
+      if (this.summaryTabActive)
+        this.summaryPanel.activateSummaryTab();
       return;
     }
     if (property !== null && FRAGMENT_ONLY_PROPS.includes(property.name) && this.rGroupColumns() !== null)
@@ -506,8 +544,11 @@ export class SarMatrixViewer extends DG.JsViewer {
       return;
     }
     this.matrices = rankMatrices(this.matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
+    this.hierarchyCache = null;
     // Transfers index into `matrices` by position, so a reorder invalidates them.
     this.transferPanel.invalidateTransfers();
+    // No re-activation here: render() below does it once, and doing it twice repaints every depiction.
+    this.summaryPanel.invalidate();
     // Both filter frames are stale, not just the cell one: the navigator's Best/Mean fold the activity
     // direction in and Best R is a rank score, so a kept frame would filter the series on numbers the
     // new scheme or direction has already replaced. The cell filter is keyed by matrix id, which
@@ -576,6 +617,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       if (!this.matrices.length) {
         ui.empty(this.host);
         this.host.appendChild(ui.divText(`SAR Matrix: ${fault}.`));
+        this.summaryPanel.showMessage(`SAR Matrix: ${fault}.`);
       }
       return;
     }
@@ -584,12 +626,20 @@ export class SarMatrixViewer extends DG.JsViewer {
     this.computing = true;
     this.analogPanels.clear();
     this.selectedCell = null;
+    this.hierarchyCache = null;
+    this.unscalable = this.countUnscalable(activity as DG.Column<number>);
+    this.assayed = (activity as DG.Column<number>).stats.valueCount;
     clearDepictionCaches();
     // Release the Dart-backed grid so the failure path below doesn't leave one repainting forever.
     this.releaseMatrixGrid();
     // Transfers and filter frames key into the matrices about to be replaced; drop them now so a
     // failed compute leaves nothing pointing at rows that no longer exist. Both rebuild lazily.
     this.transferPanel.invalidateTransfers();
+    this.summaryPanel.invalidate();
+    // Invalidation empties the panel, so a user sitting on the Summary tab would watch a blank pane
+    // for the whole build unless the loader is put back now.
+    if (this.summaryTabActive)
+      this.summaryPanel.activateSummaryTab();
     this.resetFilters();
     ui.empty(this.host);
     this.host.appendChild(ui.loader());
@@ -625,6 +675,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       // scores disagreeing with the property panel until the next rank change. rankMatrices recomputes
       // the scores, so this reconciles both.
       this.matrices = rankMatrices(matrices, this.rankScheme as SarRankScheme, this.higherIsBetter);
+      this.hierarchyCache = null;
       this.matricesData = JSON.stringify(this.matrices);
       this.collapseSeeded = false;
       this.selIndex = 0;
@@ -640,6 +691,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.host.appendChild(ui.divText(`SAR Matrix failed: ${message}`));
       // No render() on this path to replace a mid-compute "Building..." placeholder.
       this.transferPanel.showMessage(`SAR Matrix failed: ${message}`);
+      this.summaryPanel.showMessage(`SAR Matrix failed: ${message}`);
       grok.shell.error(`SAR Matrix: ${message}`);
     } finally {
       progress.close();
@@ -660,6 +712,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (this.activityDirection === DIR_LOWER)
       return false;
     return this.scaling === SCALING_METHODS.MINUS_LG;
+  }
+
+  /** Whether a difference in activity units is already a log ratio. A transformed scale is; so is a
+   *  raw column the user declared higher-is-better, which is a precomputed pIC50 rather than a
+   *  concentration, and where a fold change would understate a four-log swing as "2x". */
+  get activityIsLog(): boolean {
+    return this.scalingLabel !== 'raw' || this.activityDirection === DIR_HIGHER;
   }
 
 
@@ -754,7 +813,7 @@ export class SarMatrixViewer extends DG.JsViewer {
   }
 
   /** Measured compounds sharing this cell's row or column — what a prediction here would rest on. */
-  private observedNeighbours(matrix: SarMatrix, ri: number, ci: number): number {
+  observedNeighbours(matrix: SarMatrix, ri: number, ci: number): number {
     let n = 0;
     for (let c = 0; c < matrix.columns.length; c++) {
       if (c !== ci && matrix.cells[ri][c].kind === 'real')
@@ -865,6 +924,128 @@ export class SarMatrixViewer extends DG.JsViewer {
     const linked = this.matrices.map((matrix) =>
       matrix.parentId !== undefined ? byId.get(matrix.parentId) ?? -1 : -1);
     return linked.some((p) => p >= 0) ? linked : nestByContainment(this.matrices);
+  }
+
+  /**
+   * The one hierarchy every part of the viewer reads: parent index, lineage root id and displayed tier
+   * per matrix, in ranked order.
+   *
+   * Cached because `matrixParents` falls back to a quadratic containment scan, and because deriving a
+   * second hierarchy elsewhere would disagree with the navigator's on exactly the runs that take that
+   * fallback. Dropped whenever `matrices` is replaced or reordered — the indices are positional.
+   */
+  private get hierarchy(): {parents: number[], roots: string[], tiers: number[]} {
+    if (this.hierarchyCache !== null)
+      return this.hierarchyCache;
+    const parents = this.matrixParents();
+    const children = new Map<number, number[]>();
+    parents.forEach((p, i) => {
+      if (p >= 0)
+        children.set(p, [...(children.get(p) ?? []), i]);
+    });
+    // Tiers as the list actually shows them, not as the fragmentation built them: a matrix folded from
+    // groups that all assembled into nothing has no tier under it, and calling it L2 sends the reader
+    // looking for one.
+    const tierOf = (i: number): number =>
+      1 + (children.get(i) ?? []).reduce((deepest, child) => Math.max(deepest, tierOf(child)), 0);
+    const roots = this.matrices.map((_matrix, i) => {
+      let root = i;
+      for (let guard = 0; parents[root] >= 0 && guard <= parents.length; guard++)
+        root = parents[root];
+      return this.matrices[root].id;
+    });
+    return this.hierarchyCache = {parents, roots, tiers: this.matrices.map((_m, i) => tierOf(i))};
+  }
+
+  /** Lineage root id per matrix — what a finding is counted under, so one compound set re-cut at three
+   *  tiers cannot read as three confirmations. */
+  get matrixRoots(): string[] {
+    return this.hierarchy.roots;
+  }
+
+  /** Displayed tier per matrix: the L1/L2/L3 the navigator cards print. */
+  get matrixTiers(): number[] {
+    return this.hierarchy.tiers;
+  }
+
+  /** Values the chosen scaling cannot represent. Counted here rather than read back from the run: a
+   *  set carried in by a layout skips `runSarMatrix` entirely and would report none. */
+  /** Rows the assay reached at all, whatever the scaling can then do with them. A compound nobody
+   *  measured and one the decomposition could not place are different problems with different fixes,
+   *  and the coverage bar can only separate them if it knows this. */
+  get assayedCount(): number {
+    return this.assayed;
+  }
+
+  get unscalableCount(): number {
+    return this.unscalable;
+  }
+
+  /**
+   * The fragment column every matrix varies, or null when these came from fragmentation. Only when
+   * this is set does one substituent label mean the same thing in two series — a fragmented matrix
+   * names its positions from its own decomposition.
+   *
+   * Read off the matrices rather than the properties: `readFragmentColumns` warns as a side effect,
+   * and a set carried in by a layout never ran the decomposition the properties describe.
+   */
+  get axisRole(): string | null {
+    const axis = this.axisColumnName;
+    return this.coreColumnName && axis && this.matrices.length > 0 &&
+      this.matrices.every((m) => m.positions[0] === axis) ? axis : null;
+  }
+
+  /** Select the compounds carrying one value of one component column. An offset is a statement about
+   *  the subset of the table that carries a value, and the only way to check one is to look at it. */
+  selectRoleValue(role: string, value: string): void {
+    const df = this.dataFrame;
+    const column = df?.col(role);
+    if (df == null || column == null)
+      return;
+    df.selection.init((i) => column.getString(i) === value);
+  }
+
+  /** Whether SAR transfer detection has run on this analysis, and what it found. */
+  get transferSummary(): {scanned: boolean, count: number} {
+    return this.transferPanel.scanSummary;
+  }
+
+  /** The column the cores came from, under the same condition as {@link axisRole}: a decomposition
+   *  the user handed over names its own parts, and a fragmented one has no name to give. */
+  get coreRole(): string | null {
+    return this.axisRole === null ? null : this.coreColumnName;
+  }
+
+  /** Whether a matrix IS one core, so its fitted mean compares cores rather than groupings. A series
+   *  column or an empty row axis groups by something else, and then the cores are not the series. */
+  get coresAreSeries(): boolean {
+    return this.matrices.length > 0 &&
+      this.matrices.every((m) => new Set(m.rows.map((r) => r.coreSmiles)).size === 1);
+  }
+
+  /** Fragment columns that could run across the top, the current axis included. */
+  get roleColumns(): string[] {
+    const names = [this.axisColumnName, ...(this.rGroupColumnNames ?? [])];
+    return [...new Set(names)].filter((name) =>
+      name && name !== this.coreColumnName && this.dataFrame?.col(name) != null);
+  }
+
+  /** Transpose the analysis onto another fragment column. Through `setOptions` rather than the field:
+   *  a plain assignment raises no property change, so nothing would recompute. */
+  setColumnAxis(name: string): void {
+    this.setOptions({axisColumnName: name});
+  }
+
+  private countUnscalable(activity: DG.Column<number>): number {
+    if (this.scaling === SCALING_METHODS.NONE)
+      return 0;
+    const scaled = scaleActivity(activity, this.scaling as SCALING_METHODS).getRawData();
+    let n = 0;
+    for (let i = 0; i < activity.length; i++) {
+      if (!activity.isNone(i) && !Number.isFinite(scaled[i]))
+        n++;
+    }
+    return n;
   }
 
   /** The matrix's scaffold with every attachment made alike, canonicalized. Matrices varying
@@ -1062,12 +1243,120 @@ export class SarMatrixViewer extends DG.JsViewer {
   private selectMatrix(index: number): void {
     if (index === this.selIndex)
       return;
+    this.applyMatrixSelection(index, '');
+  }
+
+  /** Move the navigator highlight and rebuild the matrix pane, varying `position` (empty = all
+   *  columns). Runs even on the already-selected index: a landing may need a different vary axis,
+   *  and it needs a freshly built grid to scroll into. */
+  private applyMatrixSelection(index: number, position: string): void {
     this.navCards[this.selIndex]?.classList.remove('selected');
     this.selIndex = index;
     this.navCards[index]?.classList.add('selected');
-    this.varyPosition = ''; // Vary filter is per-matrix; don't carry it over
-    this.resetStructFilter(); // cell filter is scoped to one matrix; rebuild for the new one
+    this.varyPosition = position;
+    // Cell filter is scoped to one matrix; rebuild for the new one.
+    this.resetStructFilter();
     this.renderMatrixPane();
+  }
+
+  /** Whether the Summary tab is the one on screen. */
+  get summaryTabActive(): boolean {
+    return this.tabs.currentPane?.name === TAB_SUMMARY;
+  }
+
+  /** Bring a matrix on screen: the SAR Matrix tab, its navigator card unfolded and scrolled to, and
+   *  the pane rebuilt for it. Resolved by id, not by a held index — reRank reorders `matrices`. */
+  revealMatrix(matrix: SarMatrix): void {
+    const index = this.matrices.findIndex((m) => m.id === matrix.id);
+    if (index < 0) {
+      grok.shell.info('That series is not in the current analysis.');
+      return;
+    }
+    this.tabs.currentPane = this.tabs.getPane(TAB_MATRIX);
+    this.unfoldNavTo(index);
+    this.applyMatrixSelection(index, '');
+    this.scrollNavTo(index);
+  }
+
+  /** Land on one cell. `position` pins the Vary axis when the caller needs two specific columns on
+   *  screen together. The scroll and the open are deferred: the grid is created in this tick and has
+   *  no layout yet, so scrollToCell would measure against zero. */
+  revealCell(matrix: SarMatrix, ri: number, ci: number, position?: string): void {
+    const index = this.matrices.findIndex((m) => m.id === matrix.id);
+    if (index < 0) {
+      grok.shell.info('That series is not in the current analysis.');
+      return;
+    }
+    const target = this.matrices[index];
+    this.tabs.currentPane = this.tabs.getPane(TAB_MATRIX);
+    this.unfoldNavTo(index);
+    this.applyMatrixSelection(index,
+      position !== undefined && target.positions.includes(position) ? position : '');
+    this.scrollNavTo(index);
+    window.setTimeout(() => {
+      const state = this.matrixGrid;
+      if (state === null || this.detached)
+        return;
+      this.scrollPaneTo(state, ri, ci);
+      this.openCell(target, ri, ci, state.grid, null);
+    }, 0);
+  }
+
+  /** Bring one navigator card into view by moving the navigator's own scroller. `scrollIntoView` would
+   *  scroll every scrollable ancestor, the dock container included, so a card near an edge moves the
+   *  layout around the viewer rather than the list inside it. */
+  private scrollNavTo(index: number): void {
+    const card = this.navCards[index];
+    const list = card?.closest('.chem-sar-nav-list');
+    if (card === undefined || !(list instanceof HTMLElement))
+      return;
+    list.scrollTop += card.getBoundingClientRect().top - list.getBoundingClientRect().top;
+  }
+
+  /** Open every collapsed ancestor and scaffold header hiding a matrix's card. A navigator filter is
+   *  the user's, so it is reported rather than cleared. */
+  private unfoldNavTo(index: number): void {
+    for (let p = this.navParents[index]; p >= 0; p = this.navParents[p])
+      this.collapsed.delete(this.matrices[p].id);
+    let root = index;
+    for (let guard = 0; this.navParents[root] >= 0 && guard <= this.navParents.length; guard++)
+      root = this.navParents[root];
+    const key = this.navGroupOfRoot.get(root);
+    if (key !== undefined)
+      this.collapsedScaffolds.delete(key);
+    this.updateNavVisibility();
+    if (!this.passesFilter(this.matrices[index])) {
+      grok.shell.info(`${this.matrices[index].label} is hidden by the series filter — clear it to see ` +
+        'the card in the list.');
+    }
+  }
+
+  /** Scroll the matrix pane to one cell. The displayed column carries a synthetic key, so the matrix
+   *  column index has to be mapped back through the pane's own column list. */
+  private scrollPaneTo(state: MatrixGridState, ri: number, ci: number): void {
+    const paneRowIdx = state.rows.findIndex((row) => row.rowIndex === ri);
+    if (paneRowIdx < 0)
+      return;
+    const colIdxs = state.rows[paneRowIdx].colIdxs;
+    for (const [key, idx] of state.colKeyToIdx) {
+      if (colIdxs[idx] === ci) {
+        state.grid.scrollToCell(key, paneRowIdx);
+        return;
+      }
+    }
+  }
+
+  /** Bring a tab to the front, for a panel handing work to another one. */
+  showTab(name: string): void {
+    this.tabs.currentPane = this.tabs.getPane(name);
+  }
+
+  addCellsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void {
+    this.makeListPanel.addCellsToMakeList(cells, emptyMessage);
+  }
+
+  get hostRowCount(): number {
+    return this.dataFrame?.rowCount ?? 0;
   }
 
   /** A card-core canvas drawn on first visibility (via `navCoreObserver`); eager fallback when no
@@ -1121,7 +1410,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       ], 'chem-sar-rank-tip');
     });
 
-    const parents = this.matrixParents();
+    const parents = this.hierarchy.parents;
     const roots = parents.filter((p) => p < 0).length;
     const deepest = this.matrices.reduce((m, matrix) => Math.max(m, matrix.level), 2) - 1;
     // The breakdown is read once, so it hangs off a hover rather than costing a row above the list.
@@ -1199,11 +1488,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     const children = this.navChildren(parents);
     const descendants = (i: number): number =>
       (children.get(i) ?? []).reduce((n, child) => n + 1 + descendants(child), 0);
-    // Tiers as the list actually shows them, not as the fragmentation built them. A matrix folded from
-    // groups that all assembled into nothing has no tier under it to speak of, and calling it L2 sends
-    // the reader looking for one.
-    const tier = (i: number): number =>
-      1 + (children.get(i) ?? []).reduce((deepest, child) => Math.max(deepest, tier(child)), 0);
+    const tiers = this.matrixTiers;
 
     // A fresh analysis opens collapsed to its roots. Seeded once, so a redraw after a toggle keeps
     // whatever the user has opened since.
@@ -1223,7 +1508,7 @@ export class SarMatrixViewer extends DG.JsViewer {
 
     const emit = (i: number, depth: number): void => {
       const id = this.matrices[i].id;
-      const card = this.buildCard(this.matrices[i], i, depth, descendants(i), tier(i), () => {
+      const card = this.buildCard(this.matrices[i], i, depth, descendants(i), tiers[i], () => {
         if (!this.collapsed.delete(id))
           this.collapsed.add(id);
         this.updateNavVisibility();
@@ -1579,19 +1864,29 @@ export class SarMatrixViewer extends DG.JsViewer {
     if (!resolved)
       return;
     const {paneRow, ci} = resolved;
-    const matrix = paneRow.matrix;
-    const ri = paneRow.rowIndex;
+    if (!this.cellVisible(paneRow.matrix, paneRow.rowIndex, ci))
+      return;
+    this.openCell(paneRow.matrix, paneRow.rowIndex, ci, state.grid,
+      this.lastGridMouseEvent ?? new MouseEvent('click'));
+  }
+
+  /** Open a cell: context panel, host current row, and the selected cell the cart acts on. `event` is
+   *  the click that reached the grid; null arrives from a landing, which moves the current row without
+   *  rewriting a selection the user made elsewhere. The grid is passed because both panes' grids come
+   *  from buildPaneGrid and each must repaint its own. */
+  private openCell(matrix: SarMatrix, ri: number, ci: number, grid: DG.Grid,
+    event: MouseEvent | null): void {
     const cell = matrix.cells[ri][ci];
     // A threshold-blanked cell draws empty and isn't selectable.
-    if (cell.kind === 'empty' || cell.value === null || !this.cellVisible(matrix, ri, ci))
+    if (cell.kind === 'empty' || cell.value === null)
       return;
     this.selectedCell = {matrix, ri, ci};
     grok.shell.windows.showContextPanel = true;
     // A real compound becomes the current row and extends selection; a virtual analog has no row.
     if (cell.molIdx !== null) {
       this.dataFrame.currentRowIdx = cell.molIdx;
-      const event = this.lastGridMouseEvent ?? new MouseEvent('click');
-      this.dataFrame.selection.handleClick((i) => i === cell.molIdx, event, true);
+      if (event !== null)
+        this.dataFrame.selection.handleClick((i) => i === cell.molIdx, event, true);
     } else
       this.dataFrame.currentRowIdx = -1;
     // Assembled cell opens the Molecule context (SAR context gated into the "SAR analysis" pane);
@@ -1600,7 +1895,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.showMoleculeContext(cell.smiles, () => this.makeListPanel.buildCellPanel(matrix, ri, ci));
     else
       grok.shell.o = this.makeListPanel.buildCellPanel(matrix, ri, ci);
-    state.grid.invalidate();
+    grid.invalidate();
   }
 
   /** Collect an explicit set of cells, for the transfer pane's cart. */
@@ -1901,6 +2196,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     return ui.divV([infoBar, gridHost, emptyNote], 'chem-sar-main');
   }
 
+  /** Why the analysis produced nothing, named by the grouping that produced it. */
+  noMatricesMessage(): string {
+    return this.grouping === SarGrouping.Site ?
+      'No SAR matrices found. Try raising the fragment cutoff, or switch grouping to Similarity.' :
+      'No SAR matrices found. Try lowering the clustering threshold or raising the fragment cutoff.';
+  }
+
   private render(): void {
     // Preserve the navigator scroll position across the rebuild.
     const prevNav = this.host.querySelector('.chem-sar-nav-list');
@@ -1910,10 +2212,10 @@ export class SarMatrixViewer extends DG.JsViewer {
     ui.empty(this.host);
     // Palette cache is keyed by name only, so clear it on a possible theme switch.
     clearCssColorCache();
+    if (this.summaryTabActive)
+      this.summaryPanel.activateSummaryTab();
     if (this.matrices.length === 0) {
-      this.host.appendChild(ui.divText(this.grouping === SarGrouping.Site ?
-        'No SAR matrices found. Try raising the fragment cutoff, or switch grouping to Similarity.' :
-        'No SAR matrices found. Try lowering the clustering threshold or raising the fragment cutoff.'));
+      this.host.appendChild(ui.divText(this.noMatricesMessage(), 'chem-sar-empty-note'));
       return;
     }
     this.host.appendChild(this.buildNavigator());

@@ -82,6 +82,7 @@ import {structure3dWidget} from './widgets/structure3d';
 import {BitArrayMetrics, BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {
   _demoActivityCliffs, _demoActivityCliffsLayout, _demoChemicalSpace, _demoChemOverview, _demoMMPA, _demoSarMatrix,
+  _demoSarMatrixProtac,
   _demoRgroupAnalysis, _demoRGroups, _demoScaffoldTree, _demoSimilarityDiversitySearch,
 } from './demo/demo';
 import {getStructuralAlertsByRules, RuleSet, STRUCT_ALERTS_RULES_NAMES} from './panels/structural-alerts';
@@ -2711,6 +2712,12 @@ export class PackageFunctions {
     const rgroups = rGroupColumns ?? [];
     const axis = matrixColumns ?? '';
     const named = coreColumn !== null || rgroups.length > 0;
+    if (named && coreColumn !== null && rgroups.some((c) => c.name === coreColumn.name)) {
+      grok.shell.error(`SAR Matrix: ${coreColumn.name} is named as both the core column and an ` +
+        'R-group column — a column is the scaffold every row is drawn from or a substituent on it, ' +
+        'not both.');
+      return;
+    }
     if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
       grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
       return;
@@ -2812,6 +2819,15 @@ export class PackageFunctions {
   })
   static async demoSarMatrix(): Promise<void> {
     await _demoSarMatrix();
+  }
+
+  @grok.decorators.func({
+    name: 'Demo SAR Matrix PROTAC',
+    description: 'Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns',
+    meta: {demoPath: 'Cheminformatics | SAR Matrix (PROTAC)'},
+  })
+  static async demoSarMatrixProtac(): Promise<void> {
+    await _demoSarMatrixProtac();
   }
 
   @grok.decorators.func({

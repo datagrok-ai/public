@@ -360,8 +360,9 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   }
   // Started before the confidence pass rather than after it: linking is a worker round-trip and the
   // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
-  // fields — the fit reads `kind`/`value` and writes `fit`, linking writes `smiles` on virtual cells —
-  // and the fit contains no await, so it runs to completion before the link's continuation resumes.
+  // fields — the fit reads `kind`/`value` and writes `confidence`, linking writes `smiles` on virtual
+  // cells — and the fit contains no await, so it runs to completion before the link's continuation
+  // resumes.
   t = performance.now();
   const linking = params.predictVirtual ? linkVirtualStructures(matrices) : null;
   matrices.forEach((matrix) => matrix.confidence = computeMatrixConfidence(matrix));

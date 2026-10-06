@@ -425,6 +425,14 @@ function recordingFor(page: Page, info: TestInfo): Recording {
 }
 
 async function shot(page: Page, dir: string, name: string): Promise<string> {
+  // A balloon is the stand talking to whoever is driving it, never part of the answer being filmed —
+  // and the loudest of them names the packages published in debug, which is every guide's own stand.
+  // Taken away for the picture only: the platform puts its own back, and removing them as they
+  // arrive locks the renderer up between the two.
+  await page.evaluate(() => {
+    for (const e of document.querySelectorAll('[data-u2="notify"] > *, .d4-balloon'))
+      e.remove();
+  }).catch(() => undefined);
   await page.screenshot({path: join(dir, name), animations: 'disabled', caret: 'hide'}).catch(() => undefined);
   return name;
 }

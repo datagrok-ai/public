@@ -29,6 +29,10 @@ export const BENEFIT_MOL_W = 62;
 export const BENEFIT_MOL_H = 34;
 export const CARD_CORE_W = 78;
 export const CARD_CORE_H = 44;
+/** The component strip puts one structure on each row of the landing band, where a truncated SMILES
+ *  reads as the same string for every analog of one scaffold. */
+export const STRIP_MOL_W = 70;
+export const STRIP_MOL_H = 28;
 /** A whole assembled analog needs more room than the core or substituent it was built from. */
 export const ANALOG_W = 220;
 /** Must track the `.chem-sar-nav` width in the stylesheet, or cells are fitted against the wrong pane. */
@@ -46,6 +50,7 @@ export const FULL_SUPPORT = 3;
 export const TAB_MATRIX = 'SAR Matrix';
 export const TAB_TRANSFER = 'SAR Transfer';
 export const TAB_MAKELIST = 'Make list';
+export const TAB_SUMMARY = 'Summary';
 
 /** A cell addressed by the matrix it belongs to and its position in it — how the panels hand single
  *  cells to one another, since a cell object alone cannot say where it came from. */
@@ -134,7 +139,7 @@ export function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, 
     drawMoleculeToCanvas(0, 0, w, h, canvas, smiles, null,
       {normalizeDepiction: true, straightenDepiction: true}, null,
       {clearBackground: true, backgroundColour: argbToRgba(argb)});
-  } catch (e) {
+  } catch {
     // A structure RDKit cannot draw leaves the canvas at its background rather than failing the whole
     // pane — one bad row must not blank a navigator full of good ones.
   }

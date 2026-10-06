@@ -67,7 +67,10 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
       sub.unsubscribe();
       resolve();
     });
-  }), [pollMs(60000), dataset.name, !/\.(csv|tsv|txt)$/i.test(dataset.path)] as [number, string, boolean]);
+    // Detection is per column over every row, so a table of several molecule columns outgrows the
+    // default budget while still being the table the feature is about.
+  }), [pollMs(Number(process.env.BDD_DETECT_MS ?? 60000)), dataset.name,
+    !/\.(csv|tsv|txt)$/i.test(dataset.path)] as [number, string, boolean]);
   // a second after the grid is created the view makes row 0 of its first column current when no row
   // is, and every viewer repaints its marker mid-feature; done here, the same cell, the view's timer
   // skips it — and a "current column" claim does not depend on which of the two got there first

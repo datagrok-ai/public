@@ -93,6 +93,13 @@ export class TransferPanel {
 
   constructor(private readonly host: TransferPanelHost) {}
 
+  /** What the Summary can report without running detection. The scan fingerprints every core and then
+   *  compares every pair of series, so it stays on this tab: the landing screen reads the result once
+   *  there is one, and says it has not been run when there is not. */
+  get scanSummary(): {scanned: boolean, count: number} {
+    return {scanned: this.transfersComputed, count: this.transfers.length};
+  }
+
   /** The transfers involving a given matrix, strongest first — the matrix pane’s `r` chip reads this. */
   transfersInvolving(matrixIndex: number): Transfer[] {
     return this.transfers.filter((t) => t.a.matrixIndex === matrixIndex || t.b.matrixIndex === matrixIndex);

@@ -159,8 +159,13 @@ export function watchErrors(page: Page): void {
   errors.set(page, list);
   // "Stack trace X" arrives seconds after its "Look below, ID = X" error: joined while unreported, else dropped
   const announced = new Set<string>();
+  // BDD_CONSOLE echoes every console line matching the pattern, whatever its level: the floor keeps
+  // errors only, and a slow run is diagnosed from the warnings the platform logs while it works
+  const echo = process.env.BDD_CONSOLE ? new RegExp(process.env.BDD_CONSOLE, 'i') : null;
   page.on('console', (m) => {
     const text = m.text();
+    if (echo?.test(text))
+      console.log(`  [page:${m.type()}] ${text}`);
     if (m.type() !== 'error' || ignoredError(text, m.location().url))
       return;
     const continuation = /^Stack trace (\S+)/.exec(text);

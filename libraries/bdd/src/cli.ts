@@ -4,7 +4,7 @@
      lint                  diagnostics only, notes included
      list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
      run [playwright args] compile --check, then Playwright over generated/ with the library's config
-     guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [playwright args]
+     guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [--render "<flags>"] [playwright args]
                            run the scenarios in guide mode, render each into a how-to video (tool/guide-render.py)
      link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
@@ -201,6 +201,8 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   const gif = take('--gif') || helpPages;
   const out = resolve(project.root, option('--out') ?? 'guides');
   const settle = option('--settle');
+  // everything else on the line goes to Playwright, so the renderer's own flags come in one word
+  const render = (option('--render') ?? '').split(/\s+/).filter(Boolean);
   const tagged = helpPages ?
     listFiles(project.featuresDir, '.feature').map((file) => parseFeature(file, readFileSync(file, 'utf8')))
       .filter((f) => f.tags.some((t) => t.startsWith('@help:'))) :
@@ -234,7 +236,7 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   for (const manifest of manifests) {
     const dir = dirname(manifest);
     console.log(`guide: ${relative(project.root, dir)}`);
-    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : [])], project.root);
+    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : []), ...render], project.root);
     if (exit !== 0) {
       console.error(`guide: rendering failed (${exit}) — ${python} ${script}`);
       failed++;
@@ -378,7 +380,7 @@ async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
     console.log('grok-bdd init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | ' +
-      'run [playwright args] | guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>]');
+      'run [playwright args] | guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [--render "<flags>"]');
     return 0;
   }
   if (command === 'init')

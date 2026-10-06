@@ -48,7 +48,8 @@ export type SarMatrixCellKind = 'real' | 'virtual' | 'empty' | 'unmeasured' | 'i
 
 export interface SarMatrixCell {
   kind: SarMatrixCellKind;
-  /** Observed (real) or predicted (virtual) scaled activity; null when empty or unmeasured. */
+  /** Observed (real) or predicted (virtual, or unmeasured when untested prediction is on) scaled
+   *  activity; null when empty, and when an unmeasured cell was not predicted. */
   value: number | null;
   molIdx: number | null;
   smiles: string | null;
@@ -87,10 +88,15 @@ export interface SarMatrix {
   cells: SarMatrixCell[][];
   minActivity: number;
   maxActivity: number;
+  /** Distinct measured molecules, captured BEFORE the connected-component prune, which drops measured
+   *  compounds — and inflated when two records land in one cell. It can exceed what the delivered grid
+   *  holds, so anything reporting a compound count has to walk the cells. `minActivity`/`maxActivity`
+   *  are captured at the same point and carry the same defect. */
   realCount: number;
   virtualCount: number;
   scores: {[scheme: string]: number};
-  /** Active R-group positions, richest first. Length 1 means a single-position (fallback) view. */
+  /** The one R-group position this matrix varies — always exactly one entry, and every column carries
+   *  it. The other positions are folded into the row identity. */
   positions: string[];
   /** Reference (most-frequent-observed) substituent per position — pinned while one position varies. */
   refValues: {[position: string]: string};
@@ -100,8 +106,11 @@ export interface SarMatrix {
   level: number;
   parentId?: string;
   /** LOO cross-validated quality of the Free-Wilson fit; null when too few observations to
-   *  cross-validate. `n` cross-validatable observed cells out of `total`. */
-  confidence?: {r2: number, rmse: number, n: number, total: number} | null;
+   *  cross-validate. `n` cross-validatable observed cells out of `total`. `hi`/`lo` are the cells
+   *  furthest above and below their out-of-sample prediction, as raw signed `observed − predicted`. */
+  confidence?: {r2: number, rmse: number, n: number, total: number,
+    hi: {ri: number, ci: number, residual: number} | null,
+    lo: {ri: number, ci: number, residual: number} | null} | null;
 }
 
 /** Close a grid, tolerating one that cannot: a view-less grid may not support close, and dropping
@@ -109,7 +118,7 @@ export interface SarMatrix {
 export function closeGridQuietly(grid: DG.Grid | null | undefined): void {
   try {
     grid?.close?.();
-  } catch (e) {
+  } catch {
     // Nothing to do; the caller drops its reference either way.
   }
 }
