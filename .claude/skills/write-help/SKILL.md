@@ -1,8 +1,8 @@
 ---
 name: write-help
-description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature, for bringing the help up to date with a release, and for recording or replacing help GIFs.
-when-to-use: A feature needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
-argument-hint: "<topic, page, or release version>"
+description: Write, update, and verify Datagrok help pages (help/, Docusaurus), including GIFs and release updates. Use for user documentation of a platform feature or a Jira ticket, for bringing the help up to date with a release, and for recording or replacing help GIFs.
+when-to-use: A feature or a ticket (GROK-12345) needs user documentation; a release shipped and the help must describe it; a help GIF is missing, outdated, or unreadable.
+argument-hint: "<topic, page, ticket key (GROK-12345), or release version>"
 effort: medium
 ---
 
@@ -13,6 +13,8 @@ language, capitalization, and punctuation in `help/develop/help-pages/writing-st
 `word-list.md`. This skill covers what to write, how to prove it, how to shape it, and how to hand
 it over. A GIF on a help page follows `gifs.md` even when it is filmed with `grok-bdd guide`: the
 `bdd-answer` skill's full shell and captions are for answers sent to users.
+
+Companion files in this skill's folder:
 
 | File | Read when |
 |---|---|
@@ -35,6 +37,23 @@ it over. A GIF on a help page follows `gifs.md` even when it is filmed with `gro
    commit the `help` pointer in `public` (a bot bumps it). Commit and push only when asked, with
    plain commit messages.
 5. **Finish with a reading list**: for each topic, the page and anchor that now covers it.
+
+### Starting from a ticket
+
+When the argument is a ticket key, learn the feature from the ticket and the code before deciding
+what the help needs:
+
+1. **Read the ticket**: summary, description, comments, status, fix version, linked tickets, and
+   PRs (Jira, through the Atlassian tools if they are connected).
+2. **Find the change**: `git log origin/master --grep=<KEY>` in core, `public`, and `help`. Read
+   the diffs, then the current code on master: commits after the ticket may have changed it.
+3. **Decide whether it belongs in the help**: user-facing, finished, and released (see the table in
+   `release.md`). Internal changes, unfinished work, and unreleased plugin versions get no help.
+   Report the decision with the evidence.
+4. **Find the place**: grep the help for the area and its UI labels. Prefer updating the section
+   that already covers the area. A help page that now says something wrong comes first.
+5. **Propose, verify, write** as in sections 1–6. Put the ticket key at the start of the commit
+   message.
 
 ## 2. Verify every claim
 
