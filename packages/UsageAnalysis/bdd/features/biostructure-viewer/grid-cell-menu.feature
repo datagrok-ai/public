@@ -5,16 +5,10 @@ Feature: Grid context menu on Molecule3D cells (GROK-14552)
   BiostructureViewer/biostructureviewer-bug-grok-14552, on pdb_data.csv (`pdb` is Molecule3D,
   `pdb_id` is PDB_ID).
 
-  Not translated: Scenario 1, the right-click on the empty area of a row past the last column — the
-  bug of GROK-14552 itself. The grid reports no hit area for that space and no step right-clicks a
-  viewer's empty space (requested, with the scenario, in the request document).
-
-  Show > Biostructure and Show > NGL dock their viewer's root straight into the view, so the docked
-  panel carries no viewer name and the table view does not list it. The Biostructure one is claimed
-  by the Reset Camera button its Mol* engine builds (the only Mol* on the view). The NGL one has
-  nothing readable on the page: Show > NGL is picked and checked for errors and balloons, but that
-  the NGL viewer is docked is not claimed, and its error check has no readable end of the load to
-  wait on (both requested).
+  Show > Biostructure and Show > NGL dock a viewer of the table view, which is claimed visible with
+  the structure it loaded (`structure loaded`) and closed again. The right-click on the empty area
+  of a row past the last column, the bug of GROK-14552 itself, comes last (pdb_data's columns end
+  well short of the grid's right edge).
 
   Background:
     Given user is logged in
@@ -44,16 +38,26 @@ Feature: Grid context menu on Molecule3D cells (GROK-14552)
     And no errors should have been logged
 
   Scenario: Show > Biostructure docks a Biostructure viewer with the cell's structure
-    Then "Reset Camera" button inside open tableview should be absent
+    Then Biostructure viewer should be absent
     When user picks "Show > Biostructure" from the context menu of the "cell 2 of pdb" area of grid
-    Then "Reset Camera" button inside open tableview should be visible
+    Then Biostructure viewer should be visible
+    And the "structure loaded" reading of Biostructure viewer should be "true"
+    And "Reset Camera" button in Biostructure viewer should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clicks on close icon of Biostructure viewer
+    Then Biostructure viewer should be absent
 
-  Scenario: Show > NGL on a Molecule3D cell raises no error
+  Scenario: Show > NGL docks an NGL viewer with the cell's structure
+    Then NGL viewer should be absent
     When user picks "Show > NGL" from the context menu of the "cell 2 of pdb" area of grid
-    Then no errors should have been logged
+    Then NGL viewer should be visible
+    And the "structure loaded" reading of NGL viewer should be "true"
+    And "Open..." link in NGL viewer should be absent
+    And no errors should have been logged
     And no error or warning balloon should have been shown
+    When user clicks on close icon of NGL viewer
+    Then NGL viewer should be absent
 
   Scenario: A PDB_ID cell's menu has none of the Molecule3D items
     When user right-clicks on the "cell 1 of pdb_id" area of grid
@@ -63,3 +67,11 @@ Feature: Grid context menu on Molecule3D cells (GROK-14552)
     And the open menu should not list "Download"
     When user closes the context menu
     Then no errors should have been logged
+
+  Scenario: Right-clicking the row's empty space past the last column raises nothing (GROK-14552)
+    When user right-clicks on empty space of row 2 of grid
+    Then the open menu should list "Properties..."
+    And the open menu should not list "Show"
+    When user closes the context menu
+    Then no errors should have been logged
+    And no error or warning balloon should have been shown

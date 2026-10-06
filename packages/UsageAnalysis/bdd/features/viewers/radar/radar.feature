@@ -1,18 +1,13 @@
 @viewers @realizes:charts.viewer.radar
 Feature: Radar table switch, Values, Title, Normalization, Color legend and the project round trip
-  The Radar draws one line per row over up to ten numeric axes (Values). It reports no areas or
-  readings of its own, so what it draws is claimed through its properties, the message it shows in
-  place of a chart, its legend and the ink of its canvas. The viewer is added from the ribbon's Add
-  viewer gallery and set up in the Context Panel.
-  Kept without (see the request document): that a legend click narrows what the Radar draws. The
-  lines of one sex cover the same polygon as the lines of both, so ink cannot tell them apart, and
-  the Radar reports no reading of the rows it draws; the legend item's own selected state and the
-  unchanged table filter are claimed instead. The Radar's own error state is its message text (the
-  viewer reports no status), so "no message" is claimed as the absence of that text. The project
-  saved through the ribbon's Save is reopened without a console claim: the Save dialog's preview of
-  a project with two table views logs "Unable to find element in cloned iframe" (GROK-18606). The
-  console after the reopen, which both reopen tickets are about, is claimed on a project saved
-  without the dialog.
+  The Radar draws one line per row over up to ten numeric axes (Values), at most the first 1000 lines
+  of the rows its legend lets through. It reports the axes it laid out (`axes`), the lines it drew
+  (`rows shown`) and the message it shows in place of or above the chart (`message`). The viewer is
+  added from the ribbon's Add viewer gallery and set up in the Context Panel. A legend click narrows
+  the lines on demog-1000, where the selected category has fewer than 1000 rows; on demog the cap
+  keeps 1000 either way. The project round trip is made twice: through the ribbon's Save dialog and
+  with a project saved without it, both reopened from Browse > Dashboards with no error logged
+  (GROK-18085, GROK-19376).
   Translated from the TestTrack case Charts/radar.
 
   Background:
@@ -113,6 +108,28 @@ Feature: Radar table switch, Values, Title, Normalization, Color legend and the 
     And 5850 rows should pass the filter
     And no errors should have been logged
 
+  Scenario: A legend click narrows the lines the Radar draws
+    Given user opens demog-1000 dataset
+    When user clicks on "Add viewer" icon
+    And user clicks on first "Radar" card in "Add Viewer" dialog
+    Then radar viewer should be bound to table "demog-1000"
+    And the "axes" reading of radar viewer should be "AGE, HEIGHT, WEIGHT"
+    And the "rows shown" reading of radar viewer should be 1000
+    And the "message" reading of radar viewer should be ""
+    When user clicks on grid
+    And user clicks on settings icon of radar viewer
+    Given "Color" category in context panel is expanded
+    When user selects "SEX" in "Color" property in context panel
+    Then the legend of radar viewer should list 2 items
+    When user clicks on "M" item in the legend of radar viewer
+    Then "M" legend item in legend of radar viewer should be selected
+    And the "rows shown" reading of radar viewer should be 447
+    And 1000 rows should pass the filter
+    When user clicks on "M" item in the legend of radar viewer
+    Then "M" legend item in legend of radar viewer should not be selected
+    And the "rows shown" reading of radar viewer should be 1000
+    And no errors should have been logged
+
   Scenario: A Radar rebound to another table survives a project save through the ribbon and reopen
     Given no project named "RadarRebind{time}" is on the server
     And user opens demog-1000 dataset
@@ -151,10 +168,9 @@ Feature: Radar table switch, Values, Title, Normalization, Color legend and the 
     And "Values" property of radar viewer should be "AGE, HEIGHT, WEIGHT"
     And radar viewer should be painted
     And "The Radar viewer requires a minimum of 1 numerical column." text in radar viewer should be absent
+    And no errors should have been logged
 
-  Scenario: Reopening a project with a rebound Radar logs no errors (GROK-18085, GROK-19376)
-    The project is saved without the Save dialog, whose preview logs an unrelated error (GROK-18606),
-    so the console after the reopen can be claimed.
+  Scenario: Reopening a project saved without the dialog brings the rebound Radar back (GROK-18085, GROK-19376)
     Given no project named "RadarReopen{time}" is on the server
     And user opens demog-1000 dataset
     And user opens spgi dataset
@@ -169,7 +185,8 @@ Feature: Radar table switch, Values, Title, Normalization, Color legend and the 
     Then radar viewer should be bound to table "demog-1000"
     And no errors should have been logged
     When user saves all open table views as project "RadarReopen{time}"
-    And user picks "Close All" from the context menu of browse tab
+    Then 1 project named "RadarReopen{time}" should be on the server
+    When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree

@@ -3,17 +3,14 @@ feature: charts
 realizes_atlas: [charts.cp.click-segment-to-select-or-filter]
 realizes: [charts.viewer.tree]
 priority: p0
-target_layer: manual-only
+target_layer: playwright
 coverage_type: smoke
-manual_only_reason: |
-  The Tree viewer does not report where its branches are, so branch clicks
-  with Shift must be done by hand.
 related_bugs: []
 ---
 
-# Charts: Tree branch clicks (manual)
+# Charts: Tree branch clicks
 
-This file lists only checks needing a human hand on the Tree viewer's branches.
+Shift+Click on the Tree viewer's branches, with and without a filter.
 
 ## Setup
 
@@ -57,7 +54,9 @@ Close all.
 
 ## Automation notes
 
-- Tree branch clicks stay manual until the Tree viewer reports its branches as areas.
+- The Tree viewer reports each branch it drew as a `branch <path>` area (`branch All | false | F | Asian`),
+  on the line into the node, where a click selects the branch's rows; translated in
+  `bdd/features/viewers/tree/tree.feature`.
 
 ---
 {

@@ -9,8 +9,8 @@ Feature: Markush Enumerator: a core from a cell, R-groups from a table, Cartesia
 
   The dialog's core and R-group cards have no names or readings: the R-group counts are read from
   the cards' captions ("r group 4 · R1" is there, "r group 5 · R1" is not), and "exactly one core
-  card" is kept without (see the request document). Which core the dialog took is proven by the
-  result's Core column (every row holds row 2's core; rows 3 and 4 have R1 and R2 too); the top-menu
+  card" is not claimed (the card row is virtualized, so a card missing from it proves nothing).
+  Which core the dialog took is proven by the result's Core column (every row holds row 2's core; rows 3 and 4 have R1 and R2 too); the top-menu
   scenario ends on CANCEL, so there "that core" is shown only by its R-numbers (R2 present, R3
   absent — true of rows 2, 3 and 4 alike). The two result tables live in the workspace only and go
   with the views at the end of each scenario.

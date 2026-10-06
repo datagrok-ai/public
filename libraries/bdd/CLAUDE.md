@@ -44,7 +44,9 @@ playwright.config.ts    the one config every project runs with (BDD_ROOT → tes
 
 We test our own platform, not a black box. **When a test would wait, sleep, scan pixels or retry,
 a signal or a name is missing in the core, and the fix goes there** (`d4` viewers, `xamgle`, the
-js-api) — never a `waitForTimeout` in a step. What was added that way: `viewer.immediateRendering`
+js-api) — never a `waitForTimeout` in a step. A signal is computed when it is asked for: a
+`getWidgetStatus` or a status provider reads what the widget already holds, and nothing is recorded
+per render or watched in the DOM for a test's sake. What was added that way: `viewer.immediateRendering`
 and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/values/parts`,
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
 `d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
@@ -69,10 +71,17 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
   so the suite reports the environment, never the UI. Test the script with a package test. Check the
   code path, not the menu name: a JS-looking command or pane can call
   `grok.functions.call('<Pkg>:<PythonScript>')`; the package's `scripts/` folder lists the scripts.
-  A pane builds when expanded, and the expanded state persists in `localStorage` for the worker's
-  page, so a scenario that expands a server-backed pane makes it build in later scenarios too.
+  A pane builds when expanded, and the expanded state persists in `localStorage` (`Accordion:<key>`);
+  the shell reset clears it, but within a journey a scenario that expands a server-backed pane makes
+  it build in the later scenarios too.
 - **Anything with nothing UI-specific**: a function called with arguments and its result checked,
   a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
+- **What a grid cell renderer draws** (an oligonucleotide duplex, a sparkline, a molecule picture).
+  A renderer runs for every visible cell on every paint and also outside the grid (forms, tooltips,
+  exports), so it stays fast and keeps nothing for a test; a status provider fed from it costs every
+  paint and goes stale when the column is removed or a second column of the type shows. The package
+  tests the renderer (`src/tests`, `grok test`); a feature claims what the platform reports around
+  the cell — its value, semantic type, menus and panes (ruling of 2026-10-06).
 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
@@ -132,7 +141,8 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
-  menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  menus, `ui.tooltip.hide`, notices removed, `closeAll`, the context panes' expanded state
+  (`Accordion:*` in `localStorage`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
   viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
   but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
@@ -383,9 +393,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
   Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
-  Invariants (`AppEvents.propertyEdited`) reaches across features: an implicit current-object change
-  on a new viewer right after another feature edited a property leaves the panel on the old one;
-  a viewer's "Properties..." command forces the change (since 2026-09-23).
+  Invariants (`AppEvents.propertyEdited`) used to reach across features: the shell reset's
+  `closeAll` came within 2 s of the last property edit, its own "nothing is current" was dropped,
+  and the closed viewer stayed current, its properties in the panel, for the next feature's gear
+  click to miss. `closeAll` clears the guard (`PropertyPanel.reset`, 2026-10-06); a viewer's
+  "Properties..." command forces the change (since 2026-09-23).
 - Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
   cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
   join, disable and favorite (the `@serial` features, never at the same time), both made once per

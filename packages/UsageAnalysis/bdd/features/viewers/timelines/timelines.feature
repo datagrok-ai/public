@@ -1,18 +1,11 @@
 @viewers @realizes:charts.viewer.timelines
 Feature: Timelines legend, legend visibility, legend clicks and Reset View
   The Timelines viewer draws one lane per subject (Split By) with an interval per event, colored by
-  Color. It reports no areas or readings of its own: its legend is the standard DOM legend, so its
-  items are counted and clicked by name, and what it draws is claimed by the ink of its canvas.
-  ae.csv (143 adverse events, 71 subjects; AESOC has 15 values) is opened from Browse and the viewer
-  is added from the ribbon's Add viewer gallery.
-  "Not blank" after a legend click is claimed by the hues on its canvases: the intervals are drawn in
-  the Color column's colors, and a plot area with no interval left (lane labels, axes and the zoom
-  sliders only) shows 11 hue buckets against 17-18 with one category drawn, so the claim asks for 14.
-  Translated from the TestTrack case Charts/timelines. Kept without (see the request document): that
-  the Color list offers only string columns — no step reads the choices of a column property; that
-  deselecting the last legend item draws all events again (claimed as more ink than the one-item
-  state, not as the full picture); that Reset View repaints — the viewer reports no hit areas, so no
-  step can zoom it first, and Reset View on an untouched view is claimed only as still painted.
+  Color, and reports what it drew: `lanes`, `intervals` (after the legend and the zoom) and a `view`
+  area over its plot. Its legend is the standard DOM legend, so its items are counted and clicked by
+  name. ae.csv (143 adverse events, 71 subjects; AESOC has 15 values) is opened from Browse and the
+  viewer is added from the ribbon's Add viewer gallery. Color offers the string columns only.
+  Translated from the TestTrack case Charts/timelines.
 
   Background:
     Given user is logged in
@@ -37,6 +30,10 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
 
   Scenario: The viewer draws, and the legend follows Legend Visibility (GROK-20800)
     Then no errors should have been logged
+    And the "intervals" reading of timelines viewer should be 143
+    And "Color" property in context panel should offer the columns "STUDYID, DOMAIN, USUBJID, AESPID, AETERM, AELLT, AELLTCD, AEDECOD, AEPTCD, AEHLT, AEHLTCD, AEHLGT, AEHLGTCD, AEBODSYS, AEBDSYCD, AESOC, AESOCCD, AESEV, AEACN, AEREL, AEOUT, AESTDTC"
+    And "Color" property in context panel should not offer the column "AESTDY"
+    And "Color" property in context panel should not offer the column "AESEQ"
     When user selects "AESOC" in "Color" property in context panel
     Then "Color" property of timelines viewer should be "AESOC"
     And the legend of timelines viewer should list 15 items
@@ -55,22 +52,18 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
   Scenario: Legend clicks narrow the viewer without blanking it (GROK-19033, GROK-19535, GROK-18608)
     When user selects "AESOC" in "Color" property in context panel
     Then the legend of timelines viewer should list 15 items
-    When user takes a snapshot of timelines viewer
-    And user clicks on "SKIN AND SUBCUTANEOUS TISSUE DISORDERS" item in the legend of timelines viewer
-    Then timelines viewer should have less ink than before
-    And the canvases of timelines viewer should be painted in at least 14 colors
+    And the "intervals" reading of timelines viewer should be 143
+    When user clicks on "SKIN AND SUBCUTANEOUS TISSUE DISORDERS" item in the legend of timelines viewer
+    Then the "intervals" reading of timelines viewer should be 35
     And 143 rows should pass the filter
     And no errors should have been logged
-    When user takes a snapshot of timelines viewer
-    And user clicks on "NERVOUS SYSTEM DISORDERS" item in the legend of timelines viewer holding Control
-    Then timelines viewer should have more ink than before
+    When user clicks on "NERVOUS SYSTEM DISORDERS" item in the legend of timelines viewer holding Control
+    Then the "intervals" reading of timelines viewer should be 68
     And no errors should have been logged
-    When user takes a snapshot of timelines viewer
-    And user clicks on "NERVOUS SYSTEM DISORDERS" item in the legend of timelines viewer holding Control
-    Then timelines viewer should have less ink than before
-    When user takes a snapshot of timelines viewer
-    And user clicks on "SKIN AND SUBCUTANEOUS TISSUE DISORDERS" item in the legend of timelines viewer
-    Then timelines viewer should have more ink than before
+    When user clicks on "NERVOUS SYSTEM DISORDERS" item in the legend of timelines viewer holding Control
+    Then the "intervals" reading of timelines viewer should be 35
+    When user clicks on "SKIN AND SUBCUTANEOUS TISSUE DISORDERS" item in the legend of timelines viewer
+    Then the "intervals" reading of timelines viewer should be 143
     And "SKIN AND SUBCUTANEOUS TISSUE DISORDERS" legend item in legend of timelines viewer should not be selected
     And no errors should have been logged
     Given "Data" category in context panel is expanded
@@ -80,11 +73,9 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
     And timelines viewer should have repainted
     And the legend of timelines viewer should list 15 items
     And no errors should have been logged
-    When user takes a snapshot of timelines viewer
-    And user clicks on "CARDIAC DISORDERS" item in the legend of timelines viewer
+    When user clicks on "CARDIAC DISORDERS" item in the legend of timelines viewer
     Then "CARDIAC DISORDERS" legend item in legend of timelines viewer should be selected
-    And timelines viewer should have less ink than before
-    And the canvases of timelines viewer should be painted in at least 14 colors
+    And the "intervals" reading of timelines viewer should be 11
     And 143 rows should pass the filter
     And no errors should have been logged
     When user takes a snapshot of timelines viewer
@@ -93,7 +84,10 @@ Feature: Timelines legend, legend visibility, legend clicks and Reset View
     And timelines viewer should have repainted
     And no errors should have been logged
 
-  Scenario: Reset View leaves the viewer painted
+  Scenario: Reset View brings back every interval after a zoom
+    When user remembers the "intervals" reading of timelines viewer
+    And user scrolls the mouse wheel up 5 times over the "view" area of timelines viewer
+    Then the "intervals" reading of timelines viewer should be lower than remembered
     When user picks "Reset View" from the context menu of timelines viewer
-    Then timelines viewer should be painted
+    Then the "intervals" reading of timelines viewer should be as remembered
     And no errors should have been logged

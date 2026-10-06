@@ -47,9 +47,10 @@ centre, for example `F | Caucasian`.
 4. **Verify:** the tooltip shows `18` and `Black`.
 5. In the Context Panel, open the **Hierarchy** dialog, leave only **RACE** checked, click **OK**.
 6. **Verify:** 4 segments; `Caucasian` holds 896 rows.
-7. Open the **Hierarchy** dialog, check **SEX**, drag it above **RACE** and click **OK** (the
-   dialog keeps RACE, already in the hierarchy, first and appends SEX after it).
-8. **Verify:** 10 segments; no errors in the console.
+7. Open the **Hierarchy** dialog, check **SEX** and click **OK**.
+8. **Verify:** the hierarchy is RACE, SEX: 12 segments, `Caucasian | F` holds 480 rows; no errors in
+   the console. The dialog keeps RACE, already in the hierarchy, first and appends SEX after it;
+   its rows cannot be dragged into another order (a drag takes the column out of the dialog).
 
 ### 2. Only categorical columns can build the hierarchy (github-2954, GROK-18010)
 

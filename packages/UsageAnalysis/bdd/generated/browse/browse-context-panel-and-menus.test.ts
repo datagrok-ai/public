@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.browse]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
@@ -26,55 +27,55 @@ test.describe("The context panel and the context menus of the Browse tree", () =
   const session = feature(test, "features/browse/browse-context-panel-and-menus.feature", import.meta.url);
   test("F4 hides the context panel and shows it again", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(35, "Given the context panel is open", () => contextPanelOpen(page));
-    await session.step(36, "When user presses F4", () => pressKey(page, "F4"));
-    await session.step(37, "Then context panel should be hidden", () => shouldBe(page, el("context panel"), "hidden"));
-    await session.step(38, "When user presses F4", () => pressKey(page, "F4"));
-    await session.step(39, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
-    await session.step(40, "And no errors should have been logged", () => noErrors(page));
-    await session.step(41, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(36, "Given the context panel is open", () => contextPanelOpen(page));
+    await session.step(37, "When user presses F4", () => pressKey(page, "F4"));
+    await session.step(38, "Then context panel should be hidden", () => shouldBe(page, el("context panel"), "hidden"));
+    await session.step(39, "When user presses F4", () => pressKey(page, "F4"));
+    await session.step(40, "Then context panel should be visible", () => shouldBe(page, el("context panel"), "visible"));
+    await session.step(41, "And no errors should have been logged", () => noErrors(page));
+    await session.step(42, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("The context panel follows the node that was clicked", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(44, "Given the context panel is open", () => contextPanelOpen(page));
-    await session.step(45, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
-    await session.step(46, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
-    await session.step(47, "When user clicks on Files---Demo---demog.csv tree node inside browse tree", () => clickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
-    await session.step(48, "Then the context panel should show \"demog.csv\"", () => contextPanelShows(page, "demog.csv"));
-    await session.step(51, "When Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
-    await session.step(52, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
-    await session.step(53, "And user clicks on Databases---Postgres---Datagrok tree node inside browse tree", () => clickOn(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
-    await session.step(54, "Then the context panel should show \"Datagrok\"", () => contextPanelShows(page, "Datagrok"));
-    await session.step(55, "And no errors should have been logged", () => noErrors(page));
-    await session.step(56, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(45, "Given the context panel is open", () => contextPanelOpen(page));
+    await session.step(46, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
+    await session.step(47, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
+    await session.step(48, "When user clicks on Files---Demo---demog.csv tree node inside browse tree", () => clickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
+    await session.step(49, "Then the context panel should show \"demog.csv\"", () => contextPanelShows(page, "demog.csv"));
+    await session.step(52, "When Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
+    await session.step(53, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
+    await session.step(54, "And user clicks on Databases---Postgres---Datagrok tree node inside browse tree", () => clickOn(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
+    await session.step(55, "Then the context panel should show \"Datagrok\"", () => contextPanelShows(page, "Datagrok"));
+    await session.step(56, "And no errors should have been logged", () => noErrors(page));
+    await session.step(57, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("A connection offers Browse, the query commands, Edit, Rename, Clone, Delete and Clear cache", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(59, "Given Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
-    await session.step(60, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
-    await session.step(61, "When user opens the context menu of Databases---Postgres---Datagrok tree node inside browse tree", () => openContextMenu(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
-    await session.step(62, "Then the open menu should list \"Browse\"", () => menuLists(page, "Browse"));
-    await session.step(63, "And the open menu should list \"New Query...\"", () => menuLists(page, "New Query..."));
-    await session.step(64, "And the open menu should list \"Edit...\"", () => menuLists(page, "Edit..."));
-    await session.step(65, "And the open menu should list \"Rename...\"", () => menuLists(page, "Rename..."));
-    await session.step(66, "And the open menu should list \"Clone...\"", () => menuLists(page, "Clone..."));
-    await session.step(67, "And the open menu should list \"Delete...\"", () => menuLists(page, "Delete..."));
-    await session.step(68, "And the open menu should list \"Clear cache\"", () => menuLists(page, "Clear cache"));
-    await session.step(70, "And the open menu should list \"Add to favorites\"", () => menuLists(page, "Add to favorites"));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(60, "Given Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
+    await session.step(61, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
+    await session.step(62, "When user opens the context menu of Databases---Postgres---Datagrok tree node inside browse tree", () => openContextMenu(page, el("Databases---Postgres---Datagrok tree node inside browse tree")));
+    await session.step(63, "Then the open menu should list \"Browse\"", () => menuLists(page, "Browse"));
+    await session.step(64, "And the open menu should list \"New Query...\"", () => menuLists(page, "New Query..."));
+    await session.step(65, "And the open menu should list \"Edit...\"", () => menuLists(page, "Edit..."));
+    await session.step(66, "And the open menu should list \"Rename...\"", () => menuLists(page, "Rename..."));
+    await session.step(67, "And the open menu should list \"Clone...\"", () => menuLists(page, "Clone..."));
+    await session.step(68, "And the open menu should list \"Delete...\"", () => menuLists(page, "Delete..."));
+    await session.step(69, "And the open menu should list \"Clear cache\"", () => menuLists(page, "Clear cache"));
+    await session.step(70, "And the open menu should list \"Add To Favorites\"", () => menuLists(page, "Add To Favorites"));
     await session.step(71, "When user closes the context menu", () => closeContextMenu(page));
     await session.step(72, "Then no errors should have been logged", () => noErrors(page));
     await session.step(73, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("A file is not offered the commands of a connection", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(76, "Given Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(77, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
     await session.step(78, "When user opens the context menu of Files---Demo---demog.csv tree node inside browse tree", () => openContextMenu(page, el("Files---Demo---demog.csv tree node inside browse tree")));
@@ -82,15 +83,15 @@ test.describe("The context panel and the context menus of the Browse tree", () =
     await session.step(80, "And the open menu should list \"Download\"", () => menuLists(page, "Download"));
     await session.step(81, "And the open menu should not list \"New Query...\"", () => menuDoesNotList(page, "New Query..."));
     await session.step(82, "And the open menu should not list \"Clear cache\"", () => menuDoesNotList(page, "Clear cache"));
-    await session.step(84, "And the open menu should not list \"Add to favorites\"", () => menuDoesNotList(page, "Add to favorites"));
+    await session.step(84, "And the open menu should list \"Add To Favorites\"", () => menuLists(page, "Add To Favorites"));
     await session.step(85, "When user closes the context menu", () => closeContextMenu(page));
     await session.step(86, "Then no errors should have been logged", () => noErrors(page));
     await session.step(87, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
   test("Back and Forward walk the panel's history", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(90, "Given the context panel is open", () => contextPanelOpen(page));
     await session.step(91, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
     await session.step(92, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
@@ -113,8 +114,8 @@ test.describe("The context panel and the context menus of the Browse tree", () =
   });
   test("Collapse all and Expand all fold every pane of the panel", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(112, "Given the context panel is open", () => contextPanelOpen(page));
     await session.step(113, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
     await session.step(114, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
@@ -131,8 +132,8 @@ test.describe("The context panel and the context menus of the Browse tree", () =
   });
   test("The star beside a connection's name adds it to favorites and takes it out", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(127, "Given a \"Postgres\" connection named \"BDD-Browse-Star-{run}\" is on the server", () => connectionOnServer(page, "Postgres", session.text("BDD-Browse-Star-{run}")));
     await session.step(128, "And \"BDD-Browse-Star-{run}\" is not in favorites", () => notFavorite(page, session.text("BDD-Browse-Star-{run}")));
     await session.step(129, "And the context panel is open", () => contextPanelOpen(page));
@@ -147,10 +148,10 @@ test.describe("The context panel and the context menus of the Browse tree", () =
     await session.step(138, "And no errors should have been logged", () => noErrors(page));
     await session.step(139, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("A file has no favorite star, a connection has one", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
+  test("A file carries the favorite star, as a connection does (GROK-21108)", {tag: ["@browse", "@realizes:views.browse"]}, async ({browser}) => {
     const page = await session.page(browser);
-    await session.step(31, "Given user is logged in", () => loggedIn(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
+    await session.step(32, "Given user is logged in", () => loggedIn(page));
+    await session.step(33, "And the browse panel is open", () => browsePanelOpen(page));
     await session.step(142, "Given the context panel is open", () => contextPanelOpen(page));
     await session.step(143, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
     await session.step(144, "And Databases---Postgres tree node inside browse tree is expanded", () => isExpanded(page, el("Databases---Postgres tree node inside browse tree")));
@@ -161,7 +162,7 @@ test.describe("The context panel and the context menus of the Browse tree", () =
     await session.step(149, "And Files---Demo tree node inside browse tree is expanded", () => isExpanded(page, el("Files---Demo tree node inside browse tree")));
     await session.step(150, "When user clicks on Files---Demo---demog.csv tree node inside browse tree", () => clickOn(page, el("Files---Demo---demog.csv tree node inside browse tree")));
     await session.step(151, "Then the context panel should show \"demog.csv\"", () => contextPanelShows(page, "demog.csv"));
-    await session.step(152, "And favorite star in context panel should be absent", () => shouldBe(page, el("favorite star in context panel"), "absent"));
+    await session.step(152, "And favorite star in context panel should be visible", () => shouldBe(page, el("favorite star in context panel"), "visible"));
     await session.step(153, "And no errors should have been logged", () => noErrors(page));
     await session.step(154, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });

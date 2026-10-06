@@ -35,7 +35,8 @@ Feature: Biostructure viewer settings — Binding Site Whole Residues and the Co
     And "Add viewer" icon in toolbar should be visible
     When user clicks on "Add viewer" icon in toolbar
     Then "Add Viewer" dialog should be visible
-    When user clicks on first "Biostructure" button in "Add Viewer" dialog
+    When user types "Biostructure" into viewer gallery search in "Add Viewer" dialog
+    And user clicks on first "Biostructure" button in "Add Viewer" dialog
     Then "Add Viewer" dialog should be absent
     And Biostructure viewer should be visible
     When user clicks on settings icon of Biostructure viewer
@@ -50,11 +51,12 @@ Feature: Biostructure viewer settings — Binding Site Whole Residues and the Co
     And "Binding Site Whole Residues" property in context panel should be checked
     When user checks "Show Binding Site" property in context panel
     Then "showBindingSite" property of Biostructure viewer should be "true"
-    When user clicks on "Binding site" button in Biostructure viewer
-    Then "Show side chains" text input should be visible
-    And "Show side chains" text input should be checked
+    And "Binding site" overlay button in Biostructure viewer should be selected
+    When user clicks on "Binding site" overlay button in Biostructure viewer
+    Then "Show side chains" checkbox should be visible
+    And "Show side chains" checkbox should be checked
     When user presses Escape
-    Then "Show side chains" text input should be hidden
+    Then "Show side chains" checkbox should be hidden
     When user unchecks "Binding Site Whole Residues" property in context panel
     Then "bindingSiteWholeResidues" property of Biostructure viewer should be "false"
     And "Reset Camera" button in Biostructure viewer should be visible
@@ -62,11 +64,11 @@ Feature: Biostructure viewer settings — Binding Site Whole Residues and the Co
     Then "bindingSiteWholeResidues" property of Biostructure viewer should be "true"
     When user unchecks "Show Binding Site" property in context panel
     Then "showBindingSite" property of Biostructure viewer should be "false"
-    When user clicks on "Binding site" button in Biostructure viewer
-    Then "Show side chains" text input should be visible
-    And "Show side chains" text input should be unchecked
+    When user clicks on "Binding site" overlay button in Biostructure viewer
+    Then "Show side chains" checkbox should be visible
+    And "Show side chains" checkbox should be unchecked
     When user presses Escape
-    Then "Show side chains" text input should be hidden
+    Then "Show side chains" checkbox should be hidden
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

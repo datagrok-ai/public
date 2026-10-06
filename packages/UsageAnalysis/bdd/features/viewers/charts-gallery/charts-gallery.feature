@@ -2,14 +2,12 @@
 Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Group Analysis
   The ribbon's Add viewer gallery disables a Charts viewer when the table cannot feed it and says
   why in the card's tooltip; a card is disabled through aria-disabled, so its state is read as it
-  is. Surface plot and Globe draw 3D views and Group Analysis a grid of groups with analysed
-  columns; they report no readings of their own, so the claims are their properties, the painted
-  canvas, the inner grid's own readings and the console.
-  Translated from the TestTrack case Charts/charts-other-viewers. Kept without (see the request
-  document): that the Globe painted — it draws with WebGL and neither pixel step reads its canvas, so
-  it is claimed visible and silent, and so is the Surface plot (WebGL too); the Group Analysis layout is saved and applied through the API,
-  not through View > Layout. The Surface plot is checked on demog: on
-  earthquakes.csv it is not shown.
+  is. The Globe draws with WebGL, which no pixel step reads, so what it placed is its `points`
+  reading; the Surface plot is claimed by its properties and a silent console; Group Analysis by
+  its inner grid's readings, and its layout is saved and applied from the toolbox's Layouts pane,
+  under the run-unique name its table gets.
+  Translated from the TestTrack case Charts/charts-other-viewers. The Surface plot is checked on
+  demog: on earthquakes.csv it is not shown.
 
   Background:
     Given user is logged in
@@ -58,6 +56,7 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     When user clicks on "Add viewer" icon
     And user clicks on first "Globe" card in "Add Viewer" dialog
     Then globe viewer should be visible
+    And the "points" reading of globe viewer should be 2426
     And no errors should have been logged
     When user clicks on close icon of globe viewer
     Then globe viewer should be absent
@@ -84,7 +83,8 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And no errors should have been logged
 
   Scenario: Group Analysis adds an analysed column and keeps it in a layout (GROK-19039, GROK-19047)
-    Given user opens demog dataset
+    Given user opens demog dataset keeping the first 5850 rows as "GroupAnalysis-{time}"
+    And the layouts named "GroupAnalysis-{time}" are deleted when the feature ends
     When user clicks on "Add viewer" icon
     And user clicks on first "Group Analysis" card in "Add Viewer" dialog
     Then group analysis viewer should be visible
@@ -111,10 +111,13 @@ Feature: The Add viewer gallery for Charts viewers, Surface plot, Globe and Grou
     And grid in group analysis viewer should have a "header min(AGE)" area
     And the "text of cell 1 of min(AGE)" reading of grid in group analysis viewer should be "18.00"
     And no errors should have been logged
-    When user saves the layout of the current table view to the server
-    And user clicks on close icon of group analysis viewer
+    Given the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on Save button in layouts pane
+    Then "GroupAnalysis-{time}" layout card should be visible
+    When user clicks on close icon of group analysis viewer
     Then group analysis viewer should be absent
-    When user loads the saved layout
+    When user clicks on "GroupAnalysis-{time}" layout card
     Then group analysis viewer should be visible
     And "Group By" property of group analysis viewer should be "SEX"
     And the "rows" reading of grid in group analysis viewer should be 2

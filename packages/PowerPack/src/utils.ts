@@ -68,9 +68,11 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
   if (w.factory?.name) {
     const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
-    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null)
+    // saved only when new: a save writes back every setting the page read at load, undoing changes made elsewhere
+    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null) {
       widgetSettings.ignored = false;
-    saveSettings();
+      saveSettings();
+    }
   }
 }
 

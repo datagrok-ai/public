@@ -21,12 +21,9 @@ Feature: Opening and previewing structure files from the Files browser
   means by "open Help and close it" is toggled with F1, which is what the CLAUDE-33 scenario does.
 
 
-  Not translated:
-  - Scenario 2 and Scenario 6 (NGL-only formats, preview and double-click): the NGL host and its
-    canvas carry no name a step can reach, and the view they open has an empty name; nothing
-    positive is readable (requested in the request document). On the stand every one of the five
-    files previews without an error, and a double-click on 1blu.mmtf and 1lee.ccp4 opens a view
-    with an NGL canvas — the suspected empty NGL view is not confirmed.
+  The NGL-only formats (Scenario 2 and Scenario 6) preview and open in an NGL host, claimed as the
+  "NGL host" element (`data-u2-name="ngl-host"` on the `.d4-ngl-viewer` that holds the NGL canvas)
+  with no Mol* engine beside it.
 
   Background:
     Given user is logged in
@@ -50,6 +47,50 @@ Feature: Opening and previewing structure files from the Files browser
     When user clicks on Files---App-Data---BiostructureViewer---samples---1bdq.autodock-gpu.pdbqt tree node inside browse tree
     Then the "1bdq.autodock-gpu.pdbqt" view should be current
     And "Reset Camera" button should be visible
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: NGL-only formats preview with the NGL engine (GROK-13650)
+    Given Files---Demo tree node inside browse tree is expanded
+    And Files---Demo---bio tree node inside browse tree is expanded
+    And Files---Demo---bio---ngl-formats tree node inside browse tree is expanded
+    When user clicks on Files---Demo---bio---ngl-formats---1blu.mmtf tree node inside browse tree
+    Then the "1blu.mmtf" view should be current
+    And "NGL host" element should be visible
+    And "Reset Camera" button should be absent
+    When user clicks on Files---Demo---bio---ngl-formats---1crn.ply tree node inside browse tree
+    Then the "1crn.ply" view should be current
+    And "NGL host" element should be visible
+    When user clicks on Files---Demo---bio---ngl-formats---1crn.obj tree node inside browse tree
+    Then the "1crn.obj" view should be current
+    And "NGL host" element should be visible
+    When user clicks on Files---Demo---bio---ngl-formats---1lee.ccp4 tree node inside browse tree
+    Then the "1lee.ccp4" view should be current
+    And "NGL host" element should be visible
+    When user clicks on Files---Demo---bio---ngl-formats---3pqr.cns tree node inside browse tree
+    Then the "3pqr.cns" view should be current
+    And "NGL host" element should be visible
+    And "Reset Camera" button should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: A double-click on an NGL-only format opens it in a view of its own with the NGL engine
+    Given simple mode is off
+    And Files---Demo tree node inside browse tree is expanded
+    And Files---Demo---bio tree node inside browse tree is expanded
+    And Files---Demo---bio---ngl-formats tree node inside browse tree is expanded
+    When user double-clicks on Files---Demo---bio---ngl-formats---1blu.mmtf tree node inside browse tree
+    Then "1blu.mmtf" view should be visible
+    And the "1blu.mmtf" view should be current
+    And "NGL host" element should be visible
+    And "Reset Camera" button should be absent
+    When user clicks on Files---Demo---bio---ngl-formats---1crn.obj tree node inside browse tree
+    Then the "1crn.obj" view should be current
+    And "1blu.mmtf" view should be visible
+    When user double-clicks on Files---Demo---bio---ngl-formats---1lee.ccp4 tree node inside browse tree
+    Then "1lee.ccp4" view should be visible
+    And the "1lee.ccp4" view should be current
+    And "NGL host" element should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
@@ -150,6 +191,7 @@ Feature: Opening and previewing structure files from the Files browser
     When user double-clicks on Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree
     Then the "pdb_data" table view should open with 6 rows
     When user clicks on "Add viewer" icon in toolbar
+    And user types "Biostructure" into viewer gallery search in "Add Viewer" dialog
     And user clicks on first "Biostructure" button in "Add Viewer" dialog
     Then Biostructure viewer should be visible
     And "Biostructure Id" property of Biostructure viewer should be "pdb"

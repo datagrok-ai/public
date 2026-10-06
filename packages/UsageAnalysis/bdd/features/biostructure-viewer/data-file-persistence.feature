@@ -11,9 +11,8 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
   on the stand the viewer leaves it empty (the same defect as the structure column not
   being taken, GROK-21119).
 
-  Not translated: Scenario 2 (GROK-17967, only the current row's ligand is shown, in Mol* and in
-  NGL): how many structures a viewer has loaded is not on the page — a package reading is
-  requested, with the scenario, in the request document.
+  Which rows' ligands a viewer shows is its `ligand rows` reading (distinct rows; the row under the
+  pointer counts, as Show Mouse-Over Row Ligand is on by default), and how many its `ligands shown`.
 
   The project has a fixed name and is removed with its tables when the feature starts and ends;
   serial, as every feature that saves a project and searches the Dashboards gallery.
@@ -36,7 +35,8 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
     And "Add viewer" icon in toolbar should be visible
     When user clicks on "Add viewer" icon in toolbar
     Then "Add Viewer" dialog should be visible
-    When user clicks on first "Biostructure" button in "Add Viewer" dialog
+    When user types "Biostructure" into viewer gallery search in "Add Viewer" dialog
+    And user clicks on first "Biostructure" button in "Add Viewer" dialog
     Then "Add Viewer" dialog should be absent
     And "Data File" input in Biostructure viewer should be visible
     And "Reset Camera" button in Biostructure viewer should be absent
@@ -49,6 +49,45 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
     And user clicks on OK button in "Select a file" dialog
     Then "Reset Camera" button in Biostructure viewer should be visible
     And "Data File" input in Biostructure viewer should be absent
+    And no errors should have been logged
+    And no error or warning balloon should have been shown
+
+  Scenario: Only the current row's ligand is shown, in Biostructure and in NGL (GROK-17967)
+    The viewers leave Ligand empty on this table (GROK-21119), so it is picked in their settings first.
+    When user clicks on settings icon of Biostructure viewer
+    Given "Data" category in context panel is expanded
+    When user selects "molecule" in "Ligand" property in context panel
+    Then "ligandColumnName" property of Biostructure viewer should be "molecule"
+    When user clicks on the "cell 1 of molecule" area of grid
+    Then the "ligand rows" reading of Biostructure viewer should be "1"
+    And the "ligands shown" reading of Biostructure viewer should be 1
+    When user clicks on the "cell 5 of molecule" area of grid
+    Then the "ligand rows" reading of Biostructure viewer should be "5"
+    And the "ligands shown" reading of Biostructure viewer should be 1
+    When user clicks on settings icon of Biostructure viewer
+    Given "Behaviour" category in context panel is expanded
+    When user unchecks "Show Current Row Ligand" property in context panel
+    And user unchecks "Show Mouse-Over Row Ligand" property in context panel
+    Then the "ligands shown" reading of Biostructure viewer should be 0
+    When user checks "Show Current Row Ligand" property in context panel
+    And user checks "Show Mouse-Over Row Ligand" property in context panel
+    Then the "ligand rows" reading of Biostructure viewer should be "5"
+    When user clicks on "Add viewer" icon in toolbar
+    And user types "NGL" into viewer gallery search in "Add Viewer" dialog
+    And user clicks on first "NGL" button in "Add Viewer" dialog
+    Then NGL viewer should be visible
+    When user uploads "../../BiostructureViewer/files/samples/1bdq.pdb" through "Open..." link in NGL viewer
+    Then the "structure loaded" reading of NGL viewer should be "true"
+    When user clicks on settings icon of NGL viewer
+    Given "Data" category in context panel is expanded
+    When user selects "molecule" in "Ligand" property in context panel
+    Then "ligandColumnName" property of NGL viewer should be "molecule"
+    When user clicks on the "cell 3 of molecule" area of grid
+    Then the "ligand rows" reading of NGL viewer should be "3"
+    And the "ligands shown" reading of NGL viewer should be 1
+    And the "ligand rows" reading of Biostructure viewer should be "3"
+    When user clicks on close icon of NGL viewer
+    Then NGL viewer should be absent
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

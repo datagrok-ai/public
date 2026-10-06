@@ -6,7 +6,8 @@ Feature: A space in favorites
 
   The claim is presence in the tree rather than visibility, because it is the stronger one: a node
   that is merely inside a collapsed group would satisfy "absent" without anything having been
-  removed.
+  removed. Add To Favorites is a submenu for an account that administers groups; "Only for me"
+  adds the space to the user's own favorites, and picking it again takes the space out.
 
   Background:
     Given user is logged in
@@ -20,11 +21,11 @@ Feature: A space in favorites
     Then 1 space named "BDD-Fav" should be on the server
     And the "Create Space" dialog should close
     And "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
-    When user picks "Add to favorites" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be present
 
   Scenario: A space is removed from favorites
-    When user picks "Remove from favorites" from the context menu of BDD-Fav tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of BDD-Fav tree node inside browse tree
     Then "My stuff > Favorites > BDD-Fav" tree node inside browse tree should be absent
     And "My stuff > Favorites" tree node inside browse tree should be present
     And 1 space named "BDD-Fav" should be on the server

@@ -24,7 +24,8 @@ Feature: The context panel and the context menus of the Browse tree
   panel carries a Back and a Forward too, hidden while it is closed, and the icons show only while
   the pointer is on the bar. Browse-Fav-02 (the star beside the object's name toggles it in and out
   of favorites) is claimed on the account's favorites on the server — the star publishes its state
-  only as a font class — and Browse-Fav-05b (a file has no star) on its absence for a file. The
+  only as a font class — and Browse-Fav-05b (a file has no star) is turned
+  around: since GROK-21108 a file is favorited too, so its star is claimed present. The
   title bar's own "Favorites" icon is not a toggle: it lists the favorites.
 
   Background:
@@ -66,8 +67,7 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Clone..."
     And the open menu should list "Delete..."
     And the open menu should list "Clear cache"
-    # the anchor for the file scenario's negative: an entity is offered this, a file is not
-    And the open menu should list "Add to favorites"
+    And the open menu should list "Add To Favorites"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -80,8 +80,8 @@ Feature: The context panel and the context menus of the Browse tree
     And the open menu should list "Download"
     And the open menu should not list "New Query..."
     And the open menu should not list "Clear cache"
-    # Browse-Fav-05: a file is not an entity, so it cannot be made a favourite of its own
-    And the open menu should not list "Add to favorites"
+    # a file is favorited too: its record is made on the first favorite (GROK-21108)
+    And the open menu should list "Add To Favorites"
     When user closes the context menu
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -138,7 +138,7 @@ Feature: The context panel and the context menus of the Browse tree
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A file has no favorite star, a connection has one
+  Scenario: A file carries the favorite star, as a connection does (GROK-21108)
     Given the context panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
@@ -149,6 +149,6 @@ Feature: The context panel and the context menus of the Browse tree
     And Files---Demo tree node inside browse tree is expanded
     When user clicks on Files---Demo---demog.csv tree node inside browse tree
     Then the context panel should show "demog.csv"
-    And favorite star in context panel should be absent
+    And favorite star in context panel should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

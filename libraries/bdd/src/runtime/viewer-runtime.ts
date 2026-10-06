@@ -412,7 +412,9 @@ function install(): void {
     return {colors, ink, hue};
   };
   const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
-  const keyIn = (areas: Record<string, Box>, name: string): string | undefined => Object.keys(areas).find((k) => norm(k) === norm(name));
+  // the exact name first: "segment S_PART | (empty)" and "segment S_PART" are one name without punctuation
+  const keyIn = (areas: Record<string, Box>, name: string): string | undefined =>
+    name in areas ? name : Object.keys(areas).find((k) => norm(k) === norm(name));
   const areaKey = (v: any, name: string): string => {
     const areas = areasOf(v);
     const key = keyIn(areas, name);

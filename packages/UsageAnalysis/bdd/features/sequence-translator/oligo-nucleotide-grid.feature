@@ -16,9 +16,11 @@ Feature: OligoNucleotide duplex column: conversion, context panels and cell acti
   rows of a HELM column are tall, so a row past the first screen is reached by the mouse wheel.
   The Duplex texts of rows 38 and 40 were read on localhost (SequenceTranslator 1.11.5).
 
-  Not here: Block B and the "renders as a duplex / single strand" parts of Blocks A and H (the
-  duplex drawing and the monomer tooltip are canvas-only — no reading); the structure pictures of the Oligo Structures pane and of the full-screen dialog (canvas); the HELM
-  editor's OK path and a real enumeration (both need a gesture inside the HELM Web Editor canvas).
+  Not here: Block B and the "renders as a duplex / single strand" parts of Blocks A and H, the
+  monomer tooltip, and the structure pictures of the Oligo Structures pane and of the full-screen
+  dialog — what a cell renderer or a structure picture draws is tested by the package's own tests,
+  not through the grid (ruling of 2026-10-06); the HELM editor's OK path and a real enumeration
+  (both need a gesture inside the HELM Web Editor canvas).
   The cell actions sit under Current Value in the grid's context menu. The Enumerate dialog draws
   the loaded HELM as numbered monomer labels (m1 G2 sp3 …), so row 1's sense start is read as
   "m1G2sp3m4A5sp6m7C8p9m10U11p12" (row 2 starts with a Chol conjugate).

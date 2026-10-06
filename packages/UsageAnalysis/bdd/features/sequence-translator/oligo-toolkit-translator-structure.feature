@@ -23,8 +23,9 @@ Feature: Oligo Toolkit: the Translator and Structure tools
   bulk-translation-axolabs.csv has a sixth, empty row, so the five sequences
   are claimed row by row rather than by "no missing values".
 
-  Kept without (see the request document): the structure picture being drawn or empty,
-  and that no SDF file is downloaded on a refused save.
+  The single-sequence format selector has no caption; it is named "Single sequence format". Not
+  claimed: whether the structure picture drew a molecule — the picture is Chem's renderer, tested by
+  the packages' own tests.
 
   Background:
     Given user is logged in
@@ -61,7 +62,7 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And no errors should have been logged
 
   Scenario: The prefilled Axolabs sequence is detected and translated to the other formats
-    Then first choice input should have the value "Axolabs"
+    Then "Single sequence format" choice input should have the value "Axolabs"
     And "Nucleotides" table row should contain the text "ACGACU"
     And "HELM" table row should contain the text "RNA1{[fR](A)p.[25r](C)p.[25r](G)p.[25r](A)p.[25r](C)[sp].[25r](U)}$$$$"
     And "BioSpring" table row should contain the text "27867*5"
@@ -76,7 +77,7 @@ Feature: Oligo Toolkit: the Translator and Structure tools
 
   Scenario: A typed HELM switches the format selector to HELM and is translated to nucleotides without an error (GROK-20958)
     When user types "RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$" into text area
-    Then first choice input should have the value "HELM"
+    Then "Single sequence format" choice input should have the value "HELM"
     And "HELM" table row should be absent
     And "Nucleotides" table row should contain the text "ACGU"
     When user clicks on "ACGU" link
@@ -86,13 +87,13 @@ Feature: Oligo Toolkit: the Translator and Structure tools
 
   Scenario: A HELM with a monomer the oligo library lacks refreshes the translations without an error, also while typed (GROK-20958, GROK-19926)
     When user types "RNA1{r(A)p.r(" into text area
-    Then first choice input should have the value "HELM"
+    Then "Single sequence format" choice input should have the value "HELM"
     And "Nucleotides" table row should not contain the text "ACGACU"
     And no errors should have been logged
     When user types "RNA1{r(A)p.r(C)p.r(G)p.r(U)}$$$$" into text area
     Then "Nucleotides" table row should contain the text "ACGU"
     When user types "RNA1{r(A)p.r(C)p.[meI]}$$$$" into text area
-    Then first choice input should have the value "HELM"
+    Then "Single sequence format" choice input should have the value "HELM"
     And "Nucleotides" table row should not contain the text "ACGU"
     And "HELM" table row should be absent
     And no error or warning balloon should have been shown
@@ -164,19 +165,23 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And user types "Afcgacsu" into AS text area
     And user clicks on "Save SDF" button
     Then a warning balloon containing "Enter SENSE_STRAND and optionally ANTISENSE_STRAND/AS2 to save SDF" should have been shown
+    And no file should have been downloaded
     When user clears AS text area
     And user types "Afcgacsu" into SS text area
     And user downloads a file through "Save SDF" button
-    Then the downloaded file should contain "$$$$"
+    Then a file matching "^SequenceTranslator-\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sdf$" should have been downloaded
+    And the downloaded file should contain 1 occurrences of "$$$$"
     And the downloaded file should contain "M  END"
     And no errors should have been logged
 
   @known-failure
   Scenario: Save SDF with an antisense strand that cannot be converted is refused by name (GROK-20959)
+    Given user watches downloads
     When user clicks on STRUCTURE tab
     And user types "Afcgacsu" into SS text area
     And user types "NOTASEQUENCE" into AS text area
     And user clicks on "Save SDF" button
     Then a warning balloon containing "Unable to save SDF:" should have been shown
     And a warning balloon containing "NOTASEQUENCE" should have been shown
+    And no file should have been downloaded
     And no errors should have been logged

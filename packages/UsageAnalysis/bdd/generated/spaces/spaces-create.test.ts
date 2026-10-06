@@ -7,6 +7,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [views.space]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
@@ -44,7 +45,7 @@ test.describe("Creating a space", () => {
       await session.step(30, "And the open menu should list \"Rename...\"", () => menuLists(page, "Rename..."));
       await session.step(31, "And the open menu should list \"Delete Space\"", () => menuLists(page, "Delete Space"));
       await session.step(32, "And the open menu should list \"Create Child Space...\"", () => menuLists(page, "Create Child Space..."));
-      await session.step(33, "And the open menu should list \"Add to favorites\"", () => menuLists(page, "Add to favorites"));
+      await session.step(33, "And the open menu should list \"Add To Favorites\"", () => menuLists(page, "Add To Favorites"));
       await session.step(34, "And the open menu should not list \"Duplicate\"", () => menuDoesNotList(page, "Duplicate"));
       await session.step(35, "When user closes the context menu", () => closeContextMenu(page));
     });

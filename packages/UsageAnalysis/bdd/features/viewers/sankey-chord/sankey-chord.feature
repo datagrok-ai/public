@@ -1,21 +1,14 @@
 @viewers @realizes:charts.viewer.sankey @realizes:charts.viewer.chord
 Feature: Sankey and Chord columns, and redrawing on every filter change
   Sankey draws flows from Source values to Target values weighted by Value; Chord draws links
-  between From and To categories. Both draw SVG and report no areas or readings of their own, so
-  what they draw is claimed by the node and category labels they show (SVG text), the table filter
-  count and the console; a pixel comparison has no canvas to read. The viewers
-  are added from the ribbon's Add viewer gallery on demog (5850 rows; SEX F 3243) and set up in the
-  Context Panel; the filters are set on the Filter Panel's cards.
-  Translated from the TestTrack case Charts/charts-flow-viewers. Kept without (see the request
-  document): which columns the Source and Target lists offer and that neither has an empty choice
-  (no step reads the choices of a column property), hovering the Sankey's individual flows (they
-  are not areas; the pointer goes to the middle of the viewer, where it meets the F → Caucasian
-  flow, whose row-group tooltip reads "2823 rows"). The md's filter that no row passes is a
-  scenario of its own, tagged @known-failure: with a Sankey open it logs "Invalid argument(s):
-  Invalid array length" (GROK-21110). The Chord
-  is switched to From RACE, To DIS_POP with To set first: setting From to RACE while To is still
-  RACE logs "Column '' not found" twice, so the md's order is a scenario of its own,
-  tagged @known-failure (GROK-21111).
+  between From and To categories. Both draw SVG and report what they drew: the Sankey its `node
+  <name>` and `link <source> -> <target>` areas and its `nodes`, `node names` and `links` readings,
+  the Chord its `category <name>` areas and its `categories` and `chords` readings. The viewers are
+  added from the ribbon's Add viewer gallery on demog (5850 rows; SEX F 3243) and set up in the
+  Context Panel; the filters are set on the Filter Panel's cards. Which columns Source and Target
+  offer is read from their column pickers. A filter that no row passes leaves the Sankey empty and
+  logs nothing (GROK-21110), and the Chord takes From set to the column To holds (GROK-21111).
+  Translated from the TestTrack case Charts/charts-flow-viewers.
 
   Background:
     Given user is logged in
@@ -28,8 +21,8 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
     When user clicks on first "Sankey" card in "Add Viewer" dialog
     Then sankey viewer should be visible
     And sankey viewer should be bound to table "demog"
-    And "Caucasian" text in sankey viewer should be visible
-    And "M" text in sankey viewer should be visible
+    And the "node names" reading of sankey viewer should be "F, M, Caucasian, Other, Asian, Black"
+    And the "links" reading of sankey viewer should be 5850
     When user clicks on grid
     And user clicks on settings icon of sankey viewer
     Then "Source" property in context panel should be visible
@@ -37,6 +30,8 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
       | Source | SEX  |
       | Target | RACE |
       | Value  | AGE  |
+    And "Source" property in context panel should offer the columns "USUBJID, SEX, RACE, DIS_POP, DEMOG, SEVERITY"
+    And "Target" property in context panel should offer the columns "USUBJID, SEX, RACE, DIS_POP, DEMOG, SEVERITY"
     And no errors should have been logged
     When user selects "RACE" in "Source" property in context panel
     Then "Source" property of sankey viewer should be "RACE"
@@ -47,53 +42,56 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
       | Source | RACE    |
       | Target | DIS_POP |
       | Value  | WEIGHT  |
-    And "Psoriasis" text in sankey viewer should be visible
-    And "M" text in sankey viewer should be absent
-    And "Caucasian" text in sankey viewer should be visible
+    And the "node names" reading of sankey viewer should contain "Psoriasis"
+    And the "node names" reading of sankey viewer should contain "Caucasian"
+    And the "node names" reading of sankey viewer should not contain "M"
     And no errors should have been logged
 
   Scenario: Sankey follows the filter (GROK-18035)
     When user clicks on "Add viewer" icon
     And user clicks on first "Sankey" card in "Add Viewer" dialog
-    Then "M" text in sankey viewer should be visible
+    Then the "node names" reading of sankey viewer should contain "M"
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category F of SEX" area of filter panel
     Then 3243 rows should pass the filter
     And the filter should pass exactly the rows where "SEX" is "F"
-    And "M" text in sankey viewer should be absent
-    And "F" text in sankey viewer should be visible
-    And "M" text in sankey viewer should be absent
+    And the "links" reading of sankey viewer should be 3243
+    And the "node names" reading of sankey viewer should contain "F"
+    And the "node names" reading of sankey viewer should not contain "M"
     And no errors should have been logged
-    When user hovers over sankey viewer
+    When user hovers over the "link F -> Caucasian" area of sankey viewer
     Then tooltip should contain text "2823 rows"
+    When user hovers over the "link F -> Asian" area of sankey viewer
+    Then tooltip should contain text "37 rows"
     When user moves the pointer away from sankey viewer
     Then no errors should have been logged
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then 5850 rows should pass the filter
-    And "F" text in sankey viewer should be visible
-    And "M" text in sankey viewer should be visible
+    And the "links" reading of sankey viewer should be 5850
+    And the "node names" reading of sankey viewer should contain "M"
     And no errors should have been logged
 
-  @known-failure
-  Scenario: Sankey with a filter no row passes logs no error (GROK-21110)
+  Scenario: Sankey with a filter no row passes draws nothing and logs no error (GROK-21110)
     When user clicks on "Add viewer" icon
     And user clicks on first "Sankey" card in "Add Viewer" dialog
-    Then "M" text in sankey viewer should be visible
+    Then the "links" reading of sankey viewer should be 5850
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category true of CONTROL" area of filter panel
     And user clicks on the "category Asian of RACE" area of filter panel
     Then 0 rows should pass the filter
+    And the "links" reading of sankey viewer should be 0
+    And the "nodes" reading of sankey viewer should be 0
     And no errors should have been logged
 
-  Scenario: Chord redraws on a filter change without a click (GROK-17772)
+  Scenario: Chord takes From set to the column To holds, and redraws on a filter change without a click (GROK-21111, GROK-17772)
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     When user clicks on first "Chord" card in "Add Viewer" dialog
     Then chord viewer should be visible
-    And "Asian" text in chord viewer should be visible
+    And the "categories" reading of chord viewer should be 6
     When user clicks on grid
     And user clicks on settings icon of chord viewer
     Then "From" property in context panel should be visible
@@ -101,40 +99,27 @@ Feature: Sankey and Chord columns, and redrawing on every filter change
       | From | SEX  |
       | To   | RACE |
     And no errors should have been logged
-    When user selects "DIS_POP" in "To" property in context panel
-    Then "To" property of chord viewer should be "DIS_POP"
-    And "PsA" text in chord viewer should be visible
     When user selects "RACE" in "From" property in context panel
+    Then "From" property of chord viewer should be "RACE"
+    And the "categories" reading of chord viewer should be 4
+    And no errors should have been logged
+    When user selects "DIS_POP" in "To" property in context panel
     Then properties of chord viewer should be:
       | From | RACE    |
       | To   | DIS_POP |
-    And "F" text in chord viewer should be absent
-    And "Black" text in chord viewer should be visible
-    And "PsA" text in chord viewer should be visible
-    And "F" text in chord viewer should be absent
+    And chord viewer should have a "category Black" area
+    And chord viewer should have a "category PsA" area
+    And chord viewer should not have a "category F" area
     And no errors should have been logged
     When user clicks on filter icon in toolbar
     Then filter panel should be visible
     When user clicks on the "category Asian of RACE" area of filter panel
     Then the filter should pass exactly the rows where "RACE" is "Asian"
-    And "Black" text in chord viewer should be absent
-    And "Asian" text in chord viewer should be visible
-    And "Black" text in chord viewer should be absent
+    And chord viewer should have a "category Asian" area
+    And chord viewer should not have a "category Black" area
     And no errors should have been logged
     When user hovers over filter panel
     And user clicks on reset icon of filter panel
     Then 5850 rows should pass the filter
-    And "Black" text in chord viewer should be visible
-    And no errors should have been logged
-
-  @known-failure
-  Scenario: Setting the Chord's From to the column To holds logs no error (GROK-21111)
-    When user clicks on "Add viewer" icon
-    And user clicks on first "Chord" card in "Add Viewer" dialog
-    Then chord viewer should be visible
-    When user clicks on grid
-    And user clicks on settings icon of chord viewer
-    Then "From" property in context panel should be visible
-    When user selects "RACE" in "From" property in context panel
-    Then "From" property of chord viewer should be "RACE"
+    And chord viewer should have a "category Black" area
     And no errors should have been logged

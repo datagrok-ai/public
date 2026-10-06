@@ -126,13 +126,17 @@ Steps:
 
 1. In **Demo > bio > ngl-formats**, double-click `1blu.mmtf`.
 
-   * Expected result: a new view becomes current (its title is empty) and shows the structure
-     in an NGL host (`.d4-ngl-viewer` with a `canvas`). No error balloon; no console error
-     containing `ext '' unknown`.
+   * Expected result: a view named `1blu.mmtf` becomes current and shows the structure in an
+     NGL host (`.d4-ngl-viewer` with a `canvas`), not the Mol\* engine. No error balloon; no
+     console error containing `ext '' unknown`.
 
-2. Close the view and double-click `1lee.ccp4`.
+2. Click `1crn.obj` once.
 
-   * Expected result: same as step 1 (density map in an NGL host).
+   * Expected result: its preview becomes current; the `1blu.mmtf` view stays open.
+
+3. Double-click `1lee.ccp4`.
+
+   * Expected result: a view named `1lee.ccp4` with the density map in an NGL host.
 
 ### Scenario 7 — Open table residues from a PDB file's context menu (GROK-21118)
 
@@ -151,9 +155,8 @@ Steps:
 
 ## Automation notes
 
-- Scenario 1: where the Files browser shows the preview's name is to be matched on the stand;
-  the NGL previews of Scenario 2 are created without a name, so their title is not asserted.
-- Scenario 6: by code reading an empty view or an `ext '' unknown` error was suspected
-  (`viewNglUI`); on the stand a double-click on `1blu.mmtf` and `1lee.ccp4` opens a view with an
-  NGL canvas and no error. The view's title is empty, not **NGL**.
+- Scenario 1: a preview becomes current under the file's name, the NGL previews of Scenario 2
+  included.
+- Scenario 6: a double-click shows the file's previewer as a view of its own, named after the
+  file, as it does for a PDB (Scenario 3).
 - Scenario 7: on the stand `compId` comes out as an integer column of zeros (GROK-21118).

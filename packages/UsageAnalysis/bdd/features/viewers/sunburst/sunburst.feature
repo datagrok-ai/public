@@ -7,22 +7,20 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
   are readings too. The viewer is added from the ribbon's Add viewer gallery and its hierarchy is
   picked in the Select columns dialog of the Hierarchy property, as a user does it. The dialog keeps
   a column that is already in the hierarchy in its place and appends the ones checked after it, so
-  RACE with SEX checked again is RACE, SEX (12 segments); the md drags SEX above RACE (10 segments),
-  which no step can do (kept without).
+  RACE with SEX checked again is RACE, SEX (12 segments). The md's last step, SEX dragged back above
+  RACE, has no gesture: the dialog's rows cannot be dragged (a drag starts a column drag-out), and the
+  checked columns come back in the order of its rows, the current hierarchy's on top.
+  The table is demog-1000 under a run's own name, which the layout the Layouts pane saves takes.
   Counts on demog-1000: SEX F 553 / M 447; F | Caucasian 480, F | Other 48, F | Black 18,
   F | Asian 7, M | Caucasian 416, M | Other 14, M | Black 9, M | Asian 8.
   Translated from the TestTrack case Charts/sunburst. In ae.csv AESTDTC is a string column (its
-  values are not parsed as dates), so the date column searched for is AEENDTC, as in the md. Kept
-  without (see the request document): the click on the empty segment under S_PART (github-2992) — its area,
-  "segment S_PART | ", cannot be told apart from "segment S_PART" by the area lookup, which ignores
-  punctuation; the Select columns dialog is claimed by how many columns it lists and by searching
-  for the ones it must not list, not by a reading of the listed names; the layout of the last
-  scenario is saved and applied through the API, not through View > Layout.
+  values are not parsed as dates), so the date column claimed missing is AEENDTC, as in the md. An
+  empty value's sector is `segment S_PART | (empty)` (github-2992).
 
   Background:
     Given user is logged in
     And the package autostarts have completed
-    And user opens demog-1000 dataset
+    And user opens demog-1000 dataset keeping the first 1000 rows as "Sunburst-{time}"
     When user clicks on "Add viewer" icon
     Then "Add Viewer" dialog should be visible
     When user clicks on first "Sunburst" card in "Add Viewer" dialog
@@ -74,9 +72,9 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And no errors should have been logged
 
   Scenario: Only categorical columns can build the hierarchy (github-2954, GROK-18010)
-    ae.csv, opened from Browse, has 35 columns; the dialog lists the string and boolean ones only.
-    The date column AEENDTC and the numeric AESEQ and AESTDY are searched for and found nowhere,
-    while AESEV is. Then a Sunburst on spgi-100 draws Core and R101 (GROK-18010).
+    ae.csv, opened from Browse, has 35 columns; the dialog lists the string and boolean ones only:
+    the date column AEENDTC and the numeric AESEQ and AESTDY are not in its list, while a search for
+    AESEV finds it. Then a Sunburst on spgi-100 draws Core and R101 (GROK-18010).
     Given the browse panel is open
     And Files tree node inside browse tree is expanded
     And Files---App-Data tree node inside browse tree is expanded
@@ -90,15 +88,11 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And user clicks on "..." button in "Hierarchy" property in context panel
     Then "Select columns..." dialog should be visible
     And the "rows" reading of grid in "Select columns..." dialog should be 30
+    And the column list of "Select columns..." dialog should not list "AEENDTC"
+    And the column list of "Select columns..." dialog should not list "AESEQ"
+    And the column list of "Select columns..." dialog should not list "AESTDY"
     When user types "AESEV" into "Search" input in "Select columns..." dialog
-    Then the column list of "Select columns..." dialog should start with "AESEV"
-    And the "rows shown" reading of grid in "Select columns..." dialog should be 1
-    When user types "AEENDTC" into "Search" input in "Select columns..." dialog
-    Then the "rows shown" reading of grid in "Select columns..." dialog should be 0
-    When user types "AESEQ" into "Search" input in "Select columns..." dialog
-    Then the "rows shown" reading of grid in "Select columns..." dialog should be 0
-    When user types "AESTDY" into "Search" input in "Select columns..." dialog
-    Then the "rows shown" reading of grid in "Select columns..." dialog should be 0
+    Then the column list of "Select columns..." dialog should be exactly "AESEV"
     When user clicks on "CANCEL" button in "Select columns..." dialog
     Then "Select columns..." dialog should be absent
     Given user opens spgi dataset
@@ -117,7 +111,8 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     Then "2 checked" text in "Select columns..." dialog should be visible
     When user clicks on OK button in "Select columns..." dialog
     Then the "hierarchy columns" reading of sunburst viewer should be "Core, R101"
-    And the "segments" reading of sunburst viewer should be 13
+    And the "segments" reading of sunburst viewer should be 14
+    And the "segment names" reading of sunburst viewer should contain "(empty)"
     And sunburst viewer should report no error
     And no errors should have been logged
 
@@ -163,7 +158,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And "Row Source" property in context panel should contain text "Filtered"
     And no errors should have been logged
 
-  Scenario: Include Nulls counts the empty values or drops them from every count
+  Scenario: Empty values — Include Nulls, and a click on the empty segment (github-2992)
     spgi-100: Stereo Category R_ONE 36, S_ACHIR 34, S_UNKN 18, S_PART 10, S_ABS 2; Series is empty
     in 3 S_PART rows, 3 R_ONE rows and 1 S_UNKN row.
     Given user opens spgi dataset
@@ -186,6 +181,15 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the "segments" reading of sunburst viewer should be 17
     And the "rows of segment S_PART" reading of sunburst viewer should be 10
     And the "rows of segment R_ONE" reading of sunburst viewer should be 36
+    And the "rows of segment S_PART | (empty)" reading of sunburst viewer should be 3
+    When user presses Escape in grid
+    And user clicks on the "segment S_PART | (empty)" area of sunburst viewer
+    Then 3 rows should be selected
+    And no rows where "Stereo Category" is "R_ONE" should be selected
+    And no rows where "Stereo Category" is "S_ACHIR" should be selected
+    And no rows where "Stereo Category" is "S_UNKN" should be selected
+    And no rows where "Stereo Category" is "S_ABS" should be selected
+    When user presses Escape in grid
     Given "Value" category in context panel is expanded
     When user unchecks "Include Nulls" property in context panel
     Then the "include nulls" reading of sunburst viewer should be "false"
@@ -193,6 +197,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     And the "rows of segment S_PART" reading of sunburst viewer should be 7
     And the "rows of segment R_ONE" reading of sunburst viewer should be 33
     And the "rows of segment S_UNKN" reading of sunburst viewer should be 17
+    And sunburst viewer should not have a "segment S_PART | (empty)" area
     When user checks "Include Nulls" property in context panel
     Then the "segments" reading of sunburst viewer should be 17
     And the "rows of segment S_PART" reading of sunburst viewer should be 10
@@ -296,16 +301,20 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     Given user watches the task bar
     When user double-clicks on SunburstRoundTrip{time} gallery card
     Then the task bar should have finished "Opening project"
-    And the "demog-1000" view should be current
-    And sunburst viewer should be bound to table "demog-1000"
+    And the "Sunburst-{time}" view should be current
+    And sunburst viewer should be bound to table "Sunburst-{time}"
     And the "hierarchy columns" reading of sunburst viewer should be "SEX, RACE"
     And the "on click" reading of sunburst viewer should be "Filter"
     And the "segments" reading of sunburst viewer should be 10
     And no errors should have been logged
 
-  Scenario: A saved layout restores the hierarchy
-    When user saves the layout of the current table view to the server
-    And user picks "Properties..." from the context menu of the "view" area of sunburst viewer
+  Scenario: A layout saved from the Layouts pane restores the hierarchy
+    Given the layouts named "Sunburst-{time}" are deleted when the feature ends
+    And the toolbox pane is shown
+    And Layouts accordion header in toolbox is expanded
+    When user clicks on Save button in layouts pane
+    Then "Sunburst-{time}" layout card should be visible
+    When user picks "Properties..." from the context menu of the "view" area of sunburst viewer
     And user clicks on "..." button in "Hierarchy" property in context panel
     Then "Select columns..." dialog should be visible
     When user toggles the "SEX" column in the column list of "Select columns..." dialog
@@ -313,7 +322,7 @@ Feature: Sunburst segments, clicks, filtering, empty values and the project roun
     When user clicks on OK button in "Select columns..." dialog
     Then the "hierarchy columns" reading of sunburst viewer should be "RACE"
     And the "segments" reading of sunburst viewer should be 4
-    When user loads the saved layout
+    When user clicks on "Sunburst-{time}" layout card
     Then the "hierarchy columns" reading of sunburst viewer should be "SEX, RACE"
     And the "segments" reading of sunburst viewer should be 10
     And no errors should have been logged

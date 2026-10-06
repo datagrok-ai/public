@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Add New Column: Fixed Cmd+A in the formula editor (macOS) selecting every row and column of the table behind the dialog
+* Home: Fixed every Home page load writing back all the widget settings it had read, which undid a widget hidden or shown on another page of the same account
 * GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups
 * Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
 * GROK-21019: Add New Column: Fixed the dialog dropping the error behavior of the call it was opened with

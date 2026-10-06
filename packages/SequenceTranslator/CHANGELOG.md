@@ -8,6 +8,7 @@
 * AI: Exposed AI functions and briefings on the HELM Enumerator dialog and the Markush Enumerator dialog/app — state introspection, macromolecule/placeholder/core/R-group editing, options, and running the enumeration.
 
 * GROK-16674: Delete the pattern selected in the Load block's Pattern combobox instead of the live editor name
+* Oligo Pattern, Oligo Translator: Named the captionless inputs (Delete pattern, Edit strands modifications, translation examples, the single-sequence format) for test automation
 
 ## 1.11.5 (2026-07-12)
 

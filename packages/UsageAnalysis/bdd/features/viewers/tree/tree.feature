@@ -1,13 +1,15 @@
 @viewers @realizes:charts.viewer.tree @realizes:viewers.filters.categorical
 Feature: Tree filter panel, style settings, On Click and the Clone View and project round trips
-  The Tree viewer draws a categorical hierarchy as branches. It reports no areas or readings of its
-  own, so these scenarios claim that a setting reached the viewer (its property), that the viewer
-  drew again (its canvas changed) and that nothing was logged; they cannot claim what a branch
-  shows. The viewer is added from the ribbon's Add viewer gallery on demog (5850 rows; CONTROL true
-  39) and its hierarchy is picked in the Select columns dialog of the Hierarchy property.
-  Translated from the TestTrack case Charts/tree. The hierarchy is checked in the order CONTROL, SEX,
-  RACE; the dialog keeps the check order, so no row is dragged. The branch clicks of charts-ui stay
-  manual (see the request document).
+  The Tree viewer draws a categorical hierarchy as branches and reports each one it drew as a
+  `branch <path>` area (the names from the root down, `branch All | false | F | Asian`, on the line
+  into the node, where a click selects its rows), with `branches` and `rows of branch <path>`
+  readings; a style setting is claimed as reaching the viewer (its property) and the viewer drawing
+  again (its canvas changed). The viewer is added from the ribbon's Add viewer gallery on demog
+  (5850 rows; CONTROL true 39) and its hierarchy is picked in the Select columns dialog of the
+  Hierarchy property.
+  Translated from the TestTrack cases Charts/tree and Charts/charts-ui (branch clicks with Shift). The
+  hierarchy is checked in the order CONTROL, SEX, RACE; the dialog keeps the check order, so no row
+  is dragged.
 
   Background:
     Given user is logged in
@@ -42,12 +44,45 @@ Feature: Tree filter panel, style settings, On Click and the Clone View and proj
     Then 39 rows should pass the filter
     And the filter should pass exactly the rows where "CONTROL" is "true"
     And tree viewer should have repainted
+    And tree viewer should have a "branch All | true | F | Black" area
+    And tree viewer should not have a "branch All | false" area
     And no errors should have been logged
     When user takes a snapshot of tree viewer
     And user hovers over "CONTROL" filter card
     And user clicks on close of "CONTROL" filter card
     Then 5850 rows should pass the filter
     And tree viewer should have repainted
+    And tree viewer should have a "branch All | false" area
+    And no errors should have been logged
+
+  Scenario: Shift+Click on branches adds their rows to the selection
+    When user presses Escape in grid
+    Then no rows should be selected
+    When user clicks on the "branch All | false | F | Asian" area of tree viewer holding Shift
+    And user clicks on the "branch All | false | F | Black" area of tree viewer holding Shift
+    And user clicks on the "branch All | false | M | Asian" area of tree viewer holding Shift
+    Then 174 rows should be selected
+    When user clicks on the "branch All | true | F | Black" area of tree viewer holding Shift
+    Then 176 rows should be selected
+    And no errors should have been logged
+
+  Scenario: A branch Shift+clicked under a filter adds only the rows under it
+    When user presses Escape in grid
+    And user clicks on the "branch All | false | F | Asian" area of tree viewer holding Shift
+    And user clicks on the "branch All | false | F | Black" area of tree viewer holding Shift
+    And user clicks on the "branch All | false | M | Asian" area of tree viewer holding Shift
+    Then 174 rows should be selected
+    When user clicks on filter icon in toolbar
+    Then filter panel should be visible
+    When user clicks on the "category true of CONTROL" area of filter panel
+    Then 39 rows should pass the filter
+    And 0 selected rows should pass the filter
+    When user clicks on the "branch All | true | F | Black" area of tree viewer holding Shift
+    Then 2 selected rows should pass the filter
+    When user hovers over "CONTROL" filter card
+    And user clicks on close of "CONTROL" filter card
+    Then 5850 rows should pass the filter
+    And 176 rows should be selected
     And no errors should have been logged
 
   Scenario: Style, size and color settings apply without errors (github-3221, GROK-17376, GROK-17405, GROK-18087)

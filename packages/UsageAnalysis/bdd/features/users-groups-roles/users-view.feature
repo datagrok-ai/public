@@ -157,7 +157,7 @@ Feature: The Users view
     And the open menu should list "Groups..."
     And the open menu should list "Roles..."
     And the open menu should list "Copy > ID"
-    And the open menu should list "Add to favorites"
+    And the open menu should list "Add To Favorites"
     When user closes the context menu
     And user clears gallery search
     Then no errors should have been logged

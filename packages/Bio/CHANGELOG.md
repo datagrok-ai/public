@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
 
 ## 2.28.4 (2026-09-29)

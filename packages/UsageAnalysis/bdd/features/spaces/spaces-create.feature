@@ -30,7 +30,7 @@ Feature: Creating a space
     And the open menu should list "Rename..."
     And the open menu should list "Delete Space"
     And the open menu should list "Create Child Space..."
-    And the open menu should list "Add to favorites"
+    And the open menu should list "Add To Favorites"
     And the open menu should not list "Duplicate"
     When user closes the context menu
 

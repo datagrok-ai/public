@@ -20,9 +20,9 @@ Feature: Biostructure viewer on a structure table — structure column, represen
   writes the PDB file without the source's HEADER records.
 
   Adding the viewer and building its engine are checked for errors and balloons at the end of the
-  Background, after the Reset Camera button shows the engine is built. The representation a switch
-  applies has no reading of its own (requested); each switch's error check comes after the
-  property reads back and the engine's Reset Camera button is on the page.
+  Background, after the Reset Camera button shows the engine is built. A representation switch is
+  claimed by the viewer's `representation` reading, the representation the engine applied (not the
+  property), before its error check.
 
   Background:
     Given user is logged in
@@ -37,7 +37,8 @@ Feature: Biostructure viewer on a structure table — structure column, represen
     And "Add viewer" icon in toolbar should be visible
     When user clicks on "Add viewer" icon in toolbar
     Then "Add Viewer" dialog should be visible
-    When user clicks on first "Biostructure" button in "Add Viewer" dialog
+    When user types "Biostructure" into viewer gallery search in "Add Viewer" dialog
+    And user clicks on first "Biostructure" button in "Add Viewer" dialog
     Then "Add Viewer" dialog should be absent
     And Biostructure viewer should be visible
     When user clicks on settings icon of Biostructure viewer
@@ -59,17 +60,17 @@ Feature: Biostructure viewer on a structure table — structure column, represen
   Scenario: The representation switches from the settings (GROK-11759)
     When user selects "ball-and-stick" in "Representation" property in context panel
     Then "representation" property of Biostructure viewer should be "ball-and-stick"
-    And "Reset Camera" button in Biostructure viewer should be visible
+    And the "representation" reading of Biostructure viewer should be "ball-and-stick"
     And no errors should have been logged
     And no error or warning balloon should have been shown
     When user selects "molecular-surface" in "Representation" property in context panel
     Then "representation" property of Biostructure viewer should be "molecular-surface"
-    And "Reset Camera" button in Biostructure viewer should be visible
+    And the "representation" reading of Biostructure viewer should be "molecular-surface"
     And no errors should have been logged
     And no error or warning balloon should have been shown
     When user selects "cartoon" in "Representation" property in context panel
     Then "representation" property of Biostructure viewer should be "cartoon"
-    And "Reset Camera" button in Biostructure viewer should be visible
+    And the "representation" reading of Biostructure viewer should be "cartoon"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
