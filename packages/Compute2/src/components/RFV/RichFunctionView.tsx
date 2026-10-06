@@ -92,6 +92,12 @@ interface DataFrameState {
   config: Record<string, any>,
 }
 
+interface GraphicsState {
+  name: string,
+  image: Vue.ShallowRef<string | null>,
+  type: 'graphics',
+}
+
 interface DockSpawnConfigItem {
   'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
   'dock-spawn-dock-to'?: string,
@@ -108,11 +114,11 @@ interface ExportItem {
   handler: (arg?: any) => void,
 }
 
-type TabContent = Map<string, ScalarsState | DataFrameState>;
+type TabContent = Map<string, ScalarsState | DataFrameState | GraphicsState>;
 
 interface RenderStateItem {
   tabLabel: string;
-  tabContent: ScalarsState | DataFrameState;
+  tabContent: ScalarsState | DataFrameState | GraphicsState;
   isInput: boolean;
 }
 
@@ -126,6 +132,8 @@ const isEmptyScalar = (v: any) =>
 
 const isEmptyDataFrame = (df: any) =>
   !df || (df instanceof DG.DataFrame && df.rowCount === 0);
+
+const isEmptyGraphics = (v: any) => v == null || v === '';
 
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
   const isHidden = JSON.parse(prop.options.hidden || 'false');
@@ -163,45 +171,55 @@ const tabToProperties = (fc: DG.FuncCall) => {
   const tabsToProps = getEmptyTabToProperties();
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
-  const processDf = (dfProp: DG.Property, isOutput: boolean) => {
-    let dfViewers = Utils.getPropViewers(dfProp).config;
+  // Dataframes (one panel per viewer annotation) and graphics (a single image panel)
+  const processVisual = (prop: DG.Property, isOutput: boolean) => {
+    const isGraphics = prop.propertyType === DG.TYPE.GRAPHICS;
+    let viewers = isGraphics ? [{}] : Utils.getPropViewers(prop).config;
     // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
-    const isDefaultGrid = dfViewers.length === 0 && isOutput;
+    const isDefaultGrid = !isGraphics && viewers.length === 0 && isOutput;
     if (isDefaultGrid)
-      dfViewers = [{type: DG.VIEWER.GRID}];
-    if (dfViewers.length === 0) return;
-    if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
+      viewers = [{type: DG.VIEWER.GRID}];
+    if (viewers.length === 0) return;
+    const isEmpty = isGraphics ? isEmptyGraphics : isEmptyDataFrame;
+    if (hideEmpty && isOutput && isEmpty(fc.outputs[prop.name])) return;
 
-    dfViewers.forEach((dfViewer) => {
-      const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
-      const dfNameWithViewer = isDefaultGrid ? `${dfBlockTitle}` : `${dfBlockTitle} / ${dfViewer['type']}`;
+    viewers.forEach((viewer) => {
+      const blockTitle = viewer.title ?? prop.options['caption'] ?? prop.name ?? ' ';
+      const nameWithViewer = (isGraphics || isDefaultGrid) ? `${blockTitle}` : `${blockTitle} / ${viewer['type']}`;
 
-      const tabLabel = dfProp.category === 'Misc' ?
-        dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
+      const tabLabel = prop.category === 'Misc' ?
+        nameWithViewer: `${prop.category}: ${nameWithViewer}`;
 
-      const name = dfProp.name;
+      const name = prop.name;
       const source = isOutput ? fc.outputParams : fc.inputParams;
       const changes$ = source[name].onChanged.pipe(
         startWith(null),
         map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
       );
-      const df = useObservable(changes$);
-      const config = stabilizeViewerConfig(dfViewer);
+      const value = useObservable(changes$);
+      const content: DataFrameState | GraphicsState = isGraphics ?
+        {type: 'graphics', name, image: value} :
+        {type: 'dataframe', name, df: value, config: stabilizeViewerConfig(viewer)};
       if (isOutput)
-        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config});
+        tabsToProps.outputs.set(tabLabel, content);
       else
-        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config});
+        tabsToProps.inputs.set(tabLabel, content);
     });
     return;
   };
 
   [...fc.inputParams.values()].forEach(({ property }) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) processDf(property, false);
+    if (property.propertyType === DG.TYPE.DATA_FRAME) processVisual(property, false);
   });
 
   [...fc.outputParams.values()].forEach(({property}) => {
     if (property.propertyType === DG.TYPE.DATA_FRAME) {
-      processDf(property, true);
+      processVisual(property, true);
+      return;
+    }
+    if (property.propertyType === DG.TYPE.GRAPHICS) {
+      if (!JSON.parse(property.options.hidden || 'false'))
+        processVisual(property, true);
       return;
     }
     const category = property.category === 'Misc' ? 'Output': property.category;
@@ -855,8 +873,7 @@ export const RichFunctionView = Vue.defineComponent({
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
                 const tabConfig = dockSpawnConfig.value[tabLabel] ?? {};
-                if (tabContent?.type === 'dataframe') {
-                  const options = tabContent.config;
+                if (tabContent?.type === 'dataframe' || tabContent?.type === 'graphics') {
                   return <div
                     class='flex flex-col pl-2 h-full w-full'
                     dock-spawn-title={tabLabel}
@@ -864,20 +881,25 @@ export const RichFunctionView = Vue.defineComponent({
                     key={tabLabel}
                     {...tabConfig}
                   >
-                    {
+                    { tabContent.type === 'graphics' ?
+                      (tabContent.image.value &&
+                        <img
+                          class={['rfv2-graphics', Utils.isSvgGraphics(tabContent.image.value) && 'rfv2-graphics-svg']}
+                          src={Utils.graphicsDataUrl(tabContent.image.value)}
+                        />) :
                       <Viewer
-                        type={options['type'] as string}
-                        options={options}
+                        type={tabContent.config['type'] as string}
+                        options={tabContent.config}
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => {
                           if (v) liveViewers.set(tabLabel, v);
                           else liveViewers.delete(tabLabel);
-                          setViewerRef(v, tabContent.name, options['type'] as string);
-                          applyDefaultGridFloatFormat(v, options['type'] as string);
+                          setViewerRef(v, tabContent.name, tabContent.config['type'] as string);
+                          applyDefaultGridFloatFormat(v, tabContent.config['type'] as string);
                         }}
                         onViewerDataFrameChanged={(v) =>
-                          applyDefaultGridFloatFormat(v, options['type'] as string)}
+                          applyDefaultGridFloatFormat(v, tabContent.config['type'] as string)}
                       />
                     }
                   </div>;
