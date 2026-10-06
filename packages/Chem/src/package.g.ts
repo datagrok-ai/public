@@ -1262,6 +1262,13 @@ export async function demoSarMatrix() : Promise<void> {
   await PackageFunctions.demoSarMatrix();
 }
 
+//name: Demo SAR Matrix PROTAC
+//description: Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns
+//meta.demoPath: Cheminformatics | SAR Matrix (PROTAC)
+export async function demoSarMatrixProtac() : Promise<void> {
+  await PackageFunctions.demoSarMatrixProtac();
+}
+
 //name: Demo R Group Analysis
 //description: R Group Analysis including R-group decomposition and  visual analysis of the obtained R-groups
 //meta.demoPath: Cheminformatics | R-Group Analysis

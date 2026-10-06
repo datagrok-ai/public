@@ -10,7 +10,7 @@ import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constan
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
 import {DEFAULT_TRANSFER_SIMILARITY} from './sar-matrix-transfer';
-import {SarFragmentColumns} from './sar-matrix-columns';
+import {SarFragmentColumns, standardizeFragment} from './sar-matrix-columns';
 import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
 import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCell, SarMatrixCellKind}
   from './sar-matrix-types';
@@ -1002,7 +1002,13 @@ export class SarMatrixViewer extends DG.JsViewer {
     const column = df?.col(role);
     if (df == null || column == null)
       return;
-    df.selection.init((i) => column.getString(i) === value);
+    // The level came off the decomposition, which standardizes every cell it reads, so the raw text
+    // of a molblock or a non-canonically written SMILES never equals it. Standardized per distinct
+    // category rather than per row: a degrader set has hundreds of warheads over thousands of rows.
+    const wanted = standardizeFragment(value).value;
+    const matches = new Set(column.categories
+      .filter((category) => standardizeFragment(category).value === wanted));
+    df.selection.init((i) => matches.has(column.getString(i)));
   }
 
   /** Whether SAR transfer detection has run on this analysis, and what it found. */

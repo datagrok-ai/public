@@ -41,6 +41,10 @@ export interface RoleDesign {
   molIdx: number[];
   /** Observations a level needs before its offset is readable. */
   minSupport: number;
+  /** Which end of the activity column is the better one. The fit itself is direction-free — it is
+   *  in the column's own units — but `levels` is ordered best-first, and on a raw IC50 column the
+   *  best level is the lowest. */
+  higherIsBetter: boolean;
 }
 
 export interface RoleLevel {
@@ -377,7 +381,8 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
         weights.push(counts[v]);
       }
     }
-    levels.sort((a, b) => b.coef - a.coef);
+    const dir = design.higherIsBetter ? 1 : -1;
+    levels.sort((a, b) => dir * (b.coef - a.coef));
     rawVar /= m;
     // The raw count-weighted sd carries an estimation-noise term σ²·levels/observations that is
     // negligible for a twelve-level role and dominant for a six-hundred-level one, so subtracting it
@@ -387,8 +392,8 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     let cut = 0;
     let gap = 0;
     for (let i = 1; i < levels.length; i++) {
-      if (levels[i - 1].coef - levels[i].coef > gap) {
-        gap = levels[i - 1].coef - levels[i].coef;
+      if (dir * (levels[i - 1].coef - levels[i].coef) > gap) {
+        gap = dir * (levels[i - 1].coef - levels[i].coef);
         cut = i;
       }
     }

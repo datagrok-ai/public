@@ -673,6 +673,10 @@ export class SummaryPanel {
     this.paneHost = null;
     this.scroller = null;
     this.currentPane = PANE_OVERVIEW;
+    // A new analysis has its own tiers. Kept, a tier the new run does not hold filters every matrix
+    // out, which reads as an empty dataset — and the chip bar that would clear it is built from the
+    // tiers that survived the filter, so there is none.
+    this.tierFilter = null;
     this.widthKey = '';
     this.segButtons.clear();
     this.pendingPaints = [];
@@ -983,13 +987,18 @@ export class SummaryPanel {
     analogsThin.prune(dropHeld);
     analogsAny.prune(dropHeld);
 
-    const confN = host.matrices.map((m) => m.confidence?.n ?? null)
+    // Over the matrices this walk read, not over every matrix: at a tier filter none of the others
+    // reaches any other number on the tab, and a model error pooled across tiers is the error of no
+    // ranking shown — it sets the band every effect is read against and the Start-here threshold.
+    const walked = host.matrices.filter((_, mi) =>
+      this.tierFilter === null || tiers[mi] === this.tierFilter);
+    const confN = walked.map((m) => m.confidence?.n ?? null)
       .filter((n): n is number => n !== null);
-    const rmses = host.matrices.map((m) => m.confidence?.rmse ?? null)
+    const rmses = walked.map((m) => m.confidence?.rmse ?? null)
       .filter((r): r is number => r !== null);
     const families = new Set(roots).size;
     const roleFit = fitRoleEffects({names: roleNames, values: roleValues, activity: roleActivity,
-      molIdx: roleMol, minSupport: MIN_SUPPORT});
+      molIdx: roleMol, minSupport: MIN_SUPPORT, higherIsBetter: host.higherIsBetter});
     const data: SummaryData = {
       compounds: compounds.size,
       untested: untested.size,
@@ -2283,7 +2292,10 @@ export class SummaryPanel {
     if (role === undefined || !roleRanks(role))
       return null;
     const [top, second] = role.levels;
-    if (!this.leads(top.coef, second.coef, fit.cvRmse)) {
+    // Signed by direction: `levels` is best-first, so on a lower-is-better column the leader's
+    // coefficient is the smaller number.
+    const dir = this.host.higherIsBetter ? 1 : -1;
+    if (!this.leads(dir * top.coef, dir * second.coef, fit.cvRmse)) {
       // A bimodal component has an answer no leaderboard can state: which group, not which value. The
       // top two being inseparable is exactly the case where the split is the finding.
       const split = role.split;
@@ -2295,7 +2307,7 @@ export class SummaryPanel {
           'compound carries matters more than the choice inside it'};
       }
       return {answer: `No single ${role.name} leads`,
-        negative: `top two ${this.formatEffect(top.coef - second.coef)} apart, within the ` +
+        negative: `top two ${this.formatEffect(dir * (top.coef - second.coef))} apart, within the ` +
           `± ${this.host.formatActivity(fit.cvRmse!)} this fit resolves`};
     }
     return {answer: `${this.formatEffect(top.coef)} · over ${count(top.n)} compounds`,

@@ -1185,7 +1185,8 @@ category('SAR Matrix: R-group columns', () => {
         }
       }
     }
-    return {names: ['Core', 'Warhead', 'Ligand'], values, activity, molIdx, minSupport: 3};
+    return {names: ['Core', 'Warhead', 'Ligand'], values, activity, molIdx, minSupport: 3,
+      higherIsBetter: true};
   };
 
   const roleOf = (fit: RoleFit, name: string): RoleSummary => fit.roles.find((r) => r.name === name)!;
@@ -1312,7 +1313,7 @@ category('SAR Matrix: R-group columns', () => {
         }
       }
     }
-    return {names: ['A', 'B', 'P'], values, activity, molIdx, minSupport: 3};
+    return {names: ['A', 'B', 'P'], values, activity, molIdx, minSupport: 3, higherIsBetter: true};
   };
 
   test('a near-aliased design is carried to its fixed point', async () => {
@@ -1369,6 +1370,20 @@ category('SAR Matrix: R-group columns', () => {
     expect(moved < 0.05, true, `the other roles moved by ${moved}`);
   });
 
+  test('levels are ordered by the activity direction', async () => {
+    const design = roleFixture();
+    const up = roleOf(fitRoleEffects(design)!, 'Warhead').levels;
+    const down = roleOf(fitRoleEffects({...design, higherIsBetter: false})!, 'Warhead').levels;
+    expect(up.length > 1, true, 'the role has levels to order');
+    expect(up[0].coef > up[up.length - 1].coef, true, 'higher is better puts the largest offset first');
+    expect(down[0].value, up[up.length - 1].value,
+      'lower is better puts the same role\'s worst-on-the-other-reading level first');
+    // The fit itself is in the column's own units either way: only the order changes.
+    expect(down.map((l) => l.value).sort().join(), up.map((l) => l.value).sort().join());
+    for (const level of down)
+      expectFloat(level.coef, up.find((l) => l.value === level.value)!.coef, 1e-9);
+  });
+
   test('a blank role value is a level', async () => {
     const fit = fitRoleEffects(roleFixture([], ['L1', '']))!;
     const blank = roleOf(fit, 'Ligand').levels.find((l) => l.value === '');
@@ -1395,7 +1410,8 @@ category('SAR Matrix: R-group columns', () => {
         k++;
       }
     }
-    return {names: ['Component', 'Partner'], values, activity, molIdx, minSupport: 3};
+    return {names: ['Component', 'Partner'], values, activity, molIdx, minSupport: 3,
+      higherIsBetter: true};
   };
 
   test('the two-group split fires only when it should', async () => {
@@ -1462,7 +1478,7 @@ category('SAR Matrix: R-group columns', () => {
         molIdx.push(k++);
       }
     }
-    return {names: ['Solid', 'Thin'], values, activity, molIdx, minSupport: 3};
+    return {names: ['Solid', 'Thin'], values, activity, molIdx, minSupport: 3, higherIsBetter: true};
   };
 
   test('the spread subtracts the estimation noise it is comparing across', async () => {
@@ -1541,7 +1557,7 @@ category('SAR Matrix: R-group columns', () => {
         .map((el) => el.textContent ?? '');
       // A substituent label discovered by fragmentation is local to its own series, so there is no
       // scale on which one global offset could be read and the cards are absent rather than empty.
-      expect(titles.some((t) => t.includes('what each value is worth across the table')), false,
+      expect(titles.some((t) => t.includes('offsets from the additive fit')), false,
         `a role card rendered without a fragment column: ${titles.join(' | ')}`);
       expect(titles.length, 3, `Effects holds its three original cards, got ${titles.join(' | ')}`);
     } finally {
