@@ -6,10 +6,9 @@ Feature: Trellis plot On Click set in the context panel, and what a change keeps
   selection a click made; under On Click = Filter a change of the inner viewer keeps the filter a
   click made. With a filter card on, Escape takes back only the trellis's part of the filter.
 
-  Not claimed: Escape right after the inner viewer changed. The change resets the trellis's current
-  cell while the filter stays, and the Escape handler (`trellis_plot_core.dart`) acts only while a
-  current cell exists, so the filter survives the key until another cell is clicked — a question for
-  a hand walk (MISSING.md). The scenario clicks another cell before its Escape.
+  The inner viewer is changed in the trellis's own viewer selector, as a person does: the current cell
+  and the filter stay, and Escape drops the filter. (Written through the Viewer Type property instead,
+  the change resets the current cell, and Escape then has nothing to act on.)
   Translated from TestTrack Viewers/TrellisPlot/trellis-plot-click-to-filter.md (section 2, steps
   1-4 of section 1's step 10) and trellis-plot.md "On Click functionality" steps 5 and 8. One journey
   on demog-1000 with SEX by RACE and a scatter plot inside; every scenario puts back what it changed.
@@ -39,19 +38,18 @@ Feature: Trellis plot On Click set in the context panel, and what a change keeps
     And user sets "On Click" property of trellis plot viewer to "None"
     Then no errors should have been logged
 
-  Scenario: Under Filter, a change of the inner viewer keeps the filter
+  Scenario: Under Filter, a change of the inner viewer keeps the filter, and Escape then drops it
     When user sets "On Click" property of trellis plot viewer to "Filter"
     And user clicks on the "cell F | Caucasian" area of trellis plot viewer
     Then 480 rows should pass the filter
-    When user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
+    When user picks "Bar chart" in the viewer selector of trellis plot viewer
     Then the "inner viewer type" reading of trellis plot viewer should be "Bar chart"
-    And the "cell signature F | Caucasian" reading of trellis plot viewer should differ from before
+    And the "current cell" reading of trellis plot viewer should be "F | Caucasian"
     And 480 rows should pass the filter
-    When user sets "Viewer Type" property of trellis plot viewer to "Scatter plot"
-    And user clicks on the "cell M | Asian" area of trellis plot viewer
-    Then 8 rows should pass the filter
     When user presses Escape in trellis plot viewer
     Then all rows should pass the filter
+    When user picks "Scatter plot" in the viewer selector of trellis plot viewer
+    Then the "inner viewer type" reading of trellis plot viewer should be "Scatter plot"
     And no errors should have been logged
 
   Scenario: With a filter card on, Escape takes back only the trellis's part

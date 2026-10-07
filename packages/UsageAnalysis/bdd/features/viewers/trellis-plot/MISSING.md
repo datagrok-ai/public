@@ -6,27 +6,13 @@ added that day: `use-in-trellis`, `viewer-filter-and-menus`, `selectors-and-full
 `curves-table`, `click-gaps`, `scales-and-paging`, `pick-up-color-and-scroll`. Written with today's
 steps only; what could not be said is listed here.
 
-## Open question — for a walk by hand
+## Resolved
 
-### Escape does not drop the trellis filter after the inner viewer changed
-
-`trellis-plot.md` "On Click functionality": under On Click = Filter, step 8 changes the inner viewer
-(the filter must stay — it does), step 12 presses Escape (the trellis filtering resets). Done in that
-order, Escape leaves the filter on: changing the inner viewer resets the trellis's current cell while
-the filter stays, and the Escape handler in `trellis_plot_core.dart` acts only while a current cell
-exists (`if (currentCellPos != null)`). A click on any cell makes Escape work again. Probe on the local
-stand: click F | Caucasian → 480 rows; Viewer Type = Bar chart → 480; Escape → 480; click M | Asian → 8;
-Escape → 1000.
-
-```gherkin
-  Scenario: Escape drops the trellis filter after the inner viewer changed
-    When user sets "On Click" property of trellis plot viewer to "Filter"
-    And user clicks on the "cell F | Caucasian" area of trellis plot viewer
-    And user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
-    Then 480 rows should pass the filter
-    When user presses Escape in trellis plot viewer
-    Then all rows should pass the filter
-```
+- **Escape after the inner viewer changed — not a defect** (walked by hand on dev, 2026-10-07). Changed in the
+  viewer selector, as a person does, the current cell and the filter stay and Escape drops the filter. Only a
+  write of the Viewer Type property (API, or a step that sets the property) resets the current cell, after
+  which the Escape handler (`trellis_plot_core.dart`, `if (currentCellPos != null)`) has nothing to act on;
+  `click-gaps` changes the type through the selector.
 
 ## Missing steps and signals
 
