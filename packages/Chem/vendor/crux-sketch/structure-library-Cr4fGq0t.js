@@ -1,4 +1,4 @@
-import{Ar as e,Et as t,Nr as n,On as r,Sn as i,Tr as a,f as o,i as s,jr as c,kn as l,pn as u,r as d,t as f,yn as p}from"./shared-C3wUvEoR.js";var m=[{index:0,name:`alpha-D-Allopyranose`,group:`alpha-D-Sugars`,atomid:0,bondid:0,abbreviation:null,molblock:`alpha-D-Allopyranose
+import{Cn as e,En as t,Et as n,Fr as r,Lr as i,Mn as a,Nn as o,Pr as s,Tn as c,f as l,i as u,kr as d,pn as f,r as p,t as m,yn as h}from"./shared-BtGLJWWc.js";var g=[{index:0,name:`alpha-D-Allopyranose`,group:`alpha-D-Sugars`,atomid:0,bondid:0,abbreviation:null,molblock:`alpha-D-Allopyranose
   Ketcher 11161713142D 1   1.00000     0.00000     0
 
  12 12  0     1  0            999 V2000
@@ -9048,7 +9048,7 @@ M  END
  13 15  1  0     0  0
  14 16  2  0     0  0
 M  END
-`}],h=[{index:0,name:`acetic acid`,abbreviation:`acetic acid`,molblock:`acetic acid
+`}],_=[{index:0,name:`acetic acid`,abbreviation:`acetic acid`,molblock:`acetic acid
   -INDIGO-11302219142D
 
   4  3  0  0  0  0  0  0  0  0999 V2000
@@ -12066,47 +12066,47 @@ M  SLB  1   1   1
 M  SAL   1  7   1   2   3   4   5   6   7
 M  SMT   1 (NH4)2SO4
 M  END
-`}],g={alpha:`α`,beta:`β`,gamma:`γ`},_=e=>e.replace(/\b(alpha|beta|gamma)\b/g,e=>g[e]),v=e=>e.replace(/\b(alpha|beta|gamma)\b/gi,e=>g[e.toLowerCase()]);function y(e){let t=[];for(let n of e){let e=t.find(e=>e.name===n.group);e||t.push(e={index:t.length,name:n.group,shown:_(n.group),templates:[]}),e.templates.push(n)}return t}var b=Object.freeze(y(m));function x(e,t){let n=v(t.trim()).toLowerCase();return!n||[e.name,e.group,e.abbreviation].some(e=>e!==null&&_(e).toLowerCase().includes(n))}function S(e,t){return e.map(e=>({group:e,templates:e.templates.filter(e=>x(e,t))})).filter(e=>e.templates.length>0)}function C(e){let t=e=>e.label.toLowerCase();return e.map((e,t)=>({index:t,entry:e})).sort((e,n)=>t(e.entry)<t(n.entry)?-1:t(e.entry)>t(n.entry)?1:e.entry.label<n.entry.label?-1:1)}var w=e=>e.trim().toLowerCase(),T=(e,t)=>e.entry.label.toLowerCase().includes(w(t)),E=e=>e.toLowerCase().replaceAll(`-`,` `),D=(e,t)=>[e.name,e.abbreviation].some(e=>E(e).includes(E(w(t))));function ee(e){let t=[],n=/<(sub|sup)>(.*?)<\/\1>/g,r=0;for(let i=n.exec(e);i;i=n.exec(e))i.index>r&&t.push({text:e.slice(r,i.index),as:`text`}),t.push({text:i[2],as:i[1]}),r=i.index+i[0].length;return r<e.length&&t.push({text:e.slice(r),as:`text`}),t}var O=12.5,k=i,A=Object.freeze({width:106,height:86}),j=3;function M(e){let t=e.indexOf(`<svg`);return(t>=0?e.slice(t):e).replace(/<(?:path|circle|ellipse|rect|polygon|polyline|line)\b[^>]*\spointer-events='(?!none')[^']*'[^>]*\/>/g,``).replace(/(<g data-layer='background'>)[\s\S]*?(<\/g>)/,`$1$2`).replace(/\sdata-testid='[^']*'/g,``)}function N(e){let t=[];for(let n of e.matchAll(/<g\s[^>]*\bdata-atom='(\d+)'[^>]*>/g)){let e=e=>RegExp(`\\s${e}='([^']*)'`).exec(n[0])?.[1]??``;t.push({index:Number(n[1]),element:e(`data-element`),x:Number(e(`data-x`)),y:Number(e(`data-y`))})}return t}function P(e,t){let n=new Map(e.map(e=>[e.index,e])),r=e=>{let[t,r]=[n.get(e.a),n.get(e.b)];return t&&r?Math.hypot(t.x-r.x,t.y-r.y):0},i=t.filter(e=>n.get(e.a)?.element!==`H`&&n.get(e.b)?.element!==`H`&&n.has(e.a)&&n.has(e.b)),a=i.length?i:t;return a.length?a.reduce((e,t)=>e+r(t),0)/a.length:0}function F(e,t,n=A){let[r,a]=[Math.max(e.right-e.left,1),Math.max(e.bottom-e.top,1)],o=t>0?t:i,s=Math.min((n.width-6)/(r/o),(n.height-6)/(a/o)),c=Math.min(k,Math.max(O,s)),l=c/o,u=j/l;return{viewBox:[e.left-u,e.top-u,r+2*u,a+2*u],width:r*l+6,height:a*l+6,bondPx:c}}function I(e,n,a={}){let o=p(e.geometryJson()),s=r(e.meanBondLength()),c=o.atoms.map(e=>e.x),d=o.atoms.map(e=>e.y),[f,m,h,g]=c.length?[Math.min(...c),Math.max(...c),Math.min(...d),Math.max(...d)]:[0,0,0,0],_={zoom:1,cx:(f+m)/2,cy:(h+g)/2,docLen:s},v=i/s,y=8*i,b={width:Math.ceil((m-f)*v+y),height:Math.ceil((g-h)*v+y)},x=u(b,_,{},n),S={...a.attachments?{dummiesAreAttachments:!0}:{},...a.template?t:{}},C=M(e.renderSvg(Object.keys(S).length?JSON.stringify({...JSON.parse(x),...S}):x)),w=N(C);return{markup:C,...F(l(C)??{left:0,top:0,right:b.width,bottom:b.height},P(w,o.bonds))}}var L=e=>e.toLowerCase(),R=(e,t)=>e&&t&&e.includes(t)?t.length/e.length:0,z=e=>({kind:`element`,label:`${e.symbol} (${e.name})`,name:L(e.name),abbreviation:L(e.symbol),found:[L(e.name),L(e.symbol)],key:e.symbol}),B=e=>({kind:`group`,label:e.label,name:L(e.label),abbreviation:null,found:[L(e.label)],key:e.label});function V(e){let t=_(e.name),n=e.abbreviation&&e.abbreviation!==e.name?e.abbreviation:null;return{kind:`template`,label:n?`${n} (${t})`:t,name:L(t),abbreviation:n&&L(n),found:[L(t),L(e.name),...n?[L(n)]:[]],key:e.index,template:e}}function H(e){let t=e.abbreviation===e.name?null:e.abbreviation;return{kind:`salt`,label:t?`${t} (${e.name})`:e.name,name:L(e.name),abbreviation:t&&L(t),found:[L(e.name),...t?[L(t)]:[]],key:e.index,salt:e}}function U(e,t,n,r){let i=new Set,a=t.filter(e=>!i.has(e.name)&&!!i.add(e.name));return[...e.map(z),...a.map(V),...n.map(B),...r.map(H)]}var W=e=>e.map(B),G=(e,t)=>L(e.label)<L(t.label)?-1:+(L(e.label)>L(t.label));function K(e,t,n=!1){let r=L(t.trim());if(!r)return n?[...e].sort(G):[];let i=e=>e.name.startsWith(r)||!!e.abbreviation?.startsWith(r),a=e=>Math.max(R(e.name,r),R(e.abbreviation,r));return e.filter(e=>e.found.some(e=>e.includes(r))).sort((e,t)=>Number(i(t))-Number(i(e))||a(t)-a(e)||G(e,t))}var q=`canvas.lookup`,J=e=>e.matches(`:popover-open`),Y=class{#e;#t;#n=null;#r=null;constructor(e,t){this.#e=e,this.#t=t,t.addEventListener(`focusout`,this.#s),t.addEventListener(`keydown`,this.#o),t.addEventListener(`keyup`,this.#o)}get isOpen(){return this.#n!==null}open(e){if(this.#n&&this.#i(!1),!this.#t.isConnected)return;this.#n={opening:e,text:e.text,active:0,found:[]},this.#l(),this.#_();let t=this.#p();if(!t)return;J(t)||t.showPopover(),this.#h();let n=this.#m();n&&(n.focus({preventScroll:!0}),n.setSelectionRange(n.value.length,n.value.length))}close(e=!1){this.#n&&this.#i(e)}destroy(){this.#t.removeEventListener(`focusout`,this.#s),this.#t.removeEventListener(`keydown`,this.#o),this.#t.removeEventListener(`keyup`,this.#o),this.#n=null,c(e,this.#t)}#i(t){if(!this.#n)return;this.#n=null;let n=this.#p();n&&J(n)&&n.hidePopover(),c(e,this.#t),this.#e.closed(t)}#a(t){let n=this.#n;if(!n)return;this.#n=null;let r=this.#p();r&&J(r)&&r.hidePopover(),c(e,this.#t),this.#e.pick(t,n.opening)}#o=e=>{e.stopPropagation()};#s=e=>{if(!this.#n)return;let t=e.relatedTarget;t&&this.#t.contains(t)||(t||this.#t.ownerDocument.hasFocus())&&this.#i(!1)};#c(){let e=this.#e.strings();if(this.#r?.locale!==e.locale){let t=this.#e.groups(),n=a.map(t=>({symbol:t.symbol,name:e.elementName(t.symbol)}));this.#r={locale:e.locale,lookup:U(n,m,t,h),nickname:W(t)}}return this.#r}#l(){let e=this.#n;if(!e)return;let t=e.opening.mode===`nickname`,n=this.#c();e.found=K(t?n.nickname:n.lookup,e.text,t),e.active=0}#u(e){let t=this.#n;t&&t.text!==e&&(t.text=e,this.#l(),this.#_(),this.#h())}#d(e){let t=this.#n;if(t){if(e.key===`Escape`){e.preventDefault(),this.#i(!0);return}if(e.key===`Enter`){e.preventDefault();let n=t.found[t.active];n&&this.#a(n);return}if((e.key===`ArrowDown`||e.key===`ArrowUp`)&&t.found.length){e.preventDefault();let n=t.found.length;t.active=(t.active+(e.key===`ArrowDown`?1:n-1))%n,this.#_(),this.#f()}}}#f(){let e=this.#n,t=this.#t.querySelector(`.lookup-list`),n=e?this.#t.querySelector(`[data-testid="${q}.option.${e.active}"]`):null;t&&n&&(n.offsetTop<t.scrollTop?t.scrollTop=n.offsetTop:n.offsetTop+n.offsetHeight>t.scrollTop+t.clientHeight&&(t.scrollTop=n.offsetTop+n.offsetHeight-t.clientHeight))}#p(){return this.#t.querySelector(`[data-testid="${q}"]`)}#m(){return this.#t.querySelector(`[data-testid="${q}.search"]`)}#h(){let e=this.#n,t=this.#p();if(!e||!t)return;let n=t.ownerDocument.defaultView,r={width:t.offsetWidth,height:t.offsetHeight},i=o(e.opening.at,r,{width:n?.innerWidth??r.width,height:n?.innerHeight??r.height},e.opening.box);t.style.left=`${Math.round(i.x)}px`,t.style.top=`${Math.round(i.y)}px`}#g(e){let t=this.#e.strings();return e.kind===`element`?t.lookupElement:e.kind===`template`?t.lookupTemplate:e.kind===`group`?t.lookupGroup:t.lookupSalt}#_(){let t=this.#n;c(t?this.#v(t):e,this.#t)}#v(t){let r=this.#e.strings(),i=t.opening.mode===`nickname`?r.chooseNickname:r.abbreviationLookup,a=t.found.length>0,o=a?``:t.text.trim()?r.noMatchingResults:r.lookupHint;return n`<div class="lookup" popover="manual" role="dialog" aria-label=${i} data-testid=${q}>
+`}],v={alpha:`α`,beta:`β`,gamma:`γ`},y=e=>e.replace(/\b(alpha|beta|gamma)\b/g,e=>v[e]),b=e=>e.replace(/\b(alpha|beta|gamma)\b/gi,e=>v[e.toLowerCase()]);function x(e){let t=[];for(let n of e){let e=t.find(e=>e.name===n.group);e||t.push(e={index:t.length,name:n.group,shown:y(n.group),templates:[]}),e.templates.push(n)}return t}var S=Object.freeze(x(g));function C(e,t){let n=b(t.trim()).toLowerCase();return!n||[e.name,e.group,e.abbreviation].some(e=>e!==null&&y(e).toLowerCase().includes(n))}function w(e,t){return e.map(e=>({group:e,templates:e.templates.filter(e=>C(e,t))})).filter(e=>e.templates.length>0)}function T(e){let t=e=>e.label.toLowerCase();return e.map((e,t)=>({index:t,entry:e})).sort((e,n)=>t(e.entry)<t(n.entry)?-1:t(e.entry)>t(n.entry)?1:e.entry.label<n.entry.label?-1:1)}var E=e=>e.trim().toLowerCase(),D=(e,t)=>e.entry.label.toLowerCase().includes(E(t)),O=e=>e.toLowerCase().replaceAll(`-`,` `),ee=(e,t)=>[e.name,e.abbreviation].some(e=>O(e).includes(O(E(t))));function te(e){let t=[],n=/<(sub|sup)>(.*?)<\/\1>/g,r=0;for(let i=n.exec(e);i;i=n.exec(e))i.index>r&&t.push({text:e.slice(r,i.index),as:`text`}),t.push({text:i[2],as:i[1]}),r=i.index+i[0].length;return r<e.length&&t.push({text:e.slice(r),as:`text`}),t}var k=12.5,A=t,j=Object.freeze({width:106,height:86}),M=3;function N(e){let t=e.indexOf(`<svg`);return(t>=0?e.slice(t):e).replace(/<(?:path|circle|ellipse|rect|polygon|polyline|line)\b[^>]*\spointer-events='(?!none')[^']*'[^>]*\/>/g,``).replace(/(<g data-layer='background'>)[\s\S]*?(<\/g>)/,`$1$2`).replace(/\sdata-testid='[^']*'/g,``)}function P(e){let t=[];for(let n of e.matchAll(/<g\s[^>]*\bdata-atom='(\d+)'[^>]*>/g)){let e=e=>RegExp(`\\s${e}='([^']*)'`).exec(n[0])?.[1]??``;t.push({index:Number(n[1]),element:e(`data-element`),x:Number(e(`data-x`)),y:Number(e(`data-y`))})}return t}function F(e,t){let n=new Map(e.map(e=>[e.index,e])),r=e=>{let[t,r]=[n.get(e.a),n.get(e.b)];return t&&r?Math.hypot(t.x-r.x,t.y-r.y):0},i=t.filter(e=>n.get(e.a)?.element!==`H`&&n.get(e.b)?.element!==`H`&&n.has(e.a)&&n.has(e.b)),a=i.length?i:t;return a.length?a.reduce((e,t)=>e+r(t),0)/a.length:0}function I(e,n,r=j){let[i,a]=[Math.max(e.right-e.left,1),Math.max(e.bottom-e.top,1)],o=n>0?n:t,s=Math.min((r.width-6)/(i/o),(r.height-6)/(a/o)),c=Math.min(A,Math.max(k,s)),l=c/o,u=M/l;return{viewBox:[e.left-u,e.top-u,i+2*u,a+2*u],width:i*l+6,height:a*l+6,bondPx:c}}function L(e,r,i={}){let s=h(e.geometryJson()),c=a(e.meanBondLength()),l=s.atoms.map(e=>e.x),u=s.atoms.map(e=>e.y),[d,p,m,g]=l.length?[Math.min(...l),Math.max(...l),Math.min(...u),Math.max(...u)]:[0,0,0,0],_={zoom:1,cx:(d+p)/2,cy:(m+g)/2,docLen:c},v=t/c,y=8*t,b={width:Math.ceil((p-d)*v+y),height:Math.ceil((g-m)*v+y)},x=f(b,_,{},r),S={...i.attachments?{dummiesAreAttachments:!0}:{},...i.template?n:{}},C=N(e.renderSvg(Object.keys(S).length?JSON.stringify({...JSON.parse(x),...S}):x)),w=P(C);return{markup:C,...I(o(C)??{left:0,top:0,right:b.width,bottom:b.height},F(w,s.bonds))}}var R=e=>e.toLowerCase(),z=(e,t)=>e&&t&&e.includes(t)?t.length/e.length:0,B=e=>({kind:`element`,label:`${e.symbol} (${e.name})`,name:R(e.name),abbreviation:R(e.symbol),found:[R(e.name),R(e.symbol)],key:e.symbol}),V=e=>({kind:`group`,label:e.label,name:R(e.label),abbreviation:null,found:[R(e.label)],key:e.label});function H(e){let t=y(e.name),n=e.abbreviation&&e.abbreviation!==e.name?e.abbreviation:null;return{kind:`template`,label:n?`${n} (${t})`:t,name:R(t),abbreviation:n&&R(n),found:[R(t),R(e.name),...n?[R(n)]:[]],key:e.index,template:e}}function U(e){let t=e.abbreviation===e.name?null:e.abbreviation;return{kind:`salt`,label:t?`${t} (${e.name})`:e.name,name:R(e.name),abbreviation:t&&R(t),found:[R(e.name),...t?[R(t)]:[]],key:e.index,salt:e}}function W(e,t,n,r){let i=new Set,a=t.filter(e=>!i.has(e.name)&&!!i.add(e.name));return[...e.map(B),...a.map(H),...n.map(V),...r.map(U)]}var G=e=>e.map(V),K=(e,t)=>R(e.label)<R(t.label)?-1:+(R(e.label)>R(t.label));function q(e,t,n=!1){let r=R(t.trim());if(!r)return n?[...e].sort(K):[];let i=e=>e.name.startsWith(r)||!!e.abbreviation?.startsWith(r),a=e=>Math.max(z(e.name,r),z(e.abbreviation,r));return e.filter(e=>e.found.some(e=>e.includes(r))).sort((e,t)=>Number(i(t))-Number(i(e))||a(t)-a(e)||K(e,t))}var J=`canvas.lookup`,Y=e=>e.matches(`:popover-open`),X=class{#e;#t;#n=null;#r=null;constructor(e,t){this.#e=e,this.#t=t,t.addEventListener(`focusout`,this.#s),t.addEventListener(`keydown`,this.#o),t.addEventListener(`keyup`,this.#o)}get isOpen(){return this.#n!==null}open(e){if(this.#n&&this.#i(!1),!this.#t.isConnected)return;this.#n={opening:e,text:e.text,active:0,found:[]},this.#l(),this.#_();let t=this.#p();if(!t)return;Y(t)||t.showPopover(),this.#h();let n=this.#m();n&&(n.focus({preventScroll:!0}),n.setSelectionRange(n.value.length,n.value.length))}close(e=!1){this.#n&&this.#i(e)}destroy(){this.#t.removeEventListener(`focusout`,this.#s),this.#t.removeEventListener(`keydown`,this.#o),this.#t.removeEventListener(`keyup`,this.#o),this.#n=null,r(s,this.#t)}#i(e){if(!this.#n)return;this.#n=null;let t=this.#p();t&&Y(t)&&t.hidePopover(),r(s,this.#t),this.#e.closed(e)}#a(e){let t=this.#n;if(!t)return;this.#n=null;let n=this.#p();n&&Y(n)&&n.hidePopover(),r(s,this.#t),this.#e.pick(e,t.opening)}#o=e=>{e.stopPropagation()};#s=e=>{if(!this.#n)return;let t=e.relatedTarget;t&&this.#t.contains(t)||(t||this.#t.ownerDocument.hasFocus())&&this.#i(!1)};#c(){let e=this.#e.strings();if(this.#r?.locale!==e.locale){let t=this.#e.groups(),n=d.map(t=>({symbol:t.symbol,name:e.elementName(t.symbol)}));this.#r={locale:e.locale,lookup:W(n,g,t,_),nickname:G(t)}}return this.#r}#l(){let e=this.#n;if(!e)return;let t=e.opening.mode===`nickname`,n=this.#c();e.found=q(t?n.nickname:n.lookup,e.text,t),e.active=0}#u(e){let t=this.#n;t&&t.text!==e&&(t.text=e,this.#l(),this.#_(),this.#h())}#d(e){let t=this.#n;if(t){if(e.key===`Escape`){e.preventDefault(),this.#i(!0);return}if(e.key===`Enter`){e.preventDefault();let n=t.found[t.active];n&&this.#a(n);return}if((e.key===`ArrowDown`||e.key===`ArrowUp`)&&t.found.length){e.preventDefault();let n=t.found.length;t.active=(t.active+(e.key===`ArrowDown`?1:n-1))%n,this.#_(),this.#f()}}}#f(){let e=this.#n,t=this.#t.querySelector(`.lookup-list`),n=e?this.#t.querySelector(`[data-testid="${J}.option.${e.active}"]`):null;t&&n&&(n.offsetTop<t.scrollTop?t.scrollTop=n.offsetTop:n.offsetTop+n.offsetHeight>t.scrollTop+t.clientHeight&&(t.scrollTop=n.offsetTop+n.offsetHeight-t.clientHeight))}#p(){return this.#t.querySelector(`[data-testid="${J}"]`)}#m(){return this.#t.querySelector(`[data-testid="${J}.search"]`)}#h(){let e=this.#n,t=this.#p();if(!e||!t)return;let n=t.ownerDocument.defaultView,r={width:t.offsetWidth,height:t.offsetHeight},i=l(e.opening.at,r,{width:n?.innerWidth??r.width,height:n?.innerHeight??r.height},e.opening.box);t.style.left=`${Math.round(i.x)}px`,t.style.top=`${Math.round(i.y)}px`}#g(e){let t=this.#e.strings();return e.kind===`element`?t.lookupElement:e.kind===`template`?t.lookupTemplate:e.kind===`group`?t.lookupGroup:t.lookupSalt}#_(){let e=this.#n;r(e?this.#v(e):s,this.#t)}#v(e){let t=this.#e.strings(),n=e.opening.mode===`nickname`?t.chooseNickname:t.abbreviationLookup,r=e.found.length>0,a=r?``:e.text.trim()?t.noMatchingResults:t.lookupHint;return i`<div class="lookup" popover="manual" role="dialog" aria-label=${n} data-testid=${J}>
       <input
         class="lookup-search"
         type="text"
         role="combobox"
-        aria-label=${i}
+        aria-label=${n}
         aria-autocomplete="list"
-        aria-expanded=${String(a)}
+        aria-expanded=${String(r)}
         aria-controls="lookup-list"
-        aria-activedescendant=${a?`lookup-option-${t.active}`:e}
+        aria-activedescendant=${r?`lookup-option-${e.active}`:s}
         autocomplete="off"
         spellcheck="false"
-        data-testid="${q}.search"
-        .value=${t.text}
+        data-testid="${J}.search"
+        .value=${e.text}
         @input=${e=>this.#u(e.target.value)}
         @keydown=${e=>this.#d(e)}
       />
-      ${a?n`<ul class="lookup-list" id="lookup-list" role="listbox" aria-label=${i} tabindex="-1">
-            ${t.found.map((e,r)=>n`<li
+      ${r?i`<ul class="lookup-list" id="lookup-list" role="listbox" aria-label=${n} tabindex="-1">
+            ${e.found.map((t,n)=>i`<li
                   role="option"
                   class="lookup-option"
-                  id="lookup-option-${r}"
-                  data-testid="${q}.option.${r}"
-                  aria-selected=${String(r===t.active)}
+                  id="lookup-option-${n}"
+                  data-testid="${J}.option.${n}"
+                  aria-selected=${String(n===e.active)}
                   @pointerdown=${e=>e.preventDefault()}
-                  @click=${()=>this.#a(e)}
+                  @click=${()=>this.#a(t)}
                 >
-                  <span class="lookup-label">${e.label}</span><span class="lookup-kind">${this.#g(e)}</span>
+                  <span class="lookup-label">${t.label}</span><span class="lookup-kind">${this.#g(t)}</span>
                 </li>`)}
-          </ul>`:e}
-      <p class="lookup-status" role="status" aria-live="polite">${o?n`<span data-testid=${t.text.trim()?`${q}.empty`:e}>${o}</span>`:e}</p>
-    </div>`}},X=[`templates`,`groups`,`salts`],Z=`dialog.structure-library`,Q=120,te=8,ne=14,$=e=>Math.max(1,Math.ceil((e+ne+8)/128)),re=class{#e;#t;#n=null;#r=new Map;#i=new Map;#a=`templates`;#o=null;constructor(e,t){this.#e=e,this.#t=t}get open(){return this.#n!==null}show(e){this.#n||!this.#t.isConnected||(this.#n={opener:e,search:``,open:new Set,tab:this.#a},this.#S(),this.#h()?.showModal(),this.#g()?.focus())}cancel(){let e=this.#n;e&&(this.#s(),this.#e.restoreFocus(e.opener))}recolour(){this.#n&&(this.#r.clear(),this.#i.clear(),this.#S())}#s(){this.#h()?.close(),this.#n=null,this.#r.clear(),this.#i.clear(),this.#S()}#c(e){this.#l(()=>this.#e.pick(e))}#l(e){let t=this.#n;t&&(this.#a=t.tab,this.#s(),e(),this.#e.restoreFocus(t.opener))}#u(e,t=!1){let n=this.#n;n&&(n.tab!==e&&(n.tab=e,this.#S()),t&&this.#t.querySelector(`[data-testid="${Z}.tab.${e}"]`)?.focus())}#d(e){let t=this.#n;if(!t)return;let n=X.indexOf(t.tab),r=e.key===`ArrowRight`||e.key===`ArrowDown`?X[(n+1)%X.length]:e.key===`ArrowLeft`||e.key===`ArrowUp`?X[(n+X.length-1)%X.length]:e.key===`Home`?X[0]:e.key===`End`?X[X.length-1]:null;r&&(e.preventDefault(),this.#u(r,!0))}#f(e){let t=this.#n;if(t){if(t.open.has(e.index)){t.open.delete(e.index);for(let t of e.templates)this.#r.delete(t.index)}else t.open.add(e.index);this.#S()}}#p(e){let t=this.#n;t&&t.search!==e&&(t.search=e,this.#S())}#m(e){if(e.key===`Escape`){e.preventDefault(),this.cancel();return}e.key===`Tab`&&d(e)}#h(){return this.#t.querySelector(`dialog[data-testid="${Z}"]`)}#g(){return this.#t.querySelector(`[data-testid="${Z}.search"]`)}#_(e){if(this.#r.has(e.index))return this.#r.get(e.index)??null;let t=this.#e.read(e,e=>I(e,this.#e.atomColours(),{template:!0})),n=t?this.#x(t):null,r=t&&n?{svg:n,columns:$(t.width)}:null;return this.#r.set(e.index,r),r}#v(e){let t=`abbreviation.${e.index}`;if(this.#i.has(t))return this.#i.get(t)??null;let n=e.entry.attachments===1?`*${e.entry.smarts}`:e.entry.smarts;return this.#b(t,this.#e.inspect(n,`smiles`,e=>I(e,this.#e.atomColours(),{attachments:!0})))}#y(e){let t=`salt.${e.index}`;return this.#i.has(t)?this.#i.get(t)??null:this.#b(t,this.#e.inspect(e.molblock,`molV2000`,e=>(e.expandAbbreviation?.(0),I(e,this.#e.atomColours()))))}#b(e,t){let n=t?this.#x(t):null,r=t&&n?{svg:n,columns:$(t.width)}:null;return this.#i.set(e,r),r}#x(e){let t=this.#t.ownerDocument,n=t.createElement(`template`);n.innerHTML=e.markup;let r=n.content.firstElementChild;if(!r||r.localName!==`svg`)return null;let i=t.adoptNode(r);return i.setAttribute(`viewBox`,e.viewBox.map(e=>e.toFixed(2)).join(` `)),i.setAttribute(`width`,e.width.toFixed(2)),i.setAttribute(`height`,e.height.toFixed(2)),i.removeAttribute(`data-mol-to-canvas`),i.setAttribute(`class`,`sl-drawing`),i.setAttribute(`aria-hidden`,`true`),i.setAttribute(`focusable`,`false`),i}#S(){c(this.#n?this.#C(this.#n):e,this.#t)}#C(t){let r=this.#e.strings(),i=this.#w(t);return n`<dialog
+          </ul>`:s}
+      <p class="lookup-status" role="status" aria-live="polite">${a?i`<span data-testid=${e.text.trim()?`${J}.empty`:s}>${a}</span>`:s}</p>
+    </div>`}},Z=[`templates`,`groups`,`salts`],Q=`dialog.structure-library`,ne=120,re=8,ie=14,$=e=>Math.max(1,Math.ceil((e+ie+8)/128)),ae=class{#e;#t;#n=null;#r=new Map;#i=new Map;#a=`templates`;#o=null;constructor(e,t){this.#e=e,this.#t=t}get open(){return this.#n!==null}show(e){this.#n||!this.#t.isConnected||(this.#n={opener:e,search:``,open:new Set,tab:this.#a},this.#S(),this.#h()?.showModal(),this.#g()?.focus())}cancel(){let e=this.#n;e&&(this.#s(),this.#e.restoreFocus(e.opener))}recolour(){this.#n&&(this.#r.clear(),this.#i.clear(),this.#S())}#s(){this.#h()?.close(),this.#n=null,this.#r.clear(),this.#i.clear(),this.#S()}#c(e){this.#l(()=>this.#e.pick(e))}#l(e){let t=this.#n;t&&(this.#a=t.tab,this.#s(),e(),this.#e.restoreFocus(t.opener))}#u(e,t=!1){let n=this.#n;n&&(n.tab!==e&&(n.tab=e,this.#S()),t&&this.#t.querySelector(`[data-testid="${Q}.tab.${e}"]`)?.focus())}#d(e){let t=this.#n;if(!t)return;let n=Z.indexOf(t.tab),r=e.key===`ArrowRight`||e.key===`ArrowDown`?Z[(n+1)%Z.length]:e.key===`ArrowLeft`||e.key===`ArrowUp`?Z[(n+Z.length-1)%Z.length]:e.key===`Home`?Z[0]:e.key===`End`?Z[Z.length-1]:null;r&&(e.preventDefault(),this.#u(r,!0))}#f(e){let t=this.#n;if(t){if(t.open.has(e.index)){t.open.delete(e.index);for(let t of e.templates)this.#r.delete(t.index)}else t.open.add(e.index);this.#S()}}#p(e){let t=this.#n;t&&t.search!==e&&(t.search=e,this.#S())}#m(e){if(e.key===`Escape`){e.preventDefault(),this.cancel();return}e.key===`Tab`&&p(e)}#h(){return this.#t.querySelector(`dialog[data-testid="${Q}"]`)}#g(){return this.#t.querySelector(`[data-testid="${Q}.search"]`)}#_(e){if(this.#r.has(e.index))return this.#r.get(e.index)??null;let t=this.#e.read(e,e=>L(e,this.#e.atomColours(),{template:!0})),n=t?this.#x(t):null,r=t&&n?{svg:n,columns:$(t.width)}:null;return this.#r.set(e.index,r),r}#v(e){let t=`abbreviation.${e.index}`;if(this.#i.has(t))return this.#i.get(t)??null;let n=e.entry.attachments===1?`*${e.entry.smarts}`:e.entry.smarts;return this.#b(t,this.#e.inspect(n,`smiles`,e=>L(e,this.#e.atomColours(),{attachments:!0})))}#y(e){let t=`salt.${e.index}`;return this.#i.has(t)?this.#i.get(t)??null:this.#b(t,this.#e.inspect(e.molblock,`molV2000`,e=>(e.expandAbbreviation?.(0),L(e,this.#e.atomColours()))))}#b(e,t){let n=t?this.#x(t):null,r=t&&n?{svg:n,columns:$(t.width)}:null;return this.#i.set(e,r),r}#x(t){let n=this.#t.ownerDocument,r=n.createElement(`template`);r.innerHTML=c(t.markup);let i=r.content.firstElementChild;if(!i||i.localName!==`svg`)return null;let a=n.adoptNode(i);return e(n),a.setAttribute(`viewBox`,t.viewBox.map(e=>e.toFixed(2)).join(` `)),a.setAttribute(`width`,t.width.toFixed(2)),a.setAttribute(`height`,t.height.toFixed(2)),a.removeAttribute(`data-mol-to-canvas`),a.setAttribute(`class`,`sl-drawing`),a.setAttribute(`aria-hidden`,`true`),a.setAttribute(`focusable`,`false`),a}#S(){r(this.#n?this.#C(this.#n):s,this.#t)}#C(e){let t=this.#e.strings(),n=this.#w(e);return i`<dialog
       class="dialog library"
-      data-testid=${Z}
+      data-testid=${Q}
       aria-labelledby="sl-title"
       @keydown=${e=>this.#m(e)}
       @cancel=${e=>{e.preventDefault(),this.cancel()}}
     >
       <div class="dialog-head">
         <h2 id="sl-title">${this.#e.strings().structureLibrary}</h2>
-        <button type="button" class="close" data-testid="${Z}.close" aria-label=${this.#e.strings().close} @click=${()=>this.cancel()}>×</button>
+        <button type="button" class="close" data-testid="${Q}.close" aria-label=${this.#e.strings().close} @click=${()=>this.cancel()}>×</button>
       </div>
       <div class="sl-search">
         <label for="sl-search">${this.#e.strings().search}</label>
@@ -12116,70 +12116,70 @@ M  END
           autocomplete="off"
           spellcheck="false"
           placeholder=${this.#e.strings().searchHint}
-          data-testid="${Z}.search"
-          .value=${t.search}
+          data-testid="${Q}.search"
+          .value=${e.search}
           @input=${e=>this.#p(e.target.value)}
         />
       </div>
-      <div class="sl-tabs" role="tablist" aria-label=${r.libraryTabs} @keydown=${e=>this.#d(e)}>
-        ${X.map(e=>n`<button
+      <div class="sl-tabs" role="tablist" aria-label=${t.libraryTabs} @keydown=${e=>this.#d(e)}>
+        ${Z.map(n=>i`<button
               type="button"
               role="tab"
               class="sl-tab"
-              id="sl-tab-${e}"
-              data-testid="${Z}.tab.${e}"
-              aria-selected=${String(t.tab===e)}
-              aria-controls="sl-tabpanel-${e}"
-              tabindex=${t.tab===e?0:-1}
-              @click=${()=>this.#u(e)}
+              id="sl-tab-${n}"
+              data-testid="${Q}.tab.${n}"
+              aria-selected=${String(e.tab===n)}
+              aria-controls="sl-tabpanel-${n}"
+              tabindex=${e.tab===n?0:-1}
+              @click=${()=>this.#u(n)}
             >
-              ${e===`templates`?r.templateLibrary:e===`groups`?r.functionalGroups:r.saltsAndSolvents}
+              ${n===`templates`?t.templateLibrary:n===`groups`?t.functionalGroups:t.saltsAndSolvents}
             </button>`)}
       </div>
-      <div class="sl-status" role="status" aria-live="polite">${i.empty?n`<p data-testid="${Z}.empty">${r.noItemsFound}</p>`:e}</div>
-      <div class="sl-groups" role="tabpanel" id="sl-tabpanel-${t.tab}" aria-labelledby="sl-tab-${t.tab}" data-testid="${Z}.panel.${t.tab}">${i.content}</div>
-    </dialog>`}#w(e){if(e.tab===`groups`){this.#o??=C(this.#e.groups());let t=this.#o.filter(t=>T(t,e.search));return{content:this.#T(t,e=>`abbreviation.${e.index}`,e=>this.#E(e)),empty:!t.length}}if(e.tab===`salts`){let t=h.filter(t=>D(t,e.search));return{content:this.#T(t,e=>`salt.${e.index}`,e=>this.#D(e)),empty:!t.length}}let t=S(b,e.search),n=new Map(t.map(e=>[e.group.index,e.templates]));return{content:b.map(t=>this.#O(e,t,n.get(t.index)??[])),empty:!t.length}}#T(e,t,r){return n`<div class="sl-cards sl-flat">${f(e,t,r)}</div>`}#E(t){let r=this.#v(t),i=ee(t.entry.displayLabel||t.entry.label);return n`<button
+      <div class="sl-status" role="status" aria-live="polite">${n.empty?i`<p data-testid="${Q}.empty">${t.noItemsFound}</p>`:s}</div>
+      <div class="sl-groups" role="tabpanel" id="sl-tabpanel-${e.tab}" aria-labelledby="sl-tab-${e.tab}" data-testid="${Q}.panel.${e.tab}">${n.content}</div>
+    </dialog>`}#w(e){if(e.tab===`groups`){this.#o??=T(this.#e.groups());let t=this.#o.filter(t=>D(t,e.search));return{content:this.#T(t,e=>`abbreviation.${e.index}`,e=>this.#E(e)),empty:!t.length}}if(e.tab===`salts`){let t=_.filter(t=>ee(t,e.search));return{content:this.#T(t,e=>`salt.${e.index}`,e=>this.#D(e)),empty:!t.length}}let t=w(S,e.search),n=new Map(t.map(e=>[e.group.index,e.templates]));return{content:S.map(t=>this.#O(e,t,n.get(t.index)??[])),empty:!t.length}}#T(e,t,n){return i`<div class="sl-cards sl-flat">${m(e,t,n)}</div>`}#E(e){let t=this.#v(e),n=te(e.entry.displayLabel||e.entry.label);return i`<button
       type="button"
       class="sl-card"
-      data-testid="${Z}.abbreviation.${t.index}"
-      style=${s({gridColumn:`span ${r?.columns??1}`})}
-      @click=${()=>this.#l(()=>this.#e.pickGroup(t.entry.label))}
+      data-testid="${Q}.abbreviation.${e.index}"
+      ${u({"grid-column":`span ${t?.columns??1}`})}
+      @click=${()=>this.#l(()=>this.#e.pickGroup(e.entry.label))}
     >
-      <span class="sl-thumb" style=${s({minHeight:`${A.height}px`})}>${r?.svg??e}</span>
-      <span class="sl-caption">${i.map(e=>e.as===`sub`?n`<sub>${e.text}</sub>`:e.as===`sup`?n`<sup>${e.text}</sup>`:e.text)}</span>
-    </button>`}#D(t){let r=this.#y(t);return n`<button
+      <span class="sl-thumb" ${u({"min-height":`${j.height}px`})}>${t?.svg??s}</span>
+      <span class="sl-caption">${n.map(e=>e.as===`sub`?i`<sub>${e.text}</sub>`:e.as===`sup`?i`<sup>${e.text}</sup>`:e.text)}</span>
+    </button>`}#D(e){let t=this.#y(e);return i`<button
       type="button"
       class="sl-card"
-      data-testid="${Z}.salt.${t.index}"
-      style=${s({gridColumn:`span ${r?.columns??1}`})}
-      @click=${()=>this.#l(()=>this.#e.pickSalt(t))}
+      data-testid="${Q}.salt.${e.index}"
+      ${u({"grid-column":`span ${t?.columns??1}`})}
+      @click=${()=>this.#l(()=>this.#e.pickSalt(e))}
     >
-      <span class="sl-thumb" style=${s({minHeight:`${A.height}px`})}>${r?.svg??e}</span>
-      <span class="sl-caption">${t.name}</span>
-    </button>`}#O(t,r,i){let a=t.open.has(r.index),o=`sl-panel-${r.index}`;return n`<section class="sl-group" ?hidden=${!i.length}>
+      <span class="sl-thumb" ${u({"min-height":`${j.height}px`})}>${t?.svg??s}</span>
+      <span class="sl-caption">${e.name}</span>
+    </button>`}#O(e,t,n){let r=e.open.has(t.index),a=`sl-panel-${t.index}`;return i`<section class="sl-group" ?hidden=${!n.length}>
       <h3>
         <button
           type="button"
           class="sl-header"
-          data-testid="${Z}.group.${r.index}"
-          aria-expanded=${String(a)}
-          aria-controls=${a?o:e}
-          @click=${()=>this.#f(r)}
+          data-testid="${Q}.group.${t.index}"
+          aria-expanded=${String(r)}
+          aria-controls=${r?a:s}
+          @click=${()=>this.#f(t)}
         >
           <svg class="sl-chevron" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg
-          ><span>${this.#e.strings().groupCount(r.shown,i.length)}</span>
+          ><span>${this.#e.strings().groupCount(t.shown,n.length)}</span>
         </button>
       </h3>
-      ${a&&i.length?n`<div class="sl-cards" id=${o} data-testid="${Z}.group.${r.index}.templates" role="group" aria-label=${r.shown}>
-            ${f(i,e=>e.index,e=>this.#k(e))}
-          </div>`:e}
-    </section>`}#k(t){let r=this.#_(t),i=r?.columns??1;return n`<button
+      ${r&&n.length?i`<div class="sl-cards" id=${a} data-testid="${Q}.group.${t.index}.templates" role="group" aria-label=${t.shown}>
+            ${m(n,e=>e.index,e=>this.#k(e))}
+          </div>`:s}
+    </section>`}#k(e){let t=this.#_(e),n=t?.columns??1;return i`<button
       type="button"
       class="sl-card"
-      data-testid="${Z}.template.${t.index}"
-      style=${s({gridColumn:`span ${i}`})}
-      @click=${()=>this.#c(t)}
+      data-testid="${Q}.template.${e.index}"
+      ${u({"grid-column":`span ${n}`})}
+      @click=${()=>this.#c(e)}
     >
-      <span class="sl-thumb" style=${s({minHeight:`${A.height}px`})}>${r?.svg??e}</span>
-      <span class="sl-caption">${_(t.name)}</span>
-    </button>`}};export{Y as AbbreviationLookup,Q as CARD_COLUMN,te as CARD_GAP,re as StructureLibrary,$ as columnsFor};
+      <span class="sl-thumb" ${u({"min-height":`${j.height}px`})}>${t?.svg??s}</span>
+      <span class="sl-caption">${y(e.name)}</span>
+    </button>`}};export{X as AbbreviationLookup,ne as CARD_COLUMN,re as CARD_GAP,ae as StructureLibrary,$ as columnsFor};

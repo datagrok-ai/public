@@ -8,6 +8,7 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
 import '../../../bindings/connections.js';
+import '../../../bindings/flow.js';
 import '../../../bindings/grid.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -15,6 +16,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {clickCardStructure, clickScaffoldFilterArea, pickFromLongestCellMenu, rememberScaffoldReading, rowsContainPicked, scaffoldFilterReading, scaffoldFilterReadingAtLeast, scaffoldFilterReadingText, scaffoldReadingLower, scaffoldTreeUncolored, setScaffoldBitOperation, viewerShowsFormulaRows} from '../../../bindings/nx.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clearField, clickOn, doubleClickOn, enterInto, hoverOver, isExpanded, pasteInto, pressKey, pressKeyIn, selectIn, shouldBe, shouldContainText, shouldNotContainText, typeInto, uncheck, uploadThrough} from '@datagrok-libraries/bdd/bindings/common/steps';

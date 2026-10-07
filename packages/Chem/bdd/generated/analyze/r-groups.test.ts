@@ -7,13 +7,15 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [chem.cp.r-group-analysis]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {canvasColors} from '@datagrok-libraries/bdd/bindings/common/pixels';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {sketcherHolds} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, finishedUpdating, shouldBe, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {hasColumn, hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
@@ -93,7 +95,7 @@ test.describe("R-Groups Analysis with MCS, Replace latest and no core", () => {
       await session.step(88, "When user picks \"Chem > Analyze > R-Groups Analysis...\" from the top menu", () => pickFromTopMenu(page, "Chem > Analyze > R-Groups Analysis..."));
       await session.step(89, "And user clicks on MCS button in \"R-Groups Analysis\" dialog", () => clickOn(page, el("MCS button in \"R-Groups Analysis\" dialog")));
       await session.step(90, "And \"R-Groups Analysis\" dialog should have finished updating", () => finishedUpdating(page, el("\"R-Groups Analysis\" dialog")));
-      await session.step(91, "Then the canvases of \"R-Groups Analysis\" dialog should be painted in at least 2 colors", () => canvasColors(page, el("\"R-Groups Analysis\" dialog"), 2));
+      await session.step(91, "Then the sketcher in \"R-Groups Analysis\" dialog should hold the molecule \"C\"", () => sketcherHolds(page, el("\"R-Groups Analysis\" dialog"), "C"));
       await session.step(92, "When user clicks on OK button in \"R-Groups Analysis\" dialog", () => clickOn(page, el("OK button in \"R-Groups Analysis\" dialog")));
       await session.step(93, "Then an error balloon containing \"No R-Groups were found\" should have been shown", () => errorBalloonText(page, "No R-Groups were found"));
       await session.step(94, "And no new column should have been added", () => noNewColumn(page));

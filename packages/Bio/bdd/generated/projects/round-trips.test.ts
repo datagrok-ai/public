@@ -8,10 +8,12 @@ sub_features_covered: [bio.project.round-trip]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/elements.js';
+import '../../bindings/monomer-form.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {carriesAtLeast} from '../../bindings/annotations.js';
 import {bioInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';

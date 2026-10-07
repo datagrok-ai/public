@@ -481,11 +481,36 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
 
 /* Which sketcher a molecule input, a filter card or a dialog opens is the account's choice, kept on
    the server: a feature that draws or types a molecule names the one it was written against, so an
-   account that picked another one elsewhere does not change what the feature sees. */
+   account that picked another one elsewhere does not change what the feature sees. A run can pin
+   one sketcher for every feature instead (`BDD_MOLECULE_SKETCHER`: a package's suite run with a new
+   sketcher); a feature about one sketcher's own controls says so with SKETCHER_CONTROLS_TAG and
+   skips under an override that names another. */
 const sketcherKept = new WeakSet<Page>();
 
-export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+/** The feature tag of a feature that drives the controls of the sketcher it pins (Ketcher's template
+ * toolbar): a run that pins another sketcher skips it. */
+export const SKETCHER_CONTROLS_TAG = '@sketcher-controls';
+
+/** What `the molecule sketcher is "<name>"` pins: the run's override when set (`BDD_MOLECULE_SKETCHER`),
+ * else the feature's own; a SKETCHER_CONTROLS_TAG feature under an override that names another
+ * sketcher skips, with the reason. */
+export function sketcherPin(name: string, override: string | undefined, tags: readonly string[]): {pin: string} | {skip: string} {
+  const run = override?.trim() ?? '';
+  if (run === '' || run === name)
+    return {pin: name};
+  if (tags.includes(SKETCHER_CONTROLS_TAG))
+    return {skip: `the feature drives ${name}'s own controls (${SKETCHER_CONTROLS_TAG}) and the run pins "${run}" (BDD_MOLECULE_SKETCHER)`};
+  return {pin: run};
+}
+
+export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, feature: string) => {
   silent(page);
+  const choice = sketcherPin(feature, process.env.BDD_MOLECULE_SKETCHER, test.info().tags);
+  if ('skip' in choice) {
+    test.skip(true, choice.skip);
+    return;
+  }
+  const name = choice.pin;
   const was = await page.evaluate((n) => {
     const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
     if (!known.includes(n))
@@ -513,7 +538,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
     await expect.poll(() => page.evaluate(async () => String(await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '')),
       {message: 'the sketcher setting of the account on the server, put back', timeout: pollMs(30000)}).toBe(was ?? '');
   });
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -1232,7 +1257,10 @@ export const scriptOnServer = Given('a script {string} is on the server:', async
   await expectNamedCount(page, 'scripts', 'scripts', name, 1);
 }, {tier: 'api', description: 'saved through the JS API under that name; deleted with its chats at feature end'});
 
-export const queryOnServer = Given('a query {string} on {string} reads {string}', async (page: Page, name: string, connection: string, sql: string) => {
+/** A SQL query saved on the connection (its nqName) through the JS API, the platform reading its text as it reads a
+ * query's (the `--input:` header lines give it its parameters); an earlier one of the name goes first, and it is
+ * deleted with its chats at feature end. */
+async function saveQuery(page: Page, name: string, connection: string, sql: string): Promise<void> {
   const cleanup = namedCleanup(page, 'queries', 'queries', [name]);
   atFeatureEnd(page, cleanup);
   await cleanup();
@@ -1244,7 +1272,15 @@ export const queryOnServer = Given('a query {string} on {string} reads {string}'
     await grok.dapi.queries.save(conn.query(n, s));
   }, [name, connection, sql] as [string, string, string]);
   await expectNamedCount(page, 'queries', 'queries', name, 1);
-}, {tier: 'api', description: 'a SQL query saved on the connection (its nqName, "System:Datagrok") through the JS API; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
+}
+
+export const queryOnServer = Given('a query {string} on {string} reads {string}', (page: Page, name: string, connection: string, sql: string) =>
+  saveQuery(page, name, connection, sql),
+{tier: 'api', description: 'a SQL query saved on the connection (its nqName, "System:Datagrok") through the JS API; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
+
+export const queryTextOnServer = Given('a query {string} on {string} is on the server:', (page: Page, name: string, connection: string, text: string) =>
+  saveQuery(page, name, connection, text),
+{tier: 'api', description: 'a query saved on the connection (its nqName) through the JS API, its text the doc string: header lines such as `--input: string pattern {semType: Molecule}` give it its parameters, as in a query file; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
 
 /** The coordinates of a data source without its credentials: Postgres points at the Northwind of
  * the stand's test server, any other source copies the parameters of its Samples Northwind. A

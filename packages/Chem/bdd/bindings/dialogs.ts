@@ -5,7 +5,9 @@
    window rather than read once. */
 import {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, expect, locate} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, el, expect, locate} from '@datagrok-libraries/bdd/runtime';
+import {check, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {userSettingsPutBack} from '@datagrok-libraries/bdd/bindings/platform/steps';
 
 declare global {
   interface Window {__bddOkStates?: {appeared?: boolean; clicked?: boolean; hit?: boolean; under?: string}}
@@ -57,3 +59,22 @@ export const okDisabledThroughout = Then('the OK button should have been disable
   expect(states, `the OK button's state when it entered the page and when the click landed on it (under the click: ${under})`)
     .toEqual({appeared: true, clicked: true, hit: true});
 });
+
+// ---------------------------------------------------------------- the sketcher dialog's "Filter as you draw"
+
+/* The substructure filter's "Filter as you draw" is the account's (the `chem-filter` user settings, on the server), and a
+   feature leaves the stand as it found it (the library's hard rule): the first toggle in a feature remembers the whole map
+   and puts it back at feature end, the server read back, as the library's `the "…" user settings are put back at feature
+   end` does. These literal lines are the library's `user checks {element}` and `user unchecks {element}` for that one
+   input, which they take over (more literal text wins). */
+const FILTER_AS_YOU_DRAW = '"Filter as you draw" input in sketcher dialog';
+
+export const checkFilterAsYouDraw = When('user checks "Filter as you draw" input in sketcher dialog', async (page: Page) => {
+  await userSettingsPutBack(page, 'chem-filter');
+  await check(page, el(FILTER_AS_YOU_DRAW));
+}, {tier: 'ui', description: 'checks the option, the chem-filter settings of the account put back at feature end'});
+
+export const uncheckFilterAsYouDraw = When('user unchecks "Filter as you draw" input in sketcher dialog', async (page: Page) => {
+  await userSettingsPutBack(page, 'chem-filter');
+  await uncheck(page, el(FILTER_AS_YOU_DRAW));
+}, {tier: 'ui', description: 'unchecks the option, the chem-filter settings of the account put back at feature end'});

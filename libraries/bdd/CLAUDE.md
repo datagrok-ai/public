@@ -36,6 +36,9 @@ bindings/platform/      the shell: elements, datasets, steps (views, projects an
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
                         per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
                         what a viewer draws of its lines), filter-panel
+bindings/tiers/molecules/ opt-in: crux (Chem's Crux sketcher wherever a host opens it: its widget, its controls by test
+                        id), molecules (a reading or a cell read as a molecule through Chem's RDKit, a table's semantic
+                        types detected) — for the suites whose features draw or read molecules, Chem's and the hosts'
 tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
 ```
@@ -418,7 +421,10 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - A JS viewer joins by `getWidgetStatus()` (canvas under `parts`, `hitAreas` in CSS px,
   `values`), `get isRenderPending()` and `onRendered`; a package viewer's surface reaches the
   stand only when the package is republished, and a library viewer only when the package's
-  `node_modules/@datagrok-libraries/<lib>` points at the checkout.
+  `node_modules/@datagrok-libraries/<lib>` points at the checkout. A package's widget outside any
+  viewer (Chem's Crux sketcher in a dialog) joins the same way: with no viewer round the element,
+  `findViewer` takes the nearest `[data-widget]` up from it that `DG.Widget.find` knows and that
+  reports a status (`addStatusProvider` registers the widget); its areas are in px of its root.
 - The u2 side: `ChoiceInput` is a native `<select>`; comboboxes open on a keystroke; a tree row
   click selects and the twistie toggles; popups are portaled under `.u2-overlay` with
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
@@ -539,6 +545,10 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   (the columns a top-menu command adds, 180 s). `BDD_FRESH_PAGE` reloads the shell before every
   feature instead of resetting it: a feature that fails only after another one, and passes with
   the variable set, is failing on state the other left behind.
+- `BDD_MOLECULE_SKETCHER=<name>` pins that sketcher for the whole run: `the molecule sketcher is …` pins it instead of
+  the feature's own (the account's choice still comes back at feature end), so a package's suite runs with a new
+  sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
+  and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
   the machine in `config.metadata` (a `--reporter` on the command line gets `json` added). The run
   history in `packages/UsageAnalysis/bdd/history` records such reports **only when the user asks
