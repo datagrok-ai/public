@@ -261,7 +261,11 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   the property-edit guard, so a cell clicked just after expanding a pane still becomes current:
   `the context panel is open` is the Given, `the context panel should show "X"` names the object
   before any pane is read, and a failure inside the panel reports the current object and the
-  panes in the DOM but not shown (`explain`). **A context pane that counts its items is hidden
+  panes in the DOM but not shown (`explain`). The header's name is read from the page by `the title of
+  context panel should be "X"` (it can lag the object after a rename); an entity's Details rows are the
+  `details field` kind (`Name details field`, `edit icon of Tags details row`, the pencil showing only
+  under the pointer).
+  **A context pane that counts its items is hidden
   while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
   and the count arrives asynchronously: Activity on a space created a second ago is `present`,
   not `visible`, until the server has logged the creation.

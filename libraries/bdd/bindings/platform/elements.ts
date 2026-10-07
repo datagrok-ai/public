@@ -110,7 +110,21 @@ element('layouts pane', {selector: '.d4-toolbox .d4-pane-layouts',
   description: 'the Layouts section of the toolbox: its Save button and the cards of the layouts that fit the table'});
 element('file drop overlay', {selector: 'xpath=//div[./*[local-name()="svg"]//*[local-name()="text" and normalize-space()="Incoming!"]]',
   description: 'the "Incoming! Drop your CSV files to open them locally" layer the platform lays over the window while files are dragged over it'});
+/* A row of an entity's Details table in the context panel (Name, Author, Tags…): the caption in the first cell,
+   the value in the second. An editable value is a label with a pencil that shows only under the pointer; the
+   pencil turns the value into a bare input, which Enter saves. */
+kind('details field', {
+  aliases: ['details fields', 'details row'],
+  selector: '.d4-info-table tr',
+  match: ['label'],
+  labelSelector: 'td:first-child > span',
+  parts: {'edit icon': '[name="icon-pencil"]', value: ':scope > td:nth-child(2)'},
+  description: 'a row of an entity\'s Details table in the context panel, by its caption ("Name details field"); an edited value is its input',
+});
+element('layouts filter', {selector: '.d4-toolbox .d4-pane-layouts input.grok-suggestions-filter',
+  description: 'the "Filter by name or #tag" box of the Layouts section of the toolbox: a case-insensitive substring match on the cards\' names and tag chips'});
 kind('layout card', {
+  aliases: ['layout cards'],
   selector: '.d4-pane-layouts .grok-suggestions-chart-card',
   match: ['label'],
   labelSelector: '.grok-gallery-grid-item-title',
