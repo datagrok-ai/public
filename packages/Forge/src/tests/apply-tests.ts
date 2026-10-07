@@ -19,7 +19,7 @@ import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
 import {BLOB_ROOT, deleteModel} from '../storage/model-store';
 import {ColumnSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
 import {columnsOf, expectMetrics, expectReleased, framesSharing, IMPUTE, MEASUREMENTS, openIris, rawValues, requestOf,
-  saveIrisModel, saveTestModel, selectionOf, valuesOf, XGBOOST_FIELDS} from './test-data';
+  savedFixture, saveIrisModel, saveTestModel, selectionOf, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const TIMEOUT = 90000;
 const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
@@ -39,11 +39,7 @@ async function predictionsOf(engine: Engine, columns: DG.Column[], blob: Uint8Ar
   }
 }
 
-function shared(): Fixture {
-  if (fixture === undefined)
-    throw new Error('The test model was not saved');
-  return fixture;
-}
+const shared = () => savedFixture(fixture);
 
 function requestFor(model: LoadedModel, table: DG.DataFrame, options: {mapping?: Map<string, string>;
   batchSize?: number; missingValues?: MissingValuesSettings} = {}): ApplyRequest {

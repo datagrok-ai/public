@@ -6,6 +6,7 @@ import './tests/training-tests';
 import './tests/preparation-tests';
 import './tests/storage-tests';
 import './tests/apply-tests';
+import './tests/catalog-tests';
 import './tests/ui-tests';
 
 export const _package = new DG.Package();

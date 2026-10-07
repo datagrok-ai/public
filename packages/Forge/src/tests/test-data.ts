@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {ModelInsert} from '../generated/db';
+import {forgeDb, ModelInsert} from '../generated/db';
 import {METRIC_IDS, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {releaseFrame} from '../preparation/shared-frame';
@@ -24,6 +24,19 @@ export function engineByName(engines: Engine[], name: string): Engine {
   if (engine === undefined)
     throw new Error(`Engine '${name}' is not discovered`);
   return engine;
+}
+
+/** A model row without a model file: an XGBoost classifier of Species, no data stored, unless [fields] differ. */
+export async function insertModelRow(fields: Pick<ModelInsert, 'name'> & Partial<ModelInsert>): Promise<string> {
+  return (await forgeDb.models.insert({...XGBOOST_FIELDS, task: 'classification', target_name: 'Species',
+    storage_mode: 'none', ...fields}))[0].id;
+}
+
+/** A category's shared fixture, saved by its `before`. */
+export function savedFixture<T>(fixture: T | undefined): T {
+  if (fixture === undefined)
+    throw new Error('The test model was not saved');
+  return fixture;
 }
 
 let xgboostEngine: Engine | undefined;
@@ -88,8 +101,8 @@ export async function saveTestModel(features: DG.Column[], target: DG.Column, da
   const fingerprint = datasetFingerprint(request.features, request.target);
   releaseFrame(request.features);
   const name = `forge-test-model-${Date.now()}`;
-  const id = await saveModel({...modelFieldsOf({name, description: '', engine: request.engine, datasetName, result,
-    fingerprint}), ...fields}, result.blob);
+  const id = await saveModel({...modelFieldsOf({name, description: '', tags: [], engine: request.engine, datasetName,
+    result, fingerprint}), ...fields}, result.blob);
   return {id, name, result};
 }
 

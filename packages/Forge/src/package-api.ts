@@ -9,6 +9,13 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
+   * Registers the Forge model handler, the model commands and the model comparison handler
+   */
+  export async function initForge(): Promise<void> {
+    return await grok.functions.call('Forge:InitForge', {});
+  }
+
+  /**
    * Predictive modeling: methods and the model catalog
    */
   export async function forgeApp(): Promise<DG.View> {
@@ -43,5 +50,19 @@ export namespace funcs {
    */
   export async function applyModel(model: string , table: DG.DataFrame , columnNamesMap?: any , showProgress?: boolean ): Promise<DG.DataFrame> {
     return await grok.functions.call('Forge:ApplyModel', { model, table, columnNamesMap, showProgress });
+  }
+
+  /**
+   * Whether the column holds the predictions of a Forge model
+   */
+  export async function isPredictionColumn(col: DG.Column ): Promise<boolean> {
+    return await grok.functions.call('Forge:IsPredictionColumn', { col });
+  }
+
+  /**
+   * The Forge model that predicted the column
+   */
+  export async function predictedByPanel(col: DG.Column ): Promise<any> {
+    return await grok.functions.call('Forge:PredictedByPanel', { col });
   }
 }

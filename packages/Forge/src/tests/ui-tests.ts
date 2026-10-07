@@ -1,16 +1,30 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {awaitCheck, category, delay, expect, expectArray, test} from '@datagrok-libraries/test/src/test';
-import {APP_NAME, MENU_PATH} from '../constants';
+import {after, awaitCheck, before, category, delay, expect, expectArray, test}
+  from '@datagrok-libraries/test/src/test';
+import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
+import {exactMapping} from '../apply/column-matching';
+import {updateModelInfo} from '../catalog/model-edit';
+import {APP_NAME, MENU_PATH, MODEL_TYPE} from '../constants';
+import {EngineRegistry} from '../engines/engine-registry';
 import {forgeDb} from '../generated/db';
+import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
 import {deleteModel, modelsChanged} from '../storage/model-store';
-import {applyModelDialog, modelLabels} from '../ui/apply-model-dialog';
+import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
+import {gridTooltip} from '../ui/data-grid';
+import {editModelDialog} from '../ui/edit-model-dialog';
 import {ForgeApp} from '../ui/forge-app';
+import {CATALOG_ACTIONS, MODEL_ACTIONS} from '../ui/model-actions';
+import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
+import {ForgeModelHandler} from '../ui/model-handler';
+import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {saveModelDialog} from '../ui/save-model-dialog';
+import {tagsOfInput} from '../ui/tags-input';
 import {TrainView} from '../ui/train-view';
-import {columnsOf, expectReleased, framesSharing, MEASUREMENTS, openIris, saveIrisModel, saveTestModel, valuesOf,
-  XGBOOST_FIELDS} from './test-data';
+import {columnsOf, expectReleased, framesSharing, insertModelRow, MEASUREMENTS, openIris, savedFixture, saveIrisModel,
+  saveTestModel, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -52,14 +66,22 @@ function expectOptionsInRow(input: DG.InputBase): void {
     true, `Option positions ${options.map((o) => o.offsetTop).join(', ')}`);
 }
 
+/** Reads [read] every 100 ms until [done] holds of what it read or WAIT_MS pass; the last reading. */
+async function readUntil<T>(read: () => Promise<T> | T, done: (value: T) => boolean): Promise<T> {
+  let value = await read();
+  for (let i = 0; i < WAIT_MS / 100 && !done(value); i++) {
+    await delay(100);
+    value = await read();
+  }
+  return value;
+}
+
 /** Waits until [dialog] is closed, [table] has the Species prediction and the application of [modelId] is recorded. */
 async function expectApplied(dialog: DG.Dialog, table: DG.DataFrame, modelId: string): Promise<void> {
-  const applications = () => forgeDb.applications.query().where('model_id', '=', modelId).count();
   await awaitCheck(() => !dialog.root.isConnected, 'The dialog stays open', WAIT_MS);
   await awaitCheck(() => table.col('Species (predicted)') !== null, 'No prediction column', WAIT_MS);
-  for (let i = 0; i < 50 && await applications() === 0; i++)
-    await delay(100);
-  expect(await applications(), 1);
+  expect(await readUntil(() => forgeDb.applications.query().where('model_id', '=', modelId).count(),
+    (count) => count > 0), 1);
 }
 
 /** The texts of the options of the choice input captioned [caption] in [dialog], in list order. */
@@ -69,6 +91,50 @@ const optionsOf = (dialog: DG.Dialog, caption: string) =>
 const pressEnter = (dialog: DG.Dialog, caption: string) => dialog.input(caption).input.dispatchEvent(
   new KeyboardEvent('keydown', {key: 'Enter', keyCode: 13, bubbles: true}));
 
+/** The platform grid inside [root] whose table has the column [column]. */
+function gridWith(root: HTMLElement, column: string): DG.Grid {
+  for (const element of Array.from(root.querySelectorAll('.d4-grid'))) {
+    const grid: unknown = DG.toJs(DG.Widget.find(element));
+    if (grid instanceof DG.Grid && grid.dataFrame.col(column) !== null)
+      return grid;
+  }
+  throw new Error(`No grid with the column ${column}`);
+}
+
+function headerTooltip(grid: DG.Grid, column: string): string {
+  const gridColumn = grid.columns.byName(column);
+  if (gridColumn === null)
+    throw new Error(`No grid column ${column}`);
+  return gridTooltip(grid, DG.GridCell.createColHeader(gridColumn));
+}
+
+/** Checks that the attached [grid] shows its header and all its rows without scrolling; returns what was measured. */
+function expectRowsFit(name: string, grid: DG.Grid): string {
+  const needed = grid.colHeaderHeight + grid.dataFrame.rowCount * grid.props.rowHeight;
+  const scroll = grid.vertScroll.root;
+  const measured = `${name}: ${grid.root.clientHeight}px for ${needed}px (header ${grid.colHeaderHeight}px, ` +
+    `${grid.dataFrame.rowCount} rows of ${grid.props.rowHeight}px; scroll bar ` +
+    `${scroll.offsetWidth}x${scroll.offsetHeight} ${getComputedStyle(scroll).visibility})`;
+  expect(grid.root.clientHeight >= needed, true, measured);
+  return measured;
+}
+
+/** The browser autofill setting of the Tags text box inside [root]. */
+const tagsAutofill = (root: Element) =>
+  root.querySelector('input.d4-tags-selector-input')?.getAttribute('autocomplete') ?? null;
+
+/** The ids of the models the context panel compares, sorted and joined; '' when it shows no comparison. */
+function comparedIds(): string {
+  const shown: unknown = grok.shell.o;
+  return shown instanceof ModelComparison ? shown.rows.map((r) => r.id).sort().join() : '';
+}
+
+/** Whether the context panel shows the model [modelId]. */
+function shows(modelId: string): boolean {
+  const shown: unknown = grok.shell.o;
+  return shown instanceof DG.DomainRow && shown.id === modelId;
+}
+
 category('UI', () => {
   test('Forge app opens', async () => {
     const view = await ForgeApp.create();
@@ -76,27 +142,39 @@ category('UI', () => {
     expect(isDisabled(view.deleteIcon), true, 'Delete is enabled without a current row');
     expect(isDisabled(view.applyIcon), true, 'Apply is enabled without a current row');
     grok.shell.addView(view);
+    let measured = '';
     try {
       expect(view.name, APP_NAME);
       const text = view.root.textContent ?? '';
-      for (const caption of ['Methods', 'Method type', 'XGBoost', 'Models'])
+      for (const caption of ['Methods', 'Models'])
         expect(text.includes(caption), true, `${caption} is missing`);
+      const methods = view.methodsGrid;
+      expectArray(methods.dataFrame.columns.names(), ['Method', 'Package', 'Method type', 'Roles', 'Hyperparameters']);
+      expect(methods.dataFrame.rowCount, EngineRegistry.discover().length);
+      const xgboost = methods.dataFrame.getCol('Method').toList().indexOf('XGBoost');
+      expect(xgboost >= 0 && methods.props.allowEdit === false, true, 'XGBoost is not listed, or Methods is editable');
+      expect(headerTooltip(methods, 'Roles'), 'What the method can do.');
+      expect(gridTooltip(methods, methods.cell('Method type', xgboost)), 'A package function.');
+      const roles = gridTooltip(methods, methods.cell('Roles', xgboost));
+      expect(roles.includes('train: Trains a model'), true, `The Roles tooltip: ${roles}`);
+      measured = expectRowsFit('Methods', methods);
       expect(view.root.contains(view.deleteIcon), true, 'The delete icon is missing');
       expect(view.root.contains(view.applyIcon), true, 'The apply icon is missing');
-      const grid = view.root.querySelector('.d4-grid');
       const header = view.root.querySelector('.forge-pane-header');
+      const grid = header?.parentElement?.querySelector('.d4-grid');
       if (!(grid instanceof HTMLElement) || !(header instanceof HTMLElement))
         throw new Error('No catalog grid or header');
       await awaitCheck(() => Math.abs(grid.getBoundingClientRect().width - header.getBoundingClientRect().width) < 1,
         'The catalog grid does not take the width of its pane', WAIT_MS);
       expect(view.models.col('id') !== null, true, 'The catalog has no id column');
       const captions = {name: 'Name', engine_name: 'Method', task: 'Task', target_name: 'Target',
-        storage_mode: 'Data storage', row_count: 'Training rows', created_on: 'Created'};
+        storage_mode: 'Data storage', row_count: 'Training rows', tags: 'Tags', created_on: 'Created'};
       for (const [column, caption] of Object.entries(captions))
         expect(view.models.col(column)?.meta.friendlyName, caption, column);
     } finally {
       view.close();
     }
+    return measured;
   });
 
   test('the catalog refreshes itself and the delete icon follows the current row', async () => {
@@ -163,6 +241,7 @@ category('UI', () => {
     const runs = () => forgeDb.trainingRuns.query().where('dataset_name', '=', iris.name);
     const models = () => forgeDb.models.query().where('dataset_name', '=', iris.name);
     const view = await openTrainView(iris);
+    let measured = '';
     try {
       const training = view.train();
       expect(isDisabled(view.trainButton), true, 'Train is enabled while training');
@@ -173,18 +252,24 @@ category('UI', () => {
       expect(isDisabled(view.saveButton), false, 'Save stays disabled after training');
       expect(view.lastTraining !== undefined, true, 'No training result');
       const text = view.root.textContent ?? '';
+      const results = gridWith(view.root, 'Metric');
+      const metrics = results.dataFrame.getCol('Metric').toList();
       for (const caption of ['Accuracy', 'F1'])
-        expect(text.includes(caption), true, `${caption} is missing`);
-      expect(text.includes('Sensitivity'), false, 'Sensitivity on three classes');
+        expect(metrics.includes(caption), true, `${caption} is missing: ${metrics}`);
+      expect(metrics.includes('Sensitivity'), false, 'Sensitivity on three classes');
+      expect(text.includes('Seed: '), true, 'No seed line');
       expect(text.includes('Save...'), false, 'Save... is still in Results');
+      measured = expectRowsFit('Results', results);
 
       const name = `forge-test-model-${Date.now()}`;
-      await Promise.all([view.saveModelAs(name, ''), view.saveModelAs(`${name}-again`, '')]);
+      await Promise.all([view.saveModelAs({name, description: '', tags: ['x', ' y ', 'x']}),
+        view.saveModelAs({name: `${name}-again`, description: '', tags: []})]);
       expect(isDisabled(view.saveButton), true, 'Save stays enabled after saving');
-      await view.saveModelAs(`${name}-later`, '');
+      await view.saveModelAs({name: `${name}-later`, description: '', tags: []});
       const saved = await models();
       expect(saved.length, 1, 'The same training was saved more than once');
       expect(saved[0].name, name);
+      expect(saved[0].tags, 'x, y');
       expect((await runs())[0].model_id, saved[0].id);
     } finally {
       for (const model of await models())
@@ -193,6 +278,7 @@ category('UI', () => {
         await forgeDb.trainingRuns.delete(run.id);
       view.close();
     }
+    return measured;
   }, {timeout: 60000});
 
   test('a failing training records a failed run', async () => {
@@ -342,8 +428,8 @@ category('UI', () => {
       expectOptionsInRow(choice);
       const [, frames] = await framesSharing(iris.columns.toList(), () => view.train());
       expectReleased(frames);
-      expect((view.root.textContent ?? '').includes('Rows: 149 used, 1 skipped (missing values).'), true,
-        'The Results rows line is missing');
+      expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
+        .includes('Rows: 149 used, 1 skipped (missing values)'), true, 'The Results rows item is missing');
       expect((await runs())[0]?.row_count, 149);
 
       const imputeLabel = Array.from(choice.root.querySelectorAll('.ui-radio-button label'))
@@ -633,4 +719,473 @@ category('UI: Apply dialog', () => {
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
+});
+
+let catalogModel: {id: string; iris: DG.DataFrame} | undefined;
+const sharedModel = () => savedFixture(catalogModel);
+
+/** Types [text] into the Tags box inside [root] and presses Enter, as a user adds a tag; waits for the chip. */
+async function typeTag(root: HTMLElement, text: string): Promise<void> {
+  const box = root.querySelector('input.d4-tags-selector-input');
+  if (!(box instanceof HTMLInputElement))
+    throw new Error('No Tags text box');
+  box.value = text;
+  box.dispatchEvent(new Event('input', {bubbles: true}));
+  for (const type of ['keydown', 'keypress', 'keyup'])
+    box.dispatchEvent(new KeyboardEvent(type, {key: 'Enter', keyCode: 13, bubbles: true}));
+  const chips = () => Array.from(root.querySelectorAll('.d4-tags-selector-tags-container > *'), (c) => c.textContent);
+  await awaitCheck(() => chips().includes(text), `No chip '${text}': ${chips()}`, WAIT_MS);
+}
+
+/** Opens the accordion pane [name] and waits until its text has every one of [texts]; fails with the text it has. */
+async function expectPaneText(accordion: DG.Accordion, name: string, texts: string[]): Promise<void> {
+  const pane = accordion.getPane(name);
+  pane.expanded = true;
+  const hasAll = (text: string) => texts.every((t) => text.includes(t));
+  const text = await readUntil(() => pane.root.textContent ?? '', hasAll);
+  expect(hasAll(text), true, `${name}: ${text}`);
+}
+
+category('UI: Catalog', () => {
+  before(async () => {
+    const iris = await openIris();
+    catalogModel = {id: (await saveIrisModel(iris)).id, iris};
+  });
+
+  after(async () => {
+    if (catalogModel !== undefined)
+      await deleteModel(catalogModel.id);
+  });
+
+  test('the autostart registered the model handler', async () => {
+    expect(DG.ObjectHandler.list().some((h) => h.name === 'Forge model handler'), true);
+    const row = ForgeModelHandler.rowOf(await forgeDb.models.get(sharedModel().id));
+    expect(DG.ObjectHandler.forEntity(row)?.name, 'Forge model handler');
+  });
+
+  test('the catalog header has Applicable to and a disabled Compare icon', async () => {
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      const header = view.root.querySelector('.forge-pane-header');
+      expect(header?.contains(view.compareIcon) && header.contains(view.applyIcon), true, 'An icon is not in header');
+      expect(header?.nextElementSibling, view.applicableToInput.root, 'Applicable to is not on the line under Models');
+      const colorOf = (e: Element | null | undefined) => e instanceof Element ? getComputedStyle(e).color : 'none';
+      const grey = ui.div([]);
+      grey.style.color = 'var(--grey-3)';
+      view.root.append(grey);
+      const refresh = Array.from(header?.querySelectorAll('.grok-icon') ?? [])
+        .find((i) => i instanceof HTMLElement && !isDisabled(i));
+      expect(colorOf(refresh), colorOf(view.applicableToInput.root.querySelector('.ui-input-options > i')),
+        'An enabled header icon is not the blue of the input\'s icons');
+      expect(colorOf(view.compareIcon), colorOf(grey), 'A disabled header icon is not the platform\'s grey');
+      grey.remove();
+      expect(view.applicableToInput.inputType, DG.InputType.Table);
+      expect(view.applicableToInput.value, null);
+      expect(isDisabled(view.compareIcon), true, 'Compare is enabled without a selection');
+      expect(view.models.col('tags') !== null && view.models.col('features') !== null, true,
+        view.models.columns.names().join(', '));
+    } finally {
+      view.close();
+    }
+  });
+
+  test('a chosen row is the current object; Compare follows the selection', async () => {
+    const {id} = sharedModel();
+    const otherId = await insertModelRow({name: `forge-test-model-${Date.now()}-compare`});
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      const ids = view.models.getCol('id').toList();
+      view.models.currentRowIdx = ids.indexOf(id);
+      await awaitCheck(() => shows(id),
+        'The chosen model is not the current object', WAIT_MS);
+      const current: unknown = grok.shell.o;
+      expect(current instanceof DG.DomainRow && current.typeName === MODEL_TYPE, true, 'Not a model');
+
+      view.models.selection.set(ids.indexOf(id), true);
+      expect(isDisabled(view.compareIcon), true, 'Compare is enabled with one selected row');
+      view.models.selection.set(ids.indexOf(otherId), true);
+      await awaitCheck(() => !isDisabled(view.compareIcon), 'Compare stays disabled with two selected rows', WAIT_MS);
+      await awaitCheck(() => comparedIds() === [id, otherId].sort().join(),
+        `The context panel does not compare the two models: ${grok.shell.o}`, WAIT_MS);
+      expect(DG.ObjectHandler.forEntity(grok.shell.o)?.name, 'Forge model comparison handler');
+      await view.compareSelected();
+      const compared = grok.shell.tv;
+      try {
+        expect(compared.name, 'Compare models');
+        expect(compared.dataFrame.rowCount, 2);
+        const types = Array.from(compared.viewers, (v) => v.type);
+        // The viewer reports its registered name or its class name, from run to run.
+        expect(types.some((t) => t === 'Forms' || t === 'FormsViewer'), hasFormsViewer(),
+          `The Compare view's viewers: ${types}`);
+      } finally {
+        compared.close();
+      }
+      view.models.selection.set(ids.indexOf(otherId), false);
+      await awaitCheck(() => shows(id),
+        'One selected row does not show its model again', WAIT_MS);
+
+      view.models.currentRowIdx = -1;
+      view.models.selection.set(ids.indexOf(otherId), true);
+      await awaitCheck(() => comparedIds() === [id, otherId].sort().join(), 'No comparison without a current row',
+        WAIT_MS);
+      view.models.selection.set(ids.indexOf(id), false);
+      await awaitCheck(() => shows(otherId),
+        'Without a current row, the one selected row does not show its model', WAIT_MS);
+      view.models.selection.set(ids.indexOf(id), true);
+      await awaitCheck(() => comparedIds() !== '', 'The two are not compared again', WAIT_MS);
+      view.models.selection.setAll(false);
+      await awaitCheck(() => (grok.shell.o ?? null) === null, 'With nothing chosen the panel keeps the comparison',
+        WAIT_MS);
+    } finally {
+      view.close();
+      await forgeDb.models.delete(otherId);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a refresh keeps the current row and the selection', async () => {
+    const {id} = sharedModel();
+    const otherId = await insertModelRow({name: `forge-test-model-${Date.now()}-refresh`});
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      const indexOf = (modelId: string) => view.models.getCol('id').toList().indexOf(modelId);
+      const selectedIds = () => Array.from(view.models.selection.getSelectedIndexes(),
+        (i) => view.models.get('id', i)).sort();
+      const reload = async (description: string) => {
+        const frame = view.models.dart;
+        await updateModelInfo(otherId, undefined, {description});
+        await awaitCheck(() => view.models.dart !== frame, 'The catalog does not reload', WAIT_MS);
+        await awaitCheck(() => view.models.currentRowIdx === indexOf(id), 'The current row is lost', WAIT_MS);
+      };
+      view.models.currentRowIdx = indexOf(id);
+      await awaitCheck(() => shows(id),
+        'The chosen model is not the current object', WAIT_MS);
+      const shown: unknown = grok.shell.o;
+      const shownDart: unknown = shown instanceof DG.DomainRow ? shown.dart : null;
+      await reload('refreshed');
+      const now: unknown = grok.shell.o;
+      expect(now instanceof DG.DomainRow && now.dart === shownDart, true,
+        'The context panel got a new object for the same model');
+
+      view.models.selection.set(indexOf(id), true);
+      view.models.selection.set(indexOf(otherId), true);
+      await awaitCheck(() => comparedIds() !== '', 'Two selected rows are not compared', WAIT_MS);
+      await reload('refreshed again');
+      expectArray(selectedIds(), [id, otherId].sort());
+      expect(isDisabled(view.applyIcon) || isDisabled(view.compareIcon), false, 'An icon greyed out');
+      await awaitCheck(() => comparedIds() === [id, otherId].sort().join(), 'The comparison is lost', WAIT_MS);
+    } finally {
+      view.close();
+      await forgeDb.models.delete(otherId);
+    }
+  });
+
+  test('a deleted model leaves the context panel', async () => {
+    const {id} = sharedModel();
+    const stamp = Date.now();
+    const shownId = await insertModelRow({name: `forge-test-model-${stamp}-deleted`});
+    const comparedId = await insertModelRow({name: `forge-test-model-${stamp}-compared`});
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    const indexOf = (modelId: string) => view.models.getCol('id').toList().indexOf(modelId);
+    try {
+      view.models.currentRowIdx = indexOf(shownId);
+      await awaitCheck(() => shows(shownId), 'The model is not the current object', WAIT_MS);
+      view.deleteIcon.click();
+      const confirm = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Delete model');
+      if (confirm === undefined)
+        throw new Error('No Delete model dialog');
+      confirm.getButton('OK').click();
+      await awaitCheck(() => indexOf(shownId) < 0, 'The deleted model stays in the catalog', WAIT_MS);
+      await awaitCheck(() => !shows(shownId), 'The context panel keeps the deleted model', WAIT_MS);
+
+      view.models.selection.set(indexOf(id), true);
+      view.models.selection.set(indexOf(comparedId), true);
+      await awaitCheck(() => comparedIds() === [id, comparedId].sort().join(), 'The two are not compared', WAIT_MS);
+      const menuDelete = CATALOG_ACTIONS.find((a) => a.name === 'Delete model');
+      await menuDelete?.run(ForgeModelHandler.rowOf(await forgeDb.models.get(comparedId)), null);
+      DG.Dialog.getOpenDialogs().find((d) => d.title === 'Delete model')?.getButton('OK').click();
+      await awaitCheck(() => shows(id), 'A comparison that lost a model does not show the model left', WAIT_MS);
+    } finally {
+      view.close();
+      const left: {id: string}[] = await forgeDb.models.query().where('id', '=', [shownId, comparedId]).select('name')
+        .top(2);
+      for (const row of left)
+        await forgeDb.models.delete(row.id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Applicable to keeps only the models a chosen table fits', async () => {
+    const {id} = sharedModel();
+    const tables = [grok.shell.addTable(await openIris()),
+      grok.shell.addTable(await grok.data.files.openTable('System:DemoFiles/cars.csv'))];
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    const isShown = () => view.models.filter.get(view.models.getCol('id').toList().indexOf(id));
+    try {
+      view.applicableToInput.value = tables[1];
+      await awaitCheck(() => !isShown(), 'The iris model stays with cars', WAIT_MS);
+      view.applicableToInput.value = tables[0];
+      await awaitCheck(() => isShown(), 'The iris model is hidden with iris', WAIT_MS);
+      view.applicableToInput.value = null;
+      await awaitCheck(() => isShown() && view.models.filter.trueCount === view.models.rowCount,
+        'An empty Applicable to does not show every model', WAIT_MS);
+      view.applicableToInput.value = tables[1];
+      await awaitCheck(() => !isShown(), 'The iris model stays with cars', WAIT_MS);
+      grok.shell.closeTable(tables[1]);
+      await awaitCheck(() => view.applicableToInput.value === null && isShown(), 'A closed table stays chosen',
+        WAIT_MS);
+    } finally {
+      view.close();
+      for (const table of tables.filter(isOpen))
+        grok.shell.closeTable(table);
+    }
+  });
+
+  test('Apply... opens on the preferred, the current or the first table the model fits', async () => {
+    const {id} = sharedModel();
+    const iris = await openIris();
+    const cars = await grok.data.files.openTable('System:DemoFiles/cars.csv');
+    const noFeatures = await insertModelRow({name: `forge-test-model-${Date.now()}-preset`});
+    const tableOf = async (options: ApplyDialogOptions): Promise<DG.DataFrame> => {
+      const dialog = (await applyModelDialog(options)).show();
+      const table: DG.DataFrame | null = dialog.input('Table').value;
+      dialog.close();
+      if (table === null)
+        throw new Error('No table');
+      return table;
+    };
+    const views = [grok.shell.addTableView(iris), grok.shell.addTableView(cars)];
+    try {
+      expect((await tableOf({table: cars, modelId: id, preferredTable: iris})).name, iris.name);
+      const fitting = await tableOf({table: cars, modelId: id, preferredTable: null});
+      expect(fitting.name !== cars.name && MEASUREMENTS.every((m) => fitting.col(m) !== null), true,
+        `With cars current the dialog opens on ${fitting.name}`);
+      expect((await tableOf({table: cars, modelId: noFeatures})).name, cars.name);
+      grok.shell.v = views[0];
+      expect((await tableOf({table: cars, modelId: id, preferredTable: null})).name, iris.name);
+      expect((await tableOf({table: cars})).name, cars.name);
+    } finally {
+      for (const view of views)
+        view.close();
+      await forgeDb.models.delete(noFeatures);
+    }
+  });
+
+  test('the model accordion has the five panes and reads the model', async () => {
+    const {id, iris} = sharedModel();
+    const model = await forgeDb.models.get(id);
+    const row = ForgeModelHandler.rowOf(model);
+    const properties = new ForgeModelHandler().renderProperties(row);
+    await awaitCheck(() => [model.name, 'Details', 'Performance', 'Activity', 'Sharing', 'History']
+      .every((name) => (properties.textContent ?? '').includes(name)), 'The context panel lacks its title or a pane',
+    WAIT_MS);
+    expect(properties.querySelector('.svg-model') !== null, true, 'The title has no model icon');
+
+    // Attached at the context panel's width, so the grids are measured as shown.
+    const host = ui.div([]);
+    host.style.width = '320px';
+    document.body.append(host);
+    const measured: string[] = [];
+    try {
+      let accordion = modelAccordion(row, model);
+      host.append(accordion.root);
+      const title = accordion.root.firstElementChild;
+      expect(title?.classList.contains('d4-accordion-title'), true, `The first element is ${title?.className}`);
+      expect(title?.querySelector('.d4-star') !== null && title?.textContent?.includes(model.name), true,
+        'The title has no star or no name');
+      expectArray(accordion.panes.map((p) => p.name), ['Details', 'Performance', 'Activity', 'Sharing', 'History']);
+      await expectPaneText(accordion, 'Details', ['Author', 'Created', 'Updated', 'Table', `${iris.name} (150 rows)`,
+        'Last run', 'Never', 'Applications', 'Features', 'Sepal.Length', 'Target', 'Species', 'Method', 'XGBoost',
+        'Task', 'Tags']);
+      expect(tagsAutofill(accordion.getPane('Details').root), 'off');
+      await expectPaneText(accordion, 'Performance', [`Seed: ${model.seed}`]);
+      const performance = accordion.getPane('Performance').root;
+      const metrics = gridWith(performance, 'Metric');
+      expectArray(metrics.dataFrame.columns.names(), ['Metric', 'Train', 'Validation']);
+      expect(metrics.dataFrame.getCol('Metric').toList().includes('Accuracy') && !metrics.props.allowEdit, true,
+        'No Accuracy, or the metrics are editable');
+      expect(headerTooltip(metrics, 'Validation').startsWith('Value on rows the model did not see'), true,
+        'No Validation header tooltip');
+      expect(gridTooltip(metrics, metrics.cell('Metric', 0)), METRIC_DESCRIPTIONS.accuracy);
+      expectArray(Array.from(performance.querySelectorAll('ul > li'), (li) => li.textContent?.trim()),
+        ['Validation: 5-fold cross-validation on 150 rows', `Seed: ${model.seed}`]);
+      expect(performance.querySelector('.forge-seed')?.nextElementSibling?.classList.contains('fa-copy'), true,
+        'The copy icon is not right after the seed');
+      measured.push(expectRowsFit('Performance', metrics));
+      await expectPaneText(accordion, 'Activity', ['Not applied yet.']);
+      await expectPaneText(accordion, 'Sharing', ['Not shared yet.', 'Share...']);
+      expect(accordion.getPane('Sharing').root.textContent?.includes('ask an administrator'), false,
+        'The author is told to ask for the Share permission');
+      await expectPaneText(accordion, 'History', ['insert', 'promote']);
+
+      const loaded = await loadModel(id);
+      await applyAndRecord({model: loaded, table: iris, mapping: exactMapping(loaded.features, iris),
+        batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}}, 'ui');
+      accordion.root.remove();
+      accordion = modelAccordion(row, model);
+      host.append(accordion.root);
+      await expectPaneText(accordion, 'Activity', ['1 application']);
+      const activity = gridWith(accordion.getPane('Activity').root, 'Status');
+      expectArray(activity.dataFrame.columns.names(), ['When', 'Who', 'Table', 'Rows', 'Prediction column', 'Status',
+        'Source', 'Duration (ms)']);
+      const first = (column: string) => activity.dataFrame.get(column, 0);
+      expectArray([activity.dataFrame.rowCount, first('Who'), first('Status'), first('Prediction column')],
+        [1, DG.User.current().login, 'completed', 'Species (predicted)']);
+      expect(headerTooltip(activity, 'Status'), 'Outcome of the application.');
+      expect(gridTooltip(activity, activity.cell('Status', 0)), 'Completed: the column was added.');
+      expect(gridTooltip(activity, activity.cell('Source', 0)), 'The Apply dialog or the catalog.');
+      measured.push(expectRowsFit('Activity', activity));
+      await expectPaneText(accordion, 'Details', ['Last run', dayjs().format('YYYY-MM-DD')]);
+      expect((accordion.getPane('Details').root.textContent ?? '').includes('Never'), false, 'Last run is Never');
+    } finally {
+      host.remove();
+    }
+    return measured.join('; ');
+  }, {timeout: TIMEOUT});
+
+  test('the Sharing pane is read again in place', async () => {
+    const row = ForgeModelHandler.rowOf(await forgeDb.models.get(sharedModel().id));
+    const host = ui.div([ui.loader()]);
+    const entity = grok.dapi.getEntities([row.id]).then((found) => found[0] ?? null);
+    await refreshSharing(host, row, entity);
+    await refreshSharing(host, row, entity);
+    expect(host.children.length, 1, 'The pane keeps an old reading');
+    expect(host.textContent?.includes('Not shared yet.') && host.textContent.includes('Share...'), true,
+      host.textContent ?? '');
+  });
+
+  test('Edit model is prefilled and OK writes the name, description and tags', async () => {
+    const name = `forge-test-model-${Date.now()}`;
+    const id = await insertModelRow({name, description: 'd', tags: 'a'});
+    let opened: DG.Dialog | undefined;
+    try {
+      const model = await forgeDb.models.get(id);
+      grok.shell.o = ForgeModelHandler.rowOf(model);
+      const dialog = editModelDialog(model).show();
+      opened = dialog;
+      expect(dialog.input('Name').value, name);
+      expect(dialog.input('Description').value, 'd');
+      expectArray(tagsOfInput(dialog.input('Tags')), ['a']);
+      expect(tagsAutofill(dialog.root), 'off');
+      const ok = dialog.getButton('OK');
+      dialog.input('Name').value = ' ';
+      await awaitCheck(() => isDisabled(ok), 'OK is enabled without a name', WAIT_MS);
+      dialog.input('Name').value = `${name}-edited`;
+      dialog.input('Description').value = 'edited';
+      dialog.input('Tags').value = ['a', 'b'];
+      await awaitCheck(() => !isDisabled(ok), 'OK stays disabled with a name', WAIT_MS);
+      ok.click();
+      await awaitCheck(() => !dialog.root.isConnected, 'The dialog stays open', WAIT_MS);
+      const row = await readUntil(() => forgeDb.models.get(id), (r) => r.name === `${name}-edited`);
+      expect(row.name, `${name}-edited`);
+      expect(row.description, 'edited');
+      expect(row.tags, 'a, b');
+      const shownName = () => {
+        const shown: unknown = grok.shell.o;
+        return shown instanceof DG.DomainRow ? `${shown.id === id} ${shown.displayName}` : `${shown}`;
+      };
+      expect(await readUntil(shownName, (shown) => shown === `true ${name}-edited`), `true ${name}-edited`,
+        'The context panel does not show the edited model');
+    } finally {
+      opened?.close();
+      await forgeDb.models.delete(id);
+    }
+  });
+
+  test('a typed tag is saved', async () => {
+    let savedTags: string[] | undefined;
+    const save = saveModelDialog('forge-test-typed', async ({tags}) => {
+      savedTags = tags;
+    }).show();
+    try {
+      await typeTag(save.input('Tags').root, 'demo');
+      expect(save.root.isConnected, true, `Enter in the Tags box submitted Save model with tags ${savedTags}`);
+      const value: unknown = save.input('Tags').value;
+      expectArray(tagsOfInput(save.input('Tags')), ['demo']);
+      expect(Array.isArray(value), true, `The Tags value is ${typeof value}: ${value}`);
+      save.getButton('OK').click();
+      await awaitCheck(() => savedTags !== undefined, 'OK did not save', WAIT_MS);
+      expectArray(savedTags ?? [], ['demo']);
+    } finally {
+      save.close();
+    }
+
+    const id = await insertModelRow({name: `forge-test-model-${Date.now()}-typed`});
+    let opened: DG.Dialog | undefined;
+    try {
+      const edit = editModelDialog(await forgeDb.models.get(id)).show();
+      opened = edit;
+      await typeTag(edit.input('Tags').root, 'demo');
+      expect(edit.root.isConnected, true, 'Enter in the Tags box submitted Edit model');
+      expectArray(tagsOfInput(edit.input('Tags')), ['demo']);
+      edit.getButton('OK').click();
+      const storedTags = (tags: string) => readUntil(() => forgeDb.models.get(id), (row) => row.tags === tags);
+      const edited = await storedTags('demo');
+      expect(edited.tags, 'demo');
+
+      // Two chips in a row in Details: the second change comes while the first one is being written.
+      const accordion = modelAccordion(ForgeModelHandler.rowOf(edited), edited);
+      document.body.append(accordion.root);
+      const dialogs = new Set(DG.Dialog.getOpenDialogs().map((d) => d.root));
+      const newDialogs = () => DG.Dialog.getOpenDialogs().filter((d) => !dialogs.has(d.root));
+      try {
+        await expectPaneText(accordion, 'Details', ['Tags']);
+        const details = accordion.getPane('Details').root;
+        await typeTag(details, 'x');
+        await typeTag(details, 'y');
+        const written = await storedTags('demo, x, y');
+        expectArray([written.tags, written.version, newDialogs().length], ['demo, x, y', edited.version + 2, 0]);
+      } finally {
+        for (const dialog of newDialogs())
+          dialog.close();
+        accordion.root.remove();
+      }
+    } finally {
+      opened?.close();
+      await forgeDb.models.delete(id);
+    }
+  });
+
+  test('Save model has Name, Description and Tags', async () => {
+    const dialog = saveModelDialog('Iris model', async () => {}).show();
+    try {
+      for (const caption of ['Name', 'Description', 'Tags'])
+        expect(dialog.input(caption).caption, caption);
+      expectArray(tagsOfInput(dialog.input('Tags')), []);
+      const box = dialog.input('Tags').root.querySelector('input.d4-tags-selector-input');
+      expect(box instanceof HTMLInputElement && box.placeholder, 'Type a tag and press Enter');
+      expect(tagsAutofill(dialog.root), 'off');
+    } finally {
+      dialog.close();
+    }
+  });
+
+  test('the model commands', async () => {
+    expectArray(MODEL_ACTIONS.map((a) => a.name), ['Apply...', 'Download']);
+    expectArray(CATALOG_ACTIONS.map((a) => a.name), ['Apply...', 'Edit model...', 'Download', 'Delete model']);
+    const download = MODEL_ACTIONS[1];
+    const saved = ForgeModelHandler.rowOf(await forgeDb.models.get(sharedModel().id));
+    expect(download.isApplicable?.(saved), true);
+    const manual = ForgeModelHandler.rowOf({id: DG.Utils.uuid4(), name: 'forge-test-manual'});
+    expect(download.isApplicable?.(manual), false);
+
+    await grok.functions.call('Forge:_initForge');
+    const actions = ui.contextActions(saved);
+    document.body.append(actions);
+    const labels = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'),
+      (label) => label.textContent?.trim() ?? '');
+    const count = (name: string) => labels().filter((label) => label === name).length;
+    try {
+      actions.click();
+      await awaitCheck(() => labels().includes('Apply...'), `The row's menu has no Apply...: ${labels()}`, WAIT_MS);
+      expectArray(['Apply...', 'Download', 'Edit model...', 'Delete model'].map(count), [1, 1, 0, 0]);
+    } finally {
+      for (const popup of Array.from(document.querySelectorAll('.d4-menu-popup')))
+        popup.remove();
+      actions.remove();
+    }
+  });
 });

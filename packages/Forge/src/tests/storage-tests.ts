@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectFloat, test} from '@datagrok-libraries/test/src/test';
 import {forgeDb} from '../generated/db';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
-import {modelFieldsOf, trainingRunOf} from '../storage/model-fields';
+import {modelFieldsOf, normalizedTags, tagsOf, tagsText, trainingRunOf} from '../storage/model-fields';
 import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
 import {trainModel} from '../training/train-model';
@@ -61,6 +61,18 @@ category('Storage', () => {
     expect(await applicationCount(), 0);
   });
 
+  test('tags are stored as one comma-separated text and read back as a list', async () => {
+    expectArray(normalizedTags([' b ', 'a', '', 'b', '  ', 'c']), ['b', 'a', 'c']);
+    expect(tagsText([' a ', 'b', '', 'a']), 'a, b');
+    expect(tagsText(['', ' ']), '');
+    expectArray(tagsOf('a, b'), ['a', 'b']);
+    expectArray(tagsOf(' a ,b,, a , '), ['a', 'b']);
+    expectArray(tagsOf(''), []);
+    expectArray(tagsOf(null), []);
+    expectArray(tagsOf(undefined), []);
+    expectArray(tagsOf(tagsText(['x, y', 'z'])), ['x', 'y', 'z']);
+  });
+
   test('datasetFingerprint of iris', async () => {
     const iris = await grok.data.files.openTable(IRIS);
     const species = iris.getCol('Species');
@@ -83,13 +95,16 @@ category('Storage', () => {
     const request = await requestOf(iris.clone(null, MEASUREMENTS), iris.getCol('Species'));
     const result = await trainModel(request);
     const id = await saveModel(modelFieldsOf({name: `forge-test-model-${stamp}`, description: '',
-      engine: request.engine, datasetName: iris.name, result,
+      tags: [], engine: request.engine, datasetName: iris.name, result,
       fingerprint: datasetFingerprint(request.features, request.target)}), result.blob);
     let path = '';
     let folder = '';
     try {
       const model = await forgeDb.models.get(id);
       expect(model.storage_mode, 'none');
+      expect(model.tags == null, true, `Tags of a model without tags: '${model.tags}'`);
+      expect((await grok.dapi.getEntities([id])).length, 1, 'The saved model is not a platform entity');
+      expect((await forgeDb.models.get(id, {withAccess: true}))['~can_share'], true, 'Its author cannot share it');
       expect(model.blob?.startsWith(`file://${BLOB_ROOT}/`), true, `Blob ${model.blob}`);
       expect(model.has_training_rows, false);
       expect(typeof model.metrics?.validation?.accuracy, 'number');

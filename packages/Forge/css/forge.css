@@ -3,8 +3,17 @@
   gap: 8px;
 }
 
+/* The blue of an input's own icons (ui.css); a disabled icon keeps the platform's d4-disabled grey. */
+.forge-pane-header > .grok-icon {
+  color: var(--blue-1);
+}
+
 .forge-apply-rows {
   overflow-y: auto;
+}
+
+.forge-seed {
+  user-select: text;
 }
 
 .forge-group-header {

@@ -3,11 +3,11 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {randomInt} from '@datagrok-libraries/utils/src/random';
+import {ModelInfo} from '../catalog/model-edit';
 import {defaultHyperparameters, Engine, Hyperparameters, hyperparametersOf, isComplete} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {TrainingRunStatus} from '../generated/db';
-import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId} from '../metrics/metrics';
 import {DatasetFingerprint, datasetFingerprint} from '../storage/dataset-fingerprint';
 import {modelFieldsOf, trainingRunOf} from '../storage/model-fields';
 import {saveModel} from '../storage/model-store';
@@ -20,6 +20,7 @@ import {checkTrainable, MetricsRecord, prepareTraining, TrainingProblems, traini
 import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
+import {metricsTable} from './model-panes';
 import {reportError} from './report-error';
 import {saveModelDialog} from './save-model-dialog';
 
@@ -170,11 +171,10 @@ export class TrainView extends DG.ViewBase {
     const training = this.lastTraining;
     if (training === undefined || training.isSaved)
       return;
-    saveModelDialog(TrainView.defaultModelName(training.result),
-      (name, description) => this.saveModelAs(name, description)).show();
+    saveModelDialog(TrainView.defaultModelName(training.result), (info) => this.saveModelAs(info)).show();
   }
 
-  async saveModelAs(name: string, description: string): Promise<void> {
+  async saveModelAs({name, description, tags}: ModelInfo): Promise<void> {
     const training = this.lastTraining;
     if (training === undefined || training.isSaved)
       return;
@@ -183,8 +183,8 @@ export class TrainView extends DG.ViewBase {
     const {result, runId, datasetName, fingerprint} = training;
     let id: string;
     try {
-      id = await saveModel(modelFieldsOf({name, description, engine: this.engine, datasetName, result, fingerprint}),
-        result.blob);
+      id = await saveModel(modelFieldsOf({name, description, tags, engine: this.engine, datasetName, result,
+        fingerprint}), result.blob);
     } catch (e) {
       training.isSaved = false;
       this.updateButtons();
@@ -337,20 +337,9 @@ export class TrainView extends DG.ViewBase {
   }
 
   private showResults({result}: Training): void {
-    const {train, validation, positiveClass} = result.metrics;
-    const ids = METRIC_IDS.filter((id) => validation[id] !== undefined);
-    const label = (id: MetricId) => ui.tooltip.bind(ui.label(METRIC_LABELS[id]), METRIC_DESCRIPTIONS[id]);
-    const format = (value: number | undefined) => value === undefined ? '' : value.toFixed(3);
-    const skippedRows = result.options.missingValues?.skippedRows ?? 0;
-    const rows = skippedRows === 0 ? [] :
-      [ui.divText(`Rows: ${result.rowCount} used, ${skippedRows} skipped (missing values).`)];
     ui.empty(this.resultsHost);
-    this.resultsHost.append(
-      ui.table(ids, (id) => [label(id), format(train[id]), format(validation[id])], ['Metric', 'Train', 'Validation']),
-      ...rows,
-      ui.divText(`Validation: ${FOLDS}-fold cross-validation on ${result.rowCount} rows, seed ${result.seed}.`),
-      ...(positiveClass === undefined ? [] : [ui.divText(`Positive class: ${positiveClass}.`)]),
-    );
+    this.resultsHost.append(metricsTable({metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS,
+      seed: result.seed, skippedRows: result.options.missingValues?.skippedRows ?? 0}));
   }
 
   private static defaultModelName(result: TrainingResult): string {

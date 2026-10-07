@@ -9,7 +9,7 @@ export const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 const FILE_PREFIX = 'file://';
 const OWN_BLOB = new RegExp(`^${FILE_PREFIX}${BLOB_ROOT}/(${UUID})/([^/]+)$`, 'i');
 
-/** Fires after a model is saved or deleted. */
+/** Fires after a model is saved, edited or deleted. */
 export const modelsChanged = new rxjs.Subject<void>();
 
 /** The model folder and the file path of a blob in Forge's own `<uuid>/` folder layout, or null for any other value. */

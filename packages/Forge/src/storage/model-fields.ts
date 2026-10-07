@@ -24,12 +24,13 @@ export type TrainingRunRecord = Omit<TrainingRunInsert, JsonColumn> & {
   dataset_fingerprint: DatasetFingerprint;
 };
 
-export function modelFieldsOf(input: {name: string; description: string; engine: Engine; datasetName: string;
-  result: TrainingResult; fingerprint: DatasetFingerprint}): ModelFields {
+export function modelFieldsOf(input: {name: string; description: string; tags: string[]; engine: Engine;
+  datasetName: string; result: TrainingResult; fingerprint: DatasetFingerprint}): ModelFields {
   const {engine, result} = input;
   return {
     name: input.name,
     description: input.description,
+    tags: tagsText(input.tags),
     ...engineFieldsOf(engine),
     task: result.task,
     target_name: result.target.name,
@@ -72,6 +73,21 @@ export function trainingRunOf(input: {request: TrainingRequest; datasetName: str
     started_on: input.startedOn,
     duration_ms: input.durationMs,
   };
+}
+
+/** The tags as stored: trimmed, without empty ones and repeats, in the given order. */
+export function normalizedTags(tags: string[]): string[] {
+  return [...new Set(tags.map((t) => t.trim()).filter((t) => t !== ''))];
+}
+
+/** The `tags` column text of [tags]: joined by ", "; empty without tags, which the server stores as null. */
+export function tagsText(tags: string[]): string {
+  return normalizedTags(tags).join(', ');
+}
+
+/** The tags of a `tags` column value; every comma separates two tags. */
+export function tagsOf(text: string | null | undefined): string[] {
+  return normalizedTags((text ?? '').split(','));
 }
 
 function engineFieldsOf(engine: Engine): Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> {

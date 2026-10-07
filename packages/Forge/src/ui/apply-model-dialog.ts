@@ -6,6 +6,8 @@ import {APPLY_COLUMNS, ApplyModelRow, ApplyRequest, applyWithProgress, DEFAULT_B
   LoadedModel, loadedModelOf} from '../apply/apply-model';
 import {ColumnMapping, compatibility, isSuggested, kindText, MappingProblem, mappingProblems, suggestMapping}
   from '../apply/column-matching';
+import {applicableTables} from '../catalog/applicable-tables';
+import {MINUTE_FORMAT, SECOND_FORMAT} from '../constants';
 import {Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
@@ -21,21 +23,39 @@ const MAX_MODELS = 10000;
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;
-const MINUTE = 'YYYY-MM-DD HH:mm';
-const SECOND = 'YYYY-MM-DD HH:mm:ss';
 
 export interface ApplyDialogOptions {
   table: DG.DataFrame;
   modelId?: string;
   /** Show the table's view after applying (the catalog opens the dialog from another view). */
   switchToTable?: boolean;
+  /** With [modelId]: the table to open on while it is open (the catalog's **Applicable to**). */
+  preferredTable?: DG.DataFrame | null;
 }
 
 export async function applyModelDialog(options: ApplyDialogOptions): Promise<DG.Dialog> {
   const rows: ApplyModelRow[] = await forgeDb.models.query().select(...APPLY_COLUMNS).top(MAX_MODELS);
   if (rows.length === 0)
     throw new ForgeError('No Forge models yet. Train and save one with ML | Forge | Train... first.');
-  return new ApplyForm(rows, EngineRegistry.discover(), options).dialog;
+  const preset = rows.find((row) => row.id === options.modelId);
+  const table = preset === undefined ? options.table : presetTable(options, preset);
+  return new ApplyForm(rows, EngineRegistry.discover(), {...options, table}).dialog;
+}
+
+/** The table the dialog opens on for a preset [model]: the preferred table while it is open, else the current table
+ * if the model fits it, else the first open table it fits, else the caller's. */
+function presetTable(options: ApplyDialogOptions, model: ApplyModelRow): DG.DataFrame {
+  const preferred = options.preferredTable;
+  if (preferred && isOpen(preferred))
+    return preferred;
+  const fits = (t: DG.DataFrame | null): t is DG.DataFrame => t !== null && applicableTables(model, [t]).length > 0;
+  const current = grok.shell.currentTable;
+  return fits(current) ? current : grok.shell.tables.find(fits) ?? options.table;
+}
+
+/** Whether [table] is still open: a table input or a caller may hold a closed one. */
+export function isOpen(table: DG.DataFrame): boolean {
+  return grok.shell.tables.some((t) => t.dart === table.dart);
 }
 
 /** Unique list labels of [rows]: the name; with the creation time when names repeat, to the minute, or to the second
@@ -50,12 +70,12 @@ export function modelLabels<T extends Pick<ModelRow, 'id' | 'name' | 'created_on
   const timed = (row: T, format: string) => `${row.name} (${row.created_on.format(format)})`;
   const names = countsOf(rows.map((row) => row.name));
   const isNameRepeated = (row: T) => (names.get(row.name) ?? 0) > 1;
-  const entries = rows.map((row) => ({row, byMinute: isNameRepeated(row) ? timed(row, MINUTE) : row.name}));
+  const entries = rows.map((row) => ({row, byMinute: isNameRepeated(row) ? timed(row, MINUTE_FORMAT) : row.name}));
   const minutes = countsOf(entries.map((e) => e.byMinute));
   entries.sort((a, b) => a.row.created_on.valueOf() - b.row.created_on.valueOf() || a.row.id.localeCompare(b.row.id));
   const labels = new Map<string, T>();
   for (const {row, byMinute} of entries) {
-    const base = isNameRepeated(row) && (minutes.get(byMinute) ?? 0) > 1 ? timed(row, SECOND) : byMinute;
+    const base = isNameRepeated(row) && (minutes.get(byMinute) ?? 0) > 1 ? timed(row, SECOND_FORMAT) : byMinute;
     let label = base;
     for (let i = 2; labels.has(label); i++)
       label = `${base} #${i}`;
@@ -72,6 +92,24 @@ export async function openApplyDialog(table: DG.DataFrame | null,
       grok.shell.warning('Open a table first.');
     else
       (await applyModelDialog({...options, table})).show();
+  } catch (e) {
+    reportError(e);
+  }
+}
+
+/** Runs [request] under the task-bar progress, then names the new column in a balloon and, with [switchToTable], shows
+ * the table's view: the Apply dialog's OK. Outside the dialog, so the running application holds the request only, not
+ * a closed dialog's form and models. */
+async function applyAndReport(request: ApplyRequest, switchToTable: boolean): Promise<void> {
+  const table = request.table;
+  try {
+    const {column, skippedRows} = await applyWithProgress(request, 'ui');
+    const skipped = skippedRows === 0 ? '' :
+      `; ${skippedRows} ${skippedRows === 1 ? 'row' : 'rows'} skipped (missing values)`;
+    grok.shell.info(`Added the column "${column.name}" to ${table.name}${skipped}.`);
+    const view = switchToTable ? grok.shell.getTableView(table.name) : null;
+    if (view)
+      grok.shell.v = view;
   } catch (e) {
     reportError(e);
   }
@@ -317,25 +355,9 @@ class ApplyForm {
       grok.shell.warning(this.blocker ?? 'Choose a model.');
       return;
     }
-    void ApplyForm.run({model, table: this.table, mapping: this.mapping(),
+    void applyAndReport({model, table: this.table, mapping: this.mapping(),
       batchSize: this.batchInput.value ?? DEFAULT_BATCH_SIZE, missingValues: this.missingValues.settings()},
     this.switchToTable);
-  }
-
-  /** Static, so the running application holds the request only, not the closed dialog's form and models. */
-  private static async run(request: ApplyRequest, switchToTable: boolean): Promise<void> {
-    const table = request.table;
-    try {
-      const {column, skippedRows} = await applyWithProgress(request, 'ui');
-      const skipped = skippedRows === 0 ? '' :
-        `; ${skippedRows} ${skippedRows === 1 ? 'row' : 'rows'} skipped (missing values)`;
-      grok.shell.info(`Added the column "${column.name}" to ${table.name}${skipped}.`);
-      const view = switchToTable ? grok.shell.getTableView(table.name) : null;
-      if (view)
-        grok.shell.v = view;
-    } catch (e) {
-      reportError(e);
-    }
   }
 
   private subscribeTable(): void {

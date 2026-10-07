@@ -3,10 +3,10 @@ import {Engine, Hyperparameters} from '../engines/engine';
 import {apply, isApplicable, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {MetricValues, metricsOf} from '../metrics/metrics';
+import {METRIC_IDS, MetricValues, metricsOf} from '../metrics/metrics';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, PreparedData, prepareMissingValues}
   from '../preparation/missing-values';
-import {IGNORE_MISSING, IMPUTE_MISSING, MissingValuesRecord, PreparationOptions}
+import {IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
   from '../preparation/preparation-options';
 import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
 import {bigIntProblem} from './default-features';
@@ -203,6 +203,32 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
     metrics.positiveClass = positiveClass;
 
   return {...setup, blob, metrics, seed, hyperparameters: {...hyperparameters}, rowCount};
+}
+
+/** A stored `metrics` value: the known metric ids with numbers; null without a train and a validation object. */
+export function metricsRecordOf(value: unknown): MetricsRecord | null {
+  if (!isRecord(value))
+    return null;
+  const train = metricValuesOf(value.train);
+  const validation = metricValuesOf(value.validation);
+  if (train === null || validation === null)
+    return null;
+  const record: MetricsRecord = {train, validation};
+  if (typeof value.positiveClass === 'string')
+    record.positiveClass = value.positiveClass;
+  return record;
+}
+
+function metricValuesOf(value: unknown): MetricValues | null {
+  if (!isRecord(value))
+    return null;
+  const values: MetricValues = {};
+  for (const id of METRIC_IDS) {
+    const v = value[id];
+    if (typeof v === 'number')
+      values[id] = v;
+  }
+  return values;
 }
 
 /** Gives the event loop a turn first, so a click on the progress's cancel is seen before the next fit. */

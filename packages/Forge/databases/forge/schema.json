@@ -1,11 +1,11 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "tables": {
     "model": {
       "securityMode": "row",
-      "promotion": "lazy",
+      "promotion": "eager",
       "defaultRowVisibility": "none",
       "friendlyName": "Models",
       "description": "A trained predictive model: everything needed to apply it, plus the training summary shown in the catalog",
@@ -13,6 +13,7 @@
       "columns": {
         "name": {"type": "string", "required": true, "isName": true, "searchable": true, "friendlyName": "Name"},
         "description": {"type": "string", "editor": "textarea", "searchable": true, "friendlyName": "Description"},
+        "tags": {"type": "string", "friendlyName": "Tags", "description": "Comma-separated tags, shown in the catalog and the model's Details"},
         "engine_name": {"type": "string", "required": true, "friendlyName": "Method", "description": "Method id: the mlname meta of its functions"},
         "engine_namespace": {"type": "string", "required": true, "friendlyName": "Package", "description": "Package of the method's train function, or the namespace of a script method"},
         "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"], "friendlyName": "Method type"},
@@ -30,7 +31,7 @@
         "dataset_name": {"type": "string", "friendlyName": "Table"},
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
         "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, id?, path?, params?, script?}"},
-        "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the uploaded table; no foreign key, existence is checked on read"},
+        "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the uploaded table; no foreign key; not written yet"},
         "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},
         "blob": {"type": "file", "friendlyName": "Model file", "description": "file://System:DomainFiles/forge/model/<uuid>/model.bin"},
         "has_training_rows": {"type": "bool", "default": false, "friendlyName": "Contains training rows", "description": "The blob embeds training rows (SVM, KNN)"},
@@ -45,7 +46,7 @@
     },
     "training_run": {
       "securityMode": "row",
-      "promotion": "lazy",
+      "promotion": "eager",
       "defaultRowVisibility": "none",
       "friendlyName": "Training runs",
       "description": "One training attempt, saved as a model or not",

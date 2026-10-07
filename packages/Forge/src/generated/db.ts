@@ -32,6 +32,7 @@ export interface ModelRow {
   author_id: string;
   name: string;
   description?: string;
+  tags?: string;
   engine_name: string;
   engine_namespace: string;
   engine_kind: ModelEngineKind;
@@ -60,6 +61,7 @@ export interface ModelRow {
 export interface ModelInsert {
   name: string;
   description?: string;
+  tags?: string;
   engine_name: string;
   engine_namespace: string;
   engine_kind: ModelEngineKind;
@@ -85,7 +87,7 @@ export interface ModelInsert {
 }
 
 export type ModelColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'name' | 'description' |
-  'engine_name' | 'engine_namespace' | 'engine_kind' | 'task' | 'target_name' | 'target' | 'features' |
+  'tags' | 'engine_name' | 'engine_namespace' | 'engine_kind' | 'task' | 'target_name' | 'target' | 'features' |
   'feature_count' | 'options' | 'hyperparameters' | 'metrics' | 'seed' | 'splitting' | 'storage_mode' |
   'dataset_name' | 'row_count' | 'dataset_ref' | 'dataset_table_id' | 'dataset_fingerprint' | 'blob' |
   'has_training_rows' | 'legacy_id';
@@ -154,9 +156,9 @@ export type TrainingRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' |
 
 /** Expand keys of `forge.training_run` → fields each adds to the row (consumed by query()/builder). */
 export type TrainingRunExpand = {
-  'model_id': {'model_id.name'?: string; 'model_id.description'?: string; 'model_id.engine_name'?: string;
-    'model_id.engine_namespace'?: string; 'model_id.engine_kind'?: ModelEngineKind; 'model_id.task'?: ModelTask;
-    'model_id.target_name'?: string; 'model_id.target'?: {[key: string]: any};
+  'model_id': {'model_id.name'?: string; 'model_id.description'?: string; 'model_id.tags'?: string;
+    'model_id.engine_name'?: string; 'model_id.engine_namespace'?: string; 'model_id.engine_kind'?: ModelEngineKind;
+    'model_id.task'?: ModelTask; 'model_id.target_name'?: string; 'model_id.target'?: {[key: string]: any};
     'model_id.features'?: {[key: string]: any}; 'model_id.feature_count'?: number;
     'model_id.options'?: {[key: string]: any}; 'model_id.hyperparameters'?: {[key: string]: any};
     'model_id.metrics'?: {[key: string]: any}; 'model_id.seed'?: number; 'model_id.splitting'?: {[key: string]: any};
@@ -202,9 +204,9 @@ export type ApplicationColumn = 'id' | 'version' | 'created_on' | 'updated_on' |
 
 /** Expand keys of `forge.application` → fields each adds to the row (consumed by query()/builder). */
 export type ApplicationExpand = {
-  'model_id': {'model_id.name'?: string; 'model_id.description'?: string; 'model_id.engine_name'?: string;
-    'model_id.engine_namespace'?: string; 'model_id.engine_kind'?: ModelEngineKind; 'model_id.task'?: ModelTask;
-    'model_id.target_name'?: string; 'model_id.target'?: {[key: string]: any};
+  'model_id': {'model_id.name'?: string; 'model_id.description'?: string; 'model_id.tags'?: string;
+    'model_id.engine_name'?: string; 'model_id.engine_namespace'?: string; 'model_id.engine_kind'?: ModelEngineKind;
+    'model_id.task'?: ModelTask; 'model_id.target_name'?: string; 'model_id.target'?: {[key: string]: any};
     'model_id.features'?: {[key: string]: any}; 'model_id.feature_count'?: number;
     'model_id.options'?: {[key: string]: any}; 'model_id.hyperparameters'?: {[key: string]: any};
     'model_id.metrics'?: {[key: string]: any}; 'model_id.seed'?: number; 'model_id.splitting'?: {[key: string]: any};

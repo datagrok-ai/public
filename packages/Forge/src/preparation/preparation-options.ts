@@ -64,6 +64,7 @@ function isMissingValuesMode(value: unknown): value is MissingValuesMode {
   return MISSING_VALUES_MODES.some((mode) => mode === value);
 }
 
-function stringsOf(value: unknown): string[] {
+/** The strings of [value] when it is an array; otherwise none. */
+export function stringsOf(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
