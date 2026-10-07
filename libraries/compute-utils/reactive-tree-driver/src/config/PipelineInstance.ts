@@ -64,7 +64,7 @@ export type PipelineOutline = PipelineStateRec<StepFunCallStateBase, {}>;
 export type PipelineState = PipelineStateRec<StepFunCallState, PipelineInstanceRuntimeData>;
 export type PipelineSerializedState = PipelineStateRec<StepFunCallSerializedState, {}>;
 
-export function isFuncCallState(state: PipelineState): state is StepFunCallState {
+export function isFuncCallState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is S {
   return state.type === 'funccall';
 }
 
@@ -72,11 +72,11 @@ export function isFuncCallSerializedState(state: PipelineSerializedState): state
   return state.type === 'funccall';
 }
 
-export function isStaticPipelineState(state: PipelineState): state is PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
+export function isStaticPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateStatic<S, T> {
   return state.type === 'static';
 }
 
-export function isDynamicPipelineState(state: PipelineState): state is PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
+export function isDynamicPipelineState<S extends {type: 'funccall'}, T>(state: PipelineStateRec<S, T>): state is PipelineStateDynamic<S, T> {
   return isDynamicType(state.type);
 }
 

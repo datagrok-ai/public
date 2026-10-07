@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Exported the `PipelineState`, `PipelineOutline`, `ValidationItem`, `Advice`, `RestrictionType`, `ConsistencyInfo`, `IRuntimeReturnController`, `ReturnHandler`, `CustomExport` and `ViewersHook` types and the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards, which now also narrow a `PipelineOutline`; removed the internal `isPipelineActionConfig` from the public index
 * RTD: Added `consistencyTolerance` and `consistencyRelTolerance` input annotations that set the tolerance for consistency checks of numbers and dataframe cells (default stays absolute `0.0001`)
 * RTD: Fixed pipeline actions changing read-only workflows (added or replaced steps came out writable); read-only targets are now skipped, and read-only steps no longer run through `runStep` or a run sequence
 * RTD: Added `ExportSummaryItem`, `ExportSummaryRollup` and `StepStatus` export types, `status` in `ExportCbInput`, `getExportSummary` and `reportSummaryExcel` in `ExportUtils`, and the summary as the 4th element of the `reportStateExcel` result
