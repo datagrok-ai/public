@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21129: grok.meta: Fixed propertiesOf/coreLocationOf failing with a cryptic 'includes is not a function' / 'toLowerCase' error when given a non-string type; they now throw a clear argument error
+
 ## 1.10.3 (WIP)
 
 GROK-21035: Added the `Benchmarks: Calculated columns and layouts` category: 7 benchmarks on a synthetic table (50k rows in benchmark mode) with limits set from the 5 s goal for applying a layout with 200 formula columns and one failing formula
