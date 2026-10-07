@@ -140,7 +140,7 @@ export class FuncCallNode implements IStoreProvider {
       this.uuid = state.uuid;
   }
 
-  initState(initialConfig: StepFunCallInitialConfig) {
+  initState(initialConfig: Omit<StepFunCallInitialConfig, 'id'>) {
     const initialRestrictions: Record<string, RestrictionState> = {};
     for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
       const initalVal = (initialConfig.initialValues ?? {})[k];

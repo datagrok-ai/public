@@ -8,6 +8,7 @@
 * RTD: Added `$nonscalar` and `$linked` exclusions to the `inputs()`/`outputs()` io wildcards
 * RTD: Added `params`/`getParam` controller support, and `isClientAtLeast` in utils
 * RTD: Fixed computed annotation defaults (`= 2 + 2`, `= Pkg:f()`) being written as text, which failed step creation for numeric inputs; new steps evaluate defaults through the platform
+* RTD: Fixed instance configs (`startWorkflow`, `setPipelineState`) building an empty workflow for an entry without `steps`; it now gets the config defaults (static `steps`, dynamic `initialSteps`), and `steps: []` stays empty; the root `id` is optional, so `startWorkflow(nqName, version, {})` type-checks
 * RTD: Fixed a workflow whose `initialSteps` include itself hanging the tab; it now fails with an `Initial config cycle` error
 * RTD: Fixed inputs hidden via meta blocking the run with validation errors the user could not see; their validation is now suppressed
 * Excel export: Added graphics outputs as images on their own sheets (raster at native size, SVG fitted to the chart box)

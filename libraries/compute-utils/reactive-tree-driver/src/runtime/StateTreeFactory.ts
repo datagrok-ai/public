@@ -156,7 +156,6 @@ export function fromPipelineInstanceConfig({
 }): StateTree {
   const refMap = buildRefMap(config);
 
-  // TODO: fix static pipeline missing steps
   const traverse = buildTraverseD([] as Readonly<NodePath>, (data: PipelineInstanceConfig, path, visited) => {
     if (visited!.has(data))
       throw new Error(`Initial config cycle on node ${data.id} path ${JSON.stringify(path)}`);
@@ -168,6 +167,13 @@ export function fromPipelineInstanceConfig({
   }, new Set<PipelineInstanceConfig>());
 
   const tree = traverse(instanceConfig, (acc, state, path) => {
+    const nodeConf = getConfigByInstancePath(path.map((p) => p.id), config, refMap);
+    if (!state.steps && !isPipelineStepConfig(nodeConf)) {
+      return fromPipelineConfig({
+        config, startNode: nodeConf, startPath: path, startState: acc,
+        isReadonly, defaultValidators, batchLinks, mockMode, logger,
+      });
+    }
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
     if (isFuncCallNode(node))
       node.initState(state);
