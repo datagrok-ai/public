@@ -293,20 +293,25 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
         expect(Math.max(Date.parse(a.openedAt), Date.parse(a.lastSeen ?? a.openedAt), Date.parse(a.resolvedAt ?? 0))).toBeGreaterThanOrEqual(hourAgo);
     }, LONG);
 
-    it('alerts detection  # servers, liveness, who holds detection', async () => {
+    it('alerts detection  # servers and their liveness', async () => {
       const t = table((await ok(['alerts', 'detection'])).out);
-      expect(t.columns).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+      expect(t.columns).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE']);
       expect(t.rows.length).toBeGreaterThan(0);
       expect(t.rows.some((r) => r.LIVE === 'yes')).toBe(true);
-      expect(t.rows.filter((r) => r.OWNER === '*').length).toBe(1);
-      const lease = await json(['alerts', 'detection']);
-      expect(lease.servers.find((s: any) => s.id === lease.holder)).toBeTruthy();
+      expect(Object.keys(await json(['alerts', 'detection']))).toEqual(['servers']);
+    }, LONG);
+
+    it('problems history <id>  # the records of a problem', async () => {
+      const problems: any[] = await json(['problems', 'list', '--status', 'all', '--limit', '1']);
+      if (!problems.length) return;
+      const t = table((await ok(['problems', 'history', problems[0].id])).out);
+      if (t.columns.length) expect(t.columns).toEqual(['TIME', 'RECORD', 'ALERT', 'SUMMARY']);
     }, LONG);
 
     it.skipIf(!HOST2)('GROK_S.md: alerts detection --all --host a --host b  # every server row, stopped ones included', async () => {
       const t = table((await ok(['alerts', 'detection', '--all', '--host', HOST, '--host', HOST2])).out);
       expect(t.columns[0]).toBe('HOST');
-      expect(t.columns.slice(1)).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+      expect(t.columns.slice(1)).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE']);
       const hosts = new Set(t.rows.map((r) => r.HOST));
       expect(hosts.size).toBeGreaterThanOrEqual(1);
       const each: any = await json(['alerts', 'detection', '--all']);

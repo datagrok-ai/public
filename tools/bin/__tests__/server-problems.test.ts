@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {handleProblems, problemRow} from '../commands/server-alerts';
+import {handleProblems, problemRow, historyRow} from '../commands/server-alerts';
 import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
 const PROBLEM = {id: 'b52e0d00-0000-4000-8000-000000000001', kind: 'error-incident', key: 'a41f9c', name: 'DatagrokErrorIncident',
@@ -56,10 +56,15 @@ describe('handleProblems', () => {
     expect(calls.length).toBe(2);
   });
 
-  it('lists the alerts of a problem, every status by default', async () => {
-    const {connect, calls} = mockConnect(() => [{id: 'A1', kind: 'error-incident', key: 'a41f9c', status: 'resolved'}]);
-    await captureOutput(() => handleProblems(connect, 'alerts', [PROBLEM.id], {}, 'table'));
-    expect(calls[0].path).toBe(`/alerts?problem=${PROBLEM.id}&status=all`);
+  it('lists the records of a problem, newest first, by kind:key too', async () => {
+    const record = {time: utcIso(10, 7), type: 'alert-resolved', alertId: 'a41f9c00-0000-4000-8000-000000000001',
+      summary: 'error-incident:a41f9c resolved by admin'};
+    const {connect, calls} = mockConnect((_m, path) => path.startsWith('/problems?') ? [PROBLEM] : [record]);
+    const {out} = await captureOutput(() => handleProblems(connect, 'history', ['error-incident:a41f9c'], {limit: 5}, 'table'));
+    expect(calls.map((c) => c.path)).toEqual(['/problems?kind=error-incident&key=a41f9c&status=all',
+      `/problems/${PROBLEM.id}/history?limit=5`]);
+    expect(out[0].trimEnd().split(/\s{2,}/)).toEqual(['TIME', 'RECORD', 'ALERT', 'SUMMARY']);
+    expect(historyRow(record)).toMatchObject({RECORD: 'alert-resolved', ALERT: 'a41f9c0…'});
   });
 
   it('refuses a kind:key that names no problem', async () => {

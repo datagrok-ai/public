@@ -12,12 +12,13 @@ export const ALERTS_USAGE = `Usage: grok s observe alerts <verb> [args]
   ack <id|kind:key> [--reason <text>]
   resolve <id|kind:key> [--reason <text>]   a condition that still holds raises a new alert on its next check
   mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
-                                           mutes the alert's problem, which resolves the alert; no end: until lifted
-  unmute <id|kind:key> [--reason <text>]   makes the alert's problem active again
+                                           stops the alerts of the alert's problem and resolves this one;
+                                           no end: until unmuted
+  unmute <id|kind:key> [--reason <text>]   the alert's problem alerts again
   detection [--all] [--host a --host b ...]      live servers and those stopped or last seen within 1 h;
                                                 --all lists every server; hosts on one database print once
 An alert is one message that a problem went wrong. It stays open until a person resolves it; CLEARED says its
-condition ended. Resolving leaves the problem active: to stop alerts, mute, dismiss or fix it (grok s observe problems).
+condition ended. Resolving leaves the problem active, so it alerts again: to stop its alerts, mute it.
 Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open or
 acknowledged alert (its key exactly, else a unique key prefix); unmute also finds a resolved one.`;
 
@@ -25,15 +26,16 @@ export const PROBLEMS_USAGE = `Usage: grok s observe problems <verb> [args]
   list [--status active,muted,not-a-problem,fixed|all] [--state ongoing|cleared] [--kind <k>] [--since 7d]
        [--limit n] [--host a --host b ...]
   get <id|kind:key>
-  alerts <id|kind:key> [--status open,acknowledged,resolved|all]   the alerts the problem raised
+  history <id|kind:key> [--limit n]   the problem's records: alerts opened, escalated, acknowledged, cleared,
+                                      resolved, and status changes
   mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
-                                        no end: muted until a person makes it active
+                                        stops its alerts and resolves the open one; no end: until activated
   dismiss <id|kind:key> --reason <text>   not a problem: never alerts again
   fix <id|kind:key> [--reason <text>]     fixed: alerts again, as a regression, if it comes back
-  activate <id|kind:key> [--reason <text>]
-A problem is what is wrong, kept for good; its status decides whether it alerts. Active problems raise an
-alert when they start; muted ones and those that are not a problem never do. Every status but active
-resolves the open alert. Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod).`;
+  activate <id|kind:key> [--reason <text>]   alerts again (unmutes)
+A problem is what is wrong, kept for good; its status decides whether it alerts. Muting a problem is how
+you stop its alerts; activating it lets it alert again. Active problems raise an alert when they start;
+muted ones and those that are not a problem never do. Every status but active resolves the open alert. Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod).`;
 
 const MUTE_USAGE = 'mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]';
 const ALERT_PAST: Record<string, string> = {ack: 'acknowledged', unmute: 'unmuted', resolve: 'resolved'};
@@ -132,10 +134,10 @@ export async function handleProblems(connect: Connect, verb: string | undefined,
       else printOutput(p, output);
       return true;
     }
-    case 'alerts': {
-      if (!id) return usage('problems', 'alerts <id|kind:key>');
+    case 'history': {
+      if (!id) return usage('problems', 'history <id|kind:key> [--limit n]');
       const t = await problem();
-      printOutput(rows(await t.alerts.list({problem: t.id, status: optString(argv.status) ?? 'all'}) ?? [], output, alertRow), output);
+      printOutput(rows(await t.alerts.history(t.id, {limit: argv.limit}) ?? [], output, historyRow), output);
       return true;
     }
     case 'mute': {
@@ -216,7 +218,6 @@ export function alertRow(a: any): Record<string, any> {
     STATUS: a?.status ?? '',
     OPENED: fmtTime(a?.openedAt),
     CLEARED: fmtTime(a?.clearedAt),
-    BY: a?.openedOnServerName ?? '',
     SUMMARY: truncate(a?.summary, 60),
   };
 }
@@ -234,15 +235,22 @@ export function problemRow(p: any): Record<string, any> {
   };
 }
 
-export function detectionRows(lease: any): Record<string, any>[] {
-  return (lease?.servers ?? []).map((s: any) => ({
+export function historyRow(r: any): Record<string, any> {
+  return {
+    TIME: fmtDateTime(r?.time),
+    RECORD: r?.type ?? '',
+    ALERT: truncate(r?.alertId, 8),
+    SUMMARY: truncate(r?.summary, 80),
+  };
+}
+
+export function detectionRows(detection: any): Record<string, any>[] {
+  return (detection?.servers ?? []).map((s: any) => ({
     SERVER: s?.name ?? '',
     'HOST NAME': s?.host ?? '',
     VERSION: s?.version ?? '',
     'LAST SEEN': fmtTime(s?.lastSeen),
     LIVE: s?.live ? 'yes' : 'no',
-    ELIGIBLE: s?.eligible ? 'yes' : 'no',
-    OWNER: s?.id && s.id === lease?.holder ? '*' : '',
   }));
 }
 
@@ -251,7 +259,7 @@ function printAlert(a: any): void {
     ['alert', `${a?.kind}:${a?.key}  ${a?.alertname ?? ''}`],
     ['status', `${a?.status ?? ''}  ${a?.severity ?? ''}  audience ${a?.audience ?? ''}`],
     ['summary', a?.summary ?? ''],
-    ['opened', `${fmtDateTime(a?.openedAt)}${a?.openedOnServerName ? ` on ${a.openedOnServerName}` : ''}` +
+    ['opened', `${fmtDateTime(a?.openedAt)}` +
       `  · last seen ${fmtDateTime(a?.lastSeen)}  · ${a?.occurrences ?? 0} occurrences`],
   ];
   if (a?.clearedAt) lines.push(['cleared', `${fmtDateTime(a.clearedAt)} — the condition ended; open until resolved`]);

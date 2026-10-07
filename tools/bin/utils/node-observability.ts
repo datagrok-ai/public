@@ -18,6 +18,7 @@ export class NodeAlertsClient {
 
   problems(q: Query = {}): Promise<any[]> { return this.client.get(`/problems${buildQuery(q)}`); }
   problem(id: string): Promise<any> { return this.client.get(`/problems/${seg(id)}`); }
+  history(id: string, q: Query = {}): Promise<any[]> { return this.client.get(`/problems/${seg(id)}/history${buildQuery(q)}`); }
   setStatus(id: string, body: Record<string, any>): Promise<any> { return this.client.post(`/problems/${seg(id)}/status`, body); }
 }
 

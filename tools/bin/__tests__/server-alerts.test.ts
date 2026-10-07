@@ -3,7 +3,7 @@ import {handleAlerts, muteBody, alertRow, detectionRows} from '../commands/serve
 import {mockConnect, captureOutput, utcIso, apiError} from './obs-helpers';
 
 const ALERT = {id: 'a41f9c00-0000-4000-8000-000000000001', kind: 'error-incident', key: 'a41f9c', severity: 'warning',
-  audience: 'platform', status: 'open', openedAt: utcIso(10, 5), openedOnServerName: 'datlas-2',
+  audience: 'platform', status: 'open', openedAt: utcIso(10, 5),
   summary: 'TypeError: Cannot read properties of undefined (reading \'molfile\') in Chem, 9 users in 15 min'};
 
 describe('muteBody', () => {
@@ -38,20 +38,20 @@ describe('muteBody', () => {
 describe('rows', () => {
   it('prints the fixed alert columns, summary cut at 60', () => {
     const row = alertRow(ALERT);
-    expect(Object.keys(row)).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'CLEARED', 'BY', 'SUMMARY']);
+    expect(Object.keys(row)).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'CLEARED', 'SUMMARY']);
     expect(alertRow({...ALERT, clearedAt: utcIso(10, 40)}).CLEARED).toBe('10:40Z');
-    expect(row).toMatchObject({KIND: 'error-incident', KEY: 'a41f9c', OPENED: '10:05Z', BY: 'datlas-2'});
+    expect(row).toMatchObject({KIND: 'error-incident', KEY: 'a41f9c', OPENED: '10:05Z'});
     expect(row.SUMMARY.length).toBe(60);
     expect(row.SUMMARY.endsWith('…')).toBe(true);
   });
 
-  it('marks the lease holder', () => {
-    const rows = detectionRows({holder: 'S2', servers: [
-      {id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(10, 5), live: false, eligible: true},
-      {id: 'S2', name: 'datlas-2', host: 'h2', version: '1.28.3', lastSeen: utcIso(10, 8), live: true, eligible: true},
+  it('lists the servers and their liveness', () => {
+    const rows = detectionRows({servers: [
+      {id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(10, 5), live: false},
+      {id: 'S2', name: 'datlas-2', host: 'h2', version: '1.28.3', lastSeen: utcIso(10, 8), live: true},
     ]});
-    expect(rows.map((r) => [r.SERVER, r.LIVE, r.OWNER])).toEqual([['datlas-1', 'no', ''], ['datlas-2', 'yes', '*']]);
-    expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+    expect(rows.map((r) => [r.SERVER, r.LIVE])).toEqual([['datlas-1', 'no'], ['datlas-2', 'yes']]);
+    expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE']);
   });
 });
 
@@ -141,21 +141,21 @@ describe('handleAlerts', () => {
     expect(JSON.parse(all.out.join('\n')).servers.length).toBe(5);
   });
 
-  it('shows the detection lease per server', async () => {
-    const {connect, calls} = mockConnect(() => ({holder: 'S1', holderName: 'datlas-1', epoch: 3,
-      servers: [{id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(9, 29), live: true, eligible: true}]}));
+  it('shows the servers that detect', async () => {
+    const {connect, calls} = mockConnect(() => ({
+      servers: [{id: 'S1', name: 'datlas-1', host: 'h1', version: '1.28.3', lastSeen: utcIso(9, 29), live: true}]}));
     const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {}, 'table'));
     expect(calls[0].path).toBe('/alerts/detection');
-    expect(out[2].trimEnd()).toMatch(/^datlas-1\s+h1\s+1\.28\.3\s+09:29Z\s+yes\s+yes\s+\*$/);
+    expect(out[2].trimEnd()).toMatch(/^datlas-1\s+h1\s+1\.28\.3\s+09:29Z\s+yes$/);
   });
 
   it('names rows by --host alias and prints a shared database once', async () => {
-    const server = (id: string, name: string) => ({id, name, host: 'pc-alex2', version: '1.28.3', lastSeen: utcIso(9, 29), live: true, eligible: true});
-    const shared = {holder: 'S1', servers: [server('S1', 'datlas-1'), server('S2', 'datlas-2'),
+    const server = (id: string, name: string) => ({id, name, host: 'pc-alex2', version: '1.28.3', lastSeen: utcIso(9, 29), live: true});
+    const shared = {servers: [server('S1', 'datlas-1'), server('S2', 'datlas-2'),
       {...server('S0', 'datlas-0'), live: false, lastSeen: utcIso(9, 29, 3)}]};
-    const {connect} = mockConnect((_m, _p, _b, host) => host === 'c' ? {holder: 'S9', servers: [server('S9', 'datlas-9')]} : shared);
+    const {connect} = mockConnect((_m, _p, _b, host) => host === 'c' ? {servers: [server('S9', 'datlas-9')]} : shared);
     const {out} = await captureOutput(() => handleAlerts(connect, 'detection', [], {host: ['a', 'b', 'c']}, 'table'));
-    expect(out[0].trimEnd().split(/\s{2,}/)).toEqual(['HOST', 'SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
+    expect(out[0].trimEnd().split(/\s{2,}/)).toEqual(['HOST', 'SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE']);
     expect(out.slice(2).map((l) => l.split(/\s{2,}/).slice(0, 2))).toEqual([['a, b', 'datlas-1'], ['a, b', 'datlas-2'], ['c', 'datlas-9']]);
     const json = await captureOutput(() => handleAlerts(connect, 'detection', [], {host: ['a', 'b', 'c']}, 'json'));
     expect(JSON.parse(json.out.join('\n')).map((d: any) => d.hosts)).toEqual([['a', 'b'], ['c']]);
