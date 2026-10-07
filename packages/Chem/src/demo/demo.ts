@@ -676,32 +676,21 @@ export async function _demoSarMatrix(): Promise<void> {
  *
  * Nothing is cut here. The three parts are given, so the matrices are built by grouping rather than
  * by fragmenting, every component is ranked in one fit, and every component's measured pairs are
- * pooled at once. Run live rather than restored from a project: a column decomposition of this size
- * assembles in seconds, and watching it run is part of what the demo shows.
+ * pooled at once. Restored from a project, as the fragmented demo is: the decomposition of 2 792
+ * rows takes some twenty seconds, which is a long time to look at a loader.
  */
 export async function _demoSarMatrixProtac(): Promise<void> {
   grok.shell.windows.showContextPanel = true;
-  const df = await grok.data.files.openTable('System:AppData/Chem/demo_files/protac-degraders-2792.csv');
-  df.name = 'PROTAC degraders';
-  const tv = grok.shell.addTableView(df);
-  await DG.delay(100);
-  await grok.functions.call('Chem:sarMatrixAnalysis', {
-    table: df,
-    molecules: df.col('Compound'),
-    activity: df.col('Solubility logS (pred)'),
-    // The column is a predicted logS: already a log, already higher-is-better, so the analysis must
-    // not transform it again. Left on its default this dialog would read it as a raw IC50 and invert
-    // every ranking on the tab.
-    scaling: 'none',
-    activityDirection: 'Higher is better',
-    predictVirtual: true,
-    coreColumn: df.col('Linker'),
-    rGroupColumns: [df.col('Warhead'), df.col('E3 Ligand')],
-    matrixColumns: 'Warhead',
-  });
-  for (const viewer of tv.viewers) {
-    if (viewer.type === SAR_MATRIX_VIEWER)
-      dockSarMatrixTabs(tv, viewer);
+  const p = await grok.functions.eval('Chem:SarMatrixProtacDemo');
+  const project = await grok.dapi.projects.find(p.id);
+  await project.open();
+  await DG.delay(300);
+  const tv = grok.shell.tv;
+  if (tv) {
+    for (const viewer of tv.viewers) {
+      if (viewer.type === SAR_MATRIX_VIEWER)
+        dockSarMatrixTabs(tv, viewer);
+    }
   }
   showSarHints(PROTAC_HINTS);
   setTimeout(() => {
