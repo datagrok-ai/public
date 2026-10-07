@@ -33,6 +33,11 @@ For each item, with evidence:
 | User-facing? | A UI label, menu item, or property | Leave out |
 | Finished and released? | Ticket state, plugin version | Ask. Don't document unfinished work |
 | In the running product? | The stand the team reviews on | Report as not deployed |
+| Not documented yet? | `git log` of the help page: was it updated with the feature (same ticket), and has the feature changed since? | Already documented. Leave out |
+
+Help is **wrong** only when a reader following it fails: a menu path that does not exist, a label
+the UI no longer shows, a step that does nothing or cannot be done. Generic wording that leads to
+the right place is not wrong.
 
 Split a large audit by area (core viewers, core app, server and deploy, plugins) and run it
 in parallel with read-only agents. Each returns, per item: in master (evidence, exact labels,
