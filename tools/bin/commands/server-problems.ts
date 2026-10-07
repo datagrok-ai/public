@@ -1,11 +1,11 @@
-/// `grok s o problems ...` — what the deployment detects and what people decided about it (`/problems`).
+/// `grok s observe problems ...` — what the deployment detects and what people decided about it (`/problems`).
 import {NodeAlertsClient} from '../utils/node-observability';
 import {Connect, forEachHost, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {fmtTime, fmtDateTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
 import {alertRow, muteBody} from './server-alerts';
 
-export const PROBLEMS_USAGE = `Usage: grok s o problems <verb> [args]
+export const PROBLEMS_USAGE = `Usage: grok s observe problems <verb> [args]
   list [--status active,muted,not-a-problem,fixed|all] [--state ongoing|cleared] [--kind <k>] [--since 7d]
        [--limit n] [--host a --host b ...]
   get <id|kind:key>
@@ -94,7 +94,7 @@ export async function problemId(alerts: NodeAlertsClient, id: string): Promise<s
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s o problems ${line}`));
+  printError(new Error(`Usage: grok s observe problems ${line}`));
   return false;
 }
 

@@ -1,10 +1,10 @@
-/// `grok s o alerts ...` — the alerts the deployment's problems raised (AlertsRouter, `/alerts`).
+/// `grok s observe alerts ...` — the alerts the deployment's problems raised (AlertsRouter, `/alerts`).
 import {NodeAlertsClient} from '../utils/node-observability';
 import {Connect, eachHost, forEachHost, hostList, singleHost} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {fmtTime, fmtDateTime, hasValue, parseDuration, parseTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
 
-export const ALERTS_USAGE = `Usage: grok s o alerts <verb> [args]
+export const ALERTS_USAGE = `Usage: grok s observe alerts <verb> [args]
   list [--status open,acknowledged|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
   get <id|kind:key>
   ack <id|kind:key> [--reason <text>]
@@ -14,7 +14,7 @@ export const ALERTS_USAGE = `Usage: grok s o alerts <verb> [args]
   unmute <id|kind:key> [--reason <text>]   makes the alert's problem active again
   detection [--all] [--host a --host b ...]      live servers and those stopped or last seen within 1 h;
                                                 --all lists every server; hosts on one database print once
-An alert stays open until a person resolves it; CLEARED says its condition ended. Problems: grok s o problems.
+An alert stays open until a person resolves it; CLEARED says its condition ended. Problems: grok s observe problems.
 Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open or
 acknowledged alert (its key exactly, else a unique key prefix); unmute also finds a resolved one.`;
 
@@ -102,7 +102,7 @@ export async function alertId(alerts: NodeAlertsClient, id: string, status: stri
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s o alerts ${line}`));
+  printError(new Error(`Usage: grok s observe alerts ${line}`));
   return false;
 }
 

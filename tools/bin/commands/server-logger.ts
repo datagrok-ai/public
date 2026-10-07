@@ -1,4 +1,4 @@
-/// `grok s o logger ...` — the server's logging policy: base settings, time-boxed overrides, locks, history
+/// `grok s observe logger ...` — the server's logging policy: base settings, time-boxed overrides, locks, history
 /// (LoggingRouter, `/logging/policy`).
 import {NodeDapi} from '../utils/node-dapi';
 import {NodeLoggingClient} from '../utils/node-observability';
@@ -7,7 +7,7 @@ import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {applyListSpec, fmtTime, normalizeFlag, normalizeLevel, parseDuration, parseTime, printBlock,
   truncate, valueText} from '../utils/obs-format';
 
-export const LOGGER_USAGE = `Usage: grok s o logger <verb> [server] [options]
+export const LOGGER_USAGE = `Usage: grok s observe logger <verb> [server] [options]
   get [server] [--scope user:<login>|group:<name>|session:<id>|package:<name>] [--host a --host b ...]
   set [server] [--print-levels L] [--post-levels L] [--save-levels L] [--debug-flags L] [--print-format text|json]
                [--print-details true|false] [--print-date-time ...] [--print-stack-traces ...] [--print-client-messages ...]

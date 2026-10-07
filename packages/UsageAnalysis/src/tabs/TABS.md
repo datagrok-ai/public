@@ -30,7 +30,7 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
 ```
 
 `CaptureView` (tab `Capture`) lists the capture rules (`CaptureRules` over `capture_rules`, the columns of
-`grok s o capture list`: rule, author, subject, scope, reason, active, events); active rules always show, ended ones
+`grok s observe capture list`: rule, author, subject, scope, reason, active, events); active rules always show, ended ones
 when created within the Date filter. **New rule...** builds the `POST /logging/capture` body and calls the server
 function `CaptureRuleAdd`; its Debug flags are the server's (`LoggingPolicy`, `debugFlags` of `GET /logging/policy`)
 but `credentials`, and hidden when the policy can't be read; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules

@@ -71,6 +71,6 @@ describe('handleProblems', () => {
     const {connect} = mockConnect(() => ({}));
     const {err, result} = await captureOutput(() => handleProblems(connect, 'snooze', [], {}, 'table'));
     expect(result).toBe(false);
-    expect(err.join('\n')).toMatch(/Usage: grok s o problems/);
+    expect(err.join('\n')).toMatch(/Usage: grok s observe problems/);
   });
 });

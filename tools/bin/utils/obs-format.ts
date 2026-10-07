@@ -1,4 +1,4 @@
-/// Argument parsing and table formatting shared by `grok s o alerts|errors|logger|capture|timeline`.
+/// Argument parsing and table formatting shared by `grok s observe alerts|errors|logger|capture|timeline`.
 
 /** Names the worked examples use for the platform's debug flags; the server validates the rest. */
 export const DEBUG_FLAG_ALIASES: Record<string, string> = {queries: 'query', files: 'storage'};

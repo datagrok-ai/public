@@ -2,9 +2,9 @@
 
 ## v.next
 
-* GROK-20884: The observability commands live under `grok s o`: `grok s o alerts|problems|errors|logger|capture|timeline` (`grok s o --help` or `grok s o help` lists them); `grok s observe` is the long form
-* GROK-20884: Added `grok s o problems` (list, get, alerts, mute, dismiss, fix, activate); `grok s o alerts mute|unmute` act on the alert's problem, and a mute without an end holds until lifted
-* GROK-20884: Added `grok s o alerts`, `errors`, `logger`, `capture` and `timeline`; `--host` may repeat for alerts, errors and logger, which adds a HOST column
+* GROK-20884: The observability commands live under `grok s observe`: `grok s observe alerts|problems|errors|logger|capture|timeline` (`grok s observe --help` or `grok s observe help` lists them); `grok s o` is its short alias
+* GROK-20884: Added `grok s observe problems` (list, get, alerts, mute, dismiss, fix, activate); `grok s observe alerts mute|unmute` act on the alert's problem, and a mute without an end holds until lifted
+* GROK-20884: Added `grok s observe alerts`, `errors`, `logger`, `capture` and `timeline`; `--host` may repeat for alerts, errors and logger, which adds a HOST column
 * GROK-20884: Added `grok s api`, an alias of `grok s raw`
 * GROK-20884: Added the request id the server returned to `grok s` error lines
 * GROK-20884: `grok s` observability commands print and read times in UTC (`14:00Z`), as the UI and the REST API do

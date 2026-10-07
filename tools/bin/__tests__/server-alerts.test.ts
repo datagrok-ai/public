@@ -181,6 +181,6 @@ describe('handleAlerts', () => {
     const {connect} = mockConnect(() => ({}));
     const {err, result} = await captureOutput(() => handleAlerts(connect, 'frobnicate', [], {}, 'table'));
     expect(result).toBe(false);
-    expect(err.join('\n')).toMatch(/Usage: grok s o alerts/);
+    expect(err.join('\n')).toMatch(/Usage: grok s observe alerts/);
   });
 });

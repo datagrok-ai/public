@@ -1,4 +1,4 @@
-/// `grok s o capture ...` (capture rules, LoggingRouter `/logging/capture`) and `grok s o timeline`
+/// `grok s observe capture ...` (capture rules, LoggingRouter `/logging/capture`) and `grok s observe timeline`
 /// (one action, request, session, report or rule in time order, `/log/timeline`).
 import {Query} from '../utils/node-observability';
 import {Connect, singleHost} from '../utils/server-client';
@@ -6,7 +6,7 @@ import {printOutput, printError, OutputFormat} from '../utils/server-output';
 import {fmtClock, fmtDateTime, fmtSpan, hasValue, listArg, normalizeFlag, normalizeLevel, parseDuration, parseTime,
   printBlock, shortRequestId, sinceArg, truncate} from '../utils/obs-format';
 
-export const CAPTURE_USAGE = `Usage: grok s o capture <verb> [args]
+export const CAPTURE_USAGE = `Usage: grok s observe capture <verb> [args]
   add (--user <login> | --group <name> | --package <name> | --everyone)
       [--view <name> | --element "<path>" | --function <nqName> | --error <signature>]
       --capture <items> (--for 2d | --until <iso>) --reason <text>
@@ -18,7 +18,7 @@ Capture items: clicks, inputs, requests, calls, errors, and last server:<level>=
   (--capture clicks,inputs,requests,calls,errors,server:debug=queries,files)
 --anonymous applies to --group and --everyone only; --everyone needs a scope.`;
 
-export const TIMELINE_USAGE = `Usage: grok s o timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
+export const TIMELINE_USAGE = `Usage: grok s observe timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
                        [--from <iso|-1h>] [--to <iso>] [--limit n]`;
 
 const CAPTURE_ITEMS = ['clicks', 'inputs', 'requests', 'calls', 'errors'];
@@ -223,7 +223,7 @@ export async function handleCapture(connect: Connect, verb: string | undefined, 
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s o capture ${line}`));
+  printError(new Error(`Usage: grok s observe capture ${line}`));
   return false;
 }
 

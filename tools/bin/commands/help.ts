@@ -28,7 +28,7 @@ Commands:
     testall     Run packages tests
     migrate     Migrate legacy tags to meta.role
     server (s)  Manage a Datagrok server (list/get/delete entities, run functions);
-                grok s o (observe): problems, alerts, errors, logging
+                grok s observe (alias o): problems, alerts, errors, logging
 
 To get help on a particular command, use:
     grok <command> --help

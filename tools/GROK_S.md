@@ -35,10 +35,10 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
-| See the deployment's problems and alerts; mute or dismiss a problem | `grok s o problems list` / `problems mute <kind:key> --for 2h --reason ...` |
-| Errors grouped by signature, package, group, ...            | `grok s o errors top --since 7d --by signature,package`  |
-| Turn logging up for one package / user, time-boxed          | `grok s o logger set server --debug-flags +query --scope package:Chem --for 30m` |
-| Capture what one user or group does, then read it           | `grok s o capture add --user alice --view "Hit Triage" ...` / `grok s o timeline --report 4820` |
+| See the deployment's problems and alerts; mute or dismiss a problem | `grok s observe problems list` / `problems mute <kind:key> --for 2h --reason ...` |
+| Errors grouped by signature, package, group, ...      | `grok s observe errors top --since 7d --by signature,package`  |
+| Turn logging up for one package / user, time-boxed    | `grok s observe logger set server --debug-flags +query --scope package:Chem --for 30m` |
+| Capture what one user or group does, then read it           | `grok s observe capture add --user alice --view "Hit Triage" ...` / `grok s observe timeline --report 4820` |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -469,17 +469,17 @@ module the server does not report exits 1. Requires a valid dev key (standard `g
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
 
-## Alerts, errors, logging and capture (`grok s o`, `grok s observe`)
+## Alerts, errors, logging and capture (`grok s observe`, alias `grok s o`)
 
-The observability commands live under `grok s o`, or its long form `grok s observe` (`grok s o --help`
-or `grok s o help` lists them). They read and change the deployment's observability state: the alerts every server
+The observability commands live under `grok s observe`, or its short alias `grok s o` (`grok s observe --help`
+or `grok s observe help` lists them). They read and change the deployment's observability state: the alerts every server
 shares, errors as query results, the logging policy with its time-boxed overrides, and capture
 rules that record one user's or group's activity for a while. Times are UTC, as in the UI and the
 REST API: tables print `HH:MMZ` when today, else `MM-DD HH:MMZ`, and a time given without an offset
 (`--until 14:00`, `--from 2026-09-21T06:00`) is read as UTC. Request ids are shortened to their last
 six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
 `--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
-leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s o errors --help`, `grok s o help errors`)
+leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s observe errors --help`, `grok s observe help errors`)
 prints all of its options.
 
 ### Problems and alerts
@@ -491,25 +491,25 @@ or lifted), `not-a-problem` (never alerts; an error signature stops counting as 
 (alerts again, as a regression, if it comes back). Every status but `active` resolves the open alert.
 
 ```bash
-grok s o problems list --status active --state ongoing      # default: every status and state
-grok s o problems get error-incident:a41f9c                  # id: UUID, unique UUID prefix (6+), or kind:key
-grok s o problems alerts health:Jupyter                      # the alerts the problem raised
-grok s o problems mute error-incident:a41f9c --until-version 1.14.3 --reason "fixed in Chem 1.14.3"
-grok s o problems mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
-grok s o problems mute login:internal:unknown --reason "scanner on the guest network"   # no end: until lifted
-grok s o problems dismiss error-incident:7c02e1 --reason "expected when a token expires"
-grok s o problems fix health:Jupyter --reason "kernel image rebuilt"
-grok s o problems activate connection:ELN:Prod
+grok s observe problems list --status active --state ongoing      # default: every status and state
+grok s observe problems get error-incident:a41f9c            # id: UUID, unique UUID prefix (6+), or kind:key
+grok s observe problems alerts health:Jupyter                # the alerts the problem raised
+grok s observe problems mute error-incident:a41f9c --until-version 1.14.3 --reason "fixed in Chem 1.14.3"
+grok s observe problems mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
+grok s observe problems mute login:internal:unknown --reason "scanner on the guest network"   # no end: until lifted
+grok s observe problems dismiss error-incident:7c02e1 --reason "expected when a token expires"
+grok s observe problems fix health:Jupyter --reason "kernel image rebuilt"
+grok s observe problems activate connection:ELN:Prod
 
-grok s o alerts list --status open,acknowledged            # the default; `resolved` or `all` for more
-grok s o alerts list --status open --host prod --host val --host sandbox
-grok s o alerts get connection:ELN:Prod
-grok s o alerts ack health:jupyter --reason "restarting the gateway"
-grok s o alerts resolve report:4820 --reason "duplicate of 4819"
-grok s o alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deploying"   # mutes its problem
-grok s o alerts unmute connection:ELN:Prod                  # makes its problem active
-grok s o alerts detection                                   # servers, liveness, and which one holds detection
-grok s o alerts detection --all --host prod --host val      # every server row, stopped ones included
+grok s observe alerts list --status open,acknowledged      # the default; `resolved` or `all` for more
+grok s observe alerts list --status open --host prod --host val --host sandbox
+grok s observe alerts get connection:ELN:Prod
+grok s observe alerts ack health:jupyter --reason "restarting the gateway"
+grok s observe alerts resolve report:4820 --reason "duplicate of 4819"
+grok s observe alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deploying"   # mutes its problem
+grok s observe alerts unmute connection:ELN:Prod            # makes its problem active
+grok s observe alerts detection                             # servers, liveness, and which one holds detection
+grok s observe alerts detection --all --host prod --host val      # every server row, stopped ones included
 ```
 
 `problems list` prints `KIND KEY SEV STATUS STATE EPISODES LAST SEEN SUMMARY`; `alerts list`
@@ -532,16 +532,16 @@ the same database (their server lists share a server id) print once, as `HOST a,
 ### Errors
 
 ```bash
-grok s o errors list --user alice --since 2h                # occurrences: TIME USER SOURCE SIG ERROR PACKAGE VERSION ROUTE SERVER REQ
-grok s o errors top --since 7d --by signature,package --min-users 2 --limit 5
-grok s o errors top --route "POST /api/public/v1/functions/{name}/call" --since 1h --by connection
-grok s o errors top --since 30d --group Chemists --by package
-grok s o errors show a41f9c --since 24h
-grok s o errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2026-09-27
-grok s o errors diff --since 7d --host prod --host val
-grok s o errors top --since 7d --by package,group --format parquet > errors-w39.parquet
-grok s o errors export --since 7d --by signature --format csv -O errors.csv
-grok s o errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"
+grok s observe errors list --user alice --since 2h          # occurrences: TIME USER SOURCE SIG ERROR PACKAGE VERSION ROUTE SERVER REQ
+grok s observe errors top --since 7d --by signature,package --min-users 2 --limit 5
+grok s observe errors top --route "POST /api/public/v1/functions/{name}/call" --since 1h --by connection
+grok s observe errors top --since 30d --group Chemists --by package
+grok s observe errors show a41f9c --since 24h
+grok s observe errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2026-09-27
+grok s observe errors diff --since 7d --host prod --host val
+grok s observe errors top --since 7d --by package,group --format parquet > errors-w39.parquet
+grok s observe errors export --since 7d --by signature --format csv -O errors.csv
+grok s observe errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"
 ```
 
 Filters for every verb: `--since 7d` (default 24h) or `--from`/`--to` (ISO, or relative `-7d`),
@@ -572,19 +572,19 @@ CLI from the JSON rows and needs the `apache-arrow` and `parquet-wasm` packages 
 ### Logging policy
 
 ```bash
-grok s o logger get server                                  # levels, debug flags, locks, group settings, active overrides
-grok s o logger get --scope package:Snowflake               # effective settings for a scope, each with its source
-grok s o logger set server --debug-flags +queries --scope package:Snowflake --for 30m --reason "ELN timeouts"
-grok s o logger set server --save-levels -debug --reason "too much"      # base change for All Users
-grok s o logger set --scope group:Chemists --print-levels error,warning
-grok s o logger set --set exportFlushSeconds=5 --reason "faster sync"   # any settings path, base only
-grok s o logger diff                                        # current policy vs deployment defaults, overrides included
-grok s o logger diff --version 12                           # vs a history version
-grok s o logger diff --host prod --host val
-grok s o logger overrides
-grok s o logger history --limit 20
-grok s o logger revert                                      # undo the most recent change or override
-grok s o logger revert --override <id>
+grok s observe logger get server                            # levels, debug flags, locks, group settings, active overrides
+grok s observe logger get --scope package:Snowflake         # effective settings for a scope, each with its source
+grok s observe logger set server --debug-flags +queries --scope package:Snowflake --for 30m --reason "ELN timeouts"
+grok s observe logger set server --save-levels -debug --reason "too much"      # base change for All Users
+grok s observe logger set --scope group:Chemists --print-levels error,warning
+grok s observe logger set --set exportFlushSeconds=5 --reason "faster sync"   # any settings path, base only
+grok s observe logger diff                                  # current policy vs deployment defaults, overrides included
+grok s observe logger diff --version 12                     # vs a history version
+grok s observe logger diff --host prod --host val
+grok s observe logger overrides
+grok s observe logger history --limit 20
+grok s observe logger revert                                # undo the most recent change or override
+grok s observe logger revert --override <id>
 ```
 
 Lists (`--print-levels`, `--post-levels`, `--save-levels`, `--debug-flags`) take `a,b` to
@@ -600,14 +600,14 @@ configuration` and exit 1. `server` is the only target for now. Needs
 ### Capture rules and timelines
 
 ```bash
-grok s o capture add --user alice.mendel --view "Hit Triage" --capture clicks,inputs,requests,calls,errors,server:debug=queries,files --for 2d --limit 2000 --reason "GROK-21044: campaign loses filters"
-grok s o capture add --group Chemists --view "Hit Triage" --capture clicks,requests,errors --for 7d --anonymous --reason "submit drop-off"
-grok s o capture list --all --since 90d                     # RULE AUTHOR SUBJECT SCOPE REASON ACTIVE EVENTS
-grok s o capture show cap-17
-grok s o capture show cap-17 --timeline --output csv > cap-17.csv
-grok s o capture stop cap-17 --reason "reproduced"
-grok s o timeline --report 4820                             # same as: grok s api GET "/log/timeline?report=4820"
-grok s o timeline --rule cap-17                             # or --action <id>, --request <id>, --session <id>
+grok s observe capture add --user alice.mendel --view "Hit Triage" --capture clicks,inputs,requests,calls,errors,server:debug=queries,files --for 2d --limit 2000 --reason "GROK-21044: campaign loses filters"
+grok s observe capture add --group Chemists --view "Hit Triage" --capture clicks,requests,errors --for 7d --anonymous --reason "submit drop-off"
+grok s observe capture list --all --since 90d               # RULE AUTHOR SUBJECT SCOPE REASON ACTIVE EVENTS
+grok s observe capture show cap-17
+grok s observe capture show cap-17 --timeline --output csv > cap-17.csv
+grok s observe capture stop cap-17 --reason "reproduced"
+grok s observe timeline --report 4820                       # same as: grok s api GET "/log/timeline?report=4820"
+grok s observe timeline --rule cap-17                       # or --action <id>, --request <id>, --session <id>
 ```
 
 A rule names one subject (`--user`, `--group`, `--package`, `--everyone`), at most one scope

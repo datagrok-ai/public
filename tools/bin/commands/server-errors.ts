@@ -1,4 +1,4 @@
-/// `grok s o errors ...` — platform errors as query results (ErrorsRouter, `/errors`).
+/// `grok s observe errors ...` — platform errors as query results (ErrorsRouter, `/errors`).
 import * as fs from 'fs';
 import {Query} from '../utils/node-observability';
 import {Connect, forEachHost, hostList, singleHost} from '../utils/server-client';
@@ -7,7 +7,7 @@ import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, hasValue, listArg, parse
   shortSig, sinceArg, slug, sparkline, truncate} from '../utils/obs-format';
 import {rowsToCsv} from './server-domains';
 
-export const ERRORS_USAGE = `Usage: grok s o errors <verb> [filters] [options]
+export const ERRORS_USAGE = `Usage: grok s observe errors <verb> [filters] [options]
   list [filters] [--limit 50] [--host a --host b ...]
   top [filters] [--by <dim>[,<dim>[,<dim>]]] [--trend hour|day] [--limit 20] [--format csv|json|parquet] [-O file] [--host ...]
   show <signature> [--since 24h]
@@ -74,7 +74,7 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s o errors ${line}`));
+  printError(new Error(`Usage: grok s observe errors ${line}`));
   return false;
 }
 

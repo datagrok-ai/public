@@ -19,11 +19,11 @@ const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Sc
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
 const COMMANDS = ['shares', 'domains', 'raw', 'api', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle',
-  'token', 'o', 'observe'];
+  'token', 'observe', 'o'];
 
 type Handler = (connect: Connect, verb: string | undefined, rest: string[], argv: any, output: OutputFormat) => Promise<boolean>;
 
-/** `grok s o <command>` (or `grok s observe <command>`): observability. They open their own sessions; `alerts`, `problems`, `errors` and `logger`
+/** `grok s observe <command>` (alias `grok s o`): observability. They open their own sessions; `alerts`, `problems`, `errors` and `logger`
  * may address several `--host`s. */
 const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
   alerts: {handle: handleAlerts, usage: ALERTS_USAGE},
@@ -35,8 +35,8 @@ const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
 };
 const VERBS = ['list', 'count', 'get', 'delete'];
 
-export const O_USAGE = `Usage: grok s o <command> <verb> [args]
-       grok s observe <command> <verb> [args]
+export const O_USAGE = `Usage: grok s observe <command> <verb> [args]
+       grok s o <command> <verb> [args]          (short alias)
 
 Observability: what the deployment detects, the alerts it raised, its errors, logging and captures.
   alerts      the alerts the deployment's problems raised; who holds detection
@@ -45,18 +45,18 @@ Observability: what the deployment detects, the alerts it raised, its errors, lo
   logger      the logging policy: get, set, diff, overrides, history, revert
   capture     capture rules for a user, group, package or everyone
   timeline    clicks, requests, calls and server lines in time order
-grok s o <command> --help (or grok s o help <command>) prints the full options of one command.
+grok s observe <command> --help (or grok s observe help <command>) prints the full options of one command.
 Several --host flags address several servers at once for alerts, problems, errors and logger.
 
 Examples:
-  grok s o problems list --status active
+  grok s observe problems list --status active
   grok s observe alerts list --since 24h
-  grok s o errors top --since 7d --by signature,package
-  grok s o logger set server --debug-flags +query --scope package:Chem --for 30m --reason "ticket 123"`;
+  grok s observe errors top --since 7d --by signature,package
+  grok s observe logger set server --debug-flags +query --scope package:Chem --for 30m --reason "ticket 123"`;
 
 export async function server(argv: any): Promise<boolean> {
   const all: string[] = argv['_'].slice(1);
-  const o = all[0] === 'o' || all[0] === 'observe';
+  const o = all[0] === 'observe' || all[0] === 'o';
   let args: string[] = o ? all.slice(1) : all;
   if (o && args[0] === 'help') {
     args = args.slice(1);
@@ -93,7 +93,7 @@ export async function server(argv: any): Promise<boolean> {
 
   const observability = OBSERVABILITY[entity];
   if (!o && observability)
-    return fail(new Error(`grok s ${entity} is now grok s o ${entity}`));
+    return fail(new Error(`grok s ${entity} is now grok s observe ${entity}`));
   if (o) {
     if (!observability)
       return fail(new Error(`Unknown command '${all[0]} ${entity}'.\n${O_USAGE}`));
@@ -105,7 +105,7 @@ export async function server(argv: any): Promise<boolean> {
     }
   }
   if (hosts.length > 1)
-    return fail(new Error('--host may repeat only for grok s o alerts, problems, errors and logger'));
+    return fail(new Error('--host may repeat only for grok s observe alerts, problems, errors and logger'));
 
   let client;
   try {
@@ -951,7 +951,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw/api, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
-  o, observe: observability (problems, alerts, errors, logger, capture, timeline); grok s o --help
+  observe (alias o): observability (problems, alerts, errors, logger, capture, timeline); grok s observe --help
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -1032,33 +1032,37 @@ Special commands:
   grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
   grok s sync setup get <setup-id>                    Inspect a setup (entries, direction, last run)
   grok s sync setup runs <setup-id>                   A setup's past runs (per-item outcome in options.syncResult)
-  grok s o problems list [--status s,s|all] [--state ongoing|cleared] [--kind k] [--since 7d]
+  grok s observe problems list [--status s,s|all] [--state ongoing|cleared] [--kind k] [--since 7d]
                                                       What the deployment detects, and what people decided about it
-  grok s o problems get|alerts <id|kind:key>
-  grok s o problems mute <id|kind:key> --reason <t> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
-  grok s o problems dismiss|fix|activate <id|kind:key> [--reason <text>]
-  grok s o alerts list [--status s,s|all] [--kind k] [--since 24h]
+  grok s observe problems get|alerts <id|kind:key>
+  grok s observe problems mute <id|kind:key> --reason <t> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
+  grok s observe problems dismiss|fix|activate <id|kind:key> [--reason <text>]
+  grok s observe alerts list [--status s,s|all] [--kind k] [--since 24h]
                                                       Alerts the problems raised (default: open, acknowledged)
-  grok s o alerts get|ack|resolve|unmute <id|kind:key> [--reason <text>]
-  grok s o alerts mute <id|kind:key> --reason <t> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
-  grok s o alerts detection                             Servers and the one holding the detection lease
-  grok s o errors list|top [filters] [--by d1,d2,d3] [--trend hour|day]
+  grok s observe alerts get|ack|resolve|unmute <id|kind:key> [--reason <text>]
+  grok s observe alerts mute <id|kind:key> --reason <t> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
+  grok s observe alerts detection                     Servers and the one holding the detection lease
+  grok s observe errors list|top [filters] [--by d1,d2,d3] [--trend hour|day]
                                                       Error occurrences, or figures grouped by up to three dimensions
-  grok s o errors show <signature> [--since 24h]        One signature: versions, users, groups, reports, alert, change
-  grok s o errors diff --before a..b --after c..d       Two windows: new, gone, risen, regressed
-  grok s o errors diff --since 7d --host a --host b     Signatures only on a, only on b, on both
-  grok s o errors export [filters] [--by ...] --format csv|json|parquet [-O file]
-  grok s o errors save "<name>" [filters] --to "<Share:path/>" [--schedule "MON 07:00"]
+  grok s observe errors show <signature> [--since 24h]
+                                                      One signature: versions, users, groups, reports, alert, change
+  grok s observe errors diff --before a..b --after c..d
+                                                      Two windows: new, gone, risen, regressed
+  grok s observe errors diff --since 7d --host a --host b
+                                                      Signatures only on a, only on b, on both
+  grok s observe errors export [filters] [--by ...] --format csv|json|parquet [-O file]
+  grok s observe errors save "<name>" [filters] --to "<Share:path/>" [--schedule "MON 07:00"]
                                                       A job that exports on a schedule
-  grok s o logger get [server] [--scope user:<login>|group:<g>|session:<id>|package:<p>]
-  grok s o logger set [server] [--debug-flags +query] [--save-levels -debug] ... [--scope s] [--for 30m] [--reason t]
-  grok s o logger diff [--version n | --host a --host b] / overrides / history / revert [<version> | --override <id>]
-  grok s o capture add (--user l | --group g | --package p | --everyone) [--view v] --capture <items> --for 2d --reason t
-  grok s o capture list [--all] [--since 90d] / show <cap-N> [--timeline] / stop <cap-N> [--reason t]
-  grok s o timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
+  grok s observe logger get [server] [--scope user:<login>|group:<g>|session:<id>|package:<p>]
+  grok s observe logger set [server] [--debug-flags +query] [--save-levels -debug] ... [--scope s] [--for 30m] [--reason t]
+  grok s observe logger diff [--version n | --host a --host b] / overrides / history / revert [<version> | --override <id>]
+  grok s observe capture add (--user l | --group g | --package p | --everyone) [--view v] --capture <items> --for 2d --reason t
+  grok s observe capture list [--all] [--since 90d] / show <cap-N> [--timeline] / stop <cap-N> [--reason t]
+  grok s observe timeline (--action <id> | --request <id> | --session <id> | --report <n> | --rule <cap-N>)
                                                       Clicks, requests, calls and server lines in time order
-  grok s o <alerts|problems|errors|logger|capture|timeline> --help   Full options of one command
-  grok s observe ...                                  The same as grok s o ...
+  grok s observe <alerts|problems|errors|logger|capture|timeline> --help
+                                                      Full options of one command
+  grok s o ...                                        Short alias of grok s observe ...
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)
@@ -1142,13 +1146,13 @@ Examples:
   grok s packages share Chem Chemists --access View
   grok s raw GET /users/current
   grok s api GET "/log/timeline?report=4820"
-  grok s o alerts list --status open --host prod --host val --host sandbox
-  grok s o alerts mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
-  grok s o problems dismiss error-incident:a41f9c0b12de --reason "expected when a token expires"
-  grok s o errors top --since 7d --by signature,package --min-users 2 --limit 5
-  grok s o errors diff --since 7d --host prod --host val
-  grok s o logger set server --debug-flags +queries --scope package:Snowflake --for 30m
-  grok s o capture add --user alice.mendel --view "Hit Triage" --capture clicks,requests,errors --for 2d --reason "GROK-21044"
+  grok s observe alerts list --status open --host prod --host val --host sandbox
+  grok s observe alerts mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
+  grok s observe problems dismiss error-incident:a41f9c0b12de --reason "expected when a token expires"
+  grok s observe errors top --since 7d --by signature,package --min-users 2 --limit 5
+  grok s observe errors diff --since 7d --host prod --host val
+  grok s observe logger set server --debug-flags +queries --scope package:Snowflake --for 30m
+  grok s observe capture add --user alice.mendel --view "Hit Triage" --capture clicks,requests,errors --for 2d --reason "GROK-21044"
   grok s raw POST /public/v1/functions/Sin/call --data '{"x": 1}'
   grok s describe connections
   grok s tables download MyTable -O ./my-table.csv
