@@ -1,0 +1,11 @@
+UniProtKB/Swiss-Prot sequences in test fixtures
+===============================================
+
+Five unmodified UniProtKB/Swiss-Prot entries (P01009, P02144, P02647, P68871,
+P69905) appear in the Datagrok HMM package's test fixtures (files/tests).
+
+Source:  The UniProt Consortium, https://www.uniprot.org (release 2026_03)
+License: Creative Commons Attribution 4.0 International (CC BY 4.0),
+         https://creativecommons.org/licenses/by/4.0/
+         (https://www.uniprot.org/help/license)
+Changes: none.

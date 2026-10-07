@@ -1,0 +1,447 @@
+{
+ "source": "Pfam 37.0 Pfam-A.hmm.gz (https://ftp.ebi.ac.uk/pub/databases/Pfam/releases/Pfam37.0/), MD5 8272c3f18626bc300ed7cc00e86bad40; pressed by C HMMER 3.4 hmmpress (rusty-hmmer-oracle:sse)",
+ "license": "Pfam: CC0",
+ "files": {
+  "pfam-biologics.hmm": {
+   "bytes": 3265273,
+   "sha256": "25bf77cb669e4e842cd6bd3b6423d34487d0d194f1740ddf631e09a4a4e5e33c"
+  },
+  "pfam-biologics.h3m": {
+   "bytes": 1354486,
+   "sha256": "b9629fd6e3e825c9eda02f74365f121f19c92af892324b54b616e353463ac176"
+  },
+  "pfam-biologics.h3m.gz": {
+   "bytes": 618968,
+   "sha256": "38c9ecc00570aef9c817c825a47771a79f725e3141d000771a1eefb30795c75b"
+  }
+ },
+ "models": [
+  {
+   "accession": "PF07686.22",
+   "name": "V-set",
+   "description": "Immunoglobulin V-set domain",
+   "length": 109,
+   "ga": "26 26"
+  },
+  {
+   "accession": "PF07654.20",
+   "name": "C1-set",
+   "description": "Immunoglobulin C1-set domain",
+   "length": 86,
+   "ga": "21 21"
+  },
+  {
+   "accession": "PF05790.20",
+   "name": "C2-set",
+   "description": "Immunoglobulin C2-set domain",
+   "length": 80,
+   "ga": "24 24"
+  },
+  {
+   "accession": "PF08205.17",
+   "name": "C2-set_2",
+   "description": "CD80-like C2-set immunoglobulin domain",
+   "length": 89,
+   "ga": "21 21"
+  },
+  {
+   "accession": "PF07679.21",
+   "name": "I-set",
+   "description": "Immunoglobulin I-set domain",
+   "length": 90,
+   "ga": "23.7 23.7"
+  },
+  {
+   "accession": "PF00047.30",
+   "name": "ig",
+   "description": "Immunoglobulin domain",
+   "length": 81,
+   "ga": "21.8 21.8"
+  },
+  {
+   "accession": "PF13895.11",
+   "name": "Ig_2",
+   "description": "Immunoglobulin domain",
+   "length": 79,
+   "ga": "27 27"
+  },
+  {
+   "accession": "PF13927.11",
+   "name": "Ig_3",
+   "description": "Immunoglobulin domain",
+   "length": 78,
+   "ga": "30 30"
+  },
+  {
+   "accession": "PF00041.26",
+   "name": "fn3",
+   "description": "Fibronectin type III domain",
+   "length": 84,
+   "ga": "25 25"
+  },
+  {
+   "accession": "PF00273.25",
+   "name": "Serum_albumin",
+   "description": "Serum albumin family",
+   "length": 176,
+   "ga": "34.4 34.4"
+  },
+  {
+   "accession": "PF01353.27",
+   "name": "GFP",
+   "description": "Green fluorescent protein",
+   "length": 169,
+   "ga": "22 22"
+  },
+  {
+   "accession": "PF02798.25",
+   "name": "GST_N",
+   "description": "Glutathione S-transferase, N-terminal domain",
+   "length": 76,
+   "ga": "20.9 20.9"
+  },
+  {
+   "accession": "PF00043.30",
+   "name": "GST_C",
+   "description": "Glutathione S-transferase, C-terminal domain",
+   "length": 93,
+   "ga": "20.7 20.7"
+  },
+  {
+   "accession": "PF00085.25",
+   "name": "Thioredoxin",
+   "description": "Thioredoxin",
+   "length": 103,
+   "ga": "23.5 23.5"
+  },
+  {
+   "accession": "PF00240.28",
+   "name": "ubiquitin",
+   "description": "Ubiquitin family",
+   "length": 72,
+   "ga": "25.4 21.2"
+  },
+  {
+   "accession": "PF11976.13",
+   "name": "Rad60-SLD",
+   "description": "Ubiquitin-2 like Rad60 SUMO-like",
+   "length": 72,
+   "ga": "23.8 23.8"
+  },
+  {
+   "accession": "PF01547.30",
+   "name": "SBP_bac_1",
+   "description": "Bacterial extracellular solute-binding protein",
+   "length": 307,
+   "ga": "26 26"
+  },
+  {
+   "accession": "PF00229.23",
+   "name": "TNF",
+   "description": "TNF(Tumour Necrosis Factor) family",
+   "length": 127,
+   "ga": "23 23"
+  },
+  {
+   "accession": "PF00020.23",
+   "name": "TNFR_c6",
+   "description": "TNFR/NGFR cysteine-rich region",
+   "length": 39,
+   "ga": "29.4 20.6"
+  },
+  {
+   "accession": "PF00143.24",
+   "name": "Interferon",
+   "description": "Interferon alpha/beta domain",
+   "length": 160,
+   "ga": "26.8 26.8"
+  },
+  {
+   "accession": "PF00715.22",
+   "name": "IL2",
+   "description": "Interleukin 2",
+   "length": 145,
+   "ga": "26.2 26.2"
+  },
+  {
+   "accession": "PF00048.25",
+   "name": "IL8",
+   "description": "Small cytokines (intecrine/chemokine), interleukin-8 like",
+   "length": 60,
+   "ga": "21.3 21.3"
+  },
+  {
+   "accession": "PF00008.32",
+   "name": "EGF",
+   "description": "EGF-like domain",
+   "length": 32,
+   "ga": "21.5 21.5"
+  },
+  {
+   "accession": "PF07645.20",
+   "name": "EGF_CA",
+   "description": "Calcium-binding EGF domain",
+   "length": 43,
+   "ga": "27 16.3"
+  },
+  {
+   "accession": "PF00757.25",
+   "name": "Furin-like",
+   "description": "Furin-like cysteine rich region",
+   "length": 147,
+   "ga": "26.8 26.8"
+  },
+  {
+   "accession": "PF00219.23",
+   "name": "IGFBP",
+   "description": "Insulin-like growth factor binding protein",
+   "length": 55,
+   "ga": "28 28"
+  },
+  {
+   "accession": "PF00019.25",
+   "name": "TGF_beta",
+   "description": "Transforming growth factor beta like domain",
+   "length": 104,
+   "ga": "27 27"
+  },
+  {
+   "accession": "PF00341.22",
+   "name": "PDGF",
+   "description": "PDGF/VEGF domain",
+   "length": 82,
+   "ga": "27 27"
+  },
+  {
+   "accession": "PF00069.30",
+   "name": "Pkinase",
+   "description": "Protein kinase domain",
+   "length": 263,
+   "ga": "31.7 31.7"
+  },
+  {
+   "accession": "PF07714.22",
+   "name": "PK_Tyr_Ser-Thr",
+   "description": "Protein tyrosine and serine/threonine kinase",
+   "length": 258,
+   "ga": "23.1 23.1"
+  },
+  {
+   "accession": "PF00017.29",
+   "name": "SH2",
+   "description": "SH2 domain",
+   "length": 77,
+   "ga": "21 21"
+  },
+  {
+   "accession": "PF00018.33",
+   "name": "SH3_1",
+   "description": "SH3 domain",
+   "length": 48,
+   "ga": "22.9 22.9"
+  },
+  {
+   "accession": "PF00595.29",
+   "name": "PDZ",
+   "description": "PDZ domain",
+   "length": 81,
+   "ga": "23.2 23.2"
+  },
+  {
+   "accession": "PF00169.34",
+   "name": "PH",
+   "description": "PH domain",
+   "length": 105,
+   "ga": "25.1 25.1"
+  },
+  {
+   "accession": "PF00168.35",
+   "name": "C2",
+   "description": "C2 domain",
+   "length": 104,
+   "ga": "22 9.6"
+  },
+  {
+   "accession": "PF00036.37",
+   "name": "EF-hand_1",
+   "description": "EF hand",
+   "length": 29,
+   "ga": "25.4 25.4"
+  },
+  {
+   "accession": "PF00071.27",
+   "name": "Ras",
+   "description": "Ras family",
+   "length": 162,
+   "ga": "21.6 21.6"
+  },
+  {
+   "accession": "PF00089.31",
+   "name": "Trypsin",
+   "description": "Trypsin",
+   "length": 220,
+   "ga": "20.6 20.6"
+  },
+  {
+   "accession": "PF00014.28",
+   "name": "Kunitz_BPTI",
+   "description": "Kunitz/Bovine pancreatic trypsin inhibitor domain",
+   "length": 53,
+   "ga": "21 21"
+  },
+  {
+   "accession": "PF00079.25",
+   "name": "Serpin",
+   "description": "Serpin (serine protease inhibitor)",
+   "length": 370,
+   "ga": "27 27"
+  },
+  {
+   "accession": "PF00026.28",
+   "name": "Asp",
+   "description": "Eukaryotic aspartyl protease",
+   "length": 315,
+   "ga": "19.9 19.9"
+  },
+  {
+   "accession": "PF00112.28",
+   "name": "Peptidase_C1",
+   "description": "Papain family cysteine protease",
+   "length": 220,
+   "ga": "20.7 20.7"
+  },
+  {
+   "accession": "PF00413.29",
+   "name": "Peptidase_M10",
+   "description": "Matrixin",
+   "length": 159,
+   "ga": "24 24"
+  },
+  {
+   "accession": "PF00051.23",
+   "name": "Kringle",
+   "description": "Kringle domain",
+   "length": 79,
+   "ga": "34.3 34.3"
+  },
+  {
+   "accession": "PF00084.25",
+   "name": "Sushi",
+   "description": "Sushi repeat (SCR repeat)",
+   "length": 56,
+   "ga": "20.7 17"
+  },
+  {
+   "accession": "PF00057.23",
+   "name": "Ldl_recept_a",
+   "description": "Low-density lipoprotein receptor domain class A",
+   "length": 37,
+   "ga": "24.1 24.1"
+  },
+  {
+   "accession": "PF00059.26",
+   "name": "Lectin_C",
+   "description": "Lectin C-type domain",
+   "length": 107,
+   "ga": "22.6 22.6"
+  },
+  {
+   "accession": "PF00028.22",
+   "name": "Cadherin",
+   "description": "Cadherin domain",
+   "length": 93,
+   "ga": "28.8 28.8"
+  },
+  {
+   "accession": "PF00147.23",
+   "name": "Fibrinogen_C",
+   "description": "Fibrinogen beta and gamma chains, C-terminal globular domain",
+   "length": 221,
+   "ga": "22 22"
+  },
+  {
+   "accession": "PF01391.23",
+   "name": "Collagen",
+   "description": "Collagen triple helix repeat (20 copies)",
+   "length": 60,
+   "ga": "27.2 27.2"
+  },
+  {
+   "accession": "PF00090.24",
+   "name": "TSP_1",
+   "description": "Thrombospondin type 1 domain",
+   "length": 49,
+   "ga": "21.6 12"
+  },
+  {
+   "accession": "PF00092.33",
+   "name": "VWA",
+   "description": "von Willebrand factor type A domain",
+   "length": 174,
+   "ga": "23.8 23.8"
+  },
+  {
+   "accession": "PF00431.25",
+   "name": "CUB",
+   "description": "CUB domain",
+   "length": 110,
+   "ga": "21.4 21.4"
+  },
+  {
+   "accession": "PF00023.35",
+   "name": "Ank",
+   "description": "Ankyrin repeat",
+   "length": 33,
+   "ga": "21.1 14.7"
+  },
+  {
+   "accession": "PF13855.11",
+   "name": "LRR_8",
+   "description": "Leucine rich repeat",
+   "length": 61,
+   "ga": "27 27"
+  },
+  {
+   "accession": "PF00400.37",
+   "name": "WD40",
+   "description": "WD domain, G-beta repeat",
+   "length": 39,
+   "ga": "27 12.1"
+  },
+  {
+   "accession": "PF00515.33",
+   "name": "TPR_1",
+   "description": "Tetratricopeptide repeat",
+   "length": 34,
+   "ga": "27.8 27.8"
+  },
+  {
+   "accession": "PF00096.31",
+   "name": "zf-C2H2",
+   "description": "Zinc finger, C2H2 type",
+   "length": 23,
+   "ga": "25.2 15.8"
+  },
+  {
+   "accession": "PF00076.27",
+   "name": "RRM_1",
+   "description": "RNA recognition motif",
+   "length": 70,
+   "ga": "20.7 20.7"
+  },
+  {
+   "accession": "PF00046.34",
+   "name": "Homeodomain",
+   "description": "Homeodomain",
+   "length": 57,
+   "ga": "22.9 22.9"
+  },
+  {
+   "accession": "PF00001.26",
+   "name": "7tm_1",
+   "description": "7 transmembrane receptor (rhodopsin family)",
+   "length": 260,
+   "ga": "30.5 30.5"
+  }
+ ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "@datagrok/hmm",
+  "friendlyName": "HMM",
+  "version": "0.0.1",
+  "author": {
+    "name": "Davit Rizhinashvili",
+    "email": "drizhinashvili@datagrok.ai"
+  },
+  "description": "Profile hidden Markov models in the browser: ANARCI antibody/TCR numbering with species and germlines, profile HMM search and protein domain annotation, powered by an exact Rust/WebAssembly port of HMMER 3.4.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "packages/HMM"
+  },
+  "dependencies": {
+    "@datagrok-libraries/bio": "workspace:^",
+    "@datagrok-libraries/test": "workspace:^",
+    "@datagrok-libraries/utils": "workspace:^",
+    "cash-dom": "catalog:",
+    "datagrok-api": "workspace:^",
+    "dayjs": "catalog:",
+    "rxjs": "catalog:",
+    "wu": "catalog:"
+  },
+  "scripts": {
+    "build": "grok build",
+    "typecheck": "grok tsc --noEmit -p tsconfig.json",
+    "lint": "eslint --ext .ts,.tsx src",
+    "test": "grok test"
+  },
+  "canEdit": [
+    "Administrators"
+  ],
+  "canView": [
+    "All users"
+  ],
+  "category": "Bioinformatics",
+  "meta": {
+    "dartium": false,
+    "browserFeatures": [
+      "wasm"
+    ]
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  },
+  "playwrightTests": "playwright"
+}

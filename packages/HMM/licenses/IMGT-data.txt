@@ -1,0 +1,30 @@
+IMGT® data — attribution and license notice
+==========================================
+
+The ANARCI germline models and tables distributed with the Datagrok HMM
+package (wasm/anarci/ALL.hmm.h3m.gz, germlines-*.json, species.json,
+hmm-lengths.json) are derived from IMGT/GENE-DB germline V and J gene
+sequences.
+
+Source:       IMGT®, the international ImMunoGeneTics information system®,
+              https://www.imgt.org (IMGT/GENE-DB, https://www.imgt.org/genedb/)
+Downloaded:   7 October 2026 (15:26 UTC)
+License:      Creative Commons Attribution 4.0 International (CC BY 4.0),
+              https://creativecommons.org/licenses/by/4.0/
+              ("The IMGT® data are provided to both public and private users
+              under the CC BY-4.0 license", https://www.imgt.org/about/termsofuse.php,
+              in effect since 1 July 2026.)
+Changes made: the gapped V-gene and J-gene amino acid sequences were extracted
+              and assembled into IMGT-numbered alignments per species and chain
+              by ANARCI's build pipeline (https://github.com/oxpig/ANARCI,
+              commit 79f6c575056dedef86cb8f405ebb039197923eec; J genes aligned
+              with MUSCLE), converted into profile hidden Markov models with
+              HMMER 3.4 hmmbuild --hand and hmmpress, and stored as JSON
+              lookup tables.
+Citation:     Giudicelli V., Chaume D. and Lefranc M.-P. IMGT/GENE-DB: a
+              comprehensive database for human and mouse immunoglobulin and T
+              cell receptor genes. Nucleic Acids Res. 33(suppl_1):D256-D261 (2005).
+
+IMGT® is a registered trademark of CNRS; it is used here only for attribution.
+No endorsement by IMGT® or CNRS is implied. The data are provided as is,
+without warranties.
