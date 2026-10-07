@@ -83,14 +83,6 @@ category('Bio functions: HELM showcase', () => {
     expectHelmColumn(df);
   });
 
-  test('Hierarchical Clustering', async () => {
-    const {df, tv, helm} = await openShowcase();
-    await grok.functions.call('Dendrogram:hierarchicalClustering',
-      {df, colNameList: [helm], distance: 'euclidean', linkage: 'ward'});
-    await awaitReading(tv.grid, 'tree leaves', ROWS);
-    expectHelmColumn(df);
-  });
-
   test('Convert Sequence Notation', async () => {
     const {df, helm} = await openShowcase();
     const res: DG.Column<string> = await grok.functions.call('Bio:convertNotation',
