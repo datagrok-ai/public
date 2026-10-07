@@ -10,6 +10,7 @@ import {handleAlerts, handleProblems, ALERTS_USAGE, PROBLEMS_USAGE} from './serv
 import {handleErrors, ERRORS_USAGE} from './server-errors';
 import {handleLogger, LOGGER_USAGE} from './server-logger';
 import {handleCapture, handleTimeline, CAPTURE_USAGE, TIMELINE_USAGE} from './server-capture';
+import {handleRules, RULES_USAGE} from './server-rules';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -29,6 +30,7 @@ const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
   logger: {handle: handleLogger, usage: LOGGER_USAGE},
   capture: {handle: handleCapture, usage: CAPTURE_USAGE},
   timeline: {handle: handleTimeline, usage: TIMELINE_USAGE},
+  rules: {handle: handleRules, usage: RULES_USAGE},
 };
 const VERBS = ['list', 'count', 'get', 'delete'];
 
@@ -42,6 +44,7 @@ Observability: what the deployment detects, the alerts it raised, its errors, lo
   logger      the logging policy: get, set, diff, overrides, history, revert
   capture     capture rules for a user, group, package or everyone
   timeline    clicks, requests, calls and server lines in time order
+  rules       your own problem types: conditions over the log, tested before they alert
 grok s observe <command> --help (or grok s observe help <command>) prints the full options of one command.
 Several --host flags address several servers at once for alerts, problems, errors and logger.
 
@@ -49,6 +52,7 @@ Examples:
   grok s observe problems list --status active
   grok s observe alerts list --since 24h
   grok s observe errors top --since 7d --by signature,package
+  grok s observe rules test --json rule.json
   grok s observe logger set server --debug-flags +query --scope package:Chem --for 30m --reason "ticket 123"`;
 
 export async function server(argv: any): Promise<boolean> {
@@ -950,7 +954,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
-  observe (alias o): observability (problems, alerts, errors, logger, capture, timeline); grok s observe --help
+  observe (alias o): observability (problems, alerts, errors, logger, capture, timeline, rules); grok s observe --help
 
 Verbs:
   list      List entities (--filter, --limit, --offset)

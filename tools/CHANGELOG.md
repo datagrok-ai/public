@@ -3,6 +3,7 @@
 ## v.next
 
 * GROK-20884: Added `grok s observe` (alias `grok s o`): problems, alerts, errors, logger, capture and timeline; `--host` repeats for alerts, problems, errors and logger; `grok s observe --help` lists them
+* GROK-20884: Added `grok s observe rules`: list, add, edit, enable, disable, delete and test your own problem types
 * GROK-20884: Added the request id the server returned to `grok s` error lines
 * `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step

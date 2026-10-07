@@ -504,6 +504,31 @@ grok s observe alerts detection                             # servers, liveness,
 grok s observe alerts detection --all --host prod --host val      # every server row, stopped ones included
 ```
 
+### Problem rules
+
+Your own problem types: a rule is a condition over the platform's log; each group it holds for is a problem
+(kind `rule-<name>`) that alerts like the built-in ones. Test a rule before you add it; rules the deployment
+defines (`GROK_PARAMETERS` `problemRules`) are read-only. Needs `ManageAlerts`.
+
+```bash
+grok s observe rules list                                   # NAME SOURCE ON WHEN GROUP SEV ONGOING ALERTING ERROR
+grok s observe rules test --json failed-logins.json --hours 6   # what holds now and what would have raised; raises nothing
+grok s observe rules add --json failed-logins.json
+grok s observe rules add slow-checks --json '{"match": {"source": "audit", "type": "connection-checked"}, "groupBy": "param:connection", "when": {"count": 3, "value": {"param": "ms", "agg": "avg", "op": ">=", "threshold": 5000}}}'
+grok s observe rules get failed-logins-per-user             # the rule, then its definition as JSON
+grok s observe rules edit failed-logins-per-user --json failed-logins.json   # replaces the definition
+grok s observe rules disable failed-logins-per-user         # enable, delete alike
+```
+
+`failed-logins.json`:
+
+```json
+{"name": "failed-logins-per-user", "severity": "warning",
+ "match": {"source": "audit", "type": "user-login-failed"},
+ "groupBy": "param:user", "window": 15, "when": {"count": 5},
+ "summary": "{count} failed logins for {group} in {window} min"}
+```
+
 ### Errors
 
 ```bash

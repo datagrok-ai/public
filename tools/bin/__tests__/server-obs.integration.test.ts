@@ -34,7 +34,8 @@ const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'obsit-'));
 const TAG = `ObsIt${Date.now().toString(36)}`;
 const W7 = SHARED ? '1d' : '7d';
 const LONG = 180_000;
-const OBS = ['alerts', 'problems', 'errors', 'logger', 'capture', 'timeline'];
+const RULE = `${TAG.toLowerCase()}-logins`;
+const OBS = ['alerts', 'problems', 'errors', 'logger', 'capture', 'timeline', 'rules'];
 
 interface Run {code: number | null; out: string; err: string; bytes: Buffer}
 
@@ -248,6 +249,7 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       await grok(['logger', 'revert', '--override', id, '--reason', 'obsit cleanup']);
     for (const id of seed.rules)
       await grok(['capture', 'stop', id, '--reason', 'obsit cleanup']);
+    await grok(['rules', 'delete', RULE]);
     if (seed.incident) {
       await grok(['alerts', 'unmute', seed.incident.id]);
       // The loop's errors stay in the detection window for a while: a reopened incident stays muted.
@@ -846,6 +848,37 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
     it.skipIf(SHARED)('timeline --report <number>', async () => {
       const rows: any[] = await json(['timeline', '--report', String(seed.report!.number)]);
       expect(rows.some((e) => e.requestId === `${seed.action}.3`)).toBe(true);
+    }, LONG);
+  });
+
+  // ─── Problem rules ────────────────────────────────────────────────────────
+
+  describe.skipIf(SHARED)('problem rules', () => {
+    const file = () => {
+      const f = path.join(TMP, 'rule.json');
+      fs.writeFileSync(f, JSON.stringify({severity: 'info', match: {source: 'audit', type: 'user-login-failed'},
+        groupBy: 'param:user', window: 15, when: {count: 5}}));
+      return f;
+    };
+
+    it('rules test --json rule.json  # raises nothing', async () => {
+      const r = await json(['rules', 'test', '--json', file(), '--hours', '1']);
+      expect(r.matched).toBeGreaterThanOrEqual(0);
+      expect(Array.isArray(r.now) && Array.isArray(r.raised)).toBe(true);
+      expect((await ok(['rules', 'test', '--json', file(), '--hours', '1'])).out).toMatch(/^Matched \d+ events in 1 h/);
+    }, LONG);
+
+    it('rules add <name> --json rule.json, list, get, disable, delete', async () => {
+      expect((await ok(['rules', 'add', RULE, '--json', file()])).out).toContain(`added rule ${RULE}`);
+      const row = table((await ok(['rules', 'list'])).out).rows.find((x) => x.NAME === RULE);
+      expect(row).toMatchObject({SOURCE: 'settings', ON: 'yes', WHEN: 'count', GROUP: 'param:user', SEV: 'info'});
+      expect((await json(['rules', 'get', RULE])).definition.when).toEqual({count: 5});
+      expect((await json(['rules', 'disable', RULE])).enabled).toBe(false);
+      const again = await grok(['rules', 'disable', RULE]);
+      expect(again.code).not.toBe(0);
+      expect(again.out + again.err).toContain('already disabled');
+      expect((await ok(['rules', 'delete', RULE])).out).toContain(`deleted ${RULE}`);
+      expect((await json(['rules', 'list'])).some((x: any) => x.name === RULE)).toBe(false);
     }, LONG);
   });
 
