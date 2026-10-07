@@ -1,7 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
-import {callHandler, indexFromEnd} from '../utils';
+import {callHandler, indexFromEnd, Tolerance} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
 import {annotationRules, expandLinks} from './rule-expansion';
@@ -23,6 +23,8 @@ export type FuncCallIODescription = {
   checks?: CheckOptions;
   /** Choices the platform evaluates (a function, query or file); `propagate` for `propagateChoice: all`. */
   dynamicChoices?: {propagate: boolean};
+  /** Consistency comparison tolerance from the `consistencyTolerance`/`consistencyRelTolerance` annotations. */
+  tolerance?: Tolerance;
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
@@ -200,6 +202,9 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
     const scalar = DG.TYPES_SCALAR.has(p.property.propertyType);
     if (typeof choices === 'string' && choices && !parseChoices(choices) && scalar)
       io.dynamicChoices = {propagate: p.property.options.propagateChoice === 'all'};
+    const {consistencyTolerance, consistencyRelTolerance} = p.property.options ?? {};
+    if (consistencyTolerance != null || consistencyRelTolerance != null)
+      io.tolerance = {abs: Number(consistencyTolerance ?? 0), rel: Number(consistencyRelTolerance ?? 0)};
     return io;
   });
   const outputs = wu(fc.outputParams.values()).map((p) => (
