@@ -5,6 +5,10 @@
 This is `datagrok-api`, the JavaScript/TypeScript API for the Datagrok platform - a data analytics and visualization 
 platform. The API provides TypeScript bindings that communicate with a Dart backend via an interop layer.
 
+## Versioning
+
+Never change `version` in `package.json` in a feature PR. Any push to `master` with a version that is not on npm publishes it (`.github/workflows/js-api.yml`), and js-api versions are set by the core release pipeline (`release-datagrok`, see `core/docs/RELEASE_CYCLE.md`): a server only loads plugins whose `datagrok-api` range it satisfies, so an unmatched publish breaks plugin loading on shipped stands. In-repo consumers use `"datagrok-api": "../../js-api"` until the release bumps it.
+
 ## Build Commands
 
 ```bash
