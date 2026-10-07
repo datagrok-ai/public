@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21132: Sankey: Fixed nodes and links drawn with NaN sizes when the filter leaves only rows with a zero or missing Value
 * Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
 * Sankey, Chord: Added the automation surface — node, link, category and chord hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
 * Globe: Added the `points` automation reading and `isRenderPending` / `onRendered`

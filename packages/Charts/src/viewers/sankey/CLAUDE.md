@@ -15,8 +15,8 @@ its source to its target. Registered by Charts as `Sankey`, so a feature reaches
 several rows draws several ribbons side by side. A graph with a cycle, or a table without two
 string columns of at most 50 categories and a numeric one, shows a message instead. A row whose
 Value is missing weighs nothing (read raw, the int null would sink both of its nodes). A graph with
-no links — no rows, or none with both a source and a target — draws nothing: d3-sankey sizes the
-nodes by their links.
+no weight — no rows, none with both a source and a target, or none with a positive Value — draws
+nothing: d3-sankey sizes the nodes by the weight of their links.
 
 ## Automation surface (`getWidgetStatus`)
 

@@ -265,8 +265,8 @@ export class SankeyViewer extends DG.JsViewer {
 
     this.prepareData();
 
-    // d3-sankey sizes the nodes by their links: with none it throws (no rows) or yields NaN heights
-    if (this.graph.links.length === 0)
+    // d3-sankey sizes the nodes by their links' weight: with none it throws (no rows) or yields NaN heights
+    if (!this.graph.links.some((link: Link) => link.value > 0))
       return;
 
     const cycles = this.detectGraphCycles(this.graph);
