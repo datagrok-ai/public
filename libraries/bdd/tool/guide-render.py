@@ -14,6 +14,7 @@ audit.json how far the mark's centre and the pointer's tip are from the press.
     py tool/guide-render.py <scenario dir> [--gif] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
         [--size <w>x<h>, default 1600x1000; filming the page at <w>x<h-strip> lands on it exactly]
+        [--no-title: start on the first step instead of a title card]
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -113,7 +114,7 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H)):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H), title=True):
         self.folder = folder
         self.fps = fps
         self.hold = hold
@@ -121,6 +122,7 @@ class Renderer:
         self.zoom = zoom
         self.zoom_time = zoom_time
         self.video_w, self.video_h = size
+        self.title = title
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
@@ -473,7 +475,8 @@ class Renderer:
     def frames(self):
         if not self.steps:
             return
-        yield from self.title_frames(self._image(self.steps[0]['before']))
+        if self.title:
+            yield from self.title_frames(self._image(self.steps[0]['before']))
         total = len(self.steps)
         for i, step in enumerate(self.steps, 1):
             yield from self.step_frames(step, i, total)
@@ -696,6 +699,7 @@ def main(argv):
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
     size = tuple(int(v) for v in opt('--size', f'{VIDEO_W}x{VIDEO_H}').lower().split('x'))
+    title = not flag('--no-title')
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
     test_dir = opt('--selftest')
     if test_dir:
@@ -708,7 +712,7 @@ def main(argv):
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size, title)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif)
     report = renderer.write_audit()

@@ -22,16 +22,19 @@ Feature: SAR Matrix on a PROTAC set
     Then "SAR Matrix" dialog should be visible
     When user selects "Compound" in Molecules input in "SAR Matrix" dialog
     And user selects "Solubility logS (pred)" in Activity input in "SAR Matrix" dialog
-    And user selects "none" in Scaling input in "SAR Matrix" dialog
-    And user selects "Higher is better" in Direction input in "SAR Matrix" dialog
+    Then Scaling input in "SAR Matrix" dialog should be disabled
+    And Scaling input in "SAR Matrix" dialog should have value "none"
+    When user selects "Higher is better" in Direction input in "SAR Matrix" dialog
     And user checks "Use existing R-groups" input in "SAR Matrix" dialog
     Then Core input in "SAR Matrix" dialog should be visible
     When user selects "Linker" in Core input in "SAR Matrix" dialog
     And user clicks on editor of R-groups input in "SAR Matrix" dialog
     Then "Select columns..." dialog should be visible
+    And the "text of cell 1 of __name" reading of grid viewer in "Select columns..." dialog should be "Warhead"
+    And the "text of cell 3 of __name" reading of grid viewer in "Select columns..." dialog should be "E3 Ligand"
     When user clicks on None label in "Select columns..." dialog
-    And user toggles the "Warhead" column in the column list of grid viewer in "Select columns..." dialog
-    And user toggles the "E3 Ligand" column in the column list of grid viewer in "Select columns..." dialog
+    And user clicks on the "cell 1 of x" area of grid viewer in "Select columns..." dialog
+    And user clicks on the "cell 3 of x" area of grid viewer in "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
     And user selects "Warhead" in "Matrix columns" input in "SAR Matrix" dialog
     Then "SAR Matrix" dialog should contain text "Columns: Warhead"
