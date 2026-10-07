@@ -28,6 +28,12 @@ selection is keyed by that path joined with `|`. The status reports the same nam
 ` | ` instead, for readability: `segment Cancer | Male`. A one-column sunburst therefore names its
 sectors by that column alone (`segment Cancer`).
 
+An empty value (`''`, or the `' '` the tree builder gives a null) is named **`(empty)`** —
+`segment (empty)`, `segment S_PART | (empty)`. Joined raw it would read `segment S_PART | `, which
+the automation's name matching cannot tell from `segment S_PART`, and a first-ring empty sector
+would be indistinguishable from the root. The root is the node with no `parentNode`, never a name.
+Clicks and selection still key on the raw value; only the status names it.
+
 ## Automation surface (`getWidgetStatus`)
 
 Built on demand by `sunburst-status.ts`. Every `hitArea` is in the chart canvas's own pixel space.
@@ -42,7 +48,7 @@ radius-by-direction sweep a spec previously needed to land on a ring.
 | Area | What |
 |---|---|
 | `view` | the chart canvas |
-| `segment <path>` | a click target inside that sector — `segment Cancer \| Male` |
+| `segment <path>` | a click target inside that sector — `segment Cancer \| Male`, `segment S_PART \| (empty)` |
 
 | Reading | What |
 |---|---|
@@ -50,8 +56,8 @@ radius-by-direction sweep a spec previously needed to land on a ring.
 | `on click` | `Select` or `Filter` |
 | `include nulls` | the `includeNulls` property |
 | `rows shown` | `filter.trueCount` — the viewer's own combined filter |
-| `segments` | sectors the layout actually placed |
-| `segment names` | their paths, comma-separated |
+| `segments` | sectors the layout actually placed, empty values included |
+| `segment names` | their paths, comma-separated, an empty value as `(empty)` |
 | `rows of segment <path>` | that sector's value, as the last layout computed it |
 
 `isRenderPending` covers both the queued renders and the frame echarts lays the sectors out on:

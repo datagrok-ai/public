@@ -155,6 +155,11 @@ export class FormsViewer extends DG.JsViewer {
     ui.tooltip.bind(this.mouseOverRowIndicator, 'Mouse over row');
 
     this.root.addEventListener('contextmenu', () => this.contextMenuRowIdx = -1, true);
+    // a card re-rendered under the pointer goes without its mouseleave, so leaving the viewer clears the row
+    this.root.addEventListener('mouseleave', () => {
+      if (this.dataFrame && this.dataFrame.mouseOverRowIdx >= 0)
+        this.dataFrame.mouseOverRowIdx = -1;
+    });
 
     ui.tools.waitForElementInDom(this.root).then((_) => {
       this.columnHeadersDiv.style.setProperty('overflow', 'hidden', 'important');

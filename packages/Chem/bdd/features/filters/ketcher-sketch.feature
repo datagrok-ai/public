@@ -1,4 +1,4 @@
-@journey @realizes:filters.cp.chem-and-bio-filters
+@journey @sketcher-controls @realizes:filters.cp.chem-and-bio-filters
 Feature: A structure drawn in Ketcher reaches the substructure card as drawn
   Chem | Search | Substructure Search... on smiles (1000 rows, molecule column canonical_smiles) adds a
   substructure card and opens its sketcher, here Ketcher. The benzene template placed on the canvas

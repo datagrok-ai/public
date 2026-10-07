@@ -140,7 +140,7 @@ export class FuncCallNode implements IStoreProvider {
       this.uuid = state.uuid;
   }
 
-  initState(initialConfig: StepFunCallInitialConfig) {
+  initState(initialConfig: Omit<StepFunCallInitialConfig, 'id'>) {
     const initialRestrictions: Record<string, RestrictionState> = {};
     for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
       const initalVal = (initialConfig.initialValues ?? {})[k];
@@ -278,7 +278,8 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const inconsistent = !customDeepEqual(currentVal, assignedValue);
+      const tolerance = this.config.io?.find((io) => io.id === inputName)?.tolerance;
+      const inconsistent = !customDeepEqual(currentVal, assignedValue, tolerance);
       return {
         restriction: type,
         inconsistent,

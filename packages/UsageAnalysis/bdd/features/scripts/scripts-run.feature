@@ -81,6 +81,7 @@ Feature: Running a script with data from every source
     And no error or warning balloon should have been shown
 
   Scenario: A database query's result is the table
+    Given the stand has a reachable "PostgresTest" connection
     When user notes the console output
     And user picks "Run..." from the context menu of "BddScriptRun{time}" link in gallery
     Then "BddScriptRun{time}" dialog should be visible

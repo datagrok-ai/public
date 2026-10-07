@@ -1006,6 +1006,13 @@ export namespace funcs {
   }
 
   /**
+   * Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)
+   */
+  export async function cruxSketcher(): Promise<any> {
+    return await grok.functions.call('Chem:CruxSketcher', {});
+  }
+
+  /**
    * Opens SDF file
    */
   export async function importSdf(bytes: any ): Promise<any> {
@@ -1165,8 +1172,8 @@ export namespace funcs {
    * @param {DG.Column} molecules
    *   semType: Molecule
    */
-  export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean ): Promise<void> {
-    return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge });
+  export async function addChemPropertiesColumns(table: DG.DataFrame , molecules: DG.Column , MW: boolean , HBA: boolean , HBD: boolean , logP: boolean , logS: boolean , PSA: boolean , rotatableBonds: boolean , stereoCenters: boolean , moleculeCharge: boolean , molecularFormula: boolean ): Promise<void> {
+    return await grok.functions.call('Chem:AddChemPropertiesColumns', { table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula });
   }
 
   /**

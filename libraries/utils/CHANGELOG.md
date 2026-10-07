@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Forms viewer: Fixed the mouse-over row staying set after the pointer left the viewer when the card under it had been re-rendered
 * format-version-utils: Added `isClientAtLeast(version)`
 
 ## 4.7.10 (WIP)

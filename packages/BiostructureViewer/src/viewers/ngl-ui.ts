@@ -9,6 +9,8 @@ import {awaitNgl} from './ngl-viewer-utils';
 export async function viewNglUI(fileContent: string): Promise<void> {
   const view = grok.shell.newView('NGL');
   const host = ui.div([], 'd4-ngl-viewer');
+  host.setAttribute('data-u2-name', 'ngl-host');
+  view.append(host);
   const stage = new ngl.Stage(host);
   await awaitNgl(stage, `viewNglUI()`);
   const blob = new Blob([fileContent], {type: 'application/octet-binary'});
@@ -29,7 +31,9 @@ export async function viewNglUI(fileContent: string): Promise<void> {
  */
 export function previewNglUI(file: DG.FileInfo): { view: DG.View, loadingPromise: Promise<void> } {
   const view = DG.View.create();
+  view.name = file.name;
   const host = ui.div([], 'd4-ngl-viewer');
+  host.setAttribute('data-u2-name', 'ngl-host');
   const stage = new ngl.Stage(host);
   // await awaitNgl(stage); // previewNglUI is not async
 

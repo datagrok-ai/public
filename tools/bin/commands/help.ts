@@ -265,6 +265,7 @@ Options:
 --skip-puppeteer    Skip the Puppeteer/DG.Test pass; only run Playwright (for playwright-only test directories)
 --skip-playwright   Skip the Playwright pass; only run Puppeteer/DG.Test
 --skip-node         Skip the Node (browserless) pass; run all tests in the browser
+--skip-gc           Do not collect garbage after each test (faster for suites of small unit tests)
 --node-only         Run only tests annotated {node: true} headless under Node, no browser
 --link  	        Link the package to local utils (no effect in a pnpm workspace checkout)
 --record            Records the test execution process in mp4 format

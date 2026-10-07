@@ -21,7 +21,8 @@
         "OpenChemLib",
         "Ketcher",
         "Marvin",
-        "ChemDraw"
+        "ChemDraw",
+        "Crux"
       ],
       "defaultValue": "Ketcher",
       "nullable": true

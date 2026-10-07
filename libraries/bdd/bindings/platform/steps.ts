@@ -136,6 +136,16 @@ export const pickViewTabMenu = When('user picks {string} from the context menu o
   await pickMenuPath(page, path);
 }, {tier: 'ui', description: 'right-clicks the tab of the view in front and picks the path in the menu it opens'});
 
+export const viewTabsInOrder = Then('the view tabs should be in the order {string}', async (page: Page, names: string) => {
+  const want = names.split(',').map((n) => n.trim());
+  if (await page.evaluate(() => grok.shell.windows.simpleMode))
+    throw new Error('the view tabs are hidden in simple mode: "simple mode is off" comes first');
+  await expect.poll(() => page.evaluate((w) => [...document.querySelectorAll('.tab-handle[name^="view-handle: "]')]
+    .filter((t) => t.getClientRects().length > 0)
+    .map((t) => t.getAttribute('name')!.slice('view-handle: '.length))
+    .filter((n) => w.includes(n)), want), {message: 'the views\' tabs, left to right'}).toEqual(want);
+}, {tier: 'ui', description: 'the order of those views\' tabs in the tab strip of a full shell, left to right; the tabs of other views (Home, Browse) are not counted'});
+
 export const switchToLastView = When('user switches to the last table view of {string}', async (page: Page, table: string) => {
   const name = await page.evaluate((t) => {
     const views = (Array.from(grok.shell.tableViews) as any[]).filter((v) => v.dataFrame?.name === t);
@@ -196,6 +206,9 @@ async function saveProject(page: Page, name: string, everyView: boolean): Promis
     try {
       const project = DG.Project.create();
       project.name = n;
+      // as the Save dialog names it: the server's name filter misses a project listed under a
+      // friendly name derived from the name ("Radar Reopen…")
+      project.friendlyName = n;
       const tables: string[] = [];
       const views: string[] = [];
       for (const tv of every ? Array.from(grok.shell.tableViews) as any[] : [grok.shell.tv]) {
@@ -468,11 +481,36 @@ export const toolboxPaneShown = Given('the toolbox pane is shown', async (page: 
 
 /* Which sketcher a molecule input, a filter card or a dialog opens is the account's choice, kept on
    the server: a feature that draws or types a molecule names the one it was written against, so an
-   account that picked another one elsewhere does not change what the feature sees. */
+   account that picked another one elsewhere does not change what the feature sees. A run can pin
+   one sketcher for every feature instead (`BDD_MOLECULE_SKETCHER`: a package's suite run with a new
+   sketcher); a feature about one sketcher's own controls says so with SKETCHER_CONTROLS_TAG and
+   skips under an override that names another. */
 const sketcherKept = new WeakSet<Page>();
 
-export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, name: string) => {
+/** The feature tag of a feature that drives the controls of the sketcher it pins (Ketcher's template
+ * toolbar): a run that pins another sketcher skips it. */
+export const SKETCHER_CONTROLS_TAG = '@sketcher-controls';
+
+/** What `the molecule sketcher is "<name>"` pins: the run's override when set (`BDD_MOLECULE_SKETCHER`),
+ * else the feature's own; a SKETCHER_CONTROLS_TAG feature under an override that names another
+ * sketcher skips, with the reason. */
+export function sketcherPin(name: string, override: string | undefined, tags: readonly string[]): {pin: string} | {skip: string} {
+  const run = override?.trim() ?? '';
+  if (run === '' || run === name)
+    return {pin: name};
+  if (tags.includes(SKETCHER_CONTROLS_TAG))
+    return {skip: `the feature drives ${name}'s own controls (${SKETCHER_CONTROLS_TAG}) and the run pins "${run}" (BDD_MOLECULE_SKETCHER)`};
+  return {pin: run};
+}
+
+export const sketcherIs = Given('the molecule sketcher is {string}', async (page: Page, feature: string) => {
   silent(page);
+  const choice = sketcherPin(feature, process.env.BDD_MOLECULE_SKETCHER, test.info().tags);
+  if ('skip' in choice) {
+    test.skip(true, choice.skip);
+    return;
+  }
+  const name = choice.pin;
   const was = await page.evaluate((n) => {
     const known = DG.Func.find({meta: {role: 'moleculeSketcher'}}).map((f: any) => f.friendlyName);
     if (!known.includes(n))
@@ -500,7 +538,7 @@ export const sketcherIs = Given('the molecule sketcher is {string}', async (page
     await expect.poll(() => page.evaluate(async () => String(await grok.dapi.userDataStorage.getValue(DG.chem.STORAGE_NAME, DG.chem.KEY) ?? '')),
       {message: 'the sketcher setting of the account on the server, put back', timeout: pollMs(30000)}).toBe(was ?? '');
   });
-}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
+}, {tier: 'api', description: 'the sketcher every molecule editor opens from then on (OpenChemLib is the platform\'s default), or the one BDD_MOLECULE_SKETCHER names for the whole run (a @sketcher-controls feature pinning another then skips); the account\'s own choice comes back at feature end, read back from the server; not in the video'});
 
 /** Every guide's second step (the compiler insists): the shell as a person has it, view tabs and
  * menu bar included, in a plain run as much as in a filmed one. Silent, like the login. */
@@ -1046,6 +1084,38 @@ export const noSpaceOnServer = Given('no space named {string} is on the server',
   await refreshBrowseTree(page);
 }, {tier: 'api', description: 'deletes earlier fixtures by name (comma-separated), refreshes the open Browse tree and waits for it to rebuild, and deletes them again at feature end'});
 
+/* A space a feature needs but does not test the making of: the Create Space dialog is spaces-create's
+   subject, and a root saved through it takes 5–18 s. Made through the API instead; a root is swept by
+   name now and at feature end, a child goes with it, and a child finds its parent among the spaces the
+   feature made. */
+const madeSpaces = new WeakMap<Page, Map<string, string>>();
+
+async function makeSpace(page: Page, name: string, parent?: string): Promise<void> {
+  const made = madeSpaces.get(page) ?? new Map<string, string>();
+  madeSpaces.set(page, made);
+  const parentId = parent === undefined ? '' : made.get(parent);
+  if (parentId === undefined)
+    throw new Error(`the space "${parent}" was not made by this feature: "a space named "${parent}" is on the server" comes first`);
+  if (parent === undefined) {
+    const cleanup = namedCleanup(page, 'spaces', 'spaces', [name]);
+    atFeatureEnd(page, () => {
+      made.clear();
+      return cleanup();
+    });
+    await cleanup();
+  }
+  made.set(name, await page.evaluate(async ([n, p]) =>
+    String((p ? await grok.dapi.spaces.id(p).addSubspace(n) : await grok.dapi.spaces.createRootSpace(n)).id), [name, parentId]));
+  await refreshBrowseTree(page);
+}
+
+export const spaceOnServer = Given('a space named {string} is on the server', (page: Page, name: string) => makeSpace(page, name),
+  {tier: 'api', description: 'a root space made through the API after one of that name is swept, and swept again (with its children) at feature end; the open Browse tree is refreshed'});
+
+export const childSpaceOnServer = Given('a space named {string} under {string} is on the server', (page: Page, name: string, parent: string) =>
+  makeSpace(page, name, parent),
+{tier: 'api', description: 'a child space made through the API under a space this feature made first; it goes with that root at feature end'});
+
 /** A schema goes before the entity type it applies to. A schema has no creation date, so a {time} name
  * dates itself: its family's members over an hour old are what a run that was killed left. */
 async function removeStickyMetaFixtures(page: Page, schema: string, type: string): Promise<void> {
@@ -1182,7 +1252,10 @@ export const scriptOnServer = Given('a script {string} is on the server:', async
   await expectNamedCount(page, 'scripts', 'scripts', name, 1);
 }, {tier: 'api', description: 'saved through the JS API under that name; deleted with its chats at feature end'});
 
-export const queryOnServer = Given('a query {string} on {string} reads {string}', async (page: Page, name: string, connection: string, sql: string) => {
+/** A SQL query saved on the connection (its nqName) through the JS API, the platform reading its text as it reads a
+ * query's (the `--input:` header lines give it its parameters); an earlier one of the name goes first, and it is
+ * deleted with its chats at feature end. */
+async function saveQuery(page: Page, name: string, connection: string, sql: string): Promise<void> {
   const cleanup = namedCleanup(page, 'queries', 'queries', [name]);
   atFeatureEnd(page, cleanup);
   await cleanup();
@@ -1194,7 +1267,15 @@ export const queryOnServer = Given('a query {string} on {string} reads {string}'
     await grok.dapi.queries.save(conn.query(n, s));
   }, [name, connection, sql] as [string, string, string]);
   await expectNamedCount(page, 'queries', 'queries', name, 1);
-}, {tier: 'api', description: 'a SQL query saved on the connection (its nqName, "System:Datagrok") through the JS API; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
+}
+
+export const queryOnServer = Given('a query {string} on {string} reads {string}', (page: Page, name: string, connection: string, sql: string) =>
+  saveQuery(page, name, connection, sql),
+{tier: 'api', description: 'a SQL query saved on the connection (its nqName, "System:Datagrok") through the JS API; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
+
+export const queryTextOnServer = Given('a query {string} on {string} is on the server:', (page: Page, name: string, connection: string, text: string) =>
+  saveQuery(page, name, connection, text),
+{tier: 'api', description: 'a query saved on the connection (its nqName) through the JS API, its text the doc string: header lines such as `--input: string pattern {semType: Molecule}` give it its parameters, as in a query file; an earlier one of the name goes first, and it is deleted with its chats at feature end'});
 
 /** The coordinates of a data source without its credentials: Postgres points at the Northwind of
  * the stand's test server, any other source copies the parameters of its Samples Northwind. A
@@ -1298,6 +1379,95 @@ export const standReachesConnection = Given('the stand can reach the database of
   test.skip(answer.trim().toLowerCase() !== 'ok', `the stand cannot reach the database of "${name}" (${answer.slice(0, 200)}) — the rest of this test needs it`);
 }, {tier: 'api', description: 'a capability gate: the connection answers its Grok Connect test with "ok", or the rest of the test is skipped with the answer'});
 
+/* --- Database meta --------------------------------------------------------------------------------
+   What the Database meta pane saves for a schema, a table or a column of a connection, read from the
+   server: the catalogs listed afresh (grok.data.db.getInfo), the schema, table or column found by name,
+   its properties. A save is claimed here rather than after a reload; a killed run's values are swept
+   with DbInfo.clearProperties, which removes all Datagrok keeps for the connection's catalogs. */
+const DB_META_FIELDS: Record<string, string> = {'Comment': 'comment', 'LLM Comment': 'llmComment', 'Row Count': 'rowCount',
+  'Is Unique': 'isUnique', 'Min': 'min', 'Max': 'max', 'Values': 'values', 'Sample Values': 'sampleValues',
+  'Unique Count': 'uniqueCount', 'Quality': 'quality'};
+
+const dbMetaOf = (page: Page, connection: string, path: string): Promise<Record<string, string>> =>
+  page.evaluate(async ([c, p, keys]) => {
+    const conn = (await grok.dapi.connections.list({pageSize: 5000})).find((x: any) => x.friendlyName === c || x.name === c);
+    if (!conn)
+      throw new Error(`no connection "${c}"`);
+    const [schemaName, tableName, columnName] = p.split('.');
+    // a server lists every database it holds as a catalog: the connection's own comes first
+    const infos = (await grok.data.db.getInfo(conn)).sort((a: any, b: any) =>
+      Number(b.name === conn.parameters?.db) - Number(a.name === conn.parameters?.db));
+    for (const info of infos) {
+      const schema = (await info.getSchemas()).find((s: any) => s.name === schemaName);
+      if (!schema)
+        continue;
+      let held: any = {comment: schema.comment, llmComment: schema.llmComment};
+      if (tableName) {
+        const table = (await schema.getTables()).find((t: any) => String(t.name).toLowerCase() === tableName.toLowerCase());
+        if (!table)
+          continue;
+        held = table.tags;
+        if (columnName) {
+          const column = table.columns.find((x: any) => x.name === columnName);
+          if (!column)
+            continue;
+          held = column.tags;
+        }
+      }
+      // a column's and a table's tags are a map whose own methods (values, keys) shadow tags of those names
+      return Object.fromEntries(keys.map((k: string) => [k, (typeof held.get === 'function' ? held.get(k) : held[k]) ?? ''])
+        .map(([k, v]) => [k, String(v)]));
+    }
+    throw new Error(`no "${p}" in any database of "${c}"`);
+  }, [connection, path, Object.values(DB_META_FIELDS)] as [string, string, string[]]);
+
+/** Connections whose Database meta only the suite writes (database-meta.feature on DBTests' PostgresTest):
+ * clearing everything there removes nothing anyone else keeps. */
+const DB_META_FIXTURES = ['PostgresTest'];
+
+export const dbMetaCleared = Given('the Database meta of the {string} connection is cleared now and at feature end', async (page: Page, connection: string) => {
+  if (!DB_META_FIXTURES.includes(connection))
+    throw new Error(`the Database meta of "${connection}" is not the suite's to clear; only ${DB_META_FIXTURES.join(', ')}`);
+  const clear = async () => {
+    // read back only what a person writes: the other fields mix in what the platform reads off the database
+    const left = await page.evaluate(async ([c, keys]) => {
+      const conn = (await grok.dapi.connections.list({pageSize: 5000})).find((x: any) => x.friendlyName === c || x.name === c);
+      if (!conn)
+        throw new Error(`no connection "${c}"`);
+      for (const info of await grok.data.db.getInfo(conn))
+        await info.clearProperties();
+      const held: string[] = [];
+      for (const info of (await grok.data.db.getInfo(conn)).filter((i: any) => !conn.parameters?.db || i.name === conn.parameters.db))
+        for (const schema of await info.getSchemas()) {
+          if (schema.comment || schema.llmComment)
+            held.push(schema.name);
+          for (const table of await schema.getTables()) {
+            if (keys.some((k: string) => (table.tags.get(k) ?? '') !== ''))
+              held.push(`${schema.name}.${table.name}`);
+            for (const column of table.columns)
+              if (keys.some((k: string) => (column.tags.get(k) ?? '') !== ''))
+                held.push(`${schema.name}.${table.name}.${column.name}`);
+          }
+        }
+      return held;
+    }, [connection, ['comment', 'llmComment', 'quality']] as [string, string[]]);
+    expect(left, `the Database meta of "${connection}" on the server after it was cleared`).toEqual([]);
+  };
+  await clear();
+  atFeatureEnd(page, clear);
+}, {tier: 'api', description: 'every Database meta value Datagrok keeps for a connection the suite owns the meta of (PostgresTest), removed through DbInfo.clearProperties now and when the feature ends, read back from the server'});
+
+export const dbMetaOnServer = Then('the Database meta of {string} in the {string} connection should be:', async (page: Page, path: string, connection: string, rows: string[][]) => {
+  for (const [field] of rows)
+    if (!(field in DB_META_FIELDS))
+      throw new Error(`"${field}" is not a Database meta field; the fields are ${Object.keys(DB_META_FIELDS).join(', ')}`);
+  const want = Object.fromEntries(rows.map(([field, value]) => [field, value ?? '']));
+  await expect.poll(async () => {
+    const held = await dbMetaOf(page, connection, path);
+    return Object.fromEntries(rows.map(([field]) => [field, held[DB_META_FIELDS[field]]]));
+  }, {message: `the Database meta of ${path} in "${connection}" on the server`, timeout: pollMs(15000)}).toEqual(want);
+}, {tier: 'api', description: '"<schema>", "<schema>.<table>" or "<schema>.<table>.<column>"; rows of | field | value | (the pane\'s field names), "" for none, read from the server'});
+
 export const standHasReachableConnection = Given('the stand has a reachable {string} connection', async (page: Page, name: string) => {
   const answer = await connectionTestAnswer(page, name);
   test.skip(answer.trim().toLowerCase() !== 'ok', `the stand has no reachable "${name}" connection (${answer.slice(0, 200)}) — the rest of this test needs it`);
@@ -1308,6 +1478,18 @@ export const noModelOnServer = Given('no predictive model named {string} is on t
   atFeatureEnd(page, cleanup);
   await cleanup();
 }, {tier: 'api', description: 'deletes what an earlier run left under those names (comma-separated), and deletes them again when the feature ends'});
+
+/* The Apply dialog lists a model as "<saved at>: <name>" cut at 40 characters, so the text names no
+   model with a {run} suffix; the option's value is the model's id. */
+export const selectModel = When('user selects the predictive model {string} in {element}', async (page: Page, name: string, target: ElementRef) => {
+  const id = (await serverEntities(page, 'models')).find((m) => m.friendlyName === name || m.name === name)?.id;
+  if (!id)
+    throw new Error(`no predictive model named "${name}" on the server`);
+  const loc = await locate(page, target);
+  const native = await loc.first().evaluate((e) => e.tagName === 'SELECT') ? loc.first() : loc.locator('select').first();
+  await expect(native.locator(`option[value="${id}"]`), `the option of "${name}" in ${target.phrase}`).toHaveCount(1, {timeout: pollMs(5000)});
+  await native.selectOption({value: id});
+}, {tier: 'ui', description: 'the option of the model of that name, by its id: the shown text is "<saved at>: <name>" cut at 40 characters'});
 
 export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
   expectNamedCount(page, 'models', 'predictive models', name, count),
@@ -1386,7 +1568,42 @@ export const userOnServer = Given('a user {string} is on the server', async (pag
   }
   await expect.poll(() => serverUsers(page, login).then((users) => users.map((u) => u.status).join(', ') || 'no such user'),
     {message: `the user "${login}"`, timeout: pollMs(30000)}).toBe('active');
-}, {tier: 'api', description: 'a fixture user made once per stand, since users cannot be deleted: found by login or created; put back to active and out of the favorites'});
+  await putFixtureNameBack(page, login);
+  const pending = namesPutBackAtEnd.get(page) ?? new Set<string>();
+  namesPutBackAtEnd.set(page, pending);
+  if (!pending.has(login)) {
+    pending.add(login);
+    atFeatureEnd(page, () => {
+      pending.delete(login);
+      return putFixtureNameBack(page, login);
+    });
+  }
+}, {tier: 'api', description: 'a fixture user made once per stand, since users cannot be deleted: found by login or created; put back to active, out of the favorites and to its own name (the login, no last name), now and at feature end'});
+
+const namesPutBackAtEnd = new WeakMap<Page, Set<string>>();
+
+const serverUserName = (page: Page, login: string): Promise<string> => page.evaluate(async (l) => {
+  const user = await grok.dapi.users.filter(`login = "${l}"`).first();
+  return user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : 'no such user';
+}, login);
+
+async function putFixtureNameBack(page: Page, login: string): Promise<void> {
+  await page.evaluate(async (l) => {
+    const user = await grok.dapi.users.filter(`login = "${l}"`).first();
+    if (user && (user.firstName !== l || (user.lastName ?? '') !== '')) {
+      user.firstName = l;
+      user.lastName = '';
+      await grok.dapi.users.save(user);
+    }
+  }, login);
+  await expect.poll(() => serverUserName(page, login), {message: `the name of the fixture user "${login}"`, timeout: pollMs(30000)})
+    .toBe(login);
+}
+
+export const userNameOnServer = Then('the user {string} should have the name {string} on the server', async (page: Page, login: string, name: string) => {
+  await expect.poll(() => serverUserName(page, login), {message: `the first and last name of "${login}"`, timeout: pollMs(30000)})
+    .toBe(name);
+}, {tier: 'api', description: 'first and last name as the server holds them, joined by a space'});
 
 export const usersOnServer = Then('{int} user(s) with login {string} should be on the server', async (page: Page, count: number, login: string) => {
   await expect.poll(() => serverUsers(page, login).then((users) => users.length), {message: `users with login "${login}"`, timeout: pollMs(60000)})

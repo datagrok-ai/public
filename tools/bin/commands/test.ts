@@ -25,7 +25,7 @@ import {setAlphabeticalOrder} from '../utils/order-functions';
 const testInvocationTimeout = parseInt(process.env['GROK_TEST_INVOCATION_TIMEOUT_MS'] ?? '', 10) || 3600000;
 
 const availableCommandOptions = ['host', 'package', 'csv', 'gui', 'catchUnhandled', 'platform', 'core',
-  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer', 'skip-node', 'node-only'];
+  'report', 'skip-build', 'skip-publish', 'path', 'record', 'verbose', 'benchmark', 'category', 'test', 'stress-test', 'link', 'tag', 'ci-cd', 'debug', 'no-retry', 'dartium', 'f', 'params', 'logfailed', 'skip-playwright', 'skip-puppeteer', 'skip-node', 'node-only', 'skip-gc'];
 
 const curDir = process.cwd();
 
@@ -210,6 +210,7 @@ export async function test(args: TestArgs): Promise<boolean> {
       if (args.debug) cmdArgs.push('--debug');
       if (args['ci-cd']) cmdArgs.push('--ci-cd');
       if (args['no-retry']) cmdArgs.push('--no-retry');
+      if (args['skip-gc']) cmdArgs.push('--skip-gc');
       if (!args['skip-publish']) {
         const isDevToolsOnServer = await testUtils.isPackageOnServer(args.host ?? '', 'DevTools');
         if (isDevToolsOnServer) {
@@ -435,6 +436,7 @@ async function runTesting(args: TestArgs, excludeNodeTests: boolean = false): Pr
         skipToTest: currentSkipToTest,
         keepBrowserOpen: useRetry,
         urlParams: args.params,
+        skipGc: args['skip-gc'] ?? false,
       }, browserId, testInvocationTimeout, browserSession);
 
       // Store browser session for potential reuse
@@ -588,6 +590,7 @@ interface TestArgs {
   'stress-test'?: boolean,
   'ci-cd'?: boolean,
   'no-retry'?: boolean,
+  'skip-gc'?: boolean,
   recursive?: boolean,
   filter?: string,
   parallel?: number,

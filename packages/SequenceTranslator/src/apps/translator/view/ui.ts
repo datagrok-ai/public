@@ -56,6 +56,7 @@ class TranslatorAppLayout {
         await this.updateMolImg();
       }
     });
+    this.formatChoiceInput.root.setAttribute('name', 'input-host-Single-sequence-format');
 
     this.sequenceInputBase = ui.input.textArea(
       '', {value: DEFAULT_AXOLABS_INPUT, onValueChanged: () => { this.onInput.next(); }}

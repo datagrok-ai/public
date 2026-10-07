@@ -114,8 +114,12 @@ test.describe('Home page Widgets (Widgets-*)', () => {
   test('Widgets-Search-01 — typing hides widgets, clearing restores them', async ({ homePage: page }) => {
     // Searching "aspirin" makes PowerPack embed a PubChem iframe, so this one test is
     // coupled to a third-party host: when PubChem answers 5xx the browser logs a resource
-    // error and the assertion below fails for a reason outside the platform.
-    const sink = watchErrors(page, [/Failed to load resource:\s*the server responded with a status of 5\d\d/i]);
+    // error and the assertion below fails for a reason outside the platform. PubChem may also
+    // answer with a reCAPTCHA page that forbids framing (X-Frame-Options: SAMEORIGIN).
+    const sink = watchErrors(page, [
+      /Failed to load resource:\s*the server responded with a status of 5\d\d/i,
+      /Refused to display 'https:\/\/pubchem\.ncbi\.nlm\.nih\.gov\/.*' in a frame/i,
+    ]);
 
     const panel = page.locator(WIDGETS_PANEL);
     const results = page.locator(SEARCH_HOST);

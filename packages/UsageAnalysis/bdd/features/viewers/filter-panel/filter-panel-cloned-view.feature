@@ -18,7 +18,10 @@ Feature: Filter panel of a cloned view
   drag that does add a card; the "not filtered" reads are single reads, not a held window; the
   row count after the clone's layout comes back is not claimed — it is the two panels' together
   over one table, and the original view's panel is not reset by the clone's layout (measured on dev:
-  11 rows after the reload against 380 at the save).
+  11 rows after the reload against 380 at the save). The last scenario sets the SEX card to F
+  through the card's state, not a click: a panel keeps its scroll across a view switch (GROK-21109),
+  so demog-missing's comes back scrolled to its HEIGHT card with the F row under the panel header,
+  and a wheel scroll back up has no end a step can wait for before aiming the click.
 
   Background:
     Given user is logged in
@@ -174,7 +177,7 @@ Feature: Filter panel of a cloned view
     When user opens a table "shared SEX" that shares the "SEX" column of the current table
     Then 1000 rows of table "shared SEX" should pass the filter
     When user switches to the "demog-missing" view
-    And user clicks on the "category F of SEX" area of filter panel
+    And user adds a categorical filter on "SEX" keeping "F"
     Then fewer than 553 rows should pass the filter
     And the "rows shown" reading of filter panel should be at least 1
     And no rows where "SEX" is "M" should pass the filter

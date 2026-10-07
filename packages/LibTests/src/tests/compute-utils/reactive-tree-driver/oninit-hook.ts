@@ -269,7 +269,7 @@ category('ComputeUtils: Driver hooks running', async () => {
         const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
         tree.init().subscribe();
         if (placement === 'added')
-          cold('-a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, inner.id, 0).subscribe());
+          cold('-a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, inner.id!, 0).subscribe());
         cold('100ms a').subscribe(() => {
           const base = placement === 'root' ? [] : [{idx: 0}];
           const stores = [base, [...base, {idx: 0}], [...base, {idx: 1}]]

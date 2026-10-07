@@ -52,13 +52,23 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   private _detached = false;
   private _suspended = false;
   private _exportId = 0;
+  /** Settles once Ketcher's editor reports ready (its first onInit), or the sketcher is suspended or detached first:
+   * `init` waits for it, so the host announces this sketcher ready (`sketcherReady`) only when it takes input. */
+  private readonly _ready: Promise<void>;
+  private _resolveReady: (() => void) | null = null;
 
   constructor() {
     super();
+    this._ready = new Promise<void>((resolve) => this._resolveReady = resolve);
     this.ketcherHost = ui.div([], 'ketcher-host');
     this.root.appendChild(this.ketcherHost);
     KetcherSketcher._instances.add(this);
     this._mountEditor();
+  }
+
+  private _settleReady(): void {
+    this._resolveReady?.();
+    this._resolveReady = null;
   }
 
   private _mountEditor(): void {
@@ -118,6 +128,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
           this.explicitMol = null;
           this._exportChange(ketcher);
         }
+        this._settleReady();
       },
     };
 
@@ -184,6 +195,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     if (this._suspended || this._detached || this.reactRoot === null)
       return;
     this._suspended = true;
+    this._settleReady();
     try {
       this.reactRoot.unmount();
     } catch (e) {
@@ -219,6 +231,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     this.host = host;
     if (this.host.isResizing)
       this.ketcherHost.classList.add('ketcher-resizing');
+    await this._ready;
   }
 
   get supportedExportFormats() {
@@ -365,6 +378,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   detach() {
     this._detached = true;
+    this._settleReady();
     KetcherSketcher._instances.delete(this);
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this.reactRoot?.unmount();

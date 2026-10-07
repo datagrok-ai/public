@@ -16,7 +16,7 @@ related_bugs: []
 
 # Table Manager — canvas grid interactions
 
-Manual companion to `table-manager.md`. Opening **View | Tables** (Alt+T) and
+Manual companion to `table-manager.md`. Opening the manager with `Alt + T` and
 verifying the manager lists all open tables is covered by the automated
 companion. The interactions below operate on the canvas grid and
 its context menus and are verified manually.
@@ -24,7 +24,7 @@ its context menus and are verified manually.
 ## Preconditions
 
 1. Load 3-4 datasets (e.g. demog.csv, chem/smiles.csv, chem/SPGI.csv from Demo Files).
-2. Open the Table Manager via **View | Tables** (or `Alt + T`).
+2. Open the Table Manager with `Alt + T`.
 
 ## Steps
 

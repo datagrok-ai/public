@@ -11,10 +11,11 @@ import {mouseOverRowIs} from '../bindings/platform/columns.js';
 import {newestMatchingDistinct, newestMatchingFilled} from '../bindings/platform/commands.js';
 import {setTableTag, tableTagIsFile} from '../bindings/platform/data.js';
 import {taskBarFinished, taskBarShown, watchTaskBar} from '../bindings/platform/events.js';
-import {openTableOf} from '../bindings/platform/steps.js';
+import {openTableOf, SKETCHER_CONTROLS_TAG, sketcherPin} from '../bindings/platform/steps.js';
 import {fixtureFamilies, isStaleFixture, serviceGap} from '../src/runtime/server.js';
 import {el} from '../src/runtime/args.js';
 import {select} from '../src/runtime/gestures.js';
+import {hitArea, readValue} from '../src/runtime/viewers.js';
 import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
@@ -158,6 +159,23 @@ scenario('the mouse-over row counts from 1, and a filled element is told from on
   await fails(() => fillsParent(page!, el('Half viewer')));
 });
 
+scenario('a widget outside any viewer that reports a status is found up from its element: its hit areas and readings', async () => {
+  await page!.setContent(`<div style="padding:30px"><div data-widget="true" name="Probe" style="position:relative;left:5px;width:200px;height:100px">
+    <div id="inner" style="width:50px;height:50px"></div></div><div data-widget="true" name="Plain" style="width:20px;height:20px"></div></div>`);
+  await page!.evaluate(() => {
+    const w = window as any;
+    const root = document.querySelector('[name="Probe"]')!;
+    const probe = {root, type: 'Probe', isRenderPending: false,
+      getWidgetStatus: () => ({parts: {}, hitAreas: {'atom 0': {x: 10, y: 20, width: 8, height: 8}}, values: {smiles: 'CC'}})};
+    w.grok = {shell: {tableViews: []}};
+    w.DG = {Widget: {find: (e: Element) => e === root ? probe : null}};
+  });
+  const r = await page!.locator('[name="Probe"]').boundingBox();
+  assert.deepEqual(await hitArea(page!, el('Probe widget'), 'atom 0'), {x: r!.x + 10, y: r!.y + 20, width: 8, height: 8});
+  assert.equal(await readValue(page!, el('Probe widget'), 'smiles'), 'CC');
+  await assert.rejects(() => readValue(page!, el('Plain widget'), 'smiles'), /not a viewer/);
+});
+
 scenario('a table tag is compared with a file byte for byte', async () => {
   await page!.setContent('<div></div>');
   await standIn(page!, {node: ['a']});
@@ -199,4 +217,15 @@ test('a service gate skips on a service the stand reports missing or down, and l
   assert.equal(serviceGap(services, 'No Such Service'), 'absent');
   assert.equal(serviceGap([], 'Jupyter'), '');
   assert.equal(serviceGap([], 'Jupyter', true), 'the stand reports no service health');
+});
+
+test('the molecule sketcher pinned is the one the feature names, or the run override; a feature about the controls of one sketcher skips under another', () => {
+  assert.deepEqual(sketcherPin('OpenChemLib', undefined, []), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', '', []), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', ' ', [SKETCHER_CONTROLS_TAG]), {pin: 'OpenChemLib'});
+  assert.deepEqual(sketcherPin('OpenChemLib', 'Crux', ['@journey']), {pin: 'Crux'});
+  assert.deepEqual(sketcherPin('Crux', 'Crux', [SKETCHER_CONTROLS_TAG]), {pin: 'Crux'});
+  const skipped = sketcherPin('Ketcher', ' Crux ', ['@journey', SKETCHER_CONTROLS_TAG]);
+  assert.ok('skip' in skipped);
+  assert.match((skipped as {skip: string}).skip, /Ketcher's own controls .*"Crux" \(BDD_MOLECULE_SKETCHER\)/);
 });

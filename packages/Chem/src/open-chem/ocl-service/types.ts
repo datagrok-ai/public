@@ -6,4 +6,4 @@ export interface IChemProperty {
     type: IChemPropertyType;
 }
 // we need this instead of DG.TYPE.FLOAT or int, because anything used by workers can not import DG, as it is external
-export type IChemPropertyType = 'float' | 'int';
+export type IChemPropertyType = 'float' | 'int' | 'string';

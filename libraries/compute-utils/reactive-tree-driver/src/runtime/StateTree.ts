@@ -301,6 +301,8 @@ export class StateTree {
       const node = snode.getItem();
       if (!isFuncCallNode(node))
         throw new Error(`Step uuid ${uuid} is not FuncCall`);
+      if (node.isReadonly)
+        throw new Error(`Step uuid ${uuid} is read-only`);
       return node.instancesWrapper.run(mockResults, mockDelay).pipe(mapTo(undefined));
     });
   }
@@ -316,7 +318,7 @@ export class StateTree {
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
-          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length)
+          if (!isFuncCallNode(node) || node.isReadonly || node.pendingDependencies$.value?.length)
             return of(undefined);
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent(includeInfo).pipe(

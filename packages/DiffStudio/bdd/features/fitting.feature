@@ -12,18 +12,13 @@ Feature: Fitting a model to data
 
   The target table is read from the stand into the workspace rather than dragged out of the Browse
   tree: a drag into a Vue-rendered table input has no phrase, and opening the file in a view of its
-  own takes the form off screen and rebuilds it.
+  own takes the form off screen and rebuilds it. That the fit's loss falls and its result stays within
+  the bounds is the fitting library's claim (LibTests compute-utils/fitting), not this feature's; Process
+  mode cascading into the inputs is open-model's.
 
   Background:
     Given user is logged in
     And user opens the "Bioreactor" model of the Diff Studio library
-
-  Scenario: Process mode cascades into the parameters the fit would use
-    When user clicks on Multiaxis tab
-    And user takes a snapshot of line chart viewer
-    And user selects "Mode 1" in "Process mode" input
-    Then "Process mode" input should have value "Mode 1"
-    And line chart viewer should have repainted
 
   Scenario: Fit opens a view of its own
     When user clicks on Fit ribbon item
@@ -31,8 +26,7 @@ Feature: Fitting a model to data
     And no errors should have been logged
 
   Scenario: A parameter is varied, and its bounds appear with it
-    When user selects "Default" in "Process mode" input
-    And user switches on "FFox" input
+    When user switches on "FFox" input
     Then "FFox (min)" input should be switched on
     And "FFox (min)" input should have value "0.15"
     And "FFox (max)" input should have value "0.25"
@@ -46,11 +40,9 @@ Feature: Fitting a model to data
     Then "Bioreactor" input should have value "bioreactor-experiment"
     And "argument" input should have value "t"
 
-  Scenario: Running the fit lowers the loss it reports, iteration by iteration
+  Scenario: Running the fit gives its result and the loss of each iteration
     When user clicks on "Run" icon
     Then the table should have a column "RMSE by iterations"
     And the table should have 1 row
-    And every value of "FFox" column should lie between 0.15 and 1.0
     And the "RMSE by iterations" table should have at least 2 rows
-    And the "Loss" column of the "RMSE by iterations" table should never increase
     And no errors should have been logged

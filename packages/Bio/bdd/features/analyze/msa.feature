@@ -5,9 +5,10 @@ Feature: Multiple sequence alignment with kalign
   result is an aligned column — every sequence padded to one width within its cluster. A HELM
   column switches the dialog to the non-canonical engines (PepSeA) and their own parameters.
 
-  Not translated, and why: running PepSeA itself (and the container's lifecycle) needs the PepSeA
-  Docker container deployed and started on the stand, which the suite cannot assume; the HELM scenario
-  stops at the dialog, which needs no container. The MSA header's WebLogo (msa.md step 8) is
+  Not translated, and why: running PepSeA itself (and the container's lifecycle) runs a Docker
+  container, which stays out of BDD (the lead's rule); the HELM scenario stops at the dialog and its
+  Cancel, which contact no container (the dialog builds its PepSeA inputs from the function's
+  parameters). The MSA header's WebLogo (msa.md step 8) is
   claimed in render/msa-header, on the antibody chains.
 
   Background:

@@ -6,8 +6,10 @@ import * as Circos from 'circos';
 import $ from 'cash-dom';
 
 import {select, scaleLinear, scaleOrdinal, color, ScaleLinear, ScaleOrdinal} from 'd3';
+import {Observable} from 'rxjs';
 import {layoutConf, topSort} from './utils';
-import {unsubscribeAll} from '../../utils/utils';
+import {MessageHandler, RenderSignals, unsubscribeAll} from '../../utils/utils';
+import {chordStatus} from './chord-status';
 
 import '../../../css/chord-viewer.css';
 
@@ -66,6 +68,16 @@ export class ChordViewer extends DG.JsViewer {
 
   fromColumn?: DG.Column;
   toColumn?: DG.Column;
+
+  private signals = new RenderSignals();
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
+
+  getWidgetStatus(): DG.IWidgetStatus {return chordStatus(this);}
 
   constructor() {
     super();
@@ -148,9 +160,14 @@ export class ChordViewer extends DG.JsViewer {
   }
 
   addSubs() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
-    this.subs.push(DG.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => this.render(false)));
+    this.subs.push(this.signals.debounce(this.dataFrame.onFilterChanged, 50).subscribe((_) => this.render()));
+  }
+
+  detach() {
+    this.signals.reset();
+    super.detach();
   }
 
   // Override onSourceRowsChanged to re-render the chord automatically on row source updates
@@ -179,7 +196,7 @@ export class ChordViewer extends DG.JsViewer {
 
   _aggregate() {
     let aggregatedTable = this.dataFrame
-      .groupBy([this.fromColumnName!, (this.distinctCols) ? this.toColumnName! : ''])
+      .groupBy(this.distinctCols ? [this.fromColumnName!, this.toColumnName!] : [this.fromColumnName!])
       .whereRowMask(this.filter)
       .add(this.aggType as DG.AggregationType, this.chordLengthColumnName, 'result')
       .aggregate();
@@ -380,6 +397,10 @@ export class ChordViewer extends DG.JsViewer {
   _showErrorMessage(msg: string) {this.root.appendChild(ui.divText(msg, 'd4-viewer-error'));}
 
   render(computeData = true) {
+    this.signals.render(() => this.draw(computeData));
+  }
+
+  private draw(computeData: boolean) {
     $(this.root).empty();
 
     if (!this._testColumns()) {

@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Tests: The catalog feature puts the library manifest back at feature end; fitting and sensitivity analysis no longer repeat open-model's and LibTests' claims
+* Fixed the model inputs jumping up half a second after a model or a preview opened: the inputs dock loses its title bar as it is docked, not 500 ms later
 * Save to Library: Fixed overwriting a library model on a file storage that ignores case — the unused name is now picked ignoring case (a saved PK-PD landed on the library's pk-pd.ivp)
 
 ## 1.7.0 (2026-09-14)
