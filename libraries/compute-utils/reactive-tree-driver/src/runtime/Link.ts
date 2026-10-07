@@ -420,6 +420,8 @@ export class Link {
             throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
           store.setMeta(ioName, this.uuid, controller.outputs[outputAlias]);
         } else if (controller instanceof MutationController) {
+          if (node.getItem().isReadonly)
+            continue;
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});

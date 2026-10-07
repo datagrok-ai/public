@@ -18,6 +18,7 @@ import './test/graphics-output';
 import './test/dock-layout';
 import './test/validation-actions';
 import './test/tree-node';
+import './test/export-summary';
 
 export const _package = new DG.Package();
 export {tests};

@@ -2,12 +2,18 @@
 
 ## v.next
 
+* RTD: Exported the `PipelineState`, `PipelineOutline`, `ValidationItem`, `Advice`, `RestrictionType`, `ConsistencyInfo`, `IRuntimeReturnController`, `ReturnHandler`, `CustomExport` and `ViewersHook` types and the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards, which now also narrow a `PipelineOutline`; removed the internal `isPipelineActionConfig` from the public index
+* RTD: Added `consistencyTolerance` and `consistencyRelTolerance` input annotations that set the tolerance for consistency checks of numbers and dataframe cells (default stays absolute `0.0001`)
+* RTD: Fixed pipeline actions changing read-only workflows (added or replaced steps came out writable); read-only targets are now skipped, and read-only steps no longer run through `runStep` or a run sequence
+* RTD: Added `ExportSummaryItem`, `ExportSummaryRollup` and `StepStatus` export types, `status` in `ExportCbInput`, `getExportSummary` and `reportSummaryExcel` in `ExportUtils`, and the summary as the 4th element of the `reportStateExcel` result
 * RTD: Added declarative `rule` links: conditions, effects and sources written as formula strings (`'gt(m, 0)'`, `'set(t, m)'`) or JSON Logic and effect objects, with per-effect `when`; `hide`/`show`/`items`/`meta`, `error`/`warning`/`notification`/`verdicts` and `set`/`clear`/`assign` effects; `(template)` queries; `validators`, `choices`, `js`, `func`, `query`, `file` and `table` sources; the `literal`, `columns`, `columnsMissing`, `columnIs`, `nulls`, `column`, `row`, `len`, `regex`, `script` and `scriptVerdict` operations; array messages; driver-added names use a `$` prefix, as in `$all.<alias>`
 * RTD: Added `check` links (typed by the exported `PipelineCheckConfiguration`) and annotation-derived default validators sharing one expansion (`nullable`/`optional`, `min`/`max`, regex and GrokScript `validator`, `visible` (also read from `enabled`, which hides the input), `validators`, column `type`/`semType`/`allowNulls`, and static `choices` and column `table` in `check` links only, since a `choices` annotation just fills the dropdown and a `table` annotation just binds the column picker); `nullable: true` annotations now make an input optional; GrokScript checks and annotation validators need platform 1.28+ and are skipped on older clients
 * RTD: Added annotation-derived rules for choices the platform evaluates: the items, with no check of the value, and the `propagateChoice: all` lookup (the first such key of a step; cells converted to the input types)
 * RTD: Added `$nonscalar` and `$linked` exclusions to the `inputs()`/`outputs()` io wildcards
 * RTD: Added `params`/`getParam` controller support, and `isClientAtLeast` in utils
 * RTD: Fixed computed annotation defaults (`= 2 + 2`, `= Pkg:f()`) being written as text, which failed step creation for numeric inputs; new steps evaluate defaults through the platform
+* RTD: Fixed instance configs (`startWorkflow`, `setPipelineState`) building an empty workflow for an entry without `steps`; it now gets the config defaults (static `steps`, dynamic `initialSteps`), and `steps: []` stays empty; the root `id` is optional, so `startWorkflow(nqName, version, {})` type-checks
+* RTD: Fixed a workflow whose `initialSteps` include itself hanging the tab; it now fails with an `Initial config cycle` error
 * RTD: Fixed inputs hidden via meta blocking the run with validation errors the user could not see; their validation is now suppressed
 * Excel export: Added graphics outputs as images on their own sheets (raster at native size, SVG fitted to the chart box)
 
