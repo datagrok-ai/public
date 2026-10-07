@@ -543,6 +543,16 @@ const PROTAC_HINTS: SarHint[] = [
       'line names which column plays which part, and which one the matrix columns enumerate.',
   },
   {
+    anchor: () => document.querySelector('.chem-sar-sum-cov') ??
+      document.querySelector('.chem-sar-sum-overview'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'What reached a matrix',
+    text: 'The bar is the whole table: how many degraders carry a value and landed in a series, and ' +
+      'how many carry one but had no analog to pair with. A compound alone on its linker cannot be ' +
+      'compared with anything, so it informs no ranking here — this line is what the rest of the tab ' +
+      'is a statement about.',
+  },
+  {
     anchor: () => document.querySelector('.chem-sar-sum-comp') ??
       document.querySelector('.chem-sar-sum-answers'),
     position: ui.hints.POSITION.BOTTOM,
@@ -563,6 +573,15 @@ const PROTAC_HINTS: SarHint[] = [
       'numbers at all.',
   },
   {
+    anchor: () => document.querySelector('.chem-sar-sum-list-head') ??
+      document.querySelector('.chem-sar-sum-list'),
+    position: ui.hints.POSITION.TOP,
+    title: 'Which series to open first',
+    text: 'The series ranked by what each one offers, with a lane of marks saying why: most measured ' +
+      'degraders, widest range, holds the best one made, most predictions worth making, best-validated ' +
+      'fit. A series can carry several — the marks are the reason the row is where it is.',
+  },
+  {
     before: () => sarSegment('Effects'),
     anchor: () => document.querySelector('.chem-sar-sum-sub-bar') ??
       document.querySelector('.chem-sar-sum-effects'),
@@ -571,6 +590,21 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'A tab per component with its full ranking, and a last tab holding the measured pairs for ' +
       'each. The structures are drawn rather than written: three E3 ligands of one chemotype differ ' +
       'past the point where a truncated SMILES would still show it.',
+  },
+  {
+    before: () => {
+      const tab = Array.from(document.querySelectorAll('.chem-sar-sum-sub'))
+        .find((e) => e.textContent?.includes('Measured in series'));
+      (tab as HTMLElement | undefined)?.click();
+    },
+    anchor: () => document.querySelector('.chem-sar-sum-sub-bar') ??
+      document.querySelector('.chem-sar-sum-effects'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'Counted, not fitted',
+    text: 'The last tab is the other kind of evidence: what was read off compounds that were actually ' +
+      'made, inside each series — which warhead came first where, which linker scored best, which ' +
+      'swap was measured. Nothing on it is a model output, which is why it is kept apart from the ' +
+      'component rankings beside it.',
   },
   {
     before: () => sarSegment('Worth making'),
@@ -584,6 +618,17 @@ const PROTAC_HINTS: SarHint[] = [
       'gate withholds the confidence, not the ranking.',
   },
   {
+    before: () => sarSegment('Method'),
+    anchor: () => document.querySelector('.chem-sar-sum-trust') ??
+      document.querySelector('.chem-sar-sum-pane'),
+    position: ui.hints.POSITION.TOP,
+    title: 'What the ranking rests on',
+    text: 'Two R² and what the gate does with them: one for the fit over all three components, one ' +
+      'for each series on its own, both cross-validated by holding compounds out. A series below the ' +
+      'floor keeps its measured numbers and loses its predictions — which is why the Worth-making ' +
+      'list on this set is candidates rather than promises.',
+  },
+  {
     before: () => {
       sarSegment('Overview');
       sarTab('SAR Matrix');
@@ -593,9 +638,73 @@ const PROTAC_HINTS: SarHint[] = [
     position: ui.hints.POSITION.RIGHT,
     title: 'One linker per series',
     text: 'Each card is one linker with its degraders laid out: warheads across the columns, the E3 ' +
-      'ligand folded into the row. A cell is a degrader that exists; a faint one is a combination the ' +
-      'additive fit predicts. The rest of this tab, the transfers and the Make list work exactly as ' +
-      'they do for a fragmented set.',
+      'ligand folded into the row. The list is ranked, and the sparkline on each card is that ' +
+      'series\' own spread of solubility.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-chips'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'What the open matrix holds',
+    text: 'The open series in one line: how many degraders were measured, how many cells the two ' +
+      'components could fill, how many of those are predictions, and the series\' own R². A cell is ' +
+      'a degrader that exists; a faint one is a combination the additive fit predicts.',
+  },
+  {
+    anchor: () => matrixCellAnchor(),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Click a cell',
+    text: 'A cell is one warhead against one E3 ligand on this linker. Colour is solubility over the ' +
+      'series\' own range, so the best and worst corners read at a glance.',
+  },
+  {
+    anchor: () => document.querySelector('.grok-prop-panel'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'A degrader that exists',
+    text: 'The context panel shows the whole molecule assembled from its three parts, with the ' +
+      'measured value and the row it came from. Nothing here is modelled — it is a row of your table.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-cart-icon') ??
+      document.querySelector('.chem-sar-control-bar'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Collect what is worth making',
+    text: 'A faint cell is a degrader nobody has built: this linker, that warhead, that ligand. The ' +
+      'cart takes the selected cells to the Make list with the value the fit predicts for each.',
+  },
+  {
+    before: () => sarTab('SAR Transfer'),
+    anchor: () => sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'Carry the SAR across linkers',
+    text: 'Two linkers explored with the same warheads, whose potencies move together, are evidence ' +
+      'about each other. Detection is on this tab rather than in the run, because it is a question ' +
+      'about pairs of series and most runs never ask it. This set has 19 such pairs.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
+      document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Sources, nested by series',
+    text: 'Each group is one linker that lends its trend, and under it the rows it transfers to. ' +
+      '"r 1.00 over 10 shared" means ten warheads were tried on both linkers and ranked the same way ' +
+      'on both — the strongest claim this evidence can make.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
+      document.querySelector('.chem-sar-xfer-panel') ?? sarTabHeader('SAR Transfer'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'What the transfer argues for',
+    text: 'The two matrices side by side, the shared warheads aligned. Where the source has a value ' +
+      'and the target has a hole, that hole is an analog the transfer argues for — and where both ' +
+      'linkers have explored the same warheads, it says so rather than inventing one.',
+  },
+  {
+    before: () => sarTab('Make list'),
+    anchor: () => sarTabHeader('Make list'),
+    position: ui.hints.POSITION.BOTTOM,
+    title: 'The Make list',
+    text: 'Everything collected lands here: each degrader with its three parts, the value predicted ' +
+      'for it and where the suggestion came from. It is a table like any other, so it exports.',
   },
 ];
 
