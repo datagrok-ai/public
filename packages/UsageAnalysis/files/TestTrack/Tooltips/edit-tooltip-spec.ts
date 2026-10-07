@@ -50,6 +50,8 @@ test('Viewers: Edit tooltip', async ({page}) => {
       return cb.checked;
     });
     expect(toggled).toBe(true);
+    await page.evaluate(() => { (grok as any).shell.tv.grid.props.showTooltip = 'inherit from table'; });
+    expect(await page.evaluate(() => (grok as any).shell.tv.grid.props.showTooltip)).toBe('inherit from table');
   });
 
   await softStep('Add a scatter plot and a box plot', async () => {
