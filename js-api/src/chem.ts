@@ -73,11 +73,22 @@ export namespace chem {
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
     onChanged: Subject<any> = new Subject<any>();
+    /** Fires each time a drawing the implementation shows has landed on the page, as a viewer's `onViewerRendered`
+     * does: with {@link isRenderPending}, what automated tests wait on instead of a timeout (the BDD library's settles
+     * wait on both). An implementation that draws asynchronously fires it once per drawing; the base never does. */
+    onRendered: Subject<void> = new Subject<void>();
     host?: Sketcher;
     _name: string = '';
 
     constructor() {
       super(ui.box());
+    }
+
+    /** True while a change is on its way to the page (a drawing, a held gesture), as a viewer's `isRenderPending`:
+     * what a test waits on instead of a timeout, with {@link onRendered}. Undefined when the implementation does not
+     * say, as the base does not. */
+    get isRenderPending(): boolean | undefined {
+      return undefined;
     }
 
     /**
@@ -658,16 +669,22 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            if (currentSketcherType === friendlyName)
-              return;
+            // The pick is the session's sketcher, and the account's from now on, sent to the server at once (a page
+            // reloaded right after keeps it); and this host's, which may hold another than the session's (a host made
+            // before the session's last switch): it switches unless it holds the pick already.
             currentSketcherType = friendlyName;
-            grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
-            this.sketcherType = currentSketcherType;
+            if (grok.userSettings.getValue(STORAGE_NAME, KEY) !== friendlyName) {
+              grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
+              grok.userSettings.flush();
+            }
+            if (this._sketcherType === friendlyName)
+              return;
+            this.sketcherType = friendlyName;
             if (!this.resized)
               this._autoResized = true;
           },
             {
-              isChecked: (item) => item === currentSketcherType, toString: item => item,
+              isChecked: (item) => item === this._sketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
           .show({element: menuHost, x: this.host.parentElement ? calculatePopupPosition(this.host.parentElement) : 10, y: 10});
@@ -688,7 +705,10 @@ export namespace chem {
 
     // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
     private _sketcherChangeId = 0; 
+    /** The sketcher this host shows, or is switching to: its options menu checks it. */
+    private _sketcherType: string | null = null;
     private _setSketcherType(sketcherType: string): void {
+      this._sketcherType = sketcherType;
       const valuesSet = this._valuesSet;
       // a switch begins: sketcherReady() waits for the implementation it brings
       const switchId = ++this._switches;
