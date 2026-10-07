@@ -27,7 +27,8 @@ Companion files in this skill's folder:
 
 1. **Find what exists before writing.** Grep the help for the topic and list the pages and
    sections that cover it. Extend an existing page rather than create one. Don't create overview
-   or workflow pages that restate other pages: the sidebar already links them.
+   or workflow pages that restate other pages: the sidebar already links them. If the help already
+   mentions a feature correctly, don't add detail the task doesn't ask for.
 2. **Propose the structure first**: which pages and sections change, and where each fact will
    live. Wait for approval.
 3. **When the reviewer questions a section**, answer with the evidence (is it new, is it covered
@@ -83,6 +84,9 @@ the help needs:
 - **Released, finished, user-facing.** Plugin changes under `## v.next` in a `CHANGELOG.md` are
   not released. Ask before documenting a feature whose ticket is open; its developer may own the
   docs.
+- **When the UI offers several ways**, describe the one in the place where the reader works with
+  the object (where it is listed, found and applied), not the one that opens as a side effect.
+  Check the other ways for bugs before choosing.
 - **Never write an unverified claim as fact.** Keep a list of claims checked only in the code or
   not checked at all, and show it. If a check is impossible, drop the claim.
 - **Bugs found on the way** go to the reviewer as reproduction steps, not into the help. File a
@@ -105,6 +109,8 @@ the help needs:
 
 ## 4. Shaping the content
 
+- **Fix, don't rewrite.** When a section is partly wrong, change only the wrong words. Keep the
+  author's sentences, structure, and wording.
 - **Visible text states the rule and the recommendation.** Supporting detail (comparison tables,
   long option lists, step-by-step procedures, worked examples) goes under
   `<details><summary>How to use</summary>…</details>` or another descriptive summary.
@@ -146,6 +152,7 @@ the help needs:
 
 - **Only where motion or layout matters**: a new interaction or a multi-step flow. Static
   settings get none. One image per section at most. If the text says it all, remove the image.
+- **Next to the steps it shows.** A GIF never goes in a section that explains a concept or a rule.
 - **Reuse** an existing image by relative path instead of recording a duplicate.
 - Files go next to the page in `img/`, named by what they show. Every GIF has a `-thumb.png` of
   a meaningful frame next to it: in-app Context Help shows the thumbnail. Alt text describes the
