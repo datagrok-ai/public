@@ -131,7 +131,7 @@ relative path as the examples do.
 ## Process
 
 1. **Probe before filming.** A short read-only script opens the page, prints labels
-   (`.d4-menu-item-label`, `[name=…]`, a dialog's `innerText`), and takes screenshots. Choose
+   (`.d4-menu-item-label`, `[name=…]`, a dialog's title), and takes screenshots. Choose
    locators by `name` and `data-testid`, not by coordinates.
 2. **Keep the recorded part short.** Loading data, opening the tree, and closing panels go to
    `setup` or `pre`.
@@ -164,5 +164,10 @@ relative path as the examples do.
   pixels inside the axis ends.
 - The sunburst reports no hit areas: compute points in polar coordinates from the viewer's box.
   Small windows put inner rings in the empty center, so aim at the outer ring.
+- Read labels with `textContent` or the `name` attribute, not `innerText`: on some elements
+  (toolbox cards, dialogs) `innerText` drops letters ("Edit tag" for **Edit tags**).
+- To close a viewer, take the close icon in its own title bar
+  (`.panel-titlebar-tabhost .panel-titlebar-button-close` whose box lies over the viewer). The
+  last visible close icon on the page may belong to the Context Panel or the Toolbox.
 - A button label in capitals may be lowercase in the DOM (`Save` shown as SAVE): match it
   case-insensitively.
