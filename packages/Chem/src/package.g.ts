@@ -1262,9 +1262,9 @@ export async function demoSarMatrix() : Promise<void> {
   await PackageFunctions.demoSarMatrix();
 }
 
-//name: Demo SAR Matrix PROTAC
+//name: Demo PROTAC SAR Matrix
 //description: Rank warhead, linker and E3 ligand across 2792 patent degraders whose parts are columns
-//meta.demoPath: Cheminformatics | SAR Matrix (PROTAC)
+//meta.demoPath: Cheminformatics | PROTAC SAR Matrix
 export async function demoSarMatrixProtac() : Promise<void> {
   await PackageFunctions.demoSarMatrixProtac();
 }
