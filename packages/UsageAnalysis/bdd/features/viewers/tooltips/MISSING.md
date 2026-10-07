@@ -22,8 +22,8 @@ master stand, 2026-10-07.
 
 ## Missing steps and signals
 
-- **The order of the tooltip's columns — a step, and a question.** uniform-default-tooltip and edit-tooltip
-  claim "the same columns in the same order" on every viewer. `the tooltip should show columns {string}`
+- **The order of the tooltip's columns — a step, and a question.** The cases uniform-default-tooltip and
+  edit-tooltip ask for "the same columns in the same order" on every viewer. `the tooltip should show columns {string}`
   uppercases, de-duplicates and sorts what it reads (`src/runtime/viewer-legend.ts`, `tooltipColumns`), so
   neither the order nor a column listed twice is claimed. Wanted: `Then the tooltip should show columns in
   the order {string}` — the first cells of `.d4-row-tooltip-table` rows as they come. Likely a product
@@ -45,8 +45,8 @@ master stand, 2026-10-07.
   the trellis). Same need as above.
 - **The choices of a property in the context panel.** `"Show Tooltip" property in context panel should offer
   the choice …` read an empty list once in three runs: the Dart property grid's choice editor puts its
-  `<select>` in the cell only after the cell is clicked. tooltip-properties picks each of the three values in
-  turn instead. Wanted: `{element} should offer the choice` to open a lazy choice editor before reading it.
+  `<select>` in the cell only after the cell is clicked. tooltip-properties reads the default and picks the
+  other two values instead. Wanted: `{element} should offer the choice` to open a lazy choice editor before reading it.
 - **A menu item that is not listed.** `the open menu should not list "Tooltip > Hide"` re-hovers the group and
   reads its items at once (`viewer-menus.ts`, `menuLabels` with no wanted item), so a submenu not open yet
   reads as an empty list and the negative passes. The features pair it with a positive on the same group

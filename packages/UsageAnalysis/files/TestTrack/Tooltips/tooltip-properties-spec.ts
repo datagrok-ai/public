@@ -267,7 +267,7 @@ test('Viewers: tooltip properties and heuristics for column selection', async ({
     expect(sp1Mode).toBe('do not show');
   });
 
-  await softStep('Hide default tooltip via reference viewer: hides for all "inherit from table" viewers; custom viewers unaffected', async () => {
+  await softStep('Hide default tooltip via reference viewer: the Tooltip menus of the three viewers', async () => {
 
     await page.evaluate(() => {
       const sps = Array.from((grok as any).shell.tv.viewers).filter((v: any) => v.type === 'Scatter plot') as any[];

@@ -15,6 +15,9 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
   Show Column Names is Always on the grid and on the two plots, so the tooltip's columns are read
   by name.
 
+  The histogram and the bar chart report no hovered bin or bar, so their "no tooltip after Hide" is
+  read on the same areas whose tooltips are claimed shown before Hide and after Show Custom.
+
   Between two hovers the pointer rests above the grid, on the ribbon: above any other viewer of
   this crowded view lies another viewer, whose own tooltip would answer the next claim.
 
@@ -76,7 +79,8 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
     And tooltip should be hidden
     When user moves the pointer away from grid
     And user hovers over the "marker" area of box plot viewer
-    Then tooltip should be hidden
+    Then the mouse-over row of the table should be 952
+    And tooltip should be hidden
     When user moves the pointer away from grid
     Then no errors should have been logged
 

@@ -49,7 +49,7 @@ test('Viewers: default tooltip visibility', async ({page}) => {
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30_000});
 
-  await softStep('Enable Show Visible Columns In Tooltip on grid', async () => {
+  await softStep('Grid: Show Tooltip = inherit from table, enable Show Visible Columns In Tooltip', async () => {
     await page.evaluate(() => {
       const grid = document.querySelector('[name="viewer-Grid"]')!;
       (grid.querySelector('[name="icon-font-icon-settings"]') as HTMLElement).click();

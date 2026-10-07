@@ -1,7 +1,7 @@
 @journey @viewers @realizes:viewers.tooltips
 Feature: A viewer's own tooltip properties
   A viewer's Tooltip category holds Show Tooltip — "inherit from table" by default, "show custom
-  tooltip" or "do not show", each picked here in turn — and Row Tooltip, greyed out and empty until
+  tooltip" or "do not show", the latter two picked here — and Row Tooltip, greyed out and empty until
   the viewer shows a custom tooltip. Tooltip > Hide on a viewer with a custom tooltip sets it to
   "do not show" and hides its tooltip alone: the reference scatter plot keeps the table's tooltip
   and the box plot its own custom one. Tooltip > Show Custom brings the same tooltip back, and so
@@ -19,9 +19,9 @@ Feature: A viewer's own tooltip properties
   A custom tooltip with an empty Row Tooltip lists only the viewer's own data columns, not the
   table's tooltip columns (by design, confirmed 2026-10-07; the TestTrack case was updated): the
   scatter plot its axis columns (HEIGHT and WEIGHT, from Data Values = Merge), the box plot nothing,
-  so the box plot is then given its own Row Tooltip (AGE, SEX). The grid is left out: its custom
-  tooltip with an empty Row Tooltip shows nothing by design (claimed in grid-visible-columns-
-  tooltip).
+  so the box plot is then given its own Row Tooltip (AGE, SEX). The grid, whose custom tooltip with
+  an empty Row Tooltip shows nothing by design (claimed in grid-visible-columns-tooltip), is given
+  its own Row Tooltip too (RACE, SEX) and shows exactly those columns.
 
   Background:
     Given user is logged in
@@ -60,6 +60,13 @@ Feature: A viewer's own tooltip properties
     And tooltip should be hidden
     When user moves the pointer away from grid
     And user sets "Row Tooltip" property of box plot viewer to "AGE\nSEX"
+    And user sets properties of grid:
+      | Show Column Names | Always    |
+      | Row Tooltip       | RACE\nSEX |
+    Then "Show Tooltip" property of grid should be "show custom tooltip"
+    When user hovers over the "cell 11 of AGE" area of grid
+    Then the tooltip should show columns "RACE, SEX"
+    When user moves the pointer away from grid
     Then "Show Tooltip" property of second scatter plot viewer should be "inherit from table"
     When user hovers over the "marker of row 11" area of second scatter plot viewer
     Then the tooltip should show columns "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT"
@@ -128,7 +135,8 @@ Feature: A viewer's own tooltip properties
     And tooltip should be hidden
     When user moves the pointer away from grid
     And user hovers over the "marker" area of box plot viewer
-    Then tooltip should be hidden
+    Then the mouse-over row of the table should be 952
+    And tooltip should be hidden
     When user moves the pointer away from grid
     And user opens the context menu of second scatter plot viewer
     Then the open menu should list "Tooltip > Show Custom"

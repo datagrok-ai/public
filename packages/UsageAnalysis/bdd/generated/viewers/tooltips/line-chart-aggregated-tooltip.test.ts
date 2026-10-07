@@ -9,6 +9,7 @@ sub_features_covered: [viewers.tooltips]
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
 import '../../../bindings/connections.js';
+import '../../../bindings/flow.js';
 import '../../../bindings/grid.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -16,11 +17,12 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {pickColumnInDialog} from '../../../bindings/filter-panel.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {dialogCloses, openDataset, packageInstalled} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, noBalloons, noErrors, pickFromContextMenu, propertyShouldBe, readingAtLeast, readingIs, readingReads, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, noBalloons, noErrors, pickFromContextMenu, propertyShouldBe, readingIs, readingReads, reportsNoError, setProperties, setProperty} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("The line chart's aggregated tooltip with a split", () => {
@@ -52,7 +54,7 @@ test.describe("The line chart's aggregated tooltip with a split", () => {
       await session.step(42, "When user sets \"Split\" property of line chart viewer to \"Stereo Category\"", () => setProperty(page, "Split", el("line chart viewer"), "Stereo Category"));
       await session.step(43, "Then the \"split columns\" reading of line chart viewer should be 1", () => readingIs(page, "split columns", el("line chart viewer"), 1));
       await session.step(44, "And the \"lines\" reading of line chart viewer should be 5", () => readingIs(page, "lines", el("line chart viewer"), 5));
-      await session.step(45, "And the \"markers drawn\" reading of line chart viewer should be at least 1", () => readingAtLeast(page, "markers drawn", el("line chart viewer"), 1));
+      await session.step(45, "And the \"markers drawn\" reading of line chart viewer should be 32", () => readingIs(page, "markers drawn", el("line chart viewer"), 32));
       await session.step(46, "And line chart viewer should report no error", () => reportsNoError(page, el("line chart viewer")));
       await session.step(47, "And no errors should have been logged", () => noErrors(page));
       await session.step(48, "And no error or warning balloon should have been shown", () => noBalloons(page));

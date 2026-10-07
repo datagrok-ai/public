@@ -42,7 +42,7 @@ Feature: The line chart's aggregated tooltip with a split
     When user sets "Split" property of line chart viewer to "Stereo Category"
     Then the "split columns" reading of line chart viewer should be 1
     And the "lines" reading of line chart viewer should be 5
-    And the "markers drawn" reading of line chart viewer should be at least 1
+    And the "markers drawn" reading of line chart viewer should be 32
     And line chart viewer should report no error
     And no errors should have been logged
     And no error or warning balloon should have been shown

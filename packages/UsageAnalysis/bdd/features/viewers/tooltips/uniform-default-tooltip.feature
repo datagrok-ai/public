@@ -36,12 +36,12 @@ Feature: Viewers show the same default tooltip
     When user hovers over the "marker of row 11" area of scatter plot viewer
     Then tooltip should be visible
     And the tooltip should show columns "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT"
-    When user moves the pointer away from scatter plot viewer
+    When user moves the pointer away from grid
     Then tooltip should be hidden
     When user hovers over the "marker" area of box plot viewer
     Then tooltip should be visible
     And the tooltip should show columns "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT"
-    When user moves the pointer away from box plot viewer
+    When user moves the pointer away from grid
     Then tooltip should be hidden
     When user hovers over the "cell 11 of AGE" area of grid
     Then tooltip should be visible
