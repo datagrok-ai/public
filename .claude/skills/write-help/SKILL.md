@@ -61,8 +61,8 @@ the help needs:
 4. **Find the place**: grep the help for the area and its UI labels, and check every page that
    repeats the same claim. Prefer updating the section that already covers the area. A help page
    that now says something wrong comes first.
-5. **Propose and wait for approval**, then verify and write as in sections 2–6. Start the commit
-   message with the ticket: `GROK-<N>: Help: …` or `#<N>: Help: …`.
+5. **Propose and wait for approval**, then verify and write as in sections 2–6. End the commit
+   message with the ticket: `Help: … (GROK-<N>)` or `Help: … (#<N>)`.
 6. **Suggest a community post** when the change is new and noticeable to users, changes existing
    results, or requires an action: one line in the reader's words, with the help page and anchor
    if there is one.
