@@ -28,16 +28,21 @@ its own entitlements into groups. The platform delivers what a package cannot.
 |---|---|---|---|
 | 1 | Board, program page, workspace builder | Vocabulary, workspace tree | — |
 | 2 | Search, recent programs, My programs | — | — |
-| 3 | Stage track, gate criteria | Stage model, deliverables per gate | — |
+| 3 | Stage track, gate criteria; a date and an owner per deliverable (needs a core schema field: `criterion_status.owner` and `due_on` exist but nothing sets or shows them, and deliverables outside gate criteria have no table) | Stage model, deliverables per gate | — |
 | 4 | Program dataset (F-09) | Data source | — |
 | 5 | Readiness and data conditions (F-20) | Data rules | — |
-| 6 | Catalogue, model cards, recommendation (F-12, F-13) | Models and cards | — |
-| 7 | Saved model runs (F-14) | Installed models | — |
-| 8 | Evidence tables (F-40); document generation (F-50, new) | Document templates | — |
-| 9 | Documents and document cards (F-27) | Deliverable list | — |
-| 10 | Discussion and Ask SME (F-51, new); decisions (F-25) | Where Ask SME is routed | — |
-| 11 | Decisions with evidence (F-25) | — | — |
-| 12 | Provenance (F-28) | — | — |
-| 13 | Stable program addresses | — | Sharing, live views |
-| 14 | Simple and advanced modes (F-08); tablet-first surface (F-45, not built) | Persona mapping | Real-time push |
-| 15 | Program roles and grants (F-16) | Entitlement feed (F-46) | Sharing a single row (GROK-21041) |
+| 6 | Catalogue, model cards, recommendation (F-12, F-13), scoped to the portfolio's own catalogue, by unit operation, with the question shown | Models and cards | — |
+| 7 | Saved model runs (F-14) | Installed models | Row grants for non-author writes (GROK-21041) |
+| 8 | Evidence tables (F-40); document generation (F-50, new) | Document templates | Row grants for non-author writes (GROK-21041) |
+| 9 | Documents and document cards (F-27) | Deliverable list | Row grants for non-author writes (GROK-21041) |
+| 10 | Discussion and Ask SME (F-51, new); decisions (F-25) | Where Ask SME is routed | Row grants for non-author writes (GROK-21041); a notification API |
+| 11 | Decisions with evidence (F-25) | — | Row grants for non-author writes (GROK-21041) |
+| 12 | Provenance (F-28) | — | Soft references to function calls (GROK-21042) |
+| 13 | Stable program addresses; a share-link button | — | Sharing, live views; scheduling a package function (new-data notices wait for someone to sync) |
+| 14 | Simple and advanced modes (F-08); tablet-first surface (F-45, not built) | Persona mapping | Real-time push; scheduling a package function |
+| 15 | Program roles and grants (F-16); keeping each portfolio's records to its own people (requests, sync history, compounds, follows, the catalogue) | Entitlement feed (F-46) | Sharing a single row (GROK-21041) |
+
+GROK-21041 is not only point 15's: until a row can be granted, only a program's author and admins write its gate
+log, evidence, documents, runs and observations, so points 7 to 11 work for writers only as admin. Point 12's run
+reference waits on GROK-21042. Points 13 and 14 need the platform to run a package function on a schedule and to
+push to the browser. Keeping one portfolio's records and catalogue from another's users is core work.
