@@ -9,6 +9,7 @@ sub_features_covered: [viewers.box-plot]
 import {test} from '@playwright/test';
 import '../../../bindings/biostructure.js';
 import '../../../bindings/connections.js';
+import '../../../bindings/flow.js';
 import '../../../bindings/grid.js';
 import '../../../bindings/tile-viewer.js';
 import '../../../bindings/trellis-plot.js';
@@ -16,6 +17,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {pressKeyIn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {clearSelection, colorCategorical, colorConditional, colorLinear, colorLinearOver, colorOff, someSelected} from '@datagrok-libraries/bdd/bindings/platform/data';

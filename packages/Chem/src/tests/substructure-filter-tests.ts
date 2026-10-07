@@ -351,7 +351,7 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     DG.chem.currentSketcherType = 'Ketcher';
-    const filter1 = await createFilter('Structure', df, sketcherDialogs, 30000);
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
@@ -372,8 +372,8 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     DG.chem.currentSketcherType = 'OpenChemLib';
-    const filter1 = await createFilter('Structure', df, sketcherDialogs, 10000);
-    const filter2 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
+    const filter2 = await createFilter('Structure', df, sketcherDialogs);
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
@@ -385,7 +385,7 @@ M  END
     await delay(500); //waiting for detach to complete
     expect(df.filter.trueCount, 5, 'filter has been reset 1');
 
-    const filter3 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter3 = await createFilter('Structure', df, sketcherDialogs);
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('c1ccccc1');
     await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered 2', 5000);
@@ -396,7 +396,7 @@ M  END
     await delay(1000); //waiting for detach to complete
     expect(df.filter.trueCount, 32, 'filter has been reset 2');
 
-    const filter4 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter4 = await createFilter('Structure', df, sketcherDialogs);
 
     //detaching active filter3 while bitset hasn't yet been synchronized with filter4
     filter3.detach();
@@ -437,7 +437,7 @@ M  END
 });
 
 
-async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
+async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
   Promise<SubstructureFilter> {
   const filter = new SubstructureFilter();
   filter.attach(df);
@@ -447,7 +447,7 @@ async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: 
   filter.column = df.col(colName);
   filter.columnName = colName;
   filter.tableName = df.name;
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', waitForSketcherMs ?? 5000);
+  await filter.sketcher.sketcherReady();
   return filter;
 }
 

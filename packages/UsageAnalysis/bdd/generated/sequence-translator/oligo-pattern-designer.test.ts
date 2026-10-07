@@ -9,6 +9,7 @@ sub_features_covered: [sequencetranslator.app.oligo-toolkit]
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/flow.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -16,6 +17,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {noOligoPattern} from '../../bindings/oligo-patterns.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {check, clickOn, doubleClickOn, enterInto, hasRememberedValue, hoverOver, isExpanded, lacksRememberedValue, rememberValue, selectIn, shouldBe, shouldBeSwitchedOff, shouldContainText, shouldHaveValue, shouldNotContainText, shouldNotOfferChoice, shouldOfferChoice, switchOff} from '@datagrok-libraries/bdd/bindings/common/steps';

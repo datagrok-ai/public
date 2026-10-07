@@ -52,6 +52,22 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ```
 
+### Crux substructure search engine (`crux_wasm_bg.wasm`)
+
+The engine of Chem's Crux substructure search (the Substructure Search Engine
+package property, `src/crux/`), compiled to WebAssembly. Files:
+`src/crux/crux_wasm.js` and `src/crux/crux_wasm_bg.wasm` (copied into `dist/`
+at build time). It is crux-core's `crux-wasm` crate with the crates it links
+(`rk`, `smi-compiler`, `smarts-parser`, `screening-fp`, `sim-fp`,
+`synthon-space`), which port parts of RDKit to Rust: SMILES and SMARTS
+parsing, aromaticity and kekulization, substructure matching, fingerprints and
+synthon-space search.
+
+- Upstream: https://github.com/datagrok/crux (crux-core)
+- License: **Apache-2.0 OR MIT** (crux-core's own code); the parts ported from
+  RDKit keep RDKit's **BSD-3-Clause** license, reproduced under
+  "RDKit MinimalLib" above.
+
 ### NGL Viewer (2.4.0)
 
 WebGL-based 3D molecular structure viewer.
@@ -225,7 +241,7 @@ IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ```
 
-<!-- crux-sketch credits: begin (written by crux-sketch's dg-credits.py from its notices; do not edit by hand) -->
+<!-- crux-sketch credits: begin (written by crux-sketch's tools/datagrok.mjs from its notices; do not edit by hand) -->
 
 ### Crux Sketch (the Crux sketcher)
 
@@ -237,6 +253,9 @@ chemistry engine, crux-core's `sketch-wasm`, `cdxml-wasm` and `inchi-wasm` crate
 library, FreeType 2.9.1 and one file of Eigen 3.3.9 (Mozilla Public License 2.0), and embeds the Roboto font.
 
 - Upstream: https://github.com/datagrok-ai/crux-sketch, https://github.com/datagrok-ai/crux-core
+- Content-Security-Policy: beyond `'self'` it needs `'wasm-unsafe-eval'` in `script-src` (its WebAssembly), and no
+  `'unsafe-eval'` or `'unsafe-inline'`, for scripts or styles (crux-sketch's `packages/sketch/README.md`, "Under a
+  Content-Security-Policy"; HOST-074).
 
 #### Notices of Crux Sketch (`packages/sketch/NOTICE`, `packages/sketch/src/icons/NOTICE`)
 

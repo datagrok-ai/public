@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added: The Flow view reports what its canvas did to the platform (its widget status): the "parameter edits" reading counts the node parameter edits reported since it opened, so a test tells a user's edit in a node's own editor (a sketch in the Sketcher Input node) from the node's own loads
 * Added: Functions that output a view support the in-node preview (⊞ toggle), like viewer, widget and graphics outputs
 * Fixed: With autorun on, a node dropped ready to run (all inputs defaulted — e.g. Gasteiger Partial Charges) did not run until it was edited; it now runs at once
 * Fixed: A run popped the bottom output panel open for the selected node even when its in-node preview already shows the result

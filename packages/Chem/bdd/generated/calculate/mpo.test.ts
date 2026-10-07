@@ -7,12 +7,14 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [chem.cp.mpo-profile-crud]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {shippedMpoProfile} from '../../bindings/mpo.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, selectIn, shouldBe, shouldHaveValue} from '@datagrok-libraries/bdd/bindings/common/steps';

@@ -7,19 +7,22 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [chem.cp.scaffold-tree-add-filter]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {filterMatchesReading, filterPassesMatching, readingIsMolecule} from '../../bindings/molecules.js';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {filterMatchesReading, filterPassesMatching} from '../../bindings/molecules.js';
 import {treeBuilt} from '../../bindings/scaffold-tree.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, followingShouldBe, hoverOver, pressKeyIn, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {commandCompleted, pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
 import {filterPasses, filterPassesAll, filterPassesFewer} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset, sketcherIs, standRunsService} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {readingIsMolecule} from '@datagrok-libraries/bdd/bindings/tiers/molecules/molecules';
 import {boundTable, clickArea, hoverArea, noErrors, readingAtLeast, readingIs, readingReads, viewerCount} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {readingIncludes} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';

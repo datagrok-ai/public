@@ -19,6 +19,8 @@ export declare const KEY_NAMES: Readonly<{
 export declare const STRINGS: {
     /** The canvas's accessible name. */
     readonly canvasLabel: 'Molecule drawing';
+    /** The sketcher's accessible name: its root is a group of that name (HOST-043; spike datagrok-platform, R2). */
+    readonly sketcherLabel: 'Molecule sketcher';
     /** The toolbars' groups in the default configuration (A11Y-003). */
     readonly groupHistory: 'History';
     readonly groupCanvas: 'Canvas';
