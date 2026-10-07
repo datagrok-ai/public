@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Closed the Trellis plot TestTrack gaps in BDD — seven new features in `bdd/features/viewers/trellis-plot/` (Use in Trellis from five viewers, the viewer's Filter formula, a cell's context menu, To Script, the inner viewer's tab, two undo/redo cycles, the selector strips and the full-screen cell, the curves table with the Multi Curve viewer, On Click set in the context panel, axes without Global Scale, the Y range slider, paging ends, packing, Pick Up / Apply, inner color coding, category scrolling by drag and wheel) with `MISSING.md` for the rest
 * Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open
 * Tests: BDD features keep to what only the browser shows and stay fast — scenarios an API or package test covers removed (spaces, roles, users, connections, scripts, sticky meta, Biostructure, sequence translator), spaces made through the API, Database meta claimed on the server instead of after five reloads and swept when a feature starts, the queries gated on PostgresTest
 * GROK-21108: Tests: The favorites features follow Add To Favorites becoming a submenu ("Only for me" and every group the account may edit; picking a target again takes the entity out, as Remove from favorites did) and files getting the star and the menu item

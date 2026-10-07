@@ -1,0 +1,77 @@
+# Trellis plot — what is still missing
+
+The gap round of 2026-10-07 over TestTrack `Viewers/TrellisPlot/` (six md cases, their specs and
+`trellis-plot-ui.md`) against the nine features already in this folder. Its features are the seven
+added that day: `use-in-trellis`, `viewer-filter-and-menus`, `selectors-and-full-screen`,
+`curves-table`, `click-gaps`, `scales-and-paging`, `pick-up-color-and-scroll`. Written with today's
+steps only; what could not be said is listed here.
+
+## Open question — for a walk by hand
+
+### Escape does not drop the trellis filter after the inner viewer changed
+
+`trellis-plot.md` "On Click functionality": under On Click = Filter, step 8 changes the inner viewer
+(the filter must stay — it does), step 12 presses Escape (the trellis filtering resets). Done in that
+order, Escape leaves the filter on: changing the inner viewer resets the trellis's current cell while
+the filter stays, and the Escape handler in `trellis_plot_core.dart` acts only while a current cell
+exists (`if (currentCellPos != null)`). A click on any cell makes Escape work again. Probe on the local
+stand: click F | Caucasian → 480 rows; Viewer Type = Bar chart → 480; Escape → 480; click M | Asian → 8;
+Escape → 1000.
+
+```gherkin
+  Scenario: Escape drops the trellis filter after the inner viewer changed
+    When user sets "On Click" property of trellis plot viewer to "Filter"
+    And user clicks on the "cell F | Caucasian" area of trellis plot viewer
+    And user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
+    Then 480 rows should pass the filter
+    When user presses Escape in trellis plot viewer
+    Then all rows should pass the filter
+```
+
+## Missing steps and signals
+
+- **The (+) column picker** (GROK-19673, `trellis-plot-split-and-pick-inner.md` section 1 steps 5-7): its
+  hover preview, Escape undoing the preview, the click that commits, and the blank entry that drops a
+  split column. The picker does not open reliably from a pointer gesture on the `add x column` area
+  (see `trellis-plot-split-and-inner-type`), and no step hovers a row of an open picker and then leaves
+  with Escape. Wanted: a picker-opened signal on the trellis's (+) and a "hovers over {string} in the open
+  column picker" step.
+- **Pick Up / Apply step 8**: a range slider moved on the second trellis leaving the first alone. It needs
+  Global Scale and a hovered cell on the second trellis while the first is in the view; the area
+  steps address the first matching viewer's slider. Wanted: the area steps resolving `second trellis
+  plot viewer` for hover-revealed sliders (or a reading of each trellis's slider range).
+- **Whether a selector strip is visible** (`trellis-plot.md` "Selectors"): the `x selectors` / `y selectors`
+  areas follow the layout's own `_showXSelectors` / `_showYSelectors` flag (`trellis_status.dart`), not
+  whether the strip is visible on the page, and the `x selector <n>` areas are reported even while hidden.
+  Wanted: both gated on `htmlGetVisible`, or an `x selectors shown` reading of the pickers a person can see.
+- **What the full-screen dialog shows**: the dialog's title names the cell (`SEX: F, RACE: Caucasian`) and its
+  canvas is painted, but the viewer inside reports no rows; wanted: a reading of the dialog viewer's rows.
+- **The rows of the table a trellis is bound to**: `should be bound to table` reads the table's name; the case
+  also asks for its row count after the switch to curves. Wanted: a `table rows` reading.
+- **The Row Source ladder through the property list** (`trellis-plot-click-to-filter.md` section 2 step 5,
+  GROK-13205): `trellis-plot-row-source` walks all eight rungs through the API; `click-gaps` sets Row Source
+  and On Click in the panel only for the correction between them.
+- **A (+) click at the end of its range**: the click has nothing to add and no step waits for a "nothing
+  happened" signal, so `scales-and-paging` claims the icon's `aria-disabled` state rather than the click.
+- **A floating viewer after a layout is applied, undocking, browser zoom** (`trellis-plot-ui.md`): no step
+  undocks a viewer into a floating window or zooms the page.
+- **The ribbon Save and the Layout menu** (`trellis-plot.md` "Layout and Project save/restore"): the
+  persistence features save through the API. The project Save dialog has steps; applying a saved layout
+  from the Layout menu has none.
+
+## Not translated, by choice
+
+- **Pie chart "Marker Color"** (`trellis-plot-ui.md` "Inner viewer color coding"): the pie chart has no such
+  property; its slices are coloured by its Category, which `pick-up-color-and-scroll` sets.
+- **Multi Curve steps 5-7** (curve X/Y, paging, zoom slider inside the cells): the case itself leaves them
+  manual for want of a recon of the curve viewer's controls.
+
+## Traps found this round
+
+- After the context-panel scenario of `click-gaps` (Row Source and On Click picked in the panel's
+  `<select>`s), cell clicks on the trellis did nothing in the scenarios that followed it — the clicks inside
+  that scenario work; the same sequence through the API leaves later clicks working. Unexplained;
+  `click-gaps` puts its context-panel scenario last.
+- A cell already current is not clicked again by a scenario that expects a selection: pick another cell.
+- Pick Up / Apply, inner color, scroll: `x label <category>` / `y label <category>` areas are the way to
+  tell which categories a scroll brought into the window.
