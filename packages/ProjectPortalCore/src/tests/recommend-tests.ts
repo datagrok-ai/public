@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {portalDb} from '../generated/db';
-import {loadAllPortfolios, readPortfolioFiles} from '../portal';
+import {loadAllPortfolios, portfolioByCode, readPortfolioFiles} from '../portal';
 import {validateCatalogue} from '../model/catalogue';
 import {CandidateModel, missingAssays, prefillInputs, recommend, validateApplicability} from '../model/recommend';
 import {CriterionReadiness} from '../model/readiness';
@@ -54,7 +54,7 @@ category('Portal: model recommendation rules', () => {
     expect(missingAssays([open('panel', {measured: ['sol']})], null).length, 0, 'no data, no counts');
   });
 
-  test('recommendation: declared keys must match, absent keys match any, a predicted gap ranks first', async () => {
+  test('recommendation: only the portfolio\'s catalogue; declared keys must match; a predicted gap ranks first', async () => {
     const ctx = {portfolio: 'P', modality: 'Small molecule', stages: ['H2L', 'LO'], workUnits: ['campaign', 'series'],
       missingColumns: ['sol']};
     const recs = recommend([
@@ -64,17 +64,27 @@ category('Portal: model recommendation rules', () => {
       model('cs', {appliesTo: {stages: ['CS']}}),
       model('bio', {appliesTo: {modalities: ['Antibody']}}),
       model('study', {appliesTo: {workUnits: ['study']}}),
-      model('sol', {portfolios: ['Q'], appliesTo: {predicts: ['SOL'], tasks: ['physchem']}}),
+      model('sol', {appliesTo: {predicts: ['SOL'], tasks: ['physchem']}, question: 'How soluble is it?'}),
+      model('far', {installed: false, appliesTo: {predicts: ['SOL']}}),
       model('old', {status: 'deprecated'}),
       model('retired', {approval: 'retired'}),
       model('approved', {approval: 'approved', appliesTo: {stages: ['lo']}}),
     ], ctx);
-    expect(recs.map((r) => r.code).join(), 'sol,lo,approved,any');
+    expect(recs.map((r) => r.code).join(), 'sol,approved,any,far', 'another catalogue\'s model never; not installed last');
     expect(recs[0].reasons.join('; '), 'physchem; predicts SOL, missing for the gate');
-    expect(recs[1].reasons.join('; '), 'stage LO; Small molecule');
-    expect(recs[3].reasons.join('; '), 'in the P catalogue');
+    expect(recs[0].question, 'How soluble is it?');
+    expect(recs[2].reasons.join('; '), 'in the P catalogue');
+    expect(recs[3].reasons.join('; '), 'predicts SOL, missing for the gate; not installed on this server');
     expect(recommend([model('sol', {appliesTo: {tasks: ['physchem']}}), model('any')], {...ctx, task: 'PhysChem'})
       .map((r) => r.code).join(), 'sol', 'a task asked for needs a model that declares it');
+  });
+
+  test('recommendation: a unit operation counts when the model and the program both name one', async () => {
+    const ctx = {portfolio: 'P', stages: [], workUnits: [], missingColumns: []};
+    const ms = [model('harvest', {unitOperations: ['HARVEST']}), model('ferm', {unitOperations: ['FERM', 'SEED']}), model('any')];
+    expect(recommend(ms, {...ctx, unitOperations: ['seed']}).map((r) => r.code).join(), 'ferm,any');
+    expect(recommend(ms, {...ctx, unitOperations: ['seed']})[0].reasons.join(), 'unit operation seed');
+    expect(recommend(ms, ctx).length, 3, 'unknown for the program: the key matches any');
   });
 
   test('a model\'s dialog opens with the program\'s data and codes', async () => {
@@ -136,7 +146,17 @@ category('Portal: model recommendation', () => {
 
   test('a biologics program is offered its own catalogue, not the small-molecule models', async () => {
     const r = await recommendByCode('EX-BIOC', 'EXB-203');
-    expect(own(r.models.map((x) => x.code)).join(), 'ProjectPortalCore:FedBatchTiter');
+    expect(r.models.map((x) => x.code).join(), 'ProjectPortalCore:FedBatchTiter', 'nothing from another catalogue');
+  });
+
+  test('every model offered is in the portfolio\'s catalogue; a portfolio without one is offered none', async () => {
+    const biod = await recommendByCode('EX-BIOD', (await portalDb.programs.query({filter:
+      `portfolio_id = "${(await portfolioByCode('EX-BIOD')).id}"`, limit: 1}))[0].code);
+    expect(biod.models.map((m) => m.code).join(), '', 'EX-BIOD has no catalogue');
+    const kin1 = await recommendByCode('EX-SMD', 'EXS-KIN1', {stage: 'LO'});
+    const catalogue = new Set((await portalDb.models.query({limit: 10000}))
+      .filter((m) => (m.portfolios ?? '').split('|').includes('EX-SMD')).map((m) => m.code));
+    expect(kin1.models.filter((m) => !catalogue.has(m.code)).map((m) => m.code).join(), '');
   });
 
   test('the example models run on the program\'s data', async () => {

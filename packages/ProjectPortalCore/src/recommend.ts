@@ -18,15 +18,18 @@ import {describePrediction, Prediction, withPredictions} from './model/predictio
 import {predictionsOf} from './predictions';
 import {filterValue, ROW_LIMIT} from './rows';
 
-/** Every catalogued model with its current card's approval and applicability. */
-export async function candidateModels(): Promise<CandidateModel[]> {
-  const [models, cards] = await Promise.all([portalDb.models.query({limit: ROW_LIMIT}), portalDb.modelCards.query({limit: ROW_LIMIT})]);
+/** The catalogued models of [portfolio] (every catalogued model when omitted) with their current
+ * card's approval, applicability, question and unit operations. Another portfolio's models are not
+ * read into the list: the model tables are readable by all users, so the scoping is the app's. */
+export async function candidateModels(portfolio?: string): Promise<CandidateModel[]> {
+  const [all, cards] = await Promise.all([portalDb.models.query({limit: ROW_LIMIT}), portalDb.modelCards.query({limit: ROW_LIMIT})]);
+  const models = portfolio ? all.filter((m) => splitCodes(m.portfolios).includes(portfolio)) : all;
   return models.map((m) => {
     const mine = cards.filter((c) => c.model_id === m.id);
     const card = mine.find((c) => c.model_version === m.current_version) ?? mine[0];
     return {code: m.code, name: m.name, status: m.status ?? null, approval: card?.approval ?? null,
       portfolios: splitCodes(m.portfolios), appliesTo: (card?.applies_to as ModelApplicability | undefined) ?? null,
-      installed: !!funcOf(m.code)};
+      installed: !!funcOf(m.code), unitOperations: splitCodes(m.unit_operations), question: card?.question ?? null};
   });
 }
 
@@ -70,15 +73,24 @@ export async function recommendFor(ctx: ProgramContext, opts: {stageId?: string 
   const missing = readiness ? missingAssays(readiness.criteria.map((c) => ({...c, condition: byId.get(c.id)?.condition,
     rule: byId.get(c.id)?.rule})), rows ?? null, {leadRoles, series: opts.series}) : [];
   const current = stages.find((s) => s.id === program.stage_id);
-  const models = recommend(await candidateModels(), {
+  const models = recommend(await candidateModels(portfolio.code), {
     portfolio: portfolio.code, modality: program.modality,
     stages: [current?.code, stage?.code].filter((s): s is string => !!s),
     workUnits: opts.series ? ['series'] : enabledWorkUnits(portfolio),
     task: opts.task, missingColumns: missing.map((m) => m.column).filter((c): c is string => !!c),
+    unitOperations: await unitOperationsOf(program.id),
   });
   const predictions = await predictionsOf(program.id).then((p) => p.latest).catch(() => [] as Prediction[]);
   return {portfolio, program, stage, series: opts.series ?? null, missing, models,
     predictors: predictorsOf(missing, models), predictions, dataError};
+}
+
+/** The unit operations a program works in: those of its process stages. Empty when it has none. */
+async function unitOperationsOf(programId: string): Promise<string[]> {
+  const stages = await portalDb.processStages.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}).catch(() => []);
+  const ids = [...new Set(stages.map((s) => s.unit_operation_id).filter((x): x is string => !!x))];
+  const ops = await Promise.all(ids.map((id) => portalDb.unitOperations.get(id).catch(() => null)));
+  return ops.filter((o) => o).map((o) => o!.code);
 }
 
 /** The same, by codes, for the package function. */
@@ -110,6 +122,7 @@ export function recommendationFrame(r: ProgramRecommendation): DG.DataFrame {
     DG.Column.fromStrings('reasons', r.models.map((m) => m.reasons.join('; '))),
     DG.Column.fromStrings('approval', r.models.map((m) => m.approval ?? '')),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'installed', r.models.map((m) => m.installed)),
+    DG.Column.fromStrings('question', r.models.map((m) => m.question ?? '')),
   ]);
   df.name = `${r.program.code} · Suggested models`;
   return df;

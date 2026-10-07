@@ -69,6 +69,21 @@ export async function myPortfolioIds(): Promise<Set<string> | null> {
   return portfoliosOfGroups(portfolios, new Set(mine.map((g) => g.id)));
 }
 
+/** The codes of the current user's portfolios, or null for an admin. */
+export async function myPortfolioCodes(): Promise<Set<string> | null> {
+  const ids = await myPortfolioIds();
+  if (ids === null)
+    return null;
+  return new Set((await portalDb.portfolios.query({limit: ROW_LIMIT})).filter((p) => ids.has(p.id)).map((p) => p.code));
+}
+
+/** Whether a catalogued model is the current user's to see: one of their portfolios' catalogues
+ * lists it, or none does (a model loaded without a portfolio belongs to every portfolio). */
+export async function inMyCatalogues(portfolios: string[]): Promise<boolean> {
+  const mine = await myPortfolioCodes();
+  return mine === null || !portfolios.length || portfolios.some((p) => mine.has(p));
+}
+
 /** [rows] of the current user's portfolios only. */
 export async function ofMyPortfolios<T extends {portfolio_id: string}>(rows: T[]): Promise<T[]> {
   return inPortfolios(rows, await myPortfolioIds());

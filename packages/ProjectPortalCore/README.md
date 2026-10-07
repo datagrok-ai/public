@@ -111,7 +111,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `portfolioTable(portfolio)` | The programs of a portfolio, or without one of every portfolio you can see, as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace |
 | `programData(portfolio, program, dataset)` | One program's rows of the program dataset, or of a further dataset by code, as a table named after the program. Before 0.3.0 it was registered as `programDataTable`; that name still works |
 | `openProgramData(portfolio, program, dataset)` | Opens that table as a table view with the portfolio's viewers |
-| `recommendModels(portfolio, program, stage, series, task)` | Catalogued models that fit the program, best first, a model predicting an assay the gate lacks first |
+| `recommendModels(portfolio, program, stage, series, task)` | Models of the portfolio's own catalogue that fit the program, best first: installed before not installed, a model predicting an assay the gate lacks first; with each card's question |
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
 | `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
 | `programRoles(portfolio, program)` | The program's roles as a table |

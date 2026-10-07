@@ -131,6 +131,10 @@ export interface CandidateModel {
   portfolios: string[];
   appliesTo?: ModelApplicability | null;
   installed?: boolean;
+  /** Unit operation codes the catalogue says the model applies to; none means any. */
+  unitOperations?: string[];
+  /** The card's question. */
+  question?: string | null;
 }
 
 export interface RecommendContext {
@@ -144,6 +148,8 @@ export interface RecommendContext {
   task?: string | null;
   /** Columns the gate lacks: a model that predicts one ranks first. */
   missingColumns: string[];
+  /** Unit operation codes the program works in (its process stages); empty when unknown. */
+  unitOperations?: string[];
 }
 
 export interface Recommendation {
@@ -158,16 +164,21 @@ export interface Recommendation {
   installed: boolean;
   /** Every column the card says the model predicts: what a scoring stores (F-22). */
   scores?: string[];
+  /** The scientific question the card says the model answers. */
+  question?: string | null;
 }
 
 const norm = (s: string | null | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const APPROVAL_ORDER: Record<string, number> = {approved: 0, in_review: 1, draft: 2};
 
-/** The models that fit, best first. A candidate is a model the portfolio's catalogue declares, or
- * any model whose card says where it applies; a deprecated model or a retired card never is. Each
- * key the card declares must match: stage (current or target), modality, work-unit kind, and the
- * task when one is asked for. Then: models predicting a missing column first, then the more
- * specific fit, approved before in review before draft, the card's rank, the name. */
+/** The models that fit, best first. A candidate is a model the portfolio's catalogue declares: one
+ * portfolio is never offered another's models, however well their cards fit (a model is shared
+ * with a portfolio by listing that portfolio in the catalogue). A deprecated model or a retired
+ * card never is. Each key the card declares must match: stage (current or target), modality,
+ * work-unit kind, the unit operation when both the model and the program name some, and the task
+ * when one is asked for. Then: installed models before models whose function is not on this
+ * server, models predicting a missing column first, then the more specific fit, approved before
+ * in review before draft, the card's rank, the name. */
 export function recommend(models: CandidateModel[], ctx: RecommendContext): Recommendation[] {
   const out: (Recommendation & {rank: number})[] = [];
   for (const m of models) {
@@ -175,7 +186,7 @@ export function recommend(models: CandidateModel[], ctx: RecommendContext): Reco
     const declared = (k: keyof ModelApplicability) => Array.isArray(a[k]) && (a[k] as string[]).length > 0;
     if (m.status === 'deprecated' || m.approval === 'retired')
       continue;
-    if (!m.portfolios.includes(ctx.portfolio) && !KEYS.some(declared))
+    if (!m.portfolios.includes(ctx.portfolio))
       continue;
     const matched: string[] = [];
     const reasons: string[] = [];
@@ -199,6 +210,14 @@ export function recommend(models: CandidateModel[], ctx: RecommendContext): Reco
       matched.push('work unit');
       reasons.push(hit.replace('_', ' '));
     }
+    const ops = m.unitOperations ?? [];
+    if (ops.length && ctx.unitOperations?.length) {
+      const hit = ctx.unitOperations.find((u) => ops.some((x) => norm(x) === norm(u)));
+      if (!hit)
+        continue;
+      matched.push('unit operation');
+      reasons.push(`unit operation ${hit}`);
+    }
     if (ctx.task) {
       if (!declared('tasks') || !a.tasks!.some((t) => norm(t) === norm(ctx.task)))
         continue;
@@ -209,12 +228,15 @@ export function recommend(models: CandidateModel[], ctx: RecommendContext): Reco
     const predicts = (a.predicts ?? []).filter((c) => ctx.missingColumns.some((x) => norm(x) === norm(c)));
     if (predicts.length)
       reasons.push(`predicts ${predicts.join(', ')}, missing for the gate`);
-    if (m.portfolios.includes(ctx.portfolio) && !matched.length)
+    if (!reasons.length)
       reasons.push(`in the ${ctx.portfolio} catalogue`);
+    if (m.installed === false)
+      reasons.push('not installed on this server');
     out.push({code: m.code, name: m.name, predicts, matched, reasons, approval: m.approval ?? null,
-      installed: m.installed !== false, scores: a.predicts ?? [], rank: a.rank ?? Number.MAX_SAFE_INTEGER});
+      installed: m.installed !== false, scores: a.predicts ?? [], question: m.question ?? null,
+      rank: a.rank ?? Number.MAX_SAFE_INTEGER});
   }
-  out.sort((x, y) => y.predicts.length - x.predicts.length || y.matched.length - x.matched.length ||
+  out.sort((x, y) => Number(y.installed) - Number(x.installed) || y.predicts.length - x.predicts.length || y.matched.length - x.matched.length ||
     (APPROVAL_ORDER[x.approval ?? ''] ?? 3) - (APPROVAL_ORDER[y.approval ?? ''] ?? 3) || x.rank - y.rank ||
     x.name.localeCompare(y.name));
   return out.map(({rank: _rank, ...r}) => r);

@@ -9,6 +9,7 @@ import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {CardParam} from '../model/catalogue';
 import {ModelCardView, modelCardOf} from '../catalogue';
 import {installStyles} from './styles';
+import {inMyCatalogues} from '../secured-rows';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -94,12 +95,19 @@ export function modelCardElement(v: ModelCardView): HTMLElement {
   ], 'pp-model-card'), 'model-card');
 }
 
+/** The card of [code], when one of the user's portfolios catalogues the model; null otherwise. The
+ * model tables are readable by all users, so this is the app's scoping, not the server's. */
+async function visibleCardOf(code: string): Promise<ModelCardView | null> {
+  const v = await modelCardOf(code);
+  return v && await inMyCatalogues(v.portfolios) ? v : null;
+}
+
 /** The card of [code] (a function's nqName), or a line saying the model is not catalogued. */
 export async function modelCardWidget(code: string): Promise<DG.Widget> {
   installStyles();
-  const v = await modelCardOf(code);
+  const v = await visibleCardOf(code);
   return DG.Widget.fromRoot(v ? modelCardElement(v) :
-    named(span(`${code} is not in the portal's model catalogue`, 'pp-muted'), 'model-card-missing'));
+    named(span(`${code} is not in your portfolios' model catalogues`, 'pp-muted'), 'model-card-missing'));
 }
 
 /** The card beside a model's preview in the Workspace tab on Home (PowerPack's `workspaceModelPanel` role):
@@ -107,7 +115,7 @@ export async function modelCardWidget(code: string): Promise<DG.Widget> {
 export async function workspaceModelCardWidget(func: DG.Func): Promise<DG.Widget | null> {
   const codes = [...new Set([func.nqName, func.package ? `${func.package.name}:${func.name}` : ''].filter((c) => c))];
   for (const code of codes) {
-    const v = await modelCardOf(code);
+    const v = await visibleCardOf(code);
     if (v) {
       installStyles();
       return DG.Widget.fromRoot(named(divV([modelCardElement(v)]), 'workspace-model-card'));

@@ -995,7 +995,7 @@ export class PortalView {
     }
     out.push(named(span(`Suggested models (${r.models.length})`, 'pp-heading'), 'suggested-models-heading'));
     if (!r.models.length) {
-      out.push(named(span('No catalogued model fits this program\'s stage, modality and work units', 'pp-muted'),
+      out.push(named(span(`No model in the ${r.portfolio.code} catalogue fits this program's stage, modality and work units`, 'pp-muted'),
         'no-suggested-models'));
       return out;
     }
@@ -1014,6 +1014,7 @@ export class PortalView {
       return named(divV([
         divH([modelLink(m.code, m.name), ...(m.approval ? [badge(m.approval.replace('_', ' '),
           {variant: m.approval === 'approved' ? 'success' : 'default'})] : []), run, ...(score ? [score] : [])], 'pp-run-meta'),
+        ...(m.question ? [named(span(m.question, 'pp-question'), `suggested-model-question-${slug(m.code)}`)] : []),
         ...(m.reasons.length ? [span(m.reasons.join(' · '), 'pp-muted')] : []),
       ], 'pp-run'), `suggested-model-${slug(m.code)}`);
     }), 'pp-runs'), 'suggested-models'));

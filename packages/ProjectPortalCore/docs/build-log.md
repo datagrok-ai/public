@@ -546,3 +546,17 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - The app's own filter (`ofMyPortfolios`) is a second check on lists: waiting for me, approval requests, sync
   history, the feed.
 - Still readable by all users: `program_role` (who holds a role), `portfolio` (configuration), the catalogue.
+
+## Recommendation scoped to the portfolio's catalogue
+
+*Fix. Schema: none.*
+
+- Before: any model whose card declared where it applies was a candidate in every portfolio
+  (`recommend.ts:178`). EX-BIOD (no catalogue) was offered 12 models of another catalogue; EX-BIOC's own model
+  ranked 13th behind 12 uninstalled ones.
+- Now a candidate must be in the portfolio's catalogue (`model.portfolios`); listing a portfolio there is how a
+  model is shared with it. Uninstalled models rank last and say "not installed on this server". A model's unit
+  operations must meet the program's (its process stages') when both name some. The question from the card shows
+  under each suggestion and in `recommendModels`.
+- Model cards show only models of the user's portfolios (a model in no portfolio's catalogue shows to everyone).
+  The model tables stay readable by all users: this is the app's scoping, not the server's.
