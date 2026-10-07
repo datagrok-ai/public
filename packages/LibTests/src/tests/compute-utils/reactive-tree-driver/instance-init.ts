@@ -136,6 +136,33 @@ category('ComputeUtils: Driver state tree init', async () => {
     await snapshotCompare(state, 'Process initial config with ref');
   });
 
+  test('Self-referencing initialSteps throw a cycle error', async () => {
+    const config: LoadedPipeline = {
+      id: 'pipelineSeq',
+      nqName: 'mockNqName',
+      type: 'sequential',
+      stepTypes: [
+        {
+          id: 'stepMul',
+          nqName: 'LibTests:TestMul2',
+        },
+        {
+          type: 'ref',
+          provider: async (_p: any) => config,
+        },
+      ],
+      initialSteps: [{id: 'stepMul'}, {id: 'pipelineSeq'}],
+    };
+    const pconf = await getProcessedConfig(config);
+    let msg: string | undefined;
+    try {
+      StateTree.fromPipelineConfig({config: pconf});
+    } catch (e) {
+      msg = String(e);
+    }
+    expectDeepEqual(msg?.includes('Initial config cycle') ?? false, true);
+  });
+
   test('Process initial config with additional data', async () => {
     const config = await callHandler<PipelineConfiguration>('LibTests:MockWrapper5', {version: '1.0'}).toPromise();
     const pconf = await getProcessedConfig(config);

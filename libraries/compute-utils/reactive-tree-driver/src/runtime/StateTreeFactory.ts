@@ -60,8 +60,7 @@ export function fromPipelineConfig({
 }): StateTree {
   const refMap = buildRefMap(config);
 
-  // TODO: initial infinite cycles detection
-  const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path) => {
+  const traverse = buildTraverseD(startPath, (data: ConfigTraverseItem, path, ancestors) => {
     if (isPipelineDynamicConfig(data)) {
       const items = (data?.initialSteps ?? []).map((rawStep, idx) => {
         const step = typeof rawStep === 'string' ? {id: rawStep} : rawStep;
@@ -76,20 +75,21 @@ export function fromPipelineConfig({
           throw new Error(`Node ${step.id} not found on path ${JSON.stringify(path)}`);
         const nextPath = [...path, {id: step.id, idx}];
         const stepItem = {...step, ...item};
-        return [stepItem, nextPath] as const;
+        return [stepItem, nextPath, ancestors] as const;
       });
       return items;
     } else if (isPipelineStaticConfig(data))
-      return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}]] as const);
+      return data.steps.map((step, idx) => [step, [...path, {id: step.id, idx}], ancestors] as const);
     else if (isPipelineSelfRef(data)) {
       const next = getPipelineRef(refMap, data.nqName, data.version);
       if (!next)
         throw new Error(`Failed to deref nqName ${data.nqName} version ${data.version} on path ${JSON.stringify(path)}`);
-
-      return [[next, [...path, {id: next.id, idx: 0}]]] as const;
+      if (ancestors!.has(next))
+        throw new Error(`Initial config cycle on node ${next.id} path ${JSON.stringify(path)}`);
+      return [[next, [...path, {id: next.id, idx: 0}], new Set([...ancestors!, next])]] as const;
     }
     return [] as const;
-  }, new Set<ConfigTraverseItem>());
+  }, new Set<ConfigTraverseItem>([startNode]));
 
   const tree = traverse(startNode, (acc, state, path) => {
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
