@@ -86,6 +86,8 @@ import {recordGateDecision} from '../decision-records';
 import {DECISION_OUTCOMES, DecisionOutcome, describeRecord, OUTCOME_LABELS} from '../model/decision-records';
 import {openDecisionSearchDialog} from './decision-search-dialog';
 import {FindProgram, findPrograms, matchedBy, MIN_QUERY, resolveRecents} from '../model/find';
+import {accessFrame, portfolioAccess} from '../data-access';
+import {accessNotice} from '../model/data-access';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -180,6 +182,8 @@ export class PortalView {
   private pins = new Map<string, PinHolders>();
   /** The open portfolio's viewers group, which an approver may pin a program for. */
   private viewersGroup: DG.Group | null = null;
+  /** The open portfolio's data access notice, for its approvers and admins; null when all is well. */
+  private accessNoticeEl: HTMLElement | null = null;
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
 
@@ -303,7 +307,9 @@ export class PortalView {
       return;
     [this.stages, this.programs, this.pins] = [stages, programs, pins];
     this.viewersGroup = null;
+    this.accessNoticeEl = null;
     this.renderBoard();
+    void this.checkDataAccess(p);
     this.detail.replaceChildren(span(`Select a ${(p.program_noun ?? 'program').toLowerCase()}`, 'pp-muted'));
     const model = this.models.get(p.stage_model_id);
     this.status.value = `${p.name}: ${this.programs.length} ${(p.program_noun ?? 'program').toLowerCase()}s on ` +
@@ -330,7 +336,30 @@ export class PortalView {
       columns.append(this.column(slug(s.code), `${s.code} · ${s.name}`, s.phase ?? '',
         this.programs.filter((x) => x.stage_id === s.id)));
     }
-    this.board.replaceChildren(header, columns);
+    this.board.replaceChildren(header, ...(this.accessNoticeEl ? [this.accessNoticeEl] : []), columns);
+  }
+
+  /** For the portfolio's approvers and admins, who can share a connection or ask its owner to: a
+   * notice when a group cannot query a connection its datasets use. Plain viewers and contributors
+   * see nothing; they could not act on it. Read-only, and quiet when the check fails. */
+  private async checkDataAccess(p: PortfolioRow): Promise<void> {
+    try {
+      if (!await isApprover(p))
+        return;
+      const checks = await portfolioAccess(p);
+      const notice = accessNotice(checks);
+      if (this.portfolio !== p || !notice)
+        return;
+      this.accessNoticeEl = named(divH([
+        badge('data access', {variant: notice.missing ? 'error' : 'warning'}),
+        span(notice.text, 'pp-access-text'),
+        named(button('Details', () => setTimeout(() => grok.shell.addTableView(accessFrame(checks)))), 'data-access-details'),
+      ], 'pp-access-notice'), 'data-access-notice');
+      this.accessNoticeEl.title = 'Share the connection with the group with View and Query (the connection\'s owner or an admin)';
+      this.renderBoard();
+    } catch (e: any) {
+      grok.log.warning(`Project Portal: data access of ${p.code} not checked: ${e?.message ?? e}`);
+    }
   }
 
   private column(key: string, title: string, subtitle: string, programs: ProgramRow[]): HTMLElement {

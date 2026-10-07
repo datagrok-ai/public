@@ -44,6 +44,7 @@ changed. What each feature does is in [features.md](features.md); platform issue
 | Program-page panels per persona | F-31, FR-34, PORT-09 | none (`portfolio.personas`) |
 | Write permissions on portal tables | security | 0.2.31: three tables View for all users; metadata only |
 | Three small fixes | user names, no folders for ended programs | none |
+| Data access of the portfolio's groups | security, read-only check | none |
 
 ## Readiness, work units, stage folders, compounds
 
@@ -503,4 +504,18 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - Approvers who are not the program row's author are refused by the server (Edit on the row, GROK-21041), as for
   every gate-log write; on the stand only admins can record today.
 - The search reads every visible decision and its evidence in the browser on open. Fine for thousands of rows.
+
+## Data access of the portfolio's groups
+
+*Read-only check of the data connections' sharing. Schema: none.*
+
+- Report only, by choice: the portal grants nothing on a connection. The owner or an admin shares it.
+- The groups' grants are read from the server's privileges route, not a js-api method: `grok.dapi.permissions.get`
+  has no per-permission answer. If the route changes, the check says `unknown`, it does not fail. Worth a js-api ask
+  (effective permissions of a group on an entity).
+- Feeds are not required of the groups (they run as whoever syncs). A portfolio whose sync a contributor triggers
+  would need them; not handled.
+- The notice is for approvers and admins. Contributors cannot act on it either, so they do not see it.
+- Each check is three requests per connection; the board runs it on every portfolio open, for approvers only.
+- A connection is matched by the name the file gives; two spellings of one connection are checked twice.
 

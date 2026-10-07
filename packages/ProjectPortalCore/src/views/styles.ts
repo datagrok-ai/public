@@ -20,6 +20,9 @@ const CSS = `
 .pp-search-hit .pp-card-title { font-size: 12px; }
 .pp-search-hit .pp-muted { font-size: 11px; }
 .pp-board-header { gap: 8px; align-items: center; flex-wrap: wrap; flex: 0 0 auto; }
+.pp-access-notice { gap: 8px; align-items: center; flex: 0 0 auto; padding: 6px 8px; margin: 4px 0;
+  border: 1px solid var(--u2-border, #ddd); border-radius: 4px; }
+.pp-access-text { font-size: 12px; }
 .pp-board-header .pp-title { white-space: nowrap; }
 .pp-columns { gap: 8px; overflow-x: auto; flex: 1 1 auto; align-items: flex-start; padding-bottom: 8px; }
 .pp-column { flex: 0 0 160px; justify-content: flex-start; gap: 6px; background: var(--u2-surface-2, rgba(0,0,0,.03)); border-radius: 6px; padding: 6px; max-height: 100%; overflow-y: auto; }

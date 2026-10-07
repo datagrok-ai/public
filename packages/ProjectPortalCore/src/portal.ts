@@ -30,6 +30,8 @@ import {snapshotEvidence} from './model/snapshots';
 import {approvalOf, needsApproval, takesEffect} from './model/approvals';
 import {filterValue, ROW_LIMIT} from './rows';
 import {secureWriteTables} from './write-grants';
+// data-access.ts imports from here too; the cycle is safe because neither uses the other at load
+import {dataAccessWarnings} from './data-access';
 
 type Groups = {viewers?: string, contributors?: string, approvers?: string};
 
@@ -210,6 +212,8 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
   report.push(`portfolio ${c.code}: ${c.feeds.length} feed(s)`);
   // the server, not only the app, keeps the workflow tables to the portfolio's groups
   report.push(...await secureWriteTables([{code: c.code, approvers: groups.approvers, contributors: groups.contributors}]));
+  // read-only: a connection is its owner's to share, so a group that cannot query it is reported, not granted
+  report.push(...await dataAccessWarnings(c, groups));
   return report.join('\n');
 }
 
@@ -255,7 +259,7 @@ export async function loadPortfolioSet(configs: PortfolioConfig[], alsoKnown: st
 
 /** A connection by name, friendly name, or `Namespace:Name`. The dapi `name =` filter matches the
  * friendly name, which a connection may spell differently (MyData vs my_data). */
-async function findConnection(ref: string): Promise<DG.DataConnection | null> {
+export async function findConnection(ref: string): Promise<DG.DataConnection | null> {
   if (ref.includes(':'))
     return await grok.functions.eval(ref).catch(() => null) as DG.DataConnection | null;
   const byFriendly = await grok.dapi.connections.filter(`name = "${ref}"`).list().catch(() => []);

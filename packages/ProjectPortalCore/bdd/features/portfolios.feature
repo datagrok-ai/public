@@ -60,3 +60,8 @@ Feature: Several portfolios on one instance
     And user clicks on EXS-KIN1 card
     Then compound roles should contain text "6 lead"
     And EXC-3001 compound should contain text "tool"
+
+  Scenario: No data access notice when every group can query the portfolio's data
+    When user clicks on small molecule discovery portfolio
+    Then board header should contain text "EX-SMD-V1"
+    And data access notice should not be visible

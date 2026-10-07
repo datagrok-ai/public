@@ -44,6 +44,7 @@ import './tests/program-row-tests';
 import './tests/empty-filter-tests';
 import './tests/find-tests';
 import './tests/decision-record-tests';
+import './tests/data-access-tests';
 
 export let _package = new DG.Package();
 export { tests };

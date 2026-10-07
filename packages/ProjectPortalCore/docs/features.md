@@ -473,6 +473,32 @@ the domain API from the console. What the server enforces is the table's securit
   portfolio's approvers can write another portfolio's `program_role` rows from the console, and a contributor can
   write any request's status and reviews: the server grants per table, not per row.
 
+## Data access of the portfolio's groups
+
+A program dataset runs its SQL in the viewer's own session. The server then asks for View and Query
+(`DataConnection.Query`) on the connection; without Query a viewer gets `Connection "Query" permission required`.
+The portal shares its own tables and folders when a portfolio loads, but a data connection belongs to whoever set it
+up, so the portal only checks it and never grants.
+
+- **What is checked.** Each connection the portfolio's datasets (`programData`, `programDatasets`) and feeds use,
+  against each of its groups (viewers, contributors, approvers): does the group hold View and Query?
+- **Parent groups count.** The check reads the group's effective grants from the server's privileges route
+  (`/privileges/permissions?entityId&groupId&all=true`), which includes its parent groups (All users among them) and
+  grants through projects. A share with the viewers covers the contributors and approvers nested in them.
+  `grok.dapi.permissions.get` lists only View and Edit groups, so it cannot answer this.
+- **Feeds are reported, not required.** A feed runs as whoever syncs (an admin or the scheduler), so a connection
+  only feeds use shows `not needed` when the groups lack it.
+- **Unknown.** A caller who cannot see the connection, or may not read its sharing, gets `unknown` with the reason,
+  never an error.
+- **Where it shows.** `dataAccessAudit(code)` returns the report as text, `dataAccessTable(code)` as a table (one
+  row per portfolio, connection and group, with the fix); every portfolio when no code is given. Loading a portfolio
+  adds a `warning:` line per group that cannot query a dataset's connection, with the fix
+  (`share <connection> with <group>: View + Query`). The board shows a **data access** notice
+  (`data-access-notice`, **Details** opens the table) to the portfolio's approvers and admins only: they can share
+  the connection or ask its owner. Viewers and contributors see nothing.
+- **The fix.** In the connection's sharing dialog, View with Query ticked. From code, `grok.dapi.permissions.grant(
+  connection, group, false)` gives the group the whole Use set, Query included.
+
 ## Provenance
 
 From any portal record, what it rests on and what rests on it (F-28, FR-75): data → model run →

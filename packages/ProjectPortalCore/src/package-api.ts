@@ -470,6 +470,22 @@ export namespace funcs {
   }
 
   /**
+   * Read-only: for each data connection a portfolio's datasets and feeds use, whether each of its groups (viewers, contributors, approvers) has View and Query on it, directly or through a parent group, with the fix for each gap. Every portfolio when no code is given. Grants nothing
+   * @param {string} code - Portfolio code
+   */
+  export async function dataAccessAudit(code?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:DataAccessAudit', { code });
+  }
+
+  /**
+   * The data access audit as a table: one row per portfolio, connection and group, with view, query, status and fix
+   * @param {string} code - Portfolio code
+   */
+  export async function dataAccessTable(code?: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:DataAccessTable', { code });
+  }
+
+  /**
    * The programs a text finds across every portfolio the current user can see: by code, name, target or a registry alias (a value in the program's details), best match first
    */
   export async function findPrograms(query: string ): Promise<DG.DataFrame> {

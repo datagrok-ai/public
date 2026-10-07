@@ -12,7 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {addressEndsWith, boardStages, currentSpace, openApp} from '../bindings/steps.js';
-import {clickOn, shouldBe, shouldContainText} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, shouldBe, shouldContainText, shouldNotBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Several portfolios on one instance", () => {
@@ -90,5 +90,13 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(60, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
     await session.step(61, "Then compound roles should contain text \"6 lead\"", () => shouldContainText(page, el("compound roles"), "6 lead"));
     await session.step(62, "And EXC-3001 compound should contain text \"tool\"", () => shouldContainText(page, el("EXC-3001 compound"), "tool"));
+  });
+  test("No data access notice when every group can query the portfolio's data", {tag: ["@portal"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(9, "Given user opens the Project Portal app", () => openApp(page));
+    enter(page, "Project Portal app");
+    await session.step(65, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
+    await session.step(66, "Then board header should contain text \"EX-SMD-V1\"", () => shouldContainText(page, el("board header"), "EX-SMD-V1"));
+    await session.step(67, "And data access notice should not be visible", () => shouldNotBe(page, el("data access notice"), "visible"));
   });
 });

@@ -53,6 +53,8 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
   submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
 import {reviewsOf} from './model/approvals';
 import {secureWriteTables} from './write-grants';
+import {accessFrame, dataAccessChecks} from './data-access';
+import {summarizeAccess} from './model/data-access';
 import {linkProgramRows as linkRows} from './program-rows';
 import {decisionsOf, recordGateDecision} from './decision-records';
 import {DecisionOutcome, describeDecision, searchDecisions} from './model/decision-records';
@@ -776,6 +778,22 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 export async function securePortalTables(dryRun: boolean = true): Promise<string> {
   const lines = await secureWriteTables(undefined, dryRun);
   return lines.length ? lines.join('\n') : 'write permissions already in place';
+}
+
+//name: dataAccessAudit
+//description: Read-only: for each data connection a portfolio's datasets and feeds use, whether each of its groups (viewers, contributors, approvers) has View and Query on it, directly or through a parent group, with the fix for each gap. Every portfolio when no code is given. Grants nothing
+//input: string code {optional: true; description: Portfolio code}
+//output: string report
+export async function dataAccessAudit(code?: string): Promise<string> {
+  return summarizeAccess(await dataAccessChecks(code || undefined));
+}
+
+//name: dataAccessTable
+//description: The data access audit as a table: one row per portfolio, connection and group, with view, query, status and fix
+//input: string code {optional: true; description: Portfolio code}
+//output: dataframe result
+export async function dataAccessTable(code?: string): Promise<DG.DataFrame> {
+  return accessFrame(await dataAccessChecks(code || undefined));
 }
 
 const findFrame = (rows: {p: FindProgram, matched: string}[], name: string): DG.DataFrame => {

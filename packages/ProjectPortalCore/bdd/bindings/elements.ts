@@ -13,6 +13,7 @@ app.element('biologics development portfolio', {selector: u2('portfolio-ex-bioc'
 
 app.element('stage board', {selector: u2('stage-board'), aliases: ['board']});
 app.element('board header', {selector: u2('board-header')});
+app.element('data access notice', {selector: u2('data-access-notice')});
 app.element('unstaged column', {selector: u2('stage-unstaged')});
 app.element('gate D4 column', {selector: u2('stage-d4')});
 app.element('target validation column', {selector: u2('stage-tv'), aliases: ['TV column']});
