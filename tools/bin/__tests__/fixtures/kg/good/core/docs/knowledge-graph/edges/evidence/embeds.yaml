@@ -1,0 +1,18 @@
+type: embeds
+from: DocPage
+to: Media
+identity: [position]
+derived_by: [ast]
+description: >
+  A page shows a media file or a hosted video: a markdown image, an <img> or <video> tag, a
+  slide entry, a YouTube iframe or a watch link. One edge per occurrence, numbered by position
+  in the page; anchor is the nearest heading above it. Alt text lives here, not on the media.
+properties:
+  position:       number
+  line:           number
+  form:           "'image' | 'tag' | 'iframe' | 'link' | 'slide'"
+  anchor?:        string
+  alt?:           string
+  title?:         string
+  caption?:       string
+  start_seconds?: number

@@ -1,0 +1,17 @@
+# DRY RUN - generated 2026-01-15 by the fixture; nothing was released.
+dry_run: true
+
+version: 1.0.1
+kind:    patch
+base:    release/1.0.0
+state:   testing
+
+picks:
+  - {ticket: GROK-100, repo: reddata, commit: aaaaaaaaaa, subject: "Viewers: fix the legend"}
+  - {ticket: null,     repo: public,  commit: bbbbbbbbbb, subject: "GROK-101: tidy the fixture"}
+  # the record itself claims the resolution this commit message does not
+  - {ticket: GROK-101, repo: reddata, commit: aaaaaaaaaa, claim: resolves, subject: "Viewers: fix the legend"}
+
+features:
+  main:
+    - {name: "Legends", t: GROK-101, s: Open}

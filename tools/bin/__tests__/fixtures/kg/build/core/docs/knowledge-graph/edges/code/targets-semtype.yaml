@@ -1,0 +1,10 @@
+type: targets-semtype
+from: Function
+to: SemanticType
+identity: [role]
+derived_by: [annotation, ast]
+description: >
+  How a function relates to a semantic type: a detector assigns it, an input
+  consumes it, an output produces it, a renderer or filter is registered for it.
+properties:
+  role:          "'detects' | 'consumes' | 'produces' | 'renders' | 'filters'"

@@ -1,0 +1,9 @@
+{
+  "name": "datagrok-tools",
+  "version": "6.5.10",
+  "description": "The grok CLI fixture: sources under bin/, vitest suites under bin/__tests__.",
+  "dependencies": {
+    "datagrok-api": "^1.27.7",
+    "glob": "^13.0.6"
+  }
+}

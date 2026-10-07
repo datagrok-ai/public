@@ -1,0 +1,7 @@
+type: developer
+extends: person
+description: A person who commits to the platform.
+properties:
+  team:          Team
+  bitbucket?:    string
+  github?:       string

@@ -1,0 +1,5 @@
+type: serves
+from: Environment
+to: Customer
+derived_by: [annotation]
+description: A stand exists for a customer or an evaluation.

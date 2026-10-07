@@ -1,0 +1,6 @@
+type: doc-page
+extends: artifact
+description: A markdown document. Any page can describe a feature with documents.
+properties:
+  path:          Path
+  kind?:         "'help' | 'readme' | 'other'"

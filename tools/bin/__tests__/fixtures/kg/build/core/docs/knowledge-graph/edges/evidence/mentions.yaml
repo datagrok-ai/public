@@ -1,0 +1,9 @@
+type: mentions
+from: Artifact | Work
+to: Node
+derived_by: [annotation]
+description: >
+  A `~id`, ticket key or PR number appears in the text of a doc, test, scenario,
+  changelog entry, ticket, PR or commit message. The weakest edge, and the most common.
+properties:
+  count?:        number

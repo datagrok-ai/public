@@ -1,0 +1,14 @@
+type: endpoint
+extends: component
+description: >
+  A Datlas REST route registered by a router: method plus path template. From the
+  prop_gen emitter over the 38 routers. Id ep:<METHOD> <path>.
+properties:
+  language:      "'dart'"
+  method:        "'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD'"
+  route:         string
+  router:        Declaration
+  handler?:      Declaration           # the router method that serves it; anonymous handlers get path plus line
+  path_params?:  string[]
+  query_params?: string[]
+  exported?:     boolean = false        # carries @ExportApi

@@ -1,5 +1,6 @@
 ---
-feature: boxplot
+id: TS:viewers/box-plot/ui
+covers: [visualize/viewers/box-plot]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

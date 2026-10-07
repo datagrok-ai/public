@@ -1,3 +1,17 @@
+---
+feature: domains/chem
+name: Cheminformatics
+description: >
+  Molecule rendering and sketching, substructure and similarity search, fingerprints,
+  descriptors and properties, R-group analysis, scaffold trees, activity cliffs,
+  matched molecular pairs, MPO and reaction enumeration, in the browser via RDKit.
+owner: P:askalkin
+code:
+  - public/packages/Chem/**
+concepts: [semantic-type, column, dataframe, function]
+status: active
+---
+
 # Chem Package
 
 ## Summary

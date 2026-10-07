@@ -1,5 +1,6 @@
 ---
-feature: histogram
+id: TS:viewers/histogram/ui
+covers: [visualize/viewers/histogram]
 target_layer: manual-only
 coverage_type: smoke
 manual_only_reason: |

@@ -1,0 +1,7 @@
+type: tests
+from: Test | TestSuite
+to: Feature
+key: tests
+key_side: to
+derived_by: [annotation, filesystem, name]
+description: An automated test exercises a feature, from a `~id` category or tag, a path under the feature's roots, the feature's `tests:` list, or a file, category or Test Track folder name that spells the feature's id or name (`name`, 0.7).

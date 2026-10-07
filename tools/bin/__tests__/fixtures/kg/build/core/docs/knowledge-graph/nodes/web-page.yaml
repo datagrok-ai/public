@@ -1,0 +1,9 @@
+type: web-page
+extends: doc-page
+description: >
+  An HTML page of the marketing site (the landing repository): a resource of its own, with its
+  headings as doc-anchor nodes and embeds edges to the media it shows. Id doc:landing:<path>;
+  url is the live address the site's routing rules give the file.
+properties:
+  kind:          "'marketing'"
+  url:           Url

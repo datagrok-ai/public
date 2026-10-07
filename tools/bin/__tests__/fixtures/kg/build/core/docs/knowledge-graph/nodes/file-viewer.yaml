@@ -1,0 +1,9 @@
+type: file-viewer
+extends: function
+description: >
+  A preview for files with given extensions in the file browser.
+properties:
+  extensions:    string[]             # //meta.fileViewer
+  check?:        string               # //meta.fileViewerCheck
+notes:
+  - roles contains 'fileViewer'

@@ -1,0 +1,5 @@
+type: actor
+extends: node
+abstract: true
+visibility: internal
+description: Someone or something that wants, owns or uses features.

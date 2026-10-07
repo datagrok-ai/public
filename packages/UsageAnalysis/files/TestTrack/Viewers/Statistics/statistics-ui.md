@@ -1,5 +1,6 @@
 ---
-feature: statsviewer
+id: TS:viewers/statistics/ui
+covers: [visualize/viewers/statistics]
 target_layer: manual-only
 coverage_type: smoke
 ---

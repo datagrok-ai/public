@@ -1,0 +1,6 @@
+type: delivers
+from: Initiative
+to: Feature
+key: delivers
+derived_by: [annotation]
+description: An initiative builds or changes a product feature.

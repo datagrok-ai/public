@@ -1,0 +1,9 @@
+type: edge-type
+extends: type
+prefix: E
+description: An edge type; one per edges/<group>/<type>.yaml, the folder being its group.
+properties:
+  from:         TypeUnion
+  to:           TypeUnion
+  key?:         string
+  cardinality:  "'one' | 'many'"

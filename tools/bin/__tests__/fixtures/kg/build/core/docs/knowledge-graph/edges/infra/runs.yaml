@@ -1,0 +1,9 @@
+type: runs
+from: Environment
+to: Release
+cardinality: one
+derived_by: [external]
+description: The version an environment currently runs, observed from its /api/info endpoint.
+properties:
+  observed:      Date
+  build?:        string

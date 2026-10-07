@@ -8,7 +8,7 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['bin/**/*.test.ts'],
-          exclude: ['bin/**/*.integration.test.ts'],
+          exclude: ['bin/**/*.integration.test.ts', 'bin/__tests__/fixtures/**'],
         },
       },
       {

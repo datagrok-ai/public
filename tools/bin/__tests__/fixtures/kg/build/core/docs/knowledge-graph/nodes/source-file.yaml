@@ -1,0 +1,10 @@
+type: source-file
+extends: component
+description: >
+  One source file. The unit that is-implemented-in ownership, participates-in
+  citations and PR diffs operate on. Id file:<repo-relative path>.
+properties:
+  path:          Path
+  loc?:          number
+  generated?:    boolean = false
+  entry?:        boolean = false        # a package entry point every test imports (package.ts, package-test.ts, package-api.ts, the package.json main), or a Dart library file that declares parts; the import walk stops here

@@ -1,0 +1,15 @@
+# The base of every node type. Abstract; every root extends it.
+type: node
+abstract: true
+description: >
+  Fields every node carries whatever its type. The authored half is what a home
+  document may set; the build writes layer, home and provenance (schema.yaml).
+properties:
+  id:           string
+  name:         string
+  description?: Text                  # first paragraph of the home doc when there is one
+  status?:      "'proposed' | 'active' | 'removed' = 'active'"
+  visibility?:  "'public' | 'dev' | 'internal'"
+  owner?:       Person | Team
+  aliases?:     string[]              # former ids; every reference resolves through them
+inherit: [status, visibility, owner]

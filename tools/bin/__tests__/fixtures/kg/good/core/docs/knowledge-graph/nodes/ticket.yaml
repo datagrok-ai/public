@@ -1,0 +1,6 @@
+type: ticket
+extends: work
+description: An issue in Jira or GitHub. Ids are the ones the tracker uses.
+properties:
+  tracker:       "'jira' | 'github'"
+  key:           string
