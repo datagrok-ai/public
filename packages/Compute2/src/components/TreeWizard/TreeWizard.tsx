@@ -29,7 +29,7 @@ import {
   findNextSubStep,
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
-  pinView, reportTree, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
+  pinView, reportTree, getExportSummary, reportSummary, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -391,6 +391,14 @@ export const TreeWizard = Vue.defineComponent({
     // export
     ////
 
+    const exportStates = () => ({
+      callInfoStates: states.calls,
+      validationStates: states.validations,
+      consistencyStates: states.consistency,
+      pipelineValidations: states.pipelineValidations,
+      descriptions: states.descriptions,
+    });
+
     const exports = Vue.computed(() => {
       if (!treeState.value || isFuncCallState(treeState.value))
         return [];
@@ -403,11 +411,8 @@ export const TreeWizard = Vue.defineComponent({
             startDownload: true,
             treeState: treeState.value!,
             meta: currentMetaCallData.value,
-            callInfoStates: states.calls,
+            ...exportStates(),
             metaStates: states.meta,
-            validationStates: states.validations,
-            consistencyStates: states.consistency,
-            descriptions: states.descriptions,
             hasNotSavedEdits: hasNotSavedEdits.value
           })
         };
@@ -437,15 +442,14 @@ export const TreeWizard = Vue.defineComponent({
             startDownload: false,
             treeState: state,
             meta: currentMetaCallData.value,
-            callInfoStates: states.calls,
+            ...exportStates(),
             metaStates: states.meta,
-            validationStates: states.validations,
-            consistencyStates: states.consistency,
-            descriptions: states.descriptions,
             hasNotSavedEdits: hasNotSavedEdits.value,
             cb,
           });
         },
+        getExportSummary: (state: PipelineState) => getExportSummary(state, exportStates()),
+        reportSummaryExcel: (state: PipelineState) => reportSummary(getExportSummary(state, exportStates())),
         getFuncCallCustomExports: (fc: DG.FuncCall) => {
           return Utils.getCustomExports(fc.func).map(x => x.name);
         },

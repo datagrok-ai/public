@@ -9,7 +9,9 @@ import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies, hasAnyInconsistency} from '../../utils';
+import {
+  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, friendlyIoName,
+} from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
@@ -41,47 +43,6 @@ const statusToColor: Record<Status, string> = {
   ['failed']: 'red',
 };
 
-const statusToTooltip: Record<Status, string> = {
-  [`next`]: `This step is avaliable to run`,
-  [`next warn`]: `This step is avaliable to run, but has warnings`,
-  [`next error`]: `This step needs user input`,
-  ['pending']: 'This step has pending dependencies',
-  ['pending executed']: 'This step has changed dependencies',
-  ['running']: 'This step is running',
-  ['succeeded']: 'This step is succeeded',
-  ['succeeded info']: 'This step is succeeded with changes',
-  ['succeeded warn']: 'This step is succeeded, but has warnings',
-  ['succeeded inconsistent']: 'This step is succeeded, but has inconsistent inputs',
-  ['failed']: 'Run failed',
-};
-
-const statesToStatus = (
-  callState: FuncCallStateInfo,
-  validationsState?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): Status => {
-  if (callState.isRunning) return 'running';
-  if (callState.runError)
-    return 'failed';
-  if (callState.pendingDependencies?.length)
-    return callState.isOutputOutdated ? 'pending' : 'pending executed';
-  if (!callState.isOutputOutdated) {
-    if (hasInconsistencies(consistencyStates))
-      return 'succeeded inconsistent';
-    if (hasWarnings(validationsState) || hasErrors(validationsState))
-      return 'succeeded warn';
-    if (hasChanges(consistencyStates))
-      return 'succeeded info';
-    return 'succeeded';
-  }
-  if (hasErrors(validationsState))
-    return 'next error';
-  if (hasWarnings(validationsState) || hasInconsistencies(consistencyStates))
-    return 'next warn';
-
-  return 'next';
-};
-
 const listContributingIos = (
   status: Status,
   validationStates?: Record<string, ValidationResult>,
@@ -106,13 +67,6 @@ const listContributingIos = (
   return [...result];
 };
 
-const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {
-  const prop =
-    funcCall?.func?.inputs?.find((p: DG.Property) => p.name === ioName) ??
-    funcCall?.func?.outputs?.find((p: DG.Property) => p.name === ioName);
-  return prop?.friendlyName ?? prop?.caption ?? ioName;
-};
-
 export const getToolTip = (
   status: Status,
   isReadonly: boolean,
@@ -128,22 +82,6 @@ export const getToolTip = (
   const ios = listContributingIos(status, validationStates, consistencyStates);
   if (!ios.length) return base;
   return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
-};
-
-const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find((val) => val.warnings?.length);
-  return firstWarning;
-};
-
-const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'info'));
-  return firstInconsistency;
-};
-
-const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstError = Object.values(validationsState || {}).find((val) => val.errors?.length);
-  return firstError;
 };
 
 export const TreeNode = Vue.defineComponent({
