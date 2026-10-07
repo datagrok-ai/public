@@ -27,6 +27,30 @@ const INCORRECT_STEPS_MES = 'steps must be non-negative.';
 const INCORRECT_CYCLES_MES = 'cycles must be positive.';
 const INCORRECT_CUTOFF_MES = 'cutoff must be non-negative.';
 
+/**
+ * Returns the null sentinel value for the raw typed array of the given column.
+ *
+ * - Int-backed columns (int, string, bool) use {@link DG.INT_NULL} (-2147483648)
+ * - Float-backed columns (float, datetime, qnum) use {@link DG.FLOAT_NULL}
+ *
+ * @param col - source Datagrok column
+ * @returns null sentinel value used in the column's raw data
+ */
+export function getNullValue(col: DG.Column): number {
+  switch (col.type) {
+  case DG.COLUMN_TYPE.INT:
+  case DG.COLUMN_TYPE.STRING:
+  case DG.COLUMN_TYPE.BOOL:
+    return DG.INT_NULL;
+  case DG.COLUMN_TYPE.FLOAT:
+  case DG.COLUMN_TYPE.DATE_TIME:
+  case DG.COLUMN_TYPE.QNUM:
+    return DG.FLOAT_NULL;
+  default:
+    return DG.FLOAT_NULL;
+  }
+}
+
 /** Check column type */
 export function checkColumnType(col: DG.Column): void {
   if ((col.type != DG.COLUMN_TYPE.FLOAT) && (col.type != DG.COLUMN_TYPE.INT))
