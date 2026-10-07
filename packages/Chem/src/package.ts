@@ -51,7 +51,7 @@ import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
+import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
 import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
@@ -2032,11 +2032,14 @@ export class PackageFunctions {
     }
     sketcher.setMolecule(molecule);
     if (ogSmiles) {
-      waitFor(() => !!sketcher.sketcher?.isInitialized)
-        .then((inited) => {
-          if (inited)
-            sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
-        });
+      // The cell's own SMILES, given back the moment the sketcher is ready (before any edit can reach it), so that OK
+      // without an edit keeps the cell as it was: in place of the molblock above, while that is still the caller's
+      // string. A value the host took while the sketcher loaded (typed into its field and entered, picked from Recent)
+      // is the one the sketcher shows and holds by then, and OK writes it.
+      sketcher.sketcherReady().then((ready) => {
+        if (ready.explicitMol?.value === molecule)
+          ready.explicitMol = {notation: 'smiles', value: ogSmiles!};
+      });
     }
 
     const dlg = ui.dialog()

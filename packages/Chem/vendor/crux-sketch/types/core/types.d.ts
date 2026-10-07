@@ -12,6 +12,7 @@ export type SketcherMode = 'molecule' | 'query';
 export type ChangeSource = 'user' | 'api';
 /** What a `change` listener receives, once per completed edit. */
 export interface ChangeDetail {
+    /** `'user'` for a user's edit (its undo and redo by key or button included), `'api'` for the host's write or `undo()`. */
     readonly source: ChangeSource;
 }
 /**
@@ -119,18 +120,33 @@ export type WarningMarks = 'shown' | 'hidden';
  */
 export type AnalysisPanel = 'shown' | 'collapsed' | 'hidden';
 /**
+ * What a `render` listener receives (API-061; spike datagrok-platform, R5): the canvas's render count once this drawing is
+ * shown, as `renderCount` then reads it.
+ */
+export interface RenderDetail {
+    readonly renderCount: number;
+}
+/**
  * The events a sketcher emits, and what each listener receives. `settings` (spike settings-touch, K6, P9): the settings in
  * force once a user's Apply in the Settings dialog changed them, so that a host may store them; never for a host's write.
+ * `render` (API-061; spike datagrok-platform, R5): the canvas shows a new drawing (the first one included, then after an
+ * edit, a write, a view change or a resize), once per drawing, as `renderCount` counts them, with the drawing on the page
+ * when it comes. What the canvas marks on a drawing it shows (a tool's preview, the hover, the selection) is no render. A
+ * host that waits for the sketcher to settle waits on it and on `isPending` (Datagrok's settles do), never on a timeout.
  */
 export interface SketcherEvents {
     change: ChangeDetail;
     error: SketchError;
     settings: SketcherSettings;
+    render: RenderDetail;
 }
+/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings` or `render`. */
 export type SketcherEventType = keyof SketcherEvents;
+/** A listener of the event `T`, called with that event's detail (`SketcherEvents[T]`). */
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
+/** How `setValue` reads its text. */
 export interface SetValueOptions {
     /** Read the text as this format instead of detecting it (e.g. SMARTS that is also SMILES). */
     format?: SketcherFormat;
@@ -257,9 +273,14 @@ export type MethylLabels = 'shown' | 'hidden';
  * value is `'auto'`, and reads back so.
  */
 export type Density = 'auto' | 'regular' | 'compact';
+/**
+ * What `createSketcher` takes (H29): the initial molecule and mode, the toolbars, and the options the handle reads and
+ * changes later by the same names. Every option is optional; left out, it takes its default.
+ */
 export interface CreateSketcherOptions {
     /** The initial molecule, in any format the sketcher reads. Showing it emits no change event. */
     value?: string;
+    /** `'molecule'` (the default) or `'query'` (API-021): the handle's `mode` switches it later. */
     mode?: SketcherMode;
     /**
      * What the toolbars hold (UI-002): `{ top, left, right, bottom }`, each a list of groups `{ label,
@@ -333,6 +354,56 @@ export interface CreateSketcherOptions {
      */
     disabledQueryElements?: readonly string[];
 }
+/** A point of the canvas as `positions` gives it: CSS px from the top-left corner of the `<crux-sketch>` element. */
+export interface DrawnPoint {
+    readonly x: number;
+    readonly y: number;
+}
+/**
+ * Where the canvas draws the drawing (API-056): each atom's position and each bond's midpoint, by index (the order of the
+ * `molfile`'s atoms and bonds, as the test ids `atom.N` and `bond.N` number them), where a press lands on that atom or
+ * bond. An atom drawn nowhere (one a contracted abbreviation hides) and a bond drawn nowhere are null. `bondLength` is a
+ * bond's drawn length at the current zoom, in px; 0 when there is nothing drawn.
+ */
+export interface DrawnPositions {
+    readonly atoms: readonly (DrawnPoint | null)[];
+    readonly bonds: readonly (DrawnPoint | null)[];
+    readonly bondLength: number;
+}
+/** A box of the sketcher as `layout` gives it: CSS px from the top-left corner of the `<crux-sketch>` element. */
+export interface DrawnBox {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+}
+/** A toolbar's place around the canvas: the top bar, the left bar, the element palette on the right, the ring bar below. */
+export type ToolbarPlace = 'top' | 'left' | 'right' | 'bottom';
+/**
+ * Where the sketcher shows its parts now (API-058; spike datagrok-platform, R3, R4), for a host that points at them, as
+ * Datagrok's hit areas do: the canvas; each toolbar shown, by its place; each control a toolbar shows, by its name in a
+ * toolbar configuration (`bond.single`, `ring.benzene`, `element.n`, `undo`, `zoom`; a sub-palette's button by the
+ * palette's name, `select`, `bond.stereo`), where a press lands on it; and the label editor while it is open. What is not
+ * shown is left out: a toolbar the configuration leaves out, a control in a closed palette or a folded group, one its bar
+ * has scrolled out of view.
+ */
+export interface SketcherLayout {
+    readonly canvas: DrawnBox | null;
+    readonly toolbars: Readonly<Partial<Record<ToolbarPlace, DrawnBox>>>;
+    readonly controls: Readonly<Record<string, DrawnBox>>;
+    readonly labelEditor: DrawnBox | null;
+}
+/** The atoms and bonds the user has selected (API-059), by index (the `molfile`'s order, as `positions` numbers them), ascending. */
+export interface SketchSelection {
+    readonly atoms: readonly number[];
+    readonly bonds: readonly number[];
+}
+/**
+ * A tool the sketcher can have chosen (API-060), named as a toolbar configuration names it (`select.rect`, `bond.single`,
+ * `ring.benzene`, `element.n`, `chain`, `erase`, `template.library` while a template from the Structure Library is the
+ * tool), or `element.query`, the query atom picked last in the periodic table (query mode).
+ */
+export type SketcherTool = Exclude<ToolbarTool, ToolbarAction | ToolbarReadout | ToolbarMenu> | 'element.query';
 /**
  * What `createSketcher` resolves to; `<crux-sketch>` has the same members.
  *
@@ -433,6 +504,11 @@ export interface SketcherApi {
      * Writing it replaces the molecule and starts a new history.
      */
     value: string;
+    /**
+     * Writes `text` as `value` does, read as `options.format` when it is given instead of detected from its shape (API-010:
+     * SMARTS that is also SMILES). One change event with `{ source: 'api' }` when it is accepted; a text it cannot read
+     * changes nothing, sets `lastError` and emits `error`, never throwing (API-013). Throws on a destroyed sketcher.
+     */
     setValue(text: string, options?: SetValueOptions): void;
     /** The last refused write's error, until the next accepted write clears it to `null`. */
     readonly lastError: SketchError | null;
@@ -495,6 +571,7 @@ export interface SketcherApi {
      * or `'hidden'`. The toggle changes it too. It reads back the value in force as `atomColours` does; no edit.
      */
     analysisPanel: AnalysisPanel;
+    /** Whether the drawing is empty (API-019), as it is after a clear, a write of `""` and the last atom erased. A read. */
     readonly isEmpty: boolean;
     /**
      * Whether the drawing has a query feature (spike query, Q14; API-020): a generic atom, an atom list or NOT list, a query
@@ -525,6 +602,38 @@ export interface SketcherApi {
     readonly engineRev: string;
     /** How many times the canvas has rendered (API-042); mirrored as `data-render-count` on the canvas. */
     readonly renderCount: number;
+    /**
+     * Where the canvas draws each atom and bond now (API-056; spike datagrok-chem, R1): for a host that points at them, as
+     * Datagrok's hit areas do. A read, which renders and emits nothing; current at every moment. Empty before the sketcher
+     * is ready, for an empty drawing and after `destroy()`.
+     */
+    readonly positions: DrawnPositions;
+    /**
+     * Whether the sketcher has something on its way (API-057; spike datagrok-chem, R1): a press or a drag held on the canvas,
+     * or a drawing, a preview, a view change, a tooltip or a read of the clipboard waiting for a coming frame, a short wait
+     * (a ring's preview waits for the pointer to rest) or a promise. False when the canvas shows all it will until the next
+     * input or write: a host or a test that waits for the sketcher to settle waits on this, never on a timeout. A notice's
+     * time on the status line is not counted. False after `destroy()`.
+     */
+    readonly isPending: boolean;
+    /**
+     * Where the sketcher shows its canvas, its toolbars, each control they show and the label editor now (API-058; spike
+     * datagrok-platform, R3, R4): for a host that points at them, as Datagrok's hit areas do. A read, which renders and
+     * emits nothing; current at every moment. Empty (no canvas, no toolbars, no controls) before the sketcher is ready, while
+     * it is out of the page and after `destroy()`.
+     */
+    readonly layout: SketcherLayout;
+    /**
+     * The atoms and bonds selected (API-059; spike datagrok-platform, R4), by index, ascending; none with nothing selected,
+     * before the sketcher is ready and after `destroy()`. The selection is the user's: the API reads it and never sets it. A
+     * read, which emits nothing.
+     */
+    readonly selection: SketchSelection;
+    /**
+     * The tool chosen now (API-060; spike datagrok-platform, R4), however it was chosen (its button, a key, the canvas menu),
+     * named as a toolbar configuration names it; `bond.single` at first. After `destroy()`, the last one. A read.
+     */
+    readonly tool: SketcherTool;
     /**
      * Undoes the last completed edit (API-043) and returns whether it did anything: with nothing to
      * undo it returns `false` and changes nothing. When it undoes, it emits one `change` with
@@ -631,6 +740,7 @@ export interface SketcherApi {
     settings: SketcherSettings;
     /** Adds a listener; returns the function that removes it. */
     on<T extends SketcherEventType>(type: T, listener: SketcherListener<T>): () => void;
+    /** Removes a listener `on()` added (API-018); a listener it never added is ignored. */
     off<T extends SketcherEventType>(type: T, listener: SketcherListener<T>): void;
     /** Releases the sketcher. The getters keep answering; writes throw. Calling it twice is harmless. */
     destroy(): void;

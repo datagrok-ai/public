@@ -84,6 +84,6 @@ async function createKetcher(): Promise<{sketcher: KetcherSketcher, dialog: DG.D
   grok.chem.currentSketcherType = func.friendlyName;
   const s = new Sketcher();
   const d = ui.dialog().add(s).show();
-  await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 10000);
+  await s.sketcherReady();
   return {sketcher: s.sketcher as KetcherSketcher, dialog: d};
 }

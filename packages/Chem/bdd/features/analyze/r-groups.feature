@@ -88,7 +88,7 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
     And user clicks on MCS button in "R-Groups Analysis" dialog
     And "R-Groups Analysis" dialog should have finished updating
-    Then the canvases of "R-Groups Analysis" dialog should be painted in at least 2 colors
+    Then the sketcher in "R-Groups Analysis" dialog should hold the molecule "C"
     When user clicks on OK button in "R-Groups Analysis" dialog
     Then an error balloon containing "No R-Groups were found" should have been shown
     And no new column should have been added
