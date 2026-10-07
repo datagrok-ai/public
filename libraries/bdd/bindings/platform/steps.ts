@@ -581,6 +581,11 @@ export const contextPanelShows = Then('the context panel should show {string}', 
     await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
 }, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it (a viewer: its property grid)'});
 
+export const contextPanelTitle = Then('the title of context panel should be {string}', (page: Page, title: string) =>
+  expect(page.locator('.grok-prop-panel .grok-entity-prop-panel > .d4-accordion > .d4-accordion-title label').first(),
+    'the name in the context panel\'s header').toHaveText(title),
+{description: 'the name the context panel\'s header shows for the current entity, read from the page, not from the entity'});
+
 /* The table view shows a moved current cell in the panel 750 ms after the move (a debounced handler),
    and replaces whatever was made current meanwhile — this is the moment a user sees it arrive. */
 export const contextPanelShowsCurrentCell = Then('the context panel should show the current cell', async (page: Page) => {
