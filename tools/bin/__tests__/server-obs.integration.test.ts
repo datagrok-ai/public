@@ -197,7 +197,10 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
     const gname = `${TAG}Chemists`;
     fs.writeFileSync(gfile, JSON.stringify({'#type': 'UserGroup', name: gname, friendlyName: gname}));
     seed.group = {id: (await json(['groups', 'save', '--json', gfile])).id, name: gname};
-    await ok(['groups', 'add-members', gname, seed.alice.login, seed.bob.login, '--user']);
+    await ok(['groups', 'add-members', gname, seed.alice.login, '--admin', '--user']);
+    await ok(['groups', 'add-members', gname, seed.bob.login, '--user']);
+    // The creator joins as the group's admin; without leaving, admin's errors would count as the group's.
+    await ok(['groups', 'remove-members', gname, (await admin.get('/users/current')).login, '--user']);
     seed.alice.session = JSON.parse(Buffer.from(seed.alice.client.token.replace(/^Bearer /, '').split('.')[1], 'base64url').toString()).id;
 
     const pkgParams = {packageName: seed.pkg, packageVersion: '1.0.0'};
@@ -250,12 +253,9 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
     for (const id of seed.rules)
       await grok(['capture', 'stop', id, '--reason', 'obsit cleanup']);
     await grok(['rules', 'delete', RULE]);
-    if (seed.incident) {
-      await grok(['alerts', 'unmute', seed.incident.id]);
-      // The loop's errors stay in the detection window for a while: a reopened incident stays muted.
-      await grok(['alerts', 'mute', seed.incident.id, '--for', '30m', '--reason', 'obsit cleanup']);
-      await grok(['alerts', 'resolve', seed.incident.id, '--reason', 'obsit cleanup']);
-    }
+    // The loop's errors stay in the detection window for a while: muting the problem resolves its alert and keeps it from reopening.
+    if (seed.incident)
+      await grok(['problems', 'mute', seed.incident.problemId, '--for', '30m', '--reason', 'obsit cleanup']);
     if (seed.report) {
       const open: any[] = (await admin.get(`/alerts?kind=report&key=${seed.report.id}`)) ?? [];
       for (const a of open.filter((x) => x.status !== 'resolved'))
@@ -272,13 +272,13 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
   // ─── Alerts ───────────────────────────────────────────────────────────────
 
   describe('alerts', () => {
-    it('alerts list  # open, acknowledged, muted', async () => {
+    it('alerts list  # open and acknowledged', async () => {
       const r = await ok(['alerts', 'list']);
       const t = table(r.out);
-      if (t.rows.length) expect(t.columns).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'BY', 'SUMMARY']);
-      for (const row of t.rows) expect(['open', 'acknowledged', 'muted']).toContain(row.STATUS);
+      if (t.rows.length) expect(t.columns).toEqual(['KIND', 'KEY', 'SEV', 'AUDIENCE', 'STATUS', 'OPENED', 'CLEARED', 'SUMMARY']);
+      for (const row of t.rows) expect(['open', 'acknowledged']).toContain(row.STATUS);
       const all: any[] = await json(['alerts', 'list']);
-      for (const a of all) expect(['open', 'acknowledged', 'muted']).toContain(a.status);
+      for (const a of all) expect(['open', 'acknowledged']).toContain(a.status);
       if (seed.incident) expect(all.map((a) => a.id)).toContain(seed.incident.id);
     }, LONG);
 
@@ -350,7 +350,8 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       const hhmm = later.toISOString().slice(11, 16);
       const r = await ok(['alerts', 'mute', `${a.kind}:${String(a.key).slice(0, 6)}`, '--until', hhmm, '--reason', 'hotfix deploying']);
       expect(r.out.trim()).toBe(`muted ${a.kind}:${a.key} until ${hhmm}Z — hotfix deploying`);
-      expect((await json(['alerts', 'get', a.id])).status).toBe('muted');
+      expect((await json(['alerts', 'get', a.id])).status).toBe('resolved');
+      expect((await json(['problems', 'get', a.problemId])).status).toBe('muted');
       const top: any[] = await errorsJson(['top', '--since', '1h', '--signature', seed.sigIncident!]);
       expect(top[0]?.state).toBe('muted');
       expect(top[0]?.stateUntil).toBe(`${todayUtc()}T${hhmm}:00.000Z`);
@@ -369,18 +370,22 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       const a = seed.incident;
       const r = await ok(['alerts', 'unmute', `${a.kind}:${String(a.key).slice(0, 6)}`]);
       expect(r.out.trim()).toBe(`unmuted ${a.kind}:${a.key}`);
-      expect((await json(['alerts', 'get', a.id])).status).not.toBe('muted');
+      expect((await json(['problems', 'get', a.problemId])).status).toBe('active');
     }, LONG);
 
-    it.skipIf(SHARED)('alerts mute --until-version 1.14.3 --reason', async () => {
+    it.skipIf(SHARED)('problems mute <kind:key> --until-version 1.14.3 --reason  # resolves its alert', async () => {
       const a = seed.incident;
-      const r = await ok(['alerts', 'mute', `${a.kind}:${String(a.key).slice(0, 6)}`, '--until-version', '1.14.3', '--reason', 'fixed in Chem 1.14.3']);
+      const r = await ok(['problems', 'mute', `${a.kind}:${String(a.key).slice(0, 6)}`, '--until-version', '1.14.3', '--reason', 'fixed in Chem 1.14.3']);
       expect(r.out.trim()).toBe(`muted ${a.kind}:${a.key} until 1.14.3 — fixed in Chem 1.14.3`);
+      const p = await json(['problems', 'get', a.problemId]);
+      expect(p.status).toBe('muted');
+      expect(p.mutedUntilVersion).toBe('1.14.3');
+      expect(p.alertStatus).toBe('resolved');
       const top: any[] = await errorsJson(['top', '--since', '1h', '--signature', seed.sigIncident!]);
       expect(top[0]?.state).toBe('muted');
       expect(top[0]?.stateVersion).toBe('1.14.3');
       expect(table((await ok(['errors', 'top', '--since', '1h', '--signature', seed.sigIncident!])).out).rows[0].STATE).toBe('muted → 1.14.3');
-      await ok(['alerts', 'unmute', a.id]);
+      await ok(['problems', 'activate', a.problemId]);
     }, LONG);
 
     it.skipIf(SHARED)('alerts resolve report:<number> --reason', async () => {
@@ -443,6 +448,7 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       const t = table((await ok(['errors', 'top', '--since', '30d', '--group', seed.group!.name, '--by', 'package'])).out);
       expect(t.columns[0]).toBe('PACKAGE');
       expect(t.rows.map((r) => r.PACKAGE)).toContain(seed.pkg);
+      expect(t.rows.map((r) => r.PACKAGE)).not.toContain(`${TAG}LoopPkg`);
       const rows: any[] = await errorsJson(['top', '--since', '30d', '--group', seed.group!.name, '--by', 'package']);
       const mine = rows.find((r) => r.package === seed.pkg);
       expect(mine.users).toBe(2);
@@ -729,16 +735,16 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       expect((Date.parse(rule.expiresAt) - Date.parse(rule.createdAt)) / 86400_000).toBeCloseTo(7, 1);
     }, LONG);
 
-    it('capture add --user admin --function LoggingPolicy --capture calls,requests --for 10m --reason test', async () => {
-      const r = await ok(['capture', 'add', '--user', 'admin', '--function', 'LoggingPolicy', '--capture', 'calls,requests', '--for', '10m', '--reason', 'test']);
+    it('capture add --user admin --function DiskStats --capture calls,requests --for 10m --reason test', async () => {
+      const r = await ok(['capture', 'add', '--user', 'admin', '--function', 'DiskStats', '--capture', 'calls,requests', '--for', '10m', '--reason', 'test']);
       expect(r.out.trim()).toMatch(/^rule cap-\d+  active until .* · 1 user · 1 function · 0\/\d+ events$/);
       const id = /cap-\d+/.exec(r.out)![0];
       seed.rules.push(id);
       fnRule = await json(['capture', 'show', id]);
-      await ok(['functions', 'run', 'LoggingPolicy()']);
-      const events = await until('the captured LoggingPolicy call', async () => {
+      await ok(['functions', 'run', 'DiskStats()']);
+      const events = await until('the captured DiskStats call', async () => {
         const rows: any[] = await json(['timeline', '--rule', id]);
-        return rows.some((e) => String(e.summary).includes('LoggingPolicy')) ? rows : undefined;
+        return rows.some((e) => String(e.summary).includes('DiskStats')) ? rows : undefined;
       }, 60_000);
       expect(events.length).toBeGreaterThan(0);
     }, LONG);
@@ -856,7 +862,7 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
   describe.skipIf(SHARED)('problem rules', () => {
     const file = () => {
       const f = path.join(TMP, 'rule.json');
-      fs.writeFileSync(f, JSON.stringify({severity: 'info', match: {source: 'audit', type: 'user-login-failed'},
+      fs.writeFileSync(f, JSON.stringify({name: RULE, severity: 'info', match: {source: 'audit', type: 'user-login-failed'},
         groupBy: 'param:user', window: 15, when: {count: 5}}));
       return f;
     };
@@ -895,10 +901,14 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
         ['capture', 'list', '--all', '--since', '7d'], ['timeline', '--action', seed.action!],
       ];
       if (seed.sigShared) commands.push(['errors', 'show', seed.sigShared.slice(0, 6), '--since', '1d']);
-      if (seed.incident) commands.push(['alerts', 'get', seed.incident.id]);
+      if (seed.incident) commands.push(['problems', 'history', seed.incident.problemId]);
       for (const c of commands) {
         const v = await json(c);
         expect(typeof v, c.join(' ')).toBe('object');
+      }
+      if (seed.incident) {
+        const problem = await json(['problems', 'get', seed.incident.problemId]);
+        expect((await json(['alerts', 'get', problem.alertId])).problemId).toBe(problem.id);
       }
     }, 600_000);
 
@@ -954,10 +964,12 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
 
     it.skipIf(SHARED)('permissions: a user without ManageAlerts, ViewTelemetry, EditPluginsSettings is refused', async () => {
       const env = seed.bob!.home;
+      const before = await json(['problems', 'get', seed.incident.problemId]);
       const refusals: [string[], RegExp][] = [
-        [['alerts', 'ack', seed.incident.id, '--reason', 'x'], /ManageAlerts/],
-        [['alerts', 'mute', seed.incident.id, '--for', '1h', '--reason', 'x'], /ManageAlerts/],
-        [['alerts', 'resolve', seed.incident.id, '--reason', 'x'], /ManageAlerts/],
+        [['alerts', 'ack', before.alertId, '--reason', 'x'], /ManageAlerts/],
+        [['alerts', 'mute', before.alertId, '--for', '1h', '--reason', 'x'], /ManageAlerts/],
+        [['alerts', 'resolve', before.alertId, '--reason', 'x'], /ManageAlerts/],
+        [['problems', 'mute', before.id, '--for', '1h', '--reason', 'x'], /ManageAlerts/],
         [['errors', 'list', '--since', '1h'], /ViewTelemetry/],
         [['errors', 'top', '--since', '1h'], /ViewTelemetry/],
         [['timeline', '--action', seed.action!], /ViewTelemetry/],
@@ -969,7 +981,9 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
         expect(r.code, args.join(' ')).toBe(1);
         expect(r.out + r.err, args.join(' ')).toMatch(re);
       }
-      expect((await json(['alerts', 'get', seed.incident.id])).status).not.toBe('resolved');
+      const after = await json(['problems', 'get', before.id]);
+      expect([after.status, after.statusAt]).toEqual([before.status, before.statusAt]);
+      expect([after.ackedBy, after.resolvedBy]).not.toContain(seed.bob!.id);
     }, LONG);
   });
 });

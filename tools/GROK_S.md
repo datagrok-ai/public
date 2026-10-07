@@ -471,21 +471,26 @@ it's on the server's unauthenticated allowlist.
 
 ## Alerts, errors, logging and capture (`grok s observe`, alias `grok s o`)
 
-The deployment's problems and alerts, errors as data, the logging policy and capture rules.
-`grok s observe --help` lists the commands; `grok s observe <command> --help` prints all options of one.
+The deployment's problems, alerts and problem rules, errors as data, the logging policy, capture rules and
+timelines. `grok s observe --help` lists the commands; `grok s observe <command> --help` prints all options of one.
 Times are UTC in and out (`--until 14:00` is 14:00Z); in durations `m` means **minutes**.
 
 ### Problems and alerts
 
-A problem is what is wrong (`kind:key`, kept for good); an alert is one message that it went wrong,
-open until a person resolves it. Resolve an alert: seen it. Mute or dismiss the problem: stop telling me.
-Fix the problem: tell me if it comes back. Resolving an alert leaves its problem active, so a condition
-that still holds alerts again. Needs `ManageAlerts`.
+| | Problem | Alert |
+|---|---|---|
+| Is | what is wrong (`kind:key`), kept for good | the notification that it went wrong |
+| Changed by | people (`status`: active, muted, not-a-problem, fixed); detectors set `state` (ongoing, cleared) | people acknowledge and resolve it; detectors open, escalate and clear it |
+| Ends | never | when a person resolves it, or the problem leaves `active` |
+
+Resolve an alert: seen it. Mute the problem: stop its alerts (dismiss: it is not a problem). Fix the problem:
+tell me if it comes back. Resolving leaves the problem active, so a condition that still holds alerts again.
+Needs `ManageAlerts`.
 
 ```bash
 grok s observe problems list --status active --state ongoing      # default: every status and state
 grok s observe problems get error-incident:a41f9c            # id: UUID, unique UUID prefix (6+), or kind:key
-grok s observe problems alerts health:Jupyter                # the alerts the problem raised
+grok s observe problems history health:Jupyter               # its records: alerts opened, acknowledged, resolved, status changes
 grok s observe problems mute error-incident:a41f9c --until-version 1.14.3 --reason "fixed in Chem 1.14.3"
 grok s observe problems mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
 grok s observe problems mute login:internal:unknown --reason "scanner on the guest network"   # no end: until lifted
@@ -500,7 +505,7 @@ grok s observe alerts ack health:jupyter --reason "restarting the gateway"
 grok s observe alerts resolve report:4820 --reason "duplicate of 4819"
 grok s observe alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deploying"   # mutes its problem
 grok s observe alerts unmute connection:ELN:Prod            # makes its problem active
-grok s observe alerts detection                             # servers, liveness, and which one holds detection
+grok s observe alerts detection                             # the servers that report, and which are live
 grok s observe alerts detection --all --host prod --host val      # every server row, stopped ones included
 ```
 

@@ -73,7 +73,7 @@ describe('rows', () => {
 
   it('renders timeline rows with milliseconds and short request ids', () => {
     const at = new Date();
-    at.setHours(10, 14, 3, 112);
+    at.setUTCHours(9, 14, 3, 112);
     expect(timelineRow({time: at.toISOString(), source: 'server', server: 'A', kind: 'request', summary: 'POST /api/projects/{id}/save',
       status: 403, ms: 28, requestId: 'mfz3k2a1b9x8y7kq.1'}))
       .toEqual({TIME: '09:14:03.112Z', SOURCE: 'server', SERVER: 'A', KIND: 'request', SUMMARY: 'POST /api/projects/{id}/save', STATUS: 403, MS: 28, REQ: '…x8y7kq.1'});

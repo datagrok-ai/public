@@ -39,12 +39,12 @@ export const O_USAGE = `Usage: grok s observe <command> <verb> [args]
 
 Observability: what the deployment detects, the alerts it raised, its errors, logging and captures.
   problems    what is wrong, kept for good; mute, dismiss or fix one to change whether it alerts
-  alerts      the messages problems raised, open until a person resolves them; who holds detection
-  errors      platform errors as data: list, top, show, diff, export, save
+  alerts      the messages problems raised, open until a person resolves them; the servers
+  rules       your own problem types: conditions over the log, tested before they alert
+  errors      platform errors as data: list, top, show, diff, export
   logger      the logging policy: get, set, diff, overrides, history, revert
   capture     capture rules for a user, group, package or everyone
   timeline    clicks, requests, calls and server lines in time order
-  rules       your own problem types: conditions over the log, tested before they alert
 grok s observe <command> --help (or grok s observe help <command>) prints the full options of one command.
 Several --host flags address several servers at once for alerts, problems, errors and logger.
 

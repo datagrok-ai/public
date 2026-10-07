@@ -29,14 +29,15 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
                      VulnerabilitiesView];
 ```
 
-`CaptureView` (tab `Capture`): the `CaptureRules` query; New rule and Stop call the server functions `CaptureRuleAdd`
-and `CaptureRuleStop`.
+`CaptureView` (tab `Capture`): the `CaptureRules` query; New rule and Stop call `grok.dapi.log.addCaptureRule` and
+`stopCaptureRule`, the debug flags come from `getLoggingPolicy`.
 
-`TimelineView` (tab `Timeline`): the server function `Timeline`; routes as `/timeline?<key>=<id>`, the parameter
+`TimelineView` (tab `Timeline`): `grok.dapi.log.getTimeline`; routes as `/timeline?<key>=<id>`, the parameter
 arriving as `TimelineView.urlParams`.
 
-`ErrorsView` (tab `Errors`): the server function `ErrorStats`, its inputs in the toolbox's Errors pane, drill-down
-queries in `errors_query.sql`, Save as job... through `ErrorsSaveJob`; `?error=<hash>` arrives as `ErrorsView.urlError`.
+`ErrorsView` (tab `Errors`): `grok.dapi.log.getErrors` (`GET /errors`), its inputs in the toolbox's Errors pane,
+drill-down queries in `errors_query.sql` (`ErrorAlerts` reads the `problems` rows of the signature); Export as CSV,
+JSON or Parquet (the Arrow package); `?error=<hash>` arrives as `ErrorsView.urlError`.
 
 Clicks sub-tabs **Clicks** and **Followed by Error**: the `Clicks`, `ClicksFollowedByError` and `ClickErrors` queries.
 
