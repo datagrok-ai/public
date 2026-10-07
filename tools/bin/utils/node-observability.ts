@@ -20,6 +20,21 @@ export class NodeAlertsClient {
   problem(id: string): Promise<any> { return this.client.get(`/problems/${seg(id)}`); }
   history(id: string, q: Query = {}): Promise<any[]> { return this.client.get(`/problems/${seg(id)}/history${buildQuery(q)}`); }
   setStatus(id: string, body: Record<string, any>): Promise<any> { return this.client.post(`/problems/${seg(id)}/status`, body); }
+
+  rules(): Promise<any[]> { return this.client.get('/problems/rules'); }
+  rule(name: string): Promise<any> { return this.client.get(`/problems/rules/${seg(name)}`); }
+  addRule(body: Record<string, any>): Promise<any> { return this.client.post('/problems/rules', body); }
+  editRule(name: string, body: Record<string, any>): Promise<any> {
+    return this.client.request('PUT', `/problems/rules/${seg(name)}`, body);
+  }
+  enableRule(name: string, on: boolean): Promise<any> {
+    return this.client.post(`/problems/rules/${seg(name)}/${on ? 'enable' : 'disable'}`, {});
+  }
+  deleteRule(name: string): Promise<any> { return this.client.request('DELETE', `/problems/rules/${seg(name)}`); }
+  /** A definition, or `{name}` of a stored rule; `hours` back, 1 to 24. Raises nothing. */
+  testRule(body: Record<string, any>, q: Query = {}): Promise<any> {
+    return this.client.post(`/problems/rules/test${buildQuery(q)}`, body);
+  }
 }
 
 export class NodeErrorsClient {
