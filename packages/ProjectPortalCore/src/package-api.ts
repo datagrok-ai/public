@@ -31,6 +31,13 @@ export namespace funcs {
   }
 
   /**
+   * The portfolios you can see, one node each under Project Portal in Browse; a click opens the portfolio
+   */
+  export async function projectPortalTreeBrowser(treeNode: any ): Promise<void> {
+    return await grok.functions.call('ProjectPortalCore:ProjectPortalTreeBrowser', { treeNode });
+  }
+
+  /**
    * The programs of a portfolio (or, without one, of every portfolio you can see) as a table: stage, days in stage, readiness for the next gate, compounds by role, work units, workspace
    */
   export async function portfolioTable(portfolio?: string ): Promise<DG.DataFrame> {

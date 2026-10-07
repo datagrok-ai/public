@@ -21,9 +21,16 @@ All examples use the synthetic portfolios the package ships (EX-SMD, EX-BIOD, EX
 - **Deleting is out of scope.** Nothing here deletes a workspace folder; removing a parked folder is a person's call, by hand.
 - **In the app.** The ribbon's **Workspace** (Advanced mode) shows the orphan report with **Preview park**, **Park** on each folder and **Park all** for approvers, and the parked folders with **Unpark**.
 
+## Finding a portfolio
+
+- **Browse.** Under Apps › Project Portal, a node per portfolio the user can see, by name. A click opens that portfolio: in the portal on screen, else in a new preview of the app.
+- **One portfolio** opens straight away. **Several** open on the landing page: the search box, Recent, and a card per portfolio with its program count and stage model.
+- **A portfolio's page** shows that portfolio only. With several, **Portfolios ›** in its header goes back to the landing page; Browse switches directly.
+- **The program page** opens in the platform's context panel (opening it if closed), from the board, a search hit, Recent and the portfolio table alike.
+
 ## Finding a program
 
-- **One box, every portfolio.** The top of the landing column searches the programs of every portfolio the user can see (what the server lets them read; nothing else is searched). It matches the code, the name, the target and every short text or number in the program's `details`, which is where a registry feed puts extra columns. So an alias such as a molecule number is searchable without any configuration. Texts over 60 characters are prose and not searched.
+- **One box, every portfolio.** The top of the landing page searches the programs of every portfolio the user can see (what the server lets them read; nothing else is searched). It matches the code, the name, the target and every short text or number in the program's `details`, which is where a registry feed puts extra columns. So an alias such as a molecule number is searchable without any configuration. Texts over 60 characters are prose and not searched.
 - **Order.** Exact match first, then the start of the code, the start of another term, the start of a word, anywhere. Case, dashes, underscores and dots are ignored ("abc-12" finds "ABC_12"). At least two characters; at most 12 hits. A hit found by an alias says which ("molecule code: …").
 - **Opening.** A hit opens the program in its own portfolio, switching the board. Enter opens the first hit; Escape clears the box.
 - **Recent.** The 8 programs the user opened last, newest first, kept in the platform's user settings (`ProjectPortalCore` / `recent`), so they follow the user to another browser. A program that is gone or no longer shared is skipped, not shown.
@@ -256,9 +263,9 @@ Pinning a program pins its workspace folder. The pin is a platform favorite on t
 group's; the portal stores nothing. A pin made or removed anywhere (the program page, the star, the Workspace) is
 the same pin.
 
-- **Program page.** **Pin to my Workspace** / **Unpin** beside Follow, in the app and in the portfolio table's
-  program panel. A program without a built folder cannot be pinned; the button says why. An approver also gets
-  **Pin for <the portfolio's viewers>** (a group favorite) and, when the folder is missing, **Build its folder**
+- **Program page.** **Add to favorites** / **Remove from favorites** beside Follow, in the app and from the portfolio
+  table. A program without a built folder cannot be added; the button says why. An approver also gets
+  **Add to <the portfolio's viewers'> favorites** (a group favorite) and, when the folder is missing, **Build its folder**
   (this program's folders only).
 - **Board and table.** A pinned program's card says *pinned*; the portfolio table has a `pinned` column.
 - **Home.** The **My programs** widget: a tile per pinned program the user can see, across portfolios. A tile shows

@@ -129,7 +129,7 @@ category('Portal: documents', () => {
     const v = new PortalView();
     await v.load('EX-BIOC');
     await v.showProgram('EX-BIOC', exb201.id);
-    const q = (n: string) => v.root.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
+    const q = (n: string) => v.detailRoot.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
     expect(q('document-card-process-description')?.textContent?.includes('Process description, Antibody Alpha · v0.3 · draft'), true,
       q('document-card-process-description')?.textContent ?? 'no card');
     expect(q('other-documents')?.textContent?.includes('Upstream development report'), true);

@@ -107,10 +107,24 @@ const APP_PATH = '/apps/ProjectPortalCore/Portal';
 
 const viewedStageName = (ctx: ProgramContext, stageId: string | null) => ctx.stages.find((s) => s.id === stageId)?.name ?? 'the gate';
 
+/** The portfolio the app opens on: the one asked for if the user can see it, else the only one;
+ * null with several, so the landing page asks which. */
+export function startingPortfolio(codes: string[], asked?: string | null): string | null {
+  if (asked && codes.includes(asked))
+    return asked;
+  return codes.length === 1 ? codes[0] : null;
+}
+
+/** A group's name in the possessive: "Viewers'", "Team's". */
+export const possessive = (name: string): string => name.endsWith('s') ? `${name}'` : `${name}'s`;
+
 export class PortalView {
   readonly root = named(divH([], 'pp-root'), 'portal');
+  /** The landing page where there are several portfolios: find a program, the recent ones, and a
+   * card per portfolio. A portfolio's page lists no other portfolio; the Browse tree switches. */
   private readonly portfolioList = named(divV([], 'pp-portfolios'), 'portfolio-list');
   private readonly board = named(divV([], 'pp-board'), 'stage-board');
+  /** The program page: shown in the platform's context panel, or docked by whoever hosts it. */
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
   /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
   private readonly searchInput = named(document.createElement('input'), 'program-search-input');
@@ -191,7 +205,7 @@ export class PortalView {
   keeper = false;
 
   constructor() {
-    this.root.append(this.portfolioList, this.board, this.detail);
+    this.root.append(this.portfolioList, this.board);
     this.searchInput.className = 'pp-text pp-search';
     this.searchInput.placeholder = 'Find a program: code, name, alias';
     this.searchInput.title = 'Searches every portfolio you can see, by code, name, target or a registry alias';
@@ -210,7 +224,7 @@ export class PortalView {
     };
   }
 
-  /** The program page; the portfolio table docks it beside its grid. */
+  /** The program page, which opening a program puts in the context panel. */
   get detailRoot(): HTMLElement {
     return this.detail;
   }
@@ -235,11 +249,32 @@ export class PortalView {
       portalDb.programs.count({filter: `portfolio_id = ${filterValue(p.id)}`}).catch(() => 0)));
     this.findable = await findablePrograms().catch(() => []);
     this.renderPortfolios(counts);
-    const first = this.portfolios.find((p) => p.code === portfolioCode) ?? this.portfolios[0];
+    const first = startingPortfolio(this.portfolios.map((p) => p.code), portfolioCode);
     if (first)
-      await this.openPortfolio(first.code);
+      await this.openPortfolio(first);
+    else if (this.portfolios.length)
+      this.showLanding();
     else
       this.status.value = 'No portfolios are loaded; run ProjectPortalCore:loadPortfolios';
+  }
+
+  /** Whether there are portfolios to choose between, so a portfolio's page links back to the choice. */
+  get severalPortfolios(): boolean {
+    return this.portfolios.length > 1;
+  }
+
+  /** The landing page: no portfolio open, a card for each. */
+  showLanding(): void {
+    this.portfolio = null;
+    this.selected = null;
+    this.redraw = null;
+    this.keeper = false;
+    this.portfolioList.style.display = '';
+    this.board.style.display = 'none';
+    this.applyBoardButtons();
+    this.path.value = APP_PATH;
+    this.renderRecent();
+    this.status.value = `${this.portfolios.length} portfolios; choose one`;
   }
 
   /** The search's results under the box: each opens its program, in its portfolio. */
@@ -273,6 +308,8 @@ export class PortalView {
     this.renderRecent();
     this.portfolioList.replaceChildren(named(divV([this.searchInput, this.searchResults], 'pp-search-box'), 'program-search'),
       this.recentList, span('Portfolios', 'pp-heading'));
+    const cards = named(divH([], 'pp-portfolio-cards'), 'portfolio-cards');
+    this.portfolioList.append(cards);
     this.portfolios.forEach((p, i) => {
       const model = this.models.get(p.stage_model_id);
       const card = named(divV([
@@ -280,9 +317,7 @@ export class PortalView {
         span(`${counts[i]} ${(p.program_noun ?? 'program').toLowerCase()}s · ${model?.name ?? ''}`, 'pp-muted'),
       ], 'pp-portfolio'), `portfolio-${slug(p.code)}`);
       card.onclick = () => void this.openPortfolio(p.code).catch(this.failed);
-      if (this.portfolio?.id === p.id)
-        card.classList.add('pp-selected');
-      this.portfolioList.append(card);
+      cards.append(card);
     });
   }
 
@@ -303,8 +338,8 @@ export class PortalView {
       return;
     this.applyBoardButtons();
     this.path.value = `${APP_PATH}/${p.code}`;
-    for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
-      el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
+    this.portfolioList.style.display = 'none';
+    this.board.style.display = '';
     const [stages, programs, pins] = await Promise.all([
       stagesOf(p.stage_model_id),
       portalDb.programs.query({filter: `portfolio_id = ${filterValue(p.id)}`, limit: ROW_LIMIT}),
@@ -327,7 +362,15 @@ export class PortalView {
   private renderBoard(): void {
     const p = this.portfolio!;
     const model = this.models.get(p.stage_model_id);
+    const back: HTMLElement[] = [];
+    if (this.severalPortfolios) {
+      const toLanding = named(span('Portfolios ›', 'pp-link'), 'portfolios-link');
+      toLanding.title = 'Back to the choice of portfolio';
+      toLanding.onclick = () => this.showLanding();
+      back.push(toLanding);
+    }
     const header = named(divH([
+      ...back,
       span(p.name, 'pp-title'),
       badge(p.setting ?? ''),
       badge(`${model?.code ?? ''}`, {variant: 'accent'}),
@@ -400,6 +443,10 @@ export class PortalView {
 
   async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
     const opened = id !== this.selected;
+    // the program page lives in the platform's context panel: an open (or a click on the program
+    // after the panel moved on to something else) puts it there
+    if (opened || !this.detail.isConnected)
+      this.showDetail();
     if (opened) {
       this.data = undefined;
       this.news = undefined;
@@ -578,13 +625,21 @@ export class PortalView {
     this.redraw?.();
   }
 
+  /** Puts the program page in the platform's context panel, opening the panel if it is closed. */
+  private showDetail(): void {
+    grok.shell.windows.showContextPanel = true;
+    grok.shell.o = this.detail;
+  }
+
   /** Simple mode leaves the advanced buttons (sync history, export, all portfolios) off the ribbon;
    * Sync, Workspace and Export show only to the open portfolio's approvers (and admins). The
    * functions behind them check the role too. */
   applyBoardButtons(): void {
     for (const [key, el] of this.boardButtons) {
-      el.style.display = showsBoardButton(key, {simple: this.mode === 'simple', advanced: ADVANCED_BOARD_BUTTONS,
-        isApprover: this.keeper}) ? '' : 'none';
+      // the landing page has no portfolio for Sync, Workspace and the like to act on
+      const forPortfolio = key !== 'all_portfolios';
+      el.style.display = (!forPortfolio || this.portfolio) && showsBoardButton(key, {simple: this.mode === 'simple',
+        advanced: ADVANCED_BOARD_BUTTONS, isApprover: this.keeper}) ? '' : 'none';
     }
   }
 
@@ -1749,26 +1804,29 @@ export class PortalView {
       this.detail.querySelector('[data-u2-name="feed-heading"]')?.scrollIntoView({block: 'start'});
   }
 
-  /** Pin to my Workspace / Unpin, and for an approver the same for the portfolio's viewers. A
-   * program without a folder cannot be pinned; the button says why. */
+  /** Add to favorites / Remove from favorites, and for an approver the same for the portfolio's
+   * viewers. A favorite is the platform's, on the program's folder, so the folder shows in the
+   * Workspace on Home. A program without a folder cannot be added; the button says why. */
   private pinButtons(ctx: ProgramContext, spaceLive: boolean): HTMLElement[] {
     const held = ctx.program.space_id ? this.pins.get(ctx.program.space_id) : undefined;
     const reason = whyNotPinnable({spaceId: ctx.program.space_id, spaceLive});
     const mine = !!held?.mine;
-    const pin = named(button(mine ? 'Unpin' : 'Pin to my Workspace', () => void this.togglePin(ctx, !mine, null).catch(this.failed)), 'pin-button');
+    const pin = named(button(mine ? 'Remove from favorites' : 'Add to favorites',
+      () => void this.togglePin(ctx, !mine, null).catch(this.failed)), 'pin-button');
     pin.disabled = !!reason && !mine;
-    pin.title = reason && !mine ? `Cannot pin: ${reason}` : mine ? 'Take its folder out of your Workspace and its tile off Home' :
-      'Its folder goes in your Workspace, and its tile in My programs on Home';
+    pin.title = reason && !mine ? `Cannot add to favorites: ${reason}` :
+      mine ? 'Take its folder out of your favorites, your Workspace and its tile off Home' :
+        'Its folder goes in your favorites and your Workspace on Home, and its tile in My programs';
     const g = this.viewersGroup;
     if (!this.roles.manage || !g)
       return [pin];
     const gName = g.friendlyName || g.name;
     const forGroup = !!held?.groups.includes(gName);
-    const groupPin = named(button(forGroup ? `Unpin for ${gName}` : `Pin for ${gName}`,
+    const groupPin = named(button(forGroup ? `Remove from ${possessive(gName)} favorites` : `Add to ${possessive(gName)} favorites`,
       () => void this.togglePin(ctx, !forGroup, g).catch(this.failed)), 'pin-group-button');
     groupPin.disabled = !!reason && !forGroup;
-    groupPin.title = reason && !forGroup ? `Cannot pin: ${reason}` :
-      `${forGroup ? 'Take it out of' : 'Put it in'} the Workspace of everyone in ${gName}`;
+    groupPin.title = reason && !forGroup ? `Cannot add to favorites: ${reason}` :
+      `${forGroup ? 'Take it out of' : 'Put it in'} the favorites and Workspace of everyone in ${gName}`;
     return [pin, groupPin];
   }
 
@@ -1919,6 +1977,38 @@ export function openPortal(): {view: DG.ViewBase, portal: PortalView} | null {
       return {view, portal};
   }
   return null;
+}
+
+/** The portal on screen: the open app view's, else the one previewed from Browse. */
+function shownPortal(): {view: DG.ViewBase, portal: PortalView} | null {
+  const preview = grok.shell.preview;
+  const previewed = preview ? portals.get(preview.root) : undefined;
+  return previewed ? {view: preview!, portal: previewed} : openPortal();
+}
+
+/** Browse's Project Portal node: a node per portfolio the user can see. A click opens the
+ * portfolio in the portal on screen, or in a new preview of the app. */
+export async function portfolioTree(treeNode: DG.TreeViewGroup): Promise<void> {
+  const portfolios = (await portalDb.portfolios.query({limit: ROW_LIMIT}).catch(() => [] as PortfolioRow[]))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  treeNode.items.length = 0;
+  for (const p of portfolios) {
+    const node = treeNode.item(p.name);
+    node.root.dataset.u2Name = `browse-portfolio-${slug(p.code)}`;
+    node.root.title = `${p.code} · ${p.setting ?? ''}`;
+    node.onSelected.subscribe(() => void openInPortal(p.code).catch((e) => grok.shell.error(e?.message ?? String(e))));
+  }
+}
+
+async function openInPortal(code: string): Promise<void> {
+  const shown = shownPortal();
+  if (shown) {
+    if (shown.view.root !== grok.shell.preview?.root)
+      grok.shell.v = shown.view;
+    await shown.portal.openPortfolio(code);
+    return;
+  }
+  grok.shell.addPreview(await portalAppView(code));
 }
 
 export async function portalAppView(portfolioCode?: string, programCode?: string): Promise<DG.ViewBase> {

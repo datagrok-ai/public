@@ -2,9 +2,11 @@
 const CSS = `
 .pp-root { display: flex; flex-direction: row; align-items: stretch; justify-content: flex-start; gap: 12px; flex: 1 1 auto; align-self: stretch; height: 100%; width: 100%; min-width: 0; min-height: 0; padding: 8px; box-sizing: border-box; overflow: hidden; }
 .pp-root > * { align-self: stretch; }
-.pp-portfolios { flex: 0 0 190px; justify-content: flex-start; gap: 6px; overflow-y: auto; }
+.pp-portfolios { flex: 1 1 0; max-width: 720px; justify-content: flex-start; gap: 6px; overflow-y: auto; }
+.pp-portfolio-cards { flex-wrap: wrap; gap: 8px; }
+.pp-portfolio-cards > .pp-portfolio { flex: 0 0 220px; }
 .pp-board { flex: 1 1 0; min-width: 0; gap: 8px; overflow: hidden; justify-content: flex-start; }
-.pp-detail { flex: 0 0 300px; justify-content: flex-start; gap: 6px; overflow-y: auto; border-left: 1px solid var(--u2-border, #e0e0e0); padding-left: 12px; }
+.pp-detail { justify-content: flex-start; gap: 6px; padding: 4px 8px; box-sizing: border-box; }
 .pp-heading { font-weight: 600; margin-top: 8px; color: var(--u2-text-muted, #666); text-transform: uppercase; font-size: 11px; }
 .pp-title { font-size: 16px; font-weight: 600; }
 .pp-muted { color: var(--u2-text-muted, #888); font-size: 12px; }

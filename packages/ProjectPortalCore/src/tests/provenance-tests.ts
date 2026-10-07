@@ -193,9 +193,9 @@ category('Portal: provenance', () => {
       const v = new PortalView();
       await v.load('EX-SMD');
       await v.showProgram('EX-SMD', row.id);
-      expect(!!v.root.querySelector('[data-u2-name="provenance-decision-0"]'), true);
-      expect(!!v.root.querySelector('[data-u2-name="provenance-evidence-0-0"]'), true);
-      expect(!!v.root.querySelector('[data-u2-name="program-provenance-button"]'), true);
+      expect(!!v.detailRoot.querySelector('[data-u2-name="provenance-decision-0"]'), true);
+      expect(!!v.detailRoot.querySelector('[data-u2-name="provenance-evidence-0-0"]'), true);
+      expect(!!v.detailRoot.querySelector('[data-u2-name="program-provenance-button"]'), true);
     } finally {
       const by = {filter: `program_id = "${row.id}"`};
       for (const e of await portalDb.evidences.query(by)) await portalDb.evidences.delete(e.id).catch(() => undefined);

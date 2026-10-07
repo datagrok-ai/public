@@ -38,9 +38,11 @@ Feature: Several portfolios on one instance
   Scenario: A portfolio has its own address, and a program opens its workspace
     When user clicks on small molecule discovery portfolio
     Then the address should end with "/Portal/EX-SMD"
-    When user clicks on biologics discovery portfolio
+    When user clicks on portfolios link
+    And user clicks on biologics discovery portfolio
     Then the address should end with "/Portal/EX-BIOD"
-    When user clicks on small molecule discovery portfolio
+    When user clicks on portfolios link
+    And user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
     And user clicks on open workspace button
     Then the open view should be the space "EXS-KIN1"
@@ -50,7 +52,8 @@ Feature: Several portfolios on one instance
     And user clicks on EXS-KIN1 card
     Then work units should contain text "Campaigns (2)"
     And KIN-A series should contain text "validated"
-    When user clicks on biologics development portfolio
+    When user clicks on portfolios link
+    And user clicks on biologics development portfolio
     And user clicks on EXB-201 card
     Then work units should contain text "Process stages (4)"
     And TOX-201 study should contain text "completed"

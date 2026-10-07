@@ -130,7 +130,7 @@ category('Portal: program snapshots', () => {
       const v = new PortalView();
       await v.load('EX-SMD');
       await v.showProgram('EX-SMD', row.id);
-      const q = (n: string) => v.root.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
+      const q = (n: string) => v.detailRoot.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
       expect(q('snapshots-heading')?.textContent, 'Snapshots (1)');
       expect(q('snapshot-0')?.textContent?.includes('Target Validation'), true, q('snapshot-0')?.textContent ?? '');
       expect(q('decision-evidence-0')?.textContent?.includes('Snapshot: '), true, q('decision-evidence-0')?.textContent ?? '');

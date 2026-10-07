@@ -7,6 +7,7 @@ const u2 = (name: string) => `[data-u2-name="${name}"]`;
 export const app = context('Project Portal app', {selector: u2('Project Portal'), aliases: ['portal']});
 
 app.element('portfolio list', {selector: u2('portfolio-list')});
+app.element('portfolios link', {selector: u2('portfolios-link')});
 app.element('small molecule discovery portfolio', {selector: u2('portfolio-ex-smd'), aliases: ['EX-SMD portfolio']});
 app.element('biologics discovery portfolio', {selector: u2('portfolio-ex-biod'), aliases: ['EX-BIOD portfolio']});
 app.element('biologics development portfolio', {selector: u2('portfolio-ex-bioc'), aliases: ['EX-BIOC portfolio']});

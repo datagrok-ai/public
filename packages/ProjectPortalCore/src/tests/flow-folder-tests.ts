@@ -122,7 +122,9 @@ category('Portal: flow folders', () => {
     // scratch programs other tests may leave behind are not the example's
     const programsWith = [...new Set(flowPaths.map((p) => p.split('/')[1].split(' · ')[0]))].filter((c) => c.startsWith('EXB-')).sort();
     expect(programsWith.join(), 'EXB-201,EXB-204', 'D1 antibodies, the bispecific, the ADC and the fusion protein get none');
-    expect(preview.notes.some((n) => n.startsWith('flow folders: EXB-201 (EX-MAB-DS)')), true, preview.notes.join('; '));
+    // the note lists scratch programs too, possibly ahead of the example's
+    expect(preview.notes.some((n) => n.startsWith('flow folders: ') && n.includes('EXB-201 (EX-MAB-DS)')), true,
+      preview.notes.join('; '));
   });
 
   test('a build makes them under the Drug Substance workstream; a second build creates nothing', async () => {

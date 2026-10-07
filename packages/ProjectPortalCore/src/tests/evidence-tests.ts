@@ -169,7 +169,7 @@ category('Portal: decisions with evidence', () => {
       const v = new PortalView();
       await v.load('EX-SMD');
       await v.showProgram('EX-SMD', p.id);
-      const q = (name: string) => v.root.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
+      const q = (name: string) => v.detailRoot.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
       expect(q('evidence-readiness')?.parentElement?.textContent, 'Readiness of Hit Finding: 1 criterion');
       expect((q('evidence-readiness') as HTMLInputElement).checked, true);
       (q('evidence-link-input') as HTMLInputElement).value = 'https://example.org/hf-review';
@@ -182,7 +182,7 @@ category('Portal: decisions with evidence', () => {
         await DG.delay(100);
       expect(q('decision-evidence-0')?.textContent?.includes('Link: example.org/…/hf-review'), true, q('transition-history')?.textContent ?? '');
       expect(q('decision-evidence-0')?.textContent?.includes('Criterion: '), true);
-      expect(!!v.root.querySelector('[data-u2-name^="evidence-0-url-"]'), true);
+      expect(!!v.detailRoot.querySelector('[data-u2-name^="evidence-0-url-"]'), true);
     });
   });
 

@@ -7,7 +7,7 @@ import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphans
 import {summarizeReadiness} from './model/readiness';
 import {summarizeWorkUnitPlan} from './model/work-units';
 import {CompoundRole, summarizeCompoundPlan} from './model/compounds';
-import {portalAppView} from './views/portal-view';
+import {portalAppView, portfolioTree} from './views/portal-view';
 import {installStyles} from './views/styles';
 import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
 import {portfolioTables} from './portfolio-table';
@@ -133,6 +133,15 @@ export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
     await portalDb.portfolios.getByKey({code: prev}).catch(() => null))
     return portalAppView(prev, last);
   return portalAppView(last ?? prev);
+}
+
+//name: projectPortalTreeBrowser
+//description: The portfolios you can see, one node each under Project Portal in Browse; a click opens the portfolio
+//input: dynamic treeNode
+//meta.role: appTreeBrowser
+//meta.app: Project Portal
+export async function projectPortalTreeBrowser(treeNode: DG.TreeViewGroup): Promise<void> {
+  await portfolioTree(treeNode);
 }
 
 //name: portfolioTable

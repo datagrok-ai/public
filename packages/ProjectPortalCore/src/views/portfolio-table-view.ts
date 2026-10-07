@@ -25,7 +25,6 @@ export const VIEWER_TITLES = {
   timeInStage: 'Days in stage',
   readiness: 'Readiness for the next gate',
   compounds: 'Compounds by role',
-  program: 'Program',
 } as const;
 
 const FILTER_COLUMNS = [COL.portfolio, COL.stage, COL.status, COL.modality, COL.ready, COL.readiness,
@@ -36,13 +35,11 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
   return el;
 };
 
-/** Opens the clicked program in a docked panel drawn by the board's own program page. */
+/** Opens the clicked program's page, the board's own, in the context panel. */
 function programPanel(tv: DG.TableView, t: PortfolioTables): void {
   installStyles();
   const portal = new PortalView();
-  const host = named(portal.detailRoot, 'table-program-detail');
   let loaded: Promise<void> | null = null;
-  let docked: DG.DockNode | null = null;
   const df = t.programs;
   const show = async (row: number) => {
     if (row < 0)
@@ -51,8 +48,6 @@ function programPanel(tv: DG.TableView, t: PortfolioTables): void {
     const code = df.get(COL.portfolio, row) as string;
     loaded ??= portal.load(code);
     await loaded;
-    if (!docked || !host.isConnected)
-      docked = tv.dockManager.dock(host, DG.DOCK_TYPE.RIGHT, null, VIEWER_TITLES.program, 0.25);
     await portal.showProgram(code, id);
   };
   tv.subs.push(df.onCurrentRowChanged.subscribe(() => void show(df.currentRowIdx).catch((e) =>

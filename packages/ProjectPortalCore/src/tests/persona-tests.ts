@@ -111,7 +111,7 @@ category('Portal: modes and quick actions', () => {
     const v = new PortalView();
     await v.load('EX-SMD');
     await v.showProgram('EX-SMD', kin1.id);
-    const q = (name: string) => v.root.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
+    const q = (name: string) => v.detailRoot.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
     expect(q('quick-actions-heading')?.textContent, 'Quick actions · Chemist');
     expect(q('quick-open-data')?.textContent?.startsWith('Open SAR table'), true, q('quick-open-data')?.textContent ?? 'none');
     expect(!!q('quick-needs-attention') && !q('quick-save-run'), true);

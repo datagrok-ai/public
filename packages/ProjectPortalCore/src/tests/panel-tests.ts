@@ -4,7 +4,7 @@ import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {MORE_SECTIONS, PAGE_PANELS, panelLayout, PersonaConfig, validatePersonas} from '../model/personas';
 import {savedMode, saveMode, savedPersona, savePersona} from '../personas';
-import {PortalView} from '../views/portal-view';
+import {possessive, PortalView, startingPortfolio} from '../views/portal-view';
 import {loadExampleDesignSets} from '../design-sets';
 import {filterValue, ROW_LIMIT} from '../rows';
 import {_package} from '../package-test';
@@ -68,11 +68,11 @@ category('Portal: persona panels', () => {
     const v = new PortalView();
     await v.load('EX-SMD');
     await v.showProgram('EX-SMD', kin1.id);
-    const q = (name: string) => v.root.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
+    const q = (name: string) => v.detailRoot.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
     expect(!!q('panels-composed') && !!q('dmta-heading') && !!q('observations-heading') && !!q('feed-heading'), true);
     expect(!q('gate-heading') && !q('saved-runs-heading') && !q('design-sets-heading'), true, 'not listed: behind More');
     const order = ['quick-actions-heading', 'dmta-heading', 'observations-heading', 'feed-heading']
-      .map((n) => Array.from(v.root.querySelectorAll('[data-u2-name]')).indexOf(q(n)!));
+      .map((n) => Array.from(v.detailRoot.querySelectorAll('[data-u2-name]')).indexOf(q(n)!));
     expect(order.every((x, i) => i === 0 || x > order[i - 1]), true, `in the listed order: ${order.join()}`);
     expect(q('more-button')?.textContent?.startsWith('More ('), true);
     q('more-button')!.click();
@@ -81,5 +81,24 @@ category('Portal: persona panels', () => {
     v.setPersona('chemist');
     expect(!q('panels-composed') && !!q('gate-heading') && !!q('saved-runs-heading') && !q('more-button'), true,
       'the chemist keeps the whole page');
+  });
+});
+
+category('Portal: which portfolio the app opens on', () => {
+  test('the one portfolio opens straight away; several leave the choice to the landing page', async () => {
+    expect(startingPortfolio(['EX-SMD']), 'EX-SMD');
+    expect(startingPortfolio(['EX-SMD', 'EX-BIOC']), null);
+    expect(startingPortfolio([]), null);
+  });
+
+  test('a portfolio asked for by the address opens if the user can see it', async () => {
+    expect(startingPortfolio(['EX-SMD', 'EX-BIOC'], 'EX-BIOC'), 'EX-BIOC');
+    expect(startingPortfolio(['EX-SMD', 'EX-BIOC'], 'EX-BIOD'), null, 'one the user cannot see: the landing page');
+    expect(startingPortfolio(['EX-SMD'], 'EX-BIOD'), 'EX-SMD', 'one the user cannot see, with one they can: that one');
+  });
+
+  test('a group\'s favorites: "Viewers\'", "Team\'s"', async () => {
+    expect(possessive('Portal EX-BIOC Viewers'), 'Portal EX-BIOC Viewers\'');
+    expect(possessive('Team'), 'Team\'s');
   });
 });

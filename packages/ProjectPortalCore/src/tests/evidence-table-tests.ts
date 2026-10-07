@@ -214,7 +214,7 @@ category('Portal: evidence tables', () => {
     const v = new PortalView();
     await v.load('EX-BIOC');
     await v.showProgram('EX-BIOC', program.id);
-    const q = (n: string) => v.root.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
+    const q = (n: string) => v.detailRoot.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
     expect(!!q('generate-evidence-process-description'), true, 'the card offers Generate evidence table');
     expect(!!q('table-document-process-description-0'), true, 'the generated document opens as a table');
   });
@@ -258,7 +258,7 @@ category('Portal: evidence tables', () => {
     const v = new PortalView();
     await v.load('EX-BIOC');
     await v.showProgram('EX-BIOC', program.id);
-    const q = (n: string) => v.root.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
+    const q = (n: string) => v.detailRoot.querySelector(`[data-u2-name="${n}"]`) as HTMLElement | null;
     const card = q('document-card-process-description')?.textContent ?? '';
     expect(card.includes('stale') && card.includes('another run selected: Feed 2 (was Feed 4)'), true, card);
     expect(!!q('regenerate-document-process-description-0'), true);

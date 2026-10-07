@@ -18,11 +18,13 @@ Feature: Several portfolios on one instance
     Then board header should contain text "stages from registry"
     When user clicks on EXB-201 card
     Then gate reasons should contain text "The registry owns this portfolio's stages"
-    When user clicks on biologics discovery portfolio
+    When user clicks on portfolios link
+    And user clicks on biologics discovery portfolio
     Then board header should contain text "EX-BIOD-V1"
     When user clicks on EXB-101 card
     Then program detail should contain text "Registry stage: 3"
-    When user clicks on small molecule discovery portfolio
+    When user clicks on portfolios link
+    And user clicks on small molecule discovery portfolio
     Then board header should contain text "stages decided here"
     When user clicks on KINASE-X card
     And user clicks on advance button
