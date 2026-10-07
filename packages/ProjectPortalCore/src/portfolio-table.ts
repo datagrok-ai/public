@@ -16,6 +16,7 @@ import {COMPOUND_ROLES} from './model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from './model/work-units';
 import {existingSpaces} from './workspace';
 import {myPins} from './pinning';
+import {PinHolders, pinOf} from './model/pinning';
 import {attentionFor, attentionRulesOf} from './attention';
 import {ProgramAttention} from './model/attention';
 
@@ -159,11 +160,11 @@ export async function portfolioFacts(portfolioCode?: string, now = Date.now(), p
 
   const [live, pins] = await Promise.all([
     existingSpaces(facts.map((f) => f.program.space_id)).catch(() => new Set<string>()),
-    myPins().catch(() => new Map<string, never>()),
+    myPins().catch(() => new Map<string, PinHolders>()),
   ]);
   for (const f of facts) {
     f.hasWorkspace = !!f.program.space_id && live.has(f.program.space_id);
-    f.pinned = f.hasWorkspace && pins.has(f.program.space_id!);
+    f.pinned = !!pinOf(pins, {programId: f.program.id, spaceId: f.program.space_id});
   }
 
   // readiness for the next stage, exactly as the gate panel computes it (readinessFor)

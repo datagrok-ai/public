@@ -25,8 +25,8 @@ The server enforces the table's security mode and its grants; checks in package 
 
 | Tables | Security | Who reads, enforced by the server | Who writes, enforced by the server |
 |---|---|---|---|
-| `approval` | row, linked into the program folder (a model card's into the portfolio root) | the portfolio's groups and the program's roles, through the folder (View only); the proposer | each portfolio's contributors group (Edit on the table; any row) |
-| `sync_log` | row, linked into the portfolio root | the portfolio's groups; the run's author | each portfolio's approvers group |
+| `approval` | row, linked into the program folder (a model card's into `_Approvals` under the portfolio root) | the portfolio's groups and the program's roles, through the folder (View only); the proposer | each portfolio's contributors group (Edit on the table; any row) |
+| `sync_log` | row, linked into `_Sync history` under the portfolio root | the portfolio's groups; the run's author | each portfolio's approvers group |
 | `following` | row, no row grants | its author only (admins included) | its author |
 | `program_role` | table | all users | each portfolio's approvers group |
 | `parked_folder` | table | each portfolio's approvers group | each portfolio's approvers group |

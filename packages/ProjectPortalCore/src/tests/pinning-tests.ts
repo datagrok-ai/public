@@ -1,13 +1,14 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {assembleTiles, checkGroupPin, describeTile, PinHolders, pinsOf, programAddress, TileInput, tileTitle, unseenNews,
-  whyNotPinnable} from '../model/pinning';
+import {assembleTiles, checkGroupPin, describeTile, isProgramRecordName, NOTHING_PINNED, PinHolders, pinOf, pinsOf,
+  programAddress, TileInput, tileTitle, unseenNews, whyNotPinnable} from '../model/pinning';
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {myPins, pinByCode} from '../pinning';
 import {pinnedFrame, pinnedTiles} from '../pinned-programs';
 import {COL, portfolioTables} from '../portfolio-table';
+import {ProgramRecordHandler} from '../program-record';
 import {_package} from '../package-test';
 
 const stages = [{code: 'H2L', name: 'Hit to lead'}, {code: 'LO', name: 'Lead optimization'}, {code: 'CS', name: 'Candidate'}];
@@ -20,10 +21,13 @@ const input = (over: Partial<TileInput> = {}): TileInput => ({
 const mine = (...ids: string[]) => new Map<string, PinHolders>(ids.map((id) => [id, {mine: true, groups: []}]));
 
 category('Portal: pinning rules', () => {
-  test('only a program with a live folder can be pinned, and it says why not', async () => {
-    expect(whyNotPinnable({spaceId: 's', spaceLive: true}), null);
-    expect(whyNotPinnable({spaceId: null, spaceLive: false})!.startsWith('It has no workspace folder yet'), true);
-    expect(whyNotPinnable({spaceId: 's', spaceLive: false})!.startsWith('Its workspace folder is gone'), true);
+  test('the favorite is the program\'s record: no folder needed, only the record found', async () => {
+    expect(whyNotPinnable({recordFound: true}), null);
+    expect(whyNotPinnable({recordFound: false})!.startsWith('Its record is not found'), true);
+    expect(isProgramRecordName('portal.program:657f|EXS-KIN1'), true);
+    expect(isProgramRecordName('portal.sync_log:1'), false);
+    expect(isProgramRecordName(null), false);
+    expect(NOTHING_PINNED.includes('"Add to favorites"'), true, 'the widget names the button');
   });
 
   test('pinning for a group is the approvers\'', async () => {
@@ -31,13 +35,22 @@ category('Portal: pinning rules', () => {
     expect(checkGroupPin({isApprover: false})[0], 'Only the portfolio\'s approvers pin a program for a group');
   });
 
-  test('pins are the folders among the user\'s and their groups\' favorites', async () => {
-    const pins = pinsOf([{id: 's1', isSpace: true}, {id: 'q', isSpace: false}],
-      [{group: 'Chemists', entities: [{id: 's1', isSpace: true}, {id: 's2', isSpace: true}]},
-        {group: 'Biology', entities: [{id: 's2', isSpace: true}]}]);
-    expect([...pins.keys()].sort().join(), 's1,s2', 'a favorite that is not a folder is no pin');
-    expect(JSON.stringify(pins.get('s1')), '{"mine":true,"groups":["Chemists"]}');
+  test('pins are the program records and folders among the user\'s and their groups\' favorites', async () => {
+    const pins = pinsOf([{id: 'p1', kind: 'program'}, {id: 'q', kind: null}],
+      [{group: 'Chemists', entities: [{id: 'p1', kind: 'program'}, {id: 's2', kind: 'folder'}]},
+        {group: 'Biology', entities: [{id: 's2', kind: 'folder'}]}]);
+    expect([...pins.keys()].sort().join(), 'p1,s2', 'a favorite that is neither is no pin');
+    expect(JSON.stringify(pins.get('p1')), '{"mine":true,"groups":["Chemists"]}');
     expect(JSON.stringify(pins.get('s2')), '{"mine":false,"groups":["Chemists","Biology"]}');
+  });
+
+  test('a program\'s pin: its record\'s and its old folder\'s together', async () => {
+    const pins = new Map<string, PinHolders>([['p1', {mine: false, groups: ['Chemists']}], ['s1', {mine: true, groups: ['Chemists', 'Biology']}]]);
+    expect(JSON.stringify(pinOf(pins, {programId: 'p1', spaceId: 's1'})), '{"mine":true,"groups":["Chemists","Biology"]}');
+    expect(JSON.stringify(pinOf(pins, {programId: 'p1', spaceId: null})), '{"mine":false,"groups":["Chemists"]}');
+    expect(pinOf(pins, {programId: 'p2', spaceId: 's2'}) === undefined, true, 'pinned by neither');
+    const [t] = assembleTiles([input({programId: 'p1', spaceId: null})], mine('p1'));
+    expect(t?.code, 'EXS-KIN1', 'a program without a folder has a tile from its record');
   });
 
   test('a tile: place on the track, readiness for the next gate, attention, its address', async () => {
@@ -58,7 +71,7 @@ category('Portal: pinning rules', () => {
     const a = input({programId: 'a', code: 'B-2', spaceId: 'sa', portfolioName: 'Beta'});
     const b = input({programId: 'b', code: 'A-1', spaceId: 'sb', portfolioName: 'Beta'});
     const c = input({programId: 'c', code: 'Z-9', spaceId: 'sc', portfolioName: 'Alpha'});
-    const none = input({programId: 'd', code: 'N-0', spaceId: null});
+    const none = input({programId: 'd', code: 'N-0', spaceId: null});   // pinned by neither
     expect(assembleTiles([a, b, c, none], mine('sa', 'sb', 'sc')).map((t) => t.code).join(), 'Z-9,A-1,B-2');
     expect(assembleTiles([a, b, c], mine('sb')).map((t) => t.code).join(), 'A-1', 'unpinned programs have no tile');
     const group = assembleTiles([a], new Map([['sa', {mine: false, groups: ['Chemists']}]]))[0];
@@ -92,36 +105,50 @@ category('Portal: pinned programs', () => {
   let program: ProgramRow;
   let space: DG.Project;
   let viewers: DG.Group;
-  /** How the favorites stood, to put them back. */
-  let had = {mine: false, group: false};
+  let record: DG.Entity;
+  /** How the favorites stood (the record's and the folder's, the user's and the group's), to put them back. */
+  let had: [DG.Entity, DG.Group | undefined, boolean][] = [];
 
-  const favorite = async (group?: DG.Group) =>
-    (await grok.dapi.entities.getFavorites(group ?? DG.User.current().group)).some((e) => e.id === space.id);
+  const favorite = async (group?: DG.Group, entity?: DG.Entity) =>
+    (await grok.dapi.entities.getFavorites(group ?? DG.User.current().group)).some((e) => e.id === (entity ?? record).id);
 
   before(async () => {
     await loadAllPortfolios(_package);
     const pf = await portfolioByCode('EX-SMD');
     program = (await portalDb.programs.query({filter: `portfolio_id = "${pf.id}" and code = "${CODE}"`}))[0];
     space = await grok.dapi.spaces.find(program.space_id!);
+    record = await grok.dapi.entities.find(program.id);
     viewers = await grok.dapi.groups.find(pf.viewers!);
-    had = {mine: await favorite(), group: await favorite(viewers)};
+    had = [];
+    for (const e of [record, space]) {
+      for (const g of [undefined, viewers])
+        had.push([e, g, await favorite(g, e)]);
+    }
   });
 
   after(async () => {
-    for (const [on, group] of [[had.mine, undefined], [had.group, viewers]] as [boolean, DG.Group | undefined][]) {
-      if (on !== await favorite(group))
-        await (on ? DG.Favorites.add(space, group) : DG.Favorites.remove(space, group));
+    for (const [e, group, on] of had) {
+      if (on !== await favorite(group, e))
+        await (on ? DG.Favorites.add(e, group) : DG.Favorites.remove(e, group));
+    }
+    for (const r of await portalDb.programs.query({filter: `code = "${SCRATCH}"`})) {
+      const e = await grok.dapi.entities.find(r.id).catch(() => null);
+      if (e && await favorite(undefined, e))
+        await DG.Favorites.remove(e);
     }
     for (const r of await portalDb.programs.query({filter: `code = "${SCRATCH}"`}))
       await portalDb.programs.delete(r.id);
   });
 
-  test('pin and unpin: a favorite on the folder, a tile, the table\'s pinned column', async () => {
+  test('add and remove: a favorite on the program\'s record, a tile, the table\'s pinned column', async () => {
     await pinByCode('EX-SMD', CODE, false);
     expect(await favorite(), false);
-    expect(await pinByCode('EX-SMD', CODE, true), `${CODE}: pinned; its folder is in the Workspace and its tile on Home`);
-    expect(await favorite(), true, 'the platform favorite is the pin');
-    expect(await pinByCode('EX-SMD', CODE, true), `${CODE}: already pinned`);
+    expect(await pinByCode('EX-SMD', CODE, true), `${CODE}: added to favorites; it is in the Workspace and has a tile on Home`);
+    expect(await favorite(), true, 'the platform favorite on the record is the pin');
+    expect(await favorite(undefined, space), false, 'the folder is not favorited');
+    const listed = (await grok.dapi.entities.getFavorites(DG.User.current().group)).find((e) => e.id === program.id);
+    expect(`${listed?.entityType} ${listed?.friendlyName}`, `EntityRecord ${program.code}`, 'the Workspace lists it by the program\'s name');
+    expect(await pinByCode('EX-SMD', CODE, true), `${CODE}: already in favorites`);
     const tile = (await pinnedTiles()).find((t) => t.code === CODE);
     expect(tile?.portfolioCode, 'EX-SMD');
     expect(tile?.pinnedByMe, true);
@@ -130,7 +157,7 @@ category('Portal: pinned programs', () => {
     const table = (await portfolioTables('EX-SMD')).programs;
     const row = table.col(COL.program)!.toList().indexOf(CODE);
     expect(table.get(COL.pinned, row), true, 'pinned column');
-    expect(await pinByCode('EX-SMD', CODE, false), `${CODE}: unpinned`);
+    expect(await pinByCode('EX-SMD', CODE, false), `${CODE}: removed from favorites`);
     expect(await favorite(), false);
     expect((await pinnedTiles()).some((t) => t.code === CODE), false);
   });
@@ -138,32 +165,53 @@ category('Portal: pinned programs', () => {
   test('unpinning in the platform takes the tile away', async () => {
     await pinByCode('EX-SMD', CODE, true);
     expect((await pinnedTiles()).some((t) => t.code === CODE), true);
-    await DG.Favorites.remove(space);   // what the Workspace's Unpin and the star do
-    expect((await myPins()).get(space.id)?.mine ?? false, false);
+    await DG.Favorites.remove(record);   // what the Workspace's Unpin and the star do
+    expect((await myPins()).get(program.id)?.mine ?? false, false);
     expect((await pinnedTiles()).some((t) => t.code === CODE), false);
   });
 
   test('an approver pins for a group: the group\'s favorite, a tile marked for it', async () => {
     const name = viewers.friendlyName || viewers.name;
-    expect(await pinByCode('EX-SMD', CODE, true, name), `${CODE} for ${name}: pinned; its folder is in the Workspace and its tile on Home`);
+    expect(await pinByCode('EX-SMD', CODE, true, name), `${CODE} for ${name}: added to favorites; it is in the Workspace and has a tile on Home`);
     expect(await favorite(viewers), true);
     expect((await pinnedTiles()).find((t) => t.code === CODE)?.pinnedFor.includes(name), true);
     await pinByCode('EX-SMD', CODE, false, name);
     expect(await favorite(viewers), false);
   });
 
-  test('a program without a folder cannot be pinned', async () => {
+  test('a program without a folder can be added: its record is the favorite', async () => {
     const pf = await portfolioByCode('EX-SMD');
     await portalDb.programs.insert({portfolio_id: pf.id, code: SCRATCH, name: SCRATCH, stage_model_id: pf.stage_model_id,
       source: 'manual'});
-    let error = '';
+    expect(await pinByCode('EX-SMD', SCRATCH, true), `${SCRATCH}: added to favorites; it is in the Workspace and has a tile on Home`);
+    expect((await pinnedTiles()).some((t) => t.code === SCRATCH), true);
+    expect(await pinByCode('EX-SMD', SCRATCH, false), `${SCRATCH}: removed from favorites`);
+    expect(await pinByCode('EX-SMD', SCRATCH, false), `${SCRATCH}: was not in favorites`);
+  });
+
+  test('a folder pinned before 0.3.0 still counts; removing takes it out too', async () => {
+    await pinByCode('EX-SMD', CODE, false);
+    await DG.Favorites.add(space);   // the old way
+    expect((await pinnedTiles()).find((t) => t.code === CODE)?.pinnedByMe, true);
+    expect(await pinByCode('EX-SMD', CODE, true), `${CODE}: already in favorites`);
+    expect(await pinByCode('EX-SMD', CODE, false), `${CODE}: removed from favorites`);
+    expect(`${await favorite()} ${await favorite(undefined, space)}`, 'false false');
+  });
+
+  test('a favorite program opens its page from the Workspace', async () => {
+    await pinByCode('EX-SMD', CODE, true);
+    const listed = (await grok.dapi.entities.getFavorites(DG.User.current().group)).find((e) => e.id === program.id)!;
+    const handler = DG.ObjectHandler.forEntity(listed);
+    // the package's own instance, registered by portalInit: the test bundle's class is another copy
+    expect(handler?.type, new ProgramRecordHandler().type);
+    // what the Workspace's Open does: the handler's preview, added as a view
+    const view = await handler!.renderPreview(listed);
     try {
-      await pinByCode('EX-SMD', SCRATCH, true);
-    } catch (e: any) {
-      error = e?.message ?? String(e);
+      expect(view.path.endsWith(`/Portal/EX-SMD/${CODE}`), true, view.path);
+    } finally {
+      view.close();
+      await pinByCode('EX-SMD', CODE, false);
     }
-    expect(error.startsWith(`${SCRATCH} cannot be pinned: It has no workspace folder yet`), true, error);
-    expect(await pinByCode('EX-SMD', SCRATCH, false), `${SCRATCH}: not pinned (no folder)`);
   });
 
   test('a program\'s address opens its page', async () => {

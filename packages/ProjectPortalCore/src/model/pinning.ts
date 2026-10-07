@@ -1,7 +1,10 @@
-/** Pinned programs: pinning a program pins its workspace folder. The platform favorite on
- * the folder is the only record, so a pin made or removed in the Workspace, or with the star,
- * shows here and the other way round. A pinned program also gets a tile in the "My programs"
- * widget on Home: where it stands, how ready it is for its next gate, and what needs a look.
+/** Pinned programs: a program in favorites is its platform record (`portal.program`) among the
+ * user's favorites or a group's. The favorite is the only record of it, so it shows in the
+ * Workspace on Home under the program's name, and a favorite added or removed there, or with the
+ * star, shows here and the other way round. Before 0.3.0 a pin was a favorite on the program's
+ * workspace folder; such a favorite still counts, and removing the program removes both. A
+ * favorite program also gets a tile in the "My programs" widget on Home: where it stands, how ready
+ * it is for its next gate, and what needs a look.
  *
  * Pure: the caller reads the favorites, the programs' facts and the follows. */
 
@@ -12,17 +15,20 @@ export const programAddress = (portfolioCode: string, programCode: string): stri
   `${PORTAL_ADDRESS}/${encodeURIComponent(portfolioCode)}/${encodeURIComponent(programCode)}`;
 
 /** What the widget says when nothing is pinned. */
-export const NOTHING_PINNED = 'No programs pinned. Open a program in the Project Portal and click "Pin to my Workspace": ' +
-  'it shows here, and its folder in your Workspace.';
+export const NOTHING_PINNED = 'No programs in your favorites. Open a program in the Project Portal and click ' +
+  '"Add to favorites": it shows here, and in your Workspace on Home.';
 
-/** Why [p] cannot be pinned, null when it can: only a folder can be a favorite, so a program
- * without a built workspace folder has nothing to pin. */
-export function whyNotPinnable(p: {spaceId: string | null | undefined, spaceLive: boolean}): string | null {
-  if (!p.spaceId)
-    return 'It has no workspace folder yet; pinning pins the folder. An approver builds it (buildWorkspace)';
-  if (!p.spaceLive)
-    return 'Its workspace folder is gone; rebuild the portfolio\'s workspace to pin it';
-  return null;
+/** The entity name of a program's platform record: `portal.program:<portfolio id>|<code>`. */
+export const PROGRAM_RECORD = 'portal.program';
+
+/** Whether an entity named [name] is a program's record (what a favorite program is). */
+export const isProgramRecordName = (name: string | null | undefined): boolean =>
+  String(name ?? '').toLowerCase().startsWith(`${PROGRAM_RECORD}:`);
+
+/** Why [p] cannot be added to favorites, null when it can: the favorite is the program's record,
+ * which the platform must find as an entity. No workspace folder is needed. */
+export function whyNotPinnable(p: {recordFound: boolean}): string | null {
+  return p.recordFound ? null : 'Its record is not found as a platform entity, so it cannot be a favorite';
 }
 
 /** Why the user may not pin for a group, empty when they may: the portfolio's approvers. */
@@ -30,27 +36,42 @@ export function checkGroupPin(c: {isApprover: boolean}): string[] {
   return c.isApprover ? [] : ['Only the portfolio\'s approvers pin a program for a group'];
 }
 
-/** Who pinned a folder: the user, and the groups that have it among their favorites. */
+/** Who pinned a program: the user, and the groups that have it among their favorites. */
 export interface PinHolders {
   mine: boolean;
   groups: string[];
 }
 
-/** The pinned folders by id, from the user's favorites and those of their groups, any entity. */
-export function pinsOf(personal: {id: string, isSpace: boolean}[], byGroup: {group: string, entities: {id: string, isSpace: boolean}[]}[]):
-  Map<string, PinHolders> {
+/** A favorite as read: its id, and whether it is a program's record or a folder (a pin made
+ * before 0.3.0); null for anything else. */
+export interface FavoriteRef {
+  id: string;
+  kind: 'program' | 'folder' | null;
+}
+
+/** The pins by entity id (a program record's id is the program's id; a folder's is its space id),
+ * from the user's favorites and those of their groups. Other favorites are no pins. */
+export function pinsOf(personal: FavoriteRef[], byGroup: {group: string, entities: FavoriteRef[]}[]): Map<string, PinHolders> {
   const pins = new Map<string, PinHolders>();
   const at = (id: string) => pins.get(id) ?? pins.set(id, {mine: false, groups: []}).get(id)!;
-  for (const e of personal.filter((x) => x.isSpace))
+  for (const e of personal.filter((x) => x.kind))
     at(e.id).mine = true;
   for (const g of byGroup) {
-    for (const e of g.entities.filter((x) => x.isSpace)) {
+    for (const e of g.entities.filter((x) => x.kind)) {
       const h = at(e.id);
       if (!h.groups.includes(g.group))
         h.groups.push(g.group);
     }
   }
   return pins;
+}
+
+/** Who pinned [p]: its record's favorites and its folder's together; undefined when neither is. */
+export function pinOf(pins: Map<string, PinHolders>, p: {programId: string, spaceId?: string | null}): PinHolders | undefined {
+  const held = [pins.get(p.programId), p.spaceId ? pins.get(p.spaceId) : undefined].filter((h): h is PinHolders => !!h);
+  if (!held.length)
+    return undefined;
+  return {mine: held.some((h) => h.mine), groups: [...new Set(held.flatMap((h) => h.groups))]};
 }
 
 /** One pinned program as read: the plain facts a tile is made of. */
@@ -112,12 +133,12 @@ export function unseenNews(follows: TileInput['follows']): string | null {
   return unseen[0]?.lastNews ?? null;
 }
 
-/** The tiles of the pinned programs, by portfolio name and then code. A program whose folder no
- * pin holds gets no tile, so the tiles follow the favorites exactly. */
+/** The tiles of the pinned programs, by portfolio name and then code. A program no favorite holds
+ * (neither its record nor its folder) gets no tile, so the tiles follow the favorites exactly. */
 export function assembleTiles(inputs: TileInput[], pins: Map<string, PinHolders>): ProgramTile[] {
   const tiles: ProgramTile[] = [];
   for (const x of inputs) {
-    const held = x.spaceId ? pins.get(x.spaceId) : undefined;
+    const held = pinOf(pins, x);
     if (!held || (!held.mine && !held.groups.length))
       continue;
     const at = x.stage ? x.stages.findIndex((s) => s.code === x.stage) : -1;

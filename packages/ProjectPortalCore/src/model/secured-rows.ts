@@ -6,7 +6,8 @@
  *
  * - approval requests to `approval` and sync runs to `sync_log`: row-secured, each row linked into
  *   a space. A request goes into its program's workspace folder (the portfolio's groups and the
- *   program's roles view it), a model-card request and a sync run into the portfolio's root. The
+ *   program's roles view it), a model-card request into `_Approvals` and a sync run into
+ *   `_Sync history` under the portfolio's root (before 0.3.0: the root itself). The
  *   server lets whoever may view a space view the rows linked into it, View only (the e5adf17c01
  *   pattern), and nobody else; the row's author reaches it too.
  * - follows to `following`: row-secured with no row grants, so each user reaches only their own.
@@ -14,6 +15,7 @@
  *   secured through the program. `compound` keeps the identity (registry and code).
  *
  * Pure: the caller reads the rows, the folders and their links. */
+import {APPROVALS_FOLDER, SYNC_HISTORY_FOLDER} from './workspace-plan';
 
 /** Columns the server writes on every row; a copy leaves them out, except the id. */
 export const SYSTEM_COLUMNS = ['version', 'created_on', 'updated_on', 'author_id', 'is_deleted', 'deleted'];
@@ -42,9 +44,9 @@ export interface Placement {
 }
 
 /** The space a request belongs in: its program's folder when the program has one, else the
- * portfolio's root. A model card has no program and goes to the root. */
-export function requestSpace(programSpaceId: string | null | undefined, rootId: string | null): string | null {
-  return programSpaceId || rootId || null;
+ * portfolio's `_Approvals` folder ([recordsId]). A model card has no program and goes there. */
+export function requestSpace(programSpaceId: string | null | undefined, recordsId: string | null): string | null {
+  return programSpaceId || recordsId || null;
 }
 
 export interface LinkPlan {
@@ -142,4 +144,47 @@ export function describeMove(r: MoveReport, dryRun = false): string[] {
     lines.push(`${r.portfolio} ${u}: nowhere to link it (no workspace): its author and admins read it`);
   lines.push(...r.errors.map((e) => `${r.portfolio}: ${e}`));
   return lines;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Records out of the portfolio's root
+
+/** The folder under the root a record linked into the root belongs in, by its entity name
+ * (`portal.sync_log:<id>`): sync runs in `_Sync history`, requests in `_Approvals`; null for
+ * anything else (a program folder, the root's files). */
+export function recordFolderFor(entityName: string): string | null {
+  const type = String(entityName ?? '').split(':')[0].toLowerCase();
+  return type === 'portal.sync_log' ? SYNC_HISTORY_FOLDER : type === 'portal.approval' ? APPROVALS_FOLDER : null;
+}
+
+/** One record to take out of the root: linked into [folder] first, then unlinked from the root. */
+export interface RecordMove {
+  id: string;
+  folder: string;
+  /** Already linked into [folder]: only the root's link goes. */
+  linked: boolean;
+}
+
+/** What taking the records out of the root does: [rootChildren] are the root's children with
+ * links; [inFolder] holds, by folder name, the ids already linked into that folder. */
+export function planRecordMoves(rootChildren: {id: string, name: string}[], inFolder: Map<string, Set<string>>): RecordMove[] {
+  const moves: RecordMove[] = [];
+  for (const c of rootChildren) {
+    const folder = recordFolderFor(c.name);
+    if (folder)
+      moves.push({id: c.id, folder, linked: inFolder.get(folder)?.has(c.id) ?? false});
+  }
+  return moves;
+}
+
+/** `EX-SMD: would move 249 record(s) out of the root: 249 into _Sync history`; or that none is left. */
+export function describeRecordMoves(code: string, moves: RecordMove[], dryRun: boolean, errors: string[] = []): string[] {
+  if (!moves.length && !errors.length)
+    return [`${code}: no records in the root`];
+  const by = new Map<string, number>();
+  for (const m of moves)
+    by.set(m.folder, (by.get(m.folder) ?? 0) + 1);
+  const into = [...by].map(([f, n]) => `${n} into ${f}`).join(', ');
+  return [...(moves.length ? [`${code}: ${dryRun ? 'would move' : 'moved'} ${moves.length - (dryRun ? 0 : errors.length)} record(s) ` +
+    `out of the root: ${into}`] : []), ...errors.map((e) => `${code}: ${e}`)];
 }

@@ -47,6 +47,12 @@ category('Portal: parking rules', () => {
     expect(found[0].id, '2', 'the report carries the folder\'s id');
   });
 
+  test('the record folders are never orphans either', async () => {
+    const found = findOrphans('Root', [{id: '1', name: 'SyncHistory', friendlyName: '_Sync history'},
+      {id: '2', name: 'Approvals'}, {id: '3', name: 'Oldnotes', friendlyName: 'Old notes'}], []);
+    expect(found.map((o) => o.path).join(), 'Root/Old notes');
+  });
+
   test('the summary says where each folder goes and that nothing is deleted', async () => {
     const plan = planParking('Root', orphans, '2026-10-02');
     expect(summarizeParking('EX-SMD', plan, true).split('\n')[0],

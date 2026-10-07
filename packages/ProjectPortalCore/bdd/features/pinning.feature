@@ -1,7 +1,7 @@
 @portal
 Feature: Add a program to favorites and find it in the Workspace and on Home
-  Adding a program to favorites adds its workspace folder to the platform favorites, so the folder is in the user's
-  Workspace on Home and the program has a tile in My programs there, with its stage, readiness for
+  Adding a program to favorites adds the program's own record to the platform favorites, so the program is in the
+  user's Workspace on Home under its name and has a tile in My programs there, with its stage, readiness for
   the next gate and what needs attention. A click on the tile opens the program's page.
 
   Background:

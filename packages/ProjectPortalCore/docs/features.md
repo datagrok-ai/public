@@ -17,6 +17,7 @@ All examples use the synthetic portfolios the package ships (EX-SMD, EX-BIOD, EX
 - **It grows with the stage (PORT-35).** A stage declares `folders`, paths under the program's folder (`Candidate Package`, `DMPK/In vivo PK`). A program has the folders of every stage it has reached: the builder adds them, and a gate decision that advances a program adds the new stage's folders at once when its workspace exists. A program that recycles keeps them.
 - **Unit-operation folders from a program's flow (optional, `flowFolders`).** A portfolio that declares `flowFolders` gets one folder per step of each process flow its programs run: `CODE · Name/Drug Substance/02 - Production bioreactor`. A program's flows come from the `program_flow` rows a loader wrote (steps in `process_step`), which win for their process type, else from the flows the file declares, picked by its rules by modality, highest priority first. The pick is made at each build; nothing is written to `program_flow`. `placement: process_type` (the default) puts the steps under a folder named for the process type, reusing a workstream of that name; `program` puts them straight under the program's folder. `fromStage` holds them back until a program reaches that stage. Like every other folder: additive, shown by a dry run, reused on a rebuild, never deleted. The build's notes name the programs that got them and the flow. EX-BIOC declares `EX-MAB-DS` (five steps) for its antibodies from D2. Without `flowFolders` the builder reads no flow and makes no such folder.
 - **Orphans are reported; the builder never touches them (FR-22).** Every full build, and `workspaceOrphans`, lists root folders no program claims and the folders of programs that are terminated, transitioned, completed or missing from their feed.
+- **Records have their own folders.** A sync run (`sync_log`) is linked into `_Sync history` under the root, and a request with no program folder (a model card's) into `_Approvals`, so only the portfolio's people read them. Each folder is made on demand and inherits the root's grants. The root lists the program folders only: Browse groups a space's children into Spaces, Files and Others once there are more than 25 of more than one kind. The builder and the orphan report leave both folders alone. Before 0.3.0 these records were linked into the root itself; `moveRecordsOutOfRoot(code, dryRun)` links each into its folder, then removes its link in the root (the record stays). A dry run is the default; applying needs one of the portfolio's approvers. Run twice, it finds nothing.
 - **Parking is a separate, explicit step.** `parkOrphans(code, dryRun, folders)` moves the listed folders (or the ones named, by path or space id) into `_Parked/<date>` under the root. A dry run is the default. Applying needs one of the portfolio's approvers. A move keeps the folder's id, files, subfolders and grants. Each move is recorded in `parked_folder` (from where, to where, why, who, when). `unparkFolder(id)` moves one back, by the record's id or the folder's, unless a folder of the same name took its place; an emptied `_Parked/<date>`, then `_Parked`, is removed. `parkedFolders(code, all)` lists them. `_Parked` is never itself an orphan, and the builder neither rebuilds a parked program folder nor makes a new one ("folder parked; not rebuilt").
 - **Deleting is out of scope.** Nothing here deletes a workspace folder; removing a parked folder is a person's call, by hand.
 - **In the app.** The ribbon's **Workspace** (Advanced mode) shows the orphan report with **Preview park**, **Park** on each folder and **Park all** for approvers, and the parked folders with **Unpark**.
@@ -259,21 +260,28 @@ A user follows a program, or one of its series, and hears when new results land 
 
 ## Pinned programs: My programs on Home
 
-Pinning a program pins its workspace folder. The pin is a platform favorite on the folder, the user's own or a
-group's; the portal stores nothing. A pin made or removed anywhere (the program page, the star, the Workspace) is
-the same pin.
+Adding a program to favorites favorites the program's own record (its `portal.program` row as a platform entity),
+the user's own or a group's; the portal stores nothing. The program shows in the Workspace on Home under its name.
+A favorite added or removed anywhere (the program page, the star, the Workspace) is the same favorite. Before 0.3.0
+the favorite was the program's workspace folder; such a favorite still counts, and removing the program removes it
+too.
 
 - **Program page.** **Add to favorites** / **Remove from favorites** beside Follow, in the app and from the portfolio
-  table. A program without a built folder cannot be added; the button says why. An approver also gets
-  **Add to <the portfolio's viewers'> favorites** (a group favorite) and, when the folder is missing, **Build its folder**
-  (this program's folders only).
+  table. No workspace folder is needed. Only a program whose record the platform does not find cannot be added; the
+  button says why. An approver also gets **Add to <the portfolio's viewers'> favorites** (a group favorite) and, when
+  the folder is missing, **Build its folder** (this program's folders only). A viewer can add a program to their own
+  favorites.
+- **Workspace.** The favorite is listed by the program's name, with a flask icon. Open (or a double
+  click) in the Workspace opens the program's page in the Project Portal; the context panel shows the program and
+  its portfolio with **Open in the Project Portal**. This works once the package is loaded, which the My programs
+  widget on Home does. Without it, the Workspace shows the bare record in the context panel.
 - **Board and table.** A pinned program's card says *pinned*; the portfolio table has a `pinned` column.
 - **Home.** The **My programs** widget: a tile per pinned program the user can see, across portfolios. A tile shows
   code and name, portfolio, stage and its place on the track, status, the next gate's readiness (or *ready*), the
   attention count and *new data* when a followed program has news the user has not seen. A group's pin is marked
   *for <group>*. A click opens the program's page. With nothing pinned, the widget says how to pin.
 - **How it is read.** One call for the user's favorites, one for their groups' (`getFavoritesForGroups`), the
-  programs by `space_id`, then the portfolio table's facts for those programs only, so readiness and attention are
+  programs by id (and by `space_id` for an old folder favorite), then the portfolio table's facts for those programs only, so readiness and attention are
   the table's (`readinessFor`). A program row the user cannot see gives no tile.
 - **The widget** is a `meta.role: dashboard` function (`myProgramsWidget`, `meta.order: 2`), which Home lists.
   The user removes it with its close icon and brings it back under *Customize widgets…*; Home has no reordering.

@@ -143,9 +143,20 @@ export const PARKED_FOLDER = '_Parked';
 /** Whether [space] is the parking folder. The server may hold it as `Parked`. */
 export const isParkingFolder = (space: SpaceRef): boolean => isSpaceNamed(space, PARKED_FOLDER);
 
+/** The folders under a portfolio's root that hold its records, not a program's work: its sync runs,
+ * and requests with no program (a model card's). Linked there rather than into the root, so the root
+ * lists the program folders only (Browse groups a space's children by kind past 25). Made on demand;
+ * they inherit the root's grants. */
+export const SYNC_HISTORY_FOLDER = '_Sync history';
+export const APPROVALS_FOLDER = '_Approvals';
+
+/** Whether [space] is one of the record folders. The server may hold them without the underscore. */
+export const isRecordFolder = (space: SpaceRef): boolean =>
+  isSpaceNamed(space, SYNC_HISTORY_FOLDER) || isSpaceNamed(space, APPROVALS_FOLDER);
+
 /** What a prune-or-park pass would look at (FR-22): root folders no program of the portfolio
  * claims, and folders of programs that have ended or left their feed. Nothing below a program
- * folder is judged: people put their own folders there. The parking folder is never listed. */
+ * folder is judged: people put their own folders there. The parking and record folders are never listed. */
 export function findOrphans(root: string, children: SpaceRef[], programs: WorkspaceProgram[]): Orphan[] {
   const claimed = new Map<string, WorkspaceProgram>();
   for (const p of programs) {
@@ -155,8 +166,8 @@ export function findOrphans(root: string, children: SpaceRef[], programs: Worksp
   }
   const out: Orphan[] = [];
   for (const c of [...children].sort((a, b) => (a.friendlyName ?? a.name).localeCompare(b.friendlyName ?? b.name))) {
-    // parked folders are already dealt with
-    if (isParkingFolder(c))
+    // parked folders are already dealt with; the record folders are the portfolio's own
+    if (isParkingFolder(c) || isRecordFolder(c))
       continue;
     const label = `${root}/${c.friendlyName ?? c.name}`;
     const p = claimed.get(c.id);

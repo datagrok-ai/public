@@ -6,7 +6,7 @@ import {loadAllPortfolios, portfolioByCode, programContext, readSources, recordD
 import {_package} from '../package-test';
 import {withRestrictedUser} from './restricted-user';
 import {buildPortfolioWorkspace} from '../workspace';
-import {programFolderName} from '../model/workspace-plan';
+import {isParkingFolder, isRecordFolder, programFolderName} from '../model/workspace-plan';
 
 /** The three example portfolios, loaded and synced once per run. Their feeds are synthetic
  * registries written as VALUES on System:Datagrok, so every stand has them. Discovery syncs before
@@ -292,8 +292,11 @@ category('Portal: workspace', () => {
       try {
         const seen = await roots();
         expect(seen.length, 1, 'a viewer does not see the workspace');
-        const folders = await u.asUser(() => subspaces(seen[0].id));
+        const all = await u.asUser(() => subspaces(seen[0].id));
+        const ref = (f: any) => ({id: f.id, name: f.name, friendlyName: f.friendlyName ?? null});
+        const folders = all.filter((f) => !isRecordFolder(ref(f)) && !isParkingFolder(ref(f)));
         expect(folders.length, (await programsOf('EX-SMD')).length, 'a viewer does not see the program folders');
+        expect(all.some((f) => isRecordFolder(ref(f))), true, 'a viewer does not see _Sync history: it inherits the root\'s grants');
       } finally {
         await grok.dapi.groups.excludeFrom(personal, viewers);
       }

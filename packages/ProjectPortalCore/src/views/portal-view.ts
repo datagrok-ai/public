@@ -77,8 +77,8 @@ import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approva
 import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
 import {openWaitingDialog, requestItem} from './approvals-dialog';
 import {openWorkspaceDialog} from './workspace-dialog';
-import {myPins, setPinned} from '../pinning';
-import {PinHolders, whyNotPinnable} from '../model/pinning';
+import {myPins, pinnableRecord, setPinned} from '../pinning';
+import {PinHolders, pinOf} from '../model/pinning';
 import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
 import {newestFirstBy} from '../model/time';
 import {filterValue, ROW_LIMIT} from '../rows';
@@ -193,8 +193,11 @@ export class PortalView {
   private designs: {sets: DesignSetItem[], selections: SelectionSetRow[], refused: string[]} = {sets: [], selections: [], refused: []};
   /** The selected program's DMTA status (F-24); null where the portfolio is not discovery. */
   private dmta: {status: DmtaStatus | null, error?: string} = {status: null};
-  /** The folders pinned in the user's Workspace, by space id: read with the board and on each program open. */
+  /** The pins in the user's Workspace, by entity id (program records, and folders pinned before
+   * 0.3.0): read with the board and on each program open. */
   private pins = new Map<string, PinHolders>();
+  /** Why the open program cannot be added to favorites; null when it can. */
+  private pinReason: string | null = null;
   /** The open portfolio's viewers group, which an approver may pin a program for. */
   private viewersGroup: DG.Group | null = null;
   /** The open portfolio's data access notice, for its approvers and admins; null when all is well. */
@@ -432,7 +435,7 @@ export class PortalView {
         badge(x.status ?? 'active', {variant: statusVariant[x.status ?? 'active'] ?? 'default'}),
         ...(x.modality ? [span(x.modality, 'pp-muted')] : []),
         ...(x.predecessor_id ? [badge('continued', {variant: 'accent'})] : []),
-        ...(x.space_id && this.pins.has(x.space_id) ? [named(span('pinned', 'pp-pinned-mark'), `pinned-${slug(x.code)}`)] : []),
+        ...(pinOf(this.pins, {programId: x.id, spaceId: x.space_id}) ? [named(span('pinned', 'pp-pinned-mark'), `pinned-${slug(x.code)}`)] : []),
       ], 'pp-card-meta'),
     ], 'pp-card'), `program-${slug(x.code)}`);
     if (x.id === this.selected)
@@ -509,6 +512,7 @@ export class PortalView {
     const roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
     // pinned or not is the platform's favorite, which the Workspace may have changed since
     const pins = await myPins().catch(() => this.pins);
+    const pinReason = (await pinnableRecord(ctx.program).catch(() => ({reason: null}))).reason;
     const viewersGroup = roles.manage && ctx.portfolio.viewers && this.viewersGroup?.id !== ctx.portfolio.viewers ?
       await grok.dapi.groups.find(ctx.portfolio.viewers).catch(() => null) : this.viewersGroup;
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
@@ -570,6 +574,7 @@ export class PortalView {
     this.follows = follows;
     this.roles = roles;
     this.pins = pins;
+    this.pinReason = pinReason;
     this.viewersGroup = viewersGroup;
     this.predictions = predictions;
     if (this.feed.programId !== id)
@@ -933,7 +938,7 @@ export class PortalView {
       named(span(program.name, 'pp-title'), 'program-title'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
-      named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx, spaceLive),
+      named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx),
         named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button'),
         this.dataPackageButton(program.id)],
       'pp-actions'), 'program-actions'),
@@ -1805,18 +1810,19 @@ export class PortalView {
   }
 
   /** Add to favorites / Remove from favorites, and for an approver the same for the portfolio's
-   * viewers. A favorite is the platform's, on the program's folder, so the folder shows in the
-   * Workspace on Home. A program without a folder cannot be added; the button says why. */
-  private pinButtons(ctx: ProgramContext, spaceLive: boolean): HTMLElement[] {
-    const held = ctx.program.space_id ? this.pins.get(ctx.program.space_id) : undefined;
-    const reason = whyNotPinnable({spaceId: ctx.program.space_id, spaceLive});
+   * viewers. A favorite is the platform's, on the program's record, so the program shows in the
+   * Workspace on Home. A program whose record the platform does not find cannot be added; the
+   * button says why. */
+  private pinButtons(ctx: ProgramContext): HTMLElement[] {
+    const held = pinOf(this.pins, {programId: ctx.program.id, spaceId: ctx.program.space_id});
+    const reason = this.pinReason;
     const mine = !!held?.mine;
     const pin = named(button(mine ? 'Remove from favorites' : 'Add to favorites',
       () => void this.togglePin(ctx, !mine, null).catch(this.failed)), 'pin-button');
     pin.disabled = !!reason && !mine;
     pin.title = reason && !mine ? `Cannot add to favorites: ${reason}` :
-      mine ? 'Take its folder out of your favorites, your Workspace and its tile off Home' :
-        'Its folder goes in your favorites and your Workspace on Home, and its tile in My programs';
+      mine ? 'Take it out of your favorites and your Workspace, and its tile off Home' :
+        'It goes in your favorites and your Workspace on Home, and its tile in My programs';
     const g = this.viewersGroup;
     if (!this.roles.manage || !g)
       return [pin];
@@ -1856,7 +1862,7 @@ export class PortalView {
         grok.shell.error(e?.message ?? String(e));
       }
     }), 'build-folder-button');
-    b.title = 'Create this program\'s folder and its workstream folders in the portfolio\'s workspace; then it can be pinned';
+    b.title = 'Create this program\'s folder and its workstream folders in the portfolio\'s workspace';
     return [b];
   }
 

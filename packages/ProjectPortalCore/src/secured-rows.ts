@@ -5,16 +5,19 @@
  * [placeSyncLog]). Linking needs Edit on the space and on the row: the row's author holds the
  * second (the server grants it on promotion), and the portfolio's contributors hold Edit on its
  * workspace. A row that cannot be linked stays with its author and admins; [moveToSecuredTables]
- * links what is left. */
+ * links what is left. A sync run, and a request with no program folder, go into a record folder under
+ * the root (`_Sync history`, `_Approvals`), so the root lists the program folders only;
+ * [moveRecordsOutOfRoot] moves those linked into the root before 0.3.0. */
 import * as grok from 'datagrok-api/grok';
 import {ApprovalRow, portalDb, PortfolioRow, SyncLogRow} from './generated/db';
-import {portfolioByCode} from './portal';
+import {isApprover, portfolioByCode} from './portal';
 import {folderLinks} from './program-rows';
 import {filterValue, queryIn, ROW_LIMIT} from './rows';
-import {isSpaceNamed} from './model/workspace-plan';
+import {subspaces} from './workspace';
+import {APPROVALS_FOLDER, isSpaceNamed, SYNC_HISTORY_FOLDER} from './model/workspace-plan';
 import {
-  copyValues, describeMove, hasContent, inPortfolios, linkValuesOf, MoveReport, Placement, planLinks,
-  portfoliosOfGroups, requestSpace, toCopy, COMPOUND_CONTENT,
+  copyValues, describeMove, describeRecordMoves, hasContent, inPortfolios, linkValuesOf, MoveReport, Placement, planLinks,
+  planRecordMoves, portfoliosOfGroups, requestSpace, toCopy, COMPOUND_CONTENT,
 } from './model/secured-rows';
 
 /** The portfolio's workspace root space id, or null when it has none (or the user cannot see it). */
@@ -25,6 +28,27 @@ export async function rootIdOf(portfolio: PortfolioRow): Promise<string | null> 
   const root = found.find((s: any) => isSpaceNamed({id: s.id, name: s.name, friendlyName: s.friendlyName ?? null},
     portfolio.workspace_root!));
   return root?.id ?? null;
+}
+
+/** The record folder [name] under the portfolio's root, made when missing (unless not [create]).
+ * The root itself when the folder is not there and cannot or may not be made: the root reaches the
+ * same groups. Null when the portfolio has no root. */
+export async function recordFolderId(portfolio: PortfolioRow, name: string, create = true): Promise<string | null> {
+  const rootId = await rootIdOf(portfolio);
+  if (!rootId)
+    return null;
+  const found = (await subspaces(rootId).catch(() => [])).find((c) => isSpaceNamed({id: c.id, name: c.name,
+    friendlyName: (c as any).friendlyName ?? null}, name));
+  if (found || !create)
+    return found?.id ?? rootId;
+  return (await grok.dapi.spaces.id(rootId).addSubspace(name).catch(() => null))?.id ?? rootId;
+}
+
+/** Links [rowId] into [folderId], or into the root when the folder cannot take it. Null when placed. */
+async function linkIntoRecords(rowId: string, portfolio: PortfolioRow, folderId: string | null): Promise<string | null> {
+  const why = await linkInto(rowId, folderId);
+  const rootId = why && folderId ? await rootIdOf(portfolio) : null;
+  return rootId && rootId !== folderId ? linkInto(rowId, rootId) : why;
 }
 
 /** Links [rowId] into [spaceId] unless it is there. Null when it is linked; else why not. */
@@ -43,21 +67,69 @@ export async function linkInto(rowId: string, spaceId: string | null): Promise<s
   }
 }
 
-/** Links a request into its program's folder, or the portfolio's root. Null when placed. */
+/** Links a request into its program's folder, or the portfolio's `_Approvals`. Null when placed. */
 export async function placeApproval(row: ApprovalRow, portfolio?: PortfolioRow): Promise<string | null> {
   const program = row.program_id ? await portalDb.programs.get(row.program_id).catch(() => null) : null;
   const pf = portfolio ?? await portalDb.portfolios.get(row.portfolio_id);
   const folder = program?.space_id ?? null;
-  const first = await linkInto(row.id, requestSpace(folder, folder ? null : await rootIdOf(pf)));
+  if (!folder)
+    return linkIntoRecords(row.id, pf, await recordFolderId(pf, APPROVALS_FOLDER));
+  const first = await linkInto(row.id, requestSpace(folder, null));
   // a program folder that cannot take it: the portfolio's root still reaches the portfolio's groups
-  if (first && folder)
+  if (first)
     return linkInto(row.id, await rootIdOf(pf));
   return first;
 }
 
-/** Links a sync log row into the portfolio's root. Null when placed. */
+/** Links a sync log row into the portfolio's `_Sync history`. Null when placed. */
 export async function placeSyncLog(row: SyncLogRow | string, portfolio: PortfolioRow): Promise<string | null> {
-  return linkInto(typeof row === 'string' ? row : row.id, await rootIdOf(portfolio));
+  return linkIntoRecords(typeof row === 'string' ? row : row.id, portfolio, await recordFolderId(portfolio, SYNC_HISTORY_FOLDER));
+}
+
+/** Moves the sync runs and requests linked into portfolio [code]'s root into its record folders:
+ * each is linked into the folder first, then its link in the root removed (the record itself stays).
+ * A dry run (the default) only counts. Applying needs one of the portfolio's approvers (admins are).
+ * Idempotent: a second run finds nothing in the root. */
+export async function moveRecordsOutOfRoot(code: string, dryRun = true): Promise<string[]> {
+  const portfolio = await portfolioByCode(code);
+  if (!dryRun && !await isApprover(portfolio))
+    throw new Error(`Only the approvers of ${code} move its records`);
+  const rootId = await rootIdOf(portfolio);
+  if (!rootId)
+    return [`${code}: no workspace root`];
+  // only what is linked into the root: a link's removal leaves the record, an owned child's would not
+  const rootLinks = (await folderLinks([rootId])).get(rootId) ?? new Set<string>();
+  const children = (await grok.dapi.spaces.id(rootId).children.ofTypes('EntityRecord', true).list({pageSize: 100000}))
+    .filter((c) => rootLinks.has(c.id));
+  const folders = new Map<string, string>();
+  for (const name of [SYNC_HISTORY_FOLDER, APPROVALS_FOLDER]) {
+    const id = await recordFolderId(portfolio, name, false);
+    if (id && id !== rootId)
+      folders.set(name, id);
+  }
+  const links = await folderLinks([...folders.values()]);
+  const inFolder = new Map([...folders].map(([name, id]) => [name, links.get(id) ?? new Set<string>()]));
+  const moves = planRecordMoves(children.map((c) => ({id: c.id, name: c.name})), inFolder);
+  const errors: string[] = [];
+  if (!dryRun) {
+    for (const m of moves) {
+      try {
+        if (!folders.has(m.folder)) {
+          const id = await recordFolderId(portfolio, m.folder);
+          if (!id || id === rootId)
+            throw new Error(`${m.folder} could not be made`);
+          folders.set(m.folder, id);
+        }
+        if (!m.linked)
+          await grok.dapi.spaces.id(folders.get(m.folder)!).addEntity(m.id, true);
+        // linked into the folder first, so the portfolio's groups never lose it
+        await grok.dapi.spaces.id(rootId).removeEntity(m.id);
+      } catch (e: any) {
+        errors.push(`${m.id} not moved: ${e?.message ?? e}`);
+      }
+    }
+  }
+  return describeRecordMoves(code, moves, dryRun, errors);
 }
 
 /** The ids of the portfolios the current user belongs to, or null for an admin (all of them). */
@@ -99,7 +171,6 @@ export async function moveToSecuredTables(code: string, dryRun = false): Promise
   const portfolio = await portfolioByCode(code);
   const by = `portfolio_id = ${filterValue(portfolio.id)}`;
   const report: MoveReport = {portfolio: code, copied: {}, already: {}, linked: {}, unplaced: [], linkValues: 0, emptied: 0, errors: []};
-  const rootId = await rootIdOf(portfolio);
   const programs = await portalDb.programs.query({filter: by, limit: ROW_LIMIT});
   const folderOf = new Map(programs.map((p) => [p.id, p.space_id ?? null]));
   const codeOf = new Map(programs.map((p) => [p.id, p.code]));
@@ -130,10 +201,14 @@ export async function moveToSecuredTables(code: string, dryRun = false): Promise
 
   try {
     const oldRequests = await grok.dapi.domains.table('portal.approval_request').query({filter: by, limit: ROW_LIMIT});
+    // a record folder is made only for records that go there, and not by a dry run (it counts against the root)
+    const approvalsId = await recordFolderId(portfolio, APPROVALS_FOLDER,
+      !dryRun && oldRequests.some((r: any) => !(r.program_id && folderOf.get(r.program_id))));
     await move('approval', oldRequests, portalDb.approvals, (r) => ({id: r.id, label: r.title,
-      spaceId: requestSpace(r.program_id ? folderOf.get(r.program_id) : null, rootId)}));
+      spaceId: requestSpace(r.program_id ? folderOf.get(r.program_id) : null, approvalsId)}));
     const oldRuns = await grok.dapi.domains.table('portal.sync_run').query({filter: by, limit: ROW_LIMIT});
-    await move('sync_log', oldRuns, portalDb.syncLogs, (r) => ({id: r.id, label: `sync ${String(r.started_on)}`, spaceId: rootId}));
+    const syncId = await recordFolderId(portfolio, SYNC_HISTORY_FOLDER, !dryRun && oldRuns.length > 0);
+    await move('sync_log', oldRuns, portalDb.syncLogs, (r) => ({id: r.id, label: `sync ${String(r.started_on)}`, spaceId: syncId}));
   } catch (e: any) {
     report.errors.push(`not moved: ${e?.message ?? e}`);
   }

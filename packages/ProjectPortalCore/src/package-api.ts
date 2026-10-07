@@ -9,7 +9,7 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * Once the package loads: offers to save each run of a catalogued model to a program, and adds Save to program to a run's context menu
+   * Once the package loads: offers to save each run of a catalogued model to a program, adds Save to program to a run's context menu, and lets a favorite program open its page from the Workspace
    */
   export async function portalInit(): Promise<void> {
     return await grok.functions.call('ProjectPortalCore:PortalInit', {});
@@ -485,6 +485,13 @@ export namespace funcs {
   }
 
   /**
+   * Moves the sync runs and model-card requests linked into a portfolio's workspace root into _Sync history and _Approvals under it, so the root lists the program folders only. Each is linked into its folder first, then its link in the root removed; the records stay. Dry run by default. Applying needs one of the portfolio's approvers. Idempotent
+   */
+  export async function moveRecordsOutOfRoot(portfolio: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:MoveRecordsOutOfRoot', { portfolio, dryRun });
+  }
+
+  /**
    * Read-only: for each data connection a portfolio's datasets and feeds use, whether each of its groups (viewers, contributors, approvers) has View and Query on it, directly or through a parent group, with the fix for each gap. Every portfolio when no code is given. Grants nothing
    * @param {string} code - Portfolio code
    */
@@ -681,7 +688,7 @@ export namespace funcs {
   }
 
   /**
-   * Pins the program's workspace folder in your Workspace (a platform favorite), so its tile shows in My programs on Home. With a group, pins it for everyone in that group: the portfolio's approvers only. A program without a folder cannot be pinned
+   * Adds the program to your favorites (a platform favorite on its record), so it shows in your Workspace on Home and its tile in My programs. With a group, adds it for everyone in that group: the portfolio's approvers only
    * @param {string} group - Group name
    */
   export async function pinProgram(portfolio: string , program: string , group?: string ): Promise<string> {
@@ -689,7 +696,7 @@ export namespace funcs {
   }
 
   /**
-   * Takes the program's workspace folder out of your Workspace, or a group's, and its tile off Home
+   * Takes the program out of your favorites, or a group's (its record, and its folder when pinned before 0.3.0), and its tile off Home
    * @param {string} group - Group name
    */
   export async function unpinProgram(portfolio: string , program: string , group?: string ): Promise<string> {
@@ -697,7 +704,7 @@ export namespace funcs {
   }
 
   /**
-   * The programs whose folders are pinned in your Workspace (by you or for your groups) that you can see, across portfolios: stage on its track, status, readiness for the next gate, attention, new data
+   * The programs in your favorites (yours or your groups') that you can see, across portfolios: stage on its track, status, readiness for the next gate, attention, new data
    */
   export async function pinnedPrograms(): Promise<DG.DataFrame> {
     return await grok.functions.call('ProjectPortalCore:PinnedPrograms', {});

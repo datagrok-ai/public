@@ -401,18 +401,23 @@ export const rootFolder = Given('a folder {string} no program claims under the w
     }, [name, portfolio]);
   }, {tier: 'api', description: 'an empty folder at the top of the portfolio\'s workspace; unparked if parked and deleted at the end of the feature'});
 
-/** Whether [program]'s folder is among the user's own favorites; pins it or not when [set] is given. */
+/** Whether [program] is among the user's own favorites: its record, or its folder (a pin made before
+ * 0.3.0). [set] true favorites the record; false takes out both. */
 async function pinnedOwn(page: Page, program: string, portfolio: string, set?: boolean): Promise<boolean> {
   return page.evaluate(async ([c, p, s]) => {
     const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
     const row = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
-    if (!row?.space_id)
-      throw new Error(`${c} has no workspace folder: build the ${p} workspace first`);
-    const space = await grok.dapi.spaces.find(row.space_id);
-    const on = (await grok.dapi.entities.getFavorites(DG.User.current().group)).some((e: any) => e.id === space.id);
-    if (s !== null && s !== on)
-      await (s ? DG.Favorites.add(space) : DG.Favorites.remove(space));
-    return on;
+    const record = await grok.dapi.entities.find(row.id);
+    const folder = row.space_id ? await grok.dapi.spaces.find(row.space_id).catch(() => null) : null;
+    const favorites = await grok.dapi.entities.getFavorites(DG.User.current().group);
+    const held = [record, folder].filter((e: any) => e && favorites.some((f: any) => f.id === e.id));
+    if (s === true && !held.length)
+      await DG.Favorites.add(record);
+    if (s === false) {
+      for (const e of held)
+        await DG.Favorites.remove(e);
+    }
+    return held.length > 0;
   }, [program, portfolio, set ?? null] as [string, string, boolean | null]);
 }
 
@@ -424,7 +429,7 @@ export const notPinned = Given('the user has not pinned {string} in the {string}
     atFeatureEnd(page, async () => {
       await pinnedOwn(page, program, portfolio, was);
     });
-  }, {tier: 'api', description: 'unpins the program\'s folder from the user\'s own favorites; at the end of the feature, puts back what was there'});
+  }, {tier: 'api', description: 'takes the program out of the user\'s own favorites; at the end of the feature, puts back what was there'});
 
 export const openHome = When('user opens Home', async (page: Page) => {
   await page.evaluate(() => {

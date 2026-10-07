@@ -4,11 +4,14 @@ import dayjs from 'dayjs';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {ApprovalRow, portalDb, PortfolioRow, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
-import {moveToSecuredTables, myPortfolioIds, placeApproval, placeSyncLog} from '../secured-rows';
+import {moveRecordsOutOfRoot, moveToSecuredTables, myPortfolioIds, placeApproval, placeSyncLog, recordFolderId, rootIdOf}
+  from '../secured-rows';
 import {
-  compoundOfLink, copyValues, describeMove, hasContent, inPortfolios, linkValuesOf, planLinks, portfoliosOfGroups,
-  requestSpace, toCopy,
+  compoundOfLink, copyValues, describeMove, describeRecordMoves, hasContent, inPortfolios, linkValuesOf, planLinks,
+  planRecordMoves, portfoliosOfGroups, recordFolderFor, requestSpace, toCopy,
 } from '../model/secured-rows';
+import {folderLinks} from '../program-rows';
+import {SYNC_HISTORY_FOLDER} from '../model/workspace-plan';
 import {withStandUser} from './stand-users';
 import {_package} from '../package-test';
 
@@ -19,10 +22,23 @@ category('Portal: who reads a portfolio\'s records (rules)', () => {
     expect(toCopy([{id: 'a'}, {id: 'b'}], new Set(['a'])).map((r) => r.id).join(), 'b');
   });
 
-  test('a request goes into its program\'s folder, else the portfolio\'s root', async () => {
-    expect(requestSpace('folder', 'root'), 'folder');
-    expect(requestSpace(null, 'root'), 'root', 'a model card, or a program without a folder');
+  test('a request goes into its program\'s folder, else the portfolio\'s _Approvals', async () => {
+    expect(requestSpace('folder', 'approvals'), 'folder');
+    expect(requestSpace(null, 'approvals'), 'approvals', 'a model card, or a program without a folder');
     expect(requestSpace(undefined, null), null, 'no workspace: nowhere');
+  });
+
+  test('records out of the root: sync runs to _Sync history, requests to _Approvals, nothing else', async () => {
+    expect(recordFolderFor('portal.sync_log:1'), '_Sync history');
+    expect(recordFolderFor('portal.approval:2'), '_Approvals');
+    expect(recordFolderFor('EXS-KIN1'), null, 'a program folder stays');
+    expect(recordFolderFor('portal.program:x|EXS-KIN1'), null);
+    const moves = planRecordMoves([{id: 'a', name: 'portal.sync_log:a'}, {id: 'b', name: 'portal.sync_log:b'},
+      {id: 'c', name: 'portal.approval:c'}, {id: 'f', name: 'EXS-KIN1'}], new Map([['_Sync history', new Set(['b'])]]));
+    expect(moves.map((m) => `${m.id}>${m.folder}${m.linked ? ' (linked)' : ''}`).join(', '),
+      'a>_Sync history, b>_Sync history (linked), c>_Approvals');
+    expect(describeRecordMoves('EX-SMD', moves, true)[0], 'EX-SMD: would move 3 record(s) out of the root: 2 into _Sync history, 1 into _Approvals');
+    expect(describeRecordMoves('EX-SMD', [], false)[0], 'EX-SMD: no records in the root');
   });
 
   test('links: what to link, what is linked, what has nowhere to go', async () => {
@@ -134,11 +150,16 @@ category('Portal: what another portfolio cannot read', () => {
     const [r] = await portalDb.syncLogs.insert({portfolio_id: smd.id, started_on: new Date().toISOString() as any,
       trigger: 'manual', run_by: DG.User.current().id, summary: PROBE});
     try {
-      expect(await placeSyncLog(r.id, smd), null, 'the probe run was not linked into EX-SMD\'s root');
-      const count = (kind: 'viewer' | 'outsider', pf: PortfolioRow) => withStandUser(kind, (u) => u.asUser(async () =>
-        (await portalDb.syncLogs.query({filter: `portfolio_id = "${pf.id}"`, limit: 10000})).length));
-      const viewerSmd = await count('viewer', smd);
-      expect((viewerSmd ?? 0) > 0, true, 'the viewer reads EX-SMD\'s sync history');
+      expect(await placeSyncLog(r.id, smd), null, 'the probe run was not linked into EX-SMD\'s _Sync history');
+      const [rootId, historyId] = [await rootIdOf(smd), await recordFolderId(smd, SYNC_HISTORY_FOLDER, false)];
+      expect(!!historyId && historyId !== rootId, true, 'EX-SMD has a _Sync history folder');
+      const links = await folderLinks([rootId!, historyId!]);
+      expect(`${links.get(historyId!)?.has(r.id)} ${links.get(rootId!)?.has(r.id)}`, 'true false', 'in _Sync history, not the root');
+      const read = (kind: 'viewer' | 'outsider', pf: PortfolioRow) => withStandUser(kind, (u) => u.asUser(async () =>
+        (await portalDb.syncLogs.query({filter: `portfolio_id = "${pf.id}"`, limit: 10000}))));
+      const count = async (kind: 'viewer' | 'outsider', pf: PortfolioRow) => (await read(kind, pf))?.length;
+      const viewerSmd = await read('viewer', smd);
+      expect((viewerSmd ?? []).some((x) => x.id === r.id), true, 'the viewer reads EX-SMD\'s sync history through _Sync history');
       expect(await count('viewer', biod), 0, 'the viewer read EX-BIOD\'s sync history');
       expect(await count('outsider', smd), 0, 'the outsider read EX-SMD\'s sync history');
       expect(await count('outsider', bioc), 0, 'the outsider read EX-BIOC\'s sync history');
@@ -147,6 +168,15 @@ category('Portal: what another portfolio cannot read', () => {
     } finally {
       await portalDb.syncLogs.delete(r.id).catch(() => undefined);
     }
+  });
+
+  test('the root keeps program folders only: no record is linked into it', async () => {
+    for (const pf of [smd, bioc, biod])
+      expect((await moveRecordsOutOfRoot(pf.code, true))[0], `${pf.code}: no records in the root`);
+    // only the portfolio's approvers apply it
+    const refused = await withStandUser('viewer', (u) => u.asUser(() =>
+      moveRecordsOutOfRoot('EX-SMD', false).then(() => 'allowed', (e) => e?.message ?? String(e))));
+    expect(refused, 'Only the approvers of EX-SMD move its records');
   });
 
   test('compounds: structures through the program, not the compound table', async () => {

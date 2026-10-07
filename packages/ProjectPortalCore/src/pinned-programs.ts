@@ -10,8 +10,9 @@ import {filterValue} from './rows';
 
 const LIMIT = 10000;
 
-/** The tiles of every pinned program the user can see, across portfolios. The folders come from
- * the favorites; the programs from their space ids (rows the user cannot see give no tile); stage,
+/** The tiles of every pinned program the user can see, across portfolios. The pins come from the
+ * favorites; the programs by id (a record) or space id (a folder, pinned before 0.3.0), and rows the
+ * user cannot see give no tile; stage,
  * readiness and attention from the portfolio table's facts, read for those programs only. */
 export async function pinnedTiles(): Promise<ProgramTile[]> {
   const pins = await myPins();
@@ -20,11 +21,13 @@ export async function pinnedTiles(): Promise<ProgramTile[]> {
   // `space_id in (...)` fails on the server (2026-10-02: a string column of uuid-shaped values is
   // compared as uuid, "operator does not exist: text = uuid"); `=` joined by `or` does not
   const keys = [...pins.keys()];
-  const programs: ProgramRow[] = [];
-  for (let i = 0; i < keys.length; i += 50) {
-    const filter = keys.slice(i, i + 50).map((k) => `space_id = "${k}"`).join(' or ');
-    programs.push(...await portalDb.programs.query({filter, limit: LIMIT}));
+  const byId = new Map<string, ProgramRow>();
+  for (let i = 0; i < keys.length; i += 25) {
+    const filter = keys.slice(i, i + 25).map((k) => `id = "${k}" or space_id = "${k}"`).join(' or ');
+    for (const p of await portalDb.programs.query({filter, limit: LIMIT}))
+      byId.set(p.id, p);
   }
+  const programs = [...byId.values()];
   if (!programs.length)
     return [];
   const ids = programs.map((p) => p.id);
