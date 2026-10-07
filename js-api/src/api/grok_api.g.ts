@@ -1177,6 +1177,11 @@ export interface IDartApi {
   grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
+  grok_Dapi_Log_Errors(params: String): Promise<any>;
+  grok_Dapi_Log_Timeline(query: String): Promise<any>;
+  grok_Dapi_Log_LoggingPolicy(): Promise<any>;
+  grok_Dapi_Log_AddCaptureRule(rule: String): Promise<any>;
+  grok_Dapi_Log_StopCaptureRule(id: String, reason: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;

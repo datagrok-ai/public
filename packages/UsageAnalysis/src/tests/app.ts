@@ -40,9 +40,9 @@ category('App', () => {
     let key = 'action';
     let id = clicks.col('action id')!.toList().find((v) => v);
     if (!id) {
-      const errors: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify({since: '30d', limit: 50})});
+      const errors = await grok.dapi.log.getErrors({since: '30d', limit: 50});
       key = 'request';
-      id = errors.col('requestId')!.toList().find((v) => v);
+      id = errors.map((e) => e.requestId).find((v) => v);
     }
     expect(id != null, true, 'no click or error with a request id this month');
     handler.getCurrentView().openTimeline(key, id);
@@ -82,33 +82,34 @@ category('Capture', () => {
   });
 
   test('Timeline of an unknown action is empty', async () => {
-    const t: DG.DataFrame = await grok.functions.call('Timeline', {spec: JSON.stringify({action: '01M3NKD0PV60BG2W3EDPSC6ZZZ'})});
-    expect(t.rowCount, 0);
-    expect(t.col('requestId') != null, true, 'column "requestId" is missing');
+    expect((await grok.dapi.log.getTimeline({action: '01M3NKD0PV60BG2W3EDPSC6ZZZ'})).length, 0);
   });
 }, {timeout: 60000});
 
 category('Errors', () => {
-  const stats = async (spec: object): Promise<DG.DataFrame> =>
-    await grok.functions.call('ErrorStats', {spec: JSON.stringify(spec)});
+  const stats = async (spec: {[key: string]: string | number}): Promise<DG.DataFrame> =>
+    ErrorsView.frame(await grok.dapi.log.getErrors(spec));
 
-  test('ErrorStats occurrences', async () => {
+  test('Errors occurrences', async () => {
     const t = await stats({since: '7d', limit: 5});
-    for (const name of ['time', 'user', 'service', 'signature', 'error', 'package', 'version', 'route', 'server', 'requestId'])
-      expect(t.col(name) != null, true, `column "${name}" is missing`);
     expect(t.rowCount <= 5, true);
+    if (t.rowCount > 0) {
+      for (const name of ['time', 'user', 'service', 'signature', 'error', 'package', 'version', 'route', 'server', 'requestId'])
+        expect(t.col(name) != null, true, `column "${name}" is missing`);
+    }
   });
 
-  test('ErrorStats by signature and package', async () => {
+  test('Errors by signature and package', async () => {
     const t = await stats({since: '7d', by: 'signature,package', trend: 'day'});
+    if (t.rowCount === 0)
+      return;
     for (const name of ['signature', 'package', 'count', 'users', 'firstVersion', 'firstSeen', 'trend', 'state', 'newInRange'])
       expect(t.col(name) != null, true, `column "${name}" is missing`);
     expect(t.col('count')!.type, DG.TYPE.INT);
-    if (t.rowCount > 0)
-      expect(t.get('trend', 0).split(' ').length, 7);
+    expect(t.get('trend', 0).split(' ').length, 7);
   });
 
-  test('ErrorStats refuses a fourth dimension', async () => {
+  test('Errors refuses a fourth dimension', async () => {
     let message = '';
     try {
       await stats({since: '7d', by: 'signature,package,user,server'});
@@ -137,17 +138,13 @@ category('Errors', () => {
       expect(errors.col(name) != null, true, `column "${name}" is missing`);
   });
 
-  test('Trend, state and schedule helpers', async () => {
+  test('Trend and state helpers', async () => {
     expect(ErrorsView.buckets('0 1 2 4 8').join(' '), '0 1 2 4 8');
     expect(ErrorsView.buckets('').length, 0);
     const summed = ErrorsView.buckets(Array(120).fill('1').join(' '));
     expect(summed.length, 60);
     expect(summed[0], 2);
     expect(ErrorsView.shortSignature('a41f9c3e-0000-0000-0000-000000000000'), 'a41f9c');
-    expect(ErrorsView.cron('MON 07:00'), '0 7 * * 1');
-    expect(ErrorsView.cron('weekdays 7:30'), '30 7 * * 1-5');
-    expect(ErrorsView.cron('0 7 * * *'), '0 7 * * *');
-    expect(ErrorsView.cron('someday'), null);
     const logins = [...Array(12).keys()].map((k) => `u${k}`);
     expect(ErrorsView.usersText(logins), 'u0, u1, u2, u3, u4, u5, u6, u7, u8, u9 +2 more');
     expect(ErrorsView.usersText([null, '']), 'none');
@@ -160,6 +157,17 @@ category('Errors', () => {
     ]);
     expect(JSON.stringify(ErrorsView.rowFilters(t, {by: 'package,route'}, 0)), '{"package":"Chem","route":"GET /queries/{id}"}');
     expect(JSON.stringify(ErrorsView.rowFilters(t, {by: 'package,route'}, 1)), '{"package":"core"}');
+  });
+
+  test('Rows become typed columns', async () => {
+    const t = ErrorsView.frame([{signature: 'a41f9c', count: 3, lastSeen: '2026-10-01T10:00:00.000Z', trend: [1, 2],
+      regressed: true, mttrMinutes: 4}]);
+    expect(t.col('count')!.type, DG.TYPE.INT);
+    expect(t.col('lastSeen')!.type, DG.TYPE.DATE_TIME);
+    expect(t.col('regressed')!.type, DG.TYPE.BOOL);
+    expect(t.col('mttrMinutes')!.type, DG.TYPE.FLOAT);
+    expect(t.get('trend', 0), '1 2');
+    expect(ErrorsView.frame([]).rowCount, 0);
   });
 
   test('CSV export neutralises formulas', async () => {

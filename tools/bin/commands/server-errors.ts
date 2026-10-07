@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import {Query} from '../utils/node-observability';
 import {Connect, forEachHost, hostList} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, hasValue, listArg, optString, parseTime, printBlock, rows,
+import {fmtDate, fmtMinutes, fmtTime, hasValue, listArg, parseTime, printBlock, rows,
   shortRequestId, shortSig, sinceArg, sparkline, truncate} from '../utils/obs-format';
 
 export const ERRORS_USAGE = `Usage: grok s observe errors <verb> [filters] [options]
@@ -13,7 +13,6 @@ export const ERRORS_USAGE = `Usage: grok s observe errors <verb> [filters] [opti
   diff --before <from>..<to> --after <from>..<to> [filters]
   diff --since 7d --host <a> --host <b> [filters]
   export [filters] [--by ...] --format csv|json|parquet [-O file]
-  save "<name>" [filters] [--by ...] --to "<Share:path/>" [--format csv|json] [--schedule "MON 07:00" | --schedule "<cron>"]
 Filters: --since 7d | --from <iso|-7d> --to <iso|-1d>, --signature s, --package p, --version v, --user login,
   --group name, --service server|client, --route "<METHOD> /api/...", --server name, --connection <Ns:Name>,
   --function <nqName>, --regressed, --min-users n, --min-count n
@@ -59,7 +58,6 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
     }
     case 'diff':
       return hostList(argv.host).length > 1 ? await diffHosts(connect, argv, output) : await diffWindows(connect, argv, output);
-    case 'save': return await saveJob(connect, rest, argv, output);
   }
   printError(new Error(ERRORS_USAGE));
   return false;
@@ -75,23 +73,17 @@ export function normalizeRoute(route: string): string {
   return String(route).trim().replace(/^((?:[A-Za-z]+\s+)?)\/api(?=\/|$)/, '$1').replace(/^([A-Za-z]+\s+)$/, '$1/') || '/';
 }
 
-/**
- * The shared filter flags as query parameters. [time] false leaves out the window (`diff` has its
- * own); [range] false refuses `--from`/`--to` (`save`, where `--to` is the destination).
- */
-export function errorFilters(argv: any, opts: {time?: boolean; range?: boolean} = {}, now: Date = new Date()): Query {
+/** The shared filter flags as query parameters. [time] false leaves out the window (`diff` has its own). */
+export function errorFilters(argv: any, opts: {time?: boolean} = {}, now: Date = new Date()): Query {
   const q: Query = {};
   if (opts.time !== false) {
-    if (opts.range !== false && (argv.from !== undefined || argv.to !== undefined)) {
+    if (argv.from !== undefined || argv.to !== undefined) {
       if (argv.since !== undefined) throw new Error('Use either --since or --from/--to');
       if (argv.from !== undefined) q.from = parseTime(argv.from, '--from', now).toISOString();
       if (argv.to !== undefined) q.to = parseTime(argv.to, '--to', now).toISOString();
     }
-    else {
-      if (opts.range === false && argv.from !== undefined)
-        throw new Error('A saved job takes --since (--to names the destination)');
+    else
       q.since = sinceArg(argv.since ?? '24h');
-    }
   }
   for (const f of STRING_FILTERS)
     if (hasValue(argv[f])) q[f] = String(argv[f]);
@@ -279,25 +271,6 @@ async function diffHosts(connect: Connect, argv: any, output: OutputFormat): Pro
   console.log(`${labels[0].padEnd(width)}${String(onlyA.length).padStart(4)}   ${top(onlyA[0])}`.trimEnd());
   console.log(`${labels[1].padEnd(width)}${String(onlyB.length).padStart(4)}   ${top(onlyB[0])}`.trimEnd());
   console.log(`${'ON BOTH'.padEnd(width)}${String(both.length).padStart(4)}`);
-  return true;
-}
-
-async function saveJob(connect: Connect, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  const name = optString(rest[0]);
-  if (!name || argv.to === undefined || argv.to === true)
-    return usage('save "<name>" [filters] [--by ...] --to "<Share:path/>" [--format csv|json] [--schedule "MON 07:00"]');
-  const format = String(argv.format ?? 'csv');
-  if (format === 'parquet')
-    throw new Error('Saved jobs export csv or json; Parquet is written by the CLI only (errors export --format parquet)');
-  if (format !== 'csv' && format !== 'json') throw new Error(`--format is csv or json, got '${format}'`);
-  const by = byArg(argv.by);
-  const spec: Query = {...errorFilters(argv, {range: false}), by: by.length ? by.join(',') : undefined};
-  const to = String(argv.to);
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-  const path = to.endsWith('/') ? `${to}${slug}-{date}.${format}` : to;
-  const cron = argv.schedule === undefined ? undefined : cronFromSchedule(argv.schedule);
-  const job = await (await connect()).errors.saveJob({name, spec, format, path, cron});
-  output === 'table' ? console.log(`saved job "${name}" ${cron ?? '(no schedule)'} → ${path}`) : printOutput(job, output);
   return true;
 }
 

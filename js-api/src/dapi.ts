@@ -2329,6 +2329,75 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   getArchiveEvents(connection: string, key: string): Promise<DataFrame> {
     return api.grok_Dapi_Log_ArchiveEvents(connection, key);
   }
+
+  /**
+   * The platform's errors as data (`GET /errors`); needs the `ViewTelemetry` permission.
+   *
+   * Occurrences, newest first; with `by` (up to three of signature, package, version, user, group, service,
+   * route, server, connection, function), one row of figures per combination: `count`, `users`, `sessions`,
+   * `firstSeen`, `lastSeen`, `trend`, `regressed`, `incidents`, `mttrMinutes`, `topError`.
+   * Filters: `since` (`1h`, `7d`) or `from`/`to`, and one per dimension; `limit`, `offset`.
+   *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/errors-and-logging}
+   *
+   * @example
+   * const top = await grok.dapi.log.getErrors({since: '1d', by: 'signature', limit: 10});
+   */
+  async getErrors(params: {[key: string]: string | number | boolean | undefined}): Promise<{[key: string]: any}[]> {
+    return JSON.parse(await api.grok_Dapi_Log_Errors(JSON.stringify(params)));
+  }
+
+  /**
+   * What happened around one of `action`, `request`, `session`, `report` (number or id) or `rule`
+   * (`cap-<n>` or id), oldest first: rows `{time, source, server, kind, summary, status, ms, requestId, user}`
+   * (`GET /log/timeline`); needs the `ViewTelemetry` permission.
+   *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/errors-and-logging}
+   *
+   * @example
+   * const rows = await grok.dapi.log.getTimeline({session: (await grok.dapi.users.currentSession()).id});
+   */
+  async getTimeline(query: {action?: string, request?: string, session?: string, report?: string | number,
+    rule?: string, from?: string, to?: string, limit?: number}): Promise<{[key: string]: any}[]> {
+    return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
+  }
+
+  /**
+   * The logging policy (`GET /logging/policy`): `{version, settings, locked, overrides, groups, destinations,
+   * debugFlags}`; needs the `EditPluginsSettings` permission.
+   *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/errors-and-logging}
+   *
+   * @example
+   * const flags = (await grok.dapi.log.getLoggingPolicy()).debugFlags;
+   */
+  async getLoggingPolicy(): Promise<{[key: string]: any}> {
+    return JSON.parse(await api.grok_Dapi_Log_LoggingPolicy());
+  }
+
+  /**
+   * Adds a capture rule (`POST /logging/capture`): `{name, subject: {type, value}, scope?: {type, value}, capture,
+   * anonymous, windowMinutes, maxSessions, maxEvents, expiresAt | forMinutes, reason}`. Returns the rule.
+   * Needs the `EditPluginsSettings` permission.
+   *
+   * @example
+   * const rule = await grok.dapi.log.addCaptureRule({subject: {type: 'user', value: grok.shell.user.id},
+   *   capture: {requests: true}, forMinutes: 30, reason: 'Investigating a slow page'});
+   */
+  async addCaptureRule(rule: {[key: string]: any}): Promise<{[key: string]: any}> {
+    return JSON.parse(await api.grok_Dapi_Log_AddCaptureRule(JSON.stringify(rule)));
+  }
+
+  /**
+   * Ends an active capture rule (`cap-<n>` or its id) before its time. Returns the rule.
+   * Needs the `EditPluginsSettings` permission.
+   *
+   * @example
+   * await grok.dapi.log.stopCaptureRule(rule.id, 'Done');
+   */
+  async stopCaptureRule(id: string, reason?: string): Promise<{[key: string]: any}> {
+    return JSON.parse(await api.grok_Dapi_Log_StopCaptureRule(id, reason ?? null));
+  }
 }
 
 export class ActivityDataSource extends HttpDataSource<LogEvent> {

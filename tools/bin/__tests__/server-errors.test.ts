@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {handleErrors, errorFilters, normalizeRoute, byArg, aggregateRow, occurrenceRow, classifyHosts, toParquet} from '../commands/server-errors';
-import {cronFromSchedule} from '../utils/obs-format';
 import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
 const NOW = new Date(Date.UTC(2026, 8, 28, 11, 0));
@@ -32,11 +31,6 @@ describe('filters', () => {
     expect(() => errorFilters({service: 'db'})).toThrow(/server or client/);
   });
 
-  it('refuses --from in a saved job, where --to is the destination', () => {
-    expect(errorFilters({since: '7d', to: 'System:AppData/x/'}, {range: false})).toEqual({since: '7d'});
-    expect(() => errorFilters({from: '-7d', to: 'System:AppData/x/'}, {range: false})).toThrow(/--since/);
-  });
-
   it('validates --by', () => {
     expect(byArg('signature,package')).toEqual(['signature', 'package']);
     expect(byArg(undefined, 'signature')).toEqual(['signature']);
@@ -44,15 +38,6 @@ describe('filters', () => {
     expect(() => byArg('user,group,package,version')).toThrow(/at most three/);
   });
 
-  it('converts schedules to cron and passes cron through', () => {
-    expect(cronFromSchedule('MON 07:00')).toBe('0 7 * * 1');
-    expect(cronFromSchedule('daily 18:30')).toBe('30 18 * * *');
-    expect(cronFromSchedule('WEEKDAYS 06:05')).toBe('5 6 * * 1-5');
-    expect(cronFromSchedule('0 7 * * 1')).toBe('0 7 * * 1');
-    expect(() => cronFromSchedule('FUNDAY 07:00')).toThrow(/MON..SUN/);
-    expect(() => cronFromSchedule('MON 25:00')).toThrow(/MON..SUN/);
-    expect(() => cronFromSchedule('weekly')).toThrow(/five-field/);
-  });
 });
 
 describe('rows', () => {
@@ -197,16 +182,6 @@ describe('handleErrors', () => {
     expect(out[1]).toMatch(/^ONLY ON val \(1\.28\.3\)\s+1\s+top: 3e91aa core TableView.close · 6 users$/);
     expect(out[2]).toMatch(/^ON BOTH\s+1$/);
     await expect(handleErrors(connect, 'diff', [], {host: ['a', 'b', 'c']}, 'table')).rejects.toThrow(/exactly two/);
-  });
-
-  it('saves a scheduled job into a folder', async () => {
-    const {connect, calls} = mockConnect(() => ({id: 'J1', name: 'Errors by team, weekly'}));
-    const {out} = await captureOutput(() => handleErrors(connect, 'save', ['Errors by team, weekly'],
-      {since: '7d', by: 'group,package', schedule: 'MON 07:00', to: 'System:AppData/Ops/errors/'}, 'table'));
-    expect(calls[0]).toMatchObject({method: 'POST', path: '/errors/jobs', body: {name: 'Errors by team, weekly',
-      spec: {since: '7d', by: 'group,package'}, format: 'csv', path: 'System:AppData/Ops/errors/errors-by-team-weekly-{date}.csv', cron: '0 7 * * 1'}});
-    expect(out).toEqual(['saved job "Errors by team, weekly" 0 7 * * 1 → System:AppData/Ops/errors/errors-by-team-weekly-{date}.csv']);
-    await expect(handleErrors(connect, 'save', ['x'], {to: 'System:AppData/x.parquet', format: 'parquet'}, 'table')).rejects.toThrow(/csv or json/);
   });
 
   it('lists occurrences from several hosts', async () => {

@@ -26,16 +26,15 @@ const HEADERS: {[column: string]: string} = {count: 'occurrences', firstVersion:
   firstSeen: 'first seen', lastSeen: 'last seen', newInRange: 'new in range', mttrMinutes: 'MTTR, min',
   requestId: 'request id', state: 'alert'};
 const ERROR_COLUMNS = ['error', 'topError'];
-const DEFAULT_FOLDER = 'System:AppData/Ops/errors/';
-const DAYS: {[day: string]: string} = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*',
-  WEEKDAYS: '1-5'};
+const TIME_COLUMNS = ['time', 'firstSeen', 'lastSeen', 'stateUntil'];
+const INT_COLUMNS = ['count', 'users', 'sessions', 'signatures', 'newInRange', 'incidents', 'ms'];
 const USERS_SHOWN = 10;
 const NOT_HINTED = ['since', 'from', 'to', 'by', 'trend'];
 
 type Spec = {[name: string]: string | number | undefined};
 
-/** The platform's errors as data (`ErrorStats`, the `GET /errors` query): occurrences, or figures by up to three
- * dimensions, a drill-down per row, exports and scheduled exports (`ErrorsSaveJob`). Needs ViewTelemetry. */
+/** The platform's errors as data (`grok.dapi.log.getErrors`, the `GET /errors` query): occurrences, or figures
+ * by up to three dimensions, a drill-down per row and exports. Needs ViewTelemetry. */
 export class ErrorsView extends UaView {
   since = ui.input.choice('Since', {value: '7 days', items: [...Object.keys(SINCE), RANGE], nullable: false});
   from = ui.input.date('From');
@@ -51,12 +50,9 @@ export class ErrorsView extends UaView {
   trend = ui.input.choice('Trend', {value: 'day', items: ['day', 'hour'], nullable: false});
   applyButton = ui.bigButton('Apply', () => this.load());
   applyProblem = problemLine();
-  saveButton = ui.button('Save as job...', () => this.saveJobDialog());
-  saveProblemLine = problemLine();
   host: HTMLDivElement = ui.box();
   table?: DG.DataFrame;
   shownGrid?: DG.Grid;
-  shownSpec?: Spec;
   private runs = 0;
   /** The app's `?error=<stack hash>` parameter, which alert links carry (`/apps/usage/errors?error=...`): the
    * platform passes it to the app function, not in the URL. */
@@ -93,8 +89,7 @@ export class ErrorsView extends UaView {
     this.uaToolbox.addTabPane(this.name, form);
 
     const exportButton = ui.button('Export', (e: MouseEvent) => this.exportMenu(e));
-    ui.tooltip.bind(this.saveButton, 'Save this view as an export job, optionally scheduled');
-    this.root.append(ui.divV([ui.divH([exportButton, this.saveButton, this.saveProblemLine], 'ua-toolbar'), this.host],
+    this.root.append(ui.divV([ui.divH([exportButton], 'ua-toolbar'), this.host],
       'ui-box'));
     this.refresh();
     this.load();
@@ -106,7 +101,6 @@ export class ErrorsView extends UaView {
     ui.setDisplay(this.to.root, range);
     this.trend.enabled = (this.by.value ?? []).length > 0;
     showProblem(this.applyButton, this.applyProblem, this.problem());
-    showProblem(this.saveButton, this.saveProblemLine, this.saveProblem());
   }
 
   problem(): string | null {
@@ -145,18 +139,16 @@ export class ErrorsView extends UaView {
     const run = ++this.runs;
     this.table = undefined;
     this.shownGrid = undefined;
-    this.shownSpec = undefined;
     this.refresh();
     grok.shell.o = null;
     ui.empty(this.host);
     this.host.append(ui.waitBox(async () => {
       try {
-        const t: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify(spec)});
+        const t = ErrorsView.frame(await grok.dapi.log.getErrors(spec));
         if (run !== this.runs)
           return ui.div();
         t.name = 'Errors';
         this.table = t;
-        this.shownSpec = spec;
         if (t.rowCount === 0) {
           this.refresh();
           return emptyState('No errors match', ErrorsView.emptyHint(spec));
@@ -305,14 +297,14 @@ export class ErrorsView extends UaView {
   showRow(t: DG.DataFrame, spec: Spec, i: number): void {
     const filters = ErrorsView.rowFilters(t, spec, i);
     const drill: Spec = {...spec, ...filters, by: undefined, trend: undefined, limit: DRILL_LIMIT};
-    const occurrences: Promise<DG.DataFrame> = grok.functions.call('ErrorStats', {spec: JSON.stringify(drill)});
+    const occurrences = grok.dapi.log.getErrors(drill).then((rows) => ErrorsView.frame(rows));
     const error: string = t.col('topError') ? t.get('topError', i) : t.get('error', i);
     const usersSpec: Spec = {...spec, ...filters, by: 'user', trend: undefined, minUsers: undefined,
       minCount: undefined};
     const acc = DG.Accordion.create();
     acc.addPane(ErrorsView.rowTitle(t, spec, i), () => ui.divV([
       spec.by ? ui.wait(async () => {
-        const u: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify(usersSpec)});
+        const u = ErrorsView.frame(await grok.dapi.log.getErrors(usersSpec));
         return ui.divText(`Users: ${ErrorsView.usersText(u.col('user')?.toList() ?? [])}`);
       }) : null,
       ui.divText(error ?? '', 'ua-error-text'),
@@ -448,69 +440,23 @@ export class ErrorsView extends UaView {
     return safe.toCsv();
   }
 
-  saveProblem(): string | null {
-    if (!this.shownSpec)
-      return 'Nothing to save yet';
-    return this.shownSpec.since ? null : 'A saved job runs over Since, not From - To';
-  }
-
-  saveJobDialog(): void {
-    if (this.saveProblem())
-      return;
-    const spec = {...this.shownSpec};
-    const saves = ui.input.string('Saves', {value: JSON.stringify(spec)});
-    saves.readOnly = true;
-    const name = ui.input.string('Name');
-    const format = ui.input.choice('Format', {value: 'csv', items: ['csv', 'json'], nullable: false,
-      tooltipText: 'The server writes CSV or JSON. For Parquet, use Export > Parquet in the browser'});
-    const path = ui.input.string('Path', {value: DEFAULT_FOLDER,
-      tooltipText: '<connection>/<path>; a path ending in / gets <name>-{date}.<format>; {date} is the run\'s UTC date'});
-    const schedule = ui.input.string('Schedule, UTC', {placeholder: 'MON 07:00',
-      tooltipText: 'Empty for no schedule, "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron, in UTC'});
-    const dialogProblem = (): string | null => {
-      if (!name.value?.trim())
-        return 'Enter the name';
-      if (!path.value?.trim() || path.value.trim().indexOf('/') <= 0)
-        return 'Enter the path as <connection>/<path>';
-      return schedule.value?.trim() && ErrorsView.cron(schedule.value) == null ?
-        'The schedule is "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron' : null;
-    };
-    const line = problemLine();
-    const dialog = ui.dialog('Save as job');
-    dialog.add(saves);
-    for (const input of [name, format, path, schedule]) {
-      dialog.add(input);
-      input.onChanged.subscribe(() => showProblem(dialog.getButton('OK'), line, dialogProblem()));
-    }
-    dialog.add(line);
-    dialog.onOK(async () => {
-      const folder = path.value.trim();
-      const target = folder.endsWith('/') ?
-        `${folder}${name.value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}-{date}.${format.value}` :
-        folder;
-      const cron = schedule.value?.trim() ? ErrorsView.cron(schedule.value)! : '';
-      try {
-        const job = JSON.parse(await grok.functions.call('ErrorsSaveJob',
-          {name: name.value.trim(), spec: JSON.stringify(spec), format: format.value, path: target, cron}));
-        grok.shell.info(`Saved job "${job.name}": ${job.cron || 'no schedule'} → ${job.path}`);
-      }
-      catch (e: any) {
-        grok.shell.error(`Save as job: ${e?.message ?? e}`);
-      }
-    });
-    dialog.show();
-    showProblem(dialog.getButton('OK'), line, dialogProblem());
-    name.input.focus();
-  }
-
-  /** `MON 07:00`, `DAILY 07:00`, `WEEKDAYS 07:00` or a five-field cron → cron; null when it is neither. */
-  static cron(schedule: string): string | null {
-    const s = schedule.trim();
-    const m = /^([A-Za-z]+)\s+(\d{1,2}):(\d{2})$/.exec(s);
-    if (m) {
-      const day = DAYS[m[1].toUpperCase()];
-      return day === undefined || +m[2] > 23 || +m[3] > 59 ? null : `${+m[3]} ${+m[2]} * * ${day}`;
-    }
-    return s.split(/\s+/).length === 5 ? s : null;
+  /** Rows of `grok.dapi.log.getErrors` or `getTimeline` as a table: times as dates, counts as integers,
+   * lists (a trend's bucket counts) as their values separated by spaces. */
+  static frame(rows: {[key: string]: any}[]): DG.DataFrame {
+    if (rows.length === 0)
+      return DG.DataFrame.create();
+    return DG.DataFrame.fromColumns(Object.keys(rows[0]).map((name) => {
+      const values = rows.map((r) => r[name] ?? null);
+      if (TIME_COLUMNS.includes(name))
+        return DG.Column.dateTime(name, rows.length).init((i) => values[i] == null ? null : dayjs(values[i]));
+      if (INT_COLUMNS.includes(name))
+        return DG.Column.fromList(DG.TYPE.INT, name, values);
+      if (name === 'mttrMinutes')
+        return DG.Column.fromList(DG.TYPE.FLOAT, name, values);
+      if (name === 'regressed')
+        return DG.Column.fromList(DG.TYPE.BOOL, name, values);
+      return DG.Column.fromList(DG.TYPE.STRING, name,
+        values.map((v) => v == null ? null : Array.isArray(v) ? v.join(' ') : `${v}`));
+    }));
   }
 }

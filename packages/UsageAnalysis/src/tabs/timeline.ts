@@ -5,6 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {UaView} from './ua';
 import {UaToolbox} from '../ua-toolbox';
 import {emptyState, scrollToStartOnFirstDraw} from '../utils';
+import {ErrorsView} from './errors';
 import '../../css/usage_analysis.css';
 
 export const TIMELINE_KEYS = ['action', 'request', 'session', 'report', 'rule'];
@@ -63,7 +64,7 @@ export class TimelineView extends UaView {
       this.uaToolbox.viewHandler.updatePath();
     this.host.append(ui.waitBox(async () => {
       try {
-        const t: DG.DataFrame = await grok.functions.call('Timeline', {spec: JSON.stringify({[key]: value})});
+        const t = ErrorsView.frame(await grok.dapi.log.getTimeline({[key]: value}));
         if (t.rowCount === 0)
           return emptyState(`No records for ${key} ${value}`, 'Check the id, or choose another By');
         t.name = `Timeline of ${key} ${value}`;

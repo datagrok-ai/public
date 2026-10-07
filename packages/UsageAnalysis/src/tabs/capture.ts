@@ -152,7 +152,7 @@ export class CaptureView extends UaView {
       .add(line)
       .onOK(async () => {
         try {
-          await grok.functions.call('CaptureRuleStop', {id: rule, reason: reason.value.trim()});
+          await grok.dapi.log.stopCaptureRule(rule, reason.value.trim());
           grok.shell.info(`Stopped ${rule}`);
           this.stopReasons[rule] = reason.value.trim();
           this.reshow = rule;
@@ -178,9 +178,9 @@ export class CaptureView extends UaView {
     return message;
   }
 
-  /** The server's debug flags (`LoggingPolicy`), in their order, but `credentials`. */
+  /** The server's debug flags (`grok.dapi.log.getLoggingPolicy`), in their order, but `credentials`. */
   static async loadDebugFlags(): Promise<string[]> {
-    const policy = JSON.parse(await grok.functions.call('LoggingPolicy'));
+    const policy = await grok.dapi.log.getLoggingPolicy();
     return (policy.debugFlags ?? []).filter((f: string) => f !== CREDENTIALS_FLAG);
   }
 
@@ -265,7 +265,7 @@ export class CaptureView extends UaView {
       };
       ok.disabled = true;
       try {
-        const rule = JSON.parse(await grok.functions.call('CaptureRuleAdd', {rule: JSON.stringify(body)}));
+        const rule = await grok.dapi.log.addCaptureRule(body);
         dialog.close();
         grok.shell.info(`Created cap-${rule.number}`);
         this.reshow = `cap-${rule.number}`;

@@ -1,7 +1,6 @@
 /// Argument parsing and table formatting shared by `grok s observe alerts|errors|logger|capture|timeline`.
 
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
-const DAYS: Record<string, string> = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*', WEEKDAYS: '1-5'};
 const BLOCKS = '▁▂▃▄▅▆▇█';
 
 const given = (value: any) => hasValue(value) ? `got '${value}'` : 'got no value';
@@ -150,23 +149,6 @@ export function applyListSpec(current: string[] | null | undefined, spec: any, n
     if (item[0] === '-' && at >= 0) result.splice(at, 1);
   }
   return result;
-}
-
-/** `MON 07:00`, `DAILY 07:00`, `WEEKDAYS 07:00` → cron; a five-field cron string passes through. */
-export function cronFromSchedule(schedule: any): string {
-  const s = String(schedule ?? '').trim();
-  const m = /^([A-Za-z]+)\s+(\d{1,2}):(\d{2})$/.exec(s);
-  if (m) {
-    const day = DAYS[m[1].toUpperCase()];
-    const hour = Number(m[2]);
-    const minute = Number(m[3]);
-    if (day === undefined || hour > 23 || minute > 59)
-      throw new Error(`--schedule '${s}': expected MON..SUN, DAILY or WEEKDAYS and HH:MM`);
-    return `${minute} ${hour} * * ${day}`;
-  }
-  if (s.split(/\s+/).length === 5)
-    return s;
-  throw new Error(`--schedule '${s}': expected "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron`);
 }
 
 export function valueText(v: any): string {

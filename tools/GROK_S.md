@@ -516,7 +516,6 @@ grok s observe errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2
 grok s observe errors diff --since 7d --host prod --host val
 grok s observe errors top --since 7d --by package,group --format parquet > errors-w39.parquet
 grok s observe errors export --since 7d --by signature --format csv -O errors.csv
-grok s observe errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"
 ```
 
 Platform errors as query results, filtered by the same flags in every verb (default `--since 24h`) and

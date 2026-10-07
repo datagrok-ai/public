@@ -2,9 +2,10 @@
 
 ## v.next
 
-* GROK-20884: Errors: Rebuilt the tab over the server's `ErrorStats` — occurrences or figures by up to three dimensions with trend and alert state, a row drill-down with sessions, reports and alerts, Export, Save as job... and `?error=<stack hash>` links
+* GROK-20884: Errors: Rebuilt the tab over the server's errors query — occurrences or figures by up to three dimensions with trend and alert state, a row drill-down with sessions, reports and alerts, Export and `?error=<stack hash>` links
 * GROK-20884: Capture: Added the tab — capture rules with author, subject, scope, reason and stop reason; New rule and Stop through the server
 * GROK-20884: Timeline: Added the tab — one action, request, session, report or rule in time order, routed as `/timeline?<key>=<id>`
+* GROK-20884: Errors, Capture, Timeline: Moved to the server's REST routes through `grok.dapi.log` instead of server functions
 * GROK-20884: Clicks: Added the Clicks list and Followed by Error (clicks an error followed within 5 s), both linking to Timeline
 * GROK-20884: Removed the unused `EventErrors`, `ReportsCount` and `SameErrors` queries
 * Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open

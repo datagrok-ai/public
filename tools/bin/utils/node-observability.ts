@@ -29,9 +29,6 @@ export class NodeErrorsClient {
   query(q: Query): Promise<any> { return this.client.get(`/errors${buildQuery(q)}`); }
   diff(q: Query): Promise<any> { return this.client.get(`/errors/diff${buildQuery(q)}`); }
   show(signature: string, q: Query = {}): Promise<any> { return this.client.get(`/errors/${seg(signature)}${buildQuery(q)}`); }
-  saveJob(body: {name: string; spec: Query; format: string; path: string; cron?: string}): Promise<any> {
-    return this.client.post('/errors/jobs', body);
-  }
 }
 
 /** Logging policy, overrides and capture rules (LoggingRouter), plus the timeline (ActionLoggerRouter). */

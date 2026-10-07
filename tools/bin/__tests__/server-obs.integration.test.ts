@@ -155,8 +155,8 @@ const seed: {
   pkg?: string; conn?: {id: string; name: string}; query?: string;
   incident?: any; report?: {id: string; number: number};
   action?: string; request?: string;
-  overrides: string[]; rules: string[]; jobs: string[]; files: string[];
-} = {overrides: [], rules: [], jobs: [], files: []};
+  overrides: string[]; rules: string[];
+} = {overrides: [], rules: []};
 
 async function createUser(name: string): Promise<{id: string; login: string; client: NodeApiClient; home: Record<string, string>}> {
   const login = `${TAG.toLowerCase()}.${name}`;
@@ -248,10 +248,6 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       await grok(['logger', 'revert', '--override', id, '--reason', 'obsit cleanup']);
     for (const id of seed.rules)
       await grok(['capture', 'stop', id, '--reason', 'obsit cleanup']);
-    for (const id of seed.jobs)
-      await admin?.request('DELETE', `/connectors/jobs/${id}`).catch(() => {});
-    for (const f of seed.files)
-      await grok(['files', 'delete', f]);
     if (seed.incident) {
       await grok(['alerts', 'unmute', seed.incident.id]);
       // The loop's errors stay in the detection window for a while: a reopened incident stays muted.
@@ -528,29 +524,6 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       if (rows.length) expect(t.schema.fields.map((f: any) => f.name)).toEqual(expect.arrayContaining(['package', 'group']));
     }, LONG);
 
-    it('errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"', async () => {
-      const name = `${TAG} errors by team, weekly`;
-      const r = await ok(['errors', 'save', name, '--since', '7d', '--by', 'group,package', '--schedule', 'MON 07:00', '--to', 'System:AppData/Ops/errors/']);
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const target = `System:AppData/Ops/errors/${slug}-{date}.csv`;
-      expect(r.out.trim()).toBe(`saved job "${name}" 0 7 * * 1 → ${target}`);
-      const jobs: any[] = await admin.get(`/connectors/jobs?text=${encodeURIComponent(TAG)}`);
-      const job = jobs.find((j) => j.friendlyName === name);
-      expect(job).toBeTruthy();
-      seed.jobs.push(job.id);
-      const full = await admin.get(`/connectors/jobs/${job.id}?include=params`);
-      expect(full.recurrence?.cronSchedule ?? full.recurrence?.cron).toBe('0 7 * * 1');
-      const params = Object.fromEntries((full.params ?? []).map((p: any) => [p.name, p.defaultValue]));
-      expect(params.path).toBe(target);
-      expect(JSON.parse(params.spec)).toMatchObject({since: '7d', by: 'group,package'});
-      const written = target.replace('{date}', todayUtc());
-      seed.files.push(written);
-      const pfile = path.join(TMP, 'export.json');
-      fs.writeFileSync(pfile, JSON.stringify({spec: JSON.stringify({since: '1h', by: 'group,package'}), format: 'csv', path: target}));
-      await ok(['functions', 'run', 'ErrorsExport', '--json', pfile]);
-      const csv = (await ok(['files', 'get', written])).out;
-      expect(csv.split(/\r?\n/)[0].split(',')).toEqual(expect.arrayContaining(['group', 'package']));
-    }, LONG);
   });
 
   // ─── Logger ───────────────────────────────────────────────────────────────
