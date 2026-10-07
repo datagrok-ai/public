@@ -38,6 +38,7 @@ import {personaIn, runFunctionCard, savedMode, saveMode, savePersona} from '../p
 import {missingAssayFrame, recommendationFrame} from '../recommend';
 import {attentionFrame} from '../attention';
 import {isApprover} from '../portal';
+import {showsBoardButton} from '../model/keeper-actions';
 import {namedRolesOf, resolvePrincipal, setProgramRole} from '../program-roles';
 import {PROGRAM_ROLE_LABELS, PROGRAM_ROLES, ProgramRole} from '../model/program-roles';
 import {ProgramRoleRow} from '../generated/db';
@@ -186,6 +187,8 @@ export class PortalView {
   private accessNoticeEl: HTMLElement | null = null;
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
+  /** Whether the user is one of the open portfolio's approvers (admins are): the keeper's buttons. */
+  keeper = false;
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.detail);
@@ -295,6 +298,10 @@ export class PortalView {
     if (this.portfolio !== p)
       return;
     this.persona = persona;
+    this.keeper = await isApprover(p).catch(() => false);
+    if (this.portfolio !== p)
+      return;
+    this.applyBoardButtons();
     this.path.value = `${APP_PATH}/${p.code}`;
     for (const el of Array.from(this.portfolioList.querySelectorAll('.pp-portfolio')))
       el.classList.toggle('pp-selected', (el as HTMLElement).dataset.u2Name === `portfolio-${slug(code)}`);
@@ -571,10 +578,14 @@ export class PortalView {
     this.redraw?.();
   }
 
-  /** Simple mode leaves the keepers' buttons (sync history, export, all portfolios) off the ribbon. */
+  /** Simple mode leaves the advanced buttons (sync history, export, all portfolios) off the ribbon;
+   * Sync, Workspace and Export show only to the open portfolio's approvers (and admins). The
+   * functions behind them check the role too. */
   applyBoardButtons(): void {
-    for (const [key, el] of this.boardButtons)
-      el.style.display = this.mode === 'simple' && ADVANCED_BOARD_BUTTONS.includes(key) ? 'none' : '';
+    for (const [key, el] of this.boardButtons) {
+      el.style.display = showsBoardButton(key, {simple: this.mode === 'simple', advanced: ADVANCED_BOARD_BUTTONS,
+        isApprover: this.keeper}) ? '' : 'none';
+    }
   }
 
   /** The portfolio's attention rules over the program's data, read once per open; null without rules. */
@@ -1934,6 +1945,7 @@ export async function portalAppView(portfolioCode?: string, programCode?: string
   const view = appView({name: 'Project Portal', content, ribbon: [[sync, history, workspaceButton, exportButton], [table, all], [feed, waiting, decisions]],
     status: portal.status,
     path: portal.path});
+  portal.boardButtons.set('sync', sync);
   portal.boardButtons.set('sync_history', history);
   portal.boardButtons.set('export', exportButton);
   portal.boardButtons.set('workspace', workspaceButton);

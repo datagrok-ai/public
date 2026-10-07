@@ -16,6 +16,7 @@ import {CompoundPlan, CompoundRef, CompoundRole, COMPOUND_ROLES, LinkRef, planCo
 import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
 import {CompoundRow, portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 import {compoundOfLink, linkValuesOf} from './model/secured-rows';
+import {KeeperAction, keeperRefusal} from './model/keeper-actions';
 import {loadCatalogue} from './catalogue';
 import {mergeCatalogues} from './model/catalogue';
 import {CriterionArtifactKind, RunFilter} from './model/run-selection';
@@ -89,6 +90,14 @@ export async function isApprover(portfolio: PortfolioRow): Promise<boolean> {
   if (mine.some((g) => g.name === 'Administrators' || g.friendlyName === 'Administrators'))
     return true;
   return portfolio.approvers !== undefined && portfolio.approvers !== null && ids.has(portfolio.approvers);
+}
+
+/** Throws unless the current user is one of [portfolio]'s approvers (admins are): the app's check
+ * on a keeping action. What the server enforces besides is in ./model/keeper-actions. */
+export async function requireKeeper(portfolio: PortfolioRow, action: KeeperAction): Promise<void> {
+  const why = keeperRefusal(action, portfolio.code, await isApprover(portfolio));
+  if (why)
+    throw new Error(why);
 }
 
 /** Whether the current user is in the portfolio's contributors group. Approvers are nested in it
@@ -319,6 +328,8 @@ const toRef = (p: ProgramRow, portfolioCode: string): ProgramRef => ({
 /** Plans (and unless [dryRun], applies) every enabled feed of one portfolio. */
 export async function syncPortfolio(code: string, dryRun = false): Promise<SyncPlan[]> {
   const portfolio = await portfolioByCode(code);
+  if (!dryRun)
+    await requireKeeper(portfolio, 'sync');
   const [stages, feeds, portfolios] = await Promise.all([
     stagesOf(portfolio.stage_model_id),
     portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}),
@@ -417,6 +428,8 @@ export async function workUnitsOf(kind: WorkUnitKind, programIds: string[]): Pro
  * portfolio does not enable are skipped and reported. */
 export async function syncWorkUnits(code: string, dryRun = false): Promise<WorkUnitPlan[]> {
   const portfolio = await portfolioByCode(code);
+  if (!dryRun)
+    await requireKeeper(portfolio, 'sync');
   const enabled = enabledWorkUnits(portfolio);
   const feeds = (await portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .filter((f) => f.enabled !== false && f.target && f.target !== 'program')
@@ -475,6 +488,8 @@ async function inBatches<T>(keys: string[], run: (batch: string[]) => Promise<T[
  * code, links by program and compound, role changes logged. */
 export async function syncCompounds(code: string, dryRun = false): Promise<CompoundPlan | null> {
   const portfolio = await portfolioByCode(code);
+  if (!dryRun)
+    await requireKeeper(portfolio, 'sync');
   const feed = (await portalDb.registryFeeds.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT}))
     .find((f) => f.target === 'compound' && f.enabled !== false);
   if (!feed)

@@ -560,3 +560,15 @@ changed. What each feature does is in [features.md](features.md); platform issue
   under each suggestion and in `recommendModels`.
 - Model cards show only models of the user's portfolios (a model in no portfolio's catalogue shows to everyone).
   The model tables stay readable by all users: this is the app's scoping, not the server's.
+
+## Keeping actions for approvers only
+
+*Fix. Schema: none.*
+
+- Before: a viewer in Advanced mode saw Sync, Workspace and Export, and `sync()` checked no role.
+- Now the three buttons show only to the open portfolio's approvers and admins, and the functions refuse anyone
+  else before writing: sync (every path, the history row included), a whole-workspace build, export, advance by
+  data, and the move of records (admins). Dry runs stay open to all.
+- What the server enforces regardless: program rows and their work units take writes from their author and admins;
+  `sync_log` and `parked_folder` from the approvers groups. Guarded by the app only: building workspace folders
+  (contributors hold Edit on the root) and export (the portfolio table is readable by all).

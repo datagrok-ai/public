@@ -158,7 +158,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `myFeed(kinds, limit)` | The activity of everything you follow, newest first |
 | `programAttention(portfolio, program)` | The items of one program that trip the portfolio's attention rules, one row per item and rule |
 | `programReadiness(portfolio, program, stage)` | Every criterion of a stage (default: the next one) met, waived or open, with data conditions evaluated, and the gap list |
-| `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. |
+| `syncPortfolio(code, dryRun)` | Runs one portfolio's program feeds, then its work-unit and compound feeds. With `dryRun` it prints the plan without applying it. The portfolio's approvers and admins only (not for a dry run). |
 | `syncDuePortfolios(codes)` | Syncs only the portfolios whose schedule is due, records each run, notifies owners of a run that changed something |
 | `syncHistory(portfolio)` | A portfolio's sync runs as a table, newest first |
 | `exportPortfolio(code)` | A loaded portfolio as its portfolio file (JSON) |
@@ -169,7 +169,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `syncAllPortfolios` | Syncs discovery portfolios before development ones, so lineage resolves in one pass |
 | `portfolioRoutingAudit` | For each source: keys no portfolio claims, and keys claimed twice |
 | `routingAuditOf(sources)` | The same audit for sources handed over by another package |
-| `buildWorkspace(code, dryRun, program)` | Builds one portfolio's workspace, or with `program` one program's folders. With `dryRun` it lists what it would create. Refused while another build of the same root runs. |
+| `buildWorkspace(code, dryRun, program)` | Builds one portfolio's workspace, or with `program` one program's folders. With `dryRun` it lists what it would create. Refused while another build of the same root runs. A whole build is for the portfolio's approvers and admins. |
 | `workspaceOrphans(code)` | The folders a prune-or-park pass would look at; a report, nothing is changed |
 | `parkOrphans(code, dryRun, folders)` | Moves those folders (or the ones named) into `_Parked/<date>` under the root and records each move; never deletes. Dry run by default; approvers apply |
 | `unparkFolder(id)` | Moves a parked folder back where it was; approvers only |

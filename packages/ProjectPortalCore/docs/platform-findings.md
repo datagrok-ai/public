@@ -115,6 +115,10 @@ tables. Package functions run in the user's browser, so a check in them is the a
 - **Row mode:** the author always reaches their own rows; others need a row grant (refused today, item 1) or the
   table grant.
 - **Column security:** a write to a column needs Edit on its property schema (`shareColumn` / `restrictColumn`).
+- **Keeping actions:** sync, a workspace build, export and advance by data check for the portfolio's approvers in
+  the function (`requireKeeper`), which is the app's check. The server refuses a non-author's program and work-unit
+  writes on its own; building folders (contributors hold Edit on the root) and export (the portfolio table is
+  readable by all) are guarded by the app alone (`src/model/keeper-actions.ts`).
 - **Not enforcement:** custom table permissions (`permissions: ["approve"]`) are answered to the app, never
   checked on a write, so "approver of one portfolio but not another" is the app's check. Check constraints see the
   row, not the caller.

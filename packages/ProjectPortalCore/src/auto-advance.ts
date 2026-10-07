@@ -3,7 +3,7 @@
  * decision (gate log, criterion evidence, workspace folders), with source `data`. The rules live in
  * ./model/auto-advance. */
 import {portalDb, PortfolioRow} from './generated/db';
-import {isApprover, portfolioByCode, programContext, recordDecision} from './portal';
+import {isApprover, portfolioByCode, requireKeeper, programContext, recordDecision} from './portal';
 import {AutoAdvanceConfig, AutoAdvanceOutcome, planAutoAdvance, summarizeAutoAdvance} from './model/auto-advance';
 import {ProgramStatus} from './model/config';
 import {approvalOf, needsApproval} from './model/approvals';
@@ -32,6 +32,8 @@ export const autoAdvanceOf = (p: PortfolioRow): AutoAdvanceConfig | null => {
  * Recording needs the caller to be one of the portfolio's approvers, as a manual advance does. */
 export async function autoAdvance(code: string, dryRun: boolean): Promise<AutoAdvanceResult> {
   const portfolio = await portfolioByCode(code);
+  if (!dryRun)
+    await requireKeeper(portfolio, 'auto_advance');
   const config = autoAdvanceOf(portfolio);
   const result: AutoAdvanceResult = {portfolio: code, config, dryRun, outcomes: []};
   if (!config)

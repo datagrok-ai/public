@@ -94,6 +94,8 @@ export async function ofMyPortfolios<T extends {portfolio_id: string}>(rows: T[]
  * compound links given the compound's values, and compounds whose every link has them emptied.
  * Idempotent; with [dryRun] only reports. Needs an admin: it reads the closed tables. */
 export async function moveToSecuredTables(code: string, dryRun = false): Promise<string[]> {
+  if (await myPortfolioIds() !== null)
+    throw new Error('Only admins move records: the old tables are closed to everyone else');
   const portfolio = await portfolioByCode(code);
   const by = `portfolio_id = ${filterValue(portfolio.id)}`;
   const report: MoveReport = {portfolio: code, copied: {}, already: {}, linked: {}, unplaced: [], linkValues: 0, emptied: 0, errors: []};

@@ -6,7 +6,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {portalDb, PortfolioRow, SyncLogRow} from './generated/db';
-import {portfolioByCode, summarizePlan, syncCompounds, syncPortfolio, syncWorkUnits} from './portal';
+import {portfolioByCode, requireKeeper, summarizePlan, syncCompounds, syncPortfolio, syncWorkUnits} from './portal';
 import {summarizeWorkUnitPlan} from './model/work-units';
 import {summarizeCompoundPlan} from './model/compounds';
 import {
@@ -64,6 +64,8 @@ const issuesOf = (run: SyncLogRow | undefined): string[] | null => !run ? null :
  * never fails because its history could not be written; that is reported on the result. */
 export async function recordedSync(code: string, trigger: SyncTrigger): Promise<SyncRunResult> {
   const portfolio = await portfolioByCode(code);
+  // refused before anything is written, the history row included
+  await requireKeeper(portfolio, 'sync');
   const started = new Date().toISOString();
   let runId: string | null = null;
   let historyError: string | undefined;

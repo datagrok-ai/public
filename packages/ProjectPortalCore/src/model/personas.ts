@@ -173,7 +173,7 @@ export type PageSection = 'recommendation' | 'attention' | 'saved_runs' | 'roles
 export const MORE_SECTIONS: PageSection[] = ['recommendation', 'predictions', 'attention', 'saved_runs', 'roles', 'snapshots', 'feed', 'history'];
 
 /** Board buttons Simple mode leaves out: the ones for the portfolio's keepers. */
-export type BoardButton = 'sync_history' | 'export' | 'all_portfolios' | 'workspace';
+export type BoardButton = 'sync_history' | 'export' | 'all_portfolios' | 'workspace' | 'sync';
 export const ADVANCED_BOARD_BUTTONS: BoardButton[] = ['sync_history', 'export', 'all_portfolios', 'workspace'];
 
 /** Whether a section shows: always in Advanced; in Simple only once More is open. */

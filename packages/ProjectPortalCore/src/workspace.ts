@@ -15,7 +15,7 @@ import {normalizeSpaceName} from './model/config';
 import {findOrphans, findProgramFolder, isSpaceNamed, noNewFoldersReason, Orphan, PARKED_FOLDER, parseWorkstreams, programAttributes, programFolderName,
   SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
 import {portalDb, PortfolioRow} from './generated/db';
-import {portfolioByCode} from './portal';
+import {portfolioByCode, requireKeeper} from './portal';
 import {syncFolderGrants} from './program-roles';
 import {linkProgramRow} from './program-rows';
 import {filterValue, ROW_LIMIT} from './rows';
@@ -114,6 +114,9 @@ async function writeAttributes(space: DG.Project, attributes: Record<string, str
  * of its programs, which is what a gate decision asks for after the program advances. */
 export async function buildPortfolioWorkspace(code: string, dryRun = false, onlyProgramId?: string): Promise<WorkspaceReport> {
   const portfolio = await portfolioByCode(code);
+  // one program's folder is grown on a decision; the whole tree is the approvers'
+  if (!dryRun && !onlyProgramId)
+    await requireKeeper(portfolio, 'workspace');
   const rootName = portfolio.workspace_root;
   if (!rootName)
     throw new Error(`portfolio ${code} has no workspaceRoot`);

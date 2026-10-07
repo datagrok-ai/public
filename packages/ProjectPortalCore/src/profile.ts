@@ -3,7 +3,7 @@
  * instances. The rules live in ./model/profile. */
 import * as grok from 'datagrok-api/grok';
 import {portalDb} from './generated/db';
-import {loadPortfolioSet, portfolioByCode, stagesOf, COMPOUND_FEED} from './portal';
+import {loadPortfolioSet, portfolioByCode, requireKeeper, stagesOf, COMPOUND_FEED} from './portal';
 import {CriterionConfig, FeedConfig, PortfolioConfig, StageConfig} from './model/config';
 import {CardParam, ModelCardConfig, ModelCatalogueConfig, ModelConfig, readParams, splitCodes} from './model/catalogue';
 import {WorkUnitFeedConfig, WorkUnitKind} from './model/work-units';
@@ -71,6 +71,7 @@ async function catalogueOf(code: string): Promise<ModelCatalogueConfig | undefin
  * file no longer declares are still there (loading never deletes), so they show here too. */
 export async function exportPortfolioConfig(code: string): Promise<PortfolioConfig> {
   const p = await portfolioByCode(code);
+  await requireKeeper(p, 'export');
   const [model, stages, feeds] = await Promise.all([
     portalDb.stageModels.get(p.stage_model_id),
     stagesOf(p.stage_model_id),
