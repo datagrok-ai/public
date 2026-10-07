@@ -15,6 +15,7 @@ audit.json how far the mark's centre and the pointer's tip are from the press.
         [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
         [--size <w>x<h>, default 1600x1000; filming the page at <w>x<h-strip> lands on it exactly]
         [--no-title: start on the first step instead of a title card]
+        [--gif-width <px>, default 880; the GIF is downscaled to it, the video is not]
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -37,6 +38,7 @@ BAR = (20, 24, 32, 205)
 LEFT_PRESS = (255, 200, 0)    # a left-button press: yellow
 RIGHT_PRESS = (34, 197, 94)   # a right-button press: green
 SMALL_TARGET_PX = 28   # a target no wider and no taller than this (an icon, a checkbox) is zoomed into; larger ones are lit and clicked in place
+GIF_W = 880   # a GIF has no interframe compression, so its width is what decides a docs page's weight
 VIDEO_W, VIDEO_H = 1600, 1000   # the video and the stills, caption strip included; the page is filmed larger and downsampled
 PULSE_S = 0.5   # how long a press ripples
 MAX_STEP_PX = 70   # the farthest the pointer moves between two frames, in pixels of a 1080p page: a longer way takes more frames
@@ -114,7 +116,8 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H), title=True):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H), title=True,
+                 gif_width=GIF_W):
         self.folder = folder
         self.fps = fps
         self.hold = hold
@@ -123,6 +126,7 @@ class Renderer:
         self.zoom_time = zoom_time
         self.video_w, self.video_h = size
         self.title = title
+        self.gif_width = gif_width
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
@@ -586,7 +590,7 @@ class Renderer:
             out = os.path.join(self.folder, 'guide.gif')
             # a docs GIF: ten frames a second at 880 px, no dithering (which defeats GIF's run-length
             # compression on flat UI colors) — a seven-step guide lands around a megabyte
-            width = min(880, self.video[0]) & ~1
+            width = min(self.gif_width, self.video[0]) & ~1
             scale = f'fps=10,scale={width}:-2:flags=lanczos'
             palette = os.path.join(self.folder, 'palette.png')
             subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-i', video, '-vf',
@@ -700,6 +704,7 @@ def main(argv):
     zoom_time = float(opt('--zoom-time', 0.8))
     size = tuple(int(v) for v in opt('--size', f'{VIDEO_W}x{VIDEO_H}').lower().split('x'))
     title = not flag('--no-title')
+    gif_width = int(opt('--gif-width', GIF_W))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
     test_dir = opt('--selftest')
     if test_dir:
@@ -712,7 +717,7 @@ def main(argv):
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size, title)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size, title, gif_width)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif)
     report = renderer.write_audit()
