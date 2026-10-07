@@ -99,6 +99,18 @@ export type ObservationStatus = 'current' | 'retracted';
 
 export type DesignSetSource = 'enumerated' | 'generative' | 'manual';
 
+export type ApprovalKind = 'decision' | 'document' | 'model_card';
+
+export type ApprovalDecision = 'advance' | 'recycle' | 'hold' | 'terminate';
+
+export type ApprovalSource = 'person' | 'data';
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
+
+export type SyncLogTrigger = 'schedule' | 'manual';
+
+export type FollowingWorkUnitKind = 'campaign' | 'series' | 'study' | 'process_stage';
+
 /** Row of `portal.stage_model`. */
 export interface StageModelRow {
   id: string;
@@ -184,6 +196,7 @@ export type StageExpand = {
   'details:stage_transition.to_stage_id': {stage_transition?: StageTransitionRow[]};
   'details:model_run': {model_run?: ModelRunRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
+  'details:approval': {approval?: ApprovalRow[]};
 };
 
 /** Row of `portal.gate_criterion`. */
@@ -319,6 +332,8 @@ export type PortfolioExpand = {
   'details:sync_run': {sync_run?: SyncRunRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
   'details:parked_folder': {parked_folder?: ParkedFolderRow[]};
+  'details:approval': {approval?: ApprovalRow[]};
+  'details:sync_log': {sync_log?: SyncLogRow[]};
 };
 
 /** Row of `portal.registry_feed`. */
@@ -477,6 +492,8 @@ export type ProgramExpand = {
   'details:design_set': {design_set?: DesignSetRow[]};
   'details:design_proposal': {design_proposal?: DesignProposalRow[]};
   'details:selection_set': {selection_set?: SelectionSetRow[]};
+  'details:approval': {approval?: ApprovalRow[]};
+  'details:following': {following?: FollowingRow[]};
 };
 
 /** Row of `portal.stage_transition`. */
@@ -538,6 +555,7 @@ export type StageTransitionExpand = {
     'decided_by.group'?: string; 'decided_by.author'?: string};
   'details:evidence': {evidence?: EvidenceRow[]};
   'details:approval_request': {approval_request?: ApprovalRequestRow[]};
+  'details:approval': {approval?: ApprovalRow[]};
 };
 
 /** Row of `portal.criterion_status`. */
@@ -841,6 +859,12 @@ export interface ProgramCompoundRow {
   source?: ProgramCompoundSource;
   missing_from_feed?: boolean;
   last_synced_on?: Dayjs;
+  compound_code?: string;
+  compound_name?: string;
+  smiles?: string;
+  aliases?: string;
+  batches?: string;
+  details?: {[key: string]: any};
 }
 
 /** Insert payload for `portal.program_compound`. */
@@ -852,10 +876,17 @@ export interface ProgramCompoundInsert {
   source?: ProgramCompoundSource;
   missing_from_feed?: boolean;
   last_synced_on?: Dayjs | string;
+  compound_code?: string;
+  compound_name?: string;
+  smiles?: string;
+  aliases?: string;
+  batches?: string;
+  details?: {[key: string]: any};
 }
 
 export type ProgramCompoundColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'program_id' |
-  'compound_id' | 'role' | 'role_since' | 'source' | 'missing_from_feed' | 'last_synced_on';
+  'compound_id' | 'role' | 'role_since' | 'source' | 'missing_from_feed' | 'last_synced_on' | 'compound_code' |
+  'compound_name' | 'smiles' | 'aliases' | 'batches' | 'details';
 
 /** Expand keys of `portal.program_compound` → fields each adds to the row (consumed by query()/builder). */
 export type ProgramCompoundExpand = {
@@ -2135,6 +2166,212 @@ export type SelectionSetExpand = {
     'selected_by.group'?: string; 'selected_by.author'?: string};
 };
 
+/** Row of `portal.approval`. */
+export interface ApprovalRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  portfolio_id: string;
+  program_id?: string;
+  kind: ApprovalKind;
+  decision?: ApprovalDecision;
+  to_stage_id?: string;
+  target?: string;
+  title: string;
+  rationale?: string;
+  source?: ApprovalSource;
+  evidence?: {[key: string]: any};
+  proposed_by?: string;
+  proposed_on?: Dayjs;
+  approvals_needed?: number;
+  status: ApprovalStatus;
+  reviews?: {[key: string]: any};
+  closed_on?: Dayjs;
+  result?: string;
+  stage_transition_id?: string;
+}
+
+/** Insert payload for `portal.approval`. */
+export interface ApprovalInsert {
+  portfolio_id: string;
+  program_id?: string;
+  kind: ApprovalKind;
+  decision?: ApprovalDecision;
+  to_stage_id?: string;
+  target?: string;
+  title: string;
+  rationale?: string;
+  source?: ApprovalSource;
+  evidence?: {[key: string]: any};
+  proposed_by?: string;
+  proposed_on?: Dayjs | string;
+  approvals_needed?: number;
+  status: ApprovalStatus;
+  reviews?: {[key: string]: any};
+  closed_on?: Dayjs | string;
+  result?: string;
+  stage_transition_id?: string;
+}
+
+export type ApprovalColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' |
+  'program_id' | 'kind' | 'decision' | 'to_stage_id' | 'target' | 'title' | 'rationale' | 'source' | 'evidence' |
+  'proposed_by' | 'proposed_on' | 'approvals_needed' | 'status' | 'reviews' | 'closed_on' | 'result' |
+  'stage_transition_id';
+
+/** Expand keys of `portal.approval` → fields each adds to the row (consumed by query()/builder). */
+export type ApprovalExpand = {
+  'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
+    'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
+    'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+  'to_stage_id': {'to_stage_id.stage_model_id'?: string; 'to_stage_id.code'?: string; 'to_stage_id.name'?: string;
+    'to_stage_id.ordinal'?: number; 'to_stage_id.phase'?: string; 'to_stage_id.is_gate'?: boolean;
+    'to_stage_id.is_terminal'?: boolean; 'to_stage_id.governance'?: string; 'to_stage_id.aliases'?: string[];
+    'to_stage_id.spellings'?: string; 'to_stage_id.folders'?: string; 'to_stage_id.description'?: string};
+  'proposed_by': {'proposed_by.login'?: string; 'proposed_by.firstName'?: string; 'proposed_by.lastName'?: string;
+    'proposed_by.status'?: string; 'proposed_by.createdOn'?: Dayjs; 'proposed_by.picture'?: string;
+    'proposed_by.group'?: string; 'proposed_by.author'?: string};
+  'stage_transition_id': {'stage_transition_id.program_id'?: string; 'stage_transition_id.from_stage_id'?: string;
+    'stage_transition_id.to_stage_id'?: string; 'stage_transition_id.decision'?: StageTransitionDecision;
+    'stage_transition_id.decided_by'?: string; 'stage_transition_id.decided_on'?: Dayjs;
+    'stage_transition_id.rationale'?: string; 'stage_transition_id.source'?: StageTransitionSource;
+    'stage_transition_id.evidence'?: string; 'stage_transition_id.outcome'?: StageTransitionOutcome};
+};
+
+/** Row of `portal.sync_log`. */
+export interface SyncLogRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  portfolio_id: string;
+  started_on: Dayjs;
+  finished_on?: Dayjs;
+  trigger: SyncLogTrigger;
+  run_by?: string;
+  created?: number;
+  updated?: number;
+  flagged?: number;
+  unresolved?: number;
+  unresolved_spellings?: string;
+  error?: string;
+  summary?: string;
+  changes?: {[key: string]: any};
+  notified?: string;
+}
+
+/** Insert payload for `portal.sync_log`. */
+export interface SyncLogInsert {
+  portfolio_id: string;
+  started_on: Dayjs | string;
+  finished_on?: Dayjs | string;
+  trigger: SyncLogTrigger;
+  run_by?: string;
+  created?: number;
+  updated?: number;
+  flagged?: number;
+  unresolved?: number;
+  unresolved_spellings?: string;
+  error?: string;
+  summary?: string;
+  changes?: {[key: string]: any};
+  notified?: string;
+}
+
+export type SyncLogColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'portfolio_id' |
+  'started_on' | 'finished_on' | 'trigger' | 'run_by' | 'created' | 'updated' | 'flagged' | 'unresolved' |
+  'unresolved_spellings' | 'error' | 'summary' | 'changes' | 'notified';
+
+/** Expand keys of `portal.sync_log` → fields each adds to the row (consumed by query()/builder). */
+export type SyncLogExpand = {
+  'portfolio_id': {'portfolio_id.code'?: string; 'portfolio_id.name'?: string;
+    'portfolio_id.setting'?: PortfolioSetting; 'portfolio_id.modality_class'?: PortfolioModalityClass;
+    'portfolio_id.stage_model_id'?: string; 'portfolio_id.stage_authority'?: PortfolioStageAuthority;
+    'portfolio_id.program_noun'?: string; 'portfolio_id.workspace_root'?: string;
+    'portfolio_id.workstreams'?: string; 'portfolio_id.flow_folders'?: {[key: string]: any};
+    'portfolio_id.work_units'?: string; 'portfolio_id.series_maturity'?: string;
+    'portfolio_id.program_data'?: {[key: string]: any}; 'portfolio_id.program_datasets'?: {[key: string]: any};
+    'portfolio_id.attention'?: {[key: string]: any}; 'portfolio_id.schedule'?: string;
+    'portfolio_id.owners'?: string; 'portfolio_id.handoff'?: {[key: string]: any};
+    'portfolio_id.auto_advance'?: {[key: string]: any}; 'portfolio_id.dmta'?: {[key: string]: any};
+    'portfolio_id.personas'?: {[key: string]: any}; 'portfolio_id.document_kinds'?: {[key: string]: any};
+    'portfolio_id.approval'?: {[key: string]: any}; 'portfolio_id.viewers'?: string;
+    'portfolio_id.contributors'?: string; 'portfolio_id.approvers'?: string; 'portfolio_id.description'?: string};
+  'run_by': {'run_by.login'?: string; 'run_by.firstName'?: string; 'run_by.lastName'?: string;
+    'run_by.status'?: string; 'run_by.createdOn'?: Dayjs; 'run_by.picture'?: string; 'run_by.group'?: string;
+    'run_by.author'?: string};
+};
+
+/** Row of `portal.following`. */
+export interface FollowingRow {
+  id: string;
+  version: number;
+  created_on: Dayjs;
+  updated_on: Dayjs;
+  author_id: string;
+  user_id: string;
+  program_id: string;
+  work_unit_kind?: FollowingWorkUnitKind;
+  work_unit_code?: string;
+  active?: boolean;
+  checked?: {[key: string]: any};
+  checked_on?: Dayjs;
+  last_news?: string;
+  news_on?: Dayjs;
+  seen?: {[key: string]: any};
+  seen_on?: Dayjs;
+}
+
+/** Insert payload for `portal.following`. */
+export interface FollowingInsert {
+  user_id: string;
+  program_id: string;
+  work_unit_kind?: FollowingWorkUnitKind;
+  work_unit_code?: string;
+  active?: boolean;
+  checked?: {[key: string]: any};
+  checked_on?: Dayjs | string;
+  last_news?: string;
+  news_on?: Dayjs | string;
+  seen?: {[key: string]: any};
+  seen_on?: Dayjs | string;
+}
+
+export type FollowingColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'user_id' |
+  'program_id' | 'work_unit_kind' | 'work_unit_code' | 'active' | 'checked' | 'checked_on' | 'last_news' |
+  'news_on' | 'seen' | 'seen_on';
+
+/** Expand keys of `portal.following` → fields each adds to the row (consumed by query()/builder). */
+export type FollowingExpand = {
+  'user_id': {'user_id.login'?: string; 'user_id.firstName'?: string; 'user_id.lastName'?: string;
+    'user_id.status'?: string; 'user_id.createdOn'?: Dayjs; 'user_id.picture'?: string; 'user_id.group'?: string;
+    'user_id.author'?: string};
+  'program_id': {'program_id.portfolio_id'?: string; 'program_id.code'?: string; 'program_id.name'?: string;
+    'program_id.stage_model_id'?: string; 'program_id.stage_id'?: string; 'program_id.source_stage'?: string;
+    'program_id.status'?: ProgramStatus; 'program_id.modality'?: string; 'program_id.target'?: string;
+    'program_id.therapeutic_area'?: string; 'program_id.lead'?: string; 'program_id.source'?: ProgramSource;
+    'program_id.external_ref'?: string; 'program_id.predecessor_id'?: string; 'program_id.last_synced_on'?: Dayjs;
+    'program_id.space_id'?: string; 'program_id.details'?: {[key: string]: any}};
+};
+
 export type PortalTransactionOp =
   {op: 'insert'; table: 'stage_model'; ref?: string; values: DG.DomainTxValues<StageModelInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'stage_model'; id: string; values: DG.DomainTxValues<Partial<StageModelRow>>; expectedVersion?: number} |
@@ -2249,7 +2486,16 @@ export type PortalTransactionOp =
   {op: 'delete'; table: 'design_proposal'; id: string} |
   {op: 'insert'; table: 'selection_set'; ref?: string; values: DG.DomainTxValues<SelectionSetInsert>; onDuplicate?: 'error'} |
   {op: 'update'; table: 'selection_set'; id: string; values: DG.DomainTxValues<Partial<SelectionSetRow>>; expectedVersion?: number} |
-  {op: 'delete'; table: 'selection_set'; id: string};
+  {op: 'delete'; table: 'selection_set'; id: string} |
+  {op: 'insert'; table: 'approval'; ref?: string; values: DG.DomainTxValues<ApprovalInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'approval'; id: string; values: DG.DomainTxValues<Partial<ApprovalRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'approval'; id: string} |
+  {op: 'insert'; table: 'sync_log'; ref?: string; values: DG.DomainTxValues<SyncLogInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'sync_log'; id: string; values: DG.DomainTxValues<Partial<SyncLogRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'sync_log'; id: string} |
+  {op: 'insert'; table: 'following'; ref?: string; values: DG.DomainTxValues<FollowingInsert>; onDuplicate?: 'error'} |
+  {op: 'update'; table: 'following'; id: string; values: DG.DomainTxValues<Partial<FollowingRow>>; expectedVersion?: number} |
+  {op: 'delete'; table: 'following'; id: string};
 
 /** Typed clients for the `portal` domain schema tables (lazy — no import-time side effects). */
 export const portalDb = {
@@ -2366,6 +2612,15 @@ export const portalDb = {
   },
   get selectionSets() {
     return grok.dapi.domains.table<SelectionSetRow, SelectionSetInsert, SelectionSetColumn, SelectionSetExpand>('portal.selection_set');
+  },
+  get approvals() {
+    return grok.dapi.domains.table<ApprovalRow, ApprovalInsert, ApprovalColumn, ApprovalExpand>('portal.approval');
+  },
+  get syncLogs() {
+    return grok.dapi.domains.table<SyncLogRow, SyncLogInsert, SyncLogColumn, SyncLogExpand>('portal.sync_log');
+  },
+  get followings() {
+    return grok.dapi.domains.table<FollowingRow, FollowingInsert, FollowingColumn, FollowingExpand>('portal.following');
   },
   transaction<T extends PortalTransactionOp[]>(ops: [...T]):
       Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {

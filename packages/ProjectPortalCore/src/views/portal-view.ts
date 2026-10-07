@@ -31,7 +31,7 @@ import {openExportDialog} from './export-dialog';
 import {ProgramRecommendation, recommendFor, runModelFor} from '../recommend';
 import {describeMissing} from '../model/recommend';
 import {follow, myFollows, unfollow, whatsNew, WorkUnitRef} from '../new-data';
-import {FollowRow} from '../generated/db';
+import {FollowingRow} from '../generated/db';
 import {ADVANCED_BOARD_BUTTONS, BoardButton, MORE_SECTIONS, PageSection, Persona, PERSONA_LABELS, PERSONAS, PORTAL_MODES,
   PersonaConfig, PortalMode, QuickActionCode, QuickCard, quickCards, PagePanel, PANEL_LABELS, panelLayout} from '../model/personas';
 import {personaIn, runFunctionCard, savedMode, saveMode, savePersona} from '../personas';
@@ -71,7 +71,7 @@ import {FeedEntry, FeedKind, filterFeed} from '../model/feed';
 import {feedList, feedSelect, kindOptions, openMyFeedDialog} from './feed-dialog';
 import {openPredictedVsMeasured, predictionsOf, scoreCompounds} from '../predictions';
 import {describeFit, describePrediction, Prediction, predictedVsMeasured, withPredictions} from '../model/predictions';
-import {ApprovalRequestRow} from '../generated/db';
+import {ApprovalRow} from '../generated/db';
 import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approvals';
 import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
 import {openWaitingDialog, requestItem} from './approvals-dialog';
@@ -132,7 +132,7 @@ export class PortalView {
   /** Where the last run saved from this page went, by program id. */
   private savedLine = new Map<string, string>();
   /** The current user's follows of the selected program and its work units. */
-  private follows: FollowRow[] = [];
+  private follows: FollowingRow[] = [];
   /** What landed since the user's last visit, read once per open; undefined = not read yet. */
   private news: {since: string | null, lines: string[]} | null | undefined;
   /** The selected program's dataset, read once per open; undefined = not read yet. */
@@ -168,7 +168,7 @@ export class PortalView {
   /** What the last scoring on this page did, by program id. */
   private scoreLine = new Map<string, string>();
   /** The selected program's approval requests (F-30), newest first, and the names of the people in them. */
-  private approvals: {rows: ApprovalRequestRow[], names: Map<string, string>} = {rows: [], names: new Map()};
+  private approvals: {rows: ApprovalRow[], names: Map<string, string>} = {rows: [], names: new Map()};
   /** What the last proposal or review on this page did, by program id. */
   private approvalLine = new Map<string, string>();
   /** The selected program's observations (F-26), who wrote them, and whether the user may add one. */
@@ -443,7 +443,7 @@ export class PortalView {
         return null;
       });
     // what landed since the last visit, for a user who follows the program or one of its series
-    const follows = await myFollows(id).catch(() => [] as FollowRow[]);
+    const follows = await myFollows(id).catch(() => [] as FollowingRow[]);
     // read once per open of a program: a click on the stage track is not a new visit
     if (this.news === undefined && follows.length) {
       const data = await this.programDataOf(ctx);
@@ -486,7 +486,7 @@ export class PortalView {
       feedError = e?.message ?? String(e);
     }
     // the approval workflow's requests about this program, when the portfolio asks for approvals
-    const requests = await requestsOf(id).catch(() => [] as ApprovalRequestRow[]);
+    const requests = await requestsOf(id).catch(() => [] as ApprovalRow[]);
     const approvalNames = await userNames(requests.flatMap((r) =>
       [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])).catch(() => new Map<string, string>());
     // observations (F-26): curated conclusions on the program, its units and compounds
@@ -663,7 +663,8 @@ export class PortalView {
         this.picked = {programId: program.id, off: new Set(), links: []};
         if (out.proposed) {
           this.approvalLine.set(program.id, out.proposed.line);
-          grok.shell.info([out.proposed.line, ...(out.proposed.notified ? [`Approvers: ${out.proposed.notified}`] : [])].join('\n'));
+          grok.shell.info([out.proposed.line, ...(out.proposed.notified ? [`Approvers: ${out.proposed.notified}`] : []),
+            ...(out.proposed.unplaced ? [`Visibility: ${out.proposed.unplaced}`] : [])].join('\n'));
           await this.openProgram(program.id);
           return;
         }
@@ -1261,7 +1262,7 @@ export class PortalView {
       await this.openPortfolio(this.portfolio!.code);
       await this.openProgram(program.id, this.viewedStage);
     };
-    const item = (r: ApprovalRequestRow, name: string) => requestItem(r, {names: this.approvals.names, name, onDone: done,
+    const item = (r: ApprovalRow, name: string) => requestItem(r, {names: this.approvals.names, name, onDone: done,
       canReview: ctx.approver && (r.source === 'data' || r.proposed_by !== me) && !reviewsOf(r.reviews).some((x) => x.by === me),
       canWithdraw: r.source !== 'data' && r.proposed_by === me});
     return [

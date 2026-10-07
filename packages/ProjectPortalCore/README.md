@@ -115,7 +115,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `missingAssays(portfolio, program, stage, series)` | The columns the gate's open data conditions need and rows lack, with the suggested models that predict each |
 | `setProgramRole(portfolio, program, principal, role)` | Gives a group (by name) or a user (by login) a role on one program: viewer, contributor, approver, or none to remove it. Portfolio approvers only; shares the program's folder to match |
 | `programRoles(portfolio, program)` | The program's roles as a table |
-| `securePortalTables(dryRun)` | Server write permissions on `program_role`, `parked_folder`, `approval_request`: Edit to each portfolio's approvers (contributors for requests), none to All users. Admins; idempotent; preview by default |
+| `securePortalTables(dryRun)` | Server table grants: Edit on `program_role`, `parked_folder`, `sync_log` to each portfolio's approvers and on `approval` to its contributors; View on `parked_folder` to the approvers; All users' grants taken from the tables that leaked across portfolios. Admins; idempotent; preview by default |
+| `moveToSecuredTables(code, dryRun)` | Moves a portfolio's approval requests and sync runs to the row-secured `approval` and `sync_log` (same ids), linked into its folders, and its compound values onto its program links. Admins; idempotent; preview by default |
 | `decisionEvidence(portfolio, program, decision)` | The program's gate decisions with their evidence, one row per piece, and whether each target is live, renamed or gone |
 | `snapshotProgram(portfolio, program, label, note)` | Freezes the program now: stage, criteria, selected runs, and the program dataset as a file in its workspace folder |
 | `programSnapshots(portfolio, program)` | The program's snapshots, newest first |

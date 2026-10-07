@@ -519,3 +519,30 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - Each check is three requests per connection; the board runs it on every portfolio open, for approvers only.
 - A connection is matched by the name the file gives; two spellings of one connection are checked twice.
 
+## Each portfolio's records kept to its own people
+
+*Security. Schema 0.2.33: `approval`, `sync_log`, `following`, compound values on `program_compound`.*
+
+- Before, as a user in EX-BIOD's viewers only: 1 approval request with its rationale, 369 sync runs of every
+  portfolio, 17 compounds with structures, 31 follows of all users. After: none of them; the old tables are
+  closed to All users.
+- A table-secured table answers reads with one grant on the table, and a deployed table's mode cannot change
+  (platform findings 19 and 36). Hence new row-secured tables and a move. `approval` and `sync_log` rows are
+  linked into a space, as program rows are: a request into its program's folder (a model card's into the root),
+  a sync run into the portfolio's root.
+- `defaultRowVisibility: table` on `approval` and `sync_log`: Edit on the table lets the contributors (approvers)
+  write any row, which a reviewer needs. No group may hold View on them, or it reads every row.
+- Linking needs Edit on the space and on the row. The row's author gets Edit on promotion and the contributors hold
+  Edit on the workspace, so a proposer links their own request. A request that cannot be linked (no workspace)
+  stays with its proposer and admins; the proposal says so.
+- Follows are not copied: the server makes the caller the author, so a copy would belong to the admin who ran it.
+  The 31 old rows stay in `follow` (27 were test leftovers). The admin cannot read another user's `following`
+  row either (platform finding 35), so a sync updates only its runner's follows; others see news on their visit.
+- Compounds: a compound's values now live on each program's link, under the program's security. `compound` keeps
+  the registry and code; its values are emptied once every link carries them. A compound in two portfolios keeps
+  each portfolio's values.
+- Moved on the stand for EX-SMD, EX-BIOD and EX-BIOC (`moveToSecuredTables`). Other portfolios' records were not
+  moved: their old rows are admin-only until an admin runs `moveToSecuredTables(code, false)` for each.
+- The app's own filter (`ofMyPortfolios`) is a second check on lists: waiting for me, approval requests, sync
+  history, the feed.
+- Still readable by all users: `program_role` (who holds a role), `portfolio` (configuration), the catalogue.

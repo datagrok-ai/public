@@ -295,7 +295,7 @@ export async function checkEvidenceChangesOf(portfolio: PortfolioRow, opts: {not
       const ctx = await programContext(program.id);
       // every document of the program: the decisions citing a person-written one count as evidence too
       const found = await evidenceChangesOf(ctx, all.filter((d) => d.program_id === program.id));
-      const followers = opts.notify === false ? [] : (await portalDb.follows.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}))
+      const followers = opts.notify === false ? [] : (await portalDb.followings.query({filter: `program_id = ${filterValue(program.id)}`, limit: ROW_LIMIT}))
         .filter((f) => f.active !== false).map((f) => f.user_id);
       for (const d of mine) {
         const r = found.get(d.id);

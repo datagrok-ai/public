@@ -7,7 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {ModelRow, portalDb, PortfolioRow, PredictionRow, ProgramRow} from './generated/db';
-import {portfolioByCode, programData} from './portal';
+import {compoundsOf as programCompoundsOf, portfolioByCode, programData} from './portal';
 import {funcOf} from './catalogue';
 import {ModelApplicability, prefillInputs} from './model/recommend';
 import {columnValue, rowId} from './model/conditions';
@@ -132,8 +132,9 @@ export async function scoreCompounds(portfolioCode: string, programCode: string,
     description: `Batch scoring of ${compounds.length} compounds; predictions stored for ${plans.filter((x) => x.column)
       .map((x) => x.predicts).join(', ')}`});
   notes.push(...saved.notes);
-  const known = new Map(!compounds.length ? [] : (await portalDb.compounds.query({filter:
-    `code in (${compounds.map((c) => `"${c.replace(/"/g, '')}"`).join(', ')})`, limit: ROW_LIMIT}).catch(() => [])).map((c) => [c.code, c.id]));
+  // the program's own compounds, by code: the compound table is closed to most users
+  const known = new Map(!compounds.length ? [] : (await programCompoundsOf(program.id).catch(() => []))
+    .map((c) => [String(c.compound.code), c.compound.id as string]));
   const now = new Date().toISOString();
   const me = DG.User.current().id;
   const result: ScoringResult = {...base, runId: saved.runId, modelRunId: saved.modelRun.id, stored: [], kept: 0, notes, summary: ''};

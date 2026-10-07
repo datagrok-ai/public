@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
-import {PortfolioRow, SyncRunRow} from '../generated/db';
+import {PortfolioRow, SyncLogRow} from '../generated/db';
 import {dueState, syncRunsOf} from '../sync-runs';
 import {describeChange, describeSchedule, ProgramChange} from '../model/sync-runs';
 import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from '../auto-advance';
@@ -47,7 +47,7 @@ export async function syncHistoryFrame(portfolio: PortfolioRow, limit = 200): Pr
   return df;
 }
 
-const programChanges = (r: SyncRunRow): ProgramChange[] => (r.changes as {programs?: ProgramChange[]} | undefined)?.programs ?? [];
+const programChanges = (r: SyncLogRow): ProgramChange[] => (r.changes as {programs?: ProgramChange[]} | undefined)?.programs ?? [];
 
 /** The history as the app shows it. */
 export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Promise<HTMLElement> {

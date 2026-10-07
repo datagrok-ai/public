@@ -96,6 +96,14 @@ are given where one was filed. Items 1 to 19 were first listed in the package RE
    hang on the preloader), for any package. The in-browser `test` function still works and was used to count
    results when it happened.
 34. **Json columns return keys in the server's order,** not the order written. Profile diffs sort keys.
+35. **An admin does not read another user's row in a row-secured table with no row grants.** A `following` row
+   written by a plain user is invisible to the admin session (query and count). Row security on a plugin table
+   has no admin bypass in practice, so "only its author" really is only its author. The portal's consequence: a
+   sync no longer updates other users' follows; each follower's news comes from their own visit.
+36. **A table-secured table cannot be scoped per row, and its mode cannot change.** Reads of a `table` table check
+   one grant on the table entity; only `row` tables support promotion, and so only their rows can be linked into a
+   space. With item 19 (no `securityMode` change on a deployed table), narrowing who reads a table's rows means a
+   new row-secured table and moving the rows (0.2.33: `approval`, `sync_log`, `following`).
 
 ## What the server enforces on writes
 
@@ -114,6 +122,18 @@ tables. Package functions run in the user's browser, so a check in them is the a
   queries, not package JavaScript. There is no supported "write as the package" path.
 - **Deploys are additive:** a schema redeploy never revokes a grant, and refuses a `securityMode`,
   `defaultRowVisibility` or `delegate` change on a deployed table (item 19).
+
+## What the server enforces on reads
+
+- **Table mode:** View on the table, or nothing. One grant covers every row, so it cannot keep one portfolio's
+  rows from another's.
+- **Row mode:** the author; direct row grants (refused today, item 1); and whoever may view a space the row is
+  linked into (View only). With `defaultRowVisibility: table`, View on the table shows every row, so such a table
+  must carry no View grant.
+- **Master mode:** whoever reads the referenced row (the program).
+- **Not enforcement:** the app's filter to the user's portfolios (`ofMyPortfolios`, `myPortfolioIds`) and the
+  catalogue scoping run in the browser. They hide rows the server would also hide, and the catalogue, which the
+  server shows to all users.
 
 ### Platform asks that would close the remaining gaps
 

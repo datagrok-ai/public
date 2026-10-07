@@ -92,7 +92,7 @@ export async function loadCatalogue(c: MergedCatalogue, report: string[]): Promi
     }
     // a card the approval workflow (F-30) has acted on keeps its approval: the file does not undo it
     const stored = await portalDb.modelCards.getByKey({model_id: modelId, model_version: card.version});
-    const reviewed = stored ? (await portalDb.approvalRequests.query({filter: `kind = "model_card" and target = ${filterValue(stored.id)}`, limit: ROW_LIMIT})
+    const reviewed = stored ? (await portalDb.approvals.query({filter: `kind = "model_card" and target = ${filterValue(stored.id)}`, limit: ROW_LIMIT})
       .catch(() => [])).length > 0 : false;
     await upsertByKey(portalDb.modelCards, {model_id: modelId, model_version: card.version}, {
       question: card.question ?? null, intended_use: card.intendedUse ?? null,

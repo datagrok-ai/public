@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.32",
+  "version": "0.2.33",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -283,7 +283,7 @@
       "securityMode": "table",
       "businessKey": ["system", "code"],
       "friendlyName": "Compounds",
-      "description": "A projection of the customer's compound registry: the portal never mints a compound. Never promoted and never a folder; which programs hold it is in program_compound, under each program's security.",
+      "description": "The identity of a registry compound (system and code), so programs can share it. Its name, structure, aliases and batches live on program_compound, under each program's security: this table was readable by every user, so loading a portfolio takes All users View away and moveToSecuredTables copies the values to the links and empties them here. The portal never mints a compound and never promotes one.",
       "grants": {"All users": ["view"]},
       "columns": {
         "system": {"type": "string", "required": true, "immutable": true, "description": "The registry the code belongs to"},
@@ -309,7 +309,13 @@
         "role_since": {"type": "datetime"},
         "source": {"type": "string", "choices": ["feed", "manual"], "default": "manual"},
         "missing_from_feed": {"type": "bool", "default": false},
-        "last_synced_on": {"type": "datetime"}
+        "last_synced_on": {"type": "datetime"},
+        "compound_code": {"type": "string", "searchable": true, "description": "The compound's registration code, copied from compound so a reader of the program needs no access to the compound table"},
+        "compound_name": {"type": "string", "searchable": true},
+        "smiles": {"type": "string", "semType": "Molecule", "description": "The structure, as the portfolio's registry gives it"},
+        "aliases": {"type": "string", "searchable": true, "description": "Other identifiers, '|'-separated"},
+        "batches": {"type": "string", "description": "Batch codes, '|'-separated"},
+        "details": {"type": "json", "description": "Registry columns the portal does not map"}
       },
       "filters": [{"column": "program_id.name", "label": "Program"}, {"column": "role"}]
     },
@@ -501,7 +507,7 @@
     "sync_run": {
       "securityMode": "table",
       "friendlyName": "Sync runs",
-      "description": "One sync of one portfolio, by schedule or by hand: when, what it changed, what it could not resolve. Written by the sync; the portfolio's sync history.",
+      "description": "Superseded by sync_log (0.3.0), which secures each row; kept for history. Every user could read it, so loading a portfolio takes All users View away and moveToSecuredTables copies its rows to sync_log.",
       "grants": {"All users": ["view"]},
       "columns": {
         "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
@@ -540,7 +546,7 @@
       "securityMode": "table",
       "softDelete": false,
       "friendlyName": "Follows",
-      "description": "A user following a program, or one of its work units, to be told when new results land in the program dataset. Each user writes their own; the sync updates the snapshots.",
+      "description": "Superseded by following (0.3.0), which only its user reads; kept for history. Every user could read everyone's follows, so loading a portfolio takes All users View, Edit and Delete away. Rows are not copied: the server makes the caller a row's author, so a copy would belong to whoever copied it.",
       "grants": {"All users": ["view", "edit", "delete"]},
       "columns": {
         "user_id": {"type": "user", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "User"},
@@ -667,7 +673,7 @@
     "approval_request": {
       "securityMode": "table",
       "friendlyName": "Approval requests",
-      "description": "The optional approval workflow (F-30, FR-57): a gate decision proposed, or a document or model card submitted, in a portfolio that opts in. It takes effect once enough approvers other than the proposer approve; one rejection ends it. Read and written by the app, which checks who may review; the server lets only the portfolios' contributors groups write it (Edit granted when a portfolio is loaded).",
+      "description": "Superseded by approval (0.3.0), which secures each row; kept for history. Every user could read it, so loading a portfolio takes All users View away (a redeploy never revokes a grant) and moveToSecuredTables copies its rows to approval.",
       "grants": {"All users": ["view"]},
       "filters": [{"column": "kind"}, {"column": "status"}],
       "columns": {
@@ -791,6 +797,78 @@
         "compounds": {"type": "json", "description": "{items: [compound codes]}"},
         "selected_by": {"type": "user", "immutable": true},
         "selected_on": {"type": "datetime", "immutable": true}
+      }
+    },
+    "approval": {
+      "securityMode": "row",
+      "promotion": "eager",
+      "defaultRowVisibility": "table",
+      "friendlyName": "Approvals",
+      "description": "Approval requests, secured per row (replaces approval_request, which every user could read). A row is linked into its program's workspace folder, or into the portfolio's root for a model card, so the portfolio's groups and the program's roles see it (View only) and nobody else does. The proposer reaches their own row. No group holds View on the table; the portfolios' contributors groups hold Edit (granted when a portfolio is loaded), which lets them write any row: which contributor may review which request is the app's check.",
+      "filters": [{"column": "kind"}, {"column": "status"}],
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "immutable": true, "friendlyName": "Program", "description": "Empty for a model card"},
+        "kind": {"type": "string", "choices": ["decision", "document", "model_card"], "required": true, "immutable": true},
+        "decision": {"type": "string", "choices": ["advance", "recycle", "hold", "terminate"], "immutable": true, "description": "The gate decision proposed"},
+        "to_stage_id": {"type": "ref", "ref": "stage", "onDelete": "restrict", "immutable": true, "friendlyName": "To", "description": "The stage an advance or recycle goes to, as proposed"},
+        "target": {"type": "string", "immutable": true, "description": "Soft reference: the document's or the model card's id"},
+        "title": {"type": "string", "required": true, "isName": true, "immutable": true, "searchable": true, "description": "What is proposed, in one line"},
+        "rationale": {"type": "string", "editor": "textarea", "immutable": true},
+        "source": {"type": "string", "choices": ["person", "data"], "default": "person", "immutable": true, "description": "Who proposed it: a person, or the program's data (auto-advance), which any approver may then approve"},
+        "evidence": {"type": "json", "immutable": true, "description": "What the decision rests on, as proposed: {items: [...], text}"},
+        "proposed_by": {"type": "user", "immutable": true},
+        "proposed_on": {"type": "datetime", "immutable": true},
+        "approvals_needed": {"type": "int", "default": 1, "immutable": true},
+        "status": {"type": "string", "choices": ["pending", "approved", "rejected", "withdrawn"], "required": true, "default": "pending"},
+        "reviews": {"type": "json", "description": "Each review: {items: [{by, on, verdict, rationale}]}"},
+        "closed_on": {"type": "datetime"},
+        "result": {"type": "string", "editor": "textarea", "description": "What approving did (the decision recorded, the document approved), or why it could not"},
+        "stage_transition_id": {"type": "ref", "ref": "stage_transition", "onDelete": "setnull", "friendlyName": "Decision", "description": "The gate-log entry the approved decision wrote"}
+      }
+    },
+    "sync_log": {
+      "securityMode": "row",
+      "promotion": "eager",
+      "defaultRowVisibility": "table",
+      "friendlyName": "Sync log",
+      "description": "Sync runs, secured per row (replaces sync_run, which every user could read). A row is linked into its portfolio's workspace root, so only the portfolio's groups see it (View only). The portfolios' approvers groups hold Edit on the table, granted when a portfolio is loaded.",
+      "columns": {
+        "portfolio_id": {"type": "ref", "ref": "portfolio", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Portfolio"},
+        "started_on": {"type": "datetime", "required": true, "immutable": true},
+        "finished_on": {"type": "datetime"},
+        "trigger": {"type": "string", "choices": ["schedule", "manual"], "required": true, "immutable": true},
+        "run_by": {"type": "user", "onDelete": "setnull", "immutable": true},
+        "created": {"type": "int", "default": 0, "description": "Programs, work units, compounds and compound links created"},
+        "updated": {"type": "int", "default": 0, "description": "Programs, work units, compounds and roles changed, and rows back in their feed"},
+        "flagged": {"type": "int", "default": 0, "description": "Programs, work units and compound links flagged in this run as no longer in their feed"},
+        "unresolved": {"type": "int", "default": 0, "description": "Stage spellings that resolved to no stage"},
+        "unresolved_spellings": {"type": "string", "description": "CODE=\"spelling\", '|'-separated"},
+        "error": {"type": "string", "editor": "textarea", "description": "Why the run stopped; empty when it finished"},
+        "summary": {"type": "string", "editor": "textarea", "description": "The run's report, as syncPortfolio returns it"},
+        "changes": {"type": "json", "description": "Per-program changes, standing overlaps and what followers were told: {programs: [{program, created, fields, stage, missing, units, compounds, advanced}], overlaps: [...], newData: [{program, line}]}"},
+        "notified": {"type": "string", "description": "Who was told about the run, or why nobody was"}
+      }
+    },
+    "following": {
+      "securityMode": "row",
+      "defaultRowVisibility": "none",
+      "friendlyName": "Following",
+      "description": "Follows, private to their user (replaces follow, which every user could read). Row security with no grants on rows: each user reaches only the rows they wrote; admins reach all, so an admin's sync updates every follower's news. All users hold View, Edit and Delete on the table, which with defaultRowVisibility none opens no one else's row.",
+      "grants": {"All users": ["view", "edit", "delete"]},
+      "columns": {
+        "user_id": {"type": "user", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "User"},
+        "program_id": {"type": "ref", "ref": "program", "onDelete": "cascade", "required": true, "immutable": true, "friendlyName": "Program"},
+        "work_unit_kind": {"type": "string", "choices": ["campaign", "series", "study", "process_stage"], "immutable": true,
+          "description": "Empty when the whole program is followed"},
+        "work_unit_code": {"type": "string", "immutable": true, "description": "The work unit's code, e.g. the series"},
+        "active": {"type": "bool", "default": true, "description": "False once unfollowed; following again turns it back on"},
+        "checked": {"type": "json", "description": "The data as last checked for news: {rows, values, mark}"},
+        "checked_on": {"type": "datetime"},
+        "last_news": {"type": "string", "description": "What the last notification said"},
+        "news_on": {"type": "datetime", "description": "When last_news was told; the activity feed shows it"},
+        "seen": {"type": "json", "description": "The data at the user's last visit to the program page: {rows, values, mark}"},
+        "seen_on": {"type": "datetime"}
       }
     }
   }

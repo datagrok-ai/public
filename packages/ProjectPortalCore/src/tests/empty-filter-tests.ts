@@ -1,5 +1,5 @@
 import {category, expect, test} from '@datagrok-libraries/test/src/test';
-import {FollowRow, portalDb} from '../generated/db';
+import {FollowingRow, portalDb} from '../generated/db';
 import {portfolioByCode} from '../portal';
 import {feedOfFollows} from '../feed';
 import {provenanceRecords} from '../provenance';
@@ -25,7 +25,7 @@ category('Portal: lists in filters', () => {
       stage_model_id: sm.stage_model_id, source: 'manual'});
     await portalDb.programs.delete(ins.id);
     // the follow as myFollowsAll reads it; not written, so nobody's feed changes
-    const follow = {id: 'f-gone', user_id: 'u', program_id: ins.id, active: true} as unknown as FollowRow;
+    const follow = {id: 'f-gone', user_id: 'u', program_id: ins.id, active: true} as unknown as FollowingRow;
     const feed = await feedOfFollows([follow]);
     expect(feed.programs, 0);
     expect(feed.entries.length, 0);

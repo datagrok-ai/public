@@ -59,7 +59,7 @@ category('Portal: new-data notification', () => {
   const lower = async (series: string | null, by: {rows: number, values: number}, field: 'checked' | 'seen' = 'checked') => {
     const f = (await myFollows(kin1.id)).find((x) => series ? x.work_unit_code === series : !x.work_unit_code)!;
     const s = f[field] as {rows: number, values: number};
-    await portalDb.follows.update(f.id, {[field]: {rows: s.rows - by.rows, values: s.values - by.values}});
+    await portalDb.followings.update(f.id, {[field]: {rows: s.rows - by.rows, values: s.values - by.values}});
   };
 
   const mine = <T extends {user: string}>(news: T[]) => news.filter((x) => x.user === DG.User.current().id);

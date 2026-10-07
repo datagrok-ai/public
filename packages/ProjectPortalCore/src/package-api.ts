@@ -463,10 +463,18 @@ export namespace funcs {
   }
 
   /**
-   * Lets only the portfolios' groups write the workflow tables, on the server: Edit on program_role and parked_folder to each portfolio's approvers, on approval_request to its contributors, none to All users. Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
+   * Sets the server's table grants: Edit on program_role and parked_folder to each portfolio's approvers, on approval to its contributors, on sync_log to its approvers; View on parked_folder to the approvers; and All users' View, Edit and Delete taken from the tables that let every user read other portfolios' records (approval_request, sync_run, follow, compound, parked_folder). Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
    */
   export async function securePortalTables(dryRun: boolean ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:SecurePortalTables', { dryRun });
+  }
+
+  /**
+   * Moves one portfolio's records off the tables every user could read: approval requests into approval and sync runs into sync_log (same ids), each linked into its program folder or the portfolio's root so only the portfolio's people read it; compound values onto the portfolio's program_compound links, and compounds whose every link has them emptied. Follows are not copied (a copy would belong to whoever copied it). Admins. Idempotent
+   * @param {string} code - Portfolio code
+   */
+  export async function moveToSecuredTables(code: string , dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:MoveToSecuredTables', { code, dryRun });
   }
 
   /**

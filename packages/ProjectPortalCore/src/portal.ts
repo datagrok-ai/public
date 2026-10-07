@@ -14,7 +14,8 @@ import {computeReadiness, Readiness} from './model/readiness';
 import {buildPortfolioWorkspace, summarizeWorkspace} from './workspace';
 import {CompoundPlan, CompoundRef, CompoundRole, COMPOUND_ROLES, LinkRef, planCompounds} from './model/compounds';
 import {planWorkUnits, WorkUnitKind, WorkUnitPlan, WorkUnitRef, WORK_UNIT_FIELDS} from './model/work-units';
-import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
+import {CompoundRow, portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
+import {compoundOfLink, linkValuesOf} from './model/secured-rows';
 import {loadCatalogue} from './catalogue';
 import {mergeCatalogues} from './model/catalogue';
 import {CriterionArtifactKind, RunFilter} from './model/run-selection';
@@ -484,11 +485,16 @@ export async function syncCompounds(code: string, dryRun = false): Promise<Compo
   const codes = [...new Set(rows.map((r) => r.compound).filter((c) => c !== null && c !== undefined).map(String))];
   const known = await inBatches(codes, (b) =>
     portalDb.compounds.query({filter: `system = ${filterValue(feed.system)} and code in (${quoted(b)})`, limit: ROW_LIMIT}));
-  const compounds = new Map<string, CompoundRef>(known.map((c) => [c.code, {id: c.id, code: c.code,
-    values: {name: c.name ?? null, smiles: c.smiles ?? null, aliases: c.aliases ?? null, batches: c.batches ?? null,
-      details: (c.details as any) ?? null}}]));
   const linkRows = await inBatches(programs.map((p) => p.id), (b) =>
     portalDb.programCompounds.query({filter: `program_id in (${quoted(b)})`, limit: ROW_LIMIT}));
+  // a compound's values are what this portfolio's links carry; the compound row only identifies it
+  // (its values are emptied by moveToSecuredTables, so other portfolios cannot read them)
+  const carried = new Map(linkRows.filter((l) => l.compound_code).map((l) => [l.compound_id, l]));
+  const valuesOf = (c: CompoundRow) => {
+    const v = compoundOfLink(carried.get(c.id) ?? {compound_id: c.id}, c);
+    return {name: v.name, smiles: v.smiles, aliases: v.aliases, batches: v.batches, details: v.details ?? null};
+  };
+  const compounds = new Map<string, CompoundRef>(known.map((c) => [c.code, {id: c.id, code: c.code, values: valuesOf(c)}]));
   const links: LinkRef[] = linkRows.map((l) => ({id: l.id, programId: l.program_id, compoundId: l.compound_id,
     role: (l.role ?? null) as CompoundRole | null, source: l.source ?? null, missingFromFeed: l.missing_from_feed ?? false}));
   // links to compounds of this system that are not in the feed any more still need their codes
@@ -504,16 +510,21 @@ export async function syncCompounds(code: string, dryRun = false): Promise<Compo
   const now = new Date().toISOString();
   const me = DG.User.current().id;
   const idOf = new Map([...compounds.values()].map((c) => [c.code, c.id]));
+  // the registry's values by code, as this sync leaves them
+  const values = new Map<string, Record<string, any>>([...compounds.values()].map((c) => [c.code, {code: c.code, ...c.values}]));
   for (const v of plan.compoundInserts) {
-    const [r] = await portalDb.compounds.insert({...v, last_synced_on: now} as any);
+    values.set(v.code, v);
+    const [r] = await portalDb.compounds.insert({system: v.system, code: v.code, last_synced_on: now} as any);
     idOf.set(v.code, (r as any).existingId ?? r.id);
   }
-  for (const u of plan.compoundUpdates)
-    await portalDb.compounds.update(u.id, {...u.changes, last_synced_on: now} as any);
+  for (const u of plan.compoundUpdates) {
+    values.set(u.code, {...values.get(u.code), ...u.changes});
+    await portalDb.compounds.update(u.id, {last_synced_on: now} as any);
+  }
   for (const l of plan.linkInserts) {
     const compoundId = idOf.get(l.compoundCode)!;
     await portalDb.programCompounds.insert({program_id: l.programId, compound_id: compoundId, role: l.role,
-      role_since: now as any, source: 'feed', last_synced_on: now as any});
+      role_since: now as any, source: 'feed', last_synced_on: now as any, ...linkValuesOf(values.get(l.compoundCode) ?? {code: l.compoundCode})} as any);
     await portalDb.compoundRoleChanges.insert({program_id: l.programId, compound_id: compoundId, to_role: l.role,
       changed_by: me, changed_on: now as any, source: 'feed', rationale: `Registry ${feed.system}`});
   }
@@ -527,6 +538,14 @@ export async function syncCompounds(code: string, dryRun = false): Promise<Compo
     await portalDb.programCompounds.update(r.id, {missing_from_feed: false, last_synced_on: now as any});
   for (const m of plan.linkMissing)
     await portalDb.programCompounds.update(m.id, {missing_from_feed: true});
+  // each existing link of a changed compound, and each link that carries no values yet, gets them
+  const changed = new Set(plan.compoundUpdates.map((u) => u.code));
+  const codeOfId = new Map([...idOf.entries()].map(([c, id]) => [id, c]));
+  for (const l of linkRows) {
+    const c = codeOfId.get(l.compound_id);
+    if (c && values.has(c) && (changed.has(c) || !l.compound_code))
+      await portalDb.programCompounds.update(l.id, linkValuesOf(values.get(c)!) as any);
+  }
   await portalDb.registryFeeds.update(feed.id, {last_synced_on: now as any});
   return plan;
 }
@@ -551,13 +570,22 @@ export async function setCompoundRole(programId: string, compoundId: string, rol
     to_role: role, changed_by: DG.User.current().id, changed_on: now as any, source: 'manual', rationale});
 }
 
-/** A program's compounds with their roles, the compound rows joined in. */
+/** A program's compounds with their roles. The compound's values come from the link, which is
+ * secured through the program; a link from before 0.3.0 that carries none is filled from the
+ * compound row, when the reader may read it. */
 export async function compoundsOf(programId: string): Promise<{link: any, compound: any}[]> {
   const links = await portalDb.programCompounds.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT});
-  const compounds = await inBatches([...new Set(links.map((l) => l.compound_id))], (b) =>
-    portalDb.compounds.query({filter: `id in (${quoted(b)})`, limit: ROW_LIMIT}));
+  const bare = [...new Set(links.filter((l) => !l.compound_code).map((l) => l.compound_id))];
+  const compounds = await inBatches(bare, (b) =>
+    portalDb.compounds.query({filter: `id in (${quoted(b)})`, limit: ROW_LIMIT})).catch(() => []);
   const byId = new Map(compounds.map((c) => [c.id, c]));
-  return links.map((link) => ({link, compound: byId.get(link.compound_id)})).filter((x) => x.compound);
+  return links.filter((l) => l.compound_code || byId.has(l.compound_id))
+    .map((link) => ({link, compound: compoundOfLink(link, byId.get(link.compound_id))}));
+}
+
+/** The compound [code] (or id) as linked to [programId], or null when the program does not hold it. */
+export async function programCompound(programId: string, code: string): Promise<{link: any, compound: any} | null> {
+  return (await compoundsOf(programId)).find((c) => c.compound.code === code || c.compound.id === code) ?? null;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -726,7 +754,7 @@ export async function recordDecision(programId: string, decision: Decision, targ
   const ctx = await programContext(programId);
   if (needsApproval(approvalOf(ctx.portfolio.approval), 'decision', decision)) {
     // only the request being approved carries it out: pending, for this program and decision
-    const request = by.approvedRequest ? await portalDb.approvalRequests.get(by.approvedRequest).catch(() => null) : null;
+    const request = by.approvedRequest ? await portalDb.approvals.get(by.approvedRequest).catch(() => null) : null;
     if (!request || !takesEffect(request) || request.program_id !== programId || request.decision !== decision ||
       (request.to_stage_id ?? null) !== (targetStageId ?? null))
       throw new Error(`${ctx.portfolio.code} asks for approval of ${decision}: propose it, and another approver approves it`);

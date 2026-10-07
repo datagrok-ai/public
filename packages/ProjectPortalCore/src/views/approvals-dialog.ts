@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
-import {ApprovalRequestRow, portalDb} from '../generated/db';
+import {ApprovalRow, portalDb} from '../generated/db';
 import {describeRequest, reviewRequest, userNames, waitingForMe, withdrawRequest} from '../approvals';
 import {reviewsOf} from '../model/approvals';
 import {installStyles} from './styles';
@@ -29,7 +29,7 @@ export interface RequestItemOptions {
 }
 
 /** One request: its line, the reviews so far and, while it waits, what the user may do. */
-export function requestItem(r: ApprovalRequestRow, o: RequestItemOptions): HTMLElement {
+export function requestItem(r: ApprovalRow, o: RequestItemOptions): HTMLElement {
   const reviews = reviewsOf(r.reviews).map((x) =>
     span(`${o.names.get(x.by) ?? 'someone'} ${x.verdict === 'approve' ? 'approved' : 'rejected'}: ${x.rationale}`, 'pp-gap'));
   const lines: HTMLElement[] = [

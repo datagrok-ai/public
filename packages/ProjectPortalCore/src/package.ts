@@ -1,7 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, portfolioByCode, programContext, stagesOf} from './portal';
+import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, programCompound, portfolioByCode, programContext, stagesOf} from './portal';
 import {portalDb} from './generated/db';
 import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
@@ -53,6 +53,7 @@ import {proposeDecision as propose, requestsFrame, requestsOf, reviewRequest as 
   submitModelCard as submitCard, userNames, waitingForMe as waitingOf, withdrawRequest as withdraw} from './approvals';
 import {reviewsOf} from './model/approvals';
 import {secureWriteTables} from './write-grants';
+import {moveToSecuredTables as moveSecured, ofMyPortfolios} from './secured-rows';
 import {accessFrame, dataAccessChecks} from './data-access';
 import {summarizeAccess} from './model/data-access';
 import {linkProgramRows as linkRows} from './program-rows';
@@ -61,7 +62,7 @@ import {DecisionOutcome, describeDecision, searchDecisions} from './model/decisi
 import {findablePrograms, recentPrograms as savedRecents} from './find';
 import {FindProgram, findPrograms as find, matchedBy, resolveRecents} from './model/find';
 import {parkedFoldersOf, parkedFrame, parkOrphans as park, summarizeParkResult, unparkFolder as unpark} from './parking';
-import {ApprovalRequestRow} from './generated/db';
+import {ApprovalRow} from './generated/db';
 import {pinByCode} from './pinning';
 import {pinnedFrame, pinnedTiles} from './pinned-programs';
 import {MyProgramsWidget} from './views/my-programs-widget';
@@ -690,7 +691,7 @@ export async function submitDocument(portfolio: string, program: string, path: s
   if (!doc)
     throw new Error(`${program} has no document at ${path}`);
   const r = await submitDoc(p, doc.id, rationale || undefined);
-  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : [])].join('\n');
+  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : []), ...(r.unplaced ? [`  visibility: ${r.unplaced}`] : [])].join('\n');
 }
 
 //name: submitModelCard
@@ -702,7 +703,7 @@ export async function submitDocument(portfolio: string, program: string, path: s
 //output: string report
 export async function submitModelCard(portfolio: string, model: string, version?: string, rationale?: string): Promise<string> {
   const r = await submitCard(await portfolioByCode(portfolio), model, version || null, rationale || undefined);
-  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : [])].join('\n');
+  return [r.line, ...(r.notified ? [`  approvers: ${r.notified}`] : []), ...(r.unplaced ? [`  visibility: ${r.unplaced}`] : [])].join('\n');
 }
 
 //name: reviewRequest
@@ -732,9 +733,9 @@ export async function withdrawRequest(request: string): Promise<string> {
 //output: dataframe result
 export async function approvalRequests(portfolio: string, program?: string, status?: string): Promise<DG.DataFrame> {
   const pf = await portfolioByCode(portfolio);
-  const rows: ApprovalRequestRow[] = program ? await requestsOf((await programByCode(portfolio, program)).id) :
-    (await portalDb.approvalRequests.query({filter: `portfolio_id = ${filterValue(pf.id)}`, limit: ROW_LIMIT}))
-      .sort(newestFirstBy((x) => x.created_on));
+  const rows: ApprovalRow[] = await ofMyPortfolios(program ? await requestsOf((await programByCode(portfolio, program)).id) :
+    (await portalDb.approvals.query({filter: `portfolio_id = ${filterValue(pf.id)}`, limit: ROW_LIMIT}))
+      .sort(newestFirstBy((x) => x.proposed_on ?? x.created_on)));
   const shown = rows.filter((r) => !status || r.status === status);
   return requestsFrame(shown, await userNames(shown.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)])),
     `${program || portfolio} · Approval requests`);
@@ -772,12 +773,22 @@ export async function loadPortfolioConfigs(configs: string): Promise<string> {
 }
 
 //name: securePortalTables
-//description: Lets only the portfolios' groups write the workflow tables, on the server: Edit on program_role and parked_folder to each portfolio's approvers, on approval_request to its contributors, none to All users. Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
+//description: Sets the server's table grants: Edit on program_role and parked_folder to each portfolio's approvers, on approval to its contributors, on sync_log to its approvers; View on parked_folder to the approvers; and All users' View, Edit and Delete taken from the tables that let every user read other portfolios' records (approval_request, sync_run, follow, compound, parked_folder). Loading a portfolio does the same for that portfolio. Needs Share on the tables (admins). Idempotent
 //input: bool dryRun = true
 //output: string report
 export async function securePortalTables(dryRun: boolean = true): Promise<string> {
   const lines = await secureWriteTables(undefined, dryRun);
-  return lines.length ? lines.join('\n') : 'write permissions already in place';
+  return lines.length ? lines.join('\n') : 'table permissions already in place';
+}
+
+//name: moveToSecuredTables
+//description: Moves one portfolio's records off the tables every user could read: approval requests into approval and sync runs into sync_log (same ids), each linked into its program folder or the portfolio's root so only the portfolio's people read it; compound values onto the portfolio's program_compound links, and compounds whose every link has them emptied. Follows are not copied (a copy would belong to whoever copied it). Admins. Idempotent
+//input: string code {description: Portfolio code}
+//input: bool dryRun = true
+//output: string report
+export async function moveToSecuredTables(code: string, dryRun: boolean = true): Promise<string> {
+  const lines = await moveSecured(code, dryRun);
+  return lines.length ? lines.join('\n') : `${code}: nothing to move`;
 }
 
 //name: dataAccessAudit
@@ -986,7 +997,9 @@ export async function setCompoundRole(portfolio: string, program: string, compou
   const p = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(program)}`, limit: ROW_LIMIT}))[0];
   if (!p)
     throw new Error(`${portfolio} has no program ${program}, or it is not shared with you`);
-  const c = (await portalDb.compounds.query({filter: `code = ${filterValue(compound)}`, limit: ROW_LIMIT}));
+  // the program's own link first: the compound table is closed to most users
+  const linked = await programCompound(p.id, compound);
+  const c = linked ? [linked.compound] : await portalDb.compounds.query({filter: `code = ${filterValue(compound)}`, limit: ROW_LIMIT}).catch(() => []);
   if (c.length !== 1)
     throw new Error(c.length ? `${compound} is registered in ${c.length} registries` : `no compound ${compound} is known to the portal`);
   await setRole(p.id, c[0].id, role as CompoundRole, rationale);

@@ -7,7 +7,7 @@ import {
 import {validatePortfolio} from '../model/config';
 import {describeAutoAdvance} from '../model/auto-advance';
 import {documentCards} from '../model/documents';
-import {ApprovalRequestRow, portalDb, PortfolioRow, ProgramRow} from '../generated/db';
+import {ApprovalRow, portalDb, PortfolioRow, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, readPortfolioFiles, recordDecision, setCriterion, stagesOf} from '../portal';
 import {approverUsers, decideOrPropose, requestsOf, reviewRequest, submitDocument, submitModelCard, waitingForMe, withdrawRequest} from '../approvals';
 import {documentsOf, linkDocumentTo, PACKAGE_FILES} from '../documents';
@@ -130,7 +130,7 @@ async function scratchProgram<T>(stageCode: string, fn: (p: ProgramRow, biod: Po
     return await fn(await portalDb.programs.get(r.id), biod, stage);
   } finally {
     for (const q of await requestsOf(r.id).catch(() => []))
-      await portalDb.approvalRequests.delete(q.id).catch(() => undefined);
+      await portalDb.approvals.delete(q.id).catch(() => undefined);
     for (const d of await documentsOf(r.id).catch(() => []))
       await portalDb.documents.delete(d.id).catch(() => undefined);
     await portalDb.programs.delete(r.id);
@@ -140,15 +140,15 @@ async function scratchProgram<T>(stageCode: string, fn: (p: ProgramRow, biod: Po
 /** The request as if another person had proposed it: the proposer cannot approve their own, and
  * a second approver who can read the program row waits on GROK-21041. Withdraws [r] and files the
  * same request again under [otherUserId], with its target put back to waiting. */
-async function asProposedBy(r: ApprovalRequestRow, otherUserId: string): Promise<ApprovalRequestRow> {
+async function asProposedBy(r: ApprovalRow, otherUserId: string): Promise<ApprovalRow> {
   await withdrawRequest(r.id);
   if (r.kind === 'document')
     await portalDb.documents.update(r.target!, {status: 'submitted'});
   if (r.kind === 'model_card')
     await portalDb.modelCards.update(r.target!, {approval: 'in_review'});
   const {id: _id, version: _v, created_on: _c, updated_on: _u, author_id: _a, ...rest} = r as any;
-  const [copy] = await portalDb.approvalRequests.insert({...rest, proposed_by: otherUserId, proposed_on: dayjs(), status: 'pending'});
-  return portalDb.approvalRequests.get(copy.id);
+  const [copy] = await portalDb.approvals.insert({...rest, proposed_by: otherUserId, proposed_on: dayjs(), status: 'pending'});
+  return portalDb.approvals.get(copy.id);
 }
 
 const refusal = async (fn: () => Promise<unknown>): Promise<string> => {
@@ -180,14 +180,14 @@ category('Portal: approval workflow', () => {
       expect(await refusal(() => reviewRequest(out.proposed!.request.id, 'approve', 'fine')),
         'You proposed it: another approver must review it');
       const ran = await withRestrictedUser('ppappr', async (user) => {
-        // the server answers as the user; DG.User.current() stays the session's, so only the first reason is theirs
-        expect((await user.asUser(() => refusal(() => reviewRequest(out.proposed!.request.id, 'approve', 'fine')))).split('; ')[0],
-          'Only approvers of the portfolio or the program review a request');
+        // the request is linked into the program's folder, which this user cannot view: the server hides it
+        expect(await user.asUser(() => refusal(() => reviewRequest(out.proposed!.request.id, 'approve', 'fine'))),
+          `No approval request ${out.proposed!.request.id}, or it is not shared with you`);
         const theirs = await asProposedBy(out.proposed!.request, user.id);
         expect((await waitingForMe()).some((r) => r.id === theirs.id), true, 'waiting for admin');
         const done = await reviewRequest(theirs.id, 'approve', 'binders confirmed');
         expect(done.line, `${p.code}: advance to Lead Generation: advance recorded with 1 piece(s) of evidence`, 'the readiness frozen at the proposal');
-        const after = await portalDb.approvalRequests.get(theirs.id);
+        const after = await portalDb.approvals.get(theirs.id);
         expect(`${after.status} ${!!after.stage_transition_id}`, 'approved true');
         expect((await portalDb.programs.get(p.id)).stage_id, stage('LG'));
         const t = await portalDb.stageTransitions.get(after.stage_transition_id!);
@@ -232,7 +232,7 @@ category('Portal: approval workflow', () => {
         const theirs = await asProposedBy(out.proposed!.request, user.id);
         expect(await refusal(() => reviewRequest(theirs.id, 'reject', '')), 'A review needs a rationale');
         expect((await reviewRequest(theirs.id, 'reject', 'binding is not confirmed')).line, `${p.code}: advance to Lead Generation: rejected`);
-        const after = await portalDb.approvalRequests.get(theirs.id);
+        const after = await portalDb.approvals.get(theirs.id);
         expect(`${after.status} ${after.result} ${(after.reviews as any).items[0].rationale}`, 'rejected rejected binding is not confirmed');
       });
       // no self-signup on this stand: there is no second approver to review
@@ -298,8 +298,8 @@ category('Portal: approval workflow', () => {
       expect((await portalDb.modelCards.get(card.id)).approval, 'approved', 'the file\'s draft does not undo it');
       expect(report.includes('approval kept as approved'), true, report);
     } finally {
-      for (const q of await portalDb.approvalRequests.query({filter: `target = "${card.id}"`}))
-        await portalDb.approvalRequests.delete(q.id).catch(() => undefined);
+      for (const q of await portalDb.approvals.query({filter: `target = "${card.id}"`}))
+        await portalDb.approvals.delete(q.id).catch(() => undefined);
       await portalDb.modelCards.delete(card.id).catch(() => undefined);
       await portalDb.models.delete(model.id).catch(() => undefined);
     }
@@ -321,7 +321,7 @@ category('Portal: approval workflow', () => {
         expect((await reviewRequest(r.id, 'approve', 'data are clear')).line,
           'EXS-GPC3: advance to Hit-to-Lead: advance recorded with 2 piece(s) of evidence');
         expect((await portalDb.programs.get(p.id)).stage_id, stage('H2L'));
-        const t = await portalDb.stageTransitions.get((await portalDb.approvalRequests.get(r.id)).stage_transition_id!);
+        const t = await portalDb.stageTransitions.get((await portalDb.approvals.get(r.id)).stage_transition_id!);
         expect(`${t.source} ${t.evidence!.includes('potency')}`, 'data true');
       });
     } finally {
@@ -329,7 +329,7 @@ category('Portal: approval workflow', () => {
       // EX-SMD asks for no approvals: every request about EXS-GPC3 is this test's
       const gpc3 = (await portalDb.programs.query({filter: `portfolio_id = "${smd.id}" and code = "EXS-GPC3"`}))[0];
       for (const q of await requestsOf(gpc3.id))
-        await portalDb.approvalRequests.delete(q.id).catch(() => undefined);
+        await portalDb.approvals.delete(q.id).catch(() => undefined);
     }
     expect((await portfolioByCode('EX-SMD')).approval ?? null, null, 'EX-SMD put back');
   });

@@ -74,7 +74,7 @@ export async function linkDocumentTo(program: ProgramRow, input: Partial<Documen
   // in a portfolio that asks for approval of documents, only an approved request approves one
   if (status === 'approved' && existing?.status !== 'approved' &&
     needsApproval(approvalOf(ctx.portfolio.approval), 'document')) {
-    const request = opts.approvedRequest ? await portalDb.approvalRequests.get(opts.approvedRequest).catch(() => null) : null;
+    const request = opts.approvedRequest ? await portalDb.approvals.get(opts.approvedRequest).catch(() => null) : null;
     if (!request || !takesEffect(request) || request.kind !== 'document' || request.target !== existing?.id)
       throw new Error(`${ctx.portfolio.code} asks for approval of documents: submit it, and another approver approves it`);
   }

@@ -1,6 +1,7 @@
-/** Server-side write permissions on the portal's workflow tables (program_role, approval_request,
- * parked_folder): Edit to the portfolios' groups the app lets write them, none to All users. The
- * rules are in ./model/write-grants.
+/** Server-side table grants: Edit on the workflow tables (program_role, parked_folder, approval,
+ * sync_log) to the portfolios' groups the app lets write them, View on parked_folder to the
+ * approvers, and the tables that leaked across portfolios closed to All users. The rules are in
+ * ./model/write-grants.
  *
  * A schema redeploy never revokes a grant (the manifest's `grants` are additive), so the schema
  * declaring View alone is not enough on a server that already has All users' Edit: the revoke
@@ -8,7 +9,7 @@
  * this runs when portfolios are loaded and from the securePortalTables function. */
 import * as grok from 'datagrok-api/grok';
 import {portalDb, PortfolioRow} from './generated/db';
-import {describeWriteGrants, Grant, planWriteGrants, PortfolioGroups, WRITERS, WriteGrantPlan} from './model/write-grants';
+import {describeWriteGrants, Grant, MANAGED_TABLES, planWriteGrants, PortfolioGroups, WriteGrantPlan} from './model/write-grants';
 import {ROW_LIMIT} from './rows';
 
 const table = (name: string) => grok.dapi.domains.table(`portal.${name}`);
@@ -16,15 +17,15 @@ const table = (name: string) => grok.dapi.domains.table(`portal.${name}`);
 /** The grants on each managed table now. Needs Share on the tables. */
 export async function currentWriteGrants(): Promise<Record<string, Grant[]>> {
   const out: Record<string, Grant[]> = {};
-  for (const name of Object.keys(WRITERS))
+  for (const name of MANAGED_TABLES)
     out[name] = (await table(name).grants()).map((g) => [g.group.id, String(g.permission)] as Grant);
   return out;
 }
 
 const groupsOf = (p: PortfolioRow): PortfolioGroups => ({code: p.code, approvers: p.approvers, contributors: p.contributors});
 
-/** Gives the writer groups of [portfolios] (every portfolio when omitted) Edit on the managed
- * tables and takes All users' Edit and Delete away. Idempotent; with [dryRun] only reports. A
+/** Gives the writer and reader groups of [portfolios] (every portfolio when omitted) their grants
+ * on the managed tables and takes All users' away. Idempotent; with [dryRun] only reports. A
  * user without Share on the tables gets a report line instead of an error: the tables stay as
  * they were. */
 export async function secureWriteTables(portfolios?: PortfolioGroups[], dryRun = false): Promise<string[]> {

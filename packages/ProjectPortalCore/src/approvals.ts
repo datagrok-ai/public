@@ -4,17 +4,20 @@
  * through linkDocumentTo (criterion met, older version superseded). The rules live in
  * ./model/approvals.
  *
- * `approval_request` is table-secured, like program_role. The server lets only the portfolios'
- * contributors groups (approvers are nested in them) write it (./write-grants); which contributor
- * may review which request is the app's check. Master security through the program would hide a
- * request from every approver but the program's author until GROK-21041 is fixed. */
+ * Requests live in `approval`, row-secured: each is linked into its program's folder (a model card's
+ * into the portfolio's root), so the portfolio's groups and the program's roles read it and no
+ * other portfolio does (./secured-rows). The server lets only the portfolios' contributors groups
+ * (approvers are nested in them) write it (./write-grants); which contributor may review which
+ * request is the app's check. Master security through the program would hide a request from every
+ * approver but the program's author until GROK-21041 is fixed. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {ApprovalRequestRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
+import {ApprovalRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isApprover, isContributor, programContext, recordDecision, RecordedDecision, verdictFor} from './portal';
 import {programAccess, rolesOf} from './program-roles';
 import {notifyUser} from './notify';
+import {ofMyPortfolios, placeApproval} from './secured-rows';
 // evidence.ts and snapshots.ts reach portal.ts, which does not import this file
 import {suggestedEvidence} from './evidence';
 import {summaryOf, takeSnapshot} from './snapshots';
@@ -34,29 +37,41 @@ import {userNames} from './users';
 export {userNames};
 import {filterValue, ROW_LIMIT} from './rows';
 
-export const requestRef = (r: ApprovalRequestRow): RequestRef => ({id: r.id, kind: r.kind as RequestKind,
+export const requestRef = (r: ApprovalRow): RequestRef => ({id: r.id, kind: r.kind as RequestKind,
   status: r.status as RequestRef['status'], title: r.title, proposedBy: r.proposed_by ?? null,
   proposedOn: r.proposed_on ? dayjs(r.proposed_on as any).toISOString() : null, source: r.source === 'data' ? 'data' : 'person',
   needed: r.approvals_needed ?? 1, reviews: reviewsOf(r.reviews), programId: r.program_id ?? null, portfolioId: r.portfolio_id});
 
-const newestFirst = (rows: ApprovalRequestRow[]) =>
-  rows.sort(newestFirstBy((x) => x.created_on));
+const newestFirst = (rows: ApprovalRow[]) =>
+  rows.sort(newestFirstBy((x) => x.proposed_on ?? x.created_on));
+
+/** Request [id], or an error when it does not exist or the user may not read it: the server shows a
+ * request only to its portfolio's people and its proposer. */
+async function readableRequest(id: string): Promise<ApprovalRow> {
+  const row = await portalDb.approvals.get(id).catch(() => null);
+  if (!row)
+    throw new Error(`No approval request ${id}, or it is not shared with you`);
+  return row;
+}
 
 /** Every request of a program, newest first. */
-export async function requestsOf(programId: string): Promise<ApprovalRequestRow[]> {
-  return newestFirst(await portalDb.approvalRequests.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}));
+export async function requestsOf(programId: string): Promise<ApprovalRow[]> {
+  return newestFirst(await portalDb.approvals.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}));
 }
 
 /** The requests about one document or model card, newest first. */
-async function requestsFor(kind: RequestKind, target: string): Promise<ApprovalRequestRow[]> {
-  return newestFirst(await portalDb.approvalRequests.query({filter: `kind = ${filterValue(kind)} and target = ${filterValue(target)}`, limit: ROW_LIMIT}));
+async function requestsFor(kind: RequestKind, target: string): Promise<ApprovalRow[]> {
+  return newestFirst(await portalDb.approvals.query({filter: `kind = ${filterValue(kind)} and target = ${filterValue(target)}`, limit: ROW_LIMIT}));
 }
 
 export interface Proposal {
-  request: ApprovalRequestRow;
+  request: ApprovalRow;
   line: string;
   /** How telling the approvers went: `2 of 2 approver(s) notified`. */
   notified?: string;
+  /** Why the request could not be linked into its folder, when it could not: then only its
+   * proposer and admins read it. */
+  unplaced?: string;
 }
 
 /** Groups are walked this deep for their users: a group of groups of users. */
@@ -98,7 +113,7 @@ export async function approverUsers(portfolio: PortfolioRow, programId: string |
 /** Tells the approvers of [request], in the platform's notifications, that it waits for them. The
  * proposer is not told. Never throws: says how it went. The server lets a user notify others only
  * when they may edit users; otherwise each approver finds it under Waiting for me. */
-export async function tellApprovers(request: ApprovalRequestRow, portfolio: PortfolioRow): Promise<string> {
+export async function tellApprovers(request: ApprovalRow, portfolio: PortfolioRow): Promise<string> {
   try {
     const me = DG.User.current();
     const ids = approversToTell(await approverUsers(portfolio, request.program_id ?? null), me.id);
@@ -135,13 +150,14 @@ export async function proposeDecision(programId: string, decision: Decision, rat
     items = [...items, snapshotEvidence(snap.snapshot.id, summaryOf(snap.snapshot))];
   }
   const to = ctx.stages.find((s) => s.id === verdict.toStageId);
-  const [r] = await portalDb.approvalRequests.insert({portfolio_id: ctx.portfolio.id, program_id: programId, kind: 'decision',
+  const [r] = await portalDb.approvals.insert({portfolio_id: ctx.portfolio.id, program_id: programId, kind: 'decision',
     decision: decision as any, to_stage_id: verdict.toStageId ?? undefined, title: decisionTitle(ctx.program.code, decision, to?.name),
     rationale, source: by.source ?? 'person', evidence: {items, ...(by.evidence ? {text: by.evidence} : {})},
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(config), status: 'pending'});
-  const request = await portalDb.approvalRequests.get(r.id);
+  const request = await portalDb.approvals.get(r.id);
+  const unplaced = await placeApproval(request, ctx.portfolio) ?? undefined;
   return {request, line: `${request.title}: proposed; waits for ${describeProgress(requestRef(request)).replace(/^0 of /, '')}`,
-    notified: await tellApprovers(request, ctx.portfolio)};
+    notified: await tellApprovers(request, ctx.portfolio), unplaced};
 }
 
 /** What a gate decision does: recorded at once, or proposed when the portfolio asks for approval of
@@ -173,15 +189,16 @@ export async function submitDocument(program: ProgramRow, documentId: string, ra
     refused.push(`the document is ${doc.status}; only a draft or a rejected document is submitted`);
   if (refused.length)
     throw new Error(refused.join('; '));
-  const [r] = await portalDb.approvalRequests.insert({portfolio_id: ctx.portfolio.id, program_id: program.id, kind: 'document',
+  const [r] = await portalDb.approvals.insert({portfolio_id: ctx.portfolio.id, program_id: program.id, kind: 'document',
     target: doc.id, title: `${program.code}: approve ${describeDocument({title: doc.title, version: doc.doc_version, status: 'draft'})
       .replace(/ · draft$/, '')}`, rationale: rationale ?? undefined, source: 'person',
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(approvalOf(ctx.portfolio.approval)),
     status: 'pending'});
   // the request first, then the document: a failed insert leaves no document stuck as submitted
   await markSubmitted(r.id, () => portalDb.documents.update(doc.id, {status: 'submitted'}));
-  const request = await portalDb.approvalRequests.get(r.id);
-  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, ctx.portfolio)};
+  const request = await portalDb.approvals.get(r.id);
+  const unplaced = await placeApproval(request, ctx.portfolio) ?? undefined;
+  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, ctx.portfolio), unplaced};
 }
 
 /** Marks the target of request [id] as waiting; if that fails, the request is removed again. */
@@ -189,7 +206,7 @@ async function markSubmitted(id: string, mark: () => Promise<unknown>): Promise<
   try {
     await mark();
   } catch (e: any) {
-    await portalDb.approvalRequests.delete(id).catch(() => undefined);
+    await portalDb.approvals.delete(id).catch(() => undefined);
     throw e;
   }
 }
@@ -214,18 +231,19 @@ export async function submitModelCard(portfolio: PortfolioRow, modelCode: string
     refused.push(`the card is ${card.approval.replace('_', ' ')}; only a draft or a rejected card is submitted`);
   if (refused.length)
     throw new Error(refused.join('; '));
-  const [r] = await portalDb.approvalRequests.insert({portfolio_id: portfolio.id, kind: 'model_card', target: card.id,
+  const [r] = await portalDb.approvals.insert({portfolio_id: portfolio.id, kind: 'model_card', target: card.id,
     title: `${model.name} ${card.model_version}: approve model card`, rationale: rationale ?? undefined, source: 'person',
     proposed_by: DG.User.current().id, proposed_on: dayjs(), approvals_needed: approvalsNeeded(approvalOf(portfolio.approval)),
     status: 'pending'});
   await markSubmitted(r.id, () => portalDb.modelCards.update(card.id, {approval: 'in_review'}));
-  const request = await portalDb.approvalRequests.get(r.id);
-  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, portfolio)};
+  const request = await portalDb.approvals.get(r.id);
+  const unplaced = await placeApproval(request, portfolio) ?? undefined;
+  return {request, line: `${request.title}: submitted for approval`, notified: await tellApprovers(request, portfolio), unplaced};
 }
 
 /** Whether the current user reviews [r]: an approver of its program (portfolio or program role),
  * or of its portfolio for a model card. */
-async function mayReview(r: ApprovalRequestRow, portfolios: Map<string, PortfolioRow> = new Map()): Promise<boolean> {
+async function mayReview(r: ApprovalRow, portfolios: Map<string, PortfolioRow> = new Map()): Promise<boolean> {
   const portfolio = portfolios.get(r.portfolio_id) ?? await portalDb.portfolios.get(r.portfolio_id);
   portfolios.set(portfolio.id, portfolio);
   if (r.program_id)
@@ -234,7 +252,7 @@ async function mayReview(r: ApprovalRequestRow, portfolios: Map<string, Portfoli
 }
 
 export interface ReviewResult {
-  request: ApprovalRequestRow;
+  request: ApprovalRow;
   line: string;
   /** What approving did: the decision recorded, the document approved. */
   effect?: RecordedDecision;
@@ -246,7 +264,7 @@ export interface ReviewResult {
  * approved. If that fails, the review is not kept and the request stays pending. A rejection is
  * logged on the request; the document or card is marked rejected. The proposer is told. */
 export async function reviewRequest(requestId: string, verdict: ReviewVerdict, rationale: string): Promise<ReviewResult> {
-  const row = await portalDb.approvalRequests.get(requestId);
+  const row = await readableRequest(requestId);
   const ref = requestRef(row);
   const me = DG.User.current().id;
   const refused = checkReview(ref, {reviewer: me, isApprover: await mayReview(row), verdict, rationale});
@@ -258,7 +276,7 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
   // second click) at the same time fails here, or then finds it closed, instead of losing a review
   // or applying the decision twice. If the effect fails, the claim is undone.
   try {
-    await portalDb.approvalRequests.update(row.id, {reviews: {items: reviews}, status} as any, {version: row.version});
+    await portalDb.approvals.update(row.id, {reviews: {items: reviews}, status} as any, {version: row.version});
   } catch (e: any) {
     throw new Error(`${row.title}: reviewed by someone else meanwhile; reload and try again (${e?.message ?? e})`);
   }
@@ -285,7 +303,7 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
         result = 'model card approved';
       }
     } catch (e: any) {
-      await portalDb.approvalRequests.update(row.id, {reviews: {items: ref.reviews}, status: 'pending'} as any)
+      await portalDb.approvals.update(row.id, {reviews: {items: ref.reviews}, status: 'pending'} as any)
         .catch(() => undefined);
       throw new Error(`Approved, but it could not take effect, so the request stays pending: ${e?.message ?? e}`);
     }
@@ -296,10 +314,10 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
       await portalDb.modelCards.update(row.target!, {approval: 'rejected'}).catch(() => undefined);
     result = 'rejected';
   }
-  await portalDb.approvalRequests.update(row.id, {reviews: {items: reviews}, status,
+  await portalDb.approvals.update(row.id, {reviews: {items: reviews}, status,
     ...(status !== 'pending' ? {closed_on: dayjs(), result} : {}),
     ...(transition ? {stage_transition_id: transition} : {})} as any);
-  const request = await portalDb.approvalRequests.get(row.id);
+  const request = await portalDb.approvals.get(row.id);
   const line = `${request.title}: ${status === 'pending' ? `approved by you; ${describeProgress(requestRef(request))}` : result}`;
   let notified: string | undefined;
   if (status !== 'pending' && row.source !== 'data' && row.proposed_by && row.proposed_by !== me) {
@@ -310,8 +328,8 @@ export async function reviewRequest(requestId: string, verdict: ReviewVerdict, r
 }
 
 /** Withdraws a pending request; only its proposer may. A document or card goes back to draft. */
-export async function withdrawRequest(requestId: string): Promise<ApprovalRequestRow> {
-  const row = await portalDb.approvalRequests.get(requestId);
+export async function withdrawRequest(requestId: string): Promise<ApprovalRow> {
+  const row = await readableRequest(requestId);
   const refused = checkWithdraw(requestRef(row), DG.User.current().id);
   if (refused.length)
     throw new Error(refused.join('; '));
@@ -319,13 +337,13 @@ export async function withdrawRequest(requestId: string): Promise<ApprovalReques
     await portalDb.documents.update(row.target!, {status: 'draft'}).catch(() => undefined);
   else if (row.kind === 'model_card')
     await portalDb.modelCards.update(row.target!, {approval: 'draft'}).catch(() => undefined);
-  await portalDb.approvalRequests.update(row.id, {status: 'withdrawn', closed_on: dayjs(), result: 'withdrawn by the proposer'} as any);
-  return portalDb.approvalRequests.get(row.id);
+  await portalDb.approvals.update(row.id, {status: 'withdrawn', closed_on: dayjs(), result: 'withdrawn by the proposer'} as any);
+  return portalDb.approvals.get(row.id);
 }
 
 /** The pending requests the current user may review, oldest first. */
-export async function waitingForMe(): Promise<ApprovalRequestRow[]> {
-  const pending = await portalDb.approvalRequests.query({filter: 'status = "pending"', limit: ROW_LIMIT});
+export async function waitingForMe(): Promise<ApprovalRow[]> {
+  const pending = await ofMyPortfolios(await portalDb.approvals.query({filter: 'status = "pending"', limit: ROW_LIMIT}));
   const portfolios = new Map<string, PortfolioRow>();
   const allowed = new Set<string>();
   for (const r of pending) {
@@ -339,14 +357,14 @@ export async function waitingForMe(): Promise<ApprovalRequestRow[]> {
 }
 
 /** `advance to Lead Generation · proposed by Ann 2026-10-02 · 0 of 1 approvals` */
-export function describeRequest(r: ApprovalRequestRow, names: Map<string, string>): string {
+export function describeRequest(r: ApprovalRow, names: Map<string, string>): string {
   const by = r.source === 'data' ? 'by data' : `by ${names.get(r.proposed_by ?? '') ?? 'someone'}`;
   const on = r.proposed_on ? dayjs(r.proposed_on as any).format('YYYY-MM-DD') : '';
   return `${r.title} · proposed ${by} ${on} · ${describeProgress(requestRef(r))}`;
 }
 
 /** One row per request: what, status, progress, who proposed it and when, the rationale, the reviews. */
-export function requestsFrame(rows: ApprovalRequestRow[], names: Map<string, string>, name: string): DG.DataFrame {
+export function requestsFrame(rows: ApprovalRow[], names: Map<string, string>, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromStrings('id', rows.map((r) => r.id)),
     DG.Column.fromStrings('kind', rows.map((r) => r.kind)),

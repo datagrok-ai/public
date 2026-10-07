@@ -99,7 +99,7 @@ category('Portal: activity feed', () => {
   const lower = async (series: string | null, values: number) => {
     const f = (await myFollows(kin1.id)).find((x) => series ? x.work_unit_code === series : !x.work_unit_code)!;
     const s = f.checked as {rows: number, values: number};
-    await portalDb.follows.update(f.id, {checked: {rows: s.rows, values: s.values - values}});
+    await portalDb.followings.update(f.id, {checked: {rows: s.rows, values: s.values - values}});
   };
 
   before(async () => {

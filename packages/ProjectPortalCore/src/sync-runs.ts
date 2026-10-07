@@ -1,10 +1,11 @@
 /** Scheduled sync against the platform (F-01): every sync of a portfolio, by schedule or by hand,
- * is recorded in `sync_run` with what it changed; `syncDuePortfolios` syncs only the portfolios
+ * is recorded in `sync_log` with what it changed (linked into the portfolio's root, so only its
+ * groups read it); `syncDuePortfolios` syncs only the portfolios
  * whose schedule is due; owners hear about a run that changed something in the platform's own
  * notifications. The rules live in ./model/sync-runs. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {portalDb, PortfolioRow, SyncRunRow} from './generated/db';
+import {portalDb, PortfolioRow, SyncLogRow} from './generated/db';
 import {portfolioByCode, summarizePlan, syncCompounds, syncPortfolio, syncWorkUnits} from './portal';
 import {summarizeWorkUnitPlan} from './model/work-units';
 import {summarizeCompoundPlan} from './model/compounds';
@@ -16,6 +17,7 @@ import {autoAdvance, autoAdvanceOf} from './auto-advance';
 import {notifyUser} from './notify';
 import {checkNewDataOf} from './new-data';
 import {checkEvidenceChangesOf} from './evidence-tables';
+import {myPortfolioIds, placeSyncLog} from './secured-rows';
 import {filterValue, ROW_LIMIT} from './rows';
 
 export type SyncTrigger = 'schedule' | 'manual';
@@ -23,7 +25,7 @@ export type SyncTrigger = 'schedule' | 'manual';
 export interface SyncRunResult {
   portfolio: string;
   trigger: SyncTrigger;
-  /** The `sync_run` row; null when it could not be written (see `historyError`). */
+  /** The `sync_log` row; null when it could not be written (see `historyError`). */
   runId: string | null;
   historyError?: string;
   /** As syncPortfolio has always returned it: one line per feed. */
@@ -45,13 +47,16 @@ const ms = (v: any): number | null => {
 };
 
 /** A portfolio's runs, newest first. */
-export async function syncRunsOf(portfolio: PortfolioRow, limit = 50): Promise<SyncRunRow[]> {
-  const rows = await portalDb.syncRuns.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, sort: '!started_on', limit});
+export async function syncRunsOf(portfolio: PortfolioRow, limit = 50): Promise<SyncLogRow[]> {
+  const mine = await myPortfolioIds();
+  if (mine && !mine.has(portfolio.id))
+    return [];
+  const rows = await portalDb.syncLogs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, sort: '!started_on', limit});
   // the server's order is asked for, and kept whatever it returns
   return rows.sort((a, b) => (ms(b.started_on) ?? 0) - (ms(a.started_on) ?? 0));
 }
 
-const issuesOf = (run: SyncRunRow | undefined): string[] | null => !run ? null :
+const issuesOf = (run: SyncLogRow | undefined): string[] | null => !run ? null :
   [...(run.unresolved_spellings ?? '').split('|').filter((s) => s.length > 0),
     ...((run.changes as {overlaps?: string[]} | undefined)?.overlaps ?? [])].sort();
 
@@ -63,12 +68,16 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
   let runId: string | null = null;
   let historyError: string | undefined;
   try {
-    const [r] = await portalDb.syncRuns.insert({portfolio_id: portfolio.id, started_on: started, trigger,
+    const [r] = await portalDb.syncLogs.insert({portfolio_id: portfolio.id, started_on: started, trigger,
       run_by: DG.User.current().id});
     runId = (r as any).existingId ?? r.id;
   } catch (e: any) {
     historyError = `sync history not recorded: ${e?.message ?? e}`;
   }
+  // the row reaches the portfolio's groups through its root, and nobody else
+  const unplaced = runId ? await placeSyncLog(runId, portfolio) : null;
+  if (unplaced)
+    historyError = `sync history not shared: ${unplaced}`;
 
   const empty: SyncRunCounts = {created: 0, updated: 0, flagged: 0, unresolved: 0, unresolvedSpellings: [], overlaps: []};
   let result: SyncRunResult = {portfolio: code, trigger, runId, historyError, report: '', counts: empty, changes: [], error: null};
@@ -128,7 +137,7 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
 
   if (runId) {
     try {
-      await portalDb.syncRuns.update(runId, {finished_on: new Date().toISOString() as any,
+      await portalDb.syncLogs.update(runId, {finished_on: new Date().toISOString() as any,
         created: result.counts.created, updated: result.counts.updated, flagged: result.counts.flagged,
         unresolved: result.counts.unresolved, unresolved_spellings: result.counts.unresolvedSpellings.join('|') || undefined,
         error: result.error ?? undefined, summary: result.report || undefined,
@@ -178,7 +187,7 @@ export interface DueState {
   schedule: Schedule | null;
   /** Why a schedule could not be read. */
   scheduleError?: string;
-  last: SyncRunRow | undefined;
+  last: SyncLogRow | undefined;
   next: number | null;
   due: boolean;
 }
@@ -228,7 +237,7 @@ export async function syncDue(codes?: string[], now = Date.now()): Promise<{ran:
     if (worthNotifying(r, issuesOf(state.last))) {
       r.notified = await notifyOwners(p, runMessage(p, r));
       if (r.runId)
-        await portalDb.syncRuns.update(r.runId, {notified: r.notified}).catch(() => undefined);
+        await portalDb.syncLogs.update(r.runId, {notified: r.notified}).catch(() => undefined);
     } else
       r.notified = 'nothing new to tell';
     ran.push(r);

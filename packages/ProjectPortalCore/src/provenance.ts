@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {portalDb} from './generated/db';
+import {portalDb, ProgramCompoundRow} from './generated/db';
 import {stagesOf} from './portal';
 import {datasetsOf} from './program-data';
 import {MAIN_DATASET} from './model/program-data';
@@ -43,13 +43,25 @@ async function programsOf(kind: ProvenanceStart, id: string): Promise<string[]> 
   case 'model_run':
     return one(portalDb.modelRuns.query({filter: `id = ${filterValue(id)} or run_id = ${filterValue(id)}`, limit: ROW_LIMIT}).then((r) => r[0]));
   case 'compound': {
-    const c = (await portalDb.compounds.query({filter: `id = ${filterValue(id)} or code = ${filterValue(id)}`, limit: ROW_LIMIT}).catch(() => []))[0];
-    if (!c)
-      return [];
-    const links = await portalDb.programCompounds.query({filter: `compound_id = ${filterValue(c.id)}`, limit: ROW_LIMIT});
+    // through the links, which are secured by program: only programs the reader sees
+    const links = await compoundLinks(id);
     return [...new Set(links.map((l) => l.program_id))].slice(0, MAX_PROGRAMS);
   }
   }
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** The program links of compound [idOrCode] (and [and]): by the code the link carries, or by the
+ * compound row's id for a link from before 0.3.0 when the reader may read the compound table. */
+async function compoundLinks(idOrCode: string, and?: string): Promise<ProgramCompoundRow[]> {
+  const also = and ? ` and ${and}` : '';
+  const key = UUID.test(idOrCode) ? `compound_id = ${filterValue(idOrCode)}` : `compound_code = ${filterValue(idOrCode)}`;
+  const byCode = await portalDb.programCompounds.query({filter: `${key}${also}`, limit: ROW_LIMIT}).catch(() => []);
+  if (byCode.length)
+    return byCode;
+  const c = (await portalDb.compounds.query({filter: `id = ${filterValue(idOrCode)} or code = ${filterValue(idOrCode)}`, limit: ROW_LIMIT}).catch(() => []))[0];
+  return c ? portalDb.programCompounds.query({filter: `compound_id = ${filterValue(c.id)}${also}`, limit: ROW_LIMIT}).catch(() => []) : [];
 }
 
 /** The tables a saved call read and wrote: its dataframe parameters, held as the uploaded tables' ids. */
@@ -120,11 +132,8 @@ export async function provenanceRecords(programIds: string[], compound?: string)
   r.predictions = [...scored.values()];
   r.snapshots = snapshots.map((s) => ({id: s.id, programId: s.program_id, label: s.label, takenOn: iso(s.taken_on)}));
   if (compound) {
-    const c = (await portalDb.compounds.query({filter: `id = ${filterValue(compound)} or code = ${filterValue(compound)}`, limit: ROW_LIMIT}).catch(() => []))[0];
-    if (c) {
-      const links = await portalDb.programCompounds.query({filter: `compound_id = ${filterValue(c.id)} and ${by}`, limit: ROW_LIMIT});
-      r.compounds = links.map((l) => ({id: c.id, code: c.code, programId: l.program_id, role: l.role}));
-    }
+    const links = await compoundLinks(compound, by);
+    r.compounds = links.map((l) => ({id: l.compound_id, code: l.compound_code ?? compound, programId: l.program_id, role: l.role}));
   }
   return r;
 }

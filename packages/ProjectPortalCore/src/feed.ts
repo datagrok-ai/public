@@ -5,7 +5,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {FollowRow, portalDb, PortfolioRow, ProgramRow, SyncRunRow} from './generated/db';
+import {FollowingRow, portalDb, PortfolioRow, ProgramRow, SyncLogRow} from './generated/db';
 import {portfolioByCode, programData, stagesOf} from './portal';
 import {FeedEntry, FeedFilter, FeedRecords, filterFeed, mergeFeeds, programFeedEntries} from './model/feed';
 import {ProgramChange} from './model/sync-runs';
@@ -16,6 +16,7 @@ import {reviewsOf} from './model/approvals';
 import {newestFirstBy} from './model/time';
 import {filterValue, queryIn, ROW_LIMIT} from './rows';
 import {userNames} from './users';
+import {myPortfolioIds} from './secured-rows';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
 
@@ -25,13 +26,16 @@ const SYNC_RUNS = 50;
 type SyncChanges = {programs?: ProgramChange[], newData?: {program: string, line: string}[]} | undefined;
 
 /** The portfolio's recent sync runs, read once per feed. */
-async function syncRunsOf(portfolioId: string): Promise<SyncRunRow[]> {
-  return portalDb.syncRuns.query({filter: `portfolio_id = ${filterValue(portfolioId)}`, sort: '!started_on', limit: SYNC_RUNS})
+async function syncRunsOf(portfolioId: string): Promise<SyncLogRow[]> {
+  const mine = await myPortfolioIds().catch(() => new Set<string>());
+  if (mine && !mine.has(portfolioId))
+    return [];
+  return portalDb.syncLogs.query({filter: `portfolio_id = ${filterValue(portfolioId)}`, sort: '!started_on', limit: SYNC_RUNS})
     .catch(() => []);
 }
 
 /** Everything one program's feed is made of. [syncRuns] spares a second read of the portfolio's history. */
-export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow, syncRuns?: SyncRunRow[]): Promise<FeedRecords> {
+export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow, syncRuns?: SyncLogRow[]): Promise<FeedRecords> {
   const by = `program_id = "${program.id}"`;
   const [stages, decisions, evidence, runs, artifacts, documents, snapshots, roleChanges, follows, predictions, syncs, observations] = await Promise.all([
     stagesOf(program.stage_model_id),
@@ -42,7 +46,8 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
     portalDb.documents.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     portalDb.programSnapshots.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     portalDb.compoundRoleChanges.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
-    portalDb.follows.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
+    // the news told to the current user: another user's follows are theirs alone
+    portalDb.followings.query({filter: `${by} and user_id = ${filterValue(DG.User.current().id)}`, limit: ROW_LIMIT}).catch(() => []),
     portalDb.predictions.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
     syncRuns ? Promise.resolve(syncRuns) : syncRunsOf(portfolio.id),
     portalDb.observations.query({filter: by, limit: ROW_LIMIT}).catch(() => []),
@@ -51,8 +56,13 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
   const statuses = await queryIn(portalDb.criterionStatuses, 'id', statusIds).catch(() => []);
   const criterionIds = [...new Set(statuses.map((s) => s.gate_criterion_id))];
   const criteria = await queryIn(portalDb.gateCriterions, 'id', criterionIds).catch(() => []);
+  // compound codes from the program's own links; the compound table is closed to most users
   const compoundIds = [...new Set(roleChanges.map((c) => c.compound_id))];
-  const compounds = await queryIn(portalDb.compounds, 'id', compoundIds).catch(() => []);
+  const links = compoundIds.length ? await portalDb.programCompounds.query({filter: by, limit: ROW_LIMIT}).catch(() => []) : [];
+  const codes = new Map(links.filter((l) => l.compound_code).map((l) => [l.compound_id, l.compound_code!]));
+  const rest = compoundIds.filter((id) => !codes.has(id));
+  for (const c of await queryIn(portalDb.compounds, 'id', rest).catch(() => []))
+    codes.set(c.id, c.code);
   const [programRoles, modelCards] = await Promise.all([
     programRolesOf(program.id).catch(() => []),
     approvedCardsOf([...runs.map((x) => x.model_id), ...predictions.map((x) => x.model_id)]).catch(() => []),
@@ -88,7 +98,7 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
       ...((d.evidence_check as any)?.state === 'stale' && d.status !== 'superseded' ?
         {staleOn: iso((d.evidence_check as any).checkedOn), stale: ((d.evidence_check as any).changes ?? []).join('; ')} : {})})),
     snapshots: snapshots.map((s) => ({id: s.id, label: s.label, by: s.taken_by ?? s.author_id, on: iso(s.taken_on)})),
-    roleChanges: roleChanges.map((c) => ({id: c.id, compound: compounds.find((x) => x.id === c.compound_id)?.code ?? c.compound_id,
+    roleChanges: roleChanges.map((c) => ({id: c.id, compound: codes.get(c.compound_id) ?? c.compound_id,
       from: c.from_role ?? null, to: c.to_role, by: c.changed_by ?? null, on: iso(c.changed_on ?? c.created_on)})),
     syncs: syncs.map((s) => {
       const ch = s.changes as SyncChanges;
@@ -129,7 +139,7 @@ async function approvedCardsOf(modelIds: (string | null | undefined)[]): Promise
     queryIn(portalDb.modelCards, 'model_id', ids),
   ]);
   const approved = cards.filter((c) => c.approval === 'approved' && c.approved_on);
-  const requests = await queryIn(portalDb.approvalRequests, 'target', approved.map((c) => c.id),
+  const requests = await queryIn(portalDb.approvals, 'target', approved.map((c) => c.id),
     'kind = "model_card" and status = "approved"').catch(() => []);
   return approved.map((c) => {
     const reviews = reviewsOf(requests.filter((r) => r.target === c.id).sort(newestFirstBy((r) => r.closed_on))[0]?.reviews);
@@ -160,14 +170,14 @@ export async function myFeedOf(filter: FeedFilter = {}): Promise<{entries: FeedE
 }
 
 /** The feed of [follows], as `myFeedOf` reads it. */
-export async function feedOfFollows(follows: FollowRow[], filter: FeedFilter = {}): Promise<{entries: FeedEntry[], programs: number}> {
+export async function feedOfFollows(follows: FollowingRow[], filter: FeedFilter = {}): Promise<{entries: FeedEntry[], programs: number}> {
   const ids = [...new Set(follows.map((f) => f.program_id))];
   if (!ids.length)
     return {entries: [], programs: 0};
   // a followed program may be gone or not visible to the user: then nothing is left to read
   const programs = await queryIn(portalDb.programs, 'id', ids);
   const portfolios = await queryIn(portalDb.portfolios, 'id', programs.map((p) => p.portfolio_id));
-  const syncs = new Map<string, Promise<SyncRunRow[]>>();
+  const syncs = new Map<string, Promise<SyncLogRow[]>>();
   const lists = await Promise.all(programs.map(async (p) => {
     const pf = portfolios.find((x) => x.id === p.portfolio_id);
     // a portfolio not shared with the user: its programs' feeds are not theirs to read

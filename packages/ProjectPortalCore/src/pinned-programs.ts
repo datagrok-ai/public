@@ -31,7 +31,7 @@ export async function pinnedTiles(): Promise<ProgramTile[]> {
   const me = DG.User.current().id;
   const [{stages, facts}, follows] = await Promise.all([
     portfolioFacts(undefined, Date.now(), ids),
-    inBatches(ids, (b) => portalDb.follows.query({filter: `user_id = ${filterValue(me)} and program_id in (${b})`, limit: LIMIT})),
+    inBatches(ids, (b) => portalDb.followings.query({filter: `user_id = ${filterValue(me)} and program_id in (${b})`, limit: LIMIT})),
   ]);
   const str = (v: any): string | null => v ? String(v.toISOString?.() ?? v) : null;
   const inputs: TileInput[] = facts.map((f) => ({
