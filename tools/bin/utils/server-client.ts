@@ -2,21 +2,12 @@ import {NodeApiClient, NodeDapi} from './node-dapi';
 import {getServerCredentials} from './keypair';
 import {printError, OutputFormat} from './server-output';
 
-/** Opens a session on a host alias or URL (the configured default when omitted). */
+/** Opens a session on a host alias or URL; without one, on the single `--host` (or the configured default). */
 export type Connect = (host?: string) => Promise<NodeDapi>;
 
-/** `--host` as minimist leaves it: absent, one value, or an array when repeated. */
 export function hostList(host: any): string[] {
   if (host === undefined || host === null || host === true) return [];
   return (Array.isArray(host) ? host : [host]).map(String);
-}
-
-/** Commands that talk to one deployment refuse a repeated `--host`. */
-export function singleHost(argv: any, command: string): string | undefined {
-  const hosts = hostList(argv.host);
-  if (hosts.length > 1)
-    throw new Error(`'grok s ${command}' takes one --host`);
-  return hosts[0];
 }
 
 /**
@@ -48,12 +39,12 @@ export async function eachHost(argv: any, connect: Connect,
  * Rows from every `--host`, each prefixed with the host when there are several: a `HOST` column
  * in a table, a `host` field in JSON.
  */
-export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi, host: string) => Promise<any[]>,
+export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi) => Promise<any[]>,
                                   output: OutputFormat): Promise<any[]> {
   const column = output === 'json' ? 'host' : 'HOST';
   const rows: any[] = [];
   await eachHost(argv, connect, async (dapi, host, multi) => {
-    for (const row of await fn(dapi, host))
+    for (const row of await fn(dapi))
       rows.push(multi ? {[column]: host, ...row} : row);
   });
   return rows;

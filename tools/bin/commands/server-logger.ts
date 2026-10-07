@@ -1,10 +1,9 @@
 /// `grok s observe logger ...` — the server's logging policy: base settings, time-boxed overrides, locks, history
 /// (LoggingRouter, `/logging/policy`).
 import {NodeDapi} from '../utils/node-dapi';
-import {NodeLoggingClient} from '../utils/node-observability';
-import {Connect, eachHost, forEachHost, hostList, singleHost} from '../utils/server-client';
+import {Connect, eachHost, forEachHost, hostList} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {applyListSpec, fmtTime, normalizeFlag, normalizeLevel, parseDuration, parseTime, printBlock,
+import {applyListSpec, fmtTime, normalizeFlag, optString, parseDuration, parseTime, printBlock, rows,
   truncate, valueText} from '../utils/obs-format';
 
 export const LOGGER_USAGE = `Usage: grok s observe logger <verb> [server] [options]
@@ -51,16 +50,12 @@ export async function handleLogger(connect: Connect, verb: string | undefined, r
     case 'set': return await loggerSet(connect, argv, output);
     case 'diff': return await loggerDiff(connect, argv, output);
     case 'overrides': {
-      const rows = await forEachHost(argv, connect, async (dapi) => {
-        const overrides: any[] = await dapi.logging.overrides() ?? [];
-        return output === 'json' || output === 'quiet' ? overrides : overrides.map(overrideRow);
-      }, output);
-      printOutput(rows, output);
+      printOutput(await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.logging.overrides() ?? [], output, overrideRow), output), output);
       return true;
     }
     case 'history': {
-      const logging = await client(connect, argv, 'history');
-      const history: any[] = await logging.history({limit: argv.limit ?? 20}) ?? [];
+      const history: any[] = await (await connect()).logging.history({limit: argv.limit ?? 20}) ?? [];
       printOutput(output === 'json' ? history : history.map((h) => ({
         VERSION: h?.version ?? '', CHANGED: fmtTime(h?.changedAt), BY: h?.changedBy ?? '', SOURCE: h?.source ?? '',
         REASON: truncate(h?.reason, 40), CHANGES: truncate(h?.changed, 60),
@@ -68,9 +63,7 @@ export async function handleLogger(connect: Connect, verb: string | undefined, r
       return true;
     }
     case 'revert': {
-      const body = revertBody(rest, argv);
-      const logging = await client(connect, argv, 'revert');
-      const res = await logging.revert(body);
+      const res = await (await connect()).logging.revert(revertBody(rest, argv));
       if (output === 'table') console.log(`reverted ${res?.reverted ?? ''}`);
       else printOutput(res, output);
       return true;
@@ -80,20 +73,10 @@ export async function handleLogger(connect: Connect, verb: string | undefined, r
   return false;
 }
 
-async function client(connect: Connect, argv: any, verb: string): Promise<NodeLoggingClient> {
-  return (await connect(singleHost(argv, `logger ${verb}`))).logging;
-}
-
-/** A lock refusal is the server's own sentence (`levels.audit is locked by deployment configuration`). */
-function lockRefusal(err: any): never {
-  if (err?.apiError?.errorCode === 409) err.apiError.verbatim = true;
-  throw err;
-}
-
 export function revertBody(rest: string[], argv: any): Record<string, any> {
   const given = [rest[0] !== undefined, argv.override !== undefined, argv.overrides === true].filter(Boolean).length;
   if (given > 1) throw new Error('logger revert takes one of <version>, --override <id>, --overrides');
-  const body: Record<string, any> = {reason: argv.reason === undefined ? undefined : String(argv.reason)};
+  const body: Record<string, any> = {reason: optString(argv.reason)};
   if (rest[0] !== undefined) {
     if (!/^\d+$/.test(String(rest[0]))) throw new Error(`logger revert <version>: a history version number, got '${rest[0]}'`);
     body.version = Number(rest[0]);
@@ -103,7 +86,7 @@ export function revertBody(rest: string[], argv: any): Record<string, any> {
   return body;
 }
 
-export interface Scope { type: string; value?: string; label: string }
+export interface Scope { type: string; value?: string }
 
 export function parseScope(value: any): Scope {
   const s = value === undefined || value === true ? 'all' : String(value);
@@ -112,7 +95,7 @@ export function parseScope(value: any): Scope {
   const scopeValue = colon < 0 ? undefined : s.slice(colon + 1);
   if (!SCOPES.includes(type) || (type === 'all') !== (scopeValue === undefined) || scopeValue === '')
     throw new Error(`--scope is all, group:<name>, user:<login>, session:<id> or package:<name>, got '${s}'`);
-  return {type, value: scopeValue, label: type === 'all' ? 'all' : `${type}:${scopeValue}`};
+  return {type, value: scopeValue};
 }
 
 /** The All Users group of a policy document: its settings are the display path `server.<prop>`. */
@@ -170,12 +153,6 @@ export function diffMaps(left: Record<string, any>, right: Record<string, any>):
 
 function overrideScope(o: any): string {
   return o?.scope === 'all' ? 'all' : `${o?.scope}:${o?.scopeName ?? o?.scopeId ?? ''}`;
-}
-
-export function overrideRows(o: any): DiffRow[] {
-  return Object.entries(o?.changes ?? {}).map(([prop, v]) => ({
-    change: '+', path: `server.${prop}`, value: valueText(v), scope: overrideScope(o), reverts: fmtTime(o?.expiresAt),
-  }));
 }
 
 function overrideRow(o: any): Record<string, any> {
@@ -256,13 +233,12 @@ function boolArg(value: any, flag: string): boolean {
   throw new Error(`--${flag} is true or false, got '${value}'`);
 }
 
-/** The requested property values, list specs resolved against [current] (prop → value). */
 export function propChanges(argv: any, current: (prop: string) => any): Record<string, any> {
   const changes: Record<string, any> = {};
   for (const [flag, {prop, kind}] of Object.entries(PROPS)) {
     const v = argv[flag];
     if (v === undefined) continue;
-    if (kind === 'levels') changes[prop] = applyListSpec(current(prop), v, normalizeLevel, `--${flag}`);
+    if (kind === 'levels') changes[prop] = applyListSpec(current(prop), v, (s) => s.toLowerCase(), `--${flag}`);
     else if (kind === 'flags') changes[prop] = applyListSpec(current(prop), v, normalizeFlag, `--${flag}`);
     else if (kind === 'format') {
       if (v !== 'text' && v !== 'json') throw new Error(`--${flag} is text or json, got '${v}'`);
@@ -273,7 +249,6 @@ export function propChanges(argv: any, current: (prop: string) => any): Record<s
   return changes;
 }
 
-/** `--set <path>=<json>`, repeatable: a value that is not JSON is taken as a string. */
 export function setArgs(value: any): Record<string, any> {
   const out: Record<string, any> = {};
   for (const item of value === undefined ? [] : Array.isArray(value) ? value : [value]) {
@@ -287,7 +262,6 @@ export function setArgs(value: any): Record<string, any> {
   return out;
 }
 
-/** An override when time-boxed or scoped to a user, session or package; a base change otherwise. */
 export function isOverride(argv: any, scope: Scope): boolean {
   return argv.for !== undefined || argv.until !== undefined || ['user', 'session', 'package'].includes(scope.type);
 }
@@ -304,20 +278,21 @@ async function loggerSet(connect: Connect, argv: any, output: OutputFormat): Pro
     printError(new Error(`Nothing to set.\n${LOGGER_USAGE}`));
     return false;
   }
-  const reason = argv.reason === undefined ? undefined : String(argv.reason);
-  const dapi = await connect(singleHost(argv, 'logger set'));
+  const reason = optString(argv.reason);
+  const dapi = await connect();
   const logging = dapi.logging;
   const policy = await logging.policy();
   if (override) {
-      const target = await scopeTarget(dapi, policy, scope);
-      const effective = (await logging.effective(target.param))?.settings ?? {};
-      const body: Record<string, any> = {scope: scope.type, scopeId: target.scopeId, set: propChanges(argv, (p) => effective[p]), reason};
-      if (argv.for !== undefined) body.forMinutes = parseDuration(argv.for, '--for') / 60000;
-      if (argv.until !== undefined) body.expiresAt = parseTime(argv.until, '--until').toISOString();
-    const created = await logging.addOverride(body).catch(lockRefusal);
+    const target = await scopeTarget(dapi, policy, scope);
+    const effective = (await logging.effective(target.param))?.settings ?? {};
+    const body: Record<string, any> = {scope: scope.type, scopeId: target.scopeId, set: propChanges(argv, (p) => effective[p]), reason};
+    if (argv.for !== undefined) body.forMinutes = parseDuration(argv.for, '--for') / 60000;
+    if (argv.until !== undefined) body.expiresAt = parseTime(argv.until, '--until').toISOString();
+    const created = await logging.addOverride(body);
     if (output !== 'table') { printOutput(created, output); return true; }
+    const label = scope.type === 'all' ? 'all' : `${scope.type}:${scope.value}`;
     for (const [prop, v] of Object.entries(body.set))
-      console.log(`+ server.${prop}  ${valueText(v)}  scope ${scope.label}  reverts ${fmtTime(created?.expiresAt)}`);
+      console.log(`+ server.${prop}  ${valueText(v)}  scope ${label}  reverts ${fmtTime(created?.expiresAt)}`);
     return true;
   }
   const gid = scope.type === 'all'
@@ -329,7 +304,7 @@ async function loggerSet(connect: Connect, argv: any, output: OutputFormat): Pro
   const set: Record<string, any> = {...paths};
   for (const [prop, v] of Object.entries(propChanges(argv, current)))
     set[`userGroupSettings.${gid}.${prop}`] = v;
-  const res = await logging.setPolicy({set, reason}).catch(lockRefusal);
+  const res = await logging.setPolicy({set, reason});
   if (output !== 'table') { printOutput(res, output); return true; }
   if (res?.version == null) { console.log('(no change: the base settings already have these values)'); return true; }
   const named = {...policy, groups: {...policy?.groups, [gid]: policy?.groups?.[gid] ?? scope.value ?? 'All users'}};
@@ -351,7 +326,7 @@ async function loggerDiff(connect: Connect, argv: any, output: OutputFormat): Pr
     printDiff(diffMaps(maps[0], maps[1]), output);
     return true;
   }
-  const logging = (await connect(hosts[0])).logging;
+  const logging = (await connect()).logging;
   if (argv.version !== undefined) {
     if (!/^\d+$/.test(String(argv.version))) throw new Error(`--version is a history version number, got '${argv.version}'`);
     const [then, now] = [await logging.policy({version: String(argv.version)}), await logging.policy()];
@@ -359,9 +334,10 @@ async function loggerDiff(connect: Connect, argv: any, output: OutputFormat): Pr
     return true;
   }
   const policy = await logging.policy({defaults: true});
-  const rows = diffMaps(displayMap(policy?.defaults, policy), displayMap(policy?.settings, policy));
+  const diff = diffMaps(displayMap(policy?.defaults, policy), displayMap(policy?.settings, policy));
   for (const o of Array.isArray(policy?.overrides) ? policy.overrides : [])
-    rows.push(...overrideRows(o));
-  printDiff(rows, output);
+    for (const [prop, v] of Object.entries(o?.changes ?? {}))
+      diff.push({change: '+', path: `server.${prop}`, value: valueText(v), scope: overrideScope(o), reverts: fmtTime(o?.expiresAt)});
+  printDiff(diff, output);
   return true;
 }

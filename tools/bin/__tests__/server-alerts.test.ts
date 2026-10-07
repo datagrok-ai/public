@@ -1,6 +1,5 @@
 import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
-import {handleAlerts, muteBody, alertRow, detectionRows, recentServers, serverIds} from '../commands/server-alerts';
-import {hostList, singleHost} from '../utils/server-client';
+import {handleAlerts, muteBody, alertRow, detectionRows} from '../commands/server-alerts';
 import {mockConnect, captureOutput, utcIso, apiError} from './obs-helpers';
 
 const ALERT = {id: 'a41f9c00-0000-4000-8000-000000000001', kind: 'error-incident', key: 'a41f9c', severity: 'warning',
@@ -53,30 +52,6 @@ describe('rows', () => {
     ]});
     expect(rows.map((r) => [r.SERVER, r.LIVE, r.OWNER])).toEqual([['datlas-1', 'no', ''], ['datlas-2', 'yes', '*']]);
     expect(Object.keys(rows[0])).toEqual(['SERVER', 'HOST NAME', 'VERSION', 'LAST SEEN', 'LIVE', 'ELIGIBLE', 'OWNER']);
-  });
-
-  it('keeps live servers and those gone within the hour unless --all', () => {
-    const now = Date.parse('2026-10-01T10:00:00Z');
-    const lease = {servers: [
-      {id: 'L', live: true, lastSeen: '2026-09-01T00:00:00Z'},
-      {id: 'S', live: false, stoppedAt: '2026-10-01T09:30:00Z', lastSeen: '2026-10-01T09:30:00Z'},
-      {id: 'C', live: false, lastSeen: '2026-10-01T09:10:00Z'},
-      {id: 'OLD', live: false, stoppedAt: '2026-09-30T09:00:00Z', lastSeen: '2026-10-01T09:59:00Z'},
-      {id: 'GONE', live: false, lastSeen: '2026-09-20T00:00:00Z'},
-    ]};
-    expect(recentServers(lease, false, now).map((s) => s.id)).toEqual(['L', 'S', 'C']);
-    expect(recentServers(lease, true, now).length).toBe(5);
-    expect(serverIds({holder: 'x', servers: [{id: 'b'}, {id: 'a'}]})).toEqual(['b', 'a']);
-  });
-});
-
-describe('hosts', () => {
-  it('normalizes --host as minimist leaves it', () => {
-    expect(hostList(undefined)).toEqual([]);
-    expect(hostList('prod')).toEqual(['prod']);
-    expect(hostList(['prod', 'val'])).toEqual(['prod', 'val']);
-    expect(singleHost({host: 'prod'}, 'x')).toBe('prod');
-    expect(() => singleHost({host: ['a', 'b']}, 'alerts mute')).toThrow(/takes one --host/);
   });
 });
 
@@ -152,9 +127,18 @@ describe('handleAlerts', () => {
     ]);
   });
 
-  it('refuses several hosts for a transition', async () => {
-    const {connect} = mockConnect(() => ({}));
-    await expect(handleAlerts(connect, 'ack', ['x'], {host: ['a', 'b']}, 'table')).rejects.toThrow(/takes one --host/);
+  it('keeps live servers and those gone within the hour unless --all', async () => {
+    const {connect} = mockConnect(() => ({servers: [
+      {id: 'L', live: true, lastSeen: '2026-09-01T00:00:00Z'},
+      {id: 'S', live: false, stoppedAt: '2026-10-01T09:00:00Z', lastSeen: '2026-10-01T09:00:00Z'},
+      {id: 'C', live: false, lastSeen: '2026-10-01T08:40:00Z'},
+      {id: 'OLD', live: false, stoppedAt: '2026-09-30T09:00:00Z', lastSeen: '2026-10-01T09:29:00Z'},
+      {id: 'GONE', live: false, lastSeen: '2026-09-20T00:00:00Z'},
+    ]}));
+    const recent = await captureOutput(() => handleAlerts(connect, 'detection', [], {}, 'json'));
+    expect(JSON.parse(recent.out.join('\n')).servers.map((s: any) => s.id)).toEqual(['L', 'S', 'C']);
+    const all = await captureOutput(() => handleAlerts(connect, 'detection', [], {all: true}, 'json'));
+    expect(JSON.parse(all.out.join('\n')).servers.length).toBe(5);
   });
 
   it('shows the detection lease per server', async () => {

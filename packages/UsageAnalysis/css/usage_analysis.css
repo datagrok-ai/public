@@ -552,3 +552,11 @@ button.ui-btn.ui-btn-raised.ua-metrics-btn-secondary {
   gap: 12px;
   padding: 4px 8px;
 }
+
+.ua-timeline-toolbar .ui-input-choice .ui-input-editor {
+  width: 100px;
+}
+
+.ua-timeline-toolbar .ui-input-text .ui-input-editor {
+  width: 360px;
+}

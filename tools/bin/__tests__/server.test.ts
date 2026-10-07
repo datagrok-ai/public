@@ -211,21 +211,21 @@ describe('observability dispatch', () => {
     expect(lines).toEqual([ALERTS_USAGE, O_USAGE]);
   });
 
-  it('points the old spelling and an unknown observability command to grok s observe', async () => {
+  it('refuses an unknown observability command, and several --host for a single-deployment verb', async () => {
     const {server} = await import('../commands/server');
     const err: string[] = [];
     const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
     const before = process.exitCode;
     try {
-      expect(await server({_: ['s', 'alerts', 'list']})).toBe(true);
-      expect(process.exitCode).toBe(1);
       expect(await server({_: ['s', 'observe', 'users', 'list']})).toBe(true);
+      expect(process.exitCode).toBe(1);
+      expect(await server({_: ['s', 'o', 'alerts', 'ack', 'x'], host: ['a', 'b']})).toBe(true);
     } finally {
       write.mockRestore();
       process.exitCode = before;
     }
-    expect(err.join('')).toMatch(/grok s alerts is now grok s observe alerts/);
     expect(err.join('')).toMatch(/Unknown command 'observe users'/);
+    expect(err.join('')).toMatch(/'grok s observe alerts ack' takes one --host/);
   });
 
   it('answers a bare `grok s --help` with success', async () => {

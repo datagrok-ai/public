@@ -3,7 +3,6 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {UaView} from './ua';
-import {TimelineView} from './timeline';
 import {UaToolbox} from '../ua-toolbox';
 import {UaFilterableQueryViewer} from '../viewers/ua-filterable-query-viewer';
 import {formatTime, onRowContextMenu, problemLine, scrollToStartOnFirstDraw, showProblem} from '../utils';
@@ -19,8 +18,6 @@ const NO_LEVEL = 'none';
 const LEVELS = [NO_LEVEL, 'error', 'warning', 'info', 'debug'];
 const CREDENTIALS_FLAG = 'credentials';
 const DURATIONS: {[name: string]: number} = {'30 min': 30, '2 h': 120, '1 d': 1440, '2 d': 2880, '7 d': 10080};
-const HIDDEN_COLUMNS = ['status', 'capture', 'anonymous', 'max_events', 'window_minutes', 'max_sessions',
-  'created_at', 'expires_at', 'ended_at', 'id', 'stopped_by'];
 /** The server's field names in a refusal, as the New rule dialog labels them. */
 const LABELS: [RegExp, string][] = [[/\bsubject\.type\b/g, 'Subject'], [/\bsubject\.value\b/g, 'Who'],
   [/\bscope\.type\b/g, 'Scope'], [/\bscope\.value\b/g, 'Scope value'], [/\b(capture\.)?serverLevel\b/g, 'Server level'],
@@ -69,9 +66,9 @@ export class CaptureView extends UaView {
       },
       createViewer: (t: DG.DataFrame) => {
         const grid = DG.Viewer.grid(t, {showRowHeader: false, allowRowSelection: false, allowBlockSelection: false});
-        grid.columns.setOrder(['rule', 'name', 'author', 'subject', 'scope', 'reason', 'active', 'stop_reason', 'events']);
-        for (const name of HIDDEN_COLUMNS)
-          grid.col(name)!.visible = false;
+        const order = ['rule', 'name', 'author', 'subject', 'scope', 'reason', 'active', 'stop_reason', 'events'];
+        grid.columns.setVisible(order);
+        grid.columns.setOrder(order);
         grid.col('name')!.width = 150;
         grid.col('reason')!.width = 250;
         grid.col('active')!.width = 170;
@@ -87,7 +84,7 @@ export class CaptureView extends UaView {
         onRowContextMenu(grid, (menu, i) => {
           if (t.get('status', i) === 'active')
             menu.item('Stop...', () => this.stopDialog(t.get('rule', i)));
-          menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'rule', t.get('rule', i)));
+          menu.item('Timeline', () => this.openTimeline('rule', t.get('rule', i)));
         });
         scrollToStartOnFirstDraw(grid);
         return grid;
@@ -104,7 +101,7 @@ export class CaptureView extends UaView {
     const rule: string = t.get('rule', i);
     const status: string = t.get('status', i);
     const active = status === 'active';
-    const buttons = [ui.button('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'rule', rule))];
+    const buttons = [ui.button('Timeline', () => this.openTimeline('rule', rule))];
     if (active)
       buttons.unshift(ui.button('Stop...', () => this.stopDialog(rule)));
     const details: {[key: string]: string} = {
@@ -226,18 +223,6 @@ export class CaptureView extends UaView {
         return `Enter the ${subject.value === 'user' ? 'login' : `${subject.value} name`} in Who`;
       if (scope.value !== ALL_ACTIVITY && !scopeValue.value?.trim())
         return `Enter the ${scope.value} in Scope value`;
-      if ((scope.value === 'error' || scope.value === 'element') && scopeValue.value.trim().length < 6)
-        return `A ${scope.value} scope needs at least 6 characters`;
-      if (subject.value === 'everyone' && scope.value === ALL_ACTIVITY)
-        return 'A rule for everyone needs a scope';
-      if (!capture.value?.length && level.value === NO_LEVEL && !flags.value?.length)
-        return 'Choose what to capture';
-      if (anonymous.value && capture.value?.includes('calls'))
-        return 'An anonymous rule does not capture calls';
-      if (anonymous.value && (level.value !== NO_LEVEL || flags.value?.length))
-        return 'An anonymous rule raises no server level and turns on no debug flags';
-      if (!maxEvents.value || maxEvents.value < 1)
-        return 'Max events is a whole number from 1';
       if (!reason.value?.trim())
         return 'Enter the reason';
       return null;

@@ -24,7 +24,6 @@ export class ViewHandler {
   static NO_PACKAGES = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'Capture', 'Timeline',
     'Errors'];
   static NO_GROUPS = ['Metrics', 'Stress', 'Vulnerabilities', 'Capture', 'Timeline', 'Errors'];
-  static NO_FILTERS = ['Timeline'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
 

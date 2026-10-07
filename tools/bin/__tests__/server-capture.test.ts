@@ -133,8 +133,6 @@ describe('handlers', () => {
     const {connect, calls} = mockConnect(() => []);
     await captureOutput(() => handleTimeline(connect, undefined, [], {report: 4820}, 'table'));
     expect(calls[0].path).toBe('/log/timeline?report=4820');
-    const bad = await captureOutput(() => handleTimeline(connect, undefined, [], {}, 'table'));
-    expect(bad.result).toBe(false);
-    expect(bad.err.join('\n')).toMatch(/Usage: grok s observe timeline/);
+    await expect(handleTimeline(connect, undefined, [], {}, 'table')).rejects.toThrow(/timeline takes exactly one of --action/);
   });
 });

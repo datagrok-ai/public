@@ -47,8 +47,6 @@ export interface NodeApiError {
   body?: any;
   /** The response's `x-request-id`, to find the server's lines for this failure. */
   requestId?: string;
-  /** The message is the server's whole sentence (a lock refusal): printed without the HTTP status. */
-  verbatim?: boolean;
 }
 
 import {keyLogin, keypairFor} from './keypair';

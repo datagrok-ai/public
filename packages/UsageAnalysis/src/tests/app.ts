@@ -38,14 +38,14 @@ category('App', () => {
     const allUsers = (await grok.dapi.groups.getGroupsLookup('All users'))[0].id;
     const clicks = await queries.clicks('this month', [allUsers]);
     let key = 'action';
-    let id = clicks.col('request_id')!.toList().find((v) => v);
+    let id = clicks.col('action id')!.toList().find((v) => v);
     if (!id) {
       const errors: DG.DataFrame = await grok.functions.call('ErrorStats', {spec: JSON.stringify({since: '30d', limit: 50})});
       key = 'request';
       id = errors.col('requestId')!.toList().find((v) => v);
     }
     expect(id != null, true, 'no click or error with a request id this month');
-    TimelineView.open(handler, key, id);
+    handler.getCurrentView().openTimeline(key, id);
     const view = handler.getCurrentView() as TimelineView;
     await awaitCheck(() => view.host.querySelector('.d4-grid, .d4-viewer-error, .ua-empty') != null,
       'Timeline did not load', 30000);
@@ -65,7 +65,7 @@ category('Capture', () => {
   test('Clicks has request ids', async () => {
     const allUsers = (await grok.dapi.groups.getGroupsLookup('All users'))[0].id;
     const t = await queries.clicks('this week', [allUsers]);
-    for (const name of ['event_time', 'user', 'event_type', 'description', 'request_id'])
+    for (const name of ['time', 'user', 'type', 'element', 'action id'])
       expect(t.col(name) != null, true, `column "${name}" is missing`);
   });
 
@@ -79,13 +79,6 @@ category('Capture', () => {
     const flags = await CaptureView.loadDebugFlags();
     expect(flags.includes('query'), true, `no "query" in ${flags}`);
     expect(flags.includes('credentials'), false, 'credentials is offered');
-  });
-
-  test('Timeline splits the server out of the source', async () => {
-    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('source', ['client', 'server', 'A'])]);
-    TimelineView.splitSource(t);
-    expect(t.col('source')!.toList().join(','), 'client,server,server');
-    expect(t.col('server')!.toList().join(','), ',,A');
   });
 
   test('Timeline of an unknown action is empty', async () => {
@@ -155,15 +148,11 @@ category('Errors', () => {
     expect(ErrorsView.cron('weekdays 7:30'), '30 7 * * 1-5');
     expect(ErrorsView.cron('0 7 * * *'), '0 7 * * *');
     expect(ErrorsView.cron('someday'), null);
-    expect(ErrorsView.scheduleText('0 8 * * 1'), 'Mondays 08:00 UTC');
-    expect(ErrorsView.scheduleText('30 7 * * 1-5'), 'Weekdays 07:30 UTC');
-    expect(ErrorsView.scheduleText('*/5 * * * *'), 'cron "*/5 * * * *" UTC');
-    expect(ErrorsView.scheduleText(''), 'no schedule');
     const logins = [...Array(12).keys()].map((k) => `u${k}`);
     expect(ErrorsView.usersText(logins), 'u0, u1, u2, u3, u4, u5, u6, u7, u8, u9 +2 more');
     expect(ErrorsView.usersText([null, '']), 'none');
-    expect(ErrorsView.emptyHint({since: '7d', by: 'user', minUsers: 2}),
-      'Min users is 2 — grouping by user leaves one user per row. Clear it, or choose a longer Since');
+    expect(ErrorsView.emptyHint({since: '7d', by: 'user', minUsers: 2, group: undefined}),
+      'Min users is 2. Clear it, or choose a longer Since');
     expect(ErrorsView.emptyHint({since: '7d'}), 'Choose a longer Since');
     const t = DG.DataFrame.fromColumns([
       DG.Column.fromStrings('package', ['Chem', 'core']),

@@ -29,33 +29,16 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
                      VulnerabilitiesView];
 ```
 
-`CaptureView` (tab `Capture`) lists the capture rules (`CaptureRules` over `capture_rules`, the columns of
-`grok s observe capture list`: rule, author, subject, scope, reason, active, events); active rules always show, ended ones
-when created within the Date filter. **New rule...** builds the `POST /logging/capture` body and calls the server
-function `CaptureRuleAdd`; its Debug flags are the server's (`LoggingPolicy`, `debugFlags` of `GET /logging/policy`)
-but `credentials`, and hidden when the policy can't be read; a row's context panel and context menu offer **Stop...** (`CaptureRuleStop`, active rules
-only) and **Timeline**. `TimelineView` (tab `Timeline`) shows one action, request, session, report or rule
-(`cap-<n>`) in time order from the server function `Timeline`; it routes as `/timeline?<key>=<id>` (the id keeps its
-case; the platform hands the query parameters to `usageAnalysisApp`, which passes them on as
-`TimelineView.urlParams`; other tabs drop the parameter from their path). The Clicks tab's **Clicks** sub-tab lists
-single clicks (`Clicks` query) with their `request_id` (the action id); the row's context menu **Timeline** opens that
-action. The server enforces the permissions on all three functions; the packages and groups inputs are hidden on both
-tabs.
+`CaptureView` (tab `Capture`): the `CaptureRules` query; New rule and Stop call the server functions `CaptureRuleAdd`
+and `CaptureRuleStop`.
 
-`ErrorsView` (tab `Errors`) is the platform's errors as data, from the server function `ErrorStats` (the
-`GET /errors` query; ViewTelemetry): without Group by, occurrences; with up to three Group by dimensions, one row of
-figures per combination (first seen in, trend, and, by signature, the alert state). Its inputs are the toolbox's
-**Errors** pane (`UaToolbox.addTabPane`), which replaces the Filters pane while the tab is current. A row's context
-panel runs `ErrorStats` narrowed to the row and lists the occurrences (request → Timeline), then the sessions, reports
-and alerts of their signatures (`ErrorSessions`, `ErrorReports`, `ErrorAlerts` in `errors_query.sql`). Those three
-are package queries on `System:Datagrok`, so they follow the rest of the app's access model rather than
-ViewTelemetry: whoever can use that connection (administrators by default) sees them, and anyone else gets an error in
-that pane only. **Export** writes the shown table as CSV (a cell starting with `=`, `+`, `-`, `@`, a tab or a carriage
-return gets a leading `'`, as in the server's CSV), JSON or Parquet (`Arrow:toParquet`, disabled without Arrow);
-**Save as job...** calls
-`ErrorsSaveJob` with the shown query (Since only; cron in UTC). The Clicks tab's **Followed by Error** sub-tab
-(`ClicksFollowedByError`) counts clicks per element and those an error followed within 5 s whose request id is the
-click's action id or `<action>.<n>`; anonymous clicks count users by `anonSession`.
+`TimelineView` (tab `Timeline`): the server function `Timeline`; routes as `/timeline?<key>=<id>`, the parameter
+arriving as `TimelineView.urlParams`.
+
+`ErrorsView` (tab `Errors`): the server function `ErrorStats`, its inputs in the toolbox's Errors pane, drill-down
+queries in `errors_query.sql`, Save as job... through `ErrorsSaveJob`; `?error=<hash>` arrives as `ErrorsView.urlError`.
+
+Clicks sub-tabs **Clicks** and **Followed by Error**: the `Clicks`, `ClicksFollowedByError` and `ClickErrors` queries.
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,

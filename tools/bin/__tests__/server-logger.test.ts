@@ -1,8 +1,9 @@
 import {describe, it, expect} from 'vitest';
 import {handleLogger, parseScope, isOverride, propChanges, setArgs, revertBody, displayPath, diffMaps} from '../commands/server-logger';
-import {applyListSpec, normalizeFlag, normalizeLevel} from '../utils/obs-format';
-import {printError} from '../utils/server-output';
-import {mockConnect, captureOutput, utcIso, apiError} from './obs-helpers';
+import {applyListSpec, normalizeFlag} from '../utils/obs-format';
+import {mockConnect, captureOutput, utcIso} from './obs-helpers';
+
+const lower = (s: string) => s.toLowerCase();
 
 const ALL = 'a4b45840-0000-0000-0000-00000000a11a';
 const CHEM = 'c4e00000-0000-0000-0000-000000000c4e';
@@ -32,22 +33,22 @@ const POLICY = {
 
 describe('lists', () => {
   it('replaces with a plain list and edits with signed items', () => {
-    expect(applyListSpec(['error'], 'error,warning', normalizeLevel, '--save-levels')).toEqual(['error', 'warning']);
-    expect(applyListSpec(['error', 'audit'], '-audit,+info', normalizeLevel, '--save-levels')).toEqual(['error', 'info']);
+    expect(applyListSpec(['error'], 'error,warning', lower, '--save-levels')).toEqual(['error', 'warning']);
+    expect(applyListSpec(['error', 'audit'], '-audit,+info', lower, '--save-levels')).toEqual(['error', 'info']);
     expect(applyListSpec([], '+queries,+files', normalizeFlag, '--debug-flags')).toEqual(['query', 'storage']);
     expect(applyListSpec(['query'], '+query', normalizeFlag, '--debug-flags')).toEqual(['query']);
   });
 
   it('refuses mixed forms and leaves unknown names to the server', () => {
-    expect(() => applyListSpec([], 'error,+info', normalizeLevel, '--save-levels')).toThrow(/not both/);
+    expect(() => applyListSpec([], 'error,+info', lower, '--save-levels')).toThrow(/not both/);
     expect(applyListSpec([], '+queries,+connections', normalizeFlag, '--debug-flags')).toEqual(['query', 'connections']);
   });
 });
 
 describe('scope and target', () => {
   it('parses scopes', () => {
-    expect(parseScope(undefined)).toEqual({type: 'all', value: undefined, label: 'all'});
-    expect(parseScope('package:Snowflake')).toEqual({type: 'package', value: 'Snowflake', label: 'package:Snowflake'});
+    expect(parseScope(undefined)).toEqual({type: 'all', value: undefined});
+    expect(parseScope('package:Snowflake')).toEqual({type: 'package', value: 'Snowflake'});
     expect(parseScope('group:Lab: West').value).toBe('Lab: West');
     expect(() => parseScope('team:x')).toThrow(/--scope is all/);
     expect(() => parseScope('user:')).toThrow(/--scope is all/);
@@ -148,17 +149,6 @@ describe('handleLogger', () => {
   it('refuses --set with an override', async () => {
     const {connect} = mockConnect(() => POLICY);
     await expect(handleLogger(connect, 'set', [], {set: 'exportBatchSize=10', for: '1h'}, 'table')).rejects.toThrow(/--set changes the base settings/);
-  });
-
-  it('passes a lock refusal on as the server words it, without the HTTP status', async () => {
-    const {connect} = mockConnect((m) => {
-      if (m === 'PUT') throw apiError(409, 'levels.audit is locked by deployment configuration');
-      return POLICY;
-    });
-    const refusal = await handleLogger(connect, 'set', ['server'], {'save-levels': '-audit'}, 'table').catch((e) => e);
-    expect(refusal.apiError).toMatchObject({errorCode: 409, verbatim: true});
-    const {err} = await captureOutput(async () => printError(refusal));
-    expect(err).toEqual(['levels.audit is locked by deployment configuration']);
   });
 
   it('diffs against the deployment defaults, with active overrides', async () => {

@@ -4,9 +4,8 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 
 import {UaView} from './ua';
-import {TimelineView} from './timeline';
 import {UaToolbox} from '../ua-toolbox';
-import {emptyState, formatGridTimes, formatTime, onRowContextMenu, problemLine, scrollToStartOnFirstDraw,
+import {emptyState, formatGridTimes, formatTime, onRowContextMenu, problemLine, rowsTable, scrollToStartOnFirstDraw,
   showProblem} from '../utils';
 import {funcs, queries} from '../package-api';
 
@@ -30,9 +29,8 @@ const ERROR_COLUMNS = ['error', 'topError'];
 const DEFAULT_FOLDER = 'System:AppData/Ops/errors/';
 const DAYS: {[day: string]: string} = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*',
   WEEKDAYS: '1-5'};
-const DAY_NAMES: {[day: string]: string} = {'0': 'Sundays', '1': 'Mondays', '2': 'Tuesdays', '3': 'Wednesdays',
-  '4': 'Thursdays', '5': 'Fridays', '6': 'Saturdays', '*': 'Daily', '1-5': 'Weekdays'};
 const USERS_SHOWN = 10;
+const NOT_HINTED = ['since', 'from', 'to', 'by', 'trend'];
 
 type Spec = {[name: string]: string | number | undefined};
 
@@ -60,8 +58,6 @@ export class ErrorsView extends UaView {
   shownGrid?: DG.Grid;
   shownSpec?: Spec;
   private runs = 0;
-  /** The error a link names, opened once the first result shows. */
-  private linked?: string;
   /** The app's `?error=<stack hash>` parameter, which alert links carry (`/apps/usage/errors?error=...`): the
    * platform passes it to the app function, not in the URL. */
   static urlError?: string;
@@ -69,7 +65,6 @@ export class ErrorsView extends UaView {
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
-    this.linked = ErrorsView.urlError;
   }
 
   async initViewers(path?: string): Promise<void> {
@@ -83,8 +78,8 @@ export class ErrorsView extends UaView {
     this.text.route.setTooltip('"<METHOD> /path" or "/path", without /api');
     this.text.connection.setTooltip('Namespace:Name or the connection id');
     this.text.function.setTooltip('The function\'s nqName');
-    if (this.linked)
-      this.text.signature.value = this.linked;
+    if (ErrorsView.urlError)
+      this.text.signature.value = ErrorsView.urlError;
     const main: DG.InputBase[] = [this.since, this.from, this.to, this.group, this.by];
     const more: DG.InputBase[] = [this.service, ...Object.values(this.text), this.minUsers, this.minCount,
       this.regressed, this.trend];
@@ -128,29 +123,19 @@ export class ErrorsView extends UaView {
 
   spec(): Spec {
     const by = DIMENSIONS.filter((d) => (this.by.value ?? []).includes(d));
-    const spec: Spec = this.since.value === RANGE ?
-      {from: this.from.value!.startOf('day').toISOString(), to: this.to.value!.endOf('day').toISOString()} :
-      {since: SINCE[this.since.value!]};
-    for (const f of TEXT_FILTERS) {
-      const value = this.text[f].value?.trim();
-      if (value)
-        spec[f] = value;
-    }
-    if (this.group.value?.trim())
-      spec.group = this.group.value.trim();
-    if (this.service.value)
-      spec.service = this.service.value;
-    if (this.minUsers.value)
-      spec.minUsers = this.minUsers.value;
-    if (this.minCount.value)
-      spec.minCount = this.minCount.value;
-    if (this.regressed.value)
-      spec.regressed = 'true';
-    if (by.length) {
-      spec.by = by.join(',');
-      spec.trend = this.trend.value!;
-    }
-    return spec;
+    return {
+      ...(this.since.value === RANGE ?
+        {from: this.from.value!.startOf('day').toISOString(), to: this.to.value!.endOf('day').toISOString()} :
+        {since: SINCE[this.since.value!]}),
+      ...Object.fromEntries(TEXT_FILTERS.map((f) => [f, this.text[f].value?.trim() || undefined])),
+      group: this.group.value?.trim() || undefined,
+      service: this.service.value || undefined,
+      minUsers: this.minUsers.value || undefined,
+      minCount: this.minCount.value || undefined,
+      regressed: this.regressed.value ? 'true' : undefined,
+      by: by.join(',') || undefined,
+      trend: by.length ? this.trend.value! : undefined,
+    };
   }
 
   load(): void {
@@ -178,8 +163,8 @@ export class ErrorsView extends UaView {
         }
         this.shownGrid = this.grid(t, spec);
         this.refresh();
-        if (this.linked) {
-          this.linked = undefined;
+        if (ErrorsView.urlError) {
+          ErrorsView.urlError = undefined;
           t.currentRowIdx = 0;
         }
         return this.shownGrid.root;
@@ -210,7 +195,7 @@ export class ErrorsView extends UaView {
       onRowContextMenu(grid, (menu, i) => {
         const request = t.get('requestId', i);
         if (request)
-          menu.item('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'request', request));
+          menu.item('Timeline', () => this.openTimeline('request', request));
       });
     }
     if (grid.col('signature'))
@@ -261,24 +246,8 @@ export class ErrorsView extends UaView {
 
   /** What to change when [spec] finds no errors: the filters it sets beyond Since and Group by. */
   static emptyHint(spec: Spec): string {
-    const set: string[] = [];
-    const by = spec.by ? (spec.by as string).split(',') : [];
-    if (spec.group)
-      set.push(`Group is ${spec.group}`);
-    if (spec.minUsers) {
-      set.push(`Min users is ${spec.minUsers}` + (by.includes('user') && Number(spec.minUsers) > 1 ?
-        ' — grouping by user leaves one user per row' : ''));
-    }
-    if (spec.minCount)
-      set.push(`Min count is ${spec.minCount}`);
-    if (spec.service)
-      set.push(`Service is ${spec.service}`);
-    for (const f of TEXT_FILTERS) {
-      if (spec[f])
-        set.push(`${f[0].toUpperCase()}${f.substring(1)} is "${spec[f]}"`);
-    }
-    if (spec.regressed)
-      set.push('Regressed is on');
+    const set = Object.entries(spec).filter(([k, v]) => v != null && !NOT_HINTED.includes(k)).map(([k, v]) =>
+      `${k[0].toUpperCase()}${k.substring(1).replace(/[A-Z]/g, (c) => ` ${c.toLowerCase()}`)} is ${v}`);
     return set.length ? `${set.join('; ')}. Clear ${set.length > 1 ? 'them' : 'it'}, or choose a longer Since` :
       'Choose a longer Since';
   }
@@ -364,7 +333,7 @@ export class ErrorsView extends UaView {
         details[HEADERS[c.name] ?? c.name] = c.type === DG.TYPE.DATE_TIME ? formatTime(c.get(i)) : c.getString(i);
       const request = t.get('requestId', i);
       acc.addPane('Occurrence', () => ui.divV([ui.tableFromMap(details),
-        request ? ui.link('Timeline', () => TimelineView.open(this.uaToolbox.viewHandler, 'request', request)) : null,
+        request ? ui.link('Timeline', () => this.openTimeline('request', request)) : null,
       ]));
     }
     acc.addPane('Occurrences', () => ui.wait(async () => {
@@ -372,8 +341,7 @@ export class ErrorsView extends UaView {
       const rows = [...Array(Math.min(o.rowCount, SHOWN)).keys()];
       const table = ui.table(rows, (r) => [formatTime(o.get('time', r)), o.get('user', r) ?? '',
         ErrorsView.shortSignature(o.get('signature', r)), o.get('error', r),
-        o.get('requestId', r) ? ui.link('timeline', () =>
-          TimelineView.open(this.uaToolbox.viewHandler, 'request', o.get('requestId', r))) : ''],
+        o.get('requestId', r) ? ui.link('timeline', () => this.openTimeline('request', o.get('requestId', r))) : ''],
       ['time', 'user', 'signature', 'error', '']);
       o.name = `Errors of ${Object.values(filters).join(' · ')}`;
       return ui.divV([table, o.rowCount > SHOWN || o.rowCount === 0 ?
@@ -389,19 +357,13 @@ export class ErrorsView extends UaView {
       const times = o.col('time')!.toList().filter((v) => v != null).map((v) => dayjs(v).valueOf());
       const s = await queries.errorSessions(signatures, users, new Date(Math.min(...times)).toISOString(),
         new Date(Math.max(...times) + 1000).toISOString());
-      if (s.rowCount === 0)
-        return ui.divText('No sessions');
-      return ui.table([...Array(s.rowCount).keys()], (r) => [s.get('user', r), formatTime(s.get('first', r)),
-        s.get('count', r), ui.link('timeline', () =>
-          TimelineView.open(this.uaToolbox.viewHandler, 'session', s.get('session', r)))],
-      ['user', 'first', 'errors', '']);
+      return rowsTable(s, 'No sessions', (r) => [s.get('user', r), formatTime(s.get('first', r)), s.get('count', r),
+        ui.link('timeline', () => this.openTimeline('session', s.get('session', r)))], ['user', 'first', 'errors', '']);
     }));
     acc.addPane('Reports', () => ui.wait(async () => {
       const signatures = ErrorsView.values(await occurrences, 'signature');
       const r = signatures.length ? await queries.errorReports(signatures) : DG.DataFrame.create();
-      if (r.rowCount === 0)
-        return ui.divText('No reports');
-      return ui.table([...Array(r.rowCount).keys()], (k) => [
+      return rowsTable(r, 'No reports', (k) => [
         ui.link(`#${r.get('number', k)}`, async () => grok.shell.addView(await funcs.reportsApp(`/${r.get('number', k)}`))),
         formatTime(r.get('created_on', k)), r.get('is_auto', k) ? 'auto' : r.get('reporter', k) ?? '',
         r.get('is_resolved', k) ? 'resolved' : 'open', r.get('description', k) ?? ''],
@@ -410,9 +372,7 @@ export class ErrorsView extends UaView {
     acc.addPane('Alerts', () => ui.wait(async () => {
       const signatures = ErrorsView.values(await occurrences, 'signature');
       const a = signatures.length ? await queries.errorAlerts(signatures) : DG.DataFrame.create();
-      if (a.rowCount === 0)
-        return ui.divText('No alerts');
-      return ui.table([...Array(a.rowCount).keys()], (k) => [a.get('kind', k), a.get('status', k), a.get('problem', k) ?? '',
+      return rowsTable(a, 'No alerts', (k) => [a.get('kind', k), a.get('status', k), a.get('problem', k) ?? '',
         formatTime(a.get('opened_at', k)), a.get('cleared_at', k) ? formatTime(a.get('cleared_at', k)) : '', a.get('summary', k) ?? ''],
       ['kind', 'status', 'problem', 'opened', 'cleared', 'summary']);
     }));
@@ -494,16 +454,11 @@ export class ErrorsView extends UaView {
     return this.shownSpec.since ? null : 'A saved job runs over Since, not From - To';
   }
 
-  /** `since 7d · by signature · trend day · group Chemists`: what a job of [spec] exports. */
-  static describe(spec: Spec): string {
-    return Object.entries(spec).filter(([_, v]) => v != null && v !== '').map(([k, v]) => `${k} ${v}`).join(' · ');
-  }
-
   saveJobDialog(): void {
     if (this.saveProblem())
       return;
     const spec = {...this.shownSpec};
-    const saves = ui.input.string('Saves', {value: ErrorsView.describe(spec)});
+    const saves = ui.input.string('Saves', {value: JSON.stringify(spec)});
     saves.readOnly = true;
     const name = ui.input.string('Name');
     const format = ui.input.choice('Format', {value: 'csv', items: ['csv', 'json'], nullable: false,
@@ -537,7 +492,7 @@ export class ErrorsView extends UaView {
       try {
         const job = JSON.parse(await grok.functions.call('ErrorsSaveJob',
           {name: name.value.trim(), spec: JSON.stringify(spec), format: format.value, path: target, cron}));
-        grok.shell.info(`Saved job "${job.name}": ${ErrorsView.scheduleText(job.cron)} → ${job.path}`);
+        grok.shell.info(`Saved job "${job.name}": ${job.cron || 'no schedule'} → ${job.path}`);
       }
       catch (e: any) {
         grok.shell.error(`Save as job: ${e?.message ?? e}`);
@@ -546,16 +501,6 @@ export class ErrorsView extends UaView {
     dialog.show();
     showProblem(dialog.getButton('OK'), line, dialogProblem());
     name.input.focus();
-  }
-
-  /** [cron] in words, `Mondays 08:00 UTC`; `no schedule` for none. */
-  static scheduleText(cron: string | null | undefined): string {
-    if (!cron?.trim())
-      return 'no schedule';
-    const f = cron.trim().split(/\s+/);
-    const pad = (v: string) => v.padStart(2, '0');
-    return f.length === 5 && /^\d+$/.test(f[0]) && /^\d+$/.test(f[1]) && f[2] === '*' && f[3] === '*' &&
-      DAY_NAMES[f[4]] ? `${DAY_NAMES[f[4]]} ${pad(f[1])}:${pad(f[0])} UTC` : `cron "${cron.trim()}" UTC`;
   }
 
   /** `MON 07:00`, `DAILY 07:00`, `WEEKDAYS 07:00` or a five-field cron → cron; null when it is neither. */

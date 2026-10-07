@@ -137,8 +137,6 @@ export class ReportingApp {
             const length = idCol.length;
             for (let i = 0; i < length; i++) {
               if (affectedIds.has(idCol.get(i))) {
-                // Only what the batch actually changed: a resolve carries no assignee, and
-                // writing undefined over it would blank the column for every affected row.
                 if (fields['is_resolved'] !== undefined)
                   table.cell(i, 'is_resolved').value = fields['is_resolved'];
                 if (fields['assignee'] !== undefined)

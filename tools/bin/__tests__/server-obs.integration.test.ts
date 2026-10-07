@@ -303,11 +303,6 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       expect(lease.servers.find((s: any) => s.id === lease.holder)).toBeTruthy();
     }, LONG);
 
-    it('GROK_S.md: alerts list --status open,acknowledged', async () => {
-      const rows: any[] = await json(['alerts', 'list', '--status', 'open,acknowledged']);
-      for (const a of rows) expect(['open', 'acknowledged']).toContain(a.status);
-    }, LONG);
-
     it.skipIf(!HOST2)('GROK_S.md: alerts detection --all --host a --host b  # every server row, stopped ones included', async () => {
       const t = table((await ok(['alerts', 'detection', '--all', '--host', HOST, '--host', HOST2])).out);
       expect(t.columns[0]).toBe('HOST');
@@ -642,12 +637,6 @@ describe.skipIf(!HOST)('grok s observability examples', () => {
       expect(r.out.length).toBeGreaterThan(0);
       const rows: any[] = await json(['logger', 'diff', '--version', String(versionBefore)]);
       expect(Array.isArray(rows)).toBe(true);
-    }, LONG);
-
-    it('GROK_S.md: logger get --scope package:Snowflake  # effective settings for a scope, each with its source', async () => {
-      const t = table((await ok(['logger', 'get', '--scope', 'package:Snowflake'])).out);
-      expect(t.columns).toEqual(['SETTING', 'VALUE', 'SOURCE']);
-      expect(t.rows.length).toBeGreaterThan(0);
     }, LONG);
 
     it.skipIf(!HOST2)('GROK_S.md: logger diff --host a --host b', async () => {

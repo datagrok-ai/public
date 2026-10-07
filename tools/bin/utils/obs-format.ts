@@ -1,8 +1,5 @@
 /// Argument parsing and table formatting shared by `grok s observe alerts|errors|logger|capture|timeline`.
 
-/** Names the worked examples use for the platform's debug flags; the server validates the rest. */
-export const DEBUG_FLAG_ALIASES: Record<string, string> = {queries: 'query', files: 'storage'};
-
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
 const DAYS: Record<string, string> = {SUN: '0', MON: '1', TUE: '2', WED: '3', THU: '4', FRI: '5', SAT: '6', DAILY: '*', WEEKDAYS: '1-5'};
 const BLOCKS = '▁▂▃▄▅▆▇█';
@@ -18,8 +15,8 @@ export function parseDuration(value: any, flag: string): number {
 }
 
 /** A `--since` value as the server takes it: validated, without the optional leading `-`. */
-export function sinceArg(value: any, flag: string = '--since'): string {
-  parseDuration(value, flag);
+export function sinceArg(value: any): string {
+  parseDuration(value, '--since');
   return String(value).trim().replace(/^-/, '');
 }
 
@@ -49,27 +46,17 @@ function toDate(value: any): Date | null {
   return isNaN(d.getTime()) ? null : d;
 }
 
-const sameDay = (a: Date, b: Date) => a.toISOString().slice(0, 10) === b.toISOString().slice(0, 10);
-
-/** `HH:MMZ` when [value] is today, else `MM-DD HH:MMZ`, in UTC. */
-export function fmtTime(value: any, now: Date = new Date()): string {
+/** `HH:MMZ` (`HH:MM:SS.mmmZ` with [seconds]) when [value] is today, else prefixed with `MM-DD`, in UTC. */
+export function fmtTime(value: any, now: Date = new Date(), seconds: boolean = false): string {
   const d = toDate(value);
   if (!d) return '';
-  const hm = `${d.toISOString().slice(11, 16)}Z`;
-  return sameDay(d, now) ? hm : `${fmtDate(d)} ${hm}`;
-}
-
-/** `HH:MM:SS.mmmZ`, prefixed with `MM-DD` when not today: timeline rows of one click share a minute. */
-export function fmtClock(value: any, now: Date = new Date()): string {
-  const d = toDate(value);
-  if (!d) return '';
-  const t = d.toISOString().slice(11);
-  return sameDay(d, now) ? t : `${fmtDate(d)} ${t}`;
+  const t = `${d.toISOString().slice(11, seconds ? 23 : 16)}Z`;
+  return d.toISOString().slice(0, 10) === now.toISOString().slice(0, 10) ? t : `${fmtDate(d)} ${t}`;
 }
 
 export function fmtDateTime(value: any): string {
   const d = toDate(value);
-  return d ? `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)}Z` : '';
+  return d ? `${d.toISOString().slice(0, 16).replace('T', ' ')}Z` : '';
 }
 
 export function fmtDate(value: any): string {
@@ -123,17 +110,23 @@ export function listArg(value: any): string[] {
   return (Array.isArray(value) ? value : [value]).flatMap((v) => String(v).split(',')).map((s) => s.trim()).filter(Boolean);
 }
 
-export function normalizeLevel(name: string): string {
-  return name.toLowerCase();
-}
-
+/** `queries` and `files` are the names the worked examples use for the platform's debug flags. */
 export function normalizeFlag(name: string): string {
-  return DEBUG_FLAG_ALIASES[name.toLowerCase()] ?? name.toLowerCase();
+  const s = name.toLowerCase();
+  return ({queries: 'query', files: 'storage'} as Record<string, string>)[s] ?? s;
 }
 
 /** A string option minimist left empty (`--signature` with no value) counts as not given. */
 export function hasValue(value: any): boolean {
   return value !== undefined && value !== null && value !== true && value !== false && value !== '';
+}
+
+export function optString(value: any): string | undefined {
+  return hasValue(value) ? String(value) : undefined;
+}
+
+export function rows<T>(list: T[], output: string, fn: (x: T) => Record<string, any>): any[] {
+  return output === 'json' || output === 'quiet' ? list : list.map(fn);
 }
 
 /**
@@ -176,10 +169,6 @@ export function cronFromSchedule(schedule: any): string {
   throw new Error(`--schedule '${s}': expected "MON 07:00", "DAILY 07:00", "WEEKDAYS 07:00" or a five-field cron`);
 }
 
-export function slug(name: string): string {
-  return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-}
-
 export function valueText(v: any): string {
   if (v === null || v === undefined) return '(none)';
   if (Array.isArray(v)) return v.length ? v.join(', ') : '(none)';
@@ -187,7 +176,6 @@ export function valueText(v: any): string {
   return String(v);
 }
 
-/** A key/value block: labels padded to one column. */
 export function printBlock(lines: [string, string][]): void {
   const width = Math.max(0, ...lines.map(([k]) => k.length)) + 2;
   for (const [k, v] of lines)

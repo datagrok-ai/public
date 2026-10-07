@@ -91,7 +91,7 @@ export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: nu
   });
 }
 
-export const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss UTC';
+const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss UTC';
 
 /** Shows every date column of [grid] without milliseconds, marked UTC: the grid keeps the platform's UTC. */
 export function formatGridTimes(grid: DG.Grid): void {
@@ -123,4 +123,8 @@ export function showProblem(button: HTMLButtonElement, line: HTMLElement, proble
 /** A centred message with a hint, for a list with nothing to show. */
 export function emptyState(message: string, hint: string): HTMLDivElement {
   return ui.divV([ui.divText(message), ui.divText(hint, 'ua-empty-hint')], 'ua-empty');
+}
+
+export function rowsTable(t: DG.DataFrame, empty: string, row: (i: number) => any[], headers: string[]): HTMLElement {
+  return t.rowCount ? ui.table([...Array(t.rowCount).keys()], row, headers) : ui.divText(empty);
 }

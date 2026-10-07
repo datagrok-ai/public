@@ -2,12 +2,8 @@
 
 ## v.next
 
-* GROK-20884: The observability commands live under `grok s observe`: `grok s observe alerts|problems|errors|logger|capture|timeline` (`grok s observe --help` or `grok s observe help` lists them); `grok s o` is its short alias
-* GROK-20884: Added `grok s observe problems` (list, get, alerts, mute, dismiss, fix, activate); `grok s observe alerts mute|unmute` act on the alert's problem, and a mute without an end holds until lifted
-* GROK-20884: Added `grok s observe alerts`, `errors`, `logger`, `capture` and `timeline`; `--host` may repeat for alerts, errors and logger, which adds a HOST column
-* GROK-20884: Added `grok s api`, an alias of `grok s raw`
+* GROK-20884: Added `grok s observe` (alias `grok s o`): problems, alerts, errors, logger, capture and timeline; `--host` repeats for alerts, problems, errors and logger; `grok s observe --help` lists them
 * GROK-20884: Added the request id the server returned to `grok s` error lines
-* GROK-20884: `grok s` observability commands print and read times in UTC (`14:00Z`), as the UI and the REST API do
 * `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe

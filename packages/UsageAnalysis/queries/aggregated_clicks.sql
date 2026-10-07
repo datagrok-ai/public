@@ -29,8 +29,8 @@ with recursive selected_groups as (
   select gr.child_id as id from selected_groups sg
   join groups_relations gr on sg.id = gr.parent_id
 )
-select e.event_time, u.friendly_name as user, et.friendly_name as event_type, e.description, e.request_id,
-  u.group_id as ugid, e.id
+select e.event_time as time, u.friendly_name as user, et.friendly_name as type, e.description as element,
+  e.request_id as "action id"
 from events e
 join event_types et on e.event_type_id = et.id
 left join users_sessions s on e.session_id = s.id

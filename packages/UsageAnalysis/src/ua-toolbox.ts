@@ -145,7 +145,7 @@ export class UaToolbox {
   showPaneOf(tab: string): void {
     for (const name of Object.keys(this.tabPanes))
       ui.setDisplay(this.tabPanes[name].root, name === tab);
-    if (tab in this.tabPanes || ViewHandler.NO_FILTERS.includes(tab))
+    if (tab in this.tabPanes || tab === 'Timeline')
       ui.setDisplay(this.filters.root, false);
     else if (this.formDD.style.display !== 'block')
       this.filters.root.style.display = 'flex';

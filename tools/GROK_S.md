@@ -471,24 +471,16 @@ it's on the server's unauthenticated allowlist.
 
 ## Alerts, errors, logging and capture (`grok s observe`, alias `grok s o`)
 
-The observability commands live under `grok s observe`, or its short alias `grok s o` (`grok s observe --help`
-or `grok s observe help` lists them). They read and change the deployment's observability state: the alerts every server
-shares, errors as query results, the logging policy with its time-boxed overrides, and capture
-rules that record one user's or group's activity for a while. Times are UTC, as in the UI and the
-REST API: tables print `HH:MMZ` when today, else `MM-DD HH:MMZ`, and a time given without an offset
-(`--until 14:00`, `--from 2026-09-21T06:00`) is read as UTC. Request ids are shortened to their last
-six characters (`…X7K2QM.3`). Durations (`--since`, `--for`,
-`--window`) are `<n>m|h|d|w`, where `m` means **minutes** (in `pull --since` it means months); a
-leading `-` is accepted (`--since -7d`). `--help` after a command (`grok s observe errors --help`, `grok s observe help errors`)
-prints all of its options.
+The deployment's problems and alerts, errors as data, the logging policy and capture rules.
+`grok s observe --help` lists the commands; `grok s observe <command> --help` prints all options of one.
+Times are UTC in and out (`--until 14:00` is 14:00Z); in durations `m` means **minutes**.
 
 ### Problems and alerts
 
-A problem is one condition the deployment detects (`kind:key`), kept for good with what people
-decided about it; an alert is one notification about an active problem, open until a person
-resolves it. Statuses: `active` (raises an alert when it starts), `muted` (until a time, a version,
-or lifted), `not-a-problem` (never alerts; an error signature stops counting as an error), `fixed`
-(alerts again, as a regression, if it comes back). Every status but `active` resolves the open alert.
+A problem is what is wrong (`kind:key`, kept for good); an alert is one message that it went wrong,
+open until a person resolves it. Resolve an alert: seen it. Mute or dismiss the problem: stop telling me.
+Fix the problem: tell me if it comes back. Resolving an alert leaves its problem active, so a condition
+that still holds alerts again. Needs `ManageAlerts`.
 
 ```bash
 grok s observe problems list --status active --state ongoing      # default: every status and state
@@ -512,23 +504,6 @@ grok s observe alerts detection                             # servers, liveness,
 grok s observe alerts detection --all --host prod --host val      # every server row, stopped ones included
 ```
 
-`problems list` prints `KIND KEY SEV STATUS STATE EPISODES LAST SEEN SUMMARY`; `alerts list`
-prints `KIND KEY SEV AUDIENCE STATUS OPENED CLEARED BY SUMMARY`, where `CLEARED` is when the
-condition ended (the alert stays open until resolved) and `BY` is the server that opened it.
-`mute` takes at most one of `--for`, `--until` (ISO time, or `HH:MM` today, UTC) or
-`--until-version`, and always a `--reason`; with none it holds until `activate`. `dismiss` needs a
-`--reason`. Resolving an alert leaves its problem active, so a condition that still holds raises a
-new alert on its next check: mute, dismiss or fix the problem to stop that. Changes through any
-server apply to all of them. A key may itself contain colons: `connection:ELN:Prod` is kind
-`connection`, key `ELN:Prod`. For `problems`, a `kind:key` names the problem whatever its status;
-for `alerts`, the open or acknowledged alert (`unmute`: the newest one) — the key exactly, else a
-unique key prefix, and a report's also by the report number (`report:4820`). No match, or several,
-exits 1 (the several are listed so one can be picked by id).
-`detection` prints `SERVER HOST NAME VERSION LAST SEEN LIVE ELIGIBLE OWNER`, with `*` on the lease
-holder: live servers, and those that stopped or were last seen within the last hour (`--all` for
-every row). With several `--host`s the `HOST` column is the alias as typed, and aliases that reach
-the same database (their server lists share a server id) print once, as `HOST a, b`. Needs the `ManageAlerts` permission.
-
 ### Errors
 
 ```bash
@@ -544,30 +519,9 @@ grok s observe errors export --since 7d --by signature --format csv -O errors.cs
 grok s observe errors save "Errors by team, weekly" --since 7d --by group,package --schedule "MON 07:00" --to "System:AppData/Ops/errors/"
 ```
 
-Filters for every verb: `--since 7d` (default 24h) or `--from`/`--to` (ISO, or relative `-7d`),
-`--signature`, `--package`, `--version`, `--user`, `--group`, `--service server|client`,
-`--route` (the `/api` prefix and the method are optional), `--server`, `--connection`,
-`--function`, `--regressed`, `--min-users`, `--min-count`.
-
-`top` groups by up to three of `signature package version user group service route server
-connection function` (default `signature`). Grouped by signature it prints `SIG … ERROR USERS
-COUNT FIRST SEEN LAST TREND STATE`: `FIRST SEEN` is `<version> · MM-DD`, `TREND` one block per
-day (`--trend hour` for hours), `STATE` is `open`, `muted → 1.14.3`, `muted until 14:00Z` or
-`resolved`. Grouped without signature it prints `SIGNATURES USERS COUNT NEW FIRST SEEN IN LAST
-TREND TOP ERROR`. `show` prints one signature: versions, occurrences, users, the top groups,
-reports, its alert and the package publish that preceded it. Over 5,000 occurrences in the window,
-users, groups, sessions and the package come from the latest 5,000 (JSON `sampled: 5000`, and a
-`sampled` line); occurrences, first and last seen stay exact. `diff --before/--after` prints the
-`NEW`, `GONE`, `RISEN` and `REGRESSED` counts with their top signature, then incidents and
-reports; `diff --host a --host b` prints the signatures seen only on each deployment and on both.
-
-`--format csv|json|parquet` writes the raw rows to stdout or `-O <file>` (distinct from
-`--output`, which formats tables). CSV and JSON come from the server; Parquet is written by the
-CLI from the JSON rows and needs the `apache-arrow` and `parquet-wasm` packages next to `grok`.
-`save` creates a job that writes CSV or JSON to a file share path on a schedule (`MON 07:00`,
-`DAILY 07:00`, `WEEKDAYS 07:00` or a cron string); a path ending in `/` gets
-`<name>-{date}.<format>`, and `--to` names that path, so a saved job takes `--since`, not
-`--from`/`--to`. Needs `ViewTelemetry`.
+Platform errors as query results, filtered by the same flags in every verb (default `--since 24h`) and
+grouped by up to three dimensions. Needs `ViewTelemetry`. `--format csv|json|parquet` writes the raw rows
+(to stdout or `-O <file>`), unlike `--output`, which formats the table.
 
 ### Logging policy
 
@@ -587,15 +541,9 @@ grok s observe logger revert                                # undo the most rece
 grok s observe logger revert --override <id>
 ```
 
-Lists (`--print-levels`, `--post-levels`, `--save-levels`, `--debug-flags`) take `a,b` to
-replace or `+a,-b` to edit; mixing both is refused. Debug flags are the platform's (`db socket
-query hash storage credentials ...`; the server refuses unknown names); `queries` and `files` are
-accepted for `query` and `storage`. `--for`/`--until` make a time-boxed override (at most 7 days); a user, session or
-package scope without them lasts one hour; scope `all` or `group:<name>` without them changes the
-base settings; a base change that changes nothing prints `(no change: …)`, and a second base
-change within 5 s of the previous one is refused ("wait for 5 seconds"), exit 1. A setting the deployment locks is refused with `<lock> is locked by deployment
-configuration` and exit 1. `server` is the only target for now. Needs
-`EditPluginsSettings`.
+The server's logging policy: base settings, time-boxed overrides and their history. Needs
+`EditPluginsSettings`. Lists take `a,b` to replace or `+a,-b` to edit; `--for`/`--until` make an override,
+and a user, session or package scope without them lasts one hour.
 
 ### Capture rules and timelines
 
@@ -606,18 +554,13 @@ grok s observe capture list --all --since 90d               # RULE AUTHOR SUBJEC
 grok s observe capture show cap-17
 grok s observe capture show cap-17 --timeline --output csv > cap-17.csv
 grok s observe capture stop cap-17 --reason "reproduced"
-grok s observe timeline --report 4820                       # same as: grok s api GET "/log/timeline?report=4820"
+grok s observe timeline --report 4820                       # same as: grok s raw GET "/log/timeline?report=4820"
 grok s observe timeline --rule cap-17                       # or --action <id>, --request <id>, --session <id>
 ```
 
-A rule names one subject (`--user`, `--group`, `--package`, `--everyone`), at most one scope
-(`--view`, `--element`, `--function`, `--error`; the session is captured for `--window` after it
-matches), what to capture, an expiry and a reason; a rule without an expiry or a reason is
-refused. `server:<level>=<flags>` must be the last capture item, and `credentials` is never
-captured. `--anonymous` is for group and everyone rules only. `timeline` prints `TIME SOURCE SERVER
-KIND SUMMARY STATUS MS REQ` with milliseconds, so the click, its requests and the server lines of one
-action read in order. `capture` needs `EditPluginsSettings`, as the logging policy does; `timeline`
-needs `ViewTelemetry`.
+A capture rule records one subject's activity in a scope until it expires; `timeline` prints what one
+action, request, session, report or rule saw, in time order. `capture` needs `EditPluginsSettings`,
+`timeline` needs `ViewTelemetry`.
 
 ## Describing an entity type
 
@@ -635,7 +578,7 @@ entity exists.
 
 ## Raw API access
 
-When no dedicated subcommand exists, fall through to `grok s raw` (`grok s api` is the same):
+When no dedicated subcommand exists, fall through to `grok s raw`:
 
 ```bash
 grok s raw GET  /users/current

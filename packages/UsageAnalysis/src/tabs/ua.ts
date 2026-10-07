@@ -5,6 +5,7 @@ import {zipSync} from 'fflate';
 
 import {UaToolbox} from '../ua-toolbox';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
+import type {TimelineView} from './timeline';
 
 export interface Filter {
   time_start: number;
@@ -83,6 +84,12 @@ export class UaView extends DG.ViewBase {
   }
 
   async initViewers(path?: string): Promise<void> {}
+
+  openTimeline(key: string, id: string): void {
+    const handler = this.uaToolbox.viewHandler;
+    handler.changeTab('Timeline');
+    (handler.getCurrentView() as TimelineView).show(key, id);
+  }
 
   switchRout(): void {}
 }

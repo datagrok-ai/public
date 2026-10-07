@@ -1,10 +1,10 @@
 /// `grok s observe capture ...` (capture rules, LoggingRouter `/logging/capture`) and `grok s observe timeline`
 /// (one action, request, session, report or rule in time order, `/log/timeline`).
 import {Query} from '../utils/node-observability';
-import {Connect, singleHost} from '../utils/server-client';
+import {Connect} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {fmtClock, fmtDateTime, fmtSpan, hasValue, listArg, normalizeFlag, normalizeLevel, parseDuration, parseTime,
-  printBlock, shortRequestId, sinceArg, truncate} from '../utils/obs-format';
+import {fmtDateTime, fmtSpan, fmtTime, hasValue, listArg, normalizeFlag, optString, parseDuration, parseTime,
+  printBlock, rows, shortRequestId, sinceArg, truncate} from '../utils/obs-format';
 
 export const CAPTURE_USAGE = `Usage: grok s observe capture <verb> [args]
   add (--user <login> | --group <name> | --package <name> | --everyone)
@@ -47,7 +47,7 @@ export function parseCapture(value: any): CaptureSpec {
   if (at >= 0) {
     const server = raw.slice(at + 'server:'.length);
     const eq = server.indexOf('=');
-    spec.serverLevel = normalizeLevel(eq < 0 ? server : server.slice(0, eq));
+    spec.serverLevel = (eq < 0 ? server : server.slice(0, eq)).toLowerCase();
     spec.debugFlags = eq < 0 ? [] : listArg(server.slice(eq + 1)).map(normalizeFlag);
     if (spec.debugFlags.includes('credentials'))
       throw new Error('A capture rule never turns on the credentials flag');
@@ -66,7 +66,7 @@ function one(argv: any, keys: string[], what: string, required: boolean): string
 export function captureBody(argv: any, now: Date = new Date()): Record<string, any> {
   const subject = one(argv, SUBJECTS, 'subject', true)!;
   const scope = one(argv, RULE_SCOPES, 'scope', false);
-  const reason = argv.reason === undefined || argv.reason === true ? undefined : String(argv.reason);
+  const reason = optString(argv.reason);
   if (!reason) throw new Error('A capture rule needs --reason <text>');
   if (argv.for === undefined && argv.until === undefined) throw new Error('A capture rule needs --for <duration> or --until <iso>');
   if (argv.for !== undefined && argv.until !== undefined) throw new Error('Use either --for or --until');
@@ -76,7 +76,7 @@ export function captureBody(argv: any, now: Date = new Date()): Record<string, a
   if (subject !== 'everyone' && (argv[subject] === true || argv[subject] === ''))
     throw new Error(`--${subject} needs a value`);
   const body: Record<string, any> = {
-    name: argv.name === undefined ? undefined : String(argv.name),
+    name: optString(argv.name),
     subject: {type: subject, value: subject === 'everyone' ? undefined : String(argv[subject])},
     scope: scope ? {type: scope, value: String(argv[scope])} : undefined,
     capture: parseCapture(argv.capture),
@@ -144,7 +144,7 @@ function captureItems(c: any): string {
 
 export function timelineRow(e: any): Record<string, any> {
   return {
-    TIME: fmtClock(e?.time),
+    TIME: fmtTime(e?.time, new Date(), true),
     SOURCE: e?.source ?? '',
     SERVER: e?.server ?? '',
     KIND: e?.kind ?? '',
@@ -155,34 +155,27 @@ export function timelineRow(e: any): Record<string, any> {
   };
 }
 
-function printTimeline(events: any[], output: OutputFormat): void {
-  printOutput(output === 'json' ? events : events.map(timelineRow), output);
-}
-
 export async function handleCapture(connect: Connect, verb: string | undefined, rest: string[], argv: any,
                                     output: OutputFormat): Promise<boolean> {
-  const id = rest[0] === undefined ? undefined : String(rest[0]);
-  const logging = async () => (await connect(singleHost(argv, `capture ${verb}`))).logging;
+  const id = optString(rest[0]);
   switch (verb) {
     case 'add': {
-      const rule = await (await logging()).addCaptureRule(captureBody(argv));
-      if (output === 'table') console.log(ruleSummary(rule));
-      else if (output === 'quiet') console.log(ruleId(rule));
-      else printOutput(rule, output);
+      const rule = await (await connect()).logging.addCaptureRule(captureBody(argv));
+      output === 'table' ? console.log(ruleSummary(rule)) : printOutput(rule, output);
       return true;
     }
     case 'list': {
       const since = argv.since === undefined ? undefined : sinceArg(argv.since);
-      const rules: any[] = await (await logging()).captureRules({all: argv.all === true ? true : undefined, since}) ?? [];
+      const rules: any[] = await (await connect()).logging.captureRules({all: argv.all === true ? true : undefined, since}) ?? [];
       if (output === 'quiet') for (const r of rules) console.log(ruleId(r));
-      else printOutput(output === 'json' ? rules : rules.map(ruleRow), output);
+      else printOutput(rows(rules, output, ruleRow), output);
       return true;
     }
     case 'show': {
       if (!id) return usage('show <cap-N|id> [--timeline] [--output csv|json]');
-      const client = await logging();
+      const client = (await connect()).logging;
       if (argv.timeline === true) {
-        printTimeline(await client.timeline({rule: id, limit: argv.limit}) ?? [], output);
+        printOutput(rows(await client.timeline({rule: id, limit: argv.limit}) ?? [], output, timelineRow), output);
         return true;
       }
       const rule = await client.captureRule(id);
@@ -211,8 +204,8 @@ export async function handleCapture(connect: Connect, verb: string | undefined, 
     }
     case 'stop': {
       if (!id) return usage('stop <cap-N|id> [--reason <text>]');
-      const reason = argv.reason === undefined ? undefined : String(argv.reason);
-      const rule = await (await logging()).stopCaptureRule(id, reason);
+      const reason = optString(argv.reason);
+      const rule = await (await connect()).logging.stopCaptureRule(id, reason);
       if (output === 'table') console.log(`stopped ${ruleId(rule) || id}${reason ? ` — ${reason}` : ''}`);
       else printOutput(rule, output);
       return true;
@@ -239,15 +232,7 @@ export function timelineQuery(argv: any, now: Date = new Date()): Query {
 
 export async function handleTimeline(connect: Connect, _verb: string | undefined, _rest: string[], argv: any,
                                      output: OutputFormat): Promise<boolean> {
-  let q: Query;
-  try {
-    q = timelineQuery(argv);
-  }
-  catch (err: any) {
-    printError(new Error(`${err.message}\n${TIMELINE_USAGE}`));
-    return false;
-  }
-  const dapi = await connect(singleHost(argv, 'timeline'));
-  printTimeline(await dapi.logging.timeline(q) ?? [], output);
+  const q = timelineQuery(argv);
+  printOutput(rows(await (await connect()).logging.timeline(q) ?? [], output, timelineRow), output);
   return true;
 }

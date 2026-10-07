@@ -1,11 +1,10 @@
 /// `grok s observe errors ...` — platform errors as query results (ErrorsRouter, `/errors`).
 import * as fs from 'fs';
 import {Query} from '../utils/node-observability';
-import {Connect, forEachHost, hostList, singleHost} from '../utils/server-client';
+import {Connect, forEachHost, hostList} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, hasValue, listArg, parseTime, printBlock, shortRequestId,
-  shortSig, sinceArg, slug, sparkline, truncate} from '../utils/obs-format';
-import {rowsToCsv} from './server-domains';
+import {cronFromSchedule, fmtDate, fmtMinutes, fmtTime, hasValue, listArg, optString, parseTime, printBlock, rows,
+  shortRequestId, shortSig, sinceArg, sparkline, truncate} from '../utils/obs-format';
 
 export const ERRORS_USAGE = `Usage: grok s observe errors <verb> [filters] [options]
   list [filters] [--limit 50] [--host a --host b ...]
@@ -20,7 +19,7 @@ Filters: --since 7d | --from <iso|-7d> --to <iso|-1d>, --signature s, --package 
   --function <nqName>, --regressed, --min-users n, --min-count n
 Dimensions: signature package version user group service route server connection function`;
 
-export const DIMENSIONS = ['signature', 'package', 'version', 'user', 'group', 'service', 'route', 'server', 'connection', 'function'];
+const DIMENSIONS =['signature', 'package', 'version', 'user', 'group', 'service', 'route', 'server', 'connection', 'function'];
 const FORMATS = ['csv', 'json', 'parquet'];
 const STRING_FILTERS = ['signature', 'package', 'version', 'user', 'group', 'server', 'connection', 'function'];
 
@@ -29,11 +28,8 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
   switch (verb) {
     case 'list': {
       const q = {...errorFilters(argv), limit: argv.limit ?? 50, offset: argv.offset};
-      const rows = await forEachHost(argv, connect, async (dapi) => {
-        const occurrences: any[] = await dapi.errors.query(q) ?? [];
-        return output === 'json' ? occurrences : occurrences.map(occurrenceRow);
-      }, output);
-      printOutput(rows, output);
+      printOutput(await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.errors.query(q) ?? [], output, occurrenceRow), output), output);
       return true;
     }
     case 'top': {
@@ -42,11 +38,8 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
       const q = {...errorFilters(argv), by: by.join(','), trend, limit: argv.limit ?? 20};
       if (argv.format !== undefined)
         return await writeExport(connect, argv, q, output);
-      const rows = await forEachHost(argv, connect, async (dapi) => {
-        const aggregates: any[] = await dapi.errors.query(q) ?? [];
-        return output === 'json' ? aggregates : aggregates.map((r) => aggregateRow(r, by, trend));
-      }, output);
-      printOutput(rows, output);
+      printOutput(await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.errors.query(q) ?? [], output, (r: any) => aggregateRow(r, by, trend)), output), output);
       return true;
     }
     case 'export': {
@@ -59,8 +52,7 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
     case 'show': {
       if (rest[0] === undefined) return usage('show <signature> [--since 24h]');
       const since = sinceArg(argv.since ?? '24h');
-      const dapi = await connect(singleHost(argv, 'errors show'));
-      const doc = await dapi.errors.show(String(rest[0]), {since});
+      const doc = await (await connect()).errors.show(String(rest[0]), {since});
       if (output === 'table') printShow(doc);
       else printOutput(doc, output);
       return true;
@@ -87,8 +79,7 @@ export function normalizeRoute(route: string): string {
  * The shared filter flags as query parameters. [time] false leaves out the window (`diff` has its
  * own); [range] false refuses `--from`/`--to` (`save`, where `--to` is the destination).
  */
-export function errorFilters(argv: any, opts: {time?: boolean; range?: boolean; defaultSince?: string} = {},
-                             now: Date = new Date()): Query {
+export function errorFilters(argv: any, opts: {time?: boolean; range?: boolean} = {}, now: Date = new Date()): Query {
   const q: Query = {};
   if (opts.time !== false) {
     if (opts.range !== false && (argv.from !== undefined || argv.to !== undefined)) {
@@ -99,7 +90,7 @@ export function errorFilters(argv: any, opts: {time?: boolean; range?: boolean; 
     else {
       if (opts.range === false && argv.from !== undefined)
         throw new Error('A saved job takes --since (--to names the destination)');
-      q.since = sinceArg(argv.since ?? opts.defaultSince ?? '24h');
+      q.since = sinceArg(argv.since ?? '24h');
     }
   }
   for (const f of STRING_FILTERS)
@@ -183,15 +174,13 @@ export function aggregateRow(r: any, by: string[], trend: string): Record<string
 async function writeExport(connect: Connect, argv: any, q: Query, output: OutputFormat): Promise<boolean> {
   const format = String(argv.format);
   if (!FORMATS.includes(format)) throw new Error(`--format is csv, json or parquet, got '${format}'`);
-  const errors = (await connect(singleHost(argv, 'errors --format'))).errors;
+  const errors = (await connect()).errors;
   let bytes: Buffer;
-  if (format === 'csv') {
-    const csv = await errors.query({...q, format: 'csv'});
-    bytes = Buffer.from(typeof csv === 'string' ? csv : rowsToCsv(csv ?? []));
-  }
+  if (format === 'csv')
+    bytes = Buffer.from(await errors.query({...q, format: 'csv'}));
   else {
-    const rows: any[] = await errors.query({...q, format: 'json'}) ?? [];
-    bytes = format === 'json' ? Buffer.from(JSON.stringify(rows, null, 2) + '\n') : toParquet(rows);
+    const list: any[] = await errors.query({...q, format: 'json'}) ?? [];
+    bytes = format === 'json' ? Buffer.from(JSON.stringify(list, null, 2) + '\n') : toParquet(list);
   }
   const outFile: string | undefined = argv['output-file'] ?? argv.O;
   if (outFile) {
@@ -204,18 +193,10 @@ async function writeExport(connect: Connect, argv: any, q: Query, output: Output
 }
 
 /** Parquet is written here from the JSON rows; the server exports CSV and JSON only. */
-export function toParquet(rows: any[], load: (name: string) => any = require): Buffer {
-  let arrow: any;
-  let parquet: any;
-  try {
-    arrow = load('apache-arrow');
-    parquet = load('parquet-wasm');
-  }
-  catch {
-    throw new Error('Parquet output needs the apache-arrow and parquet-wasm packages, which this grok does not have ' +
-      'installed; use --format csv or --format json');
-  }
-  const flat = rows.map((r) => Object.fromEntries(Object.entries(r ?? {})
+export function toParquet(list: any[]): Buffer {
+  const arrow = require('apache-arrow');
+  const parquet = require('parquet-wasm');
+  const flat = list.map((r) => Object.fromEntries(Object.entries(r ?? {})
     .map(([k, v]) => [k, v !== null && typeof v === 'object' ? JSON.stringify(v) : v])));
   const ipc = arrow.tableToIPC(arrow.tableFromJSON(flat), 'stream');
   return Buffer.from(parquet.writeParquet(parquet.Table.fromIPCStream(ipc)));
@@ -234,8 +215,7 @@ async function diffWindows(connect: Connect, argv: any, output: OutputFormat): P
   for (const w of [argv.before, argv.after])
     if (!String(w).includes('..')) throw new Error(`A window is <from>..<to>, got '${w}'`);
   const q = {...errorFilters(argv, {time: false}), before: String(argv.before), after: String(argv.after)};
-  const dapi = await connect(singleHost(argv, 'errors diff --before/--after'));
-  const doc = await dapi.errors.diff(q);
+  const doc = await (await connect()).errors.diff(q);
   if (output === 'json') { printOutput(doc, output); return true; }
   if (output === 'csv' || output === 'quiet') { printOutput(doc?.rows ?? [], output); return true; }
   const c = doc?.categories ?? {};
@@ -303,7 +283,7 @@ async function diffHosts(connect: Connect, argv: any, output: OutputFormat): Pro
 }
 
 async function saveJob(connect: Connect, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  const name = rest[0] === undefined ? undefined : String(rest[0]);
+  const name = optString(rest[0]);
   if (!name || argv.to === undefined || argv.to === true)
     return usage('save "<name>" [filters] [--by ...] --to "<Share:path/>" [--format csv|json] [--schedule "MON 07:00"]');
   const format = String(argv.format ?? 'csv');
@@ -313,13 +293,11 @@ async function saveJob(connect: Connect, rest: string[], argv: any, output: Outp
   const by = byArg(argv.by);
   const spec: Query = {...errorFilters(argv, {range: false}), by: by.length ? by.join(',') : undefined};
   const to = String(argv.to);
-  const path = to.endsWith('/') ? `${to}${slug(name)}-{date}.${format}` : to;
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const path = to.endsWith('/') ? `${to}${slug}-{date}.${format}` : to;
   const cron = argv.schedule === undefined ? undefined : cronFromSchedule(argv.schedule);
-  const dapi = await connect(singleHost(argv, 'errors save'));
-  const job = await dapi.errors.saveJob({name, spec, format, path, cron});
-  if (output === 'json' || output === 'csv') printOutput(job, output);
-  else if (output === 'quiet') console.log(job?.id ?? '');
-  else console.log(`saved job "${name}" ${cron ?? '(no schedule)'} → ${path}`);
+  const job = await (await connect()).errors.saveJob({name, spec, format, path, cron});
+  output === 'table' ? console.log(`saved job "${name}" ${cron ?? '(no schedule)'} → ${path}`) : printOutput(job, output);
   return true;
 }
 

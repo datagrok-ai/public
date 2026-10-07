@@ -5,7 +5,6 @@ export type Query = Record<string, string | number | boolean | undefined>;
 
 const seg = (id: string) => encodeURIComponent(String(id));
 
-/** Ids are a UUID, a unique UUID prefix (≥ 6 chars) or `kind:key`. */
 export class NodeAlertsClient {
   constructor(private client: NodeApiClient) {}
 
@@ -19,8 +18,6 @@ export class NodeAlertsClient {
 
   problems(q: Query = {}): Promise<any[]> { return this.client.get(`/problems${buildQuery(q)}`); }
   problem(id: string): Promise<any> { return this.client.get(`/problems/${seg(id)}`); }
-
-  /** `{status, reason?, until?, untilVersion?}`. */
   setStatus(id: string, body: Record<string, any>): Promise<any> { return this.client.post(`/problems/${seg(id)}/status`, body); }
 }
 

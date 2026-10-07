@@ -2,21 +2,11 @@
 
 ## v.next
 
-* GROK-20884: Errors: `/apps/usage/errors?error=<stack hash>`, the link alerts carry, opens the tab on that error with its context panel
-* GROK-20884: Errors: the alert state shows the problem's status (muted, not a problem, fixed); the Alerts pane shows each alert's problem and when its condition cleared
-* GROK-20884: Rebuilt the Errors tab over the server's `ErrorStats`: occurrences, or figures by up to three dimensions (first-seen version, trend sparkline, alert state), filtered by Since or From - To, Group and the other inputs of its toolbox pane
-* GROK-20884: Errors: Added the row context panel with the occurrences, sessions, reports and alerts of the row, each linking to the Timeline tab
-* GROK-20884: Errors: Added Export as CSV (formula cells neutralised), JSON or Parquet (with the Arrow package), and Save as job... for an optionally scheduled export (`ErrorsSaveJob`)
-* GROK-20884: Clicks: Added the Followed by Error list — clicks per element, users, and how many an error followed within 5 s under the same action id, filtered by group and view
-* GROK-20884: Added the Capture tab: capture rules with author, subject, scope, reason and events; New rule and Stop through the server
-* GROK-20884: Added the Timeline tab: one action, request, session, report or rule in time order, routed as `/timeline?action=<id>`
-* GROK-20884: Clicks: Added the Clicks list with `request_id`; a row's Timeline action opens the click's timeline
+* GROK-20884: Errors: Rebuilt the tab over the server's `ErrorStats` — occurrences or figures by up to three dimensions with trend and alert state, a row drill-down with sessions, reports and alerts, Export, Save as job... and `?error=<stack hash>` links
+* GROK-20884: Capture: Added the tab — capture rules with author, subject, scope, reason and stop reason; New rule and Stop through the server
+* GROK-20884: Timeline: Added the tab — one action, request, session, report or rule in time order, routed as `/timeline?<key>=<id>`
+* GROK-20884: Clicks: Added the Clicks list and Followed by Error (clicks an error followed within 5 s), both linking to Timeline
 * GROK-20884: Removed the unused `EventErrors`, `ReportsCount` and `SameErrors` queries
-* GROK-20884: Fixed the Timeline tab failing with "Column named 'server' already exists" on servers that return the server column
-* GROK-20884: Capture: the list shows the rule's name and stop reason, a just-stopped rule shows its reason, the context panel follows the current row at once, Per session explains the window and the session limit, and Anonymous says it is only for group and everyone rules
-* GROK-20884: Errors, Capture, Clicks, Timeline: every time is marked UTC; `/apps/usage/<tab>` opens that tab without passing through Overview
-* GROK-20884: Errors: exports take the grid's columns, headers and short signatures and are named `errors-<date>`; Save as job states the schedule in words with UTC; the drill-down lists the users; an empty result names the filters that emptied it
-* GROK-20884: Errors, Capture, Clicks, Timeline: Improved the UX — why an action is disabled is shown next to it, a refused capture rule keeps its dialog open with the server's message, Who and Debug flags are pickers, the error drill-down opens with the full error and the latest stack trace, Since/Group/Group by on top and the rest under More filters, the Clicks list and Followed by Error have context panes with Timeline links, capture rules show who stopped them and why, live rules first, and Timeline splits the server name out of the source
 * Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open
 * Tests: BDD features keep to what only the browser shows and stay fast — scenarios an API or package test covers removed (spaces, roles, users, connections, scripts, sticky meta, Biostructure, sequence translator), spaces made through the API, Database meta claimed on the server instead of after five reloads and swept when a feature starts, the queries gated on PostgresTest
 * GROK-21108: Tests: The favorites features follow Add To Favorites becoming a submenu ("Only for me" and every group the account may edit; picking a target again takes the entity out, as Remove from favorites did) and files getting the star and the menu item

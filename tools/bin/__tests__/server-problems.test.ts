@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import {handleProblems, problemRow} from '../commands/server-problems';
+import {handleProblems, problemRow} from '../commands/server-alerts';
 import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
 const PROBLEM = {id: 'b52e0d00-0000-4000-8000-000000000001', kind: 'error-incident', key: 'a41f9c', name: 'DatagrokErrorIncident',

@@ -1,8 +1,10 @@
-/// `grok s observe alerts ...` — the alerts the deployment's problems raised (AlertsRouter, `/alerts`).
-import {NodeAlertsClient} from '../utils/node-observability';
-import {Connect, eachHost, forEachHost, hostList, singleHost} from '../utils/server-client';
+/// `grok s observe alerts ...` — the alerts the deployment's problems raised (AlertsRouter, `/alerts`), and
+/// `grok s observe problems ...` — what the deployment detects and what people decided about it (`/problems`).
+import {Query} from '../utils/node-observability';
+import {Connect, eachHost, forEachHost, hostList} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {fmtTime, fmtDateTime, hasValue, parseDuration, parseTime, printBlock, sinceArg, truncate} from '../utils/obs-format';
+import {fmtTime, fmtDateTime, hasValue, optString, parseDuration, parseTime, printBlock, rows, sinceArg,
+  truncate} from '../utils/obs-format';
 
 export const ALERTS_USAGE = `Usage: grok s observe alerts <verb> [args]
   list [--status open,acknowledged|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
@@ -14,34 +16,59 @@ export const ALERTS_USAGE = `Usage: grok s observe alerts <verb> [args]
   unmute <id|kind:key> [--reason <text>]   makes the alert's problem active again
   detection [--all] [--host a --host b ...]      live servers and those stopped or last seen within 1 h;
                                                 --all lists every server; hosts on one database print once
-An alert stays open until a person resolves it; CLEARED says its condition ended. Problems: grok s observe problems.
+An alert is one message that a problem went wrong. It stays open until a person resolves it; CLEARED says its
+condition ended. Resolving leaves the problem active: to stop alerts, mute, dismiss or fix it (grok s observe problems).
 Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod), which names an open or
 acknowledged alert (its key exactly, else a unique key prefix); unmute also finds a resolved one.`;
 
-const PAST: Record<string, string> = {ack: 'acknowledged', unmute: 'unmuted', resolve: 'resolved'};
+export const PROBLEMS_USAGE = `Usage: grok s observe problems <verb> [args]
+  list [--status active,muted,not-a-problem,fixed|all] [--state ongoing|cleared] [--kind <k>] [--since 7d]
+       [--limit n] [--host a --host b ...]
+  get <id|kind:key>
+  alerts <id|kind:key> [--status open,acknowledged,resolved|all]   the alerts the problem raised
+  mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]
+                                        no end: muted until a person makes it active
+  dismiss <id|kind:key> --reason <text>   not a problem: never alerts again
+  fix <id|kind:key> [--reason <text>]     fixed: alerts again, as a regression, if it comes back
+  activate <id|kind:key> [--reason <text>]
+A problem is what is wrong, kept for good; its status decides whether it alerts. Active problems raise an
+alert when they start; muted ones and those that are not a problem never do. Every status but active
+resolves the open alert. Ids: a UUID, a unique UUID prefix (6+ characters) or kind:key (connection:ELN:Prod).`;
+
+const MUTE_USAGE = 'mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]';
+const ALERT_PAST: Record<string, string> = {ack: 'acknowledged', unmute: 'unmuted', resolve: 'resolved'};
+const STATUS: Record<string, string> = {dismiss: 'not-a-problem', fix: 'fixed', activate: 'active'};
+const PROBLEM_PAST: Record<string, string> = {dismiss: 'dismissed as not a problem', fix: 'marked fixed', activate: 'made active'};
 
 export async function handleAlerts(connect: Connect, verb: string | undefined, rest: string[], argv: any,
                                    output: OutputFormat): Promise<boolean> {
-  const id = rest[0] === undefined ? undefined : String(rest[0]);
+  const id = optString(rest[0]);
+  const alert = async (status: string = 'open,acknowledged') => {
+    const alerts = (await connect()).alerts;
+    const all = status === 'all';
+    const list = (q: Query) => alerts.list({...q, status, limit: all ? 1 : undefined});
+    return {alerts, id: await target(id!, list, all ? 'alert' : 'open alert')};
+  };
   switch (verb) {
     case 'list': {
       const since = argv.since === undefined ? undefined : sinceArg(argv.since);
       const q = {status: optString(argv.status), kind: optString(argv.kind), since, limit: argv.limit};
-      const rows = await forEachHost(argv, connect, async (dapi) => {
-        const alerts: any[] = await dapi.alerts.list(q) ?? [];
-        return output === 'json' || output === 'quiet' ? alerts : alerts.map(alertRow);
-      }, output);
-      printOutput(rows, output);
+      printOutput(await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.alerts.list(q) ?? [], output, alertRow), output), output);
       return true;
     }
     case 'detection': {
       const deployments: {hosts: string[]; ids: string[]; lease: any}[] = [];
       await eachHost(argv, connect, async (dapi, host) => {
         const lease = await dapi.alerts.detection();
-        const ids = serverIds(lease);
-        const same = deployments.find((d) => d.ids.some((id) => ids.includes(id)));
-        if (same) same.hosts.push(host);
-        else deployments.push({hosts: [host], ids, lease: {...lease, servers: recentServers(lease, argv.all === true)}});
+        const servers: any[] = lease?.servers ?? [];
+        const ids = servers.map((s) => String(s?.id));
+        const same = deployments.find((d) => d.ids.some((x) => ids.includes(x)));
+        if (same)
+          same.hosts.push(host);
+        else
+          deployments.push({hosts: [host], ids, lease: {...lease, servers: argv.all === true ? servers
+            : servers.filter((s) => s?.live || Date.now() - Date.parse(s?.stoppedAt ?? s?.lastSeen) <= 3600000)}});
       });
       if (hostList(argv.host).length < 2)
         printOutput(output === 'json' ? deployments[0].lease : detectionRows(deployments[0].lease), output);
@@ -52,29 +79,29 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
       return true;
     }
     case 'get': {
-      if (!id) return usage('get <id|kind:key>');
-      const t = await target(connect, argv, verb, id);
-      const alert = await t.alerts.get(t.id);
-      if (output === 'table') printAlert(alert);
-      else printOutput(alert, output);
+      if (!id) return usage('alerts', 'get <id|kind:key>');
+      const t = await alert();
+      const a = await t.alerts.get(t.id);
+      if (output === 'table') printAlert(a);
+      else printOutput(a, output);
       return true;
     }
     case 'ack':
     case 'unmute':
     case 'resolve': {
-      if (!id) return usage(`${verb} <id|kind:key> [--reason <text>]`);
+      if (!id) return usage('alerts', `${verb} <id|kind:key> [--reason <text>]`);
       const reason = optString(argv.reason);
-      const t = await target(connect, argv, verb, id, verb === 'unmute' ? 'all' : undefined);
-      const alert = await t.alerts.transition(t.id, verb, {reason});
-      report(alert, `${PAST[verb]} ${identity(alert, id)}${reason ? ` — ${reason}` : ''}`, output);
+      const t = await alert(verb === 'unmute' ? 'all' : undefined);
+      const a = await t.alerts.transition(t.id, verb, {reason});
+      report(a, `${ALERT_PAST[verb]} ${identity(a, id)}${reason ? ` — ${reason}` : ''}`, output);
       return true;
     }
     case 'mute': {
-      if (!id) return usage('mute <id|kind:key> --reason <text> [--for 2h | --until <iso|HH:MM> | --until-version <v>]');
+      if (!id) return usage('alerts', MUTE_USAGE);
       const {body, until} = muteBody(argv);
-      const t = await target(connect, argv, verb, id);
-      const alert = await t.alerts.transition(t.id, 'mute', body);
-      report(alert, `muted ${identity(alert, id)} ${until} — ${body.reason}`, output);
+      const t = await alert();
+      const a = await t.alerts.transition(t.id, 'mute', body);
+      report(a, `muted ${identity(a, id)} ${until} — ${body.reason}`, output);
       return true;
     }
   }
@@ -82,42 +109,82 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
   return false;
 }
 
-/** The alert an id names; `kind:key` cannot travel in the path, so it is looked up among the open alerts first. */
-async function target(connect: Connect, argv: any, verb: string, id: string, status?: string): Promise<{alerts: NodeAlertsClient; id: string}> {
-  const alerts = (await connect(singleHost(argv, `alerts ${verb}`))).alerts;
-  return {alerts, id: await alertId(alerts, id, status)};
-}
-
-/** [status] `all`: the newest alert of the identity, open or not. */
-export async function alertId(alerts: NodeAlertsClient, id: string, status: string = 'open,acknowledged'): Promise<string> {
-  const colon = id.indexOf(':');
-  if (colon < 0) return id;
-  const matches: any[] = await alerts.list({kind: id.slice(0, colon), key: id.slice(colon + 1), status, limit: status === 'all' ? 1 : undefined}) ?? [];
-  if (!matches.length)
-    throw new Error(status === 'all' ? `No alert ${id}` : `No open alert ${id}`);
-  if (matches.length > 1)
-    throw new Error(`Several open alerts match ${id}; pass an id:\n` +
-      matches.map((a) => `  ${a?.id}  ${a?.kind}:${a?.key}  ${a?.status}  ${truncate(a?.summary, 60)}`).join('\n'));
-  return String(matches[0].id);
-}
-
-function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s observe alerts ${line}`));
+export async function handleProblems(connect: Connect, verb: string | undefined, rest: string[], argv: any,
+                                     output: OutputFormat): Promise<boolean> {
+  const id = optString(rest[0]);
+  const problem = async () => {
+    const alerts = (await connect()).alerts;
+    return {alerts, id: await target(id!, (q) => alerts.problems({...q, status: 'all'}), 'problem')};
+  };
+  switch (verb) {
+    case 'list': {
+      const since = argv.since === undefined ? undefined : sinceArg(argv.since);
+      const q = {status: optString(argv.status), state: optString(argv.state), kind: optString(argv.kind), since, limit: argv.limit};
+      printOutput(await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.alerts.problems(q) ?? [], output, problemRow), output), output);
+      return true;
+    }
+    case 'get': {
+      if (!id) return usage('problems', 'get <id|kind:key>');
+      const t = await problem();
+      const p = await t.alerts.problem(t.id);
+      if (output === 'table') printProblem(p);
+      else printOutput(p, output);
+      return true;
+    }
+    case 'alerts': {
+      if (!id) return usage('problems', 'alerts <id|kind:key>');
+      const t = await problem();
+      printOutput(rows(await t.alerts.list({problem: t.id, status: optString(argv.status) ?? 'all'}) ?? [], output, alertRow), output);
+      return true;
+    }
+    case 'mute': {
+      if (!id) return usage('problems', MUTE_USAGE);
+      const {body, until} = muteBody(argv);
+      const t = await problem();
+      const p = await t.alerts.setStatus(t.id, {status: 'muted', ...body});
+      report(p, `muted ${identity(p, id)} ${until} — ${body.reason}`, output);
+      return true;
+    }
+    case 'dismiss':
+    case 'fix':
+    case 'activate': {
+      const reason = optString(argv.reason);
+      if (!id || (verb === 'dismiss' && !reason))
+        return usage('problems', `${verb} <id|kind:key> ${verb === 'dismiss' ? '--reason <text>' : '[--reason <text>]'}`);
+      const t = await problem();
+      const p = await t.alerts.setStatus(t.id, {status: STATUS[verb], reason});
+      report(p, `${PROBLEM_PAST[verb]}: ${identity(p, id)}${reason ? ` — ${reason}` : ''}`, output);
+      return true;
+    }
+  }
+  printError(new Error(PROBLEMS_USAGE));
   return false;
 }
 
-function optString(v: any): string | undefined {
-  return v === undefined || v === null || v === true ? undefined : String(v);
+async function target(id: string, list: (q: Query) => Promise<any[]>, noun: string): Promise<string> {
+  const colon = id.indexOf(':');
+  if (colon < 0) return id;
+  const matches: any[] = await list({kind: id.slice(0, colon), key: id.slice(colon + 1)}) ?? [];
+  if (!matches.length)
+    throw new Error(`No ${noun} ${id}`);
+  if (matches.length > 1)
+    throw new Error(`Several ${noun}s match ${id}; pass an id:\n` +
+      matches.map((m) => `  ${m?.id}  ${m?.kind}:${m?.key}  ${m?.status}  ${truncate(m?.summary, 60)}`).join('\n'));
+  return String(matches[0].id);
 }
 
-function identity(alert: any, fallback: string): string {
-  return alert?.kind ? `${alert.kind}:${alert.key}` : fallback;
+function usage(command: string, line: string): boolean {
+  printError(new Error(`Usage: grok s observe ${command} ${line}`));
+  return false;
 }
 
-function report(alert: any, line: string, output: OutputFormat): void {
-  if (output === 'json' || output === 'csv') printOutput(alert, output);
-  else if (output === 'quiet') console.log(alert?.id ?? '');
-  else console.log(line);
+function identity(x: any, fallback: string): string {
+  return x?.kind ? `${x.kind}:${x.key}` : fallback;
+}
+
+function report(x: any, line: string, output: OutputFormat): void {
+  output === 'table' ? console.log(line) : printOutput(x, output);
 }
 
 /** A reason and at most one of `--for`, `--until`, `--until-version`; none (or `--forever`) mutes until a person lifts it. */
@@ -154,25 +221,21 @@ export function alertRow(a: any): Record<string, any> {
   };
 }
 
-/**
- * Two aliases on one database answer from the same `servers` table, so leases that share a server id
- * are one deployment (the lease holder alone is empty while nothing holds it). The ids are taken before
- * the recent-server filter, which hides different rows as time passes between the calls.
- */
-export function serverIds(lease: any): string[] {
-  const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
-  return servers.map((s) => String(s?.id));
-}
-
-/** Live servers, and those that stopped or were last seen within the hour; every row with [all]. */
-export function recentServers(lease: any, all: boolean, now: number = Date.now()): any[] {
-  const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
-  return all ? servers : servers.filter((s) => s?.live || now - Date.parse(s?.stoppedAt ?? s?.lastSeen) <= 3600000);
+export function problemRow(p: any): Record<string, any> {
+  return {
+    KIND: p?.kind ?? '',
+    KEY: p?.key ?? '',
+    SEV: p?.severity ?? '',
+    STATUS: p?.status ?? '',
+    STATE: p?.state ?? '',
+    EPISODES: p?.episodes ?? 0,
+    'LAST SEEN': fmtTime(p?.lastSeen),
+    SUMMARY: truncate(p?.summary, 60),
+  };
 }
 
 export function detectionRows(lease: any): Record<string, any>[] {
-  const servers: any[] = Array.isArray(lease?.servers) ? lease.servers : [];
-  return servers.map((s) => ({
+  return (lease?.servers ?? []).map((s: any) => ({
     SERVER: s?.name ?? '',
     'HOST NAME': s?.host ?? '',
     VERSION: s?.version ?? '',
@@ -198,5 +261,22 @@ function printAlert(a: any): void {
   if (a?.details) lines.push(['details', JSON.stringify(a.details)]);
   lines.push(['id', a?.id ?? '']);
   if (a?.problemId) lines.push(['problem', a.problemId]);
+  printBlock(lines);
+}
+
+function printProblem(p: any): void {
+  const lines: [string, string][] = [
+    ['problem', `${p?.kind}:${p?.key}  ${p?.name ?? ''}`],
+    ['status', `${p?.status ?? ''}${p?.statusReason ? ` — ${p.statusReason}` : ''}`],
+    ['state', `${p?.state ?? ''}  ${p?.severity ?? ''}  audience ${p?.audience ?? ''}`],
+    ['summary', p?.summary ?? ''],
+    ['seen', `first ${fmtDateTime(p?.firstSeen)}  · last ${fmtDateTime(p?.lastSeen)}  · ${p?.episodes ?? 0} episodes, ` +
+      `${p?.occurrences ?? 0} occurrences`],
+  ];
+  if (p?.mutedUntil) lines.push(['muted until', fmtDateTime(p.mutedUntil)]);
+  if (p?.mutedUntilVersion) lines.push(['muted until', `version ${p.mutedUntilVersion}`]);
+  if (p?.url) lines.push(['url', p.url]);
+  if (p?.details) lines.push(['details', JSON.stringify(p.details)]);
+  lines.push(['id', p?.id ?? '']);
   printBlock(lines);
 }

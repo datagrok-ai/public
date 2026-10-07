@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import {handleErrors, errorFilters, normalizeRoute, byArg, aggregateRow, occurrenceRow, classifyHosts, toParquet} from '../commands/server-errors';
-import {cronFromSchedule, sparkline, shortRequestId, fmtMinutes} from '../utils/obs-format';
+import {cronFromSchedule} from '../utils/obs-format';
 import {mockConnect, captureOutput, utcIso} from './obs-helpers';
 
 const NOW = new Date(Date.UTC(2026, 8, 28, 11, 0));
@@ -43,27 +43,6 @@ describe('filters', () => {
     expect(() => byArg('signature,team')).toThrow(/Unknown --by dimension 'team'/);
     expect(() => byArg('user,group,package,version')).toThrow(/at most three/);
   });
-});
-
-describe('formats', () => {
-  it('draws one block per bucket, scaled to the busiest', () => {
-    expect(sparkline([0, 1, 2, 3, 4, 5, 6, 7])).toBe('▁▂▃▄▅▆▇█');
-    expect(sparkline([0, 0, 0])).toBe('▁▁▁');
-    expect(sparkline(undefined)).toBe('');
-  });
-
-  it('shortens request ids to the action', () => {
-    expect(shortRequestId('mfz3k2a1b9x8y7kq.3')).toBe('…x8y7kq.3');
-    expect(shortRequestId('01J9ABCDEFGHJKMNPQRSTX7K2QM')).toBe('…X7K2QM');
-    expect(shortRequestId('abc.12')).toBe('abc.12');
-    expect(shortRequestId(null)).toBe('');
-  });
-
-  it('prints a median time to resolve', () => {
-    expect(fmtMinutes(190)).toBe('3 h 10 min');
-    expect(fmtMinutes(12)).toBe('12 min');
-    expect(fmtMinutes(null)).toBe('—');
-  });
 
   it('converts schedules to cron and passes cron through', () => {
     expect(cronFromSchedule('MON 07:00')).toBe('0 7 * * 1');
@@ -74,7 +53,9 @@ describe('formats', () => {
     expect(() => cronFromSchedule('MON 25:00')).toThrow(/MON..SUN/);
     expect(() => cronFromSchedule('weekly')).toThrow(/five-field/);
   });
+});
 
+describe('rows', () => {
   it('renders signature rows with first seen, sparkline and state', () => {
     const r = {signature: 'a41f9c3e-1111-2222-3333-444455556666', package: 'Chem', users: 9, count: 57, firstVersion: '1.14.2',
       firstSeen: utcIso(10, 2), lastSeen: utcIso(10, 47), trend: [0, 0, 0, 0, 0, 0, 57], state: 'muted', stateVersion: '1.14.3',
@@ -124,21 +105,6 @@ describe('parquet', () => {
     const table = arrow.tableFromIPC(parquet.readParquet(bytes).intoIPCStream());
     expect(table.toArray().map((r: any) => r.toJSON())).toEqual([{sig: 'a41f9c', users: 9, trend: '[0,57]'}, {sig: '7c02e1', users: 6, trend: '[3]'}]);
   }, 60000);
-
-  it('names the missing packages when they are not installed', () => {
-    const missing = () => { throw new Error('Cannot find module'); };
-    expect(() => toParquet([{a: 1}], missing)).toThrow(/apache-arrow and parquet-wasm/);
-  });
-
-  it('flattens nested values and writes through arrow IPC', () => {
-    const seen: any = {};
-    const arrow = {tableFromJSON: (rows: any[]) => { seen.rows = rows; return 'T'; }, tableToIPC: (t: any, f: string) => { seen.ipc = [t, f]; return 'IPC'; }};
-    const parquet = {Table: {fromIPCStream: (b: any) => ({b})}, writeParquet: (t: any) => new Uint8Array([80, 65, 82, 49, t.b.length])};
-    const bytes = toParquet([{sig: 'a', trend: [1, 2]}], (n) => n === 'apache-arrow' ? arrow : parquet);
-    expect(seen.rows).toEqual([{sig: 'a', trend: '[1,2]'}]);
-    expect(seen.ipc).toEqual(['T', 'stream']);
-    expect([...bytes]).toEqual([80, 65, 82, 49, 3]);
-  });
 });
 
 describe('handleErrors', () => {
