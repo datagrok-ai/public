@@ -26,7 +26,8 @@ steps only; what could not be said is listed here.
   Global Scale and a hovered cell on the second trellis while the first is in the view; the area
   steps address the first matching viewer's slider. Wanted: the area steps resolving `second trellis
   plot viewer` for hover-revealed sliders (or a reading of each trellis's slider range).
-- **Whether a selector strip is visible** (`trellis-plot.md` "Selectors"): the `x selectors` / `y selectors`
+- **Whether a selector strip is visible** (`trellis-plot.md` "Selectors", and step 5, the X strip that
+  stays off through Auto Layout's shrink and restore, which reads only the flag and so is not claimed): the `x selectors` / `y selectors`
   areas follow the layout's own `_showXSelectors` / `_showYSelectors` flag (`trellis_status.dart`), not
   whether the strip is visible on the page, and the `x selector <n>` areas are reported even while hidden.
   Wanted: both gated on `htmlGetVisible`, or an `x selectors shown` reading of the pickers a person can see.
@@ -38,7 +39,7 @@ steps only; what could not be said is listed here.
   GROK-13205): `trellis-plot-row-source` walks all eight rungs through the API; `click-gaps` sets Row Source
   and On Click in the panel only for the correction between them.
 - **A (+) click at the end of its range**: the click has nothing to add and no step waits for a "nothing
-  happened" signal, so `scales-and-paging` claims the icon's `aria-disabled` state rather than the click.
+  happened" signal, so `scales-and-paging` claims the icon's `aria-disabled` state and makes no such click.
 - **A floating viewer after a layout is applied, undocking, browser zoom** (`trellis-plot-ui.md`): no step
   undocks a viewer into a floating window or zooms the page.
 - **The ribbon Save and the Layout menu** (`trellis-plot.md` "Layout and Project save/restore"): the
@@ -52,12 +53,16 @@ steps only; what could not be said is listed here.
 - **Multi Curve steps 5-7** (curve X/Y, paging, zoom slider inside the cells): the case itself leaves them
   manual for want of a recon of the curve viewer's controls.
 
+## To check by hand
+
+- **Cell clicks after On Click and Row Source were picked in the context panel.** After the context-panel
+  scenario of `click-gaps` (Row Source = Filtered, On Click = Filter, a cell click, Escape, Row Source =
+  Filtered again, which moves On Click to None), a later On Click = Select and a click on M | Asian left no
+  current cell and no selection. The same sequence through the API leaves later clicks working. Whether a
+  person sees it too is unknown; `click-gaps` puts its context-panel scenario last.
+
 ## Traps found this round
 
-- After the context-panel scenario of `click-gaps` (Row Source and On Click picked in the panel's
-  `<select>`s), cell clicks on the trellis did nothing in the scenarios that followed it — the clicks inside
-  that scenario work; the same sequence through the API leaves later clicks working. Unexplained;
-  `click-gaps` puts its context-panel scenario last.
 - A cell already current is not clicked again by a scenario that expects a selection: pick another cell.
 - Pick Up / Apply, inner color, scroll: `x label <category>` / `y label <category>` areas are the way to
   tell which categories a scroll brought into the window.

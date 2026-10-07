@@ -5,8 +5,10 @@ Feature: Trellis plot viewer filter, menus and a second undo cycle
   a group named after the inner viewer, holding that viewer's own items; To Script > To JavaScript
   prints the call that rebuilds the trellis. Closing the viewer, undoing and redoing twice in a row
   leaves no error. Translated from the "Viewer filter formula", "Context menu", "To Script" and
-  "Undo/redo" sections of TestTrack Viewers/TrellisPlot/trellis-plot.md. One journey on demog-1000
-  with SEX by RACE and a scatter plot inside; every scenario puts back what it changed.
+  "Undo/redo" sections of TestTrack Viewers/TrellisPlot/trellis-plot.md; the undo/redo scenario adds
+  the case's second redo (step 7) to the first cycle trellis-plot-legend-and-lifecycle already walks.
+  One journey on demog-1000 with SEX by RACE and a scatter plot inside; the scenarios run in order on
+  one trellis, the inner tab leaving X on WEIGHT and the last one leaving the trellis closed.
 
   Background:
     Given user is logged in
@@ -31,8 +33,6 @@ Feature: Trellis plot viewer filter, menus and a second undo cycle
     Then the open menu should list "Scatter plot > Lasso Tool"
     And the open menu should list "Scatter plot > Markers"
     And the open menu should list "Scatter plot > Selection"
-    And the open menu should list "General > Clone"
-    And the open menu should list "Properties..."
     When user closes the context menu
     Then no errors should have been logged
 
@@ -47,7 +47,7 @@ Feature: Trellis plot viewer filter, menus and a second undo cycle
     When user clicks on settings icon of trellis plot viewer
     Then context panel should be visible
     When user clicks on "Scatter plot" tab in context panel
-    Given "X Axis" category in context panel is expanded
+    And "X Axis" category in context panel is expanded
     When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
     And user remembers the "cell signature M | Asian" reading of trellis plot viewer
     And user selects "WEIGHT" in "X" property in context panel

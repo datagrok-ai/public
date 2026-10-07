@@ -1,15 +1,17 @@
 @viewers @realizes:viewers.trellis-plot
 Feature: Trellis plot Pick Up / Apply, inner color coding and category scrolling
   Pick Up on one trellis and Apply on another carries its Y split, its inner viewer, its legend and
-  its title, and a later change to the first leaves the second as it was. A pie chart or a box plot
-  inside, colored by RACE, repaints every cell (the pie chart has no Marker Color, which the case
-  names: its slices are colored by its Category; the box plot's is Marker Color). The X column selector's own menu (Reset X columns)
-  clears the X split while the axis is paged, leaving the four RACE cells; the category scroll slider dragged along its track, and the mouse wheel
-  over the grid, bring other categories into the window. Translated from TestTrack
+  its title, and a later change of the first's Y split leaves the second as it was. A pie chart or a
+  box plot inside, colored by RACE, repaints its cells (four are read; the pie chart has no Marker
+  Color, which the case names: its slices are colored by its Category; the box plot's is Marker
+  Color). The X column selector's own menu (Reset X columns) clears the X split while the axis is
+  paged, leaving the four RACE cells; the category scroll slider dragged along its track, and the
+  mouse wheel over the grid, bring other categories into the window. Translated from TestTrack
   Viewers/TrellisPlot/trellis-plot.md "Pick Up / Apply" steps 3-7 and "Scrolling" steps 3 and 5,
   trellis-plot-ui.md "Inner viewer color coding", trellis-plot-scroll-categories.md section 1 step 8
   and trellis-plot-split-and-pick-inner.md section 2 step 6. Each scenario starts on a fresh
-  demog-1000 view.
+  demog-1000 view: a scenario holds two trellises or a trellis of another inner type, and closing
+  them would cost what reopening the clone does.
 
   Background:
     Given user is logged in
@@ -44,7 +46,7 @@ Feature: Trellis plot Pick Up / Apply, inner color coding and category scrolling
     And "Y Column Names" property of second trellis plot viewer should be "DIS_POP"
     And no errors should have been logged
 
-  Scenario Outline: A <type> inside, colored by RACE, repaints every cell
+  Scenario Outline: A <type> inside, colored by RACE, repaints its cells
     Given user adds a trellis plot viewer with:
       | X Column Names | SEX    |
       | Y Column Names | RACE   |
@@ -55,8 +57,7 @@ Feature: Trellis plot Pick Up / Apply, inner color coding and category scrolling
     And user remembers the "cell signature F | Black" reading of trellis plot viewer
     And user remembers the "cell signature M | Other" reading of trellis plot viewer
     And user sets "<color property>" inner property of trellis plot viewer to "RACE"
-    Then "<color property>" inner property of trellis plot viewer should be "RACE"
-    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
     And the "cell signature M | Asian" reading of trellis plot viewer should not be as remembered
     And the "cell signature F | Black" reading of trellis plot viewer should not be as remembered
     And the "cell signature M | Other" reading of trellis plot viewer should not be as remembered

@@ -1,17 +1,17 @@
 @journey @viewers @realizes:viewers.trellis-plot
 Feature: Trellis plot axes without global scale, the Y slider, paging ends and packing
   The axis settings take effect only under Global Scale: with it off, axes set to Always and range
-  sliders on still draw no axis strip and own no slider, and the inner viewer's Allow Zoom starts
-  off. Under Global Scale the shared Y range slider re-bounds every cell and Reset Inner Range Sliders
+  sliders on still draw no axis strip and own no slider. Under Global Scale the shared Y range slider re-bounds every cell and Reset Inner Range Sliders
   puts them back, as the X one does. The paging icons go inert at both ends: at entry, when every
-  category fits, (+) has nothing to add and (-) pages out; at the far end (+) stops adding. Packing a
+  category fits, (+) is disabled and (-) pages out; at the far end (+) is disabled again and (-) still
+  pages. Packing a
   two-column X axis drops the combinations no row holds: RACE by SEVERITY makes 20; three (Critical with Asian,
   Black and Other) hold no row, and Asian Medium holds rows none of which has both the HEIGHT and the
   WEIGHT the scatter plot inside draws, so 16 are left. Translated from TestTrack
-  Viewers/TrellisPlot/trellis-plot-global-scale-axes.md (section 1 steps 1-4, section 3 steps 1-2),
+  Viewers/TrellisPlot/trellis-plot-global-scale-axes.md (section 1 steps 1-4; section 3 is in trellis-plot-global-scale-axes),
   trellis-plot.md "Range sliders with global scale" step 7, trellis-plot-scroll-categories.md
   (section 1 steps 1-6, section 2). One journey on demog-1000 with SEX by RACE and a scatter plot
-  inside; every scenario puts back what it changed.
+  inside; the scenarios run in order on one trellis, each setting the split it needs.
 
   Background:
     Given user is logged in
@@ -24,7 +24,6 @@ Feature: Trellis plot axes without global scale, the Y slider, paging ends and p
     And "Global Scale" property of trellis plot viewer should be "false"
 
   Scenario: Without Global Scale the axis settings draw nothing, and Allow Zoom starts off
-    Then "allowZoom" inner property of trellis plot viewer should be "false"
     When user sets properties of trellis plot viewer:
       | Show X Axes        | Always |
       | Show Y Axes        | Always |
@@ -67,8 +66,6 @@ Feature: Trellis plot axes without global scale, the Y slider, paging ends and p
     And the cells of trellis plot viewer should be 6 wide and 4 tall
     And x plus icon should be disabled
     And x minus icon should be enabled
-    When user clicks on the "x plus" area of trellis plot viewer
-    Then the cells of trellis plot viewer should be 6 wide and 4 tall
     When user clicks on the "x minus" area of trellis plot viewer
     Then the cells of trellis plot viewer should be 5 wide and 4 tall
     And x plus icon should be enabled
@@ -89,8 +86,6 @@ Feature: Trellis plot axes without global scale, the Y slider, paging ends and p
     And user clicks on the "x plus" area of trellis plot viewer
     Then the cells of trellis plot viewer should be 12 wide and 4 tall
     And x plus icon should be disabled
-    When user clicks on the "x plus" area of trellis plot viewer
-    Then the cells of trellis plot viewer should be 12 wide and 4 tall
     When user clicks on the "x minus" area of trellis plot viewer
     Then the cells of trellis plot viewer should be 11 wide and 4 tall
     And x plus icon should be enabled

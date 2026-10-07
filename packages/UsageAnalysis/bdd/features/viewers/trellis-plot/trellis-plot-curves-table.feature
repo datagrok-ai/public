@@ -2,8 +2,8 @@
 Feature: Trellis plot on another table, with the Multi Curve viewer inside
   A trellis set to another table works on that table — the table it reports — and a Multi Curve
   viewer (from the Curves package; "Curves" in the viewer selector, MultiCurveViewer as the type the
-  trellis reports) fills its cells there; set back to the first table,
-  it draws its canonical grid again. Translated from the "Multi Curve inner viewer (and table
+  trellis reports) fills its cells there. Set back to the first table, with its
+  split and type set again, it draws its canonical grid. Translated from the "Multi Curve inner viewer (and table
   switching)" section of TestTrack Viewers/TrellisPlot/trellis-plot.md, steps 1-4, 8 and 9, on
   demog-1000 and curves.
 

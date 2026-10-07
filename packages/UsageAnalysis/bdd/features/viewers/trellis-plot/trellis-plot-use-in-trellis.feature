@@ -5,7 +5,8 @@ Feature: Use in Trellis from another viewer
   view. Translated from the "Use in Trellis" section of TestTrack Viewers/TrellisPlot/trellis-plot.md
   and the "Create a trellis from another viewer" item of trellis-plot-ui.md, for the five viewers the
   case walks: scatter plot, bar chart, histogram, line chart and box plot, each configured first and
-  its setting read back from the trellis's inner viewer. Each scenario starts on a
+  its setting read back from the trellis's inner viewer. Not a journey: each scenario needs a view
+  with that one viewer, and closing two viewers per scenario costs what reopening the clone does. Each scenario starts on a
   fresh demog-1000 view (the pie chart path is walked by the Embedded Viewers tutorial).
 
   Background:
