@@ -5,6 +5,7 @@ import './tests/utils/expect-tests';
 import './tests/utils/json-serialization-tests';
 import './tests/compute-utils/reactive-tree-driver/config-processing';
 import './tests/compute-utils/reactive-tree-driver/instance-init';
+import './tests/compute-utils/reactive-tree-driver/dataframe-copies';
 import './tests/compute-utils/reactive-tree-driver/consistency-tolerance';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';

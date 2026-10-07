@@ -5,6 +5,7 @@ import {deepEqual} from 'fast-equals';
 import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
+import {copyDataFrame} from '../utils';
 import {StateItem} from '../config/PipelineConfiguration';
 import {DriverLogger, reportError} from '../data/Logger';
 
@@ -160,7 +161,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
@@ -228,7 +229,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentRestriction = this.inputRestrictions$.value?.[id];
     if (!this.isReadonly && currentRestriction) {
       const consistentVal = currentRestriction.assignedValue instanceof DG.DataFrame ?
-        currentRestriction.assignedValue.clone() :
+        copyDataFrame(currentRestriction.assignedValue) :
         currentRestriction.assignedValue;
       currentInstance.setState(id, consistentVal, currentRestriction.type);
     }
@@ -291,7 +292,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         if (!restriction) continue;
         const t = restriction.type;
         if (t === 'restricted' || t === 'disabled' || (includeInfo && t === 'info'))
-          this.setState(name, restriction.assignedValue, t);
+          this.setToConsistent(name);
       }
       return of(undefined);
     });
