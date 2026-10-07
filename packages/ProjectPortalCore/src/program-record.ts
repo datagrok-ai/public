@@ -11,6 +11,7 @@ import {portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isProgramRecordName, programAddress, PROGRAM_RECORD} from './model/pinning';
 import {portalAppView} from './views/portal-view';
 import {openProgramPage} from './views/my-programs-widget';
+import {portalIcon} from './views/icons';
 
 /** The program and portfolio behind a record; null when the user cannot read them. */
 async function programOfRecord(x: DG.Entity): Promise<{program: ProgramRow, portfolio: PortfolioRow} | null> {
@@ -33,7 +34,12 @@ export class ProgramRecordHandler extends DG.ObjectHandler<DG.Entity> {
   }
 
   renderIcon(x: DG.Entity): HTMLElement {
-    return ui.iconFA('flask', null, `Program ${this.getCaption(x)}`);
+    return portalIcon('program', `Program ${this.getCaption(x)}`);
+  }
+
+  /** The icon and the name: lists that show only markup (Favorites on Home) get the icon too. */
+  renderMarkup(x: DG.Entity): HTMLElement {
+    return ui.divH([portalIcon('program'), ui.span([this.getCaption(x)])], {style: {alignItems: 'center'}});
   }
 
   renderTooltip(x: DG.Entity): HTMLElement {

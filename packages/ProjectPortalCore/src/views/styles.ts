@@ -9,6 +9,9 @@ const CSS = `
 .pp-detail { justify-content: flex-start; gap: 6px; padding: 4px 8px; box-sizing: border-box; }
 .pp-heading { font-weight: 600; margin-top: 8px; color: var(--u2-text-muted, #666); text-transform: uppercase; font-size: 11px; }
 .pp-title { font-size: 16px; font-weight: 600; }
+.pp-icon.grok-icon { color: var(--u2-text-muted, #888); cursor: default; margin-right: 6px; font-size: inherit; }
+.pp-icon-line { align-items: center; gap: 0; }
+.pp-icon-line .pp-icon { flex: 0 0 auto; }
 .pp-muted { color: var(--u2-text-muted, #888); font-size: 12px; }
 .pp-question { font-style: italic; font-size: 12px; }
 .pp-portfolio { padding: 8px; border-radius: 6px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 2px; }

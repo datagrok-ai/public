@@ -18,6 +18,7 @@ import {notifyUser} from './notify';
 import {checkNewDataOf} from './new-data';
 import {checkEvidenceChangesOf} from './evidence-tables';
 import {myPortfolioIds, placeSyncLog} from './secured-rows';
+import {buildMissingFolders, summarizeFolderGrowth} from './workspace';
 import {filterValue, ROW_LIMIT} from './rows';
 
 export type SyncTrigger = 'schedule' | 'manual';
@@ -37,6 +38,8 @@ export interface SyncRunResult {
   notified?: string;
   /** What followers were told after the run, one line per program or series, for the activity feed. */
   newData?: {program: string, line: string}[];
+  /** Programs that got a workspace folder in this run, by code. */
+  folders?: string[];
 }
 
 const ms = (v: any): number | null => {
@@ -60,7 +63,8 @@ const issuesOf = (run: SyncLogRow | undefined): string[] | null => !run ? null :
   [...(run.unresolved_spellings ?? '').split('|').filter((s) => s.length > 0),
     ...((run.changes as {overlaps?: string[]} | undefined)?.overlaps ?? [])].sort();
 
-/** Syncs one portfolio (programs, then work units, then compounds) and records the run. The sync
+/** Syncs one portfolio (programs, then work units, then compounds), gives the programs without a
+ * workspace folder theirs, and records the run. The sync
  * never fails because its history could not be written; that is reported on the result. */
 export async function recordedSync(code: string, trigger: SyncTrigger): Promise<SyncRunResult> {
   const portfolio = await portfolioByCode(code);
@@ -94,6 +98,19 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
     result = {...result, report, counts, changes};
   } catch (e: any) {
     result.error = e?.message ?? String(e);
+  }
+  // a program new since the last build is readable to viewers only through its folder
+  if (!result.error) {
+    try {
+      const g = await buildMissingFolders(code);
+      const line = summarizeFolderGrowth(g);
+      if (line)
+        result.report += `\n${line}`;
+      if (g.built.length)
+        result.folders = g.built;
+    } catch (e: any) {
+      result.report += `\n${code} folders not built: ${e?.message ?? e}`;
+    }
   }
   // a portfolio that opts in lets its programs advance by data once the feeds are in
   if (!result.error && autoAdvanceOf(portfolio)) {
@@ -144,7 +161,8 @@ export async function recordedSync(code: string, trigger: SyncTrigger): Promise<
         unresolved: result.counts.unresolved, unresolved_spellings: result.counts.unresolvedSpellings.join('|') || undefined,
         error: result.error ?? undefined, summary: result.report || undefined,
         changes: {programs: result.changes, overlaps: result.counts.overlaps,
-          ...(result.newData?.length ? {newData: result.newData} : {})}});
+          ...(result.newData?.length ? {newData: result.newData} : {}),
+          ...(result.folders?.length ? {folders: result.folders} : {})}});
     } catch (e: any) {
       result.historyError = `sync history not completed: ${e?.message ?? e}`;
     }

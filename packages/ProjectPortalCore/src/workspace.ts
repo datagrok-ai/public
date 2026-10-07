@@ -13,7 +13,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {normalizeSpaceName} from './model/config';
 import {findOrphans, findProgramFolder, isSpaceNamed, noNewFoldersReason, Orphan, PARKED_FOLDER, parseWorkstreams, programAttributes, programFolderName,
-  SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
+  programsWithoutFolder, SpaceRef, stageFolderPaths, StageFolders, WorkspaceProgram} from './model/workspace-plan';
 import {portalDb, PortfolioRow} from './generated/db';
 import {portfolioByCode, requireKeeper} from './portal';
 import {syncFolderGrants} from './program-roles';
@@ -120,10 +120,11 @@ export async function buildPortfolioWorkspace(code: string, dryRun = false, only
   const rootName = portfolio.workspace_root;
   if (!rootName)
     throw new Error(`portfolio ${code} has no workspaceRoot`);
-  return withRootLock(rootName, () => build(portfolio, rootName, dryRun, onlyProgramId));
+  return withRootLock(rootName, () => build(portfolio, rootName, dryRun, onlyProgramId ? [onlyProgramId] : undefined));
 }
 
-async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean, onlyProgramId?: string):
+/** [only]: the programs to build, when not all of them. */
+async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean, only?: string[]):
   Promise<WorkspaceReport> {
   const report: WorkspaceReport = {portfolio: portfolio.code, root: rootName, dryRun, entries: [],
     created: 0, reused: 0, failed: 0, skipped: 0, notes: [], orphans: []};
@@ -159,7 +160,7 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
       stage: p.stage_id ? stages.get(p.stage_id) ?? null : null, status: p.status ?? null,
       ordinal: p.stage_id ? ordinals.get(p.stage_id) ?? null : null}))
     .sort((a, b) => a.code.localeCompare(b.code));
-  const programs = onlyProgramId ? all.filter((p) => p.id === onlyProgramId) : all;
+  const programs = only ? all.filter((p) => only.includes(p.id)) : all;
   // programs with roles of their own get their folder shared to match
   const withRoles = dryRun ? new Set<string>() : new Set((await portalDb.programRoles.query({limit: ROW_LIMIT}).catch(() => []))
     .map((r) => r.program_id));
@@ -265,9 +266,79 @@ async function build(portfolio: PortfolioRow, rootName: string, dryRun: boolean,
     report.notes.push(`attributes written on ${attributesWritten} program folder(s)`);
   if (rowsLinked > 0)
     report.notes.push(`${rowsLinked} program row(s) linked into their folders, visible to the folder's groups`);
-  if (!onlyProgramId)
+  if (!only)
     report.orphans = findOrphans(rootName, children.map(asRef), all);
   return report;
+}
+
+export interface FolderGrowth {
+  portfolio: string;
+  dryRun: boolean;
+  /** Programs that got a folder (with dryRun: would get one), by code. */
+  built: string[];
+  /** Folders made (with dryRun: to make), subfolders included. */
+  folders: number;
+  failed: string[];
+  /** Programs without a folder that keep none: ended, or their folder parked. */
+  ended: string[];
+  parked: string[];
+  /** Set when the portfolio's workspace was never built: then nothing is made. */
+  notBuilt?: string;
+  /** A dry run's programs the sync would add, which would get a folder too. */
+  newPrograms: string[];
+}
+
+/** After a sync: a folder for each program of [code] that has none (new ones, and any other the
+ * workspace lacks), made by the builder one program at a time, so stage and flow folders, the row's
+ * link and the program's grants come with it. Programs that have ended or whose folder is parked get
+ * none; programs with a folder are not looked into. A workspace that was never built is not built
+ * here; the result says so. The caller checks the approver role (a sync does). A dry run before a sync
+ * passes the programs the sync would add ([newPrograms], codes): they are not rows yet. */
+export async function buildMissingFolders(code: string, dryRun = false, newPrograms: string[] = []): Promise<FolderGrowth> {
+  const portfolio = await portfolioByCode(code);
+  const out: FolderGrowth = {portfolio: code, dryRun, built: [], folders: 0, failed: [], ended: [], parked: [],
+    newPrograms: dryRun ? newPrograms : []};
+  const rootName = portfolio.workspace_root;
+  if (!rootName)
+    return out;
+  const rows = await portalDb.programs.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT});
+  const programs: WorkspaceProgram[] = rows.map((p) => ({id: p.id, code: p.code, name: p.name,
+    spaceId: p.space_id ?? null, status: p.status ?? null}));
+  const root = await findRoot(rootName);
+  if (!root) {
+    const without = programsWithoutFolder(programs, [], new Set()).build.length + out.newPrograms.length;
+    out.notBuilt = `workspace "${rootName}" is not built yet, so ${without} program(s) have no folder; buildWorkspace builds it`;
+    return out;
+  }
+  const parked = new Set((await portalDb.parkedFolders.query({filter: `portfolio_id = ${filterValue(portfolio.id)}`, limit: ROW_LIMIT})
+    .catch(() => [])).filter((r) => r.status === 'parked').map((r) => r.space_id));
+  const wanted = programsWithoutFolder(programs, (await subspaces(root.id)).map(asRef), parked);
+  out.ended = wanted.ended.map((p) => p.code);
+  out.parked = wanted.parked.map((p) => p.code);
+  if (wanted.build.length === 0)
+    return out;
+  const report = await withRootLock(rootName, () => build(portfolio, rootName, dryRun, wanted.build.map((p) => p.id)));
+  const failed = report.entries.filter((e) => e.status !== 'ok').map((e) => e.path);
+  for (const p of wanted.build) {
+    const path = `${rootName}/${programFolderName(p)}`;
+    (failed.some((f) => f === path || f.startsWith(`${path}/`)) ? out.failed : out.built).push(p.code);
+  }
+  out.folders = report.created;
+  return out;
+}
+
+/** The line a sync's report gets; empty when no folder was missing. */
+export function summarizeFolderGrowth(g: FolderGrowth): string {
+  if (g.notBuilt)
+    return `${g.portfolio} folders: ${g.notBuilt}`;
+  const parts: string[] = [];
+  if (g.built.length)
+    parts.push(`${g.dryRun ? 'would build' : 'built'} for ${g.built.join(', ')} (${g.folders} folder(s))`);
+  if (g.newPrograms.length)
+    parts.push(`would build for the new program(s) ${g.newPrograms.join(', ')}`);
+  if (g.failed.length)
+    parts.push(`failed for ${g.failed.join(', ')}`);
+  return parts.length ? `${g.portfolio} folders: ${parts.join('; ')}` : '';
 }
 
 /** The program_flow rows of [programIds], each joined to its flow and steps. A loader of process

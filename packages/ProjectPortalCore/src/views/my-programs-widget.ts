@@ -9,6 +9,7 @@ import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {pinnedTiles} from '../pinned-programs';
 import {describeTile, NOTHING_PINNED, ProgramTile, tileTitle} from '../model/pinning';
 import {installStyles} from './styles';
+import {portalIcon} from './icons';
 import {openPortal} from './portal-view';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -45,7 +46,7 @@ function tile(t: ProgramTile): HTMLElement {
     named(badge(t.ready ? 'ready' : `${Math.round(t.readiness * 100)}%`,
       {variant: t.ready ? 'success' : t.readiness === 0 ? 'error' : 'warning'}), 'tile-readiness');
   const el = named(divV([
-    divH([span(tileTitle(t), 'pp-card-title'),
+    divH([portalIcon('program'), span(tileTitle(t), 'pp-card-title'),
       ...(t.pinnedFor.length && !t.pinnedByMe ? [badge(`for ${t.pinnedFor[0]}`, {variant: 'accent'})] : [])], 'pp-card-meta'),
     span(t.portfolioName, 'pp-muted'),
     span(`${t.stage}${t.steps ? ` · ${t.step || '–'} of ${t.steps}` : ''}`, 'pp-tile-stage'),

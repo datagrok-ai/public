@@ -104,6 +104,14 @@ are given where one was filed. Items 1 to 19 were first listed in the package RE
    one grant on the table entity; only `row` tables support promotion, and so only their rows can be linked into a
    space. With item 19 (no `securityMode` change on a deployed table), narrowing who reads a table's rows means a
    new row-secured table and moving the rows (0.2.33: `approval`, `sync_log`, `following`).
+37. **A package cannot give its domain rows an icon of their own, except through a JS object handler.** The domain
+   schema has no `icon` per table; the platform draws every domain row with `fa-table`. A favorited row comes back as a
+   bare `EntityRecord`, which Favorites and the Power Pack Workspace do not turn into a domain row, so a handler for
+   the table's type never sees it there. The portal's handler claims the bare record by its name and gives programs the
+   flask; it works only once the package has loaded (Home loads it through My programs). In a Space's tree a linked
+   row always shows `fa-table`: the tree calls the platform's own domain-row meta, not the registered handler. Asks:
+   an `icon` per table in the domain schema; favorites and the Workspace resolving a domain `EntityRecord` to its row
+   (as Spaces do); the Space tree using the registered handler.
 
 ## What the server enforces on writes
 

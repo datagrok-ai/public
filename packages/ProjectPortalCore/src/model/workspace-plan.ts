@@ -54,6 +54,25 @@ export function findProgramFolder(p: WorkspaceProgram, children: SpaceRef[]):
   return byName ? {space: byName, by: 'name'} : null;
 }
 
+/** The programs a sync gives a folder to: those with none under the root, unless they have ended or
+ * their folder is parked ([parked]: the parked folders' space ids). Programs with a folder are left
+ * alone, so a sync grows the workspace by its new programs only. */
+export function programsWithoutFolder(programs: WorkspaceProgram[], children: SpaceRef[], parked: Set<string>):
+  {build: WorkspaceProgram[], ended: WorkspaceProgram[], parked: WorkspaceProgram[]} {
+  const out = {build: [] as WorkspaceProgram[], ended: [] as WorkspaceProgram[], parked: [] as WorkspaceProgram[]};
+  for (const p of [...programs].sort((a, b) => a.code.localeCompare(b.code))) {
+    if (findProgramFolder(p, children))
+      continue;
+    if (p.spaceId && parked.has(p.spaceId))
+      out.parked.push(p);
+    else if (noNewFoldersReason(p))
+      out.ended.push(p);
+    else
+      out.build.push(p);
+  }
+  return out;
+}
+
 /** Display attributes written on a program's folder. Space properties are not queryable
  * (PLAT-04), so they repeat the `portal` row rather than replace it. */
 export function programAttributes(portfolioCode: string, p: WorkspaceProgram): Record<string, string> {

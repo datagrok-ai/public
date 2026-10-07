@@ -553,7 +553,7 @@ export namespace funcs {
   }
 
   /**
-   * Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
+   * Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result. A real sync then builds the workspace folders of programs that have none (not of ended or parked ones); a dry run lists them
    */
   export async function syncPortfolio(code: string , dryRun: boolean ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:SyncPortfolio', { code, dryRun });

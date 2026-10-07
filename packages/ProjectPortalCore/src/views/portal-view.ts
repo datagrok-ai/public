@@ -28,6 +28,7 @@ import {AttentionSeverity, ProgramAttention} from '../model/attention';
 import {recordedSync} from '../sync-runs';
 import {openSyncHistory} from './sync-history';
 import {openExportDialog} from './export-dialog';
+import {portalIcon} from './icons';
 import {ProgramRecommendation, recommendFor, runModelFor} from '../recommend';
 import {describeMissing} from '../model/recommend';
 import {follow, myFollows, unfollow, whatsNew, WorkUnitRef} from '../new-data';
@@ -300,7 +301,8 @@ export class PortalView {
 
   /** A line that opens [p] in its portfolio; named `<kind>-<portfolio>-<code>`. */
   private programLink(p: FindProgram, kind: string, sub: string): HTMLElement {
-    const el = named(divV([span(p.name, 'pp-card-title'), span(sub, 'pp-muted')], `pp-search-hit pp-${kind}`),
+    const el = named(divV([divH([portalIcon('program'), span(p.name, 'pp-card-title')], 'pp-icon-line'), span(sub, 'pp-muted')],
+      `pp-search-hit pp-${kind}`),
       `${kind}-${slug(p.portfolio)}-${slug(p.code)}`);
     el.title = `${p.code} in ${p.portfolioName}`;
     el.onclick = () => void this.showProgram(p.portfolio, p.id).catch(this.failed);
@@ -316,7 +318,7 @@ export class PortalView {
     this.portfolios.forEach((p, i) => {
       const model = this.models.get(p.stage_model_id);
       const card = named(divV([
-        span(p.name, 'pp-portfolio-name'),
+        divH([portalIcon('portfolio'), span(p.name, 'pp-portfolio-name')], 'pp-icon-line'),
         span(`${counts[i]} ${(p.program_noun ?? 'program').toLowerCase()}s · ${model?.name ?? ''}`, 'pp-muted'),
       ], 'pp-portfolio'), `portfolio-${slug(p.code)}`);
       card.onclick = () => void this.openPortfolio(p.code).catch(this.failed);
@@ -374,7 +376,7 @@ export class PortalView {
     }
     const header = named(divH([
       ...back,
-      span(p.name, 'pp-title'),
+      divH([portalIcon('portfolio', 'Portfolio'), span(p.name, 'pp-title')], 'pp-icon-line'),
       badge(p.setting ?? ''),
       badge(`${model?.code ?? ''}`, {variant: 'accent'}),
       badge(p.stage_authority === 'feed' ? 'stages from registry' : 'stages decided here',
@@ -935,7 +937,7 @@ export class PortalView {
       body.push(divH([more], 'pp-actions'));
 
     this.detail.replaceChildren(
-      named(span(program.name, 'pp-title'), 'program-title'),
+      divH([portalIcon('program', 'Program'), named(span(program.name, 'pp-title'), 'program-title')], 'pp-icon-line'),
       divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
       named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx),
@@ -2000,6 +2002,7 @@ export async function portfolioTree(treeNode: DG.TreeViewGroup): Promise<void> {
   treeNode.items.length = 0;
   for (const p of portfolios) {
     const node = treeNode.item(p.name);
+    node.icon = portalIcon('portfolio');
     node.root.dataset.u2Name = `browse-portfolio-${slug(p.code)}`;
     node.root.title = `${p.code} · ${p.setting ?? ''}`;
     node.onSelected.subscribe(() => void openInPortal(p.code).catch((e) => grok.shell.error(e?.message ?? String(e))));

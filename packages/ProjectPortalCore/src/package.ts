@@ -3,7 +3,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, programCompound, portfolioByCode, programContext, stagesOf} from './portal';
 import {portalDb} from './generated/db';
-import {buildPortfolioWorkspace, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
+import {noNewFoldersReason} from './model/workspace-plan';
+import {buildMissingFolders, buildPortfolioWorkspace, summarizeFolderGrowth, summarizeWorkspace, workspaceOrphans as orphansOf} from './workspace';
 import {summarizeReadiness} from './model/readiness';
 import {summarizeWorkUnitPlan} from './model/work-units';
 import {CompoundRole, summarizeCompoundPlan} from './model/compounds';
@@ -112,6 +113,7 @@ export async function saveRunToProgram(call: DG.FuncCall): Promise<void> {
 //name: Project Portal
 //description: Several portfolios on one instance, each on its own stage-gate model and registry
 //tags: app
+//meta.icon: images/portal.svg
 //input: string path {meta.url: true; optional: true}
 //output: view result
 export async function projectPortalApp(path?: string): Promise<DG.ViewBase> {
@@ -901,16 +903,21 @@ async function syncOne(code: string, dryRun = false): Promise<string> {
       throw new Error(r.error);
     return r.report;
   }
-  const programs = (await syncPortfolioPlans(code, dryRun)).map(summarizePlan);
+  const plans = await syncPortfolioPlans(code, dryRun);
+  const programs = plans.map(summarizePlan);
   const units = (await syncWorkUnits(code, dryRun)).map(summarizeWorkUnitPlan);
   const compounds = await syncCompounds(code, dryRun);
+  // the folders a real sync would make, for the programs that have none before it
+  const fresh = plans.flatMap((p) => p.inserts).filter((v) => !noNewFoldersReason(v)).map((v) => v.code);
+  const folders = summarizeFolderGrowth(await buildMissingFolders(code, true, fresh));
   // what data would advance, judged on the programs as they stand before the sync
   const advance = autoAdvanceOf(await portfolioByCode(code)) ? [summarizeAutoAdvanceResult(await autoAdvance(code, true))] : [];
-  return [...programs, ...units, ...(compounds ? [summarizeCompoundPlan(compounds)] : []), ...advance].join('\n');
+  return [...programs, ...units, ...(compounds ? [summarizeCompoundPlan(compounds)] : []), ...(folders ? [folders] : []),
+    ...advance].join('\n');
 }
 
 //name: syncPortfolio
-//description: Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result
+//description: Runs one portfolio's registry feeds, then its work-unit and compound feeds, and applies (or with dryRun only plans) the result. A real sync then builds the workspace folders of programs that have none (not of ended or parked ones); a dry run lists them
 //input: string code
 //input: bool dryRun = false
 //output: string report
