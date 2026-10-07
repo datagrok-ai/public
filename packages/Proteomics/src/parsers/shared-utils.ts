@@ -79,14 +79,25 @@ export function detectLog2Status(
   let total = 0;
   const maxSamples = 200;
 
+  const numericCols = colNames
+    .map((n) => df.col(n))
+    .filter((c): c is DG.Column => c !== null &&
+      (c.type === DG.COLUMN_TYPE.FLOAT || c.type === DG.COLUMN_TYPE.INT || c.type === DG.COLUMN_TYPE.BIG_INT));
+
+  // Spread the sample budget across the FULL height of every column with a
+  // stride, rather than taking the first 200 contiguous rows. A contiguous scan
+  // biases toward whatever sits at the top of the frame — for a low-dynamic-range
+  // raw dataset (e.g. iBAQ with a long low-abundance head) that head is dominated
+  // by small values that look log2-scaled, so the high (>=1000) values that prove
+  // the data is raw never got sampled and the transform was wrongly skipped.
+  const totalCells = numericCols.length * df.rowCount;
+  const stride = totalCells > maxSamples ? Math.max(1, Math.floor(totalCells / maxSamples)) : 1;
+
   // Only count values that fall in either bucket — ambiguous "middle" values
   // (e.g. 31..999) carry no signal about scale, and counting them in `total`
-  // makes the ratios at L101-105 unreliable on heterogeneous datasets.
-  for (const name of colNames) {
-    const col = df.col(name);
-    if (!col) continue;
-    if (col.type !== DG.COLUMN_TYPE.FLOAT && col.type !== DG.COLUMN_TYPE.INT && col.type !== DG.COLUMN_TYPE.BIG_INT) continue;
-    for (let i = 0; i < df.rowCount && total < maxSamples; i++) {
+  // makes the ratios below unreliable on heterogeneous datasets.
+  for (const col of numericCols) {
+    for (let i = 0; i < df.rowCount && total < maxSamples; i += stride) {
       if (col.isNone(i)) continue;
       const val = Number(col.get(i));
       if (val >= 0 && val <= 30) { inLog2Range++; total++; }
@@ -97,7 +108,12 @@ export function detectLog2Status(
 
   if (total === 0)
     return {isLog2: false, message: 'No intensity values found'};
-  if (inRawRange / total > 0.5)
+  // A value >= 1000 cannot be a log2-transformed abundance (those top out near
+  // ~40), so the PRESENCE of raw-range values means the data is raw even when
+  // most sampled values sit in [0, 30] and superficially look log2. Require a
+  // small floor (>= 2 values and > 2% of the sample) so a lone corrupt outlier
+  // in genuinely log2 data can't flip the verdict.
+  if (inRawRange >= 2 && inRawRange / total > 0.02)
     return {isLog2: false, message: 'Data appears to be raw intensities'};
   if (inLog2Range / total > 0.8)
     return {isLog2: true, message: 'Data appears to be already log2-transformed'};
