@@ -8,11 +8,12 @@ import {MINUTE_FORMAT, MODEL_TYPE, SECOND_FORMAT} from '../constants';
 import {ApplicationRow, ApplicationSource, ApplicationStatus, forgeDb, ModelRow} from '../generated/db';
 import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
+import {datasetRefCaption, storedDatasetRef} from '../storage/dataset-ref';
 import {tagsOf, tagsText} from '../storage/model-fields';
 import {MetricsRecord, metricsRecordOf} from '../training/train-model';
 import {readOnlyGrid, textColumn} from './data-grid';
 import {reportError} from './report-error';
-import {writeModelInfo} from './save-model-dialog';
+import {STORAGE_CAPTIONS, writeModelInfo} from './save-model-dialog';
 import {tagsInput, tagsOfInput} from './tags-input';
 
 const NO_SHARE = 'Sharing a model needs the Share permission on this model; ask an administrator.';
@@ -139,6 +140,7 @@ function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise
     'Created': model.created_on.format(MINUTE_FORMAT),
     'Updated': model.updated_on.format(MINUTE_FORMAT),
     'Table': `${model.dataset_name ?? ''}${rows}`,
+    ...storageDetails(model),
     'Last run': ui.wait(async () => ui.divText(lastRunText((await activity()).lastRun))),
     'Applications': ui.wait(async () => ui.divText(`${(await activity()).count}`)),
     'Features': features.join(', '),
@@ -151,6 +153,22 @@ function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise
   ui.empty(host);
   host.append(...(model.description ? [ui.divText(model.description)] : []), ui.tableFromMap(details),
     ui.form([detailsTags(host, model, activity)]));
+}
+
+/** **Data storage**, then **Data source** of a reference or **Data copy** (the uploaded table, or `missing`). */
+function storageDetails(model: ModelRow): {[caption: string]: string | HTMLElement} {
+  const details: {[caption: string]: string | HTMLElement} = {'Data storage': STORAGE_CAPTIONS[model.storage_mode]};
+  const ref = storedDatasetRef(model.dataset_ref);
+  if (ref !== null)
+    details['Data source'] = datasetRefCaption(ref);
+  const tableId = model.dataset_table_id;
+  if (tableId) {
+    details['Data copy'] = ui.wait(async () => {
+      const info: DG.TableInfo | undefined = await grok.dapi.tables.find(tableId);
+      return info ? ui.render(info) : ui.divText('missing');
+    });
+  }
+  return details;
 }
 
 /** The editable **Tags** of Details: every change is written; a model changed elsewhere meanwhile asks to reload or

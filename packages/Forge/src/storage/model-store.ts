@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
 import {forgeDb} from '../generated/db';
+import {deleteTrainingCopy} from './dataset-copy';
 import {ModelFields} from './model-fields';
 
 export const BLOB_ROOT = 'System:DomainFiles/forge/model';
@@ -30,12 +31,18 @@ export async function saveModel(fields: ModelFields, blob: Uint8Array): Promise<
   return id;
 }
 
+/** Deletes the row, then its blob folder and its uploaded training copy, each tried; the first failure to delete
+ * those is thrown after the row is gone. */
 export async function deleteModel(id: string): Promise<void> {
   const model = await forgeDb.models.get(id);
   await forgeDb.models.delete(id);
   // Only a blob in Forge's own per-model folder is deleted; any other file stays.
   const own = ownBlob(model.blob);
-  if (own !== null)
-    await grok.dapi.files.delete(own.folder);
+  const tableId = model.dataset_table_id;
+  const outcomes = await Promise.allSettled([own === null ? undefined : grok.dapi.files.delete(own.folder),
+    tableId ? deleteTrainingCopy(tableId) : undefined]);
   modelsChanged.next();
+  const failed = outcomes.find((o): o is PromiseRejectedResult => o.status === 'rejected');
+  if (failed !== undefined)
+    throw failed.reason;
 }

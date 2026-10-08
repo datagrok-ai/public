@@ -1,11 +1,12 @@
-import {Engine} from '../engines/engine';
+import {Engine, hasTrainingRows} from '../engines/engine';
 import {ModelInsert, TrainingRunInsert, TrainingRunStatus} from '../generated/db';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {FeaturesSchema, MetricsRecord, Splitting, TargetSchema, TrainingRequest, TrainingResult, trainingSetupOf}
   from '../training/train-model';
 import {DatasetFingerprint} from './dataset-fingerprint';
+import {DatasetRef} from './dataset-ref';
 
-type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint';
+type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint' | 'dataset_ref';
 
 export type ModelFields = Omit<ModelInsert, JsonColumn> & {
   target: TargetSchema;
@@ -14,7 +15,11 @@ export type ModelFields = Omit<ModelInsert, JsonColumn> & {
   metrics: MetricsRecord;
   splitting: Splitting;
   dataset_fingerprint: DatasetFingerprint;
+  dataset_ref?: DatasetRef;
 };
+
+/** What a model keeps of its training data: only the fingerprint, a link to the source, or an uploaded copy. */
+export type ModelStorage = {mode: 'none'} | {mode: 'reference'; ref: DatasetRef} | {mode: 'copy'; tableId: string};
 
 export type TrainingRunRecord = Omit<TrainingRunInsert, JsonColumn> & {
   features: FeaturesSchema;
@@ -25,8 +30,8 @@ export type TrainingRunRecord = Omit<TrainingRunInsert, JsonColumn> & {
 };
 
 export function modelFieldsOf(input: {name: string; description: string; tags: string[]; engine: Engine;
-  datasetName: string; result: TrainingResult; fingerprint: DatasetFingerprint}): ModelFields {
-  const {engine, result} = input;
+  datasetName: string; result: TrainingResult; fingerprint: DatasetFingerprint; storage: ModelStorage}): ModelFields {
+  const {engine, result, storage} = input;
   return {
     name: input.name,
     description: input.description,
@@ -42,11 +47,13 @@ export function modelFieldsOf(input: {name: string; description: string; tags: s
     metrics: result.metrics,
     seed: result.seed,
     splitting: result.splitting,
-    storage_mode: 'none',
+    storage_mode: storage.mode,
+    ...(storage.mode === 'reference' ? {dataset_ref: storage.ref} : {}),
+    ...(storage.mode === 'copy' ? {dataset_table_id: storage.tableId} : {}),
     dataset_name: input.datasetName,
     row_count: result.rowCount,
     dataset_fingerprint: input.fingerprint,
-    has_training_rows: false,
+    has_training_rows: hasTrainingRows(engine),
   };
 }
 

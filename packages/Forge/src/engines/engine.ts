@@ -6,6 +6,8 @@ export type EngineKind = 'function' | 'script';
 export type Hyperparameters = {[name: string]: number | string | boolean};
 const TRAIN_DATA_INPUTS = ['df', 'predictColumn'] as const;
 const NUMBER_TYPES: string[] = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.NUM, DG.TYPE.QNUM];
+/** Methods that run on the server although their functions do not say so (`meta.mlserver`) yet. */
+export const SERVER_ENGINES = ['Chemprop'];
 
 export interface Engine {
   name: string;
@@ -18,6 +20,19 @@ export interface Engine {
 export function isComplete(engine: Engine): boolean {
   const {train, apply, isApplicable} = engine.functions;
   return train !== undefined && apply !== undefined && isApplicable !== undefined;
+}
+
+/** The training data leaves the browser: a script in a language other than JavaScript, a `train` with
+ * `meta.mlserver: true`, or one of {@link SERVER_ENGINES}. */
+export function isServerEngine(engine: Engine): boolean {
+  const train = engine.functions.train;
+  const isServerScript = train instanceof DG.Script && train.language !== 'javascript';
+  return isServerScript || train?.options['mlserver'] === 'true' || SERVER_ENGINES.includes(engine.name);
+}
+
+/** The model file embeds training rows (`meta.mlhasrows: true` on `train`), such as SVM's support vectors. */
+export function hasTrainingRows(engine: Engine): boolean {
+  return engine.functions.train?.options['mlhasrows'] === 'true';
 }
 
 export function hyperparametersOf(engine: Engine): DG.Property[] {

@@ -60,7 +60,7 @@ category('Catalog', () => {
     expect(df.rowCount, 2);
     expectArray(df.columns.names(), ['Name', 'Description', 'Method', 'Task', 'Target', 'Training rows', 'Created',
       'MSE (train)', 'MSE (validation)', 'RMSE (train)', 'RMSE (validation)', 'MAE (train)', 'MAE (validation)',
-      'R squared (train)', 'R squared (validation)', 'Accuracy (train)', 'Accuracy (validation)', 'F1 (train)',
+      'R2 (train)', 'R2 (validation)', 'Accuracy (train)', 'Accuracy (validation)', 'F1 (train)',
       'F1 (validation)']);
     expectArray(df.columns.toList().slice(5).map((c) => c.type), [DG.COLUMN_TYPE.INT, DG.COLUMN_TYPE.DATE_TIME,
       ...Array<string>(12).fill(DG.COLUMN_TYPE.FLOAT)]);
@@ -72,7 +72,7 @@ category('Catalog', () => {
     expectFloat(df.get('Accuracy (validation)', 1), 0.95, 1e-6);
     expect(df.getCol('Accuracy (validation)').isNone(0), true, 'The regressor has an accuracy');
     expectArray(compareFormFields(df), ['Name', 'Method', 'Task', 'Target', 'Training rows', 'Created',
-      'MSE (validation)', 'RMSE (validation)', 'MAE (validation)', 'R squared (validation)', 'Accuracy (validation)',
+      'MSE (validation)', 'RMSE (validation)', 'MAE (validation)', 'R2 (validation)', 'Accuracy (validation)',
       'F1 (validation)']);
 
     await expectExceptionAsync(async () => {

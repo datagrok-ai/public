@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "tables": {
     "model": {
       "securityMode": "row",
@@ -27,14 +27,14 @@
         "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv (auc reserved, not written yet)"},
         "seed": {"type": "int", "friendlyName": "Seed"},
         "splitting": {"type": "json", "friendlyName": "Data split", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
-        "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage"},
+        "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage", "description": "What the model keeps of its training data: none (a summary), reference (a link to the source), copy (an uploaded table)"},
         "dataset_name": {"type": "string", "friendlyName": "Table"},
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
-        "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, id?, path?, params?, script?}"},
-        "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the uploaded table; no foreign key; not written yet"},
+        "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, script, path?, id?, name?}; script is the creation script the platform recorded for the table, one call per line"},
+        "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the training table uploaded on Save (the feature and target columns), deleted with the model; no foreign key"},
         "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},
         "blob": {"type": "file", "friendlyName": "Model file", "description": "file://System:DomainFiles/forge/model/<uuid>/model.bin"},
-        "has_training_rows": {"type": "bool", "default": false, "friendlyName": "Contains training rows", "description": "The blob embeds training rows (SVM, KNN)"},
+        "has_training_rows": {"type": "bool", "default": false, "friendlyName": "Contains training rows", "description": "The model file embeds training rows (SVM support vectors); from the method's meta.mlhasrows"},
         "legacy_id": {"type": "string", "unique": true, "friendlyName": "Legacy id", "description": "Id of the migrated core model"}
       },
       "filters": [

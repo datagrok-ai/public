@@ -47,9 +47,49 @@
   column-gap: 8px;
 }
 
-/* 350px is the platform's column input width (ui.css), so Train ends under the Target and Features inputs. */
-.ui-form > .ui-input-buttons.forge-train-row > div.ui-input-editor {
-  flex: 0 1 350px;
-  box-sizing: border-box;
+.forge-note {
+  margin: 4px 0;
+  color: var(--text-color-light);
+}
+
+.forge-links,
+.forge-results-header {
+  align-items: center;
+  gap: 12px;
+}
+
+.forge-links {
+  margin-top: 12px;
+}
+
+/* ui.loader() has no width of its own. */
+.forge-results-status > .grok-loader {
+  flex: none;
+  width: 36px;
+}
+
+.forge-train-form {
+  overflow-y: auto;
+}
+
+.forge-train-form > .ui-form {
+  overflow: visible;
+}
+
+.forge-train-row > .ui-input-editor {
   justify-content: flex-end;
+}
+
+.forge-train-results {
+  overflow: auto;
+}
+
+/* The Data header's offsets: the grid's header text lines up with the first input's label. */
+.forge-results-header {
+  height: 16px;
+  margin: 12px 0 8px;
+}
+
+.forge-results-header > h2 {
+  margin: 0;
 }

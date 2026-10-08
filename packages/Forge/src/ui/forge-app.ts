@@ -109,9 +109,14 @@ export class ForgeApp extends DG.ViewBase {
     return new ForgeApp(EngineRegistry.discover(), await ForgeApp.loadModels());
   }
 
+  /** Focuses an open catalog, or opens one. */
   static async open(): Promise<void> {
     try {
-      grok.shell.addView(await ForgeApp.create());
+      const open = Array.from(grok.shell.views).find((v) => v instanceof ForgeApp);
+      if (open !== undefined)
+        grok.shell.v = open;
+      else
+        grok.shell.addView(await ForgeApp.create());
     } catch (e) {
       reportError(e);
     }

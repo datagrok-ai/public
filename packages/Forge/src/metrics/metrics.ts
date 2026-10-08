@@ -11,7 +11,7 @@ export const METRIC_LABELS: Record<MetricId, string> = {
   mse: 'MSE',
   rmse: 'RMSE',
   mae: 'MAE',
-  r2: 'R squared',
+  r2: 'R2',
   accuracy: 'Accuracy',
   f1: 'F1',
   sensitivity: 'Sensitivity',
@@ -27,7 +27,7 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'differences between predicted and actual values. Lower values indicate better model performance.',
   mae: 'Mean Absolute Error of values in the column. It is the average of the absolute differences between ' +
     'predicted and actual values. Lower values indicate better model accuracy.',
-  r2: 'R-squared value of the column. It represents the proportion of the variance for a dependent variable that ' +
+  r2: 'R2 value of the column. It represents the proportion of the variance for a dependent variable that ' +
     'is explained by an independent variable. Values close to 1 indicate a good fit.',
   accuracy: 'Accuracy of the model. It measures the proportion of true results (both true positives and true ' +
     'negatives) among the total number of cases examined. Higher values indicate better overall performance.',

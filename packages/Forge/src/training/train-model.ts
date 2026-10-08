@@ -1,6 +1,8 @@
 import * as DG from 'datagrok-api/dg';
+import {applicableEngines, EngineFailure} from '../engines/applicable-engines';
+import {selectBestEngine} from '../engines/best-engine';
 import {Engine, Hyperparameters} from '../engines/engine';
-import {apply, isApplicable, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
+import {apply, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
 import {METRIC_IDS, MetricValues, metricsOf} from '../metrics/metrics';
@@ -58,9 +60,21 @@ export interface TrainingResult extends TrainingSetup {
   rowCount: number;
 }
 
-export interface TrainingProblems { target: string[]; features: string[]; missingValues: string[] }
+export interface TrainingProblems { target: string[]; features: string[]; missingValues: string[]; method: string[] }
+
+export interface SelectionCheck {
+  problems: TrainingProblems;
+  /** The methods that can learn from the selection, in discovery order; none while a target or features rule fails. */
+  engines: Engine[];
+  best: Engine | undefined;
+  /** The selection's method is listed, live retraining is on for it, and it says it is interactive on this data. */
+  isInteractive: boolean;
+  /** Methods whose check threw; they are left out of `engines`. */
+  failed: EngineFailure[];
+}
 
 const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
+const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
 
 export function trainingSetupOf(request: TrainingRequest): TrainingSetup {
   const {target, features, folds, options} = request;
@@ -77,9 +91,52 @@ export function trainingSetupOf(request: TrainingRequest): TrainingSetup {
   };
 }
 
-export async function trainingProblems(selection: TrainingSelection): Promise<TrainingProblems> {
+/** The rules, then the methods of [engines] that can learn from the selection, the suggested one and whether the
+ * selection's method retrains live. */
+export async function checkSelection(selection: TrainingSelection, engines: Engine[]): Promise<SelectionCheck> {
+  const {engine, features, target} = selection;
+  const problems = ruleProblems(selection);
+  if (hasDataProblems(problems))
+    return failedCheck(problems);
+  const {applicable, failed} = await applicableEngines(engines, features, target);
+  const isListed = applicable.some((e) => e.name === engine.name);
+  if (!isListed)
+    problems.method.push(applicable.length === 0 ? NO_METHOD : cannotLearn(engine));
+  return {problems, engines: applicable, best: selectBestEngine(applicable, features, target),
+    isInteractive: isListed && await retrainsLive(engine, features, target), failed};
+}
+
+/** A check that lists no method: the selection cannot be trained for [problems]. */
+export function failedCheck(problems: Partial<TrainingProblems>): SelectionCheck {
+  return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: []};
+}
+
+function noProblems(): TrainingProblems {
+  return {target: [], features: [], missingValues: [], method: []};
+}
+
+/** A target or features rule fails: no method is asked. */
+export function hasDataProblems(problems: TrainingProblems): boolean {
+  return problems.target.length > 0 || problems.features.length > 0;
+}
+
+/** Live retraining is on for [engine] and it says it is interactive on this data. */
+export async function retrainsLive(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
+  if (!engine.isLiveUpdate)
+    return false;
+  // The engine's check takes a table, so it gets a frame of the columns themselves, given back right after.
+  const frame = sharedFrame(features);
+  try {
+    return await isInteractive(engine, frame, target);
+  } finally {
+    releaseFrame(frame);
+  }
+}
+
+/** Rules 1-7 and 9: checks of the column list that call no method. */
+function ruleProblems(selection: TrainingSelection): TrainingProblems {
   const {engine, features, target, folds} = selection;
-  const problems: TrainingProblems = {target: [], features: [], missingValues: []};
+  const problems = noProblems();
   const targetName = target.name;
 
   const names = features.map((c) => c.name);
@@ -105,30 +162,12 @@ export async function trainingProblems(selection: TrainingSelection): Promise<Tr
   for (const col of features.filter((c) => c.type === DG.COLUMN_TYPE.BIG_INT))
     problems.features.push(bigIntProblem(col.name, engine.name, 'uncheck it'));
   problems.missingValues.push(...missingValuesProblems(features, selection.missingValues));
-
-  const hasProblems = problems.target.length > 0 || problems.features.length > 0;
-  if (!hasProblems && !(await isApplicableTo(engine, features, target))) {
-    problems.features.push(`${engine.name} cannot learn from this selection. ` +
-      'It needs numerical features and a numerical, text or boolean target.');
-  }
   return problems;
 }
 
-async function isApplicableTo(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
-  // The engine's check takes a table, so it gets a frame of the columns themselves, given back right after.
-  const frame = sharedFrame(features);
-  try {
-    return await isApplicable(engine, frame, target);
-  } finally {
-    releaseFrame(frame);
-  }
-}
-
-export async function checkTrainable(selection: TrainingSelection): Promise<void> {
-  const problems = await trainingProblems(selection);
-  const messages = [...problems.target, ...problems.features, ...problems.missingValues];
-  if (messages.length > 0)
-    throw new ForgeError(messages.join(' '));
+function cannotLearn(engine: Engine): string {
+  return `${engine.name} cannot learn from this selection. ` +
+    'It needs numerical features and a numerical, text or boolean target.';
 }
 
 /** Skips the rows with a missing target and handles the features' missing values as chosen. */

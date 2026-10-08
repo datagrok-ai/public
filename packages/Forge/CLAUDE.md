@@ -9,8 +9,8 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
   (`ML | Forge | ...`), the API `applyModel`, `_initForge` (autostart) and the column panel **Predicted by**.
 - `src/ui/`: the screens `train-view.ts`, `apply-model-dialog.ts`, `forge-app.ts` (the catalog); the model wherever it
   shows: `model-handler.ts`, `model-panes.ts`, `model-actions.ts`, `model-comparison.ts`; `data-grid.ts` for tables.
-- `src/training/`, `src/apply/`, `src/preparation/` (Skip rows / Impute, `Eda:knnImpute`) — training and applying.
-- `src/catalog/` — `applicableTables`, `modelActivity`, `compareModels`, `readModelFile`, `updateModelInfo`.
+- `src/training/` (`training-queue.ts`: one training at a time), `src/apply/`, `src/preparation/` (`Eda:knnImpute`),
+  `src/catalog/` (`applicableTables`, `modelActivity`, `compareModels`, `readModelFile`, `updateModelInfo`).
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.
 
 ## Glossary
@@ -19,7 +19,7 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
 |---|---|---|
 | Model | `forge.model`, `ModelRow` | A trained model: what is needed to apply it, plus the training summary |
 | Engine (shown as Method in the UI) | `Engine`, `engine_*` columns | Functions sharing `meta.mlname`; `meta.mlrole` gives each one's role |
-| TrainingRun | `forge.training_run` | One training attempt (completed, failed, cancelled), saved as a model or not |
+| TrainingRun | `forge.training_run` | One training attempt (completed, failed, cancelled; a superseded one is not recorded), saved as a model or not |
 | Application | `forge.application` | One application of a model to a table; secured by the model |
 | DatasetFingerprint | `DatasetFingerprint` | Row count, column stats and a hash of the training data, kept instead of it |
 | StorageMode | `model.storage_mode` | `none` / `reference` / `copy`: what a model keeps of its training data |
@@ -28,7 +28,7 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
 
 - Comment annotations only; a `// Words: text` comment right above any function is read as an annotation tag.
 - Logic folders (`engines`, `preparation`, `training`, `metrics`, `storage`, `apply`, `catalog`) never import `ui/`,
-  log or call `grok.shell`; expected failures throw `ForgeError`. The only catch is `applyAndRecord` (record, rethrow).
+  log or call `grok.shell`; expected failures throw `ForgeError`. Catches: `applyAndRecord`, `TrainingQueue.run`.
 - Frames of the user's columns (`sharedFrame`): never rename or write into such a column, and give the frame back
   with `releaseFrame` in `finally` (a frame stays a parent of its columns and gets their events). Checks take column
   lists. `apply` takes the prediction out of the engine's frame, so the table becomes its parent.
@@ -39,8 +39,7 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry
   `PREDICTION_TAG` (`forge.model`). `ApplicationInsert` needs explicit `source` and `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.
-- Blobs are removed only by `deleteModel`, and only when `blob` matches
-  `file://System:DomainFiles/forge/model/<uuid>/<file>` (then the whole `<uuid>/` folder); otherwise the row only.
+- `deleteModel` deletes only Forge's own: a blob's `forge/model/<uuid>/` folder, a table named `<x> (training data)`.
 - Validators read the form's problems, not their argument, and run only on non-empty values. A dialog validates every
   input it was given (hidden and folded too), focuses the last one on `show()` and re-checks Enter only on an input
   change: the Apply dialog reuses one row input per feature name, resets hidden inputs and adds its rows first.
@@ -63,7 +62,9 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
 - The Tags input keeps Enter while its box holds text and adds the chip asynchronously; tests type a chip into
   `input.d4-tags-selector-input` (`typeTag`), since assigning `value` skips that path.
 - Never reuse the old tool's identifiers: no `ML | Models` items, no `Models` Browse node, no `predictive.model` tag.
-- Test rows are named `forge-test-*` and deleted in `finally`. `expect(x, undefined)` checks against `true`.
+- Test rows are `forge-test-*`, deleted in `finally`; `expect(x, undefined)` checks against `true`; `openTable` records
+  no creation script (a reference test opens iris with `openIrisFromFile`). The Train view trains after every change
+  (a superseded training writes no run): close it with `closeTrainView`, which waits for `isTraining` before cleanup.
 
 ## Commands
 

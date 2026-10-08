@@ -3,14 +3,16 @@
 Forge brings predictive modeling to [Datagrok](https://datagrok.ai): train a model on a table, apply it to
 new data, and manage your models in one catalog.
 
-This version trains models with XGBoost, saves them, lists them in the catalog with their details, performance and
+This version trains models with every installed method, retrains them as you change the inputs, saves them with or
+without their training data, lists them in the catalog with their details, performance and
 activity, compares them, and applies them to new data, from the menu, the model's context menu or from scripts.
 
 ## Train a model
 
 Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in two
 groups you can fold with their chevrons: **Data** (Table, Target, Features, Missing values) and **Method** (Method and
-its settings). Both start open, and a group with a problem opens itself.
+its settings). Both start open, and a group with a problem opens itself. **Results** is on the right; drag the
+splitter between them to resize.
 
 * **Table**: the table to learn from, the current one by default
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
@@ -23,15 +25,32 @@ its settings). Both start open, and a group with a problem opens itself.
   how many cells are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from
   the most similar rows (k nearest neighbors, from the EDA package) on a copy, with the settings **Neighbors** and
   **Distance** shown under it; your table keeps its empty cells
-* **Method**: the machine learning method, XGBoost in this version
-* the method's settings (hyperparameters), with their default values
+* **Method**: the machine learning method. The list holds the methods that can learn from the chosen target and
+  features (a text target, for example, leaves out the regression methods). Until you choose one, Forge suggests a
+  method as the built-in tool did: XGBoost for a classifier, PLS Regression for a regression with five or more
+  numerical features, Linear Regression for any other regression (Chemprop for a molecule feature, where it is
+  installed). The method you choose stays while it can learn from the data; when a change rules it out, a balloon
+  says `<Method> cannot be used with this selection; <suggested> is chosen.` When no method can learn from the
+  data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`* the method's settings (hyperparameters), with their default values. Values you change are kept per method while
+  the view is open, also when you switch the method or the table
 
 Hover an input to see what it is for. The inputs are checked as you change them. A problem is shown on the input it
 concerns: the input turns red and its tooltip says what to fix, for example that the target is also checked as a
-feature. **Train** is available only when the selection can be trained, and not while a training runs.
+feature, or that a setting is out of its range (`Value must be less than 100`). Nothing trains while there is a
+problem.
 
-Click **Train**. A progress bar shows the training in the task bar; you can cancel it there. The **Results** pane
-then shows a grid of metrics with a **Metric**, a **Train** and a **Validation** column:
+The model trains by itself: 200 ms after each change that leaves a valid selection, a new training starts, and a
+change during a training stops it (it is not recorded). A method that says it is too slow for this data (for example
+SVM on 20000 rows) does not retrain on every change; **Results** then reads `<Method> takes a while on <N> rows, so it
+does not retrain on every change. Click Train.` and a **Train** button appears under the inputs, at their right edge.
+It trains the current selection (its tooltip: `Train the model on the current selection.`). **Train** is never shown
+for a method that retrains by itself. For a slow method it is disabled, with the reason as its tooltip, while the
+selection has a problem (the target, the features, or a setting out of its range), is checked, a training runs, or
+after a training until you change an input. When the problem is a setting out of its range (a hyperparameter or a
+missing-values setting), **Results** reads `Fix the settings.` A progress bar `Training <Method> model` shows each training in
+the task bar; you can cancel it there (`Training was cancelled.`). While a training runs, a small loader is
+shown next to the **Results** header (the previous results stay while the model retrains by itself). The **Results** pane then shows a grid of metrics
+with a **Metric**, a **Train** and a **Validation** column:
 
 * **Train**: the quality of the model on the rows it was trained on
 * **Validation**: the quality on rows the model has not seen. Forge splits the table into five parts at random,
@@ -47,7 +66,7 @@ Hover a column header or a metric name to see what it means; hover a value to se
 
 | Task | Metrics |
 |---|---|
-| Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R squared** (the share of the target's variation the model explains; 1 is perfect) |
+| Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
 | Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and sensitivity; for more than two classes, the average over the classes) |
 | Two classes | also **Sensitivity**, **Specificity**, **Precision**, **Negative Predicted Value**, computed for the positive class named under the table (the first class in alphabetical order) |
 
@@ -58,16 +77,22 @@ Training runs in the browser's main thread: on large tables the page pauses for 
 After training, click **Save** at the top left of the view, enter a **Name** (prefilled; **OK** is unavailable while
 it is empty), an optional **Description** and optional **Tags** (type a tag in full and press Enter to make it a chip;
 a comma inside a tag splits it into two tags; the box offers no browser autofill list, since a value picked there
-would make no chip), and click **OK**. **Save** is available once a model is trained; after saving it greys out
-until the next training, so one training is saved once. Forge saves:
+would make no chip), choose the **Data storage** (see "Data storage"), and click **OK**. **Save** is available once a
+model is trained and no training runs; after saving it greys out until the next training, so one training is saved
+once. Forge saves:
 
 * the trained model
 * the method, the target, the features in training order, the hyperparameters, the metrics, and how the data was
   split
 * a summary of the training data: the number of rows, statistics of each column and a checksum
+* with **Reference**, a link to where the table came from; with **Copy**, an uploaded copy of the training columns
 
-The training data itself never leaves your browser. Every model catalog open in this browser tab shows the new model
-right away.
+A method whose model file itself holds training rows (SVM keeps some of them as support vectors) is recorded with
+**Contains training rows** `true` in the model's details; the dialog shows no warning.
+
+A balloon `Model "<name>" saved.` follows, with the links **Apply...** (the Apply dialog for the new model on the
+training table) and **Show in the catalog** (opens the catalog, or brings an open one to the front). Every model
+catalog open in this browser tab shows the new model right away.
 
 ## Apply a model
 
@@ -136,7 +161,8 @@ Click a model to see it in the context panel. Its title has the model icon, the 
 model's commands, then come the panes:
 
 * **Details**: the description, **Author**, **Created**, **Updated**, **Table** (the training table and its rows),
-  **Last run** (the newest application, with `(failed)` or `(cancelled)` when it did not complete; `Never` before the
+  **Data storage** (`None`, `Reference` or `Copy`), **Data source** (with a reference: the file path, the query name
+  or `a script`), **Data copy** (with a copy: the uploaded table, or `missing` when it is gone), **Last run** (the newest application, with `(failed)` or `(cancelled)` when it did not complete; `Never` before the
   first one), **Applications**, **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables
   that fit), and **Tags**, which you can edit right there
 * **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training) and
@@ -190,8 +216,11 @@ Forge does not train models itself. Methods live in other packages and in script
 * **Chem**: Chemprop, on servers where it is published
 * **Scripts** that follow the same contract
 
-A method appears only when its package is installed. This version trains with XGBoost only; the other methods are
-listed in the catalog view. **Impute** uses the EDA package's `knnImpute` function; without it, **Missing values**
+A method appears only when its package is installed, and every installed method trains in the **Predictive model**
+view. Forge itself never passes an empty cell to a method: **Missing values** skips or fills them first. Methods
+that run in the browser (all of EDA's) keep the training data there; a method that runs on the server (a Python or R
+script, a function marked `meta.mlserver: true`, or Chemprop) receives it. Chemprop and script
+methods follow the same contract but were not available to test on this version's server. **Impute** uses the EDA package's `knnImpute` function; without it, **Missing values**
 offers **Skip rows** only. Imputing a large table takes a while.
 
 To add a method, register functions that share the same `meta.mlname` (the method name) and set
@@ -210,11 +239,17 @@ their default values and descriptions (shown as tooltips) come from the function
 
 ## Data storage
 
-Every model records what it keeps of its training data:
+Every model records what it keeps of its training data. You choose it in **Data storage** of the **Save model**
+dialog; the line under the choice says what it means:
 
-* **None**: only a summary of the data, enough to check that a new table fits the model
-* **Reference**: a link to the source of the data (a file, a query or a script); the data itself is not uploaded
-* **Copy**: a copy of the training table, uploaded to the server
+* **Reference**: a link to the source of the data (a file, a query or a script the platform recorded when the table
+  was opened); the data itself is not uploaded. Line: `A link to <file path, query name or a script> is
+  saved; the data stays where it is.` Offered, and preselected, only when the table's origin is known: a table opened
+  from **Browse > Files**, a query or a script has one; a table built by a script in memory or opened from a local
+  file has none
+* **None**: only a summary of the data, enough to check that a new table fits the model. Line: `Only a summary of
+  the data is saved.` The default when there is no reference
+* **Copy**: the feature and target columns, every row, uploaded as the table `<model name> (training data)`. Line:
+  `The training columns (<N> rows) will be uploaded to the server.` Deleting the model with Forge deletes the copy
 
-This version saves every model with **None**. **Reference** and **Copy** arrive later. Training data never leaves
-your browser unless you choose **Copy**.
+Training data never leaves your browser unless you choose **Copy** (or train with a method that runs on the server).

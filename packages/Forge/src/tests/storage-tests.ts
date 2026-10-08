@@ -1,13 +1,44 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, expectFloat, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+  from '@datagrok-libraries/test/src/test';
+import {defaultHyperparameters} from '../engines/engine';
+import {EngineRegistry} from '../engines/engine-registry';
+import {ForgeError} from '../forge-error';
 import {forgeDb} from '../generated/db';
+import {releaseFrame} from '../preparation/shared-frame';
+import {deleteTrainingCopy, trainingCopyName, uploadTrainingCopy} from '../storage/dataset-copy';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
-import {modelFieldsOf, normalizedTags, tagsOf, tagsText, trainingRunOf} from '../storage/model-fields';
+import {datasetRefOf, openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
+import {ModelStorage, modelFieldsOf, normalizedTags, tagsOf, tagsText, trainingRunOf} from '../storage/model-fields';
 import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
-import {trainModel} from '../training/train-model';
-import {IRIS, MEASUREMENTS, openIris, requestOf, XGBOOST_FIELDS} from './test-data';
+import {prepareTraining, trainModel} from '../training/train-model';
+import {columnsOf, engineByName, expectReleased, framesSharing, IRIS, MEASUREMENTS, openIris, openIrisFromFile,
+  requestOf, selectionOf, XGBOOST_FIELDS} from './test-data';
+
+const IRIS_COLUMNS = [...MEASUREMENTS, 'Species'];
+
+/** Trains [engineName] on iris (Species by the measurements) and saves it with [storage]; returns the model id. */
+async function saveIrisWith(iris: DG.DataFrame, engineName: string, storage: ModelStorage): Promise<string> {
+  const engine = engineByName(EngineRegistry.discover(), engineName);
+  const request = await prepareTraining({...selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+    engine, hyperparameters: defaultHyperparameters(engine)});
+  try {
+    const result = await trainModel(request);
+    return await saveModel(modelFieldsOf({name: `forge-test-model-${Date.now()}`, description: '', tags: [],
+      engine, datasetName: iris.name, result, fingerprint: datasetFingerprint(request.features, request.target),
+      storage}), result.blob);
+  } finally {
+    releaseFrame(request.features);
+  }
+}
+
+const smallTable = () => DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'x', [1, 2])]);
+
+async function tableExists(id: string): Promise<boolean> {
+  return (await grok.dapi.tables.find(id)) != null;
+}
 
 category('Storage', () => {
   test('forge tables are registered', async () => {
@@ -96,7 +127,7 @@ category('Storage', () => {
     const result = await trainModel(request);
     const id = await saveModel(modelFieldsOf({name: `forge-test-model-${stamp}`, description: '',
       tags: [], engine: request.engine, datasetName: iris.name, result,
-      fingerprint: datasetFingerprint(request.features, request.target)}), result.blob);
+      fingerprint: datasetFingerprint(request.features, request.target), storage: {mode: 'none'}}), result.blob);
     let path = '';
     let folder = '';
     try {
@@ -152,6 +183,133 @@ category('Storage', () => {
       }
     }
   });
+
+  test('datasetRefOf reads the origin the platform recorded', async () => {
+    const iris = await openIrisFromFile();
+    try {
+      const ref = datasetRefOf(iris);
+      expect(ref?.kind, 'file', `The tags: ${JSON.stringify([...iris.tags.entries()])}`);
+      expect(ref?.path, IRIS);
+      expect(/^\w+ = OpenFile\("System:DemoFiles\/iris\.csv"\)$/.test(ref?.script ?? ''), true, ref?.script);
+    } finally {
+      grok.shell.closeTable(iris);
+    }
+    expect(datasetRefOf(await grok.data.files.openTable(IRIS)) === null, true,
+      'grok.data.files.openTable recorded an origin');
+    expect(datasetRefOf(smallTable()) === null, true, 'A frame built in code has an origin');
+
+    const local = smallTable();
+    local.setTag(DG.Tags.SourceFile, 'iris.csv');
+    expect(datasetRefOf(local) === null, true, 'A local file has an origin');
+    local.setTag(DG.Tags.SourceFile, IRIS);
+    expect(datasetRefOf(local)?.path, IRIS);
+
+    const query = smallTable();
+    query.setTag(DG.Tags.CreationScript, 'orders = Samples:Orders(country="USA") //{"timestamp": 1}');
+    query.setTag(DG.Tags.DataQueryId, 'f0e1d2c3-0000-4000-8000-000000000000');
+    query.setTag(DG.Tags.DataQueryName, 'Orders');
+    expect(JSON.stringify(datasetRefOf(query)), JSON.stringify({kind: 'query',
+      script: 'orders = Samples:Orders(country="USA")', id: 'f0e1d2c3-0000-4000-8000-000000000000', name: 'Orders'}));
+  });
+
+  test('openDatasetRef opens a file reference outside the workspace', async () => {
+    const iris = await openIrisFromFile();
+    const ref = datasetRefOf(iris);
+    grok.shell.closeTable(iris);
+    if (ref === null)
+      throw new Error('iris has no origin');
+    const tables = grok.shell.tables.length;
+    const opened = await openDatasetRef(ref);
+    expect(opened.rowCount, 150);
+    expectArray(IRIS_COLUMNS.map((name) => opened.col(name) !== null), IRIS_COLUMNS.map(() => true));
+    expect(grok.shell.tables.length, tables, 'The table was added to the workspace');
+    const stored = storedDatasetRef(JSON.parse(JSON.stringify(ref)));
+    expect(JSON.stringify(stored), JSON.stringify(ref));
+    expect(storedDatasetRef({kind: 'url', script: 'x = F()'}) === null, true, 'An unknown kind is read');
+    expect(storedDatasetRef({kind: 'file'}) === null, true, 'A reference without a script is read');
+  });
+
+  test('openDatasetRef refuses a script that is not one plain call per line', async () => {
+    const scripts = ['data = OpenFile("x"); grok.shell.info("x")', 'data = OpenFile(Evil())', 'grok.shell.info("x")',
+      'data = OpenFile("x")\nEvil()'];
+    const isRefusal = (e: unknown) => e instanceof ForgeError && e.message.includes('not a script Forge can run');
+    for (const script of scripts) {
+      await expectExceptionAsync(async () => {
+        await openDatasetRef({kind: 'script', script});
+      }, isRefusal);
+    }
+  });
+
+  test('uploadTrainingCopy and deleteTrainingCopy', async () => {
+    const iris = await openIris();
+    const columns = columnsOf(iris, IRIS_COLUMNS);
+    const modelName = `forge-test-copy-${Date.now()}`;
+    const [id, frames] = await framesSharing(columns, () => uploadTrainingCopy(columns, modelName));
+    let decoyId: string | undefined;
+    try {
+      expectReleased(frames);
+      const info = await grok.dapi.tables.find(id);
+      expect(info?.friendlyName, trainingCopyName(modelName));
+      const copy = await grok.dapi.tables.getTable(id);
+      expect(copy.rowCount, 150);
+      expectArray(copy.columns.names(), IRIS_COLUMNS);
+      expect(iris.name.startsWith('forge-test-iris-'), true, 'The table was renamed');
+
+      const decoy = smallTable();
+      decoy.name = `forge-test-decoy-${Date.now()}`;
+      decoyId = await grok.dapi.tables.uploadDataFrame(decoy);
+      await deleteTrainingCopy(decoyId);
+      expect(await tableExists(decoyId), true, 'A table that is not a training copy was deleted');
+    } finally {
+      try {
+        await deleteTrainingCopy(id);
+      } finally {
+        if (decoyId !== undefined)
+          await grok.dapi.tables.delete(await grok.dapi.tables.find(decoyId));
+      }
+    }
+    expect(await tableExists(id), false, 'The copy is left');
+    await deleteTrainingCopy(id);
+  }, {timeout: 60000});
+
+  test('a copy-mode model keeps the table id, and deleteModel deletes the table', async () => {
+    const iris = await openIris();
+    const tableId = await uploadTrainingCopy(columnsOf(iris, IRIS_COLUMNS), `forge-test-model-${Date.now()}`);
+    let modelId: string | undefined;
+    try {
+      modelId = await saveIrisWith(iris, 'XGBoost', {mode: 'copy', tableId});
+      const model = await forgeDb.models.get(modelId);
+      expect(model.storage_mode, 'copy');
+      expect(model.dataset_table_id, tableId);
+      expect(model.dataset_ref == null, true, 'dataset_ref is set');
+      expect(model.has_training_rows, false);
+    } finally {
+      if (modelId !== undefined)
+        await deleteModel(modelId);
+      else
+        await deleteTrainingCopy(tableId);
+    }
+    expect(await tableExists(tableId), false, 'The copy outlived its model');
+  }, {timeout: 60000});
+
+  test('a reference-mode SVM model keeps the reference and says it holds training rows', async () => {
+    const iris = await openIrisFromFile();
+    const ref = datasetRefOf(iris);
+    iris.name = `forge-test-iris-${Date.now()}`;
+    const saved = ref === null ? Promise.reject(new Error('iris has no origin')) :
+      saveIrisWith(iris, 'SVM', {mode: 'reference', ref});
+    const id = await saved.finally(() => grok.shell.closeTable(iris));
+    try {
+      const model = await forgeDb.models.get(id);
+      expect(model.storage_mode, 'reference');
+      expect(model.engine_name, 'SVM');
+      expect(model.has_training_rows, true);
+      expect(model.dataset_table_id == null, true, 'dataset_table_id is set');
+      expect(JSON.stringify(storedDatasetRef(model.dataset_ref)), JSON.stringify(ref));
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: 60000});
 
   test('recordTrainingRun and linkTrainingRun', async () => {
     const stamp = Date.now();

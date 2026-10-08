@@ -12,10 +12,12 @@ an EMS schema owned by Forge, and the UI on top.
   folder, the `engine_*` columns and the `mlname` contract keep engine.
 - **Two tools coexist.** The built-in `ML | Models` tool keeps working until the switchover. Forge uses its own
   identifiers (`ML | Forge` menu, app, schema) and never touches the old tool's.
-- **Training data never leaves the browser without consent.** Only the `copy` storage mode uploads it; this version
-  saves every model in `none` mode, with a fingerprint of the data instead of the data.
+- **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
+  dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source. A method that runs
+  on the server, or whose model file embeds rows, says so before it gets the data.
 - **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows; a model row
-  appears only on Save.
+  appears only on Save. A training superseded by a newer one (`TrainingQueue`) is not an attempt the user finished
+  and is not recorded.
 - **Every application is recorded.** Completed, failed and cancelled applications are `application` rows; a mapping
   the model cannot use is refused before any work and not recorded.
 - **Application records inherit the model's security.** A record is visible to whoever can see its model. It can be
@@ -39,8 +41,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                    └─> ui/model-actions.ts, ui/model-handler.ts, ui/model-comparison.ts,
            │                        ui/apply-model-dialog.ts, ui/data-grid.ts
            ├─> ui/train-view.ts ──> training/ ──> preparation/, engines/, metrics/
+           │                    ├─> ui/save-model-dialog.ts, ui/apply-model-dialog.ts, ui/forge-app.ts (the balloon)
            │                    └─> storage/  ──> generated/db.ts  (grok.dapi.domains -> EMS schema forge)
-           │                                  └─> grok.dapi.files  (System:DomainFiles/forge/model)
+           │                                  ├─> grok.dapi.files  (System:DomainFiles/forge/model)
+           │                                  └─> grok.dapi.tables (training data copies)
            ├─> ui/apply-model-dialog.ts ──> apply/, engines/, preparation/, generated/db.ts (model query)
            ├─> apply/ (runApplyModel) ──> preparation/, engines/, storage/ (blob path), generated/db.ts,
            │                              grok.dapi.files (blob read)
@@ -111,17 +115,24 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   `updateModelInfo` and `deleteModel`, whoever calls them; every open `ForgeApp` subscribes in `this.subs` and reloads
   itself, 300 ms after the last of a burst (tag chips written one by one reload it once).
 - `TrainView` (tab **Predictive model** with the core's model icon, `ui.iconSvg('model')` returned by `getIcon()`)
-  holds the form, the live validation and the results. The form has two groups, **Data** (Table, Target, Features,
-  Missing values with Neighbors and Distance) and **Method** (Method and the hyperparameters), with **Train** below
-  them, right-aligned with the 350px column inputs (`forge-train-row`); both start expanded. A Table change rebuilds
-  the form; the groups' subscriptions (`formSubs`) are dropped then and in `detach()`. The view keeps the latest
-  training in `lastTraining`: `result`, `runId`, the `datasetName` and `fingerprint` taken at training time, and
-  `isSaved`. **Save** (`ui.bigButton` in the view's ribbon) is disabled until a training result exists, while a
-  training runs, and once that result is saved: OK in `ui/save-model-dialog.ts` (Name, prefilled, Description and
-  Tags) calls `saveModelAs(info)`, which marks the training saved before it writes, so one training becomes at most one
-  model; a failed write enables **Save** again. **Name** is not nullable and its validator refuses a blank name ("Enter
+  holds the form, the live validation, the live training and the results. The form is one `ui.form`, so the platform
+  aligns every label in it: the group **Data** (Table, Target, Features, Missing values with Neighbors and Distance),
+  the group **Method** (Method and the hyperparameters), both expanded at the start, and the **Train** row
+  (`ui.buttonsInput`, `trainButton`). The view is a resizable split (`ui.splitH(..., true)`): the form's panel starts 400 px wide
+  (`FORM_WIDTH`) and scrolls by itself; **Results** takes the rest, its header line holding the training loader.
+  The `trainRow` is right-aligned (`forge-train-row`). The ribbon holds only **Save** (`ui.bigButton`). A Table change rebuilds the form; the groups'
+  subscriptions (`formSubs`) are dropped then and in `detach()`, the hyperparameter inputs' (`methodSubs`) on every
+  Method change too. The view keeps the latest training in `lastTraining`: `result`, `runId`, the method, the table and the user's feature and target
+  columns, the `datasetName` and `fingerprint` taken at training time, and `isSaved`; any change drops it at once.
+  **Save** is disabled until a training result exists, while a training runs, and once that result is saved: OK in
+  `ui/save-model-dialog.ts` (Name, prefilled, Description, Tags and **Data storage**, see "Saving") calls
+  `saveModelAs(info, choice)`, which marks the training saved before it writes, so one training becomes at most one
+  model; a failed write enables **Save** again and deletes a copy it uploaded (a failure of that delete is logged, the
+  write's error is shown). **Name** is not nullable and its validator refuses a blank name ("Enter
   a name for the model."), so OK is disabled with that tooltip and the dialog's own validation blocks Enter too. The
-  same form (`modelInfoDialog`) is **Edit model**. The Results grid is `metricsTable` of `ui/model-panes.ts`, shared
+  same form (`modelInfoDialog`; `saveModelDialog` adds the storage block to it) is **Edit model**. After a save the balloon `Model "<name>"
+  saved.` has the links **Apply...** (`openApplyDialog` on the training table, the new model preset) and **Show in the
+  catalog** (`ForgeApp.open()`, which focuses an open catalog view instead of opening a second one). The Results grid is `metricsTable` of `ui/model-panes.ts`, shared
   with the model's **Performance** pane: a frame of **Metric**, **Train** and **Validation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
   bullet list (`ul`): `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
@@ -148,7 +159,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   caller.
 - Logic folders (`engines/`, `preparation/`, `training/`, `metrics/`, `storage/`, `apply/`, `catalog/`) work without
   the DOM, throw instead of catching, and never import `ui/`. The same logic serves the UI, API functions and tests. The
-  one catch in them is `applyAndRecord`, which records a failed or cancelled application and rethrows. `catalog/` (see
+  catches in them are `applyAndRecord`, which records a failed or cancelled application and rethrows, and
+  `TrainingQueue`, whose answer is the outcome with the error in it. `catalog/` (see
   "Catalog logic") builds on `apply/`, `storage/`, `metrics/` and `training/`.
 
 ## Training pipeline
@@ -159,8 +171,8 @@ missing-value handling. `prepareTraining(selection)` builds a shared frame of th
 (see "Missing values") and returns the `TrainingRequest` the model is trained on: the prepared features and target,
 and the `options` that record the preparation (`options.missingValues.skippedRows` is the one record of the skipped
 rows); the frames it does not return are given back at once.
-The request's `features` may still share the user's columns: the Train view releases them right after training and
-recording the run. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
+The request's `features` may still share the user's columns: the Train view builds the run record from them and
+releases them right after training. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
 values, N rows remain; training needs at least 10.").
 
 **Missing values in the view.** **Missing values** (see Components) sits under **Features** and follows the checked
@@ -175,10 +187,10 @@ missing values whose values are all different
 are never excluded. Hyperparameters: `defaultHyperparameters(engine)`, read from the `train` inputs' initial values.
 Changing the target leaves the features as they are.
 
-**Problems.** `trainingProblems(selection)` returns the messages per input (`target`, `features`, `missingValues`);
-`checkTrainable` throws them as one `ForgeError`. "Numerical" means `numerical_no_datetime`: dates are not numbers
-for Forge. Rules 1-7 and 9 are cheap checks on the column list; rule 8 calls the engine, whose check takes a table, on
-a shared frame given back right after the call, and runs only when 1-7 pass:
+**Problems.** `checkSelection` (below) returns the messages per input (`target`, `features`, `missingValues`,
+`method`). "Numerical" means `numerical_no_datetime`: dates are not numbers for Forge. Rules 1-7 and 9 are cheap
+checks on the column list; rule 8 calls the engines, whose check takes a table, on a shared frame given back right
+after the call, and runs only when 1-7 pass (`hasDataProblems` is false):
 
 | # | Condition | Input |
 |---|---|---|
@@ -190,22 +202,67 @@ a shared frame given back right after the call, and runs only when 1-7 pass:
 | 6 | the target is neither numerical, text nor boolean (dates included) | Target |
 | 7 | a feature is not numerical (names listed; dates included) | Features |
 | 7b | a bigint feature, one message per column | Features |
-| 8 | the engine's `isApplicable` says no | Features |
+| 8 | the engine's `isApplicable` says no: `<Method> cannot learn from this selection. It needs numerical features and a numerical, text or boolean target.` | Method |
 | 9 | Impute chosen but not available, a yes/no feature with gaps, or fewer than two features to impute from | Missing values |
 
 Rows with a missing target are skipped by `prepareTraining`, never refused.
 
-The view adds a validator to **Target**, **Features** and **Missing values** that returns the view's current problems
-for that input. Every change of Table, Target, Features, Missing values or the imputation inputs numbers a new check,
-clears the problems, disables **Train** (a tooltip already shown on it then reads "Checking the selection...") and
-schedules the check 300 ms later; a check that finishes after a newer change is discarded, so **Train** stays disabled
-while a check is pending. After a check the inputs are validated again (red input, messages in its tooltip) and
-**Train** stays disabled with the first message as its tooltip while any problem exists (an invalid **Neighbors**
-included) or a training runs (one training per view at a time). A `ButtonGate` (`ui/button-gate.ts`, shared with the
-Save and Apply dialogs' OK) builds the tooltip overlay of the disabled button once per disabled period. A check that
-fails keeps **Train** disabled with the error as its tooltip and shows each distinct
-error once. Platform validators do not run on empty values, so an empty Features shows the platform's "Can't be
-empty". **Train** runs `checkTrainable` again before training. A rejected selection writes nothing.
+**Choosing the method.** `checkSelection(selection, engines)` is the check for a view that offers the methods of
+`engines` (the view passes its own list, to keep its `Engine` objects). It runs rules 1-7 and 9; while a target or
+features rule fails it asks no method and returns no engines (`failedCheck(problems)`, the shape of every check that
+lists no method). Otherwise it asks every
+complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract), and rule 8 becomes:
+the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this selection.
+Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine` over the
+listed methods), `failed` (the methods whose check threw, for the caller to log) and `isInteractive`: the selection's
+method is listed and `retrainsLive` (its `isLiveUpdate` is on and its `isInteractive` says yes on the selection's
+columns, a shared frame given back). A method's `isInteractive` that throws makes the whole check throw.
+
+The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
+returns the view's current problems for that input. Every change of Table, Target, Features, Missing values, the
+imputation inputs, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
+`lastTraining`, supersedes the running training (`TrainingQueue.supersede()`), disables **Train** (a tooltip
+already shown on it then reads "Checking the selection...") and schedules the check `CHECK_DELAY_MS` (200 ms, the
+built-in tool's delay) after the last change; one timer serves the check and the live training. A check that finishes
+after a newer change is discarded. The check (`revalidate`) calls `checkSelection` with the view's own list of
+complete methods and logs a method whose check threw once per view (`_package.logger.error`). Then **Method**
+(`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
+choice (`userChoice`, set when the user picks a method) while it is listed, else the suggested one (`best`), with the
+balloon `<Method> cannot be used with this selection; <suggested> is chosen.` when it replaces the user's choice, which
+is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again. **Method** then lists the methods by name (empty with the
+`No method can learn ...` problem); a failing target or features rule leaves the list as it is. Hyperparameter inputs
+are rebuilt on a Method change from the defaults overlaid with `hyperparameterValues`, the values per method name
+kept for the view's session (filled on every hyperparameter change; a Table change keeps them). After the check the
+inputs, the hyperparameters' own range validators included, are validated again (red input, messages in its tooltip).
+An invalid **Neighbors** or hyperparameter (`<caption>: <message>`, e.g. `Iterations: Value must be less than 100`) is
+a problem like the check's own: nothing trains, live or on **Train**, and nothing is recorded. **Train** is shown only
+for a method known not to be interactive on this table (`interactivity`, kept per method from the last check that
+could ask, that is one without a data problem; cleared on a Table change; an unknown method hides it), never for an
+interactive one, a problem or not. For a shown **Train**, the tooltip is `Train the model on the current selection.`
+while enabled, and it stays
+disabled with the first problem as its tooltip, while a training runs ("Training is in progress.") and after a
+completed or failed training of the selection until an input changes ("The model is trained on this selection. Change
+an input to train again."). A `ButtonGate` (`ui/button-gate.ts`, shared with the Save and Apply dialogs' OK) builds
+one tooltip overlay per disabled period (`ui.setDisabled` adds an overlay and a timer per call, both living until
+the button is enabled or leaves the document) whose content is a reusable element holding the reason: a new reason
+only changes its text (a function would show as its source), and a new overlay is built only when the last one is
+gone. On enabling it binds the button's own tooltip again (the enabled tooltip, or none), so
+the last disabled reason does not stay on it. A check that fails shows **Train** disabled with
+the error as its tooltip and shows each distinct error once. Platform validators do not run on empty values, so an empty
+Features shows the platform's "Can't be empty". A rejected selection writes nothing.
+
+**Live training.** A check without problems starts a training at once when `isInteractive` is true (`startTraining`
+live); otherwise **Results** shows `<Method> takes a while on <N> rows, so it does not retrain on every change. Click
+Train.` (N, the target's length). **Train** (`train()`) starts one when the selection has no problem and nothing
+trains. Every training runs through the view's `TrainingQueue` with a task-bar indicator `Training <Method> model`,
+created when the training starts (a request superseded while waiting shows none; cancellable: the indicator's cancel
+stops it before its next fit); a loader without text
+stands on the **Results** header line, above the previous results (live) or an empty pane (**Train**). The
+queued function prepares the data, builds the run record while the shared frame still holds the columns, trains and
+gives the frame back. Before any training, and after a problem, a failure or a cancel, **Results** reads `Choose the
+target and the features; the model trains as you change them.` (the not-interactive hint after a cancel of such a
+method); when the only problems are invalid settings (hyperparameters or missing-values settings), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save** waits for it. A result
+that arrives after a newer change is recorded but not shown.
 
 **Task.** A numerical target (not a date) is regression; text and boolean targets are classification.
 
@@ -225,8 +282,20 @@ I/O resumes as a microtask, so without the turn a click on the progress's cancel
 for the whole training. The turn is a `MessageChannel` message, which a background tab does not throttle the way it
 throttles timers (to about one a second). A running fit cannot be interrupted.
 
-**Run records.** `TrainView` writes the `training_run` row right after `trainModel` settles: `completed` with the
-metrics, `cancelled` when the indicator was cancelled, `failed` with the error message otherwise. `model_id` is set by
+**Training queue.** `TrainingQueue` (`training/training-queue.ts`) runs one training at a time for a view that
+retrains as the user changes the form. `run(train, indicator?)` waits until the trainings before it have settled,
+then, unless superseded meanwhile, creates the indicator (`indicator` is a factory, so a request that never starts
+has none) and calls `train` with a `LoopProgress` whose `canceled` is true once the request is superseded or the
+indicator is cancelled, and whose `update` goes to the indicator. A newer `run` supersedes the running training,
+which stops before its next fit (`trainModel`'s check), and every waiting one, which never starts; `supersede()` does
+the same without a newer request (the view's change that may not lead to a training). It resolves, never rejects,
+with a `QueuedTraining`, a union on `outcome`: `completed` with `result`; `superseded` whatever the training did;
+`cancelled` (the indicator was cancelled) or `failed`, each with `error`. A superseded training is not recorded; the
+other outcomes are the run statuses below.
+
+**Run records.** `TrainView` writes the `training_run` row right after the queue settles: `completed` with the
+metrics, `cancelled` (the yellow `Training was cancelled.`), `failed` with the error message; a `superseded` training
+writes nothing, and neither does a failure before the data was prepared (too few rows left). `model_id` is set by
 `linkTrainingRun` when the model is saved; deleting the model keeps the run (`setnull`).
 
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
@@ -272,13 +341,18 @@ of the built-in tool), and
 replays them and chooses its own handling. Imputing before cross-validation lets the held-out rows' values take part
 in the imputation, as the built-in tool did; a later version may impute per fold.
 
+The methods' own handling of gaps never matters (SVM refuses them at training; Linear Regression, PLS Regression and
+Softmax have none): the Training tests `<Method> trains and applies with missing values under Skip rows and Impute`
+train and apply every EDA method on iris with two gaps in both modes and check that no table or column passed to
+`train` or `apply` has a missing value.
+
 ## Metrics
 
-`metrics/metrics.ts`, ported from the built-in tool's definitions; labels and descriptions are the built-in ones,
-values are shown with 3 decimals.
+`metrics/metrics.ts`, ported from the built-in tool's definitions; labels and descriptions are the built-in ones (but
+`R2` for the built-in "R squared"), values are shown with 3 decimals.
 
 - Regression: `mse` = mean of squared errors, `rmse` = its root, `mae` = mean of absolute errors (new),
-  `r2` ("R squared") = 1 - SSres / SStot; for a constant target 1 if the predictions are exact, else 0.
+  `r2` ("R2") = 1 - SSres / SStot; for a constant target 1 if the predictions are exact, else 0.
 - Classification: labels compare as text (a boolean `true` equals the label `'true'`). `accuracy` = correct / n.
   When at most two labels occur, the shares are computed for the positive class, the target's first category:
   `sensitivity` = TP / (TP + FN), `specificity` = TN / (TN + FP), `precision` = TP / (TP + FP),
@@ -296,13 +370,27 @@ values are shown with 3 decimals.
 `deleteModel(id)` soft-deletes the row; it deletes a folder only when `blob` matches
 `file://System:DomainFiles/forge/model/<uuid>/<file>`, and then exactly `System:DomainFiles/forge/model/<uuid>`. Any
 other value (a file picked in the generic row editor elsewhere, an empty segment, `..`, no blob) leaves the files
-alone. In the UI, the ribbon **Save** asks for Name, Description and Tags, then calls `saveModel` and
-`linkTrainingRun`; the catalog's delete and **Delete model** call `deleteModel`. Both storage functions fire
-`modelsChanged`.
+alone. It also deletes the uploaded copy of a `copy` model (`deleteTrainingCopy` of `dataset_table_id`, see "Storage
+modes"); both deletes are tried whatever the other does, the first failure is thrown after the row is gone, and
+`modelsChanged` fires anyway. In the UI, the ribbon
+**Save** asks for Name, Description, Tags and **Data storage**, then calls `saveModel` and `linkTrainingRun`; the
+catalog's delete and **Delete model** call `deleteModel`. Both storage functions fire `modelsChanged`.
 
-`model-fields.ts` builds the row payloads: `modelFieldsOf` (`storage_mode: 'none'`, `has_training_rows: false`,
-feature and row counts, dataset name, the tags as their column text, see "Tags") and `trainingRunOf`. The
-json-column types are listed in "JSON column shapes" below.
+**Data storage in the Save dialog** (`StorageOffer` of `saveModelDialog`): a radio (`forge-inline-radio`, tooltip `What
+the model keeps of its training data.`) of `Reference` (only when `datasetRefOf(table)` gives a reference; then the
+default), `None` (the default otherwise) and `Copy`, with one `forge-note` line under it that follows the choice:
+`A link to <path | query name | a script> is saved; the data stays where it is.` / `Only a summary of the
+data is saved.` / `The training columns (<N> rows) will be uploaded to the server.` (N: the table's rows); there are no warnings
+about a model file with training rows or a method that runs on the server (a platform setting is planned).
+OK passes the choice (`StorageChoice`; `reference` carries the reference the dialog offered, so `datasetRefOf` runs
+once per Save) to `saveModelAs(info, choice)`: `copy` uploads the user's feature and target columns first
+(`uploadTrainingCopy`) and, when `saveModel` then fails, deletes the copy (`deleteTrainingCopy`; its own failure is
+logged) before rethrowing the save's error.
+
+`model-fields.ts` builds the row payloads: `modelFieldsOf` (the storage mode and its `dataset_ref` or
+`dataset_table_id` from a `ModelStorage`, `has_training_rows` from the method (`hasTrainingRows`), feature and row
+counts, dataset name, the tags as their column text, see "Tags") and `trainingRunOf`. The json-column types are listed
+in "JSON column shapes" below.
 
 **Dataset fingerprint** (`dataset-fingerprint.ts`), the only trace of the training data on the server, computed in
 the browser over the features in training order and the target last: `rowCount`, `columnCount`, an 8-hex-digit hash
@@ -509,7 +597,7 @@ text) carries the catalog columns only.
 
 | Pane | Content |
 |---|---|
-| **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
+| **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Data storage** (`None` / `Reference` / `Copy`), **Data source** (a reference: its `path`, else its query `name`, else `a script`), **Data copy** (a copy: `ui.render` of the uploaded `TableInfo`, `missing` when `grok.dapi.tables.find` gives none), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
 | **Performance** | `metricsTable` of the stored metrics (the Train view's grid: Metric / Train / Validation and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics |
 | **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
 | **Sharing** | The groups the model was shared with (**Can view**, **Can edit**) or "Not shared yet. Only its author and administrators can see this model.", the button **Share...** (`DG.DomainObjectHandler.shareRow`: the platform's sharing dialog; its one `try/catch` reports a refusal before the dialog opens), and "Sharing a model needs the Share permission on this model; ask an administrator." for a user without Share on the row (`~can_share`; only for such a user is a refused read of the shares expected, and it leaves the groups out) |
@@ -585,10 +673,18 @@ to share this object"), so the tests share nothing; `grok s shares add` (the pub
 
 The form starts ready to train: the last column is the target and the numerical columns except row numbers and ids
 are the features, where the built-in tool starts with nothing selected. Problems are shown live on the input they
-concern and **Train** stays unavailable until they are fixed. Validation uses five folds that cover every row once,
+concern and nothing trains until they are fixed. The live retraining and the 200 ms delay are the built-in tool's,
+but a method chosen by the user stays chosen while it applies (the built-in tool reset it on every data change), its
+hyperparameter values are kept per method, an empty method list is a red **Method** instead of a line of text, the
+ribbon holds only **Save** (no TRAIN / SAVE switch of one button; a **Train** button under the inputs appears only
+for a method that does not retrain on every change), and the task bar names the method.
+Validation uses five folds that cover every row once,
 from a seed saved with the model, instead of five overlapping random samples, and it runs from 10 rows instead of
 being skipped below 100. MAE and F1 are new; AUC-ROC is not computed yet. Training and saving are separate steps, and
-every attempt is recorded. The training table is not uploaded: a model keeps a fingerprint of it. Rows with a missing
+every completed, failed or cancelled attempt is recorded. The training table is uploaded only when the user chooses
+**Copy** (the built-in tool uploaded it on every save); otherwise a model keeps a fingerprint of it, and a
+**Reference** to its source when the platform recorded one. The DONE link of the task bar became the **Apply...** link
+of the balloon after Save. Rows with a missing
 target are skipped instead of blocking training, and dates and bigint columns are refused as features and targets.
 Missing values are a **Missing values** choice (Skip rows / Impute) with the imputation settings inline, instead of
 two checkboxes and EDA's own dialog, and the target is never imputed.
@@ -609,7 +705,7 @@ of a zip.
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.9`. `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.10`. `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -633,8 +729,8 @@ file sits in Forge's own `forge/model/<uuid>/` layout).
 ### JSON column shapes
 
 EMS `json` columns hold objects only; a list is wrapped in an object. TS types: `training/train-model.ts`,
-`preparation/preparation-options.ts` (`PreparationOptions`), `engines/engine.ts` (`Hyperparameters`) and
-`storage/dataset-fingerprint.ts`.
+`preparation/preparation-options.ts` (`PreparationOptions`), `engines/engine.ts` (`Hyperparameters`),
+`storage/dataset-ref.ts` (`DatasetRef`) and `storage/dataset-fingerprint.ts`.
 
 | Column | TS type | Shape |
 |---|---|---|
@@ -644,7 +740,7 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
 | `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv` (`auc` reserved) |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?}` |
-| `model.dataset_ref` | - | Reference mode: `{kind: file \| query \| script, id?, path?, params?, script?}` |
+| `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
 | `dataset_fingerprint` | `DatasetFingerprint` | `{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}` |
 
 `options` keeps the keys of the platform's built-in models, so their preparation replays unchanged:
@@ -660,14 +756,44 @@ EMS row editor uses for file columns. The random path segment makes the file ung
 
 ### Storage modes
 
-`model.storage_mode` (default `none`) records what a model keeps of its training data:
+`model.storage_mode` (default `none`) records what a model keeps of its training data (`ModelStorage` in
+`storage/model-fields.ts`), chosen in the Save dialog (see "Saving"):
 
-- `none`: only `dataset_fingerprint`, enough to check that a new table fits the model. The only mode used so far.
-- `reference`: `dataset_ref` points to the source (file, query or script); the data is not uploaded.
-- `copy`: `dataset_table_id` is the id of an uploaded copy of the training table (no foreign key; not written yet).
+- `none`: only `dataset_fingerprint`, enough to check that a new table fits the model.
+- `reference`: `dataset_ref` (`DatasetRef`) points to the source; the data is not uploaded.
+- `copy`: `dataset_table_id` is the id of an uploaded copy of the feature and target columns (no foreign key).
 
-`has_training_rows` marks blobs that embed training rows (SVM, KNN); `false` for XGBoost. `legacy_id` is reserved for
-migrated models.
+**Reference** (`storage/dataset-ref.ts`). `datasetRefOf(table)` reads the origin the platform recorded in the
+table's tags: the creation script (`.script`, `DG.Tags.CreationScript`; one call per line, the first assigning the
+table's variable, each line ending in a `//{"timestamp": ...}` comment, which is dropped). With `.DataQuery.id` it is a
+`query` reference (`id`, `name` from `DataQuery.name`); a first line `OpenFile("<path>")` (or `OpenServerFile`) is a
+`file` reference with `path`; any other script is a `script` reference. Without a creation script, a `source.file`
+tag holding a server path (it has a `:`; a local file's tag holds only the file name) gives a `file` reference with
+the script `data = OpenFile("<path>")` (the path escaped as a string literal). Anything else gives null: no reference
+to offer. Which tables carry the
+script: the platform records it after a function run, with data history on (the default), that is unprocessed or
+runs without default result handling (`shell.dart`). **Browse > Files** opens a file that way (an `OpenServerFile`
+call without default result handling, `file_editors.dart`), recorded as `<Name> = OpenFile("<path>")`; the tests
+reproduce it with an unprocessed `OpenServerFile` call (`openIrisFromFile`). `grok.data.files.openTable`,
+`grok.functions.call` and `grok.functions.eval` record nothing, and neither does a table built in code.
+`openDatasetRef(ref)` opens a `file` reference with `grok.data.files.openTable(path)`. A `query` reference needs its
+query (`grok.dapi.queries.find(id)`; a missing one is a `ForgeError`) and is then replayed like a `script` reference,
+since its parameter values live only in the script: as the platform's data sync does, each line is evaluated in a
+fresh `DG.Context` (`grok.functions.eval(line, context)`), and the table is the first line's variable. A stored
+reference can be edited in the generic row editor, so a script is run only when every line is `<variable> =
+<call>(<arguments>)` (an output accessor allowed) whose arguments, quoted strings aside, hold no call and no `;`;
+anything else is refused with a `ForgeError`. The table is not added to the workspace. `storedDatasetRef(value)` narrows a stored `dataset_ref` to a `DatasetRef` (null when it is not one).
+
+**Copy** (`storage/dataset-copy.ts`). `uploadTrainingCopy(columns, modelName)` uploads a shared frame of the given
+columns (every row) with `grok.dapi.tables.uploadDataFrame` and returns the table id; the frame is named
+`trainingCopyName(modelName)`, `<model name> (training data)`. The server keeps that name as the table's
+`friendlyName` and makes `name` an identifier (`ForgeTestCopy...TrainingData`), so `grok s tables list --filter
+"training data"` finds the copies. `deleteTrainingCopy(id)` deletes the table only when its `friendlyName` ends with
+` (training data)`, so a `dataset_table_id` edited in the generic row editor cannot delete another table; a table
+already gone is no error (`grok.dapi.tables.find` resolves undefined).
+
+`has_training_rows` marks model files that embed training rows: `hasTrainingRows(engine)`, the method's
+`meta.mlhasrows: true` on `train` (EDA's SVM keeps its support vectors). `legacy_id` is reserved for migrated models.
 
 ### Captions
 
@@ -717,6 +843,9 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 | `isInteractive` | `(df, predictColumn) -> bool` | Optional. `meta.mlupdate: 'false'` turns off live retraining |
 | `visualize` | `(df, targetColumn, predictColumn, model)` | Optional |
 
+Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds training rows; EDA's SVM) and
+`mlserver: 'true'` (the method runs on the server).
+
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
   table with a copy of the target appended, and the target name.
@@ -733,3 +862,23 @@ An engine is the set of functions that share `meta.mlname` (the engine id). `met
 - `isApplicable` on an engine without that role throws `ForgeError`; `isInteractive` without it returns `false`.
 - Discovery reads the client function registry synchronously; script engines that are not loaded into it yet are
   missed. No script engines exist yet to verify this.
+
+### Choosing a method
+
+- `applicableEngines(engines, features, target)` (`engines/applicable-engines.ts`) asks every complete engine's
+  `isApplicable` at once (`Promise.allSettled`) on one shared frame of the feature columns, given back when all have
+  answered. `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
+  left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
+  gets XGBoost, SVM and Softmax; Petal.Length gets XGBoost, SVM, Linear Regression and PLS Regression.
+- `selectBestEngine(engines, features, target)` (`engines/best-engine.ts`) is the built-in tool's suggestion, ported
+  as is: a feature with the `Molecule` semantic type gives `Chemprop`; a classification (the target is not numerical)
+  with at least one categorical and one numerical feature gives `XGBoost`; a regression with five or more numerical
+  features gives `PLS Regression`, any other regression `Linear Regression`; everything else `XGBoost`. "Numerical"
+  and "categorical" are the platform's `isNumerical` / `isCategorical` (dates count as numerical, as in the built-in
+  tool); a feature named like the target is not counted. A suggestion not in the list gives the first engine, an
+  empty list undefined. The built-in tool matched `<package>: <name>`; Forge's registry keeps one engine per name, so
+  it matches the name.
+- `isServerEngine(engine)` (`engines/engine.ts`): the training data leaves the browser (data only; no UI uses it yet). True for a script `train` in
+  a language other than JavaScript, a `train` with `meta.mlserver: 'true'`, or a name in `SERVER_ENGINES`
+  (`['Chemprop']`, whose functions do not say so yet).
+- `hasTrainingRows(engine)`: `meta.mlhasrows: 'true'` on `train`.

@@ -26,6 +26,11 @@ export function engineByName(engines: Engine[], name: string): Engine {
   return engine;
 }
 
+/** [names] among the [discovered] engines, in discovery order. */
+export function inDiscoveryOrder(discovered: Engine[], names: string[]): string[] {
+  return discovered.map((e) => e.name).filter((name) => names.includes(name));
+}
+
 /** A model row without a model file: an XGBoost classifier of Species, no data stored, unless [fields] differ. */
 export async function insertModelRow(fields: Pick<ModelInsert, 'name'> & Partial<ModelInsert>): Promise<string> {
   return (await forgeDb.models.insert({...XGBOOST_FIELDS, task: 'classification', target_name: 'Species',
@@ -49,6 +54,18 @@ export function xgboost(): Engine {
 export async function openIris(): Promise<DG.DataFrame> {
   const iris = await grok.data.files.openTable(IRIS);
   iris.name = `forge-test-iris-${Date.now()}`;
+  return iris;
+}
+
+/** iris opened as Browse > Files opens a file (an unprocessed `OpenServerFile` call), so the platform records its
+ * creation script; `grok.data.files.openTable` records none. The table joins the workspace: close it after use. */
+export async function openIrisFromFile(): Promise<DG.DataFrame> {
+  const call = DG.Func.byName('OpenServerFile').prepare({fullPath: IRIS});
+  await call.call(false, undefined, {processed: false});
+  const tables: unknown = call.getOutputParamValue();
+  const iris: unknown = Array.isArray(tables) ? tables[0] : null;
+  if (!(iris instanceof DG.DataFrame))
+    throw new Error(`OpenServerFile gave no table for ${IRIS}`);
   return iris;
 }
 
@@ -102,7 +119,7 @@ export async function saveTestModel(features: DG.Column[], target: DG.Column, da
   releaseFrame(request.features);
   const name = `forge-test-model-${Date.now()}`;
   const id = await saveModel({...modelFieldsOf({name, description: '', tags: [], engine: request.engine, datasetName,
-    result, fingerprint}), ...fields}, result.blob);
+    result, fingerprint, storage: {mode: 'none'}}), ...fields}, result.blob);
   return {id, name, result};
 }
 

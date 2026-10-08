@@ -9,10 +9,12 @@ import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {APP_NAME, MENU_PATH, MODEL_TYPE} from '../constants';
 import {EngineRegistry} from '../engines/engine-registry';
-import {forgeDb} from '../generated/db';
+import {forgeDb, ModelStorageMode} from '../generated/db';
 import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
+import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
+import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
 import {editModelDialog} from '../ui/edit-model-dialog';
 import {ForgeApp} from '../ui/forge-app';
@@ -22,23 +24,125 @@ import {ForgeModelHandler} from '../ui/model-handler';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tagsOfInput} from '../ui/tags-input';
-import {TrainView} from '../ui/train-view';
-import {columnsOf, expectReleased, framesSharing, insertModelRow, MEASUREMENTS, openIris, savedFixture, saveIrisModel,
-  saveTestModel, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {CHECK_DELAY_MS, TrainView} from '../ui/train-view';
+import {columnsOf, expectReleased, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openIris, openIrisFromFile,
+  savedFixture, saveIrisModel, saveTestModel, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
-const ALIGN_PX = 4;
 
-async function openTrainView(iris: DG.DataFrame): Promise<TrainView> {
-  const view = await TrainView.create(iris);
+/** Opens the Train view on [table] and waits for the training it starts by itself. */
+async function openTrainView(table: DG.DataFrame): Promise<TrainView> {
+  const view = await TrainView.create(table);
   grok.shell.addView(view);
-  await awaitCheck(() => !isDisabled(view.trainButton), 'Train stays disabled', WAIT_MS);
+  await awaitTrained(view);
   return view;
+}
+
+async function awaitTrained(view: TrainView): Promise<void> {
+  await awaitCheck(() => view.lastTraining !== undefined && !view.isTraining, 'The view does not train', TIMEOUT);
+}
+
+const runsOf = async (tables: DG.DataFrame[]) =>
+  await forgeDb.trainingRuns.query().where('dataset_name', '=', tables.map((t) => t.name));
+
+/** Closes [view], waits until no training of it is left, then deletes the runs of [tables]. */
+async function closeTrainView(view: TrainView, tables: DG.DataFrame[]): Promise<void> {
+  view.close();
+  await awaitCheck(() => !view.isTraining, 'A training outlives the view', TIMEOUT);
+  for (const run of await runsOf(tables))
+    await forgeDb.trainingRuns.delete(run.id);
+}
+
+/** The open balloon that contains [text], or null. */
+function balloonWith(text: string): HTMLElement | null {
+  return Array.from(document.querySelectorAll<HTMLElement>('.d4-balloon'))
+    .find((b) => (b.textContent ?? '').includes(text)) ?? null;
 }
 
 const isDisabled = (button: HTMLElement) => button.classList.contains('d4-disabled');
 const isShown = (element: HTMLElement) => element.style.display !== 'none';
+/** **Train** is laid out: its row under the inputs is shown. */
+const isTrainShown = (view: TrainView) => view.trainButton.offsetParent !== null;
+
+/** The tooltip overlays the platform keeps over the disabled [button]. */
+function overlaysOf(button: HTMLElement): HTMLElement[] {
+  const rect = button.getBoundingClientRect();
+  return Array.from(document.querySelectorAll<HTMLElement>('.d4-tooltip-overlays > span')).filter((o) => {
+    const r = o.getBoundingClientRect();
+    return Math.abs(r.left - rect.left) < 1 && Math.abs(r.top - rect.top) < 1;
+  });
+}
+
+/** The tooltip a hover on the disabled [button] shows, through its overlay (an enabled button's tooltip answers only
+ * a real mouse); '' if none. */
+async function hoverText(button: HTMLElement): Promise<string> {
+  ui.tooltip.hide();
+  for (let i = 0; i < 30; i++) {
+    const rect = button.getBoundingClientRect();
+    const target = overlaysOf(button)[0] ?? button;
+    target.dispatchEvent(new MouseEvent('mousemove', {bubbles: true, clientX: rect.left + 2, clientY: rect.top + 2}));
+    const text = ui.tooltip.isVisible ? ui.tooltip.root.textContent ?? '' : '';
+    if (text !== '') {
+      ui.tooltip.hide();
+      return text;
+    }
+    await delay(100);
+  }
+  return '';
+}
+
+/** The tooltip the mouse entering the enabled [element] shows; '' if none. */
+async function enterTooltip(element: HTMLElement): Promise<string> {
+  ui.tooltip.hide();
+  const rect = element.getBoundingClientRect();
+  element.dispatchEvent(new MouseEvent('mouseenter', {clientX: rect.left + 2, clientY: rect.top + 2}));
+  // The platform shows a tooltip 250 ms after the mouse enters.
+  await delay(600);
+  const text = ui.tooltip.isVisible ? ui.tooltip.root.textContent ?? '' : '';
+  ui.tooltip.hide();
+  return text;
+}
+
+/** The task-bar entry whose text includes [text], or undefined. */
+const taskBarEntry = (text: string) => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
+  .find((e) => (e.textContent ?? '').includes(text));
+
+/** Clicks the cancel icon of the task-bar [entry], as the user does. */
+function cancelTaskBarEntry(entry: Element | undefined): void {
+  const cancel = entry?.querySelector('.fa-times');
+  if (!(cancel instanceof HTMLElement) || !cancel.isConnected)
+    throw new Error('No task-bar entry to cancel');
+  cancel.click();
+}
+
+/** XGBoost still retrains live on this many demog rows with three features, but each fit takes a while. */
+const SLOW_ROWS = 100000;
+
+/** Sets [view] to XGBoost's slowest valid settings on sex by age, height and weight of [demog]. */
+function trainSlowly(view: TrainView, demog: DG.DataFrame): void {
+  view.targetInput.value = demog.getCol('sex');
+  view.featuresInput.value = columnsOf(demog, ['age', 'height', 'weight']);
+  setHyperparameter(view, 'iterations', 100);
+  setHyperparameter(view, 'maxDepth', 20);
+}
+
+/** The dialog **Save** of [view] opens, if any. */
+function saveDialogOf(view: TrainView): DG.Dialog | undefined {
+  const dialogs = new Set(DG.Dialog.getOpenDialogs().map((d) => d.root));
+  view.save();
+  return DG.Dialog.getOpenDialogs().find((d) => !dialogs.has(d.root));
+}
+
+const resultsText = (view: TrainView) => view.root.querySelector('.forge-train-results')?.textContent ?? '';
+
+/** The value of the hyperparameter input [name] of [view] becomes [value]. */
+function setHyperparameter(view: TrainView, name: string, value: number): void {
+  const input = view.hyperparameterInputs.get(name);
+  if (input === undefined)
+    throw new Error(`No ${name} input`);
+  input.value = value;
+}
 
 /** The body and the summary of the collapsible group captioned [caption] inside [root]. */
 function groupOf(root: HTMLElement, caption: string): {body: HTMLElement; summary: HTMLElement} {
@@ -58,6 +162,10 @@ function expectAlignedCaptions(root: HTMLElement, captions: string[]): void {
     .find((label) => label.textContent === caption)?.getBoundingClientRect().left ?? NaN);
   expect(lefts.every((left) => Math.abs(left - lefts[0]) < 0.5), true, `Caption positions ${lefts.join(', ')}`);
 }
+
+/** The option captions of the radio [input], in order. */
+const optionsOfRadio = (input: DG.InputBase) =>
+  Array.from(input.root.querySelectorAll('.ui-radio-button label'), (label) => label.textContent ?? '');
 
 /** Checks that the two options of the shown radio [input] sit on one line. */
 function expectOptionsInRow(input: DG.InputBase): void {
@@ -217,40 +325,59 @@ category('UI', () => {
     expect(topMenu?.startsWith(MENU_PATH), true, `Unexpected top menu: ${topMenu}`);
   });
 
-  test('Train view opens', async () => {
-    const view = await TrainView.create(await openIris());
+  test('Train view opens with Save in the ribbon and one form with a hidden Train', async () => {
+    const iris = await openIris();
+    const view = await TrainView.create(iris);
     grok.shell.addView(view);
     try {
       expect(view.name, 'Predictive model');
       expect(view.getIcon().classList.contains('svg-model'), true, 'The tab icon is not the model icon');
       const text = view.root.textContent ?? '';
-      for (const caption of ['Table', 'Target', 'Features', 'Method', 'Train', 'Results'])
+      for (const caption of ['Table', 'Target', 'Features', 'Method', 'Results'])
         expect(text.includes(caption), true, `${caption} is missing`);
+      expect(text.includes('Choose the target and the features; the model trains as you change them.'), true,
+        'No hint before the first training');
       expect(text.includes('Engine'), false, 'The word Engine is shown');
-      expect(view.getRibbonPanels().flat().some((e) => e.contains(view.saveButton)), true, 'Save is not in the ribbon');
+      const ribbon = view.getRibbonPanels().flat();
+      expect(ribbon.some((e) => e.contains(view.saveButton)), true, 'Save is not in the ribbon');
+      expect(ribbon.some((e) => e.contains(view.trainButton)), false, 'Train is in the ribbon');
+      expect(view.root.querySelector('.fa-sync') === null, true, 'A sync icon');
+      const forms = view.root.querySelectorAll('.ui-form');
+      expect(forms.length, 1, 'Data and Method are not one form');
+      expect(forms[0].contains(view.trainButton), true, 'Train is not in the form');
+      expect(view.root.querySelectorAll('.ui-split-h-divider').length, 1, 'No splitter between the form and Results');
       expect(isDisabled(view.saveButton), true, 'Save is enabled before training');
+      expect(isTrainShown(view), false, 'Train is shown before the check');
       expect(view.targetInput.value?.name, 'Species');
       expectArray(view.featuresInput.value.map((c) => c.name), MEASUREMENTS);
-    } finally {
-      view.close();
-    }
-  });
+      expect(CHECK_DELAY_MS, 200);
 
-  test('Train view trains iris and saves the model once', async () => {
+      await awaitTrained(view);
+      expect(isTrainShown(view), false, 'Train is shown for a method that retrains by itself');
+      const iterations = view.hyperparameterInputs.get('iterations');
+      const labelOf = (input: DG.InputBase | undefined) => input?.root.querySelector('label')?.getBoundingClientRect();
+      const [table, method] = [labelOf(view.tableInput), labelOf(iterations)];
+      expect(table !== undefined && method !== undefined && Math.abs(table.right - method.right) < 0.5, true,
+        `Label right edges ${table?.right}, ${method?.right}`);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Train view trains iris by itself and saves the model once', async () => {
     const iris = await openIris();
-    const runs = () => forgeDb.trainingRuns.query().where('dataset_name', '=', iris.name);
+    const runs = () => runsOf([iris]);
     const models = () => forgeDb.models.query().where('dataset_name', '=', iris.name);
-    const view = await openTrainView(iris);
+    const view = await TrainView.create(iris);
+    grok.shell.addView(view);
     let measured = '';
     try {
-      const training = view.train();
-      expect(isDisabled(view.trainButton), true, 'Train is enabled while training');
+      await awaitCheck(() => view.isTraining, 'The view does not start training by itself', WAIT_MS);
       expect(isDisabled(view.saveButton), true, 'Save is enabled while training');
-      await Promise.all([training, view.train()]);
-      expect((await runs()).length, 1, 'A second Train started another training');
-      expect(isDisabled(view.trainButton), false, 'Train stays disabled after training');
+      await awaitTrained(view);
+      const recorded = await runs();
+      expectArray(recorded.map((r) => `${r.status} ${r.engine_name}`), ['completed XGBoost']);
       expect(isDisabled(view.saveButton), false, 'Save stays disabled after training');
-      expect(view.lastTraining !== undefined, true, 'No training result');
       const text = view.root.textContent ?? '';
       const results = gridWith(view.root, 'Metric');
       const metrics = results.dataFrame.getCol('Metric').toList();
@@ -271,62 +398,173 @@ category('UI', () => {
       expect(saved[0].name, name);
       expect(saved[0].tags, 'x, y');
       expect((await runs())[0].model_id, saved[0].id);
+
+      await view.train();
+      expectArray((await runs()).map((r) => r.status), ['completed', 'completed']);
+      expect(isDisabled(view.saveButton), false, 'Train gave no new training to save');
     } finally {
       for (const model of await models())
         await deleteModel(model.id);
-      for (const run of await runs())
-        await forgeDb.trainingRuns.delete(run.id);
-      view.close();
+      await closeTrainView(view, [iris]);
     }
     return measured;
-  }, {timeout: 60000});
+  }, {timeout: TIMEOUT});
 
   test('a failing training records a failed run', async () => {
     const iris = await openIris();
-    const runs = () => forgeDb.trainingRuns.query().where('dataset_name', '=', iris.name);
     const view = await openTrainView(iris);
     try {
-      const iterations = view.hyperparameterInputs.get('iterations');
-      if (iterations === undefined)
-        throw new Error('No iterations input');
-      iterations.value = 0;
-      await view.train();
-      const recorded = await runs();
-      expect(recorded.length, 1);
-      expect(recorded[0].status, 'failed');
-      expect((recorded[0].error ?? '') !== '', true, 'The failed run has no error');
+      // In the range EDA declares, but refused by its trainer.
+      setHyperparameter(view, 'maxDepth', 0);
+      const recorded = await readUntil(() => runsOf([iris]), (runs) => runs.some((r) => r.status === 'failed'));
+      const failed = recorded.filter((r) => r.status === 'failed');
+      expect(failed.length, 1);
+      expect((failed[0].error ?? '') !== '', true, 'The failed run has no error');
+      await awaitCheck(() => !view.isTraining, 'The training does not end', WAIT_MS);
       expect(view.lastTraining === undefined, true, 'A failed training left a result');
       expect(isDisabled(view.saveButton), true, 'Save is enabled after a failed training');
     } finally {
-      for (const run of await runs())
-        await forgeDb.trainingRuns.delete(run.id);
-      view.close();
+      await closeTrainView(view, [iris]);
     }
-  }, {timeout: 60000});
+  }, {timeout: TIMEOUT});
 
-  test('a bad selection disables Train and marks the input', async () => {
+  test('a bad selection disables Train, marks the input and trains nothing', async () => {
     const iris = await openIris();
-    const view = await TrainView.create(iris);
-    grok.shell.addView(view);
+    const view = await openTrainView(iris);
     const columns = (names: string[]) => names.map((name) => iris.getCol(name));
     try {
       view.targetInput.value = iris.getCol('Petal.Length');
       view.featuresInput.value = columns(['Species', 'Sepal.Length', 'Sepal.Width', 'Petal.Width']);
       await awaitCheck(() => view.featuresInput.validity !== null, 'Features is not marked', WAIT_MS);
       expect(view.featuresInput.validity?.includes('Species'), true, `${view.featuresInput.validity}`);
-      expect(isDisabled(view.trainButton), true, 'Train is enabled');
+      expect(!isTrainShown(view) && isDisabled(view.trainButton), true, 'Train is shown for XGBoost or enabled');
       expect(view.targetInput.validity === null, true, `Target is marked: ${view.targetInput.validity}`);
+      expect(view.isTraining || view.lastTraining !== undefined, false, 'A bad selection trains');
+      expect((await runsOf([iris])).length, 1, 'A bad selection recorded a run');
 
       view.featuresInput.value = columns(['Sepal.Length', 'Sepal.Width', 'Petal.Width']);
-      await awaitCheck(() => view.featuresInput.validity === null && !isDisabled(view.trainButton),
-        'Features stays marked or Train stays disabled', WAIT_MS);
+      await awaitCheck(() => view.featuresInput.validity === null, 'Features stays marked', WAIT_MS);
+      await awaitTrained(view);
+      expect(view.methodInput.value, 'Linear Regression');
+      expectArray([...view.methodInput.items].sort(), ['Linear Regression', 'PLS Regression', 'SVM', 'XGBoost']);
+      expect(view.lastTraining?.engine.name, 'Linear Regression');
     } finally {
-      view.close();
+      await closeTrainView(view, [iris]);
     }
-  }, {timeout: 30000});
+  }, {timeout: TIMEOUT});
+
+  test('a change during a training supersedes it without a run row', async () => {
+    const wine = await grok.data.files.openTable('System:DemoFiles/winequality.csv');
+    wine.name = `forge-test-wine-${Date.now()}`;
+    const view = await TrainView.create(wine);
+    grok.shell.addView(view);
+    try {
+      await awaitCheck(() => view.isTraining, 'The view does not train by itself', TIMEOUT);
+      const first = view.methodInput.value;
+      const quality = wine.getCol('quality');
+      view.targetInput.value = quality;
+      await awaitCheck(() => view.featuresInput.validity !== null, 'Features is not marked', WAIT_MS);
+      view.featuresInput.value = view.featuresInput.value.filter((c) => c.name !== 'quality');
+      await awaitTrained(view);
+      expect(view.methodInput.value, 'PLS Regression');
+      const recorded = await runsOf([wine]);
+      expect(recorded.map((r) => `${r.status} ${r.engine_name} ${r.target_name}`).join(),
+        'completed PLS Regression quality', `The first training (${first}) was recorded`);
+    } finally {
+      await closeTrainView(view, [wine]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a cancelled training is recorded; a slow method waits for Train', async () => {
+    const demog = grok.data.demo.demog(SLOW_ROWS);
+    demog.name = `forge-test-demog-${Date.now()}`;
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    try {
+      trainSlowly(view, demog);
+      for (let i = 0; i < TIMEOUT / 10 && !view.isTraining; i++)
+        await delay(10);
+      expect(view.isTraining && view.methodInput.value === 'XGBoost', true, 'XGBoost does not train by itself');
+      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar progress', TIMEOUT);
+      // The entry's text becomes the fold progress after the first fit.
+      const entry = taskBarEntry('Training XGBoost model');
+      await delay(100);
+      cancelTaskBarEntry(entry);
+      await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
+      const recorded = await runsOf([demog]);
+      expectArray(recorded.map((r) => `${r.status} ${r.engine_name}`), ['cancelled XGBoost']);
+      expect(view.lastTraining === undefined && isDisabled(view.saveButton), true, 'A cancelled training is saveable');
+
+      view.methodInput.value = 'SVM';
+      const hint = `SVM takes a while on ${SLOW_ROWS} rows, so it does not retrain on every change. Click Train.`;
+      await awaitCheck(() => (view.root.textContent ?? '').includes(hint), 'No hint for a slow method', WAIT_MS);
+      await delay(500);
+      expect(view.isTraining, false, `SVM trains by itself on ${SLOW_ROWS} rows`);
+      expect(isTrainShown(view) && !isDisabled(view.trainButton), true, 'Train is not offered for a slow method');
+      expect((await runsOf([demog])).length, 1, 'A slow method recorded a run');
+
+      setHyperparameter(view, 'cost', 5000);
+      await awaitCheck(() => view.hyperparameterInputs.get('cost')?.validity !== null, 'No mark on Penalty', WAIT_MS);
+      await awaitCheck(() => isDisabled(view.trainButton), 'Train stays enabled with Penalty 5000', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 2);
+      expect(isTrainShown(view), true, 'Train is hidden for a slow method with a problem');
+      const reason = `Penalty: ${view.hyperparameterInputs.get('cost')?.validity}`;
+      expect(await hoverText(view.trainButton), reason);
+      expect(resultsText(view).includes('Fix the settings.'), true, 'The Results hint is not Fix the settings.');
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Method lists the applicable methods, keeps the user\'s choice and the values per method', async () => {
+    const iris = await openIris();
+    const other = await openIris();
+    const tables = [grok.shell.addTable(iris), grok.shell.addTable(other)];
+    const view = await openTrainView(iris);
+    try {
+      expectArray([...view.methodInput.items].sort(), ['SVM', 'Softmax', 'XGBoost']);
+      expect(view.methodInput.value, 'XGBoost');
+      const iterations = () => view.hyperparameterInputs.get('iterations');
+      setHyperparameter(view, 'iterations', 25);
+      await awaitTrained(view);
+
+      view.methodInput.value = 'SVM';
+      await awaitTrained(view);
+      expect(view.lastTraining?.engine.name, 'SVM');
+      expect(iterations() === undefined, true, 'SVM shows the XGBoost hyperparameters');
+      const save = saveDialogOf(view);
+      expect((save?.root.textContent ?? '').includes('contains the training rows'), false, 'A warning for SVM');
+      save?.close();
+      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Petal.Length', 'Petal.Width']);
+      await awaitTrained(view);
+      expect(view.methodInput.value, 'SVM', 'A Features change dropped the user\'s choice');
+
+      view.methodInput.value = 'XGBoost';
+      await awaitCheck(() => iterations()?.value === 25, 'The XGBoost values are lost', WAIT_MS);
+      view.tableInput.value = other;
+      await awaitTrained(view);
+      expect(iterations()?.value, 25, 'A Table change lost the values');
+      expect(view.methodInput.value, 'XGBoost');
+
+      view.methodInput.value = 'Softmax';
+      await awaitTrained(view);
+      view.featuresInput.value = columnsOf(other, ['Sepal.Length', 'Sepal.Width', 'Petal.Length']);
+      await awaitTrained(view);
+      view.targetInput.value = other.getCol('Petal.Width');
+      const balloon = 'Softmax cannot be used with this selection; Linear Regression is chosen.';
+      await awaitCheck(() => balloonWith(balloon) !== null, 'No balloon for a dropped choice', WAIT_MS);
+      await awaitTrained(view);
+      expect(view.methodInput.value, 'Linear Regression');
+    } finally {
+      await closeTrainView(view, tables);
+      for (const table of tables)
+        grok.shell.closeTable(table);
+    }
+  }, {timeout: 120000});
 
   test('Train view groups its inputs and opens a group with a problem', async () => {
-    const view = await openTrainView(await openIris());
+    const iris = await openIris();
+    const view = await openTrainView(iris);
     try {
       const data = groupOf(view.root, 'Data');
       const method = groupOf(view.root, 'Method');
@@ -335,11 +573,8 @@ category('UI', () => {
       expect(data.body.contains(view.missingValuesInputs.choice.root), true, 'Missing values is not under Data');
       const iterations = view.hyperparameterInputs.get('iterations');
       expect(iterations !== undefined && method.body.contains(iterations.root), true, 'Iterations is not under Method');
-      expect(view.groups.every((g) => !g.root.contains(view.trainButton)), true, 'Train is inside a group');
-      const trainRight = view.trainButton.getBoundingClientRect().right;
-      const inputsRight = view.featuresInput.root.querySelector('.ui-input-editor')?.getBoundingClientRect().right;
-      expect(inputsRight !== undefined && Math.abs(trainRight - inputsRight) < ALIGN_PX, true,
-        `Train ends at ${trainRight}, the inputs at ${inputsRight}`);
+      expect(method.body.contains(view.methodInput.root), true, 'Method is not under Method');
+      expect(method.body.querySelector('.forge-note') === null, true, 'A server note for XGBoost');
 
       view.groups[0].setExpanded(false);
       expect(isShown(data.body), false, 'Data does not collapse');
@@ -351,14 +586,13 @@ category('UI', () => {
       await awaitCheck(() => view.featuresInput.validity !== null && isShown(data.body),
         'Data stays collapsed with a problem on Features', WAIT_MS);
     } finally {
-      view.close();
+      await closeTrainView(view, [iris]);
     }
-  }, {timeout: 30000});
+  }, {timeout: TIMEOUT});
 
   test('Train view drops the old form\'s subscriptions on a Table change', async () => {
     const tables = [grok.shell.addTable(await openIris()), grok.shell.addTable(await openIris())];
-    const view = await TrainView.create(tables[0]);
-    grok.shell.addView(view);
+    const view = await openTrainView(tables[0]);
     try {
       const oldData = view.groups[0];
       const oldFeatures = view.featuresInput;
@@ -379,11 +613,11 @@ category('UI', () => {
       await awaitCheck(() => view.groups[0].isExpanded, 'The current Data group does not open on an error', WAIT_MS);
       expect(oldData.isExpanded, false, 'A replaced form still opens its group on an error');
     } finally {
-      view.close();
+      await closeTrainView(view, tables);
       for (const table of tables)
         grok.shell.closeTable(table);
     }
-  }, {timeout: 30000});
+  }, {timeout: TIMEOUT});
 
   test('Save model needs a name', async () => {
     const dialog = saveModelDialog('Iris model', async () => {});
@@ -403,6 +637,45 @@ category('UI', () => {
     }
   });
 
+  test('a disabled ButtonGate keeps one overlay that shows the latest reason', async () => {
+    let reason = 'forge-test-reason-0';
+    const button = ui.button('forge-test-gate', () => {});
+    const gate = new ButtonGate(button, () => reason);
+    document.body.append(button);
+    try {
+      for (let i = 1; i <= 5; i++) {
+        gate.update();
+        reason = `forge-test-reason-${i}`;
+      }
+      gate.update();
+      // The overlay takes the button's place on the platform's next 100 ms tick.
+      await delay(300);
+      expect(overlaysOf(button).length, 1);
+      expect(await hoverText(button), 'forge-test-reason-5');
+    } finally {
+      button.remove();
+    }
+  });
+
+  test('an enabled ButtonGate drops the disabled reason from the button\'s tooltip', async () => {
+    let reason: string | null = 'forge-test-reason';
+    const plain = ui.button('forge-test-plain', () => {});
+    const described = ui.button('forge-test-described', () => {});
+    const gates = [new ButtonGate(plain, () => reason), new ButtonGate(described, () => reason, 'forge-test-enabled')];
+    document.body.append(plain, described);
+    try {
+      for (const gate of gates)
+        gate.update();
+      reason = null;
+      for (const gate of gates)
+        gate.update();
+      expectArray([await enterTooltip(plain), await enterTooltip(described)], ['', 'forge-test-enabled']);
+    } finally {
+      plain.remove();
+      described.remove();
+    }
+  });
+
   test('train function is registered', async () => {
     const topMenu = DG.Func.find({package: 'Forge', name: 'forgeTrain'})[0]?.topMenu;
     expect(topMenu?.startsWith(MENU_PATH), true, `Unexpected top menu: ${topMenu}`);
@@ -418,7 +691,7 @@ category('UI', () => {
   test('Train view shows Missing values for a gapped feature and gives the columns back', async () => {
     const iris = await openIris();
     iris.getCol('Sepal.Width').set(3, null);
-    const runs = () => forgeDb.trainingRuns.query().where('dataset_name', '=', iris.name);
+    const runs = () => runsOf([iris]);
     const view = await openTrainView(iris);
     try {
       const choice = view.missingValuesInputs.choice;
@@ -443,16 +716,211 @@ category('UI', () => {
         throw new Error('No Neighbors input');
       await awaitCheck(() => isShown(neighbors.root), 'Neighbors does not appear', WAIT_MS);
       neighbors.value = 0;
-      await awaitCheck(() => isDisabled(view.trainButton), 'Train is enabled with Neighbors 0', WAIT_MS);
+      await awaitCheck(() => isDisabled(view.trainButton) && !view.isTraining, 'Train is enabled with Neighbors 0',
+        TIMEOUT);
+      expect(view.lastTraining === undefined, true, 'Neighbors 0 trained');
+      await awaitCheck(() => resultsText(view).includes('Fix the settings.'),
+        'The Results hint is not Fix the settings. for Neighbors 0', WAIT_MS);
+      expect(isTrainShown(view), false, 'Train is shown for XGBoost with Neighbors 0');
       neighbors.value = 3;
-      await awaitCheck(() => !isDisabled(view.trainButton), 'Train stays disabled with Neighbors 3', WAIT_MS);
+      await awaitTrained(view);
+      expect(isTrainShown(view), false, 'Train is shown for XGBoost with Neighbors 3');
 
       view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Petal.Length', 'Petal.Width']);
       await awaitCheck(() => !isShown(choice.root), 'Missing values stays without gaps', WAIT_MS);
     } finally {
-      for (const run of await runs())
-        await forgeDb.trainingRuns.delete(run.id);
-      view.close();
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+});
+
+category('UI: Train', () => {
+  test('a training superseded while its task-bar progress is shown writes no run', async () => {
+    const demog = grok.data.demo.demog(SLOW_ROWS);
+    demog.name = `forge-test-demog-${Date.now()}`;
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    const progressShown = () => taskBarEntry('Training XGBoost model') !== undefined;
+    try {
+      trainSlowly(view, demog);
+      for (let i = 0; i < TIMEOUT / 10 && !(view.isTraining && progressShown()); i++)
+        await delay(10);
+      expect(view.isTraining && progressShown(), true, 'XGBoost does not train with a progress');
+      expect((view.root.textContent ?? '').includes('Training XGBoost'), false, 'Results names the training');
+      setHyperparameter(view, 'maxDepth', 2);
+      await awaitTrained(view);
+      const recorded = await runsOf([demog]);
+      expectArray(recorded.map((r) => `${r.status} ${r.engine_name} ${r.hyperparameters?.maxDepth}`),
+        ['completed XGBoost 2']);
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('an invalid hyperparameter blocks training and saving', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      setHyperparameter(view, 'iterations', 500);
+      await awaitCheck(() => view.hyperparameterInputs.get('iterations')?.validity !== null,
+        'Iterations is not marked', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 2);
+      expect(!isTrainShown(view) && isDisabled(view.trainButton), true, 'Train is shown for XGBoost, which retrains');
+      expect(resultsText(view).includes('Fix the settings.'), true, 'The Results hint is not Fix the settings.');
+      await view.train();
+      await delay(500);
+      expect(view.isTraining || view.lastTraining !== undefined, false, 'An invalid value trains');
+      expect(isDisabled(view.saveButton), true, 'Save is enabled with an invalid value');
+      expect(saveDialogOf(view) === undefined, true, 'Save opened a dialog');
+      expect((await runsOf([iris])).length, 1, 'An invalid value recorded a run');
+
+      setHyperparameter(view, 'iterations', 50);
+      await awaitTrained(view);
+      expect(isTrainShown(view), false, 'Train stays shown with a valid value');
+      expect((await runsOf([iris])).length, 2);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Train is shown for a slow method, disabled after a training and enabled by a change', async () => {
+    const rows = 10001;
+    const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i % 2 + (i % 7) / 100));
+    const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => (i % 11) / 10));
+    const label = DG.Column.fromStrings('label', Array.from({length: rows}, (_, i) => i % 2 === 0 ? 'even' : 'odd'));
+    const table = DG.DataFrame.fromColumns([a, b, label]);
+    table.name = `forge-test-slow-${Date.now()}`;
+    const view = await openTrainView(table);
+    const first = view.lastTraining?.engine.name;
+    try {
+      expect(isTrainShown(view), false, `Train is shown for ${first}`);
+      view.methodInput.value = 'SVM';
+      await awaitCheck(() => isTrainShown(view) && !isDisabled(view.trainButton), 'Train is not offered for SVM',
+        WAIT_MS);
+      view.trainButton.click();
+      await awaitCheck(() => view.isTraining, 'Train does not train', WAIT_MS);
+      expect(isDisabled(view.trainButton), true, 'Train is enabled while training');
+      await awaitTrained(view);
+      expect(view.lastTraining?.engine.name, 'SVM');
+      expect(isDisabled(view.trainButton), true, 'Train is enabled after the training');
+      setHyperparameter(view, 'cost', 2);
+      await awaitCheck(() => !isDisabled(view.trainButton), 'Train stays disabled after a change', WAIT_MS);
+      expect(view.isTraining, false, 'SVM retrains by itself');
+
+      setHyperparameter(view, 'cost', 5000);
+      await awaitCheck(() => view.hyperparameterInputs.get('cost')?.validity !== null, 'No mark on Penalty', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 2);
+      expect(isTrainShown(view) && isDisabled(view.trainButton), true, 'Train is not disabled with Penalty 5000');
+      await view.train();
+      expect(view.isTraining || view.lastTraining !== undefined, false, 'Penalty 5000 trains');
+      setHyperparameter(view, 'cost', 2);
+      await awaitCheck(() => !isDisabled(view.trainButton), 'Train stays disabled with Penalty 2', WAIT_MS);
+      expectArray((await runsOf([table])).map((r) => `${r.status} ${r.engine_name}`).sort(),
+        [`completed ${first}`, 'completed SVM'].sort());
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: 120000});
+});
+
+category('UI: Save model', () => {
+  test('Save model offers Data storage: None and Copy without an origin', async () => {
+    let saved: ModelStorageMode | undefined;
+    const dialog = saveModelDialog('Iris model', async (info, choice) => {
+      saved = choice.mode;
+    }, {ref: null, rowCount: 150}).show();
+    try {
+      const storage = dialog.input('Data storage');
+      expectArray(optionsOfRadio(storage), ['None', 'Copy']);
+      expect(storage.value, 'None');
+      const text = () => dialog.root.textContent ?? '';
+      expect(text().includes('Only a summary of the data is saved.'), true, text());
+      storage.value = 'Copy';
+      await awaitCheck(() => text().includes('The training columns (150 rows) will be uploaded to the server.'),
+        'No Copy line', WAIT_MS);
+      dialog.getButton('OK').click();
+      await awaitCheck(() => saved !== undefined, 'OK did not save', WAIT_MS);
+      expect(saved, 'copy');
+    } finally {
+      dialog.close();
+    }
+  });
+
+  test('Save model presets Reference for a table opened from a file', async () => {
+    const iris = await openIrisFromFile();
+    const ref = datasetRefOf(iris);
+    grok.shell.closeTable(iris);
+    const dialog = saveModelDialog('Iris model', async () => {}, {ref, rowCount: 150}).show();
+    try {
+      const storage = dialog.input('Data storage');
+      expectArray(optionsOfRadio(storage), ['Reference', 'None', 'Copy']);
+      expect(storage.value, 'Reference');
+      const text = dialog.root.textContent ?? '';
+      expect(text.includes(`A link to ${IRIS} is saved; the data stays where it is.`), true, text);
+      expect(text.includes('training rows') || text.includes('stores them on the server'), false, text);
+    } finally {
+      dialog.close();
+    }
+  });
+
+  test('Save in copy and reference modes; the balloon links to Apply and the catalog', async () => {
+    const iris = await openIrisFromFile();
+    iris.name = `forge-test-iris-${Date.now()}`;
+    const view = await openTrainView(iris);
+    const stamp = Date.now();
+    const models = () => forgeDb.models.query().where('dataset_name', '=', iris.name);
+    let catalog: DG.ViewBase | undefined;
+    let apply: DG.Dialog | undefined;
+    try {
+      const save = saveDialogOf(view);
+      expect(save?.input('Data storage').value, 'Reference');
+      save?.close();
+      const refName = `forge-test-model-${stamp}-ref`;
+      const origin = datasetRefOf(iris);
+      if (origin === null)
+        throw new Error('iris has no origin');
+      await view.saveModelAs({name: refName, description: '', tags: []}, {mode: 'reference', ref: origin});
+      const balloon = await readUntil(() => balloonWith(`Model "${refName}" saved.`), (b) => b !== null);
+      const links = Array.from(balloon?.querySelectorAll('a') ?? [], (a) => a.textContent);
+      expectArray(links, ['Apply...', 'Show in the catalog']);
+      balloon?.querySelectorAll('a')[0].click();
+      await awaitCheck(() => DG.Dialog.getOpenDialogs().some((d) => d.title === 'Apply predictive model'),
+        'Apply... opens no dialog', WAIT_MS);
+      apply = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Apply predictive model');
+      expect(apply?.input('Model').value, refName);
+      expect(apply?.input('Table').value?.name, iris.name);
+      apply?.close();
+      balloon?.querySelectorAll('a')[1].click();
+      await awaitCheck(() => grok.shell.v instanceof ForgeApp, 'Show in the catalog opens no catalog', WAIT_MS);
+      catalog = grok.shell.v;
+      const [ref] = await models();
+      expect(ref.storage_mode, 'reference');
+      expect(storedDatasetRef(ref.dataset_ref)?.path, IRIS);
+
+      setHyperparameter(view, 'iterations', 25);
+      await awaitTrained(view);
+      const copyName = `forge-test-model-${stamp}-copy`;
+      await view.saveModelAs({name: copyName, description: '', tags: []}, {mode: 'copy'});
+      const copy = (await models()).find((m) => m.storage_mode === 'copy');
+      const tableId = copy?.dataset_table_id;
+      if (copy === undefined || !tableId)
+        throw new Error('No copy-mode model, or it has no table');
+      const info: DG.TableInfo | undefined = await grok.dapi.tables.find(tableId);
+      expect(info?.friendlyName, `${copyName} (training data)`);
+      const accordion = modelAccordion(ForgeModelHandler.rowOf(copy), copy);
+      await expectPaneText(accordion, 'Details', ['Data storage', 'Copy', 'Data copy', '(training data)']);
+      const refAccordion = modelAccordion(ForgeModelHandler.rowOf(ref), ref);
+      await expectPaneText(refAccordion, 'Details', ['Data storage', 'Reference', 'Data source', IRIS]);
+      await deleteModel(copy.id);
+      const left: DG.TableInfo | undefined = await grok.dapi.tables.find(tableId);
+      expect(left === undefined || left === null, true, 'The copy outlived its model');
+    } finally {
+      apply?.close();
+      catalog?.close();
+      for (const model of await models())
+        await deleteModel(model.id);
+      await closeTrainView(view, [iris]);
+      grok.shell.closeTable(iris);
     }
   }, {timeout: TIMEOUT});
 });
@@ -998,8 +1466,8 @@ category('UI: Catalog', () => {
         'The title has no star or no name');
       expectArray(accordion.panes.map((p) => p.name), ['Details', 'Performance', 'Activity', 'Sharing', 'History']);
       await expectPaneText(accordion, 'Details', ['Author', 'Created', 'Updated', 'Table', `${iris.name} (150 rows)`,
-        'Last run', 'Never', 'Applications', 'Features', 'Sepal.Length', 'Target', 'Species', 'Method', 'XGBoost',
-        'Task', 'Tags']);
+        'Data storage', 'None', 'Last run', 'Never', 'Applications', 'Features', 'Sepal.Length', 'Target', 'Species',
+        'Method', 'XGBoost', 'Task', 'Tags']);
       expect(tagsAutofill(accordion.getPane('Details').root), 'off');
       await expectPaneText(accordion, 'Performance', [`Seed: ${model.seed}`]);
       const performance = accordion.getPane('Performance').root;
