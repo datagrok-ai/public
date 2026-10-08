@@ -10,7 +10,7 @@ import {saveFuncCall, saveInstanceState} from './funccall-utils';
 import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
-import {GranularMutationOp, ValidationResult} from '../data/common-types';
+import {GranularMutationOp, isDynamicType, ValidationResult} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 import * as Factory from './StateTreeFactory';
@@ -189,33 +189,29 @@ export class StateTree {
     return {mutationRootPath: ppath, addIdx: newIdx, removeIdx: oldIdx, id: node.getItem().config.id};
   }
 
-  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): {detail: TreeUpdateMutationPayload, subTree: StateTree} {
+  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): TreeUpdateMutationPayload {
     const ppath = path.slice(0, -1);
     const last = indexFromEnd(path);
     const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
     if (isPipelineStepConfig(subConfig))
       throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
-    const subTree = StateTree.fromInstanceConfig({
+    const options = {
       instanceConfig: initConfig,
-      config: subConfig,
+      config: this.config,
       isReadonly: false,
       defaultValidators: this.defaultValidators,
       batchLinks: this.batchLinks,
       mockMode: this.mockMode,
       logger: this.logger,
-    });
-    if (last) {
-      this.nodeTree.removeBrunch(path);
-      this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-    } else
+    };
+    if (!last) {
+      const subTree = StateTree.fromInstanceConfig(options);
       this.nodeTree.replaceRoot(subTree.nodeTree.root);
-
-    const detail: TreeUpdateMutationPayload = last ? {
-      mutationRootPath: ppath,
-      addIdx: last.idx,
-      id: last.id,
-    } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
-    return {detail, subTree};
+      return {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
+    }
+    this.nodeTree.removeBrunch(path);
+    StateTree.fromInstanceConfig({...options, startPath: path, startState: this});
+    return {mutationRootPath: ppath, addIdx: last.idx, id: last.id};
   }
 
   // --- Public guarded methods ---
@@ -239,6 +235,33 @@ export class StateTree {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
       const detail = this.addSubTreeInternal(ppath, id, pos);
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo([{isMutation: true, details: [detail]}]));
+    });
+  }
+
+  public duplicateSubtree(uuid: string) {
+    return this.mutateTree(() => {
+      const data = this.nodeTree.find((item) => item.uuid === uuid);
+      if (data == null)
+        throw new Error(`Node uuid ${uuid} not found`);
+      const [node, path] = data;
+      const [ppath, idx] = this.getMutationSlice(path);
+      const parent = this.nodeTree.getItem(ppath);
+      if (path.length === 0 || isFuncCallNode(parent) || !isDynamicType(parent.nodeType))
+        throw new Error(`Node uuid ${uuid} is not a dynamic pipeline item`);
+      const id = node.getItem().config.id;
+      StateTree.fromInstanceConfig({
+        config: this.config,
+        instanceConfig: Serializer.toInstanceConfigRec(node),
+        startPath: [...ppath, {id, idx: idx + 1}],
+        startState: this,
+        defaultValidators: this.defaultValidators,
+        batchLinks: this.batchLinks,
+        mockMode: this.mockMode,
+        logger: this.logger,
+      });
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
+        mapTo([{isMutation: true, details: [{mutationRootPath: ppath, addIdx: idx + 1, id}]}]),
+      );
     });
   }
 
@@ -352,8 +375,8 @@ export class StateTree {
           concatMap(({pipelineMutations, granularMutations}) => {
             const replacements$ = from(pipelineMutations ?? []).pipe(
               concatMap((data) => {
-                const {detail, subTree} = this.replaceSubtreeInternal(data.path, data.initConfig);
-                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(detail));
+                const detail = this.replaceSubtreeInternal(data.path, data.initConfig);
+                return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo(detail));
               }),
             );
 

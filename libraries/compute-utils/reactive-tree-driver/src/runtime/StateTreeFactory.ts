@@ -8,7 +8,7 @@ import {buildTraverseD} from '../data/graph-traverse-utils';
 import {buildRefMap, ConfigTraverseItem, getConfigByInstancePath, isPipelineDynamicConfig, isPipelineSelfRef, isPipelineStaticConfig, isPipelineStepConfig, PipelineRefMap, PipelineStepConfigurationProcessed} from '../config/config-utils';
 import {FuncCallAdapter, FuncCallMockAdapter} from './FuncCallAdapters';
 import {loadFuncCall, loadInstanceState, makeFuncCall} from './funccall-utils';
-import {DynamicPipelineNode, FuncCallNode, isFuncCallNode, StateTreeNode, StaticPipelineNode} from './StateTreeNodes';
+import {DynamicPipelineNode, FuncCallNode, isFuncCallNode, PipelineNodeBase, StateTreeNode, StaticPipelineNode} from './StateTreeNodes';
 import {indexFromEnd} from '../utils';
 import {DriverLogger} from '../data/Logger';
 import {StateTree} from './StateTree';
@@ -140,6 +140,8 @@ export function fromPipelineInstanceState({
 export function fromPipelineInstanceConfig({
   instanceConfig,
   config,
+  startPath = [],
+  startState,
   isReadonly = false,
   defaultValidators = false,
   batchLinks = false,
@@ -148,6 +150,8 @@ export function fromPipelineInstanceConfig({
 }: {
   instanceConfig: PipelineInstanceConfig,
   config: PipelineConfigurationProcessed,
+  startPath?: Readonly<NodePath>,
+  startState?: StateTree,
   isReadonly?: boolean,
   defaultValidators?: boolean,
   batchLinks?: boolean,
@@ -156,7 +160,7 @@ export function fromPipelineInstanceConfig({
 }): StateTree {
   const refMap = buildRefMap(config);
 
-  const traverse = buildTraverseD([] as Readonly<NodePath>, (data: PipelineInstanceConfig, path, visited) => {
+  const traverse = buildTraverseD(startPath, (data: PipelineInstanceConfig, path, visited) => {
     if (visited!.has(data))
       throw new Error(`Initial config cycle on node ${data.id} path ${JSON.stringify(path)}`);
     visited!.add(data);
@@ -169,16 +173,17 @@ export function fromPipelineInstanceConfig({
   const tree = traverse(instanceConfig, (acc, state, path) => {
     const nodeConf = getConfigByInstancePath(path.map((p) => p.id), config, refMap);
     if (!state.steps && !isPipelineStepConfig(nodeConf)) {
-      return fromPipelineConfig({
+      const tree = fromPipelineConfig({
         config, startNode: nodeConf, startPath: path, startState: acc,
         isReadonly, defaultValidators, batchLinks, mockMode, logger,
       });
+      (tree.nodeTree.getItem(path) as PipelineNodeBase).initState(state);
+      return tree;
     }
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
-    if (isFuncCallNode(node))
-      node.initState(state);
+    node.initState(state);
     return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
-  }, undefined as StateTree | undefined);
+  }, startState);
   return tree!;
 }
 
@@ -192,7 +197,11 @@ export function loadOrCreateCalls(stateTree: StateTree, mockMode: boolean) {
         else if (mockMode) {
           const obs$ = defer(() => {
             const adapter = new FuncCallMockAdapter(item.config.io!, item.isReadonly);
-            item.initAdapter({adapter, restrictions: {}, isOutputOutdated: true, runError: undefined}, true);
+            const initialValues = item.instancesWrapper.initialValues;
+            const outputs = item.config.io!.filter((io) => io.direction === 'output' && initialValues[io.id] !== undefined);
+            for (const io of outputs)
+              adapter.setState(io.id, initialValues[io.id]);
+            item.initAdapter({adapter, restrictions: {}, isOutputOutdated: !outputs.length, runError: undefined}, true);
             return of(undefined);
           });
           return [...acc, obs$];

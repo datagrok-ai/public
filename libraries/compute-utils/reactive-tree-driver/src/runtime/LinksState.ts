@@ -283,7 +283,7 @@ export class LinksState {
   public runNewInits(state: BaseTree<StateTreeNode>) {
     const obs = state.traverse(state.root, (acc, node, path) => {
       const item = node.getItem();
-      if (!isFuncCallNode(item) && !this.runnedInit.has(item.uuid) && item.config.onInit) {
+      if (!isFuncCallNode(item) && !item.skipOnInit && !this.runnedInit.has(item.uuid) && item.config.onInit) {
         const minfo = matchNodeLink(node, item.config.onInit, path);
         if (!minfo)
           return acc;

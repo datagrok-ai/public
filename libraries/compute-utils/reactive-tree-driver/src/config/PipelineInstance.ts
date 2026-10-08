@@ -20,10 +20,12 @@ export type StepFunCallInitialConfig = {
 
 export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
+  skipOnInit?: boolean;
 } & C;
 
 export type InstanceConfRecInput<C> = {
   steps?: Array<ItemId | InstanceConfRecInput<C>>;
+  skipOnInit?: boolean;
 } & C;
 
 type InstanceConfItem = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
