@@ -248,10 +248,31 @@ function matrixCellAnchor(): Element | null {
   return marker;
 }
 
+/** Where the two tours point. Both walk the same analysis, so a selector belongs in one place: the
+ *  fallback is what the step lands on while its pane is still building. */
+const at = {
+  scale: () => document.querySelector('.chem-sar-sum-orient') ?? sarTabHeader('Summary'),
+  coverage: () => document.querySelector('.chem-sar-sum-cov') ?? document.querySelector('.chem-sar-sum-overview'),
+  components: () => document.querySelector('.chem-sar-sum-comp') ?? document.querySelector('.chem-sar-sum-answers'),
+  swapRow: () => document.querySelector('.chem-sar-sum-comp-row') ?? document.querySelector('.chem-sar-sum-answers'),
+  effectsBar: () => document.querySelector('.chem-sar-sum-sub-bar') ?? document.querySelector('.chem-sar-sum-effects'),
+  making: () => document.querySelector('.chem-sar-sum-making-block') ?? document.querySelector('.chem-sar-sum-making'),
+  navCard: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
+    sarTabHeader('SAR Matrix'),
+  chips: () => document.querySelector('.chem-sar-chips'),
+  contextPanel: () => document.querySelector('.grok-prop-panel'),
+  transferTab: () => sarTabHeader('SAR Transfer'),
+  transferSources: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
+    document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+  transferGrid: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
+    document.querySelector('.chem-sar-xfer-panel') ?? sarTabHeader('SAR Transfer'),
+  makeList: () => sarTabHeader('Make list'),
+};
+
 const SAR_HINTS: SarHint[] = [
   {
     before: () => sarTab('Summary'),
-    anchor: () => document.querySelector('.chem-sar-sum-orient') ?? sarTabHeader('Summary'),
+    anchor: at.scale,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Start on the Summary',
     text: 'The analysis opens here, on what it concluded rather than on the grids behind it. This ' +
@@ -260,8 +281,7 @@ const SAR_HINTS: SarHint[] = [
       'typical size of the model\'s own error.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-cov') ??
-      document.querySelector('.chem-sar-sum-overview'),
+    anchor: at.coverage,
     position: ui.hints.POSITION.BOTTOM,
     title: 'What reached a matrix',
     text: 'A compound joins a series only if the cutting finds it a core it shares with others. The ' +
@@ -269,8 +289,7 @@ const SAR_HINTS: SarHint[] = [
       'with, never assayed. The coverage of the analysis is stated before any of its findings are.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-comp') ??
-      document.querySelector('.chem-sar-sum-answers'),
+    anchor: at.components,
     position: ui.hints.POSITION.BOTTOM,
     title: 'What to change',
     text: 'One additive (Free-Wilson) fit over the whole table, cross-validated on compounds it had ' +
@@ -279,8 +298,7 @@ const SAR_HINTS: SarHint[] = [
       'widest span is the one worth spending the next round on.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-comp-row') ??
-      document.querySelector('.chem-sar-sum-answers'),
+    anchor: at.swapRow,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Best measured swap, per component',
     text: 'The other half of the band is evidence of a different kind: pairs of compounds that were ' +
@@ -299,8 +317,7 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     before: () => sarSegment('Effects'),
-    anchor: () => document.querySelector('.chem-sar-sum-sub-bar') ??
-      document.querySelector('.chem-sar-sum-effects'),
+    anchor: at.effectsBar,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Effects: every component ranked',
     text: 'A tab per component, ordered by how far each moves the endpoint. Inside, every value of ' +
@@ -310,8 +327,7 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     before: () => sarSegment('Worth making'),
-    anchor: () => document.querySelector('.chem-sar-sum-making-block') ??
-      document.querySelector('.chem-sar-sum-making'),
+    anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Worth making',
     text: 'Analogs this dataset has no row for, ranked on the gain each buys over the best compound ' +
@@ -335,8 +351,7 @@ const SAR_HINTS: SarHint[] = [
       sarSegment('Overview');
       sarTab('SAR Matrix');
     },
-    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
-      sarTabHeader('SAR Matrix'),
+    anchor: at.navCard,
     position: ui.hints.POSITION.RIGHT,
     title: 'The series themselves',
     text: 'The rest of the tour is the evidence under those conclusions: the series, the matrices ' +
@@ -395,7 +410,7 @@ const SAR_HINTS: SarHint[] = [
       'their own, so they are counted on this card but appear in none of the series below.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-chips'),
+    anchor: at.chips,
     position: ui.hints.POSITION.BOTTOM,
     title: 'What the open matrix holds',
     text: 'The chips above the matrix summarise it: how many compounds it holds, its size as cores by ' +
@@ -419,7 +434,7 @@ const SAR_HINTS: SarHint[] = [
       'you have, a dashed one an analog nobody has made. Click any of them to inspect it.',
   },
   {
-    anchor: () => document.querySelector('.grok-prop-panel'),
+    anchor: at.contextPanel,
     position: ui.hints.POSITION.LEFT,
     title: 'A compound that exists',
     text: 'Select a solid cell and the Context Panel shows the compound itself: its structure, the ' +
@@ -429,7 +444,7 @@ const SAR_HINTS: SarHint[] = [
       'registration id, because the compound is real and only the number is estimated.',
   },
   {
-    anchor: () => document.querySelector('.grok-prop-panel'),
+    anchor: at.contextPanel,
     position: ui.hints.POSITION.LEFT,
     title: 'A virtual analog',
     text: 'Select a dashed cell and the Context Panel explains it: the core and substituent were ' +
@@ -445,7 +460,7 @@ const SAR_HINTS: SarHint[] = [
       'be collected without leaving the grid. It takes measured compounds as well as predicted ones.',
   },
   {
-    anchor: () => sarTabHeader('SAR Transfer'),
+    anchor: at.transferTab,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Carry the SAR across scaffolds',
     text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
@@ -453,8 +468,7 @@ const SAR_HINTS: SarHint[] = [
       'carry to the other, and the analogs it argues for are marked in the matrix.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
-      document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+    anchor: at.transferSources,
     position: ui.hints.POSITION.RIGHT,
     title: 'Sources, nested by series',
     text: 'Each card on the left is one source core, and the cards are gathered under the series that ' +
@@ -504,7 +518,7 @@ const SAR_HINTS: SarHint[] = [
       'Click a predicted cell on either side to take the analog that pairing argues for.',
   },
   {
-    anchor: () => sarTabHeader('Make list'),
+    anchor: at.makeList,
     position: ui.hints.POSITION.BOTTOM,
     title: 'The Make list',
     text: 'Everything collected lands here: each analog with its structure, its potency and the ' +
@@ -525,7 +539,7 @@ const SAR_HINTS: SarHint[] = [
 const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarTab('Summary'),
-    anchor: () => document.querySelector('.chem-sar-sum-orient') ?? sarTabHeader('Summary'),
+    anchor: at.scale,
     position: ui.hints.POSITION.BOTTOM,
     title: '2 792 degraders, split three ways',
     text: 'Every PROTAC in this patent set carries its warhead, its linker and its E3 ligand as ' +
@@ -543,8 +557,7 @@ const PROTAC_HINTS: SarHint[] = [
       'line names which column plays which part, and which one the matrix columns enumerate.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-cov') ??
-      document.querySelector('.chem-sar-sum-overview'),
+    anchor: at.coverage,
     position: ui.hints.POSITION.BOTTOM,
     title: 'What reached a matrix',
     text: 'The bar is the whole table: how many degraders carry a value and landed in a series, and ' +
@@ -553,8 +566,7 @@ const PROTAC_HINTS: SarHint[] = [
       'is a statement about.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-comp') ??
-      document.querySelector('.chem-sar-sum-answers'),
+    anchor: at.components,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Which of the three to change',
     text: 'One additive fit over all three components at once ranks them by how far each moves ' +
@@ -563,8 +575,7 @@ const PROTAC_HINTS: SarHint[] = [
       'beside good linkers does not inherit their credit.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-comp-row') ??
-      document.querySelector('.chem-sar-sum-answers'),
+    anchor: at.swapRow,
     position: ui.hints.POSITION.BOTTOM,
     title: 'And what was actually measured',
     text: 'Under the fit, the measured half: pairs of degraders alike in every part but one. Warhead, ' +
@@ -583,8 +594,7 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     before: () => sarSegment('Effects'),
-    anchor: () => document.querySelector('.chem-sar-sum-sub-bar') ??
-      document.querySelector('.chem-sar-sum-effects'),
+    anchor: at.effectsBar,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Every linker, warhead and ligand ranked',
     text: 'A tab per component with its full ranking, and a last tab holding the measured pairs for ' +
@@ -597,8 +607,7 @@ const PROTAC_HINTS: SarHint[] = [
         .find((e) => e.textContent?.includes('Measured in series'));
       (tab as HTMLElement | undefined)?.click();
     },
-    anchor: () => document.querySelector('.chem-sar-sum-sub-bar') ??
-      document.querySelector('.chem-sar-sum-effects'),
+    anchor: at.effectsBar,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Counted, not fitted',
     text: 'The last tab is the other kind of evidence, read off compounds that were actually made ' +
@@ -608,8 +617,7 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     before: () => sarSegment('Worth making'),
-    anchor: () => document.querySelector('.chem-sar-sum-making-block') ??
-      document.querySelector('.chem-sar-sum-making'),
+    anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Combinations nobody has built',
     text: 'A warhead, a linker and an E3 ligand that appear in the set but never together. Each is ' +
@@ -633,8 +641,7 @@ const PROTAC_HINTS: SarHint[] = [
       sarSegment('Overview');
       sarTab('SAR Matrix');
     },
-    anchor: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
-      sarTabHeader('SAR Matrix'),
+    anchor: at.navCard,
     position: ui.hints.POSITION.RIGHT,
     title: 'One linker per series',
     text: 'Each card is one linker with its degraders laid out: warheads across the columns, the E3 ' +
@@ -642,7 +649,7 @@ const PROTAC_HINTS: SarHint[] = [
       'series\' own spread of solubility.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-chips'),
+    anchor: at.chips,
     position: ui.hints.POSITION.BOTTOM,
     title: 'What the open matrix holds',
     text: 'The open series in one line: how many degraders were measured, how many cells the two ' +
@@ -657,7 +664,7 @@ const PROTAC_HINTS: SarHint[] = [
       'series\' own range, so the best and worst corners read at a glance.',
   },
   {
-    anchor: () => document.querySelector('.grok-prop-panel'),
+    anchor: at.contextPanel,
     position: ui.hints.POSITION.LEFT,
     title: 'A degrader that exists',
     text: 'The context panel shows the whole molecule assembled from its three parts, with the ' +
@@ -673,7 +680,7 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     before: () => sarTab('SAR Transfer'),
-    anchor: () => sarTabHeader('SAR Transfer'),
+    anchor: at.transferTab,
     position: ui.hints.POSITION.BOTTOM,
     title: 'Carry the SAR across linkers',
     text: 'Two linkers explored with the same warheads, whose potencies move together, are evidence ' +
@@ -681,8 +688,7 @@ const PROTAC_HINTS: SarHint[] = [
       'about pairs of series and most runs never ask it. This set has 19 such pairs.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
-      document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+    anchor: at.transferSources,
     position: ui.hints.POSITION.RIGHT,
     title: 'Sources, nested by series',
     text: 'Each group is one linker that lends its trend, and under it the rows it transfers to. ' +
@@ -690,8 +696,7 @@ const PROTAC_HINTS: SarHint[] = [
       'on both, the strongest claim this evidence can make.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
-      document.querySelector('.chem-sar-xfer-panel') ?? sarTabHeader('SAR Transfer'),
+    anchor: at.transferGrid,
     position: ui.hints.POSITION.LEFT,
     title: 'What the transfer argues for',
     text: 'The two matrices side by side, the shared warheads aligned. Where the source has a value ' +
@@ -700,7 +705,7 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     before: () => sarTab('Make list'),
-    anchor: () => sarTabHeader('Make list'),
+    anchor: at.makeList,
     position: ui.hints.POSITION.BOTTOM,
     title: 'The Make list',
     text: 'Everything collected lands here: each degrader with its three parts, the value predicted ' +
