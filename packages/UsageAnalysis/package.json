@@ -22,7 +22,7 @@
     "datagrok-api": "workspace:^",
     "dayjs": "catalog:",
     "fflate": "^0.8.2",
-    "moment": "^2.29.1",
+    "moment": "^2.31.0",
     "rxjs": "catalog:"
   },
   "scripts": {
