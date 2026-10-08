@@ -1,7 +1,8 @@
 ### Viewers: Edit tooltip
 
 1. Close all. Open SPGI dataset.
-2. Open grid properties and enable `Show Visible Columns In Tooltip`
+2. Open grid properties, set `Show Tooltip` to `inherit from table` (the grid's own default is a custom tooltip
+   with no columns, which shows nothing) and enable `Show Visible Columns In Tooltip`
 3. Open a scatter plot and a box plot
 4. Right-click on a viewer and select `Tooltip > Edit...`
    - dialog 'Edit tooltip' should open

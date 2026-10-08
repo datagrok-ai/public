@@ -104,7 +104,8 @@ The `SubstructureSearchEngine` package property (`RDKit` default, `Crux`) picks 
 Not contains searches inside `chemSubstructureSearchLibrary` — every caller (filter, scaffold tree,
 `searchSubstructure`, filter operators) goes through it; tests switch it with `setSubstructureSearchEngine`.
 Crux ([crux-core](https://github.com/datagrok-ai/crux-core), Rust → wasm) indexes a column once, in
-segments that double in size per round over `hardwareConcurrency - 2` workers and are built by the first
+segments that double in size per round over `hardwareConcurrency - 2` workers (at most 16, `MAX_WORKERS`: each holds
+a WebAssembly memory, and a page has room for about 120 of them) and are built by the first
 search that reaches them; a changed column rebuilds only the segments whose molecules changed. The query goes
 through `getQueryMolSafe` as for RDKit (a typed query whose SMILES reading has radicals, like `[OH]` or `[CH3]`, is
 read as SMARTS by both engines) and is written as SMARTS without H counts of molecule atoms and without stereo (RDKit

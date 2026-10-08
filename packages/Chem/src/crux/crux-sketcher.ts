@@ -183,7 +183,7 @@ export class CruxSketcher extends grok.chem.SketcherBase {
    * - its parts (HOST-044; Crux's `layout`): `canvas`, the toolbars as `actions` (top), `tools` (left), `elements` (right)
    *   and `templates` (bottom), and `label editor` while it is open; and `tool <name>` for each control a toolbar shows,
    *   named as Crux's toolbar configuration names it (`tool bond.single`, `tool ring.benzene`, `tool undo`) (HOST-045);
-   * - the readings `ready`, `pending`, `smiles` (Crux's own, whatever the host was given), `atoms`, `bonds`, `mode`,
+   * - the readings `ready`, `pending`, `smiles` and `smarts` (Crux's own, whatever the host was given), `atoms`, `bonds`, `mode`,
    *   `selected atoms` and `selected bonds` (their indices in molfile order, `0, 2`, empty for none), `tool` (Crux's),
    *   `query` (whether the drawing has a query feature), `empty` and `changes` (the host's change events since this
    *   sketcher was made) (HOST-045).
@@ -222,8 +222,14 @@ export class CruxSketcher extends grok.chem.SketcherBase {
     } catch {
       // a drawing no SMILES holds (a query): its reading is empty
     }
+    let smarts = '';
+    try {
+      smarts = sketch.smarts;
+    } catch {
+      // the engine cannot write it: the reading is empty
+    }
     const selection = sketch.selection;
-    return {hitAreas, values: {ready: true, pending: sketch.isPending, smiles, atoms: atoms.length, bonds: bonds.length,
+    return {hitAreas, values: {ready: true, pending: sketch.isPending, smiles, smarts, atoms: atoms.length, bonds: bonds.length,
       mode: sketch.mode, 'selected atoms': selection.atoms.join(', '), 'selected bonds': selection.bonds.join(', '),
       tool: sketch.tool, query: sketch.hasQuery, empty: sketch.isEmpty, changes: this.changes}};
   }

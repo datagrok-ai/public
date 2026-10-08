@@ -128,7 +128,9 @@ async function waitForSketcherBackend(page: Page): Promise<void> {
       .find((x) => x.querySelector('input[placeholder*="SMILES" i]'));
     if (!d) return false;
     return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
-      || !!d.querySelector('canvas');
+      || !!d.querySelector('canvas')
+      // Crux draws in its shadow root; its element is busy until it is ready
+      || !!d.querySelector('crux-sketch[aria-busy="false"]');
   }, null, {timeout: 60_000});
 }
 

@@ -328,7 +328,8 @@ transform-flip-h.svg, transform-flip-v.svg, delete.svg, as they are); and the Cl
 tools' (charge-plus.svg, charge-minus.svg), as they are; and Enhanced Stereochemistry's
 (enhanced-stereo.svg), as it is; and the shortcuts sheet's and the Settings gear's (help.svg,
 settings.svg), their paint written currentColor; and the query bond tools' (bond-any.svg,
-bond-singledouble.svg, bond-singlearomatic.svg, bond-doublearomatic.svg), as they are. The fit-to-view icon and the bars' scroll chevrons
+bond-singledouble.svg, bond-singlearomatic.svg, bond-doublearomatic.svg), as they are; and the dative bond tool's
+(bond-dative.svg), as it is, and the Hydrogens menu button's (explicit-hydrogens.svg), its paint written currentColor. The fit-to-view icon and the bars' scroll chevrons
 are Crux Sketch's own.
 
 Ketcher

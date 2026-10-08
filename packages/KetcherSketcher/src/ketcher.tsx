@@ -7,7 +7,8 @@ import * as DG from 'datagrok-api/dg';
 import {_package} from './package';
 import {Editor} from 'ketcher-react';
 import {StandaloneStructServiceProvider} from 'ketcher-standalone';
-import {Ketcher, MolSerializer, Pile, SupportedFormat} from 'ketcher-core';
+import {Ketcher, MolSerializer, Pile, SettingsService, SupportedFormat} from 'ketcher-core';
+import {asKetcherQuery, withQueries} from './query-molfile';
 import 'ketcher-react/dist/index.css';
 import '../css/editor.css';
 
@@ -34,12 +35,85 @@ Object.defineProperty(SVGLength.prototype, 'value', {
   },
 });
 
+/** How long an Indigo request is waited for before it is given up (`KetcherSketcher._inTurn`, `pageStructServiceProvider`). */
+const INDIGO_ANSWER_MS = 15000;
+
+/** `request`, once the requests before it have ended and `ready` has settled, given up after INDIGO_ANSWER_MS. */
+function inTurnAfter<T>(before: Promise<unknown>, request: () => Promise<T>,
+  ready: Promise<unknown> = Promise.resolve()): Promise<T> {
+  return before.then(() => ready).then(() => new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Indigo did not answer')), INDIGO_ANSWER_MS);
+    request().then((value) => {
+      clearTimeout(timer);
+      resolve(value);
+    }, (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+  }));
+}
+
+/** The struct service's methods that send the worker nothing. */
+const LOCAL_METHODS = new Set(['addKetcherId', 'getStandardServerOptions', 'callIndigoLoadedCallback',
+  'callIndigoNoRenderLoadedCallback']);
+let pageStructService: any = null;
+let pageIndigoTurn: Promise<unknown> = Promise.resolve();
+
+/** One struct service for every Ketcher of the page. ketcher-standalone runs Indigo in one worker per page and pairs a
+ * reply with its request by the request's kind alone: a reply reaches only the IndigoService created last (each new one
+ * takes over the worker's `onmessage`), so a request of a Ketcher mounted before was never answered; and of two requests
+ * of a kind in flight, the reply for one drops the other unanswered. This service sends its requests one at a time, each
+ * given up after INDIGO_ANSWER_MS once Indigo has first answered (its worker loads Indigo's WebAssembly first, which
+ * takes what it takes); no Ketcher's unmount ends the page's worker (crux-sketch spike query-roundtrip, K3). */
+const pageStructServiceProvider = {
+  mode: 'standalone',
+  createStructService(options: any): any {
+    if (pageStructService === null) {
+      const service: any = new StandaloneStructServiceProvider().createStructService(options);
+      const loaded: Promise<unknown> = service.info().catch(() => {});
+      pageStructService = new Proxy(service, {
+        get(target, key) {
+          const value = target[key];
+          if (typeof value !== 'function')
+            return value;
+          if (key === 'destroy')
+            return () => {};
+          if (LOCAL_METHODS.has(key as string))
+            return value.bind(target);
+          return (...args: any[]) => {
+            const result = inTurnAfter(pageIndigoTurn, () => value.apply(target, args), loaded);
+            pageIndigoTurn = result.catch(() => {});
+            return result;
+          };
+        },
+      });
+    }
+    return pageStructService;
+  },
+};
+
+/** ketcher-core's Ketcher subscribes to the page's one SettingsService (a singleton) in its constructor and never ends
+ * that subscription, so every Ketcher ever mounted, its editor and its drawing stayed reachable from it: a page that had
+ * mounted Ketcher some 50 to 150 times (dialogs opened, sketchers switched) filled its heap until it stopped answering
+ * (crux-sketch spike query-roundtrip, K4; ketcher-core's own warning: "MaxListenersExceededWarning: Possible EventEmitter
+ * memory leak detected. 11 settings:changed listeners"). Each subscription made while a sketcher mounts is its own, and
+ * ends when the sketcher is suspended or detached (`_endSettingsSubscriptions`). */
+const settingsSubscribe = SettingsService.prototype.subscribe;
+SettingsService.prototype.subscribe = function(this: SettingsService, listener: any): () => void {
+  const unsubscribe = settingsSubscribe.call(this, listener);
+  KetcherSketcher._mounting?._settingsSubscriptions.push(unsubscribe);
+  return unsubscribe;
+};
+
 export class KetcherSketcher extends grok.chem.SketcherBase {
   // ketcher-core is built on module-level singletons (CoreEditor, indigoWorker, ketcherProvider),
   // so only one live editor per page is possible (upstream limitation): mounting a new one
   // suspends all others behind a "Reload" placeholder instead of letting them silently break.
   private static _instances = new Set<KetcherSketcher>();
   private static _indigoTurn: Promise<unknown> = Promise.resolve();
+  /** The sketcher mounting its editor, whose Ketcher's settings subscriptions are its own (K4). */
+  static _mounting: KetcherSketcher | null = null;
+  _settingsSubscriptions: (() => void)[] = [];
   _smiles: string | null = null;
   _molV2000: string | null = null;
   _molV3000: string | null = null;
@@ -56,6 +130,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
    * `init` waits for it, so the host announces this sketcher ready (`sketcherReady`) only when it takes input. */
   private readonly _ready: Promise<void>;
   private _resolveReady: (() => void) | null = null;
+  /** The last molecule set into Ketcher, settled once Ketcher has loaded it. */
+  private _loading: Promise<unknown> = Promise.resolve();
 
   constructor() {
     super();
@@ -78,14 +154,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     }
     this._suspended = false;
     ui.empty(this.ketcherHost);
-
-    const structServiceProvider = new StandaloneStructServiceProvider();
+    KetcherSketcher._mounting = this;
 
     const props = {
       staticResourcesUrl: !_package.webRoot ?
         '' :
         _package.webRoot.substring(0, _package.webRoot.length - 1),
-      structServiceProvider: structServiceProvider,
+      structServiceProvider: pageStructServiceProvider as any,
       // its toggle is hidden (editor.css), and onInit would wait for its lazy chunk while the canvas already takes strokes
       disableMacromoleculesEditor: true,
       errorHandler: (message: string) => {
@@ -142,11 +217,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     return [...struct.atoms.values()].some((a) => !a.isPreview) || struct.rxnArrows.size > 0 || struct.texts.size > 0;
   }
 
-  /** Runs an Indigo conversion once the ones before it have ended: the standalone struct service hands a
-   * worker reply to every pending conversion of the same input, whatever its format, fails them all when
-   * the reply is an error (SMILES of a query), and drops the ones of another input unanswered. */
+  /** Runs a conversion of this adapter's once the ones before it have ended: the standalone struct service hands a
+   * worker reply to every pending conversion of the same input, whatever its format, and fails them all when the reply
+   * is an error (SMILES of a query). One left unanswered is given up after INDIGO_ANSWER_MS, so that it holds up no
+   * later conversion of the page's Ketchers: the queue stalled for good before, every SMARTS and V3000 export after it
+   * never coming (crux-sketch spike query-roundtrip, K2; why one went unanswered: `pageStructServiceProvider`, K3). */
   private static _inTurn<T>(conversion: () => Promise<T>): Promise<T> {
-    const result = KetcherSketcher._indigoTurn.then(conversion);
+    const result = inTurnAfter(KetcherSketcher._indigoTurn, conversion);
     KetcherSketcher._indigoTurn = result.catch(() => {});
     return result;
   }
@@ -170,6 +247,13 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     }
     catch {
       return;
+    }
+    // what ketcher-core's V2000 leaves out of a query, its SMARTS-only atom properties and its custom bond queries, put
+    // back where RDKit reads them: V3000 with SMARTSQ groups where an atom has one (query-molfile.ts)
+    try {
+      molV2000 = withQueries(drawn, molV2000);
+    } catch (e) {
+      console.error(e);
     }
     const exportId = ++this._exportId;
     this._molV2000 = molV2000;
@@ -203,6 +287,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     }
     this.reactRoot = null;
     this._sketcher = null;
+    this._endSettingsSubscriptions();
     if (this.updatingMolecule) {
       this.updatingMolecule = false;
       this.onChanged.next(null);
@@ -213,6 +298,14 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
         'Ketcher supports only one active editor per page.'),
       ui.button('Reload', () => this._mountEditor()),
     ], 'ketcher-suspended'));
+  }
+
+  /** Ends the settings subscriptions this sketcher's Ketchers made (K4): an unmounted Ketcher is then unreachable. */
+  private _endSettingsSubscriptions(): void {
+    for (const unsubscribe of this._settingsSubscriptions.splice(0))
+      unsubscribe();
+    if (KetcherSketcher._mounting === this)
+      KetcherSketcher._mounting = null;
   }
 
   private _restoreMolecule(): void {
@@ -266,7 +359,8 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     if (this.explicitMol?.notation === 'molblock')
       return this.explicitMol.value;
     if (this._molV2000 !== null) {
-      if (this._molV3000 !== null && this._molV3000.includes('MDLV30/STE'))
+      // a query written V3000 (query-molfile.ts) is the molblock as it is
+      if (this._molV3000 !== null && this._molV3000.includes('MDLV30/STE') && !this._molV2000.includes('V3000'))
         return DG.chem.convert(this._molV3000, DG.chem.Notation.V3KMolBlock, DG.chem.Notation.MolBlock);
       return this._molV2000;
     }
@@ -290,6 +384,9 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   get molV3000() {
     if (this.explicitMol?.notation === 'molblockV3000')
       return this.explicitMol.value;
+    // a query written V3000 with its SMARTSQ groups (query-molfile.ts), which Indigo's V3000 leaves out
+    if (this._molV2000?.includes('V3000'))
+      return this._molV2000;
     if (this._molV3000 !== null)
       return this._molV3000;
     if (this._molV2000 !== null)
@@ -310,9 +407,16 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
   }
 
   async getSmarts(): Promise<string> {
+    // the caller's SMARTS until the user's first edit, as the other getters give the caller's string
+    if (this.explicitMol?.notation === 'smarts')
+      return this.explicitMol.value;
     const ketcher = this._sketcher;
-    if (ketcher)
-      return !this._detached ? await KetcherSketcher._inTurn(() => ketcher.getSmarts()) : this._smarts ?? '';
+    if (ketcher) {
+      // a molecule set loads asynchronously: export what it drew, not the canvas before it
+      await this._loading;
+      return !this._detached && this._sketcher === ketcher ?
+        await KetcherSketcher._inTurn(() => ketcher.getSmarts()) : this._smarts ?? '';
+    }
     return this._smarts ?? '';
   }
 
@@ -334,7 +438,16 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
 
   setKetcherMolecule(molecule: string) {
     try {
-      this._sketcher?.setMolecule(molecule);
+      // a query molfile with SMARTSQ groups is shown with them as Ketcher's own query properties (query-molfile.ts)
+      let shown = molecule;
+      try {
+        shown = asKetcherQuery(molecule);
+      } catch (e) {
+        console.error(e);
+      }
+      const loading = this._sketcher?.setMolecule(shown);
+      if (loading)
+        this._loading = loading.catch((e) => console.error(e));
     } catch (e) {
       console.error(e);
     }
@@ -383,6 +496,7 @@ export class KetcherSketcher extends grok.chem.SketcherBase {
     // grok.dapi.userDataStorage.postValue(KETCHER_OPTIONS, KETCHER_USER_STORAGE, JSON.stringify(this._sketcher?.editor.options()), true);
     this.reactRoot?.unmount();
     this.reactRoot = null;
+    this._endSettingsSubscriptions();
     super.detach();
     //if detach occured while setting molecule into ketcher, send onChange, since we will not enter ketcher's onChange handler
     if (this.updatingMolecule)

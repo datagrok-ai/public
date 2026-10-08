@@ -75,7 +75,11 @@ What a guide shows, and what the runtime guarantees (`grok-bdd guide` sets it up
    illustrates a help page under `public/help/`), a description that quotes the question, one
    scenario of 5–12 steps. Every `When` names the element a person would click, in the order they
    would; a `Then` after the decisive step shows the result. Step text is the caption of the video
-   (`user clicks on X inside Y` → "Click on X in Y"), so it is written for the person asking.
+   (`user clicks on X inside Y` → "Click on X in Y"), so it is written for the person asking; where a
+   step must stay precise for the test (an atom's index, a drag in pixels, a reading), a `# caption: <text>`
+   comment on the line right above it is what the video says instead ("Click the acid's carbon"), and a
+   check captioned so is shown even when `HIDDEN_CHECKS` would leave it out. A guide about one widget
+   (a sketcher) starts with it open from a silent set-up step that frames the video to it (`guideFrame`).
 4. `npx grok-bdd compile` then `npx grok-bdd run generated/guides/<slug>.test.ts` until green; a
    step that needs a wait or a pixel is a missing signal in the core, not a `sleep`.
 

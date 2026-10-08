@@ -74,7 +74,10 @@ export async function initRdKitModuleLocal(): Promise<void> {
   _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
-  _rdKitService = new RdKitService();
+  // A second init (a test category's `before`) keeps the worker pool: a new service would leave the old one's workers
+  // running for the rest of the page's life, each holding an RDKit instance, and a page has room for only so many
+  // WebAssembly memories (instantiation fails with "Out of memory" past it)
+  _rdKitService ??= new RdKitService();
 }
 
 export async function initRdKitService(): Promise<void> {
