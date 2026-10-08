@@ -40,21 +40,6 @@ dataset('ex-smarts', {path: 'System:AppData/Chem/enumerations/ex_smarts.csv', al
 dataset('sar-matrix-demo', {path: 'System:AppData/Chem/demo_files/sar-matrix-demo.csv',
   description: 'the SAR Matrix demo set: 9999 ChEMBL compounds, hERG_pIC50 on 3109 of them ' +
     '(already a log scale, so the analysis runs with scaling none) and a CYP3A4 column'});
-dataset('four-rgroups', {path: 'System:AppData/Chem/demo_files/four-rgroup-demo.csv',
-  description: '415 compounds over three scaffolds and four R-group columns, built from known additive ' +
-    'coefficients so the fit can be checked against a truth: R2 moves pIC50 most (0.41), then the ' +
-    'Scaffold (0.22), R1 (0.20), R4 (0.08), and R3 barely at all (0.02)'});
-dataset('five-rgroups', {path: 'System:AppData/Chem/demo_files/five-rgroup-demo.csv',
-  description: '4,172 compounds over four scaffolds and five R-group columns — six components — built ' +
-    'from known additive coefficients: R2 moves pIC50 most (0.37), then the Scaffold (0.23), R1 (0.18), ' +
-    'R5 (0.15), R4 (0.09), and R3 barely at all (0.02). One scaffold carries no R3, so that column has ' +
-    'a blank level'});
-dataset('fragmentation-core-rgroup', {
-  path: 'System:AppData/Chem/demo_files/fragmentation-core-rgroup-demo.csv',
-  description: '192 molecules over six unrelated ring systems, each decorated at two positions from ' +
-    'the same substituent sets — given as structures only, so the analysis cuts them itself. Built ' +
-    'from known additive coefficients, and the only fragmented set here whose matrices are one core ' +
-    'each, so both "best R-group" and "best core" have an answer'});
 dataset('protac-degraders', {path: 'System:AppData/Chem/demo_files/protac-degraders-2792.csv',
   description: '2,792 PROTAC degraders from PROTAC-PatentDB split into Warhead / Linker / E3 Ligand ' +
     '(71 linkers, 632 warheads, 12 E3 ligands), with computed and predicted properties but no ' +
