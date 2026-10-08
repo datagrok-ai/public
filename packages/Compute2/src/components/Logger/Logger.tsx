@@ -2,7 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as Vue from 'vue';
-import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
+import {
+  isLinkLogItem, LOG_EVENT_TYPES, LogItem,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {formatNodePath, formatMutationPath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FilterDropdown, FilterOption} from '../Inspector/FilterDropdown';
 
@@ -31,18 +33,8 @@ export const Logger = Vue.defineComponent({
     'linkClicked': (_linkIds: string[]) => true,
   },
   setup(props, {emit}) {
-    const eventTypeOptions: FilterOption[] = [
-      {value: 'treeUpdateStarted', label: 'treeUpdateStarted', detail: 'tree'},
-      {value: 'treeUpdateFinished', label: 'treeUpdateFinished', detail: 'tree'},
-      {value: 'treeUpdateMutation', label: 'treeUpdateMutation', detail: 'tree'},
-      {value: 'linkAdded', label: 'linkAdded', detail: 'link'},
-      {value: 'linkRemoved', label: 'linkRemoved', detail: 'link'},
-      {value: 'linkRunStarted', label: 'linkRunStarted', detail: 'link'},
-      {value: 'linkRunFinished', label: 'linkRunFinished', detail: 'link'},
-      {value: 'actionAdded', label: 'actionAdded', detail: 'action'},
-      {value: 'actionRemoved', label: 'actionRemoved', detail: 'action'},
-      {value: 'error', label: 'error', detail: 'error'},
-    ];
+    const eventTypeOptions: FilterOption[] =
+      LOG_EVENT_TYPES.map(({type, group}) => ({value: type, label: type, detail: group}));
 
     const eventsFilter = Vue.ref<string[]>([]);
     const linksFilter = Vue.ref<string[]>([]);
@@ -52,11 +44,6 @@ export const Logger = Vue.defineComponent({
       color: 'var(--blue-1)',
       textDecoration: 'underline',
     };
-
-    const isLinkLogItem = (item: LogItem): item is LogItem & {linkUUID: string; prefix: any; basePath?: any; id: string; isDefaultValidator?: boolean} =>
-      item.type === 'linkAdded' || item.type === 'linkRemoved' ||
-      item.type === 'linkRunStarted' || item.type === 'linkRunFinished' ||
-      item.type === 'actionAdded' || item.type === 'actionRemoved';
 
     return () => {
       const items = props.logs.filter((item) => {

@@ -10,11 +10,11 @@ import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
-import {MatchedNodePaths} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
-import {formatNodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
+import {
+  InspectedNode, inspectConfig, LinksInspection, toInspectorJSON,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/inspection';
 import {FuncCallStateInfo, ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {LinkIOParsed, LinkSelectorSegment, LinkTagSegment} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec';
 import {BehaviorSubject} from 'rxjs';
 import {FilterDropdown, FilterOption} from './FilterDropdown';
 
@@ -24,214 +24,7 @@ interface StepStates {
   consistency: Record<string, Record<string, ConsistencyInfo> | undefined>;
   meta: Record<string, Record<string, BehaviorSubject<any>> | undefined>;
   descriptions: Record<string, Record<string, string | string[]> | undefined>;
-}
-
-// ---- Serialization helpers ----
-
-function summarizeDataFrame(df: DG.DataFrame): string {
-  return `#DataFrame(${df.rowCount} rows, ${df.columns.length} cols)`;
-}
-
-/** Emit IO declarations as [{name, type}] — never reads param values. */
-function summarizeFuncCallIODecls(params: DG.FuncCallParam[]): Array<{name: string, type?: string}> {
-  return params.map((p) => ({name: p.name, type: p.property?.propertyType}));
-}
-
-function isLinkSelectorSegment(v: any): v is LinkSelectorSegment {
-  return v && v.type === 'selector' && Array.isArray(v.ids);
-}
-
-function isLinkTagSegment(v: any): v is LinkTagSegment {
-  return v && v.type === 'tag' && Array.isArray(v.tags);
-}
-
-function isLinkIOParsed(v: any): v is LinkIOParsed {
-  return v && typeof v.name === 'string' && Array.isArray(v.segments)
-    && !v.type;
-}
-
-/** Compact one-line rendering of a selector segment. Lossless. */
-function prettySegment(s: LinkSelectorSegment): string {
-  const ids = s.ids.join('|');
-  if (s.selector === 'first' && !s.ref && s.stopIds.length === 0)
-    return ids || '*';
-  const parts: string[] = [];
-  if (s.ref) parts.push(`@${s.ref}`);
-  if (ids) parts.push(ids);
-  if (s.stopIds.length) parts.push(s.stopIds.join('|'));
-  return `${s.selector}(${parts.join(', ')})`;
-}
-
-function prettyTagSegment(s: LinkTagSegment): string {
-  const ref = s.ref ? `@${s.ref},` : '';
-  return `#${s.selector}(${ref}${s.tags.join('&')})`;
-}
-
-function prettyAnySegment(s: LinkSelectorSegment | LinkTagSegment): string {
-  return s.type === 'tag' ? prettyTagSegment(s) : prettySegment(s);
-}
-
-/** Compact rendering of a parsed link IO; surfaces `templateName` when present. */
-function prettyLinkIO(io: LinkIOParsed): Record<string, any> {
-  const out: Record<string, any> = {name: io.name};
-  if (io.flags?.length) out.flags = io.flags;
-  if (io.templateName !== undefined) out.templateName = io.templateName;
-  out.path = io.segments.map(prettyAnySegment);
-  return out;
-}
-
-/** Convert a MatchedNodePaths record to readable path strings. */
-function matchedPathsToStrings(paths: Record<string, MatchedNodePaths>): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
-  for (const [name, matched] of Object.entries(paths))
-    result[name] = matched.map((m) => formatNodePath(m.path, m.ioName));
-  return result;
-}
-
-/** JSON replacer that handles all Datagrok and reactive types. */
-function dgReplacer(_key: any, value: any): any {
-  if (isLinkIOParsed(value)) return prettyLinkIO(value);
-  if (isLinkSelectorSegment(value)) return prettySegment(value);
-  if (isLinkTagSegment(value)) return prettyTagSegment(value);
-  if (value instanceof DG.FuncCall) {
-    return {
-      '#': 'FuncCall',
-      id: value.id,
-      func: value.func?.nqName,
-    };
-  }
-  if (value instanceof DG.Func)
-    return `#Func(${value.nqName})`;
-  if (value instanceof DG.DataFrame)
-    return summarizeDataFrame(value);
-  if (value instanceof Map)
-    return Object.fromEntries(value);
-  if (value instanceof Set)
-    return [...value];
-  if (value instanceof BehaviorSubject)
-    return value.value;
-  if (typeof value === 'function')
-    return '#Handler';
-  return value;
-}
-
-/** Post-process config JSON. Splits the `io` array into `inputs` and
- *  `outputs` (each `[{name, type, nullable?}]`) so the shape matches the
- *  Tree State view. Parsed link IOs are handled by `dgReplacer` via
- *  `prettyLinkIO`, so they fall through here. */
-function humanizeConfig(data: any): any {
-  if (data == null || typeof data !== 'object') return data;
-  if (Array.isArray(data)) return data.map(humanizeConfig);
-
-  const result: Record<string, any> = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (k === 'io' && Array.isArray(v) && v.length > 0 && v[0]?.id && v[0]?.direction) {
-      const inputs: any[] = [];
-      const outputs: any[] = [];
-      for (const item of v as any[]) {
-        const decl: Record<string, any> = {name: item.id, type: item.type};
-        if (item.nullable) decl.nullable = true;
-        (item.direction === 'output' ? outputs : inputs).push(decl);
-      }
-      if (inputs.length) result.inputs = inputs;
-      if (outputs.length) result.outputs = outputs;
-    } else {
-      result[k] = humanizeConfig(v);
-    }
-  }
-  return result;
-}
-
-// ---- Tab-specific data builders ----
-
-function toJSON(x: any): any {
-  return x ? JSON.parse(JSON.stringify(x, dgReplacer)) : {};
-}
-
-/** Build selected step summary from tree state. */
-function buildSelectedStepData(
-  uuid: string | undefined,
-  treeState: PipelineState | undefined,
-  stepStates: StepStates | undefined,
-): any {
-  if (!uuid || !treeState || !stepStates) return undefined;
-
-  const findNode = (state: PipelineState, targetUuid: string): PipelineState | undefined => {
-    if (state.uuid === targetUuid) return state;
-    if (!isFuncCallState(state)) {
-      for (const step of state.steps) {
-        const found = findNode(step, targetUuid);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
-
-  const node = findNode(treeState, uuid);
-  if (!node) return undefined;
-
-  const data: Record<string, any> = {
-    uuid, configId: node.configId, friendlyName: node.friendlyName,
-    type: node.type, isReadonly: node.isReadonly,
-  };
-
-  if (isFuncCallState(node) && node.funcCall) {
-    data.inputs = summarizeFuncCallIODecls([...node.funcCall.inputParams.values()]);
-    data.outputs = summarizeFuncCallIODecls([...node.funcCall.outputParams.values()]);
-  }
-
-  if (stepStates.calls[uuid]) data.callState = stepStates.calls[uuid];
-  if (stepStates.validations[uuid]) data.validations = stepStates.validations[uuid];
-  if (stepStates.descriptions[uuid]) data.descriptions = stepStates.descriptions[uuid];
-  if (stepStates.meta[uuid]) {
-    data.meta = {};
-    for (const [k, subj] of Object.entries(stepStates.meta[uuid]!))
-      data.meta[k] = subj?.value;
-  }
-
-  return data;
-}
-
-/** Build human-readable link entries by merging config + runtime data. */
-function buildLinksData(links: LinksData[], config: PipelineConfigurationProcessed | undefined) {
-  const configLinksMap = new Map<string, any>();
-  if (config) {
-    const collectLinks = (cfg: any) => {
-      for (const link of cfg.links ?? [])
-        configLinksMap.set(link.id, link);
-      for (const step of cfg.steps ?? cfg.stepTypes ?? []) {
-        if (step.links) collectLinks(step);
-      }
-    };
-    collectLinks(config);
-  }
-
-  return links.map((linkData) => {
-    const spec = configLinksMap.get(linkData.id);
-    const matchSpec = linkData.matchInfo?.spec;
-
-    const entry: Record<string, any> = {
-      id: linkData.id,
-      uuid: linkData.uuid,
-      type: spec?.type ?? matchSpec?.type ?? 'data',
-      isAction: linkData.isAction,
-    };
-
-    // Raw from/to are intentionally omitted from the Links view — they're
-    // visible in the Config tab (with the same structural pretty-print).
-    // The Links view focuses on resolved wiring via resolvedInputs/Outputs.
-
-    if (spec?.defaultRestrictions) entry.defaultRestrictions = spec.defaultRestrictions;
-    if (spec?.handler) entry.handler = '#Handler';
-    if (spec?.dataFrameMutations) entry.dataFrameMutations = spec.dataFrameMutations;
-
-    if (linkData.matchInfo?.inputs)
-      entry.resolvedInputs = matchedPathsToStrings(linkData.matchInfo.inputs as Record<string, MatchedNodePaths>);
-    if (linkData.matchInfo?.outputs)
-      entry.resolvedOutputs = matchedPathsToStrings(linkData.matchInfo.outputs as Record<string, MatchedNodePaths>);
-
-    return entry;
-  });
+  pipelineValidations: Record<string, ValidationResult | undefined>;
 }
 
 // ---- Component ----
@@ -257,27 +50,39 @@ export const Inspector = Vue.defineComponent({
     stepStates: {
       type: Object as Vue.PropType<StepStates>,
     },
+    inspectLinks: {
+      type: Function as Vue.PropType<() => LinksInspection>,
+    },
+    inspectNode: {
+      type: Function as Vue.PropType<(uuid: string) => InspectedNode | undefined>,
+    },
   },
   setup(props) {
     const selectedTab = Vue.ref('Log');
     const linksFilterSelection = Vue.ref<string[]>([]);
     const stepsFilterSelection = Vue.ref<string[]>([]);
 
-    const linksData = Vue.computed(() =>
-      buildLinksData(props.links ?? [], props.config));
+    // the driver is read only while the Links tab is shown; links updates after each tree update trigger a re-read
+    const linksData = Vue.computed<LinksInspection>(() =>
+      selectedTab.value === 'Links' && props.links && props.inspectLinks ?
+        props.inspectLinks() :
+        {matched: [], notMatched: []});
 
     // --- Filter options per tab ---
 
+    // the Log tab needs the options too, so matched links come from props.links
     const linkFilterOptions = Vue.computed<FilterOption[]>(() => {
       const seen = new Set<string>();
-      return linksData.value.filter((l) => {
+      const matched = (props.links ?? []).map((l) =>
+        ({id: l.id, isAction: l.isAction, type: l.matchInfo.spec.type ?? 'data'}));
+      return [...matched, ...linksData.value.notMatched].filter((l) => {
         if (seen.has(l.id)) return false;
         seen.add(l.id);
         return true;
       }).map((l) => ({
         value: l.id,
         label: l.id,
-        detail: l.isAction ? `${l.type ?? 'data'} (action)` : (l.type ?? 'data'),
+        detail: l.isAction ? `${l.type} (action)` : l.type,
       }));
     });
 
@@ -309,9 +114,10 @@ export const Inspector = Vue.defineComponent({
     };
 
     const filteredLinks = Vue.computed(() => {
-      if (!linksFilterSelection.value.length) return linksData.value;
+      const {matched, notMatched} = linksData.value;
+      if (!linksFilterSelection.value.length) return {matched, notMatched};
       const sel = new Set(linksFilterSelection.value);
-      return linksData.value.filter((l: any) => sel.has(l.id));
+      return {matched: matched.filter((l) => sel.has(l.id)), notMatched: notMatched.filter((l) => sel.has(l.id))};
     });
 
     const filterTreeState = (state: PipelineState, uuids: Set<string>): any => {
@@ -337,8 +143,14 @@ export const Inspector = Vue.defineComponent({
       if (!props.config) return undefined;
       if (!stepsFilterSelection.value.length) return props.config;
       // For config, reuse selected step data when a single step is selected
-      if (stepsFilterSelection.value.length === 1)
-        return buildSelectedStepData(stepsFilterSelection.value[0], props.treeState, props.stepStates) ?? props.config;
+      if (stepsFilterSelection.value.length === 1) {
+        const uuid = stepsFilterSelection.value[0];
+        // the driver read is not reactive, so depend on the step's states here
+        const states = props.stepStates;
+        void [states?.calls[uuid], states?.validations[uuid], states?.consistency[uuid], states?.meta[uuid],
+          states?.descriptions[uuid], states?.pipelineValidations[uuid], props.treeState];
+        return props.inspectNode?.(uuid) ?? props.config;
+      }
       return props.config;
     });
 
@@ -387,17 +199,17 @@ export const Inspector = Vue.defineComponent({
         }
         { selectedTab.value === 'Tree State' && props.treeState &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={toJSON(filteredTreeState.value)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={toInspectorJSON(filteredTreeState.value)}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Links' && props.links &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={toJSON(filteredLinks.value)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={filteredLinks.value}></VueJsonPretty>
           </div>
         }
         { selectedTab.value === 'Config' && props.config &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={humanizeConfig(toJSON(filteredConfig.value))}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={inspectConfig(filteredConfig.value)}></VueJsonPretty>
           </div>
         }
       </div>

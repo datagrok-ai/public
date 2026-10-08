@@ -205,6 +205,9 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'returnResult'});
   };
 
+  const inspectLinks = () => driver.inspectLinks();
+  const inspectNode = (uuid: string) => driver.inspectNode(uuid);
+
   return {
     // driver,
     treeMutationsLocked,
@@ -232,6 +235,8 @@ export function useReactiveTreeDriver(
     duplicateStep,
     changeFuncCall,
     returnResult,
+    inspectLinks,
+    inspectNode,
   };
 }
 

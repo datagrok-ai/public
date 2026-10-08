@@ -109,6 +109,8 @@ export const TreeWizard = Vue.defineComponent({
       duplicateStep,
       changeFuncCall,
       returnResult,
+      inspectLinks,
+      inspectNode,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
 
     setHelpService();
@@ -799,6 +801,8 @@ export const TreeWizard = Vue.defineComponent({
               links={links.value}
               selectedUuid={chosenStepUuid.value}
               stepStates={states}
+              inspectLinks={inspectLinks}
+              inspectNode={inspectNode}
               ref={inspectorInstance}
               dock-spawn-title='Inspector'
               class='h-full overflow-scroll'
