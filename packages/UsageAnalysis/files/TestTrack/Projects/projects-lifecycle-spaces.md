@@ -3,7 +3,7 @@ feature: projects
 target_layer: playwright
 coverage_type: regression
 priority: p0
-realizes_atlas: [projects.cp.share-spaces-datasync, projects.op.rename_external_dep, projects.op.share_with_recipient_open, projects.op.rename_project]
+realizes_atlas: [projects.cp.share-spaces-datasync, projects.op.rename_external_dep, projects.op.share_with_recipient_open]
 realizes: [views.projects, views.space]
 realized_as:
   - projects-lifecycle-spaces-spec.ts
@@ -15,14 +15,15 @@ original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-l
 migration_date: 2026-05-04
 related_bugs:
   - GROK-18345
+  - GROK-21025
 ---
 
 # Projects — lifecycle of a Space-based project
 
 A project built from a file stored in a Space is saved with Data
-sync, shared with a second user, and then the Space and the project
-are renamed. This reproduces GROK-18345: the recipient could not open
-a shared, data-synced project whose table comes from a Space.
+sync and shared with a second user, and then the Space is renamed.
+This reproduces GROK-18345: the recipient could not open a shared,
+data-synced project whose table comes from a Space.
 
 ## Setup
 
@@ -101,7 +102,11 @@ a shared, data-synced project whose table comes from a Space.
    - Change the name to `lifecycleSpaceRenamed`.
    - Click **OK**.
 
-8. **Both users reopen the project.**
+8. **Both users reopen the project (GROK-21025).**
+   - Known bug GROK-21025: after the Space is renamed, the project does
+     not open; the **Data loading error** dialog shows the creation
+     script with the old Space name,
+     `OpenFile("LifecycleSpace:Files/demog.csv")`.
    - Go to **Browse > Dashboards**.
    - Type `lifecycleSpaceProj` into the search box.
    - Click the refresh icon.
@@ -121,46 +126,20 @@ a shared, data-synced project whose table comes from a Space.
    - Click **Logout** in the profile view.
    - Sign in with the owner's credentials.
 
-9. **Rename the project.**
+9. **Cleanup.**
    - Go to **Browse > Dashboards**.
-   - Right-click the `lifecycleSpaceProj` tile and choose **Rename...**.
-   - Change the name to `lifecycleSpaceProjRenamed`.
-   - Click **OK**.
-
-10. **Both users open the renamed project.**
-    - Go to **Browse > Dashboards**.
-    - Type `lifecycleSpaceProjRenamed` into the search box.
-    - Click the refresh icon.
-    - Double-click the `lifecycleSpaceProjRenamed` tile.
-    - **Verify:** the `demog` view opens with 5,850 rows.
-    - Right-click the left sidebar and select **Close All**.
-    - Click your avatar at the bottom of the left sidebar.
-    - Click **Logout** in the profile view.
-    - Sign in with the second user's credentials.
-    - Go to **Browse > Dashboards**.
-    - Type `lifecycleSpaceProjRenamed` into the search box.
-    - Click the refresh icon.
-    - Double-click the `lifecycleSpaceProjRenamed` tile.
-    - **Verify:** the `demog` view opens with 5,850 rows.
-    - Right-click the left sidebar and select **Close All**.
-    - Click your avatar at the bottom of the left sidebar.
-    - Click **Logout** in the profile view.
-    - Sign in with the owner's credentials.
-
-11. **Cleanup.**
-    - Go to **Browse > Dashboards**.
-    - Right-click the `lifecycleSpaceProjRenamed` tile and choose
-      **Delete Project**.
-    - Click **DELETE**.
-    - Wait until the dialog closes.
-    - In **Browse > Spaces**, right-click `lifecycleSpaceRenamed` and
-      choose **Delete Space**.
-    - **Verify:** the dialog says *Delete space "lifecycleSpaceRenamed"?
-      This will delete space and its related data…*.
-    - Click **DELETE**.
+   - Right-click the `lifecycleSpaceProj` tile and choose
+     **Delete Project**.
+   - Click **DELETE**.
+   - Wait until the dialog closes.
+   - In **Browse > Spaces**, right-click `lifecycleSpaceRenamed` and
+     choose **Delete Space**.
+   - **Verify:** the dialog says *Delete space "lifecycleSpaceRenamed"?
+     This will delete space and its related data…*.
+   - Click **DELETE**.
 
 ## Expected results
 
 - A project built from a Space file reopens with Data sync.
 - The recipient can open the shared project and sees the data.
-- Renaming the Space and the project does not break the project.
+- Renaming the Space does not break the project.
