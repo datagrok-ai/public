@@ -193,6 +193,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'moveDynamicItem', uuid, position});
   };
 
+  const duplicateStep = (uuid: string) => {
+    driver.sendCommand({event: 'duplicateDynamicItem', uuid});
+  };
+
   const changeFuncCall = (uuid: string, call: DG.FuncCall) => {
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
   };
@@ -225,6 +229,7 @@ export function useReactiveTreeDriver(
     addStep,
     removeStep,
     moveStep,
+    duplicateStep,
     changeFuncCall,
     returnResult,
   };

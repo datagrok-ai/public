@@ -106,6 +106,7 @@ export const TreeWizard = Vue.defineComponent({
       addStep,
       removeStep,
       moveStep,
+      duplicateStep,
       changeFuncCall,
       returnResult,
     } = useReactiveTreeDriver(Vue.toRef(props, 'providerFunc'), Vue.toRef(props, 'version'), Vue.toRef(props, 'instanceConfig'), overlayService);
@@ -691,6 +692,12 @@ export const TreeWizard = Vue.defineComponent({
         !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
     };
 
+    const isDuplicable = (stat: AugmentedStat) => {
+      return !!stat.parent && !stat.parent.data.isReadonly &&
+        (isDynamicPipelineState(stat.parent.data)) &&
+        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIAdding);
+    };
+
     ////
     // additional
     ////
@@ -850,10 +857,12 @@ export const TreeWizard = Vue.defineComponent({
                         isDraggable={treeInstance.value?.isDraggable(stat)}
                         isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
+                        isDuplicable={isDuplicable(stat)}
                         isReadonly={stat.data.isReadonly}
                         hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}
+                        onDuplicateNode={() => duplicateStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
                         onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
                         onRunStep={(uuid) => runStep(uuid)}

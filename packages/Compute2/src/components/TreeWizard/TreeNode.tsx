@@ -115,6 +115,9 @@ export const TreeNode = Vue.defineComponent({
     isDeletable: {
       type: Boolean,
     },
+    isDuplicable: {
+      type: Boolean,
+    },
     isReadonly: {
       type: Boolean,
     },
@@ -125,6 +128,7 @@ export const TreeNode = Vue.defineComponent({
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
     removeNode: () => true,
+    duplicateNode: () => true,
     toggleNode: () => true,
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
@@ -251,6 +255,12 @@ export const TreeNode = Vue.defineComponent({
               ...props.isDraggable ? [<IconFA
                 name='grip-vertical'
                 cursor='grab'
+                class='d4-ribbon-item'
+              />]: [],
+              ...props.isDuplicable ? [<IconFA
+                name='copy'
+                tooltip='Duplicate'
+                onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],
               ...props.isDeletable ? [<IconFA
