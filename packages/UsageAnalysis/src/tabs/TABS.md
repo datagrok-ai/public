@@ -29,15 +29,17 @@ const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, Clic
                      VulnerabilitiesView];
 ```
 
-`CaptureView` (tab `Capture`): the `CaptureRules` query; New rule and Stop call `grok.dapi.log.addCaptureRule` and
-`stopCaptureRule`, the debug flags come from `getLoggingPolicy`.
+`CaptureView` (tab `Capture`): the list is the `CaptureRules` query, which reads the `rules` table through
+`System:Datagrok`; New rule and Stop call `grok.dapi.log.addCaptureRule` and `stopCaptureRule`, the debug flags
+come from `grok.dapi.log.getLoggingPolicy`.
 
 `TimelineView` (tab `Timeline`): `grok.dapi.log.getTimeline`; routes as `/timeline?<key>=<id>`, the parameter
 arriving as `TimelineView.urlParams`.
 
-`ErrorsView` (tab `Errors`): `grok.dapi.log.getErrors` (`GET /errors`), its inputs in the toolbox's Errors pane,
-drill-down queries in `errors_query.sql` (`ErrorAlerts` reads the `problems` rows of the signature); Export as CSV,
-JSON or Parquet (the Arrow package); `?error=<hash>` arrives as `ErrorsView.urlError`.
+`ErrorsView` (tab `Errors`): the list and its figures are `grok.dapi.log.getErrors` (`GET /errors`), its inputs in
+the toolbox's Errors pane; the row drill-down's `ErrorSessions`, `ErrorReports`, `ErrorAlerts` and `ErrorSample`
+(`errors_query.sql`) read `events`, `reports` and `problems` through `System:Datagrok`; Export as CSV, JSON or
+Parquet (the Arrow package); `?error=<hash>` arrives as `ErrorsView.urlError`.
 
 Clicks sub-tabs **Clicks** and **Followed by Error**: the `Clicks`, `ClicksFollowedByError` and `ClickErrors` queries.
 

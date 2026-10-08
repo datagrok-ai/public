@@ -1,4 +1,5 @@
 /// Argument parsing and table formatting shared by `grok s observe alerts|errors|logger|capture|timeline`.
+import {printError} from './server-output';
 
 const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 604800000};
 const BLOCKS = '▁▂▃▄▅▆▇█';
@@ -125,7 +126,14 @@ export function optString(value: any): string | undefined {
 }
 
 export function rows<T>(list: T[], output: string, fn: (x: T) => Record<string, any>): any[] {
-  return output === 'json' || output === 'quiet' ? list : list.map(fn);
+  return output === 'table' ? list.map(fn) : list;
+}
+
+/** A usage error: the usage on stderr and exit 1, without grok.js printing the whole `grok s` help after it. */
+export function usageError(message: string): boolean {
+  printError(new Error(message));
+  process.exitCode = 1;
+  return true;
 }
 
 /**

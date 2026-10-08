@@ -2,9 +2,9 @@
 /// `grok s observe problems ...` — what the deployment detects and what people decided about it (`/problems`).
 import {Query} from '../utils/node-observability';
 import {Connect, eachHost, forEachHost, hostList} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, OutputFormat} from '../utils/server-output';
 import {fmtTime, fmtDateTime, hasValue, optString, parseDuration, parseTime, printBlock, rows, sinceArg,
-  truncate} from '../utils/obs-format';
+  truncate, usageError} from '../utils/obs-format';
 
 export const ALERTS_USAGE = `Usage: grok s observe alerts <verb> [args]
   list [--status open,acknowledged|resolved|all] [--kind <k>] [--since 24h] [--limit n] [--host a --host b ...]
@@ -48,7 +48,7 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
   const alert = async (status: string = 'open,acknowledged') => {
     const alerts = (await connect()).alerts;
     const all = status === 'all';
-    const list = (q: Query) => alerts.list({...q, status, limit: all ? 1 : undefined});
+    const list = (q: Query) => alerts.list({...q, status});
     return {alerts, id: await target(id!, list, all ? 'alert' : 'open alert')};
   };
   switch (verb) {
@@ -107,8 +107,7 @@ export async function handleAlerts(connect: Connect, verb: string | undefined, r
       return true;
     }
   }
-  printError(new Error(ALERTS_USAGE));
-  return false;
+  return usageError(ALERTS_USAGE);
 }
 
 export async function handleProblems(connect: Connect, verb: string | undefined, rest: string[], argv: any,
@@ -160,8 +159,7 @@ export async function handleProblems(connect: Connect, verb: string | undefined,
       return true;
     }
   }
-  printError(new Error(PROBLEMS_USAGE));
-  return false;
+  return usageError(PROBLEMS_USAGE);
 }
 
 async function target(id: string, list: (q: Query) => Promise<any[]>, noun: string): Promise<string> {
@@ -177,8 +175,7 @@ async function target(id: string, list: (q: Query) => Promise<any[]>, noun: stri
 }
 
 function usage(command: string, line: string): boolean {
-  printError(new Error(`Usage: grok s observe ${command} ${line}`));
-  return false;
+  return usageError(`Usage: grok s observe ${command} ${line}`);
 }
 
 function identity(x: any, fallback: string): string {

@@ -37,11 +37,11 @@ export async function eachHost(argv: any, connect: Connect,
 
 /**
  * Rows from every `--host`, each prefixed with the host when there are several: a `HOST` column
- * in a table, a `host` field in JSON.
+ * in a table, a `host` field otherwise.
  */
 export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi) => Promise<any[]>,
                                   output: OutputFormat): Promise<any[]> {
-  const column = output === 'json' ? 'host' : 'HOST';
+  const column = output === 'table' ? 'HOST' : 'host';
   const rows: any[] = [];
   await eachHost(argv, connect, async (dapi, host, multi) => {
     for (const row of await fn(dapi))

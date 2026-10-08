@@ -100,22 +100,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:FunctionInfoBySource', { name, date, users });
   }
 
-  export async function topDisabledErrors(date: string , users: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopDisabledErrors', { date, users });
-  }
-
-  export async function topPackageErrors(date: string , users: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopPackageErrors', { date, users });
-  }
-
-  export async function topErrorSources(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
-  }
-
-  export async function topErrors(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrors', { date });
-  }
-
   export async function errorSessions(signatures: any , users: any , from: string , to: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ErrorSessions', { signatures, users, from, to });
   }

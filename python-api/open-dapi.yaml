@@ -700,7 +700,7 @@ paths:
     get:
       operationId: getAccess
       summary: get access
-      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, version, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
+      description: "Table-level access of the current user, composed by the server from the predicates the reads and writes apply: {can: {view, insert, edit, delete, share}, fields: {<column>: editable | readonly}, travelableRelations, securingTable, securityMode, audit, hasBusinessKey, support}. `support` is caller-independent — {systemColumns, writes, deleted, restore, audit, ancestors, probe, watch} — and says what the table can do at all, so a client offers only what the server declared. A restricted column is absent from `fields`; read-only registrations answer every write false and every field readonly; grants reaching individual rows show up in the `~can_edit`/`~can_delete`/`~can_share` (null off row mode) columns of a `withAccess` read instead."
       tags:
         - domains
       parameters:

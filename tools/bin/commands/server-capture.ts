@@ -2,9 +2,9 @@
 /// (one action, request, session, report or rule in time order, `/log/timeline`).
 import {Query} from '../utils/node-observability';
 import {Connect} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, OutputFormat} from '../utils/server-output';
 import {fmtDateTime, fmtSpan, fmtTime, hasValue, listArg, normalizeFlag, optString, parseDuration, parseTime,
-  printBlock, rows, shortRequestId, sinceArg, truncate} from '../utils/obs-format';
+  printBlock, rows, shortRequestId, sinceArg, truncate, usageError} from '../utils/obs-format';
 
 export const CAPTURE_USAGE = `Usage: grok s observe capture <verb> [args]
   add (--user <login> | --group <name> | --package <name> | --everyone)
@@ -75,6 +75,8 @@ export function captureBody(argv: any, now: Date = new Date()): Record<string, a
   if (subject === 'everyone' && !scope) throw new Error('An --everyone rule needs a scope: --view, --element, --function or --error');
   if (subject !== 'everyone' && (argv[subject] === true || argv[subject] === ''))
     throw new Error(`--${subject} needs a value`);
+  if (scope && (argv[scope] === true || argv[scope] === ''))
+    throw new Error(`--${scope} needs a value`);
   const body: Record<string, any> = {
     name: optString(argv.name),
     subject: {type: subject, value: subject === 'everyone' ? undefined : String(argv[subject])},
@@ -211,13 +213,11 @@ export async function handleCapture(connect: Connect, verb: string | undefined, 
       return true;
     }
   }
-  printError(new Error(CAPTURE_USAGE));
-  return false;
+  return usageError(CAPTURE_USAGE);
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s observe capture ${line}`));
-  return false;
+  return usageError(`Usage: grok s observe capture ${line}`);
 }
 
 export function timelineQuery(argv: any, now: Date = new Date()): Query {
@@ -230,8 +230,10 @@ export function timelineQuery(argv: any, now: Date = new Date()): Query {
   return q;
 }
 
-export async function handleTimeline(connect: Connect, _verb: string | undefined, _rest: string[], argv: any,
+export async function handleTimeline(connect: Connect, verb: string | undefined, rest: string[], argv: any,
                                      output: OutputFormat): Promise<boolean> {
+  if (verb !== undefined)
+    return usageError(`Unexpected '${[verb, ...rest].join(' ')}'.\n${TIMELINE_USAGE}`);
   const q = timelineQuery(argv);
   printOutput(rows(await (await connect()).logging.timeline(q) ?? [], output, timelineRow), output);
   return true;

@@ -2,13 +2,13 @@
 import * as fs from 'fs';
 import {Query} from '../utils/node-observability';
 import {Connect, forEachHost, hostList} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, OutputFormat} from '../utils/server-output';
 import {fmtDate, fmtMinutes, fmtTime, hasValue, listArg, parseTime, printBlock, rows,
-  shortRequestId, shortSig, sinceArg, sparkline, truncate} from '../utils/obs-format';
+  shortRequestId, shortSig, sinceArg, sparkline, truncate, usageError} from '../utils/obs-format';
 
 export const ERRORS_USAGE = `Usage: grok s observe errors <verb> [filters] [options]
   list [filters] [--limit 50] [--host a --host b ...]
-  top [filters] [--by <dim>[,<dim>[,<dim>]]] [--trend hour|day] [--limit 20] [--format csv|json|parquet] [-O file] [--host ...]
+  top [filters] [--by <dim>[,<dim>[,<dim>]]] [--trend hour|day] [--limit 20] [--format csv|json|parquet [-O file] | --host a --host b ...]
   show <signature> [--since 24h]
   diff --before <from>..<to> --after <from>..<to> [filters]
   diff --since 7d --host <a> --host <b> [filters]
@@ -27,8 +27,9 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
   switch (verb) {
     case 'list': {
       const q = {...errorFilters(argv), limit: argv.limit ?? 50, offset: argv.offset};
-      printOutput(await forEachHost(argv, connect, async (dapi) =>
-        rows(await dapi.errors.query(q) ?? [], output, occurrenceRow), output), output);
+      const found = await forEachHost(argv, connect, async (dapi) =>
+        rows(await dapi.errors.query(q) ?? [], output, occurrenceRow), output);
+      printOutput(output === 'quiet' ? found.map((r) => r.signature) : found, output);
       return true;
     }
     case 'top': {
@@ -59,13 +60,11 @@ export async function handleErrors(connect: Connect, verb: string | undefined, r
     case 'diff':
       return hostList(argv.host).length > 1 ? await diffHosts(connect, argv, output) : await diffWindows(connect, argv, output);
   }
-  printError(new Error(ERRORS_USAGE));
-  return false;
+  return usageError(ERRORS_USAGE);
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s observe errors ${line}`));
-  return false;
+  return usageError(`Usage: grok s observe errors ${line}`);
 }
 
 /** `"POST /api/queries/{id}/run"` → `"POST /queries/{id}/run"`: routes are recorded without the `/api` prefix. */
@@ -93,9 +92,15 @@ export function errorFilters(argv: any, opts: {time?: boolean} = {}, now: Date =
   }
   if (argv.route !== undefined) q.route = normalizeRoute(argv.route);
   if (argv.regressed === true) q.regressed = true;
-  if (argv['min-users'] !== undefined) q.minUsers = Number(argv['min-users']);
-  if (argv['min-count'] !== undefined) q.minCount = Number(argv['min-count']);
+  if (argv['min-users'] !== undefined) q.minUsers = countArg(argv['min-users'], '--min-users');
+  if (argv['min-count'] !== undefined) q.minCount = countArg(argv['min-count'], '--min-count');
   return q;
+}
+
+function countArg(value: any, flag: string): number {
+  const n = Number(value);
+  if (!hasValue(value) || !Number.isInteger(n) || n < 1) throw new Error(`${flag} is a whole number of at least 1, got '${value}'`);
+  return n;
 }
 
 export function byArg(value: any, fallback?: string): string[] {
@@ -209,7 +214,11 @@ async function diffWindows(connect: Connect, argv: any, output: OutputFormat): P
   const q = {...errorFilters(argv, {time: false}), before: String(argv.before), after: String(argv.after)};
   const doc = await (await connect()).errors.diff(q);
   if (output === 'json') { printOutput(doc, output); return true; }
-  if (output === 'csv' || output === 'quiet') { printOutput(doc?.rows ?? [], output); return true; }
+  if (output === 'csv' || output === 'quiet') {
+    const changed: any[] = doc?.rows ?? [];
+    printOutput(output === 'quiet' ? changed.map((r) => r.signature) : changed, output);
+    return true;
+  }
   const c = doc?.categories ?? {};
   const lines: [string, any, string, string][] = [
     ['NEW', c.new, `first seen in ${argv.after}`, topLine(c.new?.top)],
@@ -263,6 +272,11 @@ async function diffHosts(connect: Connect, argv: any, output: OutputFormat): Pro
   if (output === 'json') {
     printOutput({hosts: [{host: sides[0].host, version: sides[0].version, only: onlyA},
       {host: sides[1].host, version: sides[1].version, only: onlyB}], both}, output);
+    return true;
+  }
+  if (output === 'csv' || output === 'quiet') {
+    const only = [...onlyA.map((r) => ({host: sides[0].host, ...r})), ...onlyB.map((r) => ({host: sides[1].host, ...r}))];
+    printOutput(output === 'quiet' ? only.map((r) => r.signature) : only, output);
     return true;
   }
   const top = (r: any) => topLine(r && {signature: r.signature, package: r.package, error: r.topError, users: r.users ?? 0});

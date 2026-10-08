@@ -31,7 +31,7 @@ const INT_COLUMNS = ['count', 'users', 'sessions', 'signatures', 'newInRange', '
 const USERS_SHOWN = 10;
 const NOT_HINTED = ['since', 'from', 'to', 'by', 'trend'];
 
-type Spec = {[name: string]: string | number | undefined};
+type Spec = {[name: string]: string | number | boolean | undefined};
 
 /** The platform's errors as data (`grok.dapi.log.getErrors`, the `GET /errors` query): occurrences, or figures
  * by up to three dimensions, a drill-down per row and exports. Needs ViewTelemetry. */
@@ -126,7 +126,7 @@ export class ErrorsView extends UaView {
       service: this.service.value || undefined,
       minUsers: this.minUsers.value || undefined,
       minCount: this.minCount.value || undefined,
-      regressed: this.regressed.value ? 'true' : undefined,
+      regressed: this.regressed.value || undefined,
       by: by.join(',') || undefined,
       trend: by.length ? this.trend.value! : undefined,
     };
@@ -193,10 +193,9 @@ export class ErrorsView extends UaView {
     if (grid.col('signature'))
       grid.col('signature')!.width = 70;
     formatGridTimes(grid);
-    for (const [name, header] of Object.entries(HEADERS)) {
+    for (const [name, header] of Object.entries(HEADERS))
       if (grid.col(name))
         grid.col(name)!.name = header;
-    }
     grid.onCellPrepare((gc) => {
       if (!gc.isTableCell)
         return;
@@ -396,9 +395,9 @@ export class ErrorsView extends UaView {
         JSON.stringify(ErrorsView.exportTable(this.shownGrid!).toJson()), 'application/json'), null, {isEnabled: noTable})
       .item('Parquet', async () => {
         try {
-          const bytes: Uint8Array = await grok.functions.call('Arrow:toParquet',
+          const bytes: Uint8Array<ArrayBuffer> = await grok.functions.call('Arrow:toParquet',
             {table: ErrorsView.exportTable(this.shownGrid!)});
-          DG.Utils.download(file('parquet'), bytes as Uint8Array<ArrayBuffer>);
+          DG.Utils.download(file('parquet'), bytes);
         }
         catch (err: any) {
           grok.shell.error(`Parquet: ${err?.message ?? err}`);
@@ -445,7 +444,7 @@ export class ErrorsView extends UaView {
   static frame(rows: {[key: string]: any}[]): DG.DataFrame {
     if (rows.length === 0)
       return DG.DataFrame.create();
-    return DG.DataFrame.fromColumns(Object.keys(rows[0]).map((name) => {
+    return DG.DataFrame.fromColumns([...new Set(rows.flatMap((r) => Object.keys(r)))].map((name) => {
       const values = rows.map((r) => r[name] ?? null);
       if (TIME_COLUMNS.includes(name))
         return DG.Column.dateTime(name, rows.length).init((i) => values[i] == null ? null : dayjs(values[i]));

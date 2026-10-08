@@ -100,13 +100,15 @@ describe('handleRules', () => {
     const {connect, calls} = mockConnect(() => ({}));
     for (const [verb, line] of [['get', 'get <name>'], ['edit', 'edit <name>'], ['enable', 'enable <name>'],
       ['delete', 'delete <name>'], ['test', 'test (<name> | --json']]) {
-      const {err, result} = await captureOutput(() => handleRules(connect, verb, [], {}, 'table'));
-      expect(result).toBe(false);
+      const {err, result, exitCode} = await captureOutput(() => handleRules(connect, verb, [], {}, 'table'));
+      expect(result).toBe(true);
+      expect(exitCode).toBe(1);
       expect(err.join('\n')).toContain(`Usage: grok s observe rules ${line}`);
     }
     await expect(handleRules(connect, 'add', [], {}, 'table')).rejects.toThrow('Pass the rule as --json');
-    const {err, result} = await captureOutput(() => handleRules(connect, 'rename', [], {}, 'table'));
-    expect(result).toBe(false);
+    const {err, result, exitCode} = await captureOutput(() => handleRules(connect, 'rename', [], {}, 'table'));
+    expect(result).toBe(true);
+    expect(exitCode).toBe(1);
     expect(err.join('\n')).toMatch(/Usage: grok s observe rules <verb>/);
     expect(calls).toEqual([]);
   });

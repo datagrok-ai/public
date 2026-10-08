@@ -259,13 +259,13 @@ export class CaptureView extends UaView {
           debugFlags: flags.value ?? [],
         },
         anonymous: anonymous.value,
-        maxEvents: maxEvents.value,
+        maxEvents: maxEvents.value ?? undefined,
         forMinutes: DURATIONS[duration.value!],
         reason: reason.value.trim(),
       };
       ok.disabled = true;
       try {
-        const rule = await grok.dapi.log.addCaptureRule(body);
+        const rule = await grok.dapi.log.addCaptureRule(body as DG.CaptureRuleSpec);
         dialog.close();
         grok.shell.info(`Created cap-${rule.number}`);
         this.reshow = `cap-${rule.number}`;

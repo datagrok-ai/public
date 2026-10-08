@@ -29,6 +29,9 @@ describe('filters', () => {
     expect(() => errorFilters({since: '7d', from: '-1d'})).toThrow(/either --since/);
     expect(() => errorFilters({since: 'week'})).toThrow(/duration/);
     expect(() => errorFilters({service: 'db'})).toThrow(/server or client/);
+    for (const v of ['many', true, 0, 1.5])
+      expect(() => errorFilters({'min-users': v})).toThrow(/--min-users is a whole number/);
+    expect(() => errorFilters({'min-count': 'x'})).toThrow(/--min-count is a whole number/);
   });
 
   it('validates --by', () => {
@@ -181,6 +184,11 @@ describe('handleErrors', () => {
     expect(out[0]).toMatch(/^ONLY ON prod \(1\.28\.1\)\s+1\s+top: 91bb0c core ScatterPlot.render · 2 users$/);
     expect(out[1]).toMatch(/^ONLY ON val \(1\.28\.3\)\s+1\s+top: 3e91aa core TableView.close · 6 users$/);
     expect(out[2]).toMatch(/^ON BOTH\s+1$/);
+    const csv = await captureOutput(() => handleErrors(connect, 'diff', [], {since: '7d', host: ['prod', 'val']}, 'csv'));
+    expect(csv.out[0]).toBe('host,signature,package,users,topError');
+    expect(csv.out.slice(1)).toEqual(['prod,91bb0c11,core,2,ScatterPlot.render', 'val,3e91aa22,core,6,TableView.close']);
+    const quiet = await captureOutput(() => handleErrors(connect, 'diff', [], {since: '7d', host: ['prod', 'val']}, 'quiet'));
+    expect(quiet.out).toEqual(['91bb0c11', '3e91aa22']);
     await expect(handleErrors(connect, 'diff', [], {host: ['a', 'b', 'c']}, 'table')).rejects.toThrow(/exactly two/);
   });
 
@@ -189,5 +197,13 @@ describe('handleErrors', () => {
     const {out} = await captureOutput(() => handleErrors(connect, 'list', [], {host: ['prod', 'val'], user: 'alice'}, 'table'));
     expect(calls.map((c) => c.path)).toEqual(['/errors?since=24h&user=alice&limit=50', '/errors?since=24h&user=alice&limit=50']);
     expect(out[0].split(/\s{2,}/).slice(0, 3)).toEqual(['HOST', 'TIME', 'USER']);
+  });
+
+  it('prints occurrences as csv in full and their signatures in quiet', async () => {
+    const error = `TableView.close: ${'the view was already detached '.repeat(3).trim()}`;
+    const {connect} = mockConnect(() => [{time: utcIso(10, 0, 3), user: 'alice', signature: 'a41f9c3e', error}]);
+    const csv = await captureOutput(() => handleErrors(connect, 'list', [], {}, 'csv'));
+    expect(csv.out).toEqual(['time,user,signature,error', `${utcIso(10, 0, 3)},alice,a41f9c3e,${error}`]);
+    expect((await captureOutput(() => handleErrors(connect, 'list', [], {}, 'quiet'))).out).toEqual(['a41f9c3e']);
   });
 });

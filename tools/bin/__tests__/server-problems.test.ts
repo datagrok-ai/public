@@ -51,8 +51,9 @@ describe('handleProblems', () => {
     await captureOutput(() => handleProblems(connect, 'fix', [PROBLEM.id], {}, 'table'));
     await captureOutput(() => handleProblems(connect, 'activate', [PROBLEM.id], {reason: 'back'}, 'table'));
     expect(calls.map((c) => c.body)).toEqual([{status: 'fixed', reason: undefined}, {status: 'active', reason: 'back'}]);
-    const {result} = await captureOutput(() => handleProblems(connect, 'dismiss', [PROBLEM.id], {}, 'table'));
-    expect(result).toBe(false);
+    const {result, exitCode} = await captureOutput(() => handleProblems(connect, 'dismiss', [PROBLEM.id], {}, 'table'));
+    expect(result).toBe(true);
+    expect(exitCode).toBe(1);
     expect(calls.length).toBe(2);
   });
 
@@ -74,8 +75,9 @@ describe('handleProblems', () => {
 
   it('answers an unknown verb with the usage', async () => {
     const {connect} = mockConnect(() => ({}));
-    const {err, result} = await captureOutput(() => handleProblems(connect, 'snooze', [], {}, 'table'));
-    expect(result).toBe(false);
+    const {err, result, exitCode} = await captureOutput(() => handleProblems(connect, 'snooze', [], {}, 'table'));
+    expect(result).toBe(true);
+    expect(exitCode).toBe(1);
     expect(err.join('\n')).toMatch(/Usage: grok s observe problems/);
   });
 });

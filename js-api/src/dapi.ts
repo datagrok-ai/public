@@ -2273,6 +2273,178 @@ export class NotificationsDataSource extends HttpDataSource<UserNotification> {
   }
 }
 
+/** Parameters of {@link LogDataSource.getErrors}: the window, a filter per dimension, the grouping and the page. */
+export interface ErrorsQuery {
+  /** A window ending now: `1h`, `7d`; not with `from`/`to`. Defaults to the last 24 hours. */
+  since?: string,
+  /** Start of the window, ISO 8601. */
+  from?: string,
+  /** End of the window, ISO 8601; defaults to now. */
+  to?: string,
+  /** A stack hash or at least its first 6 characters. */
+  signature?: string,
+  package?: string,
+  version?: string,
+  /** A login. */
+  user?: string,
+  /** A group name: the errors of its members. */
+  group?: string,
+  service?: 'server' | 'client',
+  /** `<METHOD> /path` or `/path`. */
+  route?: string,
+  server?: string,
+  connection?: string,
+  function?: string,
+  /** Only the signatures that came back after they were resolved. */
+  regressed?: boolean,
+  minUsers?: number,
+  minCount?: number,
+  /** Up to three comma-separated dimensions: signature, package, version, user, group, service, route, server,
+   * connection, function. Without it, the rows are occurrences. */
+  by?: string,
+  /** The trend's bucket. */
+  trend?: 'hour' | 'day',
+  limit?: number,
+  offset?: number,
+}
+
+/** A row of {@link LogDataSource.getErrors}: an occurrence, or, with `by`, the figures of one combination of the
+ * dimensions (which are set by the dimensions grouped by). */
+export interface ErrorRow {
+  /** The stack hash. */
+  signature?: string,
+  package?: string,
+  version?: string,
+  /** A login. */
+  user?: string,
+  group?: string,
+  service?: 'server' | 'client',
+  route?: string,
+  server?: string,
+  connection?: string,
+  function?: string,
+  /** An occurrence's time, ISO 8601. */
+  time?: string,
+  /** An occurrence's message. */
+  error?: string,
+  /** The request an occurrence happened in; see {@link LogDataSource.getTimeline}. */
+  requestId?: string,
+  /** Figures: the number of signatures. */
+  signatures?: number,
+  count?: number,
+  /** Figures: the number of users (not a login, unlike `user`). */
+  users?: number,
+  sessions?: number,
+  firstSeen?: string,
+  firstVersion?: string,
+  lastSeen?: string,
+  /** Signatures first seen in the window. */
+  newInRange?: number,
+  /** Occurrences per `trend` bucket, oldest first. */
+  trend?: number[] | null,
+  regressed?: boolean,
+  incidents?: number,
+  mttrMinutes?: number | null,
+  topError?: string,
+  topSignature?: string,
+  /** With `by` signature: the signature's alert or problem state. */
+  state?: string | null,
+  stateVersion?: string | null,
+  stateUntil?: string | null,
+}
+
+/** A row of {@link LogDataSource.getTimeline}. */
+export interface TimelineRow {
+  /** ISO 8601. */
+  time: string,
+  source: 'client' | 'server',
+  server: string | null,
+  kind: string,
+  summary: string,
+  /** An HTTP status or a call's status. */
+  status: string | null,
+  ms: number | null,
+  requestId: string | null,
+  /** A login. */
+  user: string | null,
+}
+
+/** The result of {@link LogDataSource.getLoggingPolicy}. */
+export interface LoggingPolicy {
+  /** The version of the logger settings shown. */
+  version: number,
+  /** The logger settings, flattened, secrets hidden. */
+  settings: {[name: string]: any},
+  /** The settings the deployment locks. */
+  locked: string[],
+  /** The active overrides. */
+  overrides: {[name: string]: any}[],
+  /** Group names by id. */
+  groups: {[id: string]: string},
+  /** Export destinations: their labels by id. */
+  destinations: {[id: string]: string},
+  /** The server debug categories. */
+  debugFlags: string[],
+}
+
+/** What a capture rule captures. */
+export interface CaptureRuleCapture {
+  clicks?: boolean,
+  inputs?: boolean,
+  requests?: boolean,
+  calls?: boolean,
+  errors?: boolean,
+  /** The server log level raised for the subject. */
+  serverLevel?: 'error' | 'warning' | 'info' | 'debug' | null,
+  /** Server debug flags to turn on; never `credentials`. */
+  debugFlags?: string[],
+}
+
+/** A new capture rule, for {@link LogDataSource.addCaptureRule}. */
+export interface CaptureRuleSpec {
+  name?: string,
+  /** Whose activity: a user or a group id, a package name, or everyone (no value). */
+  subject: {type: 'user' | 'group' | 'package' | 'everyone', value?: string},
+  /** Only the activity of a view, an element path, a function or an error signature. */
+  scope?: {type: 'view' | 'element' | 'function' | 'error', value: string},
+  capture: CaptureRuleCapture,
+  /** No user, session or IP; only for a group or everyone. */
+  anonymous?: boolean,
+  windowMinutes?: number,
+  maxSessions?: number,
+  maxEvents?: number,
+  /** ISO 8601; or `forMinutes`. */
+  expiresAt?: string,
+  forMinutes?: number,
+  /** Why the activity is captured; required. */
+  reason: string,
+}
+
+/** A capture rule, as {@link LogDataSource.addCaptureRule} and {@link LogDataSource.stopCaptureRule} return it. */
+export interface CaptureRule {
+  id: string,
+  /** Its `cap-<n>` number. */
+  number: number,
+  name: string | null,
+  /** The login of whoever created it. */
+  author: string | null,
+  subject: {type: 'user' | 'group' | 'package' | 'everyone', value: string | null},
+  scope: {type: 'view' | 'element' | 'function' | 'error', value: string} | null,
+  capture: CaptureRuleCapture,
+  anonymous: boolean,
+  reason: string,
+  status: 'active' | 'expired' | 'exhausted' | 'stopped',
+  /** ISO 8601. */
+  createdAt: string,
+  expiresAt: string | null,
+  endedAt: string | null,
+  /** The events captured so far. */
+  events: number,
+  maxEvents: number,
+  windowMinutes: number,
+  maxSessions: number,
+}
+
 export class LogDataSource extends HttpDataSource<LogEvent> {
   constructor(s: any) {
     super(s);
@@ -2343,7 +2515,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
    * @example
    * const top = await grok.dapi.log.getErrors({since: '1d', by: 'signature', limit: 10});
    */
-  async getErrors(params: {[key: string]: string | number | boolean | undefined}): Promise<{[key: string]: any}[]> {
+  async getErrors(params: ErrorsQuery): Promise<ErrorRow[]> {
     return JSON.parse(await api.grok_Dapi_Log_Errors(JSON.stringify(params)));
   }
 
@@ -2358,7 +2530,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
    * const rows = await grok.dapi.log.getTimeline({session: (await grok.dapi.users.currentSession()).id});
    */
   async getTimeline(query: {action?: string, request?: string, session?: string, report?: string | number,
-    rule?: string, from?: string, to?: string, limit?: number}): Promise<{[key: string]: any}[]> {
+    rule?: string, from?: string, to?: string, limit?: number}): Promise<TimelineRow[]> {
     return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
   }
 
@@ -2371,7 +2543,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
    * @example
    * const flags = (await grok.dapi.log.getLoggingPolicy()).debugFlags;
    */
-  async getLoggingPolicy(): Promise<{[key: string]: any}> {
+  async getLoggingPolicy(): Promise<LoggingPolicy> {
     return JSON.parse(await api.grok_Dapi_Log_LoggingPolicy());
   }
 
@@ -2380,11 +2552,13 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
    * anonymous, windowMinutes, maxSessions, maxEvents, expiresAt | forMinutes, reason}`. Returns the rule.
    * Needs the `EditPluginsSettings` permission.
    *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/errors-and-logging}
+   *
    * @example
    * const rule = await grok.dapi.log.addCaptureRule({subject: {type: 'user', value: grok.shell.user.id},
    *   capture: {requests: true}, forMinutes: 30, reason: 'Investigating a slow page'});
    */
-  async addCaptureRule(rule: {[key: string]: any}): Promise<{[key: string]: any}> {
+  async addCaptureRule(rule: CaptureRuleSpec): Promise<CaptureRule> {
     return JSON.parse(await api.grok_Dapi_Log_AddCaptureRule(JSON.stringify(rule)));
   }
 
@@ -2392,10 +2566,12 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
    * Ends an active capture rule (`cap-<n>` or its id) before its time. Returns the rule.
    * Needs the `EditPluginsSettings` permission.
    *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/errors-and-logging}
+   *
    * @example
    * await grok.dapi.log.stopCaptureRule(rule.id, 'Done');
    */
-  async stopCaptureRule(id: string, reason?: string): Promise<{[key: string]: any}> {
+  async stopCaptureRule(id: string, reason?: string): Promise<CaptureRule> {
     return JSON.parse(await api.grok_Dapi_Log_StopCaptureRule(id, reason ?? null));
   }
 }

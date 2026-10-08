@@ -530,7 +530,7 @@ grok s observe rules disable failed-logins-per-user         # enable, delete ali
 ```json
 {"name": "failed-logins-per-user", "severity": "warning",
  "match": {"source": "audit", "type": "user-login-failed"},
- "groupBy": "param:user", "window": 15, "when": {"count": 5},
+ "groupBy": "param:login", "window": 15, "when": {"count": 5},
  "summary": "{count} failed logins for {group} in {window} min"}
 ```
 

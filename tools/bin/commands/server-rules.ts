@@ -1,8 +1,8 @@
 /// `grok s observe rules ...` — problem rules: your own problem types, conditions over the log (`/problems/rules`).
 import * as fs from 'fs';
 import {Connect} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
-import {fmtDateTime, fmtTime, optString, printBlock, rows, truncate} from '../utils/obs-format';
+import {printOutput, OutputFormat} from '../utils/server-output';
+import {fmtDateTime, fmtTime, optString, printBlock, rows, truncate, usageError} from '../utils/obs-format';
 
 export const RULES_USAGE = `Usage: grok s observe rules <verb> [args]
   list                                   every rule: yours and the deployment's (read-only)
@@ -108,13 +108,11 @@ export async function handleRules(connect: Connect, verb: string | undefined, re
       return true;
     }
   }
-  printError(new Error(RULES_USAGE));
-  return false;
+  return usageError(RULES_USAGE);
 }
 
 function usage(line: string): boolean {
-  printError(new Error(`Usage: grok s observe rules ${line}`));
-  return false;
+  return usageError(`Usage: grok s observe rules ${line}`);
 }
 
 function printRule(r: any): void {

@@ -122,7 +122,7 @@ describe('handleAlerts', () => {
       : {id: 'E1', kind: 'connection', key: 'ELN:Prod', status: 'resolved'});
     await captureOutput(() => handleAlerts(connect, 'unmute', ['connection:ELN:Prod'], {}, 'table'));
     expect(calls.map((c) => [c.method, c.path])).toEqual([
-      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=all&limit=1'],
+      ['GET', '/alerts?kind=connection&key=ELN%3AProd&status=all'],
       ['POST', '/alerts/E1/unmute'],
     ]);
   });
@@ -163,8 +163,9 @@ describe('handleAlerts', () => {
 
   it('answers an unknown verb with the usage', async () => {
     const {connect} = mockConnect(() => ({}));
-    const {err, result} = await captureOutput(() => handleAlerts(connect, 'frobnicate', [], {}, 'table'));
-    expect(result).toBe(false);
+    const {err, result, exitCode} = await captureOutput(() => handleAlerts(connect, 'frobnicate', [], {}, 'table'));
+    expect(result).toBe(true);
+    expect(exitCode).toBe(1);
     expect(err.join('\n')).toMatch(/Usage: grok s observe alerts/);
   });
 });

@@ -95,10 +95,9 @@ const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss UTC';
 
 /** Shows every date column of [grid] without milliseconds, marked UTC: the grid keeps the platform's UTC. */
 export function formatGridTimes(grid: DG.Grid): void {
-  for (const col of grid.dataFrame.columns.toList()) {
+  for (const col of grid.dataFrame.columns.toList())
     if (col.type === DG.TYPE.DATE_TIME && grid.col(col.name))
       grid.col(col.name)!.format = GRID_TIME_FORMAT;
-  }
 }
 
 /** A date column's value as [formatGridTimes] shows it; empty for none. */

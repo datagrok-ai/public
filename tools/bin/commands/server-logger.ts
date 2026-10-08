@@ -2,9 +2,9 @@
 /// (ActionLoggerRouter, `/logging/policy`).
 import {NodeDapi} from '../utils/node-dapi';
 import {Connect, eachHost, forEachHost, hostList} from '../utils/server-client';
-import {printOutput, printError, OutputFormat} from '../utils/server-output';
+import {printOutput, OutputFormat} from '../utils/server-output';
 import {applyListSpec, fmtTime, normalizeFlag, optString, parseDuration, parseTime, printBlock, rows,
-  truncate, valueText} from '../utils/obs-format';
+  truncate, valueText, usageError} from '../utils/obs-format';
 
 export const LOGGER_USAGE = `Usage: grok s observe logger <verb> [server] [options]
   get [server] [--scope user:<login>|group:<name>|session:<id>|package:<name>] [--host a --host b ...]
@@ -69,8 +69,7 @@ export async function handleLogger(connect: Connect, verb: string | undefined, r
       return true;
     }
   }
-  printError(new Error(LOGGER_USAGE));
-  return false;
+  return usageError(LOGGER_USAGE);
 }
 
 export function revertBody(rest: string[], argv: any): Record<string, any> {
@@ -167,8 +166,10 @@ function overrideRow(o: any): Record<string, any> {
 }
 
 function printDiff(rows: DiffRow[], output: OutputFormat): void {
-  if (output !== 'table') { printOutput(rows, output); return; }
-  if (!rows.length) { console.log('(no differences)'); return; }
+  if (output !== 'table')
+    return printOutput(rows, output);
+  if (!rows.length)
+    return console.log('(no differences)');
   const pw = Math.max(...rows.map((r) => r.path.length));
   const vw = Math.max(...rows.map((r) => r.value.length));
   for (const r of rows) {
@@ -217,13 +218,16 @@ async function loggerGet(connect: Connect, argv: any, output: OutputFormat): Pro
     const logging = dapi.logging;
     const policy = await logging.policy();
     const doc = scope ? await logging.effective((await scopeTarget(dapi, policy, scope)).param) : policy;
-    if (output !== 'table') { docs.push(multi ? {host, ...doc} : doc); return; }
+    if (output !== 'table') {
+      docs.push(multi ? {host, ...doc} : doc);
+      return;
+    }
     if (multi) console.log(`== ${host}`);
     if (!scope) printPolicy(doc);
     else printOutput(Object.entries(doc?.settings ?? {})
       .map(([prop, v]) => ({SETTING: prop, VALUE: valueText(v), SOURCE: doc?.sources?.[prop] ?? ''})), 'table');
   });
-  if (output !== 'table') printOutput(docs.length === 1 ? docs[0] : docs, output);
+  if (output !== 'table') printOutput(hostList(argv.host).length > 1 ? docs : docs[0], output);
   return true;
 }
 
@@ -256,7 +260,10 @@ export function setArgs(value: any): Record<string, any> {
     const eq = s.indexOf('=');
     if (eq <= 0) throw new Error(`--set expects <path>=<json>, got '${s}'`);
     let v: any = s.slice(eq + 1);
-    try { v = JSON.parse(v); } catch { /* a bare string */ }
+    try {
+      v = JSON.parse(v);
+    }
+    catch { /* a bare string */ }
     out[s.slice(0, eq)] = v;
   }
   return out;
@@ -274,10 +281,8 @@ async function loggerSet(connect: Connect, argv: any, output: OutputFormat): Pro
     throw new Error('--set changes the base settings; it cannot be combined with --for, --until or a user, session or package scope');
   if (argv.for !== undefined && argv.until !== undefined)
     throw new Error('Use either --for or --until');
-  if (!Object.keys(PROPS).some((f) => argv[f] !== undefined) && !Object.keys(paths).length) {
-    printError(new Error(`Nothing to set.\n${LOGGER_USAGE}`));
-    return false;
-  }
+  if (!Object.keys(PROPS).some((f) => argv[f] !== undefined) && !Object.keys(paths).length)
+    return usageError(`Nothing to set.\n${LOGGER_USAGE}`);
   const reason = optString(argv.reason);
   const dapi = await connect();
   const logging = dapi.logging;

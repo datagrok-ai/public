@@ -103,7 +103,8 @@ export async function server(argv: any): Promise<boolean> {
     };
     try {
       return await observability.handle(connect, verb, rest, argv, output);
-    } catch (err: any) {
+    }
+    catch (err: any) {
       return fail(err);
     }
   }

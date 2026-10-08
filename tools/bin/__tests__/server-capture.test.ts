@@ -52,6 +52,7 @@ describe('captureBody', () => {
     expect(() => captureBody({...base, element: 'x'}, NOW)).toThrow(/at most one scope/);
     expect(() => captureBody({...base, user: undefined, everyone: true, view: undefined}, NOW)).toThrow(/needs a scope/);
     expect(() => captureBody({...base, for: undefined, until: '2026-09-01T00:00'}, NOW)).toThrow(/in the past/);
+    expect(() => captureBody({...base, view: true}, NOW)).toThrow(/--view needs a value/);
   });
 });
 
@@ -108,8 +109,9 @@ describe('handlers', () => {
   });
 
   it('shows a rule, its activations, and its timeline as csv', async () => {
+    const summary = `Hit Triage / Filters / Reset / ${'Scaffold '.repeat(10).trim()}`;
     const {connect, calls} = mockConnect((_m, p) => p.startsWith('/log/timeline')
-      ? [{time: utcIso(15, 2), source: 'client', kind: 'click', summary: 'Hit Triage / Filters / Reset', requestId: 'mfz3k2a1b9x8y7kq'}]
+      ? [{time: utcIso(15, 2), source: 'client', kind: 'click', summary, requestId: 'mfz3k2a1b9x8y7kq'}]
       : {...RULE, activations: [{sessionId: 'abcdef0123', user: 'alice.mendel', activatedAt: RULE.createdAt, until: RULE.expiresAt, triggerDetail: 'view Hit Triage'}]});
     const show = await captureOutput(() => handleCapture(connect, 'show', ['cap-17'], {}, 'table'));
     expect(calls[0].path).toBe('/logging/capture/cap-17');
@@ -118,8 +120,8 @@ describe('handlers', () => {
     expect(show.out.some((l) => l.startsWith('abcdef01'))).toBe(true);
     const csv = await captureOutput(() => handleCapture(connect, 'show', ['cap-17'], {timeline: true}, 'csv'));
     expect(calls[1].path).toBe('/log/timeline?rule=cap-17');
-    expect(csv.out[0]).toBe('TIME,SOURCE,SERVER,KIND,SUMMARY,STATUS,MS,REQ');
-    expect(csv.out[1]).toMatch(/,client,,click,Hit Triage \/ Filters \/ Reset,,,…x8y7kq$/);
+    expect(csv.out[0]).toBe('time,source,kind,summary,requestId');
+    expect(csv.out[1]).toBe(`${utcIso(15, 2)},client,click,${summary},mfz3k2a1b9x8y7kq`);
   });
 
   it('stops a rule with a reason', async () => {
@@ -134,5 +136,9 @@ describe('handlers', () => {
     await captureOutput(() => handleTimeline(connect, undefined, [], {report: 4820}, 'table'));
     expect(calls[0].path).toBe('/log/timeline?report=4820');
     await expect(handleTimeline(connect, undefined, [], {}, 'table')).rejects.toThrow(/timeline takes exactly one of --action/);
+    const {err, result, exitCode} = await captureOutput(() => handleTimeline(connect, 'session', ['abc'], {report: 4820}, 'table'));
+    expect([result, exitCode]).toEqual([true, 1]);
+    expect(err.join('\n')).toMatch(/Unexpected 'session abc'/);
+    expect(calls.length).toBe(1);
   });
 });

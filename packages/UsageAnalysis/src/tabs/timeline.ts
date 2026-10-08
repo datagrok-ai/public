@@ -10,7 +10,7 @@ import '../../css/usage_analysis.css';
 
 export const TIMELINE_KEYS = ['action', 'request', 'session', 'report', 'rule'];
 
-/** One action, request, session, report or capture rule in time order, from the server's `Timeline` function. */
+/** One action, request, session, report or capture rule in time order, from `grok.dapi.log.getTimeline`. */
 export class TimelineView extends UaView {
   keyInput = ui.input.choice('By', {value: 'action', items: TIMELINE_KEYS, nullable: false});
   idInput = ui.input.string('Id');

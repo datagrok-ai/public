@@ -5,9 +5,9 @@
 * GROK-20884: Errors: Rebuilt the tab over the server's errors query — occurrences or figures by up to three dimensions with trend and alert state, a row drill-down with sessions, reports and alerts, Export and `?error=<stack hash>` links
 * GROK-20884: Capture: Added the tab — capture rules with author, subject, scope, reason and stop reason; New rule and Stop through the server
 * GROK-20884: Timeline: Added the tab — one action, request, session, report or rule in time order, routed as `/timeline?<key>=<id>`
-* GROK-20884: Errors, Capture, Timeline: Moved to the server's REST routes through `grok.dapi.log` instead of server functions
+* GROK-20884: Errors, Capture, Timeline: The errors list, the timeline, New rule, Stop and the debug flags go through `grok.dapi.log`; the capture list and the error drill-downs (sessions, reports, alerts, sample) read `System:Datagrok`
 * GROK-20884: Clicks: Added the Clicks list and Followed by Error (clicks an error followed within 5 s), both linking to Timeline
-* GROK-20884: Removed the unused `EventErrors`, `ReportsCount` and `SameErrors` queries
+* GROK-20884: Removed the unused `EventErrors`, `ReportsCount`, `SameErrors`, `TopErrors`, `TopErrorSources`, `TopDisabledErrors` and `TopPackageErrors` queries and the old error drill-down viewers
 * Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open
 * Tests: BDD features keep to what only the browser shows and stay fast — scenarios an API or package test covers removed (spaces, roles, users, connections, scripts, sticky meta, Biostructure, sequence translator), spaces made through the API, Database meta claimed on the server instead of after five reloads and swept when a feature starts, the queries gated on PostgresTest
 * GROK-21108: Tests: The favorites features follow Add To Favorites becoming a submenu ("Only for me" and every group the account may edit; picking a target again takes the entity out, as Remove from favorites did) and files getting the star and the menu item

@@ -169,8 +169,6 @@ export interface SettingsInterface {
    * This includes console logs, server logs, data connectivity logs, Docker logs, etc. */
   autoReportErrors: boolean;
 
-  _isShell: boolean;
-
 
 
 
