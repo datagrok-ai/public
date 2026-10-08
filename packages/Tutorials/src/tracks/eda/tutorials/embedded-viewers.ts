@@ -41,7 +41,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
     await this.contextMenuAction('Set the scatter plot as a tooltip viewer',
       'Use as group tooltip', null, 'Each viewer can be used as a template for the mouse-over ' +
       'rows to be visualized in a tooltip. To understand how it works, make the scatter plot ' +
-      'a tooltip viewer by selecting <b>Tooltip | Use as Group Tooltip</b> from the context menu.');
+      'a tooltip viewer by selecting <b>Tooltip | Use as Group Tooltip</b> from the context menu.', sp.root);
 
     await this.action('Hover over the histogram bins or pie chart segments',
       this.t!.onMouseOverRowGroupChanged, null,
@@ -49,14 +49,14 @@ export class EmbeddedViewersTutorial extends Tutorial {
       'Try doing the same with the pie chart segments to see scatter plots for different row groups.');
 
     await this.contextMenuAction('Reset the tooltip', 'Remove Group Tooltip', null,
-      'Choose the option <b>Tooltip | Remove Group Tooltip</b> in the context menu.');
+      'Choose the option <b>Tooltip | Remove Group Tooltip</b> in the context menu.', sp.root);
 
     this.title('Trellis plot');
 
     await this.contextMenuAction('Open a Trellis plot from the pie chart\'s context menu',
       'Use in Trellis', null, 'The most common viewers can be put on a trellis plot by choosing ' +
       '<b>General | Use in Trellis</b>. You can select columns by which the data should be split. ' +
-      'Each cell will only show rows that belong to the corresponding categories.');
+      'Each cell will only show rows that belong to the corresponding categories.', pie.root);
 
     // the menu command adds the Trellis plot after its click completes the step
     const trellis: DG.Viewer = (<DG.TableView>grok.shell.v).viewers.find((v) => v.type === DG.VIEWER.TRELLIS_PLOT) ??
@@ -67,7 +67,8 @@ export class EmbeddedViewersTutorial extends Tutorial {
         map((_) => trellis.props.viewerType),
         filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
       () => trellis.root.querySelector('[name="viewer selector"]') as HTMLElement, 'This time, use the viewer type selector ' +
-      'in the opened Trellis plot. You can also set it from the context panel.');
+      'in the opened Trellis plot. You can also set it from the context panel.',
+    () => trellis.props.viewerType = DG.VIEWER.SCATTER_PLOT);
 
     await this.action('Set Color of the inner scatter plot to AGE',
       interval(1000).pipe(
@@ -75,6 +76,8 @@ export class EmbeddedViewersTutorial extends Tutorial {
         filter((name: string | undefined) => name === 'AGE')),
       () => trellis.root.querySelector('[name="div-column-combobox-color"]') as HTMLElement,
       'The properties of the inner scatter plot are shown in the strip at the top of the Trellis plot. ' +
-      'Click the <b>Color</b> selector there and choose AGE. You can also find it in the context panel.');
+      'Click the <b>Color</b> selector there and choose AGE. You can also find it in the context panel.',
+      () => trellis.setOptions({innerViewerLook: {
+        ...(trellis.getOptions() as {[key: string]: any }).look.innerViewerLook, colorColumnName: 'AGE'}}));
   }
 }

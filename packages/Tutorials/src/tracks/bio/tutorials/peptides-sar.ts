@@ -54,7 +54,8 @@ export class PeptidesSarTutorial extends Tutorial {
             Let's launch the Peptides SAR tool.`);
         
         const d = await this.openDialog('On the Top Menu, click Bio > Analyze > SAR...',
-        'Analyze Peptides', this.getMenuItem('Bio', true));
+        'Analyze Peptides', this.getMenuItem('Bio', true), '',
+        () => grok.shell.v.ribbonMenu.find('Bio | Analyze | SAR...').click());
         const okBtn = $(d.root).find('button.ui-btn.ui-btn-ok')[0] as HTMLButtonElement;
         okBtn.disabled = true;
 
@@ -70,7 +71,8 @@ export class PeptidesSarTutorial extends Tutorial {
             Clustering parameters include distance metric, threshold, and others. <br>
             Lets adjust the Similarity threshold to 90 and enable WebGPU acceleration for faster clustering computation.`); 
 
-        await this.action('Click the Gear Icon (⚙)', gearIconClickEvent, gearIcon as HTMLElement);
+        await this.action('Click the Gear Icon (⚙)', gearIconClickEvent, gearIcon as HTMLElement, '',
+            () => (gearIcon as HTMLElement).click());
         
         const similarityThresholdInput: HTMLInputElement | null = d.root.querySelector('input[name="input-Similarity-Threshold"]');
         if (!similarityThresholdInput)
@@ -86,7 +88,8 @@ export class PeptidesSarTutorial extends Tutorial {
                     resolve();
             })
         })
-        await this.action('Set Similarity Threshold to 90', similarityChangedPromise, similarityThresholdInput as HTMLElement);
+        await this.action('Set Similarity Threshold to 90', similarityChangedPromise, similarityThresholdInput as HTMLElement, '',
+            () => Tutorial.setInputValue(similarityThresholdInput, '90'));
 
         const webGpuCheckbox: HTMLInputElement | null = d.root.querySelector('input[name="input-Use-WebGPU"]');
 
@@ -97,19 +100,20 @@ export class PeptidesSarTutorial extends Tutorial {
                         resolve();
                 })
             })
-            await this.action('Check Use WebGPU', webGpuChangedPromise, webGpuCheckbox as HTMLElement);
+            await this.action('Check Use WebGPU', webGpuChangedPromise, webGpuCheckbox as HTMLElement, '',
+                () => webGpuCheckbox.click());
         }
 
         okBtn.disabled = false;
         // click ok button on the dialog
-        await this.action('Click OK to start analysis', d.onClose, okBtn);
+        await this.action('Click OK to start analysis', d.onClose, okBtn, '', () => okBtn.click());
         
         // wait for SAR view to be created
         await this.action('Wait for analysis to complete',
               grok.events.onViewerAdded.pipe(operators.filter((data: DG.EventData) => {
                 const found = data.args.viewer.type === 'Logo Summary Table';
                 return found;
-              })));
+              })), null, '', null);
         grok.shell.windows.showContextPanel = true;
         
 
@@ -125,17 +129,15 @@ export class PeptidesSarTutorial extends Tutorial {
         this._placeHints(step3NextButton);
         const step3Prom = new Promise<void>((resolve) => {
             step3Hintesc.addEventListener('click', () => {
-                this._removeHints(step3Hint);
-                step3Hint.remove();
                 resolve();
             });
             step3NextButton.addEventListener('click', () => {
-                this._removeHints(step3Hint);
-                step3Hint.remove();
                 resolve();
             });
         });
-        await this.action('Click NEXT to proceed', step3Prom);
+        await this.action('Click NEXT to proceed', step3Prom, null, '', () => step3NextButton.click());
+        this._removeHints(step3Hint);
+        step3Hint.remove();
 
         // ########## Step 4: Monomer grid ##########
         this.title('Monomer Grid', true);
@@ -174,7 +176,7 @@ export class PeptidesSarTutorial extends Tutorial {
         ]);
         const step6B1 = greenHint(contextPanelRoot, step6B1Content, 'left');
         const step6B1Prom = nextOrHintGone(okBtn1, step6B1);
-        await this.action('Click NEXT to proceed', step6B1Prom);
+        await this.action('Click NEXT to proceed', step6B1Prom, null, '', () => okBtn1.click());
         this._removeHints(step6B1);
         step6B1.remove();
 
@@ -184,7 +186,8 @@ export class PeptidesSarTutorial extends Tutorial {
           operators.filter((e) => e.key === 'Escape'),
           operators.switchMap(() => rxjs.concat(rxjs.of(null), tv.dataFrame.selection.onChanged)),
           operators.filter(() => tv.dataFrame.selection.trueCount === 0));
-        await this.action('Press Esc to clear selection', escPromise);
+        await this.action('Press Esc to clear selection', escPromise, null, '',
+            Tutorial.apiSkip(() => tv.dataFrame.selection.setAll(false)));
         this._removeHints(step6B2);
         step6B2.remove();
 
@@ -199,7 +202,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const step7B1 = greenHint(svmRoot, paragraphs(['The <i>Sequence Variability Map</i> shows mutation distribution.', 'Click the <b>Gear icon</b> to adjust its settings.']), 'right');
         const svmGear = svmRoot.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
         const svmGearClick = rxjs.fromEvent(svmGear ?? svmRoot, 'click');
-        await this.action('Open SVM settings (gear)', svmGearClick, svmGear ?? svmRoot);
+        await this.action('Open SVM settings (gear)', svmGearClick, svmGear ?? svmRoot, '', () => svmGear.click());
         this._removeHints(step7B1);
         step7B1.remove();
 
@@ -211,7 +214,7 @@ export class PeptidesSarTutorial extends Tutorial {
         ]);
         const step7B2 = greenHint(contextPanelRoot, step7B2Content, 'left');
         const step7b2Prom = nextOrHintGone(nextBtn, step7B2);
-        await this.action('Click NEXT to proceed', step7b2Prom);
+        await this.action('Click NEXT to proceed', step7b2Prom, null, '', () => nextBtn.click());
         this._removeHints(step7B2);
         step7B2.remove();
 
@@ -230,13 +233,14 @@ export class PeptidesSarTutorial extends Tutorial {
         step8B1.remove();
 
         
-        const mutationCliffsPanel = (grok.shell.o as HTMLElement).getElementsByClassName('d4-pane-mutation_cliffs_pairs')[0] as HTMLElement;
+        const mutationCliffsPanel = grok.shell.o instanceof HTMLElement ?
+            grok.shell.o.getElementsByClassName('d4-pane-mutation_cliffs_pairs')[0] as HTMLElement : null;
         if (mutationCliffsPanel) {
             const step8B2 = greenHint(mutationCliffsPanel, paragraphs(['Mutation Cliffs context panel shows sequence pairs only differring at selected position, their activity distributions, and more']), 'left');
             const step8B2Ok = ui.button('NEXT', () => {});
             step8B2.appendChild(step8B2Ok);
             const mutPanelNextPromise = nextOrHintGone(step8B2Ok, step8B2);
-            await this.action('Click NEXT to proceed', mutPanelNextPromise);
+            await this.action('Click NEXT to proceed', mutPanelNextPromise, null, '', () => step8B2Ok.click());
 
             this._removeHints(step8B2);
             step8B2.remove();
@@ -248,7 +252,8 @@ export class PeptidesSarTutorial extends Tutorial {
         const invariantRadioButton = invariantMapInputRoot.querySelector('input[type="radio"]') as HTMLInputElement;
         const invariantPromise = poll(() => invariantRadioButton.checked || invariantRadioButton.value == 'true');
         const invariantHint = greenHint(invariantRadioButton, paragraphs(['Switch the <i>SVM viewer</i> to <i>Invariant Map</i> mode using the radio button.']), 'top');
-        await this.action('Switch SVM mode to Invariant Map', invariantPromise, invariantRadioButton);
+        await this.action('Switch SVM mode to Invariant Map', invariantPromise, invariantRadioButton, '',
+            () => invariantRadioButton.click());
         this._removeHints(invariantHint);
         invariantHint.remove();
 
@@ -257,7 +262,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const step91Next = ui.button('NEXT', () => {});
         step91Hint.appendChild(step91Next);
         const step91Prom = nextOrHintGone(step91Next, step91Hint);
-        await this.action('Click NEXT to proceed', step91Prom);
+        await this.action('Click NEXT to proceed', step91Prom, null, '', () => step91Next.click());
         this._removeHints(step91Hint);
         step91Hint.remove();
 
@@ -271,7 +276,8 @@ export class PeptidesSarTutorial extends Tutorial {
         const step10Hint = greenHint(mprRoot, paragraphs(['The <i>Most Potent Residues</i> viewer highlights the most potent monomers at each position.','Use the <b>gear</b> icon to adjust its settings.']), 'left');
         const mprGear = mprRoot.parentElement!.parentElement!.parentElement!.parentElement!.parentElement!.querySelector('.grok-icon.grok-font-icon-settings') as HTMLElement;
         const mprGearClick = rxjs.fromEvent(mprGear ?? mprRoot, 'click');
-        await this.action('Open Most Potent Residues settings (gear)', mprGearClick, mprGear ?? mprRoot);
+        await this.action('Open Most Potent Residues settings (gear)', mprGearClick, mprGear ?? mprRoot, '',
+            () => mprGear.click());
         this._removeHints(step10Hint);
         step10Hint.remove();
 
@@ -286,7 +292,7 @@ export class PeptidesSarTutorial extends Tutorial {
         const step10MCLNext = ui.button('NEXT', () => {});
         step10MCLHint.appendChild(step10MCLNext);
         const mclNextProm = nextOrHintGone(step10MCLNext, step10MCLHint);
-        await this.action('Click NEXT to proceed', mclNextProm);
+        await this.action('Click NEXT to proceed', mclNextProm, null, '', () => step10MCLNext.click());
         this._removeHints(step10MCLHint);
         step10MCLHint.remove();
 
@@ -295,7 +301,8 @@ export class PeptidesSarTutorial extends Tutorial {
 
         const lstContextPromise = rxjs.fromEvent(lstGear ?? LSTViewer.root, 'click').pipe(operators.take(1),
             operators.switchMap(() => poll(() => grok.shell.o === LSTViewer)));
-        await this.action('Open Logo Summary Table settings (gear)', lstContextPromise, lstGear ?? LSTViewer.root);
+        await this.action('Open Logo Summary Table settings (gear)', lstContextPromise, lstGear ?? LSTViewer.root, '',
+            () => (lstGear ?? LSTViewer.root).click());
         this._removeHints(step10LSTHint);
         step10LSTHint.remove();
 
@@ -309,7 +316,8 @@ export class PeptidesSarTutorial extends Tutorial {
         const lstAggRegationPromise = rxjs.fromEvent(aggColumnsButton, 'click').pipe(operators.take(1),
             operators.switchMap(() => poll(() => LSTViewer.props.columns.length > 0)));
 
-        await this.action('Add pie chart aggregation for position 14', lstAggRegationPromise, aggColumnsButton);
+        await this.action('Add pie chart aggregation for position 14', lstAggRegationPromise, aggColumnsButton, '',
+            Tutorial.apiSkip(() => LSTViewer.setOptions({columns: ['14']})));
         this._removeHints(lstHint);
         lstHint.remove();
 
@@ -321,7 +329,8 @@ export class PeptidesSarTutorial extends Tutorial {
             const nextBtn = ui.button('NEXT', () => {});
             scrollHint.appendChild(nextBtn);
             const scrollPromise = rxjs.merge(rxjs.fromEvent(lstHorzScroll, 'mousedown'), nextOrHintGone(nextBtn, scrollHint));
-            await this.action('Scroll horizontally in Logo Summary Table. Click NEXT to proceed to next step', scrollPromise, lstHorzScroll);
+            await this.action('Scroll horizontally in Logo Summary Table. Click NEXT to proceed to next step',
+                scrollPromise, lstHorzScroll, '', () => nextBtn.click());
             this._removeHints(scrollHint);
             scrollHint.remove();
         }
@@ -333,16 +342,19 @@ export class PeptidesSarTutorial extends Tutorial {
         const pepAnalWrench = document.querySelector('.fal.fa-wrench') as HTMLElement;
         // const pepAnalWrenchClick = rxjs.fromEvent(pepAnalWrench, 'click').pipe(operators.take(1), operators.map(() => void 0)).toPromise();
         const wrenchHint = greenHint(pepAnalWrench, paragraphs(['Lastly, you can update your SAR settings and analysis anytime.','Click the <b>wrench</b> icon, enable <b>Dendrogram</b>, then <b>OK</b> to add it to the analysis.']), 'bottom');
-        const analDialog = await this.openDialog('Click the Wrench to update analysis configuration', 'Peptides settings', pepAnalWrench);
+        const analDialog = await this.openDialog('Click the Wrench to update analysis configuration', 'Peptides settings', pepAnalWrench,
+            '', () => pepAnalWrench.click());
         this._removeHints(wrenchHint);
         wrenchHint.remove();
         // expand all sections in settings
         analDialog.root.querySelectorAll('.d4-accordion-pane-content').forEach((el) => (el as HTMLElement).classList.add('expanded'));
         const dendrogramCheckBox = analDialog.root.querySelector('input[name="input-Dendrogram"]') as HTMLInputElement;
         const dendrogramPromise = poll(() => dendrogramCheckBox.checked);
-        await this.action('Check Dendrogram', dendrogramPromise, dendrogramCheckBox);
+        await this.action('Check Dendrogram', dendrogramPromise, dendrogramCheckBox, '',
+            () => dendrogramCheckBox.click());
         const analDialogOk = analDialog.root.querySelector('button.ui-btn.ui-btn-ok') as HTMLButtonElement;
-        await this.action('Click OK to re-run analysis', analDialog.onClose, analDialogOk);
+        await this.action('Click OK to re-run analysis', analDialog.onClose, analDialogOk, '',
+            () => analDialogOk.click());
 
         // wait for dendrogram to appear for 2 seconds
         await new Promise<void>((resolve) => {

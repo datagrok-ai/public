@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption} from './utils';
+import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption, toggleSwitch} from './utils';
 import { runDescriber } from './ui-describer';
 
 /** Fitting results info */
@@ -78,6 +78,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
@@ -107,6 +108,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(modelCatalogIcn, 'dblclick'),
       modelCatalogIcn,
       `Double-click the ${name} icon`,
+      () => modelCatalogIcn.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     // 3. Run model
@@ -121,6 +123,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
+      Tutorial.apiSkip(() => DG.Func.find({package: 'DiffStudio', name: 'ballFlight'})[0].prepare().edit()),
     );
 
     // 4. Play
@@ -148,7 +151,7 @@ export class FittingTutorial extends Tutorial {
       btnsText: {done: 'OK', next: '', prev: ''},
     });
     
-    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 5. Run fitting
     this.title('Fit scalar output');
@@ -173,6 +176,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(fitIcnRoot, 'click'),
       fitIcnRoot,
       'Click the "Fit inputs" icon on the top panel.',
+      () => fitIcnRoot.querySelector('i')!.click(),
     );
 
     // 6. Switch Velocity
@@ -205,6 +209,8 @@ export class FittingTutorial extends Tutorial {
       'Toggle the "Velocity" parameter',
       fromEvent(velocityToggle, 'click'),
       velocityOverlay,
+      '',
+      () => toggleSwitch(velocityToggle),
     );
 
     velocityOverlay.remove();
@@ -219,6 +225,8 @@ export class FittingTutorial extends Tutorial {
       'Toggle the "Angle" parameter',
       fromEvent(angleToggle, 'click'),
       angleOverlay,
+      '',
+      () => toggleSwitch(angleToggle),
     );
 
     angleOverlay.remove();
@@ -231,6 +239,7 @@ export class FittingTutorial extends Tutorial {
       numSource,
       distSwitcher,
       'Set the target value for <b>Max distance</b>.',
+      () => Tutorial.setInputValue(distSwitcher, '10'),
     );
 
     // 9. Run
@@ -242,6 +251,7 @@ export class FittingTutorial extends Tutorial {
       runIcnRoot,
       `Click the <b>Run</b> icon on the top panel to launch fitting <b>Velocity</b> and <b>Angle</b>.
       Customize optimizer's settings in the <b>Using</b> block.`,
+      () => runIcnRoot.click(),
     );
 
     // 10. Explore
@@ -275,7 +285,7 @@ export class FittingTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore results', fromEvent(btnToClick, 'click'));
+    await this.action('Explore results', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/Tutorials/ball-flight-trajectory.csv');
     ballFlightTable.name = 'Ball trajectory';
@@ -294,6 +304,8 @@ export class FittingTutorial extends Tutorial {
       'Disable "Max distance"',
       fromEvent(maxDistSwitcher, 'click'),
       maxDistOverlay,
+      '',
+      () => toggleSwitch(maxDistSwitcher),
     );
 
     maxDistOverlay.remove();
@@ -308,6 +320,8 @@ export class FittingTutorial extends Tutorial {
       'Toggle "Trajectory"',
       fromEvent(trajectorySwitcher, 'click'),
       trajectoryOverlay,
+      '',
+      () => toggleSwitch(trajectorySwitcher),
     );
 
     trajectoryOverlay.remove();
@@ -322,6 +336,8 @@ export class FittingTutorial extends Tutorial {
       'Set "Trajectory" to "Ball trajectory"',
       dfSource,
       tableInputRoot,
+      '',
+      () => Tutorial.setInputValue(tableChoiceRoot, 'Ball trajectory'),
     );
 
     // 14. Run
@@ -329,6 +345,8 @@ export class FittingTutorial extends Tutorial {
       'Click "Run"',
       fromEvent(runIcnRoot, 'click'),
       runIcnRoot,
+      '',
+      () => runIcnRoot.click(),
     );
 
     await new Promise<void>((resolve) => {grid.onAfterDrawContent.subscribe((e) => resolve());});
@@ -348,7 +366,7 @@ export class FittingTutorial extends Tutorial {
       btnsText: {done: 'clear', next: '', prev: ''},
     });
 
-    await this.action('Explore the fitted trajectory', fromEvent(btnToClick, 'click'));
+    await this.action('Explore the fitted trajectory', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

@@ -9,7 +9,7 @@ import {interval, fromEvent} from 'rxjs';
 import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY,
   getLegendDiv,
-  waitForElement} from './utils';
+  waitForElement, toggleSwitch} from './utils';
 
 // @ts-ignore
 import '../../../../css/tutorial.css';
@@ -117,6 +117,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
@@ -143,6 +144,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(diffStudIcon, 'dblclick'),
       diffStudIcon,
       'Double-click the Diff Studio icon',
+      () => diffStudIcon.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     const diffStudioView = await getViewWithElement('div.ui-div.diff-studio-hub-grid');
@@ -176,6 +178,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(lotkaVolterraElement, 'dblclick'),
       lotkaVolterraElement,
       'Double-click the Lotka-Volterra model icon',
+      () => lotkaVolterraElement.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     await new Promise((resolve) => setTimeout(resolve, DELAY));
@@ -242,6 +245,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Explore the interface',
       fromEvent(doneBtn, 'click'),
+      null,
+      '',
+      () => doneBtn.click(),
     );
 
     // 5. Go to ODEs
@@ -253,6 +259,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => dsViewRoot.querySelector('div.cm-line') != null)),
       editToggle,
       'Turn on the <b>Edit</b> toggle',
+      () => toggleSwitch(editToggle),
     );
 
     // 6. Explore equations
@@ -269,6 +276,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Explore editor',
       fromEvent(doneBtn, 'click'),
+      null,
+      '',
+      () => doneBtn.click(),
     );
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
@@ -296,7 +306,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     await this.action(
       'Complete the predator equation',
-      interval(100).pipe(filter(() => lineRoots[3].textContent?.replaceAll(' ', '') == rawEquation)),
+      interval(100).pipe(filter(() => Array.from(editorRoot.querySelectorAll('div.cm-line'))
+        .some((l) => l.textContent?.replaceAll(' ', '') == rawEquation))),
+      null,
+      '',
+      () => this.updateEditorLine(editorRoot, 'dy/dt', (line) => `${line} - eta * y * y`),
     );
 
     codeDiv.hidden = true;
@@ -323,6 +337,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
         const lines = editorRoot.querySelectorAll('div.cm-line');
         return Array.from(lines).some((l) => l.textContent?.replaceAll(' ', '') === rawEtaParam);
       })),
+      null,
+      '',
+      () => this.updateEditorLine(editorRoot, 'delta =', (line) => `${line}\n  ${etaParam}`),
     );
 
     codeDiv.hidden = true;
@@ -336,6 +353,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(refreshIcn, 'click'),
       refreshIcn,
       'Click the Refresh icon',
+      () => refreshIcn.querySelector('i')!.click(),
     );
 
     // 10. Check meaning
@@ -353,6 +371,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Check the updates',
       fromEvent(clearBtn, 'click'),
+      null,
+      '',
+      () => clearBtn.click(),
     );
 
     // 11. Close editor
@@ -364,6 +385,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       //fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
       editToggle,
       'Turn off the <b>Edit</b> toggle',
+      () => toggleSwitch(editToggle),
     );
 
     simulateMouseEventsWithMove(splitBar, -450, 0);
@@ -385,6 +407,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
       'Reduce the initial value of the prey population.',
+      () => Tutorial.setInputValue(preyEditor, '2'),
     );
 
     const deltaEditor = editorOf('delta');
@@ -393,6 +416,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => deltaEditor.value == '0.1')),
       deltaEditor,
       'Reduce the effect of preys on the predator\'s growth rate.',
+      () => Tutorial.setInputValue(deltaEditor, '0.1'),
     );
 
     // 13. Play with inputs
@@ -402,10 +426,24 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => finishEditor.value == '150')),
       finishEditor,
       'Get a simulation over a longer time period.',
+      () => Tutorial.setInputValue(finishEditor, '150'),
     );
 
     this.describe(`Find useful Diff Studio ${ui.link('models', LINKS.MODELS).outerHTML}.`);
   } // _run
+
+  private updateEditorLine(editorRoot: HTMLElement, prefix: string, update: (line: string) => string): void {
+    const view = Tutorial.codeMirrorView(editorRoot);
+    const doc = view.state.doc;
+    for (let i = 1; i <= doc.lines; ++i) {
+      const line = doc.line(i);
+      if (line.text.trim().startsWith(prefix)) {
+        view.dispatch({changes: {from: line.from, to: line.to, insert: update(line.text)}});
+        break;
+      }
+    }
+    view.dom.dispatchEvent(new KeyboardEvent('keydown', {key: 'Shift', bubbles: true}));
+  }
 
   private getLegend(): HTMLElement {
     return getLegendDiv('# Graphs\n\nThe model takes into account:', [

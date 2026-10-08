@@ -55,7 +55,8 @@ export class ActivityCliffsTutorial extends Tutorial {
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', () => this.getMenuItem('Chem', true));
+      'Activity Cliffs', () => this.getMenuItem('Chem', true), '',
+      () => grok.shell.v.ribbonMenu.find('Chem | Analyze | Activity Cliffs...').click());
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>
@@ -75,8 +76,8 @@ export class ActivityCliffsTutorial extends Tutorial {
         plotAdded.next(true);
       });
 
-    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
-    await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)));
+    await this.dialogOkAction(d);
+    await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)), null, '', null);
     plotSub.unsubscribe();
 
     this.title('Start analyzing the results', true);
@@ -89,9 +90,10 @@ export class ActivityCliffsTutorial extends Tutorial {
       grok.events.onTooltipShown.pipe(filter(() => v.root.matches(':hover'))));
 
     // the switch filters the table to the cliffs and says so in a tag; any other switch on the page does not
+    const cliffsSwitch = () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null;
     await this.action('To view only the cliffs, toggle Show only cliffs.',
-      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))),
-      () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null);
+      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))), cliffsSwitch, '',
+      () => cliffsSwitch().click());
 
     this.title('Zoom in on the area of interest', true);
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents
@@ -99,7 +101,8 @@ export class ActivityCliffsTutorial extends Tutorial {
     particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.<br>
     Let’s zoom in. Use <b>${platformKeyMap['Alt'][this.platform]} + Mouse Drag</b>.`);
 
-    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed);
+    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed,
+      null, '', () => v.zoom(v.viewport.x, v.viewport.y, v.viewport.midX, v.viewport.midY));
     
     this.title('Explore the pairs of molecules', true);
     this.describe(`The opacity of the green line connecting molecules corresponds to the magnitude of the activity cliff.
@@ -123,7 +126,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     }));
 
     await this.action('On the Context Panel, click any molecule', this.t.onCurrentRowChanged,
-      undefined, 'Note changes in the grid');
+      undefined, 'Note changes in the grid', () => this.t!.currentRowIdx = this.t!.currentRowIdx === 0 ? 1 : 0);
 
     this.title('Add a summary table with cliffs', true);
     this.describe(`Let’s help our analysis and include a table listing all pairs identified as cliffs.
@@ -160,6 +163,7 @@ export class ActivityCliffsTutorial extends Tutorial {
             sub.unsubscribe();
           }
         });
-    }), undefined, 'Note the changes on the scatterplot’s view and the source table');
+      }), undefined, 'Note the changes on the scatterplot’s view and the source table',
+      () => Tutorial.clickCell(grid, 'From', 0));
   }
 }

@@ -85,6 +85,8 @@ export class StickyMetaTutorial extends Tutorial {
       'Open Types node',
       elementClick(() => stickyMetaChild('Types')),
       () => stickyMetaChild('Types'),
+      '',
+      () => stickyMetaChild('Types')!.click(),
     );
 
     // --- Step 3: Open new entity type dialog ---
@@ -94,6 +96,7 @@ export class StickyMetaTutorial extends Tutorial {
       'Create a new entity type',
       () => button('New Entity Type...'),
       'Click "New Entity Type..." to create a new entity type.',
+      () => button('New Entity Type...')!.click(),
     );
 
     // --- Step 4: Explore entity type dialog ---
@@ -113,13 +116,14 @@ export class StickyMetaTutorial extends Tutorial {
       fromEvent(doneBtn, 'click'),
       undefined,
       'Click "Next" to proceed.',
+      () => doneBtn.click(),
     );
 
     // --- Step 5: Fill in entity type fields ---
     await this.dlgInputAction(typeDialog, 'Set "Name" to "molecule-tutorial"', 'Name', 'molecule-tutorial');
     await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression', 'semtype=Molecule');
 
-    await this.action('Save entity type', typeDialog.onClose, $(typeDialog.root).find('button.ui-btn-ok')[0], 'Click OK to save the entity type.');
+    await this.dialogOkAction(typeDialog, 'Save entity type', 'Click OK to save the entity type.');
 
     // --- Step 6: Open schemas node ---
     this.title('Explore schemas');
@@ -129,6 +133,8 @@ export class StickyMetaTutorial extends Tutorial {
       'Open schemas node',
       elementClick(() => stickyMetaChild('Schemas')),
       () => stickyMetaChild('Schemas'),
+      '',
+      () => stickyMetaChild('Schemas')!.click(),
     );
 
     // --- Step 7: Open new schema dialog ---
@@ -138,6 +144,7 @@ export class StickyMetaTutorial extends Tutorial {
       'Create a new schema',
       () => button('New Schema...'),
       'Click "New Schema..." to create a schema.',
+      () => button('New Schema...')!.click(),
     );
 
     // --- Step 8: Explore schema dialog ---
@@ -157,7 +164,7 @@ export class StickyMetaTutorial extends Tutorial {
       '# Properties\nMetadata fields with a name and type (string, int, bool, double, datetime).',
     ]);
 
-    await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'));
+    await this.action('Explore schema dialog', fromEvent(doneBtn, 'click'), null, '', () => doneBtn.click());
 
     // --- Step 9: Fill in schema details ---
     await this.textInpAction(schemaDialogRoot, `Set "Name" to "${SCHEMA_NAME}"`, 'Name', SCHEMA_NAME);
@@ -172,6 +179,8 @@ export class StickyMetaTutorial extends Tutorial {
       'Select associated entity',
       new Promise<void>((resolve) => selectEntitiesLabel.addEventListener('click', () => resolve(), {once: true})),
       selectEntitiesLabel,
+      '',
+      () => selectEntitiesLabel.click(),
     );
 
     const selectorDlg = await new Promise<DG.Dialog>((resolve) => {
@@ -190,14 +199,15 @@ export class StickyMetaTutorial extends Tutorial {
       'Select molecule-tutorial',
       interval(200).pipe(filter(() => moleculeCheckbox()?.checked === true)),
       moleculeCheckbox,
+      '',
+      () => moleculeCheckbox()!.click(),
     );
 
-    const selectorOkBtn = $(selectorDlg.root).find('button.ui-btn-ok')[0];
-    await this.action('Confirm entity selection', selectorDlg.onClose, selectorOkBtn);
+    await this.dialogOkAction(selectorDlg, 'Confirm entity selection');
 
     await this.textInpAction(propertyRow, `Set property "Name" to "${PROPERTY_NAME}"`, 'Name', PROPERTY_NAME);
     await this.choiceInputAction(propertyRow, 'Set property "Type" to "string"', 'Property Type', 'string');
-    await this.action('Save schema', schemaDialog.onClose, $(schemaDialog.root).find('button.ui-btn-ok[name="button-OK"]')[0], 'Click OK to save schema.');
+    await this.dialogOkAction(schemaDialog, 'Save schema', 'Click OK to save schema.');
 
     // --- Step 10: Open dataset ---
     this.title('Annotate dataset');
@@ -226,6 +236,9 @@ export class StickyMetaTutorial extends Tutorial {
           }
         });
       }),
+      null,
+      '',
+      () => Tutorial.clickCell(grid, colName, rowIndex),
     );
 
     // --- Step 11: Fill in sticky meta property ---
@@ -260,6 +273,7 @@ export class StickyMetaTutorial extends Tutorial {
       [schemaSection, projectPropertyInput],
       `In the Context Panel, under <b>Sticky meta → ${SCHEMA_NAME}</b>, ` +
         `type <b>${PROPERTY_VALUE}</b> into the <b>${PROPERTY_NAME}</b> field.`,
+      () => Tutorial.setInputValue(projectPropertyInput, PROPERTY_VALUE),
     );
 
     // --- Step 12: Save sticky meta ---
@@ -283,6 +297,7 @@ export class StickyMetaTutorial extends Tutorial {
       saveBtn,
       `Click the <b>SAVE</b> button right below the <b>${PROPERTY_NAME}</b> field. ` +
         'Each schema in the pane has its own SAVE button.',
+      () => saveBtn.click(),
     );
 
     await this.action(

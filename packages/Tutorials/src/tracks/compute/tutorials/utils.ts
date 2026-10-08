@@ -287,3 +287,7 @@ export function inputRootByCaption(form: Element, caption: string): HTMLElement 
     .find((root) => root.querySelector(':scope > label.ui-label')?.textContent?.trim().toLowerCase()
       === caption.toLowerCase()) ?? null;
 }
+
+export function toggleSwitch(editor: HTMLElement): void {
+  editor.querySelector<HTMLElement>('.ui-input-switch')!.click();
+}

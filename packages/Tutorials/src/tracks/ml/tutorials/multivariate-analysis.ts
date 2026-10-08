@@ -34,7 +34,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     this.describe(ui.link('More about ' + this.name, this.helpUrl).outerHTML);
 
     const plsDlg = await this.openDialog('Click on "ML | Analyze | Multivariate Analysis..."',
-      'Multivariate Analysis (PLS)', () => this.getMenuItem('ML', true));
+      'Multivariate Analysis (PLS)', () => this.getMenuItem('ML', true), '',
+      () => grok.shell.v.ribbonMenu.find('ML | Analyze | Multivariate Analysis...').click());
 
     plsDlg.root.hidden = true;
 
@@ -76,7 +77,8 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Names" to "model"', 'Names', 'model',
       'The column that labels the points on the plots. Here, each row is a car model.');
 
-    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose);
+    await this.action('Click "RUN" and wait for the analysis to complete', dlg.onClose, undefined, '',
+      () => dlg.getButton('RUN').click());
 
     let viewerRoots: HTMLElement[];
 
@@ -155,6 +157,10 @@ export class MultivariateAnalysisTutorial extends Tutorial {
     await this.action('Explore each viewer', new Observable((subscriber: any) => {
       //@ts-ignore
       $(doneBtn).one('click', () => subscriber.next(true));
-    }), undefined, 'Click "Next" to switch to the next viewer');
+    }), undefined, 'Click "Next" to switch to the next viewer', async () => {
+      await Tutorial.waitFor(() => hint);
+      idx = viewerRoots.length - 1;
+      doneBtn.click();
+    });
   }
 }
