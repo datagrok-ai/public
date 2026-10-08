@@ -3,114 +3,19 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 
 import {_package} from '../../package';
-import {getRdKitModule} from '../../utils/chem-common-rdkit';
-import {cachedAtomCount} from './sar-matrix-decompose';
-import {ROLE_FIT_MAX_SWEEPS, RoleLevel,
-  RoleSummary} from './sar-matrix-role-fit';
+import {ROLE_FIT_MAX_SWEEPS} from './sar-matrix-role-fit';
 import {SarMatrix} from './sar-matrix-types';
 import {SummaryMaking} from './sar-matrix-summary-making';
-import {ANALOG_LIST_MAX, bestMeasuredRow, LOSER_ROWS, MIN_SUPPORT, RGroupRow,
-  RGROUP_MIN_SERIES, SeriesStat, SummaryCollector, SummaryData, SummaryHost,
-  SUM_ROWS, SwapPool, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP,
+import {SummaryOverview} from './sar-matrix-summary-overview';
+import {SummaryEffects} from './sar-matrix-summary-effects';
+import {MIN_SUPPORT, SeriesStat, SummaryCollector, SummaryData, SummaryHost, SUM_ROWS,
   TRUST_R2} from './sar-matrix-summary-data';
 
 export {SummaryHost} from './sar-matrix-summary-data';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CORE_BG_ARGB,
-  MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H, STRIP_MOL_W,
-  TAB_TRANSFER, count} from './sar-matrix-ui-common';
-
-const TRUST_LIST_MAX = 10;
-/** Dock widths and height below which the tab drops marks for their text, in px. */
-const NARROW_PX = 720;
-const XNARROW_PX = 560;
-const SHORT_PX = 340;
-/** Component rows the landing band shows before folding the rest away, so the swap row under them and
- *  the band under that stay on the screen the reader lands on. */
-const FINDING_ROWS = 4;
-
-/** Shortest a strip square's directional fill may draw and still read as a value rather than the
- *  mid-rule itself. */
-const STRIP_MIN_FILL = 3;
-/** Multiples of a series' own leave-one-out error a tick run shows before a count stops reading at a
- *  glance. */
-const GAIN_TICKS = 4;
-/** Difference in noise-corrected spread below which two component columns are one answer with two
- *  names: offsets print at two decimals, so anything under this is not on screen at all. */
-const ROLE_SPREAD_TIE = 0.01;
-
-/** Said on the Overview and again on the core card, which a reader can arrive at either way round. */
-const CORES_NOT_COMPARABLE = 'Cores are not comparable across series here — a core is one row of one ' +
-  'matrix and recurs only inside its own fold lineage. Each series\' best core is in its Start-here ' +
-  'expand.';
-
-const PANE_OVERVIEW = 'Overview';
-const PANE_EFFECTS = 'Effects';
-const PANE_MAKING = 'Worth making';
-const PANE_METHOD = 'Method';
-/** The Effects segment's last tab: what is read off measured compounds inside each series — which
- *  substituent came first where, which core scored best, which swap was actually made — as against the
- *  component tabs, which are one fitted model over the whole table. */
-const PANE_SERIES = 'Measured in series';
-const PANES = [PANE_OVERVIEW, PANE_EFFECTS, PANE_MAKING, PANE_METHOD];
-
-/** Fixed slots of the reason lane, in this order on every row — the lane is only comparable down a
- *  column if slot 3 means the same thing everywhere. */
-const REASON_GLYPHS = ['n', '↔', '★', '✚', '✓'];
-const REASON_WORDS = ['most measured compounds', 'widest measured range',
-  'holds the best measured compound', 'most predictions worth making', 'best-validated fit'];
-
-/** A pool read in the direction that improves potency. The pool is keyed on the lexically ordered
- *  fragment pair, so the improving direction is whichever end of its range survives; the reverse swap
- *  is the same measurements with every sign flipped. */
-function orient(pool: SwapPool): {forward: boolean, from: string, to: string, worst: number,
-  widest: number, mean: number, up: number} {
-  const forward = pool.min >= -pool.max;
-  return {
-    forward,
-    from: forward ? pool.from : pool.to,
-    to: forward ? pool.to : pool.from,
-    worst: forward ? pool.min : -pool.max,
-    widest: forward ? pool.max : -pool.min,
-    mean: (forward ? pool.sum : -pool.sum) / pool.n,
-    up: forward ? pool.nUp : pool.n - pool.nUp,
-  };
-}
-
-/** One answer tile's content: the structures the conclusion is about, the conclusion, and the one clause
- *  that stops the conclusion being over-read. */
-interface Answer {
-  answer: string;
-  negative: string;
-  /** Drawn above the conclusion. A substituent written out is truncated to fit the tile, and three
-   *  analogs of one scaffold truncate to the same string. */
-  art?: HTMLElement;
-}
-
-/** A fragment SMILES cut to fit a one-line descriptor; the full string stays in the tooltip. */
-function shortSmiles(smiles: string): string {
-  return smiles.length > 20 ? `${smiles.slice(0, 19)}…` : smiles;
-}
-
-/** A blank role value is the unsubstituted parent, which is a level like any other — rendered as a
- *  name rather than as the empty string it is stored as.
- *
- *  Not shortened: a fixed character cap renders three analogs of one scaffold as the same string, since
- *  what distinguishes them is past the cap. A row ellipsizes in CSS instead, to whatever width it has. */
-/** Where a component's swap card sits on the Effects segment, so the band row for that component scrolls
- *  to the card about that component rather than to whichever one was built first. */
-function swapAnchor(role: string): string {
-  return `swaps-${role}`;
-}
-
-function roleValueName(value: string): string {
-  return value === '' ? 'nothing at this position' : value;
-}
-
-/** Whether this role's own values may be put in an order at all: two of them have to be readable, and
- *  a split of credit that does not survive refitting each half of the table is not this role's. */
-function roleRanks(role: RoleSummary): boolean {
-  return role.levels.length >= 2 && (role.repeat === null || role.repeat >= TRUST_R2);
-}
+import {CARD_CORE_H, CARD_CORE_W, CORE_BG_ARGB, MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H, STRIP_MOL_W,
+  count} from './sar-matrix-ui-common';
+import {TRUST_LIST_MAX, NARROW_PX, XNARROW_PX, SHORT_PX, PANE_OVERVIEW, PANE_EFFECTS, PANE_MAKING, PANE_METHOD,
+  PANES} from './sar-matrix-summary-common';
 
 /**
  * The Summary tab: the landing screen of the analysis. The scale and direction are pinned above
@@ -129,14 +34,14 @@ export class SummaryPanel {
   /** Collecting over every cell of every matrix holds the main thread, so it runs off the activation
    *  stack — which also lets the loader paint. */
   private collectTimer = 0;
-  private pendingPaints: (() => void)[] = [];
+  pendingPaints: (() => void)[] = [];
 
   /** Set by the answer tile so the R-group leaderboard opens its top row when the Effects pane builds. */
-  private expandTopRGroup = false;
+  expandTopRGroup = false;
   /** Which of the Effects segment's own tabs is open: an index into its role cards, or past the last
    *  of them the per-series evidence. Held across pane rebuilds so leaving the segment and coming back
    *  does not lose the component the reader was on. */
-  private effectsTab = 0;
+  effectsTab = 0;
   /** Whether the poorly-fitting list starts open: a reader who followed a "the fit does not hold"
    *  link came for that list, not for the explanation above it. */
   private openTrustList = false;
@@ -152,10 +57,10 @@ export class SummaryPanel {
 
   /** Which halves of the landing band the reader has shut, by key. Held across pane rebuilds, so a
    *  collapsed half stays collapsed when the segment is left and come back to. */
-  private readonly foldedBands = new Set<string>();
+  readonly foldedBands = new Set<string>();
   /** The one line that reports the transfer scan, kept so its state can be refreshed without
    *  rebuilding the pane around it. */
-  private transferLine: HTMLElement | null = null;
+  transferLine: HTMLElement | null = null;
   /** A fault line stands until something invalidates it: collecting over it would replace the reason
    *  the analysis failed with a generic empty-state note. */
   private message = false;
@@ -164,12 +69,14 @@ export class SummaryPanel {
   private readonly segButtons = new Map<string, HTMLElement>();
   /** The one scrolling region of the pane on screen, or null where the pane does not scroll. Moving
    *  this rather than calling `scrollIntoView` is what keeps a scroll inside the panel. */
-  private scroller: HTMLElement | null = null;
+  scroller: HTMLElement | null = null;
   private sizeSub: Subscription | null = null;
   /** The width breakpoints the pane on screen was built against; empty before the first build. */
   private widthKey = '';
 
   private readonly making = new SummaryMaking(this);
+  private readonly overview = new SummaryOverview(this);
+  private readonly effects = new SummaryEffects(this);
 
   constructor(readonly host: SummaryHost) {}
 
@@ -395,7 +302,7 @@ export class SummaryPanel {
 
   /** Build one segment and discard the last. Panes are never held: an unvisited Worth-making segment
    *  then never creates a DataFrame, and a revisited one is rebuilt from data that has not changed. */
-  private showPane(name: string, anchor?: string): void {
+  showPane(name: string, anchor?: string): void {
     const paneHost = this.paneHost;
     const data = this.data;
     if (paneHost === null || data === null)
@@ -415,9 +322,9 @@ export class SummaryPanel {
     if (name === PANE_EFFECTS && anchor !== undefined)
       this.effectsTab = this.effectsTabOf(data, anchor);
     paneHost.classList.toggle('chem-sar-sum-pane-fixed', name === PANE_OVERVIEW);
-    paneHost.appendChild(name === PANE_EFFECTS ? this.buildEffectsPane(data) :
+    paneHost.appendChild(name === PANE_EFFECTS ? this.effects.build(data) :
       name === PANE_MAKING ? this.making.build(data) :
-        name === PANE_METHOD ? this.buildMethodPane(data) : this.buildOverviewPane(data));
+        name === PANE_METHOD ? this.buildMethodPane(data) : this.overview.build(data));
 
     this.paintTimer = window.setTimeout(() => {
       this.flushPaints();
@@ -431,7 +338,7 @@ export class SummaryPanel {
 
   /** What the transfer scan has found, said in the one line that offers it. Detection is lazy and runs
    *  on its own tab, so this is read at activation rather than when the pane was built. */
-  private syncTransferLine(): void {
+  syncTransferLine(): void {
     const line = this.transferLine;
     if (line === null)
       return;
@@ -452,104 +359,12 @@ export class SummaryPanel {
     this.showPane(PANE_METHOD, 'trust');
   }
 
-  private anchored(el: HTMLElement, anchor: string): HTMLElement {
+  anchored(el: HTMLElement, anchor: string): HTMLElement {
     el.dataset.anchor = anchor;
     return el;
   }
 
   // ---- The four panes ---------------------------------------------------------------------------
-
-  private buildOverviewPane(data: SummaryData): HTMLElement {
-    const cores = this.topCores(data);
-    const list = ui.divV(this.buildStartHere(data), 'chem-sar-sum-list');
-    this.scroller = list;
-    return ui.divV([
-      this.coverageBar(data),
-      this.setupLine(data),
-      this.buildAnswers(data, cores),
-      this.buildListHeader(data),
-      list,
-      this.buildTotals(data),
-    ], 'chem-sar-sum-overview');
-  }
-
-  /**
-   * One tab per component column, then the per-series evidence.
-   *
-   * Stacked, this segment is as tall as the decomposition is wide — five component columns is five
-   * cards before the two that were already here — and a landing screen that has to be scrolled to be
-   * read is not one. The ordering sentence stays above the strip because it is the only finding here
-   * that is about every tab at once, and each tab carries its own spread so the comparison between
-   * components does not cost a click each.
-   */
-  private buildEffectsPane(data: SummaryData): HTMLElement {
-    // The R-group card is dropped wherever the fit already ranks the axis role, for the reason the core
-    // card is: two rankings of one column, one a count of within-series wins and one an adjusted effect,
-    // read as a disagreement rather than as two kinds of evidence.
-    const series: HTMLElement[] = this.roleAnswer(data, data.axisRole) === null ?
-      [this.anchored(this.buildRGroupCard(data), 'rgroup')] : [];
-    // Dropped only where the core column is already ranked by the fit, adjusted for the components it
-    // was paired with: two rankings of one column, one confounded and one adjusted, in different units,
-    // is a worse screen than either alone. Where the fit declines to rank it, this is the only one left.
-    let coreNote: HTMLElement | null = null;
-    if (this.roleAnswer(data, data.coreRole) === null) {
-      if (data.coresAreSeries)
-        series.push(this.anchored(this.buildCoreCard(data, this.topCores(data)), 'cores'));
-      else {
-        // Where cores are not comparable the card has no ranking it could ever carry, and a card slot
-        // spent on one sentence is a slot. It keeps the anchor so the tile that points here still lands.
-        coreNote = this.anchored(ui.divText(CORES_NOT_COMPARABLE,
-          'chem-sar-cp-hint chem-sar-sum-sub-lead'), 'cores');
-      }
-    }
-    // One card per component, matching the band that links here. A single card carried whichever
-    // component the matrix columns enumerated, so clicking the Linker row landed on a card about
-    // Warhead — the band's own answer contradicted on arrival.
-    const roles = data.roleFit === null ? [] : data.roleFit.roles.map((role) => role.name);
-    if (roles.length === 0)
-      series.push(this.anchored(this.buildSwapCard(data), 'swaps'));
-    else {
-      for (const name of roles)
-        series.push(this.anchored(this.buildSwapCard(data, name), swapAnchor(name)));
-    }
-
-    const roleCards = this.buildRoleCards(data);
-    if (roleCards.length === 0) {
-      return coreNote === null ? this.effectsScroll(series) :
-        ui.divV([coreNote, this.effectsScroll(series)], 'chem-sar-sum-effects');
-    }
-
-    const tabs = [...roleCards.map((card) => ({label: card.label, note: card.note, cards: [card.el]})),
-      {label: PANE_SERIES, note: 'counted, not fitted' as string | null, cards: series}];
-    const open = Math.min(Math.max(this.effectsTab, 0), tabs.length - 1);
-    const bar = ui.divH(tabs.map((tab, i) => {
-      const parts = [ui.divText(tab.label, 'chem-sar-sum-sub-name')];
-      if (tab.note !== null)
-        parts.push(ui.divText(tab.note, 'chem-sar-sum-sub-note'));
-      const el = ui.divH(parts, 'chem-sar-sum-sub');
-      el.classList.toggle('chem-sar-sum-sub-on', i === open);
-      el.onclick = () => {
-        this.effectsTab = i;
-        this.showPane(PANE_EFFECTS);
-      };
-      return el;
-    }), 'chem-sar-sum-sub-bar');
-
-    const lead = this.roleOrdering(data);
-    return ui.divV([...(lead === null ? [] : [lead]), bar, this.effectsScroll(tabs[open].cards)],
-      'chem-sar-sum-effects');
-  }
-
-  private effectsScroll(cards: HTMLElement[]): HTMLElement {
-    const grid = ui.div(cards, 'chem-sar-sum-grid');
-    // A lone card has no neighbour to sit beside, so left at one track's width it strands the rest of
-    // the pane. The width is not decoration here: these row names are SMILES, and at one track three
-    // analogs of one scaffold truncate to the same prefix and read as the same structure.
-    grid.classList.toggle('chem-sar-sum-grid-one', cards.length === 1);
-    const scroll = ui.div([grid], 'chem-sar-sum-scroll');
-    this.scroller = scroll;
-    return scroll;
-  }
 
   /** The Effects tab an anchor lives on: a role anchor carries its own index, and everything else is
    *  on the per-series tab, which sits after the role cards. */
@@ -568,59 +383,6 @@ export class SummaryPanel {
     const scroll = ui.divV(parts, 'chem-sar-sum-scroll');
     this.scroller = scroll;
     return scroll;
-  }
-
-  /** The five reason-lane glyphs printed once, directly above the lane they label and always on
-   *  screen — a mark whose legend is a scroll away is a legend hunt. */
-  private buildListHeader(data: SummaryData): HTMLElement {
-    const label = ui.divText('Start here', 'chem-sar-sum-card-title');
-    if (!this.lanesFit(data))
-      return ui.divH([label], 'chem-sar-sum-list-head');
-    const keys = REASON_GLYPHS.map((glyph, i) =>
-      ui.divH([ui.divText(glyph, 'chem-sar-sum-slot chem-sar-sum-slot-on'),
-        ui.divText(REASON_WORDS[i], 'chem-sar-sum-legend-word')], 'chem-sar-sum-legend-key'));
-    return ui.divH([label, ui.divH(keys, 'chem-sar-sum-legend')], 'chem-sar-sum-list-head');
-  }
-
-  /** Three totals that each open the segment answering them. Magnitudes that only describe the run
-   *  stay on Method: a landing screen carries decisions, not census figures. */
-  private buildTotals(data: SummaryData): HTMLElement {
-    const host = this.host;
-    const ranked = data.analogs.all.length;
-    const thin = data.analogsThin.all.length;
-    const gated = data.analogs.all.concat(data.analogsThin.all);
-    const shown = gated.length > 0 ? gated : data.analogsAny.all;
-    const structures = new Set(shown.map((r) => r.key)).size;
-    // A capped list printed as a total states the cap as the finding, so the cap is named wherever the
-    // length is.
-    const capped = gated.length > 0 && data.analogOverflow > 0 ? `top ${count(ranked + thin)} of ` +
-      `${count(ranked + thin + data.analogOverflow)}` : count(shown.length);
-    const making = ui.divText(shown.length === 0 ? 'Nothing is predicted above what is already made →' :
-      gated.length === 0 ? `${capped} best candidates, none past the trust gate →` :
-        `${capped} worth making · ${count(structures)} distinct structures →`, 'chem-sar-sum-total');
-    making.onclick = () => this.showPane(PANE_MAKING);
-    ui.tooltip.bind(making, () => 'Predicted analogs this dataset has no row for, ranked on the gain ' +
-      'they buy over the best compound their own series has already made.' + (data.analogOverflow === 0 ?
-      '' : ` The ranked and the thin list hold ${count(ANALOG_LIST_MAX)} rows each: ` +
-      `${count(data.analogOverflow)} further structures cleared the same gate and are in neither.`));
-
-    const trust = ui.divText(`${count(data.fitHolds)} fits hold · ${count(data.unchecked)} unchecked · ` +
-      `${count(data.lowR2.length)} do not →`, 'chem-sar-sum-total');
-    trust.onclick = () => this.revealTrust();
-    ui.tooltip.bind(trust, 'A verdict on each series\' fit, not a partition of your library — one ' +
-      'compound sits in several series and is routinely on both sides. Unchecked means unverified, ' +
-      'not wrong.');
-
-    const parts = [making, trust];
-    if (host.unscalableCount > 0) {
-      const bad = ui.divText(`${count(host.unscalableCount)} values cannot be scaled by ` +
-        `${host.scalingLabel}`, 'chem-sar-sum-total chem-sar-chip-partial');
-      ui.tooltip.bind(bad, () => `${host.unscalableCount} of the "${host.activityColumnName}" values ` +
-        `were assayed but cannot be scaled by ${host.scalingLabel}, which needs positive numbers. ` +
-        'They are excluded from every matrix — set Scaling to "none" to use them as they are.');
-      parts.push(bad);
-    }
-    return ui.divH(parts, 'chem-sar-sum-totals');
   }
 
   // ---- Band A: scale, then method ---------------------------------------------------------------
@@ -707,75 +469,6 @@ export class SummaryPanel {
     return box;
   }
 
-  /**
-   * MK-cov: what fraction of the table the analysis sees, in four segments in a fixed order, over a
-   * label line naming them in the same order — so the label is the legend.
-   */
-  private coverageBar(data: SummaryData): HTMLElement {
-    const host = this.host;
-    const total = Math.max(1, host.hostRowCount);
-    // The two ways a row misses out are split because they call for different things: one is a plate
-    // to run, the other a library too diverse for any core to recur. Lumped, a sparse assay and a
-    // diverse library read the same.
-    const unplaced = Math.max(0, host.assayedCount - data.compounds - host.unscalableCount);
-    const never = Math.max(0, total - host.assayedCount - data.untested);
-    const segs = [
-      {n: data.compounds, word: 'measured', cls: 'chem-sar-sum-cov-real'},
-      {n: data.untested, word: 'held, never assayed', cls: 'chem-sar-sum-cov-held'},
-      {n: host.unscalableCount, word: 'assayed, cannot be scaled', cls: 'chem-sar-sum-cov-bad'},
-      {n: unplaced, word: 'assayed, no analog to pair with', cls: 'chem-sar-sum-cov-out'},
-      {n: never, word: 'never assayed', cls: 'chem-sar-sum-cov-none'},
-      // A zero-count segment is omitted rather than drawn at the minimum width, which would state a
-      // quantity that is not there.
-    ].filter((s) => s.n > 0);
-    const bar = ui.divH(segs.map((s) => {
-      const el = ui.div([], `chem-sar-sum-cov-seg ${s.cls}`);
-      el.style.flexGrow = `${s.n}`;
-      return el;
-    }), 'chem-sar-sum-cov');
-    const label = ui.divText(segs.map((s) => `${count(s.n)} ${s.word}`).join(' · '),
-      'chem-sar-sum-cov-label');
-    const box = ui.divV([bar, label], 'chem-sar-sum-cov-box');
-    ui.tooltip.bind(box, () => `${count(total)} table rows. Rows, not compounds: the denominator is the ` +
-      'table\'s raw row count, so this ignores any filter on the source grid. A segment narrower than ' +
-      'a couple of pixels is drawn at that floor and stops being proportional, which is why every ' +
-      'count is printed.');
-    return box;
-  }
-
-  /**
-   * MK-D: a signed magnitude against the screen's own model error.
-   *
-   * `scale` is the largest magnitude in the set this bar is compared against — the card's own rows,
-   * except where one fit produced the rows of several cards and they are genuinely on one scale. A bar
-   * ending inside the grey band is one the analysis cannot resolve.
-   */
-  private effectBar(value: number, scale: number, modelError: number | null): HTMLElement {
-    const track = ui.div([], 'chem-sar-sum-effbar');
-    const half = scale > 0 ? scale : 1;
-    // No band at all rather than a zero-width one: a zero-width band reads as "everything here is
-    // resolved", which is the opposite of what a missing model error means.
-    if (modelError !== null && modelError > 0) {
-      const band = ui.div([], 'chem-sar-sum-effband');
-      const half2 = Math.min(50, (modelError / half) * 50);
-      band.style.left = `${50 - half2}%`;
-      band.style.width = `${2 * half2}%`;
-      track.appendChild(band);
-    }
-    track.appendChild(ui.div([], 'chem-sar-sum-effzero'));
-    const w = Math.min(50, (Math.abs(value) / half) * 50);
-    const bar = ui.div([], `chem-sar-sum-effval chem-sar-sum-eff-${value >= 0 ? 'pos' : 'neg'}`);
-    bar.style.left = `${value >= 0 ? 50 : 50 - w}%`;
-    bar.style.width = `${w}%`;
-    track.appendChild(bar);
-    ui.tooltip.bind(track, () => `${this.formatEffect(value)}, against the widest bar it is compared ` +
-      `with (${this.formatEffect(half)}).` + (modelError === null ? ' No series has a cross-validated fit, ' +
-      'so there is no error band to read it against.' :
-      ` The grey band is ± ${this.host.formatActivity(modelError)}, this analysis\' own typical ` +
-      'prediction error: a bar ending inside it is a difference this analysis cannot resolve.'));
-    return track;
-  }
-
   /** MK-E: whether this series' fit was checked, and whether it held. No colour — `confidence` is null
    *  where too few cells could be cross-validated or every measured value was identical, and a traffic
    *  light would make "unchecked" read as a failing grade. */
@@ -791,62 +484,6 @@ export class SummaryPanel {
       `${conf.r2 >= TRUST_R2 ? 'holds' : 'does not hold'} at R² ${TRUST_R2}. A property of the model, ` +
       'not of the data.');
     return dot;
-  }
-
-  /** MK-F: how many of a series' own typical prediction errors a predicted gain is worth. Unfilled
-   *  slots are drawn, not omitted, so "one of four" never looks like "one of one". */
-  private tickRun(gain: number, rmse: number | null): HTMLElement {
-    const filled = rmse !== null && rmse > 0 ?
-      Math.max(0, Math.min(GAIN_TICKS, Math.floor(gain / rmse))) : 0;
-    const ticks: HTMLElement[] = [];
-    for (let i = 0; i < GAIN_TICKS; i++)
-      ticks.push(ui.div([], `chem-sar-sum-tick${i < filled ? ' chem-sar-sum-tick-on' : ''}`));
-    const run = ui.divH(ticks, 'chem-sar-sum-ticks');
-    ui.tooltip.bind(run, () => rmse === null || rmse <= 0 ?
-      'This series has no cross-validated error to measure the gain against.' :
-      `The predicted gain is ${(gain / rmse).toFixed(1)} times this series' own leave-one-out error. ` +
-      'Under one error the model cannot tell this analog from the best compound already made.');
-    return run;
-  }
-
-  /** MK-B: the five fixed reasons a series is worth opening, won or not won, always in the same order
-   *  — the lane's shape is what a reader compares down the column, which five variable-length phrases
-   *  can never be. */
-  private reasonLane(reasons: number[]): HTMLElement {
-    const won = new Set(reasons);
-    const slots = REASON_GLYPHS.map((glyph, i) => ui.divText(won.has(i) ? glyph : '',
-      `chem-sar-sum-slot${won.has(i) ? ' chem-sar-sum-slot-on' : ''}`));
-    const lane = ui.divH(slots, 'chem-sar-sum-lane');
-    ui.tooltip.bind(lane, () => reasons.map((i) => REASON_WORDS[i]).join(' · '));
-    return lane;
-  }
-
-  /** MK-C: one slot per series that tried this group — solid where it won and that series' fit holds,
-   *  hatched where it won and the fit does not, outlined where it was tried and did not win. */
-  private winTally(row: RGroupRow, placed: string): HTMLElement {
-    const shown = Math.min(row.tried, 10);
-    const slots: HTMLElement[] = [];
-    for (let i = 0; i < shown; i++) {
-      const state = i < row.k ? ' chem-sar-sum-slot-on' :
-        i < row.m ? ' chem-sar-sum-slot-hatch' : '';
-      const slot = ui.div([], `chem-sar-sum-wslot${state}`);
-      if (i >= row.k && i < row.m) {
-        slot.onclick = (e: MouseEvent) => {
-          e.stopPropagation();
-          this.revealTrust();
-        };
-      }
-      slots.push(slot);
-    }
-    const parts: HTMLElement[] = [ui.divH(slots, 'chem-sar-sum-tally')];
-    if (row.tried > shown)
-      parts.push(ui.divText(`+${row.tried - shown}`, 'chem-sar-sum-tally-more'));
-    const box = ui.divH(parts, 'chem-sar-sum-tally-box');
-    ui.tooltip.bind(box, () => `${placed} in ${row.k} of the ${row.tried} series that tried it` +
-      (row.m > row.k ? `, and in ${row.m - row.k} more whose additive fit does not hold — a group that ` +
-      `is ${placed} in additive series and not in non-additive ones is core-dependent. Click a hatched ` +
-      'slot to see those series.' : '. Every fit behind those placings holds.'));
-    return box;
   }
 
   private buildChips(data: SummaryData): HTMLElement {
@@ -876,236 +513,9 @@ export class SummaryPanel {
 
   // ---- Band A′: the three answers -------------------------------------------------------------
 
-  /**
-   * What the analysis answers, in words: which R-group, which core, and which swap buys the most.
-   *
-   * Every number here is already on a card below, so a reader who stops at this band has the finding
-   * and one who does not finds the evidence under it. Each tile carries its own negative, because a
-   * leaderboard with no stated limit is read as a ranking of the chemistry rather than of what was made.
-   */
-  private buildAnswers(data: SummaryData, cores: SeriesStat[]): HTMLElement {
-    const findings = this.buildFindings(data);
-    if (findings !== null)
-      return findings;
-    return ui.divH([
-      this.answerTile(`Best ${data.axisRole ?? 'R-group'}`, this.rgroupAnswer(data), 'rgroup',
-        () => this.expandTopRGroup = true),
-      this.answerTile(`Best ${data.coreRole ?? 'core'}`, this.coreAnswer(data, cores), 'cores'),
-      this.answerTile('What improves potency', this.potencyAnswer(data), 'swaps'),
-    ], 'chem-sar-sum-answers');
-  }
-
-  /**
-   * One row per component column and one for the best measured swap, in a single full-width band.
-   *
-   * Every component, not two of them: tiles for the axis and the core left the rest to be hunted for,
-   * which sent readers to the axis switch on Method — a rebuild of every matrix — to see a ranking that
-   * was already computed. One band rather than a strip beside a tile, because the tile's column was too
-   * narrow for a structure and fell back to a truncated SMILES, which reads identically for every analog
-   * of one scaffold.
-   *
-   * Null outside fragment-columns mode and wherever the fit is refused — a fragmented substituent label
-   * is local to its series, so there is no component to name and the three tiles stay.
-   */
-  private buildFindings(data: SummaryData): HTMLElement | null {
-    const fit = data.roleFit;
-    if (fit === null || this.roleFitRefusal(data) !== null)
-      return null;
-    const rows = fit.roles.map((role, index) => this.componentRow(role, index));
-    const body: HTMLElement[] = [
-      ui.divText(`spans = the range of ${this.host.activityColumnName} across that component's ` +
-        `values · offsets are against the library mean of ${this.host.formatActivity(fit.mean)}`,
-      'chem-sar-cp-hint'),
-      ...rows.slice(0, FINDING_ROWS),
-    ];
-    // A six-component table would otherwise push the swap row, and the band under it, off the screen the
-    // reader lands on. The ranking is by spread, so what folds away is what moves the endpoint least.
-    if (rows.length > FINDING_ROWS)
-      body.push(this.moreComponents(rows.slice(FINDING_ROWS)));
-    // One row per component, not one for whichever component the matrix columns happened to enumerate:
-    // a matched pair is a grouping on the other components, so every component's pairs are in hand.
-    const swapRows = fit.roles.map((role) => this.swapRow(data, role.name));
-    const withPairs = fit.roles.filter((role) => (data.swapsByRole.get(role.name) ?? []).length > 0);
-    // Each half folds to its own headline, so collapsing one to read the other never costs the answer.
-    const lead = fit.roles[0];
-    return ui.divV([
-      this.bandGroup('comp', `What to change · ${count(fit.roles.length)} components`,
-        `${lead.name} leads, spans ${lead.spread.toFixed(2)}`, ui.divV(body)),
-      this.bandGroup('swap', `Best measured swap · ${count(fit.roles.length)} components`,
-        withPairs.length === 0 ? 'none pooled' :
-          `${withPairs[0].name} ${this.swapHeadline(data, withPairs[0].name)}`, ui.divV(swapRows)),
-    ], 'chem-sar-sum-comp');
-  }
-
-  /**
-   * Which column is the core, which one the matrix columns enumerate, and which fold into the row.
-   *
-   * The band below names components without saying what each one is to the analysis, and the three are
-   * not interchangeable: the core is the scaffold every row is drawn from, the one across the columns is
-   * the only one whose values sit side by side in the grid, and the rest are part of a row's identity.
-   */
-  private setupLine(data: SummaryData): HTMLElement {
-    const host = this.host;
-    if (data.axisRole === null) {
-      return this.hint('Cores and substituents found by cutting the molecules — no component columns ' +
-        'were given.', 'Every core here is a fragment the cutting produced, so its substituent labels ' +
-        'are local to the series they came from and mean nothing across series.');
-    }
-    const folded = host.roleColumns.filter((name) => name !== data.axisRole);
-    const parts = [`core: ${data.coreRole}`, `across the matrix columns: ${data.axisRole}`];
-    if (folded.length > 0)
-      parts.push(`folded into the row: ${folded.join(', ')}`);
-    return this.hint(parts.join(' · '),
-      'The core is the scaffold every row is drawn from. The component across the columns is the one ' +
-      'whose values sit side by side in the SAR Matrix grid; the rest are part of what identifies a ' +
-      'row. Every component is ranked and has its swaps pooled either way — the choice only decides ' +
-      'the grid\'s layout.');
-  }
-
-  /** One foldable half of the landing band: a heading that states its own answer when shut, so the band
-   *  can be narrowed to the half the reader wants without hiding what the other half concluded. */
-  private bandGroup(key: string, title: string, headline: string, body: HTMLElement): HTMLElement {
-    const open = !this.foldedBands.has(key);
-    const lead = ui.divText(headline, 'chem-sar-cp-hint');
-    lead.style.display = open ? 'none' : '';
-    const head = this.foldHead(title, body, open, 'chem-sar-sum-band-head', (show) => {
-      lead.style.display = show ? 'none' : '';
-      if (show)
-        this.foldedBands.delete(key);
-      else
-        this.foldedBands.add(key);
-    });
-    head.appendChild(lead);
-    return ui.divV([head, body]);
-  }
-
-  /** The best pooled swap of one component, or of whichever component the matrix columns enumerated
-   *  when the components are not columns and there is only the one pool. */
-  private topSwap(data: SummaryData, role?: string): SwapPool | undefined {
-    return role === undefined ? data.swaps[0] : (data.swapsByRole.get(role) ?? [])[0];
-  }
-
-  /** The swap's conclusion in one phrase, for the group heading when it is shut. */
-  private swapHeadline(data: SummaryData, role?: string): string {
-    const top = this.topSwap(data, role);
-    if (top === undefined)
-      return 'none pooled';
-    const {worst, widest} = orient(top);
-    return worst > 0 ? `≥ ${this.formatDelta(worst)} in ${top.n} pairs` :
-      `${this.formatDelta(worst)} to ${this.formatDelta(widest)}`;
-  }
-
-  /** One component: how much it moves the endpoint, and the best value of it.
-   *
-   * The range is written out rather than drawn against the widest component. A bar whose scale is the
-   * other rows reads as a fraction of something, and with three components within 0.03 of one another it
-   * draws a ranking the numbers do not support. */
-  private componentRow(role: RoleSummary, index: number): HTMLElement {
-    const top = roleRanks(role) ? role.levels[0] : undefined;
-    const parts: HTMLElement[] = [
-      ui.divText(role.name, 'chem-sar-sum-comp-name'),
-      ui.divText(`spans ${role.spread.toFixed(2)}`, 'chem-sar-sum-comp-spread'),
-    ];
-    if (top === undefined)
-      parts.push(ui.divH([ui.divText('not ranked', 'chem-sar-cp-hint')], 'chem-sar-sum-comp-slot'));
-    else {
-      parts.push(ui.divH([top.value === '' ? this.hint('nothing at this position',
-        `The compounds that leave ${role.name} empty score best. The column is blank for them, so there ` +
-        'is no group to draw — in a decomposition that is hydrogen, in a list of named components it ' +
-        'means nobody recorded one.') :
-        this.depiction(top.value, STRIP_MOL_W, STRIP_MOL_H)], 'chem-sar-sum-comp-slot'));
-      parts.push(ui.divText(this.formatEffect(top.coef), 'chem-sar-sum-comp-best'));
-      parts.push(ui.divText(`over ${count(top.n)} compounds`, 'chem-sar-cp-hint'));
-    }
-    const row = ui.divH(parts, 'chem-sar-sum-comp-row');
-    ui.tooltip.bind(row, () => `${role.name} moves ${this.host.activityColumnName} by ` +
-      `${role.spread.toFixed(2)} across its values. Click for its full ranking.`);
-    row.onclick = () => this.showPane(PANE_EFFECTS, `role-${index}`);
-    return row;
-  }
-
-  /** The components that move the endpoint least, folded away behind their own count. */
-  private moreComponents(rows: HTMLElement[]): HTMLElement {
-    const body = ui.divV(rows);
-    const head = this.foldHead(`${rows.length} more`, body, false, 'chem-sar-sum-comp-more');
-    return ui.divV([head, body]);
-  }
-
-  /**
-   * The best measured swap, on the same row grammar as the components above it. Structures and two
-   * numbers rather than a sentence, which has no natural length and clips wherever the band is narrow.
-   */
-  private swapRow(data: SummaryData, role?: string): HTMLElement {
-    // Named like a component row, because that is what it reports on: the pairs are grouped on the other
-    // components, so each component has its own and the row has to say which.
-    const parts: HTMLElement[] = [
-      ui.divText(role ?? 'Best swap', 'chem-sar-sum-comp-name'),
-      ui.divText(role === undefined ? '' : 'swapped', 'chem-sar-sum-comp-spread'),
-    ];
-    const top = this.topSwap(data, role);
-    const only = role === undefined ? '' :
-      ` Pairs alike in every component but ${role}, pooled across the rest of the table.`;
-    let tip: string;
-    if (top !== undefined) {
-      const {from, to, worst, widest, mean} = orient(top);
-      parts.push(this.pairArt(from, to, 'chem-sar-sum-comp-slot chem-sar-sum-comp-pair'));
-      parts.push(ui.divText(worst > 0 ? `≥ ${this.formatDelta(worst)}` :
-        `mean ${this.formatDelta(mean)}`, 'chem-sar-sum-comp-best'));
-      parts.push(ui.divText(`${this.formatDelta(worst)} to ${this.formatDelta(widest)} · ` +
-        `${count(top.n)} pairs · ${count(top.roots.size)} ${role === undefined ? 'series' : 'contexts'}`,
-      'chem-sar-cp-hint'));
-      tip = (worst > 0 ? 'This swap improved potency in every pair it was measured in.' :
-        'No swap improved potency in every pair it was measured in; this one has the best floor.') +
-        ' Both compounds were made and measured; nothing here is fitted or predicted.' + only +
-        ' Click for the full pool.';
-    } else {
-      const best = data.swapBest;
-      parts.push(ui.divH([ui.divText(data.swapCandidates === 0 && role === undefined ?
-        'no row carries two measured values' :
-        `nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} ` +
-        `${role === undefined ? 'series' : 'contexts'}`, 'chem-sar-cp-hint')],
-      'chem-sar-sum-comp-slot'));
-      if (role === undefined && best?.best != null) {
-        parts.push(ui.divText(`largest single move ${this.formatDelta(Math.abs(best.best.delta))} ` +
-          `in ${best.best.matrix.label}`, 'chem-sar-cp-hint'));
-      }
-      tip = 'A swap is pooled only where the same substitution was measured against several different ' +
-        'backgrounds, so one pair cannot carry it.' + only + ' Click for what was rejected.';
-    }
-    const row = ui.divH(parts, 'chem-sar-sum-comp-row');
-    ui.tooltip.bind(row, () => tip);
-    row.onclick = () => this.showPane(PANE_EFFECTS, role === undefined ? 'swaps' : swapAnchor(role));
-    return row;
-  }
-
-  /** One conclusion: the name, the number, its bar against the model error, and one clause. The
-   *  evidence is a segment away, so nothing here has to carry it. */
-  private answerTile(title: string, text: Answer, anchor: string, onOpen?: () => void): HTMLElement {
-    const go = ui.iconFA('chevron-right');
-    go.classList.add('chem-sar-sum-go');
-    const body: HTMLElement[] = [
-      ui.divH([ui.divText(title, 'chem-sar-sum-card-title'), go], 'chem-sar-sum-answer-head'),
-    ];
-    if (text.art !== undefined)
-      body.push(text.art);
-    body.push(ui.divH([ui.divText(text.answer, 'chem-sar-sum-answer-value')], 'chem-sar-sum-answer-line'));
-    // Not `chem-sar-card-desc`: this is a sentence, and that class clips to one line.
-    body.push(ui.divText(text.negative, 'chem-sar-cp-hint'));
-    const tile = ui.divV(body, 'chem-sar-sum-answer');
-    // The answer itself, not only the routing: the value line clips, and a conclusion that fits nowhere
-    // on the tile has to be readable somewhere.
-    ui.tooltip.bind(tile, () => `${text.answer} — ${text.negative}. The evidence behind this answer is ` +
-      'on the Effects segment; click to go to it.');
-    tile.onclick = () => {
-      onOpen?.();
-      this.showPane(PANE_EFFECTS, anchor);
-    };
-    return tile;
-  }
-
   /** Whether the front-runner may be named alone: its margin over the runner-up has to clear the
    *  screen's own model error, or the two are one answer with two names. */
-  private leads(first: number | null, second: number | null, modelError: number | null): boolean {
+  leads(first: number | null, second: number | null, modelError: number | null): boolean {
     if (second === null)
       return true;
     if (first === null)
@@ -1115,122 +525,8 @@ export class SummaryPanel {
 
   /** The substituent a tile's conclusion is about, drawn. Undefined where there is no one structure —
    *  a tile that names two groups or declines to rank has nothing to draw. */
-  private answerArt(smiles: string | null): HTMLElement | undefined {
+  answerArt(smiles: string | null): HTMLElement | undefined {
     return smiles ? this.depiction(smiles, STRIP_MOL_W, STRIP_MOL_H) : undefined;
-  }
-
-  /** One role's tile, read off the global fit — the same answer for the axis role and the core role,
-   *  since in fragment-columns mode one fit ranks both. Null where that role's card is not ranking. */
-  private roleAnswer(data: SummaryData, name: string | null): Answer | null {
-    const fit = data.roleFit;
-    if (fit === null || this.roleFitRefusal(data) !== null)
-      return null;
-    const role = fit.roles.find((other) => other.name === name);
-    if (role === undefined || !roleRanks(role))
-      return null;
-    const [top, second] = role.levels;
-    // Signed by direction: `levels` is best-first, so on a lower-is-better column the leader's
-    // coefficient is the smaller number.
-    const dir = this.host.higherIsBetter ? 1 : -1;
-    if (!this.leads(dir * top.coef, dir * second.coef, fit.cvRmse)) {
-      // A bimodal component has an answer no leaderboard can state: which group, not which value. The
-      // top two being inseparable is exactly the case where the split is the finding.
-      const split = role.split;
-      if (split !== null) {
-        return {answer: `two groups: ${count(split.hiCount)} at ${this.formatEffect(split.hiMean)}, ` +
-          `${count(split.loCount)} at ${this.formatEffect(split.loMean)}`,
-        negative: `against the library mean of ${this.host.formatActivity(fit.mean)}; no single ` +
-          `${role.name} leads, but the groups are ${split.gap.toFixed(2)} apart — which group a ` +
-          'compound carries matters more than the choice inside it'};
-      }
-      return {answer: `No single ${role.name} leads`,
-        negative: `top two ${this.formatEffect(dir * (top.coef - second.coef))} apart, within the ` +
-          `± ${this.host.formatActivity(fit.cvRmse!)} this fit resolves`};
-    }
-    return {answer: `${this.formatEffect(top.coef)} · over ${count(top.n)} compounds`,
-      negative: `against the library mean of ${this.host.formatActivity(fit.mean)}, adjusted for the ` +
-        'other components — observational, not a potency', art: this.answerArt(top.value)};
-  }
-
-  private rgroupAnswer(data: SummaryData): Answer {
-    if (!this.host.activityIsLog) {
-      // There is no mark for "not answerable", so this branch stays a sentence.
-      return {answer: 'Not answerable on a raw scale',
-        negative: 'a fitted effect is a difference in assay units and says nothing about how large ' +
-          'the change is — set Scaling to lg or −lg, or declare the column higher-is-better if it is ' +
-          'already a pIC50'};
-    }
-    const loser = data.rgroupLosers[0];
-    const negative = loser === undefined ?
-      'over each series\' own most-common substituent, not over your whole library' :
-      `stop making ${shortSmiles(loser.subst)} — last in ${loser.k} of ${loser.tried} tried`;
-    const rows = data.rgroups;
-    if (rows.length === 0) {
-      return {answer: `None in ${RGROUP_MIN_SERIES} series`,
-        negative: 'no substituent comes first at its position in that many series whose additive fit holds'};
-    }
-    const top = rows[0];
-    const partner = data.axisRole === null ? 'series' : 'core';
-    if (!this.leads(top.magnitude, rows[1]?.magnitude ?? null, data.modelError)) {
-      return {answer: `Two lead equally`,
-        negative: `the ${partner} decides — ${top.k} of ${top.tried} against ${rows[1].k} of ` +
-          `${rows[1].tried}`,
-        art: ui.divH([this.depiction(top.subst, STRIP_MOL_W, STRIP_MOL_H),
-          ui.divText('or', 'chem-sar-sum-comp-arrow'),
-          this.depiction(rows[1].subst, STRIP_MOL_W, STRIP_MOL_H)], 'chem-sar-sum-comp-pair')};
-    }
-    return {answer: (top.magnitude === null ? '' : `${this.formatEffect(top.magnitude)} · `) +
-      `first on ${top.k} of ${top.tried}`, negative, art: this.answerArt(top.subst)};
-  }
-
-  private coreAnswer(data: SummaryData, cores: SeriesStat[]): Answer {
-    const host = this.host;
-    if (!data.coresAreSeries) {
-      // A core recurs only inside its own lineage, so there is no ranking a mark could carry.
-      return {answer: 'Not comparable across series',
-        // Two lines at tile width; a third is clipped, and a clipped sentence is what the tile is for.
-        negative: 'a core recurs only inside its own lineage — nothing to pool across series'};
-    }
-    if (cores.length === 0)
-      return {answer: `None with ${MIN_SUPPORT} compounds`, negative: 'mean of what was made'};
-    // Which cut depth was ranked, because only cores cut alike are comparable and the card lets the
-    // reader change it.
-    const depth = this.coreTiers(data).length > 1 ? `among the L${cores[0].tier} cores; ` : '';
-    const negative = `${depth}mean of what was made — a core only ever paired with good caps scores high`;
-    const dir = host.higherIsBetter ? 1 : -1;
-    const top = cores[0];
-    if (!this.leads(dir * top.typical, cores.length > 1 ? dir * cores[1].typical : null, data.modelError)) {
-      return {answer: `No core runs clear`,
-        negative: `${depth}the top ${cores.length} sit inside ` +
-          `${host.formatActivity(data.modelError ?? 0)} model error of each other`};
-    }
-    return {answer: `${top.matrix.label} · typical ${host.formatActivity(top.typical)} over ` +
-      `${count(top.cpd)} cpd`, negative,
-    art: this.answerArt(top.matrix.rows[0]?.keySmiles ?? null)};
-  }
-
-  private potencyAnswer(data: SummaryData): Answer {
-    const negative = 'both compounds measured, nothing fitted — one R-group swapped, the rest identical';
-    const top = data.swaps[0];
-    if (top !== undefined) {
-      const {from, to, worst, widest, mean} = orient(top);
-      const art = this.pairArt(from, to, 'chem-sar-sum-comp-pair');
-      if (worst > 0)
-        return {answer: `≥ ${this.formatDelta(worst)} in ${top.n} pairs`, negative, art};
-      // The pool is ranked on its floor, and a negative floor under this heading would state the
-      // reverse of the question: the swap lost in at least one pair it was measured in.
-      return {answer: `${this.formatDelta(worst)} to ${this.formatDelta(widest)} over ${top.n} pairs`,
-        negative: `no swap improves potency in every pair it was measured in — this one is the best ` +
-          `floor; mean ${this.formatDelta(mean)}`, art};
-    }
-    // Nothing pooled: what the gate rejected is the finding, and there is nothing to draw.
-    const gate = data.swapCandidates === 0 ? 'No row carries two measured substituents' :
-      `Nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} series`;
-    const best = data.swapBest;
-    if (best === null || best.best === null)
-      return {answer: gate, negative};
-    return {answer: gate, negative: `the largest single measured move is ` +
-      `${this.formatDelta(Math.abs(best.best.delta))} in ${best.best.matrix.label}`};
   }
 
   // ---- Rows -----------------------------------------------------------------------------------
@@ -1245,14 +541,7 @@ export class SummaryPanel {
     return canvas;
   }
 
-  /** Two structures and the arrow between them: the shape every swap is drawn in. */
-  private pairArt(from: string, to: string, cls: string): HTMLElement {
-    return ui.divH([this.depiction(from, STRIP_MOL_W, STRIP_MOL_H),
-      ui.divText('→', 'chem-sar-sum-comp-arrow'),
-      this.depiction(to, STRIP_MOL_W, STRIP_MOL_H)], cls);
-  }
-
-  private flushPaints(): void {
+  flushPaints(): void {
     const paints = this.pendingPaints;
     this.pendingPaints = [];
     for (const paint of paints)
@@ -1267,7 +556,7 @@ export class SummaryPanel {
 
   /** Signed, and finer than `formatActivity`: fitted effects and pooled differences live in tenths,
    *  where one decimal renders three differently-ranked R-groups as three rows all reading "+0.1". */
-  private formatEffect(value: number): string {
+  formatEffect(value: number): string {
     const abs = Math.abs(value);
     return `${value < 0 ? '−' : '+'}${abs < 10 ? abs.toFixed(2) : abs.toFixed(1)}`;
   }
@@ -1275,7 +564,7 @@ export class SummaryPanel {
   /** A measured difference in the reader's own units: a signed log difference where the scale is a
    *  log, and the fold it corresponds to where it is not. A loss is written as its reciprocal fold:
    *  10^value rounds every loss past one log to "0.0×", which destroys the number it is reporting. */
-  private formatDelta(value: number): string {
+  formatDelta(value: number): string {
     if (this.host.activityIsLog)
       return this.formatEffect(value);
     const fold = Math.pow(10, Math.abs(value));
@@ -1341,22 +630,6 @@ export class SummaryPanel {
     return row;
   }
 
-  cellLocation(matrix: SarMatrix, ri: number, ci: number): string {
-    return `${matrix.label} · ${matrix.rows[ri].label} × ${matrix.columns[ci].position}`;
-  }
-
-  openTip(matrix: SarMatrix, ri: number, ci: number): string {
-    return `Open ${this.cellLocation(matrix, ri, ci)} in the SAR Matrix`;
-  }
-
-  private card(title: string, subtitle: string, body: HTMLElement[], footer?: HTMLElement): HTMLElement {
-    const parts = [ui.divText(title, 'chem-sar-sum-card-title'),
-      ui.divText(subtitle, 'chem-sar-cp-hint'), ...body];
-    if (footer !== undefined)
-      parts.push(footer);
-    return ui.divV(parts, 'chem-sar-sum-card');
-  }
-
   /** A card with no qualifying rows still renders: a vanishing card reflows the grid and hides the
    *  fact that the analysis found nothing of that kind. */
   reason(text: string): HTMLElement[] {
@@ -1366,649 +639,18 @@ export class SummaryPanel {
   // ---- Band B: start here ---------------------------------------------------------------------
 
   /**
-   * Whether the reason lane is drawn on this render — the header's key, the per-row lane and the text
-   * fallback all read this one answer, so the mark can never lose its legend or the phrases with it.
-   *
-   * A lane that wins every slot carries no information, so with one series the phrases come back as
-   * text: a constant mark is decoration. Below the narrow breakpoint five 14px slots and a readable row
-   * cannot both fit, and `applySize` rebuilds the pane when that breakpoint is crossed.
-   */
-  private lanesFit(data: SummaryData): boolean {
-    return data.startHere.length > 1 && !this.root.classList.contains('chem-sar-sum-xnarrow');
-  }
-
-  private buildStartHere(data: SummaryData): HTMLElement[] {
-    const host = this.host;
-    const parts: HTMLElement[] = [];
-    if (data.startHere.length === 0)
-      parts.push(...this.reason('No series holds a measured compound.'));
-    const lanes = this.lanesFit(data);
-    for (const row of data.startHere) {
-      const stat = row.primary;
-      const {matrix} = stat;
-      const rowKey = stat.best !== null ? matrix.rows[stat.best.ri].keySmiles : matrix.rows[0]?.keySmiles;
-      const neighbours = stat.best === null ? 0 :
-        host.observedNeighbours(matrix, stat.best.ri, stat.best.ci);
-      const expand = ui.divV([]);
-      expand.style.display = 'none';
-      let filled = false;
-      parts.push(this.summaryRow({
-        depiction: this.depiction(rowKey ?? null, CARD_CORE_W, CARD_CORE_H),
-        name: matrix.label,
-        badges: [
-          this.badge(`L${stat.tier}`, stat.tier === 1 ?
-            'A leaf series: no finer series sit under this one.' :
-            `A coarser series, holding the compounds of the L${stat.tier - 1} series below it, whose ` +
-            'cores agree one further cut deeper.'),
-          this.trustDot(matrix),
-          this.gainBadge(stat),
-        ],
-        mark: lanes ? this.reasonLane(row.reasons) : undefined,
-        // Cells the decomposition cannot express are never predicted and never offered, so they are no
-        // part of the denominator — but only a matrix whose assembly marked them can say so.
-        desc: `${count(stat.cpd)} cpd · ${count(stat.realCells)} of ` +
-          `${count(stat.totalCells - stat.impossibleCells)} ` +
-          `${stat.impossibleCells > 0 ? 'makeable cells' : 'cells'} measured · ` +
-          `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}` +
-          (stat.realCells ? ` · typical ${host.formatActivity(stat.typical)}` : ''),
-        value: stat.best === null ? '—' : host.formatActivity(stat.best.value),
-        caption: 'best',
-        valueTip: stat.best === null ? 'This series holds no measured compound.' :
-          `${host.formatActivity(stat.best.value)} measured. ${neighbours} measured cells share this ` +
-          'core or this substituent.',
-        tip: `Open ${matrix.label} in the SAR Matrix. "Typical" is this series' fitted mean — the mean ` +
-          'of what was made, count-weighted, so a series whose chemists only made their good ideas ' +
-          'scores high and one heavily resampled core dominates it. The gap between typical and best ' +
-          'is the lucky-singleton signal.' + (stat.impossibleCells > 0 ? '' :
-          ' No cell of this series was marked unmakeable, which can mean the decomposition never ' +
-          'assessed them rather than that the grid is complete.'),
-        onClick: () => stat.best === null ? host.revealMatrix(matrix) :
-          host.revealCell(matrix, stat.best.ri, stat.best.ci),
-        onChevron: () => {
-          if (!filled) {
-            filled = true;
-            for (const part of this.startExpandParts(stat))
-              expand.appendChild(part);
-            // Rows added after the paint tick has run, so these depictions need one of their own.
-            this.flushPaints();
-          }
-          expand.style.display = expand.style.display === 'none' ? '' : 'none';
-        },
-      }));
-      if (!lanes)
-        parts.push(ui.divText(row.reasons.map((i) => REASON_WORDS[i]).join(' · '), 'chem-sar-cp-hint'));
-      parts.push(expand);
-    }
-    const transfers = ui.divText('', 'chem-sar-cp-hint');
-    this.transferLine = transfers;
-    this.syncTransferLine();
-    transfers.classList.add('chem-sar-sum-click');
-    transfers.onclick = () => host.showTab(TAB_TRANSFER);
-    parts.push(transfers);
-    return parts;
-  }
-
-  /**
    * The best unmade compound the model names in this series, against the best one already measured.
    *
    * An additive FLOOR, not a ceiling on the chemistry — a cliff is exactly what this model cannot see,
    * so a gain near zero means "no further additive gain", never "no further potency".
    */
-  /**
-   * Which gate left this series with nothing to aim at. The gate is one condition — a predicted cell
-   * needs MIN_SUPPORT measured compounds on both axes AND a series whose leave-one-out R² holds — but
-   * it fails in ways that call for different things: a setting to change, more compounds, or nothing
-   * at all because the grid is already full.
-   */
-  private noGainReason(stat: SeriesStat): {label: string, tip: string} {
-    const r2 = stat.matrix.confidence?.r2 ?? null;
-    if (!this.host.predictVirtual) {
-      return {label: 'predictions off', tip: '"Predict virtual analogs" is off, so this series has no ' +
-        'predicted cells to compare against. Turn it on in the viewer\'s properties.'};
-    }
-    if (stat.virtualCells === 0) {
-      return {label: 'nothing unfilled', tip: 'Every cell this series can express is already measured ' +
-        'or cannot be made, so there is no unfilled cell to predict.'};
-    }
-    if (r2 === null) {
-      return {label: 'fit unchecked', tip: `This series carries ${count(stat.virtualCells)} predicted ` +
-        'cells, but its additive fit was never cross-validated — too few measured cells to leave one ' +
-        'out — so none of them can be trusted. Unchecked, not wrong.'};
-    }
-    if (r2 < TRUST_R2) {
-      return {label: 'fit fails', tip: `This series carries ${count(stat.virtualCells)} predicted ` +
-        `cells, but its own R² is ${r2.toFixed(2)}, below ${TRUST_R2}: substituent effects ` +
-        'do not add up here, so its predictions are arithmetic rather than estimates.'};
-    }
-    return {label: 'thin support', tip: `All ${count(stat.virtualCells)} predicted cells here rest on ` +
-      `fewer than ${MIN_SUPPORT} measured compounds on one of their two axes. The fit holds; the ` +
-      'evidence behind each individual cell does not.'};
-  }
-
-  private gainBadge(stat: SeriesStat): HTMLElement {
-    const host = this.host;
-    const dir = host.higherIsBetter ? 1 : -1;
-    const reach = stat.bestVirtual !== null && stat.best !== null ?
-      dir * (stat.bestVirtual.value - stat.best.value) : null;
-    let tip = 'The best unfilled cell the model names, against the best compound already measured. ' +
-      'Negative means the best compound already beats anything the additive model can build from this ' +
-      'series\' parts — what a cliff looks like. Near zero means no further ADDITIVE gain, not that ' +
-      'the series is exhausted.';
-    let label = `${this.formatEffect(reach ?? 0)} vs best made`;
-    if (reach === null)
-      ({label, tip} = this.noGainReason(stat));
-    const badge = this.badge(label, tip, reach === null);
-    if (stat.bestVirtual !== null) {
-      badge.classList.add('chem-sar-sum-click');
-      badge.onclick = (e: MouseEvent) => {
-        e.stopPropagation();
-        host.revealCell(stat.matrix, stat.bestVirtual!.ri, stat.bestVirtual!.ci);
-      };
-    }
-    // The one thing the number itself cannot say: whether +0.4 is four of this series' own prediction
-    // errors or a quarter of one.
-    const rmse = stat.matrix.confidence?.rmse ?? null;
-    if (reach === null || rmse === null || !host.activityIsLog)
-      return badge;
-    return ui.divH([badge, this.tickRun(reach, rmse)], 'chem-sar-sum-gain');
-  }
-
-  private startExpandParts(stat: SeriesStat): HTMLElement[] {
-    const host = this.host;
-    const {matrix} = stat;
-    const parts: HTMLElement[] = [];
-
-    if (stat.colRange !== null && stat.rowRange !== null) {
-      const story = stat.colRange > stat.rowRange ? 'this is a column story' : 'this is a row story';
-      const spread = ui.divText(`Spread: substituent choice spans ${stat.colRange.toFixed(2)} · core ` +
-        `choice spans ${stat.rowRange.toFixed(2)} — ${story}`, 'chem-sar-cp-hint');
-      ui.tooltip.bind(spread, () => 'Ranges of this series\' own fitted effects, over substituents ' +
-        `measured on at least ${MIN_SUPPORT} cores and cores measured at at least ${MIN_SUPPORT} ` +
-        'substituents — one floor on both sides, or the looser side of the comparison would come out ' +
-        'wider on noise alone. Both are centred on the same fit, so they compare to each other — and ' +
-        'to no other series\' numbers.');
-      parts.push(spread);
-    }
-
-    if (stat.bestRow !== null) {
-      const row = matrix.rows[stat.bestRow.ri];
-      const folded = Object.values(row.foldedValues);
-      const oneStructure = matrix.rows.length > 1 &&
-        new Set(matrix.rows.map((r) => r.keySmiles)).size === 1;
-      const heading = folded.length === 0 ? 'Best core' :
-        oneStructure ? 'Best R-group combination' : 'Best core + fixed R-groups';
-      // With R-group columns every row can be labelled "Row N" and draw the same structure, so what
-      // distinguishes the winning row is its folded substituents, not its picture.
-      const art = folded.length > 0 && oneStructure ?
-        ui.divH(folded.slice(0, 3).map((subst) =>
-          this.depiction(subst, BENEFIT_MOL_W, BENEFIT_MOL_H)), 'chem-sar-sum-pair') :
-        this.depiction(row.keySmiles, CARD_CORE_W, CARD_CORE_H);
-      const text = ui.divV([
-        ui.divText(`${heading}: ${row.label} · ${this.formatEffect(stat.bestRow.effect)} ` +
-          `(n = ${stat.bestRow.n})`, 'chem-sar-sum-prose'),
-        ui.divText('Best on average across the substituents it was actually measured at — not the ' +
-          'single best compound, and not comparable to another series.', 'chem-sar-cp-hint'),
-      ]);
-      const block = ui.divH([art, text], 'chem-sar-sum-detail');
-      block.classList.add('chem-sar-sum-click');
-      const ci = this.bestMeasuredCol(matrix, stat.bestRow.ri);
-      if (ci >= 0)
-        block.onclick = () => host.revealCell(matrix, stat.bestRow!.ri, ci);
-      parts.push(block);
-    }
-
-    // The one place on this screen where non-additivity is a finding rather than a trust problem, and
-    // where the instruction is the opposite of the leaderboards': hold the pair, vary elsewhere.
-    const conf = matrix.confidence;
-    const dir = host.higherIsBetter ? 1 : -1;
-    // `?? null`, not a strict read: a matrix carried in by a project or layout was serialized by
-    // whichever Chem wrote it, and one without these keys yields undefined, which `!== null` passes.
-    const outlier = (conf ? (dir > 0 ? conf.hi : conf.lo) : null) ?? null;
-    if (conf && outlier !== null && Math.abs(outlier.residual) > conf.rmse &&
-      outlier.ri < matrix.rows.length && outlier.ci < matrix.columns.length) {
-      const beat = ui.divText(`${matrix.rows[outlier.ri].label} × ` +
-        `${shortSmiles(matrix.columns[outlier.ci].substSmiles)} beats its additive expectation by ` +
-        `${this.formatEffect(dir * outlier.residual)}, against this series' own ` +
-        `±${host.formatActivity(conf.rmse)} — hold that pair and vary elsewhere.`, 'chem-sar-cp-hint');
-      beat.classList.add('chem-sar-sum-click');
-      ui.tooltip.bind(beat, 'Out-of-sample: the cell was held out and predicted from the rest, so ' +
-        'the model could not pull itself toward it. It beats the additive sum in this series\' own ' +
-        'units; it does not say the mechanism is understood.');
-      beat.onclick = () => host.revealCell(matrix, outlier.ri, outlier.ci);
-      parts.push(beat);
-    }
-
-    const position = matrix.positions[0] ?? '';
-    const reference = matrix.refValues[position];
-    const refLine = ui.divText(reference ? `Varies ${position} · reference substituent:` :
-      `Varies ${position} · no reference substituent recorded`, 'chem-sar-cp-hint');
-    ui.tooltip.bind(refLine, 'The position this series explores, and the most frequently observed ' +
-      'substituent at it — the comparator its fitted effects are quoted against. Position labels come ' +
-      'from each series\' own decomposition, so R1 here and R1 elsewhere are unrelated.');
-    parts.push(reference ?
-      ui.divH([refLine, this.depiction(reference, BENEFIT_MOL_W, BENEFIT_MOL_H)], 'chem-sar-sum-detail') :
-      refLine);
-    return parts;
-  }
-
-  /** The most potent measured cell of one row, so an expand lands on a compound. */
-  private bestMeasuredCol(matrix: SarMatrix, ri: number): number {
-    const dir = this.host.higherIsBetter ? 1 : -1;
-    let ci = -1;
-    for (let c = 0; c < matrix.columns.length; c++) {
-      const cell = matrix.cells[ri][c];
-      if (cell.kind === 'real' && cell.value !== null &&
-        (ci < 0 || dir * cell.value > dir * matrix.cells[ri][ci].value!))
-        ci = c;
-    }
-    return ci;
-  }
 
   // ---- Band C: the three cards ----------------------------------------------------------------
 
-  private buildSwapCard(data: SummaryData, role?: string): HTMLElement {
-    const host = this.host;
-    const pools = role === undefined ? data.swaps : data.swapsByRole.get(role) ?? [];
-    const title = role === undefined ? 'What buys potency inside these series' :
-      `Swapping ${role} — what it bought`;
-    const subtitle = 'Differences between two compounds that were both made and both measured, alike in ' +
-      'everything but one R-group. Nothing here is fitted or predicted: if the pair was never made, it ' +
-      'is not on this card.';
-    const unit = role === undefined ? 'series' : 'contexts';
-    const rows = pools.map((pool) => {
-      const {forward, from, to, worst, widest: bestOf, mean, up} = orient(pool);
-      const allUp = up === pool.n;
-      // Null for a pool grouped off the component columns: the pair was found by matching component
-      // values, so there is no one cell of one matrix it can be opened at.
-      const best = pool.best;
-      const ci = best === null ? -1 : forward ? best.ciTo : best.ciFrom;
-      const position = best === null ? '' : best.matrix.columns[ci].position;
-      const show = (value: number): string => this.formatDelta(value);
-      // Badges, not descriptor tail: the descriptor clips to one line, and these three are exactly the
-      // qualifiers that stop the row being over-read — appended last they are the first characters lost.
-      const badges: HTMLElement[] = [];
-      if (allUp) {
-        badges.push(this.badge('all up', 'Every measured pair moved the same way. At 3 pairs that is ' +
-          'one-in-four under a coin-flip null.'));
-      }
-      if (pool.sampled) {
-        badges.push(this.badge('sampled row', 'One contributing row carried more than ' +
-          `${SWAP_ROW_CAP} measured cells; its most and least potent halves were kept and mid-range ` +
-          'pairs dropped.', true));
-      }
-      // Only on a log scale: the pooled delta is a log ratio there and the model error is in the same
-      // units, while on a raw scale the two are different quantities.
-      if (host.activityIsLog && data.modelError !== null && Math.abs(worst) < data.modelError) {
-        badges.push(this.badge('under resolution', 'The worst case is smaller than this analysis\' own ' +
-          'typical prediction error, so the whole row may be noise.', true));
-      }
-      const pair = ui.divH([
-        this.depiction(from, BENEFIT_MOL_W, BENEFIT_MOL_H),
-        ui.divText('→', 'chem-sar-sum-arrow'),
-        this.depiction(to, BENEFIT_MOL_W, BENEFIT_MOL_H),
-      ], 'chem-sar-sum-pair');
-      return this.summaryRow({
-        depiction: pair,
-        name: best === null ? `${role} swap` : `${best.matrix.label} · ${position}`,
-        badges,
-        desc: `mean ${show(mean)} (${show(worst)} → ${show(bestOf)}) · ${pool.n} pairs · ` +
-          `${pool.roots.size} ${unit}`,
-        value: show(worst),
-        caption: 'worst case',
-        valueTip: `This swap was worth at least ${show(worst)} in every one of the ${pool.n} measured ` +
-          `pairs, across ${pool.roots.size} ${unit}. Each pair is two measured compounds alike in ` +
-          'everything else, so what they do not share cancels exactly and no fit is involved. At 3 ' +
-          'pairs "all up" is one-in-four under a coin-flip null.' +
-          (pool.sampled ? ` One group carried more than ${SWAP_ROW_CAP} measured compounds; its most ` +
-            'and least potent halves were kept and mid-range pairs dropped.' : ''),
-        // A pool grouped off the component columns has no one cell to open, so the row selects the
-        // compounds that carry the better side instead of going nowhere.
-        tip: best === null ? `Select every compound whose ${role} is the one on the right` :
-          this.openTip(best.matrix, best.ri, ci),
-        onClick: best === null ? () => host.selectRoleValue(role!, to) :
-          () => host.revealCell(best.matrix, best.ri, ci, position),
-      });
-    });
-    if (rows.length > 0)
-      return this.card(title, subtitle, rows);
-    return this.card(title, subtitle, this.reason(data.swapCandidates === 0 && role === undefined ?
-      'No row of any series carries two measured substituents, so there is no swap to measure.' :
-      `No ${role === undefined ? '' : `${role} `}swap clears ${SWAP_MIN_PAIRS} measured pairs in ` +
-      `${SWAP_MIN_SERIES} ${unit}.`));
-  }
-
-  private buildRGroupCard(data: SummaryData): HTMLElement {
-    const host = this.host;
-    const title = data.axisRole === null ? 'R-groups — within-series ranking' :
-      `${data.axisRole} — within-series ranking`;
-    const subtitle = 'Ranked by how often the fitted model places this group first at its position. The ' +
-      'number is its margin over that series\' own most-common substituent — a within-series ' +
-      'comparison, so two series\' numbers are only loosely comparable.';
-    // An additive effect in raw assay units cannot be re-expressed as a fold, which is the one thing
-    // that would make it mean something; the swap card refuses the same arithmetic.
-    if (!host.activityIsLog) {
-      return this.card(title, subtitle, this.reason('The activity is on a raw scale, where a fitted ' +
-        'effect is a difference in assay units and says nothing about how large the change is. Set ' +
-        'Scaling to lg or −lg, or declare the column higher-is-better if it is already a pIC50.'));
-    }
-    const slots = data.series.filter((stat) => stat.stripCols !== null);
-    // One scale for every bar on this card, so the bars compare down the card — and, deliberately, to
-    // nothing on any other card.
-    const shown = [...data.rgroups.slice(0, SUM_ROWS), ...data.rgroupsThin, ...data.rgroupLosers];
-    const scale = shown.reduce((m, r) => Math.max(m, Math.abs(r.magnitude ?? 0)), 0);
-    // With one row the bar is full-length and says nothing.
-    const bars = shown.filter((r) => r.magnitude !== null).length > 1 ? scale : 0;
-    // One strip scale for the whole card, like the bars: normalised per row, every row's own best
-    // difference draws at full height, so a +1.8 row and a +0.05 row terminate alike.
-    let stripScale = 0;
-    for (const stat of slots) {
-      for (const r of shown) {
-        const delta = stat.stripCols!.get(r.subst)?.refDelta;
-        if (delta != null)
-          stripScale = Math.max(stripScale, Math.abs(delta));
-      }
-    }
-    const rows = data.rgroups.slice(0, SUM_ROWS).map((row, i) =>
-      this.rgroupBlock(data, slots, row, bars, stripScale, {primary: i === 0}));
-    const thin = data.rgroupsThin.map((row) =>
-      this.rgroupBlock(data, slots, row, bars, stripScale, {thin: true}));
-    if (rows.length === 0 && thin.length === 0) {
-      // Convergence is named because it is the one cause the reader cannot see anywhere else: a fit
-      // that stopped short is silently excluded from every pool, and R² says nothing about it.
-      return this.card(title, subtitle, this.reason(`No substituent comes first at its position in ` +
-        `${SWAP_MIN_SERIES} series whose additive fit holds.` + (data.nonConverged === 0 ? '' :
-        ` The additive fit of ${count(data.nonConverged)} of the ${count(this.host.matrices.length)} ` +
-        'series did not reach its tolerance, and those are left out of this comparison.')));
-    }
-    const body: HTMLElement[] = [];
-    // Two numbers for one substituent are a tab apart, and nothing else says which question each
-    // answers. Only where that second number exists: where the fit declined to rank this column there
-    // is no other card to reconcile with.
-    if (this.roleAnswer(data, data.axisRole) !== null) {
-      body.push(ui.divText('A value can place first in most series and still sit at the library mean: ' +
-        'this card counts wins within a series against that series\' own reference, while the ' +
-        `${data.axisRole} tab reports one offset pooled over the table.`,
-      'chem-sar-sum-prose'));
-    }
-    if (slots.length > 0 && data.nonConverged > 0) {
-      body.push(ui.divText(`${count(data.nonConverged)} further series carry no square and count in ` +
-        'no row: their additive fit did not reach its tolerance, so their effects cannot be ordered ' +
-        'against another series\'.', 'chem-sar-cp-hint'));
-    }
-    body.push(...rows);
-    if (thin.length > 0) {
-      body.push(ui.divText(`Won in only two series — a median over two lineages is the mean of two ` +
-        'numbers:', 'chem-sar-cp-hint'));
-      body.push(...thin);
-    }
-    if (data.rgroupLosers.length > 0) {
-      const head = data.rgroupLosers[0];
-      body.push(ui.divText(`Stop making: ${shortSmiles(head.subst)} came last at its position in ` +
-        `${head.k} of the ${head.tried} series it was tried in` +
-        (head.magnitude === null ? '.' : `, costing ${this.formatEffect(head.magnitude)} against each ` +
-        'series\' own reference.'), 'chem-sar-cp-hint'));
-      body.push(...data.rgroupLosers.map((row) =>
-        this.rgroupBlock(data, slots, row, bars, stripScale, {loser: true})));
-    }
-    return this.card(title, subtitle, body, this.sizeVerdict(data));
-  }
-
-  /** What one strip slot is. A strip is drawn for any fragment-columns run, but only where a matrix IS
-   *  one core is a slot a core — with a series column, or with nothing on the row axis, one slot holds
-   *  several cores. */
-  private slotNoun(data: SummaryData): string {
-    return data.coresAreSeries ? 'core' : 'series';
-  }
-
-  /** One leaderboard entry: the row, its per-slot strip where one can be drawn, and an expand that
-   *  says what the row does and does not claim. */
-  private rgroupBlock(data: SummaryData, slots: SeriesStat[], row: RGroupRow, scale: number,
-    stripScale: number, opts: {thin?: boolean, loser?: boolean, primary?: boolean}): HTMLElement {
-    const parts: HTMLElement[] = [this.rgroupRow(data, slots, row, scale, opts)];
-    if (slots.length > 0)
-      parts.push(this.buildStrip(data, slots, row, stripScale));
-    const body = ui.divV([]);
-    body.style.display = 'none';
-    const toggle = ui.divText('What this row claims →', 'chem-sar-cp-hint');
-    toggle.classList.add('chem-sar-sum-click');
-    let filled = false;
-    const open = (): void => {
-      if (!filled) {
-        filled = true;
-        for (const part of this.rgroupExpandParts(data, row))
-          body.appendChild(part);
-        this.flushPaints();
-      }
-      body.style.display = '';
-    };
-    toggle.onclick = () => {
-      if (body.style.display === 'none')
-        open();
-      else
-        body.style.display = 'none';
-    };
-    // The answer tile above asked for its evidence, and the pane it asked for is only built now.
-    if (opts.primary && this.expandTopRGroup) {
-      this.expandTopRGroup = false;
-      open();
-    }
-    parts.push(toggle, body);
-    return ui.divV(parts);
-  }
-
-  private rgroupExpandParts(data: SummaryData, row: RGroupRow): HTMLElement[] {
-    const slot = this.slotNoun(data);
-    // A reading instruction, not a restatement of the marks above it.
-    const read = ui.divText(`How to read this: first on most of the ${slot}s it was tried on and never ` +
-      `worse than the reference means the group travels — carry it forward. First on one ${slot} while ` +
-      `costing potency on the rest means hold it to that ${slot} and vary elsewhere.`,
-    'chem-sar-sum-prose');
-    const art = ui.divH([this.depiction(row.subst, CARD_CORE_W * 2, CARD_CORE_H * 2), read],
-      'chem-sar-sum-detail');
-    return [art];
-  }
-
-  /**
-   * MK-A. One square per slot, in a fixed order that is never re-sorted per row — the row is only
-   * readable against its neighbours if the same slot means the same series everywhere.
-   *
-   * Sign is carried by the direction the fill grows from the mid-rule, and only redundantly by hue:
-   * a tint alone renders +0.9 and −0.9 as the same grey. The mid-rule is the legend.
-   *
-   * `widest` is the card's largest difference, not this row's, so fill heights compare down the card
-   * the way the slot order lets the squares compare across it.
-   */
-  private buildStrip(data: SummaryData, slots: SeriesStat[], row: RGroupRow,
-    widest: number): HTMLElement {
-    const host = this.host;
-    const slot = this.slotNoun(data);
-    const squares = slots.map((stat) => {
-      const col = stat.stripCols!.get(row.subst);
-      if (col === undefined) {
-        const none = ui.divText('–', 'chem-sar-sum-sq chem-sar-sum-sq-none');
-        ui.tooltip.bind(none, () => `${stat.matrix.label} — never tried on this ${slot}`);
-        return none;
-      }
-      const square = ui.div([], 'chem-sar-sum-sq');
-      const delta = col.refDelta;
-      if (delta === null) {
-        square.classList.add('chem-sar-sum-sq-hatch');
-        ui.tooltip.bind(square, () => `${stat.matrix.label} — tried here over ${col.n} measured cells, ` +
-          'but this series records no reference substituent to compare against');
-      } else if (delta === 0 && stat.matrix.refValues[stat.matrix.columns[col.ci].position] === row.subst) {
-        square.classList.add('chem-sar-sum-sq-ref');
-        ui.tooltip.bind(square, () => `${stat.matrix.label} — this group IS this series' reference ` +
-          `substituent, over ${col.n} measured cells, so there is nothing to compare it against here`);
-      } else {
-        square.classList.add('chem-sar-sum-sq-val');
-        // No difference draws no fill: the floor exists so a small value still reads as a direction,
-        // and applied to an exact zero it would draw a win that is not there.
-        if (delta !== 0) {
-          const fill = ui.div([], `chem-sar-sum-fill chem-sar-sum-${delta > 0 ? 'up' : 'down'}`);
-          fill.style.height = `${Math.max(STRIP_MIN_FILL,
-            Math.round((widest > 0 ? Math.abs(delta) / widest : 0) * 9))}px`;
-          square.appendChild(fill);
-        }
-        ui.tooltip.bind(square, () => `${stat.matrix.label} · ${this.formatEffect(delta)} against this ` +
-          `series' own reference, over ${col.n} measured cells` + (delta === 0 ?
-          ' — no difference at all, so nothing grows from the mid-rule.' :
-          ` — ${delta > 0 ? 'better than' : 'worse than'} it, so the fill grows ` +
-          `${delta > 0 ? 'up' : 'down'} from the mid-rule. Heights compare down this card, against its ` +
-          `widest difference (${this.formatEffect(widest)}).`));
-      }
-      square.classList.add('chem-sar-sum-click');
-      square.onclick = () => {
-        const ri = bestMeasuredRow(stat.matrix, col.ci, this.host.higherIsBetter ? 1 : -1);
-        if (ri >= 0)
-          host.revealCell(stat.matrix, ri, col.ci, stat.matrix.columns[col.ci].position);
-      };
-      return square;
-    });
-    return ui.divH(squares, 'chem-sar-sum-strip');
-  }
-
-  /** One verdict for the whole card, not a number per row: five heavy-atom counts do not add
-   *  themselves up in a reader's head, and it is the sum that ends a series at MW 620. */
-  private sizeVerdict(data: SummaryData): HTMLElement | undefined {
-    const rows = data.rgroups;
-    if (rows.length === 0)
-      return undefined;
-    const line = ui.divText('', 'chem-sar-cp-hint');
-    this.pendingPaints.push(() => {
-      const rdkit = getRdKitModule();
-      let groups = 0;
-      let references = 0;
-      let n = 0;
-      for (const row of rows) {
-        const {matrix, ci} = row.win;
-        const reference = matrix.refValues[matrix.columns[ci].position];
-        const atoms = cachedAtomCount(row.subst, rdkit);
-        const refAtoms = reference ? cachedAtomCount(reference, rdkit) : 0;
-        if (atoms > 0 && refAtoms > 0) {
-          groups += atoms;
-          references += refAtoms;
-          n++;
-        }
-      }
-      line.innerText = n === 0 ? '' : `Your top ${n} groups average ${Math.round(groups / n)} heavy ` +
-        `atoms; the series references they beat average ${Math.round(references / n)}.`;
-    });
-    ui.tooltip.bind(line, 'Heavy atoms of the fragment, the attachment point included — not ' +
-      'molecular weight, and not lipophilicity, which is what actually kills the compound. A smoke ' +
-      'alarm, not a property model.');
-    return line;
-  }
-
-  private rgroupRow(data: SummaryData, slots: SeriesStat[], row: RGroupRow, scale: number,
-    opts: {thin?: boolean, loser?: boolean}): HTMLElement {
-    const host = this.host;
-    const {win} = row;
-    const position = win.matrix.columns[win.ci].position;
-    const reference = win.matrix.refValues[position] ?? '';
-    const atoms = this.badge('', 'Heavy atoms of the fragment, the attachment point included. The ' +
-      'model scores potency alone and carries no efficiency term, so an unlabelled leaderboard is a ' +
-      'heavy-atom leaderboard wearing a potency label.');
-    this.pendingPaints.push(() => {
-      const n = cachedAtomCount(row.subst, getRdKitModule());
-      atoms.innerText = n ? `${n} atoms` : '—';
-    });
-    // Attempts, not wins: "best in 5 of 6" is heard as "tried in 6", and a denominator of wins makes
-    // every row on the card read as near-perfect.
-    const placed = opts.loser ? 'last' : 'best';
-    const badges = [this.winTally(row, placed), atoms];
-    if (opts.thin)
-      badges.push(this.badge('2 series', 'Two lineages only — the number below is the mean of two.', true));
-    // Only a single contributing series may have its reference named: each series is measured against
-    // its own most-common substituent, and those genuinely differ, so one SMILES cannot stand for the
-    // comparator of a median pooled over several.
-    const comparator = row.magnitudeSeries > 1 ? 'each series\' own reference' : shortSmiles(reference);
-    return this.summaryRow({
-      depiction: this.depiction(row.subst, CARD_CORE_W, CARD_CORE_H),
-      name: `${win.matrix.label} · ${position}`,
-      badges,
-      // The strip below carries the per-slot picture where one can be drawn, and a range line beside it
-      // would say the same thing twice and worse.
-      desc: row.magnitude === null ? 'no reference substituent to compare against' :
-        slots.length > 0 ? `vs ${comparator} over ${row.magnitudeSeries} series` :
-          `vs ${comparator} · ${this.formatEffect(row.lo)} → ${this.formatEffect(row.hi)} ` +
-          `over ${row.magnitudeSeries} series`,
-      mark: row.magnitude === null || scale <= 0 ? undefined :
-        this.effectBar(row.magnitude, scale, data.modelError),
-      value: row.magnitude === null ? '—' : this.formatEffect(row.magnitude),
-      caption: 'vs reference',
-      valueTip: row.magnitude === null ?
-        'No series contributing this placing also carries its reference substituent as a column, so ' +
-        'there is no within-series comparison to quote. The row still ranks on how often it placed.' :
-        'Median difference against each series\' own most-common substituent' +
-        (row.magnitudeSeries > 1 ? ', which differs from series to series' : ` (${reference})`) +
-        '. A within-series difference, so it is free of the fact that two series centre their effects ' +
-        `over different substituent menus — but only ${row.magnitudeSeries} of the ${row.k} ` +
-        'contributing series carry one, and two series\' numbers are still only loosely comparable.',
-      tip: this.openTip(win.matrix, win.ri, win.ci),
-      onClick: () => host.revealCell(win.matrix, win.ri, win.ci, position),
-    });
-  }
-
   // ---- Band B′: one fit over every component column ---------------------------------------------
 
-  /**
-   * One card per role column, ordered by that role's noise-corrected spread, or one card naming why
-   * nothing is ranked.
-   *
-   * Absent rather than empty outside fragment-columns mode: a substituent label discovered by
-   * fragmentation is local to its own series, so there is no scale on which one pooled offset could be
-   * read and the question does not apply at all.
-   */
-  private buildRoleCards(data: SummaryData): {label: string, note: string | null, el: HTMLElement}[] {
-    if (data.axisRole === null)
-      return [];
-    const refusal = this.roleFitRefusal(data);
-    if (refusal !== null) {
-      return [{label: 'Components', note: null,
-        el: this.anchored(this.card('Component contributions', refusal, this.roleDropped(data)),
-          'role-0')}];
-    }
-    const roles = data.roleFit!.roles;
-    // One scale across every role card, against the tab's usual rule: each of these offsets comes from
-    // one fit against one library average, so they are on one scale and a shared bar is the honest
-    // rendering. Per-matrix effects elsewhere are centred inside their own matrix and are not. Over
-    // the rows that will be drawn only — a coefficient on no card would shorten every bar on every
-    // other one for a reason the reader cannot see.
-    let scale = 0;
-    for (const role of roles.filter(roleRanks)) {
-      for (const {level} of this.roleRows(role))
-        scale = Math.max(scale, Math.abs(level.coef));
-    }
-    return roles.map((role, i) => ({
-      label: role.name,
-      note: roleRanks(role) ? role.spread.toFixed(2) : null,
-      el: this.anchored(this.buildRoleCard(data, role, scale), `role-${i}`),
-    }));
-  }
-
-  /** The one finding that is about every component at once, so it sits above the tabs rather than on
-   *  any one of them. The order of the roles is stable; the size of the gap between two of them is not,
-   *  so it is named as a rank and never quoted as a ratio. Omitted where a role is refusing to rank its
-   *  own values, since that refusal is what invalidates the spread ordering. */
-  private roleOrdering(data: SummaryData): HTMLElement | null {
-    const roles = data.roleFit?.roles;
-    if (roles === undefined || this.roleFitRefusal(data) !== null || !roles.every(roleRanks))
-      return null;
-    // Consecutive roles closer than the tie threshold are joined by an approximation sign rather than
-    // an inequality: the order is stable, a gap that small is not, and one chain says so however many
-    // component columns there are.
-    const chain = roles.map((role, i) => i === 0 ? role.name :
-      `${roles[i - 1].spread - role.spread < ROLE_SPREAD_TIE ? '≈' : '>'} ${role.name}`).join(' ');
-    const el = this.hint(`Changing ${roles[0].name} moves ${this.host.activityColumnName} most: ${chain}.`,
-      'Each component\'s range between its best and worst value, corrected for the fact that a column ' +
-      'with more values gets a wider range by chance alone. That correction is what makes columns with ' +
-      'different numbers of values comparable. "≈" marks a gap too small to order.');
-    el.classList.add('chem-sar-sum-sub-lead');
-    return el;
-  }
-
   /** Why the whole fit cannot be read, or null when it can. */
-  private roleFitRefusal(data: SummaryData): string | null {
+  roleFitRefusal(data: SummaryData): string | null {
     const fit = data.roleFit;
     if (fit === null) {
       return `No component column carries two values with ${MIN_SUPPORT} or more compounds each, so ` +
@@ -2031,185 +673,13 @@ export class SummaryPanel {
     return null;
   }
 
-  /** Stated wherever the fit is reported: the connected-block prune drops measured compounds by design,
-   *  so the compound count the card prints is not the table. */
-  private roleDropped(data: SummaryData): HTMLElement[] {
-    const dropped = data.roleFit?.dropped ?? 0;
-    if (dropped === 0)
-      return [];
-    return [ui.divText(`${count(dropped)} compounds share no component value with the rest of the table; ` +
-      'only the largest connected block is fitted, because offsets from separate blocks rest on ' +
-      'unrelated baselines.', 'chem-sar-sum-prose')];
-  }
-
-  /** The rows one role card shows: its best three, then its worst two. Two losers rather than one —
-   *  where a role falls into two groups the single lowest value is routinely its least-supported
-   *  member, and one row would then stand for a whole cluster by its smallest. */
-  private roleRows(role: RoleSummary): {level: RoleLevel, faint: boolean}[] {
-    const top = role.levels.slice(0, SUM_ROWS);
-    return [...top.map((level) => ({level, faint: false})),
-      ...role.levels.slice(Math.max(top.length, role.levels.length - LOSER_ROWS))
-        .map((level) => ({level, faint: true}))];
-  }
-
-  /**
-   * Which component the matrix columns actually enumerate, and the one control that changes it.
-   *
-   * A card ranking R4 sits beside a grid whose columns are R1, which reads as the two disagreeing. They
-   * are answering different questions: the card is the fit over the whole table, the grid enumerates one
-   * component at a time.
-   */
-  private axisSwitchNote(name: string, data: SummaryData): HTMLElement {
-    const host = this.host;
-    const note = this.hint('Ranked from the fit over the whole table. The SAR Matrix columns enumerate ' +
-      `${data.axisRole}, so these values are not the ones across the top there.`,
-    `Putting ${name} across the columns means rebuilding: every matrix is reassembled and every fit ` +
-      'recomputed, which takes as long as the first run did.');
-    const pill = ui.divText(`Put ${name} across the columns — rebuilds`,
-      'chem-sar-chip-badge chem-sar-sum-role');
-    // What will and will not move, on the control: this ranking is the same fit either way, so a reader
-    // who clicks expecting these rows to change waits out a rebuild for a screen that looks identical.
-    ui.tooltip.bind(pill, () => `Reassembles every matrix with ${name} across the columns, and pools ` +
-      `its measured pairs instead of ${data.axisRole}'s. The offsets on this card do not change — they ` +
-      'come from one fit over the whole table, whichever component the columns enumerate.');
-    pill.onclick = () => {
-      if (!host.computing)
-        host.setColumnAxis(name);
-    };
-    return ui.divH([note, pill], 'chem-sar-sum-chips');
-  }
-
-  private buildRoleCard(data: SummaryData, role: RoleSummary, scale: number): HTMLElement {
-    const host = this.host;
-    const fit = data.roleFit!;
-    const title = `${role.name} — offsets from the additive fit`;
-    const subtitle = `Additive fit over ${fit.roles.length} component columns. Each offset is against ` +
-      `the library mean of ${host.formatActivity(fit.mean)}, adjusted for the other components. ` +
-      `R² ${fit.cvR2!.toFixed(2)} ± ${host.formatActivity(fit.cvRmse!)} predicting unseen compounds, ` +
-      `n = ${count(fit.compounds)}.`;
-    const footer = this.roleFooter();
-    // On every card, because each is now the only one its reader can see: a subtitle counting fewer
-    // compounds than the tab does, on a card that never explains the difference, is the one omission
-    // this note exists to prevent.
-    const dropped = this.roleDropped(data);
-    if (role.levels.length < 2) {
-      return this.card(title, subtitle, [...this.reason(`${role.levels.length === 1 ? 'Only one' : 'No'} ` +
-        `${role.name} value carries ${MIN_SUPPORT} or more compounds, so there is nothing to compare.`),
-      ...dropped], footer);
-    }
-    // Prediction is nearly unique even where the split of credit between the roles is not, so this is
-    // the only check that this role's share of it means anything.
-    if (role.repeat !== null && role.repeat < TRUST_R2) {
-      return this.card(title, subtitle, [...this.reason(`${role.name} offsets do not repeat: fitted on ` +
-        `each half of the table separately they correlate at r ${role.repeat.toFixed(2)}, below ` +
-        `${TRUST_R2}. The other components in this table predict which ${role.name} a compound carries ` +
-        'closely enough that the fit cannot separate their contributions on a subset, so these values ' +
-        'are not ranked.'), ...dropped], footer);
-    }
-
-    const chips: HTMLElement[] = [
-      this.badge(`spread ${role.spread.toFixed(2)}`, 'Count-weighted sd of this component\'s offsets, ' +
-        'with estimation noise subtracted so columns with different numbers of values compare. ' +
-        'Not a range.'),
-      this.badge(`${role.levels.length} of ${role.fitted} values ranked`,
-        `${role.thin} values seen fewer than ${MIN_SUPPORT} times stay in the fit but carry no readable ` +
-        'offset of their own.'),
-    ];
-    if (role.repeat !== null) {
-      chips.push(this.badge(`repeats at r ${role.repeat.toFixed(2)}`,
-        'Fitted on each half of the table separately, these offsets correlate this closely. Below ' +
-        TRUST_R2 + ' they would not be ranked.'));
-    }
-    const body: HTMLElement[] = [ui.divH(chips, 'chem-sar-sum-chips')];
-    if (role.name !== data.axisRole && host.roleColumns.includes(role.name))
-      body.push(this.axisSwitchNote(role.name, data));
-    const split = role.split;
-    if (split !== null) {
-      body.push(ui.divText(`Bimodal: ${split.hiCount} values at ${this.formatEffect(split.hiMean)} ` +
-        `(n = ${count(split.hiN)}) and ${split.loCount} at ${this.formatEffect(split.loMean)} ` +
-        `(n = ${count(split.loN)}), a gap of ${split.gap.toFixed(2)} against the ` +
-        `± ${host.formatActivity(fit.cvRmse!)} this fit resolves.`, 'chem-sar-sum-prose'));
-    }
-
-    const best = data.roleBest.get(role.name)!;
-    const others = fit.roles.filter((other) => other !== role).map((other) => other.name).join(', ');
-    for (const {level, faint} of this.roleRows(role)) {
-      const ref = best.get(level.value)!;
-      // The axis is the one role pinned in the Vary filter, so its row can land on the position too.
-      const position = role.name === data.axisRole ? ref.matrix.columns[ref.ci].position : undefined;
-      body.push(this.summaryRow({
-        depiction: level.value === '' ? null : this.depiction(level.value, CARD_CORE_W, CARD_CORE_H),
-        name: roleValueName(level.value),
-        badges: [this.roleCountBadge(role.name, level)],
-        desc: `best measured ${host.formatActivity(ref.value)} · ${ref.matrix.label}`,
-        mark: this.effectBar(level.coef, scale, fit.cvRmse),
-        value: this.formatEffect(level.coef),
-        caption: 'offset',
-        valueTip: `${this.formatEffect(level.coef)} against the library mean of ` +
-          `${host.formatActivity(fit.mean)}, over ${count(level.n)} compounds, adjusted for ${others}. ` +
-          'An offset, not a potency.',
-        faint,
-        tip: role.name === data.coreRole ? `Open ${ref.matrix.label} in the SAR Matrix` :
-          this.openTip(ref.matrix, ref.ri, ref.ci),
-        onClick: () => role.name === data.coreRole ? host.revealMatrix(ref.matrix) :
-          host.revealCell(ref.matrix, ref.ri, ref.ci, position),
-      }));
-    }
-    body.push(...dropped);
-    return this.card(title, subtitle, body, footer);
-  }
-
-  /** The compound count, which also selects those compounds. An offset is a statement about a subset
-   *  of the table, and the only way to check one is to look at the subset it is about. */
-  private roleCountBadge(role: string, level: RoleLevel): HTMLElement {
-    const badge = this.badge(`${count(level.n)} cpd`, 'Measured compounds carrying this value — click ' +
-      'to select them in the table. No ± is printed: one from this count alone would ignore the ' +
-      'degrees of freedom the other components cost.');
-    badge.classList.add('chem-sar-sum-click');
-    badge.onclick = (e: MouseEvent) => {
-      e.stopPropagation();
-      this.host.selectRoleValue(role, level.value);
-    };
-    return badge;
-  }
-
-  /** The negative clause and the reconciliation, on every role card: each is now the only card its
-   *  reader can see, so neither can be carried by a neighbour. */
-  private roleFooter(): HTMLElement {
-    return ui.divV([
-      this.prose('Offset = the mean difference of the compounds carrying this value, adjusted for the ' +
-        'other components.',
-      'Observational, not causal: it is what the compounds that happen to carry this value did, so it ' +
-        'is neither a potency nor a prediction.'),
-      this.prose(`Fitted over the whole table. The "${PANE_SERIES}" tab counts instead.`,
-        `A count on "${PANE_SERIES}" only sees comparisons that were actually made inside one row — a ` +
-        'substitution nobody tried side by side is invisible there, and visible here.'),
-    ]);
-  }
-
   // ---- Cores ----------------------------------------------------------------------------------
 
   /** Series a core leaderboard may rank at all: a matrix has to BE one core, since elsewhere a core is
    *  one row of one matrix and its fitted mean compares groupings, not scaffolds. */
-  private rankableCores(data: SummaryData): SeriesStat[] {
+  rankableCores(data: SummaryData): SeriesStat[] {
     return data.coresAreSeries ?
       data.series.filter((stat) => stat.realCells > 0 && stat.cpd >= MIN_SUPPORT) : [];
-  }
-
-  /** The fold tiers that carry rankable cores, shallowest first. */
-  private coreTiers(data: SummaryData): number[] {
-    return [...new Set(this.rankableCores(data).map((stat) => stat.tier))].sort((a, b) => a - b);
-  }
-
-  /** The tier ranked when the reader has not picked one: the one holding the most cores, which is the
-   *  cut depth this library actually recurs at. */
-  private defaultCoreTier(data: SummaryData): number | null {
-    const tiers = this.coreTiers(data);
-    if (tiers.length === 0)
-      return null;
-    const counts = new Map(tiers.map((tier) =>
-      [tier, this.rankableCores(data).filter((stat) => stat.tier === tier).length]));
-    return tiers.reduce((best, tier) => counts.get(tier)! > counts.get(best)! ? tier : best, tiers[0]);
   }
 
   /**
@@ -2218,7 +688,7 @@ export class SummaryPanel {
    * Never two tiers at once: a folded tier holds the same compounds over a core cut one bond broader,
    * so a mixed ranking enters one compound twice under two cores and reads as two scaffolds agreeing.
    */
-  private topCores(data: SummaryData): SeriesStat[] {
+  topCores(data: SummaryData): SeriesStat[] {
     const tier = this.tierFilter ?? this.defaultCoreTier(data);
     if (tier === null)
       return [];
@@ -2226,51 +696,6 @@ export class SummaryPanel {
     return this.rankableCores(data).filter((stat) => stat.tier === tier)
       .sort((a, b) => dir * (b.typical - a.typical) || (a.matrix.id < b.matrix.id ? -1 : 1))
       .slice(0, SUM_ROWS);
-  }
-
-  private buildCoreCard(data: SummaryData, cores: SeriesStat[]): HTMLElement {
-    const host = this.host;
-    const title = `${data.coreRole ?? 'Cores'} — the average of what was made on each`;
-    // Not matrix.scores: the preferred score is a raw column mean, which is exactly the statistic the
-    // fitted cards were built to replace, and the potency score reads counts captured before the prune.
-    const subtitle = 'The mean activity of each core\'s measured compounds, in the activity column\'s ' +
-      'own units. Not corrected for which substituents each core was paired with, so a core only ever ' +
-      'tried with good groups scores high — but unlike a fitted offset, these do compare between cores.';
-    if (!data.coresAreSeries)
-      return this.card(title, subtitle, this.reason(CORES_NOT_COMPARABLE));
-    if (cores.length === 0)
-      return this.card(title, subtitle, this.reason(`No core holds ${MIN_SUPPORT} measured compounds.`));
-    const body: HTMLElement[] = [];
-    body.push(...cores.map((stat) => this.summaryRow({
-      depiction: this.depiction(stat.matrix.rows[0]?.coreSmiles ?? null, CARD_CORE_W, CARD_CORE_H),
-      name: stat.matrix.label,
-      badges: [this.trustDot(stat.matrix)],
-      desc: `${count(stat.cpd)} cpd · best ${host.formatActivity(stat.best!.value)} · ` +
-        `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}`,
-      value: host.formatActivity(stat.typical),
-      caption: 'typical',
-      valueTip: 'The fitted mean of this core\'s measured compounds, count-weighted. It is the mean of ' +
-        'what was made: a core only ever paired with good caps scores high, and a heavily resampled ' +
-        'substituent dominates it.',
-      tip: `Open ${stat.matrix.label} in the SAR Matrix`,
-      onClick: () => host.revealMatrix(stat.matrix),
-    })));
-    const dir = host.higherIsBetter ? 1 : -1;
-    let holder: SeriesStat | null = null;
-    // Inside the ranked tier: a compound on a core cut at another depth is not an alternative to the
-    // cores listed here, so naming it would set up a comparison the card refuses to make.
-    for (const stat of this.rankableCores(data).filter((s) => s.tier === cores[0].tier)) {
-      if (stat.best !== null && (holder === null || dir * stat.best.value > dir * holder.best!.value))
-        holder = stat;
-    }
-    // The carry-forward decision nothing else on the screen states: the best single compound and the
-    // best scaffold on average are routinely not the same core.
-    if (holder !== null && holder.matrix.id !== cores[0].matrix.id) {
-      body.push(ui.divText(`${cores[0].matrix.label} runs highest on average. Your single best compound ` +
-        `is on ${holder.matrix.label}, whose typical is ${host.formatActivity(holder.typical)}: one ` +
-        'lucky substituent, not a better scaffold.', 'chem-sar-cp-hint'));
-    }
-    return this.card(title, subtitle, body);
   }
 
   // ---- Worth making ------------------------------------------------------------------------------
@@ -2327,14 +752,14 @@ export class SummaryPanel {
   }
 
   /** The same, in the faint style a row uses for its trailing clause. */
-  private hint(text: string, tip: string): HTMLElement {
+  hint(text: string, tip: string): HTMLElement {
     const el = ui.divText(text, 'chem-sar-cp-hint');
     ui.tooltip.bind(el, () => tip);
     return el;
   }
 
   /** A chevron heading that shows and hides `body`; the caller owns whatever else sits on the row. */
-  private foldHead(title: string, body: HTMLElement, open: boolean, cls = '',
+  foldHead(title: string, body: HTMLElement, open: boolean, cls = '',
     onToggle?: (open: boolean) => void): HTMLElement {
     const icon = ui.iconFA('chevron-right');
     icon.classList.add('chem-sar-sum-fold-icon');
@@ -2380,5 +805,29 @@ export class SummaryPanel {
     if (matrices.length > TRUST_LIST_MAX)
       list.appendChild(ui.divText(`+${matrices.length - TRUST_LIST_MAX} more`, 'chem-sar-cp-hint'));
     return list;
+  }
+
+  cellLocation(matrix: SarMatrix, ri: number, ci: number): string {
+    return `${matrix.label} · ${matrix.rows[ri].label} × ${matrix.columns[ci].position}`;
+  }
+
+  openTip(matrix: SarMatrix, ri: number, ci: number): string {
+    return `Open ${this.cellLocation(matrix, ri, ci)} in the SAR Matrix`;
+  }
+
+  /** The tier ranked when the reader has not picked one: the one holding the most cores, which is the
+   *  cut depth this library actually recurs at. */
+  defaultCoreTier(data: SummaryData): number | null {
+    const tiers = this.coreTiers(data);
+    if (tiers.length === 0)
+      return null;
+    const counts = new Map(tiers.map((tier) =>
+      [tier, this.rankableCores(data).filter((stat) => stat.tier === tier).length]));
+    return tiers.reduce((best, tier) => counts.get(tier)! > counts.get(best)! ? tier : best, tiers[0]);
+  }
+
+  /** The fold tiers that carry rankable cores, shallowest first. */
+  coreTiers(data: SummaryData): number[] {
+    return [...new Set(this.rankableCores(data).map((stat) => stat.tier))].sort((a, b) => a - b);
   }
 }
