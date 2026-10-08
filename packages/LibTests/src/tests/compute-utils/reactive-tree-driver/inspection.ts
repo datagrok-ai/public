@@ -75,6 +75,13 @@ category('ComputeUtils: Driver inspection', async () => {
     expectDeepEqual([entry.id, entry.isAction, entry.explanation.failedAlias], ['act1', true, 'out']);
   });
 
+  test('An unmatched action sharing an id with a matched link is listed', async () => {
+    const entries = await notMatched([{id: 'x', from: 'in:step1/res', to: 'out:step2/a'}], {actions: [{
+      id: 'x', from: 'in:step1/res', to: 'out:stpe2/a', position: 'none', handler() {},
+    }]} as any);
+    expectDeepEqual(entries.map((e) => [e.id, e.isAction]), [['x', true]]);
+  });
+
   test('An empty dynamic workflow leaves the base empty', async () => {
     const tree = await makeTree({
       id: 'root',

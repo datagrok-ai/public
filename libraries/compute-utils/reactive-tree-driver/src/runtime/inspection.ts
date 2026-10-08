@@ -67,7 +67,7 @@ export function inspectLinks(state: StateTree): LinksInspection {
   const {linksState, nodeTree} = state;
   const links = linksState.getLinksInfo();
   const matched = links.map((link) => inspectLink(state, link));
-  const instanceKeys = new Set(links.map((link) => `${formatNodePath(link.prefix)}#${link.id}`));
+  const instanceKeys = new Set(links.map((link) => `${formatNodePath(link.prefix)}#${link.id}#${link.isAction}`));
   const notMatched = nodeTree.traverse(nodeTree.root, (acc, node, path) => {
     const {config} = node.getItem();
     const specs = [
@@ -75,7 +75,7 @@ export function inspectLinks(state: StateTree): LinksInspection {
       ...(config.actions ?? []).map((spec) => [spec, true] as const),
     ];
     for (const [spec, isAction] of specs) {
-      if (instanceKeys.has(`${formatNodePath(path)}#${spec.id}`))
+      if (instanceKeys.has(`${formatNodePath(path)}#${spec.id}#${isAction}`))
         continue;
       acc.push({
         id: spec.id, type: spec.type ?? 'data', isAction, node: nodeRef(node, path),
