@@ -220,3 +220,9 @@ export class FrameFilter<K> {
     this.pass = null;
   }
 }
+
+/** Digits grouped with a space rather than the locale's separator: a locale that groups with a period
+ *  renders 2749 compounds as "2.749" directly beside an activity of "-5.9". */
+export function count(n: number): string {
+  return n.toLocaleString('en-US').replace(/,/g, ' ');
+}
