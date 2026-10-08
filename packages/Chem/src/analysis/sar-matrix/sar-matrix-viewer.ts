@@ -8,10 +8,10 @@ import {_package} from '../../package';
 import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
-import {nestByContainment, rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {DEFAULT_TRANSFER_SIMILARITY} from './sar-matrix-transfer';
-import {SarFragmentColumns, standardizeFragment} from './sar-matrix-columns';
-import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './sar-matrix-run';
+import {nestByContainment, rankMatrices, SarRankScheme} from './build/sar-matrix-ranking';
+import {DEFAULT_TRANSFER_SIMILARITY} from './transfer/sar-matrix-transfer';
+import {SarFragmentColumns, standardizeFragment} from './build/sar-matrix-columns';
+import {MAX_SERIES_LEVELS, runSarMatrix, SarGrouping, SarMatrixParams} from './build/sar-matrix-run';
 import {closeGridQuietly, finiteOrNaN, observedMolecules, SarMatrix, SarMatrixCell, SarMatrixCellKind}
   from './sar-matrix-types';
 import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX, chipBadge,
@@ -19,11 +19,11 @@ import {CARD_CORE_H, CARD_CORE_W, CELL_H, CELL_W, CELL_W_MAX, chipBadge,
   NAV_COLLAPSED_W, NAV_W,
   FrameFilter, paintMoleculeOnColor, PaneColumn, PaneGridSlot, PaneRow, renderMoleculeOnColor,
   scrollWithin, TAB_MAKELIST, TAB_MATRIX, TAB_SUMMARY, TAB_TRANSFER, TABLE_CHROME} from './sar-matrix-ui-common';
-import {buildAlignmentTemplate, clearDepictionCaches, coreDepictionBlock, matrixCore} from './sar-matrix-depict';
+import {buildAlignmentTemplate, clearDepictionCaches, coreDepictionBlock, matrixCore} from './render/sar-matrix-depict';
 import {MakeListPanel} from './sar-matrix-make-list';
-import {MatrixPainter} from './sar-matrix-paint';
-import {SummaryPanel} from './sar-matrix-summary-panel';
-import {TransferPanel} from './sar-matrix-transfer-panel';
+import {MatrixPainter} from './render/sar-matrix-paint';
+import {SummaryPanel} from './summary/sar-matrix-summary-panel';
+import {TransferPanel} from './transfer/sar-matrix-transfer-panel';
 import {RDMol} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 
 // Above the filter popup that opened the sketcher, which the platform stacks at 10000.

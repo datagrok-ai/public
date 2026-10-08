@@ -1,7 +1,7 @@
 /* Matched-pair swap pooling. A swap is one component value exchanged for another with every other
    component held fixed, so a pool is a grouping on all-but-one component: each component's measured
    pairs come out of one walk, with no rebuild. Pure functions of their arguments. */
-import {SarMatrix} from './sar-matrix-types';
+import {SarMatrix} from '../sar-matrix-types';
 import {RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
   SwapSide} from './sar-matrix-summary-types';
 

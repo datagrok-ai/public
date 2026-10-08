@@ -5,8 +5,8 @@ import {Observable, Subject} from 'rxjs';
 
 import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
-import {defaultAxis, holdsFragments} from './sar-matrix-columns';
-import {MAX_SERIES_LEVELS} from './sar-matrix-run';
+import {defaultAxis, holdsFragments} from './build/sar-matrix-columns';
+import {MAX_SERIES_LEVELS} from './build/sar-matrix-run';
 
 const DIRECTIONS = ['Auto (from scaling)', 'Higher is better', 'Lower is better'];
 const HISTOGRAM_W = 200;

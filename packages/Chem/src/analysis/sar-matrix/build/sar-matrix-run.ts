@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
-import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import {_package} from '../../../package';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {SCALING_METHODS} from '../../molecular-matched-pairs/mmp-viewer/mmp-constants';
+import {scaleActivity} from '../../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
   from './sar-matrix-columns';
@@ -15,7 +15,7 @@ import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeries
   poolUngroupedSeries, poolUngroupedMolecules}
   from './sar-matrix-clustering';
 import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from '../sar-matrix-types';
 
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.

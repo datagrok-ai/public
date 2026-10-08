@@ -1,10 +1,10 @@
 /* The building blocks every Summary segment draws with — rows, badges, depictions, number formats —
    and the rankings more than one segment reads. The panel extends this. */
 import * as ui from 'datagrok-api/ui';
-import {SarMatrix} from './sar-matrix-types';
+import {SarMatrix} from '../sar-matrix-types';
 import {MIN_SUPPORT, SeriesStat, SummaryData, SummaryHost, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
 import {chipBadge, CORE_BG_ARGB, count, isStructure, MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H,
-  STRIP_MOL_W, tipText} from './sar-matrix-ui-common';
+  STRIP_MOL_W, tipText} from '../sar-matrix-ui-common';
 
 export class SummaryKit {
   /** Depictions waiting for the tick after the pane lands. */

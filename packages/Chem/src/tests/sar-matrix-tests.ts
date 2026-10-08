@@ -6,22 +6,23 @@ import {category, test, expect, expectFloat, before, delay} from '@datagrok-libr
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
-import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
-import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
+import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/build/sar-matrix-clustering';
+import {assembleSinglePositionMatrix, fitAdditiveModel,
+  linkStaged} from '../analysis/sar-matrix/build/sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
   standardizeFragment}
-  from '../analysis/sar-matrix/sar-matrix-columns';
-import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
-import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
-import {matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
-import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
+  from '../analysis/sar-matrix/build/sar-matrix-columns';
+import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/build/sar-matrix-link';
+import {computeMatrixConfidence} from '../analysis/sar-matrix/build/sar-matrix-confidence';
+import {matrixCore} from '../analysis/sar-matrix/render/sar-matrix-depict';
+import {SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
-  from '../analysis/sar-matrix/sar-matrix-role-fit';
-import {SummaryHost} from '../analysis/sar-matrix/sar-matrix-summary-data';
-import {SummaryPanel} from '../analysis/sar-matrix/sar-matrix-summary-panel';
-import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
+  from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
+import {SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
+import {SummaryPanel} from '../analysis/sar-matrix/summary/sar-matrix-summary-panel';
+import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
+import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
   from '../analysis/sar-matrix/sar-matrix-types';
 

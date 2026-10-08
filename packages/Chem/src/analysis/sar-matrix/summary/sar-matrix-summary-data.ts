@@ -2,12 +2,12 @@
    shows. Kept apart from the rendering because it touches no DOM: a SummaryCollector is handed the
    viewer and the fold tier, and returns SummaryData. The algorithms it calls and the types it
    produces live in their own modules; the types are re-exported so callers import from here. */
-import {_package} from '../../package';
-import {fitAdditiveFromTriples} from './sar-matrix-assemble';
-import {median} from './sar-matrix-decompose';
+import {_package} from '../../../package';
+import {fitAdditiveFromTriples} from '../build/sar-matrix-assemble';
+import {median} from '../build/sar-matrix-decompose';
 import {fitRoleEffects} from './sar-matrix-role-fit';
-import {logSarTime, SarMatrix} from './sar-matrix-types';
-import {MatrixCellRef} from './sar-matrix-ui-common';
+import {logSarTime, SarMatrix} from '../sar-matrix-types';
+import {MatrixCellRef} from '../sar-matrix-ui-common';
 import {largestSwap, poolRoleSwaps, poolSwaps, rankSwaps} from './sar-matrix-summary-swaps';
 import {rankRGroups, recordRGroupExtremes} from './sar-matrix-summary-rgroups';
 import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, RGroupAcc, RowCell, SeriesStat, StartRow, STRIP_SLOTS,

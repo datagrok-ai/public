@@ -1,13 +1,13 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
+import {_package} from '../../../package';
 import {computeAllTransfers, Transfer, TransferSide, transferStats, TransferStats}
   from './sar-matrix-transfer';
-import {SarMatrix} from './sar-matrix-types';
+import {SarMatrix} from '../sar-matrix-types';
 import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, chipBadge, COL_HEADER_H,
   CORE_BG_ARGB, FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
-  renderMoleculeOnColor} from './sar-matrix-ui-common';
+  renderMoleculeOnColor} from '../sar-matrix-ui-common';
 
 /** A transfer is identified by the core it starts from, so several targets collapse onto one card. */
 function transferSourceKey(t: Transfer): string {

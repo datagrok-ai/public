@@ -5,12 +5,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 
-import {closeGridQuietly} from './sar-matrix-types';
+import {closeGridQuietly} from '../sar-matrix-types';
 import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, SummaryData, SummaryRow, supportOf,
   TRUST_R2} from './sar-matrix-summary-data';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {ANALOG_W, CARD_CORE_H, CARD_CORE_W, CORE_W, count, isStructure,
-  MatrixCellRef, moleculeGrid} from './sar-matrix-ui-common';
+  MatrixCellRef, moleculeGrid} from '../sar-matrix-ui-common';
 
 /** One row of the Worth-making grid and which list it came off: `ranked` cleared every gate, `thin` rests
  *  on a fit with too few cross-validatable cells to rank by, `ungated` cleared no gate at all and is

@@ -1,10 +1,10 @@
-import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
+import {_package} from '../../../package';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
 import {ClusterDecomposition, positionNumber, PositionRecord} from './sar-matrix-decompose';
 import {cellPossible, FragmentLinks, LinkStages, planLink} from './sar-matrix-link';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixCellKind, SarMatrixColumn,
   SarMatrixRow}
-  from './sar-matrix-types';
+  from '../sar-matrix-types';
 
 /**
  * Rows and columns joined into components by the cells actually observed, as a union-find over

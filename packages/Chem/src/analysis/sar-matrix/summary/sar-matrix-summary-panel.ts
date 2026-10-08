@@ -6,7 +6,7 @@ import {SummaryMaking} from './sar-matrix-summary-making';
 import {SummaryOverview} from './sar-matrix-summary-overview';
 import {SummaryEffects} from './sar-matrix-summary-effects';
 import {SummaryCollector, SummaryData} from './sar-matrix-summary-data';
-import {count, scrollWithin, tipText} from './sar-matrix-ui-common';
+import {count, scrollWithin, tipText} from '../sar-matrix-ui-common';
 import {NARROW_PX, XNARROW_PX, SHORT_PX, PANE_OVERVIEW, PANE_EFFECTS, PANE_MAKING, PANE_METHOD,
   PANES} from './sar-matrix-summary-common';
 import {SummaryMethod} from './sar-matrix-summary-method';

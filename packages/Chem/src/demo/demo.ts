@@ -15,8 +15,8 @@ import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 import {dockSarMatrixTabs} from '../analysis/sar-matrix/sar-matrix-viewer';
 import {CELL_H, CELL_W, COL_HEADER_H, CORE_W} from '../analysis/sar-matrix/sar-matrix-ui-common';
-import {PANE_SERIES} from '../analysis/sar-matrix/sar-matrix-summary-common';
-import {MIN_SUPPORT, TRUST_R2} from '../analysis/sar-matrix/sar-matrix-summary-data';
+import {PANE_SERIES} from '../analysis/sar-matrix/summary/sar-matrix-summary-common';
+import {MIN_SUPPORT, TRUST_R2} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
 
 
 export async function _demoChemOverview(): Promise<void> {

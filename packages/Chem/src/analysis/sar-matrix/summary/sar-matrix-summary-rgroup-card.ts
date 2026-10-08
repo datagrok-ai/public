@@ -1,11 +1,11 @@
 /* The Effects segment's R-group card: the substituents the fitted model most often places first at
    their position, counted over the series that tried them. */
 import * as ui from 'datagrok-api/ui';
-import {getRdKitModule} from '../../utils/chem-common-rdkit';
-import {cachedAtomCount} from './sar-matrix-decompose';
+import {getRdKitModule} from '../../../utils/chem-common-rdkit';
+import {cachedAtomCount} from '../build/sar-matrix-decompose';
 import {bestMeasured, RGroupRow, SeriesStat, SummaryData, SUM_ROWS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, count, tipText} from './sar-matrix-ui-common';
+import {CARD_CORE_H, CARD_CORE_W, count, tipText} from '../sar-matrix-ui-common';
 import {STRIP_MIN_FILL, shortSmiles} from './sar-matrix-summary-common';
 import type {SummaryEffects} from './sar-matrix-summary-effects';
 import type {SummaryPanel} from './sar-matrix-summary-panel';

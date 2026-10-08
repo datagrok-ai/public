@@ -1,9 +1,9 @@
 /* The scale band pinned above every segment, and the Method segment: what passes the trust gate and
    which series the fit holds in. */
 import * as ui from 'datagrok-api/ui';
-import {SarMatrix} from './sar-matrix-types';
+import {SarMatrix} from '../sar-matrix-types';
 import {MIN_SUPPORT, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
+import {CARD_CORE_H, CARD_CORE_W, count} from '../sar-matrix-ui-common';
 import {PANE_MAKING, TRUST_LIST_MAX} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 

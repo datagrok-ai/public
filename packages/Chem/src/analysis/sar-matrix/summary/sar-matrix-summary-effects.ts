@@ -3,7 +3,7 @@
 import * as ui from 'datagrok-api/ui';
 import {MIN_SUPPORT, SeriesStat, SummaryData, SWAP_MIN_PAIRS, SWAP_MIN_SERIES,
   SWAP_ROW_CAP} from './sar-matrix-summary-data';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
+import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count} from '../sar-matrix-ui-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {PANE_EFFECTS, PANE_SERIES, orient, Answer, swapAnchor, roleRanks} from './sar-matrix-summary-common';
 import {SummaryRoleCards} from './sar-matrix-summary-role-cards';

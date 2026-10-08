@@ -1,5 +1,5 @@
 import {fitAdditiveModel} from './sar-matrix-assemble';
-import {Confidence, Residual, SarMatrix, SarMatrixCell, SarMatrixCellKind} from './sar-matrix-types';
+import {Confidence, Residual, SarMatrix, SarMatrixCell, SarMatrixCellKind} from '../sar-matrix-types';
 
 /** Below this many cross-validatable observed cells a leave-one-out estimate is too noisy to report. */
 const MIN_CV_POINTS = 4;

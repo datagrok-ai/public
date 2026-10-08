@@ -3,7 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 
 import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
-import {standardizeFragment} from './sar-matrix-columns';
+import {standardizeFragment} from './build/sar-matrix-columns';
 import {SarMatrix} from './sar-matrix-types';
 
 /** Layout, colour and grid types shared by the viewer and its panels. */

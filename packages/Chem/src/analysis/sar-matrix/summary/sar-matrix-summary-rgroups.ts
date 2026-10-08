@@ -1,8 +1,8 @@
 /* Which substituent comes first, and which reliably last, at each position across the series whose
    additive fit holds. Pure functions of their arguments. */
-import {AdditiveFit} from './sar-matrix-assemble';
-import {median} from './sar-matrix-decompose';
-import {SarMatrix} from './sar-matrix-types';
+import {AdditiveFit} from '../build/sar-matrix-assemble';
+import {median} from '../build/sar-matrix-decompose';
+import {SarMatrix} from '../sar-matrix-types';
 import {bestMeasured, LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, StripCols, SUM_ROWS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-types';
 

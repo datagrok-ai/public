@@ -2,7 +2,7 @@
    widest range, best compound, most trusted predictions, best-validated fit — one row per lineage. */
 import * as ui from 'datagrok-api/ui';
 import {bestMeasured, MIN_SUPPORT, SeriesStat, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count, TAB_TRANSFER} from './sar-matrix-ui-common';
+import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count, TAB_TRANSFER} from '../sar-matrix-ui-common';
 import {GAIN_TICKS, REASON_GLYPHS, REASON_WORDS, shortSmiles} from './sar-matrix-summary-common';
 import type {SummaryOverview} from './sar-matrix-summary-overview';
 import type {SummaryPanel} from './sar-matrix-summary-panel';

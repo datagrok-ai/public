@@ -2,8 +2,8 @@
    from the viewer, the thresholds that gate it and the small pure helpers it is built from. A leaf
    module, so the collector, the swap and R-group algorithms and the panel can all depend on it. */
 import {RoleFit} from './sar-matrix-role-fit';
-import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
-import {MatrixCellRef} from './sar-matrix-ui-common';
+import {SarMatrix, SarMatrixCell} from '../sar-matrix-types';
+import {MatrixCellRef} from '../sar-matrix-ui-common';
 
 export const SUM_ROWS = 3;
 

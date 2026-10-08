@@ -4,7 +4,7 @@ import * as ui from 'datagrok-api/ui';
 import {RoleSummary} from './sar-matrix-role-fit';
 import {ANALOG_LIST_MAX, MIN_SUPPORT, RGROUP_MIN_SERIES, SummaryData, SWAP_MIN_PAIRS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
-import {count, STRIP_MOL_H, STRIP_MOL_W, tipText} from './sar-matrix-ui-common';
+import {count, STRIP_MOL_H, STRIP_MOL_W, tipText} from '../sar-matrix-ui-common';
 import {FINDING_ROWS, PANE_EFFECTS, PANE_MAKING, REASON_GLYPHS, REASON_WORDS, orient, Answer, shortSmiles,
   swapAnchor, roleRanks} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';

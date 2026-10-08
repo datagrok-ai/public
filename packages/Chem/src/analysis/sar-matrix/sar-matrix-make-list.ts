@@ -3,7 +3,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {renderMolecule} from '../../rendering/render-molecule';
-import {fitAdditiveEffects} from './sar-matrix-assemble';
+import {fitAdditiveEffects} from './build/sar-matrix-assemble';
 import {closeGridQuietly, SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {ANALOG_W, CELL_W, CORE_W, isStructure, MatrixCellRef,
   moleculeGrid} from './sar-matrix-ui-common';

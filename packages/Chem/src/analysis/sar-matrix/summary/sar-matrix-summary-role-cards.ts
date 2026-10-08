@@ -2,7 +2,7 @@
 import * as ui from 'datagrok-api/ui';
 import {RoleLevel, RoleSummary} from './sar-matrix-role-fit';
 import {LOSER_ROWS, MIN_SUPPORT, SummaryData, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, chipBadge, count} from './sar-matrix-ui-common';
+import {CARD_CORE_H, CARD_CORE_W, chipBadge, count} from '../sar-matrix-ui-common';
 import {ROLE_SPREAD_TIE, PANE_SERIES, roleValueName, roleRanks} from './sar-matrix-summary-common';
 import type {SummaryEffects} from './sar-matrix-summary-effects';
 import type {SummaryPanel} from './sar-matrix-summary-panel';

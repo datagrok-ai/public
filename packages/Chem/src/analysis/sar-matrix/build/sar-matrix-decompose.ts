@@ -1,7 +1,7 @@
-import {getRdKitModule, getRdKitService} from '../../utils/chem-common-rdkit';
-import {IRGroupAnalysisResult} from '../../rdkit-service/rdkit-service-worker-substructure';
+import {getRdKitModule, getRdKitService} from '../../../utils/chem-common-rdkit';
+import {IRGroupAnalysisResult} from '../../../rdkit-service/rdkit-service-worker-substructure';
 import {FragmentLinks} from './sar-matrix-link';
-import {logSarTime} from './sar-matrix-types';
+import {logSarTime} from '../sar-matrix-types';
 
 const MIN_ANCHOR_HEAVY_ATOMS = 4;
 export const MAX_SAR_CLUSTER_SIZE = 300;
