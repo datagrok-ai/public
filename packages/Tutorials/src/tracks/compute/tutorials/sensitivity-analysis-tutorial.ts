@@ -6,8 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend, inputRootByCaption, toggleSwitch} from './utils';
-import {runDescriber, Tour, DescriptionPage} from './ui-describer';
+import {getElement, getView, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend, inputRootByCaption,
+  toggleSwitch} from './utils';
+import {runDescriber} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
 /** Monte Carlo viewers description */
@@ -19,7 +20,7 @@ const monteCarloViewersInfo = [
       '🔼 the larger **Angle**, the greater **Max height**',
       '🔽 the larger **Max distance**, the shorter **Max height**',
     ],
-  ),  
+  ),
   `# Variations 🔀
   
    Multidimensional visualization of the relationship between **Angle** and the simulated values of **Max Distance** and **Max Height**.`,
@@ -75,12 +76,12 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     closeWindows();
 
     // 1. Open Apps
-    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
-    if (browseHeader === null)      
+    const browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    const browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)
       browseIcon.click();
 
-    const browsePanel = grok.shell.browsePanel;    
+    const browsePanel = grok.shell.browsePanel;
     const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
     if (appsGroupRoot === null) {
       grok.shell.warning('Failed to open Apps');
@@ -90,7 +91,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const appView = grok.shell.view('Apps');
     if ((appView !== null) && (appView !== undefined))
       appView.close();
-    
+
     await this.action(
       'Open Apps',
       fromEvent(appsGroupRoot, 'click'),
@@ -100,11 +101,11 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
-    
-    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+
+    appsGroupRoot.dispatchEvent(new Event('dblclick', {bubbles: true, cancelable: true}));
 
     // 2. Run Model catalog
-    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    const galleryGrid = await getElement(document, 'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
@@ -112,9 +113,9 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     browseIcon.click();
 
-    let name = 'Model-Hub';;
-    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
-    name = name.replace('-',' ');
+    let name = 'Model-Hub'; ;
+    const modelCatalogIcn = await getElement(galleryGrid, `div[name="div-${name}"]`);
+    name = name.replace('-', ' ');
 
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
@@ -132,9 +133,9 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     // 3. Run model
     const rootDiv = document.querySelector('div[id="rootDiv"]') as HTMLElement;
     const modelIconRoot = await getElement(rootDiv, 'span.d4-link-label[name="span-ballFlight"]');
-      if (modelIconRoot === null) {
-        grok.shell.warning(`${name} run timeout exceeded`);
-        return;
+    if (modelIconRoot === null) {
+      grok.shell.warning(`${name} run timeout exceeded`);
+      return;
     }
 
     await this.action(
@@ -179,15 +180,15 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     const ribbonPannels = modelView.getRibbonPanels();
     if (ribbonPannels.length < 1) {
       grok.shell.warning('Failed to run model analysis features');
-      return;      
+      return;
     }
-    
+
     const rightPanel = ribbonPannels[0];
     if (rightPanel.length < 3) {
       grok.shell.warning('Failed to load model analysis features');
-      return;      
+      return;
     }
-    
+
     const senAnIcnRoot = rightPanel[2];
 
     await this.action(
@@ -249,7 +250,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     await this.action(
       'Run sensitivity analysis',
-      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'), //runSensAnPromise,
       runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
       () => runIcnRoot.click(),
@@ -343,7 +344,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
     // 14. Run sens.analysis
     await this.action(
       'Run sensitivity analysis',
-      fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
+      fromEvent(runIcnRoot, 'click'), //runSensAnPromise,
       runIcnRoot,
       '',
       () => runIcnRoot.click(),
@@ -390,5 +391,5 @@ export class SensitivityAnalysisTutorial extends Tutorial {
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);
-  } // _run   
+  } // _run
 } // SensitivityAnalysisTutorial

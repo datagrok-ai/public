@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { Platform, getPlatform, platformKeyMap } from '../../shortcuts';
+import {filter} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class ScatterPlotTutorial extends Tutorial {
@@ -13,7 +13,7 @@ export class ScatterPlotTutorial extends Tutorial {
   get description() {
     return 'A graph in which the values of two variables are plotted along two axes';
   }
-  get steps() { return 10; }
+  get steps() {return 10;}
 
   get icon() {
     return '📈🔹';
@@ -45,7 +45,8 @@ export class ScatterPlotTutorial extends Tutorial {
     const colSelection = 'There are a few ways to choose a column in a scatter plot. ' +
       'The easiest way to do this is to click on the column selector on the viewer. ' +
       'Alternatively, you can drag the column right from the spreadsheet, or from ' +
-      `the column list (Windows | Columns, or ${platformKeyMap['Alt'][this.platform]}+C). Also, you can make this choice ` +
+      `the column list (Windows | Columns, or ${platformKeyMap['Alt'][this.platform]}+C). ` +
+      'Also, you can make this choice ' +
       'from the context panel on the right (Windows | Properties, or F4). ' +
       'Please try different ways in the next steps.';
     await this.action('Set X to HEIGHT', columnCheck(info.xColSelector, 'HEIGHT'), info.xColSelector.root, colSelection,
@@ -57,7 +58,8 @@ export class ScatterPlotTutorial extends Tutorial {
     await this.action('Set Color to SEX', columnCheck(info.colorColSelector, 'SEX'), info.colorColSelector.root, '',
       Tutorial.apiSkip(() => plot.props.colorColumnName = 'SEX'));
 
-    const zoomDescription = `To zoom in, hold the <b>${platformKeyMap['Alt'][this.platform]}</b> key and drag a rectangle that you want to zoom in to.`;
+    const zoomDescription = `To zoom in, hold the <b>${platformKeyMap['Alt'][this.platform]}</b> key ` +
+      'and drag a rectangle that you want to zoom in to.';
     await this.action('Zoom in', plot.onZoomed, null, zoomDescription, Tutorial.apiSkip(() => {
       const vp = plot.viewport;
       plot.zoom(vp.x, vp.y, vp.x + vp.width / 2, vp.y + vp.height / 2);

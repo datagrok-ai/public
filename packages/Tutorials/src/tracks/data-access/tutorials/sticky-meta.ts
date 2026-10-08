@@ -121,7 +121,8 @@ export class StickyMetaTutorial extends Tutorial {
 
     // --- Step 5: Fill in entity type fields ---
     await this.dlgInputAction(typeDialog, 'Set "Name" to "molecule-tutorial"', 'Name', 'molecule-tutorial');
-    await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression', 'semtype=Molecule');
+    await this.dlgInputAction(typeDialog, 'Set "Matching expression" to "semtype=Molecule"', 'Matching expression',
+      'semtype=Molecule');
 
     await this.dialogOkAction(typeDialog, 'Save entity type', 'Click OK to save the entity type.');
 

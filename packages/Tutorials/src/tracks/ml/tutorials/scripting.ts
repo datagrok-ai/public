@@ -2,9 +2,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
-import { filter } from 'rxjs/operators';
-import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval } from 'rxjs';
+import {filter} from 'rxjs/operators';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
+import {interval} from 'rxjs';
 
 
 export class ScriptingTutorial extends Tutorial {
@@ -14,7 +14,7 @@ export class ScriptingTutorial extends Tutorial {
   get description() {
     return 'Scripting is an integration mechanism with languages for statistical computing';
   }
-  get steps() { return 10; }
+  get steps() {return 10;}
 
   get icon() {
     return '📜💻';
@@ -26,7 +26,8 @@ export class ScriptingTutorial extends Tutorial {
 
   protected async _run() {
     this.showBrowse();
-    const platformNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Platform') as DG.TreeViewGroup;
+    const platformNode = grok.shell.browsePanel.mainTree.children
+      .find((child) => child.text === 'Platform') as DG.TreeViewGroup;
     if (platformNode) {
       platformNode.expanded = true;
       const functionsNode = platformNode.children.find((child) => child.text === 'Functions') as DG.TreeViewGroup;
@@ -57,16 +58,19 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Open a sample table for the script', grok.events.onTableAdded.pipe(
       filter((data) => data.args.dataFrame.name === sampleDfName)),
-      $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
-      'In front of you is a valid script. The commented out section on top defines script parameters. ' +
-      'This simple script calculates the number of cells in a dataframe. The <i class="grok-icon fal fa-asterisk"></i> ' +
-      'icon opens a demo table for you. It appears only for scripts annotated with a special <i>sample</i> parameter. ' +
+    $('div.d4-ribbon-item').has('i.grok-icon.fa-asterisk')[0],
+    'In front of you is a valid script. The commented out section on top defines script parameters. ' +
+      'This simple script calculates the number of cells in a dataframe. ' +
+      'The <i class="grok-icon fal fa-asterisk"></i> ' +
+      'icon opens a demo table for you. It appears only for scripts annotated with a special ' +
+      '<i>sample</i> parameter. ' +
       'The demo table appears in the "Tables" section (<i class="grok-icon fal fa-table"></i> on the sidebar).',
     () => $('div.d4-ribbon-item i.grok-icon.fa-asterisk')[0]!.click());
 
     const playBtn = $('div.d4-ribbon-item').has('i.grok-icon.fa-play')[0];
     let callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn,
-      'Before a script gets executed, all its input parameters should be set. If there are any, a dialog like this one ' +
+      'Before a script gets executed, all its input parameters should be set. ' +
+      'If there are any, a dialog like this one ' +
       'will appear. Here we need provide only one input named "Table".',
       () => $(playBtn).find('i.fa-play')[0]!.click());
 
@@ -87,13 +91,13 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Find the results in the console',
       interval(1000).pipe(filter(() => grok.shell.windows.showConsole)),
-      [],//this.getSidebarHints('Windows', 'Console'),
+      [], //this.getSidebarHints('Windows', 'Console'),
       scriptOutputInfo, () => grok.shell.windows.showConsole = true);
 
     const editor = (sv.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
     const scriptBodyIndex = doc.getValue().split('\n').findIndex((line: string) => !line.startsWith('#'));
-    doc.replaceRange('\n', { line: scriptBodyIndex - 1 });
+    doc.replaceRange('\n', {line: scriptBodyIndex - 1});
     const lastLineIndex = doc.lineCount() - 1;
     const newOutputParam = '#output: dataframe clone';
     const newOutputParamDef = 'clone = table';

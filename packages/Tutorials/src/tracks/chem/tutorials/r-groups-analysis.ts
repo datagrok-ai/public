@@ -5,7 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest, fromEvent, interval} from 'rxjs';
 import $ from 'cash-dom';
-import { _package } from '../../../package';
+import {_package} from '../../../package';
 
 
 export class RGroupsAnalysisTutorial extends Tutorial {
@@ -38,7 +38,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     'impact on crucial compound properties, and find gaps.<hr>');
 
     this.t = await grok.data.loadTable(`${_package.webRoot}files/sar_small-R-groups.csv`);
-    const tv = grok.shell.addTableView(this.t);
+    grok.shell.addTableView(this.t);
 
     this.title('Start the R-Groups Analysis tool', true);
     this.describe(`When you open a chemical dataset, Datagrok automatically detects molecules
@@ -83,9 +83,11 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     along with a trellis plot for visual exploration.<br>Let’s set up the visualization.`);
 
     // the gear sits in the trellis title bar, outside its root; only this viewer's gear counts
-    const trellisGear = () => v!.root.parentElement?.parentElement?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement ?? null;
+    const trellisGear = () => v!.root.parentElement?.parentElement
+      ?.getElementsByClassName('grok-font-icon-settings')[0] as HTMLElement ?? null;
     await this.action('In the trellis plot, click the gear icon for the embedded viewer',
-      fromEvent(document, 'click').pipe(filter((e) => trellisGear() != null && trellisGear().contains(e.target as Node))), trellisGear,
+      fromEvent(document, 'click').pipe(filter((e) => trellisGear() != null &&
+        trellisGear().contains(e.target as Node))), trellisGear,
       `The <b>Context Panel</b> on the right now shows the settings for the trellis plot and the pie chart.`,
       () => trellisGear()!.click());
 
@@ -105,12 +107,13 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     The <b>Context Panel</b> provides information and actions relevant to your selection.<br>
     Let’s explore.`);
 
-    await this.action('Click any segment on a pie chart', this.t.onSelectionChanged, undefined, 'Scroll to see the selected rows in the grid.',
+    await this.action('Click any segment on a pie chart', this.t.onSelectionChanged, undefined,
+      'Scroll to see the selected rows in the grid.',
       () => this.t!.selection.init((i) => this.t!.get('LC/MS', i) === 'pass'));
 
     await this.action('Press Escape', new Observable((subscriber: any) => {
-      document.addEventListener("keydown", ({key}) => {
-        if (key === "Escape")
+      document.addEventListener('keydown', ({key}) => {
+        if (key === 'Escape')
           subscriber.next(true);
       }, {once: true});
     }), undefined, '', Tutorial.apiSkip(() => this.t!.selection.setAll(false)));
@@ -127,7 +130,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
           });
         });
         observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
-    })]), undefined, 'Note changes on the pie charts');
+      })]), undefined, 'Note changes on the pie charts');
 
     // await this.action('In the grid, press Shift + Drag Mouse Down', this.t.onSelectionChanged.pipe(filter(() => {
     //   return grok.shell.o.constructor.name === 'RowGroup' &&
@@ -156,7 +159,8 @@ export class RGroupsAnalysisTutorial extends Tutorial {
         return () => document.removeEventListener('click', onClick, true);
       }), distrHeader, '', Tutorial.apiSkip(() => distrHeader()?.click()));
 
-    const distrLineChart = () => document.querySelector('.d4-pane-distributions.expanded canvas') as HTMLElement ?? null;
+    const distrLineChart = () =>
+      document.querySelector('.d4-pane-distributions.expanded canvas') as HTMLElement ?? null;
     // the pane is rebuilt as the selection changes, so the pointer is followed on the document; the
     // tooltip shows once the pointer rests, after the last move
     let overPane = false;
@@ -175,14 +179,16 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       v!.root.querySelector('.d4-combo-popup') as HTMLElement, '', () => v!.setOptions({viewerType: 'Histogram'}));
 
     await this.action('Set Value to In-Vivo Activity',
-      interval(200).pipe(filter(() => innerLook().valueColumnName === 'In-vivo Activity')), undefined, `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
+      interval(200).pipe(filter(() => innerLook().valueColumnName === 'In-vivo Activity')), undefined,
+      `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
       the histogram’s settings, and under <b>Histogram</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`,
       () => v!.setOptions({innerViewerLook: {...innerLook(), valueColumnName: 'In-vivo Activity'}}));
 
     this.title('Switch axes', true);
     this.describe(`Finally, let’s change the R-groups used on the plot.`);
 
-    const trellis = Array.from(grok.shell.tv.viewers).find((v) => v.type === DG.VIEWER.TRELLIS_PLOT)! as DG.Viewer<DG.ITrellisPlotSettings>;
+    const trellis = Array.from(grok.shell.tv.viewers)
+      .find((v) => v.type === DG.VIEWER.TRELLIS_PLOT)! as DG.Viewer<DG.ITrellisPlotSettings>;
     await this.action('Set the value for the X axis to R4',
       interval(1000).pipe(filter(() => {
         return trellis.props.xColumnNames[0] === 'R4';

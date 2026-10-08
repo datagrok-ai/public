@@ -5,7 +5,7 @@ import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {Observable, combineLatest, interval} from 'rxjs';
 import $ from 'cash-dom';
-import { _package } from '../../../package';
+import {_package} from '../../../package';
 
 
 export class SubstructureSearchFilteringTutorial extends Tutorial {
@@ -23,7 +23,7 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
   get icon() {
     return '🔍🧪';
   }
-  
+
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#substructure-search--filtering';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
@@ -45,13 +45,16 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     </ul><br>
     Let’s use the <b>Chem</b> menu.`);
 
-    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '', () => this.getMenuItem('Chem', true), '',
+    const d = await this.openDialog('Click Chem > Search > Substructure Search…', '',
+      () => this.getMenuItem('Chem', true), '',
       () => grok.shell.v.ribbonMenu.find('Chem | Search | Substructure Search...').click());
 
     this.title('Specify substructure using sketcher', true);
     this.describe('In the sketcher, draw naphthalene.' +
-    '<div class="ui-image" id="naphthalene" style="background-image: url(&quot;https://public.datagrok.ai/api/packages/published/' +
-    'files/Tutorials/amuzychyna/b4MdalZhTYWUNZKAMDaN4uevTqxgauyU/6/images/naphtalene.png&quot;); height: 90px;"></div>' +
+    '<div class="ui-image" id="naphthalene" style="background-image: ' +
+    'url(&quot;https://public.datagrok.ai/api/packages/published/' +
+    'files/Tutorials/amuzychyna/b4MdalZhTYWUNZKAMDaN4uevTqxgauyU/6/images/naphtalene.png&quot;); ' +
+    'height: 90px;"></div>' +
     `Note that as you draw, the chemical spreadsheet (grid) dynamically updates to show only the molecules with the
     specified substructure, highlighting it in each molecule.<br>Click <b>OK</b>.`);
 
@@ -71,19 +74,20 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
 
     this.title('Use current molecule to filter by substructure', true);
 
-    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as filter', 'Use as filter', null, '',
+    await this.contextMenuAction('In the grid, right-click any molecule and select Current Value > Use as filter',
+      'Use as filter', null, '',
       () => setSmilesFilter({molBlock: DG.chem.convert(
         this.t!.get('smiles', Math.max(this.t!.currentRowIdx, 0)), DG.chem.Notation.Smiles,
         DG.chem.Notation.MolBlock)}));
 
     let d_: DG.Dialog;
     await this.action('On the Filter Panel, click the molecule and modify it in the sketcher',
-    grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
-      if (dialog.title === '') {
-        d_ = dialog;
-        return true;
-      }
-      return false;
+      grok.events.onDialogShown.pipe(filter((dialog: DG.Dialog) => {
+        if (dialog.title === '') {
+          d_ = dialog;
+          return true;
+        }
+        return false;
       })), () => v!.root.querySelector('.chem-canvas') as HTMLElement | null, '',
       () => (v!.root.querySelector('.chem-canvas') as HTMLElement).click());
 
@@ -112,18 +116,22 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
       molBlock: (tv.getFiltersGroup().getStates('smiles', DG.FILTER_TYPE.SUBSTRUCTURE)[0] as any)?.molBlock})));
 
     this.title('Toggle the filter', true);
-    this.describe(`You can toggle a filter using a checkbox to the right of the filter's name ("smiles"). Turn it off.`);
+    this.describe(`You can toggle a filter using a checkbox to the right of the filter's name ("smiles"). ` +
+      `Turn it off.`);
 
     // the card says it is off with aria-disabled on its body; any class change used to count
-    const cardOff = () => v!.root.querySelector('.d4-flex-col.d4-filter[aria-disabled="true"], .d4-flex-col.d4-filter [aria-disabled="true"]') != null;
+    const cardOff = () => v!.root.querySelector(
+      '.d4-flex-col.d4-filter[aria-disabled="true"], .d4-flex-col.d4-filter [aria-disabled="true"]') != null;
     await this.action('In the filter panel, turn off the filter by clearing the checkbox',
       interval(200).pipe(filter(cardOff)), () => v?.root.querySelector('.d4-flex-col.d4-filter') as HTMLElement | null,
       '',
       () => tv.getFiltersGroup().setEnabled({type: DG.FILTER_TYPE.SUBSTRUCTURE, column: 'smiles'}, false));
 
     this.title('Add more filters', true);
-    this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose <b>Select columns...</b>.<br>
-    Then, in the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column and select it too.<br>
+    this.describe(`In the top left corner of the <b>Filter Panel</b>, click the <b>Hamburger</b> icon and choose ` +
+      `<b>Select columns...</b>.<br>
+    Then, in the dialog, select the <b>NOCount</b> column. Search for the <b>NumRotatableBonds</b> column ` +
+      `and select it too.<br>
     Click <b>OK</b>`);
 
     const exp = ['NOCount', 'NumRotatableBonds', 'smiles'];
@@ -143,7 +151,8 @@ export class SubstructureSearchFilteringTutorial extends Tutorial {
     Drag the range controls to filter.<br>
     To learn more about filters, complete our <b>Filters</b> tutorial.`);
 
-    await this.action('Interact with filters by changing their values. After that select rows of your interest', combineLatest([this.t.onSelectionChanged, this.t.onFilterChanged]),
+    await this.action('Interact with filters by changing their values. After that select rows of your interest',
+      combineLatest([this.t.onSelectionChanged, this.t.onFilterChanged]),
       null, '', () => {
         tv.getFiltersGroup().updateOrAdd({type: DG.FILTER_TYPE.HISTOGRAM, column: 'NOCount', min: 2, max: 6});
         this.t!.selection.copyFrom(this.t!.filter);

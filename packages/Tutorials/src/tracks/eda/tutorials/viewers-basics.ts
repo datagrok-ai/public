@@ -1,18 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { fromEvent, interval, merge } from 'rxjs';
-import { elementClick, selectionMade } from './utils';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {filter, map} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {fromEvent, interval, merge} from 'rxjs';
+import {elementClick, selectionMade} from './utils';
+import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
-  get name() { return 'Viewers'; }
+  get name() {return 'Viewers';}
   get description() {
     return 'Learn how to use different viewers together';
   }
-  get steps() { return 20; }
+  get steps() {return 20;}
 
   get icon() {
     return '📊👁️';
@@ -64,7 +64,8 @@ export class ViewersTutorial extends Tutorial {
     // the gallery may be rebuilt while the step is up, so the box is found by the event, not captured
     const searchInput = (): HTMLInputElement | null => document.querySelector('[name="viewer-gallery-search"]');
     await this.action('Type "Sunburst" in the search box',
-      fromEvent<InputEvent>(document, 'input').pipe(filter((e) => (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
+      fromEvent<InputEvent>(document, 'input').pipe(filter((e) =>
+        (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
         (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
       searchInput, '', () => Tutorial.setInputValue(searchInput()!, 'Sunburst'));
 
@@ -74,8 +75,8 @@ export class ViewersTutorial extends Tutorial {
       () => this.getViewerCard('Sunburst'), '', () => this.getViewerCard('Sunburst')!.click());
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
-    const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
-    const pie = await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
+    await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
+    await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
 
     const hover = 'Move the mouse over the histogram bins to see how the points ' +
     'that fall into that bin are reflected in other viewers. Similarly, hover the ' +
@@ -92,11 +93,13 @@ export class ViewersTutorial extends Tutorial {
       'you will see the corresponding records being highlighted on both scatter plot ' +
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
-      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
+      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. ` +
+      `To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
     await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync,
       () => this.t!.selection.init((i) => this.t!.get('AGE', i) >= 40 && this.t!.get('AGE', i) < 50));
 
-    const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
+    const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected ' +
+      'and synced to the other viewers.';
     await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect,
       () => this.t!.selection.init((i) => this.t!.get('SEX', i) === 'F'));
 

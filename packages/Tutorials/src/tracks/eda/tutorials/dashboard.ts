@@ -1,10 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import { filter } from 'rxjs/operators';
-import { Tutorial, TutorialPrerequisites } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval, Observable} from 'rxjs';
-import { elementClick } from './utils';
+import {filter} from 'rxjs/operators';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
+import {interval} from 'rxjs';
+import {elementClick} from './utils';
 
 export class DashboardTutorial extends Tutorial {
   get name(): string {
@@ -28,7 +28,8 @@ export class DashboardTutorial extends Tutorial {
   protected async _run(): Promise<void> {
     grok.shell.windows.showToolbox = true;
     this.showBrowse();
-    const databasesNode = grok.shell.browsePanel.mainTree.children.find((child) => child.text === 'Databases') as DG.TreeViewGroup;
+    const databasesNode = grok.shell.browsePanel.mainTree.children
+      .find((child) => child.text === 'Databases') as DG.TreeViewGroup;
     if (databasesNode) {
       databasesNode.expanded = true;
       const postgresNode = databasesNode.children.find((child) => child.text === 'Postgres') as DG.TreeViewGroup;
@@ -59,7 +60,8 @@ export class DashboardTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Port" to "54324"', 'Port', '54324');
     await this.dlgInputAction(dlg, 'Set "Db" to "starbucks"', 'Db', 'starbucks');
     await this.dlgInputAction(dlg, 'Set "Login" to "datagrok"', 'Login', 'datagrok');
-    await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
+    await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password',
+      'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
     await this.dialogOkAction(dlg);
 
     const starbucksNode = () => $(providerRoot).closest('.d4-tree-view-group').find('div.d4-tree-view-group-label')
@@ -90,14 +92,16 @@ export class DashboardTutorial extends Tutorial {
         return lines.length > 0 && lines[0] !== undefined && lines[0].textContent?.trim() === paramAnnotation;
       })), null, paramQueryDescription, () => Tutorial.setCodeEditorText(dqv.root, `${paramAnnotation}\n${query}`));
 
-    await this.buttonClickAction((grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
+    await this.buttonClickAction(
+      (grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
       'Save the query', 'SAVE');
 
     const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
     await this.action('Find Browse on the sidebar and click', elementClick(() => browseSidebar), browseSidebar, '',
       () => browseSidebar.click());
 
-    const paramEditorDlg = await this.openDialog('Find the created query in the browse view, right-click it and hit Run',
+    const paramEditorDlg = await this.openDialog(
+      'Find the created query in the browse view, right-click it and hit Run',
       queryName, () => $('div.d4-tree-view-item-label')
         .filter((idx, el) => (el.textContent ?? '').includes(queryName))[0] ?? null, '',
       async () => (await grok.dapi.queries.filter(`friendlyName = "${queryName}"`).order('createdOn', true).first())
@@ -153,14 +157,17 @@ export class DashboardTutorial extends Tutorial {
       () => $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2]!.click());
     await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription, () => shareDlg.close());
 
-    const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
-    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription,
+    const closeProjectDescription =
+      'You can close the project by right-clicking on the sidebar and clicking "Close all"';
+    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null,
+      closeProjectDescription,
       () => grok.shell.closeAll());
 
     await DG.delay(1000);
     // the tree is rebuilt after Close all, so the row is looked up on every poll; a click anywhere in it counts
     const dashboardsNode = () => ($('div.d4-tree-view-item-label')
-      .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]?.closest('.d4-tree-view-node') as HTMLElement) ?? null;
+      .filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]
+      ?.closest('.d4-tree-view-node') as HTMLElement) ?? null;
 
     await this.action('Open browse and click on Dashboards', elementClick(dashboardsNode), dashboardsNode, '',
       () => dashboardsNode()!.click());

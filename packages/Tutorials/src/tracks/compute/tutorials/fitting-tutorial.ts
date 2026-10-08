@@ -6,8 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption, toggleSwitch} from './utils';
-import { runDescriber } from './ui-describer';
+import {getElement, getView, closeWindows, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption,
+  toggleSwitch} from './utils';
+import {runDescriber} from './ui-describer';
 
 /** Fitting results info */
 const fittingInfo = [
@@ -57,8 +58,8 @@ export class FittingTutorial extends Tutorial {
     closeWindows();
 
     // 1. Open Apps
-    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    const browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    const browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
     if (browseHeader === null)
       browseIcon.click();
 
@@ -83,10 +84,10 @@ export class FittingTutorial extends Tutorial {
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
-    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+    appsGroupRoot.dispatchEvent(new Event('dblclick', {bubbles: true, cancelable: true}));
 
     // 2. Run Model catalog
-    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    const galleryGrid = await getElement(document, 'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
@@ -95,8 +96,8 @@ export class FittingTutorial extends Tutorial {
     browseIcon.click();
 
     let name = 'Model-Hub';
-    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
-    name = name.replace('-',' ');
+    const modelCatalogIcn = await getElement(galleryGrid, `div[name="div-${name}"]`);
+    name = name.replace('-', ' ');
 
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
@@ -150,7 +151,7 @@ export class FittingTutorial extends Tutorial {
       }],
       btnsText: {done: 'OK', next: '', prev: ''},
     });
-    
+
     await this.action('Click "OK"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 5. Run fitting
@@ -299,7 +300,7 @@ export class FittingTutorial extends Tutorial {
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const maxDistOverlay = buildToggleOverlay(maxDistSwitcher);
-    
+
     await this.action(
       'Disable "Max distance"',
       fromEvent(maxDistSwitcher, 'click'),
@@ -349,7 +350,7 @@ export class FittingTutorial extends Tutorial {
       () => runIcnRoot.click(),
     );
 
-    await new Promise<void>((resolve) => {grid.onAfterDrawContent.subscribe((e) => resolve());});
+    await new Promise<void>((resolve) => {grid.onAfterDrawContent.subscribe(() => resolve());});
 
     // 15. Check trajectory
     const bestVelocity = grid.table.get('Velocity', 0) as number;
@@ -361,7 +362,7 @@ export class FittingTutorial extends Tutorial {
         description: '# The best fit 🎯\n\nTo make the ball follow the specified trajectory, use the following throw parameters:\n\n' +
           `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`,
         position: 'left',
-        elements: {major: grid.cell('[Height]', 0).element}
+        elements: {major: grid.cell('[Height]', 0).element},
       }],
       btnsText: {done: 'clear', next: '', prev: ''},
     });

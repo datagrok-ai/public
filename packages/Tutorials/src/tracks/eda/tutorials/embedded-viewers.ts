@@ -1,10 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import $ from 'cash-dom';
-import { filter, first, map } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { interval } from 'rxjs';
+import {filter, first, map} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {interval} from 'rxjs';
 
 
 export class EmbeddedViewersTutorial extends Tutorial {
@@ -35,7 +34,7 @@ export class EmbeddedViewersTutorial extends Tutorial {
     this.title('Viewer tooltips');
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
-    const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
+    await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
     const pie = await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
 
     await this.contextMenuAction('Set the scatter plot as a tooltip viewer',
@@ -64,9 +63,10 @@ export class EmbeddedViewersTutorial extends Tutorial {
         filter((v) => v.type === DG.VIEWER.TRELLIS_PLOT), first()).toPromise() as DG.Viewer;
 
     await this.action('Set a scatter plot as an inner viewer', interval(1000).pipe(
-        map((_) => trellis.props.viewerType),
-        filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
-      () => trellis.root.querySelector('[name="viewer selector"]') as HTMLElement, 'This time, use the viewer type selector ' +
+      map((_) => trellis.props.viewerType),
+      filter((t: string) => t === DG.VIEWER.SCATTER_PLOT)),
+    () => trellis.root.querySelector('[name="viewer selector"]') as HTMLElement,
+    'This time, use the viewer type selector ' +
       'in the opened Trellis plot. You can also set it from the context panel.',
     () => trellis.props.viewerType = DG.VIEWER.SCATTER_PLOT);
 

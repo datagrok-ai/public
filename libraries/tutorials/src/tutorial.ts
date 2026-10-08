@@ -497,9 +497,9 @@ export abstract class Tutorial extends DG.Widget {
       instructionDiv.classList.add('grok-tutorial-entry-success');
       instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
       entry.setAttribute('aria-checked', 'true');
-      grok.events.fireCustomEvent('tutorial-step-completed', {tutorial: this.name, step: step, instruction: instructions});
-    }
-    else
+      grok.events.fireCustomEvent('tutorial-step-completed',
+        {tutorial: this.name, step: step, instruction: instructions});
+    } else
       entry.setAttribute('aria-invalid', 'true');
 
     if (hint != null)
@@ -565,7 +565,6 @@ export abstract class Tutorial extends DG.Widget {
    * complete, and is shown so), and does not settle as a success when the tutorial is closed. */
   firstEvent(eventStream: Observable<any>): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-      let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
         eventSub?.unsubscribe();
         closeSub.unsubscribe();
@@ -573,9 +572,10 @@ export abstract class Tutorial extends DG.Widget {
         // eslint-disable-next-line
         reject();
       });
-      eventSub = eventStream.pipe(first()).subscribe({
+      const eventSub: Subscription = eventStream.pipe(first()).subscribe({
         next: () => (closeSub.unsubscribe(), resolve(true)),
-        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve(false)),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(),
+        resolve(false)),
       });
     }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }

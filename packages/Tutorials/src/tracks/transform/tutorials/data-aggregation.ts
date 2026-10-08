@@ -1,11 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import $ from 'cash-dom';
-import { interval } from 'rxjs';
-import { filter } from 'rxjs/operators';
-import { Platform, getPlatform, platformKeyMap } from '../../shortcuts';
-
+import {interval} from 'rxjs';
+import {filter} from 'rxjs/operators';
+import {Platform, getPlatform, platformKeyMap} from '../../shortcuts';
 
 
 export class AggregationTutorial extends Tutorial {
@@ -41,13 +40,14 @@ export class AggregationTutorial extends Tutorial {
     () => grok.functions.call('CmdAggregateRows'));
 
     const pivotViewer = Array.from(grok.shell.tv.viewers).find((v) => v instanceof DG.PivotViewer) as DG.PivotViewer;
-    if (pivotViewer)
+    if (pivotViewer) {
       pivotViewer.setOptions({
         groupByColumnNames: [],
         pivotColumnNames: [],
         aggregateAggTypes: ['avg', 'avg'],
-        aggregateColumnNames: ['AGE', 'HEIGHT']
+        aggregateColumnNames: ['AGE', 'HEIGHT'],
       } as unknown as DG.IPivotViewerSettings);
+    }
 
     this.describe('The aggregation editor consists of several components: the section on ' +
       'top contains aggregation parameters; the spreadsheet at the bottom shows the result, ' +
@@ -61,7 +61,7 @@ export class AggregationTutorial extends Tutorial {
         const tag = $(root).find(colTagSelector)
           .filter((idx, el) => el.textContent?.toUpperCase() === colName.toUpperCase())[0];
         return tag != null && (condition === null ? true : condition());
-    }));
+      }));
 
     const groupByRoot = $('.grok-pivot-column-panel').filter((_, el) =>
       el.textContent?.startsWith('Group by') === true)[0]!;
@@ -74,7 +74,8 @@ export class AggregationTutorial extends Tutorial {
 
     const groupByCol2 = 'SEX';
     await this.action(`Group rows by column "${groupByCol2}"`, findColTag(groupByRoot, groupByCol2),
-    groupByRoot.querySelector('.grok-pivot-column-tags-plus') as HTMLElement, 'Another way to add a column to group by is to drag it from the column list on the right. ' +
+    groupByRoot.querySelector('.grok-pivot-column-tags-plus') as HTMLElement,
+    'Another way to add a column to group by is to drag it from the column list on the right. ' +
       'Add the second column to the grouping list.',
     () => pivotViewer.setOptions({groupByColumnNames: [groupByCol1, groupByCol2]}));
 
@@ -115,9 +116,13 @@ export class AggregationTutorial extends Tutorial {
     );
 
     await this.action('Change a column to "WEIGHT"', findColTag(aggRoot, 'avg(WEIGHT)', () =>
-      $(aggRoot).find(colTagSelector).length === 1), aggrTag(), 'In addition, you can change the aggregation column from the context menu too. ' +
-      'For example, if you are adding multiple columns using the same aggregation function, you can set it as default by pressing the "+" sign and choosing ' +
-      'it under the "Aggregation" submenu. Let\'s calculate the average weight for each patient group instead of age. Right-click the aggregation field and select <b>Column > WEIGHT</b>.',
+      $(aggRoot).find(colTagSelector).length === 1), aggrTag(),
+    'In addition, you can change the aggregation column from the context menu too. ' +
+      'For example, if you are adding multiple columns using the same aggregation function, ' +
+      'you can set it as default by pressing the "+" sign and choosing ' +
+      'it under the "Aggregation" submenu. ' +
+      'Let\'s calculate the average weight for each patient group instead of age. ' +
+      'Right-click the aggregation field and select <b>Column > WEIGHT</b>.',
     () => pivotViewer.setOptions({aggregateColumnNames: ['WEIGHT'], aggregateAggTypes: ['avg']}),
     );
 
@@ -130,7 +135,8 @@ export class AggregationTutorial extends Tutorial {
 
 
     // const viewerPopup = $(aggRoot).find('.d4-combo-popup').get(0);
-    // await this.action('Add viewer to visualize aggregation', elementClick(() => viewerPopup as HTMLElement), viewerPopup,
+    // await this.action('Add viewer to visualize aggregation', elementClick(() => viewerPopup as HTMLElement),
+    //   viewerPopup,
     //   'To change the viewer, click on the combobox.' +
     //   'This action will open a dropdown list containing various visualization options for aggregations.' +
     //   'You\'ll find a selection of standard viewers like scatterplot, barchart, piechart, and more.'
@@ -139,10 +145,12 @@ export class AggregationTutorial extends Tutorial {
     // const lineChartEl = $(aggRoot).find('label.ui-label').filter(function() {
     //   return $(this).text().trim() === "Line chart";
     // }).closest('div.d4-icon-text.d4-list-item').get(0);
-    // await this.action('Choose Line Chart from the viewers list', elementClick(() => lineChartEl as HTMLElement), lineChartEl,
+    // await this.action('Choose Line Chart from the viewers list', elementClick(() => lineChartEl as HTMLElement),
+    //   lineChartEl,
     //   'Now, choose the Line Chart viewer from the list.' +
     //   'By doing so, you\'ll be able to visualize the aggregation results in a line chart format.' +
-    //   'In this scenario, the data has been aggregated based on weight, and the Line Chart will represent this aggregation accordingly.'
+    //   'In this scenario, the data has been aggregated based on weight, ' +
+    //   'and the Line Chart will represent this aggregation accordingly.'
     // );
 
     this.title('Interactivity');
@@ -176,20 +184,21 @@ export class AggregationTutorial extends Tutorial {
 
     const serializedParams = ('[{"#type":"GroupAggregation","aggType":"key","colName":"RACE"},' +
       '{"#type":"GroupAggregation","aggType":"key","colName":"SEX"},{"#type":"GroupAggregation",' +
-      '"aggType":"pivot","colName":"DIS_POP"},{"#type":"GroupAggregation","aggType":"med","colName":"WEIGHT"}]').toLowerCase();
+      '"aggType":"pivot","colName":"DIS_POP"},' +
+      '{"#type":"GroupAggregation","aggType":"med","colName":"WEIGHT"}]').toLowerCase();
 
     const historyStr = window.localStorage['grok-aggregation-history'];
     const initialParamsLen = historyStr ? JSON.parse(historyStr).length : 0;
 
     await this.action('Save parameters', interval(1000).pipe(filter(() => {
-        const historyStr = window.localStorage['grok-aggregation-history'];
-        if (!historyStr)
-          return false;
-        const history = JSON.parse(historyStr);
-        return history.length > initialParamsLen &&
+      const historyStr = window.localStorage['grok-aggregation-history'];
+      if (!historyStr)
+        return false;
+      const history = JSON.parse(historyStr);
+      return history.length > initialParamsLen &&
           JSON.stringify(history[history.length - 1]).toLowerCase() === serializedParams;
-      })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
-      'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
+    })), $('i.grok-icon.fa-history.d4-command-bar-icon')[0],
+    'Click on the history icon and select <b>Save parameters</b> from the menu. Note that parameters are ' +
       'also saved automatically when you click "OK" to add the aggregated dataframe to the workspace. This ' +
       'can be useful if you choose to reset the entered parameters. To return previously used parameters, ' +
       'simply select them when clicking the history icon.', async () => {

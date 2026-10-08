@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import $, { Cash } from 'cash-dom';
-import { filter } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
+import $, {Cash} from 'cash-dom';
+import {filter} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import wu from 'wu';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 import {selectionMade} from './utils';
 
 
@@ -18,7 +18,7 @@ export class FiltersTutorial extends Tutorial {
       'and visual assessment of column values';
   }
 
-  get steps() { return 17; }
+  get steps() {return 17;}
 
   get icon() {
     return '🔍🎚️';
@@ -101,14 +101,13 @@ export class FiltersTutorial extends Tutorial {
 
     await this.action('Filter the dataset to only females of Asian or Black origin',
       this.t!.onFilterChanged.pipe(filter(() => {
-        let rMatch, sMatch;
+        let rMatch; let sMatch;
         rMatch = sMatch = false;
         wu(this.t!.rows.filters).forEach((f) => {
-          if (f === 'RACE: Asian, Black') {
+          if (f === 'RACE: Asian, Black')
             rMatch = true;
-          } else if (f === 'SEX: F') {
+          else if (f === 'SEX: F')
             sMatch = true;
-          }
         });
         return rMatch && sMatch;
       })),
@@ -133,7 +132,8 @@ export class FiltersTutorial extends Tutorial {
     await this.action('Hover over the histogram bins', this.t!.onMouseOverRowGroupChanged, null, hoverInfo);
 
     const selectionInfo = 'Click on a bin to select it. To select multiple bins, hold <b>Shift</b> and ' +
-      `either pick bins one by one or drag a rectangle to form a group. If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
+      'either pick bins one by one or drag a rectangle to form a group. ' +
+      `If you hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while ` +
       'clicking, you will toggle the bin\'s selection. Note that other filters reflect the proportion ' +
       'of the selected rows.';
     await this.action('Select one of the histogram bins',
