@@ -14,6 +14,7 @@ Feature: A SQL query started from a table of the schema
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-sql-{time}" is on the server
 
@@ -34,7 +35,7 @@ Feature: A SQL query started from a table of the schema
     Then grid should be visible
     And the "rows" reading of grid should be 77
     Given the toolbox pane is shown
-    When user clicks on "Run query..." action in toolbox
+    When user clicks on "Run query..." action in toolbox and the query it runs completes
     Then the current view should be a TableView view
     And the table should have 77 rows
     When user closes the current view

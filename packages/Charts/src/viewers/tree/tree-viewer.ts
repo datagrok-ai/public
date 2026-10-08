@@ -10,6 +10,8 @@ import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as utils from '../../utils/utils';
 import * as echarts from 'echarts';
 import _ from 'lodash';
+import {Observable} from 'rxjs';
+import {treeStatus} from './tree-status';
 
 type onClickOptions = 'Select' | 'Filter' | 'None';
 const rowSourceMap: Record<onClickOptions, string> = {
@@ -97,6 +99,21 @@ export class TreeViewer extends EChartViewer {
   viewerFilter: DG.BitSet | null = null;
   capturedFilterState: DG.BitSet | null = null;
   initialDfFilter: DG.BitSet | null = null;
+  // the branches animate into place for `animationDurationUpdate` (500 ms), past the default cap
+  protected signals = new utils.RenderSignals(() => this.frameOwed(), 120);
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return utils.MessageHandler._getMessage(this.root);}
+
+  getWidgetStatus(): DG.IWidgetStatus {return treeStatus(this);}
+
+  protected frameOwed(): boolean {
+    return this.renderError === null && (super.frameOwed() || !this.chart.getZr().animation.isFinished());
+  }
+
   constructor() {
     super();
 
@@ -270,9 +287,12 @@ export class TreeViewer extends EChartViewer {
 
     this.chart.on('mouseover', showTooltip);
     this.chart.on('mouseout', () => ui.tooltip.hide());
+    // echarts has folded or unfolded the node by now; its branches animate in or out
     this.chart.on('click', (params: any) => {
-      if (params.componentType === 'series')
+      if (params.componentType === 'series') {
         params.data.collapsed = !params.data.collapsed;
+        this.signals.settle();
+      }
     });
     this.chart.getZr().on('click', handleZrClick);
     this.chart.getZr().on('mouseover', handleZrHover);
@@ -604,7 +624,7 @@ export class TreeViewer extends EChartViewer {
 
   addSubs(): void {
     if (!this.dataFrame) return;
-    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
       this.hierarchyColumnNames = this.hierarchyColumnNames.filter((columnName) => !columnNamesToRemove.includes(columnName));
@@ -612,13 +632,19 @@ export class TreeViewer extends EChartViewer {
       this.render();
     }));
     this.subs.push(ui.onSizeChanged(this.root).subscribe((_) => {
-      requestAnimationFrame(() => this.chart?.resize());
+      const release = this.signals.hold();
+      requestAnimationFrame(() => {
+        this.chart?.resize();
+        release();
+        this.signals.settle();
+      });
     }));
-    this.subs.push(DG.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
+    this.subs.push(this.signals.debounce(grok.events.onResetFilterRequest, 10).subscribe(() => {
       if (this.filteredPaths)
         this.cleanTree(this.filteredPaths);
       this.viewerFilter = null;
       this.capturedFilterState = null;
+      this.signals.settle();
     }));
     this.subs.push(this.dataFrame.selection.onChanged.subscribe(() => {
       this.applySelectionFilterChange(this.selectedPaths, this.dataFrame.selection);
@@ -672,6 +698,7 @@ export class TreeViewer extends EChartViewer {
       if (!newSet.has(path))
         this.paintBranchByPath([path], otherColor);
     }
+    this.signals.settle();
   }
 
 
@@ -882,8 +909,7 @@ export class TreeViewer extends EChartViewer {
   }
 
   render(preserveCollapsed: boolean = true): void {
-    this.renderQueue = this.renderQueue
-      .then(() => this._render(preserveCollapsed));
+    this.renderQueue = this.signals.track(this.renderQueue.then(() => this._render(preserveCollapsed)));
   }
 
   async _render(preserveCollapsed: boolean = true): Promise<void> {

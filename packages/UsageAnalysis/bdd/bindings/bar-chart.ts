@@ -4,9 +4,9 @@
    the hangs-below geometry were not the bar chart's and are in the library now
    (`bindings/tiers/viewers/widgets.ts`). Everything else in the bar chart features is the library's
    `viewers` tier and the platform's data steps (`grok-bdd list-steps`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 interface Bar {
   name: string;

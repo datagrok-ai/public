@@ -9,7 +9,8 @@ import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import type {ElementRef} from '../../src/runtime/args.js';
 import {el} from '../../src/runtime/args.js';
-import {expectCount, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, State} from '../../src/runtime/assertions.js';
+import {expectCount, expectOption, expectOptions, expectState, expectSwitched, expectText, expectValue, expectValueBetween, expectVisible, readValue,
+  State} from '../../src/runtime/assertions.js';
 import * as g from '../../src/runtime/gestures.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
 import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
@@ -33,6 +34,27 @@ export const insertLineAfter = When('user puts {string} on a new line after the 
   (page: Page, text: string, start: string, target: ElementRef) => g.insertLineAfter(page, target, start, text),
   {tier: 'ui', description: 'a new line typed right after the first line of a code editor that starts with the text'});
 export const clearField = When('user clears {element}', (page: Page, target: ElementRef) => g.clear(page, target), {tier: 'ui'});
+/** One pass at a person's pace, never retyped: the typing above retypes until the field holds the text, which
+ * a field that drops keys only the first time would survive. */
+export const typeKeyByKey = When('user types {string} key by key into {element}', async (page: Page, text: string, target: ElementRef) => {
+  const editor = await g.editorOf(page, target);
+  await editor.click();
+  await editor.press('ControlOrMeta+A');
+  await page.keyboard.type(text, {delay: 120});
+}, {tier: 'ui', description: 'clicks the field, selects its text and types once at 120 ms a key; the field is not read back here'});
+/** For an element whose app takes the select-all key for itself: the text is selected the way a pointer does it. */
+export const selectTextOf = When('user selects the text of {element}', async (page: Page, target: ElementRef) => {
+  const loc = await locate(page, target);
+  await loc.click({clickCount: 3});
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString() ?? ''),
+    {message: `the selected text of ${target.phrase}`}).toBe((await loc.innerText()).trim());
+}, {tier: 'ui', description: 'a triple click on the element, checked by what the page reports as selected'});
+export const replaceTextOf = When('user replaces the text of {element} with {string}', async (page: Page, target: ElementRef, text: string) => {
+  const loc = await locate(page, target);
+  await loc.selectText();
+  await page.keyboard.type(text);
+  await expect(loc, `the text typed into ${target.phrase}`).toHaveText(text);
+}, {tier: 'ui', description: 'the text selected as a drag over it does, then typed: for a contenteditable whose app owns the select-all key; not committed'});
 export const pressKey = When('user presses {key}', (page: Page, key: string) => g.press(page, key), {tier: 'ui'});
 export const pressKeyIn = When('user presses {key} in {element}', (page: Page, key: string, target: ElementRef) => g.pressIn(page, target, key), {tier: 'ui'});
 export const selectIn = When('user selects {string} in {element}', (page: Page, option: string, target: ElementRef) => g.select(page, target, option), {tier: 'ui'});
@@ -192,6 +214,31 @@ export const rememberSize = When('user remembers the size of {element}', async (
   rememberedBoxes.get(page)!.set(target.phrase, {width: box.width, height: box.height});
 }, {tier: 'api', description: 'kept under the phrase, so several elements can be remembered at once'});
 
+/* An input's value before a change that should move it or leave it, kept under its phrase. */
+const rememberedValues = new WeakMap<Page, Map<string, string>>();
+
+export const rememberValue = When('user remembers the value of {element}', async (page: Page, target: ElementRef) => {
+  let value: string | undefined;
+  await expect.poll(async () => (value = await readValue(page, target)) !== undefined, {message: `the value of ${target.phrase}`}).toBe(true);
+  if (!rememberedValues.has(page)) {
+    rememberedValues.set(page, new Map());
+    atFeatureEnd(page, async () => { rememberedValues.delete(page); });
+  }
+  rememberedValues.get(page)!.set(target.phrase, value!);
+}, {tier: 'api', description: 'kept under the phrase until the feature ends, so a reload or a reopened view can be compared with it'});
+
+function rememberedValue(page: Page, target: ElementRef): string {
+  const kept = rememberedValues.get(page)?.get(target.phrase);
+  if (kept === undefined)
+    throw new Error(`no value of ${target.phrase} was remembered — "user remembers the value of ${target.phrase}" comes first`);
+  return kept;
+}
+
+export const hasRememberedValue = Then('{element} should have the remembered value', (page: Page, target: ElementRef) =>
+  expectValue(page, target, rememberedValue(page, target)));
+export const lacksRememberedValue = Then('{element} should not have the remembered value', (page: Page, target: ElementRef) =>
+  expectValue(page, target, rememberedValue(page, target), true));
+
 function rememberedBox(page: Page, target: ElementRef): {width: number; height: number} {
   const kept = rememberedBoxes.get(page)?.get(target.phrase);
   if (!kept)
@@ -248,6 +295,10 @@ export const fillsParent = Then('{element} should fill its parent', async (page:
 }, {description: 'as wide and as tall as the content box of the element it sits in, to a pixel'});
 export const shouldOffer = Then('{element} should offer {string}', (page: Page, target: ElementRef, list: string) => expectOptions(page, target, list),
   {description: 'the choices of a dropdown, comma-separated, exactly and in this order; the blank option of a nullable dropdown is not a choice'});
+export const shouldOfferChoice = Then('{element} should offer the choice {string}', (page: Page, target: ElementRef, option: string) =>
+  expectOption(page, target, option, true), {description: 'one choice among the others a dropdown offers — an entry just saved'});
+export const shouldNotOfferChoice = Then('{element} should not offer the choice {string}', (page: Page, target: ElementRef, option: string) =>
+  expectOption(page, target, option, false), {description: 'one choice missing from a dropdown that offers others — a deleted entry gone from a list'});
 export const shouldHaveItems = Then('{element} should have {int} item(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 export const shouldHaveRows = Then('{element} should have {int} row(s)', (page: Page, target: ElementRef, count: number) => expectCount(page, target, count));
 
@@ -409,6 +460,27 @@ export const downloadedContains = Then('the downloaded file should contain {stri
   expect(readFileSync(file, 'utf8'), `the downloaded file ${file}`).toContain(text);
 }, {description: 'the file downloaded last'});
 
+export const lastDownloadCount = Then('the downloaded file should contain {int} occurrences of {string}', async (page: Page, count: number, text: string) => {
+  const file = await lastDownloaded(page);
+  expect(readFileSync(file, 'utf8').split(text).length - 1, `occurrences of "${text}" in the downloaded file ${file}`).toBe(count);
+}, {description: 'the file downloaded last — a record terminator counts the records'});
+
+export const fileMatchingDownloaded = Then('a file matching {string} should have been downloaded', async (page: Page, pattern: string) => {
+  await expect.poll(() => {
+    const list = downloads.get(page);
+    if (!list)
+      throw new Error('"user watches downloads" did not run in this scenario');
+    return list.map((d) => d.name);
+  }, {message: `the files downloaded, one named like /${pattern}/`}).toContainEqual(expect.stringMatching(new RegExp(pattern)));
+}, {description: 'a file whose name the page makes up (a date and a time in it), by a regular expression over the name'});
+
+export const noFileDownloaded = Then('no file should have been downloaded', async (page: Page) => {
+  const list = downloads.get(page);
+  if (!list)
+    throw new Error('"user watches downloads" did not run in this scenario');
+  expect(list.map((d) => d.name), 'the files downloaded since "user watches downloads"').toEqual([]);
+}, {description: 'read at once, so it follows the claim a refused action ends with (its warning), never the gesture itself'});
+
 export const downloadedNotContains = Then('the downloaded file should not contain {string}', async (page: Page, text: string) => {
   const file = await lastDownloaded(page);
   expect(readFileSync(file, 'utf8'), `the downloaded file ${file}`).not.toContain(text);
@@ -484,11 +556,11 @@ export const recordAlerts = Given('browser alerts are recorded', async (page: Pa
     return;
   const list: string[] = [];
   alerts.set(page, list);
-  page.on('dialog', async (dialog) => {
-    list.push(dialog.message());
-    await dialog.dismiss().catch(() => undefined);
+  page.on('dialog', (dialog) => {
+    if (dialog.type() !== 'beforeunload')
+      list.push(dialog.message());
   });
-}, {tier: 'api', description: 'every native alert the page raises from now on is recorded and dismissed (an undismissed one blocks every later step)'});
+}, {tier: 'api', description: 'every native alert the page raises from now on is recorded; the harness dismisses it'});
 
 export const alertShown = Then('the browser should have shown the alert {string}', async (page: Page, text: string) => {
   await expect.poll(() => alerts.get(page) ?? [], {message: 'the native alerts the page raised'}).toContain(text);

@@ -177,6 +177,10 @@ export function watchErrors(page: Page): void {
   });
   page.on('pageerror', (e) => list.push(String(e)));
   page.on('crash', () => crashed.add(page));
+  // A reload or a sign-in leaves the page the way a person who chose to does: "Warn on unsaved changes" asks
+  // through beforeunload, and dismissing it, Playwright's default, cancels the navigation, which then waits
+  // out its timeout. A listener ends that default for every dialog, so the others are dismissed here.
+  page.on('dialog', (d) => (d.type() === 'beforeunload' ? d.accept() : d.dismiss()).catch(() => undefined));
 }
 
 /** The errors logged since the last call (or since the page opened), and clears them. */
@@ -391,6 +395,10 @@ export async function resetShell(page: Page): Promise<void> {
     if (w.grok.shell.windows.presentationMode)
       w.grok.shell.windows.presentationMode = false;
     w.grok.shell.closeAll();
+    // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
+    // feature expanded would build, server-backed or not, in every later feature on the page
+    for (const key of Object.keys(localStorage).filter((k) => k.startsWith('Accordion:')))
+      localStorage.removeItem(key);
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
   }, NOTICES).catch(() => '');

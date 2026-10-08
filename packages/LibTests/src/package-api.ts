@@ -100,6 +100,10 @@ export namespace funcs {
     return await grok.functions.call('LibTests:MockWrapperDF', { params });
   }
 
+  export async function testToleranceInputs(plain: number , abs: number , rel: number , df: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceInputs', { plain, abs, rel, df });
+  }
+
   /**
    * @param {string} mode
    *   choices: ["fast", "exact"]
@@ -192,5 +196,31 @@ export namespace funcs {
 
   export async function testEnabledInputs(k: number , en: number , both: number ): Promise<number> {
     return await grok.functions.call('LibTests:TestEnabledInputs', { k, en, both });
+  }
+
+  export async function loadProfile(): Promise<DG.DataFrame> {
+    return await grok.functions.call('LibTests:LoadProfile', {});
+  }
+
+  /**
+   * @param {string} subject
+   *   choices: []
+   * @param {string} route
+   *   choices: ["iv", "oral"]
+   * @param {string} doseUnit
+   *   choices: ["mg", "mg/kg"]
+   * @param {string} method
+   *   choices: ["LSODA", "RK45"]
+   */
+  export async function pkModel(profile: DG.DataFrame , time: DG.Column , subject: string | null, route: string , dose: number , doseUnit: string , weight: number | null, ka: number | null, compound: string | null, clearance: number , volume: number , duration: number , method: string , tolerance: number | null): Promise<number> {
+    return await grok.functions.call('LibTests:PkModel', { profile, time, subject, route, dose, doseUnit, weight, ka, compound, clearance, volume, duration, method, tolerance });
+  }
+
+  export async function allometricClearance(weight: number | null): Promise<number> {
+    return await grok.functions.call('LibTests:AllometricClearance', { weight });
+  }
+
+  export async function checkTolerance(tolerance: number ): Promise<string> {
+    return await grok.functions.call('LibTests:CheckTolerance', { tolerance });
   }
 }

@@ -11,21 +11,22 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
   The marker itself is a dot the grid paints on its canvas and reports nowhere; the tooltip shown
   over the cell's top right corner is built from the same values the dot is drawn for, so the values
   are claimed there. The blue circle on a sticky column's header is painted the same way and is not
-  claimed. The batch edit is claimed in the sticky columns and again after the table is reopened, so
-  what reached the server is read, not what the view keeps.
+  claimed. The batch edit is claimed in the sticky columns; that the values written are read back
+  from the server is tested in ApiTests src/dapi/sticky_meta.ts ('get values').
 
   The cell's dialog and pane list one section per schema that matches molecules, and a section has no
   container of its own, so its fields are named across all of them: the feature needs a stand where its
   schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
 
   The entity type and the schema are made through the UI in the Background and deleted through the UI
-  in the last scenarios, which a journey runs even after a failure; the server-side sweep the library
-  does not have yet is in sticky-meta/MISSING.md. Serial: a schema matching molecules adds a section
+  in the last scenarios, which a journey runs even after a failure; the Background's sweep removes them
+  at feature end as well, and an earlier run's after an hour. Serial: a schema matching molecules adds a section
   to the Sticky meta pane of every molecule column on the stand.
 
   Background:
     Given user is logged in
     And the "Chem" package is installed
+    And the Sticky Meta schema "bdd-sm-cells-{time}" and entity type "bdd-sm-cells-type-{time}" are removed now and at feature end
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -144,25 +145,6 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
     And the value of "notes" column in row 4 should be ""
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  Scenario: What was written is read back from the server after the table is reopened
-    When user closes all views
-    And user opens spgi dataset
-    And user clicks on the "header Structure" area of grid
-    Then the context panel should show "Structure"
-    Given "Sticky meta" pane in context panel is expanded
-    When user clicks on "Add bdd-sm-cells-{time}'s properties as columns" button in context panel
-    Then the table should have a column "rating"
-    And the table should have a column "notes"
-    And the table should have a column "verified"
-    And the value of "rating" column in row 1 should be "5"
-    And the value of "notes" column in row 1 should be "batch note"
-    And the value of "notes" column in row 2 should be "batch note"
-    And the value of "verified" column in row 2 should be "true"
-    And the value of "notes" column in row 3 should be "batch note"
-    And the value of "verified" column in row 3 should be "true"
-    And the value of "notes" column in row 4 should be ""
-    And no errors should have been logged
 
   Scenario: The schema is deleted
     When user closes all views

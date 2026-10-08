@@ -1,10 +1,12 @@
 @journey @realizes:chem.cp.chemical-space
-Feature: Chemical Space over SMILES, V2000 and V3000 molecules
+Feature: Chemical Space over SMILES molecules
   Chem | Analyze | Chemical Space... opens the Chem Space dialog on the molecule column with UMAP,
   Tanimoto, Plot embeddings and Cluster embeddings on and Cluster MCS off. OK adds a pair of Embed_X / Embed_Y
   columns, a Cluster (DBSCAN) column and a scatter plot of the embedding. A second run with
-  t-SNE adds a second pair of embedding columns. The same holds for molecules read from a V2000 SDF
-  (the first 100 of mol1K.sdf: the claim is about the notation, not the size) and from a V3000 SDF.
+  t-SNE adds a second pair of embedding columns.
+
+  V2000 and V3000 molecules are the same dialog over another notation, tested in Chem
+  src/tests/menu-tests-chem-space.ts (chemSpaceOpens.molV2000, chemSpaceOpens.molV3000).
 
   Background:
     Given user is logged in
@@ -45,28 +47,4 @@ Feature: Chemical Space over SMILES, V2000 and V3000 molecules
     And 2 new columns matching "^Embed_[XY]_" should have been added
     And the newest column matching "^Embed_X_" should have no missing values
     And the table should have 50 rows
-    And no errors should have been logged
-
-  Scenario: UMAP on V2000 molecules from an SDF
-    Given user opens mol1K.sdf dataset keeping the first 100 rows
-    When user picks "Chem > Analyze > Chemical Space..." from the top menu
-    Then "Chem Space" dialog should be visible
-    When user clicks on OK button in "Chem Space" dialog
-    Then the top menu command should have completed
-    And a new column matching "^Embed_X_" should have been added
-    And a new column matching "^Embed_Y_" should have been added
-    And the newest column matching "^Embed_X_" should have no missing values
-    And scatter plot viewer should be visible
-    And no errors should have been logged
-
-  Scenario: UMAP on V3000 molecules from an SDF
-    Given user opens ApprovedDrugs2015 dataset
-    When user picks "Chem > Analyze > Chemical Space..." from the top menu
-    Then "Chem Space" dialog should be visible
-    When user clicks on OK button in "Chem Space" dialog
-    Then the top menu command should have completed
-    And a new column matching "^Embed_X_" should have been added
-    And a new column matching "^Embed_Y_" should have been added
-    And the newest column matching "^Embed_X_" should have no missing values
-    And scatter plot viewer should be visible
     And no errors should have been logged

@@ -418,6 +418,17 @@ export async function MockWrapperDF(params: any) {
   return c;
 }
 
+// consistency tolerance annotations
+
+//input: double plain
+//input: double abs {consistencyTolerance: 1e-9}
+//input: double rel {consistencyRelTolerance: 1e-6}
+//input: dataframe df {consistencyTolerance: 1e-9}
+//output: double res
+export async function TestToleranceInputs(plain: number, abs: number, rel: number, df: DG.DataFrame) {
+  return 1;
+}
+
 // annotation checks
 
 //input: double a {nullable: true}
@@ -579,4 +590,44 @@ export function TestExpressionInputs(k: number, hv: number, foo: number, bar: nu
 //output: int res
 export function TestEnabledInputs(k: number, en: number, both: number): number {
   return en;
+}
+
+// the example workflow of help/compute/workflows/rules-and-checks.mdx
+
+//output: dataframe profile
+export function LoadProfile(): DG.DataFrame {
+  return DG.DataFrame.fromCsv('subject,time,parent\nS1,0.5,4.2\nS1,1,6.1\nS1,2,5.3\nS1,4,3.4\nS1,8,1.2');
+}
+
+//input: dataframe profile
+//input: column time {type: numerical; table: profile}
+//input: string subject {choices: []; nullable: true}
+//input: string route = "iv" {choices: ["iv", "oral"]}
+//input: double dose {min: 0}
+//input: string doseUnit = "mg" {choices: ["mg", "mg/kg"]}
+//input: double weight {nullable: true}
+//input: double ka {nullable: true}
+//input: string compound {nullable: true}
+//input: double clearance
+//input: double volume
+//input: double duration
+//input: string method = "LSODA" {choices: ["LSODA", "RK45"]}
+//input: double tolerance {nullable: true}
+//output: double auc
+export function PkModel(profile: DG.DataFrame, time: DG.Column, subject: string, route: string, dose: number,
+  doseUnit: string, weight: number, ka: number, compound: string, clearance: number, volume: number,
+  duration: number, method: string, tolerance: number): number {
+  return (doseUnit === 'mg/kg' ? dose * weight : dose) / clearance;
+}
+
+//input: double weight {nullable: true}
+//output: double clearance
+export function AllometricClearance(weight: number | null): number | null {
+  return weight == null ? null : 5 * (weight / 70) ** 0.75;
+}
+
+//input: double tolerance
+//output: string res
+export function CheckTolerance(tolerance: number): string | null {
+  return tolerance > 0.001 ? 'A tolerance above 0.001 can miss the absorption peak' : null;
 }

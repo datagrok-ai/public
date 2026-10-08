@@ -118,13 +118,17 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
 
 
 /** A step entry by its instruction exactly as shown — a {string}, since instructions quote what the
- * learner types ('Name a column "BMI"'), which an element phrase cannot hold. */
-function stepEntry(page: Page, instruction: string) {
-  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${instruction.replace(/"/g, '\\"')}"]`);
+ * learner types ('Name a column "BMI"'), which an element phrase cannot hold. A tutorial names a
+ * modifier as the learner's keyboard labels it (`platformKeyMap`, src/tracks/shortcuts.ts), so on a Mac
+ * the Ctrl and Alt a feature writes read Command and Option. */
+async function stepEntry(page: Page, instruction: string) {
+  const mac = await page.evaluate(() => navigator.platform.toLowerCase().includes('mac'));
+  const shown = mac ? instruction.replace(/\bCtrl\b/g, 'Command').replace(/\bAlt\b/g, 'Option') : instruction;
+  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${shown.replace(/"/g, '\\"')}"]`);
 }
 
 export const stepDone = Then('the tutorial step {string} should be done', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(async () => {
     const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
     return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
@@ -132,13 +136,13 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
 }, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
 
 export const stepDoneTimes = Then('the tutorial step {string} should be done {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').length),
     {message: `checked entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats ("Open scatter plot"): that many of its entries are checked'});
 
 export const stepNotDone = Then('the tutorial step {string} should not be done yet', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.every((e) => e.getAttribute('aria-checked') === 'false') ? 'pending' : 'done'),
     {message: `the tutorial step "${instruction}"`}).toBe('pending');
 }, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});
@@ -162,36 +166,9 @@ export const walkTour = When('user goes through the tour to its end', async (pag
 }, {tier: 'ui', description: '"next" on every page of the guided tour, then "done" — the tour closes'});
 
 export const stepListedTimes = Then('the tutorial step {string} should be listed {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.count(), {message: `entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats: its Nth entry is on the list — the tutorial has prepared that step'});
-
-/* The Sticky Meta tutorial saves an entity type and a schema under fixed names. They are removed at
-   feature end and swept when the feature starts, since a killed run never reached its end; the schema
-   goes first (a type a schema still uses is not deleted), and the server is read back after. The
-   annotated value belongs to the schema and goes with it. */
-async function removeStickyMetaFixtures(page: Page, schema: string, type: string): Promise<void> {
-  await page.evaluate(async ([schema, type]) => {
-    // the JS Schema has no id getter although deleteSchema takes the id: read it off the Dart entity
-    const idOf = (s: any) => (window as any).grok_Entity_Get_Id(s.dart);
-    for (const s of await grok.dapi.stickyMeta.getSchemas())
-      if (s.name === schema)
-        await grok.dapi.stickyMeta.deleteSchema(idOf(s));
-    for (const t of await grok.dapi.entityTypes.list())
-      if (t.name === type)
-        await grok.dapi.entityTypes.delete(t);
-  }, [schema, type]);
-  await expect.poll(() => page.evaluate(async ([schema, type]) =>
-    (await grok.dapi.stickyMeta.getSchemas()).filter((s: any) => s.name === schema).length +
-    (await grok.dapi.entityTypes.list()).filter((t: any) => t.name === type).length, [schema, type]),
-  {message: `the "${schema}" schema and the "${type}" entity type on the server`}).toBe(0);
-}
-
-export const stickyMetaFixturesGone = Given('the Sticky Meta schema {string} and entity type {string} are removed now and at feature end',
-  async (page: Page, schema: string, type: string) => {
-    await removeStickyMetaFixtures(page, schema, type);
-    atFeatureEnd(page, () => removeStickyMetaFixtures(page, schema, type));
-  }, {tier: 'api', description: 'swept before the walk and removed after it, each time read back from the server'});
 
 export const entityTypeExists = Then('the entity type {string} should exist', async (page: Page, type: string) => {
   await expect.poll(() => page.evaluate(async (type) => (await grok.dapi.entityTypes.list()).some((t: any) => t.name === type), type),

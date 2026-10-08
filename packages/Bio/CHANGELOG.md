@@ -1,5 +1,12 @@
 # Bio changelog
 
+## v.next
+
+* Tests: The BDD features no longer repeat what the package tests cover (project round trips, notation permutations, renderer checks); the MSA dialog's engine switch on a HELM column is claimed again (it contacts no container)
+* Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
+* GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
+* Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+
 ## 2.28.4 (2026-09-29)
 
 * MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)

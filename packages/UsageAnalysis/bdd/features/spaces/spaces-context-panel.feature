@@ -8,35 +8,26 @@ Feature: What the context panel says about a space
   a second click makes it stop containing the first name — every claim here is paired that way.
 
   A child space is claimed in its parent's view rather than in the Browse tree: the tree builds a
-  group's children when the group is opened and does not pick up one that arrives afterwards.
+  group's children when the group is opened and does not pick up one that arrives afterwards. The
+  spaces are made through the API: the Create Space dialog is spaces-create's subject.
 
   Background:
     Given user is logged in
     And the browse panel is open
     And the context panel is open
-    And no space named "BDD-CP-Root, BDD-CP-One, BDD-CP-Two" is on the server
+    And a space named "BDD-CP-Root" is on the server
+    And a space named "BDD-CP-One" under "BDD-CP-Root" is on the server
+    And a space named "BDD-CP-Two" under "BDD-CP-Root" is on the server
+    And Spaces tree node inside browse tree is expanded
 
-  Scenario: Two children to switch between
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    And user enters "BDD-CP-Root" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then 1 space named "BDD-CP-Root" should be on the server
-    And the "Create Space" dialog should close
-    When user picks "Create Child Space..." from the context menu of BDD-CP-Root tree node inside browse tree
-    And user enters "BDD-CP-One" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    When user picks "Create Child Space..." from the context menu of BDD-CP-Root tree node inside browse tree
-    And user enters "BDD-CP-Two" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then the "Create Space" dialog should close
-    When user double-clicks on BDD-CP-Root tree node inside browse tree
+  Scenario: The root's view lists its two children
+    When user double-clicks on Spaces---BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
-    And BDD-CP-One link in space gallery should be visible
-    And BDD-CP-Two link in space gallery should be visible
+    And BDD-CP-One link in gallery should be visible
+    And BDD-CP-Two link in gallery should be visible
 
   Scenario: Selecting a space shows its details
-    When user clicks on BDD-CP-Root tree node inside browse tree
+    When user clicks on Spaces---BDD-CP-Root tree node inside browse tree
     Then context panel should be visible
     And the context panel should show "BDD-CP-Root"
     And "Details" accordion header in context panel should be visible
@@ -54,13 +45,13 @@ Feature: What the context panel says about a space
     And "Activity" accordion header in context panel should be present
 
   Scenario: Clicking one child, then the other, switches the panel
-    When user double-clicks on BDD-CP-Root tree node inside browse tree
+    When user double-clicks on Spaces---BDD-CP-Root tree node inside browse tree
     Then the "BDD-CP-Root" view should be current
-    When user clicks on BDD-CP-One link in space gallery
+    When user clicks on BDD-CP-One link in gallery
     Then the context panel should show "BDD-CP-One"
-    When user clicks on BDD-CP-Two link in space gallery
+    When user clicks on BDD-CP-Two link in gallery
     Then the context panel should show "BDD-CP-Two"
     And context panel should not contain text "BDD-CP-One"
-    When user clicks on BDD-CP-One link in space gallery
+    When user clicks on BDD-CP-One link in gallery
     Then the context panel should show "BDD-CP-One"
     And context panel should not contain text "BDD-CP-Two"

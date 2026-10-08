@@ -36,6 +36,9 @@ bindings/platform/      the shell: elements, datasets, steps (views, projects an
 bindings/tiers/viewers/ opt-in: steps (properties, menus, areas, pixels, legend, layouts, events, floor), widgets (shared
                         per-viewer steps, the grid, docking and tabbed panels), formula-lines (the Formula Lines dialog and
                         what a viewer draws of its lines), filter-panel
+bindings/tiers/molecules/ opt-in: crux (Chem's Crux sketcher wherever a host opens it: its widget, its controls by test
+                        id), molecules (a reading or a cell read as a molecule through Chem's RDKit, a table's semantic
+                        types detected) — for the suites whose features draw or read molecules, Chem's and the hosts'
 tests/                  node:test via tsx: nouns, compile, project, init, failure, locate (Chromium over a static page)
 playwright.config.ts    the one config every project runs with (BDD_ROOT → testDir/outputDir/storageState; 4 workers)
 ```
@@ -44,7 +47,9 @@ playwright.config.ts    the one config every project runs with (BDD_ROOT → tes
 
 We test our own platform, not a black box. **When a test would wait, sleep, scan pixels or retry,
 a signal or a name is missing in the core, and the fix goes there** (`d4` viewers, `xamgle`, the
-js-api) — never a `waitForTimeout` in a step. What was added that way: `viewer.immediateRendering`
+js-api) — never a `waitForTimeout` in a step. A signal is computed when it is asked for: a
+`getWidgetStatus` or a status provider reads what the widget already holds, and nothing is recorded
+per render or watched in the DOM for a test's sake. What was added that way: `viewer.immediateRendering`
 and `isRenderPending`, `onContextMenuShown/Closed`, `getWidgetStatus().hitAreas/values/parts`,
 `aria-disabled` on menu items, property rows and dialog buttons, `Func.topMenu`,
 `d4-balloon-shown`, `grok.shell.autostartsCompleted`, `Resizer.isResizePending`, `data-legend-*`,
@@ -69,10 +74,26 @@ when translating, not when looking for gaps, not when a TestTrack case asks for 
   so the suite reports the environment, never the UI. Test the script with a package test. Check the
   code path, not the menu name: a JS-looking command or pane can call
   `grok.functions.call('<Pkg>:<PythonScript>')`; the package's `scripts/` folder lists the scripts.
-  A pane builds when expanded, and the expanded state persists in `localStorage` for the worker's
-  page, so a scenario that expands a server-backed pane makes it build in later scenarios too.
-- **Anything with nothing UI-specific**: a function called with arguments and its result checked,
-  a server outcome no UI shows. That is a package test (`src/tests/`) or an `ApiTests` test.
+  A pane builds when expanded, and the expanded state persists in `localStorage` (`Accordion:<key>`);
+  the shell reset clears it, but within a journey a scenario that expands a server-backed pane makes
+  it build in the later scenarios too.
+- **Anything an API test can check** (lead's ruling, 2026-10-06): a function called and its result
+  checked, a server outcome no UI shows, a permission or sharing matrix, the cases of a parser or a
+  search syntax, the rows a query returns, the numbers an analysis computes, a model's predictions, a
+  file's content, what a layout or a project stores. That is an `ApiTests` test
+  (`public/packages/ApiTests/src/`), the package's own test (`src/tests/`, `grok test`) or a datlas
+  test (`core/server/datlas/test/`). A feature claims the UI part once — the dialog's OK made it, the
+  view shows it — and a server read-back stands as the proof of a gesture, never as the subject.
+  Before writing, or keeping, a scenario whose Thens are mostly "on the server", or an Outline whose
+  Examples permute one rule, find the API test; where there is none, write it there and keep the
+  feature to the gesture. A UI scenario an API test already covers is deleted, not kept "for safety";
+  the moves still waiting for their test are listed in `API_TESTS_TO_WRITE.md`.
+- **What a grid cell renderer draws** (an oligonucleotide duplex, a sparkline, a molecule picture).
+  A renderer runs for every visible cell on every paint and also outside the grid (forms, tooltips,
+  exports), so it stays fast and keeps nothing for a test; a status provider fed from it costs every
+  paint and goes stale when the column is removed or a second column of the type shows. The package
+  tests the renderer (`src/tests`, `grok test`); a feature claims what the platform reports around
+  the cell — its value, semantic type, menus and panes (ruling of 2026-10-06).
 
 One exception, by the lead's ruling: the Scaffold Tree features stay. The viewer's tree comes from
 the Python `GenerateScaffoldTree`, but what they test is the viewer's own UI (checking, colouring,
@@ -119,6 +140,28 @@ prove it is gone. That covers:
 A feature that cannot undo what it does (a user cannot be deleted) works on a fixed fixture it makes
 once and reuses, never one per run. A change nothing can undo does not go in a feature.
 
+## A feature is fast — hard rule
+
+The whole suite runs on every change, so every second a feature waits is paid on every run (lead's
+ruling, 2026-10-06). A feature spends its time on the gestures it tests:
+
+- **Nothing waits a fixed time.** A step waits for the signal that the work is done; a negative
+  reads once the source is quiet. A wait that has no signal to end on is a missing signal in the core.
+- **Round trips are the expensive steps** — a reload, a sign-in as another account, a project saved,
+  closed and reopened, a server computation (a query over a remote database, a model trained, a
+  script run): a few seconds each. One is used when it is the subject, never as a proof another
+  claim gives (a server read-back proves a save; a reload does not need to).
+- **Fixtures go in through the API** (`… is on the server`, `a … named … is on the server`), and are
+  put back the same way at feature end; the UI walk that makes them is another feature's subject.
+- **Scenarios that share their setup are a `@journey`**: a Background that opens three tables runs
+  once, not once per scenario.
+- **The smallest table that shows the behaviour**: cars (30 rows), iris (150), demog-1000, not
+  demog (5850) or spgi-full, unless the size is the point.
+- **`@serial` only when features collide on a shared fixture** — it takes the feature out of the
+  parallel lanes.
+- **Read the run's JSON report**: a scenario over 10 s or a feature over 30 s is looked at, and its
+  slowest step explained (a missing signal, a round trip, a large table, a server computation).
+
 ## Invariants — what must not regress
 
 - **One registry, through `dist/`.** Specs import the library by package subpath, project bindings
@@ -132,7 +175,8 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   resets the shell (first waiting up to 60 s for the command the scenario armed and up to 25 s until the task bar has no progress entry — an
   analysis a scenario left running reopens its closed table and makes it current in the next feature;
   a menu command's `onAfterRunAction` can come before its work ends — then Escape for dialogs and
-  menus, `ui.tooltip.hide`, notices removed, `closeAll`, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
+  menus, `ui.tooltip.hide`, notices removed, `closeAll`, the context panes' expanded state
+  (`Accordion:*` in `localStorage`) cleared, Home current), `afterAll` runs all the feature's `atFeatureEnd` cleanups and fails if any fails. Never open several
   Datagrok pages in one browser. The renderer keeps what every feature left (closed views and their
   viewers stay reachable, ~60 MB a feature; a Chem feature starts RDKit's pool of a worker per core
   but two, ~1.2 GB on 32 cores), so after `BDD_PAGE_MAX_FEATURES` features (25) or once the renderer,
@@ -161,8 +205,10 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
   row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step.
-- **`expect` comes from `src/runtime/patience.js`** in every check: a `@known-failure` scenario
-  narrows it to 3 s, and a check that names its own timeout wraps it in `pollMs`.
+- **`expect` comes from `src/runtime/patience.js`** in every check — package bindings included, through
+  `@datagrok-libraries/bdd/runtime`: a `@known-failure` scenario narrows it to 3 s, a check that names its own
+  timeout wraps it in `pollMs`, and `expect.poll` reads every 100 ms, then every 250 ms, instead of Playwright's backoff to 1 s
+  (a state at 0.9 s was seen at 1.85 s).
 - **A throw inside an `expect.poll` callback ends the poll.** A read the viewer may be between
   layouts of returns `false` and keeps the reason for the failure message.
 - **Every check is one sentence naming the alternatives** (`has no "x" area; it has: …`); a
@@ -222,6 +268,18 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
   and the count arrives asynchronously: Activity on a space created a second ago is `present`,
   not `visible`, until the server has logged the creation.
+- **A navigation leaves the page as a person who chose to**: the harness accepts `beforeunload` ("Warn on
+  unsaved changes" asks once the scratchpad is dirty, and Playwright's default dismissal cancels the reload, which
+  then waits out 180 s) and dismisses every other native dialog, since a listener ends Playwright's own dismissal.
+- **The Browse tree is built once and settled**: `the browse panel is open` builds the panel only when it is not
+  on the page — a rebuild reopens its groups, whose rows arrive under the next gesture — and waits for the groups
+  still fetching children (`settleBrowseTree`, shared with the Refresh); `user expands` waits for the children of a
+  group it finds open too. A double click and a context menu still check what they reached and aim again at a
+  row that moved (a Recent group taking the view just closed), and the menu aims at the match a pointer can
+  reach (`onReachable`): Favorites under My stuff repeats a space's row under the My stuff row.
+- **A query run from a link or an icon is awaited to its end** (`user clicks on … and the query it runs completes`,
+  `armQuery`): Run query... shows its result view at once and opens it again when the call ends if no view shows it,
+  so a view closed in between comes back.
 - **Escape goes to the topmost dialog** (`press`): the dialog closes on a keydown inside its own
   root, and the focus is not reliably there (the grid's 1 s timer, a menu that just closed).
 - **A gesture is dispatched once; the target is decided before it** (`pickMenuPath`): a click
@@ -253,7 +311,8 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   so recreating the same name otherwise targets a stale node or resolves to two nodes.
 - **A killed run never reaches its feature-end cleanup**: a fixture named with `{run}` or `{time}`
   is also swept by family — the same name with any run suffix, older than an hour — whenever a
-  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`
+  `no … named` or `a … named` step runs, by `the layouts named … are deleted when the feature ends`, by `the Sticky Meta schema … and entity type … are
+  removed now and at feature end` (a schema has no creation date: the name's own suffix dates it)
   (the server stamps `createdOn` when it saves an entity, whatever the client set, so a claim about
   what was made since a step compares with the server's clock, `serverNow`, less a margin for the
   proxy's clock), by the project save (`isStaleFixture`, platform/steps.ts), and once per worker
@@ -358,7 +417,10 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
 - A JS viewer joins by `getWidgetStatus()` (canvas under `parts`, `hitAreas` in CSS px,
   `values`), `get isRenderPending()` and `onRendered`; a package viewer's surface reaches the
   stand only when the package is republished, and a library viewer only when the package's
-  `node_modules/@datagrok-libraries/<lib>` points at the checkout.
+  `node_modules/@datagrok-libraries/<lib>` points at the checkout. A package's widget outside any
+  viewer (Chem's Crux sketcher in a dialog) joins the same way: with no viewer round the element,
+  `findViewer` takes the nearest `[data-widget]` up from it that `DG.Widget.find` knows and that
+  reports a status (`addStatusProvider` registers the widget); its areas are in px of its root.
 - The u2 side: `ChoiceInput` is a native `<select>`; comboboxes open on a keystroke; a tree row
   click selects and the twistie toggles; popups are portaled under `.u2-overlay` with
   `data-u2-owner` = the nearest named ancestor; plain `button()`, toolbar buttons and tab headers
@@ -368,9 +430,11 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   a row's column, `cell N of x` is its checkbox, its Search input filters without renumbering. A
   Dart property grid category (`tr.property-grid-category`) has no aria state, only its icon
   (`property-grid-icon-minus` open, `-plus` folded), which `readExpanded` reads. The 2 s drop of the
-  Invariants (`AppEvents.propertyEdited`) reaches across features: an implicit current-object change
-  on a new viewer right after another feature edited a property leaves the panel on the old one;
-  a viewer's "Properties..." command forces the change (since 2026-09-23).
+  Invariants (`AppEvents.propertyEdited`) used to reach across features: the shell reset's
+  `closeAll` came within 2 s of the last property edit, its own "nothing is current" was dropped,
+  and the closed viewer stayed current, its properties in the panel, for the next feature's gear
+  click to miss. `closeAll` clears the guard (`PropertyPanel.reset`, 2026-10-06); a viewer's
+  "Properties..." command forces the change (since 2026-09-23).
 - Users, groups, roles: a login takes `[a-z0-9._-]` only (`grok_user.dart` `validateLogin`). A user
   cannot be deleted: a feature takes the `bddviewed` fixture user to look at, or `bddmanaged` to
   join, disable and favorite (the `@serial` features, never at the same time), both made once per
@@ -387,6 +451,19 @@ once and reuses, never one per run. A change nothing can undo does not go in a f
   gallery reloads after an order pick the counter reads "..." and the first item is empty, which is
   not "another item". A user's personal group (friendly name = login) is not listed by the Groups
   view; `user.tag()` throws on a User, so no feature can tag one.
+- A JS `tags` bag (`TableInfo.tags`, `ColumnInfo.tags`, `df.tags`) is a map proxy whose own methods
+  shadow tags of the same name: `tags['values']` is the `values()` method, not the Database meta
+  Values — read a tag with `tags.get(name)`. A database table's `TableInfo.name` is its friendly name
+  ("Categories"); a table's and a column's tags mix Datagrok's annotations with what the platform
+  reads off the database (row counts, min/max), so "nothing stored" is claimed on the annotations only.
+  `grok.data.db.getInfo(conn)` lists every database the server holds as a catalog: pick the one named
+  by `conn.parameters.db`.
+- A space made through the API is not revealed in the Browse tree as one made through Create Space
+  is: expand Spaces after the fixture, and name a root space by its path (`Spaces---BDD-X`) — My stuff >
+  Recent lists a space of the same name from an earlier run. A renamed node keeps its old `name`
+  attribute until the tree is rebuilt, so a claim on a renamed node goes by its label.
+- The table view's Search box applies `NumericMatcher` / `StringMatcher` / `DateTimeMatcher` to each
+  column of their type; its syntax is ddt's `matcher_test.dart` claim, not a feature's.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
   dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
   its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
@@ -444,6 +521,10 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   setting toggled through the UI (pin it with a Given that restores it at feature end).
 - **Package bindings take `expect` and `pollMs` from `@datagrok-libraries/bdd/runtime`**, never from
   `@playwright/test`: the `@known-failure` narrowing and `BDD_EXPECT_TIMEOUT` go through them.
+- **A reload as the proof of a save** rebuilds whatever the page kept, and with it the bug a person meets
+  without reloading: the Database meta pane deleted nothing cleared after a save in the same pane
+  (its baseline was the values it opened with) and every reload-based check passed. Prove a save on
+  the server and keep using the same pane.
 - **Titles and descriptions that promise more than the Thens claim** ("…and dropping the tree
   removes it", "builds a ball-and-stick view" checked as "shows no error") — trim the text or add
   the claim.
@@ -460,6 +541,10 @@ Each of these passed green while the thing it named was broken (audits of 2026-0
   (the columns a top-menu command adds, 180 s). `BDD_FRESH_PAGE` reloads the shell before every
   feature instead of resetting it: a feature that fails only after another one, and passes with
   the variable set, is failing on state the other left behind.
+- `BDD_MOLECULE_SKETCHER=<name>` pins that sketcher for the whole run: `the molecule sketcher is …` pins it instead of
+  the feature's own (the account's choice still comes back at feature end), so a package's suite runs with a new
+  sketcher. A feature about one sketcher's own controls (Chem's Ketcher template toolbar) carries `@sketcher-controls`
+  and skips, saying why, under an override that names another (`sketcherPin`, platform/steps.ts).
 - Every run leaves its JSON report in the project's `test-results/report.json`, with the stand and
   the machine in `config.metadata` (a `--reporter` on the command line gets `json` added). The run
   history in `packages/UsageAnalysis/bdd/history` records such reports **only when the user asks

@@ -12,7 +12,7 @@
     "@datagrok-libraries/arrow": "workspace:^",
     "@datagrok-libraries/compute-api": "workspace:^",
     "@datagrok-libraries/compute-utils": "workspace:^",
-    "@datagrok-libraries/test": "1.4.1",
+    "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/webcomponents": "workspace:^",
     "@datagrok-libraries/webcomponents-vue": "workspace:^",

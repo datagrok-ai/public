@@ -173,16 +173,16 @@ test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
     // saves it, and opens the editor — this makes the seeded notebook Apply-to-applicable to demog
     // (Scenario 6) AND gives us a server-persisted, owned notebook to Rename/Delete (Scenarios 3/7).
     seededId = await page.evaluate(async (name) => {
-      const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-      const beforeIds = new Set(before.map((n: any) => n.id));
+      // The command makes the new notebook the current object of this page. Taking the newest one on
+      // the server instead picks up notebooks the other specs create in parallel workers.
+      const prevId = grok.shell.o?.id;
       const f = (window as any).DG.Func.find({name: 'CmdOpenInNotebook'})[0];
       await f.apply();
       let fresh: any = null;
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 40 && !fresh; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-        fresh = cur.find((n: any) => !beforeIds.has(n.id));
-        if (fresh) break;
+        const id = grok.shell.o?.id;
+        if (id && id !== prevId) fresh = await grok.dapi.notebooks.find(id).catch(() => null);
       }
       if (!fresh) return null;
       fresh.friendlyName = name;

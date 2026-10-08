@@ -3,7 +3,7 @@
    Empty cells are compared as empty; a cell RDKit cannot read fails the step with its row. */
 import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {type ElementRef, expect, gestures, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, expect, gestures, locate, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -173,11 +173,6 @@ export const clipboardMolecule = Then('the clipboard should hold the molecule of
   }
 }, {description: 'the clipboard text read by RDKit (SMILES, SMARTS or molfile) is the cell\'s molecule; polled, since a copy writes the clipboard asynchronously'});
 
-export const rowMolecule = Then('the molecule in row {int} of {string} column should be {string}', async (page: Page, row: number, column: string, smiles: string) => {
-  const r = await sameAsCell(page, row, column, smiles);
-  expect(r.cell, `the molecule in row ${row} of "${column}"`).toBe(r.text);
-}, {description: 'the cell and the SMILES read by RDKit as the same molecule, stereochemistry included'});
-
 export const sortedBySimilarity = Then('the first {int} rows of grid should be in falling similarity to row {int} of {string} column', async (page: Page, count: number, row: number, column: string) => {
   await expect.poll(() => page.evaluate(() => (grok.shell.tv.grid.getRowOrder() as Int32Array)[0] + 1),
     {message: 'the table row the grid shows first'}).toBe(row);
@@ -343,11 +338,21 @@ export const matrixDiagonal = Then('the similarity columns of table {string} sho
   expect(r.asymmetric, `pairs of "${name}" whose two cells differ`).toBe(0);
 }, {description: 'a pairwise similarity table: one numeric column per row, every molecule fully similar to itself, and some pair less so'});
 
-export const readingIsMolecule = Then('the {string} reading of {widget} should be the molecule {string}', async (page: Page, reading: string, target: ElementRef, smiles: string) => {
+export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', (page: Page, column: string, reading: string, target: ElementRef) =>
+  expectFilterMatches(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
+    String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, true),
+{description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps; some molecule must contain it; polled'});
+
+export const sketcherHolds = Then('the sketcher in {element} should hold the molecule {string}', async (page: Page, target: ElementRef, smiles: string) => {
+  const root = (await locate(page, target)).filter({visible: true}).first();
   let seen = '';
   await expect.poll(async () => {
-    const r = await viewers.onViewer(page, target, async (e, arg: any) => {
-      const value = String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[arg.reading] ?? '');
+    const r = await root.evaluate(async (e, want: string) => {
+      // the sketcher the host shows in its box, a widget the platform knows (DG.chem.SketcherBase): whichever it is
+      const shown = e.querySelector('.chem-sketcher-host > *');
+      const sketcher = shown ? (window as any).DG.Widget.find(shown) : null;
+      if (!sketcher?.isInitialized)
+        return {value: '', want: '', note: 'no sketcher ready'};
       const rdkit = await grok.functions.call('Chem:getRdKitModule');
       const canonical = (v: string) => {
         if (!v)
@@ -360,16 +365,11 @@ export const readingIsMolecule = Then('the {string} reading of {widget} should b
           mol.delete();
         }
       };
-      return {value: canonical(value), want: canonical(arg.smiles)};
-    }, {reading, smiles});
-    seen = r.value;
-    return r.value === r.want;
-  }, {message: `the "${reading}" reading as the molecule ${smiles}`}).toBe(true).catch(() => {
-    throw new Error(`the "${reading}" reading holds ${seen || 'nothing'}, not ${smiles}`);
+      return {value: canonical(sketcher.smiles), want: canonical(want), note: ''};
+    }, smiles);
+    seen = r.note || r.value;
+    return r.value !== '' && r.value === r.want;
+  }, {message: `the molecule the sketcher in ${target.phrase} holds`}).toBe(true).catch(() => {
+    throw new Error(`the sketcher in ${target.phrase} holds ${seen || 'nothing'}, not ${smiles}`);
   });
-}, {description: 'a reading that holds a molecule in any notation, read by RDKit and compared with the one named'});
-
-export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', (page: Page, column: string, reading: string, target: ElementRef) =>
-  expectFilterMatches(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
-    String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, true),
-{description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps; some molecule must contain it; polled'});
+}, {description: 'what the molecule sketcher in the element draws, whichever sketcher it is: its SMILES getter (the platform\'s SketcherBase), read by RDKit and compared with the one named'});

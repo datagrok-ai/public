@@ -133,6 +133,9 @@ export class FuncFlowView extends DG.ViewBase {
     ((cell: {semType: string | null; column: string; value: unknown}) => void) | null = null;
   /** Serializes canvas loads — two interleaved clear()+add sequences would merge both graphs. */
   private loadChain: Promise<void> = Promise.resolve();
+  /** The node parameter edits the canvas reported since the view opened (`params-changed`): its status's
+   *  "parameter edits" reading, which tells a user's edit in a node's own editor from the node's own loads. */
+  private parameterEdits = 0;
 
   constructor(tableInfos: DG.TableInfo[] = [], options: {outputPanel?: boolean} = {}) {
     super();
@@ -154,6 +157,7 @@ export class FuncFlowView extends DG.ViewBase {
     this.initUI();
     this.setupRibbon();
     this.setupStatusBar();
+    this.addStatusProvider('flow', () => ({values: {'parameter edits': this.parameterEdits}}));
 
     this.toolbox = this.functionBrowser.root;
     grok.shell.windows.showToolbox = true;
@@ -491,6 +495,7 @@ export class FuncFlowView extends DG.ViewBase {
         // paramName renames arrive as params-changed — the tab set/labels must track them here.
         this.outputViews?.syncTabs(this.tableOutputs());
         if (edit.kind === 'params-changed') {
+          this.parameterEdits++;
           this.propertyPanel.refreshShownNode();
           // params-changed doesn't fire onGraphChanged — recompute the "Needs input" hint here.
           this.refreshNodeHints();

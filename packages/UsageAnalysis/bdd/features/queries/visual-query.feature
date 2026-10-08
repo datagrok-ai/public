@@ -16,6 +16,7 @@ Feature: A visual query built on a table
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-vq-{time}" is on the server
 
@@ -40,7 +41,7 @@ Feature: A visual query built on a table
     And user clicks on Save button
     Then 1 query named "BDD-Q-vq-{time}" should be on the server
     Given the toolbox pane is shown
-    When user clicks on "Run query..." action in toolbox
+    When user clicks on "Run query..." action in toolbox and the query it runs completes
     Then the current view should be a TableView view
     And the table should have 91 rows
     And the table should have a column "companyname"

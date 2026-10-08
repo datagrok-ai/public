@@ -16,6 +16,7 @@ Feature: Transformations saved with a query
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-tr-{time}" is on the server
 
@@ -43,7 +44,7 @@ Feature: Transformations saved with a query
     # result below cannot tell whether the save reached the server: the server's copy is read
     And the query "BDD-Q-tr-{time}" on the server should have transformations containing "doubled"
     Given the toolbox pane is shown
-    When user clicks on "Run query..." action in toolbox
+    When user clicks on "Run query..." action in toolbox and the query it runs completes
     Then the current view should be a TableView view
     And the table should have 77 rows
     And the table should have a column "doubled"
@@ -60,7 +61,7 @@ Feature: Transformations saved with a query
     And user clicks on last "Remove step" icon
     And user clicks on Save button
     Then the query "BDD-Q-tr-{time}" on the server should not have transformations containing "doubled"
-    When user clicks on "Run query..." action in toolbox
+    When user clicks on "Run query..." action in toolbox and the query it runs completes
     Then the current view should be a TableView view
     And the table should have 77 rows
     And the table should not have a column "doubled"

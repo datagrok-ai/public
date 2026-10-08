@@ -89,13 +89,15 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
       const grok = (window as any).grok;
       const existing = await grok.dapi.notebooks.filter('friendlyName = "Demog"').list({pageSize: 5}).catch(() => [] as any[]);
       if (existing.some((n: any) => (n.friendlyName || n.name) === 'Demog')) return null;
-      const before = new Set((await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10})).map((n: any) => n.id));
+      // The command makes the new notebook the current object of this page. Taking the newest one on
+      // the server instead picks up notebooks the other specs create in parallel workers.
+      const prevId = grok.shell.o?.id;
       await (window as any).DG.Func.find({name: 'CmdOpenInNotebook'})[0].apply();
       for (let i = 0; i < 40; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-        const fresh = cur.find((n: any) => !before.has(n.id));
-        if (fresh) {
+        const id = grok.shell.o?.id;
+        if (id && id !== prevId) {
+          const fresh = await grok.dapi.notebooks.find(id);
           fresh.friendlyName = 'Demog';
           await grok.dapi.notebooks.save(fresh);
           return fresh.id as string;
@@ -103,6 +105,10 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
       }
       throw new Error('Open in Notebook did not persist a notebook within 20 s');
     });
+    // The command also opens the notebook editor, which can land after S1 opens the browser and take
+    // the current view from it. Let it open first; the notebook is already saved if it never does.
+    if (seededDemogId)
+      await page.waitForFunction(() => (window as any).grok.shell.v?.type === 'Notebook', null, {timeout: 60_000, polling: 250}).catch(() => {});
   });
 
   // ---- S1: Navigate to the Notebooks browser (Browse Notebooks command) ----
@@ -198,8 +204,14 @@ test('Notebooks / Browser (Integration): navigate, filter, context panel, apply-
     // 2026-06-18): the context-panel accordion exposes section toggles [name="div-section--<Name>"]
     // (there is NO [name="pane-<Name>"] element on this build); the rendered body is the adjacent
     // .d4-accordion-pane-content reachable via the section's .closest('.d4-accordion-pane').
-    for (const section of ['div-section--Details', 'div-section--Actions', 'div-section--Activity', 'div-section--Sharing', 'div-section--Chats'])
-      await expect(page.locator(`[name="${section}"]`).first()).toBeVisible();
+    // The context panel hides a pane whose count is 0 (accordion.css, d4-info="0"), and the count
+    // arrives async: a fresh notebook on a fresh stand has no Activity yet.
+    for (const section of ['div-section--Details', 'div-section--Actions', 'div-section--Activity', 'div-section--Sharing', 'div-section--Chats']) {
+      const header = page.locator(`.grok-prop-panel [name="${section}"]`).first();
+      await expect(header).toBeAttached();
+      await expect.poll(() => header.evaluate((e) => (e as HTMLElement).offsetParent !== null ||
+        e.closest('.d4-accordion-pane')?.getAttribute('d4-info') === '0'), {message: `${section} is shown, or empty`}).toBe(true);
+    }
 
     // Details pane renders its Created/Modified content (notebooks.meta.render-details). The pane body
     // loads async after the section expands; poll on the rendered text rather than reading after a delay.

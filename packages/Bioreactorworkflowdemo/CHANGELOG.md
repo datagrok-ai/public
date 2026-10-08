@@ -1,5 +1,10 @@
 # Bioreactorworkflowdemo changelog
 
+## v.next
+
+- Added the maximum volume, day count and feeding plan volume validators.
+- Added day numbers and final biomass to the day step titles.
+
 ## 0.0.1 (2026-08-01)
 
 - Added a dynamic daily cultivation section with chained reactor state.

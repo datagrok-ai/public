@@ -265,14 +265,27 @@ function install(): void {
     return all;
   };
   // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
-  // still a widget the platform knows by its root
+  // still a widget the platform knows by its root; so is a package's widget outside any viewer that
+  // reports a status of its own (Chem's Crux sketcher: its atoms and bonds as hit areas), the
+  // nearest one up from the element
   const findViewer = (el: Element): any => {
     const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
     const known = viewers().find((x) => x.root === root);
     if (known)
       return known;
-    const w = root === null ? null : DG.Widget.find(root);
-    return w !== null && typeof w?.getWidgetStatus === 'function' ? w : undefined;
+    const isWidget = (x: any): boolean => x !== null && x !== undefined && typeof x.getWidgetStatus === 'function';
+    if (root !== null) {
+      const w = DG.Widget.find(root);
+      return isWidget(w) ? w : undefined;
+    }
+    for (let e: Element | null = el; e !== null; e = e.parentElement) {
+      if (!e.hasAttribute('data-widget'))
+        continue;
+      const w = DG.Widget.find(e);
+      if (isWidget(w))
+        return w;
+    }
+    return undefined;
   };
   const viewerOf = (el: Element): any => {
     const v = findViewer(el);
@@ -412,7 +425,9 @@ function install(): void {
     return {colors, ink, hue};
   };
   const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
-  const keyIn = (areas: Record<string, Box>, name: string): string | undefined => Object.keys(areas).find((k) => norm(k) === norm(name));
+  // the exact name first: "segment S_PART | (empty)" and "segment S_PART" are one name without punctuation
+  const keyIn = (areas: Record<string, Box>, name: string): string | undefined =>
+    name in areas ? name : Object.keys(areas).find((k) => norm(k) === norm(name));
   const areaKey = (v: any, name: string): string => {
     const areas = areasOf(v);
     const key = keyIn(areas, name);
@@ -1174,22 +1189,23 @@ function install(): void {
     if ((e.target as Element | null)?.closest?.('.d4-dialog [name="button-OK"], .d4-dialog [name="button-RUN"]'))
       dialogOkAt = Date.now();
   }, true);
-  const armCommand = (path: string): void => {
+  /** `path` is a top menu path; `null` arms the next data query call (a query run from a link or an icon). */
+  const armCommand = (path: string | null): void => {
     const t = grok.shell.t;
     columnsBefore = t ? {table: t.dart, names: t.columns.names()} : undefined;
     command = undefined;
     commandArm?.unsubscribe();
-    const want = norm(path);
+    const want = path === null ? null : norm(path);
     const sub = grok.functions.onBeforeRunAction.subscribe((fc: any) => {
       const menu = fc?.func?.topMenu;
-      if (!menu || norm(menu) !== want)
+      if (want === null ? !(fc?.func instanceof (window as any).DG.DataQuery) : !menu || norm(menu) !== want)
         return;
       sub.unsubscribe();
       if (commandArm === sub)
         commandArm = undefined;
       let resolve!: () => void;
       const done = new Promise<void>((r) => { resolve = r; });
-      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path), done, started: Date.now()} as NonNullable<typeof command>;
+      const started = {name: String(fc.func?.nqName ?? fc.func?.name ?? path ?? 'the query'), done, started: Date.now()} as NonNullable<typeof command>;
       // an unsaved call has no id: two undefined ids are not the same call (a transform the
       // command runs inside itself ended the wait before the command had docked its result)
       const after = grok.functions.onAfterRunAction.subscribe((ended: any) => {

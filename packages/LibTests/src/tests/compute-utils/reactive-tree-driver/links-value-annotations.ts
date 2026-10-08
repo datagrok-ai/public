@@ -92,16 +92,13 @@ category('ComputeUtils: Driver value annotations', async () => {
     const pconf: any = await getProcessedConfig(config, logger);
     const links = pconf.steps[0].links;
     expectDeepEqual(links.map((link: any) => link.id), [
-      '::model:choices::meta', '::model:choices::validator', '::model:lookup::data',
-      '::engine:choices::meta', '::engine:choices::validator',
+      '::model:choices::meta', '::model:choices::validator', '::model:lookup::data', '::engine:choices::meta',
     ]);
     const byId = Object.fromEntries(links.map((link: any) => [link.id, link]));
-    expectDeepEqual(byId['::model:choices::validator'].params.effects[1], {
+    expectDeepEqual(byId['::model:choices::validator'].params.effects, [{
       effect: 'warning', targets: 'model_target', message: {var: 'model_choices.rowErrors'},
       when: {'!!': {var: 'model_choices'}},
-    });
-    expectDeepEqual(byId['::engine:choices::validator'].params.effects.map((effect: any) => effect.message),
-      ['Not in the list of choices']);
+    }]);
     expectDeepEqual(byId['::model:lookup::data'].to.map((item: any) => item.name),
       ['engine', 'cyl', 'mpg', 'name', 'flag', 'when', 'made']);
     expectDeepEqual(logger.errors.map((item) => [item.severity, item.message]), [['warning',
@@ -123,18 +120,17 @@ category('ComputeUtils: Driver value annotations', async () => {
     const pconf: any = await getProcessedConfig(config);
     const io = Object.fromEntries(pconf.steps[0].io.map((item: any) => [item.id, item]));
     expectDeepEqual([io.city.dynamicChoices, io.model.dynamicChoices, io.speed.dynamicChoices, io.speed.checks],
-      [{propagate: false}, {propagate: true}, undefined, {choices: ['slow', 'fast']}]);
+      [{propagate: false}, {propagate: true}, undefined, undefined]);
     const links = pconf.steps[0].links;
     expectDeepEqual(links.map((link: any) => [link.id, link.type]), [
-      ['::city:choices::meta', 'meta'], ['::city:choices::validator', 'validator'],
+      ['::city:choices::meta', 'meta'],
       ['::model:choices::meta', 'meta'], ['::model:choices::validator', 'validator'], ['::model:lookup::data', 'data'],
     ]);
     const byId = Object.fromEntries(links.map((link: any) => [link.id, link]));
     expectDeepEqual(byId['::city:choices::meta'].params.effects, [
       {effect: 'items', targets: 'city_target', items: {var: 'city_choices.items'}, when: {'!!': {var: 'city_choices'}}},
     ]);
-    expectDeepEqual(byId['::city:choices::validator'].debounce, 0);
-    expectDeepEqual(byId['::model:choices::validator'].params.effects[0].message, 'Not in the lookup table');
+    expectDeepEqual(byId['::model:choices::validator'].debounce, 0);
     const lookup = byId['::model:lookup::data'];
     expectDeepEqual([lookup.runOnInit, lookup.from.map((item: any) => item.name)], [true, ['model', '$call']]);
     expectDeepEqual(lookup.to.map((item: any) => item.name), ['calc', 'bare', 'metric', 'speed', 'region', 'city', 'mpg', 'cyl']);

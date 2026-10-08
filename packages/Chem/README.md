@@ -40,7 +40,7 @@ The following features are still in the core, but we plan to move them out to th
 
 ## Sketcher
 
-Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher).
+Supports multiple sketchers (MarvinJS, OpenChemLib, Ketcher, Crux).
 
 You can set the default Sketcher in the package property so that new users won't have to switch on the first use manually:
 

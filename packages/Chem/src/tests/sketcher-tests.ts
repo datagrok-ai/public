@@ -73,7 +73,7 @@ async function testSmarts(rdkitModule: any, funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher !== null, undefined, 5000);
+    await s.sketcherReady();
     const t = new Promise((resolve, reject) => {
       s.sketcher!.onChanged.subscribe(async (_: any) => {
         try {
@@ -113,7 +113,7 @@ async function testSmiles(rdkitModule: any, funcs: DG.Func[], input?: boolean, m
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, `${chem.currentSketcherType} has not been created`, 20000);
+    await s.sketcherReady();
     if (input) {
       setTimeout(() => {
         s.molInput.value = exampleSmiles;
@@ -146,7 +146,7 @@ async function testMolblock(rdkitModule: any, funcs: DG.Func[], ver: string, inp
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher(undefined, validationFunc);
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 5000);
+    await s.sketcherReady();
     if (input) {
       setTimeout(() => {
         let dT = null;
@@ -182,7 +182,7 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, undefined, 5000);
+    await s.sketcherReady();
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
     await awaitCheck(() => {
@@ -201,7 +201,7 @@ export async function sketchersWarmUp(funcs: DG.Func[]) {
     chem.currentSketcherType = func.friendlyName;
     const s = new Sketcher();
     const d = ui.dialog().add(s).show();
-    await awaitCheck(() => s.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', 10000);
+    await s.sketcherReady();
   }
   chem.currentSketcherType = 'OpenChemLib';
 }

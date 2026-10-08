@@ -33,7 +33,7 @@ export async function demoBioSimDiv() {
 export async function demoBioSimDivLayout() {
   const t = await _package.files.readCsv('samples/peptides-non-natural.csv');
   const tv = grok.shell.addTableView(t);
-  _package.files.readAsText('demo-files/bio_similarity_diversity.layout').then(async (layoutString: string) => {
+  await _package.files.readAsText('demo-files/bio_similarity_diversity.layout').then(async (layoutString: string) => {
     const layout = DG.ViewLayout.fromJson(layoutString);
     await DG.delay(100);
     tv.loadLayout(layout);

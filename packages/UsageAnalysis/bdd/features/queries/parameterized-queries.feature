@@ -16,6 +16,7 @@ Feature: Running a query with parameters
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
 
   Scenario: The Orders query asks for its eight typed parameters

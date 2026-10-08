@@ -25,9 +25,21 @@ a viewer's areas and readings are in `core/client/d4/lib/src/viewers/<viewer>/CL
 Before anything else, drop what never becomes a feature (hard rule, `public/libraries/bdd/CLAUDE.md`
 "What never becomes a feature"): a TestTrack case marked `target_layer: manual-only` or `apitest`;
 any scenario that runs a server-side Python/R/Julia script, a Jupyter kernel or a Docker container,
-or reaches an outside web service (check the code path behind the command or pane, not its name); any scenario with nothing
-UI-specific (a function called and its result checked). Name what was dropped and why in one line
-of the feature description. A gap hunt applies the same filter: these are not gaps.
+or reaches an outside web service (check the code path behind the command or pane, not its name); any scenario an
+API test can check (`CLAUDE.md` "Anything an API test can check"): a function's result, a server
+outcome, a permission or sharing matrix, the cases of a parser or a search syntax, a query's rows, an
+analysis's numbers, a file's content, what a layout or project stores. For those, find the API test
+(`ApiTests/src`, the package's `src/tests`, `core/server/datlas/test`); where there is none, write it
+there, and translate only the gesture that triggers the behaviour, claimed once. An old spec's matrix
+of credentials, search strings or permission combinations becomes an API test with one UI scenario
+beside it, never an Outline. Name what was dropped and why in one line of the feature description. A
+gap hunt applies the same filter: these are not gaps, and a "missing step" whose only use is such a
+claim is not missing.
+
+Then plan for speed (`CLAUDE.md` "A feature is fast"): fixtures through the API, a `@journey` for
+scenarios sharing a setup, the smallest table that shows the behaviour, a reload or a project round
+trip only when it is the subject, no fixed waits. After the run, read the JSON report and explain any
+scenario over 10 s.
 
 Then list what each scenario leaves on the server — entities, files, database rows, the layout,
 project, chat or share the UI makes on the side, a configuration or setting of something the feature
