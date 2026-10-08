@@ -42,8 +42,10 @@ export class ViewersTutorial extends Tutorial {
 
     const addViewerIcon = (): HTMLElement | null => grok.shell.v.getRibbonPanels().flat()
       .find((item) => item.querySelector('.svg-add-viewer') != null) ?? null;
+    const clickAddViewer = () => addViewerIcon()!.querySelector<HTMLElement>('.svg-add-viewer')!.click();
     let stepHint = this.followHint(addViewerIcon);
-    await this.action('Click the Add viewer icon to open the gallery', elementClick(addViewerIcon));
+    await this.action('Click the Add viewer icon to open the gallery', elementClick(addViewerIcon), null, '',
+      clickAddViewer);
     stepHint.unsubscribe();
 
     const getChartsTag = (): HTMLElement | null => Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
@@ -51,17 +53,20 @@ export class ViewersTutorial extends Tutorial {
       return span && span.textContent === 'Charts';
     }) as HTMLElement ?? null;
     stepHint = this.followHint(getChartsTag);
-    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag));
+    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), null, '',
+      () => getChartsTag()!.click());
     stepHint.unsubscribe();
 
     stepHint = this.followHint(() => this.getViewerCard('Radar'));
-    await this.action('Select the Radar viewer', elementClick(() => this.getViewerCard('Radar')));
+    await this.action('Select the Radar viewer', elementClick(() => this.getViewerCard('Radar')), null, '',
+      () => this.getViewerCard('Radar')!.click());
     stepHint.unsubscribe();
 
     const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
     stepHint = this.followHint(addViewerIcon);
-    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), null, sunburstInfo);
+    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), null, sunburstInfo,
+      clickAddViewer);
     stepHint.unsubscribe();
 
     const sunburstAdded = grok.events.onViewerAdded
@@ -82,12 +87,14 @@ export class ViewersTutorial extends Tutorial {
       fromEvent<InputEvent>(document, 'input').pipe(filter((e) =>
         (e.target as HTMLElement)?.matches('.vg-controls input.ui-input-editor') &&
         (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
-      sunburstAdded));
+      sunburstAdded), null, '',
+      () => Tutorial.setInputValue(document.querySelector<HTMLInputElement>('.vg-controls input.ui-input-editor')!, 'Sunburst'));
     typeHintSub.unsubscribe();
 
     const hasSunburst = Array.from(grok.shell.tv.viewers).some((v: DG.Viewer) => v.type === 'Sunburst');
     stepHint = this.followHint(() => this.getViewerCard('Sunburst'));
-    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded);
+    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded, null, '',
+      () => this.getViewerCard('Sunburst')!.click());
     stepHint.unsubscribe();
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
@@ -101,7 +108,8 @@ export class ViewersTutorial extends Tutorial {
       merge(this.t!.onMouseOverRowGroupChanged, this.t!.onMouseOverRowChanged), null, hover);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>.';
-    await this.action('Select points on the scatter plot', this.t!.onSelectionChanged, null, selection);
+    await this.action('Select points on the scatter plot', this.t!.onSelectionChanged, null, selection,
+      () => this.t!.selection.init((i) => this.t!.get('HEIGHT', i) > 180));
 
     const selectionSync = 'Note that the selection is synchronized between ' +
       'all viewers. When you select one of the bins on the histogram by clicking on it, ' +
@@ -109,15 +117,18 @@ export class ViewersTutorial extends Tutorial {
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
       `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
-    await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync);
+    await this.action('Select one of the bins on the histogram', this.t!.onSelectionChanged, null, selectionSync,
+      () => this.t!.selection.init((i) => this.t!.get('AGE', i) >= 40 && this.t!.get('AGE', i) < 50));
 
     const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
-    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect);
+    await this.action('Click a Sunburst segment to select its rows', this.t!.onSelectionChanged, null, sunburstSelect,
+      () => this.t!.selection.init((i) => this.t!.get('SEX', i) === 'F'));
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +
       'Click on a point to make it current, and see how other viewers indicate where the current record is.';
-    await this.action('Click on a point to set the current record', this.t!.onCurrentRowChanged, null, currentRecord);
+    await this.action('Click on a point to set the current record', this.t!.onCurrentRowChanged, null, currentRecord,
+      () => this.t!.currentRowIdx++);
 
     this.title('Properties');
 
@@ -128,33 +139,34 @@ export class ViewersTutorial extends Tutorial {
       '<b>Markers</b> or <b>Axes</b>.';
     await this.action('Open the scatter plot\'s properties', interval(1000)
       .pipe(map((_) => grok.shell.o), filter((o) => o instanceof DG.ScatterPlotViewer)),
-      null, spProperties);
+    null, spProperties, () => grok.shell.setCurrentObject(sp, false));
 
 
     const initialProps = JSON.stringify((sp.getOptions() as {[key: string]: any }).look);
     await this.action('Change a few visual properties, e.g., the background color or marker size',
       interval(1000).pipe(map((_) => grok.shell.o), filter((o) => o instanceof DG.ScatterPlotViewer &&
-      JSON.stringify((o.getOptions() as {[key: string]: any }).look) !== initialProps)));
+      JSON.stringify((o.getOptions() as {[key: string]: any }).look) !== initialProps)), null, '',
+      () => sp.setOptions({markerDefaultSize: 10}));
 
     const cloneViewerInfo = 'Change some visual properties of the viewer and right-click on the scatter plot. ' +
       'In the context menu, select <b>General | Clone</b>. Note that the new viewer inherited all properties of the ' +
       'original viewer.<br> Close the new viewer by clicking on <b>"x"</b> in the top right corner of the header.';
-    await this.contextMenuAction('Clone the scatter plot', 'Clone', null, cloneViewerInfo);
+    await this.contextMenuAction('Clone the scatter plot', 'Clone', null, cloneViewerInfo, sp.root);
 
     this.title('Style');
 
     const stylePickInfo = 'You can apply the style of one viewer to another. ' +
       'To do that, right-click on the viewer and select <b>Pick Up / Apply | Pick Up</b>.';
-    await this.contextMenuAction('Pick up the scatter plot\'s style', 'Pick Up', null, stylePickInfo);
+    await this.contextMenuAction('Pick up the scatter plot\'s style', 'Pick Up', null, stylePickInfo, sp.root);
 
-    await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
+    const newSp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
 
     const styleApplyInfo = 'To apply the style, choose <b>Pick Up / Apply | Apply</b> in the context menu ' +
       'of the new viewer. Depending on the situation, you might want to apply only visual or only ' +
       'data-related attributes; in this case, use <b>Apply Style Settings</b> or ' +
       '<b>Apply Data Settings</b>. Note that style settings can be applied even to ' +
       'viewers that have different source of data.';
-    await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo);
+    await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo, newSp.root);
   }
 
   private followHint(get: () => HTMLElement | null): Subscription {

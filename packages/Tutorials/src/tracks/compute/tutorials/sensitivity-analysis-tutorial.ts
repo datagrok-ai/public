@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {checkPackages, getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
+import {checkPackages, getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend, toggleSwitch} from './utils';
 import {runDescriber, Tour, DescriptionPage} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
@@ -99,6 +99,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
@@ -128,6 +129,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(modelCatalogIcn, 'dblclick'),
       modelCatalogIcn,
       `Double-click the ${name} icon`,
+      () => modelCatalogIcn.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     // 3. Run model
@@ -143,6 +145,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
+      Tutorial.apiSkip(() => DG.Func.find({package: 'DiffStudio', name: 'ballFlight'})[0].prepare().edit()),
     );
 
     // 4. Play
@@ -170,7 +173,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'OK', next: '', prev: ''},
     });
 
-    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 5. Run sens.analysis
     this.title('Analysis');
@@ -195,6 +198,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(senAnIcnRoot, 'click'),
       senAnIcnRoot,
       'Click the "Run sensitivity analysis" icon on the top panel.',
+      () => senAnIcnRoot.querySelector('i')!.click(),
     );
 
     // 6. Set samples
@@ -223,6 +227,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       samplesSource,
       samplesInputRoot,
       'Increase <b>Samples</b> to get more accurate results.',
+      () => Tutorial.setInputValue(samplesInputEditor, '100'),
     );
 
     // 7. Switch Angle
@@ -233,6 +238,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Toggle the "Angle" parameter',
       fromEvent(angleSwitcher, 'click'),
       angleSwitcher,
+      '',
+      () => toggleSwitch(angleSwitcher),
     );
 
     // 8. Run sens.analysis
@@ -246,6 +253,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
       runIcnRoot,
       `Click the <b>Run</b> button or the <b>Run</b> icon on the top panel.`,
+      () => runIcnRoot.click(),
     );
 
     // 9. Explore viewers
@@ -269,7 +277,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 10. Optimization
     this.title('Optimization');
@@ -298,7 +306,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'ok', next: '', prev: ''},
     });
 
-    await this.action('Explore the solution', fromEvent(btnToClick, 'click'));
+    await this.action('Explore the solution', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 12. Parameters' impact
 
@@ -317,6 +325,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Set "Method" to "Sobol"',
       methodSource,
       methodInputRoot,
+      '',
+      () => Tutorial.setInputValue(methodChoiceRoot, 'Sobol'),
     );
 
     // 13. Switch Velocity
@@ -327,6 +337,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Toggle the "Velocity" parameter',
       fromEvent(velocitySwitcher, 'click'),
       velocitySwitcher,
+      '',
+      () => toggleSwitch(velocitySwitcher),
     );
 
     // 14. Run sens.analysis
@@ -334,6 +346,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       'Run sensitivity analysis',
       fromEvent(runIcnRoot, 'click'),//runSensAnPromise,
       runIcnRoot,
+      '',
+      () => runIcnRoot.click(),
     );
 
     // 15. Explore viewers
@@ -356,7 +370,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'));
+    await this.action('Explore each viewer', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
@@ -373,7 +387,7 @@ export class SensitivityAnalysisTutorial extends Tutorial {
       btnsText: {done: 'clear', next: '', prev: ''},
     });
 
-    await this.action('Click "Clear"', fromEvent(btnToClick, 'click'));
+    await this.action('Click "Clear"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     this.describe(`Apply ${ui.link('Sensitivity Analysis', LINK.SENS_AN).outerHTML} to both ${name} and 
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

@@ -51,7 +51,8 @@ export class DashboardTutorial extends Tutorial {
       (el.textContent ?? '')?.startsWith('Postgres'))[0]!;
 
     const dlg = await this.openDialog('Create a connection to Postgres server', 'Add new connection',
-      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`);
+      providerRoot, `${dbViewInfo}\nOpen the context menu on the Postgres connector and click "Add connection..."`,
+      () => Tutorial.runContextMenu(providerRoot, 'Add connection...'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -62,13 +63,14 @@ export class DashboardTutorial extends Tutorial {
     await this.dlgInputAction(dlg, 'Set "Db" to "starbucks"', 'Db', 'starbucks');
     await this.dlgInputAction(dlg, 'Set "Login" to "datagrok"', 'Login', 'datagrok');
     await this.dlgInputAction(dlg, 'Set "Password" to "KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF"', 'Password', 'KKfIh6ooS7vjzHYrNiRrderyz3KUyglrhSJF');
-    await this.action('Click "OK"', dlg.onClose, $(dlg.root).find('button.ui-btn.ui-btn-ok')[0]);
+    await this.dialogOkAction(dlg);
 
     const starbucksNodes = $(providerRoot).find('div.d4-tree-view-group-label').filter((idx, el) =>
       el.textContent === 'Starbucks');
     const dqv = await this.openViewByType(`Create a data query to the "${connectionName}" data connection`,
       'DataQueryView', starbucksNodes[starbucksNodes.length - 1],
-      `Open the context menu on Postgres | ${connectionName} and click "New Query..."`);
+      `Open the context menu on Postgres | ${connectionName} and click "New Query..."`,
+      () => Tutorial.runContextMenu(starbucksNodes[starbucksNodes.length - 1]!, 'New Query...'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -84,25 +86,26 @@ export class DashboardTutorial extends Tutorial {
     await this.action(`Add "${query}" to the editor`,
       interval(1000).pipe(filter(() => $(dqv.root).find('pre.CodeMirror-line > span')
         .filter((idx, el) => el.textContent?.trim() === query)[0] != null)),
-      null, queryDescription,
+      null, queryDescription, () => Tutorial.setCodeEditorText(dqv.root, query),
     );
 
     await this.action(`Add "${paramAnnotation}" as the first line of the query`,
       interval(1000).pipe(filter(() => {
         const lines = $(dqv.root).find('pre.CodeMirror-line > span');
         return lines.length > 0 && lines[0] !== undefined && lines[0].textContent?.trim() === paramAnnotation;
-      })), null, paramQueryDescription);
+      })), null, paramQueryDescription, () => Tutorial.setCodeEditorText(dqv.root, `${paramAnnotation}\n${query}`));
 
     await this.buttonClickAction((grok.shell.windows.simpleMode ? $('.layout-dockarea .d4-ribbon') : $('.d4-ribbon'))[0]!,
       'Save the query', 'SAVE');
 
     const browseSidebar = grok.shell.sidebar.getPane('Browse').header;
-    await this.action(
-        'Find Browse on the sidebar and click',
-        elementClick(() => browseSidebar), browseSidebar);
+    await this.action('Find Browse on the sidebar and click', elementClick(() => browseSidebar), browseSidebar, '',
+      () => browseSidebar.click());
 
     const paramEditorDlg = await this.openDialog('Find the created query in the browse view, right-click it and hit Run',
-      queryName, $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.includes(queryName))[0]!);
+      queryName, $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.includes(queryName))[0]!, '',
+      async () => (await grok.dapi.queries.filter(`friendlyName = "${queryName}"`).order('createdOn', true).first())
+        .prepare().edit());
 
     await this.dlgInputAction(paramEditorDlg, 'Set state to "NY"', 'State', 'NY');
 
@@ -111,7 +114,7 @@ export class DashboardTutorial extends Tutorial {
       const res = call.outputs.get('result');
       return (call.func.name === 'StoresInState' || call.func.name.includes('StoresInState_')) &&
         res instanceof DG.DataFrame && res?.rowCount === resultRowCount;
-    })), $(paramEditorDlg.root).find('button.ui-btn.ui-btn-ok')[0]);
+    })), $(paramEditorDlg.root).find('button.ui-btn.ui-btn-ok')[0], '', () => paramEditorDlg.getButton('OK').click());
 
     this.title('Create a dashboard');
 
@@ -134,13 +137,14 @@ export class DashboardTutorial extends Tutorial {
     this.onClose.subscribe(() => savedProjectSub.unsubscribe());
     const isSavedProject = (p: DG.Project) => savedProjectId ? p.id === savedProjectId : p.friendlyName === projectName;
 
-    const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo);
+    const projectDlg = await this.openDialog('Save a project', 'Save project', projectPaneHints, uploadProjectInfo,
+      () => projectPaneHints[0].click());
     await DG.delay(1000);
     const projectNameHint = $(projectDlg.root).find('.ui-input-editor#name')[0];
 
     await this.action(`Set the project name to "${projectName}"`, interval(2000).pipe(filter(() => projectName ===
       (<HTMLInputElement>$(projectDlg.root).find('.ui-input-editor#name')[0])?.value)),
-      projectNameHint);
+    projectNameHint, '', () => Tutorial.setInputValue(projectNameHint as HTMLInputElement, projectName));
 
     // await this.action('Enable Data sync', new Observable((subscriber: any) => {
     //   $(projectDlg.root).find('.ui-input-switch').one('click', () => subscriber.next(true));
@@ -149,21 +153,25 @@ export class DashboardTutorial extends Tutorial {
     const sharingDescription = 'You can share a newly created project with other users of the platform. Also, ' +
       'there is a link your project will be available at. Copy it, if you prefer this way of sharing.';
     const shareDlg = await this.openDialog('Click "OK"', `Share ${projectName}`,
-      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2]);
-    await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription);
+      $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2], '',
+      () => $(projectDlg.root).find('button.ui-btn.ui-btn-ok')[2]!.click());
+    await this.action('Skip the sharing step', shareDlg.onClose, null, sharingDescription, () => shareDlg.close());
 
     const closeProjectDescription = 'You can close the project by right-clicking on the sidebar and clicking "Close all"';
-    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription);
+    await this.action('Close the project', grok.events.onProjectClosed.pipe(filter(isSavedProject)), null, closeProjectDescription,
+      () => grok.shell.closeAll());
 
     await DG.delay(1000);
     const dashboardsLabel = $('div.d4-tree-view-item-label').filter((idx, el) => (el.textContent ?? '')?.startsWith('Dashboards'))[0]!;
 
-    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel);
+    await this.action('Open browse and click on Dashboards', elementClick(() => dashboardsLabel), dashboardsLabel, '',
+      () => dashboardsLabel.click());
 
     await this.action('Find and open your project',
       grok.events.onProjectOpened.pipe(filter(isSavedProject)), null,
       'If the list holds more than one dashboard with this name, open the one you have just saved — ' +
-      'the others belong to different runs of this tutorial and query connections you might not have access to.');
+      'the others belong to different runs of this tutorial and query connections you might not have access to.',
+      async () => (await grok.dapi.projects.find(savedProjectId)).open());
     savedProjectSub.unsubscribe();
     this.showToolbox();
     await DG.delay(1000);

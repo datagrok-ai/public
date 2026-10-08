@@ -46,7 +46,7 @@ export class ScriptingTutorial extends Tutorial {
       'previously saved scripts, including the samples designed to help better understand the platform.';
     const sv = await this.openViewByType(
       'In the Browse Panel, click Platform > Functions > Scripts > New > Python Script. This opens a script editor.',
-      'ScriptView', providerRoot, editorIntro);
+      'ScriptView', providerRoot, editorIntro, () => grok.shell.route('/script/python'));
 
     // UI generation delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -61,12 +61,14 @@ export class ScriptingTutorial extends Tutorial {
       'In front of you is a valid script. The commented out section on top defines script parameters. ' +
       'This simple script calculates the number of cells in a dataframe. The <i class="grok-icon fal fa-asterisk"></i> ' +
       'icon opens a demo table for you. It appears only for scripts annotated with a special <i>sample</i> parameter. ' +
-      'The demo table appears in the "Tables" section (<i class="grok-icon fal fa-table"></i> on the sidebar).');
+      'The demo table appears in the "Tables" section (<i class="grok-icon fal fa-table"></i> on the sidebar).',
+    () => $('div.d4-ribbon-item i.grok-icon.fa-asterisk')[0]!.click());
 
     const playBtn = $('div.d4-ribbon-item').has('i.grok-icon.fa-play')[0];
     let callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn,
       'Before a script gets executed, all its input parameters should be set. If there are any, a dialog like this one ' +
-      'will appear. Here we need provide only one input named "Table".');
+      'will appear. Here we need provide only one input named "Table".',
+      () => $(playBtn).find('i.fa-play')[0]!.click());
 
     await this.dlgInputAction(callEditorDlg, `Set "Table" to ${sampleDfName}`, 'Table', sampleDfName,
       'As we have added a sample table in the previous step, the input choices include this table. ' +
@@ -74,7 +76,8 @@ export class ScriptingTutorial extends Tutorial {
 
     await this.action('Click "OK"', grok.functions.onAfterRunAction.pipe(
       filter((c) => c.func.name.startsWith(sampleScriptName) && c.getOutputParamValue() === sampleScriptOutput)),
-      $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0]);
+    $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0], '',
+    () => callEditorDlg.getButton('OK').click());
 
     const scriptOutputInfo = 'If a script returns a scalar value, it gets printed to the console. ' +
       'For dataframe outputs, the platform additionally opens a table view. In our case, the result ' +
@@ -85,7 +88,7 @@ export class ScriptingTutorial extends Tutorial {
     await this.action('Find the results in the console',
       interval(1000).pipe(filter(() => grok.shell.windows.showConsole)),
       [],//this.getSidebarHints('Windows', 'Console'),
-      scriptOutputInfo);
+      scriptOutputInfo, () => grok.shell.windows.showConsole = true);
 
     const editor = (sv.root.querySelector('.CodeMirror') as any).CodeMirror;
     const doc = editor.getDoc();
@@ -103,15 +106,20 @@ export class ScriptingTutorial extends Tutorial {
     await this.action('Add the second output value to the script', interval(1000).pipe(
       filter(() => doc.getLine(scriptBodyIndex).trim() === newOutputParam &&
         doc.getLine(lastLineIndex).trim() === newOutputParamDef)),
-      null, dfCloneTip);
+    null, dfCloneTip, () => {
+      doc.replaceRange(newOutputParam, {line: scriptBodyIndex, ch: 0}, {line: scriptBodyIndex});
+      doc.replaceRange(newOutputParamDef, {line: lastLineIndex, ch: 0}, {line: lastLineIndex});
+    });
 
-    callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn);
+    callEditorDlg = await this.openDialog('Run the script', sampleScriptName, playBtn, '',
+      () => $(playBtn).find('i.fa-play')[0]!.click());
     const historyInfo = 'Find the previously entered parameter in the dialog\'s history.';
     await this.dlgInputAction(callEditorDlg, `Set "Table" to ${sampleDfName}`, 'Table',
       sampleDfName, historyInfo, true);
     await this.action('Click "OK"', grok.functions.onAfterRunAction.pipe(
       filter((c) => c.func.name.startsWith(sampleScriptName) && c.outputs.size() === 2 &&
         c.outputs.get('clone') instanceof DG.DataFrame)),
-      $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0]);
+    $(callEditorDlg.root).find('button.ui-btn').filter((idx, btn) => btn.textContent === 'OK')[0], '',
+    () => callEditorDlg.getButton('OK').click());
   }
 }

@@ -278,3 +278,7 @@ export function checkPackages(tutorial: Tutorial): boolean {
   }
   return missing.length === 0;
 }
+
+export function toggleSwitch(editor: HTMLElement): void {
+  editor.querySelector<HTMLElement>('.ui-input-switch')!.click();
+}
