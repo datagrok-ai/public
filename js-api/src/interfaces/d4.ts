@@ -906,6 +906,9 @@ export interface IBarChartSettings {
 
   showStackSelector: boolean;
 
+  /** Shows the share of each stack segment in its bar, in percent, when the segment fits the label. */
+  showStackPercentage: boolean;
+
   /** Whether the selected rows are indicated.
    * Only works for cumulative aggregations such as count. */
   showSelectedRows: boolean;
