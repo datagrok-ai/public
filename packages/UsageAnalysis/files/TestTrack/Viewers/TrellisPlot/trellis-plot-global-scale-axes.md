@@ -23,15 +23,13 @@ expected_results:
   - anchor: "Scenario 1 Step 7"
     expectation: >-
       With Show Range Sliders on and the X or Y axis displayed, the right-click
-      context menu on the trellis viewer contains the item 'Reset Inner Range
-      Sliders'.
+      context menu on the trellis viewer contains the item 'Reset View'.
   - anchor: "Scenario 1 Step 9"
     expectation: >-
       After hiding BOTH inner axes (Show X Axes and Show Y Axes off), the
       right-click context menu on the trellis viewer opens (it still carries
-      'Properties...') and does NOT contain the item 'Reset Inner Range
-      Sliders', confirming the item exists only while at least one inner-axis
-      slider does.
+      'Properties...') and still contains the item 'Reset View', which is
+      offered whether or not an inner-axis slider exists.
   - anchor: "Scenario 1 Step 10"
     expectation: >-
       After re-enabling both inner axes (Show X Axes and Show Y Axes on), the
@@ -51,7 +49,7 @@ expected_results:
       throws no console error.
   - anchor: "Scenario 2 Step 5"
     expectation: >-
-      After clicking 'Reset Inner Range Sliders' in the context menu, each
+      After clicking 'Reset View' in the context menu, each
       probed .d4-trellis-plot-cell canvas returns EXACTLY to its pre-drag
       full-range baseline (settle-gated per-cell hash equal to the Step 1
       baseline, and therefore different from the narrowed state), and no console
@@ -129,14 +127,14 @@ Steps:
    re-render with shared axis bounds.
 6. Right-click the trellis viewer background (not inside a cell) to open its
    context menu.
-7. Verify that the context menu contains the item 'Reset Inner Range Sliders'.
+7. Verify that the context menu contains the item 'Reset View'.
 8. In Properties, set BOTH Show X Axes and Show Y Axes to off. Wait for the
    viewer to settle, then right-click the trellis viewer background again.
 9. Confirm the context menu did open — it still lists 'Properties...' — and then
-   verify that 'Reset Inner Range Sliders' is NOT present in it.
+   verify that 'Reset View' is still present in it.
 10. Set both Show X Axes and Show Y Axes back to on, wait for the viewer to
     settle, right-click the trellis viewer background once more, and verify that
-    'Reset Inner Range Sliders' is present again.
+    'Reset View' is still present.
 11. With both axes shown, count the range slider controls visible inside the
     trellis viewer and record this as the axes-shown count. Then set Show X Axes
     to off, wait for the viewer to settle, and count again — the axes-hidden
@@ -158,7 +156,7 @@ Steps:
 4. Drag the shared X-axis range slider to narrow it to approximately the
    central half of the full data range for the X column.
    Wait for the viewer to settle.
-5. Right-click the trellis viewer background, select 'Reset Inner Range Sliders'.
+5. Right-click the trellis viewer background, select 'Reset View'.
    Wait for the viewer to settle.
 
 ### Scenario 3: Inner viewers do not zoom on mouse-wheel (GROK-14587)
@@ -241,9 +239,9 @@ Steps:
   trellis viewer root (refdoc: Discriminating inner-axis sliders), graded as a shown-vs-hidden
   DELTA: that selector also matches the category scroll sliders, so an absolute count or a
   presence check grades the wrong elements.
-- WITNESS — the `Reset Inner Range Sliders` absence check hides BOTH axes; the body, the anchors
-  and the spec all encode the both-axes form, because the item's gate is an OR over the two sliders
-  (refdoc: Discriminating inner-axis sliders) and a one-axis hide would grade nothing.
+- WITNESS — `Reset View` is offered with BOTH axes hidden too: it also resets the category
+  scrolls, so it is not gated on the inner-axis sliders. The inner scatter plot nests its own
+  `Reset View` under Tools, so the spec reads top-level labels only.
 - WITNESS — the identity half of each inner-type switch is a `props.viewerType` read-back, weak
   alone as a same-channel echo, paired with a per-cell canvas delta: these three inner types put no
   named node in the cell to look for (refdoc: A cell hosts the inner viewer's bare CANVAS). The
