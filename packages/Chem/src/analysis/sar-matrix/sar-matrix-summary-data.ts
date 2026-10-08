@@ -2,8 +2,6 @@
    shows. Kept apart from the rendering because it touches no DOM: a SummaryCollector is handed the
    viewer and the fold tier, and returns SummaryData. The algorithms it calls and the types it
    produces live in their own modules; the types are re-exported so callers import from here. */
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 import {_package} from '../../package';
 import {fitAdditiveFromTriples} from './sar-matrix-assemble';
 import {median} from './sar-matrix-decompose';
@@ -12,13 +10,34 @@ import {logSarTime, SarMatrix} from './sar-matrix-types';
 import {MatrixCellRef} from './sar-matrix-ui-common';
 import {largestSwap, poolRoleSwaps, poolSwaps, rankSwaps} from './sar-matrix-summary-swaps';
 import {rankRGroups, recordRGroupExtremes} from './sar-matrix-summary-rgroups';
-import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, betterEvidenced, betterSupported, MIN_SUPPORT, RGroupAcc, RowCell,
-  SeriesStat, StartRow, STRIP_SLOTS, SummaryData, SummaryHost, SWAP_ROW_CAP, SwapPool,
-  TopList, TRUST_R2} from './sar-matrix-summary-types';
+import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, RGroupAcc, RowCell, SeriesStat, StartRow, STRIP_SLOTS,
+  SummaryData, SummaryHost, SummaryRow, supportOf, SWAP_ROW_CAP, SwapPool, TopList,
+  TRUST_R2} from './sar-matrix-summary-types';
 
 export * from './sar-matrix-summary-types';
 
-/** One pass over the matrices at one fold tier. */
+/** Ties end at `matrix.id`: fragments arrive in worker-completion order, so anything resolved by
+ *  index or Map order would make the cards depend on scheduling. */
+function finerSeries(a: SummaryRow, b: SummaryRow): boolean {
+  return a.matrix.level !== b.matrix.level ? a.matrix.level < b.matrix.level : a.matrix.id < b.matrix.id;
+}
+
+function betterSupported(a: SummaryRow, b: SummaryRow): boolean {
+  const sa = supportOf(a);
+  const sb = supportOf(b);
+  return sa !== sb ? sa > sb : finerSeries(a, b);
+}
+
+function betterEvidenced(a: SummaryRow, b: SummaryRow): boolean {
+  const sa = supportOf(a);
+  const sb = supportOf(b);
+  if (sa !== sb)
+    return sa > sb;
+  const ra = a.matrix.confidence?.r2 ?? Number.NEGATIVE_INFINITY;
+  const rb = b.matrix.confidence?.r2 ?? Number.NEGATIVE_INFINITY;
+  return ra !== rb ? ra > rb : a.matrix.id < b.matrix.id;
+}
+
 export class SummaryCollector {
   constructor(private readonly host: SummaryHost, private readonly tierFilter: number | null) {}
 
@@ -28,7 +47,7 @@ export class SummaryCollector {
    *
    * The observed cells are collected as triples on the way past and the additive fit is run from
    * those, so the fit does not walk the grid a second time. The buffers are reused across matrices:
-   * 345 fresh sets would trade the scan cost for GC cost, and nothing caps the SUM of cells across
+   * one fresh set per matrix would trade the scan cost for GC cost, and nothing caps the SUM of cells across
    * matrices — only each matrix.
    */
   collect(): SummaryData {
@@ -76,8 +95,6 @@ export class SummaryCollector {
     let nonConverged = 0;
     let sampledRows = 0;
     let swapCandidates = 0;
-    let minObserved = Infinity;
-    let maxObserved = -Infinity;
 
     const obsRow: number[] = [];
     const obsCol: number[] = [];
@@ -85,16 +102,12 @@ export class SummaryCollector {
     const mols = new Set<number>();
     const rowCells: RowCell[] = [];
     // Admitting an analog on its gain needs this matrix's best measured cell, which is final only when
-    // its row loop ends — so the candidates wait here rather than being offered inside it. Reused
-    // across matrices: one triple of arrays, never 345 of them.
+    // its row loop ends — so the candidates wait here rather than being offered inside it.
     const riBuf: number[] = [];
     const ciBuf: number[] = [];
-    const valBuf: number[] = [];
-    /** The same, for the candidates the trust gate turned down — they still need this matrix's best
-     *  measured cell to carry a gain. */
+    // The same, for the candidates the trust gate turned down.
     const riAlt: number[] = [];
     const ciAlt: number[] = [];
-    const valAlt: number[] = [];
 
     // `roleColumns` excludes the core column, so the core role is prepended: left out, the report omits
     // the one role the request names first. Empty outside fragment-columns mode, which is what keeps the
@@ -125,10 +138,8 @@ export class SummaryCollector {
       obsVal.length = 0;
       riBuf.length = 0;
       ciBuf.length = 0;
-      valBuf.length = 0;
       riAlt.length = 0;
       ciAlt.length = 0;
-      valAlt.length = 0;
       mols.clear();
       let realCells = 0;
       let impossibleCells = 0;
@@ -170,10 +181,6 @@ export class SummaryCollector {
               lo = value;
             if (value > hi)
               hi = value;
-            if (value < minObserved)
-              minObserved = value;
-            if (value > maxObserved)
-              maxObserved = value;
             if (best === null || dir * value > dir * best.value)
               best = {ri, ci, value};
             if (cell.smiles !== null)
@@ -204,13 +211,11 @@ export class SummaryCollector {
               else {
                 riBuf.push(ri);
                 ciBuf.push(ci);
-                valBuf.push(value);
               }
             } else {
               if (!measuredStructures.has(cell.smiles)) {
                 riAlt.push(ri);
                 ciAlt.push(ci);
-                valAlt.push(value);
               }
               if (support < MIN_SUPPORT)
                 withheldThinSupport++;
@@ -243,35 +248,31 @@ export class SummaryCollector {
         // a plane through four points has a tiny RMSE and would top every ranking.
         const thin = conf.n < BEST_FIT_MIN_N || conf.rmse <= 0;
         for (let k = 0; k < riBuf.length; k++) {
-          const gain = dir * (valBuf[k] - best.value);
+          const cell = matrix.cells[riBuf[k]][ciBuf[k]];
+          const gain = dir * (cell.value! - best.value);
           if (thin) {
-            if (gain > 0) {
-              analogsThin.offer(matrix.cells[riBuf[k]][ciBuf[k]].smiles!, gain,
-                matrix, riBuf[k], ciBuf[k]);
-            }
+            if (gain > 0)
+              analogsThin.offer(cell.smiles!, gain, matrix, riBuf[k], ciBuf[k]);
           } else if (gain < conf.rmse)
             withheldBelowError++;
-          else {
-            analogs.offer(matrix.cells[riBuf[k]][ciBuf[k]].smiles!, gain / conf.rmse,
-              matrix, riBuf[k], ciBuf[k]);
-          }
+          else
+            analogs.offer(cell.smiles!, gain / conf.rmse, matrix, riBuf[k], ciBuf[k]);
         }
       }
       // Ranked on raw gain, never on gain over error: the fits behind these are the ones that were not
       // trusted, so their error is not a scale to divide by.
       if (best !== null) {
         for (let k = 0; k < riAlt.length; k++) {
-          const gain = dir * (valAlt[k] - best.value);
-          if (gain > 0) {
-            analogsAny.offer(matrix.cells[riAlt[k]][ciAlt[k]].smiles!, gain,
-              matrix, riAlt[k], ciAlt[k]);
-          }
+          const cell = matrix.cells[riAlt[k]][ciAlt[k]];
+          const gain = dir * (cell.value! - best.value);
+          if (gain > 0)
+            analogsAny.offer(cell.smiles!, gain, matrix, riAlt[k], ciAlt[k]);
         }
       }
       const stat: SeriesStat = {
         matrix, root: roots[mi], tier: tiers[mi], cpd: mols.size, realCells, impossibleCells,
         totalCells: nRows * nCols, lo: realCells ? lo : 0, hi: realCells ? hi : 0, best, bestVirtual,
-        typical: fit.grandMean, trusted, converged: fit.converged, virtualCells,
+        typical: fit.grandMean, trusted, virtualCells,
         stripCols: recordRGroupExtremes(acc, matrix, fit, dir, roots[mi], holds, wantStrip),
         ...this.extractRanges(matrix, fit, dir),
       };
@@ -307,39 +308,31 @@ export class SummaryCollector {
     analogsThin.prune(dropHeld);
     analogsAny.prune(dropHeld);
 
-    // Over the matrices this walk read, not over every matrix: at a tier filter none of the others
-    // reaches any other number on the tab, and a model error pooled across tiers is the error of no
-    // ranking shown — it sets the band every effect is read against and the Start-here threshold.
-    const walked = host.matrices.filter((_, mi) =>
-      this.tierFilter === null || tiers[mi] === this.tierFilter);
-    const confN = walked.map((m) => m.confidence?.n ?? null)
-      .filter((n): n is number => n !== null);
-    const rmses = walked.map((m) => m.confidence?.rmse ?? null)
-      .filter((r): r is number => r !== null);
-    const families = new Set(roots).size;
+    const measured = series.filter((stat) => stat.realCells > 0);
+    // Over the matrices this walk read, not over every matrix: at a tier filter a model error pooled
+    // across tiers is the error of no ranking shown — it sets the band every effect is read against.
+    const confs = series.flatMap((stat) => stat.matrix.confidence ?? []);
     const roleFit = fitRoleEffects({names: roleNames, values: roleValues, activity: roleActivity,
       molIdx: roleMol, minSupport: MIN_SUPPORT, higherIsBetter: host.higherIsBetter});
     const data: SummaryData = {
       compounds: compounds.size,
       untested: untested.size,
       measuredCells,
-      minObserved: measuredCells ? minObserved : null,
-      maxObserved: measuredCells ? maxObserved : null,
+      minObserved: measured.length ? Math.min(...measured.map((stat) => stat.lo)) : null,
+      maxObserved: measured.length ? Math.max(...measured.map((stat) => stat.hi)) : null,
       trustedCells,
       trustedStructures: trustedStructures.size,
       trustedNoStructure,
-      modelError: rmses.length ? median(rmses) : null,
+      modelError: confs.length ? median(confs.map((conf) => conf.rmse)) : null,
       fitHolds, unchecked, lowR2, lowR2Virtual,
-      families,
       axisRole: host.axisRole,
       coreRole: host.coreRole,
       coresAreSeries: host.coresAreSeries,
       roleFit,
       roleBest: new Map(roleNames.map((name, r) => [name, roleBest[r]])),
-      tierCounts: this.countTiers(tiers),
       nonConverged,
       series,
-      startHere: this.mergeStartHere(series, confN, dir),
+      startHere: this.mergeStartHere(series, confs.map((conf) => conf.n), dir),
       swaps: rankSwaps(swaps),
       swapsByRole: poolRoleSwaps(roleNames, roleValues, roleActivity, roleMol, dir, log),
       swapCandidates,
@@ -354,13 +347,6 @@ export class SummaryCollector {
     return data;
   }
 
-  private countTiers(tiers: number[]): {tier: number, n: number}[] {
-    const byTier = new Map<number, number>();
-    for (const tier of tiers)
-      byTier.set(tier, (byTier.get(tier) ?? 0) + 1);
-    return [...byTier.entries()].sort((a, b) => a[0] - b[0]).map(([tier, n]) => ({tier, n}));
-  }
-
   /** The scalars the screen needs out of one fit, so the Float64Arrays can be dropped with it. Both
    *  ranges are of centred effects, so they are comparable to each other inside this matrix — and to
    *  nothing outside it. One support floor on both axes: an effect estimated from two observations is
@@ -368,32 +354,18 @@ export class SummaryCollector {
    *  widen the column range before any chemistry entered. */
   private extractRanges(matrix: SarMatrix, fit: ReturnType<typeof fitAdditiveFromTriples>, dir: number):
     {colRange: number | null, rowRange: number | null, bestRow: {ri: number, effect: number, n: number} | null} {
-    let colLo = Infinity;
-    let colHi = -Infinity;
-    let colN = 0;
-    for (let ci = 0; ci < matrix.columns.length; ci++) {
-      if (fit.colN[ci] < MIN_SUPPORT)
-        continue;
-      colN++;
-      colLo = Math.min(colLo, fit.colEffect[ci]);
-      colHi = Math.max(colHi, fit.colEffect[ci]);
-    }
-    let rowLo = Infinity;
-    let rowHi = -Infinity;
-    let rowN = 0;
+    const range = (effect: Float64Array, n: Int32Array, count: number): number | null => {
+      const kept = effect.subarray(0, count).filter((_e, i) => n[i] >= MIN_SUPPORT);
+      return kept.length >= 2 ? Math.max(...kept) - Math.min(...kept) : null;
+    };
     let bestRow: {ri: number, effect: number, n: number} | null = null;
     for (let ri = 0; ri < matrix.rows.length; ri++) {
-      if (fit.rowN[ri] < MIN_SUPPORT)
-        continue;
-      rowN++;
-      rowLo = Math.min(rowLo, fit.rowEffect[ri]);
-      rowHi = Math.max(rowHi, fit.rowEffect[ri]);
-      if (bestRow === null || dir * fit.rowEffect[ri] > dir * bestRow.effect)
+      if (fit.rowN[ri] >= MIN_SUPPORT && (bestRow === null || dir * fit.rowEffect[ri] > dir * bestRow.effect))
         bestRow = {ri, effect: fit.rowEffect[ri], n: fit.rowN[ri]};
     }
     return {
-      colRange: colN >= 2 ? colHi - colLo : null,
-      rowRange: rowN >= 2 ? rowHi - rowLo : null,
+      colRange: range(fit.colEffect, fit.colN, matrix.columns.length),
+      rowRange: range(fit.rowEffect, fit.rowN, matrix.rows.length),
       bestRow,
     };
   }

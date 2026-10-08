@@ -1,16 +1,8 @@
 import {fitAdditiveModel} from './sar-matrix-assemble';
-import {SarMatrix, SarMatrixCell, SarMatrixCellKind} from './sar-matrix-types';
+import {Confidence, Residual, SarMatrix, SarMatrixCell, SarMatrixCellKind} from './sar-matrix-types';
 
 /** Below this many cross-validatable observed cells a leave-one-out estimate is too noisy to report. */
 const MIN_CV_POINTS = 4;
-
-/** One cross-validated cell and its raw signed `observed − predicted`. Signed rather than
- *  direction-adjusted: the caller owns the activity direction, and folding it in here would put the
- *  same convention in two modules. */
-type Residual = {ri: number, ci: number, residual: number};
-
-type Confidence = {r2: number, rmse: number, n: number, total: number,
-  hi: Residual | null, lo: Residual | null};
 
 /** Leave-one-out prediction of one observed cell. The held-out cell is blanked so the refit can't see
  *  it; returns null when its row or column has no other observation left. Every column of a matrix

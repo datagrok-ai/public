@@ -23,11 +23,6 @@ export const GAIN_TICKS = 4;
  *  names: offsets print at two decimals, so anything under this is not on screen at all. */
 export const ROLE_SPREAD_TIE = 0.01;
 
-/** Said on the Overview and again on the core card, which a reader can arrive at either way round. */
-export const CORES_NOT_COMPARABLE = 'Cores are not comparable across series here — a core is one row of one ' +
-  'matrix and recurs only inside its own fold lineage. Each series\' best core is in its Start-here ' +
-  'expand.';
-
 export const PANE_OVERVIEW = 'Overview';
 export const PANE_EFFECTS = 'Effects';
 export const PANE_MAKING = 'Worth making';
@@ -76,17 +71,17 @@ export function shortSmiles(smiles: string): string {
   return smiles.length > 20 ? `${smiles.slice(0, 19)}…` : smiles;
 }
 
-/** A blank role value is the unsubstituted parent, which is a level like any other — rendered as a
- *  name rather than as the empty string it is stored as.
- *
- *  Not shortened: a fixed character cap renders three analogs of one scaffold as the same string, since
- *  what distinguishes them is past the cap. A row ellipsizes in CSS instead, to whatever width it has. */
 /** Where a component's swap card sits on the Effects segment, so the band row for that component scrolls
  *  to the card about that component rather than to whichever one was built first. */
 export function swapAnchor(role: string): string {
   return `swaps-${role}`;
 }
 
+/** A blank role value is the unsubstituted parent, which is a level like any other — rendered as a
+ *  name rather than as the empty string it is stored as.
+ *
+ *  Not shortened: a fixed character cap renders three analogs of one scaffold as the same string, since
+ *  what distinguishes them is past the cap. A row ellipsizes in CSS instead, to whatever width it has. */
 export function roleValueName(value: string): string {
   return value === '' ? 'nothing at this position' : value;
 }

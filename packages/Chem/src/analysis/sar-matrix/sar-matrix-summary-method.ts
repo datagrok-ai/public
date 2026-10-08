@@ -4,15 +4,11 @@ import * as ui from 'datagrok-api/ui';
 import {SarMatrix} from './sar-matrix-types';
 import {MIN_SUPPORT, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
 import {CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
-import {TRUST_LIST_MAX} from './sar-matrix-summary-common';
+import {PANE_MAKING, TRUST_LIST_MAX} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 
-/** What this segment reads from the panel. */
-export type SummaryMethodKit = Pick<SummaryPanel, 'anchored' | 'badge' | 'depiction' | 'foldHead' | 'host' |
-  'openTrustList' | 'prose' | 'scroller' | 'summaryRow'>;
-
 export class SummaryMethod {
-  constructor(private readonly kit: SummaryMethodKit) {}
+  constructor(private readonly kit: SummaryPanel) {}
 
   build(data: SummaryData): HTMLElement {
     const parts: HTMLElement[] = [this.buildChips(data),
@@ -33,14 +29,11 @@ export class SummaryMethod {
 
     const transform = host.scalingLabel === 'raw' ? 'untransformed' : `${host.scalingLabel} applied`;
     const direction = host.higherIsBetter ? 'higher is better' : 'lower is better';
-    // Never printed as 0 when no series has a fit: a floor of zero reads as "everything is resolved".
-    const floor = data.modelError === null ? '' :
-      ` · ± ${host.formatActivity(data.modelError)} model error`;
     // Log-ness of a raw column is inferred from the declared direction, not read off the data, and
     // every fold and log-unit claim on the tab rests on it. Percent inhibition, ΔTm and ΔG are raw and
     // higher-is-better too, so the inference has to be on screen rather than in a getter.
-    // Stated on the hover rather than on the band: it qualifies the fold figures further down, and on
-    // the band it read as one more property of the column.
+    // Stated on the hover rather than on the band: it qualifies the fold figures further down, not the
+    // column.
     const assumedLog = host.scalingLabel === 'raw' && host.activityIsLog;
     const scaleLine = line(`${host.activityColumnName || 'Activity'} · ${transform} · ${direction}`);
     ui.tooltip.bind(scaleLine, () => 'The scale and direction every ranking here depends on.' +
@@ -54,8 +47,9 @@ export class SummaryMethod {
       head.push(this.rangeRule(data));
     else
       head.push(line('nothing observed'));
-    if (floor !== '')
-      head.push(line(floor.replace(/^ · /, '')));
+    // Never printed as 0 when no series has a fit: a floor of zero reads as "everything is resolved".
+    if (data.modelError !== null)
+      head.push(line(`± ${host.formatActivity(data.modelError)} model error`));
     lines.push(ui.divH(head, 'chem-sar-sum-orient-row'));
     // Only where this analysis did transform: a column it left alone is on the scale it was measured
     // on, and log permeability or ΔG is negative throughout without anything being wrong.
@@ -78,11 +72,7 @@ export class SummaryMethod {
     const lo = data.minObserved!;
     const hi = data.maxObserved!;
     const span = hi - lo || 1;
-    const track = ui.div([], 'chem-sar-sum-rule');
-    const bar = ui.div([], 'chem-sar-sum-rule-bar');
-    bar.style.left = '0%';
-    bar.style.width = '100%';
-    track.appendChild(bar);
+    const track = ui.div([ui.div([], 'chem-sar-sum-rule-bar')], 'chem-sar-sum-rule');
     // Only where the measurements actually straddle it, which is the only place the mark can be read
     // off the rule at all.
     const showZero = lo < 0 && hi > 0;
@@ -103,13 +93,8 @@ export class SummaryMethod {
   }
 
   private buildChips(data: SummaryData): HTMLElement {
-    const chip = (text: string, tip: string, cls = ''): HTMLElement => {
-      const el = ui.divText(text, `chem-sar-chip-badge ${cls}`.trim());
-      ui.tooltip.bind(el, () => tip);
-      return el;
-    };
     const items = [
-      chip(`${count(data.trustedCells)} predictions pass the trust gate · ` +
+      this.kit.badge(`${count(data.trustedCells)} predictions pass the trust gate · ` +
         `${count(data.trustedStructures)} distinct structures`,
       // The second constant is concatenated rather than interpolated: the bundler folds two adjacent
       // template operands that each carry a compile-time constant and drops the first one's trailing
@@ -119,10 +104,10 @@ export class SummaryMethod {
       'analog predicted in several tiers.'),
     ];
     if (data.trustedNoStructure > 0) {
-      items.push(chip(`${count(data.trustedNoStructure)} predictions have a value and no structure`,
-        'These pass the same trust gate as the analogs in Do next, but the core carries an attachment ' +
-        'point none of the picked fragment columns fills, so no structure can be completed over it. ' +
-        'Add that column to the R-group columns and they appear in Do next.', 'chem-sar-chip-partial'));
+      items.push(this.kit.badge(`${count(data.trustedNoStructure)} predictions have a value and no structure`,
+        `These pass the same trust gate as the analogs in ${PANE_MAKING}, but the core carries an ` +
+        'attachment point none of the picked fragment columns fills, so no structure can be completed ' +
+        `over it. Add that column to the R-group columns and they appear in ${PANE_MAKING}.`, true));
     }
     return ui.divH(items, 'chem-sar-sum-chips');
   }
@@ -178,9 +163,7 @@ export class SummaryMethod {
     const list = ui.div(matrices.slice(0, TRUST_LIST_MAX).map((matrix) => {
       const conf = matrix.confidence!;
       return this.kit.summaryRow({
-        // "Series 7" names a series without showing one. Every other list on the tab draws the
-        // chemistry it is talking about, and a reader deciding whether to trust a series' predictions
-        // wants to see which scaffold they are about.
+        // Drawn: a series name alone does not show which scaffold the fit is about.
         depiction: this.kit.depiction(matrix.rows[0]?.coreSmiles ?? null, CARD_CORE_W, CARD_CORE_H),
         name: matrix.label,
         badges: [this.kit.badge(`R² ${conf.r2.toFixed(2)} ± ${host.formatActivity(conf.rmse)}`,

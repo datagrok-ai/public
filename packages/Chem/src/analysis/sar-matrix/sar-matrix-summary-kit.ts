@@ -1,12 +1,10 @@
 /* The building blocks every Summary segment draws with — rows, badges, depictions, number formats —
-   and the rankings more than one segment reads. The panel extends this, and a segment reaches it
-   through its kit. */
+   and the rankings more than one segment reads. The panel extends this. */
 import * as ui from 'datagrok-api/ui';
-import {ROLE_FIT_MAX_SWEEPS} from './sar-matrix-role-fit';
 import {SarMatrix} from './sar-matrix-types';
 import {MIN_SUPPORT, SeriesStat, SummaryData, SummaryHost, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
-import {CORE_BG_ARGB, MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H, STRIP_MOL_W,
-  count} from './sar-matrix-ui-common';
+import {chipBadge, CORE_BG_ARGB, count, isStructure, MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H,
+  STRIP_MOL_W, tipText} from './sar-matrix-ui-common';
 
 export class SummaryKit {
   /** Depictions waiting for the tick after the pane lands. */
@@ -88,8 +86,19 @@ export class SummaryKit {
   depiction(smiles: string | null, w: number, h: number): HTMLElement {
     const canvas = ui.canvas(w, h);
     canvas.classList.add('chem-sar-card-core');
-    if (smiles)
-      this.pendingPaints.push(() => paintMoleculeOnColor(canvas, smiles, w, h, CORE_BG_ARGB));
+    if (smiles) {
+      this.pendingPaints.push(() => {
+        if (isStructure(smiles)) {
+          paintMoleculeOnColor(canvas, smiles, w, h, CORE_BG_ARGB);
+          return;
+        }
+        // A component given by name, such as "VHL", has nothing to draw and is written out instead.
+        const name = ui.divText(smiles, 'chem-sar-cp-frag-name chem-sar-sum-name-art');
+        name.style.width = `${w}px`;
+        name.style.height = `${h}px`;
+        canvas.replaceWith(name);
+      });
+    }
     return canvas;
   }
 
@@ -101,12 +110,10 @@ export class SummaryKit {
   }
 
   badge(text: string, tip: string, partial = false): HTMLElement {
-    const el = ui.divText(text, `chem-sar-chip-badge${partial ? ' chem-sar-chip-partial' : ''}`);
-    ui.tooltip.bind(el, tip);
-    return el;
+    return chipBadge(text, tip, partial ? 'chem-sar-chip-partial' : '');
   }
 
-  /** MK-E: whether this series' fit was checked, and whether it held. No colour — `confidence` is null
+  /** Whether this series' fit was checked, and whether it held. No colour — `confidence` is null
    *  where too few cells could be cross-validated or every measured value was identical, and a traffic
    *  light would make "unchecked" read as a failing grade. */
   trustDot(matrix: SarMatrix): HTMLElement {
@@ -132,16 +139,12 @@ export class SummaryKit {
   /** A statement on the pane and its qualification on the hover. Method is read for the one fact it is
    *  opened for, and a paragraph per fact buries that fact in the others. */
   prose(text: string, tip: string): HTMLElement {
-    const el = ui.divText(text, 'chem-sar-sum-prose');
-    ui.tooltip.bind(el, () => tip);
-    return el;
+    return tipText(text, 'chem-sar-sum-prose', tip);
   }
 
   /** The same, in the faint style a row uses for its trailing clause. */
   hint(text: string, tip: string): HTMLElement {
-    const el = ui.divText(text, 'chem-sar-cp-hint');
-    ui.tooltip.bind(el, () => tip);
-    return el;
+    return tipText(text, 'chem-sar-cp-hint', tip);
   }
 
   /** A card with no qualifying rows still renders: a vanishing card reflows the grid and hides the
@@ -166,6 +169,29 @@ export class SummaryKit {
       onToggle?.(show);
     };
     return head;
+  }
+
+  /** A body filled on its first opening, so an expand nobody opens draws nothing. */
+  lazyBody(fill: () => HTMLElement[]): {body: HTMLElement, open: () => void, toggle: () => void} {
+    const body = ui.divV([]);
+    body.style.display = 'none';
+    let filled = false;
+    const open = (): void => {
+      if (!filled) {
+        filled = true;
+        body.append(...fill());
+        // Rows added after the paint tick has run, so these depictions need one of their own.
+        this.flushPaints();
+      }
+      body.style.display = '';
+    };
+    const toggle = (): void => {
+      if (body.style.display === 'none')
+        open();
+      else
+        body.style.display = 'none';
+    };
+    return {body, open, toggle};
   }
 
   anchored(el: HTMLElement, anchor: string): HTMLElement {
@@ -221,7 +247,7 @@ export class SummaryKit {
         'there is nothing to compare.';
     }
     if (!fit.converged) {
-      return `The fit did not settle within ${ROLE_FIT_MAX_SWEEPS} passes. Each component's offsets are ` +
+      return `The fit did not settle within ${fit.sweeps} passes. Each component's offsets are ` +
         'still shrunk toward zero by a different amount and cannot be compared, so nothing is ranked.';
     }
     if (fit.cvR2 === null) {
@@ -262,7 +288,7 @@ export class SummaryKit {
 
   /** The tier ranked when the reader has not picked one: the one holding the most cores, which is the
    *  cut depth this library actually recurs at. */
-  defaultCoreTier(data: SummaryData): number | null {
+  private defaultCoreTier(data: SummaryData): number | null {
     const tiers = this.coreTiers(data);
     if (tiers.length === 0)
       return null;

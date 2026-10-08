@@ -1,7 +1,6 @@
 /* The Summary's Worth-making segment: the compounds the table holds but never assayed, and the
    analogs nobody has made, ranked by what each would gain over its own series' best. It owns the
-   grid it draws and reaches the panel only for the host and the rendering helpers every segment
-   shares. */
+   grid it draws. */
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
@@ -10,33 +9,23 @@ import {closeGridQuietly} from './sar-matrix-types';
 import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, SummaryData, SummaryRow, supportOf,
   TRUST_R2} from './sar-matrix-summary-data';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
-import {ANALOG_W, CARD_CORE_H, CARD_CORE_W, CELL_H, CORE_W, count,
-  MatrixCellRef} from './sar-matrix-ui-common';
-
-const ANALOG_COLS = {
-  analog: 'Analog', predicted: 'Predicted', gain: 'Gain', interest: 'Gain / error', support: 'n',
-  r2: 'R²', rmse: '± error', neighbours: 'Tried around it', series: 'Series', tier: 'Tier',
-  evidence: 'Evidence', core: 'Core', fixed: 'Fixed R-groups', rgroup: 'R-group',
-};
+import {ANALOG_W, CARD_CORE_H, CARD_CORE_W, CORE_W, count, isStructure,
+  MatrixCellRef, moleculeGrid} from './sar-matrix-ui-common';
 
 /** One row of the Worth-making grid and which list it came off: `ranked` cleared every gate, `thin` rests
  *  on a fit with too few cross-validatable cells to rank by, `ungated` cleared no gate at all and is
  *  shown only when the other two lists are empty. */
 interface AnalogRow {
   row: SummaryRow;
-  evidence: string;
+  evidence: 'ranked' | 'thin' | 'ungated';
 }
-
-/** What this segment needs from the panel. The panel satisfies it as it is. */
-export type MakingKit = Pick<SummaryPanel, 'host' | 'prose' | 'reason' | 'summaryRow' | 'depiction' |
-  'badge' | 'trustDot' | 'cellLocation' | 'openTip' | 'revealTrust'>;
 
 export class SummaryMaking {
   private analogGrid: DG.Grid | null = null;
   private analogSub: Subscription | null = null;
   private analogSources: MatrixCellRef[] = [];
 
-  constructor(private readonly kit: MakingKit) {}
+  constructor(private readonly kit: SummaryPanel) {}
 
   close(): void {
     this.analogSub?.unsubscribe();
@@ -95,10 +84,9 @@ export class SummaryMaking {
       }));
     }
     if (shelf.length > 0) {
-      const refs: MatrixCellRef[] = shelf.map((row) => ({matrix: row.matrix, ri: row.ri, ci: row.ci}));
-      body.push(ui.divH([ui.button(refs.length === 1 ? 'Queue this compound for testing' :
-        `Queue these ${refs.length} for testing`,
-      () => host.addCellsToMakeList(refs, 'Nothing to add.'))], 'chem-sar-sum-foot'));
+      body.push(ui.divH([ui.button(shelf.length === 1 ? 'Queue this compound for testing' :
+        `Queue these ${shelf.length} for testing`,
+      () => host.addCellsToMakeList(shelf, 'Nothing to add.'))], 'chem-sar-sum-foot'));
     }
 
     return ui.divV(body, 'chem-sar-sum-shelf');
@@ -150,9 +138,9 @@ export class SummaryMaking {
         `${this.gateShortfall(data)}`, 'chem-sar-sum-warn'));
     }
 
-    const rows: AnalogRow[] = [...ranked.map((row) => ({row, evidence: 'ranked'})),
-      ...thin.map((row) => ({row, evidence: 'thin'})),
-      ...spare.map((row) => ({row, evidence: 'ungated'}))];
+    const rows: AnalogRow[] = [...ranked.map((row): AnalogRow => ({row, evidence: 'ranked'})),
+      ...thin.map((row): AnalogRow => ({row, evidence: 'thin'})),
+      ...spare.map((row): AnalogRow => ({row, evidence: 'ungated'}))];
     const structures = new Set(rows.map((r) => r.row.key)).size;
     const series = new Set(rows.map((r) => r.row.matrix.id)).size;
     const dropped = data.withheldBelowError + data.withheldThinSupport + data.withheldFitFails +
@@ -197,12 +185,11 @@ export class SummaryMaking {
         'gate and are in neither. Narrow the analysis to reach them.', 'chem-sar-cp-hint'));
     }
 
-    const refs: MatrixCellRef[] = rows.map((r) => ({matrix: r.row.matrix, ri: r.row.ri, ci: r.row.ci}));
     body.push(ui.divH([
       // "These", not "all": the list is capped, and a button promising all of them would be the cap
       // stated as a total for the third time.
-      ui.button(`Add these ${refs.length} to Make list`,
-        () => host.addCellsToMakeList(refs, 'Nothing to add.')),
+      ui.button(`Add these ${rows.length} to Make list`,
+        () => host.addCellsToMakeList(rows.map((r) => r.row), 'Nothing to add.')),
       ui.button('Add selected', () => host.addCellsToMakeList(this.selectedAnalogs(),
         'Select rows in the list first.')),
     ], 'chem-sar-sum-foot'));
@@ -254,118 +241,71 @@ export class SummaryMaking {
     const degenerate = rows.every(({row}) =>
       new Set(row.matrix.rows.map((r) => r.keySmiles)).size === 1);
 
-    const analog: string[] = [];
-    const predicted: number[] = [];
-    const gains: number[] = [];
-    const interest: number[] = [];
-    const support: number[] = [];
-    const r2: number[] = [];
-    const rmse: number[] = [];
-    const neighbours: number[] = [];
-    const seriesName: string[] = [];
-    const tier: string[] = [];
-    const evidence: string[] = [];
-    const core: string[] = [];
-    const rgroup: string[] = [];
-    const sources: MatrixCellRef[] = [];
-
-    for (const {row, evidence: kind} of rows) {
+    const items = rows.map(({row, evidence}) => {
       const {matrix, ri, ci} = row;
       const cell = matrix.cells[ri][ci];
-      // Nullable: an ungated row can come off a series whose fit was never cross-validated at all.
-      const conf = matrix.confidence ?? null;
       const anchor = best.get(matrix.id) ?? null;
-      const gain = anchor === null ? 0 : dir * (cell.value! - anchor.value);
-      analog.push(cell.smiles ?? '');
-      predicted.push(cell.value!);
-      gains.push(gain);
-      interest.push(conf !== null && conf.rmse > 0 ? gain / conf.rmse : NaN);
-      support.push(cell.support ?? 0);
-      r2.push(conf?.r2 ?? NaN);
-      rmse.push(conf?.rmse ?? NaN);
+      // Nullable: an ungated row can come off a series whose fit was never cross-validated at all.
+      return {matrix, ri, ci, cell, evidence, conf: matrix.confidence ?? null,
+        gain: anchor === null ? 0 : dir * (cell.value! - anchor.value)};
+    });
+    type Item = typeof items[number];
+    const {FLOAT, INT, STRING} = DG.COLUMN_TYPE;
+    const spec: [string, DG.ColumnType, (item: Item) => string | number, string?][] = [
+      ['Analog', STRING, (it) => it.cell.smiles ?? '', 'The assembled structure — a combination this ' +
+        'dataset has no row for. It knows nothing of your collection, the catalogue or the literature, so ' +
+        'this is "not in this dataset", never "never made".'],
+      ['Predicted', FLOAT, (it) => it.cell.value!, 'A model output in the host column\'s units: this ' +
+        'series\' fitted core effect plus its fitted substituent effect. Nothing here was measured.'],
+      ['Gain', FLOAT, (it) => it.gain, 'Against the best MEASURED compound of this same series — never ' +
+        'against another series, and never against the dataset as a whole.'],
+      ['Gain / error', FLOAT, (it) => it.conf !== null && it.conf.rmse > 0 ? it.gain / it.conf.rmse : NaN,
+        'The ranking quantity: the gain in multiples of this series\' own leave-one-out error. Under one ' +
+        'error the model cannot tell this analog from the compound you already have.'],
+      ['n', INT, (it) => it.cell.support ?? 0,
+        'Measured compounds on the weaker of this core and this substituent.'],
+      ['R²', FLOAT, (it) => it.conf?.r2 ?? NaN, 'How well this series\' model predicts a measured ' +
+        'compound when that compound is left out of the fit. A property of the model, not of the data.'],
+      ['± error', FLOAT, (it) => it.conf?.rmse ?? NaN, 'Typical size of this series\' prediction error.'],
       // Only for the rows that survived the ranking: this is O(rows + columns) per call.
-      neighbours.push(host.observedNeighbours(matrix, ri, ci));
-      seriesName.push(matrix.label);
-      tier.push(`L${byMatrix.get(matrix.id) ?? 1}`);
-      evidence.push(kind);
-      core.push(degenerate ? Object.values(matrix.rows[ri].foldedValues).join(' · ') :
-        matrix.rows[ri].keySmiles);
-      rgroup.push(matrix.columns[ci].substSmiles);
-      sources.push({matrix, ri, ci});
-    }
-
-    const columns = [
-      DG.Column.fromStrings(ANALOG_COLS.analog, analog),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, ANALOG_COLS.predicted, predicted),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, ANALOG_COLS.gain, gains),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, ANALOG_COLS.interest, interest),
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, ANALOG_COLS.support, support),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, ANALOG_COLS.r2, r2),
-      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, ANALOG_COLS.rmse, rmse),
-      DG.Column.fromList(DG.COLUMN_TYPE.INT, ANALOG_COLS.neighbours, neighbours),
-      DG.Column.fromStrings(ANALOG_COLS.series, seriesName),
-      DG.Column.fromStrings(ANALOG_COLS.tier, tier),
-      DG.Column.fromStrings(ANALOG_COLS.evidence, evidence),
-      DG.Column.fromStrings(degenerate ? ANALOG_COLS.fixed : ANALOG_COLS.core, core),
-      DG.Column.fromStrings(ANALOG_COLS.rgroup, rgroup),
+      ['Tried around it', INT, (it) => host.observedNeighbours(it.matrix, it.ri, it.ci), 'Measured cells ' +
+        'sharing this core OR this substituent — how much has already been tried around this ' +
+        'combination. Not the size of the series.'],
+      ['Series', STRING, (it) => it.matrix.label],
+      ['Tier', STRING, (it) => `L${byMatrix.get(it.matrix.id) ?? 1}`],
+      ['Evidence', STRING, (it) => it.evidence, `"thin" means fewer than ${BEST_FIT_MIN_N} ` +
+        'cross-validatable cells behind this series\' fit, so its error is not a scale to rank by; those ' +
+        'rows are listed, not ranked. "ungated" means the row cleared no trust gate and is shown because ' +
+        'nothing else did.'],
+      degenerate ?
+        ['Fixed R-groups', STRING, (it) => Object.values(it.matrix.rows[it.ri].foldedValues).join(' · '),
+          'The substituents this row holds fixed — every row of these series draws the same core.'] :
+        ['Core', STRING, (it) => it.matrix.rows[it.ri].keySmiles, 'The core this analog is built on.'],
+      ['R-group', STRING, (it) => it.matrix.columns[it.ci].substSmiles],
     ];
-    const descriptions: {[name: string]: string} = {
-      [ANALOG_COLS.analog]: 'The assembled structure — a combination this dataset has no row for. It ' +
-        'knows nothing of your collection, the catalogue or the literature, so this is "not in this ' +
-        'dataset", never "never made".',
-      [ANALOG_COLS.predicted]: 'A model output in the host column\'s units: this series\' fitted core ' +
-        'effect plus its fitted substituent effect. Nothing here was measured.',
-      [ANALOG_COLS.gain]: 'Against the best MEASURED compound of this same series — never against ' +
-        'another series, and never against the dataset as a whole.',
-      [ANALOG_COLS.interest]: 'The ranking quantity: the gain in multiples of this series\' own ' +
-        'leave-one-out error. Under one error the model cannot tell this analog from the compound you ' +
-        'already have.',
-      [ANALOG_COLS.support]: 'Measured compounds on the weaker of this core and this substituent.',
-      [ANALOG_COLS.r2]: 'How well this series\' model predicts a measured compound when that compound ' +
-        'is left out of the fit. A property of the model, not of the data.',
-      [ANALOG_COLS.rmse]: 'Typical size of this series\' prediction error.',
-      [ANALOG_COLS.neighbours]: 'Measured cells sharing this core OR this substituent — how much has ' +
-        'already been tried around this combination. Not the size of the series.',
-      [ANALOG_COLS.evidence]: `"thin" means fewer than ${BEST_FIT_MIN_N} cross-validatable cells behind ` +
-        'this series\' fit, so its error is not a scale to rank by; those rows are listed, not ranked. ' +
-        '"ungated" means the row cleared no trust gate and is shown because nothing else did.',
-      [degenerate ? ANALOG_COLS.fixed : ANALOG_COLS.core]: degenerate ?
-        'The substituents this row holds fixed — every row of these series draws the same core.' :
-        'The core this analog is built on.',
-    };
-    for (const column of columns) {
-      const text = descriptions[column.name];
-      if (text !== undefined)
-        column.setTag(DG.TAGS.DESCRIPTION, text);
-    }
-    for (const name of [ANALOG_COLS.analog, ANALOG_COLS.rgroup, degenerate ? '' : ANALOG_COLS.core]) {
-      const column = columns.find((c) => c.name === name);
-      if (column !== undefined)
+    const frame = DG.DataFrame.fromColumns(spec.map(([name, type, value, description]) => {
+      const column = DG.Column.fromList(type, name, items.map(value));
+      if (description !== undefined)
+        column.setTag(DG.TAGS.DESCRIPTION, description);
+      return column;
+    }));
+    const molecules: [string, number][] = [['Analog', ANALOG_W], ['Core', CORE_W], ['R-group', CARD_CORE_W]];
+    for (const [name] of molecules) {
+      const column = frame.col(name);
+      // A component given by name, such as "VHL", is text: rendered as a molecule it is a blank cell.
+      if (column !== null && column.toList().every((value) => !value || isStructure(value)))
         column.semType = DG.SEMTYPE.MOLECULE;
     }
 
-    const frame = DG.DataFrame.fromColumns(columns);
-    this.analogSources = sources;
-    const grid = DG.Viewer.grid(frame);
+    this.analogSources = items;
+    const grid = moleculeGrid(frame, molecules);
     this.analogGrid = grid;
-    // The grid root is a ui-box, which pins itself to a fixed size and leaves the rest blank.
-    grid.root.style.width = '100%';
-    grid.root.style.height = '100%';
-    grid.setOptions({rowHeight: CELL_H});
-    for (const [name, width] of [[ANALOG_COLS.analog, ANALOG_W], [ANALOG_COLS.core, CORE_W],
-      [ANALOG_COLS.rgroup, CARD_CORE_W]] as [string, number][]) {
-      const gridCol = grid.col(name);
-      if (gridCol)
-        gridCol.width = width;
-    }
     // A click, not the current row: setting a current row is something the grid does to itself while it
     // is built, and landing on a cell switches the outer tab.
     this.analogSub = grid.onCellClick.subscribe((cell: DG.GridCell) => {
       const at = cell.tableRowIndex ?? -1;
-      if (at >= 0 && at < sources.length) {
-        const ref = sources[at];
-        host.revealCell(ref.matrix, ref.ri, ref.ci);
-      }
+      if (at >= 0 && at < items.length)
+        host.revealCell(items[at].matrix, items[at].ri, items[at].ci);
     });
     return ui.div([grid.root], 'chem-sar-sum-analog-grid');
   }

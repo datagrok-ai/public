@@ -1,4 +1,3 @@
-import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
@@ -6,8 +5,8 @@ import {_package} from '../../package';
 import {computeAllTransfers, Transfer, TransferSide, transferStats, TransferStats}
   from './sar-matrix-transfer';
 import {SarMatrix} from './sar-matrix-types';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, COL_HEADER_H, CORE_BG_ARGB,
-  FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
+import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, CELL_H, chipBadge, COL_HEADER_H,
+  CORE_BG_ARGB, FrameFilter, GRID_SCROLLBAR_H, HEADER_ARGB, PaneColumn, PaneGridSlot, PaneRow,
   renderMoleculeOnColor} from './sar-matrix-ui-common';
 
 /** A transfer is identified by the core it starts from, so several targets collapse onto one card. */
@@ -546,25 +545,20 @@ export class TransferPanel {
    *  whether the pairing is worth acting on, with the full wording on hover. */
   private buildTransferChips(transfer: Transfer): HTMLElement {
     const stats = this.statsOf(transfer);
-    const chip = (text: string, tip: string): HTMLElement => {
-      const el = ui.divText(text, 'chem-sar-chip-badge');
-      ui.tooltip.bind(el, () => tip);
-      return el;
-    };
     const items = [
-      chip(`r ${transfer.correlation.toFixed(2)}`,
+      chipBadge(`r ${transfer.correlation.toFixed(2)}`,
         'Correlation of the two cores’ potency trends over the R-groups both have explored. ' +
         '1.00 means they rank the substituents identically.'),
-      chip(stats.foldMatch === null ? 'fold —' : `fold ${stats.foldMatch.toFixed(2)}`,
+      chipBadge(stats.foldMatch === null ? 'fold —' : `fold ${stats.foldMatch.toFixed(2)}`,
         'How far the size of each step carries, not just its direction. 1.00 means a substituent ' +
         'swap is worth the same on both cores; a low value means the trend transfers but the ' +
         'magnitude does not.'),
-      chip(`${transfer.substituents.length} shared`,
+      chipBadge(`${transfer.substituents.length} shared`,
         `${transfer.substituents.length} R-groups at ${transfer.a.position} measured on both cores — ` +
         `the evidence the correlation rests on. Scaffold similarity ${transfer.similarity.toFixed(2)}.`),
     ];
     const gained = transfer.predictedSubstituents.length;
-    items.push(chip(gained === 0 ? 'nothing to make' : `${gained} to make`, gained === 0 ?
+    items.push(chipBadge(gained === 0 ? 'nothing to make' : `${gained} to make`, gained === 0 ?
       'Both cores have already explored the same R-groups, so this transfer argues for no new compound.' :
       `${gained} R-group(s) measured on one core and never made on the other — what this transfer ` +
       'argues for.'));

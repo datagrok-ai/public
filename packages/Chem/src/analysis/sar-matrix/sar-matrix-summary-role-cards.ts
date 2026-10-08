@@ -2,13 +2,13 @@
 import * as ui from 'datagrok-api/ui';
 import {RoleLevel, RoleSummary} from './sar-matrix-role-fit';
 import {LOSER_ROWS, MIN_SUPPORT, SummaryData, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
+import {CARD_CORE_H, CARD_CORE_W, chipBadge, count} from './sar-matrix-ui-common';
 import {ROLE_SPREAD_TIE, PANE_SERIES, roleValueName, roleRanks} from './sar-matrix-summary-common';
-import type {SummaryEffects, SummaryEffectsKit} from './sar-matrix-summary-effects';
+import type {SummaryEffects} from './sar-matrix-summary-effects';
+import type {SummaryPanel} from './sar-matrix-summary-panel';
 
 export class SummaryRoleCards {
-  constructor(private readonly kit: SummaryEffectsKit,
-    private readonly effects: Pick<SummaryEffects, 'card' | 'effectBar'>) {}
+  constructor(private readonly kit: SummaryPanel, private readonly effects: SummaryEffects) {}
 
   /**
    * One card per role column, ordered by that role's noise-corrected spread, or one card naming why
@@ -100,13 +100,12 @@ export class SummaryRoleCards {
       `${data.axisRole}, so these values are not the ones across the top there.`,
     `Putting ${name} across the columns means rebuilding: every matrix is reassembled and every fit ` +
       'recomputed, which takes as long as the first run did.');
-    const pill = ui.divText(`Put ${name} across the columns — rebuilds`,
-      'chem-sar-chip-badge chem-sar-sum-role');
     // What will and will not move, on the control: this ranking is the same fit either way, so a reader
     // who clicks expecting these rows to change waits out a rebuild for a screen that looks identical.
-    ui.tooltip.bind(pill, () => `Reassembles every matrix with ${name} across the columns, and pools ` +
-      `its measured pairs instead of ${data.axisRole}'s. The offsets on this card do not change — they ` +
-      'come from one fit over the whole table, whichever component the columns enumerate.');
+    const pill = chipBadge(`Put ${name} across the columns — rebuilds`,
+      `Reassembles every matrix with ${name} across the columns, and pools its measured pairs instead of ` +
+      `${data.axisRole}'s. The offsets on this card do not change — they come from one fit over the whole ` +
+      'table, whichever component the columns enumerate.', 'chem-sar-sum-role');
     pill.onclick = () => {
       if (!host.computing)
         host.setColumnAxis(name);
@@ -123,9 +122,8 @@ export class SummaryRoleCards {
       `R² ${fit.cvR2!.toFixed(2)} ± ${host.formatActivity(fit.cvRmse!)} predicting unseen compounds, ` +
       `n = ${count(fit.compounds)}.`;
     const footer = this.roleFooter();
-    // On every card, because each is now the only one its reader can see: a subtitle counting fewer
-    // compounds than the tab does, on a card that never explains the difference, is the one omission
-    // this note exists to prevent.
+    // On every card, since each tab shows one: a subtitle counting fewer compounds than the tab does
+    // needs its explanation on the same card.
     const dropped = this.roleDropped(data);
     if (role.levels.length < 2) {
       return this.effects.card(title, subtitle, [...this.kit.reason(`${role.levels.length === 1 ? 'Only one' : 'No'} ` +
@@ -208,8 +206,8 @@ export class SummaryRoleCards {
     return badge;
   }
 
-  /** The negative clause and the reconciliation, on every role card: each is now the only card its
-   *  reader can see, so neither can be carried by a neighbour. */
+  /** The negative clause and the reconciliation, on every role card: each tab shows one card, so
+   *  neither can be carried by a neighbour. */
   private roleFooter(): HTMLElement {
     return ui.divV([
       this.kit.prose('Offset = the mean difference of the compounds carrying this value, adjusted for the ' +

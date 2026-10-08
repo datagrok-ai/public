@@ -1,15 +1,14 @@
 /* The Overview's Start here list: the series that win one of five reasons to open them — most compounds,
    widest range, best compound, most trusted predictions, best-validated fit — one row per lineage. */
 import * as ui from 'datagrok-api/ui';
-import {SarMatrix} from './sar-matrix-types';
-import {MIN_SUPPORT, SeriesStat, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
+import {bestMeasured, MIN_SUPPORT, SeriesStat, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
 import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count, TAB_TRANSFER} from './sar-matrix-ui-common';
 import {GAIN_TICKS, REASON_GLYPHS, REASON_WORDS, shortSmiles} from './sar-matrix-summary-common';
-import type {SummaryOverview, SummaryOverviewKit} from './sar-matrix-summary-overview';
+import type {SummaryOverview} from './sar-matrix-summary-overview';
+import type {SummaryPanel} from './sar-matrix-summary-panel';
 
 export class SummaryStartHere {
-  constructor(private readonly kit: SummaryOverviewKit,
-    private readonly overview: Pick<SummaryOverview, 'lanesFit'>) {}
+  constructor(private readonly kit: SummaryPanel, private readonly overview: SummaryOverview) {}
 
   /**
    * Each row's value: the best unmade compound the model names in that series, against the best one
@@ -30,9 +29,7 @@ export class SummaryStartHere {
       const rowKey = stat.best !== null ? matrix.rows[stat.best.ri].keySmiles : matrix.rows[0]?.keySmiles;
       const neighbours = stat.best === null ? 0 :
         host.observedNeighbours(matrix, stat.best.ri, stat.best.ci);
-      const expand = ui.divV([]);
-      expand.style.display = 'none';
-      let filled = false;
+      const expand = this.kit.lazyBody(() => this.startExpandParts(stat));
       parts.push(this.kit.summaryRow({
         depiction: this.kit.depiction(rowKey ?? null, CARD_CORE_W, CARD_CORE_H),
         name: matrix.label,
@@ -65,20 +62,11 @@ export class SummaryStartHere {
           'assessed them rather than that the grid is complete.'),
         onClick: () => stat.best === null ? host.revealMatrix(matrix) :
           host.revealCell(matrix, stat.best.ri, stat.best.ci),
-        onChevron: () => {
-          if (!filled) {
-            filled = true;
-            for (const part of this.startExpandParts(stat))
-              expand.appendChild(part);
-            // Rows added after the paint tick has run, so these depictions need one of their own.
-            this.kit.flushPaints();
-          }
-          expand.style.display = expand.style.display === 'none' ? '' : 'none';
-        },
+        onChevron: expand.toggle,
       }));
       if (!lanes)
         parts.push(ui.divText(row.reasons.map((i) => REASON_WORDS[i]).join(' · '), 'chem-sar-cp-hint'));
-      parts.push(expand);
+      parts.push(expand.body);
     }
     const transfers = ui.divText('', 'chem-sar-cp-hint');
     this.kit.transferLine = transfers;
@@ -89,7 +77,7 @@ export class SummaryStartHere {
     return parts;
   }
 
-  /** MK-F: how many of a series' own typical prediction errors a predicted gain is worth. Unfilled
+  /** How many of a series' own typical prediction errors a predicted gain is worth. Unfilled
    *  slots are drawn, not omitted, so "one of four" never looks like "one of one". */
   private tickRun(gain: number, rmse: number | null): HTMLElement {
     const filled = rmse !== null && rmse > 0 ?
@@ -105,7 +93,7 @@ export class SummaryStartHere {
     return run;
   }
 
-  /** MK-B: the five fixed reasons a series is worth opening, won or not won, always in the same order
+  /** The five fixed reasons a series is worth opening, won or not won, always in the same order
    *  — the lane's shape is what a reader compares down the column, which five variable-length phrases
    *  can never be. */
   private reasonLane(reasons: number[]): HTMLElement {
@@ -179,18 +167,17 @@ export class SummaryStartHere {
   private startExpandParts(stat: SeriesStat): HTMLElement[] {
     const host = this.kit.host;
     const {matrix} = stat;
+    const dir = host.higherIsBetter ? 1 : -1;
     const parts: HTMLElement[] = [];
 
     if (stat.colRange !== null && stat.rowRange !== null) {
       const story = stat.colRange > stat.rowRange ? 'this is a column story' : 'this is a row story';
-      const spread = ui.divText(`Spread: substituent choice spans ${stat.colRange.toFixed(2)} · core ` +
-        `choice spans ${stat.rowRange.toFixed(2)} — ${story}`, 'chem-sar-cp-hint');
-      ui.tooltip.bind(spread, () => 'Ranges of this series\' own fitted effects, over substituents ' +
-        `measured on at least ${MIN_SUPPORT} cores and cores measured at at least ${MIN_SUPPORT} ` +
-        'substituents — one floor on both sides, or the looser side of the comparison would come out ' +
-        'wider on noise alone. Both are centred on the same fit, so they compare to each other — and ' +
-        'to no other series\' numbers.');
-      parts.push(spread);
+      parts.push(this.kit.hint(`Spread: substituent choice spans ${stat.colRange.toFixed(2)} · core ` +
+        `choice spans ${stat.rowRange.toFixed(2)} — ${story}`, 'Ranges of this series\' own fitted ' +
+        `effects, over substituents measured on at least ${MIN_SUPPORT} cores and cores measured at at ` +
+        `least ${MIN_SUPPORT} substituents — one floor on both sides, or the looser side of the ` +
+        'comparison would come out wider on noise alone. Both are centred on the same fit, so they ' +
+        'compare to each other — and to no other series\' numbers.'));
     }
 
     if (stat.bestRow !== null) {
@@ -214,7 +201,7 @@ export class SummaryStartHere {
       ]);
       const block = ui.divH([art, text], 'chem-sar-sum-detail');
       block.classList.add('chem-sar-sum-click');
-      const ci = this.bestMeasuredCol(matrix, stat.bestRow.ri);
+      const ci = bestMeasured(matrix.cells[stat.bestRow.ri], dir);
       if (ci >= 0)
         block.onclick = () => host.revealCell(matrix, stat.bestRow!.ri, ci);
       parts.push(block);
@@ -223,47 +210,33 @@ export class SummaryStartHere {
     // The one place on this screen where non-additivity is a finding rather than a trust problem, and
     // where the instruction is the opposite of the leaderboards': hold the pair, vary elsewhere.
     const conf = matrix.confidence;
-    const dir = host.higherIsBetter ? 1 : -1;
     // `?? null`, not a strict read: a matrix carried in by a project or layout was serialized by
     // whichever Chem wrote it, and one without these keys yields undefined, which `!== null` passes.
     const outlier = (conf ? (dir > 0 ? conf.hi : conf.lo) : null) ?? null;
     if (conf && outlier !== null && Math.abs(outlier.residual) > conf.rmse &&
       outlier.ri < matrix.rows.length && outlier.ci < matrix.columns.length) {
-      const beat = ui.divText(`${matrix.rows[outlier.ri].label} × ` +
+      const beat = this.kit.hint(`${matrix.rows[outlier.ri].label} × ` +
         `${shortSmiles(matrix.columns[outlier.ci].substSmiles)} beats its additive expectation by ` +
         `${this.kit.formatEffect(dir * outlier.residual)}, against this series' own ` +
-        `±${host.formatActivity(conf.rmse)} — hold that pair and vary elsewhere.`, 'chem-sar-cp-hint');
+        `±${host.formatActivity(conf.rmse)} — hold that pair and vary elsewhere.`,
+      'Out-of-sample: the cell was held out and predicted from the rest, so the model could not pull ' +
+        'itself toward it. It beats the additive sum in this series\' own units; it does not say the ' +
+        'mechanism is understood.');
       beat.classList.add('chem-sar-sum-click');
-      ui.tooltip.bind(beat, 'Out-of-sample: the cell was held out and predicted from the rest, so ' +
-        'the model could not pull itself toward it. It beats the additive sum in this series\' own ' +
-        'units; it does not say the mechanism is understood.');
       beat.onclick = () => host.revealCell(matrix, outlier.ri, outlier.ci);
       parts.push(beat);
     }
 
     const position = matrix.positions[0] ?? '';
     const reference = matrix.refValues[position];
-    const refLine = ui.divText(reference ? `Varies ${position} · reference substituent:` :
-      `Varies ${position} · no reference substituent recorded`, 'chem-sar-cp-hint');
-    ui.tooltip.bind(refLine, 'The position this series explores, and the most frequently observed ' +
-      'substituent at it — the comparator its fitted effects are quoted against. Position labels come ' +
-      'from each series\' own decomposition, so R1 here and R1 elsewhere are unrelated.');
+    const refLine = this.kit.hint(reference ? `Varies ${position} · reference substituent:` :
+      `Varies ${position} · no reference substituent recorded`, 'The position this series explores, and ' +
+      'the most frequently observed substituent at it — the comparator its fitted effects are quoted ' +
+      'against. Position labels come from each series\' own decomposition, so R1 here and R1 elsewhere ' +
+      'are unrelated.');
     parts.push(reference ?
       ui.divH([refLine, this.kit.depiction(reference, BENEFIT_MOL_W, BENEFIT_MOL_H)], 'chem-sar-sum-detail') :
       refLine);
     return parts;
-  }
-
-  /** The most potent measured cell of one row, so an expand lands on a compound. */
-  private bestMeasuredCol(matrix: SarMatrix, ri: number): number {
-    const dir = this.kit.host.higherIsBetter ? 1 : -1;
-    let ci = -1;
-    for (let c = 0; c < matrix.columns.length; c++) {
-      const cell = matrix.cells[ri][c];
-      if (cell.kind === 'real' && cell.value !== null &&
-        (ci < 0 || dir * cell.value > dir * matrix.cells[ri][ci].value!))
-        ci = c;
-    }
-    return ci;
   }
 }

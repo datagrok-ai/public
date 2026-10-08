@@ -107,11 +107,16 @@ export interface SarMatrix {
   parentId?: string;
   /** LOO cross-validated quality of the Free-Wilson fit; null when too few observations to
    *  cross-validate. `n` cross-validatable observed cells out of `total`. `hi`/`lo` are the cells
-   *  furthest above and below their out-of-sample prediction, as raw signed `observed − predicted`. */
-  confidence?: {r2: number, rmse: number, n: number, total: number,
-    hi: {ri: number, ci: number, residual: number} | null,
-    lo: {ri: number, ci: number, residual: number} | null} | null;
+   *  furthest above and below their out-of-sample prediction. */
+  confidence?: Confidence | null;
 }
+
+/** One cross-validated cell and its raw signed `observed − predicted`. Signed rather than
+ *  direction-adjusted: the caller owns the activity direction. */
+export type Residual = {ri: number, ci: number, residual: number};
+
+export type Confidence = {r2: number, rmse: number, n: number, total: number,
+  hi: Residual | null, lo: Residual | null};
 
 /** Close a grid, tolerating one that cannot: a view-less grid may not support close, and dropping
  *  the reference is enough. */

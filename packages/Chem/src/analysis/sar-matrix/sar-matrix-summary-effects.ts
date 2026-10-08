@@ -1,26 +1,19 @@
 /* The Summary's Effects segment: a tab per component with its full fitted ranking, and a last tab
-   of what was counted rather than fitted inside each series. Reaches the panel only through its kit. */
+   of what was counted rather than fitted inside each series. */
 import * as ui from 'datagrok-api/ui';
 import {MIN_SUPPORT, SeriesStat, SummaryData, SWAP_MIN_PAIRS, SWAP_MIN_SERIES,
   SWAP_ROW_CAP} from './sar-matrix-summary-data';
 import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
-import {CORES_NOT_COMPARABLE, PANE_EFFECTS, PANE_SERIES, orient, Answer, swapAnchor,
-  roleRanks} from './sar-matrix-summary-common';
+import {PANE_EFFECTS, PANE_SERIES, orient, Answer, swapAnchor, roleRanks} from './sar-matrix-summary-common';
 import {SummaryRoleCards} from './sar-matrix-summary-role-cards';
 import {SummaryRGroupCard} from './sar-matrix-summary-rgroup-card';
-
-/** What this segment reads from the panel: the shared rendering helpers and the state segments share. */
-export type SummaryEffectsKit = Pick<SummaryPanel, 'anchored' | 'answerArt' | 'badge' | 'cellLocation' |
-  'depiction' | 'effectsTab' | 'expandTopRGroup' | 'flushPaints' | 'formatDelta' | 'formatEffect' | 'hint' |
-  'host' | 'leads' | 'openTip' | 'pendingPaints' | 'prose' | 'rankableCores' | 'reason' | 'revealTrust' |
-  'roleFitRefusal' | 'scroller' | 'showPane' | 'summaryRow' | 'topCores' | 'trustDot'>;
 
 export class SummaryEffects {
   private readonly roleCards: SummaryRoleCards;
   private readonly rgroupCard: SummaryRGroupCard;
 
-  constructor(private readonly kit: SummaryEffectsKit) {
+  constructor(private readonly kit: SummaryPanel) {
     this.roleCards = new SummaryRoleCards(kit, this);
     this.rgroupCard = new SummaryRGroupCard(kit, this);
   }
@@ -35,9 +28,7 @@ export class SummaryEffects {
    * components does not cost a click each.
    */
   build(data: SummaryData): HTMLElement {
-    // The R-group card is dropped wherever the fit already ranks the axis role, for the reason the core
-    // card is: two rankings of one column, one a count of within-series wins and one an adjusted effect,
-    // read as a disagreement rather than as two kinds of evidence.
+    // Dropped wherever the fit already ranks the axis role, for the same reason as the core card below.
     const series: HTMLElement[] = this.roleAnswer(data, data.axisRole) === null ?
       [this.kit.anchored(this.rgroupCard.build(data), 'rgroup')] : [];
     // Dropped only where the core column is already ranked by the fit, adjusted for the components it
@@ -50,13 +41,11 @@ export class SummaryEffects {
       else {
         // Where cores are not comparable the card has no ranking it could ever carry, and a card slot
         // spent on one sentence is a slot. It keeps the anchor so the tile that points here still lands.
-        coreNote = this.kit.anchored(ui.divText(CORES_NOT_COMPARABLE,
-          'chem-sar-cp-hint chem-sar-sum-sub-lead'), 'cores');
+        coreNote = this.kit.anchored(ui.divText('Cores are not comparable across series here — a core is ' +
+          'one row of one matrix and recurs only inside its own fold lineage. Each series\' best core is ' +
+          'in its Start-here expand.', 'chem-sar-cp-hint chem-sar-sum-sub-lead'), 'cores');
       }
     }
-    // One card per component, matching the band that links here. A single card carried whichever
-    // component the matrix columns enumerated, so clicking the Linker row landed on a card about
-    // Warhead — the band's own answer contradicted on arrival.
     const roles = data.roleFit === null ? [] : data.roleFit.roles.map((role) => role.name);
     if (roles.length === 0)
       series.push(this.kit.anchored(this.buildSwapCard(data), 'swaps'));
@@ -104,7 +93,7 @@ export class SummaryEffects {
   }
 
   /**
-   * MK-D: a signed magnitude against the screen's own model error.
+   * A signed magnitude against the screen's own model error.
    *
    * `scale` is the largest magnitude in the set this bar is compared against — the card's own rows,
    * except where one fit produced the rows of several cards and they are genuinely on one scale. A bar
@@ -256,12 +245,9 @@ export class SummaryEffects {
     const subtitle = 'The mean activity of each core\'s measured compounds, in the activity column\'s ' +
       'own units. Not corrected for which substituents each core was paired with, so a core only ever ' +
       'tried with good groups scores high — but unlike a fitted offset, these do compare between cores.';
-    if (!data.coresAreSeries)
-      return this.card(title, subtitle, this.kit.reason(CORES_NOT_COMPARABLE));
     if (cores.length === 0)
       return this.card(title, subtitle, this.kit.reason(`No core holds ${MIN_SUPPORT} measured compounds.`));
-    const body: HTMLElement[] = [];
-    body.push(...cores.map((stat) => this.kit.summaryRow({
+    const body = cores.map((stat) => this.kit.summaryRow({
       depiction: this.kit.depiction(stat.matrix.rows[0]?.coreSmiles ?? null, CARD_CORE_W, CARD_CORE_H),
       name: stat.matrix.label,
       badges: [this.kit.trustDot(stat.matrix)],
@@ -274,7 +260,7 @@ export class SummaryEffects {
         'substituent dominates it.',
       tip: `Open ${stat.matrix.label} in the SAR Matrix`,
       onClick: () => host.revealMatrix(stat.matrix),
-    })));
+    }));
     const dir = host.higherIsBetter ? 1 : -1;
     let holder: SeriesStat | null = null;
     // Inside the ranked tier: a compound on a core cut at another depth is not an alternative to the

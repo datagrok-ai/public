@@ -2,8 +2,19 @@
    component held fixed, so a pool is a grouping on all-but-one component: each component's measured
    pairs come out of one walk, with no rebuild. Pure functions of their arguments. */
 import {SarMatrix} from './sar-matrix-types';
-import {keepExtremes, RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
+import {RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
   SwapSide} from './sar-matrix-summary-types';
+
+/** Both extremes by value once a group offers more pairs than the cap allows. A cap taken in the
+ *  group's own order would keep the commonest substituents and truncate away the rare one that jumped
+ *  two logs; this loses only mid-range pairs. */
+function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
+  if (items.length <= SWAP_ROW_CAP)
+    return items;
+  const half = SWAP_ROW_CAP >> 1;
+  const sorted = [...items].sort((a, b) => valueOf(a) - valueOf(b));
+  return [...sorted.slice(0, half), ...sorted.slice(sorted.length - half)];
+}
 
 /**
  * Measured pairs inside ONE row index, pooled on the unordered fragment pair.

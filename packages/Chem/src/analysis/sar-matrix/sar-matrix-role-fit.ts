@@ -22,10 +22,8 @@ export const ROLE_FIT_MAX_SWEEPS = 2000;
  *  would be too slow to run on the main thread, and a short run that reports itself unconverged
  *  suppresses the ranking rather than mis-stating it. */
 const ROLE_FIT_MIN_SWEEPS = 50;
-/** Ceiling on `observations × roles × sweeps`, which is what the loop actually costs. Sweeps are set
- *  by how collinear the columns are, not by how many rows there are — a fully crossed design settles
- *  in two sweeps at any size, while a design whose columns nearly predict each other needs hundreds —
- *  so bounding rows alone refuses large easy tables and admits small expensive ones. */
+/** Sweeps scale with collinearity, not rows, so bounding rows alone refuses large easy tables and
+ *  admits small expensive ones. */
 const ROLE_FIT_WORK_BUDGET = 40_000_000;
 const ROLE_CV_FOLDS = 5;
 /** Below this many held-out points an R² is noise rather than a quality. */
@@ -54,7 +52,7 @@ export interface RoleLevel {
 }
 
 /** Two clusters of values separated by more than the fit can resolve. */
-export interface RoleSplit {
+interface RoleSplit {
   gap: number;
   hiCount: number; hiMean: number; hiN: number;
   loCount: number; loMean: number; loN: number;
@@ -101,7 +99,6 @@ interface Backfit {
 }
 
 /**
- * Backfitting for `y ≈ μ + Σ_r θ_r`, one role at a time against the others' current fitted values.
  * Averaging each role's margins in a single pass solves this model only when every combination is
  * measured the same number of times, which a library never is.
  */
@@ -205,11 +202,11 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     return null;
   const n = design.activity.length;
 
-  const rawCodes: Int32Array[] = [];
-  const rawLevels: string[][] = [];
+  const codes: Int32Array[] = [];
+  const levelValues: string[][] = [];
   for (let r = 0; r < roleCount; r++) {
     const index = new Map<string, number>();
-    const codes = new Int32Array(n);
+    const coded = new Int32Array(n);
     const values: string[] = [];
     for (let k = 0; k < n; k++) {
       let code = index.get(design.values[r][k]);
@@ -218,10 +215,10 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
         index.set(design.values[r][k], code);
         values.push(design.values[r][k]);
       }
-      codes[k] = code;
+      coded[k] = code;
     }
-    rawCodes.push(codes);
-    rawLevels.push(values);
+    codes.push(coded);
+    levelValues.push(values);
   }
 
   // Offsets are identified only within a connected component of the design: two blocks sharing no
@@ -231,7 +228,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   let nodes = 0;
   for (let r = 0; r < roleCount; r++) {
     base.push(nodes);
-    nodes += rawLevels[r].length;
+    nodes += levelValues[r].length;
   }
   const parent = new Int32Array(nodes).map((_v, i) => i);
   const find = (x: number): number => {
@@ -241,15 +238,15 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   };
   for (let k = 0; k < n; k++) {
     for (let r = 1; r < roleCount; r++) {
-      const a = find(rawCodes[0][k]);
-      const b = find(base[r] + rawCodes[r][k]);
+      const a = find(codes[0][k]);
+      const b = find(base[r] + codes[r][k]);
       if (a !== b)
         parent[a] = b;
     }
   }
   const perComponent = new Map<number, number>();
   for (let k = 0; k < n; k++) {
-    const root = find(rawCodes[0][k]);
+    const root = find(codes[0][k]);
     perComponent.set(root, (perComponent.get(root) ?? 0) + 1);
   }
   let largest = -1;
@@ -262,50 +259,27 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   }
   const keep: number[] = [];
   for (let k = 0; k < n; k++) {
-    if (find(rawCodes[0][k]) === largest)
+    if (find(codes[0][k]) === largest)
       keep.push(k);
   }
 
-  // Re-interned over the kept observations, so a level living only in a dropped block disappears
-  // instead of sitting in the fit at a coefficient nothing measured.
+  // Every fit runs over the kept observations only, so a level living only in a dropped block keeps a
+  // count of zero and stays out of every sum below rather than sitting at a coefficient nothing measured.
   const m = keep.length;
-  const codes: Int32Array[] = [];
-  const levelValues: string[][] = [];
-  for (let r = 0; r < roleCount; r++) {
-    const remap = new Int32Array(rawLevels[r].length).fill(-1);
-    const kept = new Int32Array(m);
-    const values: string[] = [];
-    for (let i = 0; i < m; i++) {
-      const old = rawCodes[r][keep[i]];
-      if (remap[old] < 0) {
-        remap[old] = values.length;
-        values.push(rawLevels[r][old]);
-      }
-      kept[i] = remap[old];
-    }
-    codes.push(kept);
-    levelValues.push(values);
-  }
   const levelCounts = levelValues.map((values) => values.length);
-  const y = new Float64Array(m);
-  const mol = new Int32Array(m);
-  for (let i = 0; i < m; i++) {
-    y[i] = design.activity[keep[i]];
-    mol[i] = design.molIdx[keep[i]];
-  }
-
-  const all = new Int32Array(m).map((_v, i) => i);
-  const full = backfit(codes, levelCounts, y, all);
+  const y = Float64Array.from(design.activity);
+  const mol = design.molIdx;
+  const full = backfit(codes, levelCounts, y, Int32Array.from(keep));
   const ranked = full.counts.map((counts) =>
     counts.reduce((total, support) => total + (support >= design.minSupport ? 1 : 0), 0));
   if (!ranked.some((count) => count >= 2))
     return null;
 
   let sse = 0;
-  for (let i = 0; i < m; i++)
-    sse += (y[i] - full.fitted[i]) ** 2;
+  for (const k of keep)
+    sse += (y[k] - full.fitted[k]) ** 2;
   // Effective rather than nominal degrees of freedom: the prior costs a level less than a whole
-  // parameter, and the difference is most of the 632-level role.
+  // parameter, and the difference grows with the number of thinly supported levels.
   let edf = 1;
   for (let r = 0; r < roleCount; r++) {
     for (const support of full.counts[r])
@@ -316,13 +290,11 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   // Folds key on the source row, never on position: fragments arrive in worker-completion order, so
   // a fold keyed on the walk index would give a different R² for identical input.
   let ssRes = 0;
-  let cvSum = 0;
-  let cvN = 0;
   for (let fold = 0; fold < ROLE_CV_FOLDS; fold++) {
     const train: number[] = [];
     const test: number[] = [];
-    for (let i = 0; i < m; i++)
-      (mol[i] % ROLE_CV_FOLDS === fold ? test : train).push(i);
+    for (const k of keep)
+      (mol[k] % ROLE_CV_FOLDS === fold ? test : train).push(k);
     if (test.length === 0)
       continue;
     const trained = backfit(codes, levelCounts, y, Int32Array.from(train));
@@ -333,39 +305,31 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
       for (let r = 0; r < roleCount; r++)
         predicted += trained.theta[r][codes[r][i]];
       ssRes += (y[i] - predicted) ** 2;
-      cvSum += y[i];
-      cvN++;
     }
   }
   let cvR2: number | null = null;
   let cvRmse: number | null = null;
-  if (cvN >= ROLE_MIN_CV_POINTS) {
-    const cvMean = cvSum / cvN;
-    let ssTot = 0;
-    for (let i = 0; i < m; i++)
-      ssTot += (y[i] - cvMean) ** 2;
+  if (m >= ROLE_MIN_CV_POINTS) {
+    const cvMean = keep.reduce((sum, k) => sum + y[k], 0) / m;
+    const ssTot = keep.reduce((sum, k) => sum + (y[k] - cvMean) ** 2, 0);
     if (ssTot !== 0) {
       cvR2 = 1 - ssRes / ssTot;
-      cvRmse = Math.sqrt(ssRes / cvN);
+      cvRmse = Math.sqrt(ssRes / m);
     }
   }
 
   // Cross-validated R² checks prediction, and prediction is nearly unique even where the split of
   // credit between roles is not. Refitting each half of the table is the only check on that split.
-  const halves = [0, 1].map((half) => {
-    const rows: number[] = [];
-    for (let i = 0; i < m; i++) {
-      if (mol[i] % 2 === half)
-        rows.push(i);
-    }
-    return backfit(codes, levelCounts, y, Int32Array.from(rows));
-  });
+  const halves = [0, 1].map((half) =>
+    backfit(codes, levelCounts, y, Int32Array.from(keep.filter((k) => mol[k] % 2 === half))));
 
   const error = cvRmse ?? residualSd;
+  const dir = design.higherIsBetter ? 1 : -1;
   const roles: RoleSummary[] = [];
   for (let r = 0; r < roleCount; r++) {
     const counts = full.counts[r];
     const theta = full.theta[r];
+    const observed = counts.filter((count) => count > 0).length;
     const levels: RoleLevel[] = [];
     let rawVar = 0;
     const xs: number[] = [];
@@ -381,19 +345,19 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
         weights.push(counts[v]);
       }
     }
-    const dir = design.higherIsBetter ? 1 : -1;
     levels.sort((a, b) => dir * (b.coef - a.coef));
     rawVar /= m;
     // The raw count-weighted sd carries an estimation-noise term σ²·levels/observations that is
     // negligible for a twelve-level role and dominant for a six-hundred-level one, so subtracting it
     // is what makes two roles of one table comparable at all.
-    const spread = Math.sqrt(Math.max(0, rawVar - residualSd ** 2 * counts.length / m));
+    const spread = Math.sqrt(Math.max(0, rawVar - residualSd ** 2 * observed / m));
 
     let cut = 0;
     let gap = 0;
     for (let i = 1; i < levels.length; i++) {
-      if (dir * (levels[i - 1].coef - levels[i].coef) > gap) {
-        gap = dir * (levels[i - 1].coef - levels[i].coef);
+      const step = dir * (levels[i - 1].coef - levels[i].coef);
+      if (step > gap) {
+        gap = step;
         cut = i;
       }
     }
@@ -418,8 +382,8 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
 
     // Two comparable levels correlate at exactly ±1 whatever the halves hold, so a two-value role
     // would either wear the strongest possible repeatability chip or be refused outright, on nothing.
-    roles.push({name: design.names[r], levels, fitted: counts.length,
-      thin: counts.length - levels.length, spread,
+    roles.push({name: design.names[r], levels, fitted: observed,
+      thin: observed - levels.length, spread,
       repeat: xs.length < 3 ? null : weightedCorrelation(xs, ys, weights), split});
   }
   roles.sort((a, b) => b.spread - a.spread);

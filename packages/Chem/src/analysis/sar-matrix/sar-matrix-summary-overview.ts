@@ -1,37 +1,29 @@
 /* The Summary's Overview segment, the one the analysis opens on: the answers, the component band
-   and its measured swaps, and Start here. Reaches the panel only through its kit. */
+   and its measured swaps, and Start here. */
 import * as ui from 'datagrok-api/ui';
 import {RoleSummary} from './sar-matrix-role-fit';
-import {ANALOG_LIST_MAX, MIN_SUPPORT, RGROUP_MIN_SERIES, SeriesStat, SummaryData, SwapPool, SWAP_MIN_PAIRS,
+import {ANALOG_LIST_MAX, MIN_SUPPORT, RGROUP_MIN_SERIES, SummaryData, SWAP_MIN_PAIRS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
-import {count, STRIP_MOL_H, STRIP_MOL_W} from './sar-matrix-ui-common';
+import {count, STRIP_MOL_H, STRIP_MOL_W, tipText} from './sar-matrix-ui-common';
 import {FINDING_ROWS, PANE_EFFECTS, PANE_MAKING, REASON_GLYPHS, REASON_WORDS, orient, Answer, shortSmiles,
   swapAnchor, roleRanks} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {SummaryStartHere} from './sar-matrix-summary-start-here';
 
-/** What this segment reads from the panel: the shared rendering helpers and the state segments share. */
-export type SummaryOverviewKit = Pick<SummaryPanel, 'answerArt' | 'badge' | 'coreTiers' | 'defaultCoreTier' |
-  'depiction' | 'expandTopRGroup' | 'flushPaints' | 'foldHead' | 'foldedBands' | 'formatDelta' |
-  'formatEffect' | 'hint' | 'host' | 'leads' | 'rankableCores' | 'reason' | 'revealTrust' | 'roleFitRefusal' |
-  'root' | 'scroller' | 'showPane' | 'summaryRow' | 'syncTransferLine' | 'topCores' | 'transferLine' |
-  'trustDot'>;
-
 export class SummaryOverview {
   private readonly startHere: SummaryStartHere;
 
-  constructor(private readonly kit: SummaryOverviewKit) {
+  constructor(private readonly kit: SummaryPanel) {
     this.startHere = new SummaryStartHere(kit, this);
   }
 
   build(data: SummaryData): HTMLElement {
-    const cores = this.kit.topCores(data);
     const list = ui.divV(this.startHere.build(data), 'chem-sar-sum-list');
     this.kit.scroller = list;
     return ui.divV([
       this.coverageBar(data),
       this.setupLine(data),
-      this.buildAnswers(data, cores),
+      this.buildAnswers(data),
       this.buildListHeader(data),
       list,
       this.buildTotals(data),
@@ -50,7 +42,8 @@ export class SummaryOverview {
     return ui.divH([label, ui.divH(keys, 'chem-sar-sum-legend')], 'chem-sar-sum-list-head');
   }
 
-  /** Three totals that each open the segment answering them. Magnitudes that only describe the run
+  /** Two totals that each open the segment answering them, and a warning where values could not be
+   *  scaled. Magnitudes that only describe the run
    *  stay on Method: a landing screen carries decisions, not census figures. */
   private buildTotals(data: SummaryData): HTMLElement {
     const host = this.kit.host;
@@ -63,36 +56,34 @@ export class SummaryOverview {
     // length is.
     const capped = gated.length > 0 && data.analogOverflow > 0 ? `top ${count(ranked + thin)} of ` +
       `${count(ranked + thin + data.analogOverflow)}` : count(shown.length);
-    const making = ui.divText(shown.length === 0 ? 'Nothing is predicted above what is already made →' :
+    const making = tipText(shown.length === 0 ? 'Nothing is predicted above what is already made →' :
       gated.length === 0 ? `${capped} best candidates, none past the trust gate →` :
-        `${capped} worth making · ${count(structures)} distinct structures →`, 'chem-sar-sum-total');
+        `${capped} worth making · ${count(structures)} distinct structures →`, 'chem-sar-sum-total',
+    'Predicted analogs this dataset has no row for, ranked on the gain they buy over the best compound ' +
+      'their own series has already made.' + (data.analogOverflow === 0 ? '' : ' The ranked and the thin ' +
+      `list hold ${count(ANALOG_LIST_MAX)} rows each: ${count(data.analogOverflow)} further structures ` +
+      'cleared the same gate and are in neither.'));
     making.onclick = () => this.kit.showPane(PANE_MAKING);
-    ui.tooltip.bind(making, () => 'Predicted analogs this dataset has no row for, ranked on the gain ' +
-      'they buy over the best compound their own series has already made.' + (data.analogOverflow === 0 ?
-      '' : ` The ranked and the thin list hold ${count(ANALOG_LIST_MAX)} rows each: ` +
-      `${count(data.analogOverflow)} further structures cleared the same gate and are in neither.`));
 
-    const trust = ui.divText(`${count(data.fitHolds)} fits hold · ${count(data.unchecked)} unchecked · ` +
-      `${count(data.lowR2.length)} do not →`, 'chem-sar-sum-total');
+    const trust = tipText(`${count(data.fitHolds)} fits hold · ${count(data.unchecked)} unchecked · ` +
+      `${count(data.lowR2.length)} do not →`, 'chem-sar-sum-total', 'A verdict on each series\' fit, not ' +
+      'a partition of your library — one compound sits in several series and is routinely on both ' +
+      'sides. Unchecked means unverified, not wrong.');
     trust.onclick = () => this.kit.revealTrust();
-    ui.tooltip.bind(trust, 'A verdict on each series\' fit, not a partition of your library — one ' +
-      'compound sits in several series and is routinely on both sides. Unchecked means unverified, ' +
-      'not wrong.');
 
     const parts = [making, trust];
     if (host.unscalableCount > 0) {
-      const bad = ui.divText(`${count(host.unscalableCount)} values cannot be scaled by ` +
-        `${host.scalingLabel}`, 'chem-sar-sum-total chem-sar-chip-partial');
-      ui.tooltip.bind(bad, () => `${host.unscalableCount} of the "${host.activityColumnName}" values ` +
-        `were assayed but cannot be scaled by ${host.scalingLabel}, which needs positive numbers. ` +
-        'They are excluded from every matrix — set Scaling to "none" to use them as they are.');
-      parts.push(bad);
+      parts.push(tipText(`${count(host.unscalableCount)} values cannot be scaled by ${host.scalingLabel}`,
+        'chem-sar-sum-total chem-sar-chip-partial', `${host.unscalableCount} of the ` +
+        `"${host.activityColumnName}" values were assayed but cannot be scaled by ${host.scalingLabel}, ` +
+        'which needs positive numbers. They are excluded from every matrix — set Scaling to "none" to ' +
+        'use them as they are.'));
     }
     return ui.divH(parts, 'chem-sar-sum-totals');
   }
 
   /**
-   * MK-cov: what fraction of the table the analysis sees, in four segments in a fixed order, over a
+   * What fraction of the table the analysis sees, in up to five segments in a fixed order, over a
    * label line naming them in the same order — so the label is the legend.
    */
   private coverageBar(data: SummaryData): HTMLElement {
@@ -134,26 +125,22 @@ export class SummaryOverview {
    * and one who does not finds the evidence under it. Each tile carries its own negative, because a
    * leaderboard with no stated limit is read as a ranking of the chemistry rather than of what was made.
    */
-  private buildAnswers(data: SummaryData, cores: SeriesStat[]): HTMLElement {
+  private buildAnswers(data: SummaryData): HTMLElement {
     const findings = this.buildFindings(data);
     if (findings !== null)
       return findings;
     return ui.divH([
       this.answerTile(`Best ${data.axisRole ?? 'R-group'}`, this.rgroupAnswer(data), 'rgroup',
         () => this.kit.expandTopRGroup = true),
-      this.answerTile(`Best ${data.coreRole ?? 'core'}`, this.coreAnswer(data, cores), 'cores'),
+      this.answerTile(`Best ${data.coreRole ?? 'core'}`, this.coreAnswer(data), 'cores'),
       this.answerTile('What improves potency', this.potencyAnswer(data), 'swaps'),
     ], 'chem-sar-sum-answers');
   }
 
   /**
-   * One row per component column and one for the best measured swap, in a single full-width band.
-   *
-   * Every component, not two of them: tiles for the axis and the core left the rest to be hunted for,
-   * which sent readers to the axis switch on Method — a rebuild of every matrix — to see a ranking that
-   * was already computed. One band rather than a strip beside a tile, because the tile's column was too
-   * narrow for a structure and fell back to a truncated SMILES, which reads identically for every analog
-   * of one scaffold.
+   * One row per component column and one for the best measured swap, in a single full-width band:
+   * every component, since each is already ranked, and wide enough to draw a structure — a truncated
+   * SMILES reads identically for every analog of one scaffold.
    *
    * Null outside fragment-columns mode and wherever the fit is refused — a fragmented substituent label
    * is local to its series, so there is no component to name and the three tiles stay.
@@ -227,20 +214,12 @@ export class SummaryOverview {
         this.kit.foldedBands.add(key);
     });
     head.appendChild(lead);
-    return ui.divV([head, body]);
-  }
-
-  /** The best pooled swap of one component, or of whichever component the matrix columns enumerated
-   *  when the components are not columns and there is only the one pool. */
-  private topSwap(data: SummaryData, role?: string): SwapPool | undefined {
-    return role === undefined ? data.swaps[0] : (data.swapsByRole.get(role) ?? [])[0];
+    return ui.divV([head, body], `chem-sar-sum-band-${key}`);
   }
 
   /** The swap's conclusion in one phrase, for the group heading when it is shut. */
-  private swapHeadline(data: SummaryData, role?: string): string {
-    const top = this.topSwap(data, role);
-    if (top === undefined)
-      return 'none pooled';
+  private swapHeadline(data: SummaryData, role: string): string {
+    const top = data.swapsByRole.get(role)![0];
     const {worst, widest} = orient(top);
     return worst > 0 ? `≥ ${this.kit.formatDelta(worst)} in ${top.n} pairs` :
       `${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)}`;
@@ -286,16 +265,15 @@ export class SummaryOverview {
    * The best measured swap, on the same row grammar as the components above it. Structures and two
    * numbers rather than a sentence, which has no natural length and clips wherever the band is narrow.
    */
-  private swapRow(data: SummaryData, role?: string): HTMLElement {
+  private swapRow(data: SummaryData, role: string): HTMLElement {
     // Named like a component row, because that is what it reports on: the pairs are grouped on the other
     // components, so each component has its own and the row has to say which.
     const parts: HTMLElement[] = [
-      ui.divText(role ?? 'Best swap', 'chem-sar-sum-comp-name'),
-      ui.divText(role === undefined ? '' : 'swapped', 'chem-sar-sum-comp-spread'),
+      ui.divText(role, 'chem-sar-sum-comp-name'),
+      ui.divText('swapped', 'chem-sar-sum-comp-spread'),
     ];
-    const top = this.topSwap(data, role);
-    const only = role === undefined ? '' :
-      ` Pairs alike in every component but ${role}, pooled across the rest of the table.`;
+    const top = data.swapsByRole.get(role)?.[0];
+    const only = ` Pairs alike in every component but ${role}, pooled across the rest of the table.`;
     let tip: string;
     if (top !== undefined) {
       const {from, to, worst, widest, mean} = orient(top);
@@ -303,34 +281,25 @@ export class SummaryOverview {
       parts.push(ui.divText(worst > 0 ? `≥ ${this.kit.formatDelta(worst)}` :
         `mean ${this.kit.formatDelta(mean)}`, 'chem-sar-sum-comp-best'));
       parts.push(ui.divText(`${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)} · ` +
-        `${count(top.n)} pairs · ${count(top.roots.size)} ${role === undefined ? 'series' : 'contexts'}`,
-      'chem-sar-cp-hint'));
+        `${count(top.n)} pairs · ${count(top.roots.size)} contexts`, 'chem-sar-cp-hint'));
       tip = (worst > 0 ? 'This swap improved potency in every pair it was measured in.' :
         'No swap improved potency in every pair it was measured in; this one has the best floor.') +
         ' Both compounds were made and measured; nothing here is fitted or predicted.' + only +
         ' Click for the full pool.';
     } else {
-      const best = data.swapBest;
-      parts.push(ui.divH([ui.divText(data.swapCandidates === 0 && role === undefined ?
-        'no row carries two measured values' :
-        `nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} ` +
-        `${role === undefined ? 'series' : 'contexts'}`, 'chem-sar-cp-hint')],
-      'chem-sar-sum-comp-slot'));
-      if (role === undefined && best?.best != null) {
-        parts.push(ui.divText(`largest single move ${this.kit.formatDelta(Math.abs(best.best.delta))} ` +
-          `in ${best.best.matrix.label}`, 'chem-sar-cp-hint'));
-      }
+      parts.push(ui.divH([ui.divText(`nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} contexts`,
+        'chem-sar-cp-hint')], 'chem-sar-sum-comp-slot'));
       tip = 'A swap is pooled only where the same substitution was measured against several different ' +
         'backgrounds, so one pair cannot carry it.' + only + ' Click for what was rejected.';
     }
     const row = ui.divH(parts, 'chem-sar-sum-comp-row');
     ui.tooltip.bind(row, () => tip);
-    row.onclick = () => this.kit.showPane(PANE_EFFECTS, role === undefined ? 'swaps' : swapAnchor(role));
+    row.onclick = () => this.kit.showPane(PANE_EFFECTS, swapAnchor(role));
     return row;
   }
 
-  /** One conclusion: the name, the number, its bar against the model error, and one clause. The
-   *  evidence is a segment away, so nothing here has to carry it. */
+  /** One conclusion: the name, the number and one clause. The evidence is a segment away, so nothing
+   *  here has to carry it. */
   private answerTile(title: string, text: Answer, anchor: string, onOpen?: () => void): HTMLElement {
     const go = ui.iconFA('chevron-right');
     go.classList.add('chem-sar-sum-go');
@@ -339,7 +308,7 @@ export class SummaryOverview {
     ];
     if (text.art !== undefined)
       body.push(text.art);
-    body.push(ui.divH([ui.divText(text.answer, 'chem-sar-sum-answer-value')], 'chem-sar-sum-answer-line'));
+    body.push(ui.divText(text.answer, 'chem-sar-sum-answer-value'));
     // Not `chem-sar-card-desc`: this is a sentence, and that class clips to one line.
     body.push(ui.divText(text.negative, 'chem-sar-cp-hint'));
     const tile = ui.divV(body, 'chem-sar-sum-answer');
@@ -356,7 +325,6 @@ export class SummaryOverview {
 
   private rgroupAnswer(data: SummaryData): Answer {
     if (!this.kit.host.activityIsLog) {
-      // There is no mark for "not answerable", so this branch stays a sentence.
       return {answer: 'Not answerable on a raw scale',
         negative: 'a fitted effect is a difference in assay units and says nothing about how large ' +
           'the change is — set Scaling to lg or −lg, or declare the column higher-is-better if it is ' +
@@ -377,22 +345,20 @@ export class SummaryOverview {
       return {answer: `Two lead equally`,
         negative: `the ${partner} decides — ${top.k} of ${top.tried} against ${rows[1].k} of ` +
           `${rows[1].tried}`,
-        art: ui.divH([this.kit.depiction(top.subst, STRIP_MOL_W, STRIP_MOL_H),
-          ui.divText('or', 'chem-sar-sum-comp-arrow'),
-          this.kit.depiction(rows[1].subst, STRIP_MOL_W, STRIP_MOL_H)], 'chem-sar-sum-comp-pair')};
+        art: this.pairArt(top.subst, rows[1].subst, 'chem-sar-sum-comp-pair', 'or')};
     }
     return {answer: (top.magnitude === null ? '' : `${this.kit.formatEffect(top.magnitude)} · `) +
       `first on ${top.k} of ${top.tried}`, negative, art: this.kit.answerArt(top.subst)};
   }
 
-  private coreAnswer(data: SummaryData, cores: SeriesStat[]): Answer {
+  private coreAnswer(data: SummaryData): Answer {
     const host = this.kit.host;
     if (!data.coresAreSeries) {
-      // A core recurs only inside its own lineage, so there is no ranking a mark could carry.
       return {answer: 'Not comparable across series',
         // Two lines at tile width; a third is clipped, and a clipped sentence is what the tile is for.
         negative: 'a core recurs only inside its own lineage — nothing to pool across series'};
     }
+    const cores = this.kit.topCores(data);
     if (cores.length === 0)
       return {answer: `None with ${MIN_SUPPORT} compounds`, negative: 'mean of what was made'};
     // Which cut depth was ranked, because only cores cut alike are comparable and the card lets the
@@ -435,10 +401,10 @@ export class SummaryOverview {
       `${this.kit.formatDelta(Math.abs(best.best.delta))} in ${best.best.matrix.label}`};
   }
 
-  /** Two structures and the arrow between them: the shape every swap is drawn in. */
-  private pairArt(from: string, to: string, cls: string): HTMLElement {
+  /** Two structures and the glyph between them: the shape every swap is drawn in. */
+  private pairArt(from: string, to: string, cls: string, glyph = '→'): HTMLElement {
     return ui.divH([this.kit.depiction(from, STRIP_MOL_W, STRIP_MOL_H),
-      ui.divText('→', 'chem-sar-sum-comp-arrow'),
+      ui.divText(glyph, 'chem-sar-sum-comp-arrow'),
       this.kit.depiction(to, STRIP_MOL_W, STRIP_MOL_H)], cls);
   }
 

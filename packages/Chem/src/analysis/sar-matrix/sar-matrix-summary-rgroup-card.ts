@@ -3,15 +3,15 @@
 import * as ui from 'datagrok-api/ui';
 import {getRdKitModule} from '../../utils/chem-common-rdkit';
 import {cachedAtomCount} from './sar-matrix-decompose';
-import {bestMeasuredRow, RGroupRow, SeriesStat, SummaryData, SUM_ROWS,
+import {bestMeasured, RGroupRow, SeriesStat, SummaryData, SUM_ROWS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, count} from './sar-matrix-ui-common';
+import {CARD_CORE_H, CARD_CORE_W, count, tipText} from './sar-matrix-ui-common';
 import {STRIP_MIN_FILL, shortSmiles} from './sar-matrix-summary-common';
-import type {SummaryEffects, SummaryEffectsKit} from './sar-matrix-summary-effects';
+import type {SummaryEffects} from './sar-matrix-summary-effects';
+import type {SummaryPanel} from './sar-matrix-summary-panel';
 
 export class SummaryRGroupCard {
-  constructor(private readonly kit: SummaryEffectsKit,
-    private readonly effects: Pick<SummaryEffects, 'card' | 'effectBar' | 'roleAnswer'>) {}
+  constructor(private readonly kit: SummaryPanel, private readonly effects: SummaryEffects) {}
 
   build(data: SummaryData): HTMLElement {
     const host = this.kit.host;
@@ -21,7 +21,7 @@ export class SummaryRGroupCard {
       'number is its margin over that series\' own most-common substituent — a within-series ' +
       'comparison, so two series\' numbers are only loosely comparable.';
     // An additive effect in raw assay units cannot be re-expressed as a fold, which is the one thing
-    // that would make it mean something; the swap card refuses the same arithmetic.
+    // that would make it mean something.
     if (!host.activityIsLog) {
       return this.effects.card(title, subtitle, this.kit.reason('The activity is on a raw scale, where a fitted ' +
         'effect is a difference in assay units and says nothing about how large the change is. Set ' +
@@ -89,7 +89,7 @@ export class SummaryRGroupCard {
     return this.effects.card(title, subtitle, body, this.sizeVerdict(data));
   }
 
-  /** MK-C: one slot per series that tried this group — solid where it won and that series' fit holds,
+  /** One slot per series that tried this group — solid where it won and that series' fit holds,
    *  hatched where it won and the fit does not, outlined where it was tried and did not win. */
   private winTally(row: RGroupRow, placed: string): HTMLElement {
     const shown = Math.min(row.tried, 10);
@@ -131,49 +131,31 @@ export class SummaryRGroupCard {
     const parts: HTMLElement[] = [this.rgroupRow(data, slots, row, scale, opts)];
     if (slots.length > 0)
       parts.push(this.buildStrip(data, slots, row, stripScale));
-    const body = ui.divV([]);
-    body.style.display = 'none';
+    const expand = this.kit.lazyBody(() => [this.rgroupClaim(data, row)]);
     const toggle = ui.divText('What this row claims →', 'chem-sar-cp-hint');
     toggle.classList.add('chem-sar-sum-click');
-    let filled = false;
-    const open = (): void => {
-      if (!filled) {
-        filled = true;
-        for (const part of this.rgroupExpandParts(data, row))
-          body.appendChild(part);
-        this.kit.flushPaints();
-      }
-      body.style.display = '';
-    };
-    toggle.onclick = () => {
-      if (body.style.display === 'none')
-        open();
-      else
-        body.style.display = 'none';
-    };
+    toggle.onclick = expand.toggle;
     // The answer tile above asked for its evidence, and the pane it asked for is only built now.
     if (opts.primary && this.kit.expandTopRGroup) {
       this.kit.expandTopRGroup = false;
-      open();
+      expand.open();
     }
-    parts.push(toggle, body);
+    parts.push(toggle, expand.body);
     return ui.divV(parts);
   }
 
-  private rgroupExpandParts(data: SummaryData, row: RGroupRow): HTMLElement[] {
+  /** A reading instruction, not a restatement of the marks above it. */
+  private rgroupClaim(data: SummaryData, row: RGroupRow): HTMLElement {
     const slot = this.slotNoun(data);
-    // A reading instruction, not a restatement of the marks above it.
     const read = ui.divText(`How to read this: first on most of the ${slot}s it was tried on and never ` +
       `worse than the reference means the group travels — carry it forward. First on one ${slot} while ` +
       `costing potency on the rest means hold it to that ${slot} and vary elsewhere.`,
     'chem-sar-sum-prose');
-    const art = ui.divH([this.kit.depiction(row.subst, CARD_CORE_W * 2, CARD_CORE_H * 2), read],
-      'chem-sar-sum-detail');
-    return [art];
+    return ui.divH([this.kit.depiction(row.subst, CARD_CORE_W * 2, CARD_CORE_H * 2), read], 'chem-sar-sum-detail');
   }
 
   /**
-   * MK-A. One square per slot, in a fixed order that is never re-sorted per row — the row is only
+   * One square per slot, in a fixed order that is never re-sorted per row — the row is only
    * readable against its neighbours if the same slot means the same series everywhere.
    *
    * Sign is carried by the direction the fill grows from the mid-rule, and only redundantly by hue:
@@ -189,9 +171,8 @@ export class SummaryRGroupCard {
     const squares = slots.map((stat) => {
       const col = stat.stripCols!.get(row.subst);
       if (col === undefined) {
-        const none = ui.divText('–', 'chem-sar-sum-sq chem-sar-sum-sq-none');
-        ui.tooltip.bind(none, () => `${stat.matrix.label} — never tried on this ${slot}`);
-        return none;
+        return tipText('–', 'chem-sar-sum-sq chem-sar-sum-sq-none',
+          `${stat.matrix.label} — never tried on this ${slot}`);
       }
       const square = ui.div([], 'chem-sar-sum-sq');
       const delta = col.refDelta;
@@ -222,7 +203,7 @@ export class SummaryRGroupCard {
       }
       square.classList.add('chem-sar-sum-click');
       square.onclick = () => {
-        const ri = bestMeasuredRow(stat.matrix, col.ci, this.kit.host.higherIsBetter ? 1 : -1);
+        const ri = bestMeasured(stat.matrix.cells.map((cells) => cells[col.ci]), host.higherIsBetter ? 1 : -1);
         if (ri >= 0)
           host.revealCell(stat.matrix, ri, col.ci, stat.matrix.columns[col.ci].position);
       };

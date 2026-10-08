@@ -15,6 +15,8 @@ import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 import {dockSarMatrixTabs} from '../analysis/sar-matrix/sar-matrix-viewer';
 import {CELL_H, CELL_W, COL_HEADER_H, CORE_W} from '../analysis/sar-matrix/sar-matrix-ui-common';
+import {PANE_SERIES} from '../analysis/sar-matrix/sar-matrix-summary-common';
+import {MIN_SUPPORT, TRUST_R2} from '../analysis/sar-matrix/sar-matrix-summary-data';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -195,7 +197,7 @@ const SAR_MATRIX_VIEWER = 'SAR Matrix Viewer';
 
 interface SarHint {
   anchor: () => Element | null;
-  position: `${ui.hints.POSITION}`;
+  position?: `${ui.hints.POSITION}`;
   title: string;
   text: string;
   /** Put the viewer where the hint's anchor exists — a tab, a segment — before it is looked for. The
@@ -254,9 +256,10 @@ const at = {
   scale: () => document.querySelector('.chem-sar-sum-orient') ?? sarTabHeader('Summary'),
   coverage: () => document.querySelector('.chem-sar-sum-cov') ?? document.querySelector('.chem-sar-sum-overview'),
   components: () => document.querySelector('.chem-sar-sum-comp') ?? document.querySelector('.chem-sar-sum-answers'),
-  swapRow: () => document.querySelector('.chem-sar-sum-comp-row') ?? document.querySelector('.chem-sar-sum-answers'),
+  swapRow: () => document.querySelector('.chem-sar-sum-band-swap') ?? document.querySelector('.chem-sar-sum-answers'),
   effectsBar: () => document.querySelector('.chem-sar-sum-sub-bar') ?? document.querySelector('.chem-sar-sum-effects'),
   making: () => document.querySelector('.chem-sar-sum-making-block') ?? document.querySelector('.chem-sar-sum-making'),
+  trust: () => document.querySelector('.chem-sar-sum-trust') ?? document.querySelector('.chem-sar-sum-pane'),
   navCard: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
     sarTabHeader('SAR Matrix'),
   chips: () => document.querySelector('.chem-sar-chips'),
@@ -273,7 +276,6 @@ const SAR_HINTS: SarHint[] = [
   {
     before: () => sarTab('Summary'),
     anchor: at.scale,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Start on the Summary',
     text: 'The analysis opens here, on what it concluded rather than on the grids behind it. This ' +
       'first line is the scale everything below depends on: which column is the endpoint, whether ' +
@@ -282,15 +284,14 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     anchor: at.coverage,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'What reached a matrix',
     text: 'A compound joins a series only if the cutting finds it a core it shares with others. The ' +
-      'bar splits the whole table five ways: measured and paired, assayed with no analog to pair ' +
-      'with, never assayed. The coverage of the analysis is stated before any of its findings are.',
+      'bar splits the whole table up to five ways: measured and paired, held but never assayed, ' +
+      'assayed but impossible to scale, assayed with no analog to pair with, and never assayed. The ' +
+      'coverage of the analysis is stated before any of its findings are.',
   },
   {
     anchor: at.components,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'What to change',
     text: 'One additive (Free-Wilson) fit over the whole table, cross-validated on compounds it had ' +
       'not seen. Each component column gets a row: how far the endpoint spans across its values, its ' +
@@ -299,7 +300,6 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     anchor: at.swapRow,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Best measured swap, per component',
     text: 'The other half of the band is evidence of a different kind: pairs of compounds that were ' +
       'both made and both measured and differ in exactly one component. No model is involved: if the ' +
@@ -318,7 +318,6 @@ const SAR_HINTS: SarHint[] = [
   {
     before: () => sarSegment('Effects'),
     anchor: at.effectsBar,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Effects: every component ranked',
     text: 'A tab per component, ordered by how far each moves the endpoint. Inside, every value of ' +
       'that component with its offset against the library mean, adjusted for the other components, ' +
@@ -337,13 +336,12 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     before: () => sarSegment('Method'),
-    anchor: () => document.querySelector('.chem-sar-sum-trust') ??
-      document.querySelector('.chem-sar-sum-scroll'),
+    anchor: at.trust,
     position: ui.hints.POSITION.TOP,
     title: 'Method: what was trusted',
-    text: 'The gate every prediction had to clear: three measured compounds on both axes, in a series ' +
-      'whose own R² reaches 0.5. Two different R² appear on the tab, one over the whole table and ' +
-      'one inside each series, and both are scored by predicting compounds left out of the fit. The ' +
+    text: `The gate every prediction had to clear: ${MIN_SUPPORT} measured compounds on both axes, in a ` +
+      'series whose own R² reaches ' + TRUST_R2 + '. Two different R² appear on the tab, one over the ' +
+      'whole table and one inside each series, and both are scored by predicting compounds left out of the fit. The ' +
       'two lists name the series where the additive reading holds best and where it fails.',
   },
   {
@@ -411,7 +409,6 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     anchor: at.chips,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'What the open matrix holds',
     text: 'The chips above the matrix summarise it: how many compounds it holds, its size as cores by ' +
       'substituents, the activity range on the current scale, how many analogs are predicted rather ' +
@@ -425,7 +422,7 @@ const SAR_HINTS: SarHint[] = [
     text: 'The funnel narrows the cells themselves, by Potency, Reference points, MW, Core and substituents R.',
   },
   {
-    anchor: () => matrixCellAnchor(),
+    anchor: matrixCellAnchor,
     position: ui.hints.POSITION.RIGHT,
     title: 'Then click a cell',
     text: 'Cores run down the rows, substituents across the columns. The header over the first column ' +
@@ -461,7 +458,6 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     anchor: at.transferTab,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Carry the SAR across scaffolds',
     text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
       'they share. Where the correlation holds, an optimization found on one scaffold is expected to ' +
@@ -501,7 +497,6 @@ const SAR_HINTS: SarHint[] = [
   {
     anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-control-bar .ui-input-root') ??
       document.querySelector('.chem-sar-xfer-panel .chem-sar-main-bar') ?? sarTabHeader('SAR Transfer'),
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Pick the target core',
     text: 'One core often transfers to several. The dropdown in the header switches between them ' +
       'while the source stays put, so you can read the same series against each core its SAR carries ' +
@@ -519,7 +514,6 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     anchor: at.makeList,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'The Make list',
     text: 'Everything collected lands here: each analog with its structure, its potency and the ' +
       'activity that potency is read on, how much evidence stood behind it, and the series, core and ' +
@@ -540,7 +534,6 @@ const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarTab('Summary'),
     anchor: at.scale,
-    position: ui.hints.POSITION.BOTTOM,
     title: '2 792 degraders, split three ways',
     text: 'Every PROTAC in this patent set carries its warhead, its linker and its E3 ligand as ' +
       'columns of their own. The endpoint is a predicted solubility in log units, where higher is ' +
@@ -549,7 +542,6 @@ const PROTAC_HINTS: SarHint[] = [
   {
     anchor: () => document.querySelector('.chem-sar-sum-overview > .chem-sar-cp-hint') ??
       document.querySelector('.chem-sar-sum-overview'),
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Linker as the core',
     text: 'The analysis was given the linker as the core, the scaffold every row is drawn from, and ' +
       'the warhead and E3 ligand as the substituents hanging off it. Nothing is fragmented: with the ' +
@@ -558,7 +550,6 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     anchor: at.coverage,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'What reached a matrix',
     text: 'The bar is the whole table: how many degraders carry a value and landed in a series, and ' +
       'how many carry one but had no analog to pair with. A compound alone on its linker cannot be ' +
@@ -567,7 +558,6 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     anchor: at.components,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Which of the three to change',
     text: 'One additive fit over all three components at once ranks them by how far each moves ' +
       'solubility. Each row shows that span, the best value of that component drawn, and its offset ' +
@@ -576,7 +566,6 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     anchor: at.swapRow,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'And what was actually measured',
     text: 'Under the fit, the measured half: pairs of degraders alike in every part but one. Warhead, ' +
       'linker and E3 ligand each get their own best swap, because a matched pair is a grouping on the ' +
@@ -595,20 +584,14 @@ const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarSegment('Effects'),
     anchor: at.effectsBar,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Every linker, warhead and ligand ranked',
     text: 'A tab per component with its full ranking, and a last tab holding the measured pairs for ' +
       'each. The structures are drawn rather than written: three E3 ligands of one chemotype differ ' +
       'past the point where a truncated SMILES would still show it.',
   },
   {
-    before: () => {
-      const tab = Array.from(document.querySelectorAll('.chem-sar-sum-sub'))
-        .find((e) => e.textContent?.includes('Measured in series'));
-      (tab as HTMLElement | undefined)?.click();
-    },
+    before: () => byText('.chem-sar-sum-sub-name', PANE_SERIES)?.click(),
     anchor: at.effectsBar,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Counted, not fitted',
     text: 'The last tab is the other kind of evidence, read off compounds that were actually made ' +
       'inside each series: which warhead came first where, which linker scored best, which swap was ' +
@@ -622,13 +605,12 @@ const PROTAC_HINTS: SarHint[] = [
     title: 'Combinations nobody has built',
     text: 'A warhead, a linker and an E3 ligand that appear in the set but never together. Each is ' +
       'ranked on what it buys over the best degrader its own series already measured. On a patent set ' +
-      'nothing clears the trust gate, so these are listed as the best candidates without it. The ' +
+      'nothing may clear the trust gate, and then these are listed as the best candidates without it. The ' +
       'gate withholds the confidence, not the ranking.',
   },
   {
     before: () => sarSegment('Method'),
-    anchor: () => document.querySelector('.chem-sar-sum-trust') ??
-      document.querySelector('.chem-sar-sum-pane'),
+    anchor: at.trust,
     position: ui.hints.POSITION.TOP,
     title: 'What the ranking rests on',
     text: 'Two R² and what the gate does with them: one for the fit over all three components, one ' +
@@ -650,14 +632,13 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     anchor: at.chips,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'What the open matrix holds',
     text: 'The open series in one line: how many degraders were measured, how many cells the two ' +
       'components could fill, how many of those are predictions, and the series\' own R². A cell is ' +
       'a degrader that exists; a faint one is a combination the additive fit predicts.',
   },
   {
-    anchor: () => matrixCellAnchor(),
+    anchor: matrixCellAnchor,
     position: ui.hints.POSITION.RIGHT,
     title: 'Click a cell',
     text: 'A cell is one warhead against one E3 ligand on this linker. Colour is solubility over the ' +
@@ -681,11 +662,10 @@ const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarTab('SAR Transfer'),
     anchor: at.transferTab,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Carry the SAR across linkers',
     text: 'Two linkers explored with the same warheads, whose potencies move together, are evidence ' +
       'about each other. Detection is on this tab rather than in the run, because it is a question ' +
-      'about pairs of series and most runs never ask it. This set has 19 such pairs.',
+      'about pairs of series and most runs never ask it.',
   },
   {
     anchor: at.transferSources,
@@ -706,7 +686,6 @@ const PROTAC_HINTS: SarHint[] = [
   {
     before: () => sarTab('Make list'),
     anchor: at.makeList,
-    position: ui.hints.POSITION.BOTTOM,
     title: 'The Make list',
     text: 'Everything collected lands here: each degrader with its three parts, the value predicted ' +
       'for it and where the suggestion came from. It is a table like any other, so it exports.',
@@ -721,7 +700,8 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
     return;
   }
   const hint = hints[i];
-  hint.before?.();
+  if (tries === 0)
+    hint.before?.();
   const anchor = hint.anchor();
   if (!(anchor instanceof HTMLElement)) {
     // A pane the step just opened builds on a timer, so its anchor is not in the document the instant
@@ -744,7 +724,7 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
   content.append(ui.divText(hint.text));
   const buttonHost = ui.divH([], {style: {justifyContent: 'flex-end'}});
   content.append(buttonHost);
-  const popup = ui.hints.addHint(anchor, content, hint.position);
+  const popup = ui.hints.addHint(anchor, content, hint.position ?? ui.hints.POSITION.BOTTOM);
   buttonHost.append(i === hints.length - 1 ?
     ui.button('Close', () => {
       popup.remove();
@@ -753,7 +733,7 @@ function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries 
     ui.button('Next', () => showSarHint(hints, i + 1, popup)));
 }
 
-function showSarHints(hints: SarHint[] = SAR_HINTS): void {
+function showSarHints(hints: SarHint[]): void {
   const timer = setInterval(() => {
     // Either landing surface, not the matrix grid alone: the viewer opens on the Summary, and that
     // grid does not exist until the SAR Matrix tab is shown — which is a step of the tour, not a
@@ -766,10 +746,10 @@ function showSarHints(hints: SarHint[] = SAR_HINTS): void {
   setTimeout(() => clearInterval(timer), 120000);
 }
 
-export async function _demoSarMatrix(): Promise<void> {
+/** Restored from a project rather than run: decomposing the table takes long enough to watch a loader. */
+async function openSarDemo(projectFunc: string, hints: SarHint[]): Promise<void> {
   grok.shell.windows.showContextPanel = true;
-  grok.shell.windows.showHelp = true;
-  const p = await grok.functions.eval('Chem:SarMatrixDemo');
+  const p = await grok.functions.eval(projectFunc);
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   await DG.delay(300);
@@ -780,37 +760,24 @@ export async function _demoSarMatrix(): Promise<void> {
         dockSarMatrixTabs(tv, viewer);
     }
   }
-  showSarHints();
-  setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix'), 1000);
-}
-
-/**
- * The same analysis over components that are already columns: 2 792 PROTAC degraders from patents,
- * each split into warhead, linker and E3 ligand.
- *
- * Nothing is cut here. The three parts are given, so the matrices are built by grouping rather than
- * by fragmenting, every component is ranked in one fit, and every component's measured pairs are
- * pooled at once. Restored from a project, as the fragmented demo is: the decomposition of 2 792
- * rows takes some twenty seconds, which is a long time to look at a loader.
- */
-export async function _demoSarMatrixProtac(): Promise<void> {
-  grok.shell.windows.showContextPanel = true;
-  const p = await grok.functions.eval('Chem:SarMatrixProtacDemo');
-  const project = await grok.dapi.projects.find(p.id);
-  await project.open();
-  await DG.delay(300);
-  const tv = grok.shell.tv;
-  if (tv) {
-    for (const viewer of tv.viewers) {
-      if (viewer.type === SAR_MATRIX_VIEWER)
-        dockSarMatrixTabs(tv, viewer);
-    }
-  }
-  showSarHints(PROTAC_HINTS);
+  showSarHints(hints);
   setTimeout(() => {
     grok.shell.windows.showHelp = true;
     grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix');
   }, 1000);
+}
+
+export async function _demoSarMatrix(): Promise<void> {
+  await openSarDemo('Chem:SarMatrixDemo', SAR_HINTS);
+}
+
+/**
+ * The same analysis over components that are already columns: 2 792 PROTAC degraders from patents,
+ * each split into warhead, linker and E3 ligand. Nothing is cut: the matrices are built by grouping,
+ * every component is ranked in one fit, and every component's measured pairs are pooled at once.
+ */
+export async function _demoSarMatrixProtac(): Promise<void> {
+  await openSarDemo('Chem:SarMatrixProtacDemo', PROTAC_HINTS);
 }
 
 export async function _demoMMPA(): Promise<void> {

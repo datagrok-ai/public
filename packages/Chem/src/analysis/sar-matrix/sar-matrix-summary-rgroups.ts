@@ -3,7 +3,7 @@
 import {AdditiveFit} from './sar-matrix-assemble';
 import {median} from './sar-matrix-decompose';
 import {SarMatrix} from './sar-matrix-types';
-import {bestMeasuredRow, LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, StripCols, SUM_ROWS,
+import {bestMeasured, LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, StripCols, SUM_ROWS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-types';
 
 /**
@@ -19,22 +19,25 @@ import {bestMeasuredRow, LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RG
  */
 export function recordRGroupExtremes(acc: RGroupAcc, matrix: SarMatrix, fit: AdditiveFit, dir: number,
   root: string, fitHolds: boolean, strip: boolean): StripCols | null {
+  // Only a converged fit may be compared with another matrix's, so a series whose fit stopped short
+  // contributes to no pool and takes no strip slot either: an empty strip entry would draw the "never
+  // tried" mark over a series that tried the group and was dropped.
+  if (!fit.converged)
+    return null;
   const reference = matrix.refValues[matrix.positions[0] ?? ''];
   const found = reference ? matrix.columns.findIndex((c) => c.substSmiles === reference) : -1;
   // A reference measured once has a fitted effect made of one residual, so a difference against it
   // is noise wearing a comparator's name.
   const refCi = found >= 0 && fit.colN[found] >= 2 ? found : -1;
-  // A series whose fit stopped short contributes to no pool, so it takes no slot either: an empty
-  // strip entry would draw the "never tried" mark over a series that tried the group and was dropped.
-  const cols: StripCols | null = strip && fit.converged ? new Map() : null;
+  const cols: StripCols | null = strip ? new Map() : null;
   let bestCi = -1;
   let worstCi = -1;
   for (let c = 0; c < matrix.columns.length; c++) {
     const subst = matrix.columns[c].substSmiles;
-    // Only a converged fit may be compared with another matrix's, and a column measured once has a
-    // fitted effect made of one residual. The strip is filled under the same test, so a square and
-    // the coverage sentence under it can never describe different sets of columns.
-    if (fit.colN[c] < 2 || !fit.converged)
+    // A column measured once has a fitted effect made of one residual. The strip is filled under the
+    // same test, so a square and the coverage sentence under it can never describe different sets of
+    // columns.
+    if (fit.colN[c] < 2)
       continue;
     if (cols !== null) {
       // 0 where the column IS the reference — the honest difference against itself, which is not the
@@ -69,7 +72,7 @@ function pushExtreme(pool: Map<string, RGroupWin[]>, matrix: SarMatrix, fit: Add
   root: string, fitHolds: boolean, ci: number, refCi: number, keep: number): void {
   // The most potent measured cell of the column, so the row lands on a compound rather than on a
   // hole the reader has to hunt through.
-  const ri = bestMeasuredRow(matrix, ci, dir);
+  const ri = bestMeasured(matrix.cells.map((cells) => cells[ci]), dir);
   if (ri < 0)
     return;
   const win: RGroupWin = {
@@ -131,10 +134,10 @@ function rankPool(pool: Map<string, RGroupWin[]>, tried: Map<string, Set<string>
     if (trusted.length < SWAP_MIN_SERIES)
       continue;
     const deltas = trusted.map((win) => win.refDelta).filter((d): d is number => d !== null);
-    const ranked = [...trusted].sort((a, b) => strongerWin(a, b, keep) ? -1 : 1);
+    trusted.sort((a, b) => strongerWin(a, b, keep) ? -1 : 1);
     rows.push({
-      subst, win: ranked[0], k: trusted.length, m: entries.length,
-      tried: tried.get(subst)?.size ?? entries.length,
+      subst, win: trusted[0], k: trusted.length, m: entries.length,
+      tried: tried.get(subst)!.size,
       magnitude: deltas.length ? median(deltas) : null,
       lo: deltas.length ? Math.min(...deltas) : 0,
       hi: deltas.length ? Math.max(...deltas) : 0,

@@ -1,14 +1,13 @@
 /* The Summary tab's data model: what one walk over the matrices produces, the contract it reads
    from the viewer, the thresholds that gate it and the small pure helpers it is built from. A leaf
    module, so the collector, the swap and R-group algorithms and the panel can all depend on it. */
-import * as ui from 'datagrok-api/ui';
 import {RoleFit} from './sar-matrix-role-fit';
 import {SarMatrix, SarMatrixCell} from './sar-matrix-types';
 import {MatrixCellRef} from './sar-matrix-ui-common';
 
 export const SUM_ROWS = 3;
 
-export const SUM_POOL = 24;
+const SUM_POOL = 24;
 
 /** Below this the leave-one-out fit does not support acting on a prediction. */
 export const TRUST_R2 = 0.5;
@@ -33,8 +32,7 @@ export const BEST_FIT_MIN_N = 8;
 /** Matrices a per-core outcome strip can carry before a row of squares stops being a mark. */
 export const STRIP_SLOTS = 12;
 
-/** Reliable losers shown under the winners; a loss over two lineages is not a rule, so the tier the
- *  winners get is not offered here. */
+/** Reliable losers shown under the winners. */
 export const LOSER_ROWS = 2;
 
 /** Rows the analog list holds. A chemist does not browse ten thousand; two hundred is more than a
@@ -56,36 +54,26 @@ export interface SummaryHost {
   readonly matrices: SarMatrix[];
   /** Lineage root id per matrix, index-aligned with `matrices` — the one hierarchy the navigator uses. */
   readonly matrixRoots: string[];
-  /** Displayed tier per matrix (the L1/L2/L3 on the navigator cards), index-aligned with `matrices`. */
   readonly matrixTiers: number[];
-  /** Rows carrying an activity value at all. A compound the assay never reached and one no core could
-   *  group are both outside every matrix, and only this separates them. */
   readonly assayedCount: number;
   /** Whether SAR transfer detection has run, and what it found. Detection is lazy and lives on its own
    *  tab, so the landing screen reports its state rather than triggering it. */
   readonly transferSummary: {scanned: boolean, count: number};
   readonly higherIsBetter: boolean;
   readonly scalingLabel: string;
-  /** Whether a difference in activity units is already a log ratio. A raw column declared
-   *  higher-is-better is a precomputed pIC50: no transform applied, but the numbers are logs. */
   readonly activityIsLog: boolean;
   readonly activityColumnName: string;
   /** Rows of the host table — the denominator the coverage line is a fraction of. */
   readonly hostRowCount: number;
   /** Assayed values the chosen scaling cannot represent; they are in no matrix and are not untested. */
   readonly unscalableCount: number;
-  /** The fragment column every matrix varies, or null when these came from fragmentation. Only when
-   *  it is set does one substituent label mean the same thing in two series. */
   readonly axisRole: string | null;
   /** The column the cores came from, or null when they came from fragmentation. A degrader set names
    *  it Linker, and "Best core" over an unnamed scaffold is the same finding nobody can act on. */
   readonly coreRole: string | null;
-  /** Whether a matrix IS one core, so its fitted mean compares cores rather than groupings. */
   readonly coresAreSeries: boolean;
-  /** Fragment columns that could run across the top, the current axis included. */
   readonly roleColumns: string[];
   setColumnAxis(name: string): void;
-  /** Select the compounds carrying one value of one component column, in the table the analysis ran on. */
   selectRoleValue(role: string, value: string): void;
   readonly predictVirtual: boolean;
   readonly predictUnmeasured: boolean;
@@ -100,41 +88,8 @@ export interface SummaryHost {
   addCellsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void;
 }
 
-/** Both extremes by value once a group offers more pairs than the cap allows. A cap taken in the
- *  group's own order would keep the commonest substituents and truncate away the rare one that jumped
- *  two logs; this loses only mid-range pairs. */
-export function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
-  if (items.length <= SWAP_ROW_CAP)
-    return items;
-  const half = SWAP_ROW_CAP >> 1;
-  const sorted = [...items].sort((a, b) => valueOf(a) - valueOf(b));
-  return [...sorted.slice(0, half), ...sorted.slice(sorted.length - half)];
-}
-
 export function supportOf(row: SummaryRow): number {
   return row.matrix.cells[row.ri][row.ci].support ?? 0;
-}
-
-/** Ties end at `matrix.id`: fragments arrive in worker-completion order, so anything resolved by
- *  index or Map order would make the cards depend on scheduling. */
-export function finerSeries(a: SummaryRow, b: SummaryRow): boolean {
-  return a.matrix.level !== b.matrix.level ? a.matrix.level < b.matrix.level : a.matrix.id < b.matrix.id;
-}
-
-export function betterSupported(a: SummaryRow, b: SummaryRow): boolean {
-  const sa = supportOf(a);
-  const sb = supportOf(b);
-  return sa !== sb ? sa > sb : finerSeries(a, b);
-}
-
-export function betterEvidenced(a: SummaryRow, b: SummaryRow): boolean {
-  const sa = supportOf(a);
-  const sb = supportOf(b);
-  if (sa !== sb)
-    return sa > sb;
-  const ra = a.matrix.confidence?.r2 ?? Number.NEGATIVE_INFINITY;
-  const rb = b.matrix.confidence?.r2 ?? Number.NEGATIVE_INFINITY;
-  return ra !== rb ? ra > rb : a.matrix.id < b.matrix.id;
 }
 
 /** A bounded best-of pool that deduplicates on insert. Deduplicating a pool of cells afterwards can
@@ -302,7 +257,7 @@ export interface RGroupAcc {
 }
 
 /** Everything one matrix contributes, extracted from its fit and its cells; the fit arrays are
- *  discarded with it so 345 of them are never live at once. */
+ *  discarded with it, so the walk never holds one per matrix at once. */
 export interface SeriesStat {
   matrix: SarMatrix;
   root: string;
@@ -326,7 +281,6 @@ export interface SeriesStat {
    *  is nothing to aim at. */
   virtualCells: number;
   trusted: number;
-  converged: boolean;
   /** Filled only for the matrices a strip can draw; null everywhere else. */
   stripCols: StripCols | null;
   /** Range of the fitted substituent and core effects — centred, same units, same fit, so the two
@@ -361,7 +315,6 @@ export interface SummaryData {
   unchecked: number;
   lowR2: SarMatrix[];
   lowR2Virtual: number;
-  families: number;
   axisRole: string | null;
   coreRole: string | null;
   coresAreSeries: boolean;
@@ -373,7 +326,6 @@ export interface SummaryData {
    *  Keyed by role name and in the order the fit was given the roles, which the fit's own ranking
    *  discards. */
   roleBest: Map<string, Map<string, MatrixCellRef & {value: number}>>;
-  tierCounts: {tier: number, n: number}[];
   /** Series whose additive fit stopped short of its tolerance. They are left out of every pooled
    *  R-group comparison, so an empty leaderboard has to be able to name this as the cause. */
   nonConverged: number;
@@ -430,14 +382,13 @@ export interface SwapSide {
   mol: number;
 }
 
-/** The most potent measured cell of one column, so a leaderboard row lands on a compound. */
-export function bestMeasuredRow(matrix: SarMatrix, ci: number, dir: number): number {
-  let ri = -1;
-  for (let r = 0; r < matrix.rows.length; r++) {
-    const cell = matrix.cells[r][ci];
-    if (cell.kind === 'real' && cell.value !== null &&
-      (ri < 0 || dir * cell.value > dir * matrix.cells[ri][ci].value!))
-      ri = r;
-  }
-  return ri;
+/** Index of the most potent measured cell of one matrix row or column, so a row of the tab lands on a
+ *  compound; -1 where none of them is measured. */
+export function bestMeasured(cells: SarMatrixCell[], dir: number): number {
+  let best = -1;
+  cells.forEach((cell, i) => {
+    if (cell.kind === 'real' && cell.value !== null && (best < 0 || dir * cell.value > dir * cells[best].value!))
+      best = i;
+  });
+  return best;
 }

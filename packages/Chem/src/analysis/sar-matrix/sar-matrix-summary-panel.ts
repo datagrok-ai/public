@@ -6,9 +6,7 @@ import {SummaryMaking} from './sar-matrix-summary-making';
 import {SummaryOverview} from './sar-matrix-summary-overview';
 import {SummaryEffects} from './sar-matrix-summary-effects';
 import {SummaryCollector, SummaryData} from './sar-matrix-summary-data';
-
-export {SummaryHost} from './sar-matrix-summary-data';
-import {count} from './sar-matrix-ui-common';
+import {count, scrollWithin, tipText} from './sar-matrix-ui-common';
 import {NARROW_PX, XNARROW_PX, SHORT_PX, PANE_OVERVIEW, PANE_EFFECTS, PANE_MAKING, PANE_METHOD,
   PANES} from './sar-matrix-summary-common';
 import {SummaryMethod} from './sar-matrix-summary-method';
@@ -114,7 +112,6 @@ export class SummaryPanel extends SummaryKit {
     if (this.tierFilter === tier)
       return;
     this.tierFilter = tier;
-    this.making.close();
     this.data = new SummaryCollector(this.host, this.tierFilter).collect();
     this.render(true);
   }
@@ -126,8 +123,7 @@ export class SummaryPanel extends SummaryKit {
   }
 
   release(): void {
-    this.reset();
-    this.message = false;
+    this.invalidate();
     this.sizeSub?.unsubscribe();
     this.sizeSub = null;
   }
@@ -153,15 +149,6 @@ export class SummaryPanel extends SummaryKit {
     ui.empty(this.root);
   }
 
-  /** `scrollIntoView` scrolls every scrollable ancestor, the dock container included, so it can move
-   *  the layout around the panel; only this pane's own scroller may move. */
-  private scrollTo(el: HTMLElement): void {
-    const s = this.scroller;
-    if (s === null)
-      return;
-    s.scrollTop += el.getBoundingClientRect().top - s.getBoundingClientRect().top;
-  }
-
   /**
    * @param keepPlace Keep the segment and sub-tab the reader is on. Set when the same analysis is
    * re-read — changing the fold tier — and left alone for a new one.
@@ -185,7 +172,6 @@ export class SummaryPanel extends SummaryKit {
       this.effectsTab = 0;
       this.openTrustList = false;
     }
-    this.currentPane = PANE_OVERVIEW;
     ui.empty(this.root);
 
     if (host.matrices.length === 0) {
@@ -195,7 +181,7 @@ export class SummaryPanel extends SummaryKit {
     }
 
     this.root.appendChild(this.method.scaleBand(data));
-    this.root.appendChild(this.buildSegBar(data));
+    this.root.appendChild(this.buildSegBar());
     this.paneHost = ui.div([], 'chem-sar-sum-pane');
     this.root.appendChild(this.paneHost);
     // Before the first build, not after: a pane decides here whether it draws a mark or its text
@@ -233,14 +219,6 @@ export class SummaryPanel extends SummaryKit {
       this.showPane(this.currentPane);
   }
 
-  /**
-   * The second level of tabs, built from plain divs rather than `ui.tabControl`.
-   *
-   * A nested tab control renders the platform's own tab chrome 26px under the viewer's, and two
-   * identical strips is exactly the confusion a second level has to avoid. This differs in shape, in
-   * active state, in size and position, and in carrying a readout on its right — which a tab strip
-   * never does and a toolbar always does.
-   */
   private tierChip(tier: number | null, label: string, n: number): HTMLElement {
     // The tier name goes in its own element so a reader or a test can address it without the count
     // beside it, which changes with the data.
@@ -258,7 +236,15 @@ export class SummaryPanel extends SummaryKit {
     return chip;
   }
 
-  private buildSegBar(data: SummaryData): HTMLElement {
+  /**
+   * The second level of tabs, built from plain divs rather than `ui.tabControl`.
+   *
+   * A nested tab control renders the platform's own tab chrome 26px under the viewer's, and two
+   * identical strips is exactly the confusion a second level has to avoid. This differs in shape, in
+   * active state, in size and position, and in carrying a readout on its right — which a tab strip
+   * never does and a toolbar always does.
+   */
+  private buildSegBar(): HTMLElement {
     const segs = PANES.map((name) => {
       const el = ui.divText(name, 'chem-sar-sum-seg');
       el.onclick = () => this.showPane(name);
@@ -269,20 +255,26 @@ export class SummaryPanel extends SummaryKit {
     // has to be visible and changeable from all of them. A decomposition handed over as columns is all
     // one tier, and there the chips would be a control with one setting.
     const readout: HTMLElement[] = [];
-    if (data.tierCounts.length > 1) {
-      const total = data.tierCounts.reduce((sum, {n}) => sum + n, 0);
-      readout.push(this.tierChip(null, 'All', total));
-      for (const {tier, n} of data.tierCounts)
+    const tierCounts = this.countTiers();
+    if (tierCounts.length > 1) {
+      readout.push(this.tierChip(null, 'All', this.host.matrixTiers.length));
+      for (const {tier, n} of tierCounts)
         readout.push(this.tierChip(tier, `L${tier}`, n));
     } else {
-      const line = ui.divText(`${count(this.host.matrices.length)} series · ` +
-        `${count(data.families)} families`, 'chem-sar-sum-seg-readout');
-      ui.tooltip.bind(line, 'Matrices over fold lineages. The same compounds re-cut, not this ' +
-        'many findings.');
-      readout.push(line);
+      const families = new Set(this.host.matrixRoots).size;
+      readout.push(tipText(`${count(this.host.matrices.length)} series · ${count(families)} families`,
+        'chem-sar-sum-seg-readout', 'Matrices over fold lineages. The same compounds re-cut, not this many ' +
+        'findings.'));
     }
     return ui.divH([ui.divH(segs, 'chem-sar-sum-seg-group'),
       ui.divH(readout, 'chem-sar-sum-seg-tiers')], 'chem-sar-sum-seg-bar');
+  }
+
+  private countTiers(): {tier: number, n: number}[] {
+    const byTier = new Map<number, number>();
+    for (const tier of this.host.matrixTiers)
+      byTier.set(tier, (byTier.get(tier) ?? 0) + 1);
+    return [...byTier.entries()].sort((a, b) => a[0] - b[0]).map(([tier, n]) => ({tier, n}));
   }
 
   /** Build one segment and discard the last. Panes are never held: an unvisited Worth-making segment
@@ -302,8 +294,7 @@ export class SummaryPanel extends SummaryKit {
     this.pendingPaints = [];
     this.scroller = null;
     ui.empty(paneHost);
-    // An anchor on this segment names a card, and a card now lives on a tab rather than at a scroll
-    // offset, so it selects the tab before the pane is built.
+    // An anchor on this segment names a card, and cards live on tabs, so the tab is chosen first.
     if (name === PANE_EFFECTS && anchor !== undefined)
       this.effectsTab = this.effectsTabOf(data, anchor);
     paneHost.classList.toggle('chem-sar-sum-pane-fixed', name === PANE_OVERVIEW);
@@ -316,8 +307,8 @@ export class SummaryPanel extends SummaryKit {
       if (anchor === undefined)
         return;
       const target = paneHost.querySelector(`[data-anchor="${anchor}"]`);
-      if (target instanceof HTMLElement)
-        this.scrollTo(target);
+      if (target instanceof HTMLElement && this.scroller !== null)
+        scrollWithin(this.scroller, target);
     }, 0);
   }
 

@@ -17,7 +17,8 @@ import {matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
 import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/sar-matrix-role-fit';
-import {SummaryHost, SummaryPanel} from '../analysis/sar-matrix/sar-matrix-summary-panel';
+import {SummaryHost} from '../analysis/sar-matrix/sar-matrix-summary-data';
+import {SummaryPanel} from '../analysis/sar-matrix/sar-matrix-summary-panel';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
@@ -1160,33 +1161,33 @@ category('SAR Matrix: R-group columns', () => {
   const WARHEAD_EFFECT: {[value: string]: number} = {W1: 0.2, W2: 0.0, W3: -0.2};
   const LIGAND_EFFECT: {[value: string]: number} = {L1: 0.1, L2: -0.1};
 
+  /** One compound of a role design: its value in each role, its activity and its source row. */
+  type DesignRow = [string[], number, number];
+  const design = (names: string[], rows: DesignRow[]): RoleDesign => ({names,
+    values: names.map((_name, r) => rows.map(([values]) => values[r])),
+    activity: rows.map(([, activity]) => activity), molIdx: rows.map(([, , mol]) => mol),
+    minSupport: 3, higherIsBetter: true});
+
   /**
    * 3 cores x 3 warheads x 2 ligands, `y = 6.0 + core + warhead + ligand`, no noise, molIdx 0..17.
    * Balanced and count-centred, so the least-squares solution is exactly those effects, and the
    * count-prior of 1 then shrinks each by `n/(n+1)`: 6/7 for a core or warhead, 9/10 for a ligand.
    */
   const roleFixture = (drop: number[] = [], ligandNames = ['L1', 'L2']): RoleDesign => {
-    const values: string[][] = [[], [], []];
-    const activity: number[] = [];
-    const molIdx: number[] = [];
+    const rows: DesignRow[] = [];
     const ligands = Object.keys(LIGAND_EFFECT);
     let k = 0;
     for (const core of Object.keys(CORE_EFFECT)) {
       for (const warhead of Object.keys(WARHEAD_EFFECT)) {
-        for (let li = 0; li < ligands.length; li++) {
+        for (let li = 0; li < ligands.length; li++, k++) {
           if (!drop.includes(k)) {
-            values[0].push(core);
-            values[1].push(warhead);
-            values[2].push(ligandNames[li]);
-            activity.push(6.0 + CORE_EFFECT[core] + WARHEAD_EFFECT[warhead] + LIGAND_EFFECT[ligands[li]]);
-            molIdx.push(k);
+            rows.push([[core, warhead, ligandNames[li]],
+              6.0 + CORE_EFFECT[core] + WARHEAD_EFFECT[warhead] + LIGAND_EFFECT[ligands[li]], k]);
           }
-          k++;
         }
       }
     }
-    return {names: ['Core', 'Warhead', 'Ligand'], values, activity, molIdx, minSupport: 3,
-      higherIsBetter: true};
+    return design(['Core', 'Warhead', 'Ligand'], rows);
   };
 
   const roleOf = (fit: RoleFit, name: string): RoleSummary => fit.roles.find((r) => r.name === name)!;
@@ -1260,6 +1261,10 @@ category('SAR Matrix: R-group columns', () => {
   test('fitRoleEffects recovers an unbalanced design', async () => {
     const design = roleFixture([4, 9, 15]);
     const fit = fitRoleEffects(design)!;
+    expect(fit.converged, true, 'a fit that stops short suppresses the whole breakdown silently');
+    // The prior leaves each role off centre by a constant on every pass. Measured before that shift is
+    // taken back out, the movement plateaus at the constant and no sweep cap ever clears it.
+    expect(fit.sweeps < ROLE_FIT_MAX_SWEEPS / 4, true, `${fit.sweeps} sweeps`);
     const reference = longRunFit(design, 4000);
     const mean = meanOf(design);
     let offFixedPoint = 0;
@@ -1283,14 +1288,14 @@ category('SAR Matrix: R-group columns', () => {
     // measured mostly on the strongest core and reads +0.105 that way against +0.005 adjusted.
     // Averaging the margins in one pass is a different and worse estimator, not a shortcut to this one.
     expect(offOnePass > 0.05, true, `one-pass margins differ by only ${offOnePass}`);
-  });
-
-  test('the role fit converges after re-centring, not before', async () => {
-    const fit = fitRoleEffects(roleFixture([4, 9, 15]))!;
-    expect(fit.converged, true, 'a fit that stops short suppresses the whole breakdown silently');
-    // The prior leaves each role off centre by a constant on every pass. Measured before that shift is
-    // taken back out, the movement plateaus at the constant and no sweep cap ever clears it.
-    expect(fit.sweeps < ROLE_FIT_MAX_SWEEPS / 4, true, `${fit.sweeps} sweeps`);
+    // Σ n_v·θ_v = 0 per role is what makes an offset a difference from the library average, and what
+    // makes a level no training fold saw predict at that average instead of at nothing.
+    for (const role of fit.roles) {
+      let weighted = 0;
+      for (const level of role.levels)
+        weighted += level.n * level.coef;
+      expectFloat(weighted, 0, 1e-6, `${role.name} is not count-centred`);
+    }
   });
 
   /**
@@ -1298,22 +1303,17 @@ category('SAR Matrix: R-group columns', () => {
    * exchanged — so A and B are near-aliased and the credit between them only separates slowly.
    */
   const slowFixture = (): RoleDesign => {
-    const values: string[][] = [[], [], []];
-    const activity: number[] = [];
-    const molIdx: number[] = [];
-    let k = 0;
+    const rows: DesignRow[] = [];
     for (let i = 0; i < 16; i++) {
       for (let p = 0; p < 3; p++) {
         for (let rep = 0; rep < 5; rep++) {
-          values[0].push(`A${i}`);
-          values[1].push(`B${i === 0 && rep === 0 ? 1 : i === 1 && rep === 0 ? 0 : i}`);
-          values[2].push(`P${p}`);
-          activity.push(6.0 + (i - 8) * 0.05 + (p - 1) * 0.05 + ((k % 5) - 2) * 0.01);
-          molIdx.push(k++);
+          const k = rows.length;
+          rows.push([[`A${i}`, `B${i === 0 && rep === 0 ? 1 : i === 1 && rep === 0 ? 0 : i}`, `P${p}`],
+            6.0 + (i - 8) * 0.05 + (p - 1) * 0.05 + ((k % 5) - 2) * 0.01, k]);
         }
       }
     }
-    return {names: ['A', 'B', 'P'], values, activity, molIdx, minSupport: 3, higherIsBetter: true};
+    return design(['A', 'B', 'P'], rows);
   };
 
   test('a near-aliased design is carried to its fixed point', async () => {
@@ -1325,21 +1325,6 @@ category('SAR Matrix: R-group columns', () => {
     // Testing the sweep's movement on the last role alone stops after two passes with A0 at −0.33: the
     // last role can be still while an earlier one is a third of its final value away.
     expectFloat(coefOf(fit, 'A', 'A0'), -0.1921, 1e-3);
-  });
-
-  test('the role fit centres every role against the library average', async () => {
-    // Σ n_v·θ_v = 0 per role is what makes an offset a difference from the library average, and what
-    // makes a level no training fold saw predict at that average instead of at nothing.
-    for (const role of fitRoleEffects(roleFixture([4, 9, 15]))!.roles) {
-      let weighted = 0;
-      for (const level of role.levels)
-        weighted += level.n * level.coef;
-      expectFloat(weighted, 0, 1e-6, `${role.name} is not count-centred`);
-    }
-    // Where every role's offsets also sum to zero unweighted — which balance gives — the intercept is
-    // the plain mean of the fitted activity.
-    const balanced = roleFixture();
-    expectFloat(fitRoleEffects(balanced)!.mean, meanOf(balanced), 1e-6);
   });
 
   test('levels below the support floor are fitted but not ranked', async () => {
@@ -1397,21 +1382,14 @@ category('SAR Matrix: R-group columns', () => {
   /** One role of `effects.length` values fully crossed with a four-value partner, plus a three-cycle
    *  residual belonging to neither role so the fit has an error the split rule has to clear. */
   const splitFixture = (effects: number[]): RoleDesign => {
-    const values: string[][] = [[], []];
-    const activity: number[] = [];
-    const molIdx: number[] = [];
-    let k = 0;
+    const rows: DesignRow[] = [];
     for (let a = 0; a < effects.length; a++) {
       for (let b = 0; b < PARTNER_EFFECT.length; b++) {
-        values[0].push(`V${a}`);
-        values[1].push(`P${b}`);
-        activity.push(6.0 + effects[a] + PARTNER_EFFECT[b] + ((k % 3) - 1) * 0.06);
-        molIdx.push(k);
-        k++;
+        const k = rows.length;
+        rows.push([[`V${a}`, `P${b}`], 6.0 + effects[a] + PARTNER_EFFECT[b] + ((k % 3) - 1) * 0.06, k]);
       }
     }
-    return {names: ['Component', 'Partner'], values, activity, molIdx, minSupport: 3,
-      higherIsBetter: true};
+    return design(['Component', 'Partner'], rows);
   };
 
   test('the two-group split fires only when it should', async () => {
@@ -1453,7 +1431,7 @@ category('SAR Matrix: R-group columns', () => {
     expect(listed.some((v) => v.startsWith('X') || v.startsWith('Y') || v === 'Z1'), false,
       'an offset from a separate block rests on an unrelated baseline, so it is never listed beside these');
     for (const role of fit.roles)
-      expect(role.fitted, role.name === 'Ligand' ? 2 : 3, `${role.name} re-interned over the kept set`);
+      expect(role.fitted, role.name === 'Ligand' ? 2 : 3, `${role.name} counts only the kept set`);
   });
 
   const SOLID_EFFECT = [0.035, 0.0105, -0.0105, -0.035];
@@ -1461,24 +1439,17 @@ category('SAR Matrix: R-group columns', () => {
   /** Four well-sampled values carrying a real effect, crossed with sixty values seen three times each
    *  carrying none — the shape where a raw count-weighted sd ranks the roles the wrong way round. */
   const spreadFixture = (): RoleDesign => {
-    const values: string[][] = [[], []];
-    const activity: number[] = [];
-    const molIdx: number[] = [];
+    const rows: DesignRow[] = [];
     let seed = 4242;
     const rnd = (): number => {
       seed = (seed * 1103515245 + 12345) & 0x7fffffff;
       return seed / 0x7fffffff - 0.5;
     };
-    let k = 0;
     for (let t = 0; t < 60; t++) {
-      for (let c = 0; c < 3; c++) {
-        values[0].push(`S${(t * 3 + c) % 4}`);
-        values[1].push(`T${t}`);
-        activity.push(6.0 + SOLID_EFFECT[(t * 3 + c) % 4] + 0.5 * rnd());
-        molIdx.push(k++);
-      }
+      for (let c = 0; c < 3; c++)
+        rows.push([[`S${(t * 3 + c) % 4}`, `T${t}`], 6.0 + SOLID_EFFECT[(t * 3 + c) % 4] + 0.5 * rnd(), rows.length]);
     }
-    return {names: ['Solid', 'Thin'], values, activity, molIdx, minSupport: 3, higherIsBetter: true};
+    return design(['Solid', 'Thin'], rows);
   };
 
   test('the spread subtracts the estimation noise it is comparing across', async () => {

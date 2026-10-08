@@ -510,7 +510,9 @@ i.chem-sar-card-twisty:hover {
   border-top: 1px solid var(--grey-2);
 }
 
-.chem-sar-cp-section-title {
+.chem-sar-cp-section-title,
+.chem-sar-sum-card-title,
+.chem-sar-sum-fold-title {
   font-weight: 600;
   font-size: 12px;
   color: var(--grey-6);
@@ -702,6 +704,17 @@ i.chem-sar-card-twisty:hover {
   text-align: center;
 }
 
+/* In a depiction's slot, at the slot's size: a long name is clipped rather than widening the row. */
+.chem-sar-sum-name-art {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  padding: 2px 4px;
+}
+
 .chem-sar-cp-frag-role {
   font-size: 10px;
   color: var(--grey-5);
@@ -727,12 +740,6 @@ i.chem-sar-card-twisty:hover {
   border-radius: 6px;
   /* A long registration id in a row name must not widen the track past its share. */
   min-width: 0;
-}
-
-.chem-sar-sum-card-title {
-  font-weight: 600;
-  font-size: 12px;
-  color: var(--grey-6);
 }
 
 /* Wraps, unlike the matrix pane's chip row: here the chips are the only totals, and a clipped chip
@@ -814,7 +821,8 @@ i.chem-sar-card-twisty:hover {
   margin-bottom: 6px;
 }
 
-.chem-sar-sum-arrow {
+.chem-sar-sum-arrow,
+.chem-sar-sum-comp-arrow {
   color: var(--grey-4);
   font-size: 12px;
 }
@@ -855,7 +863,8 @@ i.chem-sar-card-twisty:hover {
   margin-left: 6px;
 }
 
-.chem-sar-sum-row:hover .chem-sar-sum-go {
+.chem-sar-sum-row:hover .chem-sar-sum-go,
+.chem-sar-sum-answer:hover .chem-sar-sum-go {
   color: var(--grey-6);
 }
 
@@ -912,17 +921,6 @@ i.chem-sar-card-twisty:hover {
   color: var(--text-color-light);
 }
 
-/* Coverage, depth and the fitted-spread verdict: methodology, so it scrolls with the cards and stays
-   folded until asked for rather than standing between the reader and the answers. */
-.chem-sar-sum-method {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 8px;
-  padding: 4px 0 8px;
-  border-bottom: 1px solid var(--grey-2);
-}
-
 /* A double-transformed activity inverts every ranking on the tab, and prose will not catch it. */
 .chem-sar-sum-alarm {
   color: var(--red-3);
@@ -935,7 +933,6 @@ i.chem-sar-card-twisty:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 8px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--grey-2);
 }
@@ -947,7 +944,9 @@ i.chem-sar-card-twisty:hover {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  flex: 1 1 260px;
+  /* Three tiles on one line at the design size: the overview does not scroll, so a wrapped tile band
+     is content pushed under the clip rather than content further down. */
+  flex: 1 1 0;
   /* A long SMILES in the answer must not widen the tile past its share of the row. */
   min-width: 0;
   padding: 6px 8px;
@@ -967,10 +966,6 @@ i.chem-sar-card-twisty:hover {
   gap: 6px;
 }
 
-.chem-sar-sum-answer:hover .chem-sar-sum-go {
-  color: var(--grey-6);
-}
-
 /* Not a stat chip: one click here rebuilds every matrix. The stat chips it sits beside are inert and
    wear the same pill, so the two must not look alike. */
 .chem-sar-sum-role {
@@ -985,7 +980,6 @@ i.chem-sar-card-twisty:hover {
   background: var(--blue-1);
 }
 
-/* Sits where the series/families readout used to, at the right end of the segment bar. */
 /* The tier name and its count read as one pill. */
 .chem-sar-sum-seg-tiers .chem-sar-sum-role {
   display: flex;
@@ -1005,9 +999,11 @@ i.chem-sar-card-twisty:hover {
   margin-left: auto;
 }
 
-/* The label of the chip row beside it, so its descender spacing must not push it off their shared
-   centre line. */
-.chem-sar-sum-chips > .chem-sar-cp-hint {
+/* A hint sitting on a row beside other items: its own bottom margin would lift it off the row's centre
+   line, away from the value it belongs to. */
+.chem-sar-sum-chips > .chem-sar-cp-hint,
+.chem-sar-sum-comp-row .chem-sar-cp-hint,
+.chem-sar-sum-band-head .chem-sar-cp-hint {
   margin-bottom: 0;
 }
 
@@ -1035,9 +1031,11 @@ i.chem-sar-card-twisty:hover {
   flex: 0 0 auto;
 }
 
-/* Tried, but the series records nothing to compare against — a different fact from a loss, which the
-   signed tint already carries. */
-.chem-sar-sum-sq-hatch {
+/* Hatched where something exists with nothing to read it against: a group tried in a series that
+   records no comparator — a different fact from a loss, which the signed tint already carries — or a
+   compound held but never assayed. */
+.chem-sar-sum-sq-hatch,
+.chem-sar-sum-cov-held {
   background: repeating-linear-gradient(45deg, var(--grey-4) 0 2px, transparent 2px 6px), var(--grey-1);
 }
 
@@ -1087,9 +1085,7 @@ i.chem-sar-card-twisty:hover {
 
 /* ---- Summary tab: segments and marks ------------------------------------------------------ */
 
-/* A segmented control, not a nested tab control: the viewer's own tab strip sits 26px above this, and
-   two identical strips is the confusion a second level exists to avoid. It differs in shape, in active
-   state, in size and position, and in carrying a readout on its right. */
+/* Shaped unlike the viewer's own tab strip just above it, so the two never read as one control. */
 .chem-sar-sum-seg-bar {
   display: flex;
   align-items: center;
@@ -1144,7 +1140,10 @@ i.chem-sar-card-twisty:hover {
   min-width: 0;
 }
 
-.chem-sar-sum-pane {
+.chem-sar-sum-pane,
+.chem-sar-sum-effects,
+.chem-sar-sum-overview,
+.chem-sar-sum-making {
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -1180,14 +1179,13 @@ i.chem-sar-card-twisty:hover {
 }
 
 /* The landing band: one row per component column and one for the best measured swap, all the full width
-   of the tab. A tile beside these rows got a column too narrow for a structure. */
+   of the tab, which is what a drawn structure needs. */
 .chem-sar-sum-comp {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
   padding: 6px 8px;
-  margin-bottom: 8px;
   border: 1px solid var(--grey-2);
   border-radius: 6px;
 }
@@ -1234,12 +1232,6 @@ i.chem-sar-card-twisty:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* The hint's own bottom margin lifts it off the row's centre line, so it rides 4px above the value it
-   belongs to. */
-.chem-sar-sum-comp-row .chem-sar-cp-hint {
-  margin-bottom: 0;
-}
-
 /* One structure, or a swap's two with an arrow, in a slot wide enough for the pair — so the offset and
    the clause after it land on the same column in every row of the band. */
 .chem-sar-sum-comp-slot {
@@ -1253,25 +1245,11 @@ i.chem-sar-card-twisty:hover {
   gap: 2px;
 }
 
-.chem-sar-sum-comp-arrow {
-  font-size: 12px;
-  color: var(--grey-4);
-}
-
 /* The band's two foldable halves. The heading is a control, so it is darker than the hint under it, and
    when shut it carries that half's own conclusion beside the title. */
 .chem-sar-sum-band-head {
   padding: 2px 2px 3px;
   gap: 6px;
-}
-
-.chem-sar-sum-band-head .chem-sar-sum-fold-title {
-  font-weight: 600;
-  color: var(--grey-6);
-}
-
-.chem-sar-sum-band-head .chem-sar-cp-hint {
-  margin-bottom: 0;
 }
 
 /* Reads as one more row of the band, not as a section heading inside it. */
@@ -1299,12 +1277,6 @@ i.chem-sar-card-twisty:hover {
   cursor: pointer;
 }
 
-.chem-sar-sum-fold-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--grey-6);
-}
-
 .chem-sar-sum-fold-icon {
   font-size: 10px;
   color: var(--grey-4);
@@ -1319,18 +1291,8 @@ i.chem-sar-card-twisty:hover {
   grid-template-columns: 1fr;
 }
 
-.chem-sar-sum-effects {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-}
-
 /* The Effects segment's own tabs, underlined rather than wearing the segment bar's joined group: a
-   second strip of the same shape a row under the first reads as one control that has lost its state.
-   One card per component column stacks as tall as the decomposition is wide, and a landing screen
-   that must be scrolled to be read is not one. */
+   second strip of the same shape a row under the first reads as one control that has lost its state. */
 .chem-sar-sum-sub-bar {
   display: flex;
   align-items: center;
@@ -1381,11 +1343,6 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-sum-overview {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
   gap: 8px;
   padding: 8px 10px;
 }
@@ -1444,7 +1401,8 @@ i.chem-sar-card-twisty:hover {
   white-space: nowrap;
 }
 
-/* Three totals that each open the segment answering them; the run's own census figures stay on Method. */
+/* Two totals that each open the segment answering them, and a warning where values could not be scaled;
+   the run's own census figures stay on Method. */
 .chem-sar-sum-totals {
   display: flex;
   align-items: center;
@@ -1468,7 +1426,7 @@ i.chem-sar-card-twisty:hover {
   cursor: help;
 }
 
-/* MK-cov: four segments in a fixed left-to-right order over a label naming them in the same order, so
+/* Up to five segments in a fixed left-to-right order over a label naming them in the same order, so
    the label is the legend. */
 .chem-sar-sum-cov-box {
   display: flex;
@@ -1492,10 +1450,6 @@ i.chem-sar-card-twisty:hover {
 
 .chem-sar-sum-cov-real {
   background: var(--green-2);
-}
-
-.chem-sar-sum-cov-held {
-  background: repeating-linear-gradient(45deg, var(--grey-4) 0 2px, transparent 2px 6px), var(--grey-1);
 }
 
 .chem-sar-sum-cov-bad {
@@ -1523,7 +1477,6 @@ i.chem-sar-card-twisty:hover {
   white-space: nowrap;
 }
 
-/* MK-G: the observed range as a rule, with a mark at zero wherever anything observed is negative. */
 /* Takes the row's spare width rather than leaving it blank: the rule is the one graphic in the band,
    and a longer axis separates values a 120px one renders on top of each other. */
 .chem-sar-sum-rule-box {
@@ -1553,6 +1506,8 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-sum-rule-bar {
   position: absolute;
   top: 5px;
+  left: 0;
+  width: 100%;
   height: 1px;
   background: var(--grey-5);
 }
@@ -1584,14 +1539,13 @@ i.chem-sar-card-twisty:hover {
   background: var(--grey-6);
 }
 
-/* MK-D: a signed magnitude on a track carrying the analysis' own error band. A bar ending inside the
+/* A signed magnitude on a track carrying the analysis' own error band. A bar ending inside the
    band is a difference this analysis cannot resolve. */
 .chem-sar-sum-effbar {
   position: relative;
   width: 72px;
   height: 11px;
   flex: 0 0 auto;
-  min-width: 0;
   border: 1px solid var(--grey-3);
   border-radius: 2px;
   box-sizing: border-box;
@@ -1627,14 +1581,13 @@ i.chem-sar-card-twisty:hover {
   background: var(--red-3);
 }
 
-/* MK-E: a nominal three-state verdict, carried by fill and stroke and never by hue — "unchecked" must
+/* A nominal three-state verdict, carried by fill and stroke and never by hue — "unchecked" must
    not read as a failing grade, and a traffic light cannot say that. */
 .chem-sar-sum-dot {
   width: 9px;
   height: 9px;
   border-radius: 50%;
   flex: 0 0 auto;
-  min-width: 0;
   box-sizing: border-box;
   border: 1px solid var(--grey-6);
   background: var(--grey-6);
@@ -1652,14 +1605,13 @@ i.chem-sar-card-twisty:hover {
   border-color: var(--grey-4);
 }
 
-/* MK-F: multiples of a series' own leave-one-out error. Unfilled slots are drawn, not omitted, so
+/* Multiples of a series' own leave-one-out error. Unfilled slots are drawn, not omitted, so
    "one of four" never looks like "one of one". */
 .chem-sar-sum-ticks {
   display: flex;
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  min-width: 0;
   cursor: help;
 }
 
@@ -1682,17 +1634,15 @@ i.chem-sar-card-twisty:hover {
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
-  min-width: 0;
 }
 
-/* MK-B: five fixed slots in one order on every row. A slot that was not won is drawn empty, never
+/* Five fixed slots in one order on every row. A slot that was not won is drawn empty, never
    omitted — the lane's SHAPE is what a reader compares down the column. */
 .chem-sar-sum-lane {
   display: flex;
   align-items: center;
   gap: 2px;
   flex: 0 0 auto;
-  min-width: 0;
 }
 
 .chem-sar-sum-slot {
@@ -1714,14 +1664,13 @@ i.chem-sar-card-twisty:hover {
   color: var(--grey-1);
 }
 
-/* MK-C: one slot per series that tried the group — solid where it won and the fit holds, hatched where
+/* One slot per series that tried the group — solid where it won and the fit holds, hatched where
    it won and the fit does not, outlined where it was tried and did not win. */
 .chem-sar-sum-tally-box {
   display: flex;
   align-items: center;
   gap: 3px;
   flex: 0 0 auto;
-  min-width: 0;
   cursor: help;
 }
 
@@ -1758,51 +1707,36 @@ i.chem-sar-card-twisty:hover {
 
 /* ---- Summary tab: answers, Worth making, responsive --------------------------------------- */
 
-/* Three tiles on one line at the design size: the overview does not scroll, so a wrapped tile band is
-   content pushed under the clip rather than content further down. */
 .chem-sar-sum-overview > .chem-sar-sum-answers,
 .chem-sar-sum-overview > .chem-sar-sum-comp {
   flex: 0 0 auto;
-  margin-bottom: 0;
 }
 
-.chem-sar-sum-overview .chem-sar-sum-answer {
-  flex: 1 1 0;
-}
-
-.chem-sar-sum-narrow .chem-sar-sum-overview .chem-sar-sum-answer {
+.chem-sar-sum-narrow .chem-sar-sum-answer {
   flex: 1 1 100%;
 }
 
-.chem-sar-sum-answer-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
+/* Two lines, not one clipped one: neither the conclusion nor the negative, a full sentence with no
+   natural length, fits one line at the design size, and the Overview does not scroll. The full string
+   is on the tile's tooltip either way. */
+.chem-sar-sum-answer-value,
+.chem-sar-sum-answer .chem-sar-cp-hint {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
-/* Two lines, not one clipped one: the conclusion shares its line with a 72px effect bar and does not
-   fit at the design size. The full string is on the tile's tooltip either way. */
 .chem-sar-sum-answer-value {
   font-size: 12px;
   font-weight: 600;
   color: var(--grey-6);
   min-width: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
 }
 
-/* The tile's negative is a full sentence with no natural length, and the Overview does not scroll. */
 .chem-sar-sum-answer .chem-sar-cp-hint {
   margin-bottom: 0;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
 }
 
 .chem-sar-sum-shelf,
@@ -1816,11 +1750,6 @@ i.chem-sar-card-twisty:hover {
 /* A fixed column, not a scroll pane: the grid below resolves a percentage height against an indefinite
    parent to auto, so inside a scrolling ancestor it would sit at its minimum however tall the dock is. */
 .chem-sar-sum-making {
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
   gap: 10px;
   padding: 10px;
   overflow: hidden;
