@@ -7,15 +7,18 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [filters.cp.chem-and-bio-filters]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
+import {checkFilterAsYouDraw, uncheckFilterAsYouDraw} from '../../bindings/dialogs.js';
 import {filterPassesMatching} from '../../bindings/molecules.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {check, clearField, clickOn, hoverOver, pressKeyIn, shouldBe, shouldNotBe, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clearField, clickOn, hoverOver, pressKeyIn, shouldBe, shouldNotBe, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {filterPasses, filterPassesAll, noneOfFiltered, openEmptyFilterPanel} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {autostartsCompleted, openDataset, sketcherIs} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {addCardFor} from '@datagrok-libraries/bdd/bindings/tiers/viewers/filter-panel';
@@ -45,7 +48,7 @@ test.describe("The substructure card with the sketcher, other cards and a reopen
     });
     await run.scenario("With Filter as you draw cleared the sketch reaches the card on OK", async () => {
       await session.step(30, "When user clicks on \"Sketch\" text in \"Structure\" filter card", () => clickOn(page, el("\"Sketch\" text in \"Structure\" filter card")));
-      await session.step(31, "And user unchecks \"Filter as you draw\" input in sketcher dialog", () => uncheck(page, el("\"Filter as you draw\" input in sketcher dialog")));
+      await session.step(31, "And user unchecks \"Filter as you draw\" input in sketcher dialog", () => uncheckFilterAsYouDraw(page));
       await session.step(32, "Then \"Filter as you draw\" input in sketcher dialog should not be checked", () => shouldNotBe(page, el("\"Filter as you draw\" input in sketcher dialog"), "checked"));
       await session.step(33, "When user types \"c1ccncc1\" into molecule input of sketcher dialog", () => typeInto(page, "c1ccncc1", el("molecule input of sketcher dialog")));
       await session.step(34, "And user presses Enter in molecule input of sketcher dialog", () => pressKeyIn(page, "Enter", el("molecule input of sketcher dialog")));
@@ -73,7 +76,7 @@ test.describe("The substructure card with the sketcher, other cards and a reopen
     });
     await run.scenario("With Filter as you draw checked the edit reaches the grid with the sketcher open", async () => {
       await session.step(58, "When user clicks on the \"card Structure\" area of filter panel", () => clickArea(page, "card Structure", el("filter panel")));
-      await session.step(59, "And user checks \"Filter as you draw\" input in sketcher dialog", () => check(page, el("\"Filter as you draw\" input in sketcher dialog")));
+      await session.step(59, "And user checks \"Filter as you draw\" input in sketcher dialog", () => checkFilterAsYouDraw(page));
       await session.step(60, "Then \"Filter as you draw\" input in sketcher dialog should be checked", () => shouldBe(page, el("\"Filter as you draw\" input in sketcher dialog"), "checked"));
       await session.step(61, "When user clears molecule input of sketcher dialog", () => clearField(page, el("molecule input of sketcher dialog")));
       await session.step(62, "And user types \"c1ccncc1\" into molecule input of sketcher dialog", () => typeInto(page, "c1ccncc1", el("molecule input of sketcher dialog")));

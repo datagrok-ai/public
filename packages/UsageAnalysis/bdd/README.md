@@ -43,8 +43,9 @@ there lists the questions answered. They run with the suite, so an answer that s
 fails. `bindings/` keeps the steps only one
 viewer can define (the bar chart's bar order and lengths, the pie chart's slices, the pivot's
 aggregation against a `groupBy`, the correlation plot's coefficient against `DG.Stats`, the
-Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card); the
-rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
+Forms viewer's card rows, the tile viewer's designer, the filter panel's hierarchical card, the
+Mol* overlay buttons of the Biostructure viewer, the saved Oligo Pattern patterns a feature removes);
+the rest of the vocabulary is the library's (`npx grok-bdd list-steps`).
 
 `features/queries/`, `features/scripts/` and `features/connections/` are the TestTrack Queries,
 Scripts and Connections cases: the query editor (typed, visual, Transformations, Post-Process,
@@ -59,6 +60,12 @@ an external provider's writes); the MS SQL catalogs case needs a connection set 
 catalogs, which the Dbtests one is not. Every query, script, connection, layout, project and chat
 a feature makes is deleted at its end and swept at its start; the features that save into the
 shared NorthwindTest connection or search the Scripts view (an account setting) are `@serial`.
+
+`features/general/` is the TestTrack General section: logout and the login form, a profile's name,
+the Table Manager, the table view's Search box, molecules exported to CSV as SMILES, and the tab
+order through a project. What the section asks that a UI test should not claim went elsewhere: the
+search syntax to ddt's matcher tests, the export's content to Chem's; the credential matrix belongs
+to the server's tests. `features/general/MISSING.md` keeps the gaps still open.
 
 The [known-failure audit](../../../libraries/bdd/KNOWN_FAILURES.md) records the current defects,
 their observed failures and causes. The line-chart lasso scenario now passes without a tag:

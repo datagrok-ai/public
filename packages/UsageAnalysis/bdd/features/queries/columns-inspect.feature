@@ -1,9 +1,10 @@
 @realizes:views.queries
-Feature: Every column of a schema in the context panel
+Feature: Every column of a table in the context panel
   Clicking a column of a table in a connection's schema makes it the current object: the context
   panel shows it with its General, Actions, Inspect and Database meta panes. Translated from the
-  TestTrack Queries case columns-inspect (playwright-public/queries columns-inspect) — every table
-  of NorthwindTest's public schema, every column. Read-only.
+  TestTrack Queries case columns-inspect (playwright-public/queries columns-inspect), which walks
+  every table of the schema: the panel is built by the same code for every column, so one table —
+  categories, a column of each kind — says what the walk said, without its ninety clicks. Read-only.
 
   Not translated, and why: the PostgresDart run of the same walk — the panel is the same for every
   provider, and what differs is the provider's server side. The case's second part names
@@ -12,10 +13,11 @@ Feature: Every column of a schema in the context panel
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And the context panel is open
 
-  Scenario: Every column of every table of the public schema is shown on click
+  Scenario: Every column of a table is shown on click
     Given Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest tree node inside browse tree is expanded
@@ -24,7 +26,7 @@ Feature: Every column of a schema in the context panel
     Then Databases---Postgres---NorthwindTest---Orders tree node inside browse tree should be visible
     Given Databases---Postgres---NorthwindTest---Schemas tree node inside browse tree is expanded
     And Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree is expanded
-    When user clicks every column of every table under Databases---Postgres---NorthwindTest---Schemas---public tree node inside browse tree
+    When user clicks every column of Databases---Postgres---NorthwindTest---Schemas---public---categories tree node inside browse tree
     Then every clicked column should have been shown in the context panel with "General, Actions, Inspect, Database meta"
     And no errors should have been logged
     And no error or warning balloon should have been shown

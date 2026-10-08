@@ -5,8 +5,8 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
   Descriptors, Properties and MPO and not Rendering: the panel set follows what is current.
   Properties lists the nine OpenChemLib readings, Toxicity the four risks, Drug Likeness a score,
   and 2D Structure draws the molecule.
-  The same cell-level groups come up for V2000 molblocks in mol1K.sdf, for the V3000 molblocks of
-  ApprovedDrugs2015 and for the SMARTS patterns of ex_smarts.
+  The same panes over V2000, V3000 and SMARTS cells are tested in Chem src/tests/cell-panel-tests.ts
+  ('cell panel': properties, structure2d-widget.<notation>, drug-likeness, toxicity).
 
   On chembl-scaffolds, choosing Scaffold as the Rendering pane's scaffold column and ticking
   Highlight scaffold repaints the Smiles cells and puts the scaffold highlight colour into them,
@@ -59,44 +59,3 @@ Feature: The Chemistry, Biology and Structure panes of the Chem context panel
     Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors
     And "2D Structure" pane in context panel should not contain the text "Molecule is possibly malformed"
     And no errors should have been logged
-
-  @realizes:chem.cell.molecule
-  Scenario: A V2000 molblock cell gets the same three groups
-    Given user opens mol1K.sdf dataset
-    Then "molecule" column should have semantic type "Molecule"
-    And "molecule" column should have units "molblock"
-    Given the "molecule" cell of row 1 is the current object
-    Then Chemistry accordion header in context panel should be visible
-    When user expands Chemistry accordion header in context panel
-    And user expands Properties accordion header in context panel
-    Then "Properties" pane in context panel should contain the text "MW"
-    And "Properties" pane in context panel should not contain the text "Molecule is possibly malformed"
-    When user expands Structure accordion header in context panel
-    And user expands "2D Structure" accordion header in context panel
-    Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors
-    And no errors should have been logged
-
-  Scenario: A V3000 molblock cell gets the same three groups
-    Given user opens ApprovedDrugs2015 dataset
-    Then "molecule" column should have semantic type "Molecule"
-    Given the "molecule" cell of row 1 is the current object
-    When user expands Chemistry accordion header in context panel
-    And user expands Properties accordion header in context panel
-    Then "Properties" pane in context panel should contain the text "MW"
-    And "Properties" pane in context panel should not contain the text "Molecule is possibly malformed"
-    When user expands Structure accordion header in context panel
-    And user expands "2D Structure" accordion header in context panel
-    Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors
-    And no errors should have been logged
-
-  Scenario: A SMARTS cell gets its properties and its picture
-    Given user opens ex-smarts dataset
-    Then "SMARTS" column should have semantic type "Molecule"
-    Given the "SMARTS" cell of row 1 is the current object
-    When user expands Chemistry accordion header in context panel
-    And user expands Properties accordion header in context panel
-    Then "Properties" pane in context panel should contain the text "MW"
-    And "Properties" pane in context panel should not contain the text "Molecule is possibly malformed"
-    When user expands Structure accordion header in context panel
-    And user expands "2D Structure" accordion header in context panel
-    Then the canvases of "2D Structure" pane in context panel should be painted in at least 1 colors

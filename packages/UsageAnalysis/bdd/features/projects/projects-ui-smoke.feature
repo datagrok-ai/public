@@ -2,7 +2,7 @@
 Feature: A project through its card in the Dashboards gallery
   demog.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog, and every
   later step goes through the project's card in Browse > Dashboards: the Share dialog, Rename, the
-  Copy items, Add to favorites, Save as Zip, reopening by a double click and Delete Project.
+  Copy items, Add To Favorites (a submenu: Only for me, or a group), Save as Zip, reopening by a double click and Delete Project.
   Translated from the TestTrack case Projects/projects-ui-smoke.
 
   Parked (see the request document): the tag added in Context Panel > Details and the "#tag"
@@ -11,7 +11,7 @@ Feature: A project through its card in the Dashboards gallery
   second project saved without one, the card and the Details pane showing it, and changing it by
   saving again; the tag and the description surviving a page reload (no reload step); Copy > ID
   (a UUID the feature cannot know without reading the project on the server); the filled star in
-  the context panel's header after Add to favorites. The words of the recipient's line in the
+  the context panel's header after Add To Favorites. The words of the recipient's line in the
   Sharing pane ("has special permissions") are claimed on the pane as a whole.
 
   The recipient of the share is the library's sharing user (the md's "qa_playwright" is any user
@@ -96,13 +96,19 @@ Feature: A project through its card in the Dashboards gallery
     Then the clipboard should contain text "/p/Admin.BDDSmokeRenamed{time}"
 
   Scenario: The project is added to favorites and taken out again
-    Given "My stuff" tree node inside browse tree is expanded
+    Given "BDDSmokeRenamed{time}" is not in favorites
+    And "My stuff" tree node inside browse tree is expanded
     And "My stuff > Favorites" tree node inside browse tree is expanded
     Then "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree should be absent
-    When user picks "Add to favorites" from the context menu of BDDSmokeRenamed{time} gallery card
-    Then an info balloon containing "to favorites" should have been shown
-    And "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree should be visible
-    When user picks "Remove from favorites" from the context menu of "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree
+    When user picks "Add To Favorites > Only for me" from the context menu of BDDSmokeRenamed{time} gallery card
+    Then "BDDSmokeRenamed{time}" should be in favorites on the server
+    When user collapses "My stuff > Favorites" tree node inside browse tree
+    And user expands "My stuff > Favorites" tree node inside browse tree
+    Then "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree should be visible
+    When user picks "Add To Favorites > Only for me" from the context menu of BDDSmokeRenamed{time} gallery card
+    Then "BDDSmokeRenamed{time}" should not be in favorites on the server
+    When user collapses "My stuff > Favorites" tree node inside browse tree
+    And user expands "My stuff > Favorites" tree node inside browse tree
     Then "My stuff > Favorites > BDDSmokeRenamed{time}" tree node inside browse tree should be absent
 
   Scenario: The project is saved as a zip file

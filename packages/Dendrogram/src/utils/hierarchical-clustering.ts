@@ -182,14 +182,17 @@ export async function hierarchicalClusteringUI(
     // bail out if the table view was disposed while we were awaiting compute
     if (!tv?.grid || !tv?.grid?.dataFrame)
       return;
+    // `v` is the grid the layout restores; clustering runs only while the view named after its table is that
+    // grid's, since hierarchicalClustering finds its view by table name, and that view may have closed or be another
     tv.grid.props.onInitializedScript = `
       setTimeout(async () => {
-        const t = grok.shell.table('${tv.dataFrame.name}');
-        if (!t)
+        const t = v.dataFrame;
+        const hosted = () => t != null && grok.shell.tableView(t.name)?.grid?.root === v.root;
+        if (!hosted())
           return;
         await t.meta.detectSemanticTypes();
         const func = DG.Func.find({name: 'hierarchicalClustering'})[0];
-        if (!func)
+        if (!func || !hosted())
           return;
         const cols = ${JSON.stringify(colNameList)};
         func.apply({

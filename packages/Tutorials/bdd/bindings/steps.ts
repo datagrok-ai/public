@@ -118,13 +118,17 @@ export const closeTutorial = When('user closes the tutorial', async (page: Page)
 
 
 /** A step entry by its instruction exactly as shown — a {string}, since instructions quote what the
- * learner types ('Name a column "BMI"'), which an element phrase cannot hold. */
-function stepEntry(page: Page, instruction: string) {
-  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${instruction.replace(/"/g, '\\"')}"]`);
+ * learner types ('Name a column "BMI"'), which an element phrase cannot hold. A tutorial names a
+ * modifier as the learner's keyboard labels it (`platformKeyMap`, src/tracks/shortcuts.ts), so on a Mac
+ * the Ctrl and Alt a feature writes read Command and Option. */
+async function stepEntry(page: Page, instruction: string) {
+  const mac = await page.evaluate(() => navigator.platform.toLowerCase().includes('mac'));
+  const shown = mac ? instruction.replace(/\bCtrl\b/g, 'Command').replace(/\bAlt\b/g, 'Option') : instruction;
+  return page.locator(`.grok-tutorial-entry[role="checkbox"][aria-label="${shown.replace(/"/g, '\\"')}"]`);
 }
 
 export const stepDone = Then('the tutorial step {string} should be done', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(async () => {
     const states = await entries.evaluateAll((els) => els.map((e) => `${e.getAttribute('aria-checked')}${e.getAttribute('aria-invalid') === 'true' ? ' invalid' : ''}`));
     return states.length === 0 ? 'not listed' : states.includes('true') ? 'done' : states.join(', ');
@@ -132,13 +136,13 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
 }, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
 
 export const stepDoneTimes = Then('the tutorial step {string} should be done {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').length),
     {message: `checked entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats ("Open scatter plot"): that many of its entries are checked'});
 
 export const stepNotDone = Then('the tutorial step {string} should not be done yet', async (page: Page, instruction: string) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.every((e) => e.getAttribute('aria-checked') === 'false') ? 'pending' : 'done'),
     {message: `the tutorial step "${instruction}"`}).toBe('pending');
 }, {description: 'the entry is listed and still unchecked — the claim that pairs with a gesture which must not tick it'});
@@ -162,7 +166,7 @@ export const walkTour = When('user goes through the tour to its end', async (pag
 }, {tier: 'ui', description: '"next" on every page of the guided tour, then "done" — the tour closes'});
 
 export const stepListedTimes = Then('the tutorial step {string} should be listed {int} times', async (page: Page, instruction: string, times: number) => {
-  const entries = stepEntry(page, instruction);
+  const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.count(), {message: `entries "${instruction}"`}).toBe(times);
 }, {description: 'for an instruction a tutorial repeats: its Nth entry is on the list — the tutorial has prepared that step'});
 

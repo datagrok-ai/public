@@ -73,11 +73,22 @@ export namespace chem {
   /** A common interface that all sketchers should implement */
   export abstract class SketcherBase extends Widget {
     onChanged: Subject<any> = new Subject<any>();
+    /** Fires each time a drawing the implementation shows has landed on the page, as a viewer's `onViewerRendered`
+     * does: with {@link isRenderPending}, what automated tests wait on instead of a timeout (the BDD library's settles
+     * wait on both). An implementation that draws asynchronously fires it once per drawing; the base never does. */
+    onRendered: Subject<void> = new Subject<void>();
     host?: Sketcher;
     _name: string = '';
 
     constructor() {
       super(ui.box());
+    }
+
+    /** True while a change is on its way to the page (a drawing, a held gesture), as a viewer's `isRenderPending`:
+     * what a test waits on instead of a timeout, with {@link onRendered}. Undefined when the implementation does not
+     * say, as the base does not. */
+    get isRenderPending(): boolean | undefined {
+      return undefined;
     }
 
     /**
@@ -153,6 +164,17 @@ export namespace chem {
     onAlignedChanged: Subject<boolean> = new Subject<boolean>();
     /** Fires when the "highlight" substructure-filter option is toggled. */
     onHighlightChanged: Subject<boolean> = new Subject<boolean>();
+    /** Fires when an implementation is ready: initialized, listened to, and showing the molecule the host holds. It fires
+     * once for every implementation that becomes ready, so a switch of sketcher (the ≡ menu) fires it again; and it
+     * fires synchronously at that moment, so a subscriber acts before any user input reaches the implementation.
+     * See {@link sketcherReady}. */
+    onSketcherReady: Subject<SketcherBase> = new Subject<SketcherBase>();
+    /** The implementation announced ready by {@link onSketcherReady}, until the next switch of sketcher begins. */
+    private _readySketcher: SketcherBase | null = null;
+    /** Counts the switches of sketcher begun, so that only the latest one announces its implementation. */
+    private _switches = 0;
+    /** True once {@link createSketcher} has built the DOM. */
+    private _created = false;
     sketcherFunctions: Func[] = [];
     sketcherDialogOpened = false;
 
@@ -166,6 +188,8 @@ export namespace chem {
     _smarts: string | null = null;
     /** Molblock notation of the last value set: V2000 or V3000. */
     molFileUnits = Notation.MolBlock;
+    /** Counts the values set, so that one set while an implementation initializes is shown once it is ready. */
+    private _valuesSet = 0;
 
     loader: HTMLDivElement = ui.loader();
     extSketcherDiv = ui.div([], {style: {cursor: 'pointer'}});
@@ -261,6 +285,7 @@ export namespace chem {
 
     /** Sets the molecule from SMILES; runs validation. */
     setSmiles(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smiles = x;
       this._molfile = null;
@@ -284,6 +309,7 @@ export namespace chem {
 
     /** Sets the molecule from a molblock, V2000 or V3000; runs validation. */
     setMolFile(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._molfile = x;
       this._smiles = null;
@@ -303,6 +329,7 @@ export namespace chem {
 
     /** Sets the query pattern from SMARTS; runs validation. */
     setSmarts(x: string): void {
+      this._valuesSet++;
       this.validate(x);
       this._smarts = x;
       this._molfile = null;
@@ -438,9 +465,23 @@ export namespace chem {
         this._mode = SKETCHER_MODE.EXTERNAL;
     }
 
-    /** True when the sketcher is hosted in a popup. */
+    /** Resolves to the implementation once it is ready ({@link onSketcherReady}): at once when the current one is ready
+     * and no switch of sketcher is under way, else at the next announcement. A switch begun before the call (the ≡ menu,
+     * a thumbnail's dialog opening) is waited for. Await it instead of polling `sketcher.isInitialized`. */
+    sketcherReady(): Promise<SketcherBase> {
+      if (this._readySketcher !== null && this._readySketcher === this.sketcher)
+        return Promise.resolve(this._readySketcher);
+      return new Promise((resolve) => {
+        const sub = this.onSketcherReady.subscribe((sketcher) => {
+          sub.unsubscribe();
+          resolve(sketcher);
+        });
+      });
+    }
+
+    /** True when the implementation is shown in a popup (not in the dialog a thumbnail in a popup opens). */
     isInPopupContainer(): boolean {
-      return !!this.root.closest('.d4-popup-host');
+      return !!this.host.closest('.d4-popup-host');
     }
 
     /** Resizes the current implementation to its host. */
@@ -451,7 +492,12 @@ export namespace chem {
       }
     }
 
+    /** Builds the sketcher's DOM, inplace or external, once: 100 ms after construction, or earlier when a host that needs
+     * it now calls it (the substructure filter, once its card is in the page: the mode is then known). */
     createSketcher() {
+      if (this._created)
+        return;
+      this._created = true;
       this.sketcherFunctions = Func.find({meta: {role: FUNC_TYPES.MOLECULE_SKETCHER}});
       this.setExternalModeForSubstrFilter();
       if (this._mode === SKETCHER_MODE.INPLACE)
@@ -623,16 +669,22 @@ export namespace chem {
           .endGroup()
           .separator()
           .items(this.sketcherFunctions.map((f) => f.friendlyName), (friendlyName: string) => {
-            if (currentSketcherType === friendlyName)
-              return;
+            // The pick is the session's sketcher, and the account's from now on, sent to the server at once (a page
+            // reloaded right after keeps it); and this host's, which may hold another than the session's (a host made
+            // before the session's last switch): it switches unless it holds the pick already.
             currentSketcherType = friendlyName;
-            grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
-            this.sketcherType = currentSketcherType;
+            if (grok.userSettings.getValue(STORAGE_NAME, KEY) !== friendlyName) {
+              grok.userSettings.add(STORAGE_NAME, KEY, friendlyName);
+              grok.userSettings.flush();
+            }
+            if (this._sketcherType === friendlyName)
+              return;
+            this.sketcherType = friendlyName;
             if (!this.resized)
               this._autoResized = true;
           },
             {
-              isChecked: (item) => item === currentSketcherType, toString: item => item,
+              isChecked: (item) => item === this._sketcherType, toString: item => item,
               radioGroup: 'sketcher type'
             })
           .show({element: menuHost, x: this.host.parentElement ? calculatePopupPosition(this.host.parentElement) : 10, y: 10});
@@ -653,7 +705,14 @@ export namespace chem {
 
     // id that tracks id of changing sketcher type, so that multiple waitfordoms do not accumulate.
     private _sketcherChangeId = 0; 
+    /** The sketcher this host shows, or is switching to: its options menu checks it. */
+    private _sketcherType: string | null = null;
     private _setSketcherType(sketcherType: string): void {
+      this._sketcherType = sketcherType;
+      const valuesSet = this._valuesSet;
+      // a switch begins: sketcherReady() waits for the implementation it brings
+      const switchId = ++this._switches;
+      this._readySketcher = null;
       const getMolecule = async () => {
         //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
         if (this.sketcher?.explicitMol)
@@ -695,9 +754,27 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        if (molecule)
+        // a value set while the implementation initialized was only stored, and is newer than the one taken above
+        if (this._valuesSet !== valuesSet)
+          this._setStoredMolecule();
+        else if (molecule)
           this.setMolecule(molecule!, this._smarts !== null);
+        // Ready: initialized, listened to, showing the host's molecule. Announced here, synchronously, so a subscriber
+        // acts before any user input; unless a later switch has begun, whose implementation will be announced instead.
+        if (switchId === this._switches && this.sketcher === sketcher) {
+          this._readySketcher = sketcher;
+          this.onSketcherReady.next(sketcher);
+        }
       });
+    }
+
+    private _setStoredMolecule(): void {
+      if (this._molfile !== null)
+        this.setMolFile(this._molfile);
+      else if (this._smarts !== null)
+        this.setSmarts(this._smarts);
+      else if (this._smiles !== null)
+        this.setSmiles(this._smiles);
     }
 
     private _setSketcherSize() {
@@ -727,11 +804,13 @@ export namespace chem {
       }
     }
 
+    /** True for an empty value: '' or a molblock with no atoms, V2000 or V3000 (WHITE_MOLBLOCK_V_3000 included, whose
+     * header is two lines, not three). */
     static isEmptyMolfile(molFile: string): boolean {
       const rowWithAtomsAndNotation = molFile && molFile.split("\n").length >= 4 ? molFile.split("\n")[3] : '';
       return (molFile == null || molFile == '' ||
        (rowWithAtomsAndNotation.trimStart()[0] === '0' && rowWithAtomsAndNotation.trimEnd().endsWith('V2000')) ||
-       (rowWithAtomsAndNotation.trimEnd().endsWith('V3000') && molFile.includes('COUNTS 0')));
+       (molFile.includes('V3000') && /^M  V30 COUNTS 0 /m.test(molFile)));
     }
 
 

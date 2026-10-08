@@ -67,7 +67,10 @@ Under the pnpm workspace the package and the library resolve to one `@playwright
 A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
 and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
 `BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
-feature that fails on what an earlier one left behind.
+feature that fails on what an earlier one left behind. `BDD_MOLECULE_SKETCHER=<name>` runs the
+suite with one molecule sketcher: `Given the molecule sketcher is "…"` pins that one instead of the
+feature's own, and a feature about one sketcher's own controls, tagged `@sketcher-controls`, skips
+with its reason under an override that names another.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
@@ -261,7 +264,10 @@ list is the reference; this is the map:
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts, a visible count remembered and then
-  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list), a value
+  remembered and claimed again after a reload (`should (not) have the remembered value`), one choice
+  a dropdown does or does not offer, and the downloads (none at all, a file by a name pattern, the
+  occurrences of a text in the last one). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
   collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
   `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
@@ -282,9 +288,10 @@ list is the reference; this is the map:
   files or a space for the feature (deleted at feature end), a file dropped from disk, the file
   chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
-  equal row by row), calculated and renamed columns, colour coding,
-  other open tables, links between tables, the filter panel's cards through its own API.
+  filter set and checked row by row (and how many selected rows the filter lets through), cells
+  (every value, some value, distinct lengths, two columns equal row by row), calculated and renamed
+  columns, colour coding, other open tables, links between tables, the filter panel's cards through
+  its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
 - **A package function the UI offers no entry to**, called for what it shows (`platform/functions.ts`;
@@ -349,7 +356,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins, a right-click
+  on the empty space past a grid row's last column, the columns a column picker offers (read from
+  its own table and dismissed), and a Select columns list exactly or without a column.
 - **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
   viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
   it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.
@@ -368,6 +377,19 @@ Area hovers also settle before the next step. Grid cell tooltip requests partici
 core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
 consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
 check. A served core must include the tracked grid tooltip debounce for these absence checks.
+
+**The `molecules` tier** is for a package whose features draw or read molecules wherever a host opens a sketcher (a
+cell editor, a molecule input's dialog, an app's inline sketcher): `crux sketcher widget` (Crux Sketch, Chem's own
+sketcher, its root named `cruxSketch`: its atoms and bonds as `atom N` and `bond N` areas; its parts as areas and as
+`<part> of crux sketcher widget`, `canvas`, `actions`, `tools`, `elements`, `templates` and `label editor`; each control
+a toolbar shows as a `tool <name>` area, by Crux's name for it (`tool ring.benzene`); its `ready`, `pending`, `smiles`,
+`atoms`, `bonds`, `mode`, `selected atoms`, `selected bonds`, `tool`, `query`, `empty` and `changes` readings; its
+gestures settle on its `isRenderPending` and `onRendered`), Crux's controls by their test ids (`crux canvas`, `crux single bond tool`, `crux benzene tool`,
+`crux nitrogen tool`, `crux R-group tool`, `crux R1 button`, `crux clear button`, …), `the "<reading>" reading of
+<widget> should be the molecule "<SMILES>"` and `… the molecule in row N of "<column>" column`, `the molecule in row N
+of "<column>" column should be "<SMILES>"` (each read by RDKit, any notation), and `the semantic types of the current
+table are detected`. It needs Chem on the stand, so a package other than Chem gates on it (`Given the "Chem" package
+is installed`); a feature that draws on Crux pins it (`the molecule sketcher is "Crux"`) and is `@sketcher-controls`.
 
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
@@ -391,6 +413,18 @@ place; later providers override earlier entries. Providers run on each status re
 `super.getWidgetStatus()`. Geometry uses the widget's coordinate system and must exclude anything
 no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
 table-specific providers registered again.
+
+A widget that is no viewer and lives outside one (a molecule sketcher in a dialog) takes part the
+same way: its own status provider, registered on itself, makes it a widget the platform knows, and
+the viewers tier's area and reading steps find it as the nearest such widget up from the element a
+phrase names. Chem's Crux sketcher reports its atoms and bonds as `atom N` and `bond N` areas and
+readings such as `smiles`, `atoms` and `pending`, and a `get isRenderPending()` its gestures settle on:
+
+```gherkin
+When user clicks on crux single bond tool
+And user drags the "atom 1" area of crux sketcher widget by 60 pixels to the right
+Then the "atoms" reading of crux sketcher widget should be 3
+```
 
 ## Guides: a scenario as a how-to video
 

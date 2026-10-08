@@ -26,7 +26,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     await ensureContextPanelOpen(page);
   });
 
-  test('Browse-Fav-01 — Add to favorites from the tree context menu', async ({ page }) => {
+  test('Browse-Fav-01 — Add To Favorites from the tree context menu', async ({ page }) => {
     const sink = watchErrors(page);
 
     await expandTreeGroup(page, 'Apps');
@@ -56,7 +56,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
 
     await openContextMenu();
     await expect(contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES),
-      'After cleanup, "Add to favorites" must be present').toBeVisible({ timeout: 5_000 });
+      'After cleanup, "Add To Favorites" must be present').toBeVisible({ timeout: 5_000 });
     await contextMenuItem(page, CONTEXT_MENU_ADD_FAVORITES).click();
     await page.waitForTimeout(1500);
 
@@ -154,7 +154,7 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     }
   });
 
-  test('Browse-Fav-05 — file / cell context menu does not expose Add to favorites', async ({ page }) => {
+  test('Browse-Fav-05 — file / cell context menu does not expose Add To Favorites', async ({ page }) => {
     const sink = watchErrors(page);
 
     await page.goto(`${process.env.DATAGROK_URL!}/files/System.DemoFiles/?browse=files`);
@@ -172,9 +172,9 @@ test.describe('Browse favorites (Browse-Fav-*)', () => {
     await expect(page.locator(CONTEXT_MENU), 'Context menu must open').toBeVisible({ timeout: 5_000 });
 
     const addItems = page.locator(`${CONTEXT_MENU} .d4-menu-item-label`,
-      { hasText: /^Add to favorites$/i });
+      { hasText: /^Add To Favorites$/i });
     expect(await addItems.count(),
-      '"Add to favorites" must not appear for a non-entity file').toBe(0);
+      '"Add To Favorites" must not appear for a non-entity file').toBe(0);
 
     await page.keyboard.press('Escape');
     await expectNoErrors(page, sink);

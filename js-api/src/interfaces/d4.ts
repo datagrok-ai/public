@@ -494,6 +494,8 @@ export interface IScatterPlotSettings {
 
   colorAxisType: keyof typeof AxisType;
 
+  /** Reverses the viewer's color scheme and the column's linear color-coding.
+   * Does not apply to the column's conditional or categorical color-coding. */
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -683,6 +685,53 @@ export interface IScatterPlotSettings {
 
   defaultRenderer: boolean;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /** Determines the rows shown on the plot. */
+  rowSource: keyof typeof RowSet;
+
+  /** Formula that filters out rows to show.
+   * Examples:
+   * ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+   * ${SEVERITY} == 'Medium',
+   * ${RACE}.endsWith('sian') */
+  filter: string;
+
+  /** Viewer controls elements font. */
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  /** Properties common for all viewers
+   * todo: use code generation */
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /** Viewer description that gets shown at the *Descriptor Position*.
+   * Markup is supported. */
+  description: string;
+
+  /** Help to be shown when user clicks on the '?' icon on top.
+   * Could either be in markdown, or a URL (starting with '/' or 'http'). */
+  help: string;
+
+  /** Namespace-qualified function that gets executed when a viewer is initialized */
+  initializationFunction: string;
+
+  /** JavaScript that gets executed after a viewer is initialized and added to the TableView */
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
   /** Regression line visibility (toggle by pressing R). */
   showRegressionLine: boolean;
 
@@ -761,53 +810,6 @@ export interface IScatterPlotSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
-  /** Determines the rows shown on the plot. */
-  rowSource: keyof typeof RowSet;
-
-  /** Formula that filters out rows to show.
-   * Examples:
-   * ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-   * ${SEVERITY} == 'Medium',
-   * ${RACE}.endsWith('sian') */
-  filter: string;
-
-  /** Viewer controls elements font. */
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  /** Properties common for all viewers
-   * todo: use code generation */
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /** Viewer description that gets shown at the *Descriptor Position*.
-   * Markup is supported. */
-  description: string;
-
-  /** Help to be shown when user clicks on the '?' icon on top.
-   * Could either be in markdown, or a URL (starting with '/' or 'http'). */
-  help: string;
-
-  /** Namespace-qualified function that gets executed when a viewer is initialized */
-  initializationFunction: string;
-
-  /** JavaScript that gets executed after a viewer is initialized and added to the TableView */
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
@@ -906,6 +908,9 @@ export interface IBarChartSettings {
 
   showStackSelector: boolean;
 
+  /** Shows the share of each stack segment in its bar, in percent, when the segment fits the label. */
+  showStackPercentage: boolean;
+
   /** Whether the selected rows are indicated.
    * Only works for cumulative aggregations such as count. */
   showSelectedRows: boolean;
@@ -981,28 +986,6 @@ export interface IBarChartSettings {
 
   showLabels: string;
 
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  annotationFont: string;
-
-  formulaLines: string;
-
-  /** Control the visibility of viewer-level formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showViewerFormulaLines: boolean;
-
-  /** Control the visibility of dataframe-originated formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showDataframeFormulaLines: boolean;
-
-  formulaFont: string;
-
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
@@ -1046,6 +1029,28 @@ export interface IBarChartSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /** Control the visibility of viewer-level formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showViewerFormulaLines: boolean;
+
+  /** Control the visibility of dataframe-originated formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -1130,6 +1135,8 @@ export interface IBoxPlotSettings {
 
   colorAxisType: keyof typeof AxisType;
 
+  /** Reverses the viewer's color scheme and the column's linear color-coding.
+   * Does not apply to the column's conditional or categorical color-coding. */
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -1345,28 +1352,6 @@ export interface IBoxPlotSettings {
    * Requires *showTooltip* to be enabled. */
   rowTooltip: string;
 
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  annotationFont: string;
-
-  formulaLines: string;
-
-  /** Control the visibility of viewer-level formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showViewerFormulaLines: boolean;
-
-  /** Control the visibility of dataframe-originated formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showDataframeFormulaLines: boolean;
-
-  formulaFont: string;
-
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
@@ -1413,6 +1398,28 @@ export interface IBoxPlotSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /** Control the visibility of viewer-level formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showViewerFormulaLines: boolean;
+
+  /** Control the visibility of dataframe-originated formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -1719,28 +1726,6 @@ export interface IDensityPlotSettings {
 
   viewport: string;
 
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  annotationFont: string;
-
-  formulaLines: string;
-
-  /** Control the visibility of viewer-level formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showViewerFormulaLines: boolean;
-
-  /** Control the visibility of dataframe-originated formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showDataframeFormulaLines: boolean;
-
-  formulaFont: string;
-
   /** Determines the rows shown on the plot. */
   rowSource: keyof typeof RowSet;
 
@@ -1783,6 +1768,28 @@ export interface IDensityPlotSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /** Control the visibility of viewer-level formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showViewerFormulaLines: boolean;
+
+  /** Control the visibility of dataframe-originated formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -2082,28 +2089,6 @@ export interface IHistogramSettings {
 
   aggTooltipColumns: string;
 
-  annotationRegions: string;
-
-  showViewerAnnotationRegions: boolean;
-
-  showDataframeAnnotationRegions: boolean;
-
-  annotationFont: string;
-
-  formulaLines: string;
-
-  /** Control the visibility of viewer-level formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showViewerFormulaLines: boolean;
-
-  /** Control the visibility of dataframe-originated formula lines.
-   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
-   * Requires the PowerPack plugin. */
-  showDataframeFormulaLines: boolean;
-
-  formulaFont: string;
-
   legendVisibility: keyof typeof VisibilityMode;
 
   legendPosition: keyof typeof FlexAutoPosition;
@@ -2146,6 +2131,28 @@ export interface IHistogramSettings {
   descriptionPosition: keyof typeof FlexPosition;
 
   descriptionVisibilityMode: keyof typeof VisibilityMode;
+
+  annotationRegions: string;
+
+  showViewerAnnotationRegions: boolean;
+
+  showDataframeAnnotationRegions: boolean;
+
+  annotationFont: string;
+
+  formulaLines: string;
+
+  /** Control the visibility of viewer-level formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showViewerFormulaLines: boolean;
+
+  /** Control the visibility of dataframe-originated formula lines.
+   * Edit formula lines by right-clicking and selecting "Tools | Formula Lines" from the popup menu.
+   * Requires the PowerPack plugin. */
+  showDataframeFormulaLines: boolean;
+
+  formulaFont: string;
 
 }
 
@@ -2458,6 +2465,61 @@ export interface ILineChartSettings {
 
   aggTooltipColumns: string;
 
+  legendVisibility: keyof typeof VisibilityMode;
+
+  legendPosition: keyof typeof FlexAutoPosition;
+
+  /** Determines the rows shown on the plot. */
+  rowSource: keyof typeof RowSet;
+
+  /** Formula that filters out rows to show.
+   * Examples:
+   * ${AGE} > 20 or ${WEIGHT / 2)} > 100,
+   * ${SEVERITY} == 'Medium',
+   * ${RACE}.endsWith('sian') */
+  filter: string;
+
+  /** Viewer controls elements font. */
+  controlsFont: string;
+
+  allowDynamicMenus: boolean;
+
+  /** Properties common for all viewers
+   * todo: use code generation
+   * Properties common for all viewers
+   * todo: use code generation */
+  showContextMenu: boolean;
+
+  title: string;
+
+  showTitle: boolean;
+
+  table: string;
+
+  /** Viewer description that gets shown at the *Descriptor Position*.
+   * Markup is supported.
+   * Viewer description that gets shown at the *Descriptor Position*.
+   * Markup is supported. */
+  description: string;
+
+  /** Help to be shown when user clicks on the '?' icon on top.
+   * Could either be in markdown, or a URL (starting with '/' or 'http').
+   * Help to be shown when user clicks on the '?' icon on top.
+   * Could either be in markdown, or a URL (starting with '/' or 'http'). */
+  help: string;
+
+  /** Namespace-qualified function that gets executed when a viewer is initialized
+   * Namespace-qualified function that gets executed when a viewer is initialized */
+  initializationFunction: string;
+
+  /** JavaScript that gets executed after a viewer is initialized and added to the TableView
+   * JavaScript that gets executed after a viewer is initialized and added to the TableView */
+  onInitializedScript: string;
+
+  descriptionPosition: keyof typeof FlexPosition;
+
+  descriptionVisibilityMode: keyof typeof VisibilityMode;
+
   /** Regression line visibility (toggle by pressing R). */
   showRegressionLine: boolean;
 
@@ -2530,61 +2592,6 @@ export interface ILineChartSettings {
   showDataframeFormulaLines: boolean;
 
   formulaFont: string;
-
-  legendVisibility: keyof typeof VisibilityMode;
-
-  legendPosition: keyof typeof FlexAutoPosition;
-
-  /** Determines the rows shown on the plot. */
-  rowSource: keyof typeof RowSet;
-
-  /** Formula that filters out rows to show.
-   * Examples:
-   * ${AGE} > 20 or ${WEIGHT / 2)} > 100,
-   * ${SEVERITY} == 'Medium',
-   * ${RACE}.endsWith('sian') */
-  filter: string;
-
-  /** Viewer controls elements font. */
-  controlsFont: string;
-
-  allowDynamicMenus: boolean;
-
-  /** Properties common for all viewers
-   * todo: use code generation
-   * Properties common for all viewers
-   * todo: use code generation */
-  showContextMenu: boolean;
-
-  title: string;
-
-  showTitle: boolean;
-
-  table: string;
-
-  /** Viewer description that gets shown at the *Descriptor Position*.
-   * Markup is supported.
-   * Viewer description that gets shown at the *Descriptor Position*.
-   * Markup is supported. */
-  description: string;
-
-  /** Help to be shown when user clicks on the '?' icon on top.
-   * Could either be in markdown, or a URL (starting with '/' or 'http').
-   * Help to be shown when user clicks on the '?' icon on top.
-   * Could either be in markdown, or a URL (starting with '/' or 'http'). */
-  help: string;
-
-  /** Namespace-qualified function that gets executed when a viewer is initialized
-   * Namespace-qualified function that gets executed when a viewer is initialized */
-  initializationFunction: string;
-
-  /** JavaScript that gets executed after a viewer is initialized and added to the TableView
-   * JavaScript that gets executed after a viewer is initialized and added to the TableView */
-  onInitializedScript: string;
-
-  descriptionPosition: keyof typeof FlexPosition;
-
-  descriptionVisibilityMode: keyof typeof VisibilityMode;
 
 }
 
@@ -3007,6 +3014,8 @@ export interface IPcPlotSettings {
 
   colorAxisType: keyof typeof AxisType;
 
+  /** Reverses the viewer's color scheme and the column's linear color-coding.
+   * Does not apply to the column's conditional or categorical color-coding. */
   invertColorScheme: boolean;
 
   colorMin: number;

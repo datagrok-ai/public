@@ -13,6 +13,7 @@ import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
 import './tests/crux-substructure-search-tests';
+import './tests/crux-sketcher-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';
@@ -24,6 +25,7 @@ import './tests/screening-tools';
 import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
+import './tests/save-as-csv-tests';
 import './tests/substructure-filter-tests';
 
 import './tests/mol2-importer-tests';

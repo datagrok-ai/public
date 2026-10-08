@@ -21,6 +21,7 @@ export {
   expandTreeGroup,
   watchErrors,
   expectNoErrors,
+  setPersonalFavorite,
 } from '../browse/helpers';
 
 import { BASE, ensureContextPanelOpen } from '../browse/helpers';

@@ -26,7 +26,7 @@ test('Table Manager lists open tables', async ({page}) => {
   expect(opened.count).toBe(TABLE_NAMES.length);
   for (const n of TABLE_NAMES) expect(opened.names).toContain(n);
 
-  await page.evaluate(() => (window as any).grok.shell.windows.showTables = true);
+  await page.keyboard.press('Alt+T');
   await page.locator('[name="Tables"]').waitFor({state: 'attached', timeout: 15_000});
   const manager = await page.evaluate((names) => {
     const grok = (window as any).grok;
@@ -47,8 +47,8 @@ test('Table Manager lists open tables', async ({page}) => {
   for (const row of manager.namesRendered)
     expect(row.found, `table "${row.n}" should be listed in the Table Manager`).toBe(true);
 
-  await softStep('View | Tables toggles the manager off', async () => {
-    await page.evaluate(() => (window as any).grok.shell.windows.showTables = false);
+  await softStep('Alt+T toggles the manager off', async () => {
+    await page.keyboard.press('Alt+T');
     await page.waitForFunction(() => (window as any).grok.shell.windows.showTables === false,
       null, {timeout: 15_000});
   });

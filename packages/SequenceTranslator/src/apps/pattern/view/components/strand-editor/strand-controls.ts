@@ -2,7 +2,7 @@ import * as ui from 'datagrok-api/ui';
 
 import $ from 'cash-dom';
 
-import {STRAND, STRANDS, STRAND_LABEL} from '../../../model/const';
+import {STRAND, STRANDS, STRAND_LABEL, STRAND_NAME} from '../../../model/const';
 import {EventBus} from '../../../model/event-bus';
 import {StrandType} from '../../../model/types';
 import {isOverhangNucleotide} from '../../../model/utils';
@@ -77,8 +77,12 @@ export class StrandControls {
         (a, b) => a.toLowerCase().localeCompare(b.toLowerCase())
       );
     const nucleotides = this.eventBus.getNucleotideSequences()[strand];
+    const positions = this.displayedInputLabels.get(strand)!;
     const choiceInputs = nucleotides.map((nucleotide, index) => {
       const input = ui.input.choice<string>('', {value: nucleotide, items: nucleotideBaseChoices});
+      // captionless: named after the position its row shows (overhangs show none); any change rebuilds the dialog
+      if (positions[index])
+        input.root.setAttribute('name', `input-host-${STRAND_NAME[strand]}-modification-${positions[index]}`);
       input.onInput.subscribe(() => {
         const newValue = input.value!;
         this.eventBus.setNucleotide(strand, index, newValue);

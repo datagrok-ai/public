@@ -9,7 +9,8 @@ Feature: Putting files into a space by dragging them
   between two spaces, on a copy, where it costs nothing.
 
   The old spec reached the files with page.goto(BASE + '/files/System.DemoFiles/?browse=files'),
-  which reloads the whole client; here the tree gets there, the way a person does.
+  which reloads the whole client; here the tree gets there, the way a person does. The two spaces are
+  made through the API: the Create Space dialog is spaces-create's subject.
 
   When the drag starts inside a space view rather than in the files, the dialog is shown before its
   Link/Copy/Move chooser is in it, so the chooser is waited for as its own claim. That lateness is
@@ -19,26 +20,18 @@ Feature: Putting files into a space by dragging them
   Background:
     Given user is logged in
     And the browse panel is open
-    And no space named "BDD-DnD, BDD-DnD-Src" is on the server
+    And a space named "BDD-DnD" is on the server
+    And a space named "BDD-DnD-Src" is on the server
+    And Spaces tree node inside browse tree is expanded
 
-  Scenario: Two spaces and the demo files
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    And user enters "BDD-DnD" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then 1 space named "BDD-DnD" should be on the server
-    And the "Create Space" dialog should close
-    When user picks "Create Space..." from the context menu of Spaces tree node inside browse tree
-    And user enters "BDD-DnD-Src" into Name input in Create Space dialog
-    And user clicks on OK button in Create Space dialog
-    Then 1 space named "BDD-DnD-Src" should be on the server
-    And the "Create Space" dialog should close
+  Scenario: The demo files
     Given Files tree node inside browse tree is expanded
     When user clicks on "Files > Demo" tree node inside browse tree
     Then the "Demo" view should be current
     And demog.csv link in gallery should be visible
 
   Scenario: The dialog offers Link, Copy and Move, and names the target
-    When user drags demog.csv link in gallery to BDD-DnD tree node inside browse tree
+    When user drags demog.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     Then Move entity dialog should be visible
     And Move entity dialog should contain text "BDDDnD"
     And choice input in Move entity dialog should have value "Link"
@@ -46,17 +39,17 @@ Feature: Putting files into a space by dragging them
   Scenario: Cancelling leaves the space empty
     When user clicks on CANCEL button in Move entity dialog
     Then Move entity dialog should be hidden
-    When user double-clicks on BDD-DnD tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD tree node inside browse tree
     Then the "BDD-DnD" view should be current
     And demog.csv link in gallery should be absent
 
   Scenario: A copied file lands in the space
     When user clicks on "Files > Demo" tree node inside browse tree
-    And user drags demog.csv link in gallery to BDD-DnD tree node inside browse tree
+    And user drags demog.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     And user selects "Copy" in Move entity dialog
     And user clicks on YES button in Move entity dialog
     Then Move entity dialog should be hidden
-    When user double-clicks on BDD-DnD tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD tree node inside browse tree
     Then the "BDD-DnD" view should be current
     And demog.csv link in gallery should be visible
 
@@ -67,35 +60,35 @@ Feature: Putting files into a space by dragging them
 
   Scenario: A second file joins the first
     When user clicks on "Files > Demo" tree node inside browse tree
-    And user drags TSLA.csv link in gallery to BDD-DnD tree node inside browse tree
+    And user drags TSLA.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     And user selects "Copy" in Move entity dialog
     And user clicks on YES button in Move entity dialog
     Then Move entity dialog should be hidden
-    When user double-clicks on BDD-DnD tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD tree node inside browse tree
     Then demog.csv link in gallery should be visible
     And TSLA.csv link in gallery should be visible
 
   Scenario: A copy is made in the source space to move later
     When user clicks on "Files > Demo" tree node inside browse tree
-    And user drags beer.csv link in gallery to BDD-DnD-Src tree node inside browse tree
+    And user drags beer.csv link in gallery to Spaces---BDD-DnD-Src tree node inside browse tree
     And user selects "Copy" in Move entity dialog
     And user clicks on YES button in Move entity dialog
     Then Move entity dialog should be hidden
-    When user double-clicks on BDD-DnD-Src tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD-Src tree node inside browse tree
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be visible
 
   Scenario: Moving takes the file out of the source space
-    When user drags beer.csv link in gallery to BDD-DnD tree node inside browse tree
+    When user drags beer.csv link in gallery to Spaces---BDD-DnD tree node inside browse tree
     Then Move entity dialog should be visible
     And choice input in Move entity dialog should be visible
     When user selects "Move" in Move entity dialog
     And user clicks on YES button in Move entity dialog
     Then Move entity dialog should be hidden
-    When user double-clicks on BDD-DnD tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD tree node inside browse tree
     Then the "BDD-DnD" view should be current
     And beer.csv link in gallery should be visible
-    When user double-clicks on BDD-DnD-Src tree node inside browse tree
+    When user double-clicks on Spaces---BDD-DnD-Src tree node inside browse tree
     Then the "BDD-DnD-Src" view should be current
     And beer.csv link in gallery should be absent
 

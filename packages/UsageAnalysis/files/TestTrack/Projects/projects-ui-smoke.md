@@ -156,14 +156,17 @@ main project and a second one without a description, both with
       the project's namespace (the part of the Grok name from step 12
       before the colon) and `.UiSmokeRenamed`.
 
-15. **Add to favorites.**
-    - Right-click the tile and choose **Add to favorites**.
+15. **Add To Favorites.**
+    - Right-click the tile and choose **Add To Favorites > Only for me** (for an account that
+      can edit a group, Add To Favorites is a submenu of "Only for me" and the groups).
     - Click the tile.
     - **Verify:** the star next to the project name in the **Context
       Panel** header is filled.
     - Go to **Browse > My stuff > Favorites**.
     - **Verify:** `uiSmokeRenamed` is listed.
-    - Right-click `uiSmokeRenamed` and choose **Remove from favorites**.
+    - Right-click the tile and choose **Add To Favorites > Only for me** again: it takes the
+      project out of the favorites.
+    - **Verify:** `uiSmokeRenamed` is no longer listed in **Favorites**.
 
 16. **Save as Zip.**
     - Go to **Browse > Dashboards**.

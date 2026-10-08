@@ -16,6 +16,7 @@ Feature: Transformations saved with a query
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-tr-{time}" is on the server
 

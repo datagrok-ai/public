@@ -9,6 +9,11 @@ export const STRAND_LABEL: Record<StrandType, string> = {
   [STRAND.SENSE]: 'Sense strand',
   [STRAND.ANTISENSE]: 'Anti sense',
 };
+/** The strand as test automation names its inputs: `Sense modification 1`, `Antisense example output`. */
+export const STRAND_NAME: Record<StrandType, string> = {
+  [STRAND.SENSE]: 'Sense',
+  [STRAND.ANTISENSE]: 'Antisense',
+};
 
 export const enum STRAND_END {
   LEFT,

@@ -13,6 +13,7 @@ Feature: A query's post-process runs on its result
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-pp-{time}" is on the server
 

@@ -265,14 +265,27 @@ function install(): void {
     return all;
   };
   // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
-  // still a widget the platform knows by its root
+  // still a widget the platform knows by its root; so is a package's widget outside any viewer that
+  // reports a status of its own (Chem's Crux sketcher: its atoms and bonds as hit areas), the
+  // nearest one up from the element
   const findViewer = (el: Element): any => {
     const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
     const known = viewers().find((x) => x.root === root);
     if (known)
       return known;
-    const w = root === null ? null : DG.Widget.find(root);
-    return w !== null && typeof w?.getWidgetStatus === 'function' ? w : undefined;
+    const isWidget = (x: any): boolean => x !== null && x !== undefined && typeof x.getWidgetStatus === 'function';
+    if (root !== null) {
+      const w = DG.Widget.find(root);
+      return isWidget(w) ? w : undefined;
+    }
+    for (let e: Element | null = el; e !== null; e = e.parentElement) {
+      if (!e.hasAttribute('data-widget'))
+        continue;
+      const w = DG.Widget.find(e);
+      if (isWidget(w))
+        return w;
+    }
+    return undefined;
   };
   const viewerOf = (el: Element): any => {
     const v = findViewer(el);
@@ -412,7 +425,9 @@ function install(): void {
     return {colors, ink, hue};
   };
   const areasOf = (v: any): Record<string, Box> => v.getWidgetStatus()?.hitAreas ?? {};
-  const keyIn = (areas: Record<string, Box>, name: string): string | undefined => Object.keys(areas).find((k) => norm(k) === norm(name));
+  // the exact name first: "segment S_PART | (empty)" and "segment S_PART" are one name without punctuation
+  const keyIn = (areas: Record<string, Box>, name: string): string | undefined =>
+    name in areas ? name : Object.keys(areas).find((k) => norm(k) === norm(name));
   const areaKey = (v: any, name: string): string => {
     const areas = areasOf(v);
     const key = keyIn(areas, name);

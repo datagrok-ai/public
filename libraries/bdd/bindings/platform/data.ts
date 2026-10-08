@@ -141,6 +141,13 @@ export const selectedPassFilter = Then('every selected row should pass the filte
   expect(off, 'selected rows the filter drops').toBe(0);
 });
 
+export const selectedPassingCount = Then('{int} selected row(s) should pass the filter', async (page: Page, count: number) => {
+  await expect.poll(() => page.evaluate(() => {
+    const df = grok.shell.t;
+    return df.selection.clone().and(df.filter).trueCount;
+  }), {message: 'rows both selected and passing the filter'}).toBe(count);
+}, {description: 'what the status bar\'s "filtered and selected" counts: a selection the filter partly hides'});
+
 /** The names of the selected grid columns of the current table view, in grid order. */
 const selectedColumns = (page: Page): Promise<string[]> => page.evaluate(() => {
   const cols = grok.shell.tv.grid.columns;
@@ -335,7 +342,8 @@ export const cellIsCurrentObject = Given('the {string} cell of row {int} is the 
     if (!col)
       throw new Error(`no "${c}" column in ${grok.shell.t.name}`);
     grok.shell.t.currentCell = grok.shell.t.cell(Number(r) - 1, c as string);
-    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), true, true);
+    // not frozen: a click does not freeze the current object, and a frozen one drops the next gesture's change for 1 s
+    grok.shell.setCurrentObject(DG.SemanticValue.fromTableCell(grok.shell.t.currentCell), false, true);
     return grok.shell.t.name;
   }, [column, row] as [string, number]);
   await expect.poll(() => page.evaluate(() => {
