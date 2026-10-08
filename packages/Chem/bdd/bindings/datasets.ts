@@ -36,11 +36,3 @@ dataset('drugs-props-train', {path: 'System:AppData/Eda/drugs-props-train.csv', 
   description: '663 drugs with a boolean CNS column and a dozen numeric properties: the pMPO training set of the EDA package'});
 dataset('ex-smarts', {path: 'System:AppData/Chem/enumerations/ex_smarts.csv', aliases: ['ex_smarts'],
   description: 'a SMARTS column of substructure patterns'});
-
-dataset('sar-matrix-demo', {path: 'System:AppData/Chem/demo_files/sar-matrix-demo.csv',
-  description: 'the SAR Matrix demo set: 9999 ChEMBL compounds, hERG_pIC50 on 3109 of them ' +
-    '(already a log scale, so the analysis runs with scaling none) and a CYP3A4 column'});
-dataset('protac-degraders', {path: 'System:AppData/Chem/demo_files/protac-degraders-2792.csv',
-  description: '2,792 PROTAC degraders from PROTAC-PatentDB split into Warhead / Linker / E3 Ligand ' +
-    '(71 linkers, 632 warheads, 12 E3 ligands), with computed and predicted properties but no ' +
-    'measured potency'});

@@ -41,20 +41,3 @@ kind('MPO profile', {
 
 element('R-Groups settings icon', {selector: '.chem-rgroup-settings-icon',
   description: 'the gear of the R-Groups Analysis dialog: shows Matching strategy and Only match at R groups, which the dialog remembers per account'});
-
-/* The SAR Matrix Summary tab's own parts. A Summary row is a plain div carrying its heading in its
-   own child, and the segments and tabs are plain divs rather than tab controls, so the platform's
-   `tab` kind does not see them. */
-kind('summary row', {selector: '.chem-sar-sum-row', labelSelector: '.chem-sar-card-name',
-  match: ['label', 'text'], description: 'a clickable finding on the SAR Matrix Summary tab'});
-
-kind('summary segment', {selector: '.chem-sar-sum-seg', match: ['text'],
-  description: 'one of the Summary tab\'s segments (Overview, Effects, Worth making, Method)'});
-
-kind('tier chip', {selector: '.chem-sar-sum-seg-tiers .chem-sar-sum-role',
-  labelSelector: '.chem-sar-sum-tier-name', match: ['label'],
-  description: 'a fold tier (All, L1, L2, ...) the Summary tab reads its rankings at'});
-
-kind('effects tab', {selector: '.chem-sar-sum-sub', labelSelector: '.chem-sar-sum-sub-name',
-  match: ['label'],
-  description: 'one component column\'s tab on the Summary tab\'s Effects segment'});

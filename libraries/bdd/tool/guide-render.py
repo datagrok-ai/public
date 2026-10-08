@@ -2,8 +2,7 @@
 step-NN.png (the annotated picture of every step), steps.md, audit.png + audit.json, and with --gif
 also guide.gif and guide-thumb.png. Pillow does the drawing, ffmpeg the encoding (FFMPEG env,
 PATH, the imageio-ffmpeg package, or Playwright's own build, which can only write WebM). The video
-and the stills are 1600×1000 with the caption strip (--size overrides it): the page is filmed at 1080p
-and downsampled, never upsampled.
+and the stills are 1600×1000 with the caption strip: the page is filmed at 1080p and downsampled.
 
 The pointer goes where the page says it went, and never skips: every frame's pointer continues
 from the frame before, so an action starts where the one before it ended — a skip is an error,
@@ -13,9 +12,6 @@ audit.json how far the mark's centre and the pointer's tip are from the press.
 
     py tool/guide-render.py <scenario dir> [--gif] [--fps 30] [--hold 1.4] [--travel 0.7]
         [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
-        [--size <w>x<h>, default 1600x1000; filming the page at <w>x<h-strip> lands on it exactly]
-        [--no-title: start on the first step instead of a title card]
-        [--gif-width <px>, default 880; the GIF is downscaled to it, the video is not]
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -38,7 +34,6 @@ BAR = (20, 24, 32, 205)
 LEFT_PRESS = (255, 200, 0)    # a left-button press: yellow
 RIGHT_PRESS = (34, 197, 94)   # a right-button press: green
 SMALL_TARGET_PX = 28   # a target no wider and no taller than this (an icon, a checkbox) is zoomed into; larger ones are lit and clicked in place
-GIF_W = 880   # a GIF has no interframe compression, so its width is what decides a docs page's weight
 VIDEO_W, VIDEO_H = 1600, 1000   # the video and the stills, caption strip included; the page is filmed larger and downsampled
 PULSE_S = 0.5   # how long a press ripples
 MAX_STEP_PX = 70   # the farthest the pointer moves between two frames, in pixels of a 1080p page: a longer way takes more frames
@@ -116,17 +111,13 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, size=(VIDEO_W, VIDEO_H), title=True,
-                 gif_width=GIF_W):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8):
         self.folder = folder
         self.fps = fps
         self.hold = hold
         self.travel = travel
         self.zoom = zoom
         self.zoom_time = zoom_time
-        self.video_w, self.video_h = size
-        self.title = title
-        self.gif_width = gif_width
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
@@ -140,9 +131,9 @@ class Renderer:
         # and zoom is in them); the strip is as tall as makes page plus strip the video's aspect
         # (120 px over a 1080p page), and the composed frame is downsampled to the video size —
         # never upsampled, so a small capture stays as it is
-        self.bar_h = max(int(self.h * 0.085), round(self.w * self.video_h / self.video_w) - self.h) & ~1
+        self.bar_h = max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
         self.out_h = self.h + self.bar_h
-        scale = min(1.0, self.video_w / self.w, self.video_h / self.out_h)
+        scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
         self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
         self.font = load_font(max(14, self.bar_h // 3))
         self.small = load_font(max(12, self.bar_h // 4))
@@ -479,8 +470,7 @@ class Renderer:
     def frames(self):
         if not self.steps:
             return
-        if self.title:
-            yield from self.title_frames(self._image(self.steps[0]['before']))
+        yield from self.title_frames(self._image(self.steps[0]['before']))
         total = len(self.steps)
         for i, step in enumerate(self.steps, 1):
             yield from self.step_frames(step, i, total)
@@ -590,7 +580,7 @@ class Renderer:
             out = os.path.join(self.folder, 'guide.gif')
             # a docs GIF: ten frames a second at 880 px, no dithering (which defeats GIF's run-length
             # compression on flat UI colors) — a seven-step guide lands around a megabyte
-            width = min(self.gif_width, self.video[0]) & ~1
+            width = min(880, self.video[0]) & ~1
             scale = f'fps=10,scale={width}:-2:flags=lanczos'
             palette = os.path.join(self.folder, 'palette.png')
             subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-i', video, '-vf',
@@ -702,9 +692,6 @@ def main(argv):
     travel = float(opt('--travel', 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
-    size = tuple(int(v) for v in opt('--size', f'{VIDEO_W}x{VIDEO_H}').lower().split('x'))
-    title = not flag('--no-title')
-    gif_width = int(opt('--gif-width', GIF_W))
     ffmpeg = find_ffmpeg(opt('--ffmpeg'))
     test_dir = opt('--selftest')
     if test_dir:
@@ -717,7 +704,7 @@ def main(argv):
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, size, title, gif_width)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time)
     renderer.write_markdown()
     outputs, count = renderer.encode(ffmpeg, gif)
     report = renderer.write_audit()
