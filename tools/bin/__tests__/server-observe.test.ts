@@ -54,7 +54,7 @@ describe('logger set', () => {
         calls.push({method, path, body});
         if (path.startsWith('/public/v1/groups/lookup'))
           return [{id: 'g1', name: 'Chemists'}];
-        return method === 'GET' ? {userGroupSettings: {g0: {debugFlags: []}}} : null;
+        return method === 'GET' ? {'#key': 'logger', settings: {userGroupSettings: {g0: {debugFlags: []}}}} : null;
       },
       get(path: string) { return this.request('GET', path); },
     };

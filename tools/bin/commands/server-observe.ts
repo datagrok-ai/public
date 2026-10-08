@@ -86,7 +86,7 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     if (!id)
       throw new Error(`Usage: grok s observe ${command} ${verb} <id|kind:key>`);
   };
-  const settings = (key: string) => dapi.raw('GET', `/admin/plugins/${key}/settings`);
+  const settings = async (key: string) => (await dapi.raw('GET', `/admin/plugins/${key}/settings`))?.settings ?? {};
   const saveSettings = (key: string, body: any) => dapi.raw('POST', `/admin/plugins/${key}/settings`, body);
 
   switch (`${command} ${verb}`) {

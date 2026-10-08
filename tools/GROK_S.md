@@ -469,7 +469,7 @@ Thin commands over the server's routes; `grok s observe` with no command prints 
 ```bash
 grok s o problems list --alert-status open                 # the open alerts; --status, --state, --kind, --since 7d
 grok s o problems get health:Jupyter                        # by id or kind:key; history <id> for its records
-grok s o problems status connection:ELN:Prod --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
+grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
 grok s o problems ack health:Jupyter --reason "restarting"  # resolve <id> --reason ... closes the alert
 grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
 grok s o rules test                                         # evaluates the saved rules once, now
@@ -480,8 +480,8 @@ grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics
 grok s o timeline --report 4820                             # also --action, --request, --session
 ```
 
-Problems need `ManageAlerts`, errors and the timeline `ViewTelemetry`, logger and rules changes
-`EditPluginsSettings`. In durations `m` means minutes (in `grok s pull --since` it means months).
+Problems need `ManageAlerts`, errors and the timeline `ViewTelemetry`, `rules test` both, logger
+and rules changes `EditPluginsSettings`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 
