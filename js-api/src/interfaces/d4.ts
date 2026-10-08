@@ -495,7 +495,8 @@ export interface IScatterPlotSettings {
   colorAxisType: keyof typeof AxisType;
 
   /** Reverses the viewer's color scheme and the column's linear color-coding.
-   * Does not apply to the column's conditional or categorical color-coding. */
+   * Does not apply to the column's conditional or categorical color-coding.
+   * Affects this viewer only: the grid and other viewers keep their colors. */
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -1136,7 +1137,8 @@ export interface IBoxPlotSettings {
   colorAxisType: keyof typeof AxisType;
 
   /** Reverses the viewer's color scheme and the column's linear color-coding.
-   * Does not apply to the column's conditional or categorical color-coding. */
+   * Does not apply to the column's conditional or categorical color-coding.
+   * Affects this viewer only: the grid and other viewers keep their colors. */
   invertColorScheme: boolean;
 
   colorMin: number;
@@ -3015,7 +3017,8 @@ export interface IPcPlotSettings {
   colorAxisType: keyof typeof AxisType;
 
   /** Reverses the viewer's color scheme and the column's linear color-coding.
-   * Does not apply to the column's conditional or categorical color-coding. */
+   * Does not apply to the column's conditional or categorical color-coding.
+   * Affects this viewer only: the grid and other viewers keep their colors. */
   invertColorScheme: boolean;
 
   colorMin: number;
