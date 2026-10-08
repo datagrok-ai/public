@@ -46,7 +46,7 @@ export class NodeErrorsClient {
   show(signature: string, q: Query = {}): Promise<any> { return this.client.get(`/errors/${seg(signature)}${buildQuery(q)}`); }
 }
 
-/** Logging policy, overrides and capture rules (LoggingRouter), plus the timeline (ActionLoggerRouter). */
+/** Logging policy, overrides and capture rules (ActionLoggerRouter), plus the timeline (ActionLoggerRouter). */
 export class NodeLoggingClient {
   constructor(private client: NodeApiClient) {}
 

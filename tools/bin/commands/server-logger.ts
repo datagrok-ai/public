@@ -1,5 +1,5 @@
 /// `grok s observe logger ...` — the server's logging policy: base settings, time-boxed overrides, locks, history
-/// (LoggingRouter, `/logging/policy`).
+/// (ActionLoggerRouter, `/logging/policy`).
 import {NodeDapi} from '../utils/node-dapi';
 import {Connect, eachHost, forEachHost, hostList} from '../utils/server-client';
 import {printOutput, printError, OutputFormat} from '../utils/server-output';

@@ -1,4 +1,4 @@
-/// `grok s observe capture ...` (capture rules, LoggingRouter `/logging/capture`) and `grok s observe timeline`
+/// `grok s observe capture ...` (capture rules, ActionLoggerRouter `/logging/capture`) and `grok s observe timeline`
 /// (one action, request, session, report or rule in time order, `/log/timeline`).
 import {Query} from '../utils/node-observability';
 import {Connect} from '../utils/server-client';
