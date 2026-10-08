@@ -29,7 +29,7 @@ import './dapi/fetch';
 import './dapi/groups';
 import './dapi/dapi';
 import './dapi/cloud-logs';
-import './dapi/observability';
+import './dapi/log-timeline';
 import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-errors';

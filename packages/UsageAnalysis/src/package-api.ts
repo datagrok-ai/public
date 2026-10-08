@@ -12,24 +12,8 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:GetAggregatedClicks', { date });
   }
 
-  export async function clicks(date: string , groups: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:Clicks', { date, groups });
-  }
-
-  export async function clicksFollowedByError(date: string , groups: any , view: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ClicksFollowedByError', { date, groups, view });
-  }
-
-  export async function clickErrors(date: string , groups: any , element: string , view: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ClickErrors', { date, groups, element, view });
-  }
-
   export async function allTestRuns(benchmarks: boolean ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:AllTestRuns', { benchmarks });
-  }
-
-  export async function captureRules(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:CaptureRules', { date });
   }
 
   export async function uniqueUsersCount(date: string , groups: any , packages: any ): Promise<DG.DataFrame> {
@@ -100,20 +84,36 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:FunctionInfoBySource', { name, date, users });
   }
 
-  export async function errorSessions(signatures: any , users: any , from: string , to: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ErrorSessions', { signatures, users, from, to });
+  export async function topDisabledErrors(date: string , users: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TopDisabledErrors', { date, users });
   }
 
-  export async function errorReports(signatures: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ErrorReports', { signatures });
+  export async function topPackageErrors(date: string , users: any ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TopPackageErrors', { date, users });
   }
 
-  export async function errorAlerts(signatures: any ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ErrorAlerts', { signatures });
+  export async function topErrorSources(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
   }
 
-  export async function errorSample(signature: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ErrorSample', { signature });
+  export async function eventErrors(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:EventErrors', { date });
+  }
+
+  export async function reportsCount(date: string , event_id: string ): Promise<{count: number, report_number: number}> {
+    return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
+  }
+
+  export async function errorAlerts(signature: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorAlerts', { signature });
+  }
+
+  export async function sameErrors(date: string , event_id: string | null): Promise<number> {
+    return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
+  }
+
+  export async function topErrors(date: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:TopErrors', { date });
   }
 
   export async function packageInfo(name: string ): Promise<DG.DataFrame> {
@@ -580,8 +580,8 @@ export namespace funcs {
     return await grok.functions.call('UsageAnalysis:TestAnalysisReportForCurrentDay', { date });
   }
 
-  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string , action?: string , request?: string , session?: string , report?: string , rule?: string , error?: string ): Promise<DG.View> {
-    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects, action, request, session, report, rule, error });
+  export async function usageAnalysisApp(path?: string , date?: string , groups?: string , packages?: string , tags?: string , categories?: string , projects?: string ): Promise<DG.View> {
+    return await grok.functions.call('UsageAnalysis:UsageAnalysisApp', { path, date, groups, packages, tags, categories, projects });
   }
 
   export async function releaseDashboardApp(path?: string ): Promise<DG.View> {

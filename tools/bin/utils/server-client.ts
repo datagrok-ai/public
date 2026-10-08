@@ -1,54 +1,5 @@
-import {NodeApiClient, NodeDapi} from './node-dapi';
+import {NodeApiClient} from './node-dapi';
 import {getServerCredentials} from './keypair';
-import {printError, OutputFormat} from './server-output';
-
-/** Opens a session on a host alias or URL; without one, on the single `--host` (or the configured default). */
-export type Connect = (host?: string) => Promise<NodeDapi>;
-
-export function hostList(host: any): string[] {
-  if (host === undefined || host === null || host === true) return [];
-  return (Array.isArray(host) ? host : [host]).map(String);
-}
-
-/**
- * Runs [fn] against every `--host`. With several hosts a failing one is reported on stderr and
- * the rest still answer; the run then exits 1.
- */
-export async function eachHost(argv: any, connect: Connect,
-                               fn: (dapi: NodeDapi, host: string, multi: boolean) => Promise<void>): Promise<void> {
-  const hosts = hostList(argv.host);
-  if (hosts.length < 2)
-    return fn(await connect(hosts[0]), hosts[0] ?? '', false);
-  let answered = 0;
-  for (const host of hosts) {
-    try {
-      await fn(await connect(host), host, true);
-      answered++;
-    }
-    catch (err: any) {
-      const apiError = err?.apiError ? {...err.apiError, error: `${host}: ${err.apiError.error}`} : undefined;
-      printError({message: `${host}: ${err?.message ?? err}`, apiError});
-      process.exitCode = 1;
-    }
-  }
-  if (!answered)
-    throw new Error('No host answered');
-}
-
-/**
- * Rows from every `--host`, each prefixed with the host when there are several: a `HOST` column
- * in a table, a `host` field otherwise.
- */
-export async function forEachHost(argv: any, connect: Connect, fn: (dapi: NodeDapi) => Promise<any[]>,
-                                  output: OutputFormat): Promise<any[]> {
-  const column = output === 'table' ? 'HOST' : 'host';
-  const rows: any[] = [];
-  await eachHost(argv, connect, async (dapi, host, multi) => {
-    for (const row of await fn(dapi))
-      rows.push(multi ? {[column]: host, ...row} : row);
-  });
-  return rows;
-}
 
 /**
  * `--admin` asks the server for an admin session, which lifts the permission filter for this run:

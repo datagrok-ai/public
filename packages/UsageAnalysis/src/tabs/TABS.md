@@ -15,7 +15,7 @@ It builds a `ViewHandler`, calls `handler.init(...)`, and returns `handler.view`
 | `ViewHandler`             | `view-handler.ts`                       | Owns a `DG.MultiView` (the tab strip); registers tabs, routing, per-tab toggles          |
 | `UaToolbox`               | `ua-toolbox.ts`                         | The single shared left toolbox (filter accordion) used by every tab                      |
 | `UaView`                  | `tabs/ua.ts`                            | Base class each tab extends                                                              |
-| Tabs                      | `tabs/*.ts`                             | One file per tab (the list in `ViewHandler.init()` below)                                |
+| Tabs                      | `tabs/*.ts`                             | One file per tab (Overview, Packages, Functions, Events, Clicks, Log, Projects, Metrics) |
 | `UaQueryViewer`           | `viewers/abstract/ua-query-viewer.ts`   | Runs a named UA query and builds a `DG.Viewer`                                           |
 | `UaFilterableQueryViewer` | `viewers/ua-filterable-query-viewer.ts` | A `UaQueryViewer` that re-runs on every filter change                                    |
 
@@ -25,23 +25,8 @@ Tabs are a **fixed list** in `ViewHandler.init()`:
 
 ```ts
 const viewClasses = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-                     SystemActivityView, ErrorsView, CaptureView, TimelineView, ProjectsView, MetricsView, StressView,
-                     VulnerabilitiesView];
+                     SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
 ```
-
-`CaptureView` (tab `Capture`): the list is the `CaptureRules` query, which reads the `rules` table through
-`System:Datagrok`; New rule and Stop call `grok.dapi.log.addCaptureRule` and `stopCaptureRule`, the debug flags
-come from `grok.dapi.log.getLoggingPolicy`.
-
-`TimelineView` (tab `Timeline`): `grok.dapi.log.getTimeline`; routes as `/timeline?<key>=<id>`, the parameter
-arriving as `TimelineView.urlParams`.
-
-`ErrorsView` (tab `Errors`): the list and its figures are `grok.dapi.log.getErrors` (`GET /errors`), its inputs in
-the toolbox's Errors pane; the row drill-down's `ErrorSessions`, `ErrorReports`, `ErrorAlerts` and `ErrorSample`
-(`errors_query.sql`) read `events`, `reports` and `problems` through `System:Datagrok`; Export as CSV, JSON or
-Parquet (the Arrow package); `?error=<hash>` arrives as `ErrorsView.urlError`.
-
-Clicks sub-tabs **Clicks** and **Followed by Error**: the `Clicks`, `ClicksFollowedByError` and `ClickErrors` queries.
 
 `SystemActivityView` (tab `System Activity`) lists the platform-level audit records datlas writes —
 `server-started`, `user-logged-in`, `user-logged-out`, `user-login-failed`, `user-impersonated`,
@@ -51,6 +36,11 @@ Clicks sub-tabs **Clicks** and **Followed by Error**: the `Clicks`, `ClicksFollo
 resolves the record's user from its `user` parameter first (a failed login or a server start has no
 session), so the groups filter applies to records with a user and passes the rest through. The
 packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
+
+`ErrorsView` (tab `Errors`): Top errors and Top source come from `grok.dapi.admin.getMetrics` (`GET /admin/metrics`,
+by signature, for the toolbox's date); a bar click filters `EventErrors` to that signature, and a row's context panel
+adds its `error-incident` problem (`ErrorAlerts`). In the Log tab, an event logged under a request id gets a Timeline
+button (`openTimeline` in `utils.ts`: `grok.dapi.log.getTimeline` as a table view).
 
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
@@ -106,6 +96,5 @@ read-only drilldown fields, reload a target tab's viewer with a derived filter, 
 
 ## Routing
 
-`setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (the tab and route lowercased, the
-parameters as they are). On load, `init()`
+`setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (lowercased). On load, `init()`
 parses the first path segment to pick the starting tab (default `Overview`) and applies incoming filter params.

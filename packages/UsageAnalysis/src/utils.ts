@@ -1,8 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
-import {take} from 'rxjs/operators';
-import dayjs from 'dayjs';
 
 export const colors = {'passed': '#3CB173', 'failed': '#EB6767', 'skipped': '#FFA24A'};
 
@@ -32,6 +30,7 @@ export function showEventDetails(table: DG.DataFrame): void {
   const eventId = table.getCol('id').get(rowIdx);
   if (!eventId)
     return;
+  const requestId: string | null = table.col('request_id')?.get(rowIdx) ?? null;
   const accordion = DG.Accordion.create();
   accordion.addPane('Details', () => ui.wait(async () => {
     const t: DG.DataFrame = await grok.functions.call('UsageAnalysis:LogEventParameters', {eventId});
@@ -45,7 +44,29 @@ export function showEventDetails(table: DG.DataFrame): void {
     return ui.tableFromMap(map);
   }), true);
 
-  grok.shell.o = accordion.root;
+  grok.shell.o = requestId ? ui.divV([ui.button('Timeline', () => openTimeline('action', requestId.split('.')[0]),
+    'What happened in the user action of this event'), accordion.root]) : accordion.root;
+}
+
+/** Opens what happened in one action, request, session or report, oldest first, as a table view. */
+export async function openTimeline(key: 'action' | 'request' | 'session' | 'report', id: string): Promise<void> {
+  const progress = DG.TaskBarProgressIndicator.create('Loading the timeline...');
+  try {
+    const rows = await grok.dapi.log.getTimeline({[key]: id});
+    if (!rows.length) {
+      grok.shell.info(`Nothing recorded for ${key} ${id}`);
+      return;
+    }
+    const t = DG.DataFrame.fromObjects(rows)!;
+    t.name = `Timeline ${id}`;
+    grok.shell.addTableView(t);
+  }
+  catch (e: any) {
+    grok.shell.error(`Timeline: ${e?.message ?? e}`);
+  }
+  finally {
+    progress.close();
+  }
 }
 
 export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG.User }, columnNames: string[]): void {
@@ -69,61 +90,4 @@ export function setupUserIconRenderer(grid: DG.Grid, users: { [name: string]: DG
       });
     }
   });
-}
-
-/** A grid wider than its view opens scrolled right past its first column: scroll back on the first draw. */
-export function scrollToStartOnFirstDraw(grid: DG.Grid): void {
-  grid.onAfterDrawContent.pipe(take(1)).subscribe(() => grid.horzScroll.scrollTo(0));
-}
-
-/** Calls [handler] with the table row a context menu was opened on (a right-click does not move the current row). */
-export function onRowContextMenu(grid: DG.Grid, handler: (menu: DG.Menu, row: number) => void): void {
-  let row = -1;
-  grid.root.addEventListener('mousedown', (e) => {
-    if (e.button !== 2)
-      return;
-    const r = grid.root.getBoundingClientRect();
-    row = grid.hitTest(e.clientX - r.left, e.clientY - r.top)?.tableRowIndex ?? -1;
-  }, true);
-  grid.onContextMenu.subscribe((menu) => {
-    if (row >= 0)
-      handler(menu, row);
-  });
-}
-
-const GRID_TIME_FORMAT = 'yyyy-MM-dd HH:mm:ss UTC';
-
-/** Shows every date column of [grid] without milliseconds, marked UTC: the grid keeps the platform's UTC. */
-export function formatGridTimes(grid: DG.Grid): void {
-  for (const col of grid.dataFrame.columns.toList())
-    if (col.type === DG.TYPE.DATE_TIME && grid.col(col.name))
-      grid.col(col.name)!.format = GRID_TIME_FORMAT;
-}
-
-/** A date column's value as [formatGridTimes] shows it; empty for none. */
-export function formatTime(value: any): string {
-  return value == null ? '' : `${dayjs(value).toISOString().replace('T', ' ').substring(0, 19)} UTC`;
-}
-
-/** A line that says why an action is disabled: a disabled button shows no tooltip. */
-export function problemLine(): HTMLDivElement {
-  const line = ui.divText('', 'ua-problem');
-  ui.setDisplay(line, false);
-  return line;
-}
-
-/** Disables [button] while there is a [problem] and shows it in [line]. */
-export function showProblem(button: HTMLButtonElement, line: HTMLElement, problem: string | null): void {
-  button.disabled = problem != null;
-  line.textContent = problem ?? '';
-  ui.setDisplay(line, problem != null);
-}
-
-/** A centred message with a hint, for a list with nothing to show. */
-export function emptyState(message: string, hint: string): HTMLDivElement {
-  return ui.divV([ui.divText(message), ui.divText(hint, 'ua-empty-hint')], 'ua-empty');
-}
-
-export function rowsTable(t: DG.DataFrame, empty: string, row: (i: number) => any[], headers: string[]): HTMLElement {
-  return t.rowCount ? ui.table([...Array(t.rowCount).keys()], row, headers) : ui.divText(empty);
 }

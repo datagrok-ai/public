@@ -2,15 +2,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {NodeDapi, BatchRequest, BatchOperation, InternalDataSource, PackageOpResult, mapPositionalParams} from '../utils/node-dapi';
-import {createClient, Connect, hostList} from '../utils/server-client';
+import {createClient} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
-import {handleAlerts, handleProblems, ALERTS_USAGE, PROBLEMS_USAGE} from './server-alerts';
-import {handleErrors, ERRORS_USAGE} from './server-errors';
-import {handleLogger, LOGGER_USAGE} from './server-logger';
-import {handleCapture, handleTimeline, CAPTURE_USAGE, TIMELINE_USAGE} from './server-capture';
-import {handleRules, RULES_USAGE} from './server-rules';
+import {handleObserve, OBSERVE_USAGE} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -18,51 +14,12 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle',
-  'token', 'observe', 'o'];
-
-type Handler = (connect: Connect, verb: string | undefined, rest: string[], argv: any, output: OutputFormat) => Promise<boolean>;
-
-const OBSERVABILITY: Record<string, {handle: Handler; usage: string}> = {
-  alerts: {handle: handleAlerts, usage: ALERTS_USAGE},
-  problems: {handle: handleProblems, usage: PROBLEMS_USAGE},
-  errors: {handle: handleErrors, usage: ERRORS_USAGE},
-  logger: {handle: handleLogger, usage: LOGGER_USAGE},
-  capture: {handle: handleCapture, usage: CAPTURE_USAGE},
-  timeline: {handle: handleTimeline, usage: TIMELINE_USAGE},
-  rules: {handle: handleRules, usage: RULES_USAGE},
-};
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+  'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
-export const O_USAGE = `Usage: grok s observe <command> <verb> [args]
-       grok s o <command> <verb> [args]          (short alias)
-
-Observability: what the deployment detects, the alerts it raised, its errors, logging and captures.
-  problems    what is wrong, kept for good; mute, dismiss or fix one to change whether it alerts
-  alerts      the messages problems raised, open until a person resolves them; the servers
-  rules       your own problem types: conditions over the log, tested before they alert
-  errors      platform errors as data: list, top, show, diff, export
-  logger      the logging policy: get, set, diff, overrides, history, revert
-  capture     capture rules for a user, group, package or everyone
-  timeline    clicks, requests, calls and server lines in time order
-grok s observe <command> --help (or grok s observe help <command>) prints the full options of one command.
-Several --host flags address several servers at once for alerts, problems, errors and logger.
-
-Examples:
-  grok s observe problems list --status active
-  grok s observe alerts list --since 24h
-  grok s observe errors top --since 7d --by signature,package
-  grok s observe rules test --json rule.json
-  grok s observe logger set server --debug-flags +query --scope package:Chem --for 30m --reason "ticket 123"`;
-
 export async function server(argv: any): Promise<boolean> {
-  const all: string[] = argv['_'].slice(1);
-  const o = all[0] === 'observe' || all[0] === 'o';
-  let args: string[] = o ? all.slice(1) : all;
-  if (o && args[0] === 'help') {
-    args = args.slice(1);
-    argv.help = true;
-  }
+  const args: string[] = argv['_'].slice(1);
   const entity: string | undefined = args[0];
   const verb: string | undefined = args[1];
   const rest: string[] = args.slice(2);
@@ -72,51 +29,26 @@ export async function server(argv: any): Promise<boolean> {
   const limit: number = Number(argv.limit ?? argv.l ?? 50);
   const offset: number = Number(argv.offset ?? 0);
   const filter: string = argv.filter ?? argv.f ?? '';
-  const hosts = hostList(argv.host);
+  const host: string | undefined = argv.host;
   const recursive: boolean = !!(argv.r ?? argv.recursive);
 
-  if (o && (!entity || argv.help || verb === 'help')) {
-    console.log(OBSERVABILITY[entity ?? '']?.usage ?? O_USAGE);
-    return true;
-  }
   if (!entity || argv.help) {
     console.log(HELP_SERVER);
     return true;
   }
-
-  // A runtime failure is not a usage error: report it and exit non-zero without
-  // making grok.js dump the help block (which it does for every `false` result).
-  const fail = (err: any): boolean => {
-    printError(err, {verbose: !!argv.verbose});
-    process.exitCode = 1;
+  if ((entity === 'observe' || entity === 'o') && !verb) {
+    console.log(OBSERVE_USAGE);
     return true;
-  };
-
-  if (o) {
-    const observability = OBSERVABILITY[entity];
-    if (!observability)
-      return fail(new Error(`Unknown command '${all[0]} ${entity}'.\n${O_USAGE}`));
-    const connect: Connect = async (h) => {
-      if (h === undefined && hosts.length > 1)
-        throw new Error(`'grok s observe ${[entity, verb].filter(Boolean).join(' ')}' takes one --host`);
-      return new NodeDapi(await createClient(h ?? hosts[0], !!argv.admin));
-    };
-    try {
-      return await observability.handle(connect, verb, rest, argv, output);
-    }
-    catch (err: any) {
-      return fail(err);
-    }
   }
-  if (hosts.length > 1)
-    return fail(new Error('--host may repeat only for grok s observe alerts, problems, errors and logger'));
 
   let client;
   try {
-    client = await createClient(hosts[0], !!argv.admin);
+    client = await createClient(host, !!argv.admin);
   } catch (err: any) {
     // a bad alias, URL or key is not a usage error: no help dump, just the reason
-    return fail(err);
+    printError(err);
+    process.exitCode = 1;
+    return true;
   }
   const dapi = new NodeDapi(client);
 
@@ -126,6 +58,7 @@ export async function server(argv: any): Promise<boolean> {
     if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
+    if (entity === 'observe' || entity === 'o') return await handleObserve(dapi, verb, rest[0], rest.slice(1), argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
     // Shell scripts that used to curl /users/login/dev get a token the same way
     // every other command does, whatever credential the config holds.
@@ -222,7 +155,11 @@ export async function server(argv: any): Promise<boolean> {
     printError(new Error(`Unknown verb: '${verb}'. Valid: ${VERBS.join(', ')}${extraVerbs}`));
     return false;
   } catch (err: any) {
-    return fail(err);
+    // A runtime failure is not a usage error: report it and exit non-zero without
+    // making grok.js dump the help block (which it does for every `false` result).
+    printError(err, {verbose: !!argv.verbose});
+    process.exitCode = 1;
+    return true;
   }
 }
 
@@ -955,7 +892,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
-  observe (alias o): observability (problems, alerts, errors, logger, capture, timeline, rules); grok s observe --help
+  observe (alias o): problems, problem rules, logger settings, errors, timeline; grok s observe prints its verbs
 
 Verbs:
   list      List entities (--filter, --limit, --offset)
@@ -1035,8 +972,6 @@ Special commands:
   grok s sync setups list --pair <pair-id>            List the named sync setups under a pair
   grok s sync setup get <setup-id>                    Inspect a setup (entries, direction, last run)
   grok s sync setup runs <setup-id>                   A setup's past runs (per-item outcome in options.syncResult)
-  grok s observe <command> --help                     Full options of one command
-  grok s o ...                                        Short alias of grok s observe ...
 
 Pull / push / migrate options:
   --out <dir>           Bundle directory to write (pull; merges into an existing bundle)
@@ -1067,7 +1002,7 @@ Pull / push / migrate options:
   --keep                Migrate: keep the temporary bundle and print its path on stderr
 
 Options:
-  --host <alias|url>    Server alias from config or full URL; repeatable for grok s observe alerts, problems, errors and logger
+  --host <alias|url>    Server alias from config or full URL
   --admin               Ask the server for an admin session, so the run sees entities the key's
                         own account cannot (other people's spaces). Refused unless the account
                         may start one; lasts for this command only
@@ -1079,7 +1014,7 @@ Options:
   --verbose             Print the stack of a runtime failure, not just its message
   --json <file>         Read a JSON body from a file (save, functions run, batch, raw)
   --data '<json>'       Inline JSON body for raw
-  -O, --output-file     Write a table download, or an errors top/export --format file, instead of stdout
+  -O, --output-file     Write table download to a file instead of stdout
   --type <t>            Function discriminator: script | query | function | package
   --language <lang>     Script language: python, r, julia, nodejs, octave, grok
   --package <name>      Restrict to functions belonging to a package (by short name)

@@ -43,7 +43,6 @@ export class UaToolbox {
   formDD: HTMLElement;
   drilldown: UaView | null = null;
   filters: DG.AccordionPane;
-  tabPanes: {[tab: string]: DG.AccordionPane} = {};
 
   static async construct(viewHandler: ViewHandler) {
     const date = 'this week';
@@ -134,21 +133,6 @@ export class UaToolbox {
         this.filters.root.style.display = 'none';
       }
     });
-  }
-
-  /** A tab's own filter pane, shown in place of Filters while that tab is current. */
-  addTabPane(tab: string, content: HTMLElement): void {
-    this.tabPanes[tab] = this.rootAccordion.addPane(tab, () => content, true);
-    this.showPaneOf(this.viewHandler.view.currentView?.name ?? tab);
-  }
-
-  showPaneOf(tab: string): void {
-    for (const name of Object.keys(this.tabPanes))
-      ui.setDisplay(this.tabPanes[name].root, name === tab);
-    if (tab in this.tabPanes || tab === 'Timeline')
-      ui.setDisplay(this.filters.root, false);
-    else if (this.formDD.style.display !== 'block')
-      this.filters.root.style.display = 'flex';
   }
 
   exitDrilldown() {

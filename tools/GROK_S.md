@@ -35,10 +35,7 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
-| See the deployment's problems and alerts; mute or dismiss a problem | `grok s observe problems list` / `problems mute <kind:key> --for 2h --reason ...` |
-| Errors grouped by signature, package, group, ...      | `grok s observe errors top --since 7d --by signature,package`  |
-| Turn logging up for one package / user, time-boxed    | `grok s observe logger set server --debug-flags +query --scope package:Chem --for 30m` |
-| Capture what one user or group does, then read it           | `grok s observe capture add --user alice --view "Hit Triage" ...` / `grok s observe timeline --report 4820` |
+| Problems, alerts, problem rules, logger settings, errors     | `grok s observe problems list --alert-status open` (alias `grok s o`) |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -71,10 +68,6 @@ servers:
   is the API base (`https://host/api`, or `http://host:8082` for a bare Datlas).
 - `grok s token` prints a session token for the target server — what a shell script needs
   when it has to call the API with `curl` itself.
-- `--host` may repeat for `o alerts list|detection`, `o problems list`, `o errors list|top|diff` and
-  `o logger get|overrides|diff`: each host answers in turn and a `HOST` column is prepended. A
-  host that fails is reported on stderr, the others still print, and the run exits 1. Every
-  other command refuses a repeated `--host`.
 
 ## Entity operations
 
@@ -469,127 +462,26 @@ module the server does not report exits 1. Requires a valid dev key (standard `g
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
 
-## Alerts, errors, logging and capture (`grok s observe`, alias `grok s o`)
+## Problems, logging and errors (`grok s observe`, alias `grok s o`)
 
-The deployment's problems, alerts and problem rules, errors as data, the logging policy, capture rules and
-timelines. `grok s observe --help` lists the commands; `grok s observe <command> --help` prints all options of one.
-Times are UTC in and out (`--until 14:00` is 14:00Z); in durations `m` means **minutes**.
-
-### Problems and alerts
-
-| | Problem | Alert |
-|---|---|---|
-| Is | what is wrong (`kind:key`), kept for good | the notification that it went wrong |
-| Changed by | people (`status`: active, muted, not-a-problem, fixed); detectors set `state` (ongoing, cleared) | people acknowledge and resolve it; detectors open, escalate and clear it |
-| Ends | never | when a person resolves it, or the problem leaves `active` |
-
-Resolve an alert: seen it. Mute the problem: stop its alerts (dismiss: it is not a problem). Fix the problem:
-tell me if it comes back. Resolving leaves the problem active, so a condition that still holds alerts again.
-Needs `ManageAlerts`.
+Thin commands over the server's routes; `grok s observe` with no command prints every verb and option.
 
 ```bash
-grok s observe problems list --status active --state ongoing      # default: every status and state
-grok s observe problems get error-incident:a41f9c            # id: UUID, unique UUID prefix (6+), or kind:key
-grok s observe problems history health:Jupyter               # its records: alerts opened, acknowledged, resolved, status changes
-grok s observe problems mute error-incident:a41f9c --until-version 1.14.3 --reason "fixed in Chem 1.14.3"
-grok s observe problems mute connection:ELN:Prod --until 2026-10-04T06:00 --reason "monthly ELN maintenance"
-grok s observe problems mute login:internal:unknown --reason "scanner on the guest network"   # no end: until lifted
-grok s observe problems dismiss error-incident:7c02e1 --reason "expected when a token expires"
-grok s observe problems fix health:Jupyter --reason "kernel image rebuilt"
-grok s observe problems activate connection:ELN:Prod
-
-grok s observe alerts list --status open,acknowledged      # the default; `resolved` or `all` for more
-grok s observe alerts list --status open --host prod --host val --host sandbox
-grok s observe alerts get connection:ELN:Prod
-grok s observe alerts ack health:jupyter --reason "restarting the gateway"
-grok s observe alerts resolve report:4820 --reason "duplicate of 4819"
-grok s observe alerts mute error-incident:7c02e1 --until 14:00 --reason "hotfix deploying"   # mutes its problem
-grok s observe alerts unmute connection:ELN:Prod            # makes its problem active
-grok s observe alerts detection                             # the servers that report, and which are live
-grok s observe alerts detection --all --host prod --host val      # every server row, stopped ones included
+grok s o problems list --alert-status open                 # the open alerts; --status, --state, --kind, --since 7d
+grok s o problems get health:Jupyter                        # by id or kind:key; history <id> for its records
+grok s o problems status connection:ELN:Prod --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
+grok s o problems ack health:Jupyter --reason "restarting"  # resolve <id> --reason ... closes the alert
+grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
+grok s o rules test                                         # evaluates the saved rules once, now
+grok s o logger get exportSettings                          # the logger settings, or one path of them
+grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry
+grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
+grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
+grok s o timeline --report 4820                             # also --action, --request, --session
 ```
 
-### Problem rules
-
-Your own problem types: a rule is a condition over the platform's log; each group it holds for is a problem
-(kind `rule-<name>`) that alerts like the built-in ones. Test a rule before you add it; rules the deployment
-defines (`GROK_PARAMETERS` `problemRules`) are read-only. Needs `ManageAlerts`.
-
-```bash
-grok s observe rules list                                   # NAME SOURCE ON WHEN GROUP SEV ONGOING ALERTING ERROR
-grok s observe rules test --json failed-logins.json --hours 6   # what holds now and what would have raised; raises nothing
-grok s observe rules add --json failed-logins.json
-grok s observe rules add slow-checks --json '{"match": {"source": "audit", "type": "connection-checked"}, "groupBy": "param:connection", "when": {"count": 3, "value": {"param": "ms", "agg": "avg", "op": ">=", "threshold": 5000}}}'
-grok s observe rules get failed-logins-per-user             # the rule, then its definition as JSON
-grok s observe rules edit failed-logins-per-user --json failed-logins.json   # replaces the definition
-grok s observe rules disable failed-logins-per-user         # enable, delete alike
-```
-
-`failed-logins.json`:
-
-```json
-{"name": "failed-logins-per-user", "severity": "warning",
- "match": {"source": "audit", "type": "user-login-failed"},
- "groupBy": "param:login", "window": 15, "when": {"count": 5},
- "summary": "{count} failed logins for {group} in {window} min"}
-```
-
-### Errors
-
-```bash
-grok s observe errors list --user alice --since 2h          # occurrences: TIME USER SOURCE SIG ERROR PACKAGE VERSION ROUTE SERVER REQ
-grok s observe errors top --since 7d --by signature,package --min-users 2 --limit 5
-grok s observe errors top --route "POST /api/public/v1/functions/{name}/call" --since 1h --by connection
-grok s observe errors top --since 30d --group Chemists --by package
-grok s observe errors show a41f9c --since 24h
-grok s observe errors diff --before 2026-09-14..2026-09-20 --after 2026-09-21..2026-09-27
-grok s observe errors diff --since 7d --host prod --host val
-grok s observe errors top --since 7d --by package,group --format parquet > errors-w39.parquet
-grok s observe errors export --since 7d --by signature --format csv -O errors.csv
-```
-
-Platform errors as query results, filtered by the same flags in every verb (default `--since 24h`) and
-grouped by up to three dimensions. Needs `ViewTelemetry`. `--format csv|json|parquet` writes the raw rows
-(to stdout or `-O <file>`), unlike `--output`, which formats the table.
-
-### Logging policy
-
-```bash
-grok s observe logger get server                            # levels, debug flags, locks, group settings, active overrides
-grok s observe logger get --scope package:Snowflake         # effective settings for a scope, each with its source
-grok s observe logger set server --debug-flags +queries --scope package:Snowflake --for 30m --reason "ELN timeouts"
-grok s observe logger set server --save-levels -debug --reason "too much"      # base change for All Users
-grok s observe logger set --scope group:Chemists --print-levels error,warning
-grok s observe logger set --set exportFlushSeconds=5 --reason "faster sync"   # any settings path, base only
-grok s observe logger diff                                  # current policy vs deployment defaults, overrides included
-grok s observe logger diff --version 12                     # vs a history version
-grok s observe logger diff --host prod --host val
-grok s observe logger overrides
-grok s observe logger history --limit 20
-grok s observe logger revert                                # undo the most recent change or override
-grok s observe logger revert --override <id>
-```
-
-The server's logging policy: base settings, time-boxed overrides and their history. Needs
-`EditPluginsSettings`. Lists take `a,b` to replace or `+a,-b` to edit; `--for`/`--until` make an override,
-and a user, session or package scope without them lasts one hour.
-
-### Capture rules and timelines
-
-```bash
-grok s observe capture add --user alice.mendel --view "Hit Triage" --capture clicks,inputs,requests,calls,errors,server:debug=queries,files --for 2d --limit 2000 --reason "GROK-21044: campaign loses filters"
-grok s observe capture add --group Chemists --view "Hit Triage" --capture clicks,requests,errors --for 7d --anonymous --reason "submit drop-off"
-grok s observe capture list --all --since 90d               # RULE AUTHOR SUBJECT SCOPE REASON ACTIVE EVENTS
-grok s observe capture show cap-17
-grok s observe capture show cap-17 --timeline --output csv > cap-17.csv
-grok s observe capture stop cap-17 --reason "reproduced"
-grok s observe timeline --report 4820                       # same as: grok s raw GET "/log/timeline?report=4820"
-grok s observe timeline --rule cap-17                       # or --action <id>, --request <id>, --session <id>
-```
-
-A capture rule records one subject's activity in a scope until it expires; `timeline` prints what one
-action, request, session, report or rule saw, in time order. `capture` needs `EditPluginsSettings`,
-`timeline` needs `ViewTelemetry`.
+Problems need `ManageAlerts`, errors and the timeline `ViewTelemetry`, logger and rules changes
+`EditPluginsSettings`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 
@@ -808,10 +700,8 @@ a user who does not exist there lands under the pushing account instead of their
 ### Surviving a blip
 
 A retriable answer (429, 502, 503, 504) or a dropped socket is retried with exponential backoff —
-five attempts by default, about half a minute. A request that gets no answer within
-`GROK_HTTP_TIMEOUT` (60 s) is never repeated: the server may still be processing it, so narrow
-the query (a shorter `--since`, fewer rows) instead. Retries cover a busy moment, not a stand
-that steps out for a restart, and a whole-instance walk is long enough to meet one:
+five attempts by default, about half a minute. That covers a busy moment, not a stand that steps
+out for a restart, and a whole-instance walk is long enough to meet one:
 
 ```bash
 GROK_HTTP_RETRIES=9 grok s pull --out ./bundle --host dev --admin ...   # ~90s of tolerance

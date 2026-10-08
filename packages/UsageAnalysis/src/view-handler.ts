@@ -16,14 +16,9 @@ import {ClicksView} from './tabs/clicks';
 import {MetricsView} from './tabs/metrics';
 import {VulnerabilitiesView} from './tabs/vulnerabilities';
 import {StressView} from './tabs/stress-tests';
-import {CaptureView} from './tabs/capture';
-import {TIMELINE_KEYS, TimelineView} from './tabs/timeline';
 
 export class ViewHandler {
   public static UA_NAME = 'Usage Analysis';
-  static NO_PACKAGES = ['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity', 'Capture', 'Timeline',
-    'Errors'];
-  static NO_GROUPS = ['Metrics', 'Stress', 'Vulnerabilities', 'Capture', 'Timeline', 'Errors'];
   private urlParams: Map<string, string> = new Map<string, string>();
   public view: DG.MultiView;
 
@@ -36,7 +31,7 @@ export class ViewHandler {
   async init(date?: string, groups?: string, packages?: string, tags?: string, categories?: string, projects?: string, path?: string): Promise<void> {
     const toolboxPromise = UaToolbox.construct(this);
     const viewClasses: (typeof UaView)[] = [OverviewView, PackagesView, FunctionsView, EventsView, ClicksView, LogView,
-      SystemActivityView, ErrorsView, CaptureView, TimelineView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
+      SystemActivityView, ErrorsView, ProjectsView, MetricsView, StressView, VulnerabilitiesView];
     const views: UaView[] = [];
     for (let i = 0; i < viewClasses.length; i++) {
       const currentView = new viewClasses[i]();
@@ -55,8 +50,6 @@ export class ViewHandler {
       if (urlView)
         urlTab = urlView.name;
     }
-    this.changeTab(urlTab);
-    this.updatePath();
 
     const indicatorTimer = setTimeout(() => ui.setUpdateIndicator(this.view.root, true, 'Loading...'), 200);
     const toolbox = await toolboxPromise;
@@ -69,8 +62,8 @@ export class ViewHandler {
     toolbox.toggleCategoriesInput(urlTab == 'Packages');
     toolbox.toggleTagsInput(urlTab == 'Functions');
     toolbox.toggleProjectsInput(urlTab == 'Projects');
-    toolbox.togglePackagesInput(!ViewHandler.NO_PACKAGES.includes(urlTab));
-    toolbox.toggleGroupsInput(!ViewHandler.NO_GROUPS.includes(urlTab));
+    toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(urlTab));
+    toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(urlTab));
 
     const paramsHaveDate = date != undefined;
     const paramsHaveUsers = groups != undefined;
@@ -140,15 +133,13 @@ export class ViewHandler {
     fButtons.style.display = 'none';
     toolbox.filters.root.before(fButtons);
 
-    const onTabChanged = () => {
+    this.view.tabs.onTabChanged.subscribe((_) => {
       const view = this.view.currentView;
-      grok.shell.o = null;
       toolbox.toggleCategoriesInput(view.name === 'Packages');
       toolbox.toggleTagsInput(view.name === 'Functions');
       toolbox.toggleProjectsInput(view.name == 'Projects');
-      toolbox.togglePackagesInput(!ViewHandler.NO_PACKAGES.includes(view.name));
-      toolbox.toggleGroupsInput(!ViewHandler.NO_GROUPS.includes(view.name));
-      toolbox.showPaneOf(view.name);
+      toolbox.togglePackagesInput(!['Projects', 'Metrics', 'Stress', 'Vulnerabilities', 'System Activity'].includes(view.name));
+      toolbox.toggleGroupsInput(!['Metrics', 'Stress', 'Vulnerabilities'].includes(view.name));
       // ViewHandler.UA.path = ViewHandler.UA.path.replace(/(UsageAnalysis\/)([a-zA-Z/]+)/, '$1' + view.name);
       this.updatePath();
       if (view instanceof UaView) {
@@ -180,9 +171,8 @@ export class ViewHandler {
         fButtons.style.display = 'flex';
       else
         fButtons.style.display = 'none';
-    };
-    this.view.tabs.onTabChanged.subscribe(() => onTabChanged());
-    onTabChanged();
+    });
+    this.changeTab(urlTab);
   }
 
   static urlName(view: DG.ViewBase): string {
@@ -213,17 +203,13 @@ export class ViewHandler {
     if (saveDuringChangingView)
       this.urlParams.set(key, value);
 
-    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`;
+    this.view.path = `/${ViewHandler.urlName(this.getCurrentView())}?${params.join('&')}`.toLowerCase();
   }
 
-  /** The tab's path with the shared parameters; the Timeline tab adds the record it shows, the others drop it. */
-  updatePath(): void {
+   updatePath(): void {
     const v = this.getCurrentView();
     const s = this.view.path.split('?');
-    const params = (s.length === 2 ? s[1].split('&') : [])
-      .filter((p) => p && !TIMELINE_KEYS.includes(p.split('=')[0]));
-    if (v instanceof TimelineView && v.shownParam)
-      params.push(v.shownParam);
-    this.view.path = `/${ViewHandler.urlName(v)}${(v.rout ?? '').toLowerCase()}${params.length ? '?' + params.join('&') : ''}`;
+    const params = s.length === 2 ? s[1] : null;
+     this.view.path = `/${ViewHandler.urlName(v)}${v.rout ?? ''}${params ? '?' + params : ''}`.toLowerCase();
   }
 }

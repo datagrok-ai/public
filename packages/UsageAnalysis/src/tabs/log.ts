@@ -54,6 +54,7 @@ export class LogView extends UaView {
         viewer.columns.setOrder(['source', 'user', 'event_time', 'event_description', 'id']);
         viewer.col('source')!.width = 30;
         viewer.col('ugid')!.visible = false;
+        viewer.col('request_id')!.visible = false;
 
         viewer.onCellPrepare(function(gc) {
           if (gc.gridColumn.name === 'event_description')

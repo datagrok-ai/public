@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest';
+import {describe, it, expect, beforeEach, afterEach} from 'vitest';
 import * as os from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -193,64 +193,5 @@ describe('resolveManifestSources', () => {
     const result = resolveManifestSources(manifest);
     const decoded = Buffer.from((result.operations[0].params as any).content, 'base64');
     expect(decoded).toEqual(bytes);
-  });
-});
-
-describe('observability dispatch', () => {
-  it('answers `grok s observe alerts --help` with the command usage, and the alias `grok s o` with the list', async () => {
-    const {server, O_USAGE} = await import('../commands/server');
-    const {ALERTS_USAGE} = await import('../commands/server-alerts');
-    const lines: string[] = [];
-    const log = vi.spyOn(console, 'log').mockImplementation((s: any) => { lines.push(String(s)); });
-    try {
-      expect(await server({_: ['s', 'observe', 'alerts'], help: true})).toBe(true);
-      expect(await server({_: ['s', 'o']})).toBe(true);
-    } finally {
-      log.mockRestore();
-    }
-    expect(lines).toEqual([ALERTS_USAGE, O_USAGE]);
-  });
-
-  it('refuses an unknown observability command, and several --host for a single-deployment verb', async () => {
-    const {server} = await import('../commands/server');
-    const err: string[] = [];
-    const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
-    const before = process.exitCode;
-    try {
-      expect(await server({_: ['s', 'observe', 'users', 'list']})).toBe(true);
-      expect(process.exitCode).toBe(1);
-      expect(await server({_: ['s', 'o', 'alerts', 'ack', 'x'], host: ['a', 'b']})).toBe(true);
-    } finally {
-      write.mockRestore();
-      process.exitCode = before;
-    }
-    expect(err.join('')).toMatch(/Unknown command 'observe users'/);
-    expect(err.join('')).toMatch(/'grok s observe alerts ack' takes one --host/);
-  });
-
-  it('answers a bare `grok s --help` with success', async () => {
-    const {server, HELP_SERVER} = await import('../commands/server');
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    try {
-      expect(await server({_: ['s'], help: true})).toBe(true);
-      expect(log).toHaveBeenCalledWith(HELP_SERVER);
-    } finally {
-      log.mockRestore();
-    }
-  });
-
-  it('refuses a repeated --host outside grok s observe alerts, problems, errors and logger', async () => {
-    const {server} = await import('../commands/server');
-    const err: string[] = [];
-    const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { err.push(String(s)); return true; });
-    const before = process.exitCode;
-    try {
-      expect(await server({_: ['s', 'users', 'list'], host: ['a', 'b']})).toBe(true);
-      expect(process.exitCode).toBe(1);
-    } finally {
-      write.mockRestore();
-      process.exitCode = before;
-    }
-    expect(err.join('')).toMatch(/--host may repeat only for grok s observe alerts, problems, errors and logger/);
   });
 });

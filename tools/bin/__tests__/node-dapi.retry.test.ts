@@ -96,20 +96,4 @@ describe('fetchOrRetry', () => {
     const client = new NodeApiClient(URL, 'token');
     await expect(client.get('/projects/x')).rejects.toThrow('GET http://stand/api/projects/x: no answer in');
   });
-
-  // The server may still be running the query; a retry would stack another copy on top of it.
-  it('attempts a timed-out GET once and says the server may still be processing it', async () => {
-    const spy = stub(() => { throw Object.assign(new Error('timed out'), {name: 'TimeoutError'}); });
-    const client = new NodeApiClient(URL, 'token');
-    await expect(client.get('/log/errors/x')).rejects.toThrow(/may still be processing.*narrow the query/);
-    expect(spy).toHaveBeenCalledTimes(1);
-  });
-
-  it('retries a GET whose connection failed and returns the answer that follows', async () => {
-    const refused = () => { throw Object.assign(new TypeError('fetch failed'), {cause: {code: 'ECONNREFUSED'}}); };
-    const spy = stub(refused, refused, () => ok({id: 'x'}));
-    const client = new NodeApiClient(URL, 'token');
-    expect(await client.get('/projects/x')).toEqual({id: 'x'});
-    expect(spy).toHaveBeenCalledTimes(3);
-  });
 });

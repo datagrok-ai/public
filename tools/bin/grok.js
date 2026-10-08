@@ -1,5 +1,10 @@
 #!/usr/bin/env node
-const argv = require('./utils/cli-args').parseArgs(process.argv.slice(2));
+const argv = require('minimist')(process.argv.slice(2), {
+  alias: {k: 'key', h: 'help', r: 'recursive'},
+  boolean: ['dartium'],
+  // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
+  string: ['version'],
+});
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored
 // (Playwright kept retrying failed specs). Normalize back to the flag the commands read.
@@ -58,8 +63,7 @@ if (command !== 'test' && command !== 'stresstest')
   delete argv.dartium;
 if (command in commands) {
   try {
-    // `grok s [<command>] --help` is answered by server(), which knows each command's options
-    if (argv['help'] && command !== 's' && command !== 'server') {
+    if (argv['help']) {
       console.log(help[command]);
       exitWithCode(1);
     } else if (argv.all && onPackageCommandNames.includes(command)) {
