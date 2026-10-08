@@ -404,6 +404,7 @@ export function isApplicableXGBooster(df: DG.DataFrame, predictColumn: DG.Column
 //output: dynamic model
 //meta.mlname: SVM
 //meta.mlrole: train
+//meta.mlhasrows: true
 export async function trainSVM(df: DG.DataFrame, predictColumn: DG.Column, kernel: string, cost: number, gamma: number, degree: number, coef0: number, epsilon: number) : Promise<Uint8Array> {
   return await PackageFunctions.trainSVM(df, predictColumn, kernel, cost, gamma, degree, coef0, epsilon);
 }

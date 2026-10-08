@@ -773,6 +773,7 @@ export class PackageFunctions {
     'meta': {
       'mlname': 'SVM',
       'mlrole': 'train',
+      'mlhasrows': 'true',
     },
     'name': 'trainSVM',
     'outputs': [{'name': 'model', 'type': 'dynamic'}],
