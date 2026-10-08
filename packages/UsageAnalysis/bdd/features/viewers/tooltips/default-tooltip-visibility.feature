@@ -1,13 +1,14 @@
 @journey @viewers @realizes:viewers.tooltips
 Feature: Hiding the table's default tooltip from a viewer's context menu
-  Tooltip > Hide on any viewer switches off every tooltip of the table: the grid, the scatter plot
-  and the box plot, which show its row tooltip, stop showing anything on hover, and so do the
-  histogram's bin and the bar chart's bar, whose own tooltips show before Hide (by design, confirmed
-  in the team thread on 2026-10-07; the TestTrack case was updated). The Tooltip group then
-  offers Show Custom in place of Hide, and Show Custom brings the row tooltip back on all three and
-  the histogram's and the bar chart's tooltips with it.
-  Translated from the TestTrack case Tooltips/default-tooltip-visibility on demog-1000, with a scatter
-  plot, a box plot, a histogram, a line chart, a bar chart and a trellis plot.
+  The grid, the scatter plot and the box plot show the same default tooltip, the table's. Tooltip >
+  Hide on any viewer switches off every tooltip of the table: those three stop showing anything on
+  hover, and so do the histogram's bin and the bar chart's bar, whose own tooltips show before Hide
+  (by design, confirmed in the team thread on 2026-10-07; the TestTrack case was updated). The
+  Tooltip group then offers Show Custom in place of Hide, and Show Custom brings every one of them
+  back.
+  Translated from the TestTrack cases Tooltips/default-tooltip-visibility and
+  Tooltips/uniform-default-tooltip on demog-1000, with a scatter plot, a box plot, a histogram and a
+  bar chart.
 
   The grid is switched to "inherit from table" with Show Visible Columns In Tooltip on, as the case
   says: the grid's own default (by design since GROK-19901) is a custom tooltip with no columns,
@@ -21,8 +22,12 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
   Between two hovers the pointer rests above the grid, on the ribbon: above any other viewer of
   this crowded view lies another viewer, whose own tooltip would answer the next claim.
 
-  Not translated: the line chart's and the trellis plot's own tooltips going and coming back — neither reports a
-  place a pointer can rest on to raise one (MISSING.md); they are in the view as the case has them.
+  Not translated: the line chart and the trellis plot of the case. The line chart on demog-1000
+  aggregates its points (X has repeated values), and an aggregated line chart shows no tooltip until
+  Edit Aggregated Tooltip configures one (line-chart-aggregated-tooltip claims that one); the
+  trellis plot's inner viewers' marks are not areas of the trellis, so no pointer can rest on one.
+  Nor that the three viewers list the columns in the same order — the tooltip steps claim the set,
+  and the scatter plot puts its axis columns first (MISSING.md).
 
   Background:
     Given user is logged in
@@ -34,9 +39,7 @@ Feature: Hiding the table's default tooltip from a viewer's context menu
     And user adds a scatter plot viewer
     And user adds a box plot viewer
     And user adds a histogram viewer
-    And user adds a line chart viewer
     And user adds a bar chart viewer
-    And user adds a trellis plot viewer
     And user sets properties of scatter plot viewer:
       | showLabels | Always |
     And user sets properties of box plot viewer:

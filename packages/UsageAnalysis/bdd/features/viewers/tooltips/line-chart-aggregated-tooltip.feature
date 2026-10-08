@@ -6,13 +6,11 @@ Feature: The line chart's aggregated tooltip with a split
   shows the configured aggregations (GitHub #2571). Translated from the TestTrack case
   Tooltips/line-chart-aggregated-tooltip, on spgi-100 (the first 100 rows of SPGI) instead of the
   whole SPGI: X = Chemist 521, Y = CAST Idea ID, the aggregations concat unique(Stereo Category) and
-  min(Average Mass), split by Stereo Category (five lines: four categories and the empty one).
+  min(Average Mass), split by Stereo Category (five lines: four categories and the empty one). The
+  pointer rests on the first point the split chart reports (`point of row <r>`, a row of the
+  aggregated frame), whose tooltip lists the two aggregations.
 
-  Not translated: hovering a point and reading the aggregations in its tooltip — the case's own
-  subject. The line chart reports no area for a point (only the plot and its charts), and the
-  centre of the chart is not one, so no step can rest the pointer on a dot (MISSING.md). What is
-  claimed is the configuration the dialog writes and a split chart that draws its markers without an
-  error. The case's title also names an in-viewer filter, which none of its steps sets; not translated.
+  The case's title also names an in-viewer filter, which none of its steps sets; not translated.
 
   Background:
     Given user is logged in
@@ -38,11 +36,16 @@ Feature: The line chart's aggregated tooltip with a split
     And "aggTooltipColumns" property of line chart viewer should be "concat unique(Stereo Category)\nmin(Average Mass)"
     And no errors should have been logged
 
-  Scenario: Split by Stereo Category, the chart draws a line per category with no error
+  Scenario: Split by Stereo Category, a point's tooltip shows the two aggregations
     When user sets "Split" property of line chart viewer to "Stereo Category"
     Then the "split columns" reading of line chart viewer should be 1
     And the "lines" reading of line chart viewer should be 5
     And the "markers drawn" reading of line chart viewer should be 32
     And line chart viewer should report no error
+    When user hovers over the first "point" area of line chart viewer
+    Then tooltip should be visible
+    And tooltip should contain text "concat unique(Stereo Category)"
+    And tooltip should contain text "min(Average Mass)"
+    When user moves the pointer away from line chart viewer
     And no errors should have been logged
     And no error or warning balloon should have been shown
