@@ -2433,7 +2433,7 @@ importers:
         specifier: workspace:^
         version: link:../../libraries/statistics
       '@datagrok-libraries/test':
-        specifier: workspace:^
+        specifier: ^1.4.1
         version: link:../../libraries/test
       '@datagrok-libraries/utils':
         specifier: workspace:^
