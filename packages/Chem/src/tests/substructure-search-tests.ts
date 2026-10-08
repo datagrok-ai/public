@@ -221,6 +221,20 @@ M  END
     await performanceTestWithConsoleLog(df.col('smiles')!, 'CNC(C)=O');
   }, {benchmark: true});
 
+  test('rdkitReinitKeepsWorkerPool', async () => {
+    // a second init (another category's before) used to start a new pool and leave the old one's workers running, each
+    // holding an RDKit WebAssembly instance, until the page had room for no more ("Out of memory")
+    const service = await chemCommonRdKit.getRdKitService();
+    await chemCommonRdKit.initRdKitModuleLocal();
+    expect(await chemCommonRdKit.getRdKitService() === service, true, 'the RDKit worker pool after a second init');
+  });
+
+  test('rdkitWorkerPoolIsBounded', async () => {
+    // each worker holds an RDKit WebAssembly instance, and a page has room for only so many WebAssembly memories
+    const service = await chemCommonRdKit.getRdKitService();
+    expect(service.workerCount, Math.max(1, Math.min(navigator.hardwareConcurrency - 2, 16)), 'RDKit workers');
+  });
+
 });
 
 category('substructure search: search types', () => { 
