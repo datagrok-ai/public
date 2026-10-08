@@ -2,6 +2,7 @@
 
 ## v.next
 
+* NGL preview: Fixed "Cannot read properties of undefined (reading 'length')" from NGL when a preview was closed while its structure was still being built
 * Molstar viewer: Fixed a crash when closing an unrelated view while a structure preview was open
 * Biostructure, NGL: Added automation status (readings, render-pending)
 * Biostructure: Fixed the Representation property skipping structures not yet interacted with in the 3D view, and a structure loaded later (current-row reload) keeping the default representation
