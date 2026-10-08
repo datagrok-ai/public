@@ -1,8 +1,5 @@
 /* Which substituent comes first, and which reliably last, at each position across the series whose
    additive fit holds. Pure functions of their arguments. */
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import {_package} from '../../package';
 import {AdditiveFit} from './sar-matrix-assemble';
 import {median} from './sar-matrix-decompose';
 import {SarMatrix} from './sar-matrix-types';

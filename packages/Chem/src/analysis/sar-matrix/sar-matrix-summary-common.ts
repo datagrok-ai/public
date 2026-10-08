@@ -1,9 +1,6 @@
 /* What every Summary segment shares: the segment names, the layout breakpoints, the thresholds the
    rendering reads and the small pure helpers that format and orient what the collector produced. */
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
 import {RoleSummary} from './sar-matrix-role-fit';
 import {SwapPool, TRUST_R2} from './sar-matrix-summary-data';
 

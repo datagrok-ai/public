@@ -1,9 +1,6 @@
 /* Matched-pair swap pooling. A swap is one component value exchanged for another with every other
    component held fixed, so a pool is a grouping on all-but-one component: each component's measured
    pairs come out of one walk, with no rebuild. Pure functions of their arguments. */
-import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import {_package} from '../../package';
 import {SarMatrix} from './sar-matrix-types';
 import {keepExtremes, RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
   SwapSide} from './sar-matrix-summary-types';
