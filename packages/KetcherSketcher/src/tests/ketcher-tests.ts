@@ -4,7 +4,6 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import { _testSetMolfile, _testSetSmarts, _testSetSmiles } from './ketcher-utils';
 import { KetcherSketcher } from '../ketcher';
-import { SettingsService } from 'ketcher-core';
 
 /** A Ketcher sketcher in a dialog of its own, once its Ketcher has started. */
 async function openKetcher(): Promise<{ketcher: any, dialog: DG.Dialog}> {
@@ -80,20 +79,22 @@ category('ketcher', async () => {
     }
   }, {timeout: 90000});
 
-  // ketcher-core's Ketcher never ended its subscription to the page's one SettingsService, so every Ketcher mounted
-  // stayed reachable, and a page that had mounted some 50 to 150 filled its heap (crux-sketch spike query-roundtrip, K4)
+  // ketcher-core's Ketcher never ended its subscription to the page's one SettingsService, so every Ketcher
+  // mounted stayed reachable, and a page that had mounted some 50 to 150 filled its heap (crux-sketch spike
+  // query-roundtrip, K4)
   test('a Ketcher closed or paused leaves no subscription on the page\'s settings service', async () => {
-    // the page's one settings service, as Ketcher's UI reaches it (window.ketcher, the Ketcher mounted last)
-    const service = (): any => (window as any).ketcher?.settingsService ?? (SettingsService as any).instance;
-    const listeners = (): number => {
-      const count = service()?.emitter?.listenerCount?.('settings:changed');
-      if (typeof count !== 'number')
-        throw new Error('the page has no Ketcher settings service to count the listeners of');
-      return count;
+    // the settings service the Ketchers share (ketcher-core's singleton), as each Ketcher holds it
+    const services = new Set<any>();
+    const opened = async (): Promise<{ketcher: any, dialog: DG.Dialog}> => {
+      const k = await openKetcher();
+      services.add(k.ketcher.settingsService);
+      return k;
     };
+    const listeners = (): number => Array.from(services)
+      .reduce((n, s) => n + (s?.emitter?.listenerCount?.('settings:changed') ?? 0), 0);
     const closed = async (n: number): Promise<void> => {
       for (let i = 0; i < n; i++) {
-        const {dialog} = await openKetcher();
+        const {dialog} = await opened();
         dialog.close();
         await delay(300);
       }
@@ -101,9 +102,10 @@ category('ketcher', async () => {
     await closed(1);
     const settled = listeners();
     await closed(3);
-    expect(listeners(), settled, 'the settings listeners after three more Ketchers opened and closed');
-    const paused = await openKetcher();
-    const last = await openKetcher();
+    expect(listeners(), settled,
+      `the settings listeners after three more Ketchers opened and closed (${services.size} settings services)`);
+    const paused = await opened();
+    const last = await opened();
     last.dialog.close();
     paused.dialog.close();
     await delay(300);
