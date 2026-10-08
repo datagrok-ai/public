@@ -12,6 +12,7 @@ import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateT
 import {ValidationResult} from './data/common-types';
 import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
+import {inspectLinks, inspectNode, LinksInspection} from './runtime/inspection';
 import {getStartedOrNull} from '../../shared-utils/utils';
 
 export type CommandAck = {cid: number, result: any} | {cid: number, error: unknown};
@@ -163,6 +164,16 @@ export class Driver {
     ).toPromise();
     this.commands$.next({msg, cid});
     return ack;
+  }
+
+  public inspectLinks(): LinksInspection {
+    const state = this.states$.value;
+    return state ? inspectLinks(state) : {matched: [], notMatched: []};
+  }
+
+  public inspectNode(uuid: string) {
+    const state = this.states$.value;
+    return state ? inspectNode(state, uuid) : undefined;
   }
 
   public close() {

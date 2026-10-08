@@ -232,3 +232,27 @@ function checkAST(str: string, ast?: IToken) {
   if (ast.errors?.length)
     throw new Error(`Failed to parse link spec: ${str}, errors: ${ast.errors.map((e) => e.message).join(',')}`);
 }
+
+/** One-line rendering of a parsed segment, e.g. `before(@in, step1|step2, stop)` or `#all(tag1&tag2)`. */
+export function formatLinkSegment(s: LinkSelectorSegment | LinkTagSegment): string {
+  if (s.type === 'tag')
+    return `#${s.selector}(${s.ref ? `@${s.ref},` : ''}${s.tags.join('&')})`;
+  const ids = s.ids.join('|');
+  if (s.selector === 'first' && !s.ref && s.stopIds.length === 0)
+    return ids;
+  const parts: string[] = [];
+  if (s.ref) parts.push(`@${s.ref}`);
+  if (ids) parts.push(ids);
+  if (s.stopIds.length) parts.push(s.stopIds.join('|'));
+  return `${s.selector}(${parts.join(', ')})`;
+}
+
+export function formatLinkIO(io: LinkIOParsed) {
+  return {
+    name: io.name,
+    ...(io.flags?.length ? {flags: io.flags} : {}),
+    ...(io.templateName !== undefined ? {templateName: io.templateName} : {}),
+    ...(io.unlinked ? {unlinked: true} : {}),
+    path: io.segments.map(formatLinkSegment),
+  };
+}

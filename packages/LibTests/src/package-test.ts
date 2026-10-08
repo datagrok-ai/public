@@ -10,6 +10,7 @@ import './tests/compute-utils/reactive-tree-driver/consistency-tolerance';
 import './tests/compute-utils/reactive-tree-driver/instance-persistence';
 import './tests/compute-utils/reactive-tree-driver/instance-mutations';
 import './tests/compute-utils/reactive-tree-driver/instance-duplicate';
+import './tests/compute-utils/reactive-tree-driver/inspection';
 import './tests/compute-utils/reactive-tree-driver/instance-readonly';
 import './tests/compute-utils/reactive-tree-driver/links-matching';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-data';
