@@ -54,7 +54,96 @@ category('sketcher testing', () => {
   test('malformed input', async () => {
     await testMolblock(rdkitModule, funcs, 'V2000', false, true);
   });
+
+  // With an empty browser cache, applying Ketcher's function loads its whole package, for seconds; a sketcher chosen
+  // meanwhile (the options menu) is shown first, and Ketcher, when it arrived, replaced it in the host.
+  test('a sketcher chosen while Ketcher loads stays', async () => {
+    const ketcher = funcs.find((f) => f.name === 'ketcherSketcher');
+    if (!ketcher)
+      return;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => release = resolve);
+    let applying = false;
+    let applied: Promise<chem.SketcherBase> | null = null;
+    const [s, d] = await sketcherSwitchingFrom(ketcher, (f) => async () => {
+      applying = true;
+      await held;
+      applied = f.apply();
+      return applied;
+    });
+    await awaitCheck(() => applying, 'the function of Ketcher has not been applied', 10000);
+    const chosen = await switchSketcher(s, 'OpenChemLib');
+    release();
+    await applied;
+    await delay(500);
+    expect(s.sketcher === chosen, true);
+    expect(s.host.contains(chosen.root), true);
+    expect(s.host.querySelector('.ketcher-host') === null, true);
+    d.close();
+  });
+
+  // The same while Ketcher initializes (its editor's first load): once it was ready, it took the host's change
+  // subscription from the sketcher chosen meanwhile, and set the molecule it started with over that one's.
+  test('a sketcher chosen while Ketcher initializes keeps its molecule', async () => {
+    const ketcher = funcs.find((f) => f.name === 'ketcherSketcher');
+    if (!ketcher)
+      return;
+    let release = () => {};
+    const held = new Promise<void>((resolve) => release = resolve);
+    let initializing = false;
+    let initialized: Promise<void> | null = null;
+    const [s, d] = await sketcherSwitchingFrom(ketcher, (f) => async () => {
+      const implementation: chem.SketcherBase = await f.apply();
+      const init = implementation.init.bind(implementation);
+      implementation.init = async (host: chem.Sketcher) => {
+        initializing = true;
+        await held;
+        initialized = init(host);
+        return initialized;
+      };
+      return implementation;
+    });
+    await awaitCheck(() => initializing, 'Ketcher has not begun to initialize', 10000);
+    const chosen = await switchSketcher(s, 'OpenChemLib');
+    let changes = 0;
+    s.onChanged.subscribe(() => changes++);
+    s.setSmiles(exampleInchiSmiles);
+    await awaitCheck(() => compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()),
+      'the chosen sketcher does not show its molecule', 5000);
+    release();
+    await initialized;
+    await delay(500);
+    expect(s.sketcher === chosen, true);
+    expect(s.host.contains(chosen.root), true);
+    expect(compareTwoMols(rdkitModule, rdkitModule.get_mol(exampleInchiSmiles), s.getMolFile()), true);
+    const before = changes;
+    s.setSmiles(exampleSmiles);
+    await awaitCheck(() => changes > before, 'the host hears no change of the chosen sketcher', 5000);
+    await delay(300);
+    expect(changes - before, 1);
+    d.close();
+  });
 });
+
+/** A host in a dialog, switching to `from` (as the session's sketcher), whose function's apply is `apply(from)`. */
+async function sketcherSwitchingFrom(from: DG.Func, apply: (f: DG.Func) => () => Promise<chem.SketcherBase>):
+  Promise<[Sketcher, DG.Dialog]> {
+  chem.currentSketcherType = from.friendlyName;
+  const s = new Sketcher();
+  s.createSketcher();
+  // the switch looks its function up after a turn: replaced here, before it does
+  s.sketcherFunctions = s.sketcherFunctions.map((f) => f.name !== from.name ? f :
+    ({name: f.name, friendlyName: f.friendlyName, apply: apply(f)} as unknown as DG.Func));
+  const d = ui.dialog().add(s).show();
+  return [s, d];
+}
+
+/** Chooses `friendlyName` as the options menu does, and resolves to its implementation once ready. */
+async function switchSketcher(s: Sketcher, friendlyName: string): Promise<chem.SketcherBase> {
+  chem.currentSketcherType = friendlyName;
+  s.sketcherType = friendlyName;
+  return await s.sketcherReady();
+}
 
 
 function compareTwoMols(rdkitModule: any, mol: any, resMolfile: any): boolean {
