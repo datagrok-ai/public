@@ -4,18 +4,14 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {
   getProcessedConfig, PipelineConfigurationStaticProcessed,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import {
-  formatLinkIO, formatLinkSegment, parseLinkIO,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/LinkSpec';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {
-  inspectConfig, inspectLinks, inspectNode, toInspectorJSON,
+  inspectConfig, inspectLinks, toInspectorJSON,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/inspection';
 import {
   isLinkLogItem, LOG_EVENT_TYPES, LogItem,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
-import {NodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/BaseTree';
 import {
   explainLinkMatch, matchNodeLink,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
@@ -232,36 +228,6 @@ category('ComputeUtils: Driver inspection', async () => {
     expectDeepEqual(explainLinkMatch(root, dupAfterTypo).failedAlias, 'a');
   });
 
-  test('A step node shows its io and states', async () => {
-    const tree = await makeTree({id: 'root', type: 'static', steps});
-    const step = tree.nodeTree.getItem([{idx: 0}] as NodePath);
-    const node = inspectNode(tree, step.uuid)!;
-    expectDeepEqual([node.configId, node.path, node.type, node.isReadonly], ['step1', 'step1[0]', 'funccall', false]);
-    expectDeepEqual(node.inputs?.map((io) => io.name), ['a', 'b']);
-    expectDeepEqual(node.outputs?.map((io) => io.name), ['res']);
-    expectDeepEqual(node.callState?.isOutputOutdated, true, {prefix: 'Outdated'});
-    expectDeepEqual([node.validations, node.consistency, node.meta], [{}, {}, {}]);
-  });
-
-  test('A workflow node shows its states', async () => {
-    const tree = await makeTree(
-      {id: 'root', type: 'static', steps, states: [{id: 'counter'}]} as PipelineConfiguration);
-    tree.nodeTree.root.getItem().getStateStore().editState('counter', 3);
-    const node = inspectNode(tree, tree.nodeTree.root.getItem().uuid)!;
-    expectDeepEqual([node.configId, node.path, node.type, node.states, node.pipelineValidations],
-      ['root', '', 'static', {counter: 3}, {}]);
-    expectDeepEqual(inspectNode(tree, 'missing'), undefined);
-  });
-
-  test('Link queries are printed with all their parts', async () => {
-    const [io] = parseLinkIO('in(optional):before(@base, step1|step2, stop)/#after(@base, t1&t2)/res', 'input');
-    expectDeepEqual(formatLinkIO(io),
-      {name: 'in', flags: ['optional'], path: ['before(@base, step1|step2, stop)', '#after(@base,t1&t2)', 'res']});
-    const [plain] = parseLinkIO('in:all(step1)/step2/res', 'input');
-    expectDeepEqual(plain.segments.map(formatLinkSegment), ['all(step1)', 'step2', 'res']);
-    expectDeepEqual(formatLinkIO({...plain, unlinked: true}).unlinked, true);
-  });
-
   test('Inspector JSON makes values readable', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [1, 2])]);
     const data = toInspectorJSON(
@@ -270,13 +236,29 @@ category('ComputeUtils: Driver inspection', async () => {
     expectDeepEqual(toInspectorJSON(undefined), {});
   });
 
-  test('Config io is split into inputs and outputs', async () => {
-    const config = await getProcessedConfig(
-      {id: 'root', type: 'static', steps, links: [{id: 'l1', from: 'in:step1/res', to: 'out:step2/a'}]});
-    const data = inspectConfig(config);
-    expectDeepEqual([data.steps[0].inputs, data.steps[0].outputs, data.steps[0].io],
-      [[{name: 'a', type: 'double'}, {name: 'b', type: 'double'}], [{name: 'res', type: 'double'}], undefined]);
-    expectDeepEqual(data.links[0].from, [{name: 'in', path: ['step1', 'res']}]);
+  test('Config is shown as written with resolved step io', async () => {
+    const config = await getProcessedConfig({
+      id: 'root',
+      type: 'static',
+      steps: [
+        steps[0],
+        {id: 'seq', type: 'sequential', stepTypes: [{...steps[1], disableUIControlls: true}], initialSteps: []},
+      ],
+      links: [{id: 'l1', from: 'in:step1/res', to: 'out:seq/step2/a', handler() {}}],
+    } as PipelineConfiguration);
+    const inputs = [{name: 'a', type: 'double'}, {name: 'b', type: 'double'}];
+    const outputs = [{name: 'res', type: 'double'}];
+    expectDeepEqual(inspectConfig(config), {
+      id: 'root',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2', inputs, outputs},
+        {id: 'seq', type: 'sequential', initialSteps: [], stepTypes: [
+          {id: 'step2', nqName: 'LibTests:TestMul2', disableUIControlls: true, inputs, outputs},
+        ]},
+      ],
+      links: [{id: 'l1', from: 'in:step1/res', to: 'out:seq/step2/a', handler: '#Handler'}],
+    });
   });
 
   test('Link log items are recognized', async () => {
@@ -286,17 +268,18 @@ category('ComputeUtils: Driver inspection', async () => {
     expectDeepEqual(LOG_EVENT_TYPES.filter((t) => isLinkLogItem({...base, type: t.type} as LogItem)).length, 6);
   });
 
-  test('The driver reads links and nodes of the current tree', async () => {
+  test('The driver reads links and the config of the current tree', async () => {
     const driver = new Driver(true);
     const config = await getProcessedConfig({id: 'root', type: 'static', steps, links: [
       {id: 'l1', from: 'in:step1/res', to: 'out:step2/a'},
       {id: 'l2', from: 'in:stpe1/res', to: 'out:step2/a'},
     ]});
-    expectDeepEqual(driver.inspectLinks(), {matched: [], notMatched: []}, {prefix: 'Before init'});
-    const tree = await driver.sendCommand({event: 'initPipeline', provider: '', config}) as StateTree;
+    expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [{matched: [], notMatched: []}, undefined],
+      {prefix: 'Before init'});
+    await driver.sendCommand({event: 'initPipeline', provider: '', config});
     const {matched, notMatched} = driver.inspectLinks();
     expectDeepEqual([matched.map((l) => l.id), notMatched.map((l) => l.id)], [['l1'], ['l2']]);
-    expectDeepEqual(driver.inspectNode(tree.nodeTree.root.getItem().uuid)?.configId, 'root');
+    expectDeepEqual(driver.inspectConfig().links.map((l: any) => l.from), ['in:step1/res', 'in:stpe1/res']);
     driver.close();
   });
 });

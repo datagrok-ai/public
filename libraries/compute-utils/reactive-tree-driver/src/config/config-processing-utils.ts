@@ -85,11 +85,35 @@ export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: strin
   return false;
 }
 
+type ProcessedConfigItem =
+  PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> |
+  AbstractPipelineActionConfiguration | PipelineSelfRef;
+
+const originalConfigs = new WeakMap<object, object>();
+
+/** The config item as written, before links were parsed and expanded and nested pipelines were loaded. */
+export function getOriginalConfig(processed: object): object | undefined {
+  return originalConfigs.get(processed);
+}
+
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
+  original: object = conf,
+): Promise<ProcessedConfigItem> {
+  const processed = await processConfigItem(conf, loadedPipelines, logger);
+  // a loaded ref is already recorded with the config its provider returned
+  if (!originalConfigs.has(processed))
+    originalConfigs.set(processed, original);
+  return processed;
+}
+
+async function processConfigItem(
+  conf: ConfigInitialTraverseItem,
+  loadedPipelines: PipelineRefStore<null>,
+  logger?: DriverLogger,
+): Promise<ProcessedConfigItem> {
   if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
@@ -101,7 +125,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
-      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger);
+      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger, step);
       return sconf;
     }));
     checkUniqId(steps, logger);
@@ -109,7 +133,7 @@ async function configProcessing(
   } else if (isPipelineDynamicInitial(conf)) {
     const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger);
+      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger, item);
       return nconf;
     }));
     checkUniqId(stepTypes, logger);

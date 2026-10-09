@@ -1,13 +1,12 @@
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {NodePath, TreeNode} from '../data/BaseTree';
-import {formatLinkIO, formatLinkSegment, LinkIOParsed} from '../config/LinkSpec';
+import {getOriginalConfig, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {formatNodePath} from '../utils';
 import {explainLinkMatch, LinkMatchExplanation, MatchedNodePaths, matchNodeLink} from './link-matching';
 import {LinksData} from './LinksState';
 import {StateTree} from './StateTree';
-import {flattenTags} from './StateTreeSerializer';
-import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
+import {StateTreeNode} from './StateTreeNodes';
 
 export type InspectedNodeRef = {
   uuid: string;
@@ -47,21 +46,6 @@ export type LinksInspection = {
 };
 
 export type InspectedIO = {name: string, type?: string, nullable?: boolean};
-
-export type InspectedNode = InspectedNodeRef & {
-  friendlyName?: string;
-  type: string;
-  isReadonly: boolean;
-  inputs?: InspectedIO[];
-  outputs?: InspectedIO[];
-  callState?: any;
-  validations?: any;
-  consistency?: any;
-  meta?: Record<string, any>;
-  descriptions?: Record<string, any>;
-  states?: Record<string, any>;
-  pipelineValidations?: any;
-};
 
 export function inspectLinks(state: StateTree): LinksInspection {
   const {linksState, nodeTree} = state;
@@ -125,48 +109,27 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
   return res;
 }
 
-export function inspectNode(state: StateTree, uuid: string): InspectedNode | undefined {
-  const [node, path] = state.nodeTree.find((item) => item.uuid === uuid) ?? [];
-  if (!node || !path)
-    return undefined;
-  const item = node.getItem();
-  const res: InspectedNode = {
-    ...nodeRef(node, path), friendlyName: item.config.friendlyName, type: item.nodeType, isReadonly: item.isReadonly,
-  };
-  const descriptions: Record<string, any> = {};
-  for (const name of item.nodeDescription.getStateNames()) {
-    const val = item.nodeDescription.getState(name);
-    if (val === undefined)
-      continue;
-    descriptions[name] = name === 'tags' ? flattenTags(val) : val;
-  }
-  if (Object.keys(descriptions).length)
-    res.descriptions = descriptions;
-
-  if (isFuncCallNode(item)) {
-    Object.assign(res, splitIO(item.config.io ?? []));
-    res.callState = item.funcCallState$.value;
-    res.validations = item.validationInfo$.value;
-    res.consistency = item.consistencyInfo$.value;
-    res.meta = Object.fromEntries(Object.entries(item.metaInfo$.value).map(([k, meta$]) => [k, meta$?.value]));
-  } else {
-    const store = item.getStateStore();
-    const names = store.getStateNames();
-    if (names.length)
-      res.states = Object.fromEntries(names.map((name) => [name, store.getState(name)]));
-    res.pipelineValidations = item.pipelineValidations$.value;
-  }
-  return res;
-}
-
 /** Plain JSON for the Inspector: DG objects, rx subjects, collections and handlers become readable values. */
 export function toInspectorJSON(value: any): any {
   return value ? JSON.parse(JSON.stringify(value, inspectorReplacer)) : {};
 }
 
-/** Config as plain JSON, with each step's io split into inputs and outputs like in {@link inspectNode}. */
-export function inspectConfig(config: any): any {
-  return splitConfigIO(toInspectorJSON(config));
+/** The config as written, with nested pipelines loaded and each step's io resolved into inputs and outputs. */
+export function inspectConfig(config: PipelineConfigurationProcessed): any {
+  return toInspectorJSON(originalConfig(config));
+}
+
+function originalConfig(processed: any): any {
+  const res: Record<string, any> = {...(getOriginalConfig(processed) ?? processed)};
+  for (const key of ['steps', 'stepTypes']) {
+    if (res[key])
+      res[key] = processed[key].map(originalConfig);
+  }
+  if (processed.io) {
+    delete res.io;
+    Object.assign(res, splitIO(processed.io));
+  }
+  return res;
 }
 
 function nodeRef(node: TreeNode<StateTreeNode>, path: Readonly<NodePath>): InspectedNodeRef {
@@ -191,34 +154,7 @@ function splitIO(io: {id: string, type?: string, direction?: string, nullable?: 
   return {...(inputs.length ? {inputs} : {}), ...(outputs.length ? {outputs} : {})};
 }
 
-function splitConfigIO(data: any): any {
-  if (data == null || typeof data !== 'object')
-    return data;
-  if (Array.isArray(data))
-    return data.map(splitConfigIO);
-  const res: Record<string, any> = {};
-  for (const [k, v] of Object.entries(data)) {
-    if (k === 'io' && Array.isArray(v) && v[0]?.id && v[0]?.direction)
-      Object.assign(res, splitIO(v));
-    else
-      res[k] = splitConfigIO(v);
-  }
-  return res;
-}
-
-function isLinkIOParsed(v: any): v is LinkIOParsed {
-  return v && typeof v.name === 'string' && Array.isArray(v.segments) && !v.type;
-}
-
-function isLinkSegment(v: any) {
-  return v && ((v.type === 'selector' && Array.isArray(v.ids)) || (v.type === 'tag' && Array.isArray(v.tags)));
-}
-
 function inspectorReplacer(_key: string, value: any): any {
-  if (isLinkIOParsed(value))
-    return formatLinkIO(value);
-  if (isLinkSegment(value))
-    return formatLinkSegment(value);
   if (value instanceof DG.FuncCall)
     return {'#': 'FuncCall', 'id': value.id, 'func': value.func?.nqName};
   if (value instanceof DG.Func)

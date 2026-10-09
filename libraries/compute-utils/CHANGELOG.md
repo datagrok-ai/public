@@ -2,7 +2,8 @@
 
 ## v.next
 
-* RTD: Added `Driver.inspectLinks` and `Driver.inspectNode` for debugging: resolved links and actions with their empty aliases and the targets `$linked` dropped, plus each config link that matched nothing at a node with the reason (path or io not found, blocking `not`, empty `base`, alias depending on an empty alias)
+* RTD: Added `Driver.inspectLinks` and `Driver.inspectConfig` for debugging: resolved links and actions with their empty aliases and the targets `$linked` dropped, plus each config link that matched nothing at a node with the reason (path or io not found, blocking `not`, empty `base`, alias depending on an empty alias), and the config as written with resolved step io
+* RTD: Removed `Driver.currentConfig$`
 * RTD: Fixed `setPipelineState` failing with "SelfRef ... not found" when the replaced workflow's step types reference an outer workflow
 * RTD: Added the `duplicateDynamicItem` command; in a `PipelineInstanceConfig`, workflow entries take `initialValues` (workflow states) and `skipOnInit`, and output values in a script step's `initialValues` mark the step as run
 * RTD: Data links copy a dataframe once instead of twice when it only becomes a consistency snapshot (target already run or read-only) or no snapshot is kept (restriction `none`); reset to consistent and Update give the input dataframe its own id

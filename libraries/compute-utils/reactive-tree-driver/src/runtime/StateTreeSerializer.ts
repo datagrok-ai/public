@@ -123,10 +123,6 @@ export function getFuncCallStates(nodeTree: BaseTree<StateTreeNode>) {
   return Object.fromEntries(entries);
 }
 
-export function flattenTags(tags: Record<string, string[]> | undefined): string[] {
-  return Object.values(tags ?? {}).flat().filter((x) => x);
-}
-
 export function getNodesDescriptions(nodeTree: BaseTree<StateTreeNode>) {
   const entries = nodeTree.traverse(nodeTree.root, (acc, node) => {
     const item = node.getItem();
@@ -137,7 +133,8 @@ export function getNodesDescriptions(nodeTree: BaseTree<StateTreeNode>) {
     const descriptions$ = merge(...stateChanges).pipe(
       scan((acc, [name, val]) => {
         if (name === 'tags') {
-          return {...acc, [name]: flattenTags(val)};
+          const tags = Object.values(val ?? {}).flat().filter((x) => x) as string[];
+          return {...acc, [name]: tags};
         }
         return {...acc, [name]: val};
       }, {} as Record<string, string[] | string>),
