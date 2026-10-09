@@ -87,6 +87,10 @@ the help needs:
 - **When the UI offers several ways**, describe the one in the place where the reader works with
   the object (where it is listed, found and applied), not the one that opens as a side effect.
   Check the other ways for bugs before choosing.
+- **A general mechanism is not a specific case.** When the code has a mechanism for many objects,
+  check that it applies to the one you write about (a connector of its own type is not covered).
+- **Carry the code's conditions into the text.** When the code adds or shows something only under
+  a condition (only the types found, only when several items exist), say so instead of "all".
 - **Never write an unverified claim as fact.** Keep a list of claims checked only in the code or
   not checked at all, and show it. If a check is impossible, drop the claim.
 - **Bugs found on the way** go to the reviewer as reproduction steps, not into the help. File a
@@ -94,6 +98,7 @@ the help needs:
 - **Don't document legacy functionality** or link to it. Ask when unsure.
 - **Clean up the stand**: delete every entity you created, by id, and verify it's gone. Never save
   shared settings to try something out.
+- **Don't delete help files** (stubs and drafts included) without the reviewer's agreement.
 
 ## 3. Terms and style
 
@@ -114,6 +119,12 @@ the help needs:
 - **Visible text states the rule and the recommendation.** Supporting detail (comparison tables,
   long option lists, step-by-step procedures, worked examples) goes under
   `<details><summary>How to use</summary>…</details>` or another descriptive summary.
+- **Options are a list**: `* **Option**: what it does.`, not a table, unless the reader compares
+  them by several criteria.
+- **A note inside a numbered step** is indented to the step's text, so the numbering continues.
+- **No line starts with `>`** when you wrap a menu path: Markdown turns it into a quote. Keep
+  `> **Item**` on the previous line.
+- **Links in a list follow their neighbours** (site URLs or relative paths).
 - **Short sections are prose, not bullets.** Two links in a list become two sentences under a
   heading that says what they are.
 - **Every section has a heading.** Text after an image without one reads as an orphan.

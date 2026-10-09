@@ -8,7 +8,7 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 
 1. **One action and its result**, planned before recording: open, set, see the outcome. Cut
    everything before the first meaningful action (start about 1 s before it) and after the
-   result.
+   result. There is no length cap: shorten waits, never the actions the reviewer asked for.
 2. **Show the whole interaction**: set, change, and undo. A filter is applied and reset, a pin is
    added and removed, a slider goes there and back, legend categories are toggled on and off.
 3. **Cause before effect.** A selection, filter, or highlight never appears before the gesture
@@ -22,8 +22,9 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 
 **Frame**
 
-7. **Only what the GIF is about.** Keep the shell (menus, tabs). Close Browse, Toolbox, Context
-   Panel, and Help unless a step needs one. Open a panel only for that step and close it again.
+7. **Only what the GIF is about.** Keep the shell (menus, tabs, status bar). Hide the left sidebar
+   (`grok.shell.windows.showSidebar = false`, session-only) unless the GIF is about it. Close
+   Browse, Toolbox, Context Panel, and Help unless a step needs one. Open a panel only for that step and close it again.
    No full-screen mode (`Alt+F`): it is recorded shrunk with black bars. Move a splitter or close
    the grid instead.
 8. **A viewer GIF shows the whole viewer.** Show the grid only when the result is visible in the
@@ -33,9 +34,12 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
    squeezes the view and draws attention away. When a setting lives only in the Context Panel,
    open it with the viewer's gear, filter it with its search box, and widen it with the splitter
    if labels are cut.
-10. **Readable at help width.** Help shows GIFs about 800 px wide. Record at the final size,
-    800×500, as `help/CLAUDE.md` requires. The one exception: when a panel must stay open, record at
-    up to 1000×625 and scale down to 800×500 (1.25×). For a small
+10. **Readable at help width.** Help shows GIFs about 800 px wide, so the file has twice that
+    density: a CSS viewport of 800×500 (up to 1000×625 when a panel must stay open) at device scale
+    2, output **1600×1000**, **256 colours**, 12 fps, and a thumbnail of the same size. On a probe,
+    check that `window.innerWidth`/`innerHeight` equal the viewport and a screenshot is twice that;
+    don't add `--force-device-scale-factor` unless that check fails. Scale a larger output down
+    with ffmpeg `lanczos` and a fresh 256-colour palette, then check frames at 800 px width. For a small
     preview (a 400×300 gallery tile), make the viewer itself small, for example docked next to the
     grid, and crop to it, instead of shrinking a large one.
 11. **No spinners, no black edges**, light theme, default zoom, no browser chrome.
@@ -58,10 +62,14 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
     coordinates, or IDs. Dimming around a highlighted element is allowed where it helps find it.
 17. **Replacing a GIF is an edit.** Analyse the original frame by frame (`git show HEAD:<path>`
     and a contact sheet) and repeat its whole scenario, fixing only what was asked. Keep its size
-    unless the size is the complaint.
+    unless the size is the complaint. Delete the old file only after the reviewer approves the new
+    one, and only when nothing else uses it (grep the help and package READMEs).
 18. File name, thumbnail, and alt text: SKILL.md, "Images and GIFs".
 19. **Leave the stand as you found it.** Delete every entity the recording created and verify
-    it. Never save shared settings: stop before **Save and apply**.
+    it. Delete only by the id the action returned, after checking its name and author, never by
+    comparing lists before and after: on a shared stand others create entities at the same time.
+    Never save shared settings: stop before **Save and apply**. Check behaviour on the local stand;
+    use the shared stand only to record.
 
 ## Choosing the tool
 
@@ -74,7 +82,8 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 top menu folds its last groups, such as Chem and Bio, into "more"). The GIF is at most 880 px
 wide, and the thumbnail is the first step (`step-01.png`), not the result. For a help GIF, set the
 viewport to the final size (800×500) and check the thumbnail; switch to `rec-lib.mjs` when the
-table above says so.
+table above says so. Its usual output (5 fps, no drawn pointer) is for `bdd-answer` replies, not
+the help: help GIFs need the pointer and the quality of requirement 10.
 
 ## rec-lib.mjs
 

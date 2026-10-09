@@ -31,13 +31,18 @@ For each item, with evidence:
 | In master? | `git log origin/master --grep=<ticket>`, the code itself | Leave out, report where it is |
 | New in this version? | Core: absent from the previous release branch (`git grep <symbol> origin/release/<previous>`, private core repo). Plugins: first appears in a version dated after the previous release | Not new. Document only if the help lacks it |
 | User-facing? | A UI label, menu item, or property | Leave out |
-| Finished and released? | Ticket state, plugin version | Ask. Don't document unfinished work |
+| Finished and released? | The ticket is Done (check it yourself, not from an agent's summary); without a ticket, the code is on master and the plugin version is released | Leave out. Don't document unfinished work |
 | In the running product? | The stand the team reviews on | Report as not deployed |
 | Not documented yet? | `git log` of the help page: was it updated with the feature (same ticket), and has the feature changed since? | Already documented. Leave out |
 
 Help is **wrong** only when a reader following it fails: a menu path that does not exist, a label
 the UI no longer shows, a step that does nothing or cannot be done. Generic wording that leads to
 the right place is not wrong.
+
+A release-planning ticket ("Created from the release planning doc") is no reason for a new page:
+check first whether the developer documented the feature. A property every viewer has (such as
+**Legend Visibility**) is checked against the common viewer code and never added to one viewer's
+page.
 
 Split a large audit by area (core viewers, core app, server and deploy, plugins) and run it
 in parallel with read-only agents. Each returns, per item: in master (evidence, exact labels,
