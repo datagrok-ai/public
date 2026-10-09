@@ -19,9 +19,11 @@ const {chromium} = (() => {
 
 export const HOST = process.env.REC_HOST ?? 'dev';
 export const W = +(process.env.REC_W ?? 800), H = +(process.env.REC_H ?? Math.round(W * 5 / 8));
-// Hardware WebGL: software rendering stalls 3D viewers. REC_BROWSER_ARGS overrides (space-separated).
+// Hardware WebGL: software rendering stalls 3D viewers. The screencast ignores the context's deviceScaleFactor and
+// sends 1x frames unless the scale is forced. REC_BROWSER_ARGS overrides (space-separated).
 const BROWSER_ARGS = process.env.REC_BROWSER_ARGS?.split(' ').filter(Boolean) ??
-  (process.platform === 'win32' ? ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist'] : ['--enable-gpu', '--ignore-gpu-blocklist']);
+  [...(process.platform === 'win32' ? ['--use-angle=d3d11'] : []), '--enable-gpu', '--ignore-gpu-blocklist',
+    '--force-device-scale-factor=2'];
 
 // A full ffmpeg build (Playwright's own writes WebM only): FFMPEG, else imageio-ffmpeg's binary, else ffmpeg on PATH.
 function findFfmpeg() {
@@ -228,9 +230,14 @@ export class Recorder {
       try { await this.cdp.send('Page.screencastFrameAck', {sessionId: f.sessionId}); } catch (_) {}
     });
     await this.cdp.send('Page.startScreencast', {format: 'jpeg', quality: 95, maxWidth: W * 2, maxHeight: H * 2});
-    // a still page emits no frames: nudge a repaint so the first frame exists
+    // a still page emits no frames: nudge a repaint so the first frame exists. Frames from before the nudge show the
+    // pointer where the setup left it, so they are dropped
+    await this.page.waitForTimeout(200);
+    const before = this.frames.length;
     await this.page.mouse.move(nudge[0], nudge[1]);
     await this.page.waitForTimeout(600);
+    if (this.frames.length > before)
+      this.frames.splice(0, before);
   }
   async stop() {
     await this.page.waitForTimeout(300);
@@ -254,6 +261,8 @@ export class Recorder {
     lines.push(`file '${this.frames[this.frames.length - 1].file.replace(/\\/g, '/')}'`);
     fs.writeFileSync(list, lines.join('\n'));
     const k = jpegWidth(this.frames[0].file) / W;
+    if (k < 2)
+      console.warn(`frames are ${k}x the viewport, not 2x: the GIF is upscaled`);
     const cropF = crop ? `crop=${Math.round(crop[2] * k)}:${Math.round(crop[3] * k)}:${Math.round(crop[0] * k)}:${Math.round(crop[1] * k)},` : '';
     const vf = `fps=${fps},${cropF}scale=${size[0]}:${size[1]}:flags=lanczos,split[a][b];[a]palettegen=max_colors=${colors}:stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4:diff_mode=rectangle`;
     execFileSync(FFMPEG, ['-y', '-loglevel', 'error', '-f', 'concat', '-safe', '0', '-i', list, '-vf', vf, '-loop', '0', `${out}.gif`]);

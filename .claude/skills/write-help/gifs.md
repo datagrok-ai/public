@@ -36,9 +36,10 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
    if labels are cut.
 10. **Readable at help width.** Help shows GIFs about 800 px wide, so the file has twice that
     density: a CSS viewport of 800×500 (up to 1000×625 when a panel must stay open) at device scale
-    2, output **1600×1000**, **256 colours**, 12 fps, and a thumbnail of the same size. On a probe,
-    check that `window.innerWidth`/`innerHeight` equal the viewport and a screenshot is twice that;
-    don't add `--force-device-scale-factor` unless that check fails. Scale a larger output down
+    2, output **1600×1000**, **256 colours**, 12 fps, and a thumbnail of the same size. The screencast
+    ignores the context's device scale and sends 1x frames unless Chromium runs with
+    `--force-device-scale-factor=2` (a screenshot is 2x either way, so it proves nothing): `rec-lib.mjs`
+    passes the flag and warns when the frames are not twice the viewport. Scale a larger output down
     with ffmpeg `lanczos` and a fresh 256-colour palette, then check frames at 800 px width. For a small
     preview (a 400×300 gallery tile), make the viewer itself small, for example docked next to the
     grid, and crop to it, instead of shrinking a large one.
