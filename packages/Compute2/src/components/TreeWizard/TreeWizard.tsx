@@ -157,6 +157,15 @@ export const TreeWizard = Vue.defineComponent({
         runAction(uuid, additionalParams);
     };
 
+    const removeStepWithConfirm = (state: PipelineState) => {
+      const title = states.descriptions[state.uuid]?.title;
+      const name = typeof title === 'string' ? title : (state.friendlyName ?? state.configId);
+      ui.dialog(`Remove confirmation`)
+        .add(ui.divText(`Do you want to remove "${name}"? Its unsaved inputs and results will be lost.`))
+        .onOK(() => removeStep(state.uuid))
+        .show({center: true, modal: true});
+    };
+
     const runSubtreeWithConfirm = (startUuid: string, rerunWithConsistent?: boolean) => {
       const includeInfoInput = ui.input.bool('Also reset info-typed inputs', {value: false});
       ui.dialog(`Update confirmation`)
@@ -829,7 +838,7 @@ export const TreeWizard = Vue.defineComponent({
                         isSelected={stat.data.uuid === chosenStepUuid.value}
                         hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
-                        onRemoveNode={() => removeStep(stat.data.uuid)}
+                        onRemoveNode={() => removeStepWithConfirm(stat.data)}
                         onDuplicateNode={() => duplicateStep(stat.data.uuid)}
                         onToggleNode={() => stat.open = !stat.open}
                         onRunSubtree={(startUuid, rerunWithConsistent) => runSubtreeWithConfirm(startUuid, rerunWithConsistent)}
