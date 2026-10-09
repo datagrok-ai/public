@@ -8,7 +8,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {RestrictionType} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {
-  couldBeSaved, findTreeNodeByPath, findTreeNodeParrent, getRelevantGlobalActions, hasAddControls, hasRunnableSteps,
+  couldBeSaved, findTreeNodeByPath, findTreeNodeParrent, getRelevantGlobalActions, hasAddControls,
   hasSubtreeAnyInconsistencies, hasSubtreeFixableInconsistencies, isDeletable, isDuplicable, isEachDraggable,
   statesToStatus,
 } from '../utils';
@@ -76,15 +76,12 @@ category('TreeWizard: tree helpers', () => {
     expectDeepEqual(getRelevantGlobalActions(tree, 's1').map((a) => a.id), ['rootGlobal']);
   });
 
-  test('Add, run and save controls follow the workflow state', async () => {
+  test('Add and save controls follow the workflow state', async () => {
     const stepTypes: StepDynamicDescription[] = [{configId: 's2'}];
     expect(hasAddControls(mockDynamicPipeline('d', [], {stepTypes})), true);
     expect(hasAddControls(mockDynamicPipeline('d', [], {stepTypes, isReadonly: true})), false);
     expect(hasAddControls(mockDynamicPipeline('d', [], {stepTypes: [{configId: 's2', disableUIAdding: true}]})), false);
     expect(hasAddControls(mockStaticPipeline('s', [])), false);
-    expect(hasRunnableSteps(mockDynamicPipeline('d', [mockFuncCall('s2')])), true);
-    expect(hasRunnableSteps(mockDynamicPipeline('d', [])), false);
-    expect(hasRunnableSteps(mockDynamicPipeline('d', [mockFuncCall('s2')], {isReadonly: true})), false);
     expect(couldBeSaved(mockStaticPipeline('p', [], {nqName: 'Pkg:P'})), true);
     expect(couldBeSaved(mockStaticPipeline('p', [], {nqName: 'Pkg:P', disableHistory: true})), false);
     expect(couldBeSaved(mockStaticPipeline('p', [])), false);

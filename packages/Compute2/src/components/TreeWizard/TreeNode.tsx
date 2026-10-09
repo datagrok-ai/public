@@ -10,7 +10,8 @@ import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {
-  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, friendlyIoName,
+  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, statusInputs,
+  friendlyIoName,
 } from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
@@ -43,30 +44,6 @@ const statusToColor: Record<Status, string> = {
   ['failed']: 'var(--red-3)',
 };
 
-const listContributingIos = (
-  status: Status,
-  validationStates?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): string[] => {
-  const result = new Set<string>();
-  const valEntries = Object.entries(validationStates ?? {});
-  const consEntries = Object.entries(consistencyStates ?? {});
-  const addIf = (name: string, cond: boolean) => { if (cond) result.add(name); };
-  if (status === 'next error')
-    valEntries.forEach(([n, v]) => addIf(n, !!v.errors?.length));
-  else if (status === 'next warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!v.warnings?.length));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!(v.warnings?.length || v.errors?.length)));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded info')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction === 'info'));
-  else if (status === 'succeeded inconsistent')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  return [...result];
-};
-
 export const getToolTip = (
   status: Status,
   isReadonly: boolean,
@@ -79,7 +56,7 @@ export const getToolTip = (
   const base = statusToTooltip[status];
   if (status === 'failed' && runError)
     return `${base}: ${runError}`;
-  const ios = listContributingIos(status, validationStates, consistencyStates);
+  const ios = statusInputs(status, validationStates, consistencyStates);
   if (!ios.length) return base;
   return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
 };
@@ -107,9 +84,6 @@ export const TreeNode = Vue.defineComponent({
       type: Object as Vue.PropType<Record<string, string | string[]>>,
     },
     isDraggable: {
-      type: Boolean,
-    },
-    isDroppable: {
       type: Boolean,
     },
     isDeletable: {

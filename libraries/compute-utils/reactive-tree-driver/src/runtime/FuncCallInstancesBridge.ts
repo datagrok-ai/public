@@ -214,7 +214,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set restriction on an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,

@@ -9,20 +9,7 @@ import {TestScheduler} from 'rxjs/testing';
 import {Subject} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
-
-function expectThrows(fn: () => unknown, match?: RegExp) {
-  let threw = false;
-  let err: unknown = undefined;
-  try {
-    fn();
-  } catch (e) {
-    threw = true;
-    err = e;
-  }
-  expectDeepEqual(threw, true);
-  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
-}
+import {createTestScheduler, expectThrows, expectThrowsAsync} from '../../../test-utils';
 
 category('ComputeUtils: Driver template expansion grammar', async () => {
   test('outputs(nqName) parses with ioExpand + nqName', async () => {

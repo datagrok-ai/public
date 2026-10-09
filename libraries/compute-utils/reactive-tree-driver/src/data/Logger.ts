@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import {v4 as uuidv4} from 'uuid';
 import {NodePath} from './BaseTree';
+import {AnnotationLinkKind} from './common-types';
 import {BehaviorSubject, Subject} from 'rxjs';
 
 export interface DebugLogBase {
@@ -13,7 +14,7 @@ export interface LinkLogPayload {
   prefix: Readonly<NodePath>,
   basePath?: Readonly<NodePath>,
   id: string,
-  isDefaultValidator?: boolean,
+  annotation?: AnnotationLinkKind,
 }
 
 export interface LinkLogItem extends DebugLogBase, LinkLogPayload {}

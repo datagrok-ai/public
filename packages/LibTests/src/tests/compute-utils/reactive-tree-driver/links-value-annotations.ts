@@ -41,7 +41,7 @@ category('ComputeUtils: Driver value annotations', async () => {
     });
   });
 
-  test('Choices source evaluates once per dependency change', async () => {
+  test('Choices source reports membership and refreshes on a dependency change', async () => {
     const fc = DG.Func.byName(VALUES).prepare({region: 'EU'});
     const choices = (io: string, value: any): any => resolveSources({
       hasCall: (name: string) => name === 'call',
@@ -90,7 +90,7 @@ category('ComputeUtils: Driver value annotations', async () => {
     const logger = new DriverLogger();
     const config: PipelineConfiguration = {id: 'pipeline1', type: 'static', steps: [{id: 'step', nqName: LOOKUP}]};
     const pconf: any = await getProcessedConfig(config, logger);
-    const links = pconf.steps[0].links;
+    const links = pconf.steps[0].links.filter((link: any) => link.annotation === 'rule');
     expectDeepEqual(links.map((link: any) => link.id), [
       '::model:choices::meta', '::model:choices::validator', '::model:lookup::data', '::engine:choices::meta',
     ]);
@@ -121,7 +121,7 @@ category('ComputeUtils: Driver value annotations', async () => {
     const io = Object.fromEntries(pconf.steps[0].io.map((item: any) => [item.id, item]));
     expectDeepEqual([io.city.dynamicChoices, io.model.dynamicChoices, io.speed.dynamicChoices, io.speed.checks],
       [{propagate: false}, {propagate: true}, undefined, undefined]);
-    const links = pconf.steps[0].links;
+    const links = pconf.steps[0].links.filter((link: any) => link.annotation === 'rule');
     expectDeepEqual(links.map((link: any) => [link.id, link.type]), [
       ['::city:choices::meta', 'meta'],
       ['::model:choices::meta', 'meta'], ['::model:choices::validator', 'validator'], ['::model:lookup::data', 'data'],

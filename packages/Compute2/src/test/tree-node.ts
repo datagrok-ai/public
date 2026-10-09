@@ -26,11 +26,13 @@ category('TreeWizard: step tooltip', () => {
     } as const;
     expect(getToolTip('next error', false, undefined, validations, consistency), 'This step needs user input: a');
     expect(getToolTip('next warn', false, undefined, validations, consistency),
-      'This step is available to run, but has warnings: b, c, d');
+      'This step is available to run, but has warnings: b, c');
     expect(getToolTip('succeeded warn', false, undefined, validations, consistency),
-      'This step is succeeded, but has warnings: a, b, c, d');
+      'This step is succeeded, but has warnings: a, b');
     expect(getToolTip('succeeded info', false, undefined, validations, consistency),
       'This step is succeeded with changes: d');
+    expect(getToolTip('succeeded inconsistent', false, undefined, validations, consistency),
+      'This step is succeeded, but has inconsistent inputs: c, d');
     expect(getToolTip('succeeded', false, undefined, validations, consistency), 'This step is succeeded');
   });
 });

@@ -15,7 +15,7 @@ import {PipelineLinkConfigurationInput} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler} from '../../../test-utils';
+import {createTestScheduler, errors, noCallController, warnings} from '../../../test-utils';
 
 // the examples of help/compute/workflows/rules-and-checks.mdx, with Pkg: written as LibTests:
 
@@ -34,10 +34,6 @@ const pk = (links: Links): PipelineConfiguration => ({
 const PROFILE = 'subject,time,parent\nS1,0.5,4.2\nS1,1,6.1\nS1,2,5.3\nS1,4,3.4\nS1,8,1.2';
 const profile = (csv = PROFILE) => DG.DataFrame.fromCsv(csv);
 
-const errors = (...descriptions: string[]) =>
-  ({errors: descriptions.map((description) => ({description})), warnings: [], notifications: []});
-const warnings = (...descriptions: string[]) =>
-  ({errors: [], warnings: descriptions.map((description) => ({description})), notifications: []});
 
 type Nodes = {data: FuncCallNode, model: FuncCallNode};
 type Step = (nodes: Nodes) => void;
@@ -369,11 +365,10 @@ category('ComputeUtils: Driver rules guide cases', async () => {
     };
     const pconf: any = await getProcessedConfig(pk([allometric]));
     expectDeepEqual(pconf.links.map((link: any) => link.id), ['allometric::data']);
-    const controller = {getFirst: () => undefined} as any;
-    const {scaled} = await resolveSources(controller, {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: 70}) as any;
     expect(scaled, 5);
-    const {scaled: none} = await resolveSources(controller, {scaled: compileSource(allometric.sources.scaled)},
+    const {scaled: none} = await resolveSources(noCallController(), {scaled: compileSource(allometric.sources.scaled)},
       {$all: {}, weight: null}) as any;
     expect(none === null, true);
   });
@@ -436,16 +431,6 @@ category('ComputeUtils: Driver rules guide cases', async () => {
       {profile: warnings('At least three samples are needed for a fit')},
       {},
     ]);
-  });
-
-  const COMPOUNDS = 'compound,clearance,volume\nCMP-0001,5.2,40\nCMP-0002,1.3,12';
-
-  test('The compound table loads from the file share', async () => {
-    const controller = {getFirst: () => undefined} as any;
-    const {presets} = await resolveSources(controller,
-      {presets: compileSource('file("System:AppData/LibTests/compounds.csv")')}) as any;
-    expectDeepEqual(presets.col('compound').toList(), ['CMP-0001', 'CMP-0002']);
-    expectDeepEqual(presets.columns.names(), DG.DataFrame.fromCsv(COMPOUNDS).columns.names());
   });
 
   test('Compound presets fill the model inputs', async () => {

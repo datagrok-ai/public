@@ -4,7 +4,6 @@ import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {
   getProcessedConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
-import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
 import {
   inspectConfig, inspectLinks, toInspectorJSON,
@@ -14,21 +13,18 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {BehaviorSubject} from 'rxjs';
+import {makeTree} from '../../../test-utils';
 
 const steps = [
   {id: 'step1', nqName: 'LibTests:TestAdd2'},
   {id: 'step2', nqName: 'LibTests:TestMul2'},
 ];
 
-async function makeTree(config: PipelineConfiguration) {
-  const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(config), mockMode: true});
-  await tree.init().toPromise();
-  return tree;
-}
+const makeMockTree = (config: PipelineConfiguration) => makeTree(config, true);
 
 category('ComputeUtils: Driver inspection', async () => {
   test('A base link lists the base it matched', async () => {
-    const tree = await makeTree({
+    const tree = await makeMockTree({
       id: 'root',
       type: 'sequential',
       stepTypes: steps,
@@ -40,7 +36,7 @@ category('ComputeUtils: Driver inspection', async () => {
   });
 
   test('An optional alias without matches is shown as empty', async () => {
-    const tree = await makeTree({id: 'root', type: 'static', steps, links: [
+    const tree = await makeMockTree({id: 'root', type: 'static', steps, links: [
       {id: 'l1', from: ['in:step1/res', 'extra(optional):step3/a'], to: 'out:step2/a'},
     ]});
     const [link] = inspectLinks(tree);
@@ -49,7 +45,7 @@ category('ComputeUtils: Driver inspection', async () => {
   });
 
   test('Targets dropped by linked are shown', async () => {
-    const tree = await makeTree({id: 'root', type: 'static', steps, links: [
+    const tree = await makeMockTree({id: 'root', type: 'static', steps, links: [
       {id: 'l1', from: 'in:step1/res', to: 'out:step2/a'},
       {
         id: 'l2', type: 'meta', from: 'in:step1/res',
@@ -63,7 +59,7 @@ category('ComputeUtils: Driver inspection', async () => {
   });
 
   test('Links with the same id in two steps keep their own spec', async () => {
-    const tree = await makeTree({
+    const tree = await makeMockTree({
       id: 'root',
       type: 'static',
       steps: [
@@ -78,7 +74,7 @@ category('ComputeUtils: Driver inspection', async () => {
   });
 
   test('Actions show whether they are visible', async () => {
-    const tree = await makeTree({
+    const tree = await makeMockTree({
       id: 'root',
       type: 'static',
       steps,
@@ -100,7 +96,7 @@ category('ComputeUtils: Driver inspection', async () => {
     };
     const action = {id: 'act', from: 'in:step1/res', to: 'out:step2/a', position: 'none', handler() {}};
     const written = JSON.parse(JSON.stringify([link, rule, {...action, handler: '#Handler'}]));
-    const tree = await makeTree(
+    const tree = await makeMockTree(
       {id: 'root', type: 'static', steps, links: [link, rule], actions: [action]} as PipelineConfiguration);
     expectDeepEqual(inspectLinks(tree).map((l) => [l.id, l.original]), [
       ['l1', written[0]], ['r::meta', written[1]], ['r::data', written[1]], ['act', written[2]],
@@ -148,15 +144,18 @@ category('ComputeUtils: Driver inspection', async () => {
   });
 
   test('The driver reads links and the config of the current tree', async () => {
-    const driver = new Driver(true);
     const config = await getProcessedConfig({id: 'root', type: 'static', steps, links: [
       {id: 'l1', from: 'in:step1/res', to: 'out:step2/a'},
       {id: 'l2', from: 'in:stpe1/res', to: 'out:step2/a'},
     ]});
-    expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [[], undefined], {prefix: 'Before init'});
-    await driver.sendCommand({event: 'initPipeline', provider: '', config});
-    expectDeepEqual(driver.inspectLinks().map((l) => l.id), ['l1']);
-    expectDeepEqual(driver.inspectConfig().links.map((l: any) => l.from), ['in:step1/res', 'in:stpe1/res']);
-    driver.close();
+    const driver = new Driver(true);
+    try {
+      expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [[], undefined], {prefix: 'Before init'});
+      await driver.sendCommand({event: 'initPipeline', provider: '', config});
+      expectDeepEqual(driver.inspectLinks().filter((l) => !l.annotation).map((l) => l.id), ['l1']);
+      expectDeepEqual(driver.inspectConfig().links.map((l: any) => l.from), ['in:step1/res', 'in:stpe1/res']);
+    } finally {
+      driver.close();
+    }
   });
 });

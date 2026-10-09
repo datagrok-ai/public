@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {BehaviorSubject} from 'rxjs';
 import {NodePath, TreeNode} from '../data/BaseTree';
+import {AnnotationLinkKind} from '../data/common-types';
 import {getOriginalConfig, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {formatNodePath} from '../utils';
 import {MatchedNodePaths, matchNodeLink} from './link-matching';
@@ -31,6 +32,7 @@ export type InspectedLink = {
   dataFrameMutations?: any;
   hasHandler?: boolean;
   visible?: boolean;
+  annotation?: AnnotationLinkKind;
   // the link, rule or check as written in the config
   original?: any;
 };
@@ -38,7 +40,7 @@ export type InspectedLink = {
 export type InspectedIO = {name: string, type?: string, nullable?: boolean};
 
 export function inspectLinks(state: StateTree): InspectedLink[] {
-  return state.linksState.getLinksInfo().map((link) => inspectLink(state, link));
+  return state.linksState.getLinksInfo(true).map((link) => inspectLink(state, link));
 }
 
 function inspectLink(state: StateTree, link: LinksData): InspectedLink {
@@ -58,6 +60,8 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
     res.dataFrameMutations = spec.dataFrameMutations;
   if ('handler' in spec && spec.handler)
     res.hasHandler = true;
+  if (spec.annotation)
+    res.annotation = spec.annotation;
   if (isAction)
     res.visible = state.linksState.actionsVisibility.get(link.uuid) ?? true;
   const original = getOriginalConfig(spec);

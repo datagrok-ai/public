@@ -831,7 +831,6 @@ export const TreeWizard = Vue.defineComponent({
                           'background-color': stat.data.uuid === chosenStepUuid.value ? SELECTED_STEP_BACKGROUND : null,
                         }}
                         isDraggable={treeInstance.value?.isDraggable(stat)}
-                        isDroppable={treeInstance.value?.isDroppable(stat)}
                         isDeletable={isDeletable(stat)}
                         isDuplicable={isDuplicable(stat)}
                         isReadonly={stat.data.isReadonly}

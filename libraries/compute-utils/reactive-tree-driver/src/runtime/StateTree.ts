@@ -1,16 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, withLatestFrom, filter} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
 import {FuncCallAdapter} from './FuncCallAdapters';
 import {saveFuncCall, saveInstanceState} from './funccall-utils';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
+import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
-import {GranularMutationOp, isDynamicType, ValidationResult} from '../data/common-types';
+import {GranularMutationOp, isDynamicType} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 import * as Factory from './StateTreeFactory';
@@ -41,12 +41,12 @@ export class StateTree {
     item: StateTreeNode,
     public config: PipelineConfigurationProcessed,
     private mockMode = false,
-    private defaultValidators = false,
+    private annotationChecks = false,
     private logger?: DriverLogger,
     private batchLinks = false,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
+    this.linksState = new LinksState(annotationChecks, this.logger, batchLinks);
 
     combineLatest([this.linksState.runningLinks$, this.globalROLocked$]).pipe(
       map(([links, roLocked]) => !!links?.length || roLocked),
@@ -159,7 +159,7 @@ export class StateTree {
         startPath: [...parentPath, {id, idx: pos}],
         startState: this,
         isReadonly: false,
-        defaultValidators: this.defaultValidators,
+        annotationChecks: this.annotationChecks,
         batchLinks: this.batchLinks,
         mockMode: this.mockMode,
         logger: this.logger,
@@ -199,7 +199,7 @@ export class StateTree {
       instanceConfig: initConfig,
       config: this.config,
       isReadonly: false,
-      defaultValidators: this.defaultValidators,
+      annotationChecks: this.annotationChecks,
       batchLinks: this.batchLinks,
       mockMode: this.mockMode,
       logger: this.logger,
@@ -254,7 +254,7 @@ export class StateTree {
         instanceConfig: Serializer.toInstanceConfigRec(node),
         startPath: [...ppath, {id, idx: idx + 1}],
         startState: this,
-        defaultValidators: this.defaultValidators,
+        annotationChecks: this.annotationChecks,
         batchLinks: this.batchLinks,
         mockMode: this.mockMode,
         logger: this.logger,
@@ -276,7 +276,7 @@ export class StateTree {
           dbId,
           config: subConfig,
           mockMode: this.mockMode,
-          defaultValidators: this.defaultValidators,
+          annotationChecks: this.annotationChecks,
           batchLinks: this.batchLinks,
           isReadonly,
         },

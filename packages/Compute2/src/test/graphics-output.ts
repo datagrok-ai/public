@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
-import {category, test, expect, after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {richFunctionViewReport} from '@datagrok-libraries/compute-utils';
-import {closeView, awaitWebComponents} from './utils';
+import {closeViewsAfter, awaitWebComponents} from './utils';
 
 const PNG_PREFIX = 'iVBORw0KGgo';
 
@@ -26,16 +26,11 @@ const plotImg = (view: DG.ViewBase) =>
   view.root.querySelector('[dock-spawn-title="plot"] img') as HTMLImageElement | null;
 
 category('RFV: graphics outputs', () => {
-  let view: DG.ViewBase | undefined;
-
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
+  const track = closeViewsAfter();
 
   test('PNG output renders as an image once the run fills it', async () => {
     const call = DG.Func.byName('Compute2:GraphicsOutputTest').prepare({a: 7});
-    view = await openEditor(call);
+    const view = track(await openEditor(call));
     expect(view.root.querySelector('[dock-spawn-title="plot"]') === null, true,
       'empty plot should be hidden before the run');
 
@@ -47,9 +42,8 @@ category('RFV: graphics outputs', () => {
   });
 
   test('SVG output renders as an SVG image', async () => {
-    if (view) closeView(view);
     const call = DG.Func.byName('Compute2:GraphicsSvgOutputTest').prepare({a: 1});
-    view = await openEditor(call);
+    const view = track(await openEditor(call));
     await run(view);
     await awaitCheck(() => plotValue(call).startsWith('<svg'), 'run produced no plot', 15000);
     await awaitCheck(() => plotImg(view!) !== null, 'plot image not rendered', 15000);
