@@ -306,6 +306,33 @@ export namespace funcs {
   }
 
   /**
+   * A program's discussion (F-51): the platform chat on its workspace folder, as rows newest first: thread (General, or the criterion, run or document it is about), on, by, question, text, id
+   */
+  export async function programDiscussion(portfolio: string , program: string ): Promise<DG.DataFrame> {
+    return await grok.functions.call('ProjectPortalCore:ProgramDiscussion', { portfolio, program });
+  }
+
+  /**
+   * Posts to a program's discussion as you (F-51), in general or about a criterion (code), a saved run (run_id or title) or a document (title). Anyone who may open the program's folder may post
+   * @param {string} aboutKind
+   *   choices: ["criterion", "run", "document"]
+   * @param {string} about - The criterion's code, the run's run_id or title, the document's title
+   */
+  export async function postToDiscussion(portfolio: string , program: string , text: string , aboutKind?: string , about?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:PostToDiscussion', { portfolio, program, text, aboutKind, about });
+  }
+
+  /**
+   * Asks an expert about a program (F-51): the question, with the portfolio, program, stage, next gate and readiness and the item it is about, goes into the program's discussion; the people the portfolio names (askSme; its approvers by default), or the logins given, are told in the platform's notifications where the server allows it. Nothing is sent outside the platform
+   * @param {string} aboutKind
+   *   choices: ["criterion", "run", "document"]
+   * @param {string} logins - Comma-separated logins to ask instead of the portfolio's choice
+   */
+  export async function askSme(portfolio: string , program: string , question: string , aboutKind?: string , about?: string , logins?: string ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:AskSme', { portfolio, program, question, aboutKind, about, logins });
+  }
+
+  /**
    * Retracts an observation: kept, marked retracted, with who, when and why. Its author or an approver
    */
   export async function retractObservation(id: string , reason: string ): Promise<string> {
@@ -463,7 +490,7 @@ export namespace funcs {
   }
 
   /**
-   * Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow and the example documents, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
+   * Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow, the example documents and two example discussion threads, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
    */
   export async function seedExamples(dryRun: boolean ): Promise<string> {
     return await grok.functions.call('ProjectPortalCore:SeedExamples', { dryRun });

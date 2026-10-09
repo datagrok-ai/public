@@ -13,6 +13,10 @@ import {EvidenceItem, readinessEvidence, uniqueEvidence, validateEvidence} from 
 import {describeSeedPlan, exampleKey, ExampleDecision, ExampleHistory, isExamplePortfolio, planExampleSeed,
   SeedPlan, SeedState} from './model/examples';
 import {queryIn, ROW_LIMIT, filterValue} from './rows';
+import {postsOf, postToProgram} from './discussion';
+import {approverUsers, userNames} from './approvals';
+import {Anchor, ExampleThread, missingExamplePosts, smeContextFrom, smeQuestionBody} from './model/discussion';
+import {programAddress} from './model/pinning';
 
 export const EXAMPLE_HISTORY_FILE = 'examples/history.json';
 
@@ -81,11 +85,12 @@ export async function seedExamples(pkg: DG.Package, dryRun = true): Promise<{pla
   const loaded = await loadState(h);
   const plan = planExampleSeed(h, loaded.state);
   if (dryRun)
-    return {plan, report: describeSeedPlan(plan, true)};
+    return {plan, report: `${describeSeedPlan(plan, true)}\nExample discussion: ${await seedThreads(pkg, true, [])} to post`};
   const errors = await writePlan(plan, loaded);
   const documents = await loadExampleDocuments(pkg);
   const linked = documents.split('\n').filter((l) => / linked/.test(l) && !/already linked|not linked/.test(l)).length;
-  const report = [describeSeedPlan(plan, false), `Example documents: ${linked} linked`,
+  const posted = await seedThreads(pkg, false, errors);
+  const report = [describeSeedPlan(plan, false), `Example documents: ${linked} linked`, `Example discussion: ${posted} posted`,
     ...errors.map((e) => `  error: ${e}`)].join('\n');
   return {plan, report};
 }
@@ -165,4 +170,46 @@ async function gateEvidence(d: ExampleDecision, programId: string, to: string | 
     await programData(pf, ctx.program.code).catch(() => null) : null;
   const stage = loaded.stages.get(d.portfolio)!.find((s) => s.id === to)!;
   return readinessEvidence(readinessFor(ctx, to, rows), stage.name);
+}
+
+/** Posts the example threads (F-51) not yet in their program's discussion, as the admin running
+ * the seed: one about a criterion, one Ask SME question put to the portfolio's approvers (posted,
+ * nobody notified). A post is there when a message's body is its text. Returns how many were (or,
+ * in a dry run, would be) posted. */
+async function seedThreads(pkg: DG.Package, dryRun: boolean, errors: string[]): Promise<number> {
+  const all: ExampleThread[] = JSON.parse(await pkg.files.readAsText(EXAMPLE_HISTORY_FILE)).discussions ?? [];
+  let n = 0;
+  for (const code of [...new Set(all.map((t) => t.portfolio))].filter(isExamplePortfolio)) {
+    const pf = await portfolioByCode(code).catch(() => null);
+    if (!pf)
+      continue;
+    for (const programCode of [...new Set(all.filter((t) => t.portfolio === code).map((t) => t.program))]) {
+      const program = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(pf.id)} and code = ${filterValue(programCode)}`,
+        limit: ROW_LIMIT}))[0];
+      if (!program?.space_id)
+        continue;
+      try {
+        const missing = missingExamplePosts(all.filter((t) => t.portfolio === code && t.program === programCode),
+          (await postsOf(program)).map((p) => p.body));
+        n += missing.length;
+        if (dryRun)
+          continue;
+        const ctx = await programContext(program.id);
+        for (const t of missing) {
+          const c = t.criterion ? ctx.criteria.find((x) => x.code === t.criterion!.code &&
+            ctx.stages.find((s) => s.id === x.stageId)?.code === t.criterion!.stage) : null;
+          const asked = t.question ? (await approverUsers(pf, program.id)).filter((id) => id !== DG.User.current().id) : [];
+          const names = [...(await userNames(asked)).values()];
+          const anchor: Anchor | null = c ? {kind: 'criterion', id: c.id, label: c.name} : null;
+          const body = t.question ? smeQuestionBody(t.text, smeContextFrom({...ctx, anchor,
+            appUrl: `${window.location.origin}${programAddress(code, programCode)}`})) : t.text;
+          await postToProgram(program, body, {anchor,
+            question: !!t.question, askedOf: asked, names: names.length <= 3 ? names : [...names.slice(0, 3), `${names.length - 3} more`]});
+        }
+      } catch (e: any) {
+        errors.push(`${code} ${programCode}: discussion not seeded: ${e?.message ?? e}`);
+      }
+    }
+  }
+  return n;
 }

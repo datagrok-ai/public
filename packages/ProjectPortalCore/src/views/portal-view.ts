@@ -90,6 +90,10 @@ import {openDecisionSearchDialog} from './decision-search-dialog';
 import {FindProgram, findPrograms, matchedBy, MIN_QUERY, resolveRecents} from '../model/find';
 import {accessFrame, portfolioAccess} from '../data-access';
 import {accessNotice} from '../model/data-access';
+import {discussionOf, postToProgram, ProgramDiscussion} from '../discussion';
+import {Anchor, decisionsCiting, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl} from '../model/discussion';
+import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
+import {programAddress} from '../model/pinning';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -190,6 +194,12 @@ export class PortalView {
   /** The selected program's observations (F-26), who wrote them, and whether the user may add one. */
   private observations: {list: ObservationView[], names: Map<string, string>, refused: string[], approver: boolean} =
     {list: [], names: new Map(), refused: [], approver: false};
+  /** The selected program's discussion (F-51): the platform chat on its folder, as threads. */
+  private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
+  /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
+  private pageCtx: ProgramContext | null = null;
+  /** The selected program's documents by id, for the context a question about one carries. */
+  private pageDocs = new Map<string, DocumentRow>();
   /** The selected program's design and selection sets (F-23), and why the user may not add one. */
   private designs: {sets: DesignSetItem[], selections: SelectionSetRow[], refused: string[]} = {sets: [], selections: [], refused: []};
   /** The selected program's DMTA status (F-24); null where the portfolio is not discovery. */
@@ -566,11 +576,15 @@ export class PortalView {
       }
     }
     const obsNames = await userNames(observations.flatMap((o) => [o.by, o.retractedBy])).catch(() => new Map<string, string>());
+    // the discussion (F-51): the platform chat on the program's folder
+    const discussion = await discussionOf(ctx.program).then((d) => ({d}))
+      .catch((e: any) => ({d: null, error: e?.message ?? String(e)}));
     // another program was opened meanwhile: its page is not this one's to draw
     if (this.selected !== id)
       return;
     this.designs = {sets: designSets, selections, refused: designRefused};
     this.dmta = dmta;
+    this.discussion = {...discussion, all: opened ? false : this.discussion.all};
     this.observations = {list: observations, names: obsNames, approver: obsAccess?.approver ?? false,
       refused: checkObservationAccess({isApprover: obsAccess?.approver ?? false, isContributor: obsAccess?.contributor ?? false})};
     this.follows = follows;
@@ -695,6 +709,8 @@ export class PortalView {
     snapshots: ProgramSnapshotRow[] = [],
     documents: {rows: DocumentRow[], cards: DocumentCard[], contributor: boolean, changes?: Map<string, EvidenceChange[]>} =
     {rows: [], cards: [], contributor: false}): void {
+    this.pageCtx = ctx;
+    this.pageDocs = new Map(documents.rows.map((r) => [r.id, r]));
     const {program, stages} = ctx;
     const current = stages.find((s) => s.id === program.stage_id) ?? null;
     const next = nextStage(stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
@@ -892,6 +908,7 @@ export class PortalView {
       work_units: () => units.length ? [span('Work units', 'pp-heading'), this.workUnits(units, ctx)] : [],
       compounds: () => compounds.length ? [span('Compounds', 'pp-heading'), this.compounds(compounds)] : [],
       observations: () => this.observationsSection(ctx),
+      discussion: () => this.discussionSection(ctx, transitions, evidence.lines),
       design_sets: () => this.designSection(ctx, units, compounds),
       dmta: () => this.dmtaSection(ctx),
       recommendation: () => recommendation ? this.recommendation(recommendation) : [],
@@ -944,6 +961,7 @@ export class PortalView {
         span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
       named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx),
         named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button'),
+        this.askSmeButton(ctx),
         this.dataPackageButton(program.id)],
       'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
@@ -1261,6 +1279,8 @@ export class PortalView {
           ...(run.is_reference ? [badge('reference', {variant: 'success'})] : []),
           span((run.run_started ?? run.created_on)?.format?.('YYYY-MM-DD') ?? '', 'pp-muted'),
           this.provenanceLink('model_run', run.id, `provenance-run-${slug(run.title ?? run.run_id ?? run.id)}`),
+          ...this.anchorLinks({kind: 'run', id: run.id, label: run.title ?? run.run_id ?? run.model_name},
+            `run-${slug(run.title ?? run.run_id ?? run.id)}`),
         ], 'pp-run-meta'),
       ], 'pp-run'), `saved-run-${slug(run.title ?? run.run_id ?? run.id)}`);
     }), 'pp-runs'), 'saved-runs');
@@ -1277,6 +1297,7 @@ export class PortalView {
       span(`${c.name}${c.required ? '' : ' (optional)'}`),
       span(c.basis === 'evaluated' ? 'from data' : c.kind.replace('_', ' '), 'pp-muted'),
     ], 'pp-criterion'), `criterion-${slug(c.code)}`);
+    row.append(...this.anchorLinks({kind: 'criterion', id: c.id, label: c.name}, `criterion-${slug(c.code)}`));
     if (editable) {
       if (c.basis === 'recorded' && c.state !== 'met' && c.state !== 'waived')
         row.append(named(button('Met', () => void this.mark(programId, c.id, 'met').catch(this.failed)), `mark-met-${slug(c.code)}`));
@@ -1393,7 +1414,9 @@ export class PortalView {
         row.status === 'superseded' ? 'pp-link pp-gap' : 'pp-link'), `${name}-open`);
       open.title = row.path;
       open.onclick = () => void openDocumentFile(row).catch(failed);
-      const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`)];
+      const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`),
+        ...this.anchorLinks({kind: 'document', id: row.id, label: describeDocument({title: row.title, version: row.doc_version,
+          status: row.status as DocumentStatus})}, name)];
       // a generated evidence table (F-40) opens as a table too
       if (generatedOf(row)) {
         const table = named(span('Table', 'pp-link'), `table-${name}`);
@@ -1730,6 +1753,144 @@ export class PortalView {
       named(divV(sets.length ? sets : [span('No design sets yet', 'pp-muted')], 'pp-units'), 'design-sets'),
       ...(hits.length ? [named(span(`Selection sets (${hits.length})`, 'pp-heading'), 'selection-sets-heading'),
         named(divV(hits, 'pp-units'), 'selection-sets')] : []),
+    ];
+  }
+
+  /** Discuss and Ask SME beside a criterion, a saved run or a document (F-51). */
+  private anchorLinks(anchor: Anchor, name: string): HTMLElement[] {
+    const ctx = this.pageCtx;
+    if (!ctx)
+      return [];
+    const reopen = () => this.openProgram(ctx.program.id, this.viewedStage);
+    const discuss = named(span('Discuss', 'pp-link pp-gap'), `discuss-${name}`);
+    discuss.title = 'Start or continue a thread about this in the program\'s discussion';
+    discuss.onclick = (e) => {
+      e.stopPropagation();
+      openDiscussDialog({program: ctx.program, anchor, onPosted: reopen});
+    };
+    const ask = named(span('Ask SME', 'pp-link pp-gap'), `ask-sme-${name}`);
+    ask.title = 'Ask an expert about this; the context goes with the question';
+    ask.onclick = (e) => {
+      e.stopPropagation();
+      openAskSmeDialog({portfolio: ctx.portfolio, program: ctx.program, context: this.smeContext(ctx, anchor), onAsked: reopen});
+    };
+    return [discuss, ask];
+  }
+
+  /** Ask SME on the program's header. */
+  private askSmeButton(ctx: ProgramContext): HTMLElement {
+    const b = named(button('Ask SME…', () => openAskSmeDialog({portfolio: ctx.portfolio, program: ctx.program,
+      context: this.smeContext(ctx, null), onAsked: () => this.openProgram(ctx.program.id, this.viewedStage)})), 'ask-sme-button');
+    b.title = 'Ask an expert about this program: the portfolio, stage, next gate and readiness go with the question';
+    return b;
+  }
+
+  /** What a question carries: where the program stands, the item it is about, and its address. */
+  private smeContext(ctx: ProgramContext, anchor: Anchor | null): SmeContext {
+    const doc = anchor?.kind === 'document' ? this.pageDocs.get(anchor.id) : undefined;
+    return smeContextFrom({...ctx, anchor, anchorUrl: doc?.path ?? null,
+      appUrl: `${window.location.origin}${programAddress(ctx.portfolio.code, ctx.program.code)}`});
+  }
+
+  /** Opens what a thread is about: a criterion on the gate panel, a run's or document's provenance. */
+  private openAnchor(ctx: ProgramContext, a: Anchor): void {
+    if (a.kind === 'criterion') {
+      const c = ctx.criteria.find((x) => x.id === a.id);
+      const el = c ? this.detail.querySelector(`[data-u2-name="criterion-${slug(c.code)}"]`) : null;
+      if (el)
+        el.scrollIntoView({block: 'center'});
+      else
+        grok.shell.info(`${a.label}: a criterion of another gate; click its stage on the track to see it`);
+      return;
+    }
+    this.provenance(a.kind === 'run' ? 'model_run' : 'document', a.id);
+  }
+
+  /** Discussion (F-51): the program's threads, newest first, each with what it is about (a click
+   * opens it), its posts and the decisions that cite it; a box to post, Ask SME, and per thread
+   * Reply, Cite in the next decision (approvers) and Open in Chats (the platform's page). */
+  private discussionSection(ctx: ProgramContext, transitions: StageTransitionRow[],
+    evidence: Map<string, EvidenceLine[]>): HTMLElement[] {
+    const {program} = ctx;
+    const x = this.discussion;
+    const heading = named(span('Discussion', 'pp-heading'), 'discussion-heading');
+    if (x.error)
+      return [heading, named(span(`The discussion could not be read: ${x.error}`, 'pp-reason'), 'discussion-error')];
+    if (!x.d || x.d.reason)
+      return [heading, named(span(x.d?.reason ?? 'No discussion', 'pp-muted'), 'discussion-unavailable')];
+    const d = x.d;
+    const reopen = () => this.openProgram(program.id, this.viewedStage);
+    heading.textContent = `Discussion (${d.threads.reduce((n, t) => n + t.posts.length, 0)})`;
+    const input = named(document.createElement('textarea'), 'discussion-input');
+    input.rows = 2;
+    input.placeholder = `Post to ${program.code}'s discussion`;
+    const post = named(button('Post', () => void postToProgram(program, input.value).then(reopen).catch(this.failed)),
+      'discussion-post-button');
+    post.title = 'Posted to the platform chat on the program\'s folder: whoever may open the folder reads it';
+    const ask = named(button('Ask SME…', () => openAskSmeDialog({portfolio: ctx.portfolio, program,
+      context: this.smeContext(ctx, null), onAsked: reopen})), 'discussion-ask-sme-button');
+    const origin = window.location.origin;
+    const shown = x.all ? d.threads : d.threads.slice(0, 5);
+    const items = shown.map((t: Thread, i) => {
+      const url = d.chatId ? threadUrl(origin, t.posts[0].chatId, t.key) : '';
+      const title = named(span(threadTitle(t), t.anchor ? 'pp-link' : ''), `thread-${i}-title`);
+      if (t.anchor) {
+        const a = t.anchor;
+        title.title = 'Open what this thread is about';
+        title.onclick = () => this.openAnchor(ctx, a);
+      }
+      const decisions = url ? decisionsCiting(url, new Map([...evidence].map(([k, v]) => [k, v.map((l) => l.row)]))) : [];
+      const led = decisions.map((id) => transitions.find((tr) => tr.id === id)).filter((tr): tr is StageTransitionRow => !!tr)
+        .map((tr) => `${(tr.decided_on ?? tr.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${tr.decision === 'record' ?
+          describeRecord(tr.outcome, ctx.stages.find((s) => s.id === tr.to_stage_id)?.name ?? '', null) : tr.decision}`);
+      const posts = t.posts.slice(-3).map((p, j) => named(divV([
+        divH([span(p.byName ?? '', 'pp-muted'), span(p.on.slice(0, 16).replace('T', ' '), 'pp-muted'),
+          ...(p.question ? [badge('question', {variant: 'warning'})] : [])], 'pp-unit'),
+        span(p.body.length > 400 ? `${p.body.slice(0, 399)}…` : p.body, 'pp-post-body'),
+      ], 'pp-post'), `thread-${i}-post-${j}`));
+      const reply = named(span('Reply', 'pp-link'), `thread-${i}-reply`);
+      reply.onclick = () => openDiscussDialog({program, anchor: t.anchor, onPosted: reopen});
+      const actions: HTMLElement[] = [reply];
+      if (ctx.approver && url) {
+        const cite = named(span('Cite in the next decision', 'pp-link'), `thread-${i}-cite`);
+        cite.title = 'Attach this thread to the next gate decision\'s evidence; the thread then shows the decision';
+        cite.onclick = () => {
+          const item: EvidenceItem = {kind: 'url', target: url, name: `Discussion: ${threadTitle(t)}`, role: 'supporting'};
+          if (!this.picked.links.some((l) => evidenceKey(l) === evidenceKey(item)))
+            this.picked.links.push(item);
+          this.picked.off.delete(evidenceKey(item));
+          grok.shell.info(`${threadTitle(t)}: attached to the next decision`);
+          this.redraw?.();
+        };
+        actions.push(cite);
+      }
+      if (url) {
+        const chats = named(span('Open in Chats', 'pp-link'), `thread-${i}-chats`);
+        chats.title = 'The platform\'s own page of this chat';
+        chats.onclick = () => window.open(url, '_blank', 'noopener');
+        actions.push(chats);
+      }
+      return named(divV([
+        divH([title, span(`${t.posts.length} post${t.posts.length === 1 ? '' : 's'}`, 'pp-muted')], 'pp-unit'),
+        ...(led.length ? [named(span(`Led to: ${led.join('; ')}`, 'pp-gap'), `thread-${i}-decisions`)] : []),
+        ...(t.posts.length > 3 ? [span(`${t.posts.length - 3} earlier`, 'pp-muted')] : []),
+        ...posts,
+        divH(actions, 'pp-actions'),
+      ], 'pp-observation'), `thread-${i}`);
+    });
+    const more = d.threads.length > 5 ? [named(span(x.all ? 'Fewer threads' : `All ${d.threads.length} threads`, 'pp-link'),
+      'discussion-all')] : [];
+    if (more.length) {
+      more[0].onclick = () => {
+        x.all = !x.all;
+        this.redraw?.();
+      };
+    }
+    return [
+      heading,
+      named(divV([input, divH([post, ask], 'pp-actions')]), 'discussion-form'),
+      named(divV(items.length ? items : [span('No posts yet', 'pp-muted')], 'pp-units'), 'discussion-threads'),
+      ...more,
     ];
   }
 

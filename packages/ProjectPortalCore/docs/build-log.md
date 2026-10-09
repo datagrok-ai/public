@@ -45,6 +45,7 @@ changed. What each feature does is in [features.md](features.md); platform issue
 | Write permissions on portal tables | security | 0.2.31: three tables View for all users; metadata only |
 | Three small fixes | user names, no folders for ended programs | none |
 | Data access of the portfolio's groups | security, read-only check | none |
+| Discussion and Ask SME | F-51, goal 10 | 0.2.35: `portfolio.ask_sme` |
 
 ## Readiness, work units, stage folders, compounds
 
@@ -572,3 +573,35 @@ changed. What each feature does is in [features.md](features.md); platform issue
 - What the server enforces regardless: program rows and their work units take writes from their author and admins;
   `sync_log` and `parked_folder` from the approvers groups. Guarded by the app only: building workspace folders
   (contributors hold Edit on the root) and export (the portfolio table is readable by all).
+
+## Discussion and Ask SME
+
+*F-51, goal 10. Schema 0.2.35: `portfolio.ask_sme`. No discussion table.*
+
+- **The platform's chats, by the user's decision.** A program's discussion is the platform chat on its workspace
+  folder, so it shows in the platform's own Chats panel and follows the folder's sharing. Checked on the stand
+  first: ppviewer (EX-SMD viewer) posts to and reads a chat on EXS-KIN1's folder, the admin reads the post, and a
+  user of EX-BIOD only reads nothing. The fallback considered, a row-secured `discussion` table linked into the
+  folder, would not let a viewer post visibly: linking a row into a space needs Edit on the space, which viewers
+  lack. It was not built.
+- **One chat per program folder,** started by the first post (`Re: <code>`). Several chats on one folder (one
+  started in the Chats panel elsewhere) are read together; the portal posts to the first.
+- **Threads live in the text.** The first line of a post names the anchor and the asked users, with `pp:` tokens.
+  The platform shows that line to people as written. A label is frozen when posted; a renamed criterion keeps
+  its old label in old posts.
+- **A decision cites a thread by its address** (a `url` evidence item: `/forums/<chat>#pp-<kind>-<id>`), so no
+  schema change and the evidence picker is reused. Only approvers on a gate they decide see **Cite in the next
+  decision**. A decision recorded elsewhere (a function) can cite it with `addEvidence(..., 'url', <address>)`.
+- **Ask SME default:** the portfolio's approvers and the program's approver roles, minus the asker. `external` is a
+  placeholder and sends nothing. The dialog also takes logins.
+- **Notifications are best effort.** Only user managers may notify others (item 41), so a viewer's or contributor's
+  question tells no one; the line says so and the question waits in the discussion and the activity. A question
+  addressed to a user is not in Waiting for me: reading every followed program's chat for it was left out.
+- **Email is the platform's.** A chat post makes the server email participants, watchers and, on a chat's first
+  post, all admins, where email is configured (item 39). The portal sends nothing outside the platform itself.
+  On the stand email has no server. Worth deciding before a customer deployment with email.
+- **No edit or delete** in the app: the server would let anyone change anyone's post (item 42).
+- **Simple mode shows the Discussion panel;** a persona whose portfolio lists its panels gets it behind More
+  (EX-SMD's biologist).
+- **Examples:** two posts on EXS-KIN1, dated when seeded (item 44). The seed's question tells nobody.
+

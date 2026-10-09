@@ -54,7 +54,7 @@ Each feature is described in detail in [docs/features.md](docs/features.md):
 - **Gates and evidence:** [Data conditions and readiness](docs/features.md#data-conditions-and-readiness), [Stage advance driven by data](docs/features.md#stage-advance-driven-by-data), [Decisions with evidence](docs/features.md#decisions-with-evidence), [Program snapshots](docs/features.md#program-snapshots), [Documents](docs/features.md#documents), [Evidence tables](docs/features.md#evidence-tables), [Approval workflow](docs/features.md#approval-workflow), [Provenance](docs/features.md#provenance), [Data package manifest](docs/features.md#data-package-manifest).
 - **Models and runs:** [Model runs](docs/features.md#model-runs), [Saving a run from the app](docs/features.md#saving-a-run-from-the-app), [Model catalogue and model cards](docs/features.md#model-catalogue-and-model-cards), [Choosing the run a criterion rests on](docs/features.md#choosing-the-run-a-criterion-rests-on), [Comparing a criterion's runs in Compute2](docs/features.md#comparing-a-criterions-runs-in-compute2), [Model recommendation](docs/features.md#model-recommendation), [Predictions](docs/features.md#predictions).
 - **Discovery:** [Program data](docs/features.md#program-data), [Compounds needing attention](docs/features.md#compounds-needing-attention), [Observations](docs/features.md#observations), [Design sets and selection sets](docs/features.md#design-sets-and-selection-sets), [DMTA status](docs/features.md#dmta-status).
-- **People:** [Modes and quick actions per persona](docs/features.md#modes-and-quick-actions-per-persona), [Program roles](docs/features.md#program-roles), [Write permissions on portal tables](docs/features.md#write-permissions-on-portal-tables), [Following a program: new-data notification](docs/features.md#following-a-program-new-data-notification), [Pinned programs: My programs on Home](docs/features.md#pinned-programs-my-programs-on-home), [Activity feed](docs/features.md#activity-feed).
+- **People:** [Modes and quick actions per persona](docs/features.md#modes-and-quick-actions-per-persona), [Program roles](docs/features.md#program-roles), [Write permissions on portal tables](docs/features.md#write-permissions-on-portal-tables), [Following a program: new-data notification](docs/features.md#following-a-program-new-data-notification), [Pinned programs: My programs on Home](docs/features.md#pinned-programs-my-programs-on-home), [Activity feed](docs/features.md#activity-feed), [Discussion and Ask SME](docs/features.md#discussion-and-ask-sme).
 
 ## Design docs
 
@@ -143,6 +143,9 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)` | Records an observation on the program, a series, campaign, study or compound, with one piece of evidence; contributors and approvers |
 | `retractObservation(id, reason)` | Retracts an observation, kept and marked; its author or an approver |
 | `observations(portfolio, program, subject, code)` | A program's observations as a table, current first |
+| `programDiscussion(portfolio, program)` | A program's discussion (the platform chat on its folder), newest first, by thread |
+| `postToDiscussion(portfolio, program, text, aboutKind, about)` | Posts to a program's discussion, in general or about a criterion, saved run or document; anyone who may open the folder |
+| `askSme(portfolio, program, question, aboutKind, about, logins)` | Puts a question, with the program's context, into the discussion and tells the people the portfolio names |
 | `createDesignSet(portfolio, program, series, name, source, proposals, scoreColumn, scoreName, lowerIsBetter)` | Proposed structures for a series from a table, ranked by score; contributors and approvers |
 | `designSets(portfolio, program)` | The program's design proposals by set and rank, with what was chosen for synthesis |
 | `chooseForSynthesis(portfolio, program, designSet, labels, chosen)` | Marks proposals chosen for synthesis, or not |
@@ -153,7 +156,7 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `dmtaCycles(portfolio, program)` | Per series: compounds at each DMTA stage and the median cycle time |
 | `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
 | `loadExampleDocuments()` | Links the synthetic EX-BIOC and EX-BIOD documents the package ships. EX-* only; idempotent |
-| `seedExamples(dryRun)` | Writes the example history: decisions, criteria met, observations, a follow, the example documents. Admins only; EX-* only; idempotent; a dry run (default) lists what it would write |
+| `seedExamples(dryRun)` | Writes the example history: decisions, criteria met, observations, a follow, the example documents, two discussion threads. Admins only; EX-* only; idempotent; a dry run (default) lists what it would write |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |

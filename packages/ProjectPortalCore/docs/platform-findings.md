@@ -113,6 +113,44 @@ are given where one was filed. Items 1 to 19 were first listed in the package RE
    an `icon` per table in the domain schema; favorites and the Workspace resolving a domain `EntityRecord` to its row
    (as Spaces do); the Space tree using the registered handler.
 
+Items 38 to 45 were found building the project discussion and Ask SME on the platform's chats (F-51, 2026-10-09).
+Each says what is missing, what the portal does instead, and what the platform would need.
+
+38. **No js-api for chats.** The server has `/chats` routes (list by entity, comments, post, watch, delete), but
+   `grok.dapi` has no chats client and `dapi2.chats` is generated empty. The portal calls the routes with `fetch` and
+   the session token (`src/discussion.ts`), relying on the server's JSON shape. A new chat's id is the client's only
+   when the comment carries its own id too; without one the server makes an empty chat. Need: `grok.dapi.chats`
+   (find by entity, read, post, watch) and a `ui` chat widget a package can embed.
+39. **A chat post emails people.** Every post to a public chat makes the server email its participants and watchers,
+   and the first post of a chat emails every administrator, wherever email is configured (`email.dart`,
+   `COMMENT_POSTED`). The portal must notify in the platform only. On the stand email has no server, so nothing goes
+   out; on a deployment with email, a discussion post or an Ask SME question would email. The portal cannot turn this
+   off per chat. Need: a chat (or a caller) that notifies in the platform only, or a per-user setting that the
+   portal can rely on.
+40. **No threads, anchors or recipients in a chat.** A chat hangs on entities and is one flat list; the Chats panel
+   shows the first chat of an entity only. The portal keeps one chat per program folder and writes the anchor
+   (criterion, run, document) and the asked users into a first line with `pp:` tokens, which the platform shows
+   as text. Need: a reply-to or topic on a comment, and a reference to another entity (or a domain row) on a comment.
+41. **No mentions, and no notification to the people asked.** Mention notifications are commented out in the server.
+   `POST /users/notifications` creates a notification for someone else only for a user manager ("Permission denied
+   to access notifications of another user" for a viewer). So a viewer's or a contributor's question is posted, and
+   the people asked are not told; an admin's question tells them. A user cannot make someone else watch a chat
+   either. Need: @mentions that notify in the platform, or a notification API that a package may call for the
+   members of a portfolio's groups (item 10).
+42. **Anyone who reads a chat can rewrite or delete any comment in it.** Posting a comment with an existing id
+   replaces its text and keeps its author (proved: a viewer rewrote the admin's comment); `DELETE
+   /chats/comments/{id}` checks nothing. A discussion that a decision cites can be changed after the decision. The
+   portal offers no edit or delete, and a decision cites the thread's address, not a copy. Need: edit and delete by
+   the author (and admins) only, and an edit history.
+43. **A post is not checked against the chat's entities.** Reads are filtered by View on an attached entity, but a
+   post only checks a private chat's group: a user who knows a public chat's id may post to it without seeing it.
+   Ids are not listed to such a user, so the risk is small. Need: posting checked like reading.
+44. **A comment cannot be back-dated.** The server sets `posted` to now. The example threads are dated when seeded,
+   not in the example history's past. Need: an admin import with a date (as the gate log allows).
+45. **A chat on a domain row needs the row promoted.** Criteria, runs and documents are domain rows; a chat on one
+   would need it to be an entity, and promotion is per table. The portal anchors to them inside the program
+   folder's chat instead (item 40). Need: chats on domain rows without promotion, or comment references (item 40).
+
 ## What the server enforces on writes
 
 Read in the server source (domain repository, predicate builder, deployer) while securing the portal's workflow
@@ -155,3 +193,5 @@ tables. Package functions run in the user's browser, so a check in them is the a
   `portfolio_id` is one of the caller's portfolios).
 - A supported server-side write identity for a package.
 - Scheduling a package function (item 9) and a notification API (item 10).
+- Chats a package can use for project discussion: a js-api, in-platform-only notification, threads and references,
+  mentions, author-only edits (items 38 to 45).

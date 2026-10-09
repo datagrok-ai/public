@@ -48,6 +48,7 @@ import './tests/data-access-tests';
 import './tests/read-scope-tests';
 import './tests/keeper-action-tests';
 import './tests/example-tests';
+import './tests/discussion-tests';
 
 export let _package = new DG.Package();
 export { tests };

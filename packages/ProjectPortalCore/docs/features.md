@@ -345,6 +345,21 @@ A curated conclusion on a program, one of its series, campaigns or studies, or a
 - **Activity feed.** Kind `observation`: recorded, and retracted. One about a series, campaign or study is tagged with it, and one about a compound with the compound, so a series' feed shows both.
 - **Functions.** `addObservation(portfolio, program, subject, code, title, finding, evidenceKind, evidenceTarget)`, `retractObservation(id, reason)`, `observations(portfolio, program, subject, code)`.
 
+## Discussion and Ask SME
+
+Questions, answers and the reasoning behind a decision stay with the program (F-51), not in email or chat.
+- **Where it lives.** The platform's own chat on the program's workspace folder: the one its **Chats** panel shows on the folder. Whoever may open the folder reads and posts, viewers included; another portfolio's users see nothing. A program without a folder has no discussion yet. No portal table.
+- **Threads.** A post is about the program in general, a gate criterion, a saved run or a document. The platform has no threads, so the portal writes what a post is about, and whom a question asks, in its first line (`Re: criterion "hERG IC50 ≥ 10 µM" · pp:criterion:<id>`) and groups posts by it. A post written in the platform's Chats panel lands in General.
+- **Program page.** *Discussion (n)*: a box to post, **Ask SME…**, then the threads, newest first, each with its last three posts. A thread's title opens what it is about (the criterion on the gate panel, a run's or a document's provenance). **Reply**, **Cite in the next decision** (approvers) and **Open in Chats** (the platform's page). **Discuss** and **Ask SME** sit beside each gate criterion, saved run and document. Shown in Simple mode; behind More where a persona's panels leave it out.
+- **Decisions.** **Cite in the next decision** attaches the thread's address to the next gate decision's evidence (a link). The thread then shows *Led to:* that decision, and the decision's evidence opens the thread.
+- **Ask SME.** **Ask SME…** on the program's header (and beside a criterion, run or document) opens the question, the context that goes with it (portfolio, program, stage, the next gate and its readiness, the open criteria, the item it is about, the program's address in the app) and who is asked. The question and its context go into the discussion, marked as a question. The people asked are told in the platform's notifications.
+- **Who is asked.** The portfolio's `askSme` (optional): `{channel: discussion | group | user | external, group, users: [login], external: {kind, address}, note}`. Default (`discussion`): the portfolio's approvers and the program's approver roles. `group`: a group's members. `user`: the logins listed. `external` is a placeholder: nothing leaves the platform; the dialog says so and the approvers are told. The dialog also takes logins to ask instead. `note` shows above the question.
+- **Notifications.** The server lets only a user manager notify someone else. For everyone else the question is posted and the line says who was not told; they find it in the discussion and the activity.
+- **Activity feed.** Kinds `discussion` and `question`.
+- **Examples.** `seedExamples` posts two threads on EXS-KIN1: one on the hERG criterion, one question on the ADME panel. Idempotent.
+- **Functions.** `programDiscussion(portfolio, program)`, `postToDiscussion(portfolio, program, text, aboutKind, about)`, `askSme(portfolio, program, question, aboutKind, about, logins)`.
+- **Platform gaps.** Platform findings 38 to 45.
+
 ## Design sets and selection sets
 
 Discovery records of what was proposed and picked (F-23, FR-101/102). Never folders.

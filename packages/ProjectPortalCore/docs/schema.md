@@ -1,6 +1,6 @@
 # Schema notes
 
-The `portal` domain schema: `databases/portal/schema.json` (version 0.2.34, 41 tables). The design rules are in
+The `portal` domain schema: `databases/portal/schema.json` (version 0.2.35, 41 tables). The design rules are in
 [architecture.md](architecture.md#2-schema-design-rules). This page records how the tables group, who may write
 them, the choices made while building, and how the schema grew.
 
@@ -130,3 +130,4 @@ Every other change so far has been additive and deployed from `schema.json` alon
 | 0.2.32 | `stage_transition.decision` takes `record`; `stage_transition.outcome` (go, hold, no_go) for decision records; additive |
 | 0.2.33 | `approval`, `sync_log`, `following` (row-secured replacements of `approval_request`, `sync_run`, `follow`); `program_compound.compound_code`, `compound_name`, `smiles`, `aliases`, `batches`, `details`; additive |
 | 0.2.34 | `sync_log.changes` documents `folders` (the programs a sync gave a workspace folder); description only |
+| 0.2.35 | `portfolio.ask_sme` (Ask SME channel, F-51); additive. The discussion itself is the platform's chats, no table |

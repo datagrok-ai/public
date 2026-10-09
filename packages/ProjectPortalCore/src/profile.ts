@@ -108,6 +108,7 @@ export async function exportPortfolioConfig(code: string): Promise<PortfolioConf
     personas: p.personas as any,
     documentKinds: (p.document_kinds as any)?.kinds,
     approval: p.approval as any,
+    askSme: p.ask_sme as any,
     groups: Object.keys(groups).length ? groups : undefined,
     handoff: p.handoff as any,
     workUnits: orNull(split(p.work_units)) as WorkUnitKind[] | undefined,

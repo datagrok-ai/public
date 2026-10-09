@@ -273,3 +273,14 @@ app.element('record note', {selector: u2('record-note')});
 app.element('decisions button', {selector: u2('decisions-button')});
 app.element('decision text input', {selector: u2('decision-text-input')});
 app.element('decision results', {selector: u2('decision-results')});
+
+// discussion and Ask SME (F-51)
+app.element('scratch discussion project card', {selector: u2('program-bdd-disc')});
+app.element('discussion heading', {selector: u2('discussion-heading')});
+app.element('discussion input', {selector: u2('discussion-input')});
+app.element('discussion post button', {selector: u2('discussion-post-button')});
+app.element('discussion threads', {selector: u2('discussion-threads')});
+app.element('ask SME button', {selector: u2('ask-sme-button')});
+app.element('ask SME dialog', {selector: u2('ask-sme-dialog')});
+app.element('SME context', {selector: u2('sme-context')});
+app.element('SME note', {selector: u2('sme-note')});

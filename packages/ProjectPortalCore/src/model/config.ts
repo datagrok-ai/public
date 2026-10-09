@@ -8,6 +8,7 @@ import {mergeCatalogues, ModelCatalogueConfig} from './catalogue';
 import {CriterionArtifactKind, RunFilter, validateRunCriterion} from './run-selection';
 import {MAIN_DATASET, ProgramDatasetConfig, validateProgramDatasets} from './program-data';
 import {DmtaConfig, validateDmta} from './dmta';
+import {AskSmeConfig, validateAskSme} from './discussion';
 import {AttentionRule, validateAttentionRules} from './attention';
 import {validateSchedule} from './sync-runs';
 import {AutoAdvanceConfig, validateAutoAdvance} from './auto-advance';
@@ -135,6 +136,8 @@ export interface PortfolioConfig {
   /** The optional approval workflow (F-30), off when absent: the gate decisions and artifacts that
    * a second person approves before they take effect, and how many approvers that takes. */
   approval?: ApprovalConfig;
+  /** Where Ask SME questions go (F-51); the portfolio's approvers when absent. */
+  askSme?: AskSmeConfig;
   stageModel: StageModelConfig;
   feeds: FeedConfig[];
 }
@@ -204,6 +207,7 @@ export function validatePortfolio(c: PortfolioConfig): string[] {
   errors.push(...validateDmta(c.dmta, [...(c.programData ? [MAIN_DATASET] : []), ...(c.programDatasets ?? []).map((d) => d.code)]));
   errors.push(...validateFlowFolders(c.flowFolders, (c.stageModel?.stages ?? []).map((s) => s.code), c.workspaceRoot));
   errors.push(...validateCompoundFeed(c.compoundFeed));
+  errors.push(...validateAskSme(c.askSme));
   if (c.programData !== undefined) {
     need(c.programData.connection, 'programData: connection');
     need(c.programData.sql, 'programData: sql');

@@ -1,6 +1,6 @@
 /** The activity feed against the platform (F-21): reads one program's records (gate log, evidence,
  * runs, selections, documents, snapshots, compound role changes, the portfolio's sync history and
- * the follows' last news) and turns them into entries; "my feed" does the same for every program the
+ * the follows' last news, the discussion's posts) and turns them into entries; "my feed" does the same for every program the
  * current user follows. Nothing new is stored. The rules live in ./model/feed. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
@@ -18,6 +18,8 @@ import {newestFirstBy} from './model/time';
 import {filterValue, queryIn, ROW_LIMIT} from './rows';
 import {userNames} from './users';
 import {myPortfolioIds} from './secured-rows';
+import {postsOf} from './discussion';
+import {postFeedText} from './model/discussion';
 
 const iso = (d: any): string | null => d ? dayjs(d).toISOString() : null;
 
@@ -64,9 +66,11 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
   const rest = compoundIds.filter((id) => !codes.has(id));
   for (const c of await queryIn(portalDb.compounds, 'id', rest).catch(() => []))
     codes.set(c.id, c.code);
-  const [programRoles, modelCards] = await Promise.all([
+  const [programRoles, modelCards, posts] = await Promise.all([
     programRolesOf(program.id).catch(() => []),
     approvedCardsOf([...runs.map((x) => x.model_id), ...predictions.map((x) => x.model_id)]).catch(() => []),
+    // the discussion is the platform chat on the program's folder (F-51)
+    postsOf(program).catch(() => []),
   ]);
   const runTitle = (id: string) => {
     const r = runs.find((x) => x.id === id);
@@ -114,6 +118,7 @@ export async function feedRecordsOf(program: ProgramRow, portfolio: PortfolioRow
       by: o.observed_by ?? o.author_id, on: iso(o.observed_on ?? o.created_on),
       retractedBy: o.retracted_by ?? null, retractedOn: o.status === 'retracted' ? iso(o.retracted_on) : null,
       retraction: o.retraction ?? null})),
+    discussion: posts.map((p) => ({id: p.id, on: p.on, by: p.by, text: postFeedText(p), question: p.question})),
   };
 }
 

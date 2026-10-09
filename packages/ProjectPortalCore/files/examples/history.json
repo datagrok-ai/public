@@ -1,5 +1,5 @@
 {
-  "description": "Synthetic history for the EX-* example portfolios: what a registry feed cannot carry. Loaded by seedExamples; every name, number and date is invented.",
+  "description": "Synthetic history for the EX-* example portfolios: what a registry feed cannot carry, and example discussion threads. Loaded by seedExamples; every name, number and date is invented.",
   "criteria": [
     {"portfolio": "EX-SMD", "program": "EXS-GPC3", "stage": "HF", "criterion": "assay_ready", "status": "met", "on": "2026-02-24",
       "evidence": "Example: GPC3 binding assay, Z' 0.64 over 8 plates"},
@@ -63,5 +63,11 @@
   ],
   "follows": [
     {"portfolio": "EX-SMD", "program": "EXS-GPC3"}
+  ],
+  "discussions": [
+    {"portfolio": "EX-SMD", "program": "EXS-KIN1", "criterion": {"stage": "LO", "code": "herg_margin"},
+      "text": "Example: the KIN-A leads sit at hERG IC50 6-8 uM, short of the 10 uM bar. Test the morpholine analogues first, or widen the panel? The SAR table has the numbers."},
+    {"portfolio": "EX-SMD", "program": "EXS-KIN1", "criterion": {"stage": "LO", "code": "adme_panel"}, "question": true,
+      "text": "Example: does rat microsomal stability alone count toward the ADME panel, or do we need human microsomes too?"}
   ]
 }

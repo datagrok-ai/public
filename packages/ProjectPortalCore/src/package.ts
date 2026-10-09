@@ -75,6 +75,8 @@ export * from './package.g';
 import '@datagrok-libraries/u2/src/dg/domain/styles.js';
 import {newestFirstBy} from './model/time';
 import {seedExamples as seedExampleHistory} from './examples';
+import {askSme as askExpert, discussionFrame, discussionOf, postToProgram, resolveAnchor, smeContextOf} from './discussion';
+import {AnchorKind, describeAnchor} from './model/discussion';
 import {filterValue, ROW_LIMIT} from './rows';
 
 export const _package = new DG.Package();
@@ -547,6 +549,53 @@ export async function addObservation(portfolio: string, program: string, subject
   return `${p.code}: observation recorded on ${describeObservation(o)} (${o.id})`;
 }
 
+//name: programDiscussion
+//description: A program's discussion (F-51): the platform chat on its workspace folder, as rows newest first: thread (General, or the criterion, run or document it is about), on, by, question, text, id
+//input: string portfolio
+//input: string program
+//output: dataframe result
+export async function programDiscussion(portfolio: string, program: string): Promise<DG.DataFrame> {
+  const p = await programByCode(portfolio, program);
+  const d = await discussionOf(p);
+  if (d.reason)
+    throw new Error(d.reason);
+  return discussionFrame(d.threads, `${p.code} discussion`);
+}
+
+//name: postToDiscussion
+//description: Posts to a program's discussion as you (F-51), in general or about a criterion (code), a saved run (run_id or title) or a document (title). Anyone who may open the program's folder may post
+//input: string portfolio
+//input: string program
+//input: string text
+//input: string aboutKind {optional: true; choices: ["criterion", "run", "document"]}
+//input: string about {optional: true; description: The criterion's code, the run's run_id or title, the document's title}
+//output: string report
+export async function postToDiscussion(portfolio: string, program: string, text: string, aboutKind?: string,
+  about?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const anchor = aboutKind && about ? await resolveAnchor(p.id, aboutKind as AnchorKind, about) : null;
+  const {post} = await postToProgram(p, text, {anchor});
+  return `${p.code}: posted to the discussion${anchor ? ` about ${describeAnchor(anchor)}` : ''} (${post.id})`;
+}
+
+//name: askSme
+//description: Asks an expert about a program (F-51): the question, with the portfolio, program, stage, next gate and readiness and the item it is about, goes into the program's discussion; the people the portfolio names (askSme; its approvers by default), or the logins given, are told in the platform's notifications where the server allows it. Nothing is sent outside the platform
+//input: string portfolio
+//input: string program
+//input: string question
+//input: string aboutKind {optional: true; choices: ["criterion", "run", "document"]}
+//input: string about {optional: true}
+//input: string logins {optional: true; description: Comma-separated logins to ask instead of the portfolio's choice}
+//output: string report
+export async function askSme(portfolio: string, program: string, question: string, aboutKind?: string, about?: string,
+  logins?: string): Promise<string> {
+  const p = await programByCode(portfolio, program);
+  const anchor = aboutKind && about ? await resolveAnchor(p.id, aboutKind as AnchorKind, about) : null;
+  const to = (logins ?? '').split(',').map((x) => x.trim()).filter((x) => x);
+  const r = await askExpert(p.id, question, await smeContextOf(p.id, anchor), to.length ? {logins: to} : undefined);
+  return `${p.code}: ${r.line}`;
+}
+
 //name: retractObservation
 //description: Retracts an observation: kept, marked retracted, with who, when and why. Its author or an approver
 //input: string id
@@ -781,7 +830,7 @@ export async function loadExampleDocuments(): Promise<string> {
 }
 
 //name: seedExamples
-//description: Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow and the example documents, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
+//description: Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow, the example documents and two example discussion threads, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
 //input: bool dryRun = true
 //output: string report
 export async function seedExamples(dryRun: boolean = true): Promise<string> {

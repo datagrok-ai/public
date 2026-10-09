@@ -16,6 +16,7 @@
     "contributors": "Portal EX-SMD Contributors",
     "approvers": "Portal EX-SMD Approvers"
   },
+  "askSme": {"channel": "discussion", "note": "Example: an EX-SMD approver answers within two working days."},
   "personas": {
     "default": "chemist",
     "groups": [{"group": "Portal EX-SMD Approvers", "persona": "lead"}],

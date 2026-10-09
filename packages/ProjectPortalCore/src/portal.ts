@@ -201,6 +201,7 @@ export async function loadPortfolio(c: PortfolioConfig): Promise<string> {
     auto_advance: c.autoAdvance ?? null, handoff: c.handoff ?? null, personas: c.personas ?? null,
     document_kinds: c.documentKinds?.length ? {kinds: c.documentKinds} : null,
     approval: c.approval ?? null,
+    ask_sme: c.askSme ?? null,
     work_units: (c.workUnits ?? []).join('|') || null, series_maturity: (c.seriesMaturity ?? []).join('|') || null,
     description: c.description ?? null,
     viewers: groups.viewers, contributors: groups.contributors, approvers: groups.approvers,

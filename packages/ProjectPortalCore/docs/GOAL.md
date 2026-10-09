@@ -35,7 +35,7 @@ its own entitlements into groups. The platform delivers what a package cannot.
 | 7 | Saved model runs (F-14) | Installed models | Row grants for non-author writes (GROK-21041) |
 | 8 | Evidence tables (F-40); document generation (F-50, new) | Document templates | Row grants for non-author writes (GROK-21041) |
 | 9 | Documents and document cards (F-27) | Deliverable list | Row grants for non-author writes (GROK-21041) |
-| 10 | Discussion and Ask SME (F-51, new); decisions (F-25) | Where Ask SME is routed | Row grants for non-author writes (GROK-21041); a notification API |
+| 10 | Discussion and Ask SME on the platform's chats (F-51); decisions cite threads (F-25) | Where Ask SME is routed (`askSme`) | Chats for packages: js-api, in-platform-only notification, threads and references, mentions, author-only edits (platform findings 38 to 45); a notification API |
 | 11 | Decisions with evidence (F-25) | — | Row grants for non-author writes (GROK-21041) |
 | 12 | Provenance (F-28) | — | Soft references to function calls (GROK-21042) |
 | 13 | Stable program addresses; a share-link button | — | Sharing, live views; scheduling a package function (new-data notices wait for someone to sync) |

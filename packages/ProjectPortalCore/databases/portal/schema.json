@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "portal",
-  "version": "0.2.34",
+  "version": "0.2.35",
   "extensible": {"tables": true},
   "tables": {
     "stage_model": {
@@ -94,6 +94,7 @@
         "personas": {"type": "json", "description": "Quick actions per persona: {default, groups: [{group, persona}], cards: {persona: [action code or {name, function, description}]}}"},
         "document_kinds": {"type": "json", "description": "The portfolio's document vocabulary: {kinds: [{code, name, description}]}. Empty: one kind per document criterion, and other"},
         "approval": {"type": "json", "description": "Optional approval workflow (F-30), off when empty: {decisions: [advance, terminate, ...], artifacts: [document, model_card], approvers: N}. A decision or artifact of a listed kind is proposed, and takes effect once N approvers other than the proposer approve"},
+        "ask_sme": {"type": "json", "description": "Optional Ask SME channel (F-51): {channel: discussion | group | user | external, group, users: [login], external: {kind, address}, note}. The question always goes into the program's discussion (the platform chat on its folder); the channel picks who is told in the platform. Default: the portfolio's approvers. external is not wired"},
         "viewers": {"type": "group", "onDelete": "setnull", "description": "Sees the portfolio's programs"},
         "contributors": {"type": "group", "onDelete": "setnull", "description": "Edits the portfolio's programs"},
         "approvers": {"type": "group", "onDelete": "setnull", "description": "Records gate decisions"},

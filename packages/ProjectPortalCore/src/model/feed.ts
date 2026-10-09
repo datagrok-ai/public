@@ -2,22 +2,22 @@
  * rather than a separate event store. Each record kind already says who did what and when: the gate
  * log, evidence, saved and selected runs, documents, snapshots, compound role changes, the sync
  * history (registry and work-unit changes, new data), the follows' last news, program roles, the
- * approved cards of the models the program used, and observations. Pure: the caller
+ * approved cards of the models the program used, observations, and discussion posts. Pure: the caller
  * reads the records; this turns them into entries, merges, filters and pages them. */
 import type {ProgramChange} from './sync-runs';
 import {describeRecord} from './decision-records';
 
 export type FeedKind = 'decision' | 'evidence' | 'run' | 'selection' | 'prediction' | 'document' | 'snapshot' |
-  'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card' | 'observation';
+  'compound' | 'work_unit' | 'registry' | 'new_data' | 'role' | 'model_card' | 'observation' | 'discussion' | 'question';
 
 export const FEED_KINDS: FeedKind[] = ['decision', 'evidence', 'run', 'selection', 'prediction', 'document', 'snapshot', 'compound',
-  'work_unit', 'registry', 'new_data', 'role', 'model_card', 'observation'];
+  'work_unit', 'registry', 'new_data', 'role', 'model_card', 'observation', 'discussion', 'question'];
 
 export const FEED_KIND_LABELS: Record<FeedKind, string> = {
   decision: 'Gate decisions', evidence: 'Evidence', run: 'Runs saved', selection: 'Runs selected',
   prediction: 'Predictions', document: 'Documents', snapshot: 'Snapshots', compound: 'Compound roles',
   work_unit: 'Work units', registry: 'Registry', new_data: 'New data', role: 'Program roles', model_card: 'Model cards',
-  observation: 'Observations',
+  observation: 'Observations', discussion: 'Discussion', question: 'Questions to experts',
 };
 
 /** The record an entry opens, by the kinds provenance starts from. */
@@ -76,6 +76,8 @@ export interface FeedRecords {
   /** Observations (F-26): recorded, and retracted when they were. */
   observations?: {id: string, subject: string, code: string | null, title: string, by: string | null, on: When,
     retractedBy?: string | null, retractedOn?: When, retraction?: string | null}[];
+  /** Posts in the program's discussion (F-51), Ask SME questions marked: the feed line already made. */
+  discussion?: {id: string, on: When, by: string | null, text: string, question: boolean}[];
 }
 
 /** Evidence attached this close to its decision belongs to the decision; later, it is an entry. */
@@ -167,6 +169,8 @@ export function programFeedEntries(r: FeedRecords): FeedEntry[] {
         text: `Observation retracted${about}: ${o.title}${o.retraction ? ` — ${o.retraction}` : ''}`});
     }
   }
+  for (const d of r.discussion ?? [])
+    push({key: `discussion:${d.id}`, at: d.on, kind: d.question ? 'question' : 'discussion', who: d.by, text: d.text});
   for (const c of r.roleChanges) {
     push({key: `role:${c.id}`, at: c.on, kind: 'compound', who: c.by, compounds: [c.compound],
       text: `${c.compound}: ${c.from ?? 'new'} → ${c.to}`});

@@ -504,3 +504,27 @@ export const recentsCleared = Given('the user\'s recent programs are cleared', a
     await clearRecents(page);
   });
 }, {tier: 'api', description: 'clears the programs the user opened last from their settings, now and at the end of the feature'});
+
+/** Deletes the platform chats on [code]'s workspace folder. */
+async function removeDiscussion(page: Page, code: string, portfolio: string): Promise<void> {
+  await page.evaluate(async ([c, p]) => {
+    const pf = await grok.dapi.domains.table('portal.portfolio').getByKey({code: p});
+    const prog = (await grok.dapi.domains.table('portal.program').query({filter: `portfolio_id = "${pf.id}" and code = "${c}"`}))[0];
+    if (!prog?.space_id)
+      return;
+    const h = {Authorization: grok.dapi.token};
+    const chats = await (await fetch(`${grok.dapi.root}/chats?entityId=${prog.space_id}`, {headers: h, credentials: 'omit'})).json();
+    for (const chat of Array.isArray(chats) ? chats : [])
+      await fetch(`${grok.dapi.root}/chats/${chat.id}`, {method: 'DELETE', headers: h, credentials: 'omit'});
+  }, [code, portfolio]);
+}
+
+export const discussionRemoved = Given('the discussion of the scratch project {string} in the {string} portfolio is removed at the end',
+  async (page: Page, code: string, portfolio: string) => {
+    silent(page);
+    await removeDiscussion(page, code, portfolio);
+    // before the scratch cleanup removes the folder the chat hangs on
+    atFeatureEnd(page, async () => {
+      await removeDiscussion(page, code, portfolio);
+    }, true);
+  }, {tier: 'api', description: 'deletes the platform chats on the program\'s workspace folder, now and at the end of the feature'});

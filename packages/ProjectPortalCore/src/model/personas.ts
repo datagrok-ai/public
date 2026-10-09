@@ -183,13 +183,13 @@ export const sectionShown = (mode: PortalMode, section: PageSection, moreOpen: b
 /** The program page's panels, in the page's own order (F-31). The header (title, status, the
  * program's actions, what is new) is not a panel: it always shows. */
 export type PagePanel = 'quick_actions' | 'data' | 'gate' | 'approvals' | 'documents' | 'work_units' | 'compounds' |
-  'observations' | 'design_sets' | 'dmta' | PageSection;
+  'observations' | 'discussion' | 'design_sets' | 'dmta' | PageSection;
 export const PAGE_PANELS: PagePanel[] = ['quick_actions', 'data', 'gate', 'approvals', 'documents', 'work_units', 'compounds',
-  'observations', 'design_sets', 'dmta', 'recommendation', 'predictions', 'attention', 'saved_runs', 'roles', 'snapshots',
+  'observations', 'discussion', 'design_sets', 'dmta', 'recommendation', 'predictions', 'attention', 'saved_runs', 'roles', 'snapshots',
   'feed', 'history'];
 export const PANEL_LABELS: Record<PagePanel, string> = {
   quick_actions: 'Quick actions', data: 'Program data', gate: 'Gate', approvals: 'Waiting for approval', documents: 'Documents',
-  work_units: 'Work units', compounds: 'Compounds', observations: 'Observations', design_sets: 'Design sets', dmta: 'DMTA',
+  work_units: 'Work units', compounds: 'Compounds', observations: 'Observations', discussion: 'Discussion', design_sets: 'Design sets', dmta: 'DMTA',
   recommendation: 'Missing assays and suggested models', predictions: 'Predictions', attention: 'Needs attention',
   saved_runs: 'Saved runs', roles: 'Program roles', snapshots: 'Snapshots', feed: 'Activity', history: 'History',
 };

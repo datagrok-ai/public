@@ -79,7 +79,7 @@ export interface Proposal {
 const GROUP_DEPTH = 4;
 
 /** The users in [groupIds], nested groups included, by user id. */
-async function usersOfGroups(groupIds: string[]): Promise<string[]> {
+export async function usersOfGroups(groupIds: string[]): Promise<string[]> {
   const users: string[] = [];
   const seen = new Set<string>();
   let frontier = groupIds;
