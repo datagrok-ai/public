@@ -31,6 +31,8 @@ export type InspectedLink = {
   dataFrameMutations?: any;
   hasHandler?: boolean;
   visible?: boolean;
+  // the link, rule or check as written in the config
+  original?: any;
 };
 
 export type InspectedIO = {name: string, type?: string, nullable?: boolean};
@@ -58,6 +60,9 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
     res.hasHandler = true;
   if (isAction)
     res.visible = state.linksState.actionsVisibility.get(link.uuid) ?? true;
+  const original = getOriginalConfig(spec);
+  if (original)
+    res.original = toInspectorJSON(original);
 
   const emptyAliases: Record<string, 'optional' | 'linked'> = {};
   // $linked pruning keeps no record, so a fresh match shows what was dropped

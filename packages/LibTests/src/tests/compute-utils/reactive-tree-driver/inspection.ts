@@ -92,6 +92,21 @@ category('ComputeUtils: Driver inspection', async () => {
       [['l1', false, undefined], ['shown', true, true], ['hidden', true, false]]);
   });
 
+  test('Links show the link, rule or action as written', async () => {
+    const link = {id: 'l1', from: 'in:step1/res', to: 'out:step2/a'};
+    const rule = {
+      id: 'r', type: 'rule', from: 'm:step1/res', to: ['t:step2/a', 'u:step2/b'],
+      effects: [{effect: 'hide', targets: 't'}, {effect: 'set', targets: 'u', value: {var: 'm'}}],
+    };
+    const action = {id: 'act', from: 'in:step1/res', to: 'out:step2/a', position: 'none', handler() {}};
+    const written = JSON.parse(JSON.stringify([link, rule, {...action, handler: '#Handler'}]));
+    const tree = await makeTree(
+      {id: 'root', type: 'static', steps, links: [link, rule], actions: [action]} as PipelineConfiguration);
+    expectDeepEqual(inspectLinks(tree).map((l) => [l.id, l.original]), [
+      ['l1', written[0]], ['r::meta', written[1]], ['r::data', written[1]], ['act', written[2]],
+    ]);
+  });
+
   test('Inspector JSON makes values readable', async () => {
     const df = DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [1, 2])]);
     const data = toInspectorJSON(
