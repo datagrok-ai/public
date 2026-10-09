@@ -18,6 +18,7 @@ import './tests/compute-utils/reactive-tree-driver/links-reactivity-validators';
 import './tests/compute-utils/reactive-tree-driver/links-reactivity-meta';
 import './tests/compute-utils/reactive-tree-driver/links-rule';
 import './tests/compute-utils/reactive-tree-driver/links-check';
+import './tests/compute-utils/reactive-tree-driver/annotation-checks';
 import './tests/compute-utils/reactive-tree-driver/links-check-expressions';
 import './tests/compute-utils/reactive-tree-driver/links-rule-sources';
 import './tests/compute-utils/reactive-tree-driver/links-rule-formula';

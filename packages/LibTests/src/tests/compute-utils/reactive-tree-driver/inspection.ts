@@ -152,7 +152,7 @@ category('ComputeUtils: Driver inspection', async () => {
     try {
       expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [[], undefined], {prefix: 'Before init'});
       await driver.sendCommand({event: 'initPipeline', provider: '', config});
-      expectDeepEqual(driver.inspectLinks().map((l) => l.id), ['l1']);
+      expectDeepEqual(driver.inspectLinks().filter((l) => !l.annotation).map((l) => l.id), ['l1']);
       expectDeepEqual(driver.inspectConfig().links.map((l: any) => l.from), ['in:step1/res', 'in:stpe1/res']);
     } finally {
       driver.close();

@@ -233,13 +233,13 @@ category('ComputeUtils: Driver links check', async () => {
     ]);
   });
 
-  // the initial link run happens only with defaultValidators, so parity is compared from the first change on
-  function annotationScenario(pconf: any, defaultValidators: boolean, initialSnapshot = true) {
+  // the initial link run happens only with annotationChecks, so parity is compared from the first change on
+  function annotationScenario(pconf: any, annotationChecks: boolean, initialSnapshot = true) {
     const clean = makeTable();
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
@@ -275,7 +275,7 @@ category('ComputeUtils: Driver links check', async () => {
     return snapshots;
   }
 
-  test('Annotation checks run as default validators', async () => {
+  test('Annotation checks run with the annotationChecks option', async () => {
     const pconf = await getProcessedConfig(annotatedStep());
     const snapshots = annotationScenario(pconf, true);
     const initial = Object.keys(snapshots[0]).sort();
@@ -296,7 +296,7 @@ category('ComputeUtils: Driver links check', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
@@ -350,7 +350,7 @@ category('ComputeUtils: Driver links check', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;

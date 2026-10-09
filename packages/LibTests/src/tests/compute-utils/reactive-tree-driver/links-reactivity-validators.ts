@@ -191,7 +191,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
     });
   });
 
-  test('Run default validators', async () => {
+  test('Run annotation checks', async () => {
     const pconf = await getProcessedConfig({
       id: 'pipeline1',
       type: 'static',
@@ -209,7 +209,7 @@ category('ComputeUtils: Driver links reactivity: validators', async () => {
 
     testScheduler.run((helpers) => {
       const {expectObservable, cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const n1 = tree.nodeTree.getNode([{idx: 0}]);

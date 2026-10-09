@@ -685,7 +685,7 @@ category('ComputeUtils: Driver links rule', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
@@ -775,7 +775,7 @@ category('ComputeUtils: Driver links rule', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
