@@ -10,6 +10,7 @@
  * as covered. The caller needs View on the connection; without it the answer is "unknown". */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import {portalDb, PortfolioRow} from './generated/db';
 // portal.ts imports from here too; the cycle is safe because neither uses the other at load
 import {COMPOUND_FEED, findConnection, portfolioByCode} from './portal';
@@ -100,15 +101,15 @@ export async function dataAccessChecks(code?: string): Promise<AccessCheck[]> {
 export function accessFrame(checks: AccessCheck[]): DG.DataFrame {
   const yn = (c: AccessCheck, k: keyof Access) => c.access === null ? 'unknown' : c.access[k] ? 'yes' : 'no';
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('portfolio', checks.map((c) => c.portfolio)),
-    DG.Column.fromStrings('connection', checks.map((c) => c.connection)),
-    DG.Column.fromStrings('used by', checks.map((c) => c.uses.join(', '))),
-    DG.Column.fromStrings('role', checks.map((c) => c.role)),
-    DG.Column.fromStrings('group', checks.map((c) => c.group)),
-    DG.Column.fromStrings('view', checks.map((c) => yn(c, 'view'))),
-    DG.Column.fromStrings('query', checks.map((c) => yn(c, 'query'))),
-    DG.Column.fromStrings('status', checks.map((c) => accessStatus(c))),
-    DG.Column.fromStrings('fix', checks.map((c) => accessStatus(c) === 'missing' ?
+    textColumn('portfolio', checks.map((c) => c.portfolio)),
+    textColumn('connection', checks.map((c) => c.connection)),
+    textColumn('used by', checks.map((c) => c.uses.join(', '))),
+    textColumn('role', checks.map((c) => c.role)),
+    textColumn('group', checks.map((c) => c.group)),
+    textColumn('view', checks.map((c) => yn(c, 'view'))),
+    textColumn('query', checks.map((c) => yn(c, 'query'))),
+    textColumn('status', checks.map((c) => accessStatus(c))),
+    textColumn('fix', checks.map((c) => accessStatus(c) === 'missing' ?
       accessFix(c.connection, c.group) : c.access === null ? c.reason ?? '' : missingPermissions(c.access).length ?
         'feeds run as whoever syncs; groups need not query it' : '')),
   ]);

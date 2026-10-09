@@ -4,6 +4,7 @@
  * snapshot. The rules live in ./model/snapshots. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {portalDb, ProgramRow, ProgramSnapshotRow} from './generated/db';
 import {programContext} from './portal';
@@ -130,14 +131,14 @@ export const describeSnapshotRow = (s: ProgramSnapshotRow) => describeSnapshot(s
 
 export function snapshotsFrame(rows: ProgramSnapshotRow[], name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('id', rows.map((r) => r.id)),
+    textColumn('id', rows.map((r) => r.id)),
     DG.Column.fromStrings('taken_on', rows.map((r) => summaryOf(r).takenOn)),
-    DG.Column.fromStrings('label', rows.map((r) => r.label)),
-    DG.Column.fromStrings('stage', rows.map((r) => r.stage_code ?? '')),
-    DG.Column.fromStrings('status', rows.map((r) => r.status ?? '')),
-    DG.Column.fromStrings('summary', rows.map(describeSnapshotRow)),
-    DG.Column.fromStrings('table_file', rows.map((r) => r.table_file ?? '')),
-    DG.Column.fromStrings('note', rows.map((r) => r.note ?? '')),
+    textColumn('label', rows.map((r) => r.label)),
+    textColumn('stage', rows.map((r) => r.stage_code ?? '')),
+    textColumn('status', rows.map((r) => r.status ?? '')),
+    textColumn('summary', rows.map(describeSnapshotRow)),
+    textColumn('table_file', rows.map((r) => r.table_file ?? '')),
+    textColumn('note', rows.map((r) => r.note ?? '')),
   ]);
   df.name = name;
   return df;

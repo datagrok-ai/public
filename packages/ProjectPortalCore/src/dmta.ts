@@ -3,6 +3,7 @@
  * (`registerDmtaSource`), and a portfolio may name functions in `dmta.sources`, until request
  * objects (F-49) exist and become a source of their own. */
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {compoundsOf, programData} from './portal';
@@ -177,13 +178,13 @@ const day = (s: string | undefined) => s === undefined ? '' : s === '' ? 'yes' :
 
 export function dmtaFrame(s: DmtaStatus, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Compound', s.rows.map((r) => r.compound)),
-    DG.Column.fromStrings('Design label', s.rows.map((r) => r.label ?? '')),
-    DG.Column.fromStrings('Series', s.rows.map((r) => r.series ?? '')),
-    DG.Column.fromStrings('Stage', s.rows.map((r) => r.stage)),
+    textColumn('Compound', s.rows.map((r) => r.compound)),
+    textColumn('Design label', s.rows.map((r) => r.label ?? '')),
+    textColumn('Series', s.rows.map((r) => r.series ?? '')),
+    textColumn('Stage', s.rows.map((r) => r.stage)),
     ...DMTA_STAGES.map((st) => DG.Column.fromStrings(st[0].toUpperCase() + st.slice(1), s.rows.map((r) => day(r.stages[st])))),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Cycle days', s.rows.map((r) => r.cycleDays)),
-    DG.Column.fromStrings('Sources', s.rows.map((r) => r.sources.join('; '))),
+    textColumn('Sources', s.rows.map((r) => r.sources.join('; '))),
   ]);
   df.col('Stage')!.setCategoryOrder(DMTA_STAGES);
   df.name = name;
@@ -192,7 +193,7 @@ export function dmtaFrame(s: DmtaStatus, name: string): DG.DataFrame {
 
 export function cyclesFrame(s: DmtaStatus, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Series', s.cycles.map((c) => c.series)),
+    textColumn('Series', s.cycles.map((c) => c.series)),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Compounds', s.cycles.map((c) => c.compounds)),
     ...DMTA_STAGES.map((st) => DG.Column.fromList(DG.COLUMN_TYPE.INT, st[0].toUpperCase() + st.slice(1), s.cycles.map((c) => c.reached[st]))),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Median cycle days', s.cycles.map((c) => c.medianDays)),

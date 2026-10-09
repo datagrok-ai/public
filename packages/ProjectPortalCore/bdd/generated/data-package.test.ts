@@ -34,6 +34,6 @@ test.describe("Data package manifest", () => {
     await session.step(22, "And download data package csv button should be visible", () => shouldBe(page, el("download data package csv button"), "visible"));
     await session.step(23, "When user clicks on open data package as table button", () => clickOn(page, el("open data package as table button")));
     await session.step(24, "Then data package dialog should not be visible", () => shouldNotBe(page, el("data package dialog"), "visible"));
-    await session.step(25, "And the open table should have 6 rows and a name starting with \"BDD-PKG data package\"", () => openTableStarting(page, 6, "BDD-PKG data package"));
+    await session.step(25, "And the open table should have 9 rows and a name starting with \"BDD-PKG data package\"", () => openTableStarting(page, 9, "BDD-PKG data package"));
   });
 });

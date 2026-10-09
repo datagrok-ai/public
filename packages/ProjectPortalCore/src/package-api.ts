@@ -463,6 +463,13 @@ export namespace funcs {
   }
 
   /**
+   * Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow and the example documents, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
+   */
+  export async function seedExamples(dryRun: boolean ): Promise<string> {
+    return await grok.functions.call('ProjectPortalCore:SeedExamples', { dryRun });
+  }
+
+  /**
    * Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
    */
   export async function loadPortfolios(): Promise<string> {

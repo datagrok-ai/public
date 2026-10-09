@@ -11,7 +11,7 @@ import {ContextCriterion, programContext, ProgramContext, programData, readiness
   verdictFor, enabledWorkUnits, workUnitsOf, compoundsOf} from '../portal';
 import {COMPOUND_ROLES} from '../model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from '../model/work-units';
-import {CriterionReadiness, Readiness} from '../model/readiness';
+import {CriterionReadiness, Readiness, readinessLabel} from '../model/readiness';
 import {DataRow} from '../model/conditions';
 import {Decision, nextStage} from '../model/gates';
 import {openPortfolioTable} from './portfolio-table-view';
@@ -714,10 +714,12 @@ export class PortalView {
     const criteriaList = named(divV((readiness?.criteria ?? []).map((c) => this.criterionRow(program.id, c, editable,
       choices.get(c.id) ? {runs: choices.get(c.id)!, criterion: ctx.criteria.find((x) => x.id === c.id)!} : null)),
     'pp-criteria'), 'gate-criteria');
+    // a gate without required criteria is not ready: "no criteria", never 100%
     const score = readiness ? named(divH([
-      span(`${readiness.requiredMet} of ${readiness.requiredTotal} required met or waived`),
-      badge(`${Math.round(readiness.score * 100)}%`,
-        {variant: readiness.score === 1 ? 'success' : readiness.score === 0 ? 'error' : 'warning'}),
+      span(readiness.empty ? 'No required criteria defined' :
+        `${readiness.requiredMet} of ${readiness.requiredTotal} required met or waived`),
+      badge(readinessLabel(readiness), {variant: readiness.score === null ? 'default' : readiness.score === 1 ? 'success' :
+        readiness.score === 0 ? 'error' : 'warning'}),
     ], 'pp-readiness'), 'readiness-score') : null;
 
     const rationale = named(document.createElement('textarea'), 'rationale-input');

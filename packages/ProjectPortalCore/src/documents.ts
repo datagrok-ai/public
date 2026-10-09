@@ -4,6 +4,7 @@
  * page, and the example documents of EX-BIOC. The rules live in ./model/documents. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {DocumentRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {ProgramContext, programContext, portfolioByCode} from './portal';
@@ -209,13 +210,13 @@ export async function documentCardsOf(ctx: ProgramContext, docs?: DocumentRow[])
 export function documentsFrame(rows: DocumentRow[], criteria: {id: string, code: string}[], name: string): DG.DataFrame {
   const code = (id?: string) => criteria.find((c) => c.id === id)?.code ?? '';
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('id', rows.map((r) => r.id)),
-    DG.Column.fromStrings('criterion', rows.map((r) => code(r.gate_criterion_id))),
-    DG.Column.fromStrings('kind', rows.map((r) => r.kind)),
-    DG.Column.fromStrings('title', rows.map((r) => r.title)),
-    DG.Column.fromStrings('version', rows.map((r) => r.doc_version ?? '')),
-    DG.Column.fromStrings('status', rows.map((r) => r.status)),
-    DG.Column.fromStrings('path', rows.map((r) => r.path)),
+    textColumn('id', rows.map((r) => r.id)),
+    textColumn('criterion', rows.map((r) => code(r.gate_criterion_id))),
+    textColumn('kind', rows.map((r) => r.kind)),
+    textColumn('title', rows.map((r) => r.title)),
+    textColumn('version', rows.map((r) => r.doc_version ?? '')),
+    textColumn('status', rows.map((r) => r.status)),
+    textColumn('path', rows.map((r) => r.path)),
     DG.Column.fromStrings('linked_on', rows.map((r) => r.linked_on ? dayjs(r.linked_on as any).toISOString() : '')),
     DG.Column.fromStrings('approved_on', rows.map((r) => r.approved_on ? dayjs(r.approved_on as any).toISOString() : '')),
   ]);

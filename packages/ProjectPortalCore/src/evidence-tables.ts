@@ -8,6 +8,7 @@
  * ./model/evidence-tables. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {DocumentRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {ContextCriterion, ProgramContext, programContext, programData, readinessFor} from './portal';
@@ -123,7 +124,8 @@ export async function evidenceInputsOf(ctx: ProgramContext, c: ContextCriterion,
 }
 
 export function evidenceFrame(rows: EvidenceRow[], name: string): DG.DataFrame {
-  const df = DG.DataFrame.fromColumns(EVIDENCE_COLUMNS.map((c) => DG.Column.fromStrings(c, rows.map((r) => r[c]))));
+  const df = DG.DataFrame.fromColumns(EVIDENCE_COLUMNS.map((c) =>
+    (c === 'on' ? DG.Column.fromStrings : textColumn)(c, rows.map((r) => r[c]))));
   df.name = name;
   return df;
 }

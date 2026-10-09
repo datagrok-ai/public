@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {portalDb} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext, readSources, recordDecision, routingAudit,
-  setCriterion, shareProgram, stagesOf, syncPortfolio, verdictFor} from '../portal';
+  readPortfolioFiles, setCriterion, shareProgram, stagesOf, syncPortfolio, verdictFor} from '../portal';
 import {_package} from '../package-test';
 import {withRestrictedUser} from './restricted-user';
 import {buildPortfolioWorkspace} from '../workspace';
@@ -64,8 +64,15 @@ category('Portal: portfolios on one instance', () => {
     expect(await stageOf('EXB-201'), 'D4', 'the alias GD4 resolves');
     expect(await stageOf('EXB-104'), 'D1', 'the alias Gate D1 resolves');
     expect(await stageOf('EXB-205'), null, 'an unresolvable spelling leaves the program unstaged');
+    // a development gate on a research project must not place it: only the portal's own decisions do
     const disc = await programsOf('EX-BIOD');
-    expect(disc.filter((p) => p.stage_id).length, 0, 'a development gate on a research project must not place it');
+    const log = await portalDb.stageTransitions.query({filter: disc.map((p) => `program_id = "${p.id}"`).join(' or '), limit: 10000});
+    expect(log.filter((t) => t.decision === 'sync').length, 0, 'no registry transition in EX-BIOD');
+    for (const p of disc) {
+      const moves = log.filter((t) => t.program_id === p.id && ['advance', 'recycle'].includes(t.decision))
+        .sort((a, b) => +new Date(a.decided_on as any) - +new Date(b.decided_on as any));
+      expect(p.stage_id ?? null, moves.length ? moves[moves.length - 1].to_stage_id ?? null : null, `${p.code}: placed by its decisions`);
+    }
     expect(disc.find((p) => p.code === 'EXB-101')?.source_stage, '3');
   });
 
@@ -236,7 +243,15 @@ category('Portal: workspace', () => {
     }
     const again = await buildPortfolioWorkspace('EX-SMD');
     expect(again.created, 0, again.entries.filter((e) => e.action === 'create').map((e) => e.path).join());
-    expect(again.reused, 1 + programs.length * (1 + WORKSTREAMS.length));
+    // and the folders of the stages each program has reached (the example history places some)
+    const smd = (await readPortfolioFiles(_package)).find((c) => c.code === 'EX-SMD')!;
+    const stageCodes = new Map((await stagesOf(programs[0].stage_model_id)).map((s) => [s.id, s.ordinal]));
+    const stageFolders = programs.map((p) => {
+      const reached = smd.stageModel.stages.filter((s) => s.ordinal <= (stageCodes.get(p.stage_id ?? '') ?? 0));
+      const paths = new Set(reached.flatMap((s) => s.folders ?? []).flatMap((f) => f.split('/').map((_, i, a) => a.slice(0, i + 1).join('/'))));
+      return [...paths].filter((x) => !WORKSTREAMS.includes(x)).length;
+    }).reduce((a, b) => a + b, 0);
+    expect(again.reused, 1 + programs.length * (1 + WORKSTREAMS.length) + stageFolders);
     expect(again.notes.some((n) => n.startsWith('attributes written')), false, again.notes.join('; '));
   });
 

@@ -3,6 +3,7 @@
  * function dialog filled in from the program. The rules live in ./model/recommend. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import * as ui from 'datagrok-api/ui';
 import {portalDb, PortfolioRow, ProgramRow, StageRow} from './generated/db';
 import {enabledWorkUnits, portfolioByCode, programContext, ProgramContext, programData, readinessFor} from './portal';
@@ -114,15 +115,15 @@ export async function recommendByCode(portfolioCode: string, programCode: string
 /** One row per suggested model: the stable contract of recommendModels. */
 export function recommendationFrame(r: ProgramRecommendation): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('model', r.models.map((m) => m.code)),
-    DG.Column.fromStrings('name', r.models.map((m) => m.name)),
+    textColumn('model', r.models.map((m) => m.code)),
+    textColumn('name', r.models.map((m) => m.name)),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'rank', r.models.map((_, i) => i + 1)),
-    DG.Column.fromStrings('predicts', r.models.map((m) => m.predicts.join(', '))),
-    DG.Column.fromStrings('matched', r.models.map((m) => m.matched.join(', '))),
-    DG.Column.fromStrings('reasons', r.models.map((m) => m.reasons.join('; '))),
-    DG.Column.fromStrings('approval', r.models.map((m) => m.approval ?? '')),
+    textColumn('predicts', r.models.map((m) => m.predicts.join(', '))),
+    textColumn('matched', r.models.map((m) => m.matched.join(', '))),
+    textColumn('reasons', r.models.map((m) => m.reasons.join('; '))),
+    textColumn('approval', r.models.map((m) => m.approval ?? '')),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'installed', r.models.map((m) => m.installed)),
-    DG.Column.fromStrings('question', r.models.map((m) => m.question ?? '')),
+    textColumn('question', r.models.map((m) => m.question ?? '')),
   ]);
   df.name = `${r.program.code} · Suggested models`;
   return df;
@@ -131,15 +132,15 @@ export function recommendationFrame(r: ProgramRecommendation): DG.DataFrame {
 /** One row per missing column (or per criterion with only a rule in words). */
 export function missingAssayFrame(r: ProgramRecommendation): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('stage', r.missing.map(() => r.stage?.code ?? '')),
-    DG.Column.fromStrings('criterion', r.missing.map((m) => m.criterion)),
+    textColumn('stage', r.missing.map(() => r.stage?.code ?? '')),
+    textColumn('criterion', r.missing.map((m) => m.criterion)),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'required', r.missing.map((m) => m.required)),
-    DG.Column.fromStrings('assay', r.missing.map((m) => m.column ?? '')),
+    textColumn('assay', r.missing.map((m) => m.column ?? '')),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'missing', r.missing.map((m) => m.missing)),
-    DG.Column.fromStrings('items', r.missing.map((m) => m.items.join(', '))),
-    DG.Column.fromStrings('predicted by', r.missing.map((m) => m.column ?
+    textColumn('items', r.missing.map((m) => m.items.join(', '))),
+    textColumn('predicted by', r.missing.map((m) => m.column ?
       (r.predictors.get(m.column) ?? []).map((x) => x.code).join(', ') : '')),
-    DG.Column.fromStrings('predicted', r.missing.map((m) => withPredictions([m], r.predictions ?? [])[0].predicted
+    textColumn('predicted', r.missing.map((m) => withPredictions([m], r.predictions ?? [])[0].predicted
       .map((p) => `${p.compound} ${describePrediction(p)}`).join('; '))),
   ]);
   df.name = `${r.program.code} · Missing assays`;

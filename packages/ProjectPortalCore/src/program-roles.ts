@@ -13,6 +13,7 @@
  * change to the table or to who manages it. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {portalDb, PortfolioRow, ProgramRoleRow, ProgramRow} from './generated/db';
 import {isApprover, isContributor} from './portal';
@@ -179,8 +180,8 @@ export async function syncRowGrants(program: ProgramRow, portfolio?: PortfolioRo
 /** One row per role: group or user, role, who granted it, when. */
 export function programRolesFrame(rows: (ProgramRoleRow & {name: string})[], name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('group', rows.map((r) => r.name)),
-    DG.Column.fromStrings('role', rows.map((r) => r.role)),
+    textColumn('group', rows.map((r) => r.name)),
+    textColumn('role', rows.map((r) => r.role)),
     DG.Column.fromStrings('granted on', rows.map((r) => r.granted_on ? dayjs(r.granted_on as any).format('YYYY-MM-DD HH:mm') : '')),
   ]);
   df.name = name;

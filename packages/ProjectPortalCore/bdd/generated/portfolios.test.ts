@@ -43,7 +43,7 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(25, "Then board header should contain text \"EX-SMD-V1\"", () => shouldContainText(page, el("board header"), "EX-SMD-V1"));
     await session.step(26, "And board header should contain text \"stages decided here\"", () => shouldContainText(page, el("board header"), "stages decided here"));
     await session.step(27, "And the board should show the stages \"TV, HF, H2L, LO, CS, PCD\"", () => boardStages(page, "TV, HF, H2L, LO, CS, PCD"));
-    await session.step(28, "And EXS-KIN1 card in unstaged column should be visible", () => shouldBe(page, el("EXS-KIN1 card in unstaged column"), "visible"));
+    await session.step(28, "And EXS-KIN1 card in hit-to-lead column should be visible", () => shouldBe(page, el("EXS-KIN1 card in hit-to-lead column"), "visible"));
   });
   test("Biologics discovery reads the shared registry but not its gates", {tag: ["@portal"]}, async ({browser}) => {
     const page = await session.page(browser);
@@ -52,7 +52,7 @@ test.describe("Several portfolios on one instance", () => {
     await session.step(31, "When user clicks on biologics discovery portfolio", () => clickOn(page, el("biologics discovery portfolio")));
     await session.step(32, "Then board header should contain text \"EX-BIOD-V1\"", () => shouldContainText(page, el("board header"), "EX-BIOD-V1"));
     await session.step(33, "And the board should show the stages \"TI, LG, LO, DA, CN\"", () => boardStages(page, "TI, LG, LO, DA, CN"));
-    await session.step(34, "And EXB-101 card in unstaged column should be visible", () => shouldBe(page, el("EXB-101 card in unstaged column"), "visible"));
+    await session.step(34, "And EXB-101 card in lead generation column should be visible", () => shouldBe(page, el("EXB-101 card in lead generation column"), "visible"));
     await session.step(35, "When user clicks on EXB-101 card", () => clickOn(page, el("EXB-101 card")));
     await session.step(36, "Then program detail should contain text \"Registry stage: 3\"", () => shouldContainText(page, el("program detail"), "Registry stage: 3"));
   });

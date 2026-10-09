@@ -1,6 +1,7 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import {loadAllPortfolios, loadPortfolioSet, programReadiness as readinessOf, readSources, routingAudit, summarizePlan, summarizeRouting, syncPortfolio as syncPortfolioPlans, syncWorkUnits, syncCompounds, setCompoundRole as setRole, programCompound, portfolioByCode, programContext, stagesOf} from './portal';
 import {portalDb} from './generated/db';
 import {noNewFoldersReason} from './model/workspace-plan';
@@ -73,6 +74,7 @@ export * from './package.g';
 // the skins of everything the u2 domain stack renders
 import '@datagrok-libraries/u2/src/dg/domain/styles.js';
 import {newestFirstBy} from './model/time';
+import {seedExamples as seedExampleHistory} from './examples';
 import {filterValue, ROW_LIMIT} from './rows';
 
 export const _package = new DG.Package();
@@ -391,15 +393,15 @@ export async function findDecisions(text?: string, portfolio?: string, program?:
   withSync: boolean = false): Promise<DG.DataFrame> {
   const found = searchDecisions(await decisionsOf(portfolio || null), {text, program, gate, withoutSync: !withSync});
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('portfolio', found.map((d) => d.portfolio)),
-    DG.Column.fromStrings('program', found.map((d) => d.programCode)),
+    textColumn('portfolio', found.map((d) => d.portfolio)),
+    textColumn('program', found.map((d) => d.programCode)),
     DG.Column.fromStrings('on', found.map((d) => d.on.slice(0, 10))),
-    DG.Column.fromStrings('decision', found.map((d) => d.decision)),
-    DG.Column.fromStrings('outcome', found.map((d) => d.outcome ?? '')),
-    DG.Column.fromStrings('gate', found.map((d) => d.to?.code ?? '')),
-    DG.Column.fromStrings('rationale', found.map((d) => d.rationale ?? '')),
-    DG.Column.fromStrings('evidence', found.map((d) => d.evidence.map((e) => e.name).join('; '))),
-    DG.Column.fromStrings('line', found.map(describeDecision)),
+    textColumn('decision', found.map((d) => d.decision)),
+    textColumn('outcome', found.map((d) => d.outcome ?? '')),
+    textColumn('gate', found.map((d) => d.to?.code ?? '')),
+    textColumn('rationale', found.map((d) => d.rationale ?? '')),
+    textColumn('evidence', found.map((d) => d.evidence.map((e) => e.name).join('; '))),
+    textColumn('line', found.map(describeDecision)),
   ]);
   df.name = 'Decisions';
   return df;
@@ -778,6 +780,14 @@ export async function loadExampleDocuments(): Promise<string> {
   return loadExamples(_package);
 }
 
+//name: seedExamples
+//description: Seeds the example history into the EX-* portfolios: gate decisions with rationale and evidence, criteria met, observations, a follow and the example documents, dated in the past. Admins only; EX-* only; idempotent. A dry run (the default) only says what it would write
+//input: bool dryRun = true
+//output: string report
+export async function seedExamples(dryRun: boolean = true): Promise<string> {
+  return (await seedExampleHistory(_package, dryRun)).report;
+}
+
 //name: loadPortfolios
 //description: Loads every portfolio file the package ships (files/portfolios/*.json): groups, stage models, portfolios, feeds. Idempotent.
 //output: string report
@@ -839,10 +849,10 @@ export async function dataAccessTable(code?: string): Promise<DG.DataFrame> {
 
 const findFrame = (rows: {p: FindProgram, matched: string}[], name: string): DG.DataFrame => {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('portfolio', rows.map((r) => r.p.portfolio)),
-    DG.Column.fromStrings('program', rows.map((r) => r.p.code)),
-    DG.Column.fromStrings('name', rows.map((r) => r.p.name)),
-    DG.Column.fromStrings('matched', rows.map((r) => r.matched)),
+    textColumn('portfolio', rows.map((r) => r.p.portfolio)),
+    textColumn('program', rows.map((r) => r.p.code)),
+    textColumn('name', rows.map((r) => r.p.name)),
+    textColumn('matched', rows.map((r) => r.matched)),
   ]);
   df.name = name;
   return df;

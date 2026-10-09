@@ -1,6 +1,7 @@
 /** Cross-model run comparison (F-29): a criterion's candidate runs, and Compute2's Compare Runs.
  * The plan is pure (src/model/compare-runs.ts); this reads the runs and opens the tool. */
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import {CriterionRuns} from './model-runs';
 import {COMPARE_RUNS_FUNCTION, CompareCandidate, comparePlan, ComparePlan} from './model/compare-runs';
 
@@ -35,9 +36,9 @@ export async function openCompareRuns(): Promise<void> {
 export function comparePlanFrame(p: ComparePlan, name: string): DG.DataFrame {
   const runs = p.groups.flatMap((g) => g.runs);
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Model', runs.map((r) => r.modelName)),
-    DG.Column.fromStrings('Run', runs.map((r) => r.title)),
-    DG.Column.fromStrings('Run id', runs.map((r) => r.runId ?? '')),
+    textColumn('Model', runs.map((r) => r.modelName)),
+    textColumn('Run', runs.map((r) => r.title)),
+    textColumn('Run id', runs.map((r) => r.runId ?? '')),
     DG.Column.fromStrings('Saved on', runs.map((r) => r.on?.slice(0, 10) ?? '')),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Selected', runs.map((r) => r.selected)),
   ]);

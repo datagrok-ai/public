@@ -12,6 +12,7 @@
  * approver but the program's author until GROK-21041 is fixed. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {ApprovalRow, portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isApprover, isContributor, programContext, recordDecision, RecordedDecision, verdictFor} from './portal';
@@ -366,17 +367,17 @@ export function describeRequest(r: ApprovalRow, names: Map<string, string>): str
 /** One row per request: what, status, progress, who proposed it and when, the rationale, the reviews. */
 export function requestsFrame(rows: ApprovalRow[], names: Map<string, string>, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('id', rows.map((r) => r.id)),
-    DG.Column.fromStrings('kind', rows.map((r) => r.kind)),
-    DG.Column.fromStrings('title', rows.map((r) => r.title)),
-    DG.Column.fromStrings('status', rows.map((r) => r.status)),
-    DG.Column.fromStrings('progress', rows.map((r) => describeProgress(requestRef(r)))),
-    DG.Column.fromStrings('proposed by', rows.map((r) => r.source === 'data' ? 'data' : names.get(r.proposed_by ?? '') ?? '')),
+    textColumn('id', rows.map((r) => r.id)),
+    textColumn('kind', rows.map((r) => r.kind)),
+    textColumn('title', rows.map((r) => r.title)),
+    textColumn('status', rows.map((r) => r.status)),
+    textColumn('progress', rows.map((r) => describeProgress(requestRef(r)))),
+    textColumn('proposed by', rows.map((r) => r.source === 'data' ? 'data' : names.get(r.proposed_by ?? '') ?? '')),
     DG.Column.fromStrings('proposed on', rows.map((r) => r.proposed_on ? dayjs(r.proposed_on as any).toISOString() : '')),
-    DG.Column.fromStrings('rationale', rows.map((r) => r.rationale ?? '')),
-    DG.Column.fromStrings('reviews', rows.map((r) => reviewsOf(r.reviews)
+    textColumn('rationale', rows.map((r) => r.rationale ?? '')),
+    textColumn('reviews', rows.map((r) => reviewsOf(r.reviews)
       .map((x) => `${names.get(x.by) ?? x.by} ${x.verdict}d: ${x.rationale}`).join('; '))),
-    DG.Column.fromStrings('result', rows.map((r) => r.result ?? '')),
+    textColumn('result', rows.map((r) => r.result ?? '')),
   ]);
   df.name = name;
   return df;

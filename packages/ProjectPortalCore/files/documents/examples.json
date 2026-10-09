@@ -10,5 +10,8 @@
     "file": "documents/ex-bioc/exb-202-ind-quality-v0.1.md"},
   {"portfolio": "EX-BIOC", "program": "EXB-104", "criterion": "transfer_package", "kind": "transfer_package",
     "title": "Technology transfer package, Anti-TS antibody", "version": "1.0", "status": "approved",
-    "file": "documents/ex-bioc/exb-104-transfer-package-v1.0.md"}
+    "file": "documents/ex-bioc/exb-104-transfer-package-v1.0.md"},
+  {"portfolio": "EX-BIOD", "program": "EXB-101", "criterion": "developability", "kind": "developability",
+    "title": "Developability assessment, Anti-IL-X antibody", "version": "0.2", "status": "draft",
+    "file": "documents/ex-biod/exb-101-developability-v0.2.md"}
 ]

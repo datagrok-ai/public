@@ -7,6 +7,7 @@
  * it is for its next gate, and what needs a look.
  *
  * Pure: the caller reads the favorites, the programs' facts and the follows. */
+import {isReady} from './readiness';
 
 /** The app's address; a program's page is `<portfolio>/<program>` under it. */
 export const PORTAL_ADDRESS = '/apps/ProjectPortalCore/Portal';
@@ -87,7 +88,8 @@ export interface TileInput {
   stages: {code: string, name: string}[];
   stage: string | null;
   next: {code: string, name: string} | null;
-  readiness: {score: number, requiredMet: number, requiredTotal: number, gaps: string[], dataError?: string} | null;
+  /** score is null when the next gate has no required criteria. */
+  readiness: {score: number | null, requiredMet: number, requiredTotal: number, gaps: string[], dataError?: string} | null;
   /** What trips the portfolio's attention rules; null when it declares none or the data could not be read. */
   attention: number | null;
   /** The user's active follows of the program and its work units. */
@@ -109,7 +111,7 @@ export interface ProgramTile {
   /** The stage codes, the current one marked done/current/ahead, for the track. */
   track: {code: string, state: 'done' | 'current' | 'ahead'}[];
   next: string | null;
-  /** 0..1, null when there is no next gate. */
+  /** 0..1, null when there is no next gate or it has no criteria. */
   readiness: number | null;
   ready: boolean;
   /** `3 of 4 required met`, or why there is nothing to measure. */
@@ -150,10 +152,10 @@ export function assembleTiles(inputs: TileInput[], pins: Map<string, PinHolders>
       step: at + 1, steps: x.stages.length,
       track: x.stages.map((s, i) => ({code: s.code, state: at < 0 || i > at ? 'ahead' : i === at ? 'current' : 'done'})),
       next: x.next ? `${x.next.code} · ${x.next.name}` : null,
-      readiness: r ? r.score : null,
-      ready: !!r && r.score === 1,
+      readiness: r?.score ?? null,
+      ready: isReady(r),
       readinessLine: !x.next ? 'No further gate' : !r ? 'Readiness not computed' :
-        r.requiredTotal === 0 ? 'No required criteria' : `${r.requiredMet} of ${r.requiredTotal} required met`,
+        r.score === null ? 'No criteria defined' : `${r.requiredMet} of ${r.requiredTotal} required met`,
       gaps: r?.gaps ?? [],
       attention: x.attention,
       followed: x.follows.length > 0,

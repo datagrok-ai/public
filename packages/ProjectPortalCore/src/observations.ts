@@ -1,6 +1,7 @@
 /** Observations (F-26): curated conclusions on a program, its work units and its compounds, stored
  * in `portal.observation`. The rules are pure (src/model/observations.ts); this reads and writes. */
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {ObservationRow, portalDb, PortfolioRow} from './generated/db';
 import {compoundsOf, enabledWorkUnits, workUnitsOf} from './portal';
@@ -71,14 +72,14 @@ export async function retractObservation(id: string, reason: string): Promise<Ob
 /** The observations as a table. */
 export function observationsFrame(list: ObservationView[], names: Map<string, string>, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('About', list.map((o) => subjectLabel(o.subject, o.code))),
-    DG.Column.fromStrings('Title', list.map((o) => o.title)),
-    DG.Column.fromStrings('Finding', list.map((o) => o.finding)),
-    DG.Column.fromStrings('Evidence', list.map((o) => o.evidence.map((e) => e.name).join('; '))),
-    DG.Column.fromStrings('Status', list.map((o) => o.status)),
-    DG.Column.fromStrings('By', list.map((o) => names.get(o.by ?? '') ?? '')),
+    textColumn('About', list.map((o) => subjectLabel(o.subject, o.code))),
+    textColumn('Title', list.map((o) => o.title)),
+    textColumn('Finding', list.map((o) => o.finding)),
+    textColumn('Evidence', list.map((o) => o.evidence.map((e) => e.name).join('; '))),
+    textColumn('Status', list.map((o) => o.status)),
+    textColumn('By', list.map((o) => names.get(o.by ?? '') ?? '')),
     DG.Column.fromStrings('On', list.map((o) => o.on?.slice(0, 10) ?? '')),
-    DG.Column.fromStrings('Id', list.map((o) => o.id)),
+    textColumn('Id', list.map((o) => o.id)),
   ]);
   df.name = name;
   return df;

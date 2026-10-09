@@ -44,13 +44,20 @@ What the package tests and BDD scenarios cover. How to run them is in the packag
 - Panels per persona: the rules (a composed persona's panels in order in both modes, the rest behind More and after it when open, a persona left out keeping the page and the mode, the config check), and on EXS-KIN1 the biologist's page from EX-SMD's file (DMTA, observations, activity in order, the gate behind More and back) and the chemist's whole page.
 - Comparing runs in Compute2: the rules (runs grouped by model, across models, a run without a saved call, the tool missing or fewer than two runs, the steps), and on EX-BIOC a scratch project's two process description candidates as a plan and as the function's table, runs saved by another user, the dialog with Open Compare Runs on only where Compute2 is installed, and Open Compare Runs opening Compute2's Run Comparison view.
 - Choosing a run: the rules (what a criterion takes, the filter, who may choose, the comparison, the history), and on EX-BIOC the candidates of D5's process description, two runs compared, a choice superseded, and the dialog.
+- Example history: the shipped file against the portfolio files (one stage at a time, records only where the
+  registry owns the stage, EX-* only), the plan (all of it at first, nothing once written, a program moved since
+  and a recorded criterion left alone), and a dry run on the stand that writes nothing. Package tests pass on a
+  stand with or without the history: they use their own unstaged program and compare EXS-GPC3 with where it was.
+- Readiness of an empty gate: no score, not ready, "no criteria"; on a tile too. Text columns: a document version
+  "0.3" stays the string "0.3".
 - The model catalogue: its rules (codes, cards, merging across portfolios, validity ranges), the example catalogue loaded twice with nothing rewritten, the card joined with the function, the card rendered, the card the Workspace on Home asks for by role (FedBatchTiter's; none for an uncatalogued function), and a run saved with the catalogue's codes.
 
 ## BDD scenarios (`npm run test:bdd`)
 
 Gherkin scenarios in `bdd/features/`, compiled to Playwright by `@datagrok-libraries/bdd`. Features address
 controls only by their `data-u2-name`. Run them one worker at a time (`--workers=1`): scenarios share the
-example portfolios on one server. A guide tour (`bdd/features/guides/portfolios-tour.feature`) renders a film of
+example portfolios on one server. They expect the example history seeded (`seedExamples(false)`): EXS-KIN1
+at Hit-to-Lead, EXB-101 at Lead Generation. A guide tour (`bdd/features/guides/portfolios-tour.feature`) renders a film of
 the multi-portfolio board from a passing scenario.
 
 ## Known failures

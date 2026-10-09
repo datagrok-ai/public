@@ -18,6 +18,8 @@ app.element('data access notice', {selector: u2('data-access-notice')});
 app.element('unstaged column', {selector: u2('stage-unstaged')});
 app.element('gate D4 column', {selector: u2('stage-d4')});
 app.element('target validation column', {selector: u2('stage-tv'), aliases: ['TV column']});
+app.element('hit-to-lead column', {selector: u2('stage-h2l'), aliases: ['H2L column']});
+app.element('lead generation column', {selector: u2('stage-lg'), aliases: ['LG column']});
 
 app.element('EXS-KIN1 card', {selector: u2('program-exs-kin1')});
 app.element('EXB-101 card', {selector: u2('program-exb-101')});

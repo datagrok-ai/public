@@ -98,7 +98,7 @@ category('Portal: auto-advance rules', () => {
   });
 });
 
-/** Puts EXS-GPC3 (unstaged, its data meets Hit-to-Lead) at Hit Finding for [fn], then puts it back:
+/** Puts EXS-GPC3 (its data meets Hit-to-Lead) at Hit Finding for [fn], then puts it back where it was:
  * its stage, and the transitions, criterion statuses and evidence written meanwhile. */
 export async function gpc3AtHitFinding(fn: (p: ProgramRow, stage: (code: string) => string) => Promise<void>): Promise<void> {
   const smd = await portfolioByCode('EX-SMD');
@@ -123,9 +123,13 @@ export async function gpc3AtHitFinding(fn: (p: ProgramRow, stage: (code: string)
 }
 
 category('Portal: auto-advance on the examples', () => {
+  // unstaged on a fresh stand; at Hit-to-Lead once the example history is seeded
+  let gpc3Stage: string | null = null;
   before(async () => {
     await loadAllPortfolios(_package);
     await syncPortfolio('EX-SMD');
+    const smd = await portfolioByCode('EX-SMD');
+    gpc3Stage = (await portalDb.programs.query({filter: `portfolio_id = "${smd.id}" and code = "EXS-GPC3"`}))[0].stage_id ?? null;
   });
 
   test('EX-SMD lets data advance through Hit-to-Lead; the other examples do not opt in', async () => {
@@ -140,14 +144,23 @@ category('Portal: auto-advance on the examples', () => {
   });
 
   test('a dry run says what would move and why the rest stay, and writes nothing', async () => {
-    await gpc3AtHitFinding(async (p, stage) => {
-      const r = await autoAdvance('EX-SMD', true);
-      const line = (code: string) => r.outcomes.find((o) => o.program === code);
-      expect(describeAutoAdvance(line('EXS-GPC3')!), 'EXS-GPC3: HF → H2L by data');
-      expect(line('EXS-KIN1')!.reason, 'unstaged: a program enters its model by a decision');
-      expect(line('EXS-ION4')!.reason, 'terminated: only active programs advance by data');
-      expect((await portalDb.programs.get(p.id)).stage_id, stage('HF'), 'nothing written');
-    });
+    // the examples are all placed once their history is seeded: an unstaged program of its own
+    const smd = await portfolioByCode('EX-SMD');
+    const code = `TEST-AA-${Date.now() % 1e9}`;
+    const [unstaged] = await portalDb.programs.insert({portfolio_id: smd.id, code, name: code,
+      stage_model_id: smd.stage_model_id, source: 'manual'});
+    try {
+      await gpc3AtHitFinding(async (p, stage) => {
+        const r = await autoAdvance('EX-SMD', true);
+        const line = (code: string) => r.outcomes.find((o) => o.program === code);
+        expect(describeAutoAdvance(line('EXS-GPC3')!), 'EXS-GPC3: HF → H2L by data');
+        expect(line(code)!.reason, 'unstaged: a program enters its model by a decision');
+        expect(line('EXS-ION4')!.reason, 'terminated: only active programs advance by data');
+        expect((await portalDb.programs.get(p.id)).stage_id, stage('HF'), 'nothing written');
+      });
+    } finally {
+      await portalDb.programs.delete(unstaged.id);
+    }
   });
 
   test('a real pass advances by data: gate log with source data and the evidence, one stage only', async () => {
@@ -181,10 +194,10 @@ category('Portal: auto-advance on the examples', () => {
     });
   });
 
-  test('the example is put back: EXS-GPC3 unstaged, no transition by data left', async () => {
+  test('the example is put back: EXS-GPC3 where it was, no transition by data left', async () => {
     const smd = await portfolioByCode('EX-SMD');
     const p = (await portalDb.programs.query({filter: `portfolio_id = "${smd.id}" and code = "EXS-GPC3"`}))[0];
-    expect(p.stage_id ?? null, null);
+    expect(p.stage_id ?? null, gpc3Stage);
     const left = (await portalDb.stageTransitions.query({filter: `program_id = "${p.id}"`})).filter((t) => t.source === 'data');
     expect(left.length, 0);
   });

@@ -11,7 +11,7 @@ import {appliesTo, ContextCriterion, enabledWorkUnits, portfolioByCode, programD
   from './portal';
 import {CriterionState, nextStage} from './model/gates';
 import {DataCondition, DataRow} from './model/conditions';
-import {Readiness, ReadinessState} from './model/readiness';
+import {isReady, Readiness, ReadinessState} from './model/readiness';
 import {COMPOUND_ROLES} from './model/compounds';
 import {WORK_UNIT_LABELS, WorkUnitKind} from './model/work-units';
 import {existingSpaces} from './workspace';
@@ -244,8 +244,8 @@ export function buildTables(portfolios: PortfolioRow[], stages: Map<string, Stag
     col(I, COL.requiredMet, (x) => x.readiness?.requiredMet ?? null),
     col(I, COL.requiredTotal, (x) => x.readiness?.requiredTotal ?? null),
     col(DG.COLUMN_TYPE.FLOAT, COL.readiness, (x) => x.readiness?.score ?? null),
-    col(DG.COLUMN_TYPE.BOOL, COL.ready, (x) => x.readiness !== null && x.readiness.score === 1),
-    col(S, COL.gaps, (x) => x.readiness?.gaps.join('; ') || null),
+    col(DG.COLUMN_TYPE.BOOL, COL.ready, (x) => isReady(x.readiness)),
+    col(S, COL.gaps, (x) => x.readiness?.empty ? 'no criteria defined' : x.readiness?.gaps.join('; ') || null),
     col(I, COL.compounds, (x) => Object.values(x.roles).reduce((a, b) => a + b, 0)),
     ...COMPOUND_ROLES.map((r) => col(I, roleColumn(r), (x) => x.roles[r] ?? 0)),
     ...kinds.map((k) => col(I, unitColumn(k), (x) => x.units[k] ?? null)),

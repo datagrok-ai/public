@@ -5,6 +5,7 @@
  * live in ./model/predictions. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {ModelRow, portalDb, PortfolioRow, PredictionRow, ProgramRow} from './generated/db';
 import {compoundsOf as programCompoundsOf, portfolioByCode, programData} from './portal';
@@ -175,14 +176,14 @@ export async function predictionsFrame(portfolioCode: string, programCode: strin
     return typeof v === 'number' ? v : null;
   };
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('compound', shown.map((p) => p.compound)),
-    DG.Column.fromStrings('predicts', shown.map((p) => p.predicts)),
-    DG.Column.fromStrings('model', shown.map((p) => p.model)),
-    DG.Column.fromStrings('version', shown.map((p) => p.version)),
+    textColumn('compound', shown.map((p) => p.compound)),
+    textColumn('predicts', shown.map((p) => p.predicts)),
+    textColumn('model', shown.map((p) => p.model)),
+    textColumn('version', shown.map((p) => p.version)),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'predicted', shown.map((p) => p.value)),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'measured', shown.map(measured)),
-    DG.Column.fromStrings('units', shown.map((p) => p.units ?? '')),
-    DG.Column.fromStrings('model run', shown.map((p) => p.modelRunId ?? '')),
+    textColumn('units', shown.map((p) => p.units ?? '')),
+    textColumn('model run', shown.map((p) => p.modelRunId ?? '')),
   ]);
   df.name = `${program.code} · Predictions`;
   return df;

@@ -1,6 +1,7 @@
 /** Design sets and selection sets (F-23): stored in `design_set`, `design_proposal` and
  * `selection_set`. The rules are pure (src/model/design-sets.ts); this reads and writes them. */
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {DesignProposalRow, DesignSetRow, portalDb, PortfolioRow, ProgramRow, SelectionSetRow} from './generated/db';
 import {compoundsOf, portfolioByCode, workUnitsOf} from './portal';
@@ -117,14 +118,14 @@ export async function createSelectionSet(program: ProgramRow, s: SelectionSetInp
 export function designSetsFrame(items: DesignSetItem[], name: string): DG.DataFrame {
   const rows = items.flatMap((i) => i.proposals.map((p) => ({i, p})));
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Design set', rows.map((r) => r.i.set.name)),
-    DG.Column.fromStrings('Series', rows.map((r) => r.i.set.series_code)),
-    DG.Column.fromStrings('Label', rows.map((r) => r.p.label)),
-    DG.Column.fromStrings('Structure', rows.map((r) => r.p.structure)),
+    textColumn('Design set', rows.map((r) => r.i.set.name)),
+    textColumn('Series', rows.map((r) => r.i.set.series_code)),
+    textColumn('Label', rows.map((r) => r.p.label)),
+    textColumn('Structure', rows.map((r) => r.p.structure)),
     DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Score', rows.map((r) => r.p.score ?? null)),
     DG.Column.fromList(DG.COLUMN_TYPE.INT, 'Rank', rows.map((r) => r.p.rank ?? null)),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'Chosen', rows.map((r) => !!r.p.chosen)),
-    DG.Column.fromStrings('Compound', rows.map((r) => r.p.compound_code ?? '')),
+    textColumn('Compound', rows.map((r) => r.p.compound_code ?? '')),
   ]);
   df.col('Structure')!.semType = DG.SEMTYPE.MOLECULE;
   df.col('Structure')!.meta.units = 'smiles';
@@ -134,10 +135,10 @@ export function designSetsFrame(items: DesignSetItem[], name: string): DG.DataFr
 
 export function selectionSetsFrame(rows: SelectionSetRow[], name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('Selection set', rows.map((r) => r.name)),
-    DG.Column.fromStrings('Campaign', rows.map((r) => r.campaign_code ?? '')),
-    DG.Column.fromStrings('Compounds', rows.map((r) => selectionCompounds(r.compounds).join(', '))),
-    DG.Column.fromStrings('Rationale', rows.map((r) => r.rationale)),
+    textColumn('Selection set', rows.map((r) => r.name)),
+    textColumn('Campaign', rows.map((r) => r.campaign_code ?? '')),
+    textColumn('Compounds', rows.map((r) => selectionCompounds(r.compounds).join(', '))),
+    textColumn('Rationale', rows.map((r) => r.rationale)),
     DG.Column.fromStrings('On', rows.map((r) => r.selected_on ? dayjs(r.selected_on as any).format('YYYY-MM-DD') : '')),
   ]);
   df.name = name;

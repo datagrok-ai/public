@@ -5,6 +5,7 @@
  * folder that unparking leaves behind. The rules live in ./model/parking. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {ParkedFolderRow, portalDb, PortfolioRow} from './generated/db';
 import {isApprover, portfolioByCode} from './portal';
@@ -141,14 +142,14 @@ async function tidyParking(dayId: string, rootId: string): Promise<string[]> {
 /** One row per parked folder: name, why, from, to, who and when, status. */
 export function parkedFrame(rows: ParkedFolderRow[], name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
-    DG.Column.fromStrings('id', rows.map((r) => r.id)),
-    DG.Column.fromStrings('folder', rows.map((r) => r.name)),
-    DG.Column.fromStrings('kind', rows.map((r) => r.kind ?? '')),
-    DG.Column.fromStrings('reason', rows.map((r) => r.reason ?? '')),
-    DG.Column.fromStrings('from', rows.map((r) => r.from_path)),
-    DG.Column.fromStrings('parked in', rows.map((r) => r.parked_path)),
+    textColumn('id', rows.map((r) => r.id)),
+    textColumn('folder', rows.map((r) => r.name)),
+    textColumn('kind', rows.map((r) => r.kind ?? '')),
+    textColumn('reason', rows.map((r) => r.reason ?? '')),
+    textColumn('from', rows.map((r) => r.from_path)),
+    textColumn('parked in', rows.map((r) => r.parked_path)),
     DG.Column.fromStrings('parked on', rows.map((r) => r.parked_on ? dayjs(r.parked_on as any).toISOString() : '')),
-    DG.Column.fromStrings('status', rows.map((r) => r.status)),
+    textColumn('status', rows.map((r) => r.status)),
     DG.Column.fromStrings('restored on', rows.map((r) => r.restored_on ? dayjs(r.restored_on as any).toISOString() : '')),
   ]);
   df.name = name;

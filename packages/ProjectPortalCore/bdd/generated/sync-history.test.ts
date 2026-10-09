@@ -38,6 +38,6 @@ test.describe("A portfolio's sync history", () => {
     await session.step(23, "Then sync auto-advance should contain text \"Stages advance by data through Hit-to-Lead\"", () => shouldContainText(page, el("sync auto-advance"), "Stages advance by data through Hit-to-Lead"));
     await session.step(24, "When user clicks on preview advance by data button", () => clickOn(page, el("preview advance by data button")));
     await session.step(25, "Then advance by data preview should contain text \"would advance by data (through H2L)\"", () => shouldContainText(page, el("advance by data preview"), "would advance by data (through H2L)"));
-    await session.step(26, "And advance by data preview should contain text \"EXS-KIN1 stays: unstaged\"", () => shouldContainText(page, el("advance by data preview"), "EXS-KIN1 stays: unstaged"));
+    await session.step(26, "And advance by data preview should contain text \"EXS-KIN1 stays: Lead Optimization is past Hit-to-Lead\"", () => shouldContainText(page, el("advance by data preview"), "EXS-KIN1 stays: Lead Optimization is past Hit-to-Lead"));
   });
 });

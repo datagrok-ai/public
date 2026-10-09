@@ -4,6 +4,7 @@
  * current user follows. Nothing new is stored. The rules live in ./model/feed. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {FollowingRow, portalDb, PortfolioRow, ProgramRow, SyncLogRow} from './generated/db';
 import {portfolioByCode, programData, stagesOf} from './portal';
@@ -206,13 +207,13 @@ export function feedUserNames(entries: FeedEntry[]): Promise<Map<string, string>
 export function feedFrame(entries: FeedEntry[], names: Map<string, string>, name: string): DG.DataFrame {
   const df = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'at', entries.map((e) => new Date(e.at))),
-    DG.Column.fromStrings('portfolio', entries.map((e) => e.portfolio ?? '')),
-    DG.Column.fromStrings('program', entries.map((e) => e.program)),
-    DG.Column.fromStrings('kind', entries.map((e) => e.kind)),
-    DG.Column.fromStrings('what', entries.map((e) => e.text)),
-    DG.Column.fromStrings('who', entries.map((e) => e.who ? names.get(e.who) ?? e.who : '')),
-    DG.Column.fromStrings('work unit', entries.map((e) => e.unit ?? '')),
-    DG.Column.fromStrings('record', entries.map((e) => e.ref ? `${e.ref.kind}:${e.ref.id}` : '')),
+    textColumn('portfolio', entries.map((e) => e.portfolio ?? '')),
+    textColumn('program', entries.map((e) => e.program)),
+    textColumn('kind', entries.map((e) => e.kind)),
+    textColumn('what', entries.map((e) => e.text)),
+    textColumn('who', entries.map((e) => e.who ? names.get(e.who) ?? e.who : '')),
+    textColumn('work unit', entries.map((e) => e.unit ?? '')),
+    textColumn('record', entries.map((e) => e.ref ? `${e.ref.kind}:${e.ref.id}` : '')),
   ]);
   df.name = name;
   return df;

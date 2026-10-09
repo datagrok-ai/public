@@ -80,6 +80,11 @@ The example data covers the cases a real registry raises: a key no portfolio cla
 handed on from discovery (lineage), one still active in discovery while in development (overlap), a
 development gate code on a research project, and a stage spelling that resolves to nothing.
 
+A feed carries no history, and where the portal owns the stage it places no program. The example
+history in `files/examples/history.json` (decisions with rationale and evidence over the past year,
+criteria met, observations, a follow) puts the EX-SMD and EX-BIOD programs on their tracks:
+`seedExamples(false)` writes it once, admins only, EX-* only.
+
 Customer portfolios live in customer packages, not here. A customer package hands its files to the
 core with `loadPortfolioConfigs` and audits its sources with `routingAuditOf`.
 
@@ -147,7 +152,8 @@ Portfolio files load and validate as a set. Four functions work on them as files
 | `dmtaStatus(portfolio, program)` | Each compound's DMTA stage with dates, design label, series, cycle days and sources |
 | `dmtaCycles(portfolio, program)` | Per series: compounds at each DMTA stage and the median cycle time |
 | `criterionRunsToCompare(portfolio, program, criterion)` | A run criterion's candidate runs by model, with run ids: what to add in Compute2's Compare Runs |
-| `loadExampleDocuments()` | Links the synthetic EX-BIOC documents the package ships. EX-* only; idempotent |
+| `loadExampleDocuments()` | Links the synthetic EX-BIOC and EX-BIOD documents the package ships. EX-* only; idempotent |
+| `seedExamples(dryRun)` | Writes the example history: decisions, criteria met, observations, a follow, the example documents. Admins only; EX-* only; idempotent; a dry run (default) lists what it would write |
 | `addEvidence(portfolio, program, kind, target, name, decision)` | Adds a run (by `run_id` or title), a criterion (by code), a URL or a file path to a decision (default the latest), its name frozen now. Approvers only |
 | `checkNewData(code)` | Checks every followed program of a portfolio for new data and notifies the followers; also runs after every sync |
 | `followProgram(portfolio, program, series)` | Follows a program, or one of its series, as you; the data now is the baseline |

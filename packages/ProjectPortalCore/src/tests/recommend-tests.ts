@@ -129,8 +129,9 @@ category('Portal: model recommendation', () => {
     const df: DG.DataFrame = await grok.functions.call('ProjectPortalCore:recommendModels',
       {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'LO'});
     expect(`${df.get('model', 0)} ${df.get('rank', 0)} ${df.get('predicts', 0)}`, `${SOL} 1 solubility_um`);
+    // EXS-PRO2 is at most at Target Validation, where no example model applies
     const tv: DG.DataFrame = await grok.functions.call('ProjectPortalCore:recommendModels',
-      {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'TV'});
+      {portfolio: 'EX-SMD', program: 'EXS-PRO2', stage: 'TV'});
     expect(ownRows(tv).length, 0);
     const adme: DG.DataFrame = await grok.functions.call('ProjectPortalCore:recommendModels',
       {portfolio: 'EX-SMD', program: 'EXS-KIN1', stage: 'LO', task: 'ADMET'});

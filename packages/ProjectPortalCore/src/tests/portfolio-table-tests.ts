@@ -74,8 +74,11 @@ category('Portal: portfolio table', () => {
         expect(df.get(COL.nextStage, i), r.stage.code, at);
         expect(df.get(COL.requiredMet, i), r.readiness.requiredMet, at);
         expect(df.get(COL.requiredTotal, i), r.readiness.requiredTotal, at);
-        expect(Math.abs(df.get(COL.readiness, i) - r.readiness.score) < 1e-9, true, at);
-        expect(df.get(COL.ready, i), r.readiness.score === 1, at);
+        if (r.readiness.score === null)
+          expect(df.col(COL.readiness)!.isNone(i), true, `${at}: no criteria, no percentage`);
+        else
+          expect(Math.abs(df.get(COL.readiness, i) - r.readiness.score) < 1e-9, true, at);
+        expect(df.get(COL.ready, i), r.readiness.score === 1 && !r.readiness.empty, at);
       }
     }
   });

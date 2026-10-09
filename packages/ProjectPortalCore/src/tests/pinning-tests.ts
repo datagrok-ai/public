@@ -85,6 +85,8 @@ category('Portal: pinning rules', () => {
     expect(`${last.readinessLine} ${last.readiness}`, 'No further gate null');
     const [ready] = assembleTiles([input({readiness: {score: 1, requiredMet: 4, requiredTotal: 4, gaps: []}})], mine('s1'));
     expect(ready.ready, true);
+    const [empty] = assembleTiles([input({readiness: {score: null, requiredMet: 0, requiredTotal: 0, gaps: []}})], mine('s1'));
+    expect(`${empty.ready} ${empty.readiness} ${empty.readinessLine}`, 'false null No criteria defined', 'an empty gate');
   });
 
   test('new data is news that landed after the user\'s last visit', async () => {

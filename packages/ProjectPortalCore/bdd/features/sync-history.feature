@@ -23,4 +23,4 @@ Feature: A portfolio's sync history
     Then sync auto-advance should contain text "Stages advance by data through Hit-to-Lead"
     When user clicks on preview advance by data button
     Then advance by data preview should contain text "would advance by data (through H2L)"
-    And advance by data preview should contain text "EXS-KIN1 stays: unstaged"
+    And advance by data preview should contain text "EXS-KIN1 stays: Lead Optimization is past Hit-to-Lead"

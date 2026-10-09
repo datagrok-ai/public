@@ -74,7 +74,9 @@ category('Portal: program snapshots', () => {
     const {snapshot: s, notes} = await takeSnapshot(kin1, {note: 'package test'});
     try {
       expect(notes.length, 0, notes.join('; '));
-      expect(`${s.status} ${s.stage_code ?? 'unstaged'} ${s.dataset}`, 'active unstaged SAR table');
+      // unstaged on a fresh stand, at Hit-to-Lead once the example history is seeded
+      const stage = (await stagesOf(kin1.stage_model_id)).find((x) => x.id === kin1.stage_id)?.code ?? 'unstaged';
+      expect(`${s.status} ${s.stage_code ?? 'unstaged'} ${s.dataset}`, `active ${stage} SAR table`);
       expect(s.table_file!.startsWith('snapshot-EXS-KIN1-'), true, s.table_file);
       expect(s.table_folder, kin1.space_id);
       expect(frozenCriteria(s).some((c) => c.code === 'assay_ready'), true);

@@ -10,7 +10,7 @@ import {validatePortfolio} from '../model/config';
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext, setCriterion, stagesOf} from '../portal';
 import {
-  documentCardsOf, documentsOf, folderFiles, linkDocumentTo, loadExampleDocuments, PACKAGE_FILES, setDocumentStatus,
+  documentCardsOf, documentsFrame, documentsOf, folderFiles, linkDocumentTo, loadExampleDocuments, PACKAGE_FILES, setDocumentStatus,
   uploadDocument,
 } from '../documents';
 import {evidenceItemFor} from '../evidence';
@@ -95,6 +95,17 @@ category('Portal: document rules', () => {
       stageModel: {code: 'M', name: 'M', setting: 'development', stages: [{code: 'A', name: 'A', ordinal: 1}]}};
     expect(validatePortfolio({...base, documentKinds: [{code: 'r', name: 'Report'}]}).length, 0);
     expect(validatePortfolio({...base, documentKinds: [{code: 'r', name: ''}]})[0], 'documentKinds: r has no name');
+  });
+
+  test('the documents table keeps a version, an id and a code as text', async () => {
+    const rows: any[] = [{id: '17', gate_criterion_id: 'c1', kind: 'pd', title: 'Process', doc_version: '0.3', status: 'draft',
+      path: 'X:a.md'}, {id: '18', kind: 'other', title: 'Note', doc_version: '1.10', status: 'approved', path: 'X:b.md'}];
+    const df = documentsFrame(rows, [{id: 'c1', code: '007'}], 'docs');
+    for (const c of ['id', 'criterion', 'version'])
+      expect(df.col(c)!.type, DG.COLUMN_TYPE.STRING, c);
+    expect(df.get('version', 0), '0.3');
+    expect(df.get('version', 1), '1.10');
+    expect(df.get('criterion', 0), '007');
   });
 });
 

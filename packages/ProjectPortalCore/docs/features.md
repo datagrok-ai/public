@@ -8,6 +8,30 @@ nothing here depends on them. Open decisions per feature are in [build-log.md](b
 
 All examples use the synthetic portfolios the package ships (EX-SMD, EX-BIOD, EX-BIOC).
 
+## Example history
+
+A registry feed carries programs, not their past. Where the portal owns the stage (EX-SMD, EX-BIOD), a
+feed places nothing, so every example program would stay unstaged. `files/examples/history.json` holds
+the rest, all invented and dated in the past: gate decisions with rationale and evidence, criteria
+recorded met, observations and a follow.
+
+- **`seedExamples(dryRun)`** writes what is missing (admins only, EX-* portfolios only). A dry run, the
+  default, lists it. A second run writes nothing. It also links the example documents.
+- **Decisions.** Advances walk each program's model one stage at a time from its first stage. Each
+  carries the gate's readiness as evidence, and sometimes a link. Holds and a no-go (terminate) stand
+  where the registry status agrees, so a sync does not undo them. In EX-BIOC, where the registry owns
+  the stage, they are decision records (go, hold) that move nothing.
+- **Never forced.** A decision already in the gate log (same kind and rationale) is skipped. A program
+  someone has moved since is left alone, and the report says so. A criterion already recorded is not
+  overwritten.
+- **Straight to the gate log.** The decisions keep their own dates, so they make no approval request,
+  snapshot or workspace folder.
+- **What it gives** (stand, 2026-10-09). EX-SMD: EXS-KIN1 and EXS-GPC3 at H2L, EXS-PRO2 and EXS-ION4
+  (terminated) at TV. The history leaves EXS-EPI5 unstaged, the one deliberate empty gate (on the
+  stand an earlier decision put it at TV). EX-BIOD: EXB-101 at LG, EXB-102, EXB-103 (on hold) and EXB-105 at TI,
+  EXB-104 unstaged (handed to EX-BIOC). Ready for the next gate: EXS-PRO2, EXB-102, EXB-104 in EX-BIOC.
+  EXS-KIN1 lacks the ADME panel for LO and gets the solubility model suggested.
+
 ## Workspace per portfolio
 
 - `buildWorkspace` creates a Spaces tree: the portfolio's `workspaceRoot`, a folder per program named `CODE · Name`, and the portfolio's `workstreams` under each program.
@@ -89,6 +113,10 @@ is a declarative predicate over those rows, the one rule language of [architectu
 - **Readiness** (`programReadiness`) evaluates every criterion of a stage: data conditions from the
   data, documents and decisions from `criterion_status`. A recorded waiver wins; a recorded "met"
   does not outvote the data. It returns met over required, a score, and the gap list.
+- **A gate with no required criteria is not ready.** There is nothing to measure, so it has no score:
+  the gate panel, the portfolio table (`readiness` empty, `ready` false, `gaps` "no criteria defined"),
+  the My programs tile and `programReadiness` say "no criteria" instead of 100%. Auto-advance never moves a
+  program through it. In the examples only a first stage that is not a gate (TV, TI) has none.
 - **The gate uses it.** Advancing needs the evaluated conditions met (or waived). On advance the
   portal writes what the data said into `criterion_status.evidence`, beside the decision.
 - A data condition with only a free-text `rule` is still recorded by hand.
@@ -555,7 +583,7 @@ limit stage, so the top gates still need an approver:
 - **When it runs.** After every sync of the portfolio, by hand or by schedule; the run's report and history name each program it moved (`EXS-GPC3: advanced by data HF → H2L`), and owners hear of it. Or on call: `autoAdvancePortfolio(code, dryRun)`. A dry run (the default) lists what would move and why each other program stays. Applying needs the caller to be an approver, as a manual advance does.
 - **In the app.** Sync history says how far data advances stages and has **Preview advance by data**. The program's history marks a move `(by data)`; hover for the evidence.
 - **It is a field, not a third stage authority.** Stage authority says who owns the stage (registry or portal); auto-advance is a way the portal decides, so the gate rules, the approver groups and the feed's handling stay as they are.
-- The example EX-SMD lets data advance through Hit-to-Lead. Its programs are unstaged, so nothing moves until an approver places one in the model; a program at Hit Finding whose data shows a validated series and a sub-micromolar compound then enters Hit-to-Lead on the next sync.
+- The example EX-SMD lets data advance through Hit-to-Lead. A program at Hit Finding whose data shows a validated series and a sub-micromolar compound enters Hit-to-Lead on the next sync. Once the example history is seeded, EXS-KIN1 and EXS-GPC3 are already at Hit-to-Lead and Lead Optimization needs an approver, so a sync moves nothing.
 
 ## Choosing the run a criterion rests on
 

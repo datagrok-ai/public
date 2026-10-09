@@ -38,8 +38,11 @@ export interface Readiness {
   /** Required criteria met or waived, over required criteria. */
   requiredMet: number;
   requiredTotal: number;
-  /** 0..1; 1 when the stage has no required criteria. */
-  score: number;
+  /** 0..1; null when the gate has no required criteria ([empty]). */
+  score: number | null;
+  /** The gate has no required criteria: nothing to measure, so it is not ready and never 100%.
+   * Shown as "no criteria"; auto-advance never moves a program through it. */
+  empty: boolean;
   /** The open required criteria, one sentence each, in declaration order. */
   gaps: string[];
   /** Criterion states for the gate rules: evaluated data conditions folded in. */
@@ -93,15 +96,26 @@ export function computeReadiness(stageId: string | null, criteria: ReadinessCrit
   const requiredMet = required.filter((c) => c.state === 'met' || c.state === 'waived').length;
   return {
     stageId, criteria: out, requiredMet, requiredTotal: required.length,
-    score: required.length === 0 ? 1 : requiredMet / required.length,
+    score: required.length === 0 ? null : requiredMet / required.length, empty: required.length === 0,
     gaps: required.filter((c) => c.gap).map((c) => `${c.name}: ${c.gap}`),
     states, dataError,
   };
 }
 
+/** Ready: the gate has required criteria and every one is met or waived. An empty gate is not. */
+export const isReady = (r: Pick<Readiness, 'score'> | null | undefined): boolean => !!r && r.score === 1;
+
+/** How an empty gate is shown, wherever a percentage would be. */
+export const NO_CRITERIA = 'no criteria';
+
+/** `75%`, or `no criteria` for a gate without required criteria. */
+export const readinessLabel = (r: Pick<Readiness, 'score'>): string =>
+  r.score === null ? NO_CRITERIA : `${Math.round(r.score * 100)}%`;
+
 export function summarizeReadiness(programCode: string, stageName: string, r: Readiness): string {
-  const head = `${programCode} → ${stageName}: ${r.requiredMet} of ${r.requiredTotal} required criteria met or waived` +
-    ` (${Math.round(r.score * 100)}%)`;
+  const head = `${programCode} → ${stageName}: ` + (r.empty ?
+    `no ${r.criteria.length ? 'required ' : ''}criteria defined; not ready` :
+    `${r.requiredMet} of ${r.requiredTotal} required criteria met or waived (${readinessLabel(r)})`);
   const lines = [head];
   for (const c of r.criteria) {
     const detail = c.result ? ` — ${c.result.summary}` : '';

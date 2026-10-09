@@ -1,6 +1,6 @@
 import {before, category, expect, test} from '@datagrok-libraries/test/src/test';
 import {DataCondition, evaluateCondition, holds, validateCondition} from '../model/conditions';
-import {computeReadiness, ReadinessCriterion} from '../model/readiness';
+import {computeReadiness, isReady, ReadinessCriterion, readinessLabel, summarizeReadiness} from '../model/readiness';
 import {PortfolioConfig, validatePortfolio} from '../model/config';
 import {portalDb} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext, programReadiness, recordDecision, setCriterion,
@@ -112,8 +112,15 @@ category('Portal: readiness', () => {
     expect(r.criteria.find((c) => c.code === 'panel')!.gap.includes('connection refused'), true);
   });
 
-  test('a stage without required criteria is ready', async () => {
-    expect(computeReadiness('s', [], {}, []).score, 1);
+  test('a gate without required criteria is not ready: no criteria, no percentage', async () => {
+    const none = computeReadiness('s', [], {}, []);
+    expect(`${none.empty} ${none.score} ${isReady(none)} ${readinessLabel(none)}`, 'true null false no criteria');
+    expect(summarizeReadiness('X-1', 'Beta', none), 'X-1 → Beta: no criteria defined; not ready');
+    const optional = computeReadiness('s', [{id: 'o', code: 'opt', name: 'Opt', kind: 'decision', required: false}], {o: 'met'}, []);
+    expect(`${optional.empty} ${isReady(optional)}`, 'true false', 'only optional criteria');
+    expect(summarizeReadiness('X-1', 'Beta', optional).split('\n')[0], 'X-1 → Beta: no required criteria defined; not ready');
+    const all = computeReadiness('s', [{id: 'd', code: 'go', name: 'Go', kind: 'decision', required: true}], {d: 'met'}, []);
+    expect(`${all.empty} ${isReady(all)} ${readinessLabel(all)}`, 'false true 100%');
   });
 });
 

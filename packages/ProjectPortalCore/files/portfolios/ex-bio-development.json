@@ -151,6 +151,13 @@
         "aliases": [
           "Gate D2",
           "GD2"
+        ],
+        "criteria": [
+          {
+            "code": "supply_plan",
+            "name": "Clinical supply plan agreed",
+            "kind": "decision"
+          }
         ]
       },
       {
@@ -201,6 +208,13 @@
         "aliases": [
           "Gate D4",
           "GD4"
+        ],
+        "criteria": [
+          {
+            "code": "late_phase_plan",
+            "name": "Late-phase development plan agreed",
+            "kind": "decision"
+          }
         ]
       },
       {
@@ -233,6 +247,13 @@
         "aliases": [
           "Gate D6",
           "GD6"
+        ],
+        "criteria": [
+          {
+            "code": "pivotal_supply",
+            "name": "Pivotal supply plan agreed",
+            "kind": "decision"
+          }
         ]
       },
       {

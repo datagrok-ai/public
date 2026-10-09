@@ -25,13 +25,13 @@ Feature: Several portfolios on one instance
     Then board header should contain text "EX-SMD-V1"
     And board header should contain text "stages decided here"
     And the board should show the stages "TV, HF, H2L, LO, CS, PCD"
-    And EXS-KIN1 card in unstaged column should be visible
+    And EXS-KIN1 card in hit-to-lead column should be visible
 
   Scenario: Biologics discovery reads the shared registry but not its gates
     When user clicks on biologics discovery portfolio
     Then board header should contain text "EX-BIOD-V1"
     And the board should show the stages "TI, LG, LO, DA, CN"
-    And EXB-101 card in unstaged column should be visible
+    And EXB-101 card in lead generation column should be visible
     When user clicks on EXB-101 card
     Then program detail should contain text "Registry stage: 3"
 

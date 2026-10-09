@@ -30,10 +30,11 @@ Feature: Gate decisions follow the portfolio
   Scenario: Data conditions are evaluated from the program's data
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
-    And user clicks on LO step
-    Then gate heading should contain text "What entering Lead Optimization takes"
+    And user clicks on H2L step
+    Then gate heading should contain text "Hit-to-Lead"
+    And readiness score should contain text "2 of 2 required"
+    And potency criterion should contain text "from data"
+    When user clicks on LO step
+    Then gate heading should contain text "Lead Optimization"
     And readiness score should contain text "0 of 1 required"
     And ADME panel criterion detail should contain text "EXC-1006 lacks"
-    When user clicks on H2L step
-    Then readiness score should contain text "2 of 2 required"
-    And potency criterion should contain text "from data"

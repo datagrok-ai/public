@@ -2,6 +2,7 @@
  * lists (criteria and their state, documents, evidence tables, saved runs and the criteria they
  * were selected for, datasets, snapshots) and hands them to ./model/data-package. Read only. */
 import * as DG from 'datagrok-api/dg';
+import {textColumn} from './columns';
 import dayjs from 'dayjs';
 import {portalDb} from './generated/db';
 import {programContext} from './portal';
@@ -71,7 +72,7 @@ export async function dataPackageOf(programId: string): Promise<DataPackage> {
 /** The manifest as a table: one string column per manifest column. */
 export function dataPackageFrame(p: DataPackage): DG.DataFrame {
   const df = DG.DataFrame.fromColumns(MANIFEST_COLUMNS.map((c) =>
-    DG.Column.fromStrings(c.name, p.lines.map((l) => manifestCell(l, c.key)))));
+    textColumn(c.name, p.lines.map((l) => manifestCell(l, c.key)))));
   df.name = `${p.program.code} data package`;
   return df;
 }

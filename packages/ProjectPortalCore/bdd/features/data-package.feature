@@ -22,4 +22,4 @@ Feature: Data package manifest
     And download data package csv button should be visible
     When user clicks on open data package as table button
     Then data package dialog should not be visible
-    And the open table should have 6 rows and a name starting with "BDD-PKG data package"
+    And the open table should have 9 rows and a name starting with "BDD-PKG data package"
