@@ -134,7 +134,7 @@ ones that do not fit. Picking Table (2) a second time (after All) logs, from the
 (Screenshot_43): the filter saves the table again, and its columns are the ones the model's inputs
 point to. The ticket goes to GitHub, filed by Olesia.
 
-### 2.3 Text of the tips
+### 2.3 Text of the tips (confirmed by hand; filed by Olesia)
 
 - "Column 'id_like' contains **contain** too many unique categories." (`tooManyUniqueCategories`,
   `predictive_modeling_validators.dart`).
