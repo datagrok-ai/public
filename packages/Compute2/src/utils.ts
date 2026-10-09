@@ -164,9 +164,6 @@ export function resolveSingleStep(
 
 export type PipelineWithAdd = PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData>;
 
-export const hasRunnableSteps = (data: PipelineState) =>
-  isDynamicPipelineState(data) && !data.isReadonly && data.steps.length > 0;
-
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   isDynamicPipelineState(data) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
@@ -568,10 +565,6 @@ function getExportName(
   return fileName;
 }
 
-
-export function setDifference<T>(a: Set<T>, b: Set<T>) {
-  return new Set(Array.from(a).filter((item) => !b.has(item)));
-}
 
 /** Resolves the custom export named `exportName` declared on the funcCall's function
  *  (via `meta.customExports`) and applies it, passing the funcCall through. */

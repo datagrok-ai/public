@@ -109,9 +109,6 @@ export const TreeNode = Vue.defineComponent({
     isDraggable: {
       type: Boolean,
     },
-    isDroppable: {
-      type: Boolean,
-    },
     isDeletable: {
       type: Boolean,
     },
