@@ -83,9 +83,11 @@ Steps:
 3. Insights & Tips says id_like has too many unique categories; tick **Skip unique categories**.
 
 Expected: id_like is dropped and the model trains on feature1 (preview with metrics, SAVE enabled).
-Actual: Model Engine and its parameters appear, the preview stays empty, and the console logs
-`Invalid argument (namesOrColumns): Not supported type: null` from `PredictiveModelingEngine.apply`
-(`predictive_modeling_engines.dart:58`). Picking another engine changes nothing.
+Actual: Model Engine and its parameters appear and SAVE turns active, but the preview stays empty
+and the console logs `Invalid argument (namesOrColumns): Not supported type: null` from
+`ColumnList.toColumnList` in `PredictiveModelingEngine.apply` (`predictive_modeling_engines.dart:58`).
+Picking another engine changes nothing. Walked by hand 2026-10-09: the same error and stack
+(Screenshot_40); SAVE is enabled over a model that never trained.
 
 Why (from the code): the preview calls `apply` with a column map built from the reduced features
 (feature1 only), whose length differs from `model.input` (id_like, feature1); `apply` then rebuilds the
