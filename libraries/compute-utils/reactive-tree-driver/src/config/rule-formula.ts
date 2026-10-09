@@ -2,7 +2,7 @@ import {Grammars, IToken, Parser} from 'ebnf';
 import {RestrictionType} from '../data/common-types';
 import {driverOpNames, isLiteral} from '../runtime/rule-expressions';
 import {
-  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource,
+  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource, SourceKind,
 } from './PipelineConfiguration';
 
 /* eslint-disable max-len */
@@ -49,7 +49,6 @@ const elementOps = new Set(['map', 'filter', 'all', 'some', 'none']);
 const ELEMENT = '$it';
 
 type EffectName = RuleEffect['effect'];
-type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
 
 // the effect object behind a name; found by membership because hide and show share one shape
 type EffectOf<E extends EffectName> = RuleEffect extends infer R ? R extends {effect: infer N} ?

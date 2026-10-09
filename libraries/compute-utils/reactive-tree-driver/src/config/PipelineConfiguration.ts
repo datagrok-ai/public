@@ -250,6 +250,8 @@ export type RuleSource =
   /** A table given in the config: a dataframe, or CSV text parsed with optional import options, once per link. */
   {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
+export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
   when?: RuleLogic;
