@@ -42,58 +42,31 @@ export function matchLink(state: StateTree, address: NodePath, spec: LinkSpec): 
 }
 
 export function matchNodeLink(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec, basePath?: Readonly<NodePath>) {
-  return matchLinkAt(rnode, spec, basePath, false).matched;
-}
-
-/** Runs the matching of one link at one node without stopping at the first empty alias. */
-export function explainLinkMatch(rnode: TreeNode<StateTreeNode>, spec: LinkSpec | ActionSpec): LinkMatchExplanation {
-  return matchLinkAt(rnode, spec, undefined, true).explanation!;
-}
-
-function matchLinkAt(
-  rnode: TreeNode<StateTreeNode>,
-  spec: LinkSpec | ActionSpec,
-  basePath: Readonly<NodePath> | undefined,
-  explain: boolean,
-): {matched?: MatchInfo[], explanation?: LinkMatchExplanation} {
   const basePaths = basePath ? [{path: basePath}] : (spec.base?.length ? expandLinkBase(rnode, spec.base[0]) : undefined);
   const baseName = spec.base?.length ? spec.base[0].name : undefined;
-  const explanation: LinkMatchExplanation | undefined = explain ? {aliases: []} : undefined;
-  for (const io of spec.not ?? []) {
-    const nodes = matchLinkIO(rnode, {}, io, true, false).length;
-    if (!explanation) {
-      if (nodes)
-        return {};
-      continue;
-    }
-    explanation.aliases.push({name: io.name, kind: 'not', optional: false, nodes});
-    if (nodes && !explanation.blockedBy)
-      explanation.blockedBy = io.name;
-  }
-  if (explanation && basePaths) {
-    explanation.aliases.push({name: baseName!, kind: 'base', optional: false, nodes: basePaths.length});
-    if (!basePaths.length) {
-      explanation.failedAlias = baseName;
-      return {explanation};
+  if (spec.not) {
+    const currentIO: Record<string, MatchedNodePaths> = {};
+    for (const io of spec.not) {
+      const paths = matchLinkIO(rnode, currentIO, io, true, false);
+      if (paths?.length)
+        return undefined;
     }
   }
-  const bases = basePaths == null ? [undefined] : (explanation ? basePaths.slice(0, 1) : basePaths);
-  const instances = bases.map((base) => matchLinkInstance(rnode, spec, explain, base, baseName));
-  if (explanation) {
-    explanation.aliases.push(...instances[0].aliases!);
-    explanation.failedAlias = instances[0].failedAlias;
+  if (basePaths == null) {
+    const matchInfo = matchLinkInstance(rnode, spec);
+    return matchInfo ? [matchInfo] : undefined;
+  } else {
+    const instances = basePaths.map((basePath) => matchLinkInstance(rnode, spec, basePath, baseName)).filter((x) => !!x);
+    return instances.length ? instances : undefined;
   }
-  const matched = instances.map((instance) => instance.matchInfo).filter((x) => !!x);
-  return {matched: matched.length ? matched : undefined, explanation};
 }
 
 function matchLinkInstance(
   rnode: TreeNode<StateTreeNode>,
   spec: LinkSpec | ActionSpec,
-  explain: boolean,
   base?: Readonly<MatchedIO>,
   baseName?: string,
-): {matchInfo?: MatchInfo, aliases?: AliasMatch[], failedAlias?: string} {
+): MatchInfo | undefined {
   const actions: Record<string, MatchedNodePaths> = {};
   const matchInfo: MatchInfo = {
     spec,
@@ -107,85 +80,30 @@ function matchLinkInstance(
   const currentIO: Record<string, MatchedNodePaths> = {};
   if (base && baseName)
     currentIO[baseName] = [base];
-  const aliases: AliasMatch[] | undefined = explain ? [] : undefined;
-  let failedAlias: string | undefined;
 
   for (const action of spec.actions ?? []) {
     const parsed = matchLinkIO(rnode, currentIO, action, true, false);
     actions[action.name] = parsed;
-    aliases?.push({name: action.name, kind: 'action', optional: false, nodes: parsed.length});
   }
 
   const ioData = [...spec.from.map((item) => ['inputs', item] as const), ...spec.to.map((item) => ['outputs', item] as const)];
   for (const [kind, io] of ioData) {
-    const [skipIO, useDescriptionsStore] = ioMatchFlags(spec, kind === 'outputs', io);
-    const dependsOn = explain ? io.segments.find((segment) => segment.ref && !currentIO[segment.ref])?.ref : undefined;
-    const paths = dependsOn ? [] : matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
-    aliases?.push(explainAlias(rnode, currentIO, io, kind, skipIO, paths, dependsOn));
+    const skipIO = (spec.type === 'pipeline' && kind === 'outputs') || (!!io.flags?.includes('call')) || (spec.type === 'pipelineValidator' && kind === 'outputs');
+    const useDescriptionsStore = ((spec.type === 'nodemeta' || spec.type === 'selector') && kind === 'outputs');
+    const paths = matchLinkIO(rnode, currentIO, io, skipIO, useDescriptionsStore);
     if (paths.length == 0) {
       if (io.flags?.includes('optional'))
         continue;
-      if (!explain)
-        return {};
-      failedAlias ??= io.name;
-      continue;
+      else
+        return;
     }
-    if (currentIO[io.name] != null && !explain)
+    if (currentIO[io.name] != null)
       throw new Error(`Duplicate io name ${io.name} in link ${spec.id}, node: ${rnode.getItem().config.id}`);
     currentIO[io.name] = paths;
     matchInfo[kind][io.name] = paths;
   }
-  if (failedAlias)
-    return {aliases, failedAlias};
   updateMatchInfoUUIDs(rnode, matchInfo);
-  return {matchInfo, aliases};
-}
-
-export type AliasMatch = {
-  name: string;
-  kind: 'not' | 'base' | 'action' | 'input' | 'output';
-  optional: boolean;
-  // nodes reached by the path, and of those the ones having the io
-  nodes: number;
-  ios?: number;
-  // the alias it refers to matched nothing, so it was not matched
-  dependsOn?: string;
-};
-
-export type LinkMatchExplanation = {
-  aliases: AliasMatch[];
-  failedAlias?: string;
-  blockedBy?: string;
-};
-
-function explainAlias(
-  rnode: TreeNode<StateTreeNode>,
-  currentIO: Record<string, MatchedNodePaths>,
-  io: LinkIOParsed,
-  kind: 'inputs' | 'outputs',
-  skipIO: boolean,
-  paths: MatchedNodePaths,
-  dependsOn?: string,
-): AliasMatch {
-  const entry: AliasMatch = {
-    name: io.name, kind: kind === 'inputs' ? 'input' : 'output', optional: !!io.flags?.includes('optional'), nodes: 0,
-  };
-  if (dependsOn)
-    entry.dependsOn = dependsOn;
-  else if (skipIO)
-    entry.nodes = paths.length;
-  else {
-    entry.nodes = matchLinkIO(rnode, currentIO, {...io, segments: io.segments.slice(0, -1)}, true, false).length;
-    entry.ios = paths.length;
-  }
-  return entry;
-}
-
-function ioMatchFlags(spec: LinkSpec | ActionSpec, isOutput: boolean, io: LinkIOParsed) {
-  const skipIO = (isOutput && (spec.type === 'pipeline' || spec.type === 'pipelineValidator')) ||
-    !!io.flags?.includes('call');
-  const useDescriptionsStore = isOutput && (spec.type === 'nodemeta' || spec.type === 'selector');
-  return [skipIO, useDescriptionsStore] as const;
+  return matchInfo;
 }
 
 function expandLinkBase(

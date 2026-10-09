@@ -3,7 +3,7 @@ import {BehaviorSubject} from 'rxjs';
 import {NodePath, TreeNode} from '../data/BaseTree';
 import {getOriginalConfig, PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {formatNodePath} from '../utils';
-import {explainLinkMatch, LinkMatchExplanation, MatchedNodePaths, matchNodeLink} from './link-matching';
+import {MatchedNodePaths, matchNodeLink} from './link-matching';
 import {LinksData} from './LinksState';
 import {StateTree} from './StateTree';
 import {StateTreeNode} from './StateTreeNodes';
@@ -30,45 +30,13 @@ export type InspectedLink = {
   defaultRestrictions?: any;
   dataFrameMutations?: any;
   hasHandler?: boolean;
-};
-
-export type NotMatchedLink = {
-  id: string;
-  type: string;
-  isAction: boolean;
-  node: InspectedNodeRef;
-  explanation: LinkMatchExplanation;
-};
-
-export type LinksInspection = {
-  matched: InspectedLink[];
-  notMatched: NotMatchedLink[];
+  visible?: boolean;
 };
 
 export type InspectedIO = {name: string, type?: string, nullable?: boolean};
 
-export function inspectLinks(state: StateTree): LinksInspection {
-  const {linksState, nodeTree} = state;
-  const links = linksState.getLinksInfo();
-  const matched = links.map((link) => inspectLink(state, link));
-  const instanceKeys = new Set(links.map((link) => `${formatNodePath(link.prefix)}#${link.id}#${link.isAction}`));
-  const notMatched = nodeTree.traverse(nodeTree.root, (acc, node, path) => {
-    const {config} = node.getItem();
-    const specs = [
-      ...(config.links ?? []).map((spec) => [spec, false] as const),
-      ...(config.actions ?? []).map((spec) => [spec, true] as const),
-    ];
-    for (const [spec, isAction] of specs) {
-      if (instanceKeys.has(`${formatNodePath(path)}#${spec.id}#${isAction}`))
-        continue;
-      acc.push({
-        id: spec.id, type: spec.type ?? 'data', isAction, node: nodeRef(node, path),
-        explanation: explainLinkMatch(node, spec),
-      });
-    }
-    return acc;
-  }, [] as NotMatchedLink[]);
-  return {matched, notMatched};
+export function inspectLinks(state: StateTree): InspectedLink[] {
+  return state.linksState.getLinksInfo().map((link) => inspectLink(state, link));
 }
 
 function inspectLink(state: StateTree, link: LinksData): InspectedLink {
@@ -88,6 +56,8 @@ function inspectLink(state: StateTree, link: LinksData): InspectedLink {
     res.dataFrameMutations = spec.dataFrameMutations;
   if ('handler' in spec && spec.handler)
     res.hasHandler = true;
+  if (isAction)
+    res.visible = state.linksState.actionsVisibility.get(link.uuid) ?? true;
 
   const emptyAliases: Record<string, 'optional' | 'linked'> = {};
   // $linked pruning keeps no record, so a fresh match shows what was dropped

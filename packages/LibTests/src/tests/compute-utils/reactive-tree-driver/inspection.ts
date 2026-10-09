@@ -2,7 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {category, test} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {
-  getProcessedConfig, PipelineConfigurationStaticProcessed,
+  getProcessedConfig,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
@@ -12,9 +12,6 @@ import {
 import {
   isLinkLogItem, LOG_EVENT_TYPES, LogItem,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
-import {
-  explainLinkMatch, matchNodeLink,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/link-matching';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {BehaviorSubject} from 'rxjs';
 
@@ -29,74 +26,8 @@ async function makeTree(config: PipelineConfiguration) {
   return tree;
 }
 
-async function notMatched(links: any[], extra: Partial<PipelineConfiguration> = {}) {
-  const tree = await makeTree({id: 'root', type: 'static', steps, links, ...extra} as PipelineConfiguration);
-  return inspectLinks(tree).notMatched;
-}
-
 category('ComputeUtils: Driver inspection', async () => {
-  test('A step path typo reaches no nodes', async () => {
-    const [entry, ...rest] = await notMatched([{id: 'l1', from: 'in:stpe1/res', to: 'out:step2/a'}]);
-    expectDeepEqual(rest.length, 0, {prefix: 'Count'});
-    expectDeepEqual([entry.id, entry.isAction, entry.node.configId], ['l1', false, 'root']);
-    expectDeepEqual(entry.explanation.failedAlias, 'in');
-    expectDeepEqual(entry.explanation.aliases[0], {name: 'in', kind: 'input', optional: false, nodes: 0, ios: 0});
-  });
-
-  test('An io name typo reaches the step but not the io', async () => {
-    const [entry] = await notMatched([{id: 'l1', from: 'in:step1/rez', to: 'out:step2/a'}]);
-    expectDeepEqual(entry.explanation.failedAlias, 'in');
-    expectDeepEqual(entry.explanation.aliases[0], {name: 'in', kind: 'input', optional: false, nodes: 1, ios: 0});
-    expectDeepEqual(entry.explanation.aliases[1], {name: 'out', kind: 'output', optional: false, nodes: 1, ios: 1});
-  });
-
-  test('An alias referring to an empty alias depends on it', async () => {
-    const [entry] = await notMatched([{id: 'l1', from: 'in:stpe1/res', to: 'out:after(@in, step2)/a'}]);
-    expectDeepEqual(entry.explanation.failedAlias, 'in');
-    expectDeepEqual(entry.explanation.aliases[1],
-      {name: 'out', kind: 'output', optional: false, nodes: 0, dependsOn: 'in'});
-  });
-
-  test('A matching not clause blocks the link', async () => {
-    const [entry] = await notMatched([{id: 'l1', not: 'blk:step1', from: 'in:step1/res', to: 'out:step2/a'}]);
-    expectDeepEqual(entry.explanation.blockedBy, 'blk');
-    expectDeepEqual(entry.explanation.failedAlias, undefined);
-    expectDeepEqual(entry.explanation.aliases[0], {name: 'blk', kind: 'not', optional: false, nodes: 1});
-  });
-
-  test('An unmatched action is listed as an action', async () => {
-    const [entry] = await notMatched([], {actions: [{
-      id: 'act1', from: 'in:step1/res', to: 'out:stpe2/a', position: 'none', handler() {},
-    }]} as any);
-    expectDeepEqual([entry.id, entry.isAction, entry.explanation.failedAlias], ['act1', true, 'out']);
-  });
-
-  test('An unmatched action sharing an id with a matched link is listed', async () => {
-    const entries = await notMatched([{id: 'x', from: 'in:step1/res', to: 'out:step2/a'}], {actions: [{
-      id: 'x', from: 'in:step1/res', to: 'out:stpe2/a', position: 'none', handler() {},
-    }]} as any);
-    expectDeepEqual(entries.map((e) => [e.id, e.isAction]), [['x', true]]);
-  });
-
-  test('An empty dynamic workflow leaves the base empty', async () => {
-    const tree = await makeTree({
-      id: 'root',
-      type: 'static',
-      steps: [{
-        id: 'seq',
-        type: 'sequential',
-        stepTypes: steps,
-        initialSteps: [],
-        links: [{id: 'l1', base: 'base:expand(step1)', from: 'in:same(@base)/res', to: 'out:same(@base)/a'}],
-      }],
-    });
-    const [entry] = inspectLinks(tree).notMatched;
-    expectDeepEqual([entry.id, entry.node.configId, entry.node.path], ['l1', 'seq', 'seq[0]']);
-    expectDeepEqual(entry.explanation,
-      {aliases: [{name: 'base', kind: 'base', optional: false, nodes: 0}], failedAlias: 'base'});
-  });
-
-  test('A base link matched at some nodes is not listed as not matched', async () => {
+  test('A base link lists the base it matched', async () => {
     const tree = await makeTree({
       id: 'root',
       type: 'sequential',
@@ -104,9 +35,7 @@ category('ComputeUtils: Driver inspection', async () => {
       initialSteps: ['step1', 'step2', 'step1'],
       links: [{id: 'l1', base: 'base:expand(step1)', from: 'in:same(@base)/res', to: 'out:after+(@base, step2)/a'}],
     } as PipelineConfiguration);
-    const {matched, notMatched} = inspectLinks(tree);
-    expectDeepEqual(notMatched, []);
-    expectDeepEqual(matched.map((l) => [l.id, l.basePath, l.resolvedOutputs]),
+    expectDeepEqual(inspectLinks(tree).map((l) => [l.id, l.basePath, l.resolvedOutputs]),
       [['l1', 'step1[0]', {out: ['step2[1]::a']}]]);
   });
 
@@ -114,10 +43,9 @@ category('ComputeUtils: Driver inspection', async () => {
     const tree = await makeTree({id: 'root', type: 'static', steps, links: [
       {id: 'l1', from: ['in:step1/res', 'extra(optional):step3/a'], to: 'out:step2/a'},
     ]});
-    const {matched, notMatched} = inspectLinks(tree);
-    expectDeepEqual(notMatched, []);
-    expectDeepEqual(matched[0].resolvedInputs, {in: ['step1[0]::res']});
-    expectDeepEqual(matched[0].emptyAliases, {extra: 'optional'});
+    const [link] = inspectLinks(tree);
+    expectDeepEqual(link.resolvedInputs, {in: ['step1[0]::res']});
+    expectDeepEqual(link.emptyAliases, {extra: 'optional'});
   });
 
   test('Targets dropped by linked are shown', async () => {
@@ -128,7 +56,7 @@ category('ComputeUtils: Driver inspection', async () => {
         to: '_(template):step2/inputs(LibTests:TestMul2, $linked)', handler() {},
       },
     ]});
-    const l2 = inspectLinks(tree).matched.find((l) => l.id === 'l2')!;
+    const l2 = inspectLinks(tree).find((l) => l.id === 'l2')!;
     expectDeepEqual(l2.resolvedOutputs, {b: ['step2[1]::b']});
     expectDeepEqual(l2.emptyAliases, {a: 'linked'});
     expectDeepEqual(l2.linkedTargets, {a: ['step2[1]::a']});
@@ -145,87 +73,23 @@ category('ComputeUtils: Driver inspection', async () => {
         ]},
       ],
     } as PipelineConfiguration);
-    const entries = inspectLinks(tree).matched.map((l) => [l.id, l.node.configId, l.type, !!l.hasHandler]);
+    const entries = inspectLinks(tree).map((l) => [l.id, l.node.configId, l.type, !!l.hasHandler]);
     expectDeepEqual(entries, [['l', 'p1', 'data', false], ['l', 'p2', 'validator', true]]);
   });
 
-  test('Explaining agrees with matching', async () => {
-    const tree = await makeTree({id: 'root', type: 'static', steps, links: [
-      {id: 'ok', from: 'in:step1/res', to: 'out:step2/a'},
-      {id: 'pathTypo', from: 'in:stpe1/res', to: 'out:step2/a'},
-      {id: 'ioTypo', from: 'in:step1/res', to: 'out:step2/z'},
-      {id: 'optional', from: ['in:step1/res', 'extra(optional):step3/a'], to: 'out:step2/a'},
-      {id: 'dependsOn', from: 'in:stpe1/res', to: 'out:after(@in, step2)/a'},
-      {id: 'blocked', not: 'blk:step1', from: 'in:step1/res', to: 'out:step2/a'},
-      {id: 'notClear', not: 'blk:step3', from: 'in:step1/res', to: 'out:step2/a'},
-      {id: 'call', from: 'fc(call,optional):step1', to: 'out:step2/a'},
-      {id: 'pipeline', type: 'pipeline', from: [], to: 'out:stpe2', handler() {}},
-    ]} as PipelineConfiguration);
-    const root = tree.nodeTree.root;
-    const specs = (root.getItem().config as PipelineConfigurationStaticProcessed).links!;
-    const results = specs.map((spec) => {
-      const {failedAlias, blockedBy} = explainLinkMatch(root, spec);
-      return [spec.id, !!matchNodeLink(root, spec), failedAlias ?? blockedBy ?? null];
-    });
-    expectDeepEqual(results, [
-      ['ok', true, null], ['pathTypo', false, 'in'], ['ioTypo', false, 'out'], ['optional', true, null],
-      ['dependsOn', false, 'in'], ['blocked', false, 'blk'], ['notClear', true, null], ['call', true, null],
-      ['pipeline', false, 'out'],
-    ]);
-    const aliases = (id: string) => explainLinkMatch(root, specs.find((s) => s.id === id)!).aliases;
-    expectDeepEqual(aliases('notClear'), [
-      {name: 'blk', kind: 'not', optional: false, nodes: 0},
-      {name: 'in', kind: 'input', optional: false, nodes: 1, ios: 1},
-      {name: 'out', kind: 'output', optional: false, nodes: 1, ios: 1},
-    ], {prefix: 'notClear'});
-    expectDeepEqual(aliases('call'), [
-      {name: 'fc', kind: 'input', optional: true, nodes: 1},
-      {name: 'out', kind: 'output', optional: false, nodes: 1, ios: 1},
-    ], {prefix: 'call'});
-  });
-
-  test('Explaining a base link agrees with matching', async () => {
+  test('Actions show whether they are visible', async () => {
     const tree = await makeTree({
       id: 'root',
-      type: 'sequential',
-      stepTypes: steps,
-      initialSteps: ['step1', 'step2', 'step1'],
-      links: [
-        {id: 'some', base: 'base:expand(step1)', from: 'in:same(@base)/res', to: 'out:after+(@base, step2)/a'},
-        {id: 'none', base: 'base:expand(step1)', from: 'in:same(@base)/res', to: 'out:after+(@base, step3)/a'},
+      type: 'static',
+      steps,
+      links: [{id: 'l1', from: 'in:step1/res', to: 'out:step2/a'}],
+      actions: [
+        {id: 'shown', from: 'in:step1/res', to: 'out:step2/a', position: 'buttons', handler() {}},
+        {id: 'hidden', from: 'in:step1/res', to: 'out:step2/a', position: 'buttons', hideWhen: 'h:step1', handler() {}},
       ],
     } as PipelineConfiguration);
-    const root = tree.nodeTree.root;
-    const [some, none] = (root.getItem().config as PipelineConfigurationStaticProcessed).links!;
-    expectDeepEqual([matchNodeLink(root, some)?.length, explainLinkMatch(root, some).failedAlias], [1, undefined]);
-    expectDeepEqual(matchNodeLink(root, none), undefined);
-    expectDeepEqual(explainLinkMatch(root, none), {
-      aliases: [
-        {name: 'base', kind: 'base', optional: false, nodes: 2},
-        {name: 'in', kind: 'input', optional: false, nodes: 1, ios: 1},
-        {name: 'out', kind: 'output', optional: false, nodes: 0, ios: 0},
-      ],
-      failedAlias: 'out',
-    });
-  });
-
-  test('A repeated alias throws in matching but not in explaining', async () => {
-    const tree = await makeTree({id: 'root', type: 'static', steps});
-    const config = await getProcessedConfig({id: 'root', type: 'static', steps, links: [
-      {id: 'dup', from: ['x:step1/res', 'x:step2/res'], to: 'out:step2/a'},
-      {id: 'dupAfterTypo', from: ['a:stpe1/res', 'x:step1/res', 'x:step2/res'], to: 'out:step2/a'},
-    ]}) as PipelineConfigurationStaticProcessed;
-    const [dup, dupAfterTypo] = config.links!;
-    const root = tree.nodeTree.root;
-    let error = '';
-    try {
-      matchNodeLink(root, dup);
-    } catch (e) {
-      error = (e as Error).message;
-    }
-    expectDeepEqual(error.startsWith('Duplicate io name x'), true, {prefix: 'Matching'});
-    expectDeepEqual(matchNodeLink(root, dupAfterTypo), undefined);
-    expectDeepEqual(explainLinkMatch(root, dupAfterTypo).failedAlias, 'a');
+    expectDeepEqual(inspectLinks(tree).map((l) => [l.id, l.isAction, l.visible]),
+      [['l1', false, undefined], ['shown', true, true], ['hidden', true, false]]);
   });
 
   test('Inspector JSON makes values readable', async () => {
@@ -274,11 +138,9 @@ category('ComputeUtils: Driver inspection', async () => {
       {id: 'l1', from: 'in:step1/res', to: 'out:step2/a'},
       {id: 'l2', from: 'in:stpe1/res', to: 'out:step2/a'},
     ]});
-    expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [{matched: [], notMatched: []}, undefined],
-      {prefix: 'Before init'});
+    expectDeepEqual([driver.inspectLinks(), driver.inspectConfig()], [[], undefined], {prefix: 'Before init'});
     await driver.sendCommand({event: 'initPipeline', provider: '', config});
-    const {matched, notMatched} = driver.inspectLinks();
-    expectDeepEqual([matched.map((l) => l.id), notMatched.map((l) => l.id)], [['l1'], ['l2']]);
+    expectDeepEqual(driver.inspectLinks().map((l) => l.id), ['l1']);
     expectDeepEqual(driver.inspectConfig().links.map((l: any) => l.from), ['in:step1/res', 'in:stpe1/res']);
     driver.close();
   });
