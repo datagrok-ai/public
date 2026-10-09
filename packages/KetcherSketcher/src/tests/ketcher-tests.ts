@@ -112,4 +112,27 @@ category('ketcher', async () => {
     expect(listeners(), settled, 'the settings listeners after a Ketcher paused by another, and both closed');
   }, {timeout: 120000});
 
+  // ketcher-standalone sent every conversion the macromolecules editor's whole monomer library, which its worker kept
+  // in its heap until Indigo answered nothing (crux-sketch spike query-roundtrip, K5)
+  test('a conversion reaches Indigo without the monomer library', async () => {
+    const {ketcher, dialog} = await openKetcher();
+    const seen: any[] = [];
+    const post = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function(this: Worker, message: any, ...rest: any[]): void {
+      seen.push(message);
+      return (post as any).call(this, message, ...rest);
+    };
+    try {
+      const converted = await ketcher.indigo.convert('CCO', {outputFormat: 'chemical/x-daylight-smiles' as any});
+      expect(String(converted.struct).trim(), 'CCO', 'the conversion');
+    } finally {
+      Worker.prototype.postMessage = post;
+      dialog.close();
+    }
+    const conversions = seen.filter((m) => m?.data?.options && 'input-format' in m.data.options);
+    expect(conversions.length > 0, true, 'a conversion reached the worker');
+    expect(conversions.map((m) => String(m.data.options.monomerLibrary ?? '').length).join(', '),
+      conversions.map(() => '0').join(', '), 'the monomer library sent with each conversion (its length)');
+  });
+
 });
