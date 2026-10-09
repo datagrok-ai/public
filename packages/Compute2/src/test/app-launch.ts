@@ -1,20 +1,17 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, before, after, awaitCheck} from '@datagrok-libraries/test/src/test';
-import {launchApp, closeView, awaitElement, awaitWebComponents, findButton, clickAndAwait} from './utils';
+import {category, test, expect, before, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {closeViewsAfter, launchApp, awaitElement, awaitWebComponents, findButton, clickAndAwait} from './utils';
 
 category('Apps: ViewerTestApp', () => {
-  let view: DG.ViewBase;
+  const track = closeViewsAfter();
 
   before(async () => {
     await awaitWebComponents();
   });
 
-  after(async () => {
-    if (view) closeView(view);
-  });
 
   test('Renders viewer with data and buttons', async () => {
-    view = await launchApp('ViewerTestApp');
+    const view = track(await launchApp('ViewerTestApp'));
     await awaitElement(view.root, 'dg-viewer', 'Viewer WebComponent', 10000);
     // Verify both control buttons are present with correct labels
     const changeDataBtn = findButton(view.root, 'change data');
@@ -24,7 +21,7 @@ category('Apps: ViewerTestApp', () => {
   });
 
   test('Change data loads dataset into viewer', async () => {
-    view = await launchApp('ViewerTestApp');
+    const view = track(await launchApp('ViewerTestApp'));
     await awaitElement(view.root, 'dg-viewer', 'Viewer', 10000);
     const btn = findButton(view.root, 'change data');
 
@@ -42,7 +39,7 @@ category('Apps: ViewerTestApp', () => {
   });
 
   test('Change type renders different viewer kinds', async () => {
-    view = await launchApp('ViewerTestApp');
+    const view = track(await launchApp('ViewerTestApp'));
     await awaitElement(view.root, 'dg-viewer', 'Viewer', 10000);
     // Set data first — types have no effect without data
     findButton(view.root, 'change data').click();
@@ -64,18 +61,15 @@ category('Apps: ViewerTestApp', () => {
 });
 
 category('Apps: FormTestApp', () => {
-  let view: DG.ViewBase;
+  const track = closeViewsAfter();
 
   before(async () => {
     await awaitWebComponents();
   });
 
-  after(async () => {
-    if (view) closeView(view);
-  });
 
   test('Shows SimpleInputs2 form with labeled inputs', async () => {
-    view = await launchApp('FormTestApp');
+    const view = track(await launchApp('FormTestApp'));
     const btn = findButton(view.root, 'change funcall');
     // First click loads SimpleInputs2 (or ObjectCooling2 depending on toggle state)
     await clickAndAwait(
@@ -92,7 +86,7 @@ category('Apps: FormTestApp', () => {
   });
 
   test('Toggle funcall switches form content', async () => {
-    view = await launchApp('FormTestApp');
+    const view = track(await launchApp('FormTestApp'));
     const btn = findButton(view.root, 'change funcall');
     await clickAndAwait(
       btn,
@@ -115,7 +109,7 @@ category('Apps: FormTestApp', () => {
   });
 
   test('Remove funcall clears all inputs', async () => {
-    view = await launchApp('FormTestApp');
+    const view = track(await launchApp('FormTestApp'));
     const changeFcBtn = findButton(view.root, 'change funcall');
     await clickAndAwait(
       changeFcBtn,
@@ -135,18 +129,15 @@ category('Apps: FormTestApp', () => {
 });
 
 category('Apps: HistoryTestApp', () => {
-  let view: DG.ViewBase;
+  const track = closeViewsAfter();
 
   before(async () => {
     await awaitWebComponents();
   });
 
-  after(async () => {
-    if (view) closeView(view);
-  });
 
   test('Renders history component for ObjectCooling2', async () => {
-    view = await launchApp('HistoryTestApp');
+    const view = track(await launchApp('HistoryTestApp'));
     // The History component should render — either a table/grid with runs,
     // or an empty state message. Verify it has meaningful content.
     await awaitCheck(() => {

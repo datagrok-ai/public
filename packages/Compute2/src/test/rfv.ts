@@ -1,7 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, after, awaitCheck} from '@datagrok-libraries/test/src/test';
-import {closeView, awaitWebComponents} from './utils';
+import {category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {closeViewsAfter, awaitWebComponents, deleteSavedWorkflow} from './utils';
 
 /** Find and click a button by exact label text. */
 async function clickBigButton(root: HTMLElement, label: string, timeout = 10000): Promise<void> {
@@ -28,36 +28,31 @@ async function awaitRunComplete(root: HTMLElement, timeout = 30000): Promise<voi
 // ---- RFV Editor tests ----
 
 category('Editors: RFV smoke', () => {
-  let view: DG.ViewBase | undefined;
-
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
+  const track = closeViewsAfter();
 
   test('Opens for SimpleInputs2 with form and Run button', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:SimpleInputs2');
     const call = func.prepare();
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:RichFunctionViewEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelector('dg-input-form') !== null,
+      () => view.root.querySelector('dg-input-form') !== null,
       'RFV should contain dg-input-form', 15000,
     );
     await awaitCheck(
-      () => view!.root.querySelectorAll('dg-input-form input').length >= 3,
+      () => view.root.querySelectorAll('dg-input-form input').length >= 3,
       'SimpleInputs2 has 3 params — form should have at least 3 inputs', 5000,
     );
     await awaitCheck(() => {
-      return Array.from(view!.root.querySelectorAll('button')).some(
+      return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Run',
       );
     }, 'Run button should be visible initially', 5000);
     await awaitCheck(
-      () => view!.root.querySelector('[dock-spawn-title="Inputs"]') !== null,
+      () => view.root.querySelector('[dock-spawn-title="Inputs"]') !== null,
       'Inputs dock panel not rendered', 5000,
     );
   });
@@ -66,16 +61,16 @@ category('Editors: RFV smoke', () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:ObjectCooling2');
     const call = func.prepare();
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:RichFunctionViewEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelectorAll('dg-input-form input').length >= 5,
+      () => view.root.querySelectorAll('dg-input-form input').length >= 5,
       'ObjectCooling2 form should have at least 5 input fields', 15000,
     );
     await awaitCheck(() => {
-      const text = view!.root.textContent ?? '';
+      const text = view.root.textContent ?? '';
       return text.includes('Ambient') || text.includes('Initial') || text.includes('Surface');
     }, 'ObjectCooling2 form should show input labels', 5000);
   });
@@ -84,24 +79,20 @@ category('Editors: RFV smoke', () => {
 // ---- RFV run tests ----
 
 category('RFV: run SimpleInputs2', () => {
-  let view: DG.ViewBase | undefined;
+  const track = closeViewsAfter();
   let call: DG.FuncCall;
 
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
 
   test('Fill inputs, run, check outputs in DOM', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:SimpleInputs2');
     call = func.prepare({a: 42, b: 3.14, c: 'test-value'});
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:RichFunctionViewEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelectorAll('input').length >= 3,
+      () => view.root.querySelectorAll('input').length >= 3,
       'Form inputs not rendered', 15000,
     );
 
@@ -113,20 +104,16 @@ category('RFV: run SimpleInputs2', () => {
     expect(call.outputs.get('cout'), 'test-value', 'cout should be test-value');
 
     await awaitCheck(() => {
-      const text = view!.root.textContent ?? '';
+      const text = view.root.textContent ?? '';
       return text.includes('42') && text.includes('3.14') && text.includes('test-value');
     }, 'Scalar outputs not rendered in DOM', 10000);
   });
 });
 
 category('RFV: run ObjectCooling2', () => {
-  let view: DG.ViewBase | undefined;
+  const track = closeViewsAfter();
   let call: DG.FuncCall;
 
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
 
   test('Fill inputs, run, verify outputs', async () => {
     await awaitWebComponents();
@@ -135,12 +122,12 @@ category('RFV: run ObjectCooling2', () => {
       ambTemp: 20, initTemp: 80, desiredTemp: 30,
       area: 0.06, heatCap: 4200, heatTransferCoeff: 8.3, simTime: 100,
     });
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:RichFunctionViewEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelectorAll('input').length >= 3,
+      () => view.root.querySelectorAll('input').length >= 3,
       'Form inputs not rendered', 15000,
     );
 
@@ -165,7 +152,7 @@ category('RFV: run ObjectCooling2', () => {
     }
 
     await awaitCheck(() => {
-      const text = view!.root.textContent ?? '';
+      const text = view.root.textContent ?? '';
       return text.includes('60');
     }, 'Scalar output (tempDiff=60) not rendered in DOM', 10000);
   });
@@ -174,36 +161,31 @@ category('RFV: run ObjectCooling2', () => {
 // ---- Pipeline tests ----
 
 category('Pipeline: MockPipeline1 static', () => {
-  let view: DG.ViewBase | undefined;
-
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
+  const track = closeViewsAfter();
 
   test('Renders tree with steps and Next button', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:MockPipeline1');
     const call = func.prepare();
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:TreeWizardEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelector('.mtl-tree') !== null,
+      () => view.root.querySelector('.mtl-tree') !== null,
       'Tree not rendered', 15000,
     );
 
     // Verify tree nodes
     await awaitCheck(() => {
-      const labels = view!.root.querySelectorAll('.mtl-tree .mtl-ml');
+      const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
       return texts.includes('step1') && texts.includes('step2');
     }, 'Tree should show step1 and step2', 10000);
 
     // Pipeline view's bottom bar shows the unified Next button (same as RFV).
     await awaitCheck(() => {
-      return Array.from(view!.root.querySelectorAll('button')).some(
+      return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Next',
       );
     }, 'Should show Next button', 10000);
@@ -211,29 +193,24 @@ category('Pipeline: MockPipeline1 static', () => {
 });
 
 category('Pipeline: MockPipeline2 sequential', () => {
-  let view: DG.ViewBase | undefined;
-
-  after(async () => {
-    if (view) closeView(view);
-    view = undefined;
-  });
+  const track = closeViewsAfter();
 
   test('Renders tree with initial steps and Next button', async () => {
     await awaitWebComponents();
     const func = DG.Func.byName('Compute2:MockPipeline2');
     const call = func.prepare();
-    view = await grok.functions.call(
+    const view = track(await grok.functions.call(
       'Compute2:TreeWizardEditor', {call},
-    ) as unknown as DG.ViewBase;
+    ) as unknown as DG.ViewBase);
 
     await awaitCheck(
-      () => view!.root.querySelector('.mtl-tree') !== null,
+      () => view.root.querySelector('.mtl-tree') !== null,
       'Tree not rendered', 15000,
     );
 
     // Verify tree shows initial steps (add, mul, cooling)
     await awaitCheck(() => {
-      const labels = view!.root.querySelectorAll('.mtl-tree .mtl-ml');
+      const labels = view.root.querySelectorAll('.mtl-tree .mtl-ml');
       const texts = Array.from(labels).map((l) => l.textContent?.trim());
       const count = (texts.some((t) => t === 'add') ? 1 : 0)
         + (texts.some((t) => t === 'mul') ? 1 : 0)
@@ -243,7 +220,7 @@ category('Pipeline: MockPipeline2 sequential', () => {
 
     // Pipeline view's bottom bar shows the unified Next button (same as RFV).
     await awaitCheck(() => {
-      return Array.from(view!.root.querySelectorAll('button')).some(
+      return Array.from(view.root.querySelectorAll('button')).some(
         (b) => b.textContent?.trim() === 'Next',
       );
     }, 'Should show Next button', 10000);
@@ -260,6 +237,8 @@ const ribbonIcons = (view: DG.ViewBase, name: string) => view.getRibbonPanels().
   .flatMap((el) => [el, ...Array.from(el.querySelectorAll('*'))])
   .filter((el) => el.classList.contains(`fa-${name}`));
 
+const savedRunId = (view: DG.ViewBase) => new URLSearchParams((view.path ?? '').split('?')[1] ?? '').get('id');
+
 async function openCompact(nqName: string): Promise<DG.ViewBase> {
   await awaitWebComponents();
   const call = DG.Func.byName(nqName).prepare();
@@ -271,15 +250,10 @@ async function openCompact(nqName: string): Promise<DG.ViewBase> {
 
 for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleStepNested']) {
   category(`Pipeline: single step compact (${nqName.split(':')[1]})`, () => {
-    let view: DG.ViewBase | undefined;
-
-    after(async () => {
-      if (view) closeView(view);
-      view = undefined;
-    });
+    const track = closeViewsAfter();
 
     test('No tree, no navigation, one save and one share control', async () => {
-      view = await openCompact(nqName);
+      const view = track(await openCompact(nqName));
       expect(view.root.querySelector('.mtl-tree'), null, 'Steps tree should be hidden');
       expect(hasButton(view.root, 'Back'), false, 'Back should be hidden');
       expect(hasButton(view.root, 'Next'), false, 'Next should be hidden');
@@ -291,20 +265,24 @@ for (const nqName of ['Compute2:MockSingleStepPipeline', 'Compute2:MockSingleSte
     });
 
     test('Run, then save with id in the URL', async () => {
-      view = await openCompact(nqName);
+      const view = track(await openCompact(nqName));
       expect(ribbonIcons(view, 'save').length, 1, 'Expected exactly one save icon before run');
 
       await clickBigButton(view.root, 'Run');
       await awaitRunComplete(view.root);
-      await awaitCheck(() => (view!.root.textContent ?? '').includes('80'), 'tempDiff (100 - 20) not rendered', 10000);
+      await awaitCheck(() => (view.root.textContent ?? '').includes('80'), 'tempDiff (100 - 20) not rendered', 10000);
 
       (ribbonIcons(view, 'save')[0] as HTMLElement).click();
       await awaitCheck(() => document.querySelector('.d4-dialog') !== null, 'Save dialog not shown', 5000);
       const saveBtn = Array.from(document.querySelectorAll('.d4-dialog button'))
         .find((b) => b.textContent?.trim() === 'Save') as HTMLElement;
       saveBtn.click();
-      await awaitCheck(() => (view!.path ?? '').includes('id='), 'URL should carry the saved run id', 20000);
-      expect((view.path ?? '').includes('currentStep='), false, 'currentStep must not be written in compact mode');
+      await awaitCheck(() => savedRunId(view) != null, 'URL should carry the saved run id', 20000);
+      try {
+        expect((view.path ?? '').includes('currentStep='), false, 'currentStep must not be written in compact mode');
+      } finally {
+        await deleteSavedWorkflow(savedRunId(view)!);
+      }
     });
   });
 }
