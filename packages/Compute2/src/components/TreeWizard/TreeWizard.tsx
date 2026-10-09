@@ -36,6 +36,7 @@ import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-co
 import {historyUtils} from '@datagrok-libraries/compute-utils';
 import {PipelineInstanceConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {setHelpService} from '../../composables/use-help';
+import {useFeedbackItems} from '../../composables/use-feedback';
 import {createCompositorOverlayService} from '../../composables/use-compositor-overlay';
 import {compositorOverlay} from '../../directives/compositor-overlay';
 import {CustomExport, ExportCbInput, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
@@ -125,12 +126,7 @@ export const TreeWizard = Vue.defineComponent({
       return func ? Vue.markRaw(func) : undefined;
     });
     const showReturn = Vue.computed(() => props.showReturn);
-    const reportBugUrl = Vue.computed<string | undefined>(() => {
-      return (providerFunc.value?.package?.settings)?.REPORT_BUG_URL;
-    });
-    const reqFeatureUrl = Vue.computed<string | undefined>(() => {
-      return (providerFunc.value?.package?.settings)?.REQUEST_FEATURE_URL;
-    });
+    const feedbackItems = useFeedbackItems(providerFunc);
 
     ////
     // results
@@ -755,17 +751,6 @@ export const TreeWizard = Vue.defineComponent({
       onClick: () => exportHandler(exportData),
     })));
 
-    const feedbackItems = Vue.computed<RibbonMenuItem[]>(() => [
-      ...(reportBugUrl.value ? [{
-        text: 'Report a bug',
-        onClick: () => window.open(reportBugUrl.value, '_blank'),
-      }] : []),
-      ...(reqFeatureUrl.value ? [{
-        text: 'Request a feature',
-        onClick: () => window.open(reqFeatureUrl.value, '_blank'),
-      }] : []),
-    ]);
-
     const actionMenuItems = (actions: ViewAction[]): RibbonMenuItem[] => actions.map((action) => ({
       text: action.friendlyName ?? action.id,
       icon: action.icon,
@@ -780,7 +765,7 @@ export const TreeWizard = Vue.defineComponent({
         {isTreeLoaded.value && isTreeReportable.value && !singleStep.value &&
           <RibbonMenu groupName='Export' items={exportItems.value}/>
         }
-        {(reportBugUrl.value || reqFeatureUrl.value) &&
+        {feedbackItems.value.length > 0 &&
           <RibbonMenu groupName='Feedback' items={feedbackItems.value}/>
         }
         { isTreeLoaded.value && menuActions.value && Object.entries(menuActions.value).map(([category, actions]) =>
