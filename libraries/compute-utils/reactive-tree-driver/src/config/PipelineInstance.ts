@@ -20,10 +20,12 @@ export type StepFunCallInitialConfig = {
 
 export type InstanceConfRec<C> = {
   steps?: InstanceConfRec<C>[];
+  skipOnInit?: boolean;
 } & C;
 
 export type InstanceConfRecInput<C> = {
   steps?: Array<ItemId | InstanceConfRecInput<C>>;
+  skipOnInit?: boolean;
 } & C;
 
 type InstanceConfItem = InstanceConfRec<StepDynamicInitialConfig | StepFunCallInitialConfig>;
@@ -125,7 +127,6 @@ export type StepFunCallState = {
 
 export type PipelineInstanceRuntimeData = {
   actions: ViewAction[] | undefined;
-  approversGroup: string | undefined;
   disableHistory: boolean;
   customExports: CustomExport[] | undefined;
   disableDefaultExport?: boolean;

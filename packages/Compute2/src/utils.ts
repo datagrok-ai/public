@@ -21,7 +21,7 @@ import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
 import {ExportCbInput, ExportSummaryItem, ExportSummaryRollup, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
-import type {Status} from './components/TreeWizard/types';
+import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
 
 export type NodeWithPath = {
@@ -171,6 +171,15 @@ export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   isDynamicPipelineState(data) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
 
+const isItemActionAllowed = (
+  stat: AugmentedStat, flag: 'disableUIDragging' | 'disableUIRemoving' | 'disableUIAdding',
+) => !!stat.parent && !stat.parent.data.isReadonly && isDynamicPipelineState(stat.parent.data) &&
+  !stat.parent.data.stepTypes.some((item) => item.configId === stat.data.configId && item[flag]);
+
+export const isEachDraggable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIDragging');
+export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIRemoving');
+export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIAdding');
+
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
 export const hasSubtreeFixableInconsistencies = (
@@ -223,8 +232,8 @@ export const hasSubtreeAnyInconsistencies = (
 };
 
 export const statusToTooltip: Record<Status, string> = {
-  [`next`]: `This step is avaliable to run`,
-  [`next warn`]: `This step is avaliable to run, but has warnings`,
+  [`next`]: `This step is available to run`,
+  [`next warn`]: `This step is available to run, but has warnings`,
   [`next error`]: `This step needs user input`,
   ['pending']: 'This step has pending dependencies',
   ['pending executed']: 'This step has changed dependencies',
@@ -631,5 +640,5 @@ export function pinView(view?: DG.ViewBase): void {
 }
 
 // shared inline-style colors; tailwind arbitrary-value classes stay literal (the JIT needs them static)
-export const STICKY_BAR_BACKGROUND = 'rgba(255, 255, 255, 0.75)';
-export const SELECTED_STEP_BACKGROUND = '#f2f2f5';
+export const STICKY_BAR_BACKGROUND = 'color-mix(in srgb, var(--white) 75%, transparent)';
+export const SELECTED_STEP_BACKGROUND = 'var(--grey-1)';

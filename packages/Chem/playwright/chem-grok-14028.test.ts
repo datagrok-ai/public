@@ -126,7 +126,9 @@ test('Chem: GROK-14028 Filter Panel Clear 3-layer cleanup invariant', async ({pa
       const d = document.querySelector('.d4-dialog');
       if (!d) return false;
       return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
-        || !!d.querySelector('canvas');
+        || !!d.querySelector('canvas')
+        // Crux draws in its shadow root; its element is busy until it is ready
+        || !!d.querySelector('crux-sketch[aria-busy="false"]');
     }, null, {timeout: 60_000});
     const smilesInput = page.locator('.d4-dialog input[placeholder*="SMILES" i]').first();
     await smilesInput.click();

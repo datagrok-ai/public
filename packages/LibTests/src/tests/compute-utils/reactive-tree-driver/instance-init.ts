@@ -6,6 +6,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {isFuncCallSerializedState, normalizePipelineInstanceConfig, PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineSerializedState, PipelineStateStatic, StepFunCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
+import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import {LoadedPipeline} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
@@ -205,6 +206,26 @@ category('ComputeUtils: Driver init calls', async () => {
           throw new Error(`funcCall is not an instance of DG.FuncCall`);
       },
     );
+  });
+
+  test('Step config initial values with an output start the step as run', async () => {
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2', initialValues: {a: 1}},
+        {id: 'step2', nqName: 'LibTests:TestAdd2', initialValues: {a: 1, res: 5}},
+      ],
+    };
+    const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(config)});
+    await tree.init().toPromise();
+    const step1 = tree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+    const step2 = tree.nodeTree.getItem([{idx: 1}]) as FuncCallNode;
+    expectDeepEqual(step1.getStateStore().getState('a'), 1, {prefix: 'step1 a'});
+    expectDeepEqual(step1.funcCallState$.value?.isOutputOutdated, true, {prefix: 'step1 not run'});
+    expectDeepEqual(step2.getStateStore().getState('a'), 1, {prefix: 'step2 a'});
+    expectDeepEqual(step2.getStateStore().getState('res'), 5, {prefix: 'step2 res'});
+    expectDeepEqual(step2.funcCallState$.value?.isOutputOutdated, false, {prefix: 'step2 run'});
   });
 
   test('Init function calls options', async () => {
@@ -408,6 +429,85 @@ category('ComputeUtils: Driver instance config defaults', async () => {
 
   test('setPipelineState without steps gets the initialSteps', async () => {
     expectDeepEqual(await runSetPipelineState({id: 'nestedDyn'}), ['root', [['nestedDyn', ['add']]]]);
+  });
+
+  async function runReplaceInPlace(state: PipelineInstanceConfigInput) {
+    const replaceConfig: PipelineConfiguration = {
+      id: 'root',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {
+          id: 'nestedDyn',
+          type: 'parallel',
+          stepTypes: [{id: 'add', nqName: 'LibTests:TestAdd2'}],
+          initialSteps: ['add'],
+        },
+        {id: 'step2', nqName: 'LibTests:TestMul2'},
+      ],
+      actions: [{
+        id: 'replace',
+        from: [],
+        position: 'none',
+        to: 'out1:nestedDyn',
+        type: 'pipeline',
+        handler({controller}) {
+          controller.setPipelineState('out1', state);
+        },
+      }],
+    };
+    const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(replaceConfig), mockMode: true});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    return tree;
+  }
+
+  test('setPipelineState replaces a workflow in place between its siblings', async () => {
+    const tree = await runReplaceInPlace({id: 'nestedDyn', steps: ['add', 'add', 'add']});
+    expectDeepEqual(shape(tree.toSerializedState({disableNodesUUID: true})), ['root', [
+      'step1',
+      ['nestedDyn', ['add', 'add', 'add']],
+      'step2',
+    ]]);
+  });
+
+  test('setPipelineState fills the initial values of the new steps', async () => {
+    const tree = await runReplaceInPlace({id: 'nestedDyn', steps: [{id: 'add', initialValues: {a: 5}}]});
+    const step = tree.nodeTree.getItem([{idx: 1}, {idx: 0}]) as FuncCallNode;
+    expectDeepEqual(step.getStateStore().getState('a'), 5);
+  });
+
+  test('setPipelineState works when a step type references an outer workflow', async () => {
+    const outerRefConfig: LoadedPipeline = {
+      id: 'root',
+      nqName: 'mockOuterRefRoot',
+      type: 'static',
+      steps: [{
+        id: 'items',
+        type: 'parallel',
+        stepTypes: [
+          {id: 'add', nqName: 'LibTests:TestAdd2'},
+          {type: 'ref', provider: async (_p: any) => outerRefConfig},
+        ],
+        initialSteps: ['add'],
+      }],
+      actions: [{
+        id: 'replace',
+        from: [],
+        position: 'none',
+        to: 'out1:items',
+        type: 'pipeline',
+        handler({controller}) {
+          controller.setPipelineState('out1', {id: 'items', steps: ['add', 'add']});
+        },
+      }],
+    };
+    const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(outerRefConfig), mockMode: true});
+    await tree.init().toPromise();
+    const action = [...tree.linksState.actions.values()][0];
+    await tree.runAction(action.uuid).toPromise();
+    expectDeepEqual(shape(tree.toSerializedState({disableNodesUUID: true})), ['root', [['items', ['add', 'add']]]]);
   });
 
   test('setPipelineState with a nested static workflow without steps gets its config steps', async () => {

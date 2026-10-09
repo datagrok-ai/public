@@ -166,14 +166,17 @@ export type ToolbarReadout = 'zoom.level';
  * A menu button a toolbar can hold (spike bar-fit, B7, B9): `zoom`, the zoom level as Ketcher shows it, whose menu holds Zoom
  * in, Zoom out, Actual size and Fit to view (it and `zoom.level` show the same level, and a configuration shows the first
  * of them it names); `options`, the gear, whose menu holds Settings…, Query mode (spike reports-oct5, R3) and Keyboard
- * shortcuts….
+ * shortcuts…; `hydrogens` (spike hydrogens-and-dative, R1), whose menu holds Add explicit hydrogens and Remove explicit
+ * hydrogens, each acting on the selection's atoms, or on the whole drawing with nothing selected.
  */
-export type ToolbarMenu = 'zoom' | 'options';
+export type ToolbarMenu = 'zoom' | 'options' | 'hydrogens';
 /**
  * An item of a menu that is no control of a bar (spike reports-oct5, R3), which a configuration's `hidden` takes away as it
- * takes a control: `mode`, the gear's Query mode, a check item that switches `mode` between `'molecule'` and `'query'`.
+ * takes a control: `mode`, the gear's Query mode, a check item that switches `mode` between `'molecule'` and `'query'`;
+ * `hydrogens.add` and `hydrogens.remove`, the Hydrogens menu's Add explicit hydrogens and Remove explicit hydrogens (spike
+ * hydrogens-and-dative, R1). A menu whose items are all hidden leaves the bar with them.
  */
-export type ToolbarMenuItem = 'mode';
+export type ToolbarMenuItem = 'mode' | 'hydrogens.add' | 'hydrogens.remove';
 /** The 118 element symbols, as written. */
 export type ElementSymbol = 'H' | 'He' | 'Li' | 'Be' | 'B' | 'C' | 'N' | 'O' | 'F' | 'Ne' | 'Na' | 'Mg' | 'Al' | 'Si' | 'P' | 'S' | 'Cl' | 'Ar' | 'K' | 'Ca' | 'Sc' | 'Ti' | 'V' | 'Cr' | 'Mn' | 'Fe' | 'Co' | 'Ni' | 'Cu' | 'Zn' | 'Ga' | 'Ge' | 'As' | 'Se' | 'Br' | 'Kr' | 'Rb' | 'Sr' | 'Y' | 'Zr' | 'Nb' | 'Mo' | 'Tc' | 'Ru' | 'Rh' | 'Pd' | 'Ag' | 'Cd' | 'In' | 'Sn' | 'Sb' | 'Te' | 'I' | 'Xe' | 'Cs' | 'Ba' | 'La' | 'Ce' | 'Pr' | 'Nd' | 'Pm' | 'Sm' | 'Eu' | 'Gd' | 'Tb' | 'Dy' | 'Ho' | 'Er' | 'Tm' | 'Yb' | 'Lu' | 'Hf' | 'Ta' | 'W' | 'Re' | 'Os' | 'Ir' | 'Pt' | 'Au' | 'Hg' | 'Tl' | 'Pb' | 'Bi' | 'Po' | 'At' | 'Rn' | 'Fr' | 'Ra' | 'Ac' | 'Th' | 'Pa' | 'U' | 'Np' | 'Pu' | 'Am' | 'Cm' | 'Bk' | 'Cf' | 'Es' | 'Fm' | 'Md' | 'No' | 'Lr' | 'Rf' | 'Db' | 'Sg' | 'Bh' | 'Hs' | 'Mt' | 'Ds' | 'Rg' | 'Cn' | 'Nh' | 'Fl' | 'Mc' | 'Lv' | 'Ts' | 'Og';
 /** An element tool, named by its symbol in lower case: `element.n`, `element.cl` (spike atoms). */
@@ -191,11 +194,12 @@ export type ToolbarRingTool = `ring.${RingName}`;
  * attachment-point tool (`rgroup.attachment`, spike rgroups); the selection tools, the rectangle
  * (`select.rect`), the lasso (`select.lasso`) and the structure tool (`select.structure`, spike select); the S-Group tool
  * (`sgroup`, spike sgroups).
- * `bond.wavy` and `bond.crossed` are the wavy bond and the crossed double bond (spike stereo). The query bond tools,
+ * `bond.wavy` and `bond.crossed` are the wavy bond and the crossed double bond (spike stereo); `bond.dative` the dative bond,
+ * drawn from its donor to its acceptor, the arrow on the acceptor (spike hydrogens-and-dative, R2). The query bond tools,
  * `bond.any`, `bond.single-or-double`, `bond.single-or-aromatic` and `bond.double-or-aromatic`, show in query mode only
  * (spike query-edit, API-021). A misspelt name fails to compile.
  */
-export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | ToolbarRingTool | ToolbarElementTool;
+export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.dative' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | ToolbarRingTool | ToolbarElementTool;
 /**
  * A sub-palette of a toolbar: its id (a test-id path of your own, such as `bond.multiple`: its main
  * button is `toolbar.<palette>`), its name, and its tools. Its main button shows the tool used last.

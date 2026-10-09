@@ -4,6 +4,7 @@ import {PipelineConfiguration, historyUtils} from '@datagrok-libraries/compute-u
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {Driver} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/Driver';
+import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {deserializeRestrictions} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {callHandler} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
@@ -152,6 +153,34 @@ category('ComputeUtils: Driver state tree persistence', async () => {
     } finally {
       driver.close();
     }
+  });
+
+  test('Duplicated run step saves and loads as run', async () => {
+    const pconf = await getProcessedConfig({
+      id: 'pipeline1',
+      type: 'sequential',
+      nqName: 'LibTests:MockWrapper5',
+      version: '1.0',
+      stepTypes: [{id: 'mul', nqName: 'LibTests:TestMul2'}],
+      initialSteps: ['mul'],
+    });
+    const tree = StateTree.fromPipelineConfig({config: pconf});
+    await tree.init().toPromise();
+    const source = tree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+    source.getStateStore().editState('a', 2);
+    source.getStateStore().editState('b', 3);
+    await tree.runStep(source.uuid).toPromise();
+    await tree.duplicateSubtree(source.uuid).toPromise();
+    const metaCall = await tree.save().toPromise();
+    const loadedTree = await StateTree.load({dbId: metaCall!.id, config: pconf}).toPromise();
+    await loadedTree.init().toPromise();
+    const loadedSource = loadedTree.nodeTree.getItem([{idx: 0}]) as FuncCallNode;
+    const copy = loadedTree.nodeTree.getItem([{idx: 1}]) as FuncCallNode;
+    expectDeepEqual(copy.funcCallState$.value?.isOutputOutdated, false, {prefix: 'Run copy'});
+    expectDeepEqual(copy.getStateStore().getState('res'), 6, {prefix: 'Output'});
+    expectDeepEqual(copy.getStateStore().getState('a'), 2, {prefix: 'Input'});
+    expectDeepEqual(!!copy.instancesWrapper.getInstance()?.getFuncCall().started, true, {prefix: 'Started'});
+    expectDeepEqual(copy.instancesWrapper.id !== loadedSource.instancesWrapper.id, true, {prefix: 'Own call'});
   });
 
   test('Load legacy embedded-DF consistency format', async () => {

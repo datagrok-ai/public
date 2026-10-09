@@ -120,6 +120,23 @@ class Renderer:
         self.zoom_time = zoom_time
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
+        # a guide framed to a part of the page (a sketcher's dialog: `frameTo` in guide.ts) shows that
+        # part alone: every picture is cut to it, and every point and box is moved into it
+        self.frame_box = self.manifest.get('frame')
+        if self.frame_box:
+            fx, fy = self.frame_box['x'], self.frame_box['y']
+            for step in self.manifest['steps']:
+                for box in [step.get('target')] + [leg.get('target') for leg in step.get('legs', [])]:
+                    if box:
+                        box['x'] -= fx
+                        box['y'] -= fy
+                for leg in step.get('legs', []):
+                    for p in leg.get('pointer', []):
+                        p['x'] -= fx
+                        p['y'] -= fy
+                        if p.get('box'):
+                            p['box']['x'] -= fx
+                            p['box']['y'] -= fy
         self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
         first = self._image(self.steps[0]['before'] if self.steps else self.manifest['steps'][0]['before'])
         self.w, self.h = first.width & ~1, first.height & ~1
@@ -144,6 +161,9 @@ class Renderer:
 
     def _image(self, name):
         img = Image.open(os.path.join(self.folder, name)).convert('RGB')
+        if self.frame_box:
+            b = self.frame_box
+            img = img.crop((b['x'], b['y'], b['x'] + b['width'], b['y'] + b['height']))
         if hasattr(self, 'w') and (img.width != self.w or img.height != self.h):
             img = img.crop((0, 0, self.w, self.h))
         return img

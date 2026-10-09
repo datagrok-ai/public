@@ -69,6 +69,8 @@ export interface GuideManifest {
   description: string;
   tags: string[];
   viewport: {width: number; height: number} | null;
+  /** The part of the page the video shows (`frameTo`): every picture is cut to it. */
+  frame?: GuideBox;
   steps: GuideStep[];
 }
 
@@ -85,7 +87,9 @@ interface Recording {
   pending: GuidePointer[];
   dragShots: number;
   silent: boolean;
-  open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; started: number; before: string};
+  /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
+  area?: boolean;
+  open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; caption?: string; started: number; before: string};
 }
 
 const recordings = new WeakMap<Page, Recording>();
@@ -351,10 +355,38 @@ export async function attach(page: Page): Promise<void> {
  * end (a menu item that the click closed is read by then, an element that appears later is not). */
 export async function located(page: Page, loc: Locator): Promise<void> {
   const r = recordings.get(page);
-  if (!r || !r.open)
+  // an area the step aims at stays lit: the viewer located after it (a settle) is its scope
+  if (!r || !r.open || r.area)
     return;
   r.located = loc;
   r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+}
+
+/** The step acts on a place inside the element it located — a hit area of a viewer or a widget (an
+ * atom of a sketcher, a grid cell): that place is lit, not the element round it, and a small one is
+ * zoomed into as an icon is. */
+export function locatedArea(page: Page, box: GuideBox): void {
+  const r = recordings.get(page);
+  if (!r || !r.open)
+    return;
+  r.located = undefined;
+  r.target = box;
+  r.area = true;
+}
+
+/** The video shows this part of the page only (a sketcher's dialog, for a guide about the sketcher):
+ * set by a set-up step, it holds for the scenario, and every picture is cut to it — the box grown by
+ * `margin` and kept on the page. */
+export function frameTo(page: Page, box: GuideBox, margin = 16): void {
+  const r = recordings.get(page);
+  if (!r || !r.open)
+    return;
+  const view = page.viewportSize() ?? {width: Infinity, height: Infinity};
+  const x = Math.max(0, Math.floor(box.x - margin));
+  const y = Math.max(0, Math.floor(box.y - margin));
+  const right = Math.min(view.width, Math.ceil(box.x + box.width + margin));
+  const bottom = Math.min(view.height, Math.ceil(box.y + box.height + margin));
+  r.manifest.frame = {x, y, width: (right - x) & ~1, height: (bottom - y) & ~1};
 }
 
 /** A stop on the path the step walks: the page as it is now (a menu opened by the stop before)
@@ -431,7 +463,8 @@ async function shot(page: Page, dir: string, name: string): Promise<string> {
 
 /** Opens a step: the page as it is before the step, for the picture the pointer moves over. A step
  * before the page exists (the login) is recorded without pictures. */
-export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string, table?: string[][]): Promise<void> {
+export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string, table?: string[][],
+  caption?: string): Promise<void> {
   if (!guideDir() || !page || page.isClosed())
     return;
   const r = recordingFor(page, info);
@@ -448,7 +481,8 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.pending = [];
   r.dragShots = 0;
   r.silent = false;
-  r.open = {index, line, keyword, text, table, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
+  r.area = false;
+  r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
 
 /** Closes the step: waits for the platform to settle, takes the "after" picture, resolves the
@@ -484,12 +518,12 @@ export async function end(page: Page | undefined): Promise<void> {
   const acted = !!target || r.legs.some((l) => l.pointer.length > 0) || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
   // page after it is the point); left out are the login, a step that changed nothing on the page,
-  // and a check or a wait a person has no use for
-  const hidden = r.silent || ((type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
+  // and a check or a wait a person has no use for — unless the feature gave it a caption to show
+  const hidden = r.silent || (!open.caption && (type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
   const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
+    caption: open.caption ?? captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
     keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

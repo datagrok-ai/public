@@ -6,13 +6,16 @@
    events of the sketcher a step opens next, counted from its creation, and the molecules made the current object. */
 import {Page} from '@playwright/test';
 import {element, Given, Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, el, expect, gestures, locate, pollMs, viewers} from '@datagrok-libraries/bdd/runtime';
+import {type ElementRef, atFeatureEnd, el, expect, gestures, guideFrame, locate, pollMs, silent, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 declare const DG: any;
 
 element('sketcher thumbnail', {selector: '.chem-external-sketcher-canvas',
   description: 'the drawing a sketcher shows in place of itself until clicked (a filter card, a pane\'s scaffold): its Clear button shows while the pointer is over it'});
+
+element('crux aromatic bond tool', {selector: '[data-u2-name="cruxSketch"] crux-sketch [data-testid="toolbar.bond.aromatic"]',
+  description: 'the aromatic bond tool of Crux\'s left toolbar: a click on a bond makes it aromatic'});
 
 element('Ketcher canvas', {selector: '.d4-dialog .Ketcher-root [data-testid="ketcher-canvas"]',
   description: 'the canvas of Ketcher in a sketcher dialog, once Ketcher has loaded into it (a switch away from Crux lands there)'});
@@ -242,3 +245,183 @@ export const clipboardFormat = Then('the clipboard should hold {word} text', asy
   expect({oneLine: !text.trim().includes('\n'), molblock}, `the clipboard: ${text.slice(0, 80)}`)
     .toEqual(format === 'SMILES' ? {oneLine: true, molblock: false} : {oneLine: false, molblock: true});
 }, {description: 'SMILES: one line and no molblock end; MOLBLOCK: a molblock, with its "M  END"'});
+
+// ---------------------------------------------------------------- the guides about Crux (features/guides/crux/)
+
+/* Crux's own controls by their test ids (crux-sketch's docs/conventions/test-ids.md), beside the molecules tier's
+   (crux canvas, crux clear button, crux single bond tool, crux benzene tool, crux nitrogen tool, crux select tool,
+   crux undo button, crux flip horizontal button, crux R-group tool and its dialog's buttons): the ones the guides
+   about Crux show. Its dialogs and menus are in its open shadow root too. */
+const CRUX = '[data-u2-name="cruxSketch"] crux-sketch';
+const CRUX_CONTROLS: [string, string, string][] = [
+  // drawing
+  ['crux double bond tool', 'toolbar.bond.double', 'the double bond tool of Crux\'s left toolbar: a click on a bond makes it double'],
+  ['crux dative bond tool', 'toolbar.bond.dative', 'the dative bond tool: a drag draws a dative bond from its donor, where it starts, to its acceptor'],
+  ['crux chain tool', 'toolbar.chain', 'the chain tool: a drag from an atom or the empty canvas draws a zig-zag carbon chain, a bond per bond length dragged'],
+  ['crux stereo bond tool', 'toolbar.bond.stereo', 'the stereo bonds palette\'s button, the wedge until another member is chosen; a click while its member is the tool opens the palette'],
+  ['crux hash bond tool', 'toolbar.bond.hash', 'the hashed wedge, in the open stereo bonds palette'],
+  ['crux cyclohexane tool', 'toolbar.ring.cyclohexane', 'the cyclohexane of Crux\'s ring bar: a click on a bond fuses the ring onto it'],
+  ['crux cyclopropane tool', 'toolbar.ring.cyclopropane', 'the cyclopropane of Crux\'s ring bar: a click on an atom adds a spiro ring there'],
+  ['crux oxygen tool', 'toolbar.element.o', 'the oxygen of Crux\'s element palette: a click on an atom makes it O'],
+  ['crux charge plus tool', 'toolbar.charge.plus', 'Charge plus: a click on an atom raises its charge by one'],
+  ['crux charge minus tool', 'toolbar.charge.minus', 'Charge minus: a click on an atom lowers its charge by one'],
+  ['crux periodic table button', 'toolbar.element.table', 'the periodic table button, last in Crux\'s element palette'],
+  ['crux periodic table', 'dialog.periodic-table', 'Crux\'s periodic table: an element\'s button chooses it, Add makes it the tool'],
+  ['crux periodic table list button', 'dialog.periodic-table.mode.list', 'List (query mode): the elements chosen next make an atom list'],
+  ['crux periodic table not list button', 'dialog.periodic-table.mode.not-list', 'Not list (query mode): the elements chosen next make a NOT list'],
+  ['crux periodic table Q button', 'dialog.periodic-table.generic.q', 'Q, a generic atom in the periodic table (query mode): any atom but carbon and hydrogen'],
+  ['crux periodic table Add button', 'dialog.periodic-table.add', 'Add: the element, list or generic chosen becomes the tool'],
+  ['crux structure library button', 'toolbar.template.library', 'the Structure Library button, last in Crux\'s ring bar'],
+  ['crux structure library', 'dialog.structure-library', 'the Structure Library dialog (Ketcher\'s template library): a template\'s card makes it the tool and closes it'],
+  ['crux structure library search', 'dialog.structure-library.search', 'the Structure Library\'s search: the groups show only the templates that match'],
+  ['crux query bond tool', 'toolbar.bond.query', 'the query bonds palette\'s button (query mode), Any bond until another member is chosen'],
+  ['crux attachment point tool', 'toolbar.rgroup.attachment', 'the attachment point tool, in the open R-group palette: a click on an atom opens the Attachment Points dialog'],
+  ['crux primary attachment point checkbox', 'dialog.attachment-points.primary', 'Primary attachment point, in the Attachment Points dialog'],
+  ['crux Attachment Points OK button', 'dialog.attachment-points.ok', 'OK of the Attachment Points dialog'],
+  // the top bar
+  ['crux redo button', 'toolbar.redo', 'Redo, beside Undo on Crux\'s top toolbar'],
+  ['crux clean up button', 'toolbar.clean', 'Clean Up on Crux\'s top toolbar: tidies bonds and angles, of the selection when there is one'],
+  ['crux copy as button', 'toolbar.copy.open', 'Copy As, the opener beside Copy: the formats the drawing is copied in'],
+  ['crux SMILES item', 'menu.copy-as.smiles', 'SMILES, in the Copy As menu'],
+  ['crux paste button', 'toolbar.paste', 'Paste, on Crux\'s top toolbar'],
+  ['crux hydrogens button', 'toolbar.hydrogens', 'Hydrogens, at the end of the top toolbar\'s Structure group: its menu adds or removes explicit hydrogens'],
+  ['crux add hydrogens item', 'menu.hydrogens.add', 'Add explicit hydrogens, in the Hydrogens menu'],
+  ['crux remove hydrogens item', 'menu.hydrogens.remove', 'Remove explicit hydrogens, in the Hydrogens menu'],
+  ['crux settings button', 'toolbar.options', 'the gear, "Settings and help", last on Crux\'s top toolbar'],
+  ['crux settings item', 'menu.options.settings', 'Settings…, in the gear\'s menu'],
+  ['crux query mode item', 'menu.options.mode', 'Query mode, in the gear\'s menu: switches the sketcher between molecule and query mode'],
+  ['crux stereo labels checkbox', 'dialog.settings.stereo-labels', '"Show R, S, E and Z labels", in Crux\'s Settings'],
+  ['crux settings Apply button', 'dialog.settings.apply', 'Apply of Crux\'s Settings'],
+  // the canvas and its menus
+  ['crux rotate handle', 'overlay.rotate-handle', 'the handle above a selection of two atoms or more: a drag of it turns the selection'],
+  ['crux formula', 'panel.info.formula', 'the formula in Crux\'s formula and mass readout, at the canvas\'s foot'],
+  ['crux context menu', 'menu.context', 'Crux\'s own context menu, of an atom, a bond, the selection or the canvas'],
+  ['crux Atom Properties item', 'menu.context.atom-properties', 'Atom Properties…, in an atom\'s context menu'],
+  ['crux hash item', 'menu.context.bond.hash', 'the hashed wedge among the bond types of a bond\'s context menu'],
+  ['crux wedge item', 'menu.context.bond.wedge', 'the wedge among the bond types of a bond\'s context menu'],
+  ['crux atropisomer P item', 'menu.context.atrop.p', 'P, in an atropisomer axis bond\'s context menu'],
+  ['crux atropisomer M item', 'menu.context.atrop.m', 'M, in an atropisomer axis bond\'s context menu'],
+  ['crux E item', 'menu.context.ez.e', 'E, in a stereo double bond\'s context menu'],
+  ['crux Z item', 'menu.context.ez.z', 'Z, in a stereo double bond\'s context menu'],
+  ['crux enhanced stereo item', 'menu.context.enhanced-stereo', 'Enhanced Stereochemistry…, in the context menu of a stereocentre or the selection'],
+  ['crux topology item', 'menu.context.topology', 'Topology, in a bond\'s context menu (query mode): opens its submenu'],
+  ['crux ring topology item', 'menu.context.topology.ring', 'Ring, in the Topology submenu'],
+  ['crux chain topology item', 'menu.context.topology.chain', 'Chain, in the Topology submenu'],
+  ['crux expand abbreviation item', 'menu.context.expand-abbreviation', 'Expand Abbreviation, in a contracted abbreviation\'s context menu'],
+  ['crux contract abbreviation item', 'menu.context.contract-abbreviation', 'Contract Abbreviation, in the context menu of an expanded abbreviation\'s atom'],
+  // dialogs
+  ['crux Atom Properties', 'dialog.atom-properties', 'Crux\'s Atom Properties dialog'],
+  ['crux charge field', 'dialog.atom-properties.charge', 'Charge, in Atom Properties'],
+  ['crux isotope field', 'dialog.atom-properties.isotope', 'Isotope, in Atom Properties'],
+  ['crux radical list', 'dialog.atom-properties.radical', 'Radical, in Atom Properties: none, a monovalent or a divalent radical'],
+  ['crux Atom Properties Apply button', 'dialog.atom-properties.apply', 'Apply of Atom Properties'],
+  ['crux enhanced stereo dialog', 'dialog.enhanced-stereo', 'Crux\'s Enhanced Stereochemistry dialog'],
+  ['crux AND button', 'dialog.enhanced-stereo.type.and', 'AND, in Enhanced Stereochemistry'],
+  ['crux OR button', 'dialog.enhanced-stereo.type.or', 'OR, in Enhanced Stereochemistry'],
+  ['crux enhanced stereo Apply button', 'dialog.enhanced-stereo.apply', 'Apply of Enhanced Stereochemistry'],
+];
+for (const [name, id, description] of CRUX_CONTROLS)
+  element(name, {selector: `${CRUX} [data-testid="${id}"]`, description});
+
+/** The sketcher a guide about Crux opens on, sized for the video, in the middle of the page; its zoom, in Zoom in
+ * steps from 100%, so the drawing reads in a video. */
+const GUIDE_DIALOG = {width: 1040, height: 860, zoomSteps: 5};
+
+/** Crux's settings as a user leaves them, kept in the page (crux-sketch's `persist-settings`). */
+const CRUX_SETTINGS = 'crux-sketch:settings';
+
+/** In the page: Crux's status values (its `getWidgetStatus()` readings). */
+function cruxValues(page: Page): Promise<any> {
+  return viewers.onViewer(page, el('crux sketcher widget'),
+    (e) => (window as any).__bdd.viewerOf(e).getWidgetStatus()?.values ?? {});
+}
+
+async function openCrux(page: Page, molecule: string, labels: boolean): Promise<void> {
+  const {width, height, zoomSteps} = GUIDE_DIALOG;
+  // set-up a person never does: the video starts with the sketcher open
+  silent(page);
+  const kept = await page.evaluate((k) => localStorage.getItem(k), CRUX_SETTINGS);
+  atFeatureEnd(page, async () => {
+    await page.evaluate(([k, v]) => v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v), [CRUX_SETTINGS, kept]);
+  });
+  await page.evaluate(([m, w, h]) => {
+    const sketcher = new DG.chem.Sketcher();
+    if (m)
+      sketcher.setMolecule(m);
+    (window as any).ui.dialog().add(sketcher).onOK(() => {})
+      .show({resizable: true, width: w, height: h, x: Math.round((innerWidth - w) / 2), y: Math.round((innerHeight - h) / 2)});
+  }, [molecule, width, height] as [string, number, number]);
+  await expect.poll(async () => {
+    const v = await cruxValues(page).catch(() => ({}));
+    return v.ready === true && v.pending === false && (molecule === '' || Number(v.atoms) > 0);
+  }, {message: 'Crux ready in the sketcher dialog, showing the molecule'}).toBe(true);
+  if (labels)
+    await page.evaluate((root) => { (document.querySelector(root) as any).stereoLabels = 'shown'; }, CRUX);
+  // Zoom in (F7) on the canvas, as a person makes a drawing larger
+  await page.evaluate((root) => (document.querySelector(root)?.shadowRoot?.querySelector('[data-testid="canvas"]') as HTMLElement | null)
+    ?.focus(), CRUX);
+  for (let i = 0; i < zoomSteps; i++)
+    await page.keyboard.press('F7');
+  await viewers.settle(page, el('crux sketcher widget'));
+  const dialog = (await locate(page, el('sketcher dialog'))).filter({visible: true}).first();
+  const box = await dialog.boundingBox();
+  // the menus and dialogs Crux opens over the canvas can reach past the dialog's edges
+  if (box)
+    guideFrame(page, box, 40);
+}
+
+export const cruxOpenOn = Given('the Crux sketcher is open on {string}', (page: Page, molecule: string) => openCrux(page, molecule, false),
+  {tier: 'api', description: 'a sketcher dialog with Crux (pinned before) showing the molecule, sized for a video, which a guide shows alone; Crux\'s settings come back at feature end; silent in a guide'});
+
+export const cruxOpenEmpty = Given('the Crux sketcher is open', (page: Page) => openCrux(page, '', false),
+  {tier: 'api', description: 'the same, empty'});
+
+export const cruxOpenLabelled = Given('the Crux sketcher is open on {string}, showing R, S, E and Z labels', (page: Page, molecule: string) =>
+  openCrux(page, molecule, true),
+{tier: 'api', description: 'the same, with Crux\'s CIP labels shown (its stereoLabels), as Settings\' "Show R, S, E and Z labels" shows them'});
+
+export const cruxOpenOnMolfile = Given('the Crux sketcher is open on this molfile, showing R, S, E and Z labels:',
+  (page: Page, molfile: string) => openCrux(page, molfile, true),
+  {tier: 'api', description: 'the same, on the molfile the doc string holds (a drawing with its wedges where they were drawn)'});
+
+const STEREO_DRAWN: {[stereo: string]: string} = {wedge: 'up', hash: 'down', plain: 'none'};
+
+export const cruxBondDrawn = Then('bond {int} of Crux should be drawn as a {word}', async (page: Page, bond: number, kind: string) => {
+  const want = STEREO_DRAWN[kind];
+  if (want === undefined)
+    throw new Error(`a bond is drawn as a wedge, a hash or plain, not "${kind}"`);
+  await expect(page.locator(`${CRUX} [data-testid="bond.${bond}"]`), `bond ${bond}'s stereo as drawn`).toHaveAttribute('data-stereo', want);
+}, {description: 'the bond\'s data-stereo as Crux draws it: wedge (up), hash (down) or plain (none)'});
+
+export const cruxKey = When('user presses the {string} key over the {string} area of {widget}',
+  async (page: Page, key: string, area: string, target: ElementRef) => {
+    const c = viewers.centerOf(await viewers.hitArea(page, target, area, true));
+    await page.mouse.move(c.x - 3, c.y - 3);
+    await page.mouse.move(c.x, c.y);
+    await viewers.settle(page, target);
+    // a key goes to the sketcher holding the focus: a person has clicked in it before
+    await page.evaluate((root) => {
+      const sketch = document.querySelector(root) as HTMLElement | null;
+      if (sketch && !sketch.contains(document.activeElement) && sketch.shadowRoot?.activeElement == null)
+        (sketch.shadowRoot?.querySelector('[data-testid="canvas"]') as HTMLElement | null)?.focus();
+    }, CRUX);
+    // as typed: Crux's keymap is case-sensitive (o is oxygen, Shift+O a methoxy)
+    await page.keyboard.press(key);
+  }, {tier: 'ui', description: 'the pointer over the area, then the key as written, case and all (Crux\'s hotkeys act on the hovered atom or bond)'});
+
+export const cruxMenu = When('user opens the Crux context menu on the {string} area', async (page: Page, area: string) => {
+  const c = viewers.centerOf(await viewers.hitArea(page, el('crux sketcher widget'), area, true));
+  await page.mouse.click(c.x, c.y, {button: 'right'});
+  await expect(page.locator(`${CRUX} [data-testid="menu.context"]`), 'Crux\'s context menu').toBeVisible();
+}, {tier: 'ui', description: 'a right-click on an atom or a bond of Crux (an area of crux sketcher widget): Crux\'s own menu, in its shadow root'});
+
+export const cruxSpot = When('user clicks on Crux canvas {int}% across and {int}% down', async (page: Page, across: number, down: number) => {
+  const b = await viewers.hitArea(page, el('crux sketcher widget'), 'canvas', true);
+  await page.mouse.click(b.x + b.width * across / 100, b.y + b.height * down / 100);
+}, {tier: 'ui', description: 'a click on a point of Crux\'s canvas, by its place across and down the canvas (an empty spot)'});
+
+export const cruxSmarts = Then('the Crux sketcher should hold the query {string}', async (page: Page, smarts: string) => {
+  await viewers.settle(page, el('crux sketcher widget')).catch(() => undefined);
+  await expect.poll(() => viewers.onViewer(page, el('crux sketcher widget'),
+    (e) => (window as any).DG.Widget.find(e).getSmarts()), {message: 'the SMARTS of Crux\'s drawing'}).toBe(smarts);
+}, {description: 'the SMARTS Crux writes for its drawing (getSmarts), as written'});

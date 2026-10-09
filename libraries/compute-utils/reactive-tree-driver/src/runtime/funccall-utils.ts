@@ -91,11 +91,20 @@ export async function makeFuncCall(
   nqName: string, isReadonly: boolean, initialValues: Record<string, any> = {},
 ): Promise<AdapterInitData> {
   const func = DG.Func.byName(nqName);
-  const fc = func.prepare(initialValues);
-  await initNewCall(fc, initialValues);
+  const inputValues = Object.fromEntries(func.inputs
+    .filter((prop) => prop.name in initialValues)
+    .map((prop) => [prop.name, initialValues[prop.name]]));
+  const fc = func.prepare(inputValues);
+  await initNewCall(fc, inputValues);
+  // output values mean the call has run
+  const outputs = func.outputs.filter((prop) => initialValues[prop.name] !== undefined);
+  for (const prop of outputs)
+    fc.outputs[prop.name] = initialValues[prop.name];
+  if (outputs.length)
+    fc.started = dayjs();
   fc.newId();
   const adapter = new FuncCallAdapter(fc, isReadonly);
-  return {adapter, restrictions: {}, runError: undefined, isOutputOutdated: true};
+  return {adapter, restrictions: {}, runError: undefined, isOutputOutdated: !outputs.length};
 }
 
 export async function saveFuncCall(bridge: FuncCallInstancesBridge) {

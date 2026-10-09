@@ -312,6 +312,7 @@ export class PipelineNodeBase implements IStoreProvider {
   private store: MemoryStore;
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
   public pipelineValidations$ = new BehaviorSubject<Record<string, ValidationResult | undefined>>({});
+  public skipOnInit = false;
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
@@ -326,6 +327,12 @@ export class PipelineNodeBase implements IStoreProvider {
       throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
     if (state.uuid)
       this.uuid = state.uuid;
+  }
+
+  initState(initialConfig: {initialValues?: Record<string, any>, skipOnInit?: boolean}) {
+    for (const [k, val] of Object.entries(initialConfig.initialValues ?? {}))
+      this.store.setState(k, val);
+    this.skipOnInit = !!initialConfig.skipOnInit;
   }
 
   getStateStore() {
@@ -367,7 +374,6 @@ export class PipelineNodeBase implements IStoreProvider {
     const res = {
       ...state,
       nqName: this.config.nqName,
-      approversGroup: this.config.approversGroup,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
       forceNavigate: !!this.config.forceNavigate,

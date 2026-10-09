@@ -2,6 +2,12 @@
 
 ## v.next
 
+* RTD: Added `Driver.inspectLinks` and `Driver.inspectConfig` for debugging: resolved links and actions with the link, rule or check as written, their empty aliases, the targets `$linked` dropped and action visibility, and the config as written with resolved step io
+* RTD: Removed `Driver.currentConfig$`
+* RTD: Removed the unused `approversGroup` config key
+* RTD: Fixed `setPipelineState` failing with "SelfRef ... not found" when the replaced workflow's step types reference an outer workflow
+* RTD: Added the `duplicateDynamicItem` command; in a `PipelineInstanceConfig`, workflow entries take `initialValues` (workflow states) and `skipOnInit`, and output values in a script step's `initialValues` mark the step as run
+* RTD: Data links copy a dataframe once instead of twice when it only becomes a consistency snapshot (target already run or read-only) or no snapshot is kept (restriction `none`); reset to consistent and Update give the input dataframe its own id
 * RTD: Exported the `PipelineState`, `PipelineOutline`, `ValidationItem`, `Advice`, `RestrictionType`, `ConsistencyInfo`, `IRuntimeReturnController`, `ReturnHandler`, `CustomExport` and `ViewersHook` types and the `isFuncCallState`, `isStaticPipelineState` and `isDynamicPipelineState` guards, which now also narrow a `PipelineOutline`; removed the internal `isPipelineActionConfig` from the public index
 * RTD: Added `consistencyTolerance` and `consistencyRelTolerance` input annotations that set the tolerance for consistency checks of numbers and dataframe cells (default stays absolute `0.0001`)
 * RTD: Fixed pipeline actions changing read-only workflows (added or replaced steps came out writable); read-only targets are now skipped, and read-only steps no longer run through `runStep` or a run sequence

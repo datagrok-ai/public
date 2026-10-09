@@ -17,30 +17,30 @@ import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/rea
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
-  ['next warn']: 'arrow-right',
-  ['next error']: 'arrow-right',
-  [`pending`]: 'circle',
-  [`pending executed`]: 'dot-circle',
+  ['next warn']: 'exclamation-triangle',
+  ['next error']: 'pen',
+  [`pending`]: 'clock',
+  [`pending executed`]: 'history',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
-  ['succeeded info']: 'check-circle',
-  ['succeeded warn']: 'dot-circle',
-  ['succeeded inconsistent']: 'dot-circle',
+  ['succeeded info']: 'info-circle',
+  ['succeeded warn']: 'exclamation-circle',
+  ['succeeded inconsistent']: 'unlink',
   ['failed']: 'times-circle',
 };
 
 const statusToColor: Record<Status, string> = {
-  ['next']: 'green',
-  ['next warn']: 'orange',
-  ['next error']: 'black',
-  [`pending`]: 'gray',
-  [`pending executed`]: 'gray',
-  ['running']: 'blue',
-  ['succeeded']: 'green',
-  ['succeeded info']: 'blue',
-  ['succeeded warn']: 'orange',
-  ['succeeded inconsistent']: 'red',
-  ['failed']: 'red',
+  ['next']: 'var(--success)',
+  ['next warn']: 'var(--orange-2)',
+  ['next error']: 'var(--red-3)',
+  [`pending`]: 'var(--grey-5)',
+  [`pending executed`]: 'var(--grey-5)',
+  ['running']: 'var(--blue-1)',
+  ['succeeded']: 'var(--success)',
+  ['succeeded info']: 'var(--blue-1)',
+  ['succeeded warn']: 'var(--orange-2)',
+  ['succeeded inconsistent']: 'var(--red-3)',
+  ['failed']: 'var(--red-3)',
 };
 
 const listContributingIos = (
@@ -115,7 +115,13 @@ export const TreeNode = Vue.defineComponent({
     isDeletable: {
       type: Boolean,
     },
+    isDuplicable: {
+      type: Boolean,
+    },
     isReadonly: {
+      type: Boolean,
+    },
+    isSelected: {
       type: Boolean,
     },
     hasInconsistentSubsteps: {
@@ -125,6 +131,7 @@ export const TreeNode = Vue.defineComponent({
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
     removeNode: () => true,
+    duplicateNode: () => true,
     toggleNode: () => true,
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
@@ -221,7 +228,7 @@ export const TreeNode = Vue.defineComponent({
         >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { ...isHovered.value ? [
+            { ...isHovered.value || props.isSelected ? [
               ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
                 name='save'
                 tooltip={'Save this subtree'}
@@ -231,6 +238,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
+                tooltip='Add a step'
                 rightAligned
                 items={props.stat.data.stepTypes
                   .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
@@ -250,11 +258,19 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...props.isDraggable ? [<IconFA
                 name='grip-vertical'
+                tooltip='Drag to move'
                 cursor='grab'
+                class='d4-ribbon-item'
+              />]: [],
+              ...props.isDuplicable ? [<IconFA
+                name='copy'
+                tooltip='Duplicate'
+                onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],
               ...props.isDeletable ? [<IconFA
                 name='times'
+                tooltip='Remove'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],

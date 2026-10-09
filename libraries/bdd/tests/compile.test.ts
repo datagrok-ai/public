@@ -210,6 +210,22 @@ test('data tables and doc strings are passed as trailing arguments', () => {
   assert.match(code, /fillIn\(page, \[\["name input","Batch 7"\],\["method","clustal"\]\]\)/);
 });
 
+test('a "# caption:" comment right above a step is its caption in a guide, passed after the body', () => {
+  const {code} = compile(`Feature: A
+  Scenario: B
+    # caption: Open the toolbox
+    When user clicks on toolbox
+    # a note, not a caption
+    Then toolbox should be visible
+    # caption: The toolbox shows
+    # (it is the shell's)
+    Then toolbox should be hidden
+`);
+  assert.match(code, /clickOn\(page, el\("toolbox"\)\), undefined, "Open the toolbox"\);/);
+  assert.match(code, /shouldBe\(page, el\("toolbox"\), "visible"\)\);/);
+  assert.match(code, /shouldBe\(page, el\("toolbox"\), "hidden"\), undefined, "The toolbox shows"\);/);
+});
+
 test('a step that enters a context switches the vocabulary and emits the switch', () => {
   const workbench = context('MSA workbench', {selector: '[data-u2-name="msaWorkbench"]'});
   workbench.element('results', {selector: '[data-u2-name="results"]'});

@@ -236,4 +236,42 @@ category('crux substructure search', () => {
       tv.close();
     }
   }, {timeout: 45000});
+
+  // RDKit's SMARTS writer writes MDL's single or double with ring topology `-,=&@`, which a SMARTS parser, crux's too,
+  // reads as `-,(=&@)`; such a query is searched by RDKit, which matches the query molecule itself (crux-sketch spike
+  // query-roundtrip, L6: a custom bond query `-,=;@` passed 969 rows of mol1K for 417)
+  test('anAndOverAnOrBondQueryIsSearchedByRdkit', async () => {
+    setSubstructureSearchEngine(SubstructureSearchEngine.Crux);
+    const molblock = ['', '  query-roundtrip', '', '  2  1  0  0  0  0  0  0  0  0999 V2000',
+      '    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+      '    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+      '  1  2  5  0  0  1', 'M  END', ''].join('\n');
+    expect(await getCruxQuery(molblock, ''), null, 'crux takes the query written `-,=&@`');
+    const df = await readDataframe('smiles.csv');
+    await expectSameAsRdkit(df.col('canonical_smiles')!, [molblock], SubstructureSearchType.CONTAINS, null, false);
+    const rdkit = chemCommonRdKit.getRdKitModule();
+    const intended = rdkit.get_qmol('[#6]-,=;@[#6]');
+    const found = (q: any) => df.col('canonical_smiles')!.toList().filter((s: string) => {
+      const m = rdkit.get_mol(s);
+      try {
+        return m.get_substruct_match(q) !== '{}';
+      } finally {
+        m.delete();
+      }
+    }).length;
+    const query = rdkit.get_qmol(molblock);
+    try {
+      expect(found(query), found(intended), 'the molblock\'s query against [#6]-,=;@[#6]');
+    } finally {
+      query.delete();
+      intended.delete();
+    }
+  });
+
+  test('workerPoolIsBounded', async () => {
+    // each worker holds a crux WebAssembly instance, and a page has room for only so many WebAssembly memories:
+    // sized by the threads alone, crux's pool and RDKit's filled it on a 32-thread machine
+    const service = await getCruxService();
+    expect(service.workerCount, Math.max(1, Math.min(navigator.hardwareConcurrency - 2, 16)), 'crux workers');
+  });
 });

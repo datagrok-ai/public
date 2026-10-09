@@ -5,6 +5,7 @@ import {deepEqual} from 'fast-equals';
 import {FuncCallAdapter, IFuncCallAdapter, IRunnableWrapper, IStateStore, MemoryStore} from './FuncCallAdapters';
 import {RestrictionType, ValidationResult} from '../data/common-types';
 import {FuncCallIODescription} from '../config/config-processing-utils';
+import {copyDataFrame} from '../utils';
 import {StateItem} from '../config/PipelineConfiguration';
 import {DriverLogger, reportError} from '../data/Logger';
 
@@ -101,7 +102,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       throw new Error(`Double funcCall bridge instance init`);
     if (data.initValues) {
       for (const [key, val] of Object.entries(this.initialValues)) {
-        if (data.restrictions[key]?.assignedValue == null)
+        const isInput = this.io.some((item) => item.id === key && item.direction === 'input');
+        if (isInput && data.restrictions[key]?.assignedValue == null)
           data.adapter.setState(key, val);
       }
       for (const [key, val] of Object.entries(data.restrictions)) {
@@ -160,7 +162,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,
@@ -228,7 +230,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentRestriction = this.inputRestrictions$.value?.[id];
     if (!this.isReadonly && currentRestriction) {
       const consistentVal = currentRestriction.assignedValue instanceof DG.DataFrame ?
-        currentRestriction.assignedValue.clone() :
+        copyDataFrame(currentRestriction.assignedValue) :
         currentRestriction.assignedValue;
       currentInstance.setState(id, consistentVal, currentRestriction.type);
     }
@@ -291,7 +293,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
         if (!restriction) continue;
         const t = restriction.type;
         if (t === 'restricted' || t === 'disabled' || (includeInfo && t === 'info'))
-          this.setState(name, restriction.assignedValue, t);
+          this.setToConsistent(name);
       }
       return of(undefined);
     });

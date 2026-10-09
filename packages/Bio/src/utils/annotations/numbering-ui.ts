@@ -141,6 +141,44 @@ function sortPositionCodes(codes: string[]): string[] {
   });
 }
 
+/** Orders position codes as they occur along the sequences: every row lists its
+ *  codes in sequence order, and the rows are merged (topological order of the
+ *  "comes before" pairs), so schemes that number insertions backwards keep
+ *  residue order (IMGT: ..., 111A, 111B, 112B, 112A, 112; likewise at 33 and 61).
+ *  Codes not ordered by any row fall back to {@link sortPositionCodes}. */
+function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[] {
+  const fallback = sortPositionCodes(Array.from(codes));
+  const rank = new Map(fallback.map((c, i) => [c, i]));
+  const next = new Map<string, Set<string>>(fallback.map((c) => [c, new Set<string>()]));
+  const indegree = new Map<string, number>(fallback.map((c) => [c, 0]));
+  for (const order of rowOrders) {
+    for (let i = 1; i < order.length; i++) {
+      const successors = next.get(order[i - 1]);
+      if (!successors || !indegree.has(order[i]) || successors.has(order[i])) continue;
+      successors.add(order[i]);
+      indegree.set(order[i], indegree.get(order[i])! + 1);
+    }
+  }
+  const ready = fallback.filter((c) => indegree.get(c) === 0);
+  const ordered: string[] = [];
+  while (ready.length > 0) {
+    ready.sort((a, b) => rank.get(a)! - rank.get(b)!);
+    const code = ready.shift()!;
+    ordered.push(code);
+    for (const successor of next.get(code)!) {
+      const remaining = indegree.get(successor)! - 1;
+      indegree.set(successor, remaining);
+      if (remaining === 0) ready.push(successor);
+    }
+  }
+  // Rows that disagree (a cycle) leave codes unplaced: append them in numeric order.
+  if (ordered.length < fallback.length) {
+    const placed = new Set(ordered);
+    ordered.push(...fallback.filter((c) => !placed.has(c)));
+  }
+  return ordered;
+}
+
 /** Builds unified position list from all rows and creates an aligned sequence column.
  *  Includes flanking residues (before/after the numbered region) padded with gaps.
  *  Layout: [pre-region gaps+residues] [scheme-aligned region] [post-region residues+gaps]
@@ -150,9 +188,12 @@ function createAlignedColumn(
 ): {alignedCol: DG.Column<string>; unifiedPositions: string[]; preOffset: number} | null {
   const numberingMapCol = result.col('numbering_map');
   if (!numberingMapCol) return null;
+  const positionNamesCol = result.col('position_names');
 
-  // Pass 1: collect all scheme position codes and per-row flanking lengths
+  // Pass 1: collect all scheme position codes (with each row's sequence order)
+  // and per-row flanking lengths
   const allCodes = new Set<string>();
+  const rowOrders: string[][] = [];
   const rowMaps: (Record<string, number> | null)[] = [];
   const rowPreLens: number[] = []; // chars before first numbered position
   const rowPostLens: number[] = []; // chars after last numbered position
@@ -171,6 +212,9 @@ function createAlignedColumn(
       rowMaps.push(posToCharIdx);
       for (const code of Object.keys(posToCharIdx))
         allCodes.add(code);
+      const names: string = positionNamesCol?.get(i) ?? '';
+      if (names)
+        rowOrders.push(names.split(',').map((c) => c.trim()).filter((c) => c in posToCharIdx));
 
       // Find min/max char indices that were numbered
       const charIndices = Object.values(posToCharIdx);
@@ -191,7 +235,7 @@ function createAlignedColumn(
   const maxPostLen = Math.max(0, ...rowPostLens);
 
   // Build position names: [pre-flanking] + [scheme positions] + [post-flanking]
-  const schemePositions = sortPositionCodes(Array.from(allCodes));
+  const schemePositions = orderPositionCodes(rowOrders, allCodes);
   const preNames: string[] = [];
   for (let p = maxPreLen; p > 0; p--)
     preNames.push(`N-${p}`);

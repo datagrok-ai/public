@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import $ from 'cash-dom';
-import {from, fromEvent, interval, Observable, Subject, Subscription} from 'rxjs';
-import {filter, first, map} from 'rxjs/operators';
+import {from, fromEvent, interval, merge, Observable, Subject, Subscription} from 'rxjs';
+import {filter, first, map, switchMap} from 'rxjs/operators';
 import {Track} from './track';
 import {awardBadge} from './utils/badges-utils';
 
@@ -79,6 +79,7 @@ export abstract class Tutorial extends DG.Widget {
   progressSteps: HTMLDivElement = ui.divText('');
 
   static DATA_STORAGE_KEY: string = 'tutorials';
+  static SKIP_DELAY_MS: number = 30000;
   static SERVICES: {[service: string]: string} = {
     'jupyter': 'Jupyter',
     'grokCompute': 'GrokCompute',
@@ -414,7 +415,8 @@ export abstract class Tutorial extends DG.Widget {
   }
 
   async action(instructions: string, completed: Observable<any> | Promise<void>,
-    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<void> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: (() => unknown) | null): Promise<void> {
     if (this.closed)
       return;
 
@@ -458,7 +460,33 @@ export abstract class Tutorial extends DG.Widget {
     }
     descriptionDiv.scrollIntoView();
 
-    const succeeded = await this.firstEvent(completed instanceof Promise ? from(completed) : completed);
+    const skipped = new Subject<void>();
+    let stepDone = false;
+    let skipTimer: ReturnType<typeof setTimeout> | undefined;
+    const showSkipLater = () => {
+      if (!stepDone)
+        skipTimer = setTimeout(() => entry.append(skipIcon!), Tutorial.SKIP_DELAY_MS);
+    };
+    const skipIcon = skip === null ? null : ui.iconFAB('step-forward', async () => {
+      skipIcon!.remove();
+      try {
+        await skip?.();
+        if (!skip || Tutorial.apiSkips.has(skip)) {
+          skipped.next();
+          return;
+        }
+      } catch (e) {
+        console.error('Tutorial step could not be performed on skip', this.name, e);
+      }
+      showSkipLater();
+    }, 'Stuck? Click to skip this step');
+    if (skipIcon)
+      showSkipLater();
+
+    const succeeded = await this.firstEvent(merge(completed instanceof Promise ? from(completed) : completed, skipped));
+    stepDone = true;
+    clearTimeout(skipTimer);
+    skipIcon?.remove();
     if (this.closed) {
       sub.unsubscribe();
       return;
@@ -469,9 +497,9 @@ export abstract class Tutorial extends DG.Widget {
       instructionDiv.classList.add('grok-tutorial-entry-success');
       instructionIndicator.classList.add('grok-tutorial-entry-indicator-success');
       entry.setAttribute('aria-checked', 'true');
-      grok.events.fireCustomEvent('tutorial-step-completed', {tutorial: this.name, step: step, instruction: instructions});
-    }
-    else
+      grok.events.fireCustomEvent('tutorial-step-completed',
+        {tutorial: this.name, step: step, instruction: instructions});
+    } else
       entry.setAttribute('aria-invalid', 'true');
 
     if (hint != null)
@@ -537,7 +565,6 @@ export abstract class Tutorial extends DG.Widget {
    * complete, and is shown so), and does not settle as a success when the tutorial is closed. */
   firstEvent(eventStream: Observable<any>): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
-      let eventSub: Subscription;
       const closeSub = this.onClose.subscribe(() => {
         eventSub?.unsubscribe();
         closeSub.unsubscribe();
@@ -545,9 +572,10 @@ export abstract class Tutorial extends DG.Widget {
         // eslint-disable-next-line
         reject();
       });
-      eventSub = eventStream.pipe(first()).subscribe({
+      const eventSub: Subscription = eventStream.pipe(first()).subscribe({
         next: () => (closeSub.unsubscribe(), resolve(true)),
-        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(), resolve(false)),
+        error: (e) => (console.error('Tutorial step could not complete', this.name, e), closeSub.unsubscribe(),
+        resolve(false)),
       });
     }).catch((_) => (console.log('Closing tutorial', this.name), false));
   }
@@ -587,6 +615,12 @@ export abstract class Tutorial extends DG.Widget {
     return null;
   }
 
+  static setInputValue(editor: HTMLInputElement | HTMLSelectElement, value: string): void {
+    editor.value = value;
+    editor.dispatchEvent(new Event('input', {bubbles: true}));
+    editor.dispatchEvent(new Event('change', {bubbles: true}));
+  }
+
   private awaitElement(element: HTMLElement, selector: string,
     filter: ((idx: number, el: Element) => boolean) | null = null, timeoutMs = 10000): Promise<EleLoose | null> {
     return Tutorial.waitFor(() => this.getElement(element, selector, filter), timeoutMs);
@@ -594,6 +628,47 @@ export abstract class Tutorial extends DG.Widget {
 
   protected get menuRoot(): HTMLElement {
     return grok.shell.v.ribbonMenu.root;
+  }
+
+  private static apiSkips = new WeakSet<() => unknown>();
+
+  static apiSkip(perform: () => unknown): () => unknown {
+    Tutorial.apiSkips.add(perform);
+    return perform;
+  }
+
+  static setCodeEditorText(root: HTMLElement, text: string): void {
+    const cm5 = ($(root).find('.CodeMirror')[0] as any)?.CodeMirror;
+    if (cm5 != null) {
+      cm5.setValue(text);
+      return;
+    }
+    const view = Tutorial.codeMirrorView(root);
+    view?.dispatch({changes: {from: 0, to: view.state.doc.length, insert: text}});
+  }
+
+  static codeMirrorView(root: HTMLElement): any {
+    const content: any = root.querySelector('.cm-content');
+    const link = content?.cmTile ?? content?.cmView;
+    return link?.view ?? link?.rootView?.view ?? null;
+  }
+
+  static clickCell(grid: DG.Grid, column: string, row: number): void {
+    const cell = grid.cell(column, row).bounds;
+    const rect = grid.overlay.getBoundingClientRect();
+    const init = {bubbles: true, clientX: rect.left + cell.midX, clientY: rect.top + cell.midY};
+    for (const type of ['mousedown', 'mouseup', 'click'])
+      grid.overlay.dispatchEvent(new MouseEvent(type, init));
+  }
+
+  static async runContextMenu(target: HTMLElement, label: string): Promise<void> {
+    const rect = target.getBoundingClientRect();
+    target.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, button: 2,
+      clientX: rect.left + rect.width / 2, clientY: rect.top + rect.height / 2}));
+    const item = await Tutorial.waitFor(() => $('.d4-menu-popup').last().find('.d4-menu-item-label')
+      .filter((_, el) => el.textContent?.trim().toLowerCase() === label.toLowerCase())
+      .closest('.d4-menu-item')[0] ?? null);
+    item!.click();
   }
 
   protected getMenuItem(name: string, horizontalMenu?: boolean): HTMLElement | null {
@@ -630,6 +705,7 @@ export abstract class Tutorial extends DG.Widget {
       })),
       view.type === 'TableView' ? getViewerIcon((<DG.TableView>view).toolboxPage.accordion.root) : null,
       description,
+      () => grok.shell.tv.addViewer(Object.values(DG.VIEWER).find((v) => v.toLowerCase() === name) ?? name),
     );
 
     return viewer!;
@@ -654,6 +730,7 @@ export abstract class Tutorial extends DG.Widget {
       }),
       historyHint ? this.getElement(dlg.root, 'i.fa-history.d4-command-bar-icon') : inp.root,
       description,
+      () => {inp.stringValue = value;},
     );
   }
 
@@ -668,7 +745,7 @@ export abstract class Tutorial extends DG.Widget {
     }
     const input = this.getElement(inputRoot, 'input.ui-input-editor') as HTMLInputElement;
     const source = fromEvent(input, 'input').pipe(map((_) => input.value), filter((val) => val === value));
-    await this.action(instructions, source, inputRoot, description);
+    await this.action(instructions, source, inputRoot, description, () => Tutorial.setInputValue(input, value));
   }
 
   /** A helper method to access choice inputs in a view. */
@@ -685,7 +762,7 @@ export abstract class Tutorial extends DG.Widget {
     await this.action(instructions, select.value === value ?
       new Promise<void>((resolve) => resolve()) :
       source.pipe(map((_) => select.value), filter((v: string) => v === value)),
-    inputRoot, description);
+    inputRoot, description, () => Tutorial.setInputValue(select, value));
   };
 
   private async prepareColumnInpAction(root: HTMLElement, instructions: string, caption: string, columnName: string,
@@ -726,12 +803,19 @@ export abstract class Tutorial extends DG.Widget {
       return;
     }
     const source = fromEvent(btn, 'click');
-    await this.action(instructions, source, btn, description);
+    await this.action(instructions, source, btn, description, () => btn.click());
   };
+
+  protected async dialogOkAction(dialog: DG.Dialog, instructions: string = 'Click "OK"',
+    description: string = ''): Promise<void> {
+    await this.action(instructions, dialog.onClose, dialog.getButton('OK'), description,
+      () => dialog.getButton('OK').click());
+  }
 
   /** Prompts the user to open a view of the specified type, waits for it to open and returns it. */
   protected async openViewByType(instructions: string, type: string,
-    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<DG.View> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: () => unknown): Promise<DG.View> {
     let view: DG.View;
 
     // If the view was opened earlier, we find it and wait until it becomes current.
@@ -750,14 +834,15 @@ export abstract class Tutorial extends DG.Widget {
       })) : grok.shell.v.type === view.type ?
         new Promise<void>((resolve, _) => resolve()) :
         grok.events.onCurrentViewChanged.pipe(filter((_) => grok.shell.v.type === view.type)),
-    hint, description);
+    hint, description, view! == null ? skip ?? null : () => {grok.shell.v = view;});
 
     return view!;
   }
 
   /** Prompts the user to open a dialog with the specified title, waits for it to open and returns it. */
   protected async openDialog(instructions: string, title: string,
-    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<DG.Dialog> {
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: () => unknown): Promise<DG.Dialog> {
     let dialog: DG.Dialog;
 
     await this.action(instructions, grok.events.onDialogShown.pipe(filter((dlg) => {
@@ -766,7 +851,7 @@ export abstract class Tutorial extends DG.Widget {
         return true;
       }
       return false;
-    })), hint, description);
+    })), hint, description, skip ?? null);
 
     return dialog!;
   }
@@ -774,25 +859,19 @@ export abstract class Tutorial extends DG.Widget {
   /** Prompts the user to open the "Add New Column" dialog, waits for it to open and returns it. */
   protected async openAddNCDialog(instructions: string = 'Open the "Add New Column" dialog',
     description: string = ''): Promise<DG.Dialog> {
-    const addNCIcon = $('div.d4-ribbon-item').has('i.svg-add-new-column')[0];
-    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description);
+    const addNCIcon = () => $('div.d4-ribbon-item').has('i.svg-add-new-column')[0] ?? null;
+    return await this.openDialog(instructions, 'Add New Column', addNCIcon, description,
+      () => $(addNCIcon()!).find('i.svg-add-new-column')[0]!.click());
   }
 
   /** Prompts the user to select a menu item in the context menu. */
   protected async contextMenuAction(instructions: string, label: string,
-    hint: HintTarget | HintTarget[] | null = null, description: string = ''): Promise<void> {
-    const commandClick = new Promise<void>((resolve) => {
-      const sub = grok.events.onContextMenu.subscribe((data) => {
-        data.args.menu.onContextMenuItemClick.pipe(
-          filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()),
-          first()).subscribe((_: any) => {
-          sub.unsubscribe();
-          resolve();
-        });
-      });
-    });
-
-    await this.action(instructions, commandClick, hint, description);
+    hint: HintTarget | HintTarget[] | null = null, description: string = '',
+    skip?: HTMLElement | (() => unknown)): Promise<void> {
+    const commandClick = grok.events.onContextMenu.pipe(switchMap((data) => data.args.menu.onContextMenuItemClick),
+      filter((mi) => (new DG.Menu(mi)).toString().toLowerCase() === label.toLowerCase()));
+    await this.action(instructions, commandClick, hint, description, skip instanceof HTMLElement ?
+      () => Tutorial.runContextMenu(skip, label) : skip && Tutorial.apiSkip(skip));
   }
 }
 

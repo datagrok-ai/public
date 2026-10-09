@@ -3,10 +3,6 @@ import {v4 as uuidv4} from 'uuid';
 import {NodePath} from './BaseTree';
 import {BehaviorSubject, Subject} from 'rxjs';
 
-export type DebugLogType =
- 'linkRunScheduled' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved' |
- 'treeUpdateStarted' | 'treeUpdateMutation' | 'treeUpdateFinished'
-
 export interface DebugLogBase {
   uuid: string,
   timestamp: Date,
@@ -76,10 +72,39 @@ export interface ErrorLogItem extends DebugLogBase {
   links?: string[];
 }
 
+type LinkLogItems = LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkAddedLogItem | LinkRemoveLogItem |
+  ActionAddedLogItem | ActionRemoveLogItem;
+
+export type LinkLogType = LinkLogItems['type'];
+
 export type LogItem =
-TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem |
-LinkRunStartedLogItem | LinkRunFinishedLogItem | LinkAddedLogItem | LinkRemoveLogItem | ActionAddedLogItem | ActionRemoveLogItem |
-ErrorLogItem;
+TreeUpdateStartedLogItem | TreeUpdateMutationLogItem | TreeUpdateFinishedLogItem | LinkLogItems | ErrorLogItem;
+
+type LogEventGroup = 'tree' | 'link' | 'action' | 'error';
+
+// a Record, so a log type missing here fails to compile
+const logEventGroups: Record<LogItem['type'], LogEventGroup> = {
+  treeUpdateStarted: 'tree',
+  treeUpdateFinished: 'tree',
+  treeUpdateMutation: 'tree',
+  linkAdded: 'link',
+  linkRemoved: 'link',
+  linkRunStarted: 'link',
+  linkRunFinished: 'link',
+  actionAdded: 'action',
+  actionRemoved: 'action',
+  error: 'error',
+};
+
+export const LOG_EVENT_TYPES = Object.entries(logEventGroups).map(([type, group]) =>
+  ({type: type as LogItem['type'], group}));
+
+const linkLogTypes = new Set<string>(
+  LOG_EVENT_TYPES.filter((t) => t.group === 'link' || t.group === 'action').map((t) => t.type));
+
+export function isLinkLogItem(item: LogItem): item is LogItem & LinkLogItem & {type: LinkLogType} {
+  return linkLogTypes.has(item.type);
+}
 
 const MAX_LOG_ENTRIES = 5000;
 
@@ -99,7 +124,7 @@ export class DriverLogger {
 
   get errors(): readonly ErrorLogItem[] { return this._errors; }
 
-  logLink(type: 'linkRunStarted' | 'linkRunFinished' | 'linkAdded' | 'linkRemoved' | 'actionAdded' | 'actionRemoved', data: LinkLogPayload) {
+  logLink(type: LinkLogType, data: LinkLogPayload) {
     const uuid = uuidv4();
     const timestamp = new Date();
     this.append({type, uuid, timestamp, ...data});

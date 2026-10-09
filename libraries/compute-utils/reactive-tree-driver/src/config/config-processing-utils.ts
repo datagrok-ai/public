@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineLinkConfigurationInput, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler, indexFromEnd, Tolerance} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
@@ -85,11 +85,36 @@ export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: strin
   return false;
 }
 
+type ProcessedConfigItem =
+  PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> |
+  AbstractPipelineActionConfiguration | PipelineSelfRef;
+
+const originalConfigs = new WeakMap<object, object>();
+
+/** The config item, link or action as written: before links were parsed and expanded
+ * and nested pipelines were loaded. */
+export function getOriginalConfig(processed: object): object | undefined {
+  return originalConfigs.get(processed);
+}
+
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
+  original: object = conf,
+): Promise<ProcessedConfigItem> {
+  const processed = await processConfigItem(conf, loadedPipelines, logger);
+  // a loaded ref is already recorded with the config its provider returned
+  if (!originalConfigs.has(processed))
+    originalConfigs.set(processed, original);
+  return processed;
+}
+
+async function processConfigItem(
+  conf: ConfigInitialTraverseItem,
+  loadedPipelines: PipelineRefStore<null>,
+  logger?: DriverLogger,
+): Promise<ProcessedConfigItem> {
   if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
@@ -101,7 +126,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
-      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger);
+      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger, step);
       return sconf;
     }));
     checkUniqId(steps, logger);
@@ -109,7 +134,7 @@ async function configProcessing(
   } else if (isPipelineDynamicInitial(conf)) {
     const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger);
+      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger, item);
       return nconf;
     }));
     checkUniqId(stepTypes, logger);
@@ -131,7 +156,7 @@ function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
-  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
+  const links = conf.links ? processLinks(conf.links) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -140,7 +165,7 @@ function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: 
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
-  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
+  const links = conf.links ? processLinks(conf.links) : undefined;
   const actions = processPipelineActions(conf.actions ?? [], logger);
   const onInit = processInitHook(conf.onInit);
   const onReturn = processReturnHook(conf.onReturn);
@@ -152,7 +177,7 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
   const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
-  const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
+  const links = allLinks.length ? processLinks(allLinks) : undefined;
   const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
@@ -215,14 +240,25 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
 
 function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
+  const actions = actionsInput.map((action) =>
+    withOriginal({...processLinkData(action), ...processActionVisibility(action)}, action));
   return actions;
 }
 
 function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
+  const actions = actionsInput.map((action) =>
+    withOriginal({...processLinkData(action), ...processActionVisibility(action)}, action));
   return actions;
+}
+
+function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
+  return links.flatMap((link) => expandLinks([link]).map((expanded) => withOriginal(processLinkData(expanded), link)));
+}
+
+function withOriginal<T extends object>(processed: T, original: object): T {
+  originalConfigs.set(processed, original);
+  return processed;
 }
 
 function processActionVisibility(action: {showWhen?: LinkSpecString, hideWhen?: LinkSpecString}) {

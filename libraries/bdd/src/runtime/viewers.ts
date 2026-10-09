@@ -9,6 +9,7 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
+import * as guide from './guide.js';
 import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
@@ -62,7 +63,11 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  return (await awaitArea(page, target, name, false, beforeChange))!;
+  const box = (await awaitArea(page, target, name, false, beforeChange))!;
+  // a gesture follows: a guide lights the area it aims at, not the viewer round it
+  if (beforeChange)
+    guide.locatedArea(page, box);
+  return box;
 }
 
 export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {

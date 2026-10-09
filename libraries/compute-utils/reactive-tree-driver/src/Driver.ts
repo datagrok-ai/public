@@ -1,17 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import {BehaviorSubject, Observable, Subject, EMPTY, of, from, combineLatest, defer} from 'rxjs';
 import {isFuncCallSerializedState, PipelineState} from './config/PipelineInstance';
-import {AddDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
+import {AddDynamicItem, DuplicateDynamicItem, InitPipeline, LoadDynamicItem, LoadPipeline, MoveDynamicItem, RemoveDynamicItem, ResetToConsistent, ReturnResult, RunAction, RunSequence, RunStep, SaveDynamicItem, SavePipeline, UpdateFuncCall, ViewConfigCommands} from './view/ViewCommunication';
 import {pairwise, takeUntil, concatMap, catchError, switchMap, map, mapTo, startWith, tap, distinctUntilChanged, filter, defaultIfEmpty, last, take} from 'rxjs/operators';
 import {StateTree} from './runtime/StateTree';
 import {loadInstanceState} from './runtime/funccall-utils';
 import {callHandler} from './utils';
 import {PipelineConfiguration} from './config/PipelineConfiguration';
-import {getProcessedConfig, PipelineConfigurationProcessed} from './config/config-processing-utils';
+import {getProcessedConfig} from './config/config-processing-utils';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from './runtime/StateTreeNodes';
 import {ValidationResult} from './data/common-types';
 import {DriverLogger, reportError} from './data/Logger';
 import {LinksData} from './runtime/LinksState';
+import {inspectConfig, inspectLinks} from './runtime/inspection';
 import {getStartedOrNull} from '../../shared-utils/utils';
 
 export type CommandAck = {cid: number, result: any} | {cid: number, error: unknown};
@@ -26,7 +27,6 @@ export class Driver {
   public currentPipelineValidations$ = new BehaviorSubject<Record<string, Observable<ValidationResult | undefined>>>({});
   public currentConsistency$ = new BehaviorSubject<Record<string, Observable<Record<string, ConsistencyInfo>>>>({});
   public currentMeta$ = new BehaviorSubject<Record<string, Observable<Record<string, BehaviorSubject<any>>>>>({});
-  public currentConfig$ = new BehaviorSubject<PipelineConfigurationProcessed | undefined>(undefined);
   public nodesDescriptions$ = new BehaviorSubject<Record<string, Observable<Record<string, string | string[]> | undefined>>>({});
   public currentLinks$ = new BehaviorSubject<LinksData[]>([]);
   public result$ = new Subject<any>();
@@ -125,11 +125,6 @@ export class Driver {
     ).subscribe(this.nodesDescriptions$);
 
     stateUpdates$.pipe(
-      map((state) => state ? state.config : undefined),
-      takeUntil(this.closed$),
-    ).subscribe(this.currentConfig$);
-
-    stateUpdates$.pipe(
       switchMap((state) => state ? state.globalROLocked$ : of(false)),
       distinctUntilChanged(),
       takeUntil(this.closed$),
@@ -165,6 +160,16 @@ export class Driver {
     return ack;
   }
 
+  public inspectLinks() {
+    const state = this.states$.value;
+    return state ? inspectLinks(state) : [];
+  }
+
+  public inspectConfig() {
+    const state = this.states$.value;
+    return state ? inspectConfig(state.config) : undefined;
+  }
+
   public close() {
     this.closed$.next(true);
     // resolves pending sendCommand promises (with undefined) instead of leaving them hanging
@@ -185,6 +190,8 @@ export class Driver {
       return this.removeDynamicItem(msg, state);
     case 'moveDynamicItem':
       return this.moveDynamicItem(msg, state);
+    case 'duplicateDynamicItem':
+      return this.duplicateDynamicItem(msg, state);
     case 'runStep':
       return this.runStep(msg, state);
     case 'runAction':
@@ -237,6 +244,13 @@ export class Driver {
   private moveDynamicItem(msg: MoveDynamicItem, state?: StateTree) {
     this.checkState(msg, state);
     return state.moveSubtree(msg.uuid, msg.position).pipe(
+      tap(() => this.wasEdited$.next(true)),
+    );
+  }
+
+  private duplicateDynamicItem(msg: DuplicateDynamicItem, state?: StateTree) {
+    this.checkState(msg, state);
+    return state.duplicateSubtree(msg.uuid).pipe(
       tap(() => this.wasEdited$.next(true)),
     );
   }
