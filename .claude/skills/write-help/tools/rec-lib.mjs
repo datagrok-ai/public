@@ -91,8 +91,8 @@ export async function installPointer(page) {
     Object.assign(arrow.style, {position: 'fixed', left: '0', top: '0', zIndex: 2147483647, pointerEvents: 'none',
       transition: 'transform 60ms linear', transform: 'translate(-100px,-100px)'});
     const disc = document.createElement('div');
-    Object.assign(disc.style, {position: 'fixed', left: '0', top: '0', width: '26px', height: '26px', marginLeft: '-13px',
-      marginTop: '-13px', borderRadius: '50%', zIndex: 2147483646, pointerEvents: 'none', display: 'none',
+    Object.assign(disc.style, {position: 'fixed', left: '0', top: '0', width: '26px', height: '26px', boxSizing: 'border-box',
+      borderRadius: '50%', zIndex: 2147483646, pointerEvents: 'none', display: 'none',
       transition: 'transform 60ms linear', opacity: '0.75', border: '2px solid rgba(0,0,0,0.35)'});
     // Top-layer popovers: a select picker or another popover is drawn in the top layer above any z-index, so the
     // pointer is a popover too, raised over whatever top-layer element opens last.
@@ -113,10 +113,15 @@ export async function installPointer(page) {
       requestAnimationFrame(watch);
     };
     requestAnimationFrame(watch);
-    let last = 0, down = false, hideTimer = null;
+    let last = 0, down = false, hideTimer = null, px = -100, py = -100;
     const move = (e) => {
+      // a long step (Mouse.press) jumps, or the arrow trails the press mark for a frame
+      const jump = Math.hypot(e.clientX - px, e.clientY - py) > 40;
+      px = e.clientX; py = e.clientY;
+      for (const el of [arrow, disc])
+        el.style.transition = jump ? 'none' : 'transform 60ms linear';
       arrow.style.transform = `translate(${e.clientX - 1}px,${e.clientY - 1}px)`;
-      disc.style.transform = `translate(${e.clientX}px,${e.clientY}px)`;
+      disc.style.transform = `translate(${e.clientX - 13}px,${e.clientY - 13}px)`;
     };
     const press = (e) => {
       const now = performance.now();
