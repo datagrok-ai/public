@@ -19,7 +19,6 @@ function mockFuncCall(uuid: string, opts?: {isReadonly?: boolean}): StepFunCallS
 
 const defaultPipelineRuntimeData: PipelineInstanceRuntimeData = {
   actions: undefined,
-  approversGroup: undefined,
   disableHistory: false,
   customExports: undefined,
   forceNavigate: false,
