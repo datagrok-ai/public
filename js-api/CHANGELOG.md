@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20884: Added `LogDataSource.getTimeline` (`grok.dapi.log`, `TimelineRow`): a session's events and requests in a time window, in time order; `AdminDataSource.getMetrics` takes `errorsBy`, `package`, `user` and `source` and declares `errors` (`ServerMetricsError`)
 * Sketcher: Fixed a sketcher chosen from the options menu while another was still loading (Ketcher on an empty browser cache) being replaced by the one loading once it arrived: a switch overtaken by a later one, while its function applies or its implementation initializes, leaves the host alone, and an implementation it never showed is detached; before, a late Ketcher also took the chosen sketcher's change subscription, so each change was announced twice
 * Sketcher: Added `SketcherBase.onRendered` and `SketcherBase.isRenderPending`, the render signals a viewer has (`onViewerRendered`, `isRenderPending`), for a sketcher implementation that draws asynchronously: it fires `onRendered` once per drawing it shows and says what is still on its way, so that automated tests wait on them instead of a timeout. The base never fires and says nothing (`undefined`)
 * Sketcher: The options menu (≡) sends the sketcher the user picks to the server at once (`grok.userSettings.flush()`), so a page reloaded right after keeps the pick, and it checks and switches the sketcher its host shows, not the session's: a host made before the session's last switch (one that keeps its sketcher for the page's life) switches to a pick of the session's sketcher instead of ignoring it

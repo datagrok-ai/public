@@ -84,6 +84,16 @@ WHERE r.error_stack_trace_hash = (
 );
 --end
 
+--name: ErrorAlerts
+--input: string signature
+--connection: System:Datagrok
+select p.status as problem, p.alert_status as alert, p.summary, p.alerted_at, p.last_seen
+from problems p
+where p.kind = 'error-incident' and @signature like p.key || '%'
+order by p.last_seen desc
+limit 1
+--end
+
 --name: SameErrors
 --input: string date {pattern: datetime}
 --input: string event_id {nullable: true}

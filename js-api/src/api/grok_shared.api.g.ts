@@ -163,6 +163,10 @@ export class Permission {
 
   static ADMIN_URL_ALIASES = 'AdminUrlAliases';
 
+  static MANAGE_ALERTS = 'ManageAlerts';
+
+  static VIEW_TELEMETRY = 'ViewTelemetry';
+
   static CREATE_REPOSITORY = 'CreateRepository';
 
   static CREATE_GROUP = 'CreateGroup';

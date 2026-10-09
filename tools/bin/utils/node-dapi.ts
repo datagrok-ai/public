@@ -1042,6 +1042,7 @@ export class NodeDapi {
   get scripts(): InternalDataSource { return this.internal('/scripts'); }
   get packages(): NodePackagesDataSource { return new NodePackagesDataSource(this.client); }
   get reports(): InternalDataSource { return this.internal('/reports'); }
+  get problems(): InternalDataSource { return this.internal('/problems'); }
   get files(): NodeFilesDataSource { return new NodeFilesDataSource(this.client); }
   get shares(): NodeSharesDataSource { return new NodeSharesDataSource(this.client); }
   get tables(): NodeTablesDataSource { return new NodeTablesDataSource(this.client); }

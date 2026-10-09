@@ -6,6 +6,7 @@ import {createClient} from '../utils/server-client';
 import {printOutput, printBatchOutput, printError, setOutputFormat, OutputFormat} from '../utils/server-output';
 import {handleMigrate} from './server-migrate';
 import {handleDomains} from './server-domains';
+import {handleObserve, OBSERVE_USAGE} from './server-observe';
 import {isUuid} from '../utils/migrate/registry';
 import {resolveEntity} from '../utils/migrate/walker';
 
@@ -13,7 +14,8 @@ import {resolveEntity} from '../utils/migrate/walker';
 const ENTITY_TYPES: Record<string, string> = {queries: 'DataQuery', scripts: 'Script', reports: 'UserReport'};
 
 const ENTITIES = ['users', 'groups', 'functions', 'connections', 'queries', 'scripts', 'packages', 'reports', 'files', 'tables'];
-const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token'];
+const COMMANDS = ['shares', 'domains', 'raw', 'batch', 'describe', 'healthcheck', 'sync', 'pull', 'push', 'migrate', 'diff', 'bundle', 'token',
+  'observe', 'o'];
 const VERBS = ['list', 'count', 'get', 'delete'];
 
 export async function server(argv: any): Promise<boolean> {
@@ -34,6 +36,10 @@ export async function server(argv: any): Promise<boolean> {
     console.log(HELP_SERVER);
     return true;
   }
+  if ((entity === 'observe' || entity === 'o') && !verb) {
+    console.log(OBSERVE_USAGE);
+    return true;
+  }
 
   let client;
   try {
@@ -52,6 +58,7 @@ export async function server(argv: any): Promise<boolean> {
     if (['pull', 'push', 'migrate', 'diff', 'bundle'].includes(entity))
       return await handleMigrate(dapi, entity, [verb, ...rest].filter(Boolean), argv, output);
     if (entity === 'domains') return await handleDomains(dapi, verb, rest, argv, output);
+    if (entity === 'observe' || entity === 'o') return await handleObserve(dapi, verb, rest[0], rest.slice(1), argv, output);
     if (entity === 'batch') return await handleBatch(dapi, argv, verb, rest, output);
     // Shell scripts that used to curl /users/login/dev get a token the same way
     // every other command does, whatever credential the config holds.
@@ -885,6 +892,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
+  observe (alias o): problems, problem rules, logger settings, errors, timeline; grok s observe prints its verbs
 
 Verbs:
   list      List entities (--filter, --limit, --offset)

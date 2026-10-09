@@ -2,6 +2,9 @@
 
 ## v.next
 
+* GROK-20884: Errors: Top errors and Top source come from the server's error metrics, by stack signature; a row's context panel shows its error incident and alert
+* GROK-20884: Log: An event's Timeline button opens what happened in its session around it (its events and requests) as a table
+* GROK-20881: Reporting: Fixed a batch change blanking the assignee of every row it touched. The handler wrote back fields the payload did not carry, which a rule with no assign action already did and resolving a selection now would
 * Tests: Translated the Tooltips TestTrack section into BDD in `bdd/features/viewers/tooltips/` — the Tooltip group of every viewer's context menu, the grid's tooltip and Show Visible Columns In Tooltip, the default tooltip shared by the plots and the grid, Hide and Show Custom, the Edit Tooltip dialog (search, picking columns), a viewer's Show Tooltip and Row Tooltip, and the line chart's Edit Aggregated Tooltip with the aggregations a point's tooltip then shows — with the TestTrack cases updated to the behaviour confirmed as intended (the grid's default custom tooltip, Hide switching off every tooltip of the table, a custom tooltip with no Row Tooltip) and `MISSING.md` listing the steps still needed
 * Tests: Translated the General TestTrack section into BDD in `bdd/features/general/` — logout and the login form, the profile name, the Table Manager (its rows, a row click, Open as table), the table view's Search box, molecules exported to CSV as SMILES, and the tab order through a project — with `MISSING.md` keeping only the gaps still open
 * Tests: BDD features keep to what only the browser shows and stay fast — scenarios an API or package test covers removed (spaces, roles, users, connections, scripts, sticky meta, Biostructure, sequence translator), spaces made through the API, Database meta claimed on the server instead of after five reloads and swept when a feature starts, the queries gated on PostgresTest

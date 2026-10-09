@@ -37,6 +37,14 @@ resolves the record's user from its `user` parameter first (a failed login or a 
 session), so the groups filter applies to records with a user and passes the rest through. The
 packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
 
+`ErrorsView` (tab `Errors`): Top errors and Top source come from one `grok.dapi.admin.getMetrics` call
+(`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`); a Top errors bar click
+filters the `EventErrors` grid to its signatures. A row's context panel shows its reports and `SameErrors`, and an
+Alert pane with the signature's `error-incident` problem (`ErrorAlerts`, over the `problems` table). The context
+panel of an event in the Log and System Activity tabs has a Timeline button (`openTimeline` in `utils.ts`:
+`grok.dapi.log.getTimeline` for the event's session from a minute before it to five minutes after, opened as a
+table view).
+
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the
 selected image's per-CVE CSV; the packages/groups filter inputs are hidden on it (like Metrics).

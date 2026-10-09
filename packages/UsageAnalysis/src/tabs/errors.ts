@@ -5,8 +5,9 @@ import * as DG from "datagrok-api/dg";
 import {UaView} from "./ua";
 import {UaToolbox} from "../ua-toolbox";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaFilter} from "../filter";
 import {loadUsers, setupUserIconRenderer} from "../utils";
-import {funcs} from "../package-api";
+import {funcs, queries} from "../package-api";
 
 import '../../css/usage_analysis.css';
 
@@ -36,9 +37,20 @@ function createCountBarChart(t: DG.DataFrame, splitColumnName: string, title: st
 }
 
 export class ErrorsView extends UaView {
+  private metrics?: {filter: UaFilter, errors: Promise<DG.ServerMetrics['errors']>};
+
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
+  }
+
+  /** The errors of `/admin/metrics` for the applied filter's date, by signature, fetched once for both charts. */
+  errorMetrics(): Promise<DG.ServerMetrics['errors']> {
+    const filter = this.uaToolbox.filterStream.value;
+    if (this.metrics?.filter !== filter)
+      this.metrics = {filter, errors: grok.dapi.admin.getMetrics({date: filter.date, limit: 15, errorsBy: 'signature'})
+        .then((m) => m.errors)};
+    return this.metrics.errors;
   }
 
   async initViewers(path?: string): Promise<void> {
@@ -92,18 +104,24 @@ export class ErrorsView extends UaView {
       {
         filterSubscription: this.uaToolbox.filterStream,
         name: 'Top Errors',
-        queryName: 'TopErrors',
+        getDataFrame: async () => {
+          const top = (await this.errorMetrics()).top;
+          return DG.DataFrame.fromColumns([
+            DG.Column.fromStrings('error', top.map((e) => e.message)),
+            DG.Column.fromStrings('signature', top.map((e) => e.signature ?? '')),
+            DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', top.map((e) => e.count)),
+          ]);
+        },
         createViewer: (t: DG.DataFrame) => {
           const viewer = createCountBarChart(t, 'error', 'Top errors', ERROR_BAR_COLOR);
 
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
             const df: DG.DataFrame | undefined = errorViewer.viewer?.dataFrame;
-            if (df) {
-              df.filter.handleClick((i) => {
-                const column = df.getCol('error_message');
-                return column.get(i) == args.args.options.categories[0];
-              }, new MouseEvent(''));
-            }
+            const error = args.args.options.categories[0];
+            const signatures = new Set([...Array(t.rowCount).keys()].filter((i) => t.get('error', i) === error)
+              .map((i) => t.get('signature', i)));
+            if (df)
+              df.filter.handleClick((i) => signatures.has(df.get('error_stack_trace_hash', i)), new MouseEvent(''));
           });
           return viewer;
         }
@@ -114,7 +132,13 @@ export class ErrorsView extends UaView {
       {
         filterSubscription: this.uaToolbox.filterStream,
         name: 'Top Source',
-        queryName: 'TopErrorSources',
+        getDataFrame: async () => {
+          const bySource = (await this.errorMetrics()).bySource;
+          return DG.DataFrame.fromColumns([
+            DG.Column.fromStrings('error_source', Object.keys(bySource)),
+            DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', Object.values(bySource)),
+          ]);
+        },
         createViewer: (t: DG.DataFrame) =>
           createCountBarChart(t, 'error_source', 'Top source', SOURCE_BAR_COLOR),
       }
@@ -193,6 +217,14 @@ export class ErrorsView extends UaView {
       div.classList.add('ua-errors-reports');
       const map = {'Reports': div, 'Same errors': results[1]};
       return ui.tableFromMap(map);
+    }));
+
+    accordion.addPane('Alert', () => ui.wait(async () => {
+      const t = await queries.errorAlerts(table.getCol('error_stack_trace_hash').get(rowIdx));
+      if (t.rowCount === 0)
+        return ui.divText('No error incident');
+      return ui.tableFromMap({'Problem': t.get('problem', 0), 'Alert': t.get('alert', 0) ?? 'none',
+        'Summary': t.get('summary', 0), 'Alerted': t.get('alerted_at', 0), 'Last seen': t.get('last_seen', 0)});
     }));
     grok.shell.o = properties;
   }

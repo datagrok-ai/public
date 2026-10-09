@@ -515,6 +515,10 @@ export class AdminDataSource {
       params.set('date', options.date);
     if (options?.limit != null)
       params.set('limit', `${options.limit}`);
+    const errors = {errors_by: options?.errorsBy, package: options?.package, user: options?.user, source: options?.source};
+    for (const [key, value] of Object.entries(errors))
+      if (value)
+        params.set(key, value);
     const r = await fetch(`${api.grok_Dapi_Root()}/admin/metrics?${params}`, {credentials: 'include'});
     if (!r.ok)
       throw new Error(await r.text());
@@ -623,6 +627,31 @@ export interface ServerMetricsOptions {
   date?: string,
   /** Rows per ranking (default 10, max 1000). */
   limit?: number,
+  /** Groups `errors.top` by normalized message (the default) or by stack trace hash. */
+  errorsBy?: 'message' | 'signature',
+  /** Only the errors of this package. */
+  package?: string,
+  /** Only the errors of this login. */
+  user?: string,
+  /** Only the errors of this error source. */
+  source?: string,
+}
+
+/** One row of {@link ServerMetrics.errors}`.top`. */
+export interface ServerMetricsError {
+  message: string,
+  /** The stack trace hash, with `errorsBy: 'signature'`. */
+  signature: string | null,
+  source: string,
+  severity: string,
+  count: number,
+  users: number,
+  sessions: number,
+  /** Distinct hours the error occurred in. */
+  hours: number,
+  /** ISO 8601. */
+  firstSeen: string,
+  lastSeen: string,
 }
 
 /** Request statistics of a window or of one route. */
@@ -689,6 +718,14 @@ export interface ServerMetrics {
     previous: {count: number, p95: number},
     /** Ordered by `p95` descending, at most `limit` rows. */
     routes: ServerMetricsRoute[],
+  },
+  /** The window's errors: totals, the previous window's count, counts per error source, and the top
+   *  errors ranked by the users they hit, then the hours they recurred, `limit` per source. */
+  errors: {
+    now: {count: number, users: number},
+    previous: {count: number},
+    bySource: {[source: string]: number},
+    top: ServerMetricsError[],
   },
   /** `func_calls` by status: `queued` are waiting, `running` are executing. */
   queue: {queued: number, running: number},
@@ -2329,6 +2366,36 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   getArchiveEvents(connection: string, key: string): Promise<DataFrame> {
     return api.grok_Dapi_Log_ArchiveEvents(connection, key);
   }
+
+  /**
+   * The events and HTTP requests of a session from `from` to `to` (by default `from` + 10 minutes, at most 2 hours
+   * later), in time order (`GET /log/timeline`); `limit` defaults to 500, at most 5000. Needs the `ViewTelemetry`
+   * permission, except for the current session.
+   *
+   * Sample: {@link https://public.datagrok.ai/js/samples/dapi/log-timeline}
+   *
+   * @example
+   * const session = (await grok.dapi.users.currentSession()).id;
+   * const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 5 * 60000)});
+   */
+  async getTimeline(query: {session: string, from: Date | string, to?: Date | string, limit?: number}): Promise<TimelineRow[]> {
+    return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
+  }
+}
+
+/** A row of {@link LogDataSource.getTimeline}. */
+export interface TimelineRow {
+  /** ISO 8601. */
+  time: string,
+  source: 'client' | 'server',
+  /** The event type, `error`, `warning` or `request`. */
+  kind: string,
+  summary: string,
+  /** An HTTP status, or the `status` parameter of an event. */
+  status: string | null,
+  ms: number | null,
+  /** A login. */
+  user: string | null,
 }
 
 export class ActivityDataSource extends HttpDataSource<LogEvent> {

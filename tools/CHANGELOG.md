@@ -2,6 +2,8 @@
 
 ## v.next
 
+* GROK-20884: Added `grok s observe` (alias `grok s o`): problems and their alerts, problem rules, logger settings with expiring user and group entries, errors and the timeline
+* GROK-20884: `grok s` error lines name the request id the server returned
 * `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe

@@ -104,6 +104,10 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:ReportsCount', { date, event_id });
   }
 
+  export async function errorAlerts(signature: string ): Promise<DG.DataFrame> {
+    return await grok.data.query('UsageAnalysis:ErrorAlerts', { signature });
+  }
+
   export async function sameErrors(date: string , event_id: string | null): Promise<number> {
     return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
   }
