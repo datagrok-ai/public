@@ -82,9 +82,10 @@ export const ruleValidatorHandler: Validator = ({controller}) => {
             (result[isError ? 'errors' : 'warnings'] ??= []).push({description: message});
           continue;
         }
-        // an array message yields one item per element, an empty array none
+        // an array message yields one item per element, an empty array none; empty values add nothing
         const message = evaluate(effect.message, ctx);
-        const descriptions = (Array.isArray(message) ? message : [message]).map((item) => String(item));
+        const descriptions = (Array.isArray(message) ? message : [message])
+          .filter((item) => item != null).map((item) => String(item));
         if (!descriptions.length)
           continue;
         const result = results[target] ??= {};
