@@ -1,6 +1,4 @@
-import * as grok from 'datagrok-api/grok';
-import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
+import {BaseTree, NodePathSegment} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {LinkSpec, MatchedIO, MatchInfo} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';

@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {RuleEffect, RuleExpr, RuleLogic, RuleSource, RuleValidatorEffect} from './PipelineConfiguration';
+import {RuleEffect, RuleExpr, RuleLogic, RuleSource} from './PipelineConfiguration';
 
 /** The annotation options the driver validates. Keys and values match the function
  *  annotation syntax; `check` links use the same object. */
