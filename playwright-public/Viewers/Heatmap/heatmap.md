@@ -10,7 +10,8 @@ realized_as:
   - heatmap-spec.ts
 related_bugs:
   - id: GROK-20619
-    status: open
+    status: fixed
+    fixed_in: 1.28.0
   - id: GROK-11515
     status: fixed
 ---
@@ -51,10 +52,8 @@ All scenarios start with:
 
 ## Row height
 
-1. **Row Height** should not be offered here at all: it is a grid-only option
-   (its tooltip says so) and the drawing does not follow it in heatmap mode. The
-   property is still shown today (GROK-20619, guarded by `knownOpenBug`); once it
-   is hidden, this check goes loud and the step can be dropped.
+1. **Row Height** is not offered here: it is a grid-only option and is hidden in
+   heatmap mode (GROK-20619, fixed in 1.28.0).
 
 ## Interaction
 
