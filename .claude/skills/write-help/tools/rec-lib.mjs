@@ -302,8 +302,8 @@ export async function walkMenu(mouse, labels) {
     const horz = await item.evaluate((e) => e.closest('.d4-menu-item')?.classList.contains('d4-menu-item-horz') ?? false);
     if (horz) {
       const bottom = await item.evaluate((e) => e.closest('.d4-menu-item').getBoundingClientRect().bottom);
-      await mouse.moveTo(x, Math.max(mouse.y, bottom + 12));
-      await mouse.page.waitForTimeout(250);
+      // no pause below the bar: it is often a grid header, whose tooltip would pop up
+      await mouse.moveTo(x, bottom + 12);
       await mouse.press(x, y, {after: 650});
     }
     else if (i < labels.length - 1) {
