@@ -71,8 +71,9 @@ test('Network diagram', async ({page}) => {
     await page.locator('[name="icon-network-diagram"]').first().click();
     await page.locator(VIEWER).first().waitFor({timeout: 30_000});
 
-    expect(await selectorText(page, 'node1')).toBe('SEX');
-    expect(await selectorText(page, 'node2')).toBe('CONTROL');
+    // the pickers fill once vis.js has loaded, after the viewer root is already shown
+    await expect.poll(() => selectorText(page, 'node1'), {timeout: 15_000}).toBe('SEX');
+    await expect.poll(() => selectorText(page, 'node2'), {timeout: 15_000}).toBe('CONTROL');
 
     await expect.poll(async () => (await v.countCanvasPixels(page, VIEWER_TYPE)).total,
       {timeout: 30_000}).toBeGreaterThan(1000);
