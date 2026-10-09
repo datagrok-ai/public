@@ -206,14 +206,25 @@ export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: s
   return globalActions;
 }
 
-export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
-  return !!firstInconsistency;
-};
+// per-input conditions behind a step status, shared by statesToStatus and statusInputs
+const inputHasWarning = (val: ValidationResult) => !!val.warnings?.length;
+const inputHasError = (val: ValidationResult) => !!val.errors?.length;
+const isFixableInconsistency = (val: ConsistencyInfo) =>
+  !!val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted');
+const isChange = (val: ConsistencyInfo) => !!val.inconsistent && val.restriction === 'info';
+const isInconsistent = (val: ConsistencyInfo) => !!val.inconsistent;
+
+const anyInput = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
+  Object.values(states ?? {}).some(cond);
+
+const inputsWhere = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
+  Object.entries(states ?? {}).filter(([, state]) => cond(state)).map(([name]) => name);
+
+export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) =>
+  anyInput(consistencyStates, isFixableInconsistency);
 
 export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
-  Object.values(consistencyStates || {}).some((v) => v.inconsistent);
+  anyInput(consistencyStates, isInconsistent);
 
 export const hasSubtreeAnyInconsistencies = (
   data: PipelineState,
@@ -242,21 +253,10 @@ export const statusToTooltip: Record<Status, string> = {
   ['failed']: 'Run failed',
 };
 
-const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find((val) => val.warnings?.length);
-  return firstWarning;
-};
-
-const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'info'));
-  return firstInconsistency;
-};
-
-const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstError = Object.values(validationsState || {}).find((val) => val.errors?.length);
-  return firstError;
-};
+const hasWarnings = (validationsState?: Record<string, ValidationResult>) =>
+  anyInput(validationsState, inputHasWarning);
+const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => anyInput(consistencyStates, isChange);
+const hasErrors = (validationsState?: Record<string, ValidationResult>) => anyInput(validationsState, inputHasError);
 
 export const statesToStatus = (
   callState: FuncCallStateInfo,
@@ -283,6 +283,30 @@ export const statesToStatus = (
     return 'next warn';
 
   return 'next';
+};
+
+/** The inputs behind a step status. */
+export const statusInputs = (
+  status: Status,
+  validationsState?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+): string[] => {
+  switch (status) {
+  case 'next error':
+    return inputsWhere(validationsState, inputHasError);
+  case 'next warn':
+    return [...new Set([...inputsWhere(validationsState, inputHasWarning),
+      ...inputsWhere(consistencyStates, isFixableInconsistency)])];
+  case 'succeeded warn':
+    return inputsWhere(validationsState, (val) => inputHasWarning(val) || inputHasError(val));
+  case 'succeeded info':
+    return inputsWhere(consistencyStates, isChange);
+  case 'succeeded inconsistent':
+    // everything the Update action resets, info inputs included
+    return inputsWhere(consistencyStates, isInconsistent);
+  default:
+    return [];
+  }
 };
 
 export const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation
 * Replaced hardcoded colours with the platform design tokens
 * TreeWizard: The selected step shows its actions without hovering, and tree icons are labelled for assistive tools
