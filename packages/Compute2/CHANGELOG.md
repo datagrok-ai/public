@@ -2,7 +2,7 @@
 
 ## v.next
 
-* Inspector: Links tab lists links that matched nothing with the reason, shows empty aliases and targets dropped by `$linked`, and no longer mixes up the spec of links that share an id across steps
+* Inspector: Links tab lists links that matched nothing with the reason, shows empty aliases and targets dropped by `$linked`, and no longer mixes up the spec of links that share an id across steps; Config tab shows the config as written with resolved step io
 * TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
 * TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
 * TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them

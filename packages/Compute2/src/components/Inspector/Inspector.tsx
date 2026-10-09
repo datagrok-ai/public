@@ -6,26 +6,13 @@ import {PipelineState, isFuncCallState} from '@datagrok-libraries/compute-utils/
 import {Button} from '@datagrok-libraries/webcomponents-vue';
 import {LogItem} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {Logger} from '../Logger/Logger';
-import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {
-  InspectedNode, inspectConfig, LinksInspection, toInspectorJSON,
+  LinksInspection, toInspectorJSON,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/inspection';
-import {FuncCallStateInfo, ConsistencyInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {BehaviorSubject} from 'rxjs';
 import {FilterDropdown, FilterOption} from './FilterDropdown';
-
-interface StepStates {
-  calls: Record<string, FuncCallStateInfo | undefined>;
-  validations: Record<string, Record<string, ValidationResult> | undefined>;
-  consistency: Record<string, Record<string, ConsistencyInfo> | undefined>;
-  meta: Record<string, Record<string, BehaviorSubject<any>> | undefined>;
-  descriptions: Record<string, Record<string, string | string[]> | undefined>;
-  pipelineValidations: Record<string, ValidationResult | undefined>;
-}
 
 // ---- Component ----
 
@@ -38,23 +25,14 @@ export const Inspector = Vue.defineComponent({
     links: {
       type: Array as Vue.PropType<LinksData[]>,
     },
-    config: {
-      type: Object as Vue.PropType<PipelineConfigurationProcessed>,
-    },
     logs: {
       type: Array as Vue.PropType<LogItem[]>,
-    },
-    selectedUuid: {
-      type: String,
-    },
-    stepStates: {
-      type: Object as Vue.PropType<StepStates>,
     },
     inspectLinks: {
       type: Function as Vue.PropType<() => LinksInspection>,
     },
-    inspectNode: {
-      type: Function as Vue.PropType<(uuid: string) => InspectedNode | undefined>,
+    inspectConfig: {
+      type: Function as Vue.PropType<() => any>,
     },
   },
   setup(props) {
@@ -139,20 +117,9 @@ export const Inspector = Vue.defineComponent({
       return filterTreeState(props.treeState, new Set(stepsFilterSelection.value)) ?? props.treeState;
     });
 
-    const filteredConfig = Vue.computed(() => {
-      if (!props.config) return undefined;
-      if (!stepsFilterSelection.value.length) return props.config;
-      // For config, reuse selected step data when a single step is selected
-      if (stepsFilterSelection.value.length === 1) {
-        const uuid = stepsFilterSelection.value[0];
-        // the driver read is not reactive, so depend on the step's states here
-        const states = props.stepStates;
-        void [states?.calls[uuid], states?.validations[uuid], states?.consistency[uuid], states?.meta[uuid],
-          states?.descriptions[uuid], states?.pipelineValidations[uuid], props.treeState];
-        return props.inspectNode?.(uuid) ?? props.config;
-      }
-      return props.config;
-    });
+    // the config only changes when another workflow is loaded, which also replaces the tree state
+    const configData = Vue.computed(() =>
+      selectedTab.value === 'Config' && props.treeState ? props.inspectConfig?.() : undefined);
 
     const height = 'calc(100% - 20px)';
     const sectionStyle = {height, display: 'flex', flexDirection: 'column' as const};
@@ -175,7 +142,7 @@ export const Inspector = Vue.defineComponent({
               placeholder='all links'
             />
           }
-          { (selectedTab.value === 'Tree State' || selectedTab.value === 'Config') &&
+          { selectedTab.value === 'Tree State' &&
             <FilterDropdown
               options={stepFilterOptions.value}
               modelValue={stepsFilterSelection.value}
@@ -207,9 +174,9 @@ export const Inspector = Vue.defineComponent({
             <VueJsonPretty deep={4} showLength={true} data={filteredLinks.value}></VueJsonPretty>
           </div>
         }
-        { selectedTab.value === 'Config' && props.config &&
+        { selectedTab.value === 'Config' && configData.value &&
           <div style={{...sectionStyle, overflow: 'scroll'}}>
-            <VueJsonPretty deep={4} showLength={true} data={inspectConfig(filteredConfig.value)}></VueJsonPretty>
+            <VueJsonPretty deep={4} showLength={true} data={configData.value}></VueJsonPretty>
           </div>
         }
       </div>

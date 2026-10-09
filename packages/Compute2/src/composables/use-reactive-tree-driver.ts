@@ -46,7 +46,6 @@ export function useReactiveTreeDriver(
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
-  const config = useObservable(driver.currentConfig$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const result = useObservable(driver.result$);
 
@@ -206,7 +205,7 @@ export function useReactiveTreeDriver(
   };
 
   const inspectLinks = () => driver.inspectLinks();
-  const inspectNode = (uuid: string) => driver.inspectNode(uuid);
+  const inspectConfig = () => driver.inspectConfig();
 
   return {
     // driver,
@@ -217,7 +216,6 @@ export function useReactiveTreeDriver(
     hasNotSavedEdits,
     states,
     logs,
-    config,
     links,
     result,
     //
@@ -236,7 +234,7 @@ export function useReactiveTreeDriver(
     changeFuncCall,
     returnResult,
     inspectLinks,
-    inspectNode,
+    inspectConfig,
   };
 }
 
