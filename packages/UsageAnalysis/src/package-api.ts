@@ -184,9 +184,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:EventByErrorMessageAndFriendlyName', { errorMessage, friendlyName });
   }
 
-  export async function updateEventsIsErrorComment(errorMessage: string , friendlyName: string , isError: boolean , comment: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:UpdateEventsIsErrorComment', { errorMessage, friendlyName, isError, comment });
-  }
 
   export async function functionErrors(date: string , users: any ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:FunctionErrors', { date, users });
@@ -408,9 +405,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:UserReportsSingle', { reportNumber });
   }
 
-  export async function reportsMigration(): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:ReportsMigration', {});
-  }
 
   export async function reportDataMigration(report_id: string , id: string , screenshot: string | null, details: string | null, client_settings: string | null, server_settings: string | null, errors: string | null, client_log: string | null, server_log: string | null, console: string | null, queries_log: string | null, containers_log: string | null, images_log: string | null, services: string | null): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:ReportDataMigration', { report_id, id, screenshot, details, client_settings, server_settings, errors, client_log, server_log, console, queries_log, containers_log, images_log, services });
