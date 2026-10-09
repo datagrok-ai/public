@@ -61,8 +61,15 @@ function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
-  const pconf = await configProcessing(conf, new Map(), logger);
-  return pconf as PipelineConfigurationProcessed;
+  const ownsCache = funcIOCache == null;
+  funcIOCache ??= new Map();
+  try {
+    const pconf = await configProcessing(conf, new Map(), logger);
+    return pconf as PipelineConfigurationProcessed;
+  } finally {
+    if (ownsCache)
+      funcIOCache = undefined;
+  }
 }
 
 export type PipelineRefStore<T> = Map<string, Map<string | undefined, T>>;
@@ -213,7 +220,17 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedI
   } as PipelineConfigurationStaticProcessed;
 }
 
+// io read from annotations, kept for one processing run; the FuncCall prepared to read them is dropped,
+// calls that are run or saved are never taken from here
+let funcIOCache: Map<NqName, FuncCallIODescription[]> | undefined;
+
 function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
+  const cached = funcIOCache?.get(nqName) ?? readFuncCallIO(nqName);
+  funcIOCache?.set(nqName, cached);
+  return cached.map((io) => ({...io}));
+}
+
+function readFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   const func = DG.Func.byName(nqName);
   if (!func)
     throw new Error(`Function '${nqName}' not found`);
