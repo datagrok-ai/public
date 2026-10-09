@@ -16,6 +16,7 @@ browser or a logged-in session.
 |-------------------------------------------------------------|--------------------------------------------------------|
 | Create / update a user                                      | `grok s users save --json user.json`                   |
 | Block / unblock a user                                      | `grok s users block <login>` / `users unblock <login>` |
+| Invite a user, get a login link                             | `grok s users invite [<email>] [--prefix <P>]`         |
 | Create / update a group                                     | `grok s groups save --json group.json`                 |
 | Add or remove users in a group                              | `grok s groups add-members <group> <user>...`          |
 | List members of a group                                     | `grok s groups list-members <group>`                   |
@@ -165,7 +166,16 @@ personal groups.
 ```bash
 grok s users block   alice.mendel        # accept login, UUID, or namespace:name
 grok s users unblock alice.mendel
+grok s users invite  alice@corp.com      # prints a login link; no email is sent
+grok s users invite                      # same, for an account with no email
+grok s users invite  --prefix ALEX-      # code starts with ALEX- (letters, digits, - and _, up to 32)
+grok s users invite  alice@corp.com --send-email   # mail the invitation instead
 ```
+
+`users invite` creates the user in state `new` and prints `<server>?inviteCode=<code>`. The
+link logs straight in as that user, every time, for a year. Inviting the same email again
+prints a new link, and the earlier ones keep working. An account that has already been used
+cannot be sent a link.
 
 Both commands resolve the argument to a full user record first, so the server receives
 the entire object (matching the Python client's `grok.users.block(user)`). Blocking

@@ -110,6 +110,31 @@ describe('NodeUsersDataSource.delete', () => {
   });
 });
 
+describe('NodeUsersDataSource.invite', () => {
+  it('asks for a link by default, with or without an email', async () => {
+    const {client, calls} = makeMock(() => 'https://x/?inviteCode=abc');
+    const users = new NodeUsersDataSource(client);
+    expect(await users.invite('a+1@b.com')).toBe('https://x/?inviteCode=abc');
+    await users.invite();
+    expect(calls.map((c: any) => c.path)).toEqual([
+      '/users/invite?email=a%2B1%40b.com&target=Datagrok&link=true',
+      '/users/invite?email=&target=Datagrok&link=true',
+    ]);
+  });
+
+  it('passes the code prefix', async () => {
+    const {client, calls} = makeMock(() => 'https://x/?inviteCode=ALEX-abc');
+    await new NodeUsersDataSource(client).invite(undefined, false, 'ALEX-');
+    expect(calls[0].path).toBe('/users/invite?email=&target=Datagrok&link=true&prefix=ALEX-');
+  });
+
+  it('sends an email only when asked', async () => {
+    const {client, calls} = makeMock(() => '');
+    await new NodeUsersDataSource(client).invite('a@b.com', true);
+    expect(calls[0].path).toBe('/users/invite?email=a%40b.com&target=Datagrok');
+  });
+});
+
 describe('NodeFuncsDataSource.delete', () => {
   it('routes a script to /scripts and a query to /connectors/queries', async () => {
     const {client, calls} = makeMock((method, path) => {
