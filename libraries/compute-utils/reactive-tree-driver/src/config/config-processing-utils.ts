@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineLinkConfigurationInput, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
-import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
 import {callHandler, indexFromEnd, Tolerance} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationRules, expandLinks} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLinks} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -176,8 +176,12 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
-  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
-  const links = allLinks.length ? processLinks(allLinks) : undefined;
+  const allLinks = [
+    ...processLinks(conf.links ?? []),
+    ...markAnnotation(processLinks(annotationRules(conf.nqName, io, logger)), 'rule'),
+    ...annotationCheckLinks(io).flatMap(({kind, link}) => markAnnotation(processLinks([link]), kind)),
+  ];
+  const links = allLinks.length ? allLinks : undefined;
   const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
@@ -256,6 +260,13 @@ function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
   return links.flatMap((link) => expandLinks([link]).map((expanded) => withOriginal(processLinkData(expanded), link)));
 }
 
+// in place, so the links keep their originals
+function markAnnotation<L extends {annotation?: AnnotationLinkKind}>(links: L[], kind: AnnotationLinkKind) {
+  for (const link of links)
+    link.annotation = kind;
+  return links;
+}
+
 function withOriginal<T extends object>(processed: T, original: object): T {
   originalConfigs.set(processed, original);
   return processed;
@@ -314,7 +325,10 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   };
   checkSingleIoTarget(from, false);
   checkSingleIoTarget(to, true);
-  return {...link, from, to, base, not, actions};
+  const processed = {...link, from, to, base, not, actions};
+  // only markAnnotation sets the kind; a link written with one in its config is not generated
+  delete (processed as {annotation?: unknown}).annotation;
+  return processed;
 }
 
 export function normalizeLinkSpec(io?: LinkSpecString): string[] {

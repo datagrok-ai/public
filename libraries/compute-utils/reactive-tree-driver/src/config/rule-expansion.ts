@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-import {LinkSpecString} from '../data/common-types';
+import {AnnotationLinkKind, LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
   PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr, RuleSource,
@@ -85,6 +85,31 @@ export function annotationRules(
     }
     return rules;
   });
+}
+
+/** The checks a step's annotations stand for, one link per input and check; a GrokScript expression
+ *  sees every input of the step under its own name. */
+export function annotationCheckLinks(
+  io: FuncCallIODescription[],
+): {kind: AnnotationLinkKind, link: PipelineLinkConfiguration<LinkSpecString>}[] {
+  const inputs = io.filter((item) => item.direction === 'input');
+  const inputQueries = inputs.filter((other) => other.id !== VALUE).map((other) => `${other.id}:${other.id}`);
+  return inputs.flatMap((item) =>
+    expandChecks({...item.checks, nullable: item.nullable}, {validatorsViaCall: true})
+      .map(({key, family, needsCall, needsInputs, params}) => {
+        const kind: AnnotationLinkKind = key === 'required' ? 'required' : 'check';
+        const common = {
+          id: `::${item.id}:${key}`,
+          from: [`${VALUE}:${item.id}`, ...(needsCall ? [`${CALL}(call,optional):.`] : []),
+            ...(needsInputs ? inputQueries : [])],
+          to: `${TARGET}:${item.id}`,
+          params,
+        };
+        const link: PipelineMetaConfiguration<LinkSpecString> | PipelineValidatorConfiguration<LinkSpecString> =
+          family === 'meta' ? {...common, type: 'meta', handler: ruleMetaHandler} :
+            {...common, type: 'validator', handler: ruleValidatorHandler, debounce: 0};
+        return {kind, link};
+      }));
 }
 
 export function expandLinks(

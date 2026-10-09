@@ -18,20 +18,20 @@ export function loadStateTree({
   dbId,
   config,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
 }: {
   dbId: string,
   config: PipelineConfigurationProcessed,
   isReadonly?: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean
 }): Observable<StateTree> {
   return defer(async () => {
     const [state, _] = await loadInstanceState(dbId);
-    const tree = fromPipelineInstanceState({state, config, isReadonly, defaultValidators, batchLinks, mockMode});
+    const tree = fromPipelineInstanceState({state, config, isReadonly, annotationChecks, batchLinks, mockMode});
     return tree;
   });
 }
@@ -42,7 +42,7 @@ export function fromPipelineConfig({
   startPath = [],
   startState,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
   logger,
@@ -52,7 +52,7 @@ export function fromPipelineConfig({
   startPath?: Readonly<NodePath>;
   startState?: StateTree;
   isReadonly?: boolean;
-  defaultValidators?: boolean;
+  annotationChecks?: boolean;
   batchLinks?: boolean;
   mockMode?: boolean;
   logger?: DriverLogger
@@ -97,7 +97,7 @@ export function fromPipelineConfig({
         throw new Error(`Wrong FuncCall node state type ${state.type} on path ${JSON.stringify(path)}`);
       node.initState(state);
     }
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, startState);
   return tree!;
 }
@@ -107,14 +107,14 @@ export function fromPipelineInstanceState({
   config,
   isReadonly,
   mockMode = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   logger,
 }: {
   state: PipelineSerializedState;
   config: PipelineConfigurationProcessed;
   isReadonly: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean,
   logger?: DriverLogger
@@ -131,7 +131,7 @@ export function fromPipelineInstanceState({
   const tree = traverse(state, (acc, state, path) => {
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly || state.isReadonly, logger);
     node.restoreState(state);
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, undefined as StateTree | undefined);
   return tree!;
 }
@@ -142,7 +142,7 @@ export function fromPipelineInstanceConfig({
   startPath = [],
   startState,
   isReadonly = false,
-  defaultValidators = false,
+  annotationChecks = false,
   batchLinks = false,
   mockMode = false,
   logger,
@@ -152,7 +152,7 @@ export function fromPipelineInstanceConfig({
   startPath?: Readonly<NodePath>,
   startState?: StateTree,
   isReadonly?: boolean,
-  defaultValidators?: boolean,
+  annotationChecks?: boolean,
   batchLinks?: boolean,
   mockMode?: boolean,
   logger?: DriverLogger
@@ -174,14 +174,14 @@ export function fromPipelineInstanceConfig({
     if (!state.steps && !isPipelineStepConfig(nodeConf)) {
       const tree = fromPipelineConfig({
         config, startNode: nodeConf, startPath: path, startState: acc,
-        isReadonly, defaultValidators, batchLinks, mockMode, logger,
+        isReadonly, annotationChecks, batchLinks, mockMode, logger,
       });
       (tree.nodeTree.getItem(path) as PipelineNodeBase).initState(state);
       return tree;
     }
     const [node, ppath, idx] = makeTreeNode(config, refMap, path, isReadonly, logger);
     node.initState(state);
-    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, defaultValidators, batchLinks, mockMode, logger});
+    return addTreeNodeOrCreate({acc, config, node, ppath, pos: idx, annotationChecks, batchLinks, mockMode, logger});
   }, startState);
   return tree!;
 }
@@ -287,7 +287,7 @@ function addTreeNodeOrCreate(
     node,
     ppath,
     pos,
-    defaultValidators,
+    annotationChecks,
     batchLinks,
     mockMode,
     logger,
@@ -297,7 +297,7 @@ function addTreeNodeOrCreate(
     node: StateTreeNode;
     ppath: NodePath;
     pos: number;
-    defaultValidators: boolean;
+    annotationChecks: boolean;
     batchLinks: boolean;
     mockMode: boolean;
     logger?: DriverLogger
@@ -306,6 +306,6 @@ function addTreeNodeOrCreate(
   if (acc)
     acc.nodeTree.addItem(ppath, node, node.config.id, pos);
   else
-    return new StateTree(node, config, mockMode, defaultValidators, logger, batchLinks);
+    return new StateTree(node, config, mockMode, annotationChecks, logger, batchLinks);
   return acc;
 }

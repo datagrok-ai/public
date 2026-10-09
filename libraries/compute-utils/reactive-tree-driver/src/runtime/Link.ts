@@ -240,7 +240,7 @@ export class Link {
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -381,7 +381,7 @@ export class Link {
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {

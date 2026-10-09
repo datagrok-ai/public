@@ -3,7 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import type {RulesLogic} from 'json-logic-js';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
-import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {
+  AnnotationLinkKind, DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult,
+} from '../data/common-types';
 import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
 import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
@@ -123,6 +125,8 @@ export type PipelineLinkConfigurationBase<P> = {
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
   params?: Record<string, any>;
+  /** Set by config processing on links generated from function annotations. */
+  annotation?: [P] extends [LinkSpecString] ? never : AnnotationLinkKind;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {

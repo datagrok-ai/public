@@ -1,6 +1,7 @@
 import {BaseTree, NodePath} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {ActionSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
+import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
+import {AnnotationLinkKind} from '../data/common-types';
 import {Action, Link} from './Link';
 import {BehaviorSubject, concat, merge, Subject, of, Observable, defer, combineLatest, identity, EMPTY, asapScheduler} from 'rxjs';
 import {takeUntil, map, scan, switchMap, filter, mapTo, toArray, take, tap, debounceTime, delay, concatMap, finalize} from 'rxjs/operators';
@@ -8,7 +9,7 @@ import {DriverLogger} from '../data/Logger';
 import {getLinksDiff} from './links-diff';
 import {ViewAction} from '../config/PipelineInstance';
 import {
-  calculateStepsDependencies, calculateIoDependencies, createDefaultValidators, DependenciesData, IoDeps,
+  calculateStepsDependencies, calculateIoDependencies, DependenciesData, IoDeps,
   pruneLinkedTargets,
 } from './links-dependencies';
 
@@ -20,6 +21,10 @@ export interface LinksData {
   isAction: boolean;
   matchInfo: MatchInfo;
 }
+
+// annotation checks run only with the annotationChecks option and stay out of links info and the link log
+export const isAnnotationCheck = (spec: {annotation?: AnnotationLinkKind}) =>
+  spec.annotation === 'check' || spec.annotation === 'required';
 
 export class LinksState {
   private closed$ = new Subject<true>();
@@ -41,7 +46,7 @@ export class LinksState {
   private batchTrigger$ = new Subject<void>();
 
   constructor(
-    private defaultValidators: boolean = false,
+    private annotationChecks: boolean = false,
     private logger?: DriverLogger,
     batchLinks: boolean = false,
   ) {
@@ -103,7 +108,7 @@ export class LinksState {
         of(this.wireLinks(state)),
         this.runNewInits(state),
         this.runLinks(state, initLinks, false),
-        (this.defaultValidators || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
+        (this.annotationChecks || this.forceInitialMetaRun) ? of(null).pipe(delay(0, asapScheduler), concatMap(() => this.runLinks(state, metaMap, true))) : of(null),
       ).pipe(toArray(), mapTo(undefined));
     }
   }
@@ -120,9 +125,8 @@ export class LinksState {
   public updateLinks(state: BaseTree<StateTreeNode>, oldLinks: Link[]) {
     const newLinks = this.createStateLinks(state);
     pruneLinkedTargets(state, newLinks);
-    if (this.defaultValidators) {
-      newLinks.push(...createDefaultValidators(state, this.logger));
-    }
+    if (this.annotationChecks)
+      newLinks.push(...this.createStateLinks(state, isAnnotationCheck));
     return this.mergeLinks(oldLinks, newLinks, 'link');
   }
 
@@ -159,15 +163,15 @@ export class LinksState {
       if (!toRemove.has(oldLink.uuid))
         mergedLinks.push(oldLink);
       else {
-        if (this.logger && !oldLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id});
+        if (this.logger && !isAnnotationCheck(oldLink.matchInfo.spec))
+          this.logger.logLink(`${prefix}Removed`, {linkUUID: oldLink.uuid, prefix: oldLink.prefix, basePath: oldLink.matchInfo.basePath, id: oldLink.matchInfo.spec.id, annotation: oldLink.matchInfo.spec.annotation});
         oldLink.destroy();
       }
     }
     for (const newLink of newLinks) {
       if (toAdd.has(newLink.uuid)) {
-        if (this.logger && !newLink.matchInfo.isDefaultValidator)
-          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id});
+        if (this.logger && !isAnnotationCheck(newLink.matchInfo.spec))
+          this.logger.logLink(`${prefix}Added`, {linkUUID: newLink.uuid, prefix: newLink.prefix, basePath: newLink.matchInfo.basePath, id: newLink.matchInfo.spec.id, annotation: newLink.matchInfo.spec.annotation});
         mergedLinks.push(newLink);
         addedLinks.push(newLink);
       }
@@ -175,11 +179,12 @@ export class LinksState {
     return [mergedLinks, addedLinks] as const;
   }
 
-  public createStateLinks(state: BaseTree<StateTreeNode>) {
+  public createStateLinks(
+    state: BaseTree<StateTreeNode>, include: (spec: LinkSpec) => boolean = (spec) => !isAnnotationCheck(spec),
+  ) {
     const links = state.traverse(state.root, (acc, node, path) => {
-      const item = node.getItem();
-      const {config} = item;
-      const matchedLinks = (config.links ?? [])
+      const matchedLinks = (node.getItem().config.links ?? [])
+        .filter(include)
         .map((link) => matchNodeLink(node, link))
         .filter((x) => !!x)
         .flat();
@@ -358,8 +363,10 @@ export class LinksState {
     this.closed$.next(true);
   }
 
-  public getLinksInfo(): LinksData[] {
-    const links = [...this.links.values()].filter((l) => !l.matchInfo.isDefaultValidator).map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
+  public getLinksInfo(includeAnnotationChecks = false): LinksData[] {
+    const links = [...this.links.values()]
+      .filter((l) => includeAnnotationChecks || !isAnnotationCheck(l.matchInfo.spec))
+      .map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: false, matchInfo: l.matchInfo}));
     const actions = [...this.actions.values()].map((l) => ({id: l.matchInfo.spec.id, uuid: l.uuid, prefix: l.prefix, basePath: l.matchInfo.basePath, isAction: true, matchInfo: l.matchInfo}));
     return [...links, ...actions];
   }
@@ -383,10 +390,6 @@ export class LinksState {
 
   public isOnInitDataLink(link: Link) {
     return (!link.matchInfo.spec.type || link.matchInfo.spec.type === 'data') && link.matchInfo.spec.runOnInit;
-  }
-
-  public isDefaultValidatorLink(link: Link) {
-    return link.matchInfo.isDefaultValidator;
   }
 
   private getLinkRunObs(linkUUID: string) {
