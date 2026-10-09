@@ -552,6 +552,30 @@ category('ComputeUtils: Driver links rule', async () => {
     ]);
   });
 
+  test('Missing message values add no validation items', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: ['a1:step1/a', 'b1:step1/b'],
+      to: 't:step1/a',
+      debounce: 0,
+      effects: [
+        {effect: 'error', targets: 't', message: {var: 'b1'}},
+        {effect: 'warning', targets: 't', message: ['kept', {var: 'b1'}]},
+      ],
+    }]));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      cold('-a').subscribe(() => node.getStateStore().setState('a', 1));
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [{a: {errors: [], warnings: [{description: 'kept'}], notifications: []}}]);
+  });
+
   test('Set writes a default value without consistency tracking', async () => {
     const pconf = await getProcessedConfig(twoSteps([{
       id: 'r',
