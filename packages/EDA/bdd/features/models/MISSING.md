@@ -127,7 +127,12 @@ Walked by hand on dev 2026-10-09 (Screenshot_42): Is applicable to... > Table (2
 `isApplicableTo = "<id>"` in the search and the address (`/models?q=isApplicableTo+%3D+"<id>"`), and
 the gallery lists 21 models — Check-B (applicable to Table (2)) first, then Check-A ("Applicable to
 Table" only) and models over other columns entirely ("Predict b by a", "Predict accel_x by accel_y,
-accel_z, time_offset"). The ticket goes to GitHub, filed by Olesia.
+accel_z, time_offset"). All gives 28, so the filter drops 7 models, by what is unclear, and keeps
+ones that do not fit. Picking Table (2) a second time (after All) logs, from the client's POST,
+`ERROR 23503 update or delete on table "table_columns" violates foreign key constraint
+"pm_input_columns_column_id_fkey" on table "pm_input_columns"`, and the search stays empty
+(Screenshot_43): the filter saves the table again, and its columns are the ones the model's inputs
+point to. The ticket goes to GitHub, filed by Olesia.
 
 ### 2.3 Text of the tips
 
