@@ -30,17 +30,17 @@ const statusToIcon: Record<Status, string> = {
 };
 
 const statusToColor: Record<Status, string> = {
-  ['next']: 'green',
-  ['next warn']: 'orange',
-  ['next error']: 'red',
-  [`pending`]: 'gray',
-  [`pending executed`]: 'gray',
-  ['running']: 'blue',
-  ['succeeded']: 'green',
-  ['succeeded info']: 'blue',
-  ['succeeded warn']: 'orange',
-  ['succeeded inconsistent']: 'red',
-  ['failed']: 'red',
+  ['next']: 'var(--success)',
+  ['next warn']: 'var(--orange-2)',
+  ['next error']: 'var(--red-3)',
+  [`pending`]: 'var(--grey-5)',
+  [`pending executed`]: 'var(--grey-5)',
+  ['running']: 'var(--blue-1)',
+  ['succeeded']: 'var(--success)',
+  ['succeeded info']: 'var(--blue-1)',
+  ['succeeded warn']: 'var(--orange-2)',
+  ['succeeded inconsistent']: 'var(--red-3)',
+  ['failed']: 'var(--red-3)',
 };
 
 const listContributingIos = (

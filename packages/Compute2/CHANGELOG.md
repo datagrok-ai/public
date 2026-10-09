@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Replaced hardcoded colours with the platform design tokens
 * TreeWizard: The selected step shows its actions without hovering, and tree icons are labelled for assistive tools
 * TreeWizard: Each step status has its own icon, so statuses no longer differ only by colour
 * RFV: Added the Feedback menu (Report a bug, Request a feature) to the standalone view

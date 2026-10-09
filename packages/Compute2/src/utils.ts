@@ -631,5 +631,5 @@ export function pinView(view?: DG.ViewBase): void {
 }
 
 // shared inline-style colors; tailwind arbitrary-value classes stay literal (the JIT needs them static)
-export const STICKY_BAR_BACKGROUND = 'rgba(255, 255, 255, 0.75)';
-export const SELECTED_STEP_BACKGROUND = '#f2f2f5';
+export const STICKY_BAR_BACKGROUND = 'color-mix(in srgb, var(--white) 75%, transparent)';
+export const SELECTED_STEP_BACKGROUND = 'var(--grey-1)';

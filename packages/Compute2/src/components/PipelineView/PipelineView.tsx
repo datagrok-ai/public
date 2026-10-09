@@ -199,7 +199,7 @@ export const PipelineView = Vue.defineComponent({
                   const iconBackground = `background-image: url("/images/entities/${language}.png"); padding-right: 3px;`;
                   return (
                     <div
-                      class='p-2 border-solid border border-[#dbdcdf] m-4 hover:bg-[#F2F2F5]'
+                      class='p-2 border-solid border border-[color:var(--grey-2)] m-4 hover:bg-[color:var(--grey-1)]'
                       style={{width: '208px'}}
                     >
                       <div class='flex flex-col'>
@@ -210,7 +210,7 @@ export const PipelineView = Vue.defineComponent({
                               <IconFA style={{'padding-right': '3px'}} name='folder-tree' />
                             }
                             <div>
-                              <span class='text-[#2083d5]'> {stepType.friendlyName ?? stepType.configId} </span>
+                              <span class='text-[color:var(--blue-1)]'> {stepType.friendlyName ?? stepType.configId} </span>
                             </div>
                           </div>
                           <div class='flex flex-row'>
