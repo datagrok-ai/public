@@ -157,18 +157,18 @@ function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
   const links = conf.links ? processLinks(conf.links) : undefined;
-  const actions = processPipelineActions(conf.actions ?? [], logger);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
+  const actions = processActions(conf.actions ?? [], logger);
+  const onInit = processHook<PipelineInitConfiguration<LinkIOParsed[]>>(conf.onInit);
+  const onReturn = processHook<PipelineReturnConfiguration<LinkIOParsed[]>>(conf.onReturn);
   const states = conf.states?.map((s) => normalizeIdRef(s));
   return {...conf, links, actions, onInit, onReturn, states};
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
   const links = conf.links ? processLinks(conf.links) : undefined;
-  const actions = processPipelineActions(conf.actions ?? [], logger);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
+  const actions = processActions(conf.actions ?? [], logger);
+  const onInit = processHook<PipelineInitConfiguration<LinkIOParsed[]>>(conf.onInit);
+  const onReturn = processHook<PipelineReturnConfiguration<LinkIOParsed[]>>(conf.onReturn);
   const initialSteps = conf.initialSteps?.map((s) => normalizeIdRef(s));
   const states = conf.states?.map((s) => normalizeIdRef(s));
   return {...conf, actions, links, onInit, onReturn, initialSteps, states};
@@ -182,7 +182,7 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
     ...annotationCheckLinks(io).flatMap(({kind, link}) => markAnnotation(processLinks([link]), kind)),
   ];
   const links = allLinks.length ? allLinks : undefined;
-  const actions = processStepActions(conf.actions ?? [], logger);
+  const actions = processActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
@@ -242,18 +242,13 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   return [...inputs, ...outputs];
 }
 
-function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
-  checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) =>
-    withOriginal({...processLinkData(action), ...processActionVisibility(action)}, action));
-  return actions;
-}
+type ActionInput = DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> |
+  FuncCallActionConfiguration<LinkSpecString>;
 
-function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+function processActions<A extends ActionInput>(actionsInput: A[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) =>
+  return actionsInput.map((action) =>
     withOriginal({...processLinkData(action), ...processActionVisibility(action)}, action));
-  return actions;
 }
 
 function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
@@ -278,14 +273,8 @@ function processActionVisibility(action: {showWhen?: LinkSpecString, hideWhen?: 
   return {showWhen, hideWhen};
 }
 
-function processReturnHook(hooksInput?: PipelineReturnConfiguration<LinkSpecString>) {
-  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineReturnConfiguration<LinkIOParsed[]> | undefined;
-  return hook;
-}
-
-function processInitHook(hooksInput?: PipelineInitConfiguration<LinkSpecString>) {
-  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineInitConfiguration<LinkIOParsed[]> | undefined;
-  return hook;
+function processHook<R>(hookInput?: PipelineLinkConfigurationBase<LinkSpecString>) {
+  return (hookInput ? processLinkData(hookInput) : undefined) as R | undefined;
 }
 
 function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>>(link: L) {
