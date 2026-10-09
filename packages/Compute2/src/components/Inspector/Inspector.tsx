@@ -13,6 +13,7 @@ import {
   InspectedLink, toInspectorJSON,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/inspection';
 import {FilterDropdown, FilterOption} from './FilterDropdown';
+import {isLinkShown} from './annotation-links';
 
 // ---- Component ----
 
@@ -39,18 +40,28 @@ export const Inspector = Vue.defineComponent({
     const selectedTab = Vue.ref('Log');
     const linksFilterSelection = Vue.ref<string[]>([]);
     const stepsFilterSelection = Vue.ref<string[]>([]);
+    const showAnnotationLinks = Vue.ref(false);
 
     // the driver is read only while the Links tab is shown; links updates after each tree update trigger a re-read
     const linksData = Vue.computed<InspectedLink[]>(() =>
-      selectedTab.value === 'Links' && props.links && props.inspectLinks ? props.inspectLinks() : []);
+      (selectedTab.value === 'Links' && props.links && props.inspectLinks ? props.inspectLinks() : [])
+        .filter((link) => isLinkShown(link.annotation, showAnnotationLinks.value)));
+
+    // annotation checks are not in props.links, so with the toggle on they are read for the filters of both tabs
+    const annotationChecks = Vue.computed<InspectedLink[]>(() =>
+      showAnnotationLinks.value && props.links && props.inspectLinks ?
+        props.inspectLinks().filter((link) => link.annotation === 'check') : []);
 
     // --- Filter options per tab ---
 
     // the Log tab needs the options too, so they come from props.links
     const linkFilterOptions = Vue.computed<FilterOption[]>(() => {
       const seen = new Set<string>();
-      const links = (props.links ?? []).map((l) =>
-        ({id: l.id, isAction: l.isAction, type: l.matchInfo.spec.type ?? 'data'}));
+      const links = [
+        ...(props.links ?? []).filter((l) => isLinkShown(l.matchInfo.spec.annotation, showAnnotationLinks.value))
+          .map((l) => ({id: l.id, isAction: l.isAction, type: l.matchInfo.spec.type ?? 'data'})),
+        ...annotationChecks.value.map((l) => ({id: l.id, isAction: false, type: l.type})),
+      ];
       return links.filter((l) => {
         if (seen.has(l.id)) return false;
         seen.add(l.id);
@@ -139,6 +150,16 @@ export const Inspector = Vue.defineComponent({
               placeholder='all links'
             />
           }
+          { (selectedTab.value === 'Links' || selectedTab.value === 'Log') &&
+            <label style={{display: 'flex', alignItems: 'center', gap: '3px'}}>
+              <input
+                type='checkbox'
+                checked={showAnnotationLinks.value}
+                onChange={(e: Event) => showAnnotationLinks.value = (e.target as HTMLInputElement).checked}
+              />
+              Annotation links
+            </label>
+          }
           { selectedTab.value === 'Tree State' &&
             <FilterDropdown
               options={stepFilterOptions.value}
@@ -156,6 +177,7 @@ export const Inspector = Vue.defineComponent({
             </div>
             <Logger
               linkFilterOptions={linkFilterOptions.value}
+              showAnnotationLinks={showAnnotationLinks.value}
               logs={props.logs.slice(lastVisibleIdx.value)}
               onLinkClicked={handleLinkClicked}
             ></Logger>

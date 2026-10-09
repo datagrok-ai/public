@@ -7,7 +7,7 @@
 * TreeWizard: The selected step shows its actions without hovering, and tree icons are labelled for assistive tools
 * TreeWizard: Each step status has its own icon, so statuses no longer differ only by colour
 * RFV: Added the Feedback menu (Report a bug, Request a feature) to the standalone view
-* Inspector: Links tab shows each link as written, empty aliases, targets dropped by `$linked` and action visibility, and no longer mixes up the spec of links that share an id across steps; Config tab shows the config as written with resolved step io
+* Inspector: Links tab shows each link as written, empty aliases, targets dropped by `$linked` and action visibility, and no longer mixes up the spec of links that share an id across steps; Config tab shows the config as written with resolved step io; links generated from annotations are shown in the Links and Log tabs only with the Annotation links toggle, and missing-value checks are never shown
 * TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
 * TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
 * TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them

@@ -7,6 +7,7 @@ import {
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {formatNodePath, formatMutationPath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/utils';
 import {FilterDropdown, FilterOption} from '../Inspector/FilterDropdown';
+import {isLinkShown} from '../Inspector/annotation-links';
 
 
 function formatTime(d: Date): string {
@@ -28,6 +29,10 @@ export const Logger = Vue.defineComponent({
       type: Array as Vue.PropType<FilterOption[]>,
       required: true,
     },
+    showAnnotationLinks: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     'linkClicked': (_linkIds: string[]) => true,
@@ -47,7 +52,7 @@ export const Logger = Vue.defineComponent({
 
     return () => {
       const items = props.logs.filter((item) => {
-        if (isLinkLogItem(item) && item.isDefaultValidator)
+        if (isLinkLogItem(item) && !isLinkShown(item.annotation, props.showAnnotationLinks))
           return false;
         if (eventsFilter.value.length)
           return eventsFilter.value.includes(item.type);
@@ -109,7 +114,6 @@ export const Logger = Vue.defineComponent({
           const segments = [...item.prefix, ...(item.basePath ?? [])].map((s) => ({idx: s.idx, id: s.id}));
           const pathStr = formatNodePath(segments);
           const pathString = pathStr ? `${pathStr}/${item.id}` : item.id;
-          const isDefault = item.isDefaultValidator;
           return ([
             <div key={item.uuid + '1'}>
               {formatTime(item.timestamp)}
@@ -118,10 +122,7 @@ export const Logger = Vue.defineComponent({
               {item.type}
               </div>,
             <div key={item.uuid + '3'}>
-              { isDefault
-                ? <span>{pathString}</span>
-                : <span style={linkStyle} onClick={() => emit('linkClicked', [item.id])}>{pathString}</span>
-              }
+              <span style={linkStyle} onClick={() => emit('linkClicked', [item.id])}>{pathString}</span>
             </div>,
           ]);
         }
