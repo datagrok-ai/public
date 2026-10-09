@@ -72,12 +72,12 @@ import './tests/another-category-tests';
 
 ### Step 4: Skip failing tests
 
-Use the `skipReason` parameter to temporarily skip a test (always provide a reason such as a Jira ticket):
+Use the `skipReason` parameter to temporarily skip a test (always provide a reason such as a GitHub issue):
 
 ```ts
 test('flaky test', async () => {
   expect(1, 11);
-}, {skipReason: 'GROK-99999'});
+}, {skipReason: 'public#4256'});
 ```
 
 ### Step 5: Add inline function tests
@@ -121,7 +121,7 @@ Tests can also be run from the Datagrok console or Test Manager in the platform 
 
 - Import `category`, `test`, `expect` from `@datagrok-libraries/utils/src/test`
 - Always register test files in `src/package-test.ts`
-- Use `skipReason` with a Jira key (e.g., `GROK-12345`) when skipping tests
+- Use `skipReason` with a GitHub issue (e.g., `public#4256`) when skipping tests
 - The `//test:` annotation on functions is for simple input/output validation
 - For real examples, see the Chem package: `public/packages/Chem/`
 

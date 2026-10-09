@@ -79,6 +79,23 @@ grok s raw GET /api/users/current                    # any endpoint
 Full reference with JSON shapes, batch operations, and scripting patterns:
 [`tools/GROK_S.md`](tools/GROK_S.md).
 
+## Issues and references
+
+Tickets are GitHub issues: [datagrok-ai/public](https://github.com/datagrok-ai/public/issues)
+for JS API, plugins, libraries, tools, help and every client request; `datagrok-ai/core` (private)
+for the platform itself. A ticket goes to the repo whose code it changes. Old `GROK-NNNNN` keys
+are read-only Jira history; leave them as they are.
+
+| Where | Issue in this repo | Issue in `core` |
+|---|---|---|
+| Commit header (max 70 chars) | `#4256: Scope: what was done` | `Scope: what was done`, body `Refs datagrok-ai/core#707` |
+| Branch | `claude/public-4256` | `claude/core-707` (same name in both repos) |
+| PR body | `Closes #4256` | `Closes datagrok-ai/core#707` |
+| Changelog bullet | `* [#4256](https://github.com/datagrok-ai/public/issues/4256): Fixed …` | `* [core#707](https://github.com/datagrok-ai/core/issues/707): Fixed …` |
+
+Use `gh issue view|list|comment|close|edit -R datagrok-ai/public` and
+`gh search issues --owner datagrok-ai`.
+
 ## Publishing to npm
 
 Everything published from this repo (`datagrok-api`, `datagrok-tools`,
