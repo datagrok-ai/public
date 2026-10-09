@@ -78,7 +78,7 @@ Everything below was in the original checklist and is **not** covered by
 ### Table switching
 
 > Manual
-
+>
 > Note: requires spgi-100 dataset (open twice to get two tables for switching).
 > Setup: Close all, open spgi-100.csv twice, go to the first table view, add Heat map, open Context Panel.
 
@@ -144,7 +144,7 @@ Everything below was in the original checklist and is **not** covered by
 ### Layout saving with Is Heatmap toggle
 
 > Manual
-
+>
 > Note: uses spgi-100 dataset.
 > Setup: open spgi-100.csv, add Heat map.
 
