@@ -92,6 +92,7 @@ export async function server(argv: any): Promise<boolean> {
     if (entity === 'groups' && (verb === 'list-members' || verb === 'list-memberships')) return await handleGroupListMembers(dapi, verb, rest, argv, output);
     if (entity === 'users' && verb === 'block') return await handleUserBlock(dapi, rest, output);
     if (entity === 'users' && verb === 'unblock') return await handleUserUnblock(dapi, rest, output);
+    if (entity === 'users' && verb === 'invite') return await handleUserInvite(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'download') return await handleTablesDownload(dapi, rest, argv, output);
     if (entity === 'tables' && verb === 'upload') return await handleTablesUpload(dapi, rest, output);
     if (entity === 'packages' && verb === 'install') return await handlePackagesInstall(dapi, rest, argv, output);
@@ -192,6 +193,20 @@ async function handleUserUnblock(dapi: NodeDapi, rest: string[], output: OutputF
   const user = await dapi.users.find(rest[0]);
   await dapi.users.unblock(user);
   if (output !== 'quiet') console.log(`Unblocked ${user?.login ?? rest[0]}`);
+  return true;
+}
+
+async function handleUserInvite(dapi: NodeDapi, rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
+  const email = rest[0] !== undefined ? String(rest[0]) : undefined;
+  const prefix = argv.prefix !== undefined ? String(argv.prefix) : undefined;
+  if (argv['send-email'] && (!email || prefix !== undefined)) {
+    printError(new Error('Usage: grok s users invite <email> --send-email (no --prefix: only a link has a code)'));
+    return false;
+  }
+  const link = await dapi.users.invite(email, !!argv['send-email'], prefix);
+  if (output === 'json') printOutput({email: email ?? null, link: link || null}, output);
+  else if (link) console.log(link);
+  else if (output !== 'quiet') console.log(`Invitation sent to ${email}`);
   return true;
 }
 
@@ -922,6 +937,10 @@ Special commands:
                                                       List parent groups
   grok s users block <id-or-login>                    Block a user from the platform
   grok s users unblock <id-or-login>                  Unblock a previously blocked user
+  grok s users invite [<email>] [--prefix <P>] [--send-email]
+                                                      Invite a user; prints a login link (no email sent).
+                                                      --prefix starts the code with <P> (e.g. ALEX-);
+                                                      --send-email mails the invitation instead
   grok s tables upload <name> <file.csv|file.d42>     Upload a CSV or d42 binary as a Datagrok table
   grok s tables download <name|Project:Table|id> [-O <file>]
                                                       Download a table as CSV (stdout by default)

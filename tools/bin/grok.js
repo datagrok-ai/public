@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 const argv = require('minimist')(process.argv.slice(2), {
   alias: {k: 'key', h: 'help', r: 'recursive'},
-  boolean: ['dartium'],
+  boolean: ['dartium', 'send-email'],
   // keep versions verbatim — minimist would coerce '1.10' to the number 1.1
-  string: ['version'],
+  string: ['version', 'prefix'],
 });
 // minimist maps `--no-retry` to `{retry: false}`, so the `args['no-retry']` checks in
 // test.ts / playwright-runner.ts never fired and `--no-retry` was silently ignored

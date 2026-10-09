@@ -566,6 +566,15 @@ export class NodeUsersDataSource extends NodeHttpDataSource {
   async unblock(user: any): Promise<void> {
     await this.client.post('/public/v1/users/unblock', user);
   }
+
+  /**
+   * Creates the invitee (status `new`) and returns a link that logs them in, sending no email; the
+   * email may be omitted, and [prefix] goes in front of the link's code. With [sendEmail] the
+   * server mails the invitation and returns '' instead.
+   */
+  async invite(email?: string, sendEmail: boolean = false, prefix?: string): Promise<string> {
+    return this.client.post(`/users/invite${buildQuery({email: email ?? '', target: 'Datagrok', link: sendEmail ? undefined : true, prefix})}`);
+  }
 }
 
 export class NodeConnectionsDataSource extends NodeHttpDataSource {
