@@ -16,8 +16,15 @@ no bindings of its own.
 | `models/train-on-cars.feature` | linear-regression, pls-regression, xgboost2 | the target, fifteen features picked in the column picker, three engines, a selection in the result chart, XGBoost's clickers and sliders |
 | `models/train-on-iris.feature` | softmax, xgboost1 | the same for classification, Softmax's sliders, all five XGBoost controls |
 | `models/share-model.feature` | share-model-permissions (owner's side) | a model trained and saved, its Sharing pane, the Share dialog, a share to the second account and its revoke |
+| `models/train-data-checks.feature` | models-validators-edge, models-bug-grok-3525 | the Insights & Tips checks (class imbalance, categorical and identifier-like features, correlated pairs, missing values in the target) and the remedies that let the model train |
+| `models/train-options.feature` | models-testdemog-lifecycle-smoke 1–2, models-one-hot-suffix-collision | Ignore / Impute missing, Predict probability with its cutoff and ROC curve, One-hot encoding — each trained, saved and applied to new rows |
+| `models/models-gallery.feature` | models-testdemog-lifecycle-smoke 4, models-lifecycle-csv-table 3–4 | the gallery search, Created by me, Edit..., Run Evaluation, Apply to on a card, Save as Zip |
 | `pareto-front.feature` | pareto-front-viewer, steps 5–6 | the label picked on cars and on demog, and none on iris |
 | `pareto-front-objectives.feature` | pareto-front-viewer, steps 1–4 and 7 | the property categories, the objectives offered, the min/max conflict warning, an axis and the labels chosen in the panel; `@known-failure` for an empty column |
+
+`features/models/MISSING.md` lists what these could not say yet (Ctrl+click and Compare, the Is
+applicable to... filter), the candidate findings to check by hand, and the API tests the old API-only
+specs need.
 
 Not translated: the recipient's side of `share-model-permissions` (seeing, applying and being refused
 the shared model), which needs a second signed-in session; the Spaces features share the same way.
@@ -31,10 +38,12 @@ DATAGROK_URL=https://dev.datagrok.ai DATAGROK_SERVER=dev npx grok-bdd run --repo
 npx grok-bdd run generated/models/train-on-cars.test.ts   # one feature
 ```
 
-Eleven features compile to thirteen Playwright tests. The stand needs EDA published and `cars.csv`,
+Fifteen features compile to fifteen Playwright specs. The stand needs EDA published and `cars.csv`,
 `demog.csv` and `iris.csv` in `System:DemoFiles`. Sharing needs a dev key for setup of `bddsecond`.
-The feature uses a unique `{run}` model name, disables notifications, and removes its model,
-sharing wrapper and newly created training table at teardown. Cleanup failure fails the run.
+The model features use unique `{run}` model names; the sharing one disables notifications. Their
+models are removed by name at start and at teardown together with the sharing wrapper and the newly
+created training table — except a model apply-and-delete deletes through the gallery, whose training
+table and wrapper stay (`features/models/MISSING.md` §1.3). Cleanup failure fails the run.
 
 The model tests require the core Train Model preview readiness attributes (`aria-busy` and
 `aria-invalid`). Rebuild the Dart client after the companion core changes before running these tests. Model
