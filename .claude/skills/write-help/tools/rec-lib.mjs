@@ -94,7 +94,25 @@ export async function installPointer(page) {
     Object.assign(disc.style, {position: 'fixed', left: '0', top: '0', width: '26px', height: '26px', marginLeft: '-13px',
       marginTop: '-13px', borderRadius: '50%', zIndex: 2147483646, pointerEvents: 'none', display: 'none',
       transition: 'transform 60ms linear', opacity: '0.75', border: '2px solid rgba(0,0,0,0.35)'});
+    // Top-layer popovers: a select picker or another popover is drawn in the top layer above any z-index, so the
+    // pointer is a popover too, raised over whatever top-layer element opens last.
+    for (const el of [disc, arrow]) {
+      el.popover = 'manual';
+      Object.assign(el.style, {inset: 'auto', left: '0', top: '0', margin: '0', overflow: 'visible'});
+    }
+    Object.assign(arrow.style, {padding: '0', border: 'none', background: 'transparent'});
+    Object.assign(disc.style, {padding: '0'});
     document.documentElement.append(disc, arrow);
+    const raise = () => { for (const el of [disc, arrow]) { try { el.hidePopover(); } catch (_) {} el.showPopover(); } };
+    raise();
+    let topLayer = '';
+    const watch = () => {
+      const now = [...document.querySelectorAll(':popover-open, :modal')].filter((e) => e !== disc && e !== arrow).length +
+        ':' + document.querySelectorAll('select:open').length;
+      if (now !== topLayer) { topLayer = now; raise(); }
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
     let last = 0, down = false, hideTimer = null;
     const move = (e) => {
       arrow.style.transform = `translate(${e.clientX - 1}px,${e.clientY - 1}px)`;
@@ -131,6 +149,16 @@ export class Mouse {
   async click(x, y, {button = 'left', pause = 350, after = 500} = {}) {
     await this.moveTo(x, y);
     await this.page.waitForTimeout(pause);
+    await this.page.mouse.down({button});
+    await this.page.waitForTimeout(160);
+    await this.page.mouse.up({button});
+    await this.page.waitForTimeout(after);
+  }
+  /** Steps onto (x, y) in one move and presses at once: for targets that react on mouseenter, such as the groups of
+   *  a horizontal menu bar, so the press mark appears in the same frame as the reaction. */
+  async press(x, y, {button = 'left', after = 500} = {}) {
+    await this.page.mouse.move(x, y);
+    this.x = x; this.y = y;
     await this.page.mouse.down({button});
     await this.page.waitForTimeout(160);
     await this.page.mouse.up({button});
@@ -249,21 +277,34 @@ export function menuItem(page, label) {
   return page.locator('.d4-menu-item-label:visible').getByText(label, {exact: true}).first();
 }
 
-/** Walks a context-menu path with the mouse: hover each group, click the leaf. */
+/** Walks a menu path with the mouse: hover each group, click the leaf. A group in a horizontal menu bar opens on
+ *  mouseenter, so the pointer approaches it from below (never sliding along the bar over its neighbours), stops just
+ *  outside it, and steps in with the press: the press mark and the opening menu land in the same frame. */
 export async function walkMenu(mouse, labels) {
+  let prevHorz = false;
   for (let i = 0; i < labels.length; i++) {
-    const [x, y] = await mouse.center(menuItem(mouse.page, labels[i]));
-    if (i < labels.length - 1) {
+    const item = menuItem(mouse.page, labels[i]);
+    const [x, y] = await mouse.center(item);
+    const horz = await item.evaluate((e) => e.closest('.d4-menu-item')?.classList.contains('d4-menu-item-horz') ?? false);
+    if (horz) {
+      const bottom = await item.evaluate((e) => e.closest('.d4-menu-item').getBoundingClientRect().bottom);
+      await mouse.moveTo(x, Math.max(mouse.y, bottom + 12));
+      await mouse.page.waitForTimeout(250);
+      await mouse.press(x, y, {after: 650});
+    }
+    else if (i < labels.length - 1) {
       // move horizontally first so the pointer doesn't cross sibling groups diagonally
       if (i === 0) { await mouse.moveTo(mouse.x, y); await mouse.moveTo(x, y); }
+      else if (prevHorz) { await mouse.moveTo(mouse.x, y); await mouse.moveTo(x, y); }
       else { await mouse.moveTo(x, mouse.y); await mouse.moveTo(x, y); }
       await mouse.page.waitForTimeout(650);
     }
     else {
-      if (i === 0) await mouse.moveTo(mouse.x, y);
+      if (i === 0 || prevHorz) await mouse.moveTo(mouse.x, y);
       else await mouse.moveTo(x, mouse.y);
       await mouse.click(x, y, {after: 900});
     }
+    prevHorz = horz;
   }
 }
 

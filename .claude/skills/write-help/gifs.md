@@ -118,8 +118,10 @@ viewers need), `REC_GROK` (the grok command), `REC_OUT` (output folder of the ex
     final `waitForTimeout(2000)` in the scene holds the last frame. The browser closes even when the
     scene fails.
 - `Mouse`: `moveTo`, `click` (`{button: 'right'}`), `dblclick`, `drag`, `clickEl`, `hoverEl`,
-  `type`. Every action travels to its target first.
-- `walkMenu(mouse, labels)` walks a context-menu path: hovers each group, clicks the leaf.
+  `type`. Every action travels to its target first. `press` steps onto the target in one move and
+  presses at once, for targets that react on hover.
+- `walkMenu(mouse, labels)` walks a menu path: hovers each group, clicks the leaf. A top menu bar
+  group is entered from below and pressed in the same step.
 - `open()` and `cleanShell(page)` for read-only probes without recording.
 
 Run a scene with `node <scene>.mjs` from the folder that holds `rec-lib.mjs`, or import it by
@@ -130,7 +132,7 @@ relative path as the examples do.
 | Script | Shows |
 |---|---|
 | `rec-sc-reg.mjs` | Viewer only, context-menu path, column selector popup, legend toggles, the property panel opened by the gear for one step |
-| `rec-sc-ma.mjs` | Slider there and back, switching an axis column, a native `<select>` with the keyboard |
+| `rec-sc-ma.mjs` | Slider there and back, switching an axis column, a native `<select>` (older take, with the keyboard) |
 | `rec-lc-small.mjs` | A 400×300 gallery preview: viewer docked next to the grid, cropped to the viewer |
 | `rec-helm.mjs` | A full-screen editor addressed by `data-testid`, waiting for slow tabs |
 | `rec-cw.mjs` | A settings page, stopping before **Save and apply** |
@@ -158,8 +160,12 @@ relative path as the examples do.
 - Clicking the sidebar Browse icon while Browse is open closes it.
 - Tree nodes load lazily: wait a few seconds after expanding, and scroll with the mouse wheel over
   the tree until the node is in the window.
-- Native `<select>` lists are not captured by the screencast: click the field, then use the arrows
-  and Enter.
+- Native `<select>` lists are not captured by the screencast. Make Chromium draw them in the page
+  with recording-only CSS, `select, select::picker(select) { appearance: base-select !important; }`
+  (Datagrok's CSS overrides it without `!important`; hide the extra `select::picker-icon`), then
+  open the list and pick the option with real clicks.
+- A top menu bar opens its group on hover, before any click: open it with `walkMenu` or
+  `Mouse.press`, not `clickEl`, or the menu opens half a second before the click mark appears.
 - Balloons a step triggers that explain nothing: hide them with
   `.d4-balloon, .d4-balloon-container { display: none !important; }`.
 - Column selector popups open above or below the selector depending on space: read the focused
