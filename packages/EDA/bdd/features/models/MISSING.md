@@ -123,6 +123,12 @@ even that branch only sorts the list, with a one-argument comparator
 (`models.sort((pmi, _) => pmi.isApplicable(tableInfo) ? 0 : 1)`). Picking a table that was never saved also saves it to the server (1.2). Whether "Is applicable
 to" was meant to filter or to sort is the question.
 
+Walked by hand on dev 2026-10-09 (Screenshot_42): Is applicable to... > Table (2) gives
+`isApplicableTo = "<id>"` in the search and the address (`/models?q=isApplicableTo+%3D+"<id>"`), and
+the gallery lists 21 models — Check-B (applicable to Table (2)) first, then Check-A ("Applicable to
+Table" only) and models over other columns entirely ("Predict b by a", "Predict accel_x by accel_y,
+accel_z, time_offset"). The ticket goes to GitHub, filed by Olesia.
+
 ### 2.3 Text of the tips
 
 - "Column 'id_like' contains **contain** too many unique categories." (`tooManyUniqueCategories`,
