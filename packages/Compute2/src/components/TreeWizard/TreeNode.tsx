@@ -17,22 +17,22 @@ import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/rea
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
-  ['next warn']: 'arrow-right',
-  ['next error']: 'arrow-right',
-  [`pending`]: 'circle',
-  [`pending executed`]: 'dot-circle',
+  ['next warn']: 'exclamation-triangle',
+  ['next error']: 'pen',
+  [`pending`]: 'clock',
+  [`pending executed`]: 'history',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
-  ['succeeded info']: 'check-circle',
-  ['succeeded warn']: 'dot-circle',
-  ['succeeded inconsistent']: 'dot-circle',
+  ['succeeded info']: 'info-circle',
+  ['succeeded warn']: 'exclamation-circle',
+  ['succeeded inconsistent']: 'unlink',
   ['failed']: 'times-circle',
 };
 
 const statusToColor: Record<Status, string> = {
   ['next']: 'green',
   ['next warn']: 'orange',
-  ['next error']: 'black',
+  ['next error']: 'red',
   [`pending`]: 'gray',
   [`pending executed`]: 'gray',
   ['running']: 'blue',
@@ -119,6 +119,9 @@ export const TreeNode = Vue.defineComponent({
       type: Boolean,
     },
     isReadonly: {
+      type: Boolean,
+    },
+    isSelected: {
       type: Boolean,
     },
     hasInconsistentSubsteps: {
@@ -225,7 +228,7 @@ export const TreeNode = Vue.defineComponent({
         >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { ...isHovered.value ? [
+            { ...isHovered.value || props.isSelected ? [
               ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
                 name='save'
                 tooltip={'Save this subtree'}
@@ -235,6 +238,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
+                tooltip='Add a step'
                 rightAligned
                 items={props.stat.data.stepTypes
                   .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
@@ -254,6 +258,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...props.isDraggable ? [<IconFA
                 name='grip-vertical'
+                tooltip='Drag to move'
                 cursor='grab'
                 class='d4-ribbon-item'
               />]: [],
@@ -265,6 +270,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...props.isDeletable ? [<IconFA
                 name='times'
+                tooltip='Remove'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],

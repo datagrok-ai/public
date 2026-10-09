@@ -844,6 +844,7 @@ export const TreeWizard = Vue.defineComponent({
                         isDeletable={isDeletable(stat)}
                         isDuplicable={isDuplicable(stat)}
                         isReadonly={stat.data.isReadonly}
+                        isSelected={stat.data.uuid === chosenStepUuid.value}
                         hasInconsistentSubsteps={!!hasSubtreeAnyInconsistencies(stat.data, states.calls, states.consistency)}
                         onAddNode={({itemId, position}) => addStep(stat.data.uuid, itemId, position)}
                         onRemoveNode={() => removeStep(stat.data.uuid)}

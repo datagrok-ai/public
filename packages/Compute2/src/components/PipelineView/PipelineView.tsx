@@ -272,7 +272,7 @@ export const PipelineView = Vue.defineComponent({
             > {
                 Vue.withDirectives(
                   <MarkDown
-                    markdown={helpContent.value ?? 'Help file is not avaliable'}
+                    markdown={helpContent.value ?? 'Help file is not available'}
                   />, [[ifOverlapping, helpLoading.value]])
               }
             </div> : null

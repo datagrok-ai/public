@@ -223,8 +223,8 @@ export const hasSubtreeAnyInconsistencies = (
 };
 
 export const statusToTooltip: Record<Status, string> = {
-  [`next`]: `This step is avaliable to run`,
-  [`next warn`]: `This step is avaliable to run, but has warnings`,
+  [`next`]: `This step is available to run`,
+  [`next warn`]: `This step is available to run, but has warnings`,
   [`next error`]: `This step needs user input`,
   ['pending']: 'This step has pending dependencies',
   ['pending executed']: 'This step has changed dependencies',
