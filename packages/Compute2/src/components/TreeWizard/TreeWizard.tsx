@@ -12,7 +12,6 @@ import {
   PipelineState,
   ViewAction,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
-import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {RichFunctionView} from '../RFV/RichFunctionView';
 import {STEP_HISTORY_OPTION} from '../History/History';
 import {TreeNode} from './TreeNode';
@@ -30,6 +29,7 @@ import {
   findNodeWithPathByUuid, findPrevStep, findTreeNodeByPath,
   disposeViewers, findTreeNodeParrent, getRelevantGlobalActions, getViewers, hasInconsistencies, hasSubtreeFixableInconsistencies, hasSubtreeAnyInconsistencies,
   pinView, reportTree, getExportSummary, reportSummary, resolveChosenUuid, resolveSingleStep, SELECTED_STEP_BACKGROUND,
+  isEachDraggable, isDeletable, isDuplicable,
 } from '../../utils';
 import {useReactiveTreeDriver} from '../../composables/use-reactive-tree-driver';
 import {EditRunMetadataDialog} from '@datagrok-libraries/compute-utils/shared-components/src/history-dialogs';
@@ -649,12 +649,6 @@ export const TreeWizard = Vue.defineComponent({
         .every((isOutdated) => isOutdated === false);
     });
 
-    const isEachDraggable = (stat: AugmentedStat) => {
-      return stat.parent && !stat.parent.data.isReadonly &&
-        (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIDragging);
-    };
-
     const isEachDroppable = (stat: AugmentedStat) => {
       const draggedStep = dragContext?.startInfo?.dragNode as AugmentedStat | undefined;
       return isDynamicPipelineState(stat.data) &&
@@ -681,18 +675,6 @@ export const TreeWizard = Vue.defineComponent({
         inst.dragNode = null;
         inst.dragOvering = false;
       }
-    };
-
-    const isDeletable = (stat: AugmentedStat) => {
-      return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIRemoving);
-    };
-
-    const isDuplicable = (stat: AugmentedStat) => {
-      return !!stat.parent && !stat.parent.data.isReadonly &&
-        (isDynamicPipelineState(stat.parent.data)) &&
-        !stat.parent.data.stepTypes.find((item: StepDynamicDescription) => item.configId === stat.data.configId && item.disableUIAdding);
     };
 
     ////

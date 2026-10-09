@@ -12,6 +12,27 @@ category('TreeWizard: step tooltip', () => {
   test('Failed step without a stored error keeps the plain text', async () => {
     expect(getToolTip('failed', false), 'Run failed');
   });
+
+  test('A locked step says so instead of next', async () => {
+    expect(getToolTip('next', true), 'This step is locked');
+    expect(getToolTip('succeeded', true), 'This step is succeeded');
+  });
+
+  test('Tooltips list the inputs behind the status', async () => {
+    const validations = {a: {errors: ['bad']}, b: {warnings: ['careful']}};
+    const consistency = {
+      c: {restriction: 'restricted', inconsistent: true, assignedValue: 1},
+      d: {restriction: 'info', inconsistent: true, assignedValue: 1},
+    } as const;
+    expect(getToolTip('next error', false, undefined, validations, consistency), 'This step needs user input: a');
+    expect(getToolTip('next warn', false, undefined, validations, consistency),
+      'This step is available to run, but has warnings: b, c, d');
+    expect(getToolTip('succeeded warn', false, undefined, validations, consistency),
+      'This step is succeeded, but has warnings: a, b, c, d');
+    expect(getToolTip('succeeded info', false, undefined, validations, consistency),
+      'This step is succeeded with changes: d');
+    expect(getToolTip('succeeded', false, undefined, validations, consistency), 'This step is succeeded');
+  });
 });
 
 category('TreeWizard: step node', () => {

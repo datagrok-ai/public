@@ -21,7 +21,7 @@ import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
 import {ExportCbInput, ExportSummaryItem, ExportSummaryRollup, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
-import type {Status} from './components/TreeWizard/types';
+import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
 
 export type NodeWithPath = {
@@ -170,6 +170,15 @@ export const hasRunnableSteps = (data: PipelineState) =>
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   isDynamicPipelineState(data) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
+
+const isItemActionAllowed = (
+  stat: AugmentedStat, flag: 'disableUIDragging' | 'disableUIRemoving' | 'disableUIAdding',
+) => !!stat.parent && !stat.parent.data.isReadonly && isDynamicPipelineState(stat.parent.data) &&
+  !stat.parent.data.stepTypes.some((item) => item.configId === stat.data.configId && item[flag]);
+
+export const isEachDraggable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIDragging');
+export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIRemoving');
+export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIAdding');
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 

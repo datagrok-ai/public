@@ -1,72 +1,7 @@
 import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {
-  PipelineState,
-  PipelineInstanceRuntimeData,
-  PipelineStateStatic,
-  PipelineStateDynamic,
-  StepFunCallState,
-} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {PipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import {findNextStep, findPrevStep, findNextSubStep, resolveChosenUuid, resolveSingleStep} from '../utils';
-
-function mockFuncCall(uuid: string, opts?: {isReadonly?: boolean}): StepFunCallState {
-  return {
-    type: 'funccall',
-    uuid,
-    configId: uuid,
-    isReadonly: opts?.isReadonly ?? false,
-  };
-}
-
-const defaultPipelineRuntimeData: PipelineInstanceRuntimeData = {
-  actions: undefined,
-  disableHistory: false,
-  customExports: undefined,
-  forceNavigate: false,
-  compactView: false,
-};
-
-function mockStaticPipeline(
-  uuid: string,
-  steps: PipelineState[],
-  opts?: {isReadonly?: boolean; isActionStep?: boolean; forceNavigate?: boolean; compactView?: boolean},
-): PipelineStateStatic<StepFunCallState, PipelineInstanceRuntimeData> {
-  return {
-    type: 'static',
-    uuid,
-    configId: uuid,
-    friendlyName: undefined,
-    description: undefined,
-    version: undefined,
-    nqName: undefined,
-    isReadonly: opts?.isReadonly ?? false,
-    steps,
-    isActionStep: opts?.isActionStep,
-    ...defaultPipelineRuntimeData,
-    forceNavigate: opts?.forceNavigate ?? false,
-    compactView: opts?.compactView ?? false,
-  };
-}
-
-function mockDynamicPipeline(
-  uuid: string,
-  steps: PipelineState[],
-  opts?: {isReadonly?: boolean; forceNavigate?: boolean; type?: 'dynamic' | 'parallel' | 'sequential'},
-): PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData> {
-  return {
-    type: opts?.type ?? 'dynamic',
-    uuid,
-    configId: uuid,
-    friendlyName: undefined,
-    description: undefined,
-    version: undefined,
-    nqName: undefined,
-    isReadonly: opts?.isReadonly ?? false,
-    steps,
-    stepTypes: [],
-    ...defaultPipelineRuntimeData,
-    forceNavigate: opts?.forceNavigate ?? false,
-  };
-}
+import {mockDynamicPipeline, mockFuncCall, mockStaticPipeline} from './state-fixtures';
 
 function collectSequence(startUuid: string, tree: PipelineState, direction: 'forward' | 'backward'): string[] {
   const fn = direction === 'forward' ? findNextStep : findPrevStep;
