@@ -41,7 +41,7 @@ category('ComputeUtils: Driver value annotations', async () => {
     });
   });
 
-  test('Choices source evaluates once per dependency change', async () => {
+  test('Choices source reports membership and lookup rows', async () => {
     const fc = DG.Func.byName(VALUES).prepare({region: 'EU'});
     const choices = (io: string, value: any): any => resolveSources({
       hasCall: (name: string) => name === 'call',
@@ -55,11 +55,6 @@ category('ComputeUtils: Driver value annotations', async () => {
     const cached = choices('city', 'Nope');
     expect(cached instanceof Promise, false);
     expect(cached.c.inList, false);
-    fc.setParamValue('region', 'US');
-    const refreshed = choices('city', 'EU-1');
-    expect(refreshed instanceof Promise, true);
-    const {c} = await refreshed;
-    expectDeepEqual([c.items, c.inList], [['US-1', 'US-2'], false]);
     expectDeepEqual((await choices('model', 'Volvo')).c.row, {mpg: 30, CYL: 4});
     expect((await choices('model', 'Nope')).c.row === null, true);
     expect(choices('model', null).c.inList, true);

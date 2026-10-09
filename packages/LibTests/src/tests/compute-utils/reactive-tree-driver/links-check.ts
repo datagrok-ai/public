@@ -13,7 +13,7 @@ import {PipelineLinkConfigurationInput} from
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import * as DG from 'datagrok-api/dg';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
+import {createTestScheduler, expectThrowsAsync, twoSteps, errors, warnings} from '../../../test-utils';
 
 const ANNOTATED = 'LibTests:TestAnnotatedInputs';
 const NAMED = 'LibTests:TestNamedValidators';
@@ -25,20 +25,6 @@ const annotatedStep = (links: PipelineLinkConfigurationInput<string | string[]>[
   links,
 });
 
-const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
-  id: 'pipeline1',
-  type: 'static',
-  steps: [
-    {id: 'step1', nqName: 'LibTests:TestAdd2'},
-    {id: 'step2', nqName: 'LibTests:TestMul2'},
-  ],
-  links,
-});
-
-const errors = (...descriptions: string[]) =>
-  ({errors: descriptions.map((description) => ({description})), warnings: [], notifications: []});
-const warnings = (...descriptions: string[]) =>
-  ({errors: [], warnings: descriptions.map((description) => ({description})), notifications: []});
 
 function makeTable(withNulls = false) {
   const mol = DG.Column.fromList('string', 'mol', ['C', 'CC']);
