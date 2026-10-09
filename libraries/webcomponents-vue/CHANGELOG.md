@@ -2,6 +2,7 @@
 
 ## v.next
 
+* IconFA, ComboPopup: the tooltip is also the `aria-label`, with role `button` for clickable items and `img` for status icons
 * InputForm: Added the `skipLogic` prop; literal `choices` fill the items under it, as under `skipInit`
 * RibbonPanel: an icon item carries its tooltip as `aria-label` (and drops it when an update removes the tooltip), so assistive tools and tests can name it
 * InputForm: In driver forms, choice inputs offer an empty option when annotated `nullable` or `optional`, or as the `emptyChoice` meta says
