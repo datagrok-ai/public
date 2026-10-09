@@ -140,25 +140,23 @@ point to. The ticket goes to GitHub, filed by Olesia.
   `predictive_modeling_validators.dart`).
 - "No models **registred** that match this type of data" under the Features when no engine fits.
 
-### 2.4 Details pane: "Trained on" shows an id
+### 2.4 Details pane: "Trained on" shows an id (confirmed by hand; an enhancement, filed by Olesia)
 
 A model trained in the view and saved shows `Trained on 12a571e0-bde0-…` in its Details pane, not a
 table name (the training table is built without a name in `fillModelParameters`). Intended?
 
-### 2.5 A second model saved from the same Train Model view takes the first one's name
+### 2.5 A second model saved from the same Train Model view takes the first one's name (not walked yet)
 
 Train, save as `A-LR`; change Model Engine, save as `A-PLS`. On the server the second model is
 `name = ALR_1`, `friendlyName = A-PLS` (its card is `div-ALR-1`). The friendly name shows everywhere a
 person looks, so this matters only where `name` is used (URL, scripting by name). Intended?
 
-### 2.6 Apply to from a card leaves the previous model current (low confidence)
+### 2.6 Apply to from a card — not a finding
 
-Steps: in Predictive models click model A (the context panel shows A), right-click model B's card,
-Apply to > a table B fits. Expected (`runPredictiveModellingApply` sets `AppEvents.currentObject` to the
-dialog's model): the context panel shows B while the dialog is open. Actual in the feature run: the
-current object stayed `Model "A"`. Changing the Model choice inside the dialog does make the new model
-current (apply-and-delete), so only the dialog's first model is affected. Not instrumented yet — the
-context panel's own guards may drop the change; walk it by hand before anything else.
+Under the test the context panel kept the model clicked before when a card's Apply to opened the
+dialog of another model. Walked by hand 2026-10-09: not reproduced — the panel follows the dialog's
+model. The feature claims the dialog's Model input instead; why the panel dropped the change under
+the test (most likely one of its guards after a fast click sequence) is not instrumented.
 
 ### 2.7 Questions on the old cases' expectations
 

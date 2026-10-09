@@ -13,9 +13,9 @@ Feature: The Predictive models gallery
   "Kestrel" keeps one of the two models and not the other, and the counter drops; Created by me writes
   "author = @current" into an empty search (a typed search is kept and combined with it). Run Evaluation applies the model to the table it was trained
   on and draws its result charts and metrics (Accuracy, Confusions, a scatter plot) in the pane. Apply to on a card opens the Apply dialog on that table and that model, and makes the table's view
-  current once the prediction is added. The dialog is meant to make its model the current object too;
-  from a card's menu it left the model clicked before current (MISSING.md, to check by hand), so the
-  scenario claims the dialog's own Model input instead.
+  current once the prediction is added. The dialog makes its model the current object too, as a walk
+  by hand shows; under the test the context panel kept the model clicked before (a guard of the panel
+  dropping the change, not instrumented), so the scenario claims the dialog's own Model input instead.
 
   Not translated, and why: picking two cards with Ctrl+click and comparing them (Actions > Compare
   opens "Compare models" with Name, Description, Method and Source) — no step clicks an element with a
