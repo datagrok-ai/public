@@ -133,7 +133,7 @@ function's parameter type results in the parameter placeholder
 - **Bug-library status**: the affordance gaps are not catalogued in
   `bug-library/powerpack.yaml` because they are platform-architecture
   constraints (Dart event-bus binding, private wrapper internals), not
-  fixable bugs. If a JIRA ticket is filed to expose the affordances
+  fixable bugs. If a GitHub issue is filed to expose the affordances
   publicly, link it via `related_bugs[]` here.
 
 ---

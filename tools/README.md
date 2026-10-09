@@ -106,7 +106,8 @@ For more information on configuring connections, refer to the [Connections](http
   `config.yaml`): `grok report fetch <instance> <number>` downloads the report zip, `grok report read
   <zip|json|instance number>` prints one normalized JSON object (flags `--extract-screenshot`,
   `--extract-d42`, `--extract-client-log`), `grok report resolve <instance> <number>` marks it resolved.
-  `ticket`, `comment`, `label`, `attach` talk to JIRA with `JIRA_TOKEN`. See `grok report --help`.
+  `ticket`, `comment`, `label`, `attach` talk to JIRA with `JIRA_TOKEN`; porting them to GitHub Issues
+  is pending. See `grok report --help`.
 - `check` checks package content (function signatures, import statements of external modules,
   etc.). The check is also run during package publication.
 - `init` modifies a package template by adding config files for linters, IDE, and so on
