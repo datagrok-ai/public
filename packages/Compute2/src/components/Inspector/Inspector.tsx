@@ -10,7 +10,7 @@ import VueJsonPretty from 'vue-json-pretty';
 import 'vue-json-pretty/lib/styles.css';
 import {LinksData} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/LinksState';
 import {
-  LinksInspection, toInspectorJSON,
+  InspectedLink, toInspectorJSON,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/inspection';
 import {FilterDropdown, FilterOption} from './FilterDropdown';
 
@@ -29,7 +29,7 @@ export const Inspector = Vue.defineComponent({
       type: Array as Vue.PropType<LogItem[]>,
     },
     inspectLinks: {
-      type: Function as Vue.PropType<() => LinksInspection>,
+      type: Function as Vue.PropType<() => InspectedLink[]>,
     },
     inspectConfig: {
       type: Function as Vue.PropType<() => any>,
@@ -41,19 +41,17 @@ export const Inspector = Vue.defineComponent({
     const stepsFilterSelection = Vue.ref<string[]>([]);
 
     // the driver is read only while the Links tab is shown; links updates after each tree update trigger a re-read
-    const linksData = Vue.computed<LinksInspection>(() =>
-      selectedTab.value === 'Links' && props.links && props.inspectLinks ?
-        props.inspectLinks() :
-        {matched: [], notMatched: []});
+    const linksData = Vue.computed<InspectedLink[]>(() =>
+      selectedTab.value === 'Links' && props.links && props.inspectLinks ? props.inspectLinks() : []);
 
     // --- Filter options per tab ---
 
-    // the Log tab needs the options too, so matched links come from props.links
+    // the Log tab needs the options too, so they come from props.links
     const linkFilterOptions = Vue.computed<FilterOption[]>(() => {
       const seen = new Set<string>();
-      const matched = (props.links ?? []).map((l) =>
+      const links = (props.links ?? []).map((l) =>
         ({id: l.id, isAction: l.isAction, type: l.matchInfo.spec.type ?? 'data'}));
-      return [...matched, ...linksData.value.notMatched].filter((l) => {
+      return links.filter((l) => {
         if (seen.has(l.id)) return false;
         seen.add(l.id);
         return true;
@@ -92,10 +90,9 @@ export const Inspector = Vue.defineComponent({
     };
 
     const filteredLinks = Vue.computed(() => {
-      const {matched, notMatched} = linksData.value;
-      if (!linksFilterSelection.value.length) return {matched, notMatched};
+      if (!linksFilterSelection.value.length) return linksData.value;
       const sel = new Set(linksFilterSelection.value);
-      return {matched: matched.filter((l) => sel.has(l.id)), notMatched: notMatched.filter((l) => sel.has(l.id))};
+      return linksData.value.filter((l) => sel.has(l.id));
     });
 
     const filterTreeState = (state: PipelineState, uuids: Set<string>): any => {
