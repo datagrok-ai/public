@@ -74,3 +74,40 @@ describe('logger set', () => {
     expect(Date.parse(saved.body.userGroupSettings.g1.expiresAt) - Date.now()).toBeGreaterThan(29 * 60000);
   });
 });
+
+describe('timeline', () => {
+  async function timelinePath(argv: any): Promise<URLSearchParams> {
+    const paths: string[] = [];
+    const client: any = {
+      async request(method: string, path: string) {
+        paths.push(path);
+        return [];
+      },
+      get(path: string) { return this.request('GET', path); },
+    };
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await handleObserve(new NodeDapi(client), 'timeline', undefined, [], argv, 'json');
+    }
+    finally {
+      log.mockRestore();
+    }
+    expect(paths[0].startsWith('/log/timeline?')).toBe(true);
+    return new URLSearchParams(paths[0].split('?')[1]);
+  }
+
+  it('a session without --from reads its last 15 minutes', async () => {
+    const q = await timelinePath({session: 's1'});
+    expect(q.get('session')).toBe('s1');
+    expect(Date.parse(q.get('to')!) - Date.parse(q.get('from')!)).toBe(15 * 60000);
+  });
+
+  it('a session with --from leaves --to to the server unless given', async () => {
+    const q = await timelinePath({session: 's1', from: '2026-10-09T10:00', limit: 5});
+    expect([q.get('from'), q.has('to'), q.get('limit')]).toEqual(['2026-10-09T10:00:00.000Z', false, '5']);
+  });
+
+  it('needs a session', async () => {
+    await expect(handleObserve(new NodeDapi({} as any), 'timeline', undefined, [], {}, 'json')).rejects.toThrow('--session');
+  });
+});

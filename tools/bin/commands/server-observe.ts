@@ -22,7 +22,9 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   logger history [--limit 20]          The log-settings-changed audit records, with each change's diff
   errors top [--since 24h | --date "this week" | --from <ISO> [--to <ISO>]] [--by message|signature]
              [--package <name>] [--user <login>] [--source <s>] [--limit 10]
-  timeline --action <id> | --request <id> [--limit 500]
+  timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]
+                                       A session's events and requests in a window: no --from, the last
+                                       15 min; --to defaults to --from + 10 min, at most 2 h
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
 relative, written with = (--from=-2h).`;
@@ -164,7 +166,11 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     }
   }
   if (command === 'timeline') {
-    printOutput(await dapi.raw('GET', `/log/timeline${buildQuery({action: argv.action, request: argv.request,
+    if (argv.session === undefined)
+      throw new Error('Usage: grok s observe timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]');
+    const window = argv.from === undefined ? {from: iso('-15m', '--from'), to: new Date().toISOString()}
+      : {from: iso(argv.from, '--from'), to: iso(argv.to, '--to')};
+    printOutput(await dapi.raw('GET', `/log/timeline${buildQuery({session: argv.session, ...window,
       limit: argv.limit})}`), output);
     return true;
   }

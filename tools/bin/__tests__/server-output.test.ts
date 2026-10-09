@@ -1,5 +1,5 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest';
-import {cellStr, csvCell, getKeys, printBatchOutput, printError} from '../utils/server-output';
+import {cellStr, csvCell, getKeys, printBatchOutput} from '../utils/server-output';
 import type {BatchResponse} from '../utils/node-dapi';
 
 describe('cellStr', () => {
@@ -129,19 +129,5 @@ describe('printBatchOutput', () => {
     const parsed = JSON.parse(errLines[0]);
     expect(parsed[0].id).toBe('op0');
     expect(parsed[0].error.error).toBe('Not found');
-  });
-});
-
-describe('printError', () => {
-  it('names the request id the server returned', () => {
-    const lines: string[] = [];
-    const write = vi.spyOn(process.stderr, 'write').mockImplementation((s: any) => { lines.push(String(s)); return true; });
-    try {
-      printError({apiError: {error: 'Forbidden', errorCode: 403, requestId: 'mfz3k2a1b9x8y7kq.2'}});
-      printError({apiError: {error: 'Not found', errorCode: 404}});
-    } finally {
-      write.mockRestore();
-    }
-    expect(lines).toEqual(['Forbidden (HTTP 403) (request mfz3k2a1b9x8y7kq.2)\n', 'Not found (HTTP 404)\n']);
   });
 });

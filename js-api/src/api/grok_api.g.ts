@@ -2009,7 +2009,6 @@ export interface IDartApi {
   grok_LogEvent_Get_Parameters(logEvent: any): any;
   grok_LogEvent_Get_Type(logEvent: any): any;
   grok_LogEvent_Get_EventTime(logEvent: any): any;
-  grok_LogEvent_Get_RequestId(logEvent: any): any;
   grok_LogEventParameter_Get_Name(p: any): any;
   grok_LogEventParameter_Get_Type(p: any): any;
   grok_LogEventParameterValue_Get_Event(v: any): any;

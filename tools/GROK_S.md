@@ -477,10 +477,11 @@ grok s o logger get exportSettings                          # the logger setting
 grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry
 grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
-grok s o timeline --action <action id>                      # its events and requests; or --request <id>
+grok s o timeline --session <id>                            # its events and requests of the last 15 min
+grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
 ```
 
-Problems need `ManageAlerts`, errors and the timeline `ViewTelemetry`, `rules test` both, logger
+Problems need `ManageAlerts`, errors and another session's timeline `ViewTelemetry`, `rules test` both, logger
 and rules changes `EditPluginsSettings`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type

@@ -39,12 +39,9 @@ category('App', () => {
     expect((await queries.errorAlerts(signature)).col('alert') != null, true);
   });
 
-  test('Log: events carry request ids for the timeline', async () => {
-    const allUsers = (await grok.dapi.groups.getGroupsLookup('All users'))[0].id;
-    const t = await queries.logTail('today', [allUsers], ['all']);
-    expect(t.col('request_id') != null, true, 'LogTail has no request_id');
-    const requestId = t.col('request_id')?.toList().find((id) => id);
-    if (requestId)
-      expect((await grok.dapi.log.getTimeline({action: requestId.split('.')[0], limit: 5})).length > 0, true);
+  test('Log: the timeline of the current session', async () => {
+    const session = (await grok.dapi.users.currentSession()).id;
+    const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 3600000), to: new Date(), limit: 5});
+    expect(Array.isArray(rows), true);
   });
 }, {clear: false, timeout: 60000});

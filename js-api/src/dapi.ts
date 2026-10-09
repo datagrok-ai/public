@@ -2368,16 +2368,17 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   }
 
   /**
-   * One action or request in time order, from the events and the HTTP requests (`GET /log/timeline`); an action
-   * also includes its requests (`<action>.<n>`). Takes exactly one of `action`, `request`; needs the
-   * `ViewTelemetry` permission.
+   * The events and HTTP requests of a session from `from` to `to` (by default `from` + 10 minutes, at most 2 hours
+   * later), in time order (`GET /log/timeline`); `limit` defaults to 500, at most 5000. Needs the `ViewTelemetry`
+   * permission, except for the current session.
    *
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/log-timeline}
    *
    * @example
-   * const rows = await grok.dapi.log.getTimeline({request: requestId});
+   * const session = (await grok.dapi.users.currentSession()).id;
+   * const rows = await grok.dapi.log.getTimeline({session, from: new Date(Date.now() - 5 * 60000)});
    */
-  async getTimeline(query: {action?: string, request?: string, limit?: number}): Promise<TimelineRow[]> {
+  async getTimeline(query: {session: string, from: Date | string, to?: Date | string, limit?: number}): Promise<TimelineRow[]> {
     return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
   }
 }
@@ -2393,7 +2394,6 @@ export interface TimelineRow {
   /** An HTTP status, or the `status` parameter of an event. */
   status: string | null,
   ms: number | null,
-  requestId: string | null,
   /** A login. */
   user: string | null,
 }

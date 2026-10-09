@@ -30,7 +30,6 @@ export function showEventDetails(table: DG.DataFrame): void {
   const eventId = table.getCol('id').get(rowIdx);
   if (!eventId)
     return;
-  const requestId: string | null = table.col('request_id')?.get(rowIdx) ?? null;
   const accordion = DG.Accordion.create();
   accordion.addPane('Details', () => ui.wait(async () => {
     const t: DG.DataFrame = await grok.functions.call('UsageAnalysis:LogEventParameters', {eventId});
@@ -44,21 +43,29 @@ export function showEventDetails(table: DG.DataFrame): void {
     return ui.tableFromMap(map);
   }), true);
 
-  grok.shell.o = requestId ? ui.divV([ui.button('Timeline', () => openTimeline('action', requestId.split('.')[0]),
-    'What happened in the user action of this event'), accordion.root]) : accordion.root;
+  grok.shell.o = ui.divV([ui.button('Timeline', () => openTimeline(eventId),
+    'What happened in the session of this event, from a minute before it to five minutes after'), accordion.root]);
 }
 
-/** Opens what happened in one action or request, oldest first, as a table view. */
-export async function openTimeline(key: 'action' | 'request', id: string): Promise<void> {
+/** Opens what happened in the session of an event, from a minute before it to five minutes after, as a table view. */
+export async function openTimeline(eventId: string): Promise<void> {
   const progress = DG.TaskBarProgressIndicator.create('Loading the timeline...');
   try {
-    const rows = await grok.dapi.log.getTimeline({[key]: id});
+    const event = await grok.dapi.log.find(eventId);
+    const session = typeof event.session === 'string' ? event.session : event.session?.id;
+    if (!session) {
+      grok.shell.info('The event has no session');
+      return;
+    }
+    const time = event.eventTime;
+    const rows = await grok.dapi.log.getTimeline({session, from: time.subtract(1, 'minute').toDate(),
+      to: time.add(5, 'minute').toDate()});
     if (!rows.length) {
-      grok.shell.info(`Nothing recorded for ${key} ${id}`);
+      grok.shell.info('Nothing recorded in the session around this event');
       return;
     }
     const t = DG.DataFrame.fromObjects(rows)!;
-    t.name = `Timeline ${id}`;
+    t.name = `Timeline ${time.format('YYYY-MM-DD HH:mm')}`;
     grok.shell.addTableView(t);
   }
   catch (e: any) {

@@ -40,9 +40,10 @@ packages input is hidden on it, like Projects. Both queries are uncached: this i
 `ErrorsView` (tab `Errors`): Top errors and Top source come from one `grok.dapi.admin.getMetrics` call
 (`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`); a Top errors bar click
 filters the `EventErrors` grid to its signatures. A row's context panel shows its reports and `SameErrors`, and an
-Alert pane with the signature's `error-incident` problem (`ErrorAlerts`, over the `problems` table). In the Log tab
-the `request_id` column is hidden; the context panel of an event logged under one has a Timeline button
-(`openTimeline` in `utils.ts`: `grok.dapi.log.getTimeline` for the event's action, opened as a table view).
+Alert pane with the signature's `error-incident` problem (`ErrorAlerts`, over the `problems` table). The context
+panel of an event in the Log and System Activity tabs has a Timeline button (`openTimeline` in `utils.ts`:
+`grok.dapi.log.getTimeline` for the event's session from a minute before it to five minutes after, opened as a
+table view).
 
 `VulnerabilitiesView` is toolbox-independent: it loads the published VEX index
 (`https://data.datagrok.ai/vex/index.json`) via `grok.dapi.fetchProxy` and drills into the

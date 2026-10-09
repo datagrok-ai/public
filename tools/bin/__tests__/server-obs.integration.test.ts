@@ -65,10 +65,10 @@ describe.skipIf(!HOST)('grok s observe', () => {
   it('timeline', () => {
     const events: any[] = JSON.parse(spawnSync(process.execPath, [GROK, 's', 'raw', 'GET', '/log?limit=50&page=1',
       '--host', HOST, '--output', 'json'], {encoding: 'utf8'}).stdout);
-    const request = events.find((e) => e.requestId)?.requestId;
-    if (!request)
+    const event = events.find((e) => e.session?.id && e.eventTime);
+    if (!event)
       return;
-    const rows: any[] = observe('timeline', '--request', request, '--limit', '5');
-    expect(rows.some((r) => r.requestId === request)).toBe(true);
+    const rows: any[] = observe('timeline', '--session', event.session.id, `--from=${event.eventTime}`, '--limit', '5');
+    expect(Array.isArray(rows)).toBe(true);
   });
 });

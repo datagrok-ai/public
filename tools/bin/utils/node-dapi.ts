@@ -45,8 +45,6 @@ export interface NodeApiError {
   innerError?: NodeApiError;
   /** The decoded error envelope, for callers that read structured fields (per-row reports, plans). */
   body?: any;
-  /** The response's `x-request-id`, to find the request with `grok s observe timeline --request`. */
-  requestId?: string;
 }
 
 import {keyLogin, keypairFor} from './keypair';
@@ -250,7 +248,6 @@ async function throwHttpError(res: Response): Promise<never> {
     errorCode: errBody?.errorCode ?? res.status,
     stackTrace: errBody?.stackTrace,
     body: errBody,
-    requestId: res.headers.get('x-request-id') ?? undefined,
   };
   throw Object.assign(new Error(err.error), {apiError: err});
 }

@@ -50,9 +50,6 @@ export class LogEvent extends Entity {
   get eventType(): LogEventType { return toJs(api.grok_LogEvent_Get_Type(this.dart)); }
 
   get eventTime(): dayjs.Dayjs { return dayjs(api.grok_LogEvent_Get_EventTime(this.dart)); }
-
-  /** Id of the request the event was logged in, or null */
-  get requestId(): string | null { return api.grok_LogEvent_Get_RequestId(this.dart); }
 }
 
 export class LogEventParameter extends Entity {
