@@ -372,7 +372,6 @@ export type PipelineConfigurationBase<S> = {
   disableHistory?: boolean;
   disableDefaultExport?: boolean;
   compactView?: boolean;
-  approversGroup?: string; // not used rn
 };
 
 export type NestedItemContext = {
