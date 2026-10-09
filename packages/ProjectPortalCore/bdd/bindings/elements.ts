@@ -1,6 +1,6 @@
 /* The names the portal's features use. Everything the app draws carries a data-u2-name derived
    from a code (src/views/portal-view.ts: `slug`), so each name below is one attribute selector. */
-import {context} from '@datagrok-libraries/bdd';
+import {context, element} from '@datagrok-libraries/bdd';
 
 const u2 = (name: string) => `[data-u2-name="${name}"]`;
 
@@ -212,6 +212,9 @@ app.element('my programs widget', {selector: u2('my-programs')});
 app.element('EXS-KIN1 tile', {selector: u2('pinned-tile-exs-kin1')});
 
 app.element('workspace model card', {selector: u2('workspace-model-card')});
+// the context panel's Model card pane shows outside the app too (Model Hub, Browse)
+element('model card pane', {selector: u2('model-card-panel')});
+element('model card pane portfolios', {selector: u2('model-card-panel-portfolios')});
 
 app.element('scratch package project card', {selector: u2('program-bdd-pkg')});
 app.element('data package button', {selector: u2('program-data-package-button')});

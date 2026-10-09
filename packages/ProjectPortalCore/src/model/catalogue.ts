@@ -216,6 +216,24 @@ export function unionCodes(existing: string | null | undefined, added: string[])
 export const splitCodes = (s: string | null | undefined): string[] =>
   (s ?? '').split('|').map((x) => x.trim()).filter((x) => x.length > 0);
 
+/** The portfolios a model's card is shown under, for a user in portfolios [mine] (null: an admin,
+ * who sees every portfolio): those of the model's [portfolios] that are the user's. A model no
+ * portfolio declares belongs to every portfolio and shows unlabelled ([]). Null when the user is
+ * in none of them: the card is not theirs to see. */
+export function cardPortfolios(portfolios: string[], mine: Set<string> | null): string[] | null {
+  if (mine === null || !portfolios.length)
+    return portfolios;
+  const shown = portfolios.filter((p) => mine.has(p));
+  return shown.length ? shown : null;
+}
+
+/** The model codes a function may be catalogued under: its nqName, and `Package:Name` when that
+ * differs; only those of [catalogued]. */
+export function catalogueCodesOf(nqName: string | null | undefined, pkg: string | null | undefined,
+  name: string, catalogued: Set<string>): string[] {
+  return [...new Set([nqName ?? '', pkg ? `${pkg}:${name}` : ''])].filter((c) => c && catalogued.has(c));
+}
+
 /** A function parameter as the platform describes it, reduced to what a card shows. */
 export interface FuncParamInfo {
   name: string;

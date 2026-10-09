@@ -15,6 +15,7 @@ import {folderLinks} from './program-rows';
 import {filterValue, queryIn, ROW_LIMIT} from './rows';
 import {subspaces} from './workspace';
 import {APPROVALS_FOLDER, isSpaceNamed, SYNC_HISTORY_FOLDER} from './model/workspace-plan';
+import {cardPortfolios} from './model/catalogue';
 import {
   copyValues, describeMove, describeRecordMoves, hasContent, inPortfolios, linkValuesOf, MoveReport, Placement, planLinks,
   planRecordMoves, portfoliosOfGroups, requestSpace, toCopy, COMPOUND_CONTENT,
@@ -152,8 +153,7 @@ export async function myPortfolioCodes(): Promise<Set<string> | null> {
 /** Whether a catalogued model is the current user's to see: one of their portfolios' catalogues
  * lists it, or none does (a model loaded without a portfolio belongs to every portfolio). */
 export async function inMyCatalogues(portfolios: string[]): Promise<boolean> {
-  const mine = await myPortfolioCodes();
-  return mine === null || !portfolios.length || portfolios.some((p) => mine.has(p));
+  return cardPortfolios(portfolios, await myPortfolioCodes()) !== null;
 }
 
 /** [rows] of the current user's portfolios only. */

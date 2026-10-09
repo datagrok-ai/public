@@ -4,12 +4,15 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, readPortfolioFiles} from '../portal';
 import {
-  cardMismatches, cardParams, mergeCatalogues, ModelCatalogueConfig, outsideValidity, unionCodes, validateCatalogue,
+  cardMismatches, cardParams, cardPortfolios, catalogueCodesOf, mergeCatalogues, ModelCatalogueConfig, outsideValidity,
+  unionCodes, validateCatalogue,
 } from '../model/catalogue';
 import {modelCardOf} from '../catalogue';
-import {modelCardElement, workspaceModelCardWidget} from '../views/model-card';
+import {catalogueCodes} from '../save-run';
+import {cardLabel, modelCardElement, modelCardPanelWidget, workspaceModelCardWidget} from '../views/model-card';
 import {saveModelRun, savedRunsOf} from '../model-runs';
 import {_package} from '../package-test';
+import {withStandUser} from './stand-users';
 
 const MODEL = 'ProjectPortalCore:FedBatchTiter';
 
@@ -69,6 +72,25 @@ category('Portal: model catalogue rules', () => {
     expect(cardMismatches({inputs: [{name: 'z'}]}, {inputs: ['x', 'y'], outputs: []}).join(), 'input z is not an input of the function');
     expect(outsideValidity(listed, {x: 25}).join(), 'X 25 is above the validity range (10–20 mg)');
     expect(outsideValidity(listed, {x: 15}).length, 0);
+  });
+
+  test('the info panel shows a card under the user\'s portfolios only; admins see all', async () => {
+    const mine = new Set(['EX-SMD', 'EX-BIOC']);
+    expect(cardPortfolios(['EX-BIOD', 'EX-BIOC', 'EX-SMD'], mine)?.join(), 'EX-BIOC,EX-SMD', 'only the user\'s, in catalogue order');
+    expect(cardPortfolios(['EX-BIOD'], mine), null, 'no portfolio of the user\'s lists it');
+    expect(cardPortfolios(['EX-BIOD', 'EX-SMD'], null)?.join(), 'EX-BIOD,EX-SMD', 'an admin sees every portfolio');
+    expect(cardPortfolios([], mine)?.length, 0, 'a model no portfolio declares belongs to all, unlabelled');
+    expect(cardLabel(['EX-SMD']), 'In the catalogue of EX-SMD');
+    expect(cardLabel(['EX-SMD', 'EX-BIOC']), 'In the catalogue of EX-SMD, EX-BIOC');
+    expect(cardLabel([]), '');
+  });
+
+  test('a function is looked up under its nqName and Package:Name, only when catalogued', async () => {
+    const known = new Set(['Pkg:Model', 'Other:Model']);
+    expect(catalogueCodesOf('Pkg:Model', 'Pkg', 'Model', known).join(), 'Pkg:Model', 'the same code once');
+    expect(catalogueCodesOf('Model', 'Pkg', 'Model', known).join(), 'Pkg:Model');
+    expect(catalogueCodesOf('Pkg:Other', 'Pkg', 'Other', known).length, 0, 'not catalogued: nothing to read');
+    expect(catalogueCodesOf(null, null, 'Model', known).length, 0);
   });
 });
 
@@ -143,6 +165,57 @@ category('Portal: model catalogue', () => {
         'the portfolios it belongs to');
       const other = DG.Func.find({package: 'ProjectPortalCore', name: 'pinnedPrograms'})[0];
       expect(await workspaceModelCardWidget(other), null, 'a function the catalogue does not list');
+    });
+
+  test('the Model card info panel shows each catalogue entry under its portfolios, nothing for another function',
+    async () => {
+      const panel = DG.Func.find({package: 'ProjectPortalCore', meta: {role: 'panel'}}).find((f) => f.name === 'modelCardPanel');
+      expect(panel?.friendlyName, 'Model card', 'an info panel the platform finds by its role');
+      expect(panel?.inputs[0].propertyType, DG.TYPE.FUNC);
+      const f = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+      const root = (await panel!.apply({model: f}) as DG.Widget | null)?.root;
+      expect(root?.querySelectorAll('[data-u2-name="model-card-panel-entry"]').length, 1);
+      expect(root?.querySelector('[data-u2-name="model-card-panel-portfolios"]')?.textContent, 'In the catalogue of EX-BIOC');
+      expect(root?.querySelector('[data-u2-name="model-card-approval"]')?.textContent, 'draft');
+
+      // a function two portfolios catalogue: one card (cards are per model), labelled with the user's portfolios
+      const shared = DG.Func.find({package: 'ProjectPortalCore', name: 'pinnedPrograms'})[0];
+      expect(await modelCardPanelWidget(shared), null, 'a function the catalogue does not list');
+      const [m] = await portalDb.models.insert({code: shared.nqName, name: 'Shared test model', portfolios: 'EX-SMD|EX-BIOD'});
+      const label = (w: DG.Widget | null): string | null =>
+        w?.root.querySelector('[data-u2-name="model-card-panel-portfolios"]')?.textContent ?? null;
+      try {
+        await catalogueCodes(true);
+        const both = await modelCardPanelWidget(shared);
+        expect(label(both), 'In the catalogue of EX-SMD, EX-BIOD', 'an admin sees every portfolio');
+        expect(!!both?.root.querySelector('[data-u2-name="model-card-empty"]'), true, 'declared without a card');
+        await withStandUser('viewer', (u) => u.asUser(async () => {
+          expect(label(await modelCardPanelWidget(shared)), 'In the catalogue of EX-SMD', 'the viewer is in EX-SMD, not EX-BIOD');
+          expect(label(await modelCardPanelWidget(f)), 'In the catalogue of EX-BIOC');
+        }));
+        await withStandUser('outsider', (u) => u.asUser(async () => {
+          expect(label(await modelCardPanelWidget(shared)), 'In the catalogue of EX-BIOD');
+          expect(await modelCardPanelWidget(f), null, 'EX-BIOC\'s model is not the outsider\'s');
+        }));
+      } finally {
+        await portalDb.models.delete(m.id);
+        await catalogueCodes(true);
+      }
+      expect(await modelCardPanelWidget(shared), null, 'gone with its catalogue entry');
+    });
+
+  test('selecting a catalogued model adds the Model card pane to its context panel',
+    async () => {
+      const headers = (): string[] =>
+        [...document.querySelectorAll('.grok-prop-panel .d4-accordion-pane-header')].map((e) => e.textContent ?? '');
+      grok.shell.o = DG.Func.find({package: 'ProjectPortalCore', name: 'FedBatchTiter'})[0];
+      for (let i = 0; i < 40 && !headers().includes('Model card'); i++)
+        await DG.delay(250);
+      expect(headers().includes('Model card'), true, headers().join());
+      // another function gets none: checked through modelCardPanelWidget above, since the test runner's
+      // context panel does not follow a second change of the current object
+      expect(document.querySelector('.grok-prop-panel [data-u2-name="model-card-panel-portfolios"]')?.textContent,
+        'In the catalogue of EX-BIOC');
     });
 
   test('a run saved with the example catalogue\'s codes resolves its model, unit operation and run type', async () => {

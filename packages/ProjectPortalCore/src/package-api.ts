@@ -9,10 +9,17 @@ import * as DG from 'datagrok-api/dg';
 
 export namespace funcs {
   /**
-   * Once the package loads: offers to save each run of a catalogued model to a program, adds Save to program to a run's context menu, and lets a favorite program open its page from the Workspace
+   * Once the package loads: offers to save each run of a catalogued model to a program, adds Save to program to a run's context menu, lets a favorite program open its page from the Workspace, and shows a catalogued model's card in its context panel
    */
   export async function portalInit(): Promise<void> {
     return await grok.functions.call('ProjectPortalCore:PortalInit', {});
+  }
+
+  /**
+   * Loads the package when the platform starts, so its init runs before a model function is selected: the Model card pane in the context panel and the offer to save a run need it
+   */
+  export async function portalAutostart(): Promise<void> {
+    return await grok.functions.call('ProjectPortalCore:PortalAutostart', {});
   }
 
   /**
@@ -550,6 +557,13 @@ export namespace funcs {
    */
   export async function workspaceModelCard(model: any ): Promise<any> {
     return await grok.functions.call('ProjectPortalCore:WorkspaceModelCard', { model });
+  }
+
+  /**
+   * The Model card of a function: its card, labelled with the user's portfolios whose catalogue lists it. Nothing for a function those catalogues do not list. The context panel shows it as the Model card pane of a selected model (Model Hub, Browse)
+   */
+  export async function modelCardPanel(model: any ): Promise<any> {
+    return await grok.functions.call('ProjectPortalCore:ModelCardPanel', { model });
   }
 
   /**

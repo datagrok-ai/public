@@ -473,6 +473,16 @@ export const selectInWorkspace = When('user selects the {string} model in the Wo
     await row.click({timeout: 60000});
   }, {tier: 'ui', description: 'Home, its Spotlight widget\'s Workspace tab, the model\'s row (PowerPack addresses the rows by entity id)'});
 
+export const selectInModelHub = When('user selects {string} in Model Hub',
+  async (page: Page, model: string) => {
+    await page.goto('/apps/Modelhub', {waitUntil: 'domcontentloaded'});
+    const card = page.getByText(model, {exact: true}).first();
+    await card.waitFor({timeout: 120000});
+    await page.evaluate(() => grok.shell.windows.showContextPanel = true);
+    await card.click();
+  }, {tier: 'ui',
+    description: 'Apps › Compute › Model Hub (Compute2), the model\'s card in its gallery, by its name; the context panel shown'});
+
 export const exampleDesignSets = Given('the example design sets are loaded', async (page: Page) => {
   silent(page);
   await page.evaluate(async () => grok.functions.call('ProjectPortalCore:loadExampleDesignSets', {}));

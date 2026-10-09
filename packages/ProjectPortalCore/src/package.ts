@@ -16,7 +16,7 @@ import {portfolioTables} from './portfolio-table';
 import {criterionRuns, saveModelRun as saveRun, summarizeSavedRun} from './model-runs';
 import {RunPurpose} from './model/model-runs';
 import {loadCatalogues} from './catalogue';
-import {modelCardWidget, workspaceModelCardWidget} from './views/model-card';
+import {addModelCardPanes, modelCardPanelWidget, modelCardWidget, workspaceModelCardWidget} from './views/model-card';
 import {openSaveRunDialog} from './views/save-run-dialog';
 import {trackModelRuns} from './save-run';
 import {openProgramTable, programTable} from './program-data';
@@ -90,9 +90,10 @@ function offerSave(call: DG.FuncCall): void {
 
 //name: portalInit
 //tags: init
-//description: Once the package loads: offers to save each run of a catalogued model to a program, adds Save to program to a run's context menu, and lets a favorite program open its page from the Workspace
+//description: Once the package loads: offers to save each run of a catalogued model to a program, adds Save to program to a run's context menu, lets a favorite program open its page from the Workspace, and shows a catalogued model's card in its context panel
 export async function portalInit(): Promise<void> {
   registerProgramRecordHandler();
+  addModelCardPanes();
   trackModelRuns(offerSave);
   grok.events.onContextMenu.subscribe((e: any) => {
     const item = e?.args?.item;
@@ -100,6 +101,13 @@ export async function portalInit(): Promise<void> {
       e.args.menu.item('Save to program…', () => void openSaveRunDialog({call: item})
         .catch((err) => grok.shell.error(err?.message ?? String(err))));
   });
+}
+
+//name: portalAutostart
+//description: Loads the package when the platform starts, so its init runs before a model function is selected: the Model card pane in the context panel and the offer to save a run need it
+//meta.role: autostart
+export function portalAutostart(): void {
+  // the work is in portalInit, which the platform runs once the package loads
 }
 
 //name: saveRunToProgram
@@ -892,6 +900,16 @@ export async function modelCard(model: string): Promise<DG.Widget> {
 //meta.role: workspaceModelPanel
 export async function workspaceModelCard(model: DG.Func): Promise<DG.Widget | null> {
   return workspaceModelCardWidget(model);
+}
+
+//name: modelCardPanel
+//friendlyName: Model card
+//description: The Model card of a function: its card, labelled with the user's portfolios whose catalogue lists it. Nothing for a function those catalogues do not list. The context panel shows it as the Model card pane of a selected model (Model Hub, Browse)
+//input: func model
+//output: widget result
+//meta.role: panel
+export async function modelCardPanel(model: DG.Func): Promise<DG.Widget | null> {
+  return modelCardPanelWidget(model);
 }
 
 /** Programs first, so work units find the programs they hang under. A real sync is recorded in the
