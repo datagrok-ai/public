@@ -219,6 +219,21 @@ category('ComputeUtils: Driver hooks running', async () => {
     expectDeepEqual(snapshots, [[5, 5, 5], [9, 9, 9]]);
   });
 
+  test('onInit writes chain through runOnInit links within one frame', async () => {
+    const pconf = await getProcessedConfig(initChainConfig(true));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const root = tree.nodeTree.root.getItem().getStateStore();
+      const step1 = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const step2 = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore();
+      cold('-a').subscribe(() => snapshots.push([root.getState('s'), step1.getState('a'), step2.getState('a')]));
+    });
+    expectDeepEqual(snapshots, [[5, 5, 5]]);
+  });
+
   test('Plain data links follow writes after runOnInit links', async () => {
     const pconf = await getProcessedConfig(runOnInitConfig);
     const snapshots: any[] = [];
