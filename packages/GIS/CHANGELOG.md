@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-18101: Map: Fixed `Cannot read properties of undefined (reading 'length')` on row selection when the table has no latitude/longitude columns
 * Map: Fixed `isRenderPending` never clearing under Render Type = heatmap - the hidden WebGL marker layer keeps `renderer.ready === false` and OpenLayers never renders it again, so every settle waited out its cap
 * Map: Added the automation surface — `getWidgetStatus` reports `view`, `layers panel`, `layer "<name>"`, `layer "<name>" visibility`, `zoom in` / `zoom out` and `point <row>` hit areas plus `layers`, `visible layers`, `layer "<name>" visible`, `zoom`, `centre`, `markers`, `rows shown` and `render type`; added `isRenderPending` / `onRendered`, settled on the marker layer rather than on base-map tiles
 * KML/KMZ: Fixed `SyntaxError: Unexpected end of JSON input` in `GisAreaGridCellRenderer` when the gisObject cell is empty (style-only KML rows or unsupported geometries)
