@@ -48,8 +48,8 @@ export function showEventDetails(table: DG.DataFrame): void {
     'What happened in the user action of this event'), accordion.root]) : accordion.root;
 }
 
-/** Opens what happened in one action, request, session or report, oldest first, as a table view. */
-export async function openTimeline(key: 'action' | 'request' | 'session' | 'report', id: string): Promise<void> {
+/** Opens what happened in one action or request, oldest first, as a table view. */
+export async function openTimeline(key: 'action' | 'request', id: string): Promise<void> {
   const progress = DG.TaskBarProgressIndicator.create('Loading the timeline...');
   try {
     const rows = await grok.dapi.log.getTimeline({[key]: id});

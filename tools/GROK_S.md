@@ -477,7 +477,7 @@ grok s o logger get exportSettings                          # the logger setting
 grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry
 grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
-grok s o timeline --report 4820                             # also --action, --request, --session
+grok s o timeline --action <action id>                      # its events and requests; or --request <id>
 ```
 
 Problems need `ManageAlerts`, errors and the timeline `ViewTelemetry`, `rules test` both, logger

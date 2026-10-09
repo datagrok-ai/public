@@ -2368,16 +2368,16 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   }
 
   /**
-   * What happened around one of `action`, `request`, `session` or `report` (number or id), oldest first, from the
-   * events, requests and function calls (`GET /log/timeline`); needs the `ViewTelemetry` permission.
+   * One action or request in time order, from the events and the HTTP requests (`GET /log/timeline`); an action
+   * also includes its requests (`<action>.<n>`). Takes exactly one of `action`, `request`; needs the
+   * `ViewTelemetry` permission.
    *
    * Sample: {@link https://public.datagrok.ai/js/samples/dapi/log-timeline}
    *
    * @example
-   * const rows = await grok.dapi.log.getTimeline({session: (await grok.dapi.users.currentSession()).id});
+   * const rows = await grok.dapi.log.getTimeline({request: requestId});
    */
-  async getTimeline(query: {action?: string, request?: string, session?: string, report?: string | number,
-    from?: string, to?: string, limit?: number}): Promise<TimelineRow[]> {
+  async getTimeline(query: {action?: string, request?: string, limit?: number}): Promise<TimelineRow[]> {
     return JSON.parse(await api.grok_Dapi_Log_Timeline(JSON.stringify(query)));
   }
 }
@@ -2387,10 +2387,10 @@ export interface TimelineRow {
   /** ISO 8601. */
   time: string,
   source: 'client' | 'server',
-  /** The event type, `request` or `call`. */
+  /** The event type, `error`, `warning` or `request`. */
   kind: string,
   summary: string,
-  /** An HTTP status or a call's status. */
+  /** An HTTP status, or the `status` parameter of an event. */
   status: string | null,
   ms: number | null,
   requestId: string | null,

@@ -44,13 +44,16 @@ describe.skipIf(!HOST)('grok s observe', () => {
     const login = JSON.parse(me.stdout).login;
     const before = observe('logger', 'get');
     expect(before.userGroupSettings).toBeDefined();
-    observe('logger', 'set', '--user', login, '--set', 'saveHttpRequests=true', '--for', '5m', '--reason', 'grok s smoke');
-    const after = observe('logger', 'get', 'userGroupSettings');
-    const added = Object.keys(after).find((id) => after[id].reason === 'grok s smoke');
-    expect(added).toBeDefined();
-    const history: any[] = observe('logger', 'history', '--limit', '1');
-    expect(history[0].diff.some((d: any) => String(d.path).includes('saveHttpRequests'))).toBe(true);
-    observe('logger', 'set', '--set', `userGroupSettings=${JSON.stringify(before.userGroupSettings)}`);
+    try {
+      observe('logger', 'set', '--user', login, '--set', 'saveHttpRequests=true', '--for', '5m', '--reason', 'grok s smoke');
+      const after = observe('logger', 'get', 'userGroupSettings');
+      expect(Object.keys(after).find((id) => after[id].reason === 'grok s smoke')).toBeDefined();
+      const history: any[] = observe('logger', 'history', '--limit', '1');
+      expect(history[0].diff.some((d: any) => String(d.path).includes('saveHttpRequests'))).toBe(true);
+    }
+    finally {
+      observe('logger', 'set', '--set', `userGroupSettings=${JSON.stringify(before.userGroupSettings)}`);
+    }
   });
 
   it('errors top', () => {
@@ -60,8 +63,12 @@ describe.skipIf(!HOST)('grok s observe', () => {
   });
 
   it('timeline', () => {
-    const session = JSON.parse(spawnSync(process.execPath, [GROK, 's', 'raw', 'GET', '/users/sessions/current', '--host', HOST,
-      '--output', 'json'], {encoding: 'utf8'}).stdout).id;
-    expect(Array.isArray(observe('timeline', '--session', session, '--limit', '5'))).toBe(true);
+    const events: any[] = JSON.parse(spawnSync(process.execPath, [GROK, 's', 'raw', 'GET', '/log?limit=50&page=1',
+      '--host', HOST, '--output', 'json'], {encoding: 'utf8'}).stdout);
+    const request = events.find((e) => e.requestId)?.requestId;
+    if (!request)
+      return;
+    const rows: any[] = observe('timeline', '--request', request, '--limit', '5');
+    expect(rows.some((r) => r.requestId === request)).toBe(true);
   });
 });

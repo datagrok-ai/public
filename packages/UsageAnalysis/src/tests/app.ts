@@ -43,7 +43,8 @@ category('App', () => {
     const allUsers = (await grok.dapi.groups.getGroupsLookup('All users'))[0].id;
     const t = await queries.logTail('today', [allUsers], ['all']);
     expect(t.col('request_id') != null, true, 'LogTail has no request_id');
-    const session = await grok.dapi.users.currentSession();
-    expect(Array.isArray(await grok.dapi.log.getTimeline({session: session.id, limit: 5})), true);
+    const requestId = t.col('request_id')?.toList().find((id) => id);
+    if (requestId)
+      expect((await grok.dapi.log.getTimeline({action: requestId.split('.')[0], limit: 5})).length > 0, true);
   });
 }, {clear: false, timeout: 60000});
