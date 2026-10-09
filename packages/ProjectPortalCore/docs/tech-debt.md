@@ -37,6 +37,17 @@ Status as of 2026-10-09.
 | 15 | **No notification API from JS** (finding 10); in-platform notices go through what the stand offers. | Platform. | A notifications client in the js-api. |
 | 16 | **Soft-deleted program rows can leave live entities** (EMS); the example stand has some. | Platform behaviour. | Platform fix, then a clean-up of orphans. |
 
+## Discussion and Ask SME (on the platform's Chats)
+
+| # | Debt | Why | Pays it off |
+|---|---|---|---|
+| 22 | **Chats are called through raw `fetch` on the server's `/chats` routes** (`src/discussion.ts`), not a js-api client. | No chats client in the js-api (finding 38). | A js-api chats client; swap the calls. |
+| 23 | **A thread's anchor (criterion, run, document) is written into the first line of each message**, and a decision cites a thread by its address. | Chats have no threads or references (finding 40). | Platform threads/references on chats; migrate the first-line anchors. |
+| 24 | **Ask SME from a non-admin notifies nobody**; the question is posted, but only user managers may notify others. Questions put to a person do not show in Waiting for me. | Finding 41. | Platform @mentions / notifications for other users; then add questions to Waiting for me. |
+| 25 | **The app offers no edit or delete of posts.** | Anyone who can read a chat can rewrite or delete any comment (finding 42), so we don't expose it. | Platform ownership checks on comments. |
+| 26 | **Every chat post emails participants and watchers, and the first post emails all admins**, wherever email is configured (finding 39). Not an issue on a stand without mail. | Platform behaviour. | Decide per deployment before going live with email; ask the platform for a per-chat or per-package switch. |
+| 27 | **Seeded example threads carry the seed date.** | Comments cannot be back-dated (finding 44). | Cosmetic; leave. |
+
 ## Process and tooling
 
 | # | Debt | Pays it off |
