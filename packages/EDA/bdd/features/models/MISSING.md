@@ -87,7 +87,11 @@ Actual: Model Engine and its parameters appear and SAVE turns active, but the pr
 and the console logs `Invalid argument (namesOrColumns): Not supported type: null` from
 `ColumnList.toColumnList` in `PredictiveModelingEngine.apply` (`predictive_modeling_engines.dart:58`).
 Picking another engine changes nothing. Walked by hand 2026-10-09: the same error and stack
-(Screenshot_40); SAVE is enabled over a model that never trained.
+(Screenshot_40); SAVE is enabled over a model that never trained. SAVE does store a model without an
+error, and applying it to the same table (ML > Models > Apply Model..., Inputs 2/2, OK) fails with
+`Error: Incorrect parameters count` from EDA `orderedFeatures` (`regression.ts:206`, via
+`applyLinearRegression`): the model declares id_like and feature1 as inputs, but its coefficients are
+for feature1 alone (Screenshot_41). The ticket goes to GitHub, filed by Olesia.
 
 Why (from the code): the preview calls `apply` with a column map built from the reduced features
 (feature1 only), whose length differs from `model.input` (id_like, feature1); `apply` then rebuilds the
