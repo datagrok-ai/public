@@ -3,8 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {after, awaitCheck, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 
-// The limits are the 5 s goal for applying a big layout with formula columns and 3-5x the quiet-machine times
-// for the rest; smaller slowdowns show on the benchmark dashboard.
+// The limits are the 1 s goal for applying a big layout with formula columns, 0.9 s for calculating its formulas,
+// and about 1.4x the quiet-machine times for the rest, rounded up to 100 ms; a run over a limit fails on purpose
+// until the goal is met. Smaller slowdowns show on the benchmark dashboard.
 category('Benchmarks: Calculated columns and layouts', () => {
   const formulas = makeFormulas(10);
   let rows: number;
@@ -58,17 +59,17 @@ category('Benchmarks: Calculated columns and layouts', () => {
     return await waitIdle(start);
   }
 
-  test('Apply a layout with 200 formula columns', async () => expectFaster(await applyLayout(), 5000),
+  test('Apply a layout with 200 formula columns', async () => expectFaster(await applyLayout(), 1000),
     {benchmark: true, timeout: 120000});
 
-  test('Open a second view with the layout', async () => expectFaster(await openSecondView(), 500), {benchmark: true, timeout: 120000});
+  test('Open a second view with the layout', async () => expectFaster(await openSecondView(), 200), {benchmark: true, timeout: 120000});
 
   test('Switch a view to another layout', async () => {
     if (secondView == null)
       await openSecondView();
     const start = performance.now();
     secondView!.loadLayout(DG.ViewLayout.fromJson(otherLayout));
-    return expectFaster(await waitIdle(start), 300);
+    return expectFaster(await waitIdle(start), 100);
   }, {benchmark: true, timeout: 120000});
 
   test('Add a formula column', async () => {
@@ -77,7 +78,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const column = await table.columns.addNewCalculated('added', '${a} * 2 + ${f9_1}');
     const ms = performance.now() - start;
     table.columns.remove(column.name);
-    return expectFaster(ms, 200);
+    return expectFaster(ms, 100);
   }, {benchmark: true, timeout: 120000});
 
   test('Edit a cell that 10 levels of formulas depend on', async () => {
@@ -92,7 +93,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const start = performance.now();
     table.set('b', row, table.get('b', row) + 10);
     await awaitCheck(() => deepest.get(row) !== was, 'dependent formulas were not recalculated', 60000, 5);
-    return expectFaster(performance.now() - start, 500);
+    return expectFaster(performance.now() - start, 200);
   }, {benchmark: true, timeout: 120000});
 
   test('Calculate 200 formulas', async () => {
@@ -100,7 +101,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const start = performance.now();
     for (const f of formulas)
       await table.columns.addNewCalculated(f.name, f.formula);
-    return expectFaster(performance.now() - start, 5000);
+    return expectFaster(performance.now() - start, 900);
   }, {benchmark: true, timeout: 120000});
 
   test('Formulas failing on every row', async () => {
@@ -111,7 +112,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
       expect(column.stats.missingValueCount, rows);
       table.columns.remove(column.name);
     }
-    return expectFaster(performance.now() - start, 2500);
+    return expectFaster(performance.now() - start, 700);
   }, {benchmark: true, timeout: 120000});
 }, {owner: 'dkovalyov@datagrok.ai', clear: false});
 
