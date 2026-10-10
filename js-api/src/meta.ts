@@ -53,6 +53,7 @@ export class Meta {
    * const users = await grok.dapi.users.filter(`${props[0].name} = "admin"`).list();
    */
   async propertiesOf(type: string, options?: {filterable?: boolean}): Promise<EntityPropertyInfo[] | null> {
+    Meta.checkTypeName(type);
     let props: Property[] | null;
     if (type.includes('.')) {
       try {
@@ -79,6 +80,12 @@ export class Meta {
    * platform does not serve them — pass the result to `grok.dapi.domains.table()`
    * to query, facet or filter them with the names {@link propertiesOf} returned. */
   async coreLocationOf(type: string): Promise<CoreLocation | null> {
+    Meta.checkTypeName(type);
     return (await api.grok_Meta_CoreLocationOf(type)) ?? null;
+  }
+
+  private static checkTypeName(type: string): void {
+    if (typeof type !== 'string')
+      throw new TypeError(`Expected a type name such as 'User' or '<schema>.<table>', got ${typeof type}`);
   }
 }

@@ -110,6 +110,16 @@ category('Dapi: entity properties', () => {
     expect(await grok.meta.coreLocationOf('Property'), null);
   });
 
+  test('a non-string type is refused as a bad argument', async () => {
+    for (const type of [DG.User, 123, {}, null] as any[]) {
+      for (const call of [() => grok.meta.propertiesOf(type), () => grok.meta.coreLocationOf(type)]) {
+        const err = await thrown(call);
+        expect(err instanceof TypeError, true, `${err?.constructor?.name}: ${err?.message}`);
+        expect(err.message.includes('Expected a type name'), true, err.message);
+      }
+    }
+  });
+
   test('descriptor names match the Core manifest', async () => {
     for (const type of ['User', 'UserSession']) {
       const core = await location(type);
