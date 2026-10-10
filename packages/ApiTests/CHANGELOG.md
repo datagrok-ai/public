@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
+
 ## 1.10.3 (WIP)
 
 GROK-21035: Added the `Benchmarks: Calculated columns and layouts` category: 7 benchmarks on a synthetic table (50k rows in benchmark mode) with limits set from the 5 s goal for applying a layout with 200 formula columns and one failing formula
