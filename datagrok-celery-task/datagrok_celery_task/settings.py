@@ -20,6 +20,7 @@ class Settings:
     ws_message_timeout_seconds: int
     calls_fanout: str
     log_level: int
+    json_logs: bool
     broker_url: str
     pipe_url: str
     api_url: Optional[str]
@@ -65,6 +66,7 @@ class Settings:
 
         self.calls_fanout = calls_fanout
         self.log_level = log_level
+        self.json_logs = self._get_bool_env("GROK_JSON_LOGS", False)
 
         self.broker_url = self._build_broker_url()
         self.pipe_url = self._build_pipe_url()

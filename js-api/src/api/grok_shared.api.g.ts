@@ -201,6 +201,8 @@ export class Permission {
 
   static SEND_EMAIL = 'SendEmail';
 
+  static EDIT_ALL_USERS_FAVORITES = 'EditAllUsersFavorites';
+
   /** ===== Browse ===== */
   static BROWSE_FILE_CONNECTIONS = 'BrowseFileConnections';
 

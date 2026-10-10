@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-20884: Removed the Update events and Reports migration queries: events are append-only, and they ran as the read-only System:Datagrok and always failed
 * GROK-20884: Errors: Top errors and Top source come from the server's error metrics, by stack signature; a row's context panel shows its error incident and alert
 * GROK-20884: Log: An event's Timeline button opens what happened in its session around it (its events and requests) as a table
 * GROK-20881: Reporting: Fixed a batch change blanking the assignee of every row it touched. The handler wrote back fields the payload did not carry, which a rule with no assign action already did and resolving a selection now would

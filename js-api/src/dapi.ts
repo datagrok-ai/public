@@ -2327,7 +2327,7 @@ export class LogDataSource extends HttpDataSource<LogEvent> {
   /**
    * Names of the cloud log groups this instance can read.
    *
-   * Admins only. Without a connection the server uses its own AWS role.
+   * Needs the ViewTelemetry permission. Without a connection the server uses its own AWS role.
    *
    * @example
    * const groups = await grok.dapi.log.getCloudLogGroups({prefix: '/datagrok/'});

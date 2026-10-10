@@ -892,7 +892,7 @@ Manage a Datagrok server from the command line.
 Entities:
   users, groups, functions, connections, queries, scripts, packages, reports, files, tables
   (plus domains, shares, batch, raw, describe, healthcheck, sync, pull/push/migrate/diff/bundle below)
-  observe (alias o): problems, problem rules, logger settings, errors, timeline; grok s observe prints its verbs
+  observe (alias o): problems, problem rules, logger settings, errors, timeline, cloud logs; grok s observe prints its verbs
 
 Verbs:
   list      List entities (--filter, --limit, --offset)

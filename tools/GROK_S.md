@@ -35,7 +35,7 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
-| Problems, alerts, problem rules, logger settings, errors     | `grok s observe problems list --alert-status open` (alias `grok s o`) |
+| Problems, alerts, problem rules, logger settings, errors, cloud logs | `grok s observe problems list --alert-status open` (alias `grok s o`) |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -479,10 +479,13 @@ grok s o logger history --limit 5                           # log-settings-chang
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
 grok s o timeline --session <id>                            # its events and requests of the last 15 min
 grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
+grok s o logs cloud --since 2h --filter ERROR                # CloudWatch, the instance's own group; --group, --from/--to
+grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket)
+grok s o logs archive read <key>                             # one archived object decoded to events
 ```
 
-Problems need `ManageAlerts`, errors and another session's timeline `ViewTelemetry`, `rules test` both, logger
-and rules changes `EditPluginsSettings`. In durations `m` means minutes (in `grok s pull --since` it means months).
+Problems need `ManageAlerts`, errors, another session's timeline and `logs` `ViewTelemetry`, `rules test` both, logger
+and rules changes `EditPluginsSettings`. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 
