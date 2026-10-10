@@ -1,5 +1,6 @@
-/// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors and the timeline, over
-/// `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics` and `/log/timeline`.
+/// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, the timeline and cloud logs,
+/// over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`, `/log/timeline`,
+/// `/log/cloud/*` and `/log/archive/*`.
 import * as fs from 'fs';
 import {NodeDapi, buildQuery} from '../utils/node-dapi';
 import {printOutput, OutputFormat} from '../utils/server-output';
@@ -25,6 +26,13 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]
                                        A session's events and requests in a window: no --from, the last
                                        15 min; --to defaults to --from + 10 min, at most 2 h
+  logs cloud [--group <g>] [--since 1h | --from <ISO> [--to <ISO>]] [--filter <pattern>] [--limit 1000]
+                                       CloudWatch events; no --group, the instance's own group;
+                                       --filter is a CloudWatch filter pattern
+  logs archive list [--prefix <p>] [--since 7d] [--limit n]
+                                       Objects in the log archive (WORM bucket), by key
+  logs archive read <key>              One archived object decoded to events
+                                       logs take [--connection <id>]; without it, the instance's AWS role
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
 relative, written with = (--from=-2h).`;
@@ -165,6 +173,8 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       return true;
     }
   }
+  if (command === 'logs')
+    return logs(dapi, verb, rest, argv, output);
   if (command === 'timeline') {
     if (argv.session === undefined)
       throw new Error('Usage: grok s observe timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]');
@@ -176,6 +186,40 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
   }
   console.log(OBSERVE_USAGE);
   return true;
+}
+
+async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], argv: any,
+                    output: OutputFormat): Promise<boolean> {
+  const connection = argv.connection;
+  if (verb === 'cloud') {
+    if (argv.since !== undefined && argv.from !== undefined)
+      throw new Error('--since is not used with --from');
+    const group = argv.group ?? (await dapi.raw('GET', `/log/cloud/groups${buildQuery({connection})}`))?.[0];
+    if (!group)
+      throw new Error('No log group to read: pass --group');
+    const window = argv.from !== undefined ? {start: iso(argv.from, '--from'), end: iso(argv.to, '--to')}
+      : {start: new Date(Date.now() - parseDuration(argv.since ?? '1h', '--since')).toISOString()};
+    printOutput(await dapi.raw('GET', `/log/cloud/events${buildQuery({connection, group, ...window,
+      filter: argv.filter, limit: argv.limit, format: 'json'})}`), output);
+    return true;
+  }
+  if (verb === 'archive' && rest[0] === 'list') {
+    let objects: any[] = await dapi.raw('GET', `/log/archive/objects${buildQuery({connection, prefix: argv.prefix,
+      limit: argv.limit, format: 'json'})}`) ?? [];
+    if (argv.since !== undefined) {
+      const from = Date.now() - parseDuration(argv.since, '--since');
+      objects = objects.filter((o) => Date.parse(o.modified) >= from);
+    }
+    printOutput(objects, output);
+    return true;
+  }
+  if (verb === 'archive' && rest[0] === 'read' && rest[1] !== undefined) {
+    printOutput(await dapi.raw('GET', `/log/archive/events${buildQuery({connection, key: rest[1],
+      format: 'json'})}`), output);
+    return true;
+  }
+  throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs archive list [--prefix <p>] | ' +
+    'logs archive read <key>');
 }
 
 async function loggerSet(dapi: NodeDapi, argv: any, current: any, save: (body: any) => Promise<any>,

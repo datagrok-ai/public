@@ -111,3 +111,60 @@ describe('timeline', () => {
     await expect(handleObserve(new NodeDapi({} as any), 'timeline', undefined, [], {}, 'json')).rejects.toThrow('--session');
   });
 });
+
+describe('logs', () => {
+  async function run(verb: string, rest: string[], argv: any, answers: Record<string, any> = {}) {
+    const paths: string[] = [];
+    const client: any = {
+      async request(method: string, path: string) {
+        paths.push(path);
+        return answers[path.split('?')[0]] ?? [];
+      },
+      get(path: string) { return this.request('GET', path); },
+    };
+    const lines: string[] = [];
+    const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
+    try {
+      await handleObserve(new NodeDapi(client), 'logs', verb, rest, argv, 'json');
+    }
+    finally {
+      log.mockRestore();
+    }
+    return {queries: paths.map((p) => [p.split('?')[0], new URLSearchParams(p.split('?')[1])] as [string, URLSearchParams]),
+      printed: lines.join('\n')};
+  }
+
+  it('cloud reads the first group of the instance for the last hour, as JSON rows', async () => {
+    const {queries} = await run('cloud', [], {filter: 'ERROR'}, {'/log/cloud/groups': ['/datagrok/dev', '/eks/pods/x']});
+    expect(queries[0][0]).toBe('/log/cloud/groups');
+    const [path, q] = queries[1];
+    expect(path).toBe('/log/cloud/events');
+    expect([q.get('group'), q.get('filter'), q.get('format'), q.has('end')]).toEqual(['/datagrok/dev', 'ERROR', 'json', false]);
+    expect(Date.now() - Date.parse(q.get('start')!)).toBeGreaterThanOrEqual(3600000 - 1000);
+  });
+
+  it('cloud takes a group and an absolute window', async () => {
+    const {queries} = await run('cloud', [], {group: '/g', from: '2026-10-09T10:00', to: '2026-10-09T11:00', limit: 5});
+    expect(queries.length).toBe(1);
+    const q = queries[0][1];
+    expect([q.get('group'), q.get('start'), q.get('end'), q.get('limit')])
+      .toEqual(['/g', '2026-10-09T10:00:00.000Z', '2026-10-09T11:00:00.000Z', '5']);
+    await expect(run('cloud', [], {group: '/g', since: '1h', from: '-2h'})).rejects.toThrow('--since');
+  });
+
+  it('archive list keeps the objects modified within --since', async () => {
+    const recent = new Date(Date.now() - 3600000).toISOString();
+    const {queries, printed} = await run('archive', ['list'], {prefix: 'cw/', since: '1d'}, {'/log/archive/objects': [
+      {key: 'cw/new.gz', modified: recent, size: 10}, {key: 'cw/old.gz', modified: '2020-01-01T00:00:00.000Z', size: 10}]});
+    expect([queries[0][1].get('prefix'), queries[0][1].get('format')]).toEqual(['cw/', 'json']);
+    expect(JSON.parse(printed).map((o: any) => o.key)).toEqual(['cw/new.gz']);
+  });
+
+  it('archive read decodes one key', async () => {
+    const {queries} = await run('archive', ['read', 'cw/tenant-a/app/2026/10/09/x.gz'], {connection: 'c1'});
+    expect(queries[0][0]).toBe('/log/archive/events');
+    expect([queries[0][1].get('key'), queries[0][1].get('connection'), queries[0][1].get('format')])
+      .toEqual(['cw/tenant-a/app/2026/10/09/x.gz', 'c1', 'json']);
+    await expect(run('archive', ['read'], {})).rejects.toThrow('Usage');
+  });
+});
