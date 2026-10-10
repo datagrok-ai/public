@@ -1,11 +1,11 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {_package} from '../../package';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
-import {SCALING_METHODS} from '../molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {scaleActivity} from '../molecular-matched-pairs/mmp-viewer/mmpa-utils';
+import {_package} from '../../../package';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {SCALING_METHODS} from '../../molecular-matched-pairs/mmp-viewer/mmp-constants';
+import {scaleActivity} from '../../molecular-matched-pairs/mmp-viewer/mmpa-utils';
 import {assembleMultiPositionMatrix} from './sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, SarFragmentColumns, SeriesCut}
   from './sar-matrix-columns';
@@ -15,7 +15,7 @@ import {buildMatchedSeries, buildCoarserLevels, clusterRelatedCores, groupSeries
   poolUngroupedSeries, poolUngroupedMolecules}
   from './sar-matrix-clustering';
 import {rankMatrices, SarRankScheme} from './sar-matrix-ranking';
-import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from './sar-matrix-types';
+import {CoreCluster, logSarTime, observedMolecules, SarMatrix, SarMatrixCell} from '../sar-matrix-types';
 
 /**
  * Link each virtual analog's row core to its column substituent in one batched worker call.
@@ -360,8 +360,9 @@ export async function runSarMatrix(molecules: DG.Column, activity: DG.Column<num
   }
   // Started before the confidence pass rather than after it: linking is a worker round-trip and the
   // fit is main-thread, so run in sequence each waits on the other for no reason. They touch disjoint
-  // fields — the fit reads `kind`/`value` and writes `fit`, linking writes `smiles` on virtual cells —
-  // and the fit contains no await, so it runs to completion before the link's continuation resumes.
+  // fields — the fit reads `kind`/`value` and writes `confidence`, linking writes `smiles` on virtual
+  // cells — and the fit contains no await, so it runs to completion before the link's continuation
+  // resumes.
   t = performance.now();
   const linking = params.predictVirtual ? linkVirtualStructures(matrices) : null;
   matrices.forEach((matrix) => matrix.confidence = computeMatrixConfidence(matrix));

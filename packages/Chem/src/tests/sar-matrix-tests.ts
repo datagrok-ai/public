@@ -1,23 +1,28 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
-import {category, test, expect, expectFloat, before} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectFloat, before, delay} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
-import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/sar-matrix-clustering';
-import {assembleSinglePositionMatrix, fitAdditiveModel, linkStaged} from '../analysis/sar-matrix/sar-matrix-assemble';
+import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/build/sar-matrix-clustering';
+import {assembleSinglePositionMatrix, fitAdditiveModel,
+  linkStaged} from '../analysis/sar-matrix/build/sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
   standardizeFragment}
-  from '../analysis/sar-matrix/sar-matrix-columns';
-import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/sar-matrix-link';
-import {computeMatrixConfidence} from '../analysis/sar-matrix/sar-matrix-confidence';
-import {matrixCore} from '../analysis/sar-matrix/sar-matrix-depict';
-import {SarRankScheme} from '../analysis/sar-matrix/sar-matrix-ranking';
-import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/sar-matrix-run';
+  from '../analysis/sar-matrix/build/sar-matrix-columns';
+import {cellPossible, LinkStages, planLink} from '../analysis/sar-matrix/build/sar-matrix-link';
+import {computeMatrixConfidence} from '../analysis/sar-matrix/build/sar-matrix-confidence';
+import {matrixCore} from '../analysis/sar-matrix/render/sar-matrix-depict';
+import {SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
+import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
+  from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
+import {SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
+import {SummaryPanel} from '../analysis/sar-matrix/summary/sar-matrix-summary-panel';
+import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
-import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/sar-matrix-transfer';
+import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
 import {CoreCluster, MatchedSeries, SarMatrix, SarMatrixCell, SarMatrixColumn, SarMatrixRow}
   from '../analysis/sar-matrix/sar-matrix-types';
 
@@ -1151,4 +1156,405 @@ category('SAR Matrix: R-group columns', () => {
     expect(bridged!.rows.every((row) => !row.keySmiles.includes('[*:100]') && !row.keySmiles.includes('[*:101]')),
       true, 'their bridge is closed in every row');
   }, {timeout: 300000});
+  // ---- One additive fit over every role column ---------------------------------------------------
+
+  const CORE_EFFECT: {[value: string]: number} = {C1: 0.3, C2: 0.0, C3: -0.3};
+  const WARHEAD_EFFECT: {[value: string]: number} = {W1: 0.2, W2: 0.0, W3: -0.2};
+  const LIGAND_EFFECT: {[value: string]: number} = {L1: 0.1, L2: -0.1};
+
+  /** One compound of a role design: its value in each role, its activity and its source row. */
+  type DesignRow = [string[], number, number];
+  const design = (names: string[], rows: DesignRow[]): RoleDesign => ({names,
+    values: names.map((_name, r) => rows.map(([values]) => values[r])),
+    activity: rows.map(([, activity]) => activity), molIdx: rows.map(([, , mol]) => mol),
+    minSupport: 3, higherIsBetter: true});
+
+  /**
+   * 3 cores x 3 warheads x 2 ligands, `y = 6.0 + core + warhead + ligand`, no noise, molIdx 0..17.
+   * Balanced and count-centred, so the least-squares solution is exactly those effects, and the
+   * count-prior of 1 then shrinks each by `n/(n+1)`: 6/7 for a core or warhead, 9/10 for a ligand.
+   */
+  const roleFixture = (drop: number[] = [], ligandNames = ['L1', 'L2']): RoleDesign => {
+    const rows: DesignRow[] = [];
+    const ligands = Object.keys(LIGAND_EFFECT);
+    let k = 0;
+    for (const core of Object.keys(CORE_EFFECT)) {
+      for (const warhead of Object.keys(WARHEAD_EFFECT)) {
+        for (let li = 0; li < ligands.length; li++, k++) {
+          if (!drop.includes(k)) {
+            rows.push([[core, warhead, ligandNames[li]],
+              6.0 + CORE_EFFECT[core] + WARHEAD_EFFECT[warhead] + LIGAND_EFFECT[ligands[li]], k]);
+          }
+        }
+      }
+    }
+    return design(['Core', 'Warhead', 'Ligand'], rows);
+  };
+
+  const roleOf = (fit: RoleFit, name: string): RoleSummary => fit.roles.find((r) => r.name === name)!;
+  const coefOf = (fit: RoleFit, name: string, value: string): number =>
+    roleOf(fit, name).levels.find((l) => l.value === value)!.coef;
+  const meanOf = (design: RoleDesign): number =>
+    design.activity.reduce((sum, v) => sum + v, 0) / design.activity.length;
+
+  test('fitRoleEffects recovers a balanced design', async () => {
+    const raw = fitRoleEffects(roleFixture());
+    expect(raw !== null, true, 'three roles with three, three and two levels are rankable');
+    const fit = raw!;
+    expect(fit.converged, true);
+    expect(fit.compounds, 18);
+    expect(fit.dropped, 0);
+    // Raw group means answer 0.3 exactly and centring inside a core block answers 0.15; neither is the
+    // penalised least-squares solution that reproduces all 18 values.
+    for (const [value, effect] of Object.entries(CORE_EFFECT))
+      expectFloat(coefOf(fit, 'Core', value), effect * 6 / 7, 1e-5, `Core ${value}`);
+    for (const [value, effect] of Object.entries(WARHEAD_EFFECT))
+      expectFloat(coefOf(fit, 'Warhead', value), effect * 6 / 7, 1e-5, `Warhead ${value}`);
+    for (const [value, effect] of Object.entries(LIGAND_EFFECT))
+      expectFloat(coefOf(fit, 'Ligand', value), effect * 9 / 10, 1e-5, `Ligand ${value}`);
+    expectFloat(fit.mean, 6.0, 1e-6, 'the library average every offset is read against');
+    expect(fit.roles.map((r) => r.name).join(','), 'Core,Warhead,Ligand',
+      'roles come back ordered by noise-corrected spread, widest first');
+    expect(roleOf(fit, 'Core').repeat! > 0.99, true,
+      `a noiseless design has to refit to the same offsets on each half, got ${roleOf(fit, 'Core').repeat}`);
+    // Two points correlate at exactly ±1 whatever they are, so a two-value role reporting r 1.00 would
+    // wear the strongest repeatability chip on the screen on no evidence at all.
+    expect(roleOf(fit, 'Ligand').repeat, null, 'two comparable levels are not a repeatability check');
+  });
+
+  /** The same penalised backfit written the slow way and run far past the module's own tolerance: the
+   *  fixed point the shipped fit has to land on, however many sweeps that takes. */
+  const longRunFit = (design: RoleDesign, passes: number): {[value: string]: number} => {
+    const levels = design.values.map((column) => Array.from(new Set(column)));
+    const codes = design.values.map((column, r) => column.map((v) => levels[r].indexOf(v)));
+    const counts = levels.map((values, r) => {
+      const n = values.map(() => 0);
+      for (const code of codes[r])
+        n[code]++;
+      return n;
+    });
+    const theta = levels.map((values) => values.map(() => 0));
+    let mu = meanOf(design);
+    for (let pass = 0; pass < passes; pass++) {
+      for (let r = 0; r < levels.length; r++) {
+        const acc = levels[r].map(() => 0);
+        for (let k = 0; k < design.activity.length; k++) {
+          let others = mu;
+          for (let q = 0; q < levels.length; q++) {
+            if (q !== r)
+              others += theta[q][codes[q][k]];
+          }
+          acc[codes[r][k]] += design.activity[k] - others;
+        }
+        const next = acc.map((a, v) => a / (counts[r][v] + 1));
+        const total = counts[r].reduce((sum, c) => sum + c, 0);
+        const shift = next.reduce((sum, t, v) => sum + counts[r][v] * t, 0) / total;
+        mu += shift;
+        for (let v = 0; v < next.length; v++)
+          theta[r][v] = next[v] - shift;
+      }
+    }
+    const out: {[value: string]: number} = {};
+    levels.forEach((values, r) => values.forEach((v, i) => out[v] = theta[r][i]));
+    return out;
+  };
+
+  test('fitRoleEffects recovers an unbalanced design', async () => {
+    const design = roleFixture([4, 9, 15]);
+    const fit = fitRoleEffects(design)!;
+    expect(fit.converged, true, 'a fit that stops short suppresses the whole breakdown silently');
+    // The prior leaves each role off centre by a constant on every pass. Measured before that shift is
+    // taken back out, the movement plateaus at the constant and no sweep cap ever clears it.
+    expect(fit.sweeps < ROLE_FIT_MAX_SWEEPS / 4, true, `${fit.sweeps} sweeps`);
+    const reference = longRunFit(design, 4000);
+    const mean = meanOf(design);
+    let offFixedPoint = 0;
+    let offOnePass = 0;
+    for (let r = 0; r < design.names.length; r++) {
+      for (const level of roleOf(fit, design.names[r]).levels) {
+        let sum = 0;
+        let n = 0;
+        for (let k = 0; k < design.activity.length; k++) {
+          if (design.values[r][k] === level.value) {
+            sum += design.activity[k];
+            n++;
+          }
+        }
+        offFixedPoint = Math.max(offFixedPoint, Math.abs(level.coef - reference[level.value]));
+        offOnePass = Math.max(offOnePass, Math.abs(level.coef - (sum / n - mean)));
+      }
+    }
+    expect(offFixedPoint < 1e-5, true, `off the long-run fixed point by ${offFixedPoint}`);
+    // With holes a level's own group mean carries whatever it happened to be paired with: W2 is
+    // measured mostly on the strongest core and reads +0.105 that way against +0.005 adjusted.
+    // Averaging the margins in one pass is a different and worse estimator, not a shortcut to this one.
+    expect(offOnePass > 0.05, true, `one-pass margins differ by only ${offOnePass}`);
+    // Σ n_v·θ_v = 0 per role is what makes an offset a difference from the library average, and what
+    // makes a level no training fold saw predict at that average instead of at nothing.
+    for (const role of fit.roles) {
+      let weighted = 0;
+      for (const level of role.levels)
+        weighted += level.n * level.coef;
+      expectFloat(weighted, 0, 1e-6, `${role.name} is not count-centred`);
+    }
+  });
+
+  /**
+   * Sixteen values of A crossed with three of P, and a B that is A with one pair of compounds
+   * exchanged — so A and B are near-aliased and the credit between them only separates slowly.
+   */
+  const slowFixture = (): RoleDesign => {
+    const rows: DesignRow[] = [];
+    for (let i = 0; i < 16; i++) {
+      for (let p = 0; p < 3; p++) {
+        for (let rep = 0; rep < 5; rep++) {
+          const k = rows.length;
+          rows.push([[`A${i}`, `B${i === 0 && rep === 0 ? 1 : i === 1 && rep === 0 ? 0 : i}`, `P${p}`],
+            6.0 + (i - 8) * 0.05 + (p - 1) * 0.05 + ((k % 5) - 2) * 0.01, k]);
+        }
+      }
+    }
+    return design(['A', 'B', 'P'], rows);
+  };
+
+  test('a near-aliased design is carried to its fixed point', async () => {
+    const fit = fitRoleEffects(slowFixture())!;
+    // A cap sized for one small two-factor matrix stops here, and a fit that stops short is refused
+    // outright — the breakdown disappears rather than reporting anything.
+    expect(fit.converged, true);
+    expect(fit.sweeps > 50, true, `two near-aliased roles need ${fit.sweeps} passes`);
+    // Testing the sweep's movement on the last role alone stops after two passes with A0 at −0.33: the
+    // last role can be still while an earlier one is a third of its final value away.
+    expectFloat(coefOf(fit, 'A', 'A0'), -0.1921, 1e-3);
+  });
+
+  test('levels below the support floor are fitted but not ranked', async () => {
+    const design = roleFixture();
+    const plain = fitRoleEffects(design)!;
+    // Two compounds carrying a fourth warhead a full log unit above everything else, on opposite cores
+    // and opposite ligands so the pair adds no core or ligand imbalance of its own.
+    design.values[0].push('C1', 'C3');
+    design.values[1].push('W4', 'W4');
+    design.values[2].push('L1', 'L2');
+    design.activity.push(6.0 + 0.3 + 0.1 + 1.0, 6.0 - 0.3 - 0.1 + 1.0);
+    design.molIdx.push(18, 19);
+    const fit = fitRoleEffects(design)!;
+    const warhead = roleOf(fit, 'Warhead');
+    expect(warhead.fitted, 4, 'the thin level stays in the fit — its compounds inform the other roles');
+    expect(warhead.thin, 1);
+    expect(warhead.levels.some((l) => l.value === 'W4'), false, 'but carries no readable offset');
+    // Ungated it absorbs its own two rows whole and tops the leaderboard at three times the widest
+    // offset any well-sampled warhead has.
+    expect(roleOf(fitRoleEffects({...design, minSupport: 2})!, 'Warhead').levels[0].value, 'W4');
+    // The other roles only feel the warhead role being re-centred over one more level; the pair's own
+    // residual does not reach them.
+    let moved = 0;
+    for (const name of ['Core', 'Ligand']) {
+      for (const level of roleOf(fit, name).levels)
+        moved = Math.max(moved, Math.abs(level.coef - coefOf(plain, name, level.value)));
+    }
+    expect(moved < 0.05, true, `the other roles moved by ${moved}`);
+  });
+
+  test('levels are ordered by the activity direction', async () => {
+    const design = roleFixture();
+    const up = roleOf(fitRoleEffects(design)!, 'Warhead').levels;
+    const down = roleOf(fitRoleEffects({...design, higherIsBetter: false})!, 'Warhead').levels;
+    expect(up.length > 1, true, 'the role has levels to order');
+    expect(up[0].coef > up[up.length - 1].coef, true, 'higher is better puts the largest offset first');
+    expect(down[0].value, up[up.length - 1].value,
+      'lower is better puts the same role\'s worst-on-the-other-reading level first');
+    // The fit itself is in the column's own units either way: only the order changes.
+    expect(down.map((l) => l.value).sort().join(), up.map((l) => l.value).sort().join());
+    for (const level of down)
+      expectFloat(level.coef, up.find((l) => l.value === level.value)!.coef, 1e-9);
+  });
+
+  test('a blank role value is a level', async () => {
+    const fit = fitRoleEffects(roleFixture([], ['L1', '']))!;
+    const blank = roleOf(fit, 'Ligand').levels.find((l) => l.value === '');
+    expect(blank !== undefined, true, 'the unsubstituted parent is a value, not a missing one');
+    expect(blank!.n, 9, 'dropping its rows would exclude compounds the tab counts as placed');
+    expectFloat(blank!.coef, -0.1 * 9 / 10, 1e-5, 'and it is fitted like every other level');
+  });
+
+  const PARTNER_EFFECT = [-0.15, -0.05, 0.05, 0.15];
+
+  /** One role of `effects.length` values fully crossed with a four-value partner, plus a three-cycle
+   *  residual belonging to neither role so the fit has an error the split rule has to clear. */
+  const splitFixture = (effects: number[]): RoleDesign => {
+    const rows: DesignRow[] = [];
+    for (let a = 0; a < effects.length; a++) {
+      for (let b = 0; b < PARTNER_EFFECT.length; b++) {
+        const k = rows.length;
+        rows.push([[`V${a}`, `P${b}`], 6.0 + effects[a] + PARTNER_EFFECT[b] + ((k % 3) - 1) * 0.06, k]);
+      }
+    }
+    return design(['Component', 'Partner'], rows);
+  };
+
+  test('the two-group split fires only when it should', async () => {
+    const twoGroups = fitRoleEffects(splitFixture([0.2, 0.2, 0.2, 0.2, -0.3, -0.3, -0.3]))!;
+    const split = roleOf(twoGroups, 'Component').split;
+    expect(split !== null, true, 'a 0.5 step against a ±0.10 cross-validated error is a partition');
+    expect(`${split!.hiCount}|${split!.loCount}`, '4|3');
+    expect(split!.gap > twoGroups.cvRmse!, true, `gap ${split!.gap} under the error`);
+    expect(split!.hiMean > 0 && split!.loMean < 0, true, 'each side reports its own mean offset');
+    expect(`${split!.hiN}|${split!.loN}`, '16|12', 'and the compounds behind it, not its level count');
+
+    const even = fitRoleEffects(splitFixture([-0.06, -0.04, -0.02, 0, 0.02, 0.04, 0.06]))!;
+    expect(roleOf(even, 'Component').split, null,
+      'evenly spaced values hold no gap the fit can resolve');
+
+    // The widest gap here is 0.37, far over the error, and the split is still refused: one value is not
+    // a group, and reporting it as one would call a single outlier half the chemistry.
+    const outlier = fitRoleEffects(splitFixture([0.5, 0.02, 0.01, 0, -0.01, -0.02, -0.03]))!;
+    expect(roleOf(outlier, 'Component').split, null);
+  });
+
+  test('disconnected blocks are not ranked together', async () => {
+    const design = roleFixture();
+    let k = 18;
+    // Two cores x three warheads on one ligand, sharing no value in any role with the block above.
+    for (const core of ['X1', 'X2']) {
+      for (const warhead of ['Y1', 'Y2', 'Y3']) {
+        design.values[0].push(core);
+        design.values[1].push(warhead);
+        design.values[2].push('Z1');
+        design.activity.push(9.0 + (k % 2) * 0.2);
+        design.molIdx.push(k++);
+      }
+    }
+    const fit = fitRoleEffects(design)!;
+    expect(fit.compounds, 18, 'only the largest connected block is fitted');
+    expect(fit.dropped, 6);
+    const listed = fit.roles.flatMap((role) => role.levels.map((level) => level.value));
+    expect(listed.some((v) => v.startsWith('X') || v.startsWith('Y') || v === 'Z1'), false,
+      'an offset from a separate block rests on an unrelated baseline, so it is never listed beside these');
+    for (const role of fit.roles)
+      expect(role.fitted, role.name === 'Ligand' ? 2 : 3, `${role.name} counts only the kept set`);
+  });
+
+  const SOLID_EFFECT = [0.035, 0.0105, -0.0105, -0.035];
+
+  /** Four well-sampled values carrying a real effect, crossed with sixty values seen three times each
+   *  carrying none — the shape where a raw count-weighted sd ranks the roles the wrong way round. */
+  const spreadFixture = (): RoleDesign => {
+    const rows: DesignRow[] = [];
+    let seed = 4242;
+    const rnd = (): number => {
+      seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+      return seed / 0x7fffffff - 0.5;
+    };
+    for (let t = 0; t < 60; t++) {
+      for (let c = 0; c < 3; c++)
+        rows.push([[`S${(t * 3 + c) % 4}`, `T${t}`], 6.0 + SOLID_EFFECT[(t * 3 + c) % 4] + 0.5 * rnd(), rows.length]);
+    }
+    return design(['Solid', 'Thin'], rows);
+  };
+
+  test('the spread subtracts the estimation noise it is comparing across', async () => {
+    const fit = fitRoleEffects(spreadFixture())!;
+    const rawSd = (role: RoleSummary): number => {
+      let weighted = 0;
+      let total = 0;
+      for (const level of role.levels) {
+        weighted += level.n * level.coef * level.coef;
+        total += level.n;
+      }
+      return Math.sqrt(weighted / total);
+    };
+    const solid = roleOf(fit, 'Solid');
+    const thin = roleOf(fit, 'Thin');
+    // Sixty values seen three times each carry no effect here, and still scatter: fitting each from
+    // three compounds leaves a σ²·levels/observations term in the raw count-weighted sd that a
+    // four-value role does not pay. Raw, that term alone outranks the role with the real effect.
+    expect(rawSd(thin) > rawSd(solid), true,
+      `raw sds are ${rawSd(thin).toFixed(4)} thin against ${rawSd(solid).toFixed(4)} solid`);
+    expect(fit.roles[0].name, 'Solid',
+      `noise put ${fit.roles[0].name} first: ${fit.roles.map((r) => `${r.name} ${r.spread.toFixed(4)}`)}`);
+    expect(thin.spread < 0.01, true, `a role with no effect reports spread ${thin.spread}`);
+  });
+
+  /** Everything a `SummaryPanel` reads, over matrices built by fragmentation: no fragment column ran
+   *  across the top, so `axisRole` and `coreRole` are null and navigation is inert. */
+  const summaryHost = (matrices: SarMatrix[], rowCount: number): SummaryHost => ({
+    matrices,
+    matrixRoots: matrices.map((m) => m.parentId ?? m.id),
+    matrixTiers: matrices.map((m) => m.level),
+    transferSummary: {scanned: false, count: 0},
+    assayedCount: matrices.length ? 1 : 0,
+    selectRoleValue: () => {},
+    higherIsBetter: true,
+    scalingLabel: 'none',
+    activityIsLog: true,
+    activityColumnName: 'activity',
+    hostRowCount: rowCount,
+    unscalableCount: 0,
+    axisRole: null,
+    coreRole: null,
+    // Read the same way the viewer reads it, so the stub cannot disagree with the host it stands in for.
+    coresAreSeries: matrices.length > 0 &&
+      matrices.every((m) => new Set(m.rows.map((r) => r.coreSmiles)).size === 1),
+    roleColumns: [],
+    setColumnAxis: () => {},
+    predictVirtual: true,
+    predictUnmeasured: true,
+    computing: false,
+    noMatricesMessage: () => 'no matrices',
+    formatActivity: (value: number) => value.toFixed(2),
+    cellIdText: () => null,
+    observedNeighbours: () => 0,
+    revealCell: () => {},
+    revealMatrix: () => {},
+    showTab: () => {},
+    addCellsToMakeList: () => {},
+  });
+
+  test('the role fit is absent in fragmentation mode', async () => {
+    const {molecules, activity} = mixedCoverage();
+    const matrices = await runSarMatrix(molecules, activity, e2eParams(false));
+    expect(matrices.length > 0, true, 'the fragmentation pipeline must produce matrices to summarise');
+    const panel = new SummaryPanel(summaryHost(matrices, molecules.length));
+    try {
+      panel.activateSummaryTab();
+      // Collection runs off the activation stack so the loader can paint.
+      await delay(50);
+      const segment = Array.from(panel.root.querySelectorAll<HTMLElement>('.chem-sar-sum-seg'))
+        .find((el) => el.textContent === 'Effects');
+      expect(segment !== undefined, true, 'the segment bar must offer the Effects segment');
+      segment!.click();
+      const pane = panel.root.querySelector('.chem-sar-sum-pane')!;
+      const titles = Array.from(pane.querySelectorAll('.chem-sar-sum-card-title'))
+        .map((el) => el.textContent ?? '');
+      // A substituent label discovered by fragmentation is local to its own series, so there is no
+      // scale on which one global offset could be read and the cards are absent rather than empty.
+      expect(titles.some((t) => t.includes('offsets from the additive fit')), false,
+        `a role card rendered without a fragment column: ${titles.join(' | ')}`);
+      expect(titles.length, 3, `Effects holds its three original cards, got ${titles.join(' | ')}`);
+    } finally {
+      panel.release();
+    }
+  });
+
+  test('cross-validation reacts to non-additivity', async () => {
+    const clean = fitRoleEffects(roleFixture())!;
+    expect(clean.cvR2! > 0.9, true, `an additive table cross-validates, got ${clean.cvR2}`);
+    const spiked = (size: number): RoleFit => {
+      const design = roleFixture();
+      design.activity[0] += size;
+      return fitRoleEffects(design)!;
+    };
+    const mild = spiked(0.5);
+    // One cell no combination of role offsets can reach: the fit absorbs part of it in sample and pays
+    // for the rest on the held-out compound, so the in-sample error stays under the cross-validated one
+    // and the cross-validated R² is the number that moves.
+    expect(mild.residualSd < mild.cvRmse!, true, 'an in-sample error cannot be the gate');
+    expect(mild.cvR2! < clean.cvR2! - 0.1, true, `cvR2 barely moved: ${mild.cvR2}`);
+    expect(mild.roles.map((r) => r.name).join(','), 'Core,Warhead,Ligand',
+      'the leaderboard still looks orderly, which is why the gate cannot be the ranking itself');
+    // The Summary tab withholds the ranking below 0.5 rather than ranking a table the additive reading
+    // does not describe.
+    expect(spiked(1.5).cvR2! < 0.5, true);
+  });
 });

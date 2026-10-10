@@ -3,9 +3,24 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 
 import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
+import {standardizeFragment} from './build/sar-matrix-columns';
 import {SarMatrix} from './sar-matrix-types';
 
 /** Layout, colour and grid types shared by the viewer and its panels. */
+
+const structureCache = new Map<string, boolean>();
+const STRUCTURE_CACHE_MAX = 2000;
+
+/** Whether a fragment is a structure rather than a name such as "VHL". */
+export function isStructure(value: string): boolean {
+  let known = structureCache.get(value);
+  if (known === undefined) {
+    if (structureCache.size >= STRUCTURE_CACHE_MAX)
+      structureCache.clear();
+    structureCache.set(value, known = standardizeFragment(value).structure);
+  }
+  return known;
+}
 
 /** Transparent (alpha 0) so a drawn core blends with the card/pane instead of showing a white box. */
 export const CORE_BG_ARGB = 0x00000000;
@@ -29,6 +44,10 @@ export const BENEFIT_MOL_W = 62;
 export const BENEFIT_MOL_H = 34;
 export const CARD_CORE_W = 78;
 export const CARD_CORE_H = 44;
+/** The component strip puts one structure on each row of the landing band, where a truncated SMILES
+ *  reads as the same string for every analog of one scaffold. */
+export const STRIP_MOL_W = 70;
+export const STRIP_MOL_H = 28;
 /** A whole assembled analog needs more room than the core or substituent it was built from. */
 export const ANALOG_W = 220;
 /** Must track the `.chem-sar-nav` width in the stylesheet, or cells are fitted against the wrong pane. */
@@ -46,6 +65,7 @@ export const FULL_SUPPORT = 3;
 export const TAB_MATRIX = 'SAR Matrix';
 export const TAB_TRANSFER = 'SAR Transfer';
 export const TAB_MAKELIST = 'Make list';
+export const TAB_SUMMARY = 'Summary';
 
 /** A cell addressed by the matrix it belongs to and its position in it — how the panels hand single
  *  cells to one another, since a cell object alone cannot say where it came from. */
@@ -134,10 +154,44 @@ export function paintMoleculeOnColor(canvas: HTMLCanvasElement, smiles: string, 
     drawMoleculeToCanvas(0, 0, w, h, canvas, smiles, null,
       {normalizeDepiction: true, straightenDepiction: true}, null,
       {clearBackground: true, backgroundColour: argbToRgba(argb)});
-  } catch (e) {
+  } catch {
     // A structure RDKit cannot draw leaves the canvas at its background rather than failing the whole
     // pane — one bad row must not blank a navigator full of good ones.
   }
+}
+
+/** A grid over molecule columns. Its root is a ui-box, which pins itself to a fixed size unless told to
+ *  fill; rows and the named columns are sized like the matrix cells, since the text-oriented defaults
+ *  leave a structure too small to read. */
+export function moleculeGrid(frame: DG.DataFrame, widths: [string, number][]): DG.Grid {
+  const grid = DG.Viewer.grid(frame);
+  grid.root.style.width = '100%';
+  grid.root.style.height = '100%';
+  grid.setOptions({rowHeight: CELL_H});
+  for (const [name, width] of widths) {
+    const column = grid.col(name);
+    if (column)
+      column.width = width;
+  }
+  return grid;
+}
+
+/** Text with a hover that qualifies it. */
+export function tipText(text: string, cls: string, tip: string): HTMLElement {
+  const el = ui.divText(text, cls);
+  ui.tooltip.bind(el, tip);
+  return el;
+}
+
+/** A small badge with a hover that qualifies it; `cls` adds a variant such as `chem-sar-chip-partial`. */
+export function chipBadge(text: string, tip: string, cls = ''): HTMLElement {
+  return tipText(text, `chem-sar-chip-badge ${cls}`.trim(), tip);
+}
+
+/** Bring `el` to the top of `scroller` by moving that scroller alone. `scrollIntoView` scrolls every
+ *  scrollable ancestor, the dock container included, so it can move the layout around the panel. */
+export function scrollWithin(scroller: HTMLElement, el: HTMLElement): void {
+  scroller.scrollTop += el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
 }
 
 export function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
@@ -214,4 +268,10 @@ export class FrameFilter<K> {
     this.keys = [];
     this.pass = null;
   }
+}
+
+/** Digits grouped with a space rather than the locale's separator: a locale that groups with a period
+ *  renders 2749 compounds as "2.749" directly beside an activity of "-5.9". */
+export function count(n: number): string {
+  return n.toLocaleString('en-US').replace(/,/g, ' ');
 }

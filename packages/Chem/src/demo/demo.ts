@@ -15,6 +15,8 @@ import {ScaffoldTreeViewer} from '../widgets/scaffold-tree';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
 import {dockSarMatrixTabs} from '../analysis/sar-matrix/sar-matrix-viewer';
 import {CELL_H, CELL_W, COL_HEADER_H, CORE_W} from '../analysis/sar-matrix/sar-matrix-ui-common';
+import {PANE_SERIES} from '../analysis/sar-matrix/summary/sar-matrix-summary-common';
+import {MIN_SUPPORT, TRUST_R2} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
 
 
 export async function _demoChemOverview(): Promise<void> {
@@ -195,16 +197,36 @@ const SAR_MATRIX_VIEWER = 'SAR Matrix Viewer';
 
 interface SarHint {
   anchor: () => Element | null;
-  position: `${ui.hints.POSITION}`;
+  position?: `${ui.hints.POSITION}`;
   title: string;
   text: string;
+  /** Put the viewer where the hint's anchor exists — a tab, a segment — before it is looked for. The
+   *  tour walks four tabs and four segments of one of them, and an anchor on a pane that is not open
+   *  is not in the document at all. */
+  before?: () => void;
+}
+
+/** The one element matching `selector` whose text is exactly `title`. */
+function byText(selector: string, title: string): HTMLElement | null {
+  const found = Array.from(document.querySelectorAll(selector))
+    .find((e) => e.textContent?.trim() === title);
+  return found instanceof HTMLElement ? found : null;
+}
+
+/** Click a tab header of the SAR viewer by name. */
+function sarTab(title: string): void {
+  sarTabHeader(title)?.click();
+}
+
+/** Click one of the Summary tab's own segments. */
+function sarSegment(title: string): void {
+  byText('.chem-sar-sum-seg', title)?.click();
 }
 
 /** A tab header of the SAR viewer, used as the fallback anchor for hints about a tab the tour has
  *  not opened yet — that tab's own markup does not exist until it is shown once. */
-function sarTabHeader(title: string): Element | null {
-  return Array.from(document.querySelectorAll('.d4-tab-header'))
-    .find((e) => e.textContent?.trim() === title) ?? null;
+function sarTabHeader(title: string): HTMLElement | null {
+  return byText('.d4-tab-header', title);
 }
 
 /** The matrix is a canvas grid, so its cells are not elements to anchor to. This lays a marker over
@@ -228,7 +250,111 @@ function matrixCellAnchor(): Element | null {
   return marker;
 }
 
+/** Where the two tours point. Both walk the same analysis, so a selector belongs in one place: the
+ *  fallback is what the step lands on while its pane is still building. */
+const at = {
+  scale: () => document.querySelector('.chem-sar-sum-orient') ?? sarTabHeader('Summary'),
+  coverage: () => document.querySelector('.chem-sar-sum-cov') ?? document.querySelector('.chem-sar-sum-overview'),
+  components: () => document.querySelector('.chem-sar-sum-comp') ?? document.querySelector('.chem-sar-sum-answers'),
+  swapRow: () => document.querySelector('.chem-sar-sum-band-swap') ?? document.querySelector('.chem-sar-sum-answers'),
+  effectsBar: () => document.querySelector('.chem-sar-sum-sub-bar') ?? document.querySelector('.chem-sar-sum-effects'),
+  making: () => document.querySelector('.chem-sar-sum-making-block') ?? document.querySelector('.chem-sar-sum-making'),
+  trust: () => document.querySelector('.chem-sar-sum-trust') ?? document.querySelector('.chem-sar-sum-pane'),
+  navCard: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
+    sarTabHeader('SAR Matrix'),
+  chips: () => document.querySelector('.chem-sar-chips'),
+  contextPanel: () => document.querySelector('.grok-prop-panel'),
+  transferTab: () => sarTabHeader('SAR Transfer'),
+  transferSources: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
+    document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+  transferGrid: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-grid-host') ??
+    document.querySelector('.chem-sar-xfer-panel') ?? sarTabHeader('SAR Transfer'),
+  makeList: () => sarTabHeader('Make list'),
+};
+
 const SAR_HINTS: SarHint[] = [
+  {
+    before: () => sarTab('Summary'),
+    anchor: at.scale,
+    title: 'Start on the Summary',
+    text: 'The analysis opens here, on what it concluded rather than on the grids behind it. This ' +
+      'first line is the scale everything below depends on: which column is the endpoint, whether ' +
+      'this analysis transformed it, which direction is better, the range actually observed, and the ' +
+      'typical size of the model\'s own error.',
+  },
+  {
+    anchor: at.coverage,
+    title: 'What reached a matrix',
+    text: 'A compound joins a series only if the cutting finds it a core it shares with others. The ' +
+      'bar splits the whole table up to five ways: measured and paired, held but never assayed, ' +
+      'assayed but impossible to scale, assayed with no analog to pair with, and never assayed. The ' +
+      'coverage of the analysis is stated before any of its findings are.',
+  },
+  {
+    anchor: at.components,
+    title: 'What to change',
+    text: 'One additive (Free-Wilson) fit over the whole table, cross-validated on compounds it had ' +
+      'not seen. Each component column gets a row: how far the endpoint spans across its values, its ' +
+      'best value drawn, and that value\'s offset against the library mean. The component with the ' +
+      'widest span is the one worth spending the next round on.',
+  },
+  {
+    anchor: at.swapRow,
+    title: 'Best measured swap, per component',
+    text: 'The other half of the band is evidence of a different kind: pairs of compounds that were ' +
+      'both made and both measured and differ in exactly one component. No model is involved: if the ' +
+      'pair was never made it is not here. Each component has its own, because a matched pair is a ' +
+      'grouping on all the others. Either half folds away to read the other.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-sum-list .chem-sar-sum-row') ??
+      document.querySelector('.chem-sar-sum-overview'),
+    position: ui.hints.POSITION.TOP,
+    title: 'Start here',
+    text: 'The series worth opening first, each with the reason it is listed: most measured ' +
+      'compounds, widest measured range, holds the best measured compound, most predictions worth ' +
+      'making, best-validated fit. Expanding a row shows that series\' own spread and its best core.',
+  },
+  {
+    before: () => sarSegment('Effects'),
+    anchor: at.effectsBar,
+    title: 'Effects: every component ranked',
+    text: 'A tab per component, ordered by how far each moves the endpoint. Inside, every value of ' +
+      'that component with its offset against the library mean, adjusted for the other components, ' +
+      'and the number of compounds behind it. The last tab holds what was counted rather than fitted: ' +
+      'the measured pairs for each component.',
+  },
+  {
+    before: () => sarSegment('Worth making'),
+    anchor: at.making,
+    position: ui.hints.POSITION.TOP,
+    title: 'Worth making',
+    text: 'Analogs this dataset has no row for, ranked on the gain each buys over the best compound ' +
+      'its own series has already measured, in that series\' own error. Above them sit the compounds ' +
+      'the table already holds but never assayed, an assay to run rather than a synthesis. Where ' +
+      'nothing clears the trust gate the best candidates are listed anyway, marked as ungated.',
+  },
+  {
+    before: () => sarSegment('Method'),
+    anchor: at.trust,
+    position: ui.hints.POSITION.TOP,
+    title: 'Method: what was trusted',
+    text: `The gate every prediction had to clear: ${MIN_SUPPORT} measured compounds on both axes, in a ` +
+      'series whose own R² reaches ' + TRUST_R2 + '. Two different R² appear on the tab, one over the ' +
+      'whole table and one inside each series, and both are scored by predicting compounds left out of the fit. The ' +
+      'two lists name the series where the additive reading holds best and where it fails.',
+  },
+  {
+    before: () => {
+      sarSegment('Overview');
+      sarTab('SAR Matrix');
+    },
+    anchor: at.navCard,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'The series themselves',
+    text: 'The rest of the tour is the evidence under those conclusions: the series, the matrices ' +
+      'they are drawn as, the transfers between them, and the list of what to make.',
+  },
   {
     // The first card, not the list: the list runs the full height of the pane, so a popup beside it
     // is centred halfway down and lands over the matrix rather than beside what it describes.
@@ -276,14 +402,13 @@ const SAR_HINTS: SarHint[] = [
     title: 'Select and unfold',
     text: 'Click a card to open that series in the matrix on the right. Levels nest: an L1 card is a ' +
       'single core with its substituents, while L2 and L3 group the cores that agree one and two cuts ' +
-      'deeper - their badge reads "L2·6" for the L2 matrix containing 6 L1 matrices. Use the chevron to ' +
+      'deeper, so their badge reads "L2·6" for the L2 matrix containing 6 L1 matrices. Use the chevron to ' +
       'unfold one into the matrices it groups, shown indented beneath it. An orange badge warns that ' +
       'unfolding will not reach every compound: the rest sit in groups too thin to form a matrix of ' +
       'their own, so they are counted on this card but appear in none of the series below.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-chips'),
-    position: ui.hints.POSITION.BOTTOM,
+    anchor: at.chips,
     title: 'What the open matrix holds',
     text: 'The chips above the matrix summarise it: how many compounds it holds, its size as cores by ' +
       'substituents, the activity range on the current scale, how many analogs are predicted rather ' +
@@ -294,10 +419,10 @@ const SAR_HINTS: SarHint[] = [
     anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-filter-icon'),
     position: ui.hints.POSITION.LEFT,
     title: 'Filter the matrix',
-    text: 'The funnel narrows the cells themselves - by Potency, Reference points, MW, Core and substituents R.',
+    text: 'The funnel narrows the cells themselves, by Potency, Reference points, MW, Core and substituents R.',
   },
   {
-    anchor: () => matrixCellAnchor(),
+    anchor: matrixCellAnchor,
     position: ui.hints.POSITION.RIGHT,
     title: 'Then click a cell',
     text: 'Cores run down the rows, substituents across the columns. The header over the first column ' +
@@ -306,17 +431,17 @@ const SAR_HINTS: SarHint[] = [
       'you have, a dashed one an analog nobody has made. Click any of them to inspect it.',
   },
   {
-    anchor: () => document.querySelector('.grok-prop-panel'),
+    anchor: at.contextPanel,
     position: ui.hints.POSITION.LEFT,
     title: 'A compound that exists',
     text: 'Select a solid cell and the Context Panel shows the compound itself: its structure, the ' +
       'potency measured on it, and the compounds sharing its core and its substituent as the SAR ' +
-      'around it. Some solid cells carry a "~" value instead of a plain one - those are compounds ' +
-      'the dataset already holds but dont have any activity. They keep the solid frame and their ' +
+      'around it. Some solid cells carry a "~" value instead of a plain one. Those are compounds ' +
+      'the dataset already holds but which carry no activity value. They keep the solid frame and their ' +
       'registration id, because the compound is real and only the number is estimated.',
   },
   {
-    anchor: () => document.querySelector('.grok-prop-panel'),
+    anchor: at.contextPanel,
     position: ui.hints.POSITION.LEFT,
     title: 'A virtual analog',
     text: 'Select a dashed cell and the Context Panel explains it: the core and substituent were ' +
@@ -332,16 +457,14 @@ const SAR_HINTS: SarHint[] = [
       'be collected without leaving the grid. It takes measured compounds as well as predicted ones.',
   },
   {
-    anchor: () => sarTabHeader('SAR Transfer'),
-    position: ui.hints.POSITION.BOTTOM,
+    anchor: at.transferTab,
     title: 'Carry the SAR across scaffolds',
     text: 'The SAR Transfer tab pairs cores whose potency trends run in parallel over the substituents ' +
       'they share. Where the correlation holds, an optimization found on one scaffold is expected to ' +
       'carry to the other, and the analogs it argues for are marked in the matrix.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-xfer-nav .chem-sar-scaffold-card') ??
-      document.querySelector('.chem-sar-xfer-list') ?? sarTabHeader('SAR Transfer'),
+    anchor: at.transferSources,
     position: ui.hints.POSITION.RIGHT,
     title: 'Sources, nested by series',
     text: 'Each card on the left is one source core, and the cards are gathered under the series that ' +
@@ -354,7 +477,7 @@ const SAR_HINTS: SarHint[] = [
       sarTabHeader('SAR Transfer'),
     position: ui.hints.POSITION.RIGHT,
     title: 'Rank the transfers',
-    text: 'Potent compounds orders by the strongest analog a pairing points at - the question the ' +
+    text: 'Potent compounds orders by the strongest analog a pairing points at, the question the ' +
       'matrix list asks, asked of a transfer. Fold match orders by how far the size of each step ' +
       'carries rather than merely its direction: two cores can rank every substituent alike and still ' +
       'disagree on what a swap is worth. Analogs gained orders by how many compounds the pairing ' +
@@ -374,12 +497,11 @@ const SAR_HINTS: SarHint[] = [
   {
     anchor: () => document.querySelector('.chem-sar-xfer-panel .chem-sar-control-bar .ui-input-root') ??
       document.querySelector('.chem-sar-xfer-panel .chem-sar-main-bar') ?? sarTabHeader('SAR Transfer'),
-    position: ui.hints.POSITION.BOTTOM,
     title: 'Pick the target core',
     text: 'One core often transfers to several. The dropdown in the header switches between them ' +
       'while the source stays put, so you can read the same series against each core its SAR carries ' +
-      'to in turn. The title left of it always names the pair on screen, and the chips beside it - ' +
-      'correlation, fold match, shared R-groups and how many compounds the pairing argues for - ' +
+      'to in turn. The title left of it always names the pair on screen, and the chips beside it ' +
+      '(correlation, fold match, shared R-groups and how many compounds the pairing argues for) ' +
       'change with the target you pick. A source with only one target gets no dropdown.',
   },
   {
@@ -391,29 +513,205 @@ const SAR_HINTS: SarHint[] = [
       'Click a predicted cell on either side to take the analog that pairing argues for.',
   },
   {
-    anchor: () => sarTabHeader('Make list'),
-    position: ui.hints.POSITION.BOTTOM,
+    anchor: at.makeList,
     title: 'The Make list',
     text: 'Everything collected lands here: each analog with its structure, its potency and the ' +
       'activity that potency is read on, how much evidence stood behind it, and the series, core and ' +
       'substituent it came from. Status and Method are separate columns because they answer different ' +
-      'questions - Status says whether the compound exists (Synthesized, Untested or Virtual), Method ' +
+      'questions. Status says whether the compound exists (Synthesized, Untested or Virtual), Method ' +
       'says where its number came from (measured or predicted), and an untested compound is made and ' +
       'predicted at once. Add to workspace hands out a copy to save, export or join; Remove drops the ' +
       'selected compound and Clear empties the list.',
   },
 ];
 
-function showSarHint(i: number, previous?: HTMLElement): void {
+/**
+ * The PROTAC tour. Shorter than the fragmentation one and about a different thing: here the three
+ * parts of every molecule are already columns, so nothing is cut and the question is which of the
+ * three to change.
+ */
+const PROTAC_HINTS: SarHint[] = [
+  {
+    before: () => sarTab('Summary'),
+    anchor: at.scale,
+    title: '2 792 degraders, split three ways',
+    text: 'Every PROTAC in this patent set carries its warhead, its linker and its E3 ligand as ' +
+      'columns of their own. The endpoint is a predicted solubility in log units, where higher is ' +
+      'better. It is a property these molecules are notoriously short of, and the one this run ranks on.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-sum-overview > .chem-sar-cp-hint') ??
+      document.querySelector('.chem-sar-sum-overview'),
+    title: 'Linker as the core',
+    text: 'The analysis was given the linker as the core, the scaffold every row is drawn from, and ' +
+      'the warhead and E3 ligand as the substituents hanging off it. Nothing is fragmented: with the ' +
+      'parts named, the matrices are a grouping of the table rather than a cut of the molecules. This ' +
+      'line names which column plays which part, and which one the matrix columns enumerate.',
+  },
+  {
+    anchor: at.coverage,
+    title: 'What reached a matrix',
+    text: 'The bar is the whole table: how many degraders carry a value and landed in a series, and ' +
+      'how many carry one but had no analog to pair with. A compound alone on its linker cannot be ' +
+      'compared with anything, so it informs no ranking here. This line is what the rest of the tab ' +
+      'is a statement about.',
+  },
+  {
+    anchor: at.components,
+    title: 'Which of the three to change',
+    text: 'One additive fit over all three components at once ranks them by how far each moves ' +
+      'solubility. Each row shows that span, the best value of that component drawn, and its offset ' +
+      'against the library mean, adjusted for the other two, so a warhead that happens to appear ' +
+      'beside good linkers does not inherit their credit.',
+  },
+  {
+    anchor: at.swapRow,
+    title: 'And what was actually measured',
+    text: 'Under the fit, the measured half: pairs of degraders alike in every part but one. Warhead, ' +
+      'linker and E3 ligand each get their own best swap, because a matched pair is a grouping on the ' +
+      'other two. No rebuild is needed to see another component, and no model is involved in these ' +
+      'numbers at all.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-sum-list-head') ??
+      document.querySelector('.chem-sar-sum-list'),
+    position: ui.hints.POSITION.TOP,
+    title: 'Which series to open first',
+    text: 'The series ranked by what each one offers, with a lane of marks saying why: most measured ' +
+      'degraders, widest range, holds the best one made, most predictions worth making, best-validated ' +
+      'fit. A series can carry several, and the marks are the reason the row is where it is.',
+  },
+  {
+    before: () => sarSegment('Effects'),
+    anchor: at.effectsBar,
+    title: 'Every linker, warhead and ligand ranked',
+    text: 'A tab per component with its full ranking, and a last tab holding the measured pairs for ' +
+      'each. The structures are drawn rather than written: three E3 ligands of one chemotype differ ' +
+      'past the point where a truncated SMILES would still show it.',
+  },
+  {
+    before: () => byText('.chem-sar-sum-sub-name', PANE_SERIES)?.click(),
+    anchor: at.effectsBar,
+    title: 'Counted, not fitted',
+    text: 'The last tab is the other kind of evidence, read off compounds that were actually made ' +
+      'inside each series: which warhead came first where, which linker scored best, which swap was ' +
+      'measured. Nothing on it is a model output, which is why it is kept apart from the component ' +
+      'rankings beside it.',
+  },
+  {
+    before: () => sarSegment('Worth making'),
+    anchor: at.making,
+    position: ui.hints.POSITION.TOP,
+    title: 'Combinations nobody has built',
+    text: 'A warhead, a linker and an E3 ligand that appear in the set but never together. Each is ' +
+      'ranked on what it buys over the best degrader its own series already measured. On a patent set ' +
+      'nothing may clear the trust gate, and then these are listed as the best candidates without it. The ' +
+      'gate withholds the confidence, not the ranking.',
+  },
+  {
+    before: () => sarSegment('Method'),
+    anchor: at.trust,
+    position: ui.hints.POSITION.TOP,
+    title: 'What the ranking rests on',
+    text: 'Two R² and what the gate does with them: one for the fit over all three components, one ' +
+      'for each series on its own, both cross-validated by holding compounds out. A series below the ' +
+      'floor keeps its measured numbers and loses its predictions, which is why the Worth-making ' +
+      'list on this set is candidates rather than promises.',
+  },
+  {
+    before: () => {
+      sarSegment('Overview');
+      sarTab('SAR Matrix');
+    },
+    anchor: at.navCard,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'One linker per series',
+    text: 'Each card is one linker with its degraders laid out: warheads across the columns, the E3 ' +
+      'ligand folded into the row. The list is ranked, and the sparkline on each card is that ' +
+      'series\' own spread of solubility.',
+  },
+  {
+    anchor: at.chips,
+    title: 'What the open matrix holds',
+    text: 'The open series in one line: how many degraders were measured, how many cells the two ' +
+      'components could fill, how many of those are predictions, and the series\' own R². A cell is ' +
+      'a degrader that exists; a faint one is a combination the additive fit predicts.',
+  },
+  {
+    anchor: matrixCellAnchor,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Click a cell',
+    text: 'A cell is one warhead against one E3 ligand on this linker. Colour is solubility over the ' +
+      'series\' own range, so the best and worst corners read at a glance.',
+  },
+  {
+    anchor: at.contextPanel,
+    position: ui.hints.POSITION.LEFT,
+    title: 'A degrader that exists',
+    text: 'The context panel shows the whole molecule assembled from its three parts, with the ' +
+      'measured value and the row it came from. Nothing here is modelled. It is a row of your table.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-control-bar .chem-sar-cart-icon') ??
+      document.querySelector('.chem-sar-control-bar'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Collect what is worth making',
+    text: 'A faint cell is a degrader nobody has built: this linker, that warhead, that ligand. The ' +
+      'cart takes the selected cells to the Make list with the value the fit predicts for each.',
+  },
+  {
+    before: () => sarTab('SAR Transfer'),
+    anchor: at.transferTab,
+    title: 'Carry the SAR across linkers',
+    text: 'Two linkers explored with the same warheads, whose potencies move together, are evidence ' +
+      'about each other. Detection is on this tab rather than in the run, because it is a question ' +
+      'about pairs of series and most runs never ask it.',
+  },
+  {
+    anchor: at.transferSources,
+    position: ui.hints.POSITION.RIGHT,
+    title: 'Sources, nested by series',
+    text: 'Each group is one linker that lends its trend, and under it the rows it transfers to. ' +
+      '"r 1.00 over 10 shared" means ten warheads were tried on both linkers and ranked the same way ' +
+      'on both, the strongest claim this evidence can make.',
+  },
+  {
+    anchor: at.transferGrid,
+    position: ui.hints.POSITION.LEFT,
+    title: 'What the transfer argues for',
+    text: 'The two matrices side by side, the shared warheads aligned. Where the source has a value ' +
+      'and the target has a hole, that hole is an analog the transfer argues for. Where both ' +
+      'linkers have explored the same warheads, it says so rather than inventing one.',
+  },
+  {
+    before: () => sarTab('Make list'),
+    anchor: at.makeList,
+    title: 'The Make list',
+    text: 'Everything collected lands here: each degrader with its three parts, the value predicted ' +
+      'for it and where the suggestion came from. It is a table like any other, so it exports.',
+  },
+];
+
+/** The two SAR demos share this walker and differ only in the step list they hand it. */
+function showSarHint(hints: SarHint[], i: number, previous?: HTMLElement, tries = 0): void {
   previous?.remove();
-  if (i >= SAR_HINTS.length) {
+  if (i >= hints.length) {
     document.querySelector('.chem-sar-hint-cell')?.remove();
     return;
   }
-  const hint = SAR_HINTS[i];
+  const hint = hints[i];
+  if (tries === 0)
+    hint.before?.();
   const anchor = hint.anchor();
   if (!(anchor instanceof HTMLElement)) {
-    showSarHint(i + 1);
+    // A pane the step just opened builds on a timer, so its anchor is not in the document the instant
+    // the tab is clicked. Waiting a few beats for it is the difference between a step and a skipped
+    // step; past that the anchor is genuinely absent and the tour moves on.
+    if (tries < 8) {
+      setTimeout(() => showSarHint(hints, i, undefined, tries + 1), 250);
+      return;
+    }
+    showSarHint(hints, i + 1);
     return;
   }
   // Cards sit wherever their rank puts them, and one low in the list leaves too little height beside
@@ -426,29 +724,32 @@ function showSarHint(i: number, previous?: HTMLElement): void {
   content.append(ui.divText(hint.text));
   const buttonHost = ui.divH([], {style: {justifyContent: 'flex-end'}});
   content.append(buttonHost);
-  const popup = ui.hints.addHint(anchor, content, hint.position);
-  buttonHost.append(i === SAR_HINTS.length - 1 ?
+  const popup = ui.hints.addHint(anchor, content, hint.position ?? ui.hints.POSITION.BOTTOM);
+  buttonHost.append(i === hints.length - 1 ?
     ui.button('Close', () => {
       popup.remove();
       document.querySelector('.chem-sar-hint-cell')?.remove();
     }) :
-    ui.button('Next', () => showSarHint(i + 1, popup)));
+    ui.button('Next', () => showSarHint(hints, i + 1, popup)));
 }
 
-function showSarHints(): void {
+function showSarHints(hints: SarHint[]): void {
   const timer = setInterval(() => {
-    if (document.querySelector('.chem-sar-grid-host')) {
+    // Either landing surface, not the matrix grid alone: the viewer opens on the Summary, and that
+    // grid does not exist until the SAR Matrix tab is shown — which is a step of the tour, not a
+    // precondition for starting it.
+    if (document.querySelector('.chem-sar-sum-overview') || document.querySelector('.chem-sar-grid-host')) {
       clearInterval(timer);
-      showSarHint(0);
+      showSarHint(hints, 0);
     }
   }, 250);
   setTimeout(() => clearInterval(timer), 120000);
 }
 
-export async function _demoSarMatrix(): Promise<void> {
+/** Restored from a project rather than run: decomposing the table takes long enough to watch a loader. */
+async function openSarDemo(projectFunc: string, hints: SarHint[]): Promise<void> {
   grok.shell.windows.showContextPanel = true;
-  grok.shell.windows.showHelp = true;
-  const p = await grok.functions.eval('Chem:SarMatrixDemo');
+  const p = await grok.functions.eval(projectFunc);
   const project = await grok.dapi.projects.find(p.id);
   await project.open();
   await DG.delay(300);
@@ -459,8 +760,24 @@ export async function _demoSarMatrix(): Promise<void> {
         dockSarMatrixTabs(tv, viewer);
     }
   }
-  showSarHints();
-  setTimeout(() => grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix'), 1000);
+  showSarHints(hints);
+  setTimeout(() => {
+    grok.shell.windows.showHelp = true;
+    grok.shell.windows.help.showHelp('/help/datagrok/solutions/domains/chem/chem#sar-matrix');
+  }, 1000);
+}
+
+export async function _demoSarMatrix(): Promise<void> {
+  await openSarDemo('Chem:SarMatrixDemo', SAR_HINTS);
+}
+
+/**
+ * The same analysis over components that are already columns: 2 792 PROTAC degraders from patents,
+ * each split into warhead, linker and E3 ligand. Nothing is cut: the matrices are built by grouping,
+ * every component is ranked in one fit, and every component's measured pairs are pooled at once.
+ */
+export async function _demoSarMatrixProtac(): Promise<void> {
+  await openSarDemo('Chem:SarMatrixProtacDemo', PROTAC_HINTS);
 }
 
 export async function _demoMMPA(): Promise<void> {

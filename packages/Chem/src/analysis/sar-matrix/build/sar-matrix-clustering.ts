@@ -2,12 +2,12 @@ import * as DG from 'datagrok-api/dg';
 import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {tanimotoSimilarity} from '@datagrok-libraries/ml/src/distance-metrics-methods';
 
-import {Fingerprint, rdKitFingerprintToBitArray} from '../../utils/chem-common';
-import {getRdKitService} from '../../utils/chem-common-rdkit';
-import {bitbirchWorker} from '../bit-birch/bitbirch-clustering';
-import {getMmpFrags} from '../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
-import {MmpFragments} from '../molecular-matched-pairs/mmp-analysis/mmpa-misc';
-import {CoreCluster, MatchedSeries, SeriesMember} from './sar-matrix-types';
+import {Fingerprint, rdKitFingerprintToBitArray} from '../../../utils/chem-common';
+import {getRdKitService} from '../../../utils/chem-common-rdkit';
+import {bitbirchWorker} from '../../bit-birch/bitbirch-clustering';
+import {getMmpFrags} from '../../molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {MmpFragments} from '../../molecular-matched-pairs/mmp-analysis/mmpa-misc';
+import {CoreCluster, MatchedSeries, SeriesMember} from '../sar-matrix-types';
 
 /**
  * Step 3 — build matched series from MMP fragmentation: molecules sharing a core
