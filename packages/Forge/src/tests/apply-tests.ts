@@ -6,7 +6,7 @@ import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel
   from '../apply/apply-model';
 import {compatibility, exactMapping, isSuggested, MAX_NAME_DISTANCE, mappedColumns, mappingProblems, nameDistance,
   suggestMapping} from '../apply/column-matching';
-import {featureFrame} from '../apply/feature-frame';
+import {featureColumns} from '../apply/feature-columns';
 import {PREDICTION_TAG} from '../constants';
 import {Engine} from '../engines/engine';
 import {apply, LoopProgress} from '../engines/engine-calls';
@@ -14,12 +14,13 @@ import {errorMessage, ForgeError} from '../forge-error';
 import {forgeDb, ModelInsert} from '../generated/db';
 import {metricsOf, regressionMetrics} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
-import {ONE_HOT} from '../preparation/preparation-options';
-import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
+import {replayPostprocessing} from '../preparation/pipeline';
+import {ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
 import {BLOB_ROOT, deleteModel} from '../storage/model-store';
 import {ColumnSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
-import {columnsOf, expectMetrics, expectReleased, framesSharing, IMPUTE, MEASUREMENTS, openIris, rawValues, requestOf,
-  savedFixture, saveIrisModel, saveTestModel, selectionOf, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {columnNamed, columnsOf, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE, MEASUREMENTS,
+  ONE_HOT_STEPS, openIris, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel,
+  saveSkipUniqueModel, saveTestModel, selectionOf, twoSpeciesIris, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const TIMEOUT = 90000;
 const IRIS_FEATURES: ColumnSchema[] = MEASUREMENTS.map((name) => ({name, type: DG.COLUMN_TYPE.FLOAT}));
@@ -31,12 +32,7 @@ let fixtureId: string | undefined;
 
 /** The engine's predictions for [columns], as a list. */
 async function predictionsOf(engine: Engine, columns: DG.Column[], blob: Uint8Array): Promise<unknown[]> {
-  const frame = sharedFrame(columns);
-  try {
-    return (await apply(engine, frame, blob)).toList();
-  } finally {
-    releaseFrame(frame);
-  }
+  return (await apply(engine, columns, blob)).toList();
 }
 
 const shared = () => savedFixture(fixture);
@@ -100,7 +96,7 @@ category('Apply', () => {
     expect(mapping.has('z'), false);
     const problems = mappingProblems(features, mapping, table, 'XGBoost');
     expectArray(problems.map((p) => p.feature), ['z']);
-    expectArray(featureFrame(table, features.slice(0, 2), mapping).columns.names(),
+    expectArray(featureColumns(table, features.slice(0, 2), mapping).map((c) => c.name),
       ['Sepal.Length', 'color=red', 'color=blue']);
   });
 
@@ -190,10 +186,9 @@ category('Apply', () => {
       const names = iris.columns.names();
       const sepalLength = rawValues(iris.getCol('Sepal.Length'));
       const model = await loadModel(id);
-      const frame = featureFrame(iris, model.features, exactMapping(model.features, iris));
-      expect(frame.getCol('Sepal.Length').getRawData().buffer === iris.getCol('Sepal.Length').getRawData().buffer,
-        true, 'The feature frame copied a column');
-      releaseFrame(frame);
+      const columns = featureColumns(iris, model.features, exactMapping(model.features, iris));
+      expect(columnNamed(columns, 'Sepal.Length').dart === iris.getCol('Sepal.Length').dart, true,
+        'A feature column was copied');
 
       const [{column, skippedRows}, frames] = await framesSharing(iris.columns.toList(),
         () => applyAndRecord(requestFor(model, iris), 'api'));
@@ -363,7 +358,8 @@ category('Apply', () => {
       if (i !== emptyRow)
         expect(column.get(i), reference[i], `Row ${i}`);
     }
-    expectReleased(frames);
+    // Every feature has a gap, so the imputer and the method get copies only.
+    expectNoFrames(frames);
     expect((await applicationsOf(table))[0]?.skipped_rows, 1);
   }, {timeout: TIMEOUT});
 
@@ -402,6 +398,80 @@ category('Apply', () => {
       expectReleased(frames);
       expectArray(table.columns.names(), ['x', 'color', 'y (predicted)']);
       expect(color.dataFrame?.dart === table.dart, true, 'The text column left the table');
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+});
+
+// One category, split for its length: the fixture of `before` and `after` serves both parts.
+category('Apply', () => {
+  test('a one-hot model with recorded categories applies to a table lacking one category and with an extra one',
+    async () => {
+      const rows = 40;
+      const colors = ['red', 'green', 'blue'];
+      const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 4));
+      const color = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color',
+        Array.from({length: rows}, (_, i) => colors[i % 3]));
+      const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i / 4 + 5 * (i % 3)));
+      const {id, result} = await saveTestModel([x, color], y, `forge-test-one-hot-${Date.now()}`, {}, ONE_HOT_STEPS);
+      try {
+        expect(JSON.stringify(result.options.oneHotCategories), JSON.stringify({color: ['blue', 'green', 'red']}));
+        expectArray(result.features.columns.map((c) => c.name), ['x', 'color']);
+        const model = await loadModel(id);
+        // No 'blue' in the applied table, and a 'purple' training never saw: its rows are 0 in every color column.
+        const applied = ['red', 'green', 'purple', 'red'];
+        const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4]),
+          DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color', applied)]);
+        const encoded = ['blue', 'green', 'red'].map((c) => DG.Column.fromInt32Array(`color=${c}`,
+          Int32Array.from(applied, (value) => value === c ? 1 : 0)));
+        const expected = await predictionsOf(model.engine, [table.getCol('x'), ...encoded], result.blob);
+        const {column} = await applyAndRecord(requestFor(model, table), 'api');
+        expect(column.stats.missingValueCount, 0);
+        expectArray(column.toList(), expected);
+        expectArray(table.columns.names(), ['x', 'color', 'y (predicted)']);
+      } finally {
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('a model records the columns Skip unique categories left out and does not need them to apply', async () => {
+    const {id, result} = await saveSkipUniqueModel();
+    try {
+      expectArray(result.options.skippedColumns ?? [], ['subject']);
+      expectArray(result.features.columns.map((c) => c.name), ['x', 'subject']);
+      expectArray(preparationOptionsOf((await forgeDb.models.get(id)).options).skippedColumns ?? [], ['subject']);
+      const model = await loadModel(id);
+      expectArray(model.features.map((f) => f.name), ['x']);
+      const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4])]);
+      expect(mappingProblems(model.features, exactMapping(model.features, table), table, model.engine.name).length, 0);
+      const expected = await predictionsOf(model.engine, [table.getCol('x')], result.blob);
+      const {column} = await applyAndRecord(requestFor(model, table), 'api');
+      expectArray(column.toList(), expected);
+      // A table that has the column, with repeating values, applies the same: the column is not mapped.
+      const withSubject = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4]),
+        DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'subject', ['s1', 's1', 's2', 's2'])]);
+      expectArray((await applyAndRecord(requestFor(model, withSubject), 'api')).column.toList(), expected);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a predict-probability model applies as labels', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+      PREDICT_PROBABILITY);
+    try {
+      const model = await loadModel(id);
+      const {column} = await applyAndRecord(requestFor(model, iris), 'api');
+      expect(column.type, DG.COLUMN_TYPE.STRING);
+      expect(column.name, 'Species (predicted)');
+      if (result.scores === undefined)
+        throw new Error('The probability model kept no scores');
+      expectArray(column.toList(), replayPostprocessing(result.scores.train, result.options).toList());
+      expect(column.toList().every((v) => v === 'versicolor' || v === 'virginica'), true, column.categories.join());
+      expect((await forgeDb.models.get(id)).metrics?.validation?.auc !== undefined, true, 'No AUC-ROC was saved');
     } finally {
       await deleteModel(id);
     }
@@ -544,9 +614,8 @@ category('Apply', () => {
     const original = table.columns.toList().map(rawValues);
 
     const request = await prepareTraining(selectionOf(columnsOf(table, ['k', 'x']), y));
-    expect(request.options.missingValues?.skippedRows, 2);
+    expect(request.prepared.options.missingValues?.skippedRows, 2);
     const metrics = (await trainModel(request)).metrics;
-    releaseFrame(request.features);
 
     const kept = DG.BitSet.create(rows, (i) => !nullRows.includes(i));
     const byHand = await requestOf([k.clone(kept), x.clone(kept)], y.clone(kept));

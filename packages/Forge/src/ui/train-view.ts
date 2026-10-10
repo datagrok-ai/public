@@ -15,18 +15,17 @@ import {datasetRefOf} from '../storage/dataset-ref';
 import {ModelStorage, modelFieldsOf, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
 import {saveModel} from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
-import {missingColumnsOf} from '../preparation/missing-values';
-import {releaseFrame} from '../preparation/shared-frame';
 import {defaultFeatures} from '../training/default-features';
-import {checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining, retrainsLive, SelectionCheck,
-  TrainingResult, TrainingSelection, trainModel} from '../training/train-model';
+import {checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining, recutResult, retrainsLive,
+  SelectionCheck, TrainingResult, TrainingSelection, trainModel} from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
 import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
-import {metricsTable} from './model-panes';
+import {MetricsTable} from './model-panes';
+import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
 import {saveModelDialog, StorageChoice} from './save-model-dialog';
 
@@ -51,7 +50,7 @@ interface TrainForm {
   tableInput: DG.InputBase<DG.DataFrame | null>;
   target: DG.InputBase<DG.Column | null>;
   features: DG.InputBase<DG.Column[]>;
-  missingValues: MissingValuesInputs;
+  preparation: PreparationInputs;
   method: DG.ChoiceInput<string | null>;
   hyperparameters: Map<string, DG.InputBase>;
   /** The Method group's content: rebuilt with the method. */
@@ -83,6 +82,7 @@ export class TrainView extends DG.ViewBase {
   private readonly formPane: HTMLDivElement;
   private readonly resultsStatus = ui.div([], 'forge-results-status');
   private readonly resultsBody = ui.div([]);
+  private metricsTable: MetricsTable | undefined;
   private readonly changes = new rxjs.Subject<void>();
   private readonly queue = new TrainingQueue();
   /** Hyperparameter values per method name, kept for the session of the view (a Table change keeps them). */
@@ -102,6 +102,9 @@ export class TrainView extends DG.ViewBase {
   /** The latest check's result; undefined while it is pending. */
   private check: SelectionCheck | undefined;
   private checkNumber = 0;
+  /** An input other than the cutoff changed since the timer last fired: the timer checks instead of re-cutting (as it
+   * does when there is no result to re-cut and nothing trains). */
+  private isCheckRequested = false;
   private activeTrainings = 0;
   /** A training of the current selection completed or failed; any change clears it. */
   private isTrained = false;
@@ -120,7 +123,13 @@ export class TrainView extends DG.ViewBase {
     this.saveButton = ui.bigButton('Save', () => this.save());
     this.setRibbonPanels([[this.saveButton]]);
     this.formPane = ui.panel([], 'forge-train-form');
-    this.subs.push(DG.debounce(this.changes, CHECK_DELAY_MS).subscribe(() => this.revalidate()));
+    this.subs.push(DG.debounce(this.changes, CHECK_DELAY_MS).subscribe(() => {
+      if (this.isCheckRequested || (this.lastTraining === undefined && !this.isTraining && !this.isTrained)) {
+        this.isCheckRequested = false;
+        void this.revalidate();
+      } else
+        this.recut();
+    }));
     this.form = this.createForm(table);
     const results = ui.panel([ui.divH([ui.h2('Results'), this.resultsStatus], 'forge-results-header'),
       this.resultsBody], 'forge-train-results');
@@ -161,10 +170,14 @@ export class TrainView extends DG.ViewBase {
   }
 
   get missingValuesInputs(): MissingValuesInputs {
-    return this.form.missingValues;
+    return this.form.preparation.missingValues;
   }
 
-  /** **Data** and **Method**. */
+  get preparationInputs(): PreparationInputs {
+    return this.form.preparation;
+  }
+
+  /** **Data**, **Preparation** and **Method**. */
   get groups(): readonly CollapsibleGroup[] {
     return this.form.groups;
   }
@@ -202,7 +215,7 @@ export class TrainView extends DG.ViewBase {
 
   save(): void {
     const training = this.lastTraining;
-    if (training === undefined || training.isSaved)
+    if (training === undefined || training.isSaved || this.form.preparation.cutoffProblem !== null)
       return;
     saveModelDialog(TrainView.defaultModelName(training.result), (info, choice) => this.saveModelAs(info, choice),
       {ref: datasetRefOf(training.table), rowCount: training.table.rowCount}).show();
@@ -243,20 +256,25 @@ export class TrainView extends DG.ViewBase {
   private createForm(table: DG.DataFrame): TrainForm {
     const target = table.columns.byIndex(table.columns.length - 1);
     const onChanged = () => this.requestCheck();
+    const onCutoffChanged = () => {
+      this.updateControls();
+      this.changes.next();
+    };
+    const preparation = new PreparationInputs(onChanged, onCutoffChanged,
+      () => TrainView.messageOf(this.check?.problems.missingValues));
     const targetInput = ui.input.column('Target', {table, value: target, nullable: false,
       tooltipText: TrainView.targetTooltip(target), onValueChanged: (t, input) => {
         input.setTooltip(TrainView.targetTooltip(t));
+        preparation.update(featuresInput.value, t);
         onChanged();
       }});
     const checked = defaultFeatures(table, target).map((c) => c.name);
-    const missingValues = new MissingValuesInputs(onChanged,
-      () => TrainView.messageOf(this.check?.problems.missingValues));
     const featuresInput = ui.input.columns('Features', {table, checked, nullable: false,
       tooltipText: 'Columns the model uses to make predictions.', onValueChanged: (columns) => {
-        missingValues.update(missingColumnsOf(columns));
+        preparation.update(columns, targetInput.value);
         onChanged();
       }});
-    missingValues.update(missingColumnsOf(featuresInput.value));
+    preparation.update(featuresInput.value, target);
     targetInput.addValidator(() => TrainView.messageOf(this.check?.problems.target));
     featuresInput.addValidator(() => TrainView.messageOf(this.check?.problems.features));
     const tableInput = ui.input.table('Table', {items: grok.shell.tables, value: table,
@@ -269,22 +287,23 @@ export class TrainView extends DG.ViewBase {
       onValueChanged: (name) => this.chooseMethod(name)});
     methodInput.addValidator(() => TrainView.messageOf(this.check?.problems.method));
 
-    const dataInputs = [tableInput, targetInput, featuresInput, ...missingValues.inputs];
+    const dataInputs = [tableInput, targetInput, featuresInput];
     const methodBody = ui.div([]);
-    const groups = [new CollapsibleGroup('Data', dataInputs.map((input) => input.root)),
+    const groups = [new CollapsibleGroup('Data', dataInputs.map((input) => input.root)), preparation.group,
       new CollapsibleGroup('Method', [methodBody])];
     this.unsubscribeForm();
     this.interactivity.clear();
     ui.setDisplay(this.trainRow, false);
-    this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError([methodInput])];
+    this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError(preparation.inputs),
+      ...groups[2].expandOnError([methodInput])];
     ui.empty(this.formPane);
-    // One form, so the labels of both groups and the Train row line up.
+    // One form, so the labels of every group and the Train row line up.
     const formRoot = ui.form([]);
     formRoot.append(...groups.map((g) => g.root), this.trainRow);
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
     this.showHint(RESULTS_HINT);
-    const form: TrainForm = {table, tableInput, target: targetInput, features: featuresInput, missingValues,
+    const form: TrainForm = {table, tableInput, target: targetInput, features: featuresInput, preparation,
       method: methodInput, hyperparameters: new Map(), methodBody, groups};
     this.fillMethod(form);
     this.requestCheck();
@@ -309,7 +328,7 @@ export class TrainView extends DG.ViewBase {
       }));
     }
     const inputs = [...form.hyperparameters.values()];
-    this.methodSubs.push(...form.groups[1].expandOnError(inputs));
+    this.methodSubs.push(...form.groups[2].expandOnError(inputs));
     ui.empty(form.methodBody);
     form.methodBody.append(form.method.root, ...inputs.map((input) => input.root));
   }
@@ -345,13 +364,14 @@ export class TrainView extends DG.ViewBase {
       return null;
     return {engine: this.engine, features: this.form.features.value, target,
       hyperparameters: TrainView.valuesOf(this.form.hyperparameters), seed, folds: FOLDS,
-      missingValues: this.form.missingValues.settings()};
+      missingValues: this.form.preparation.missingValues.settings(), steps: this.form.preparation.steps()};
   }
 
   /** Every change: the training of the old selection stops, its result goes, and the selection is checked again
    * [CHECK_DELAY_MS] after the last change. */
   private requestCheck(): void {
     this.checkNumber++;
+    this.isCheckRequested = true;
     this.check = undefined;
     this.queue.supersede();
     this.lastTraining = undefined;
@@ -383,21 +403,23 @@ export class TrainView extends DG.ViewBase {
       if (checkNumber !== this.checkNumber)
         return;
       const engine = this.methodOf(check);
-      const target = this.form.target.value;
-      if (engine !== this.engine && target !== null) {
+      if (engine !== this.engine && check.prepared !== undefined) {
         this.engine = engine;
         this.fillMethod(this.form);
         // The data and the list stand; only the new method, which is listed, is asked whether it retrains live.
-        const isInteractive = await retrainsLive(engine, this.form.features.value, target);
+        const {columns, target} = check.prepared;
+        const isInteractive = await retrainsLive(engine, columns, target);
         if (checkNumber !== this.checkNumber)
           return;
         check = {...check, problems: {...check.problems, method: []}, isInteractive};
       }
-      this.check = check;
+      // The prepared columns (one-hot copies of the whole table) are not kept beyond this check.
+      this.check = {...check, prepared: undefined};
       this.showMethods(check);
-      const settings = this.form.missingValues.visibleInputs;
+      const settings = this.form.preparation.missingValues.visibleInputs;
       const hyperparameters = this.form.hyperparameters.values();
-      for (const input of [this.form.target, this.form.features, this.form.method, ...settings, ...hyperparameters])
+      for (const input of [this.form.target, this.form.features, this.form.method, this.form.preparation.cutoff,
+        ...settings, ...hyperparameters])
         input.validate();
       if (check.engines.length > 0)
         this.interactivity.set(this.engine.name, check.isInteractive);
@@ -469,16 +491,19 @@ export class TrainView extends DG.ViewBase {
       return CHECKING;
     const hyperparameters = [...this.form.hyperparameters.values()].filter((input) => input.validity !== null)
       .map((input) => `${input.caption}: ${input.validity}`);
-    const settings = this.form.missingValues.visibleInputs.map((input) => input.validity)
+    const settings = this.form.preparation.missingValues.visibleInputs.map((input) => input.validity)
       .filter((v): v is string => v !== null);
-    return [...TrainView.dataProblems(this.check), ...settings, ...hyperparameters][0] ?? null;
+    const cutoff = this.form.preparation.cutoffProblem;
+    return [...TrainView.dataProblems(this.check), ...settings, ...hyperparameters,
+      ...(cutoff === null ? [] : [`Positive class cutoff: ${cutoff}`])][0] ?? null;
   }
 
   /** **Train**, **Save** and the Results hint follow the check, the training and the last result. */
   private updateControls(): void {
     this.trainGate.update();
     const training = this.lastTraining;
-    ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved);
+    ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved ||
+      this.form.preparation.cutoffProblem !== null);
   }
 
   /** Trains the current selection through the queue (a newer training supersedes it) with a task-bar progress; records
@@ -502,14 +527,10 @@ export class TrainView extends DG.ViewBase {
       const queued = await this.queue.run(async (loop) => {
         run.startedOn = Date.now();
         const request = await prepareTraining(selection);
-        try {
-          run.fingerprint = datasetFingerprint(request.features, request.target);
-          run.record = trainingRunOf({request, datasetName, fingerprint: run.fingerprint, status: 'completed',
-            startedOn: new Date(run.startedOn).toISOString(), durationMs: 0});
-          return await trainModel(request, loop);
-        } finally {
-          releaseFrame(request.features);
-        }
+        run.fingerprint = datasetFingerprint(request.features, request.target);
+        run.record = trainingRunOf({request, datasetName, fingerprint: run.fingerprint, status: 'completed',
+          startedOn: new Date(run.startedOn).toISOString(), durationMs: 0});
+        return await trainModel(request, loop);
       }, () => {
         run.progress = DG.TaskBarProgressIndicator.create(`Training ${engine.name} model`, {cancelable: true});
         return run.progress;
@@ -527,7 +548,8 @@ export class TrainView extends DG.ViewBase {
           this.lastTraining = {result, runId, engine, table, columns: [...features, target], datasetName,
             fingerprint: run.fingerprint, isSaved: false};
           this.isTrained = true;
-          this.showResults(this.lastTraining);
+          // The cutoff may have moved while the model trained.
+          this.recut();
         }
       } else if (queued.outcome === 'cancelled') {
         await record('cancelled');
@@ -571,10 +593,31 @@ export class TrainView extends DG.ViewBase {
       ui.empty(this.resultsBody);
   }
 
+  /** Shows the last training cut at the current **Positive class cutoff**, without retraining; Save writes it so. */
+  private recut(): void {
+    const training = this.lastTraining;
+    if (training === undefined)
+      return;
+    this.form.preparation.cutoff.validate();
+    this.updateControls();
+    if (this.form.preparation.cutoffProblem !== null) {
+      this.showHint(FIX_SETTINGS);
+      return;
+    }
+    training.result = recutResult(training.result, this.form.preparation.cutoffValue);
+    this.showResults(training);
+  }
+
+  /** Shows the metrics in the grid Results already holds when the result has the same metric rows, so the grid keeps
+   * its column widths and does not flicker; builds a new one otherwise (after a hint, or for other rows). */
   private showResults({result}: Training): void {
+    const summary = {metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS, seed: result.seed,
+      skippedRows: result.options.missingValues?.skippedRows ?? 0};
+    if (this.metricsTable?.root.parentElement === this.resultsBody && this.metricsTable.update(summary))
+      return;
+    this.metricsTable = new MetricsTable(summary);
     ui.empty(this.resultsBody);
-    this.resultsBody.append(metricsTable({metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS,
-      seed: result.seed, skippedRows: result.options.missingValues?.skippedRows ?? 0}));
+    this.resultsBody.append(this.metricsTable.root);
   }
 
   private static valuesOf(inputs: ReadonlyMap<string, DG.InputBase>): Hyperparameters {

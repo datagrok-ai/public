@@ -1,22 +1,25 @@
 import * as DG from 'datagrok-api/dg';
 import {Engine, EngineRole, Hyperparameters} from './engine';
 import {ForgeError} from '../forge-error';
+import {onFrame} from '../preparation/shared-frame';
 
-export async function isApplicable(engine: Engine, features: DG.DataFrame, target: DG.Column): Promise<boolean> {
+export async function isApplicable(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
   const func = roleFunc(engine, 'isApplicable', 'does not say which data it supports');
   return await callCheck(engine, func, features, target);
 }
 
-export async function isInteractive(engine: Engine, features: DG.DataFrame, target: DG.Column): Promise<boolean> {
+export async function isInteractive(engine: Engine, features: DG.Column[], target: DG.Column): Promise<boolean> {
   const func = engine.functions.isInteractive;
   return func === undefined ? false : await callCheck(engine, func, features, target);
 }
 
-export async function train(engine: Engine, features: DG.DataFrame, target: DG.Column,
+export async function train(engine: Engine, features: DG.Column[], target: DG.Column,
   hyperparameters: Hyperparameters): Promise<Uint8Array> {
   const func = roleFunc(engine, 'train', 'cannot train models');
-  const [df, predictColumn] = dataArgs(engine, features, target);
-  const result: unknown = await func.apply({...hyperparameters, df, predictColumn});
+  const result: unknown = await onFrame(features, (frame) => {
+    const [df, predictColumn] = dataArgs(engine, frame, target);
+    return func.apply({...hyperparameters, df, predictColumn});
+  });
   if (result instanceof Uint8Array)
     return result;
   if (result instanceof DG.FileInfo)
@@ -25,9 +28,9 @@ export async function train(engine: Engine, features: DG.DataFrame, target: DG.C
 }
 
 /** The first column of the engine's result, taken out of the result frame, so a table it is added to is its parent. */
-export async function apply(engine: Engine, features: DG.DataFrame, blob: Uint8Array): Promise<DG.Column> {
+export async function apply(engine: Engine, features: DG.Column[], blob: Uint8Array): Promise<DG.Column> {
   const func = roleFunc(engine, 'apply', 'cannot apply models');
-  const result: unknown = await func.apply({df: features, model: blob});
+  const result: unknown = await onFrame(features, (df) => func.apply({df, model: blob}));
   if (!(result instanceof DG.DataFrame) || result.columns.length === 0)
     throw new ForgeError(`The method '${engine.name}' returned no predictions.`);
   const prediction = result.columns.byIndex(0);
@@ -59,8 +62,8 @@ function roleFunc(engine: Engine, role: EngineRole, problem: string): DG.Func {
   return func;
 }
 
-async function callCheck(engine: Engine, func: DG.Func, features: DG.DataFrame, target: DG.Column): Promise<boolean> {
-  const result: unknown = await func.apply(dataArgs(engine, features, target));
+async function callCheck(engine: Engine, func: DG.Func, features: DG.Column[], target: DG.Column): Promise<boolean> {
+  const result: unknown = await onFrame(features, (frame) => func.apply(dataArgs(engine, frame, target)));
   return result === true;
 }
 

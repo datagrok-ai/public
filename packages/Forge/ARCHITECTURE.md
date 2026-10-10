@@ -13,8 +13,7 @@ an EMS schema owned by Forge, and the UI on top.
 - **Two tools coexist.** The built-in `ML | Models` tool keeps working until the switchover. Forge uses its own
   identifiers (`ML | Forge` menu, app, schema) and never touches the old tool's.
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
-  dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source. A method that runs
-  on the server, or whose model file embeds rows, says so before it gets the data.
+  dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source.
 - **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows; a model row
   appears only on Save. A training superseded by a newer one (`TrainingQueue`) is not an attempt the user finished
   and is not recorded.
@@ -23,11 +22,14 @@ an EMS schema owned by Forge, and the UI on top.
 - **Application records inherit the model's security.** A record is visible to whoever can see its model. It can be
   written by anyone the `model` table lets insert, which today is every user through the table's Edit grant, so
   applications by users who can only view a model are recorded too.
-- **No copies of the user's data.** Training and application work on frames that share the user's columns
-  (`preparation/shared-frame.ts`: `sharedFrame`); a column is copied only where Forge would otherwise change it (see
-  "Missing values" and "Application pipeline"). A frame stays a parent of its columns and receives their events, so
-  every such frame is given back with `releaseFrame` (its columns removed) as soon as the work is done, and the
-  live checks work on column lists.
+- **No copies of the user's data.** Training and application pass lists of the user's columns themselves; a column
+  is copied only where Forge would otherwise change it (see "Missing values" and "Application pipeline"), and the
+  preparation steps add only Forge's own columns. A function that takes a table gets a frame of the columns
+  (`preparation/shared-frame.ts`: `sharedFrame`) for the length of the call: every engine call
+  (`engines/engine-calls.ts`), the imputer (`preparation/missing-values.ts`) and the training-copy upload
+  (`storage/dataset-copy.ts`). A frame stays a parent of its columns and receives their events, so each runs its call
+  through `onFrame`, which gives the frame back with `releaseFrame` (its columns removed) when the call ends, whatever
+  happens.
 - **Missing values never reach a method.** Rows with gaps are skipped or the gaps are imputed before the engine is
   called; dates and very large whole numbers (bigint) are not numerical features.
 - **Later:** more engines, MLflow models and the migration of existing models.
@@ -89,7 +91,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   catalog order: the table view **Compare models** of `compareModels` with the PowerGrid **Forms** viewer added
   (without PowerGrid, a balloon says to install it). **Applicable to** is a `ui.input.table` (empty = every model; the
   platform's input tracks the open tables and keeps its Open file icon) and filters the grid's rows in the browser with
-  `applicableTables`, once per distinct feature list in a pass; the input empties itself when its table is closed but
+  `requiredFeaturesOf` and `isSuggested`, as `applicableTables` does, once per distinct required feature list in a pass; the input empties itself when its table is closed but
   reports no change, so the catalog filters again on `onTableRemoved` when the table it filters by closed, and treats
   a closed table as none. A new current row becomes the current object
   (`grok.shell.setCurrentObject(ForgeModelHandler.rowOf(...), true, true)` of the row's values, the `features` text
@@ -116,8 +118,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   itself, 300 ms after the last of a burst (tag chips written one by one reload it once).
 - `TrainView` (tab **Predictive model** with the core's model icon, `ui.iconSvg('model')` returned by `getIcon()`)
   holds the form, the live validation, the live training and the results. The form is one `ui.form`, so the platform
-  aligns every label in it: the group **Data** (Table, Target, Features, Missing values with Neighbors and Distance),
-  the group **Method** (Method and the hyperparameters), both expanded at the start, and the **Train** row
+  aligns every label in it: the group **Data** (Table, Target, Features), the group **Preparation**
+  (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method and the
+  hyperparameters), all expanded at the start, and the **Train** row
   (`ui.buttonsInput`, `trainButton`). The view is a resizable split (`ui.splitH(..., true)`): the form's panel starts 400 px wide
   (`FORM_WIDTH`) and scrolls by itself; **Results** takes the rest, its header line holding the training loader.
   The `trainRow` is right-aligned (`forge-train-row`). The ribbon holds only **Save** (`ui.bigButton`). A Table change rebuilds the form; the groups'
@@ -132,8 +135,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   a name for the model."), so OK is disabled with that tooltip and the dialog's own validation blocks Enter too. The
   same form (`modelInfoDialog`; `saveModelDialog` adds the storage block to it) is **Edit model**. After a save the balloon `Model "<name>"
   saved.` has the links **Apply...** (`openApplyDialog` on the training table, the new model preset) and **Show in the
-  catalog** (`ForgeApp.open()`, which focuses an open catalog view instead of opening a second one). The Results grid is `metricsTable` of `ui/model-panes.ts`, shared
-  with the model's **Performance** pane: a frame of **Metric**, **Train** and **Validation** (format `0.000`) in a
+  catalog** (`ForgeApp.open()`, which focuses an open catalog view instead of opening a second one). The Results grid is a `MetricsTable` of `ui/model-panes.ts`, shared
+  with the model's **Performance** pane (it builds one there). The Train view keeps one while results come (a training,
+  a cutoff re-cut): `update(summary)` rewrites the values in place and refills the bullet list when the metric rows are
+  the same, so the grid neither flickers nor loses its column widths; other rows (task, AUC-ROC, a hint shown in between)
+  build a new one. It is a frame of **Metric**, **Train** and **Validation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
   bullet list (`ul`): `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
   `Validation: <folds>-fold cross-validation on <rows> rows`, `Seed: <seed>` with the seed in a selectable
@@ -154,6 +160,19 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   only when `Eda:knnImpute` exists; choosing it shows the function's own inputs (**Neighbors**, **Distance**, from
   `imputeSettingsOf` with `defaultValuesOf`) right under it. Hiding them puts their defaults back, so a hidden invalid
   value cannot block the form.
+- **Preparation** (`ui/preparation-inputs.ts`, `PreparationInputs`, Train view only) owns its `CollapsibleGroup`:
+  **Missing values** (the `MissingValuesInputs` above), **One-hot encoding** (shown while a checked feature
+  is text or yes/no; checked when it appears if every such feature, the all-unique ones aside while Skip unique
+  categories is checked, has at most `ONE_HOT_MAX_CATEGORIES` (20) categories, else unchecked: a deviation from the
+  built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
+  and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`),
+  **Predict probability** (unchecked; shown while `twoClasses(target)` is not null, its tooltip naming the positive
+  class) and under it **Positive class cutoff** (`ui.input.float` 0..1, step 0.01, with a slider, `DEFAULT_CUTOFF`; shown while
+  Predict probability is checked; a validator and `cutoffProblem` refuse an empty value or one outside 0..1). The show conditions are the pipeline's own predicates (`preparation/pipeline.ts`).
+  `update(features, target)` runs on every Features and Target change; a hidden input gets its default back, so it
+  reappears as it first appeared, and the group is hidden while nothing in it is shown. `steps()` is the
+  `PreparationSteps` of the selection; a hidden input's step is off (Skip unique categories, checked while hidden, is
+  sent only while it is shown).
 - UI entry points and handlers are the only error boundaries (`ui/report-error.ts`): `ForgeError` becomes a warning,
   anything else an error balloon plus `_package.logger.error`. API functions do not catch: the error reaches the
   caller.
@@ -166,17 +185,19 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 ## Training pipeline
 
 `training/train-model.ts`. A `TrainingSelection` is what the user chose: the engine, the checked feature columns
-themselves (a list, no frame), the target column, the hyperparameters, a seed, the number of folds (5) and the
-missing-value handling. `prepareTraining(selection)` builds a shared frame of the columns, handles the missing values
-(see "Missing values") and returns the `TrainingRequest` the model is trained on: the prepared features and target,
-and the `options` that record the preparation (`options.missingValues.skippedRows` is the one record of the skipped
-rows); the frames it does not return are given back at once.
-The request's `features` may still share the user's columns: the Train view builds the run record from them and
-releases them right after training. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
+themselves (a list, no frame), the target column, the hyperparameters, a seed, the number of folds (5), the
+missing-value handling and the preparation steps (`steps`, a `PreparationSteps`, see "Preparation"; the Train view
+takes them from `PreparationInputs.steps()`). `prepareTraining(selection)`
+handles the missing values (see "Missing values"), then applies the steps (`prepareFeatures`), and returns the
+`TrainingRequest`: `features` and `target`, the selection's columns with the missing values handled (the user's own
+columns where nothing changed; the model's feature list, target schema and data summary describe them), and
+`prepared` (`PreparedFeatures`), what the method is trained on, with the `options` that record the whole preparation
+(`options.missingValues.skippedRows` is the one record of the skipped rows). No frame is built: the engine calls
+build their own. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
 values, N rows remain; training needs at least 10.").
 
-**Missing values in the view.** **Missing values** (see Components) sits under **Features** and follows the checked
-features. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
+**Missing values in the view.** **Missing values** (see Components) is the first input of **Preparation** and follows
+the checked features. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
 skipped.") when the target has gaps; it is information, not a problem. After a training with skipped rows,
 **Results** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid.
 
@@ -189,18 +210,20 @@ Changing the target leaves the features as they are.
 
 **Problems.** `checkSelection` (below) returns the messages per input (`target`, `features`, `missingValues`,
 `method`). "Numerical" means `numerical_no_datetime`: dates are not numbers for Forge. Rules 1-7 and 9 are cheap
-checks on the column list; rule 8 calls the engines, whose check takes a table, on a shared frame given back right
-after the call, and runs only when 1-7 pass (`hasDataProblems` is false):
+checks on the column list (rule 7 on the columns `prepareFeatures` gives: the selection's preparation steps applied,
+as a method would get them); rule 8 calls the engines on those prepared columns, and runs only when
+1-7 pass (`hasDataProblems` is false):
 
 | # | Condition | Input |
 |---|---|---|
 | 1 | no feature | Features |
+| 1b | Skip unique categories leaves no prepared feature: `Skip unique categories leaves no feature. Check more features.` | Features |
 | 2 | the target is also a feature | Features |
 | 3 | fewer rows with a target value than `2 * folds` (10) | Target |
 | 4 | a bigint target ("holds very large whole numbers", `bigIntProblem` in `training/default-features.ts`) | Target |
 | 5 | a classification target with fewer than two values | Target |
 | 6 | the target is neither numerical, text nor boolean (dates included) | Target |
-| 7 | a feature is not numerical (names listed; dates included) | Features |
+| 7 | a prepared feature is text or yes/no, which happens only while One-hot encoding is off: `<Method> needs numerical features. Check One-hot encoding in Preparation, or uncheck: SEX, RACE.`; any other prepared feature that is not numerical (dates included): `<Method> needs numerical features. Uncheck: <names>.` | Features |
 | 7b | a bigint feature, one message per column | Features |
 | 8 | the engine's `isApplicable` says no: `<Method> cannot learn from this selection. It needs numerical features and a numerical, text or boolean target.` | Method |
 | 9 | Impute chosen but not available, a yes/no feature with gaps, or fewer than two features to impute from | Missing values |
@@ -211,16 +234,18 @@ Rows with a missing target are skipped by `prepareTraining`, never refused.
 `engines` (the view passes its own list, to keep its `Engine` objects). It runs rules 1-7 and 9; while a target or
 features rule fails it asks no method and returns no engines (`failedCheck(problems)`, the shape of every check that
 lists no method). Otherwise it asks every
-complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract), and rule 8 becomes:
-the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this selection.
-Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine` over the
-listed methods), `failed` (the methods whose check threw, for the caller to log) and `isInteractive`: the selection's
-method is listed and `retrainsLive` (its `isLiveUpdate` is on and its `isInteractive` says yes on the selection's
-columns, a shared frame given back). A method's `isInteractive` that throws makes the whole check throw.
+complete method at once (`applicableEngines`, see "Choosing a method" under the engine contract) about the prepared
+columns and target (so with Predict probability the regressors are listed, as for any numerical target), and rule 8
+becomes: the selection's method is not among them (the rule 8 text), or none is (`No method can learn from this
+selection. Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
+over the listed methods and the prepared columns), `failed` (the methods whose check threw, for the caller to log),
+`isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
+`isInteractive` says yes on the prepared columns), and `prepared`, those columns and target (none from
+`failedCheck`). A method's `isInteractive` that throws makes the whole check throw.
 
 The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
-returns the view's current problems for that input. Every change of Table, Target, Features, Missing values, the
-imputation inputs, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
+returns the view's current problems for that input. Every change of Table, Target, Features, a **Preparation** input
+but the cutoff, Method or a hyperparameter (`requestCheck`) numbers a new check, clears the problems, drops
 `lastTraining`, supersedes the running training (`TrainingQueue.supersede()`), disables **Train** (a tooltip
 already shown on it then reads "Checking the selection...") and schedules the check `CHECK_DELAY_MS` (200 ms, the
 built-in tool's delay) after the last change; one timer serves the check and the live training. A check that finishes
@@ -229,7 +254,8 @@ complete methods and logs a method whose check threw once per view (`_package.lo
 (`methodOf`): while a target or features rule fails, or no method is listed, the method stays; otherwise the user's
 choice (`userChoice`, set when the user picks a method) while it is listed, else the suggested one (`best`), with the
 balloon `<Method> cannot be used with this selection; <suggested> is chosen.` when it replaces the user's choice, which
-is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again. **Method** then lists the methods by name (empty with the
+is then forgotten; for a changed method, which is listed, only `retrainsLive` is asked again, on the check's
+`prepared` columns. **Method** then lists the methods by name (empty with the
 `No method can learn ...` problem); a failing target or features rule leaves the list as it is. Hyperparameter inputs
 are rebuilt on a Method change from the defaults overlaid with `hyperparameterValues`, the values per method name
 kept for the view's session (filled on every hyperparameter change; a Table change keeps them). After the check the
@@ -258,13 +284,15 @@ trains. Every training runs through the view's `TrainingQueue` with a task-bar i
 created when the training starts (a request superseded while waiting shows none; cancellable: the indicator's cancel
 stops it before its next fit); a loader without text
 stands on the **Results** header line, above the previous results (live) or an empty pane (**Train**). The
-queued function prepares the data, builds the run record while the shared frame still holds the columns, trains and
-gives the frame back. Before any training, and after a problem, a failure or a cancel, **Results** reads `Choose the
+queued function prepares the data, builds the run record from the request and trains. Before any training, and after a problem, a failure or a cancel, **Results** reads `Choose the
 target and the features; the model trains as you change them.` (the not-interactive hint after a cancel of such a
-method); when the only problems are invalid settings (hyperparameters or missing-values settings), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save** waits for it. A result
+method); when the only problems are invalid settings (hyperparameters, missing-values settings or the **Positive class
+cutoff**), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save** waits for it. A result
 that arrives after a newer change is recorded but not shown.
 
-**Task.** A numerical target (not a date) is regression; text and boolean targets are classification.
+**Task.** A numerical target (not a date) is regression; text and boolean targets are classification. The task
+follows the target the method learns: with Predict probability that is the float 0/1 target, so the task is
+regression, while the target schema stays the selection's (with its two categories).
 
 **Validation.** `kFold(rowCount, folds, seed)` shuffles the rows with a mulberry32 generator (Fisher-Yates) and
 deals them round-robin into the folds, so fold sizes differ by at most one and every row is validated exactly once.
@@ -301,7 +329,21 @@ writes nothing, and neither does a failure before the data was prepared (too few
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
 preparation options, the splitting, the seed, the hyperparameters and the row count (the prepared rows the model
 learned from); the skipped rows are in `options.missingValues`. The run and model rows record that row count, and the
-dataset fingerprint is computed on the prepared data.
+dataset fingerprint is computed on the request's `features` and `target` (before the preparation steps). With
+Predict probability it also keeps `scores` (`ProbabilityScores`: the method's train and out-of-fold predictions, the
+selection's target, the positive class and both AUC-ROC values, measured once), so `recutResult(result, cutoff)` cuts
+them again at another cutoff without retraining: it returns the result with `options.binaryClassificationThreshold`
+and the metrics of the new labels; AUC-ROC does not change. A result without scores is returned as it is.
+
+**The cutoff in the view.** A **Positive class cutoff** change requests no check: it fires the same `CHECK_DELAY_MS`
+timer (`isCheckRequested` tells the two apart; a check wins), and `recut()` replaces `lastTraining.result` with
+`recutResult` at the input's value and shows it, without a training or a run row; **Save** then writes the re-cut
+`options` and metrics. A completed training is re-cut at the current value before it is shown (the cutoff may have
+moved while it trained); its run row keeps the cutoff it trained with. An invalid cutoff (`cutoffProblem`) computes
+nothing: `recut()` keeps the old result out of sight and shows `Fix the settings.`, **Save** is disabled, and
+`problem()` blocks **Train** and the live training, as for any invalid setting. When the timer fires with no result
+to re-cut, no training running and no finished training of the selection (another input changed while the cutoff
+was invalid), it runs the check instead, so a valid cutoff then trains as any fixed setting does.
 
 ## Missing values
 
@@ -311,21 +353,21 @@ features (and target) to use, `keptRows` (the input rows kept, or `null` when ev
 `settings.mode` is one of `MISSING_VALUES_MODES`:
 
 - **`skip`** (Skip rows): rows with a missing value in any feature (or the target) are skipped. Only then are the
-  features and the target copied (`rowCopy` / `columnRowCopy` in `preparation/row-copy.ts`); with nothing to skip
-  the input frame itself is returned. A masked clone of a text column keeps every category of the source, the empty
+  features and the target copied (`columnRowCopy` in `preparation/row-copy.ts`); with nothing to skip the input
+  columns themselves are returned. A masked clone of a text column keeps every category of the source, the empty
   one included, so the copies drop the categories no kept row has: otherwise the method would count a class for the
   skipped empty cells, and the saved target and data summary would list it. The imputed text copies are compacted the
   same way. The k-fold copies in `trainModel` are not: they keep the target's full category list, so every fold model
   has the classes of the final model.
 - **`impute`** (Impute): the rows with a missing target are skipped first; then the feature gaps are filled by EDA's
   `Eda:knnImpute` (k nearest neighbors, in place). Because it writes in place, it gets a frame whose gapped columns are
-  copies and whose other columns are still the user's (no extra copy when the target skip already made one). Cells it
+  copies and whose other columns are still the user's (no extra copy when the target skip already made one), given
+  back when the call ends. Cells it
   cannot fill (a row whose features are all missing) stay empty; those rows are then skipped and counted in
   `failedRows` and `skippedRows`. `settings.impute` holds `neighbors` and `distance`; `imputeSettingsOf(func)` lists
   the function's own inputs for them, and `defaultValuesOf` reads their defaults.
 
-The returned `features` may share the user's columns (the input frame itself, or the imputation frame); the caller
-releases both its input frame and the returned one. An imputation frame that is not returned is released inside.
+It takes and returns column lists; the returned `features` may be the user's own columns.
 
 `missingValuesProblems(columns, settings)` refuses Impute when the function is missing ("Imputation is not
 available: the EDA package has no knnImpute function."), for a yes/no column with gaps ("Impute cannot fill the yes/no
@@ -346,6 +388,41 @@ Softmax have none): the Training tests `<Method> trains and applies with missing
 train and apply every EDA method on iris with two gaps in both modes and check that no table or column passed to
 `train` or `apply` has a missing value.
 
+## Preparation
+
+`preparation/pipeline.ts`. The steps after the missing values, in the built-in tool's order: skip unique categories,
+one-hot, predict probability. `PreparationSteps` is `{oneHot, skipUniqueCategories, predictProbability, cutoff}`
+(`DEFAULT_CUTOFF` 0.5).
+
+`prepareFeatures(columns, target, steps, options)` (training) returns `PreparedFeatures` `{columns, target, options}`:
+`options` is a copy of the given ones with each step that changed something recorded; a step that does not apply
+changes nothing and is not recorded. Only Forge's own columns are created; the user's columns are never copied or
+changed, and those no step touches are passed on as they are.
+
+- **Skip unique categories**: drops the text and yes/no columns whose values are all different (`hasUniqueCategories`:
+  `categories.length` equals the length), such as ids; `preprocessingInfo` gains `skip-unique-categories` and
+  `options.skippedColumns` records the dropped names.
+- **One-hot**: every remaining text or yes/no column becomes one int 0/1 column `<column>=<category>` per category, after
+  the other columns, in the order of the columns and their categories; `preprocessingInfo` gains `one-hot`, and
+  `options.oneHotCategories` records `{<column>: [categories]}` in that order.
+- **Predict probability**, for a text or yes/no target with exactly two classes (`twoClasses`, the empty one aside): the method gets
+  a float target named like the selection's, 1 for the first category (the positive class) and 0 for the other; float,
+  because XGBoost rounds the predictions of an int target. `postprocessingInfo` gains `binary-classification`, and
+  `positiveClass`, `negativeClass`, `binaryClassificationThreshold` (the cutoff) and `targetType` (the target's type)
+  are recorded: the keys of the built-in tool's models. Training then measures the scores (see "Metrics"). As in the
+  built-in tool, the score is the regression model's prediction on the 0/1 target, not a calibrated probability (it can
+  fall outside 0..1); real class probabilities come when the EDA methods return them (phase 9).
+
+`replayPreprocessing(columns, options)` (application) replays `options.preprocessingInfo` on the mapped columns and
+returns the columns the method gets (the given list itself when there is nothing to replay): `ignore-missing` and
+`impute-missing` are skipped, any other unknown id is refused ("The model uses the preparation step 'X', which Forge
+cannot replay yet."). With `oneHotCategories`, `one-hot` builds exactly the recorded columns (a value training never
+saw is 0 in each, a category the table lacks is a column of zeros); with `skippedColumns`, `skip-unique-categories`
+drops exactly those columns by name, whatever their values (the application does not map them, see "Application
+pipeline", so they are there only when passed directly); without it (the built-in tool's models) it drops the
+all-unique columns (the core's rule); without `oneHotCategories` one-hot uses the applied data's categories. `replayPostprocessing`
+(also in `pipeline.ts`) cuts the scores into the two classes (see "Application pipeline").
+
 ## Metrics
 
 `metrics/metrics.ts`, ported from the built-in tool's definitions; labels and descriptions are the built-in ones (but
@@ -360,7 +437,14 @@ train and apply every EDA method on iris with two gaps in both modes and check t
   tool hid it. `f1` (new): of the positive class for two classes, the macro average over the classes otherwise.
   For a two-category target the positive class is saved as `metrics.positiveClass`.
 - Rows where the actual or the predicted value is empty are skipped; no rows left is a `ForgeError`.
-- AUC-ROC is not computed yet: the engines' `apply` returns labels, not scores.
+- `auc` ("AUC-ROC"), Predict probability only: `aucOf(actual, score, positiveClass)`, the trapezoid over the rows
+  sorted by score, highest first, the rows of one score taken as one step (one diagonal segment, as scikit-learn; the
+  built-in ROC curve stepped row by row, so tied scores counted in their row order); undefined (left out) when the
+  rows hold one class only. A
+  Predict probability training measures its train and out-of-fold scores: the classification metrics above on the
+  labels the cutoff gives (`replayPostprocessing` of the scores) against the selection's target, with its positive
+  class, and `auc` on the scores themselves. The scores are regression outputs, not calibrated probabilities (real
+  class probabilities come when the EDA methods return them, phase 9).
 
 ## Saving
 
@@ -406,26 +490,25 @@ of the one visible model with that name ("No Forge model 'X' is available to you
 Use the model id."). `loadedModelOf(row, engines)` then refuses, in this order, a row without a blob ("has no model
 file"), a blob outside Forge's own `forge/model/<uuid>/` layout (`ownBlob` in `storage/model-store.ts`), a row
 without a `{name, type}` feature list, and an engine that is not discovered or incomplete ("The method 'X' is not
-installed. Install the <package> package."). The result (`LoadedModel`) holds the row, the engine, the features, the
-options (`preparationOptionsOf`) and the blob path; the target is the row's `target_name`.
+installed. Install the <package> package."). The result (`LoadedModel`) holds the row, the engine, the features a
+table must provide (`requiredFeaturesOf`: the row's feature list without `options.skippedColumns`, which the model
+keeps as the record of the user's choice but never needs), the options (`preparationOptionsOf`) and the blob path;
+the target is the row's `target_name`.
 
 An `ApplyRequest` is the model, the table, the column mapping, the batch size (`DEFAULT_BATCH_SIZE` 10000) and the
 missing-value settings. `applyAndRecord(request, source, progress?)`:
 
 1. Refuses the request when `mappingProblems` reports anything or the table has no rows; a refusal is not recorded.
-2. Builds the feature frame (`featureFrame`, `apply/feature-frame.ts`): the mapped columns in training order, shared
-   with the table. A column whose name differs from its feature is a renamed copy: renaming a shared column would
-   rename it in the user's table, and the engines find features by name.
+2. Takes the feature columns (`featureColumns`, `apply/feature-columns.ts`): the mapped columns of the table in training
+   order, the table's own. A column whose name differs from its feature is a renamed copy: renaming the table's
+   column would rename it in the user's table, and the engines find features by name.
 3. `prepareMissingValues` without a target (see "Missing values"); every row skipped is a `ForgeError` ("Every row
    has a missing value in the columns the model needs, so nothing can be predicted. Fill the missing values or
    choose Impute.").
-4. `replayPreprocessing` (`preparation/preparation-steps.ts`) replays `options.preprocessingInfo` on a frame of the
-   same columns: `one-hot` replaces every text and boolean column with `<column>=<category>` 0/1 columns (the
-   categories of the applied data), `skip-unique-categories` removes text columns whose values are all different;
-   `ignore-missing` and `impute-missing` are skipped; any other id is refused ("The model uses the preparation step
-   'X', which Forge cannot replay yet."). Without steps the frame itself is used.
-5. Reads the blob and calls the engine's `apply`: once on the frame itself when it fits one batch, otherwise once per
-   batch of rows (a copy each, of a range mask built from a word array), the results written into one column
+4. `replayPreprocessing` (see "Preparation") replays `options.preprocessingInfo`: one-hot with the recorded training
+   categories, or the applied data's for a model without the record; without steps the columns themselves are used.
+5. Reads the blob and calls the engine's `apply`: once on the columns themselves when they fit one batch, otherwise
+   once per batch of rows (a copy each, of a range mask built from a word array), the results written into one column
    (numerical predictions through their raw data). Before every call a cancelled progress
    indicator stops it ("Application was cancelled."); after every call the progress shows "Rows a-b of n". At most
    every 50 ms the loop gives the event loop a turn (`yieldToEventLoop`), so a click on the cancel and the progress
@@ -437,9 +520,10 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
    column of that name exists (ignoring case); tags it `forge.model` = the model id (`PREDICTION_TAG` in
    `constants.ts`) and adds it to the table.
 
-No step writes into a shared column: the engines read their inputs and return new frames, the replay steps add and
-remove columns of their own frame, and the imputer only gets copies of the columns it fills. Every frame built on the
-way (feature frame, prepared frame, replay frame) is released in `finally`, whatever happens. The raw engine call
+No step writes into the table's columns: the engines read their inputs and return new frames, the replay builds new
+lists with Forge's own one-hot columns, and the imputer only gets copies of the columns it fills. The pipeline builds
+no frame of its own; the imputer's and the engine's frames are given back by the calls that build them. The raw
+engine call
 (`apply` in `engines/engine-calls.ts`) takes the prediction column out of the engine's result frame, so the user's
 table is the column's only parent (`column.dataFrame` is the table). Only the first column of the engine's result is
 used; other output columns are dropped.
@@ -496,12 +580,13 @@ The dialog **Apply predictive model** has:
 - **Model** (`Saved model to apply.`): labels are unique (`modelLabels`): the model name, with ` (YYYY-MM-DD HH:mm)`
   when models share a name, to the second when they share the minute too, then ` #2`, ` #3`, ... in creation order;
   the dialog keys the models by these labels. The models that fit the table (`isSuggested` over the row's
-  `featureSchemasOf`, computed once per distinct feature list) come first, newest first in each group; the default is
+  `requiredFeaturesOf`, computed once per distinct list) come first, newest first in each group; the default is
   the preset model, else the first. A
   model `loadedModelOf` refuses shows its message instead of the rows, and the same message marks **Model**.
-- **Columns** (a `CollapsibleGroup`): the summary `N of M matched` (features without a mapping problem out of all) and,
-  inside, one column input per feature, captioned with the feature name, in a block (`forge-apply-rows`) that scrolls
-  past 40% of the window height (at least 160 px). It starts collapsed when every feature has a valid column, expanded
+- **Columns** (a `CollapsibleGroup`): the summary `N of M matched` (features without a mapping problem out of the
+  model's `LoadedModel.features`, so the columns Skip unique categories left out are neither asked for nor counted) and,
+  inside, one column input per such feature, captioned with the feature name, in a block (`forge-apply-rows`) that
+  scrolls past 40% of the window height (at least 160 px). It starts collapsed when every feature has a valid column, expanded
   otherwise; the summary turns red while any feature has a problem, and a row validated with an error expands it.
   The list offers only columns `compatibility` does not refuse; the prefill is `suggestMapping`; the tooltip is
   "Table column used as the feature 'F' (<kind>)." plus "'X' has N missing values." and a semantic-type hint when
@@ -538,9 +623,9 @@ model needs. Map them in columnNamesMap."). Rows with missing values are skipped
 `catalog/`, one function per file, for the model catalog and the model's panels:
 
 - `applicableTables(row, tables)` (`applicable-tables.ts`): the tables in which `isSuggested` finds a close column for
-  every feature of the row's `features` (`featureSchemasOf`); none for a row without a feature list. It runs in the
-  browser on the open tables; nothing is uploaded. `featureFit(row, tables)` gives the feature names with them, from
-  one read of the list (the card and Details).
+  every feature the row needs (`requiredFeaturesOf` of its `features` and `options`); none for a row without a
+  feature list. It runs in the browser on the open tables; nothing is uploaded. `featureFit(row, tables)` gives the
+  names of every feature (`featureSchemasOf`) with them (the card and Details).
 - `modelActivity(id)` (`model-activity.ts`): the model's `application` records, newest first, at most
   `MAX_ACTIVITY_ROWS` (100), the full `count` (the list's length below the cap, a count query at it), and `lastRun`,
   the newest application of any status (`when`, `status`), undefined for a model never applied.
@@ -598,7 +683,7 @@ text) carries the catalog columns only.
 | Pane | Content |
 |---|---|
 | **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Data storage** (`None` / `Reference` / `Copy`), **Data source** (a reference: its `path`, else its query `name`, else `a script`), **Data copy** (a copy: `ui.render` of the uploaded `TableInfo`, `missing` when `grok.dapi.tables.find` gives none), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
-| **Performance** | `metricsTable` of the stored metrics (the Train view's grid: Metric / Train / Validation and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics |
+| **Performance** | `MetricsTable` of the stored metrics (the Train view's grid: Metric / Train / Validation and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics |
 | **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
 | **Sharing** | The groups the model was shared with (**Can view**, **Can edit**) or "Not shared yet. Only its author and administrators can see this model.", the button **Share...** (`DG.DomainObjectHandler.shareRow`: the platform's sharing dialog; its one `try/catch` reports a refusal before the dialog opens), and "Sharing a model needs the Share permission on this model; ask an administrator." for a user without Share on the row (`~can_share`; only for such a user is a refused read of the shares expected, and it leaves the groups out) |
 | **History** | The platform's audit pane (`DG.DomainObjectHandler.auditPane`): one line per change of the row (user, time, `insert` / `promote` / `update`), newest first |
@@ -680,7 +765,14 @@ ribbon holds only **Save** (no TRAIN / SAVE switch of one button; a **Train** bu
 for a method that does not retrain on every change), and the task bar names the method.
 Validation uses five folds that cover every row once,
 from a seed saved with the model, instead of five overlapping random samples, and it runs from 10 rows instead of
-being skipped below 100. MAE and F1 are new; AUC-ROC is not computed yet. Training and saving are separate steps, and
+being skipped below 100. MAE and F1 are new; AUC-ROC is measured on the Predict probability scores, whose target is a
+float 0/1 column (the built-in tool's int target gets rounded 0/1 predictions from XGBoost). One-hot records the
+training categories and replays them (the built-in tool encoded the applied table's categories), and text and yes/no
+features are refused while One-hot is off (which starts checked when every such feature has at most 20 categories).
+Skip unique categories records the columns it dropped, and applying neither asks for them nor passes them to the
+method (the built-in tool re-ran its rule on the applied table). AUC-ROC takes tied scores as one diagonal
+segment, as scikit-learn (the built-in ROC curve stepped row by row, so the order of tied rows changed it; the user's
+decision). Training and saving are separate steps, and
 every completed, failed or cancelled attempt is recorded. The training table is uploaded only when the user chooses
 **Copy** (the built-in tool uploaded it on every save); otherwise a model keeps a fingerprint of it, and a
 **Reference** to its source when the platform recorded one. The DONE link of the task bar became the **Apply...** link
@@ -705,7 +797,7 @@ of a zip.
 
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.10`. `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.12`. `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -736,17 +828,18 @@ EMS `json` columns hold objects only; a list is wrapped in an object. TS types: 
 |---|---|---|
 | `model.target` (caption "Target details") | `TargetSchema` | `{name, type, semType?, categories?}`; `categories` for classification targets |
 | `model.features`, `training_run.features` | `FeaturesSchema` | `{columns: [{name, type, semType?}]}`, in training order |
-| `options` | `PreparationOptions` | Preparation replay, see below; Forge writes `{preprocessingInfo, postprocessingInfo: [], missingValues: {mode, neighbors?, distance?, skippedRows}}` |
+| `options` | `PreparationOptions` | Preparation replay, see below and "Preparation"; Forge writes `{preprocessingInfo, postprocessingInfo, missingValues: {mode, neighbors?, distance?, skippedRows}, skippedColumns?: [names], oneHotCategories?: {<column>: [categories]}}`, plus `positiveClass`, `negativeClass`, `binaryClassificationThreshold`, `targetType` with Predict probability |
 | `hyperparameters` | `Hyperparameters` | `{<train function input>: value}` |
-| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv` (`auc` reserved) |
+| `metrics` | `MetricsRecord` | `{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}`; ids `mse`, `rmse`, `mae`, `r2`, `accuracy`, `f1`, `sensitivity`, `specificity`, `precision`, `npv`, `auc` (Predict probability only) |
 | `splitting` | `Splitting` | `{scheme: none \| kfold \| holdout, folds?, trainFraction?, isStratified?}` |
 | `model.dataset_ref` | `DatasetRef` | Reference mode: `{kind: file \| query \| script, script, path?, id?, name?}`, see "Storage modes" |
 | `dataset_fingerprint` | `DatasetFingerprint` | `{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}` |
 
 `options` keeps the keys of the platform's built-in models, so their preparation replays unchanged:
 `preprocessingInfo`, `postprocessingInfo`, `positiveClass`, `negativeClass`, `binaryClassificationThreshold`,
-`targetType`, `allowNulls` (`allowNulls` is read and ignored). `PreparationOptions` and `preparationOptionsOf`, which
-narrows a stored value to it, are in `preparation/preparation-options.ts`.
+`targetType`, `allowNulls` (`allowNulls` is read and ignored). Forge adds `missingValues`, `skippedColumns` and `oneHotCategories`; a
+model without `oneHotCategories` replays one-hot, and one without `skippedColumns` skip-unique, as the built-in tool did. `PreparationOptions` and
+`preparationOptionsOf`, which narrows a stored value to it, are in `preparation/preparation-options.ts`.
 
 ### Model blob
 
@@ -828,8 +921,8 @@ The `model` filter on `engine_name` is labelled **Method**. The catalog grid rea
 `grok.dapi.domains.registry.rowProperties('forge.model')` in `ForgeApp.loadModels()` and sets
 `column.meta.friendlyName`; the system column `created_on` is labelled "Created" explicitly. The grid shows Name,
 Method, Task, Target, Data storage, Training rows, Tags and Created, in this order (`grid.columns.setOrder` and
-`setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features` and `blob` (for the card,
-**Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
+`setVisible`); `id`, `version`, `updated_on`, `author_id` and the loaded `features`, `options` and `blob` (for the
+card, **Applicable to** and **Download**) stay hidden. "No models yet." is shown while the catalog is empty.
 
 ## Engine contract (methods in the UI)
 
@@ -849,6 +942,8 @@ Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds trai
 - An engine is complete, and usable, only with `train`, `apply` and `isApplicable`.
 - A function engine receives the feature table and the target column. A script engine (`DG.Script`) receives one
   table with a copy of the target appended, and the target name.
+- The calls (`isApplicable`, `isInteractive`, `train`, `apply` in `engines/engine-calls.ts`) take the feature columns
+  and build the table themselves, a frame of the columns given back by `onFrame` when the call ends.
 - `train` returns the blob as a `Uint8Array` or a `DG.FileInfo` (its `data` is used); anything else is a
   `ForgeError`. `apply` must return a dataframe with at least one column.
 - Hyperparameter defaults come from the `train` annotation (`//input: int iterations = 20`). The platform keeps them
@@ -866,8 +961,7 @@ Two more `meta` keys on `train`: `mlhasrows: 'true'` (the model file embeds trai
 ### Choosing a method
 
 - `applicableEngines(engines, features, target)` (`engines/applicable-engines.ts`) asks every complete engine's
-  `isApplicable` at once (`Promise.allSettled`) on one shared frame of the feature columns, given back when all have
-  answered. `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
+  `isApplicable` at once (`Promise.allSettled`) on the feature columns (each call with its own frame). `applicable` keeps the given order (discovery order: functions first); an engine whose check throws is
   left out and returned in `failed` with its error, for the caller to log (nothing is logged here). On iris, Species
   gets XGBoost, SVM and Softmax; Petal.Length gets XGBoost, SVM, Linear Regression and PLS Regression.
 - `selectBestEngine(engines, features, target)` (`engines/best-engine.ts`) is the built-in tool's suggestion, ported

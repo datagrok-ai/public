@@ -2,7 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {applicableTables} from '../catalog/applicable-tables';
+import {requiredFeaturesOf} from '../apply/apply-model';
+import {isSuggested} from '../apply/column-matching';
 import {COMPARE_COLUMNS, CompareModelRow} from '../catalog/compare-models';
 import {APP_NAME, MODEL_TYPE} from '../constants';
 import {Engine, EngineKind, EngineRole, hyperparametersOf, rolesOf} from '../engines/engine';
@@ -19,8 +20,8 @@ import {reportError} from './report-error';
 import '../../css/forge.css';
 
 const SHOWN = ['name', 'engine_name', 'task', 'target_name', 'storage_mode', 'row_count', 'tags'] as const;
-// features and blob are not shown: the card, Applicable to and Download read them.
-const CATALOG_COLUMNS = [...SHOWN, 'features', 'blob'] as const;
+// features, options and blob are not shown: the card, Applicable to and Download read them.
+const CATALOG_COLUMNS = [...SHOWN, 'features', 'options', 'blob'] as const;
 const VISIBLE_COLUMNS = [...SHOWN, 'created_on'];
 const COMPARISON_DELAY_MS = 300;
 const RELOAD_DELAY_MS = 300;
@@ -283,17 +284,20 @@ export class ForgeApp extends DG.ViewBase {
     const table = chosen !== null && isOpen(chosen) ? chosen : null;
     this.filteredBy = table;
     const features = this.models.col('features');
+    const options = this.models.col('options');
     // Retrained models share their feature lists: each list is matched against the table once.
-    const fitting = new Map<unknown, boolean>();
-    const fits = (raw: unknown, open: DG.DataFrame): boolean => {
-      let fit = fitting.get(raw);
+    const fitting = new Map<string, boolean>();
+    const fits = (i: number, open: DG.DataFrame): boolean => {
+      const required = requiredFeaturesOf({features: jsonOf(features?.get(i)), options: jsonOf(options?.get(i))});
+      const key = JSON.stringify(required);
+      let fit = fitting.get(key);
       if (fit === undefined) {
-        fit = applicableTables({features: jsonOf(raw)}, [open]).length > 0;
-        fitting.set(raw, fit);
+        fit = required !== null && isSuggested(required, open);
+        fitting.set(key, fit);
       }
       return fit;
     };
-    this.models.filter.init((i) => table === null || fits(features?.get(i), table));
+    this.models.filter.init((i) => table === null || fits(i, table));
   }
 
   /** Right-clicking a catalog row: the grid's menu gets the model's commands, and Compare for a selection of two or
@@ -308,13 +312,13 @@ export class ForgeApp extends DG.ViewBase {
       menu.item('Compare', () => void this.compareSelected());
   }
 
-  /** The catalog row [i] as model values, its features as an object. */
+  /** The catalog row [i] as model values, its features and options as objects. */
   private modelValues(i: number): Pick<ModelRow, 'id' | 'name'> & Partial<ModelRow> {
     const values: {[column: string]: unknown} = {};
     for (const col of this.models.columns.toList())
       values[col.name] = col.isNone(i) ? undefined : col.get(i);
     return {...values, id: this.models.get('id', i), name: this.models.get('name', i),
-      features: jsonOf(values.features)};
+      features: jsonOf(values.features), options: jsonOf(values.options)};
   }
 
   private async applyCurrentModel(): Promise<void> {

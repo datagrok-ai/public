@@ -6,7 +6,6 @@ import {defaultHyperparameters} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {forgeDb} from '../generated/db';
-import {releaseFrame} from '../preparation/shared-frame';
 import {deleteTrainingCopy, trainingCopyName, uploadTrainingCopy} from '../storage/dataset-copy';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {datasetRefOf, openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
@@ -24,14 +23,10 @@ async function saveIrisWith(iris: DG.DataFrame, engineName: string, storage: Mod
   const engine = engineByName(EngineRegistry.discover(), engineName);
   const request = await prepareTraining({...selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
     engine, hyperparameters: defaultHyperparameters(engine)});
-  try {
-    const result = await trainModel(request);
-    return await saveModel(modelFieldsOf({name: `forge-test-model-${Date.now()}`, description: '', tags: [],
-      engine, datasetName: iris.name, result, fingerprint: datasetFingerprint(request.features, request.target),
-      storage}), result.blob);
-  } finally {
-    releaseFrame(request.features);
-  }
+  const result = await trainModel(request);
+  return await saveModel(modelFieldsOf({name: `forge-test-model-${Date.now()}`, description: '', tags: [],
+    engine, datasetName: iris.name, result, fingerprint: datasetFingerprint(request.features, request.target),
+    storage}), result.blob);
 }
 
 const smallTable = () => DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'x', [1, 2])]);
@@ -107,16 +102,16 @@ category('Storage', () => {
   test('datasetFingerprint of iris', async () => {
     const iris = await grok.data.files.openTable(IRIS);
     const species = iris.getCol('Species');
-    const fingerprint = datasetFingerprint(iris.clone(null, MEASUREMENTS), species);
+    const fingerprint = datasetFingerprint(columnsOf(iris, MEASUREMENTS), species);
     expect(fingerprint.rowCount, 150);
     expect(fingerprint.columnCount, 5);
     expect(/^[0-9a-f]{8}$/.test(fingerprint.hash), true, `Hash ${fingerprint.hash}`);
     expect(fingerprint.columns[4].name, 'Species');
     expect(fingerprint.columns[4].categories?.length, 3);
     expectFloat(fingerprint.columns[0].min ?? NaN, 4.3, 1e-6, 'Sepal.Length min');
-    expect(datasetFingerprint(iris.clone(null, MEASUREMENTS), species).hash, fingerprint.hash);
+    expect(datasetFingerprint(columnsOf(iris, MEASUREMENTS), species).hash, fingerprint.hash);
     const swapped = ['Sepal.Width', 'Sepal.Length', 'Petal.Length', 'Petal.Width'];
-    expect(datasetFingerprint(iris.clone(null, swapped), species).hash !== fingerprint.hash, true,
+    expect(datasetFingerprint(columnsOf(iris, swapped), species).hash !== fingerprint.hash, true,
       'Swapping two features keeps the hash');
   });
 

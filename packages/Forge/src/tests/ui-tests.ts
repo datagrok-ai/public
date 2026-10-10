@@ -11,8 +11,10 @@ import {APP_NAME, MENU_PATH, MODEL_TYPE} from '../constants';
 import {EngineRegistry} from '../engines/engine-registry';
 import {forgeDb, ModelStorageMode} from '../generated/db';
 import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
+import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
+import {metricsRecordOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
@@ -25,8 +27,9 @@ import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, TrainView} from '../ui/train-view';
-import {columnsOf, expectReleased, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openIris, openIrisFromFile,
-  savedFixture, saveIrisModel, saveTestModel, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {columnsOf, expectNoFrames, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris,
+  openIrisFromFile, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, valuesOf, XGBOOST_FIELDS}
+  from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -37,6 +40,11 @@ async function openTrainView(table: DG.DataFrame): Promise<TrainView> {
   grok.shell.addView(view);
   await awaitTrained(view);
   return view;
+}
+
+/** `demog.csv` of the demo files: text SEX, RACE and USUBJID (all different), gaps in HEIGHT and WEIGHT. */
+async function openDemog(): Promise<DG.DataFrame> {
+  return openDemoTable('System:DemoFiles/demog.csv', 'demog');
 }
 
 async function awaitTrained(view: TrainView): Promise<void> {
@@ -435,6 +443,8 @@ category('UI', () => {
     try {
       view.targetInput.value = iris.getCol('Petal.Length');
       view.featuresInput.value = columns(['Species', 'Sepal.Length', 'Sepal.Width', 'Petal.Width']);
+      await awaitCheck(() => isShown(view.preparationInputs.oneHot.root), 'One-hot encoding is not offered', WAIT_MS);
+      view.preparationInputs.oneHot.value = false;
       await awaitCheck(() => view.featuresInput.validity !== null, 'Features is not marked', WAIT_MS);
       expect(view.featuresInput.validity?.includes('Species'), true, `${view.featuresInput.validity}`);
       expect(!isTrainShown(view) && isDisabled(view.trainButton), true, 'Train is shown for XGBoost or enabled');
@@ -567,10 +577,15 @@ category('UI', () => {
     const view = await openTrainView(iris);
     try {
       const data = groupOf(view.root, 'Data');
+      const preparation = groupOf(view.root, 'Preparation');
       const method = groupOf(view.root, 'Method');
-      expect(isShown(data.body) && isShown(method.body), true, 'A group starts collapsed');
+      expect(isShown(data.body) && isShown(preparation.body) && isShown(method.body), true, 'A group starts collapsed');
       expect(data.body.contains(view.featuresInput.root), true, 'Features is not under Data');
-      expect(data.body.contains(view.missingValuesInputs.choice.root), true, 'Missing values is not under Data');
+      expect(preparation.body.contains(view.missingValuesInputs.choice.root), true,
+        'Missing values is not under Preparation');
+      const groupRoot = view.preparationInputs.group.root;
+      expect(!isShown(groupRoot) && groupRoot.offsetHeight === 0, true, 'Preparation is shown for iris without gaps');
+      expectArray(view.groups.map((g) => Array.from(g.root.parentElement?.children ?? []).indexOf(g.root)), [0, 1, 2]);
       const iterations = view.hyperparameterInputs.get('iterations');
       expect(iterations !== undefined && method.body.contains(iterations.root), true, 'Iterations is not under Method');
       expect(method.body.contains(view.methodInput.root), true, 'Method is not under Method');
@@ -699,8 +714,9 @@ category('UI', () => {
       expect(choice.inputType, 'Radio');
       expect(choice.value, 'Skip rows');
       expectOptionsInRow(choice);
+      // The skipped row makes every training column a copy: no frame holds a column of the table.
       const [, frames] = await framesSharing(iris.columns.toList(), () => view.train());
-      expectReleased(frames);
+      expectNoFrames(frames);
       expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
         .includes('Rows: 149 used, 1 skipped (missing values)'), true, 'The Results rows item is missing');
       expect((await runs())[0]?.row_count, 149);
@@ -819,6 +835,185 @@ category('UI: Train', () => {
         [`completed ${first}`, 'completed SVM'].sort());
     } finally {
       await closeTrainView(view, [table]);
+    }
+  }, {timeout: 120000});
+
+  test('Preparation follows demog: Missing values, One-hot encoding, Skip unique categories', async () => {
+    const demog = await openDemog();
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    const preparation = view.preparationInputs;
+    const {oneHot, skipUniqueCategories, predictProbability, cutoff} = preparation;
+    try {
+      expect(isShown(preparation.group.root) && isShown(view.missingValuesInputs.choice.root), true,
+        'Preparation does not show Missing values for HEIGHT and WEIGHT');
+      expect([oneHot, skipUniqueCategories, predictProbability, cutoff].some((input) => isShown(input.root)), false,
+        'A step is shown for numerical features and a many-class target');
+      const forms = view.root.querySelectorAll('.ui-form');
+      expect(forms.length === 1 && forms[0].contains(preparation.group.root), true, 'Preparation is not in the form');
+
+      view.targetInput.value = demog.getCol('AGE');
+      view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT', 'SEX', 'RACE']);
+      await awaitCheck(() => isShown(oneHot.root), 'One-hot encoding is not offered', WAIT_MS);
+      expect(oneHot.value, true, 'One-hot encoding is not checked for SEX and RACE');
+      await awaitTrained(view);
+      const encoded = view.lastTraining?.result.options;
+      expectArray(encoded?.preprocessingInfo ?? [], ['ignore-missing', 'one-hot']);
+      expectArray(Object.keys(encoded?.oneHotCategories ?? {}), ['SEX', 'RACE']);
+      expect(isShown(skipUniqueCategories.root) || isShown(predictProbability.root), false,
+        'A step that does not apply is shown');
+
+      oneHot.value = false;
+      await awaitCheck(() => view.featuresInput.validity !== null, 'Text features are not marked', TIMEOUT);
+      expect(view.featuresInput.validity, `${view.methodInput.value} needs numerical features. Check One-hot ` +
+        'encoding in Preparation, or uncheck: SEX, RACE.');
+
+      oneHot.value = true;
+      await awaitCheck(() => view.featuresInput.validity === null, 'One-hot encoding leaves Features marked', WAIT_MS);
+      await awaitTrained(view);
+
+      view.featuresInput.value = [...view.featuresInput.value, demog.getCol('USUBJID')];
+      await awaitCheck(() => isShown(skipUniqueCategories.root), 'Skip unique categories is not offered', WAIT_MS);
+      expect(skipUniqueCategories.value, true, 'Skip unique categories is not checked when it appears');
+      await awaitTrained(view);
+      expectArray(view.lastTraining?.result.options.preprocessingInfo ?? [],
+        ['ignore-missing', 'skip-unique-categories', 'one-hot']);
+      expectArray(view.lastTraining?.result.features.columns.map((c) => c.name).sort() ?? [],
+        ['HEIGHT', 'RACE', 'SEX', 'USUBJID', 'WEIGHT']);
+
+      view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT', 'SEX', 'RACE']);
+      await awaitCheck(() => !isShown(skipUniqueCategories.root), 'Skip unique categories stays', WAIT_MS);
+      view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT']);
+      await awaitCheck(() => !isShown(oneHot.root), 'One-hot encoding stays without text features', WAIT_MS);
+      expect(oneHot.value, false, 'A hidden One-hot encoding is not unchecked');
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: 120000});
+
+  test('One-hot encoding is checked by default only for few categories, and keeps the user\'s choice', async () => {
+    const rows = 60;
+    const text = (name: string, value: (i: number) => string) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, Array.from({length: rows}, (_, i) => value(i)));
+    const table = DG.DataFrame.fromColumns([
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i)),
+      text('few', (i) => i % 2 === 0 ? 'a' : 'b'), text('many', (i) => `k${i % 30}`), text('id', (i) => `id${i}`),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i * 1.5 + i % 7)),
+    ]);
+    table.name = `forge-test-categories-${Date.now()}`;
+    const view = await TrainView.create(table);
+    grok.shell.addView(view);
+    const {oneHot, skipUniqueCategories} = view.preparationInputs;
+    const use = async (names: string[], isChecked: boolean) => {
+      view.featuresInput.value = columnsOf(table, names);
+      await awaitCheck(() => isShown(oneHot.root) && oneHot.value === isChecked,
+        `One-hot encoding is not ${isChecked ? '' : 'un'}checked for ${names.join(', ')}`, WAIT_MS);
+    };
+    try {
+      await use(['x', 'few'], true);
+      await use(['x', 'few', 'many'], false);
+      await use(['x', 'few', 'id'], true);
+      skipUniqueCategories.value = false;
+      await awaitCheck(() => !oneHot.value, 'An unskipped id leaves One-hot encoding checked', WAIT_MS);
+      skipUniqueCategories.value = true;
+      await awaitCheck(() => oneHot.value, 'Skipping the id does not check One-hot encoding', WAIT_MS);
+
+      await use(['x', 'many'], false);
+      oneHot.value = true;
+      await use(['x', 'few', 'many'], true);
+      view.featuresInput.value = columnsOf(table, ['x']);
+      await awaitCheck(() => !isShown(oneHot.root), 'One-hot encoding stays without text features', WAIT_MS);
+      expect(oneHot.value, false, 'A hidden One-hot encoding is not unchecked');
+      await use(['x', 'few', 'many'], false);
+    } finally {
+      await closeTrainView(view, [table]);
+    }
+  }, {timeout: 120000});
+
+  test('Predict probability trains on the classes; the cutoff re-cuts without a run', async () => {
+    const demog = await openDemog();
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    const {predictProbability, cutoff} = view.preparationInputs;
+    const models = () => forgeDb.models.query().where('dataset_name', '=', demog.name);
+    try {
+      view.targetInput.value = demog.getCol('SEX');
+      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT', 'WEIGHT']);
+      await awaitCheck(() => isShown(predictProbability.root), 'Predict probability is not offered for SEX', WAIT_MS);
+      expect(predictProbability.value || isShown(cutoff.root), false, 'Predict probability starts checked');
+      await awaitTrained(view);
+      expect(view.lastTraining?.result.task, 'classification');
+      const classificationGrid = gridWith(view.root, 'Metric').root;
+
+      predictProbability.value = true;
+      await awaitCheck(() => isShown(cutoff.root), 'No Positive class cutoff', WAIT_MS);
+      expect(cutoff.value, 0.5);
+      await awaitTrained(view);
+      const trained = view.lastTraining?.result;
+      expect(trained?.task, 'regression');
+      expect(view.methodInput.items.includes('Softmax'), false, 'Softmax is listed for the probability');
+      const auc = trained?.metrics.validation.auc;
+      expect(auc !== undefined && auc > 0.5 && auc <= 1, true, `Validation AUC-ROC ${auc}`);
+      expect(gridWith(view.root, 'Metric').dataFrame.getCol('Metric').toList().includes('AUC-ROC'), true,
+        'No AUC-ROC row in Results');
+      const probabilityGrid = gridWith(view.root, 'Metric');
+      expect(probabilityGrid.root === classificationGrid, false, 'A task change kept the classification grid');
+      const runCount = (await runsOf([demog])).length;
+
+      cutoff.value = 0.9;
+      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9,
+        'The cutoff does not re-cut the result', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.isTraining, false, 'The cutoff retrains');
+      expect((await runsOf([demog])).length, runCount, 'The cutoff recorded a run');
+      const recut = view.lastTraining?.result.metrics.train;
+      expect(recut?.auc, trained?.metrics.train.auc, 'AUC-ROC changed with the cutoff');
+      expect(recut?.sensitivity !== trained?.metrics.train.sensitivity ||
+        recut?.specificity !== trained?.metrics.train.specificity, true, 'The cutoff left the shares as they were');
+      const recutGrid = gridWith(view.root, 'Metric');
+      expect(recutGrid.root === probabilityGrid.root, true, 'The cutoff built a new metrics grid');
+      const sensitivityRow = recutGrid.dataFrame.getCol('Metric').toList().indexOf('Sensitivity');
+      // The column stores single-precision floats.
+      expect(Math.abs((recutGrid.dataFrame.getCol('Train').get(sensitivityRow) ?? NaN) - (recut?.sensitivity ?? NaN)) <
+        1e-6, true, 'The grid shows the old sensitivity');
+      expect(gridTooltip(recutGrid, recutGrid.cell('Train', sensitivityRow)).startsWith(`${recut?.sensitivity}.`), true,
+        'The cell tooltip shows the old sensitivity');
+
+      cutoff.value = 1.5;
+      await awaitCheck(() => cutoff.validity !== null, 'No mark on a cutoff of 1.5', WAIT_MS);
+      await awaitCheck(() => resultsText(view).includes('Fix the settings.'), 'No hint for a cutoff of 1.5', WAIT_MS);
+      expect(isDisabled(view.saveButton), true, 'Save stays enabled with a cutoff of 1.5');
+      expect(view.lastTraining?.result.options.binaryClassificationThreshold, 0.9, 'A cutoff of 1.5 re-cut the result');
+      cutoff.value = 0.9;
+      await awaitCheck(() => cutoff.validity === null && !resultsText(view).includes('Fix the settings.'),
+        'A valid cutoff leaves the hint', WAIT_MS);
+      expect(isDisabled(view.saveButton), false, 'Save stays disabled with a valid cutoff');
+
+      const name = `forge-test-model-${Date.now()}`;
+      await view.saveModelAs({name, description: '', tags: []});
+      const [saved] = await models();
+      const options = preparationOptionsOf(saved?.options);
+      expect(options.binaryClassificationThreshold, 0.9);
+      expect(metricsRecordOf(saved?.metrics)?.train.sensitivity, recut?.sensitivity);
+
+      // A change while the cutoff is invalid leaves nothing to re-cut; fixing the cutoff then trains.
+      cutoff.value = 1.5;
+      await awaitCheck(() => resultsText(view).includes('Fix the settings.'), 'No hint for a cutoff of 1.5', WAIT_MS);
+      view.featuresInput.value = columnsOf(demog, ['AGE', 'HEIGHT']);
+      await delay(CHECK_DELAY_MS * 5);
+      await awaitCheck(() => !view.isTraining && resultsText(view).includes('Fix the settings.'),
+        'A change with an invalid cutoff does not show the hint', WAIT_MS);
+      expect(view.lastTraining === undefined, true, 'A change with an invalid cutoff trained');
+      cutoff.value = 0.5;
+      await awaitTrained(view);
+      expect(view.lastTraining?.result.options.binaryClassificationThreshold, 0.5);
+      expect(resultsText(view).includes('Fix the settings.'), false, 'Results still shows the hint');
+      expect(gridWith(view.root, 'Metric').dataFrame.getCol('Metric').toList().includes('AUC-ROC'), true,
+        'Results shows no metrics');
+    } finally {
+      for (const model of await models())
+        await deleteModel(model.id);
+      await closeTrainView(view, [demog]);
     }
   }, {timeout: 120000});
 });
@@ -959,6 +1154,22 @@ category('UI: Apply dialog', () => {
       expect(isShown(columns.body), true, 'Columns stays collapsed with a problem');
       expect(isShown(moreOptions.body), false, 'More options opened');
       expectAlignedCaptions(dialog.root, ['Columns', 'More options']);
+    } finally {
+      opened?.close();
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Apply dialog does not ask for the columns Skip unique categories left out', async () => {
+    const {id} = await saveSkipUniqueModel();
+    const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4])]);
+    let opened: DG.Dialog | undefined;
+    try {
+      const dialog = (await applyModelDialog({table, modelId: id})).show();
+      opened = dialog;
+      await awaitCheck(() => !isDisabled(dialog.getButton('OK')), 'OK stays disabled without subject', WAIT_MS);
+      expect(groupOf(dialog.root, 'Columns').summary.textContent, '1 of 1 matched');
+      expect((dialog.root.textContent ?? '').includes('subject'), false, 'The dialog asks for subject');
     } finally {
       opened?.close();
       await deleteModel(id);

@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {APPLY_COLUMNS, ApplyModelRow, ApplyRequest, applyWithProgress, DEFAULT_BATCH_SIZE, featureSchemasOf,
-  LoadedModel, loadedModelOf} from '../apply/apply-model';
+import {APPLY_COLUMNS, ApplyModelRow, ApplyRequest, applyWithProgress, DEFAULT_BATCH_SIZE, LoadedModel,
+  loadedModelOf, requiredFeaturesOf} from '../apply/apply-model';
 import {ColumnMapping, compatibility, isSuggested, kindText, MappingProblem, mappingProblems, suggestMapping}
   from '../apply/column-matching';
 import {applicableTables} from '../catalog/applicable-tables';
@@ -189,7 +189,7 @@ class ApplyForm {
     // Retrained models share their feature lists: each list is matched against the table once.
     const fitting = new Map<string, boolean>();
     const entries = [...this.models].map(([label, row]) => {
-      const features = featureSchemasOf(row.features);
+      const features = requiredFeaturesOf(row);
       const key = JSON.stringify(features);
       let fits = fitting.get(key);
       if (fits === undefined) {

@@ -13,11 +13,15 @@ export interface MissingValuesRecord {
   skippedRows: number;
 }
 
-/** `options` of a model; the keys after `missingValues` are those of the platform's built-in models. */
+/** `options` of a model; the keys after `oneHotCategories` are those of the platform's built-in models. */
 export interface PreparationOptions {
   preprocessingInfo: string[];
   postprocessingInfo: string[];
   missingValues?: MissingValuesRecord;
+  /** The columns Skip unique categories left out of the training, dropped by name when the model is applied. */
+  skippedColumns?: string[];
+  /** The training categories of each one-hot encoded column, in the order of its 0/1 columns. */
+  oneHotCategories?: {[column: string]: string[]};
   positiveClass?: string;
   negativeClass?: string;
   binaryClassificationThreshold?: number;
@@ -42,6 +46,14 @@ export function preparationOptionsOf(value: unknown): PreparationOptions {
       record.distance = distance;
     options.missingValues = record;
   }
+  const oneHotCategories = source['oneHotCategories'];
+  if (isRecord(oneHotCategories)) {
+    options.oneHotCategories = {};
+    for (const [column, categories] of Object.entries(oneHotCategories))
+      options.oneHotCategories[column] = stringsOf(categories);
+  }
+  if (Array.isArray(source['skippedColumns']))
+    options.skippedColumns = stringsOf(source['skippedColumns']);
   const {positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls} = source;
   if (typeof positiveClass === 'string')
     options.positiveClass = positiveClass;

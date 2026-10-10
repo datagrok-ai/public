@@ -1,17 +1,18 @@
 import * as DG from 'datagrok-api/dg';
-import {featureSchemasOf} from '../apply/apply-model';
+import {featureSchemasOf, requiredFeaturesOf} from '../apply/apply-model';
 import {isSuggested} from '../apply/column-matching';
 import {ModelRow} from '../generated/db';
 
-/** The [tables] in which every feature of the model has a close column; none for a model without a feature list. */
-export function applicableTables(row: Pick<ModelRow, 'features'>, tables: DG.DataFrame[]): DG.DataFrame[] {
-  return featureFit(row, tables).tables;
+type FeatureRow = Pick<ModelRow, 'features' | 'options'>;
+
+/** The [tables] in which every feature the model needs ({@link requiredFeaturesOf}) has a close column; none for a
+ * model without a feature list. */
+export function applicableTables(row: FeatureRow, tables: DG.DataFrame[]): DG.DataFrame[] {
+  const required = requiredFeaturesOf(row);
+  return required === null ? [] : tables.filter((table) => isSuggested(required, table));
 }
 
-/** The model's feature names and its {@link applicableTables}, from one read of its feature list. */
-export function featureFit(row: Pick<ModelRow, 'features'>, tables: DG.DataFrame[]):
-  {names: string[]; tables: DG.DataFrame[]} {
-  const features = featureSchemasOf(row.features);
-  return features === null ? {names: [], tables: []} :
-    {names: features.map((f) => f.name), tables: tables.filter((table) => isSuggested(features, table))};
+/** The names of every feature of the model and its {@link applicableTables}. */
+export function featureFit(row: FeatureRow, tables: DG.DataFrame[]): {names: string[]; tables: DG.DataFrame[]} {
+  return {names: (featureSchemasOf(row.features) ?? []).map((f) => f.name), tables: applicableTables(row, tables)};
 }

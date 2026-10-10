@@ -8,14 +8,13 @@ import {errorMessage, ForgeError} from '../forge-error';
 import {ApplicationInsert, ApplicationSource, forgeDb, ModelRow} from '../generated/db';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {isRecord, PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
-import {replayPostprocessing, replayPreprocessing} from '../preparation/preparation-steps';
+import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
-import {releaseFrame} from '../preparation/shared-frame';
 import {ownBlob, UUID} from '../storage/model-store';
 import {ColumnSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
-import {featureFrame} from './feature-frame';
+import {featureColumns} from './feature-columns';
 
 export const DEFAULT_BATCH_SIZE = 10000;
 const YIELD_MS = 50;
@@ -30,6 +29,7 @@ export type ApplyModelRow = Pick<ModelRow, typeof APPLY_COLUMNS[number] | 'id' |
 export interface LoadedModel {
   row: ApplyModelRow;
   engine: Engine;
+  /** The features a table must provide ({@link requiredFeaturesOf}). */
   features: ColumnSchema[];
   options: PreparationOptions;
   blobPath: string;
@@ -70,7 +70,7 @@ export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedMode
   const blob = ownBlob(row.blob);
   if (blob === null)
     throw new ForgeError(`The model '${name}' points to a file outside Forge's storage and cannot be applied.`);
-  const features = featureSchemasOf(row.features);
+  const features = requiredFeaturesOf(row);
   if (features === null)
     throw new ForgeError(`The model '${name}' has no feature list.`);
   const engine = engines.find((e) => e.name === row.engine_name && isComplete(e));
@@ -149,39 +149,29 @@ function checkRequest({model, table, mapping}: ApplyRequest): void {
 
 async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
   const {model, table, mapping} = request;
-  // Every frame built here may share the user's columns and is given back before returning.
-  const frames: DG.DataFrame[] = [];
-  try {
-    const frame = featureFrame(table, model.features, mapping);
-    frames.push(frame);
-    const prepared = await prepareMissingValues(frame, undefined, request.missingValues);
-    frames.push(prepared.features);
-    if (prepared.features.rowCount === 0) {
-      throw new ForgeError('Every row has a missing value in the columns the model needs, so nothing can be ' +
-        'predicted. Fill the missing values or choose Impute.');
-    }
-    const features = replayPreprocessing(prepared.features, model.options);
-    frames.push(features);
-    const blob = await grok.dapi.files.readAsBytes(model.blobPath);
-    const predictions = replayPostprocessing(
-      await predictInBatches(model.engine, features, blob, request.batchSize, progress), model.options);
-    const column = prepared.keptRows === null ? predictions :
-      scattered(predictions, prepared.keptRows, table.rowCount);
-    column.name = predictionName(table, model.row.target_name);
-    column.setTag(PREDICTION_TAG, model.row.id);
-    table.columns.add(column);
-    return {column, skippedRows: prepared.skippedRows};
-  } finally {
-    for (const frame of frames)
-      releaseFrame(frame);
+  const prepared = await prepareMissingValues(featureColumns(table, model.features, mapping), undefined,
+    request.missingValues);
+  const rowCount = table.rowCount - prepared.skippedRows;
+  if (rowCount === 0) {
+    throw new ForgeError('Every row has a missing value in the columns the model needs, so nothing can be ' +
+      'predicted. Fill the missing values or choose Impute.');
   }
+  const features = replayPreprocessing(prepared.features, model.options);
+  const blob = await grok.dapi.files.readAsBytes(model.blobPath);
+  const predictions = replayPostprocessing(
+    await predictInBatches(model.engine, features, rowCount, blob, request.batchSize, progress), model.options);
+  const column = prepared.keptRows === null ? predictions :
+    scattered(predictions, prepared.keptRows, table.rowCount);
+  column.name = predictionName(table, model.row.target_name);
+  column.setTag(PREDICTION_TAG, model.row.id);
+  table.columns.add(column);
+  return {column, skippedRows: prepared.skippedRows};
 }
 
-/** One engine call on [features] itself when it fits a batch; otherwise one call per batch of rows, with a pause for
- * the event loop at most every YIELD_MS, so a cancel and the progress repaint get through. */
-async function predictInBatches(engine: Engine, features: DG.DataFrame, blob: Uint8Array, batchSize: number,
-  progress?: LoopProgress): Promise<DG.Column> {
-  const rowCount = features.rowCount;
+/** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of
+ * rows, with a pause for the event loop at most every YIELD_MS, so a cancel and the progress repaint get through. */
+async function predictInBatches(engine: Engine, features: DG.Column[], rowCount: number, blob: Uint8Array,
+  batchSize: number, progress?: LoopProgress): Promise<DG.Column> {
   let yieldedAt = Date.now();
   const predictBatch = async (start: number): Promise<DG.Column> => {
     if (Date.now() - yieldedAt >= YIELD_MS) {
@@ -269,6 +259,14 @@ export function featureSchemasOf(features: unknown): ColumnSchema[] | null {
     return null;
   const schemas = columns.map(parsedColumnSchema).filter((s): s is ColumnSchema => s !== null);
   return schemas.length === columns.length ? schemas : null;
+}
+
+/** The features a table must provide to apply the model: its feature list without the columns Skip unique categories
+ * left out (`options.skippedColumns`); null when it has no feature list. */
+export function requiredFeaturesOf(row: Pick<ModelRow, 'features' | 'options'>): ColumnSchema[] | null {
+  const features = featureSchemasOf(row.features);
+  const skipped = preparationOptionsOf(row.options).skippedColumns ?? [];
+  return features === null ? null : features.filter((f) => !skipped.includes(f.name));
 }
 
 function parsedColumnSchema(value: unknown): ColumnSchema | null {

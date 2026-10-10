@@ -6,7 +6,8 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {forgeDb, ModelInsert} from '../generated/db';
 import {METRIC_IDS, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
-import {releaseFrame} from '../preparation/shared-frame';
+import {DEFAULT_CUTOFF, PreparationSteps} from '../preparation/pipeline';
+import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
 import {saveModel} from '../storage/model-store';
@@ -18,6 +19,12 @@ export const MEASUREMENTS = ['Sepal.Length', 'Sepal.Width', 'Petal.Length', 'Pet
 export const XGBOOST_FIELDS: Pick<ModelInsert, 'engine_name' | 'engine_namespace' | 'engine_kind'> =
   {engine_name: 'XGBoost', engine_namespace: 'Eda', engine_kind: 'function'};
 export const IMPUTE: MissingValuesSettings = {mode: 'impute', impute: {neighbors: 4, distance: 'Euclidean'}};
+export const NO_PREPARATION_STEPS: PreparationSteps =
+  {oneHot: false, skipUniqueCategories: false, predictProbability: false, cutoff: DEFAULT_CUTOFF};
+export const PREDICT_PROBABILITY: PreparationSteps = {...NO_PREPARATION_STEPS, predictProbability: true};
+export const ONE_HOT_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, oneHot: true};
+export const SKIP_UNIQUE_STEPS: PreparationSteps = {...NO_PREPARATION_STEPS, skipUniqueCategories: true};
+export const NO_OPTIONS: PreparationOptions = {preprocessingInfo: [], postprocessingInfo: []};
 
 export function engineByName(engines: Engine[], name: string): Engine {
   const engine = engines.find((e) => e.name === name);
@@ -51,10 +58,15 @@ export function xgboost(): Engine {
   return xgboostEngine;
 }
 
+/** The demo file [path], named `forge-test-<prefix>-<time>`. */
+export async function openDemoTable(path: string, prefix: string): Promise<DG.DataFrame> {
+  const table = await grok.data.files.openTable(path);
+  table.name = `forge-test-${prefix}-${Date.now()}`;
+  return table;
+}
+
 export async function openIris(): Promise<DG.DataFrame> {
-  const iris = await grok.data.files.openTable(IRIS);
-  iris.name = `forge-test-iris-${Date.now()}`;
-  return iris;
+  return openDemoTable(IRIS, 'iris');
 }
 
 /** iris opened as Browse > Files opens a file (an unprocessed `OpenServerFile` call), so the platform records its
@@ -73,13 +85,24 @@ export function columnsOf(table: DG.DataFrame, names: string[]): DG.Column[] {
   return names.map((name) => table.getCol(name));
 }
 
+export function columnNamed(columns: DG.Column[], name: string): DG.Column {
+  const col = columns.find((c) => c.name === name);
+  if (col === undefined)
+    throw new Error(`No column '${name}' among ${columns.map((c) => c.name).join(', ')}`);
+  return col;
+}
+
+export function names(columns: DG.Column[]): string[] {
+  return columns.map((c) => c.name);
+}
+
 /** A selection of the columns themselves, as the Train view makes it. */
 export function selectionOf(features: DG.Column[] | DG.DataFrame, target: DG.Column,
   missingValues: MissingValuesSettings = {mode: 'skip'}): TrainingSelection {
   const engine = xgboost();
   const columns = features instanceof DG.DataFrame ? features.columns.toList() : features;
   return {engine, features: columns, target, hyperparameters: defaultHyperparameters(engine), seed: 42, folds: 5,
-    missingValues};
+    missingValues, steps: NO_PREPARATION_STEPS};
 }
 
 /** Runs [action]; returns its result and every frame `DG.DataFrame.fromColumns` built meanwhile over any of
@@ -106,21 +129,46 @@ export function expectReleased(frames: DG.DataFrame[]): void {
   expectArray(frames.map((f) => f.columns.length), frames.map(() => 0));
 }
 
-export async function requestOf(features: DG.Column[] | DG.DataFrame, target: DG.Column): Promise<TrainingRequest> {
-  return prepareTraining(selectionOf(features, target));
+/** No frame of the user's columns was built: every column the action passed on was a copy. */
+export function expectNoFrames(frames: DG.DataFrame[]): void {
+  expect(frames.length, 0, 'A frame of the user\'s columns was built');
+}
+
+export async function requestOf(features: DG.Column[] | DG.DataFrame, target: DG.Column,
+  steps: PreparationSteps = NO_PREPARATION_STEPS): Promise<TrainingRequest> {
+  return prepareTraining({...selectionOf(features, target), steps});
+}
+
+/** iris without setosa: two classes of Species that overlap, so a method's scores are not all 0 or 1. */
+export async function twoSpeciesIris(): Promise<DG.DataFrame> {
+  const iris = await openIris();
+  const species = iris.getCol('Species');
+  const twoSpecies = iris.clone(DG.BitSet.create(iris.rowCount, (i) => species.get(i) !== 'setosa'));
+  twoSpecies.getCol('Species').compact();
+  twoSpecies.name = iris.name;
+  return twoSpecies;
 }
 
 /** Trains a model of [target] by [features] and saves it as a `forge-test-` model; [fields] override the row. */
 export async function saveTestModel(features: DG.Column[], target: DG.Column, datasetName: string,
-  fields: Partial<ModelFields> = {}): Promise<{id: string; name: string; result: TrainingResult}> {
-  const request = await requestOf(features, target);
+  fields: Partial<ModelFields> = {}, steps: PreparationSteps = NO_PREPARATION_STEPS):
+  Promise<{id: string; name: string; result: TrainingResult}> {
+  const request = await requestOf(features, target, steps);
   const result = await trainModel(request);
   const fingerprint = datasetFingerprint(request.features, request.target);
-  releaseFrame(request.features);
   const name = `forge-test-model-${Date.now()}`;
   const id = await saveModel({...modelFieldsOf({name, description: '', tags: [], engine: request.engine, datasetName,
     result, fingerprint, storage: {mode: 'none'}}), ...fields}, result.blob);
   return {id, name, result};
+}
+
+/** {@link saveTestModel} of y by x and 'subject' (all different), which Skip unique categories leaves out. */
+export async function saveSkipUniqueModel(): Promise<{id: string; name: string; result: TrainingResult}> {
+  const rows = 40;
+  const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', valuesOf(rows, (i) => i / 4));
+  const subject = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'subject', Array.from({length: rows}, (_, i) => `s${i}`));
+  const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i / 2 + 1));
+  return saveTestModel([x, subject], y, `forge-test-skip-unique-${Date.now()}`, {}, SKIP_UNIQUE_STEPS);
 }
 
 /** {@link saveTestModel} of an iris classifier of Species by the measurements. */

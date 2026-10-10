@@ -6,7 +6,7 @@ import {featureFit} from '../catalog/applicable-tables';
 import {ModelActivity, modelActivity} from '../catalog/model-activity';
 import {MINUTE_FORMAT, MODEL_TYPE, SECOND_FORMAT} from '../constants';
 import {ApplicationRow, ApplicationSource, ApplicationStatus, forgeDb, ModelRow} from '../generated/db';
-import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId, MetricValues} from '../metrics/metrics';
+import {METRIC_DESCRIPTIONS, METRIC_IDS, METRIC_LABELS, MetricId} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefCaption, storedDatasetRef} from '../storage/dataset-ref';
 import {tagsOf, tagsText} from '../storage/model-fields';
@@ -54,45 +54,86 @@ export interface MetricsSummary {
   seed?: number;
 }
 
+type Split = 'train' | 'validation';
+const SPLIT_COLUMNS: [string, Split][] = [['Train', 'train'], ['Validation', 'validation']];
+
+/** The [split]'s value of each of [ids], null where it has none. */
+function splitValues(metrics: MetricsRecord, split: Split, ids: MetricId[]): (number | null)[] {
+  return ids.map((id) => metrics[split][id] ?? null);
+}
+
 /** The metrics [ids], one row each: **Metric** (the label), **Train**, **Validation**. */
 function metricsFrame(metrics: MetricsRecord, ids: MetricId[]): DG.DataFrame {
-  const values = (name: string, split: MetricValues) => {
-    const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, ids.map((id) => split[id] ?? null));
+  const values = SPLIT_COLUMNS.map(([name, split]) => {
+    const col = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, splitValues(metrics, split, ids));
     col.meta.format = '0.000';
     return col;
-  };
-  return DG.DataFrame.fromColumns([textColumn('Metric', ids.map((id) => METRIC_LABELS[id])),
-    values('Train', metrics.train), values('Validation', metrics.validation)]);
+  });
+  return DG.DataFrame.fromColumns([textColumn('Metric', ids.map((id) => METRIC_LABELS[id])), ...values]);
 }
 
 /** The metrics grid (hover a header or a metric for its meaning), then a bullet list of the rows, the validation, the
- * seed and the positive class: the Train view's Results and the model's Performance pane. */
-export function metricsTable({metrics, rowCount, skippedRows, folds, seed}: MetricsSummary): HTMLElement {
-  const ids = METRIC_IDS.filter((id) => metrics.validation[id] !== undefined);
-  // A value in full precision, with what the column measures.
-  const valueTooltip = (column: string, split: MetricValues) => (row: number) => {
-    const value = split[ids[row]];
-    return value === undefined ? '' : `${value}. ${METRIC_HEADERS[column]}`;
-  };
-  const grid = readOnlyGrid(metricsFrame(metrics, ids), {headers: METRIC_HEADERS, cells: {
-    'Metric': (row) => METRIC_DESCRIPTIONS[ids[row]],
-    'Train': valueTooltip('Train', metrics.train),
-    'Validation': valueTooltip('Validation', metrics.validation),
-  }});
-  const items: (string | HTMLElement)[][] = [];
-  if (skippedRows > 0)
-    items.push([`Rows: ${rowCount} used, ${skippedRows} skipped (missing values)`]);
-  if (folds !== undefined && seed !== undefined)
-    items.push([`Validation: ${folds}-fold cross-validation on ${rowCount} rows`], seedLine(seed));
-  if (metrics.positiveClass !== undefined)
-    items.push([`Positive class: ${metrics.positiveClass}`]);
-  const list = ui.element('ul');
-  for (const item of items) {
-    const li = ui.element('li');
-    li.append(...item);
-    list.append(li);
+ * seed and the positive class: the Train view's Results and the model's Performance pane. {@link update} shows
+ * another summary of the same metric rows in the same grid, which keeps its column widths and scroll. */
+export class MetricsTable {
+  readonly root: HTMLElement;
+  private readonly ids: MetricId[];
+  private readonly grid: DG.Grid;
+  private readonly list = ui.element('ul');
+  private summary: MetricsSummary;
+
+  constructor(summary: MetricsSummary) {
+    this.summary = summary;
+    this.ids = MetricsTable.idsOf(summary);
+    // A value in full precision, with what the column measures; read from the current summary.
+    const valueTooltip = (column: string, split: Split) => (row: number) => {
+      const value = this.summary.metrics[split][this.ids[row]];
+      return value === undefined ? '' : `${value}. ${METRIC_HEADERS[column]}`;
+    };
+    this.grid = readOnlyGrid(metricsFrame(summary.metrics, this.ids), {headers: METRIC_HEADERS, cells: {
+      'Metric': (row) => METRIC_DESCRIPTIONS[this.ids[row]],
+      'Train': valueTooltip('Train', 'train'),
+      'Validation': valueTooltip('Validation', 'validation'),
+    }});
+    this.root = ui.divV([this.grid.root, this.list]);
+    this.fillList();
   }
-  return ui.divV(items.length === 0 ? [grid.root] : [grid.root, list]);
+
+  /** Shows [summary] and returns true when it has the metric rows of the grid; false (nothing changed) when not. */
+  update(summary: MetricsSummary): boolean {
+    const ids = MetricsTable.idsOf(summary);
+    if (ids.length !== this.ids.length || ids.some((id, i) => id !== this.ids[i]))
+      return false;
+    this.summary = summary;
+    for (const [name, split] of SPLIT_COLUMNS) {
+      const values = splitValues(summary.metrics, split, ids);
+      this.grid.dataFrame.getCol(name).init((i) => values[i]);
+    }
+    this.fillList();
+    return true;
+  }
+
+  private static idsOf({metrics}: MetricsSummary): MetricId[] {
+    return METRIC_IDS.filter((id) => metrics.validation[id] !== undefined);
+  }
+
+  private fillList(): void {
+    const {metrics, rowCount, skippedRows, folds, seed} = this.summary;
+    const items: (string | HTMLElement)[][] = [];
+    if (skippedRows > 0)
+      items.push([`Rows: ${rowCount} used, ${skippedRows} skipped (missing values)`]);
+    if (folds !== undefined && seed !== undefined)
+      items.push([`Validation: ${folds}-fold cross-validation on ${rowCount} rows`], seedLine(seed));
+    if (metrics.positiveClass !== undefined)
+      items.push([`Positive class: ${metrics.positiveClass}`]);
+    ui.empty(this.list);
+    for (const item of items) {
+      const li = ui.element('li');
+      li.append(...item);
+      this.list.append(li);
+    }
+    ui.setDisplay(this.list, items.length > 0);
+  }
 }
 
 /** `Seed: <seed>` with the seed selectable and a copy icon right after it. */
@@ -213,9 +254,9 @@ function performancePane(model: ModelRow): HTMLElement {
   if (metrics === null)
     return ui.divText('No metrics were recorded for this model.');
   const folds: unknown = model.splitting?.folds;
-  return metricsTable({metrics, rowCount: model.row_count ?? 0, seed: model.seed,
+  return new MetricsTable({metrics, rowCount: model.row_count ?? 0, seed: model.seed,
     skippedRows: preparationOptionsOf(model.options).missingValues?.skippedRows ?? 0,
-    folds: typeof folds === 'number' ? folds : undefined});
+    folds: typeof folds === 'number' ? folds : undefined}).root;
 }
 
 function activityPane(activity: () => Promise<ModelActivity>): HTMLElement {

@@ -63,7 +63,7 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
   renderCard(x: unknown): HTMLElement {
     const row = this.rowOrThrow(x);
     const v = row.values;
-    const {names: features, tables} = featureFit({features: v.features}, grok.shell.tables);
+    const {names: features, tables} = featureFit({features: v.features, options: v.options}, grok.shell.tables);
     const lines: HTMLElement[] = [ui.label(row.displayName, 'grok-gallery-grid-item-title')];
     if (tables.length > 0)
       lines.push(ui.label(`Applicable to ${tables.map((t) => t.name).join(', ')}`));

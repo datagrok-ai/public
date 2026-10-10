@@ -79,7 +79,7 @@ category('Engines', () => {
   test('isApplicable and isInteractive through the contract', async () => {
     const engines = EngineRegistry.discover();
     const iris = await grok.data.files.openTable(IRIS);
-    const without = (...names: string[]) => iris.clone(null, iris.columns.names().filter((n) => !names.includes(n)));
+    const without = (...names: string[]) => iris.columns.toList().filter((c) => !names.includes(c.name));
     const species = iris.getCol('Species');
     const petalLength = iris.getCol('Petal.Length');
     const xgboost = engineByName(engines, 'XGBoost');

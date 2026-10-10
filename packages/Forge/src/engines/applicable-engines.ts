@@ -1,5 +1,4 @@
 import * as DG from 'datagrok-api/dg';
-import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
 import {Engine, isComplete} from './engine';
 import {isApplicable} from './engine-calls';
 
@@ -11,18 +10,13 @@ export interface ApplicableEngines { applicable: Engine[]; failed: EngineFailure
 export async function applicableEngines(engines: Engine[], features: DG.Column[], target: DG.Column):
   Promise<ApplicableEngines> {
   const complete = engines.filter(isComplete);
-  const frame = sharedFrame(features);
-  try {
-    const outcomes = await Promise.allSettled(complete.map((engine) => isApplicable(engine, frame, target)));
-    const result: ApplicableEngines = {applicable: [], failed: []};
-    for (const [i, outcome] of outcomes.entries()) {
-      if (outcome.status === 'rejected')
-        result.failed.push({engine: complete[i], error: outcome.reason});
-      else if (outcome.value)
-        result.applicable.push(complete[i]);
-    }
-    return result;
-  } finally {
-    releaseFrame(frame);
+  const outcomes = await Promise.allSettled(complete.map((engine) => isApplicable(engine, features, target)));
+  const result: ApplicableEngines = {applicable: [], failed: []};
+  for (const [i, outcome] of outcomes.entries()) {
+    if (outcome.status === 'rejected')
+      result.failed.push({engine: complete[i], error: outcome.reason});
+    else if (outcome.value)
+      result.applicable.push(complete[i]);
   }
+  return result;
 }

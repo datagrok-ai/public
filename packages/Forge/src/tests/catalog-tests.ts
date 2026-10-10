@@ -19,7 +19,9 @@ import {deleteModel, modelsChanged} from '../storage/model-store';
 import {comparisonForms, hasFormsViewer, ModelComparison, NO_FORMS} from '../ui/model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from '../ui/model-handler';
 import {isForgePrediction, predictedByPane} from '../ui/prediction-column-panel';
-import {insertModelRow, MEASUREMENTS, openIris, savedFixture, saveIrisModel} from './test-data';
+import {trainModel} from '../training/train-model';
+import {columnsOf, insertModelRow, MEASUREMENTS, openIris, PREDICT_PROBABILITY, requestOf, savedFixture,
+  saveIrisModel, twoSpeciesIris} from './test-data';
 
 const TIMEOUT = 90000;
 const WAIT_MS = 10000;
@@ -80,6 +82,21 @@ category('Catalog', () => {
     }, (e) => e instanceof ForgeError && e.message === 'Select at least two models to compare.');
   });
 
+  test('compareModels lists AUC-ROC (train) and (validation) for a predict-probability model', async () => {
+    const iris = await twoSpeciesIris();
+    const result = await trainModel(await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'),
+      PREDICT_PROBABILITY));
+    const [regressor] = compareRows();
+    const probability: CompareModelRow = {id: 'p', name: 'forge-test-probability', created_on: dayjs(),
+      engine_name: 'XGBoost', task: result.task, target_name: 'Species', row_count: result.rowCount,
+      metrics: result.metrics};
+    const df = compareModels([regressor, probability]);
+    const names = df.columns.names();
+    expect(names.includes('AUC-ROC (train)') && names.includes('AUC-ROC (validation)'), true, names.join(', '));
+    expectFloat(df.get('AUC-ROC (validation)', 1), result.metrics.validation.auc ?? NaN, 1e-6);
+    expect(df.getCol('AUC-ROC (train)').isNone(0), true, 'The regressor has an AUC-ROC');
+  }, {timeout: TIMEOUT});
+
   test('the comparison handler claims a comparison and shows it as forms', async () => {
     const comparison = new ModelComparison(compareRows());
     expect(DG.ObjectHandler.forEntity(comparison)?.name, 'Forge model comparison handler');
@@ -113,6 +130,15 @@ category('Catalog', () => {
     expectArray(applicableTables(IRIS_ROW, [cars, iris]).map((t) => t.name), [iris.name]);
     expect(applicableTables(IRIS_ROW, [cars]).length, 0);
     expect(applicableTables({}, [iris]).length, 0);
+  });
+
+  test('applicableTables does not require a feature that Skip unique categories left out', async () => {
+    const features = {columns: [{name: 'x', type: DG.COLUMN_TYPE.FLOAT}, {name: 'y', type: DG.COLUMN_TYPE.FLOAT},
+      {name: 'subject', type: DG.COLUMN_TYPE.STRING}]};
+    const table = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [3, 4])]);
+    expect(applicableTables({features, options: {skippedColumns: ['subject']}}, [table]).length, 1);
+    expect(applicableTables({features}, [table]).length, 0);
   });
 
   test('modelActivity lists the applications newest first and the last run of any status', async () => {

@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
+import {onFrame} from '../preparation/shared-frame';
 
 const COPY_SUFFIX = ' (training data)';
 
@@ -11,13 +11,10 @@ export function trainingCopyName(modelName: string): string {
 
 /** Uploads [columns] (the features and the target, every row) as a table named after the model; returns its id. */
 export async function uploadTrainingCopy(columns: DG.Column[], modelName: string): Promise<string> {
-  const frame = sharedFrame(columns);
-  try {
+  return await onFrame(columns, (frame) => {
     frame.name = trainingCopyName(modelName);
-    return await grok.dapi.tables.uploadDataFrame(frame);
-  } finally {
-    releaseFrame(frame);
-  }
+    return grok.dapi.tables.uploadDataFrame(frame);
+  });
 }
 
 /** Deletes an uploaded copy. A table that is gone already is no error; a table not named as a copy (a

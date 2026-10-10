@@ -1,20 +1,25 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, expectExceptionAsync, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+  from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine} from '../engines/engine';
+import {applicableEngines} from '../engines/applicable-engines';
 import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {kFold} from '../training/k-fold';
+import {aucOf} from '../metrics/metrics';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
-import {releaseFrame, sharedFrame} from '../preparation/shared-frame';
+import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
+import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
-import {checkSelection, prepareTraining, TrainingProblems, TrainingRequest, TrainingSelection, trainModel}
-  from '../training/train-model';
+import {checkSelection, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
+  TrainingSelection, trainModel} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
-import {columnsOf, engineByName, expectMetrics, expectReleased, framesSharing, IMPUTE, inDiscoveryOrder, IRIS,
-  MEASUREMENTS, openIris, requestOf, selectionOf, valuesOf} from './test-data';
+import {columnNamed, columnsOf, engineByName, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE,
+  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, ONE_HOT_STEPS, openIris,
+  PREDICT_PROBABILITY, requestOf, selectionOf, SKIP_UNIQUE_STEPS, twoSpeciesIris, valuesOf} from './test-data';
 
 const TIMEOUT = 60000;
 const ENGINE_TIMEOUT = 120000;
@@ -26,6 +31,7 @@ const ENGINE_TARGETS: [string, string[]][] = [['XGBoost', ['Species', 'Petal.Len
 const NOT_SOFTMAX = 'Softmax cannot learn from this selection. ' +
   'It needs numerical features and a numerical, text or boolean target.';
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
+const EDA_METHODS = ['Linear Regression', 'Softmax', 'PLS Regression', 'XGBoost', 'SVM'];
 
 /** A selection of [engine] with its default hyperparameters. */
 function engineSelection(engine: Engine, features: DG.Column[], target: DG.Column,
@@ -143,7 +149,7 @@ category('Training', () => {
     problems = await problemsOf(selectionOf([n], yWithGap));
     expect(problems.target.length, 0, problems.target.join(' '));
     const request = await prepareTraining(selectionOf([n], yWithGap));
-    expect(request.options.missingValues?.skippedRows, 1);
+    expect(request.prepared.options.missingValues?.skippedRows, 1);
     expect(request.target.length, 11);
 
     problems = await problemsOf(selectionOf([n], constant));
@@ -193,26 +199,25 @@ category('Training', () => {
     const a = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'a', valuesOf(rows, (i) => i, [2]));
     const b = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'b', valuesOf(rows, (i) => 2 * i));
     const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => 3 * i, [9]));
-    const features = DG.DataFrame.fromColumns([a, b]);
+    const features = [a, b];
 
-    const [[skipped, imputed], frames] = await framesSharing([a, b], async () =>
+    const [[skipped, imputed], frames] = await framesSharing(features, async () =>
       [await prepareTraining(selectionOf(features, y)), await prepareTraining(selectionOf(features, y, IMPUTE))]);
-    expect(skipped.options.missingValues?.skippedRows, 2);
+    expect(skipped.prepared.options.missingValues?.skippedRows, 2);
     expect(skipped.target.length, 10);
-    expect(JSON.stringify(skipped.options), JSON.stringify({preprocessingInfo: ['ignore-missing'],
+    expect(JSON.stringify(skipped.prepared.options), JSON.stringify({preprocessingInfo: ['ignore-missing'],
       postprocessingInfo: [], missingValues: {mode: 'skip', skippedRows: 2}}));
 
-    expect(imputed.options.missingValues?.skippedRows, 1);
+    expect(imputed.prepared.options.missingValues?.skippedRows, 1);
     expect(imputed.target.length, 11);
-    expect(imputed.features.getCol('a').isNone(2), false, 'The gap in a is not imputed');
-    expect(JSON.stringify(imputed.options), JSON.stringify({preprocessingInfo: ['impute-missing'],
+    expect(columnNamed(imputed.features, 'a').isNone(2), false, 'The gap in a is not imputed');
+    expect(JSON.stringify(imputed.prepared.options), JSON.stringify({preprocessingInfo: ['impute-missing'],
       postprocessingInfo: [], missingValues: {mode: 'impute', neighbors: 4, distance: 'Euclidean', skippedRows: 1}}));
 
     expect(a.isNone(2) && y.isNone(9), true, 'The input columns changed');
-    expect(features.rowCount, rows);
-    releaseFrame(skipped.features);
-    releaseFrame(imputed.features);
-    expectReleased(frames);
+    expect(a.length, rows);
+    // A skipped row makes every column a copy, so the imputer's frame holds no column of the user's.
+    expectNoFrames(frames);
   }, {timeout: TIMEOUT});
 
   test('Skip rows leaves a text target only the classes its rows have', async () => {
@@ -224,7 +229,6 @@ category('Training', () => {
     const request = await prepareTraining(selectionOf([x, z], y));
     expectArray(request.target.categories, ['a', 'b']);
     const result = await trainModel(request);
-    releaseFrame(request.features);
     expect(result.metrics.positiveClass, 'a');
     for (const id of ['sensitivity', 'specificity', 'precision', 'npv'] as const)
       expect(result.metrics.validation[id] !== undefined, true, `${id} is missing`);
@@ -236,7 +240,6 @@ category('Training', () => {
     expect(irisRequest.target.categories.length, 3, irisRequest.target.categories.join(', '));
     const fingerprint = datasetFingerprint(irisRequest.features, irisRequest.target);
     const irisResult = await trainModel(irisRequest);
-    releaseFrame(irisRequest.features);
     expect(irisResult.target.categories?.length, 3);
     expect(irisResult.target.categories?.includes(''), false, 'The stored target lists an empty class');
     expect(fingerprint.columns[4].categories?.includes(''), false, 'The data summary lists an empty class');
@@ -429,6 +432,214 @@ category('Training', () => {
     expect(check.problems.method.length, 0, check.problems.method.join(' '));
     expect(check.isInteractive, false);
   }, {timeout: TIMEOUT});
+});
+
+// The preparation steps and Predict probability, and every method end to end (one category, split for its length).
+category('Training', () => {
+  test('checkSelection: text and yes/no features need One-hot encoding, dates are refused', async () => {
+    const values = Array.from({length: 12}, (_, i) => i + 1);
+    const n = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', values);
+    const cls = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'cls', values.map((v) => v % 2 === 0 ? 'a' : 'b'));
+    const flag = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'flag', values.map((v) => v % 3 === 0));
+    const date = DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'date', values.map((v) => new Date(2020, 0, v)));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', values.map((v) => v * 1.5 + (v % 3)));
+    let problems = await problemsOf(selectionOf([n, cls, flag], y));
+    expectArray(problems.features, ['XGBoost needs numerical features. Check One-hot encoding in Preparation, ' +
+      'or uncheck: cls, flag.']);
+    problems = await problemsOf({...selectionOf([n, cls, flag], y), steps: ONE_HOT_STEPS});
+    expectArray([...problems.features, ...problems.method], []);
+    problems = await problemsOf({...selectionOf([n, cls, date], y), steps: ONE_HOT_STEPS});
+    expectArray(problems.features, ['XGBoost needs numerical features. Uncheck: date.']);
+  }, {timeout: TIMEOUT});
+
+  test('prepareFeatures: one-hot records the categories and builds their columns in that order', async () => {
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [0.5, 1.5, 2.5, 3.5]);
+    const color = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color', ['red', 'blue', 'green', 'blue']);
+    const flag = DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'flag', [true, false, false, true]);
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [1, 2, 3, 4]);
+    const prepared = prepareFeatures([color, x, flag], y, ONE_HOT_STEPS, NO_OPTIONS);
+    expectArray(prepared.options.preprocessingInfo, ['one-hot']);
+    expect(JSON.stringify(prepared.options.oneHotCategories),
+      JSON.stringify({color: ['blue', 'green', 'red'], flag: ['false', 'true']}));
+    expectArray(names(prepared.columns),
+      ['x', 'color=blue', 'color=green', 'color=red', 'flag=false', 'flag=true']);
+    expectArray(columnNamed(prepared.columns, 'color=blue').toList(), [0, 1, 0, 1]);
+    expectArray(columnNamed(prepared.columns, 'flag=true').toList(), [1, 0, 0, 1]);
+    expect(prepared.columns[0] === x && prepared.target === y, true, 'A numerical column or the target was copied');
+    expect(color.type === DG.COLUMN_TYPE.STRING && color.length === 4, true, 'The text column changed');
+  });
+
+  test('applicableEngines lists the methods for a one-hot encoded demog-like frame, in discovery order', async () => {
+    const rows = 40;
+    const age = DG.Column.fromList(DG.COLUMN_TYPE.INT, 'age', valuesOf(rows, (i) => 20 + i));
+    const height = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'height', valuesOf(rows, (i) => 150 + (i * 7) % 40));
+    const weight = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'weight', valuesOf(rows, (i) => 50 + (i * 5) % 45));
+    const sex = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'sex', Array.from({length: rows}, (_, i) =>
+      i % 3 === 0 ? 'M' : 'F'));
+    const race = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'race', Array.from({length: rows}, (_, i) =>
+      ['Asian', 'Black', 'Caucasian', 'Other'][i % 4]));
+    const engines = EngineRegistry.discover();
+    const listed = async (features: DG.Column[], target: DG.Column) => {
+      const {columns, target: prepared} = prepareFeatures(features, target, ONE_HOT_STEPS, NO_OPTIONS);
+      const {applicable, failed} = await applicableEngines(engines, columns, prepared);
+      const edaFailed = failed.map((f) => f.engine.name).filter((name) => EDA_METHODS.includes(name));
+      expect(edaFailed.length, 0, edaFailed.join(', '));
+      return applicable.map((e) => e.name).filter((name) => EDA_METHODS.includes(name));
+    };
+    expectArray(await listed([height, weight, sex, race], age),
+      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Linear Regression', 'PLS Regression']));
+    expectArray(await listed([age, height, weight, race], sex),
+      inDiscoveryOrder(engines, ['XGBoost', 'SVM', 'Softmax']));
+  }, {timeout: TIMEOUT});
+
+  test('replayPreprocessing builds the recorded one-hot columns for a table with a missing and an extra category',
+    async () => {
+      const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3]);
+      const color = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'color', ['red', 'purple', 'red']);
+      const options: PreparationOptions = {...NO_OPTIONS, preprocessingInfo: ['one-hot'],
+        oneHotCategories: {color: ['blue', 'green', 'red']}};
+      const replayed = replayPreprocessing([x, color], options);
+      expectArray(names(replayed), ['x', 'color=blue', 'color=green', 'color=red']);
+      expectArray(columnNamed(replayed, 'color=blue').toList(), [0, 0, 0]);
+      expectArray(columnNamed(replayed, 'color=green').toList(), [0, 0, 0]);
+      expectArray(columnNamed(replayed, 'color=red').toList(), [1, 0, 1]);
+      // A model without the record (the built-in tool's) uses the applied data's categories.
+      expectArray(names(replayPreprocessing([x, color], {...options, oneHotCategories: undefined})),
+        ['x', 'color=purple', 'color=red']);
+    });
+
+  test('prepareFeatures: skip unique categories drops the id column before one-hot', async () => {
+    const id = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'id', ['s1', 's2', 's3', 's4']);
+    const group = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'group', ['a', 'b', 'a', 'b']);
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4]);
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [2, 4, 6, 8]);
+    const skipped = prepareFeatures([id, group, x], y, SKIP_UNIQUE_STEPS, NO_OPTIONS);
+    expectArray(names(skipped.columns), ['group', 'x']);
+    expectArray(skipped.options.preprocessingInfo, ['skip-unique-categories']);
+    expectArray(skipped.options.skippedColumns ?? [], ['id']);
+    const nothingSkipped = prepareFeatures([group, x], y, SKIP_UNIQUE_STEPS, NO_OPTIONS).options;
+    expectArray(nothingSkipped.preprocessingInfo, []);
+    expect(nothingSkipped.skippedColumns === undefined, true, 'skippedColumns is recorded without a skipped column');
+
+    const both = prepareFeatures([id, group, x], y, {...SKIP_UNIQUE_STEPS, oneHot: true},
+      {...NO_OPTIONS, preprocessingInfo: ['ignore-missing']});
+    expectArray(both.options.preprocessingInfo, ['ignore-missing', 'skip-unique-categories', 'one-hot']);
+    expectArray(names(both.columns), ['x', 'group=a', 'group=b']);
+    expect(JSON.stringify(both.options.oneHotCategories), JSON.stringify({group: ['a', 'b']}));
+    // The replay leaves the id out even where its values repeat.
+    const repeated = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'id', ['s1', 's1', 's2']);
+    const appliedGroup = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'group', ['b', 'a', 'b']);
+    const appliedX = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3]);
+    expectArray(names(replayPreprocessing([repeated, appliedGroup, appliedX], both.options)),
+      ['x', 'group=a', 'group=b']);
+  });
+
+  test('checkSelection: Skip unique categories that leaves no feature is a Features problem', async () => {
+    const id = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'id', Array.from({length: 12}, (_, i) => `s${i}`));
+    const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(12, (i) => i * 1.5));
+    const problems = await problemsOf({...selectionOf([id], y),
+      steps: {...SKIP_UNIQUE_STEPS, oneHot: true}});
+    expectArray(problems.features, ['Skip unique categories leaves no feature. Check more features.']);
+    expectArray(problems.method, []);
+  }, {timeout: TIMEOUT});
+
+  test('prepareFeatures: predict probability makes a two-class target a float 0/1 target', async () => {
+    const x = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2, 3, 4, 5]);
+    const sex = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'sex', ['M', 'F', 'F', 'M', null]);
+    const prepared = prepareFeatures([x], sex, {...PREDICT_PROBABILITY, cutoff: 0.4}, NO_OPTIONS);
+    expect(prepared.target.type, DG.COLUMN_TYPE.FLOAT);
+    expect(prepared.target.name, 'sex');
+    expectArray(prepared.target.toList(), [0, 1, 1, 0, null]);
+    expect(JSON.stringify(prepared.options), JSON.stringify({preprocessingInfo: [],
+      postprocessingInfo: ['binary-classification'], positiveClass: 'F', negativeClass: 'M',
+      binaryClassificationThreshold: 0.4, targetType: 'string'}));
+    expect(sex.type, DG.COLUMN_TYPE.STRING);
+
+    const three = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'kind', ['a', 'b', 'c', 'a', 'b']);
+    const ignored = prepareFeatures([x], three, PREDICT_PROBABILITY, NO_OPTIONS);
+    expect(ignored.target === three, true, 'A three-class target was changed');
+    expectArray(ignored.options.postprocessingInfo, []);
+  });
+
+  test('aucOf: the trapezoid over the rows sorted by score', async () => {
+    const labels = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b', 'a', 'b']);
+    const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 's', [0.9, 0.8, 0.3, 0.1]);
+    expectFloat(aucOf(labels, scores, 'a') ?? NaN, 0.75, 1e-9);
+    expectFloat(aucOf(labels, scores, 'b') ?? NaN, 0.25, 1e-9);
+    const oneClass = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'a', 'a', 'a']);
+    expect(aucOf(oneClass, scores, 'a') === undefined, true, 'AUC of one class');
+  });
+
+  test('aucOf: tied scores form one diagonal segment', async () => {
+    const tiedLabels = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b']);
+    const tied = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 's', [0.5, 0.5]);
+    expectFloat(aucOf(tiedLabels, tied, 'a') ?? NaN, 0.5, 1e-9);
+    expectFloat(aucOf(tiedLabels, tied, 'b') ?? NaN, 0.5, 1e-9);
+    // Of the 9 positive-negative pairs, 0.9 beats 3, the tied 0.7 beats 1 and ties 2, 0.2 beats 1: (3 + 2 + 1) / 9.
+    const labels = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b', 'a', 'b', 'a', 'b']);
+    const mixed = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 's', [0.9, 0.7, 0.7, 0.7, 0.2, 0.1]);
+    expectFloat(aucOf(labels, mixed, 'a') ?? NaN, 2 / 3, 1e-9);
+  });
+
+  test('recutResult cuts the kept scores at another cutoff without retraining', async () => {
+    const actual = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'y', ['a', 'b', 'a', 'b']);
+    const scores = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [0.9, 0.8, 0.3, 0.1]);
+    const options: PreparationOptions = {...NO_OPTIONS, postprocessingInfo: ['binary-classification'],
+      positiveClass: 'a', negativeClass: 'b', binaryClassificationThreshold: 0.5, targetType: 'string'};
+    const result: TrainingResult = {task: 'regression', target: {name: 'y', type: 'string', categories: ['a', 'b']},
+      features: {columns: []}, options, splitting: {scheme: 'kfold', folds: 5}, blob: new Uint8Array(),
+      metrics: {train: {}, validation: {}}, seed: 1, hyperparameters: {}, rowCount: 4,
+      scores: {actual, positiveClass: 'a', train: scores, validation: scores,
+        auc: {train: aucOf(actual, scores, 'a'), validation: aucOf(actual, scores, 'a')}}};
+    const allPositive = recutResult(result, 0);
+    expect(allPositive.options.binaryClassificationThreshold, 0);
+    for (const values of [allPositive.metrics.train, allPositive.metrics.validation]) {
+      expect(values.sensitivity, 1);
+      expect(values.specificity, 0);
+      expectFloat(values.auc ?? NaN, 0.75, 1e-9);
+    }
+    const allNegative = recutResult(result, 1);
+    expect(allNegative.metrics.validation.sensitivity, 0);
+    expect(allNegative.metrics.validation.specificity, 1);
+    expectFloat(allNegative.metrics.validation.auc ?? NaN, 0.75, 1e-9);
+    expect(allNegative.metrics.positiveClass, 'a');
+    expect(result.options.binaryClassificationThreshold, 0.5);
+    const plain: TrainingResult = {...result, scores: undefined};
+    expect(recutResult(plain, 0) === plain, true, 'A result without scores was cut');
+  });
+
+  test('Predict probability: a regressor on the classes, AUC-ROC, metrics of the labels, non-integer scores',
+    async () => {
+      const iris = await twoSpeciesIris();
+      const features = columnsOf(iris, MEASUREMENTS);
+      const species = iris.getCol('Species');
+      const engines = EngineRegistry.discover();
+      const check = await checkSelection({...selectionOf(features, species), steps: PREDICT_PROBABILITY}, engines);
+      const listed = check.engines.map((e) => e.name);
+      expect(listed.includes('Linear Regression') && !listed.includes('Softmax'), true, listed.join(', '));
+
+      const request = await requestOf(features, species, PREDICT_PROBABILITY);
+      expect(request.prepared.target.type, DG.COLUMN_TYPE.FLOAT);
+      expect(request.target === species, true, 'The selection\'s target was replaced');
+      const result = await trainModel(request);
+      expect(result.task, 'regression');
+      expect(JSON.stringify(result.target), JSON.stringify({name: 'Species', type: 'string',
+        categories: ['versicolor', 'virginica']}));
+      const {options, metrics, scores} = result;
+      expect(JSON.stringify([options.positiveClass, options.negativeClass, options.binaryClassificationThreshold,
+        options.targetType]), JSON.stringify(['versicolor', 'virginica', 0.5, 'string']));
+      expectArray(options.postprocessingInfo, ['binary-classification']);
+      expect(metrics.positiveClass, 'versicolor');
+      for (const values of [metrics.train, metrics.validation]) {
+        const auc = values.auc ?? NaN;
+        expect(auc > 0.5 && auc <= 1, true, `AUC-ROC ${auc}`);
+        expect(values.accuracy !== undefined && values.sensitivity !== undefined, true, JSON.stringify(values));
+        expect(values.mse === undefined, true, 'A regression metric of the scores');
+      }
+      expect(scores?.validation.toList().some((v) => typeof v === 'number' && !Number.isInteger(v)), true,
+        'XGBoost returned 0/1 scores');
+      expect(scores?.actual === species, true, 'The scores are measured against another target');
+    }, {timeout: TIMEOUT});
 
   for (const [name, targets] of ENGINE_TARGETS) {
     test(`${name} trains and applies with missing values under Skip rows and Impute`, async () => {
@@ -447,24 +658,14 @@ category('Training', () => {
 
           const request = await prepareTraining(engineSelection(engine, features, iris.getCol(targetName),
             missingValues));
-          try {
-            const result = await trainModel(request);
-            expect(result.rowCount, expectedRows, what);
-            expect(result.task, targetName === 'Species' ? 'classification' : 'regression', what);
+          const result = await trainModel(request);
+          expect(result.rowCount, expectedRows, what);
+          expect(result.task, targetName === 'Species' ? 'classification' : 'regression', what);
 
-            const frame = sharedFrame(features);
-            const prepared = await prepareMissingValues(frame, undefined, missingValues);
-            try {
-              const prediction = await apply(engine, prepared.features, result.blob);
-              expect(prediction.length, expectedRows, what);
-              expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
-            } finally {
-              releaseFrame(prepared.features);
-              releaseFrame(frame);
-            }
-          } finally {
-            releaseFrame(request.features);
-          }
+          const prepared = await prepareMissingValues(features, undefined, missingValues);
+          const prediction = await apply(engine, prepared.features, result.blob);
+          expect(prediction.length, expectedRows, what);
+          expect(prediction.stats.missingValueCount, 0, `${what}: empty predictions`);
           expect(features[0].isNone(3) && features[1].isNone(70), true, `${what}: the gaps were filled in place`);
         }
       }

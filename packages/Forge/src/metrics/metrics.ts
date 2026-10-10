@@ -3,7 +3,7 @@ import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
 
 export const METRIC_IDS =
-  ['mse', 'rmse', 'mae', 'r2', 'accuracy', 'f1', 'sensitivity', 'specificity', 'precision', 'npv'] as const;
+  ['mse', 'rmse', 'mae', 'r2', 'accuracy', 'f1', 'sensitivity', 'specificity', 'precision', 'npv', 'auc'] as const;
 export type MetricId = typeof METRIC_IDS[number];
 export type MetricValues = Partial<Record<MetricId, number>>;
 
@@ -18,6 +18,7 @@ export const METRIC_LABELS: Record<MetricId, string> = {
   specificity: 'Specificity',
   precision: 'Precision',
   npv: 'Negative Predicted Value',
+  auc: 'AUC-ROC',
 };
 
 export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
@@ -41,6 +42,9 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'positive predictions. Higher values indicate fewer false positives.',
   npv: 'Negative Predicted Value of the model. It measures the proportion of true negatives among the total number ' +
     'of negative predictions. Higher values indicate fewer false negatives.',
+  auc: 'Area Under the Receiver Operating Characteristic Curve. It represents the model\'s ability to distinguish ' +
+    'between classes. Values range from 0 to 1, with 1 indicating perfect classification and 0.5 representing ' +
+    'random guessing.',
 };
 
 interface ClassCounts { tp: number; fp: number; fn: number }
@@ -125,6 +129,36 @@ export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Colu
   positiveClass?: string): MetricValues {
   return task === 'regression' ? regressionMetrics(actual, predicted) :
     classificationMetrics(actual, predicted, positiveClass ?? actual.categories[0]);
+}
+
+/** The area under the ROC curve of [score] for [positiveClass] of [actual]: the trapezoid over the rows sorted by
+ * score, highest first, with the rows of one score as one step (a diagonal segment, as scikit-learn; the built-in
+ * tool stepped row by row, so ties counted in their row order); undefined when the rows hold only one of the
+ * classes. */
+export function aucOf(actual: DG.Column, score: DG.Column, positiveClass: string): number | undefined {
+  const paired = pairedRows(actual, score);
+  const values = Float64Array.from(paired, (i) => score.getNumber(i));
+  const order = Array.from(paired.keys()).sort((a, b) => values[b] - values[a]);
+  const scores = order.map((k) => values[k]);
+  const isPositive = order.map((k) => String(actual.get(paired[k])) === positiveClass);
+  const positives = isPositive.filter((p) => p).length;
+  const negatives = order.length - positives;
+  if (positives === 0 || negatives === 0)
+    return undefined;
+  let auc = 0;
+  let tp = 0;
+  let fp = 0;
+  for (let k = 0; k < order.length;) {
+    const [tpr, fpr] = [tp / positives, fp / negatives];
+    for (const tied = scores[k]; k < order.length && scores[k] === tied; k++) {
+      if (isPositive[k])
+        tp++;
+      else
+        fp++;
+    }
+    auc += (fp / negatives - fpr) * (tp / positives + tpr) / 2;
+  }
+  return auc;
 }
 
 function pairedRows(actual: DG.Column, predicted: DG.Column): number[] {

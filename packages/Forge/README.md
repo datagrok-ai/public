@@ -9,10 +9,10 @@ activity, compares them, and applies them to new data, from the menu, the model'
 
 ## Train a model
 
-Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in two
-groups you can fold with their chevrons: **Data** (Table, Target, Features, Missing values) and **Method** (Method and
-its settings). Both start open, and a group with a problem opens itself. **Results** is on the right; drag the
-splitter between them to resize.
+Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in
+groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (see "Preparation"; shown
+only while one of its inputs applies) and **Method** (Method and its settings). They start open, and a group with a
+problem opens itself. **Results** is on the right; drag the splitter between them to resize.
 
 * **Table**: the table to learn from, the current one by default
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
@@ -20,18 +20,15 @@ splitter between them to resize.
   tooltip of **Target** says how many
 * **Features**: the columns to learn from. By default, all numerical columns except the target and except integer
   columns whose values are all different, such as row numbers and ids. Dates and very large whole numbers (bigint
-  columns) cannot be features
-* **Missing values**: a choice shown only when a checked feature has empty cells; its tooltip lists the columns and
-  how many cells are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from
-  the most similar rows (k nearest neighbors, from the EDA package) on a copy, with the settings **Neighbors** and
-  **Distance** shown under it; your table keeps its empty cells
+  columns) cannot be features; text and yes/no features need **One-hot encoding** (see "Preparation")
 * **Method**: the machine learning method. The list holds the methods that can learn from the chosen target and
   features (a text target, for example, leaves out the regression methods). Until you choose one, Forge suggests a
   method as the built-in tool did: XGBoost for a classifier, PLS Regression for a regression with five or more
   numerical features, Linear Regression for any other regression (Chemprop for a molecule feature, where it is
   installed). The method you choose stays while it can learn from the data; when a change rules it out, a balloon
   says `<Method> cannot be used with this selection; <suggested> is chosen.` When no method can learn from the
-  data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`* the method's settings (hyperparameters), with their default values. Values you change are kept per method while
+  data, **Method** is empty and red: `No method can learn from this selection. Check the features and the target.`
+* the method's settings (hyperparameters), with their default values. Values you change are kept per method while
   the view is open, also when you switch the method or the table
 
 Hover an input to see what it is for. The inputs are checked as you change them. A problem is shown on the input it
@@ -69,8 +66,45 @@ Hover a column header or a metric name to see what it means; hover a value to se
 | Regression | **MSE**, **RMSE** (mean squared error and its root; lower is better), **MAE** (mean absolute error; lower is better), **R2** (the share of the target's variation the model explains; 1 is perfect) |
 | Classification | **Accuracy** (the share of correct predictions), **F1** (balances precision and sensitivity; for more than two classes, the average over the classes) |
 | Two classes | also **Sensitivity**, **Specificity**, **Precision**, **Negative Predicted Value**, computed for the positive class named under the table (the first class in alphabetical order) |
+| Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) |
 
 Training runs in the browser's main thread: on large tables the page pauses for a few seconds.
+
+### Preparation
+
+The **Preparation** group, between **Data** and **Method**, prepares the data before the method gets it. Each input is
+shown only while it applies to the checked features and the target, and the group is hidden while none does; an input
+that disappears goes back to its default. Hover an input to see what it does.
+
+* **Missing values**: shown when a checked feature has empty cells; its tooltip lists the columns and how many cells
+  are empty. **Skip rows** (the default) leaves those rows out. **Impute** fills the empty cells from the most similar
+  rows (k nearest neighbors, from the EDA package) on a copy, with the settings **Neighbors** and **Distance** shown
+  under it; your table keeps its empty cells
+* **One-hot encoding**: shown while a checked feature is text or yes/no, and checked when it appears if every such
+  feature has at most 20 categories (ids that **Skip unique categories** leaves out do not count), unchecked
+  otherwise; once you toggle it, your choice stays until it hides. Its tooltip: "Lets the model use categories as
+  numbers without implying an order: each category gets its own 0/1 column." The methods need numbers, so while it is
+  unchecked such a feature marks **Features** red: `<Method> needs numerical features. Check One-hot encoding in
+  Preparation, or uncheck: <features>.` Checked, it turns each text or yes/no feature into one 0/1 column per value.
+  The values are saved with the model, and applying it builds exactly those columns: a value the
+  new table lacks, or one the training never saw, does not stop the application (an unseen value counts as none of
+  the known ones)
+* **Skip unique categories** (checked when it appears): shown while a checked text feature has a different value in
+  every row, such as an id. It leaves such features out, so an id never becomes thousands of 0/1 columns. The left-out
+  features are saved with the model, and the **Apply predictive model** dialog does not ask for them: a table without
+  them can be applied to. When it leaves no feature, **Features** turns red: `Skip unique categories leaves no
+  feature. Check more features.`
+* **Predict probability** (unchecked by default): shown while the target is text or yes/no with exactly two classes.
+  Checked, the model is trained as a regression on the two classes (1 for the positive class, the first one in
+  alphabetical order, 0 for the other) and predicts the probability of the positive class; **Method** then lists the
+  methods for a regression. The score is the regression model's prediction on the 0/1 target, not a calibrated
+  probability, and it can fall outside 0..1; **AUC-ROC** uses the scores, the other metrics the labels after the
+  cutoff. **Positive class cutoff** appears under it, a number from 0 to 1 (0.5 by default) with a slider: type a value
+  or move the slider, and a row whose score reaches the cutoff is predicted as the positive class. A value that is not
+  a number from 0 to 1 marks the input red, **Results** says `Fix the settings.` and **Save** is unavailable. Changing
+  the cutoff does not retrain: the metrics are computed again from the scores of the last training, **AUC-ROC** stays,
+  and **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
+  scores
 
 ## Save a model
 

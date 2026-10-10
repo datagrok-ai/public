@@ -21,8 +21,8 @@ const MAX_CATEGORIES = 20;
 const FNV_OFFSET = 0x811c9dc5;
 const FNV_PRIME = 0x01000193;
 
-export function datasetFingerprint(features: DG.DataFrame, target: DG.Column): DatasetFingerprint {
-  const columns = [...features.columns.toList(), target];
+export function datasetFingerprint(features: DG.Column[], target: DG.Column): DatasetFingerprint {
+  const columns = [...features, target];
   const encoder = new TextEncoder();
   let hash = FNV_OFFSET;
   for (const col of columns) {
