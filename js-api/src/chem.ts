@@ -37,6 +37,20 @@ $$$$`
 
 let extractors: Func[];  // id => molecule
 
+function getExtractors(): Func[] {
+  if (extractors == null) {
+    try {
+      extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
+    } catch {
+      extractors = [];
+    }
+    // nameToSmiles matches almost any text, so the specific converters are tried first
+    const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
+    if (index >= 0)
+      extractors.push(extractors.splice(index, 1)[0]);
+  }
+  return extractors;
+}
 
 /** Cheminformatics-related routines */
 export namespace chem {
@@ -369,11 +383,7 @@ export namespace chem {
 
     /** Sets SMILES, MOLBLOCK, or any other molecule representation */
     setValue(x: string) {
-      const index = extractors.map(it => it.name.toLowerCase()).indexOf('nametosmiles');
-      const el = extractors.splice(index, 1)[0];
-      extractors.splice(extractors.length, 0, el);
-
-      const extractor = extractors
+      const extractor = getExtractors()
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
           if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
@@ -629,13 +639,6 @@ export namespace chem {
       const molInputDiv = ui.div();
       $(this.molInput).attr('placeholder', 'SMILES, MOLBLOCK, Inchi, ChEMBL id, etc');
 
-      if (extractors == null) {
-        try {
-          extractors = Func.find({meta: {role: FUNC_TYPES.CONVERTER}}).filter(it => it.outputs.filter(o => o.semType == SEMTYPE.MOLECULE).length);
-        } catch {
-          extractors = [];
-        }
-      }
       let optionsIcon = ui.iconFA('bars', (event: MouseEvent) => {
         const menuHost = ui.div([], {style: {position: 'fixed', zIndex: '100'}});
         this.host.parentElement?.prepend(menuHost);
