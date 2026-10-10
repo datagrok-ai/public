@@ -10,7 +10,7 @@ import {
 import {modelCardOf} from '../catalogue';
 import {catalogueCodes} from '../save-run';
 import {cardLabel, modelCardElement, modelCardPanelWidget, workspaceModelCardWidget} from '../views/model-card';
-import {saveModelRun, savedRunsOf} from '../model-runs';
+import {deleteRunTable, saveModelRun, savedRunsOf} from '../model-runs';
 import {_package} from '../package-test';
 import {withStandUser} from './stand-users';
 
@@ -224,7 +224,7 @@ category('Portal: model catalogue', () => {
     const r = await saveModelRun(call, 'EX-BIOC', program.code, {unitOperation: 'EX-PROD', runType: 'EX-SIM',
       purpose: 'screening', link: false});
     for (const id of r.tableIds)
-      undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+      undo.push(() => deleteRunTable(id));
     undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
     undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
     expect(r.notes.some((n) => n.includes('catalogue')), false, r.notes.join('; '));

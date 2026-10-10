@@ -10,6 +10,7 @@ import {
 import {predictionsOf, scoreCompounds} from '../predictions';
 import {recommendFor} from '../recommend';
 import {provenanceOf} from '../provenance';
+import {deleteRunTable} from '../model-runs';
 import {_package} from '../package-test';
 
 const SOL = 'ProjectPortalCore:SolubilityEstimate';
@@ -75,7 +76,7 @@ category('Portal: predictions', () => {
         continue;
       const call = run.run_id ? await grok.dapi.functions.calls.find(run.run_id).catch(() => null) : null;
       for (const t of (call?.options?.['portalTables'] as string[] | undefined) ?? [])
-        await grok.dapi.tables.find(t).then((x) => grok.dapi.tables.delete(x)).catch(() => undefined);
+        await deleteRunTable(t).catch(() => undefined);
       if (call)
         await grok.dapi.functions.calls.delete(call).catch(() => undefined);
       await portalDb.modelRuns.delete(id).catch(() => undefined);

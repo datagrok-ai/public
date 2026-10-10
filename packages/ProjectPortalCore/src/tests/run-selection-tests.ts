@@ -8,7 +8,7 @@ import {
   checkRunSelection, compareRuns, describeRunFilter, formatRunValue, matchesRunFilter, selectionHistory,
   validateRunCriterion,
 } from '../model/run-selection';
-import {criterionRuns, runComparison, saveModelRun, SavedModelRun, selectRunForCriterion} from '../model-runs';
+import {criterionRuns, deleteRunTable, runComparison, saveModelRun, SavedModelRun, selectRunForCriterion} from '../model-runs';
 import {openChooseRunDialog} from '../views/choose-run-dialog';
 import {_package} from '../package-test';
 
@@ -87,7 +87,7 @@ async function saveRun(feedRate: number, unitOperation: string, title: string): 
   const call = await f.prepare({feedRate, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
   const r = await saveModelRun(call, 'EX-BIOC', program.code, {unitOperation, runType: 'EX-SIM', title, link: false});
   for (const id of r.tableIds)
-    undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+    undo.push(() => deleteRunTable(id));
   undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
   undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
   return r;

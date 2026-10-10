@@ -91,6 +91,27 @@ async function uploadTables(call: DG.FuncCall, portfolio: PortfolioRow, notes: s
   return ids;
 }
 
+/** Deletes the entity projects the platform made for [entityId]. Sharing a standalone entity
+ * (`permissions.grant` on an uploaded table or a connection) wraps it in an entity project named
+ * after it. Deleting the entity alone leaves that project behind: listed in search, not
+ * openable, and refused to every delete, an admin's too (docs/platform-findings.md, item 46).
+ * So it goes first, while the entity still exists. */
+export async function deleteEntityProjectsOf(entityId: string): Promise<void> {
+  const projects = await grok.dapi.projects
+    .filter(`isEntity = true and relations.entity.id = ${filterValue(entityId)}`).list();
+  for (const p of projects)
+    await grok.dapi.projects.delete(p);
+}
+
+/** Deletes a table uploaded for a run (`uploadTables`) and, first, its entity project. */
+export async function deleteRunTable(id: string): Promise<void> {
+  const t = await grok.dapi.tables.find(id).catch(() => null);
+  if (!t)
+    return;
+  await deleteEntityProjectsOf(id);
+  await grok.dapi.tables.delete(t);
+}
+
 /** The space to link the run into: the asked-for or current-stage folder under the program's
  * folder when it exists, else the program folder; null when the program has no workspace. */
 async function targetFolder(portfolio: PortfolioRow, program: ProgramRow, stageFolders: string | null,

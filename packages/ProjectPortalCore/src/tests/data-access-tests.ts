@@ -8,6 +8,7 @@ import {
   accessFix, accessFrom, AccessCheck, accessNotice, accessStatus, connectionUses, describeAccessProblems,
   missingPermissions, QUERY, summarizeAccess, VIEW,
 } from '../model/data-access';
+import {deleteEntityProjectsOf} from '../model-runs';
 import {withRestrictedUser} from './restricted-user';
 import {_package} from '../package-test';
 
@@ -99,6 +100,8 @@ category('Portal: data access', () => {
     try {
       return await body(conn);
     } finally {
+      // a share makes an entity project that outlives the connection (platform finding 46)
+      await deleteEntityProjectsOf(conn.id).catch(() => undefined);
       await grok.dapi.connections.delete(conn).catch(() => undefined);
     }
   }

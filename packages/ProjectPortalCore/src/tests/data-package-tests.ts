@@ -5,7 +5,7 @@ import {buildManifest, ManifestInput, manifestCsv, manifestFileName, manifestSta
 import {portalDb} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext} from '../portal';
 import {loadExampleDocuments} from '../documents';
-import {saveModelRun} from '../model-runs';
+import {deleteRunTable, saveModelRun} from '../model-runs';
 import {dataPackageOf} from '../data-package';
 import {cachedUserNames, clearUserNames, userNames} from '../users';
 import {openDataPackageDialog} from '../views/data-package-dialog';
@@ -105,11 +105,8 @@ category('Portal: data package', () => {
       purpose: 'characterization', title: 'Package run'});
     undo.push(async () => {
       const back = await grok.dapi.functions.calls.find(saved.runId).catch(() => null);
-      for (const id of (back?.options?.['portalTables'] ?? []) as string[]) {
-        const t = await grok.dapi.tables.find(id).catch(() => null);
-        if (t)
-          await grok.dapi.tables.delete(t);
-      }
+      for (const id of (back?.options?.['portalTables'] ?? []) as string[])
+        await deleteRunTable(id);
       for (const r of await portalDb.modelRuns.query({filter: `program_id = ${filterValue(programId)}`, limit: ROW_LIMIT}))
         await portalDb.modelRuns.delete(r.id);
       if (back)

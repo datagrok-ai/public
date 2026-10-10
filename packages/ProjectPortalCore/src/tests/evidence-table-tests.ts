@@ -10,7 +10,7 @@ import {mergeFeeds, programFeedEntries} from '../model/feed';
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, programContext} from '../portal';
 import {buildPortfolioWorkspace, subspaces} from '../workspace';
-import {saveModelRun, selectRunForCriterion} from '../model-runs';
+import {deleteRunTable, saveModelRun, selectRunForCriterion} from '../model-runs';
 import {snapshotsOf, takeSnapshot} from '../snapshots';
 import {documentCardsOf, documentsOf, folderFiles} from '../documents';
 import {checkOf, evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFor} from '../evidence-tables';
@@ -141,7 +141,7 @@ async function saveRun(feedRate: number, title: string) {
   const call = await f.prepare({feedRate, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
   const r = await saveModelRun(call, 'EX-BIOC', program.code, {unitOperation: 'EX-PROD', runType: 'EX-SIM', title, link: false});
   for (const id of r.tableIds)
-    undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+    undo.push(() => deleteRunTable(id));
   undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
   undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
   return r;

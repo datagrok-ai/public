@@ -137,8 +137,12 @@ async function removeScratchWithRuns(page: Page, code: string, portfolio: string
         const call = run.run_id ? await grok.dapi.functions.calls.find(run.run_id).catch(() => null) : null;
         for (const id of (call?.options?.portalTables ?? []) as string[]) {
           const t = await grok.dapi.tables.find(id).catch(() => null);
-          if (t)
-            await grok.dapi.tables.delete(t);
+          if (!t)
+            continue;
+          // the share made an entity project that would outlive the table (platform finding 46)
+          for (const ep of await grok.dapi.projects.filter(`isEntity = true and relations.entity.id = "${id}"`).list())
+            await grok.dapi.projects.delete(ep);
+          await grok.dapi.tables.delete(t);
         }
         if (call)
           await grok.dapi.functions.calls.delete(call);
@@ -343,8 +347,12 @@ async function removePredictions(page: Page, model: string, program: string, por
     for (const id of [...new Set(rows.map((r: any) => r.model_run_id).filter((x: any) => !!x))]) {
       const run = await runs.get(id).catch(() => null);
       const call = run?.run_id ? await grok.dapi.functions.calls.find(run.run_id).catch(() => null) : null;
-      for (const t of call?.options?.['portalTables'] ?? [])
+      for (const t of call?.options?.['portalTables'] ?? []) {
+        // entity project first: it would outlive the table (platform finding 46)
+        for (const ep of await grok.dapi.projects.filter(`isEntity = true and relations.entity.id = "${t}"`).list().catch(() => []))
+          await grok.dapi.projects.delete(ep).catch(() => undefined);
         await grok.dapi.tables.find(t).then((x: any) => grok.dapi.tables.delete(x)).catch(() => undefined);
+      }
       if (call)
         await grok.dapi.functions.calls.delete(call).catch(() => undefined);
       if (run)

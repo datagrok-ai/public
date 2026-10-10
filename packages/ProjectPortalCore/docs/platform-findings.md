@@ -150,6 +150,30 @@ Each says what is missing, what the portal does instead, and what the platform w
 45. **A chat on a domain row needs the row promoted.** Criteria, runs and documents are domain rows; a chat on one
    would need it to be an entity, and promotion is per table. The portal anchors to them inside the program
    folder's chat instead (item 40). Need: chats on domain rows without promotion, or comment references (item 40).
+46. **Deleting a shared entity leaves its entity project behind, and no one can delete that project.**
+   `grok.dapi.permissions.grant(entity, group)` on a standalone entity (an uploaded table, a connection) goes
+   through `Entity_Share` → `GET /projects/for_entity/{id}`, which creates an entity project named after the entity
+   (`is_entity`, `is_dashboard`, linked to it) and shares that. When the entity is deleted, its relation goes, the
+   project stays. It is listed in Home search under the entity's name and fails to open ("Can't open project
+   EXSKIN1"). `grok.dapi.projects.delete` refuses it to everyone, admin included ("Insufficient privileges to delete
+   Project"), since the permission check finds nothing left to check against. Repro, as admin:
+   ```js
+   const df = DG.DataFrame.fromColumns([DG.Column.fromList('int', 'x', [1])]); df.name = 'TEST-ORPHAN';
+   await grok.dapi.tables.uploadDataFrame(df);
+   const t = df.getTableInfo();
+   await grok.dapi.permissions.grant(t, someGroup, false);       // one project "TEST-ORPHAN" appears
+   await grok.dapi.tables.delete(await grok.dapi.tables.find(t.id)); // the project stays
+   await grok.dapi.projects.delete(project);                       // "Insufficient privileges to delete Project"
+   ```
+   Deleting the project first, while the entity exists, works and leaves the entity and its grant in place. A
+   platform bug, not our misuse: the share is the documented call. Our tests deleted run tables after saving runs,
+   so every full core run left about ten (by 2026-10-09: 1,071 "Fed-batch time course", 72 "EXS-KIN1", 72
+   "Estimated solubility (example)", 30 scratch connections). **Workaround:** `deleteRunTable` and
+   `deleteEntityProjectsOf` (`src/model-runs.ts`) delete the project first, found by
+   `isEntity = true and relations.entity.id = "<id>"`; a full core run now leaves none. On 2026-10-09 the 73 "EXS-KIN1"
+   orphans were removed from the stand's database (the same deletes the server's own delete runs); the other names
+   were left for a decision. Need: deleting an entity deletes its entity project (or the
+   project is deletable by its author and admins once empty).
 
 ## What the server enforces on writes
 

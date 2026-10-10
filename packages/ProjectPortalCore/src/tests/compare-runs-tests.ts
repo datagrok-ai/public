@@ -4,7 +4,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {COMPARE_RUNS_FUNCTION, CompareCandidate, comparePlan, describePlan} from '../model/compare-runs';
-import {criterionRuns, saveModelRun} from '../model-runs';
+import {criterionRuns, deleteRunTable, saveModelRun} from '../model-runs';
 import {compareCandidates, compareRunsTool, criterionComparePlan, openCompareRuns} from '../compare-runs';
 import {openCompareRunsDialog} from '../views/compare-runs-dialog';
 import {_package} from '../package-test';
@@ -62,7 +62,7 @@ category('Portal: run comparison', () => {
       const call = await f.prepare({feedRate, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
       const r = await saveModelRun(call, 'EX-BIOC', program.code, {unitOperation: 'EX-PROD', runType: 'EX-SIM', title, link: false});
       for (const id of r.tableIds)
-        undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+        undo.push(() => deleteRunTable(id));
       undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
       undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
     }

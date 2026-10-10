@@ -36,6 +36,7 @@ Status as of 2026-10-09.
 | 14 | **Sync runs only when someone runs it.** The package cannot schedule its own functions (finding 9). | Platform. | Platform scheduling for package functions, or a server-side job. |
 | 15 | **No notification API from JS** (finding 10); in-platform notices go through what the stand offers. | Platform. | A notifications client in the js-api. |
 | 16 | **Soft-deleted program rows can leave live entities** (EMS); the example stand has some. | Platform behaviour. | Platform fix, then a clean-up of orphans. |
+| 28 | **Each table of a saved run gets an entity project** named after the table ("Fed-batch time course", a program code), because `uploadTables` shares it with the viewers and a share wraps a standalone entity in a project (finding 46). Deleting the table leaves that project behind, and no one can delete it then. The package never deletes run tables; its tests do, through `deleteRunTable` (project first). | Sharing the table is how a viewer reads a run's data; there is no share without the project. | Finding 46 fixed (the entity's project goes with it). Any future code that deletes run tables or shared connections must call `deleteRunTable` / `deleteEntityProjectsOf` first. |
 
 ## Discussion and Ask SME (on the platform's Chats)
 

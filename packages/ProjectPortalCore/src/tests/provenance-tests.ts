@@ -6,7 +6,7 @@ import {
 } from '../model/provenance';
 import {portalDb, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode, recordDecision, setCriterion, stagesOf} from '../portal';
-import {saveModelRun, selectRunForCriterion} from '../model-runs';
+import {deleteRunTable, saveModelRun, selectRunForCriterion} from '../model-runs';
 import {linkDocumentTo, PACKAGE_FILES} from '../documents';
 import {provenanceOf} from '../provenance';
 import {openProvenanceDialog} from '../views/provenance-dialog';
@@ -130,7 +130,7 @@ category('Portal: provenance', () => {
     const call = await f.prepare({feedRate: 4, temperature: 36.5, days: 14, seedingDensity: 0.5}).call();
     const r = await saveModelRun(call, 'EX-BIOC', program.code, {unitOperation: 'EX-PROD', runType: 'EX-SIM', title: 'PV feed 4', link: false});
     for (const id of r.tableIds)
-      undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+      undo.push(() => deleteRunTable(id));
     undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
     undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
     runRowId = r.modelRun.id;

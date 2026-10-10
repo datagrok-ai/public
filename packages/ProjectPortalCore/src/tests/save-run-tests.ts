@@ -6,7 +6,7 @@ import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {describeSavedRun, programChoices, saveRunDefaults, SaveRunChoices, validateSaveRun} from '../model/save-run';
 import {programsOf, saveRunChoices} from '../save-run';
 import {openSaveRunDialog} from '../views/save-run-dialog';
-import {modelRunsOf} from '../model-runs';
+import {deleteRunTable, modelRunsOf} from '../model-runs';
 import {_package} from '../package-test';
 
 const choices = (over: Partial<SaveRunChoices> = {}): SaveRunChoices => ({
@@ -90,7 +90,7 @@ category('Portal: save to program dialog', () => {
       onSaved: (r, l) => {
         line = l;
         for (const id of r.tableIds)
-          undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+          undo.push(() => deleteRunTable(id));
         undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
         undo.push(() => portalDb.modelRuns.delete(r.modelRun.id));
       }});

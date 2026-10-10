@@ -4,7 +4,7 @@ import {after, before, category, expect, test} from '@datagrok-libraries/test/sr
 import {portalDb, ProgramRow, StageRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {buildPortfolioWorkspace} from '../workspace';
-import {modelRunsOf, saveModelRun, SavedModelRun, selectRunForCriterion} from '../model-runs';
+import {deleteRunTable, modelRunsOf, saveModelRun, SavedModelRun, selectRunForCriterion} from '../model-runs';
 import {readRunAnnotations, RUN_OPTIONS, runFolderPath, runOptions} from '../model/model-runs';
 import {_package} from '../package-test';
 
@@ -58,7 +58,7 @@ async function runModel(feedRate: number): Promise<DG.FuncCall> {
 /** Undoes a saved run: the model_run row, the link, the call and its uploaded tables. */
 function forget(r: SavedModelRun): void {
   for (const id of r.tableIds)
-    undo.push(async () => grok.dapi.tables.delete(await grok.dapi.tables.find(id)));
+    undo.push(() => deleteRunTable(id));
   undo.push(async () => grok.dapi.functions.calls.delete(await grok.dapi.functions.calls.find(r.runId)));
   if (r.folder)
     undo.push(() => grok.dapi.spaces.id(r.folder!.id).removeEntity(r.runId));
