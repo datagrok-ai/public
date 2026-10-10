@@ -198,17 +198,14 @@ export class SurfacePlot extends EChartViewer {
       case 'XColumnName':
         this.XColumnName = newVal;
         this.XArr = col;
-        this.option.xAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'YColumnName':
         this.YColumnName = newVal;
         this.YArr = col;
-        this.option.yAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       case 'ZColumnName':
         this.ZColumnName = newVal;
         this.ZArr = col;
-        this.option.zAxis3D.axisLabel.formatter = col.type === 'time' ? undefined : formatter;
         break;
       }
       this.render(true);
@@ -269,6 +266,8 @@ export class SurfacePlot extends EChartViewer {
       this.option.xAxis3D.type = this.XArr.type;
       this.option.yAxis3D.type = this.YArr.type;
       this.option.zAxis3D.type = this.ZArr.type;
+      for (const axis of [this.option.xAxis3D, this.option.yAxis3D, this.option.zAxis3D])
+        axis.axisLabel.formatter = axis.type === 'time' ? undefined : formatter;
       this.rawData = this.zip(this.XArr.data, this.YArr.data, this.ZArr.data);
     }
 

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21150: Surface plot: Fixed an error when the plot opened on a table with a datetime column on an axis
 * Radar, Timelines, Tree: Added the automation surface — `getWidgetStatus` hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
 * Sankey, Chord: Added the automation surface — node, link, category and chord hit areas and readings, `isRenderPending` / `onRendered` / `renderError`
 * Globe: Added the `points` automation reading and `isRenderPending` / `onRendered`
