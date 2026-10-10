@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21149: Pattern: Fixed bulk Convert failing with "Column already exists" when run again on the same table
 * GROK-20959: Warn on Save SDF when a strand cannot be converted instead of linking an empty sense molfile
 * GROK-20958: Handle MonomerNotFoundError in Oligo Translator getMolfile so unknown-monomer input refreshes the view instead of throwing
 * GROK-20806: Uniquify Bulk Convert output column name via columns.getUnusedName
