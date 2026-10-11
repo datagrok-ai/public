@@ -358,11 +358,13 @@ export function runControlComparisons(): void {
   });
 
   function rebuildControlChoices(): void {
-    const labels = groupLabels(factor);
+    // an ID-like column has no control to pick, and a native drop-down of thousands of values flashes black when opened
+    const labels = isFactorAllUnique(factor) ? [] : groupLabels(factor);
     (controlInput as any).items = labels;
     if (!labels.includes(control))
       control = labels[0];
-    controlInput.value = control;
+    if (control != null)
+      controlInput.value = control;
   }
 
   // --- Feature ---

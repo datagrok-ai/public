@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#418](https://github.com/datagrok-ai/core/issues/418): Control comparisons: The Control drop-down stays empty and disabled for an ID-like category instead of listing every value
 * Tests: `models/apply-and-delete` chooses a model in the Apply dialog by name (the dialog keys its models by id), so it and `share-model` left the serial lane; the analysis features keep to what the dialog produced, the statistics being the package tests'
 * Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
 * GROK-21061: Pareto front: Fixed result columns staying in the table after the viewer is closed
