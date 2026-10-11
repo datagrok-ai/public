@@ -5,6 +5,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {ERROR_MSG, COPY_SUFFIX} from './ui-constants';
+import {getNullValue} from '../utils';
 
 /** Column types supported by the missing values imputer */
 export const SUPPORTED_COLUMN_TYPES = [
@@ -14,29 +15,6 @@ export const SUPPORTED_COLUMN_TYPES = [
   DG.COLUMN_TYPE.DATE_TIME,
   DG.COLUMN_TYPE.QNUM,
 ] as string[];
-
-/** Return null value with respect to the column type */
-export function getNullValue(col: DG.Column): number {
-  switch (col.type) {
-  case DG.COLUMN_TYPE.INT:
-    return DG.INT_NULL;
-
-  case DG.COLUMN_TYPE.FLOAT:
-    return DG.FLOAT_NULL;
-
-  case DG.COLUMN_TYPE.QNUM:
-    return DG.FLOAT_NULL;
-
-  case DG.COLUMN_TYPE.DATE_TIME:
-    return DG.FLOAT_NULL;
-
-  case DG.COLUMN_TYPE.STRING:
-    return col.max;
-
-  default:
-    throw new Error(ERROR_MSG.UNSUPPORTED_COLUMN_TYPE);
-  }
-}
 
 /** Metric types (between column elements) */
 export enum METRIC_TYPE {
