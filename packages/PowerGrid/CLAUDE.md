@@ -3,7 +3,7 @@
 ## Overview
 
 PowerGrid is a Datagrok plugin that extends the platform's grid (spreadsheet) with custom cell renderers,
-sparkline summary columns, a forms viewer, pinned columns, and WebGPU-accelerated scatter plot rendering.
+sparkline summary columns, a forms viewer, pinned columns, and GPU (WebGPU or WebGL) scatter plot rendering.
 
 ## Architecture
 
@@ -56,11 +56,31 @@ via `renderSettings(gridColumn)`.
 graph (`Scene`, `Element`, `LabelElement`, `MarkerElement`, `GridCellElement`) for compositional layout. Auto-switches
 between 1 and 2 column layouts based on available width.
 
-### WebGPU (`src/webgpu/`)
+### GPU scatter plots (`src/scatterplot-gpu.ts`, `src/webgpu/`, `src/webgl/`)
 
-GPU-accelerated scatter plot rendering. `scWebGPURender()` and `scWebGPUPointHitTest()` are registered as platform
-functions called by the scatter plot viewer when WebGPU is available. `WebGPUCache` manages GPU buffers. Falls back
-gracefully when unavailable or on error (tracked via `gpuErrorCounter`).
+The core's scatter plot draws plots over 50K rows through four package functions — `isWebGPUAvailable`,
+`isWebGPURenderValid`, `_scWebGPURender`, `_scWebGPUPointHitTest` (named before WebGL existed). `scatterplot-gpu.ts`
+picks the backend: WebGPU when the autostart got a device, WebGL 2 otherwise (WebGPU blocked by a policy, older
+browsers), the core's CPU renderers when neither is there. A backend that throws once is not used again, and the plot
+is redrawn with the next one. `scatterplot-look.ts` reads the viewer properties in one pass (`sc.props.x` builds
+wrappers for every property on each access) and holds the rules both GPU backends share (`isGpuRenderable`: no jitter,
+no pack-and-zoom, no labels next to markers, plain axis columns).
+
+- **WebGPU** (`webgpu/scatterplot.ts`): `WebGPUCache` manages GPU buffers; textured markers from an atlas; compute
+  shader hit testing. No per-row marker shapes.
+- **WebGL** (`webgl/scatterplot.ts`, `webgl/shaders.ts`): reproduces the CPU renderers. DOT markers match the
+  pixel-buffer dot renderer pixel for pixel; other shapes are signed distances in the fragment shader drawn as point
+  sprites, with the canvas renderer's pass order (filtered-out rows, filtered rows, selected rows on top). Per-row
+  data sits in vertex buffers addressed by row index; each pass is an element list of row indexes, so filtering and
+  selecting rebuild index lists only. Positions are float32 offsets from an origin near the viewport, rebuilt when a
+  deep zoom drifts far from it. Selected rows take the selection color from per-row flags, so a new selection
+  re-reads the core's row colors only when it deselects a row the core painted selected. The hit test draws the
+  filtered rows into a 1×1 target placed under the mouse and reads back the highest row whose marker contains the
+  point (`Marker.hitTest` rules); its viewport reaches past the canvas by the largest hit radius, and a mouse farther
+  off is left to the core's CPU hit test. Each viewer gets its own context, released when the plot stops drawing
+  with WebGL, on `onDetached` and on context loss; past 8 live contexts new plots stay on the CPU (a page gets about
+  16). Matrix plot cells stay on the CPU: they keep the plot canvas without its overlay. Software rasterizers are
+  refused: the canvas renderer is faster than they are.
 
 ### Pinned Columns
 
@@ -77,6 +97,7 @@ The `addPinnedColumn()` function is exposed as a package function.
 ### Tests (`src/tests/`)
 
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
+- `webgl-tests.ts` — the WebGL renderer against the CPU: dot pixels, row colors, hit tests, fallback rules, disposal
 
 ## Key Patterns
 
