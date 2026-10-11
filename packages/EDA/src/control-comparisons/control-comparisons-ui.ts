@@ -338,7 +338,7 @@ export function runControlComparisons(): void {
     value: factor,
     tooltipText: 'Categorical column defining the groups',
     onValueChanged: (col) => {factor = col; rebuildControlChoices(); updateRunButtonState();},
-    filter: (col: DG.Column) => factorColNames.includes(col.name),
+    filter: (col: DG.Column) => FACTOR_TYPES.includes(col.type),
     nullable: false,
   });
 
@@ -373,7 +373,7 @@ export function runControlComparisons(): void {
     value: feature,
     tooltipText: 'Numeric column to compare across the groups',
     onValueChanged: (col) => {feature = col; updateRunButtonState();},
-    filter: (col: DG.Column) => featureColNames.includes(col.name),
+    filter: (col: DG.Column) => FEATURE_TYPES.includes(col.type),
     nullable: false,
   });
 

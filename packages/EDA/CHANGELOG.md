@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [#417](https://github.com/datagrok-ai/core/issues/417): ANOVA, t-test, Control comparisons: Fixed a column renamed while the dialog is open disappearing from its column selectors
 * [#418](https://github.com/datagrok-ai/core/issues/418): Control comparisons: The Control drop-down stays empty and disabled for an ID-like category instead of listing every value
 * Tests: `models/apply-and-delete` chooses a model in the Apply dialog by name (the dialog keys its models by id), so it and `share-model` left the serial lane; the analysis features keep to what the dialog produced, the statistics being the package tests'
 * Tests: Added the BDD feature `models/apply-and-delete` — PLS and linear regression models saved, applied to new data and deleted from the gallery (from TestTrack General/predictive-models)
