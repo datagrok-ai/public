@@ -6,7 +6,7 @@ import {median} from '../build/sar-matrix-decompose';
 import {fitRoleEffects} from './sar-matrix-role-fit';
 import {logSarTime, SarMatrix} from '../sar-matrix-types';
 import {MatrixCellRef} from '../sar-matrix-ui-common';
-import {largestSwap, poolRoleSwaps, poolSwaps, rankSwaps} from './sar-matrix-summary-swaps';
+import {poolRoleSwaps, poolSwaps, rankSwaps} from './sar-matrix-summary-swaps';
 import {rankRGroups, recordRGroupExtremes} from './sar-matrix-summary-rgroups';
 import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, RGroupAcc, RowCell, SeriesStat, StartRow,
   SummaryData, SummaryHost, SummaryRow, supportOf, SWAP_ROW_CAP, SwapPool, TopList,
@@ -300,7 +300,6 @@ export class SummaryCollector {
       swaps: rankSwaps(swaps),
       swapsByRole: poolRoleSwaps(roleNames, roleValues, roleActivity, roleMol, dir, log),
       swapCandidates,
-      swapBest: largestSwap(swaps),
       ...rankRGroups(acc),
       test, analogs, analogsThin, analogsAny,
       withheldBelowError, withheldThinSupport, withheldFitFails, withheldUnchecked, withheldNotConverged,

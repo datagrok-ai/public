@@ -114,6 +114,12 @@ export class SummaryKit {
       `${conf.r2 >= TRUST_R2 ? 'holds' : 'does not hold'} at R² ${TRUST_R2}.`, !!conf && conf.r2 < TRUST_R2);
   }
 
+  /** Two structures and the glyph between them: the shape every swap is drawn in. */
+  pairArt(from: string, to: string, cls: string, glyph = '→', w = STRIP_MOL_W, h = STRIP_MOL_H): HTMLElement {
+    return ui.divH([this.depiction(from, w, h), ui.divText(glyph, 'chem-sar-sum-arrow'), this.depiction(to, w, h)],
+      cls);
+  }
+
   /** The substituent a tile's conclusion is about, drawn; undefined where there is no single one. */
   answerArt(smiles: string | null): HTMLElement | undefined {
     return smiles ? this.depiction(smiles, STRIP_MOL_W, STRIP_MOL_H) : undefined;

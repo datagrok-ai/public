@@ -125,17 +125,6 @@ function swapScore(pool: SwapPool): number {
   return Math.max(pool.min, -pool.max);
 }
 
-/** The widest single measured move, gate or no gate. */
-export function largestSwap(pools: Map<string, SwapPool>): SwapPool | null {
-  let best: SwapPool | null = null;
-  for (const pool of pools.values()) {
-    const reach = Math.max(pool.max, -pool.min);
-    if (best === null || reach > Math.max(best.max, -best.min))
-      best = pool;
-  }
-  return best;
-}
-
 export function rankSwaps(pools: Map<string, SwapPool>): SwapPool[] {
   return [...pools.values()]
     .filter((pool) => pool.n >= SWAP_MIN_PAIRS && pool.roots.size >= SWAP_MIN_SERIES)

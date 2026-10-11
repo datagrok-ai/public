@@ -289,8 +289,6 @@ export interface SummaryData {
   swapsByRole: Map<string, SwapPool[]>;
   /** Whether any candidate existed: "none clears the gate" is not "no row has two measured cells". */
   swapCandidates: number;
-  /** The largest single measured move, named when nothing pooled clears the gate. */
-  swapBest: SwapPool | null;
   rgroups: RGroupRow[];
   rgroupsThin: RGroupRow[];
   rgroupLosers: RGroupRow[];

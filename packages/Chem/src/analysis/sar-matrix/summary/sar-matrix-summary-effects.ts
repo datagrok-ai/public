@@ -139,13 +139,8 @@ export class SummaryEffects {
         badges.push(this.kit.badge('under resolution', 'The worst case is smaller than this analysis\' own ' +
           'typical prediction error, so the whole row may be noise.', true));
       }
-      const pair = ui.divH([
-        this.kit.depiction(from, BENEFIT_MOL_W, BENEFIT_MOL_H),
-        ui.divText('→', 'chem-sar-sum-arrow'),
-        this.kit.depiction(to, BENEFIT_MOL_W, BENEFIT_MOL_H),
-      ], 'chem-sar-sum-pair');
       return this.kit.summaryRow({
-        depiction: pair,
+        depiction: this.kit.pairArt(from, to, 'chem-sar-sum-pair', '→', BENEFIT_MOL_W, BENEFIT_MOL_H),
         name: best === null ? `${role} swap` : `${best.matrix.label} · ${position}`,
         badges,
         desc: `mean ${show(mean)} (${show(worst)} → ${show(bestOf)}) · ${pool.n} pairs · ` +

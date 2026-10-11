@@ -8,6 +8,7 @@ import {count, STRIP_MOL_H, STRIP_MOL_W, tipText} from '../sar-matrix-ui-common'
 import {FINDING_ROWS, PANE_EFFECTS, orient, Answer, shortSmiles, swapAnchor,
   roleRanks} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
+import type {SwapPool} from './sar-matrix-summary-types';
 import {SummaryStartHere} from './sar-matrix-summary-start-here';
 
 export class SummaryOverview {
@@ -110,7 +111,7 @@ export class SummaryOverview {
         `${lead.name} leads, spans ${lead.spread.toFixed(2)}`, ui.divV(body)),
       this.bandGroup('swap', `Best measured swap · ${count(fit.roles.length)} components`,
         withPairs.length === 0 ? 'none pooled' :
-          `${withPairs[0].name} ${this.swapHeadline(data, withPairs[0].name)}`, ui.divV(swapRows)),
+          `${withPairs[0].name} ${this.swapPhrase(data.swapsByRole.get(withPairs[0].name)![0])}`, ui.divV(swapRows)),
     ], 'chem-sar-sum-comp chem-sar-sum-card');
   }
 
@@ -146,12 +147,11 @@ export class SummaryOverview {
     return ui.divV([head, body], `chem-sar-sum-band-${key}`);
   }
 
-  /** The swap's conclusion in one phrase, for the group heading when it is shut. */
-  private swapHeadline(data: SummaryData, role: string): string {
-    const top = data.swapsByRole.get(role)![0];
-    const {worst, widest} = orient(top);
-    return worst > 0 ? `≥ ${this.kit.formatDelta(worst)} in ${top.n} pairs` :
-      `${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)}`;
+  /** A swap's conclusion in one phrase: a floor where every pair improved, else the measured range. */
+  private swapPhrase(pool: SwapPool): string {
+    const {worst, widest} = orient(pool);
+    return worst > 0 ? `≥ ${this.kit.formatDelta(worst)} in ${pool.n} pairs` :
+      `${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)} over ${pool.n} pairs`;
   }
 
   /** One component: how much it moves the endpoint, and its best value. */
@@ -195,7 +195,7 @@ export class SummaryOverview {
     let tip: string;
     if (top !== undefined) {
       const {from, to, worst, widest, mean} = orient(top);
-      parts.push(this.pairArt(from, to, 'chem-sar-sum-slot'));
+      parts.push(this.kit.pairArt(from, to, 'chem-sar-sum-slot'));
       parts.push(ui.divText(worst > 0 ? `≥ ${this.kit.formatDelta(worst)}` :
         `mean ${this.kit.formatDelta(mean)}`, 'chem-sar-card-title chem-sar-sum-col'));
       parts.push(ui.divText(`${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)} · ` +
@@ -256,7 +256,7 @@ export class SummaryOverview {
       return {answer: `Two lead equally`,
         negative: `the ${partner} decides — ${top.k} of ${top.tried} against ${rows[1].k} of ` +
           `${rows[1].tried}`,
-        art: this.pairArt(top.subst, rows[1].subst, 'chem-sar-sum-pair', 'or')};
+        art: this.kit.pairArt(top.subst, rows[1].subst, 'chem-sar-sum-pair', 'or')};
     }
     return {answer: (top.magnitude === null ? '' : `${this.kit.formatEffect(top.magnitude)} · `) +
       `first on ${top.k} of ${top.tried}`, negative, art: this.kit.answerArt(top.subst)};
@@ -290,29 +290,14 @@ export class SummaryOverview {
     const negative = 'both compounds measured, nothing fitted — one R-group swapped, the rest identical';
     const top = data.swaps[0];
     if (top !== undefined) {
-      const {from, to, worst, widest, mean} = orient(top);
-      const art = this.pairArt(from, to, 'chem-sar-sum-pair');
-      if (worst > 0)
-        return {answer: `≥ ${this.kit.formatDelta(worst)} in ${top.n} pairs`, negative, art};
+      const {from, to, worst, mean} = orient(top);
       // A negative floor means the swap lost at least once, so it is not stated as an improvement.
-      return {answer: `${this.kit.formatDelta(worst)} to ${this.kit.formatDelta(widest)} over ${top.n} pairs`,
-        negative: `no swap improves potency in every pair it was measured in — this one is the best ` +
-          `floor; mean ${this.kit.formatDelta(mean)}`, art};
+      return {answer: this.swapPhrase(top), art: this.kit.pairArt(from, to, 'chem-sar-sum-pair'),
+        negative: worst > 0 ? negative : 'no swap improves potency in every pair it was measured in — this ' +
+          `one is the best floor; mean ${this.kit.formatDelta(mean)}`};
     }
     // Nothing pooled: what the gate rejected is the finding, and there is nothing to draw.
-    const gate = data.swapCandidates === 0 ? 'No row carries two measured substituents' :
-      `Nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} series`;
-    const best = data.swapBest;
-    if (best === null || best.best === null)
-      return {answer: gate, negative};
-    return {answer: gate, negative: `the largest single measured move is ` +
-      `${this.kit.formatDelta(Math.abs(best.best.delta))} in ${best.best.matrix.label}`};
-  }
-
-  /** Two structures and the glyph between them: the shape every swap is drawn in. */
-  private pairArt(from: string, to: string, cls: string, glyph = '→'): HTMLElement {
-    return ui.divH([this.kit.depiction(from, STRIP_MOL_W, STRIP_MOL_H),
-      ui.divText(glyph, 'chem-sar-sum-arrow'),
-      this.kit.depiction(to, STRIP_MOL_W, STRIP_MOL_H)], cls);
+    return {answer: data.swapCandidates === 0 ? 'No row carries two measured substituents' :
+      `Nothing clears ${SWAP_MIN_PAIRS} pairs in ${SWAP_MIN_SERIES} series`, negative};
   }
 }
