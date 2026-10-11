@@ -43,10 +43,11 @@ export type SketchErrorCode = 'loading' | 'unavailable';
 /**
  * What a warning is about (spike charges-checks, K11): an atom with a valence RDKit's sanitization rejects (`valence`),
  * aromatic bonds with no Kekulé structure (`aromaticity`), a label kept as an alias, which nothing interprets (`label`),
- * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), or something a
- * getter's format cannot hold (`format`).
+ * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), an atom on or very
+ * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), or something a getter's format cannot hold
+ * (`format`).
  */
-export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'format';
+export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'format';
 /**
  * The loss table's rows (spike formats, F2, F11): what a format cannot hold, as a `format` warning's `code` names it.
  * `v3000` is no loss but a notice: under `molV2000`, that the molfile getter (and `value` after an edit) writes V3000, and
@@ -146,10 +147,18 @@ export type SketcherEventType = keyof SketcherEvents;
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
-/** How `setValue` reads its text. */
+/** How `setValue` reads its text, and where it shows the molecule. */
 export interface SetValueOptions {
     /** Read the text as this format instead of detecting it (e.g. SMARTS that is also SMILES). */
     format?: SketcherFormat;
+    /**
+     * Where the view goes (API-014): `'fit'`, the default, fits the new molecule into the view as every value write does
+     * (CANVAS-008: centred, and zoomed out only when it would not fit, never above 100%); `'keep'` keeps the view shown,
+     * its zoom and its centre, as an edit does, so that a molecule written in the coordinates of the one shown (the host's
+     * own copy of it, changed) is drawn where that one was. With no view to keep yet (before the first drawing) the molecule
+     * is fitted. Any other value is `'fit'`.
+     */
+    view?: 'fit' | 'keep';
 }
 /**
  * An action a toolbar can hold: it does something once, and is no tool that stays chosen. `element.table`
@@ -510,8 +519,10 @@ export interface SketcherApi {
     value: string;
     /**
      * Writes `text` as `value` does, read as `options.format` when it is given instead of detected from its shape (API-010:
-     * SMARTS that is also SMILES). One change event with `{ source: 'api' }` when it is accepted; a text it cannot read
-     * changes nothing, sets `lastError` and emits `error`, never throwing (API-013). Throws on a destroyed sketcher.
+     * SMARTS that is also SMILES), and fitted into the view as `value` fits it unless `options.view` is `'keep'`, which keeps
+     * the zoom and the centre shown (API-014). One change event with `{ source: 'api' }` when it is accepted; a text it
+     * cannot read changes nothing, sets `lastError` and emits `error`, never throwing (API-013). Throws on a destroyed
+     * sketcher.
      */
     setValue(text: string, options?: SetValueOptions): void;
     /** The last refused write's error, until the next accepted write clears it to `null`. */
@@ -521,10 +532,11 @@ export interface SketcherApi {
      * neither (spike charges-checks, K11, CHECK-012; decision `rgroups`). First the problems, in atom order: an atom
      * whose valence RDKit's sanitization rejects (`kind: 'valence'`), aromatic atoms with no Kekulé structure
      * (`'aromaticity'`), a label kept as an alias (`'label'`), a stereocentre nothing specifies in a structure drawn with
-     * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), each with the
-     * status line's words and every atom concerned. Then the losses (`'format'`), one per format and loss: a combined R
-     * label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number, and attachment points, which SMARTS
-     * does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
+     * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), and atoms on or
+     * very close to other atoms or bonds (`'contact'`, the atoms of a pair together, an atom on a bond alone; spike
+     * v1-display, CHECK-006), each with the status line's words and every atom concerned. Then the losses (`'format'`),
+     * one per format and loss: a combined R label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number,
+     * and attachment points, which SMARTS does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
      * for attachment points, so they warn under `smarts` alone; `plainSmiles` has no entries, since it loses something
      * exactly when it differs from `smiles`. Nothing is refused for any of them. Synchronous and current at every moment,
      * as the getters are; it changes only with the molecule, so a `change` listener reads it as it reads the getters.
