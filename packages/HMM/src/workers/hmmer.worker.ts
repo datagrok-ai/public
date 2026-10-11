@@ -5,6 +5,7 @@ import {HmmDatabase, HmmerEngine, type QueryResult} from '../hmmer/engine.ts';
 import {align, numberFromAlignment, type AnarciData, type SequenceResult} from '../hmmer/anarci/anarci.ts';
 import type {ChainGermlines} from '../hmmer/anarci/germline.ts';
 import {HmmerTools} from '../hmmer/tools.ts';
+import {numberingRow} from '../numbering-rows';
 import type {WorkerRequest, WorkerResponse} from './protocol';
 
 const ctx = self as unknown as Worker;
@@ -46,7 +47,8 @@ async function loadAnarci(): Promise<AnarciData> {
   };
 }
 
-async function anarci(request: Extract<WorkerRequest, {op: 'anarci'}>): Promise<SequenceResult[]> {
+async function anarci(request: Extract<WorkerRequest, {op: 'anarci' | 'anarciRows'}>):
+  Promise<SequenceResult[]> {
   const data = await (anarciData ??= loadAnarci());
   const alignments = align(data, request.sequences, request.options);
   if (request.options.assignGermline) {
@@ -78,6 +80,8 @@ async function handle(request: WorkerRequest): Promise<unknown> {
     return null;
   case 'anarci':
     return anarci(request);
+  case 'anarciRows':
+    return (await anarci(request)).map((r) => numberingRow(request.scheme, r, request.choice));
   case 'load': {
     const hmmer = await engine!;
     databases.get(request.key)?.free();

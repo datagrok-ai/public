@@ -9,9 +9,9 @@
       "sha256": "b3cad83ebec2e419aeeabb181064786ff3c910647e5db91d355bc18e70d88824"
     },
     "wasm/hmmer_tools.wasm": {
-      "bytes": 489751,
-      "gzip": 201877,
-      "sha256": "5cd0e1440e02d24033617d1b7bfa58410a9b1d32d970f4974abb5c8c93cc270b"
+      "bytes": 496892,
+      "gzip": 204612,
+      "sha256": "cea56303f08fc2af2c8cc6256c7e35f45cdc4d057ff803f3dce8d1ea4615190a"
     },
     "src/hmmer/engine.ts": {
       "bytes": 14723,
@@ -29,9 +29,9 @@
       "sha256": "10536c1b91e59771b3148a6658aaa2eacd3dcc1497ade85740b373254a8e55b1"
     },
     "src/hmmer/tools.ts": {
-      "bytes": 10451,
-      "gzip": 3383,
-      "sha256": "44f42802c11fbad2f75b1e49528d05838555a86157afd97dd6093a8d0a90a656"
+      "bytes": 10930,
+      "gzip": 3569,
+      "sha256": "3eb12dd29dd1371ffa49586f026d9c6fc2f9208b15029e334b9080f4c5b74915"
     },
     "src/hmmer/anarci/alignment.ts": {
       "bytes": 11614,

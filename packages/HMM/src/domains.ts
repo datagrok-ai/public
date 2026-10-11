@@ -8,11 +8,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type {QueryResult, SearchOptions} from './hmmer/engine.ts';
 import {resolveClanOverlaps} from './hmmer/clans.ts';
-import {HmmerPool} from './pool';
+import {HmmerPool, type Progress} from './pool';
+import {taskProgress} from './progress';
 import {columnResidues} from './sequences';
 import {type DomainHitSpan, setDomainAnnotations} from './annotations';
 import {fetchPfam, loadBuiltIn, loadFile, type LoadedModels, parseAccessions} from './models';
-import {CLAN_NOTE, HMMER_NOTE, noteDiv} from './notice';
+import {CLAN_NOTE, HMMER_NOTE, withNotes} from './notice';
 
 export interface FoundDomain {
   row: number;
@@ -39,7 +40,8 @@ export function queryDomains(result: QueryResult, clans: (string | null)[] | nul
  * cutoffs make HMMER stop, as `hmmscan --cut_ga` does. Coordinates are
  * 1-based residue indices of the gap-free sequence. */
 export async function findDomains(pool: HmmerPool, models: LoadedModels, column: DG.Column<string>,
-  options: SearchOptions, clanCompetition = true): Promise<{found: FoundDomain[]; positions: number[][]}> {
+  options: SearchOptions, clanCompetition = true, progress?: Progress):
+  Promise<{found: FoundDomain[]; positions: number[][]}> {
   const {residues, positions} = await columnResidues(column);
   const rows: number[] = [];
   const sequences: {name: string; residues: string}[] = [];
@@ -48,7 +50,7 @@ export async function findDomains(pool: HmmerPool, models: LoadedModels, column:
     rows.push(i);
     sequences.push({name: String(i), residues: r});
   });
-  const results = await pool.scan(models.key, sequences, options);
+  const results = await pool.scan(models.key, sequences, options, undefined, progress);
   const found: FoundDomain[] = [];
   results.forEach((result, q) => {
     if (result.status === 3) throw new Error('The scan stopped: a model lacks the requested cutoffs');
@@ -92,7 +94,8 @@ export async function showFindDomainsDialog(pool: HmmerPool, pkg: DG.Package): P
   const libraries = ['Pfam biologics library (built-in)', 'Pfam accessions (online)', 'HMM file'];
   const columnInput = ui.input.column('Sequence', {table: df, value: seqCols[0],
     filter: (c: DG.Column) => c.semType === DG.SEMTYPE.MACROMOLECULE});
-  const libraryInput = ui.input.choice('Library', {value: libraries[0], items: libraries});
+  const libraryInput = ui.input.choice('Library', {value: libraries[0], items: libraries,
+    tooltipText: withNotes('Profile HMMs to scan every sequence against (hmmscan).', HMMER_NOTE)});
   const accessionsInput = ui.input.string('Accessions', {value: 'PF07686, PF07654',
     tooltipText: 'Pfam accessions separated by commas'});
   const fileInput = ui.input.file('HMM file');
@@ -101,7 +104,8 @@ export async function showFindDomainsDialog(pool: HmmerPool, pkg: DG.Package): P
   const evalueInput = ui.input.float('E-value ≤',
     {value: 0.01, tooltipText: 'Sequence and domain E-value (-E, --domE)'});
   const clanInput = ui.input.bool('Clan competition', {value: true,
-    tooltipText: 'Of overlapping domains from the same Pfam clan, keep only the most significant (as Pfam does)'});
+    tooltipText: withNotes('Of overlapping domains from the same Pfam clan, keep only the most significant ' +
+      '(as Pfam does).', CLAN_NOTE)});
   const refresh = () => {
     accessionsInput.root.style.display = libraryInput.value === libraries[1] ? '' : 'none';
     fileInput.root.style.display = libraryInput.value === libraries[2] ? '' : 'none';
@@ -113,7 +117,6 @@ export async function showFindDomainsDialog(pool: HmmerPool, pkg: DG.Package): P
 
   ui.dialog({title: 'Find Domains (HMMER)'})
     .add(ui.inputs([columnInput, libraryInput, accessionsInput, fileInput, thresholdInput, evalueInput, clanInput]))
-    .add(noteDiv(HMMER_NOTE, CLAN_NOTE))
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Finding domains...');
       try {
@@ -129,7 +132,8 @@ export async function showFindDomainsDialog(pool: HmmerPool, pkg: DG.Package): P
         const options: SearchOptions = thresholdInput.value === thresholds[0] ? {cutoff: 'ga'} :
           {evalue, domEvalue: evalue};
         const column = columnInput.value as DG.Column<string>;
-        const {found, positions} = await findDomains(pool, models, column, options, clanInput.value);
+        const {found, positions} = await findDomains(pool, models, column, options, clanInput.value,
+          taskProgress(pi, 'Finding domains'));
         applyDomains(df, column, found, positions);
         grok.shell.info(`${found.length} domains in ${new Set(found.map((d) => d.row)).size} sequences`);
       } catch (e) {

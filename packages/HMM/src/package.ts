@@ -46,12 +46,14 @@ export class PackageFunctions {
     @grok.decorators.param({type: 'string', options: {optional: true, caption: 'Domain', choices: ['first', 'heavy', 'light'], initialValue: 'first', description: 'Which domain of multi-domain chains (scFv, diabodies) to number: the N-terminal one, the first heavy (TCR beta/delta) or the first light (TCR alpha/gamma) domain'}})
       domain: string = 'first',
   ): Promise<DG.DataFrame> {
-    const {allowedChains, domainChoice, numberColumn, numberingFrame, SCHEMES, speciesOption} = await numbering();
+    const {allowedChains, domainChoice, frameFromRows, numberColumn, SCHEMES, speciesOption} = await numbering();
     const s = (SCHEMES.includes(scheme as Scheme) ? scheme : 'imgt') as Scheme;
     const threshold = Number.isFinite(bitScoreThreshold) ? bitScoreThreshold : 80;
-    const {results} = await numberColumn(pool(), seqCol, {scheme: s, allow: allowedChains(s), assignGermline: true,
-      allowedSpecies: speciesOption(species), bitScoreThreshold: threshold});
-    return numberingFrame(s, results, domainChoice(domain));
+    const {withProgress} = await import('./progress');
+    const {rows} = await withProgress('ANARCI numbering', seqCol.length, (progress) => numberColumn(pool(), seqCol,
+      {scheme: s, allow: allowedChains(s), assignGermline: true, allowedSpecies: speciesOption(species),
+        bitScoreThreshold: threshold}, s, domainChoice(domain), progress));
+    return frameFromRows(rows);
   }
 
   @grok.decorators.func({
@@ -70,10 +72,11 @@ export class PackageFunctions {
   ): Promise<void> {
     const pi = DG.TaskBarProgressIndicator.create('ANARCI germlines...');
     try {
-      const {numberColumn, numberingFrame, speciesOption} = await numbering();
-      const {results} = await numberColumn(pool(), sequence,
-        {scheme: 'imgt', assignGermline: true, allowedSpecies: speciesOption(species)});
-      const frame = numberingFrame('imgt', results);
+      const {frameFromRows, numberColumn, speciesOption} = await numbering();
+      const {taskProgress} = await import('./progress');
+      const {rows} = await numberColumn(pool(), sequence, {scheme: 'imgt', assignGermline: true,
+        allowedSpecies: speciesOption(species)}, 'imgt', 'first', taskProgress(pi, 'ANARCI'));
+      const frame = frameFromRows(rows);
       const prefix = `${sequence.name} `;
       for (const name of ['chain', 'species', 'v_gene', 'v_identity', 'j_gene', 'j_identity', 'evalue', 'bitscore']) {
         const col = frame.getCol(name);
@@ -133,10 +136,12 @@ export class PackageFunctions {
       trim: boolean = false,
   ): Promise<DG.Column<string>> {
     const [{alignColumn, chooseProfile}, {columnResidues}] = await Promise.all([import('./align'), import('./sequences')]);
+    const {withProgress} = await import('./progress');
     const named = (await columnResidues(sequences)).residues.map((residues, i) => ({name: String(i), residues}));
     const {models, index} = await chooseProfile(pool(), _package, profile || 'Best Pfam family (auto)', family,
       hmmFile, named);
-    return alignColumn(pool(), sequences, models, index, trim === true, named);
+    return withProgress('hmmalign', named.length, (progress) =>
+      alignColumn(pool(), sequences, models, index, trim === true, named, progress));
   }
 
   @grok.decorators.func({

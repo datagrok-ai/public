@@ -3,6 +3,7 @@
 ## 6.0.8
 
 * `viewers/web-logo.ts`: `WebLogoProfile`, `WEB_LOGO_PROFILE_ROLE` and the `profile` property: WebLogo draws a profile supplied by a package instead of the column's composition
+* `annotation-manager.ts`: `setRowAnnotations(..., notify)` to write many rows with one change event
 * Added `utils/macromolecule/annotation-manager.ts` (moved from Bio): read and write sequence annotations (`.annotations` tag and the hidden per-row companion column)
 
 ## 6.0.4 (2026-09-08)

@@ -125,9 +125,11 @@ export function cacheAllRowAnnotations(annotCol: DG.Column<string>): (RowAnnotat
   return data;
 }
 
-/** Writes per-row annotation hits. */
-export function setRowAnnotations(annotCol: DG.Column<string>, rowIdx: number, hits: SeqAnnotationHit[]): void {
-  annotCol.set(rowIdx, hits.length > 0 ? JSON.stringify(hits) : '');
+/** Writes per-row annotation hits. When writing many rows, pass `notify = false` and fire
+ *  one change for the whole column afterwards (a change event per row is slow on large tables). */
+export function setRowAnnotations(annotCol: DG.Column<string>, rowIdx: number, hits: SeqAnnotationHit[],
+  notify: boolean = true): void {
+  annotCol.set(rowIdx, hits.length > 0 ? JSON.stringify(hits) : '', notify);
 }
 
 /** Clears all annotations from a column (both column-level and row-level). */

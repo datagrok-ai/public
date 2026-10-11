@@ -61,8 +61,11 @@ async function explain(page: Page, target: string | {column: string}, title: str
 }
 
 async function clearHints(page: Page): Promise<void> {
-  await page.evaluate(() => document.querySelectorAll('.ui-hint-popup, .ui-hint-blob, .tour-anchor')
-    .forEach((e) => e.remove()));
+  await page.evaluate(() => {
+    document.querySelectorAll('.ui-hint-popup, .ui-hint-blob, .ui-hint-overlay, .tour-anchor')
+      .forEach((e) => e.remove());
+    document.querySelectorAll('.ui-hint-target').forEach((e) => e.classList.remove('ui-hint-target'));
+  });
 }
 
 /** A screenshot of the whole window, or of the box around `selectors` (and the hints). */
@@ -227,6 +230,23 @@ test('HMM package tour: explained screenshots', async ({page}) => {
       'Overlapping matches of related families (one Pfam clan, such as the immunoglobulin-like domains) are ' +
       'resolved as Pfam does: the most significant one is kept. Identical to Pfam\'s pfam_scan.pl.');
     await shot(page, '05-domains-dialog', [domains]);
+    // The note that HMMER is reimplemented here is in the tooltips, not in the dialog.
+    await clearHints(page);
+    // Hovering fills the input's tooltip; automated browsers keep tooltips hidden, so the
+    // text Datagrok put in it is shown in a tour hint instead.
+    const label = page.locator(`${domains} [name="input-host-Library"] label`).first();
+    const box = (await label.boundingBox())!;
+    await page.mouse.move(box.x + 4, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 5});
+    const tooltip = await page.waitForFunction(() => Array.from(document.querySelectorAll('.d4-tooltip'))
+      .map((e) => e.textContent ?? '').find((t) => /reimplemented/.test(t)), null, {timeout: 8_000})
+      .then((h) => h.jsonValue() as Promise<string>, () => null);
+    await page.mouse.move(5, 5);
+    if (tooltip) {
+      await explain(page, `${domains} [name="input-host-Library"]`, 'Tooltip of Library', tooltip);
+      await shot(page, '05b-tooltip-note', [domains]);
+      await clearHints(page);
+    }
     await clearHints(page);
     await page.locator(`${domains} [name="button-OK"]`).click();
     await page.waitForFunction(() => grok.shell.tv.dataFrame.columns.contains('AntibodyHC domains'), null,

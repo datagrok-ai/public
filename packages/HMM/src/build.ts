@@ -11,7 +11,8 @@ import {HmmerPool} from './pool';
 import {alignedRows} from './sequences';
 import {loadText, type LoadedModels} from './models';
 import {applySearch, searchColumn} from './search';
-import {HMMER_NOTE, noteDiv} from './notice';
+import {HMMER_NOTE, withNotes} from './notice';
+import {taskProgress} from './progress';
 
 /** hmmbuild model names are single words. */
 export function modelName(text: string): string {
@@ -52,7 +53,8 @@ export async function showBuildProfileDialog(pool: HmmerPool): Promise<void> {
     c.meta.units !== 'fasta' && (c.getTag('aligned') ?? '').includes('MSA');
   const alignedInput = ui.input.column('Alignment', {table: df, value: seqCols.find(isAligned) ?? seqCols[0],
     filter: (c: DG.Column) => c.semType === DG.SEMTYPE.MACROMOLECULE,
-    tooltipText: 'An aligned column (e.g. from Bio | Analyze | MSA); its rows build the profile'});
+    tooltipText: withNotes('An aligned column (e.g. from Bio | Analyze | MSA); its rows build the profile ' +
+      '(hmmbuild).', HMMER_NOTE)});
   const rowChoices = ['Selected rows', 'Filtered rows', 'All rows'];
   const rowsInput = ui.input.choice('Rows', {value: df.selection.trueCount > 0 ? rowChoices[0] : rowChoices[2],
     items: rowChoices});
@@ -73,7 +75,6 @@ export async function showBuildProfileDialog(pool: HmmerPool): Promise<void> {
   ui.dialog({title: 'Build Profile HMM'})
     .add(ui.inputs([alignedInput, rowsInput, nameInput, searchInput, targetInput, evalueInput, logoInput,
       downloadInput]))
-    .add(noteDiv(HMMER_NOTE))
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Building profile HMM...');
       try {
@@ -89,7 +90,8 @@ export async function showBuildProfileDialog(pool: HmmerPool): Promise<void> {
         if (downloadInput.value) DG.Utils.download(`${model.name}.hmm`, built.text);
         if (searchInput.value) {
           const target = targetInput.value as DG.Column<string>;
-          const result = await searchColumn(pool, built.models, 0, target, {evalue: evalueInput.value ?? 10}, false);
+          const result = await searchColumn(pool, built.models, 0, target, {evalue: evalueInput.value ?? 10}, false,
+            undefined, taskProgress(pi, 'Searching'));
           applySearch(df, target, built.models, 0, result,
             `${model.name} (hmmbuild of ${rows.length} rows of ${column.name})`);
           grok.shell.info(`${model.name}: ${model.length} positions from ${rows.length} rows; ` +

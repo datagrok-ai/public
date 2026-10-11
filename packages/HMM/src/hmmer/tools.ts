@@ -135,6 +135,12 @@ export class HmmerTools {
     return pointer;
   }
 
+  /** Grow linear memory to hold `bytes` more (allocated and freed: the allocator keeps it). */
+  private reserve(bytes: number): void {
+    const pointer = this.x.ht_alloc(bytes);
+    if (pointer !== 0) this.x.ht_free(pointer);
+  }
+
   /** Copy a returned buffer out of linear memory and free it. */
   private take(pointer: number): Uint8Array {
     if (pointer === 0) {
@@ -205,6 +211,9 @@ export class HmmerTools {
   build(rows: {name: string; aligned: string}[], name: string, alphabet: 'amino' | 'dna' | 'rna' | null = 'amino'):
     BuiltProfile {
     const afa = rows.map((r) => `>${r.name}\n${r.aligned}\n`).join('');
+    // A large alignment grows linear memory once (~21 bytes per cell needed), not in
+    // many small steps: 100,000 rows x 120 columns built in 3.3 s on a fresh module, 0.6 s so.
+    if (afa.length > 4_000_000) this.reserve(afa.length * 24);
     const code = alphabet === null ? 0 : ['amino', 'dna', 'rna'].indexOf(alphabet) + 1;
     const bytes = this.call(new Request().word(code).text(name).text(afa).finish(),
       (pointer) => this.x.ht_build(pointer));

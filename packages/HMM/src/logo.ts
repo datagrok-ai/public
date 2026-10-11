@@ -10,7 +10,7 @@ import * as DG from 'datagrok-api/dg';
 import type {WebLogoProfile} from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {HmmerPool} from './pool';
 import {fetchPfam, loadBuiltIn, loadGermlines, loadText, type LoadedModels} from './models';
-import {HMMER_NOTE, noteDiv} from './notice';
+import {HMMER_NOTE, withNotes} from './notice';
 
 const LETTERS: Record<string, string> = {amino: 'ACDEFGHIKLMNPQRSTVWY', dna: 'ACGT', rna: 'ACGU'};
 const ALPHABETS: Record<string, string> = {amino: 'PT', dna: 'DNA', rna: 'RNA'};
@@ -165,7 +165,9 @@ export async function showLogoDialog(pool: HmmerPool, pkg: DG.Package): Promise<
     filter: (c: DG.Column) => c.semType === DG.SEMTYPE.MACROMOLECULE,
     tooltipText: 'The WebLogo\'s sequence column. When it is aligned to the profile (an hmmalign column of it, ' +
       'or the alignment it was built from), clicking a letter selects the rows that have it there.'});
-  const sourceInput = ui.input.choice('Profile from', {value: sources[0], items: sources});
+  const sourceInput = ui.input.choice('Profile from', {value: sources[0], items: sources,
+    tooltipText: withNotes('Drawn by WebLogo with hmmlogo heights; change the profile later in its Profile ' +
+      'property.', HMMER_NOTE)});
   const familyInput = ui.input.choice<string>('Family', {value: '', items: [''], nullable: false,
     tooltipText: 'A Pfam family of the built-in library'});
   const accessionInput = ui.input.string('Accession', {value: 'PF07686',
@@ -215,9 +217,6 @@ export async function showLogoDialog(pool: HmmerPool, pkg: DG.Package): Promise<
 
   ui.dialog({title: 'Profile HMM Logo'})
     .add(ui.inputs([columnInput, sourceInput, familyInput, accessionInput, germlineInput, builtInput]))
-    .add(ui.divText('Drawn by WebLogo with hmmlogo heights; change the profile later in its Profile property.',
-      {style: {fontSize: '12px', opacity: '0.7', maxWidth: '360px'}}))
-    .add(noteDiv(HMMER_NOTE))
     .onOK(() => {
       const value = valueInputs[sourceInput.value ?? SOURCES[0]]?.value;
       const spec = String(value ?? '').trim();

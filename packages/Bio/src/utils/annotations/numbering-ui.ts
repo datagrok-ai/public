@@ -12,6 +12,7 @@ import {
   setColumnAnnotations, getColumnAnnotations,
   getOrCreateAnnotationColumn, getRowAnnotations, setRowAnnotations, mergeRowHits,
 } from './annotation-manager';
+import {bindEngineDescription, setEngineDescription} from '../engine-description';
 /** An engine entry — a dynamically discovered DG.Func with meta.role: 'antibodyNumbering'. */
 interface NumberingEngine {
   label: string;
@@ -92,8 +93,9 @@ export function showNumberingSchemeDialog(): void {
   });
   const initialSchemes = engines[0].schemes;
   // The selected engine's description, as in the MSA dialog.
-  const engineDesc = ui.divText(engines[0].func.description ?? '',
-    {style: {fontSize: '12px', opacity: '0.7', maxWidth: '460px', marginBottom: '6px'}});
+  const engineDesc = ui.div('', {style: {fontSize: '12px', opacity: '0.7', maxWidth: '460px', marginBottom: '6px'}});
+  setEngineDescription(engineDesc, engines[0].func.description ?? '');
+  bindEngineDescription(engineDesc);
   const schemeInput = ui.input.choice('Scheme', {value: initialSchemes[0], items: initialSchemes});
 
   // Switch the scheme list when the user picks a different engine — each engine
@@ -101,7 +103,7 @@ export function showNumberingSchemeDialog(): void {
   engineInput.onChanged.subscribe(() => {
     const selected = engines.find((e) => e.label === engineInput.value);
     if (!selected) return;
-    engineDesc.textContent = selected.func.description ?? '';
+    setEngineDescription(engineDesc, selected.func.description ?? '');
     const schemes = selected.schemes;
     const prev = schemeInput.value;
     schemeInput.items = schemes;
@@ -229,37 +231,49 @@ function sortPositionCodes(codes: string[]): string[] {
  *  "comes before" pairs), so schemes that number insertions backwards keep
  *  residue order (IMGT: ..., 111A, 111B, 112B, 112A, 112; likewise at 33 and 61).
  *  Codes not ordered by any row fall back to {@link sortPositionCodes}. */
-function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[] {
-  const fallback = sortPositionCodes(Array.from(codes));
-  const rank = new Map(fallback.map((c, i) => [c, i]));
-  const next = new Map<string, Set<string>>(fallback.map((c) => [c, new Set<string>()]));
-  const indegree = new Map<string, number>(fallback.map((c) => [c, 0]));
-  for (const order of rowOrders) {
+/** The order of scheme position codes, fed one row at a time (so 100,000 rows' orders are
+ *  never held at once): each row's codes in sequence order add successor edges; the result
+ *  is a topological order, ties and disagreements resolved by {@link sortPositionCodes}. */
+class PositionOrder {
+  private readonly next = new Map<string, Set<string>>();
+
+  add(order: string[]): void {
     for (let i = 1; i < order.length; i++) {
-      const successors = next.get(order[i - 1]);
-      if (!successors || !indegree.has(order[i]) || successors.has(order[i])) continue;
+      let successors = this.next.get(order[i - 1]);
+      if (!successors) this.next.set(order[i - 1], successors = new Set<string>());
       successors.add(order[i]);
-      indegree.set(order[i], indegree.get(order[i])! + 1);
     }
   }
-  const ready = fallback.filter((c) => indegree.get(c) === 0);
-  const ordered: string[] = [];
-  while (ready.length > 0) {
-    ready.sort((a, b) => rank.get(a)! - rank.get(b)!);
-    const code = ready.shift()!;
-    ordered.push(code);
-    for (const successor of next.get(code)!) {
-      const remaining = indegree.get(successor)! - 1;
-      indegree.set(successor, remaining);
-      if (remaining === 0) ready.push(successor);
+
+  ordered(codes: Set<string>): string[] {
+    const fallback = sortPositionCodes(Array.from(codes));
+    const rank = new Map(fallback.map((c, i) => [c, i]));
+    const indegree = new Map<string, number>(fallback.map((c) => [c, 0]));
+    for (const [code, successors] of this.next) {
+      if (!indegree.has(code)) continue;
+      for (const successor of successors)
+        if (indegree.has(successor)) indegree.set(successor, indegree.get(successor)! + 1);
     }
+    const ready = fallback.filter((c) => indegree.get(c) === 0);
+    const ordered: string[] = [];
+    while (ready.length > 0) {
+      ready.sort((a, b) => rank.get(a)! - rank.get(b)!);
+      const code = ready.shift()!;
+      ordered.push(code);
+      for (const successor of this.next.get(code) ?? []) {
+        if (!indegree.has(successor)) continue;
+        const remaining = indegree.get(successor)! - 1;
+        indegree.set(successor, remaining);
+        if (remaining === 0) ready.push(successor);
+      }
+    }
+    // Rows that disagree (a cycle) leave codes unplaced: append them in numeric order.
+    if (ordered.length < fallback.length) {
+      const placed = new Set(ordered);
+      ordered.push(...fallback.filter((c) => !placed.has(c)));
+    }
+    return ordered;
   }
-  // Rows that disagree (a cycle) leave codes unplaced: append them in numeric order.
-  if (ordered.length < fallback.length) {
-    const placed = new Set(ordered);
-    ordered.push(...fallback.filter((c) => !placed.has(c)));
-  }
-  return ordered;
 }
 
 /** Builds unified position list from all rows and creates an aligned sequence column.
@@ -267,58 +281,59 @@ function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[]
  *  Layout: [pre-region gaps+residues] [scheme-aligned region] [post-region residues+gaps]
  *  @returns aligned column, full position list (including flanking), and the pre-region offset. */
 function createAlignedColumn(
-  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame, rowCells: RowCells[],
+  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame, cellsOf: (row: number) => RowCells,
 ): {alignedCol: DG.Column<string>; unifiedPositions: string[]; preOffset: number} | null {
   const numberingMapCol = result.col('numbering_map');
   if (!numberingMapCol) return null;
   const positionNamesCol = result.col('position_names');
 
   // Pass 1: collect all scheme position codes (with each row's sequence order)
-  // and per-row flanking lengths
+  // and per-row flanking lengths. Rows are parsed again in pass 2 rather than
+  // kept: on 100,000 rows the parsed maps alone took gigabytes.
   const allCodes = new Set<string>();
-  const rowOrders: string[][] = [];
-  const rowMaps: (Record<string, number> | null)[] = [];
-  const rowPreLens: number[] = []; // chars before first numbered position
-  const rowPostLens: number[] = []; // chars after last numbered position
-
-  for (let i = 0; i < result.rowCount; i++) {
-    const mapStr = numberingMapCol.get(i);
-    const rawSeq = rowCells[i]?.letters ?? [];
-    if (!mapStr) {
-      rowMaps.push(null);
-      rowPreLens.push(0);
-      rowPostLens.push(0);
-      continue;
+  const order = new PositionOrder();
+  const n = result.rowCount;
+  const numbered = new Uint8Array(n);
+  const rowPreLens = new Int32Array(n); // chars before first numbered position
+  const rowPostLens = new Int32Array(n); // chars after last numbered position
+  const charRange = (map: Record<string, number>): [number, number] => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const k of Object.keys(map)) {
+      min = Math.min(min, map[k]);
+      max = Math.max(max, map[k]);
     }
+    return [min, max];
+  };
+
+  for (let i = 0; i < n; i++) {
+    const mapStr = numberingMapCol.get(i);
+    if (!mapStr) continue;
     try {
       const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
-      rowMaps.push(posToCharIdx);
       for (const code of Object.keys(posToCharIdx))
         allCodes.add(code);
       const names: string = positionNamesCol?.get(i) ?? '';
       if (names)
-        rowOrders.push(names.split(',').map((c) => c.trim()).filter((c) => c in posToCharIdx));
+        order.add(names.split(',').map((c) => c.trim()).filter((c) => c in posToCharIdx));
 
       // Find min/max char indices that were numbered
-      const charIndices = Object.values(posToCharIdx);
-      const minChar = Math.min(...charIndices);
-      const maxChar = Math.max(...charIndices);
-      rowPreLens.push(minChar); // chars before first numbered
-      rowPostLens.push(Math.max(0, rawSeq.length - maxChar - 1)); // chars after last numbered
+      const [minChar, maxChar] = charRange(posToCharIdx);
+      rowPreLens[i] = minChar; // chars before first numbered
+      rowPostLens[i] = Math.max(0, cellsOf(i).letters.length - maxChar - 1); // chars after last numbered
+      numbered[i] = 1;
     } catch {
-      rowMaps.push(null);
-      rowPreLens.push(0);
-      rowPostLens.push(0);
+      // not numbered
     }
   }
 
   if (allCodes.size === 0) return null;
 
-  const maxPreLen = Math.max(0, ...rowPreLens);
-  const maxPostLen = Math.max(0, ...rowPostLens);
+  const maxPreLen = rowPreLens.reduce((max, l) => Math.max(max, l), 0);
+  const maxPostLen = rowPostLens.reduce((max, l) => Math.max(max, l), 0);
 
   // Build position names: [pre-flanking] + [scheme positions] + [post-flanking]
-  const schemePositions = orderPositionCodes(rowOrders, allCodes);
+  const schemePositions = order.ordered(allCodes);
   const preNames: string[] = [];
   for (let p = maxPreLen; p > 0; p--)
     preNames.push(`N-${p}`);
@@ -340,13 +355,12 @@ function createAlignedColumn(
   const alignedCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, df.rowCount);
 
   for (let i = 0; i < df.rowCount; i++) {
-    const map = i < rowMaps.length ? rowMaps[i] : null;
-    const rawSeq = rowCells[i]?.letters ?? [];
-
+    const map: Record<string, number> | null = i < n && numbered[i] ? JSON.parse(numberingMapCol.get(i)!) : null;
     if (!map) {
-      alignedCol.set(i, '-'.repeat(totalLen));
+      alignedCol.set(i, '-'.repeat(totalLen), false);
       continue;
     }
+    const rawSeq = cellsOf(i).letters;
 
     const aligned = new Array<string>(totalLen).fill('-');
 
@@ -359,19 +373,17 @@ function createAlignedColumn(
 
     // Place pre-region flanking residues (right-aligned within the pre-region block)
     const preLen = rowPreLens[i];
-    const charIndices = Object.values(map);
-    const minChar = Math.min(...charIndices);
+    const [minChar, maxChar] = charRange(map);
     for (let p = 0; p < preLen; p++)
       aligned[preOffset - preLen + p] = rawSeq[minChar - preLen + p];
 
     // Place post-region flanking residues (left-aligned within the post-region block)
     const postLen = rowPostLens[i];
-    const maxChar = Math.max(...charIndices);
     const postStart = preOffset + schemePositions.length;
     for (let p = 0; p < postLen; p++)
       aligned[postStart + p] = rawSeq[maxChar + 1 + p];
 
-    alignedCol.set(i, aligned.join(''));
+    alignedCol.set(i, aligned.join(''), false);
   }
 
   // Set macromolecule tags on the aligned column
@@ -409,23 +421,21 @@ export function applyNumberingResults(
   // If the source column is already aligned (MSA), remap numbering_map indices
   // from ungapped to gapped, since numbering engines strip gaps before processing.
   const isAligned = true; // always treat as aligned to handle remapping
+  // Cells are split per row when needed, not kept for all rows (memory on large tables).
   const cellsOf = columnCells(seqCol);
-  const rowCells: RowCells[] = [];
-  for (let i = 0; i < result.rowCount; i++)
-    rowCells.push(cellsOf(i));
   if (isAligned && numberingMapCol) {
     for (let i = 0; i < result.rowCount; i++) {
       const mapStr = numberingMapCol.get(i);
       if (!mapStr) continue;
       try {
         const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
-        const ungapToGap = buildUngappedToGappedMap(rowCells[i]);
+        const ungapToGap = buildUngappedToGappedMap(cellsOf(i));
         const remapped: Record<string, number> = {};
         for (const [posCode, ungappedIdx] of Object.entries(posToCharIdx)) {
           if (ungappedIdx < ungapToGap.length)
             remapped[posCode] = ungapToGap[ungappedIdx];
         }
-        numberingMapCol.set(i, JSON.stringify(remapped));
+        numberingMapCol.set(i, JSON.stringify(remapped), false);
       } catch { /* skip */ }
     }
   }
@@ -496,7 +506,8 @@ export function applyNumberingResults(
         }
 
         const existingHits = getRowAnnotations(annotCol, i) ?? [];
-        setRowAnnotations(annotCol, i, mergeRowHits(existingHits, regionHits, true, false));
+        // No event per row: df.fireValuesChanged() below covers them.
+        setRowAnnotations(annotCol, i, mergeRowHits(existingHits, regionHits, true, false), false);
       }
     } catch (err) {
       console.warn('Failed to store per-row region data on original column:', err);
@@ -504,7 +515,7 @@ export function applyNumberingResults(
   }
 
   // --- Aligned column: column-level annotations only ---
-  const alignment = createAlignedColumn(df, seqCol, result, rowCells);
+  const alignment = createAlignedColumn(df, seqCol, result, cellsOf);
   if (alignment) {
     df.columns.insert(alignment.alignedCol, df.columns.toList().indexOf(seqCol) + 1);
     if (grok.shell.tv?.dataFrame === df)

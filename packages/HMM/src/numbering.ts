@@ -4,176 +4,67 @@
  * `annotations_json`, `numbering_detail`, `numbering_map`, plus ANARCI's
  * chain, species, germline and E-value columns. */
 import * as DG from 'datagrok-api/dg';
-import {
-  ChainType as RegionChain, NumberingScheme, SCHEME_REGIONS, type SchemeRegionDef,
-} from '@datagrok-libraries/bio/src/utils/macromolecule/numbering-schemes';
-import type {AnarciOptions, DomainDetails, SequenceResult} from './hmmer/anarci/anarci.ts';
-import type {Numbering, Scheme} from './hmmer/anarci/types.ts';
-import {HmmerPool} from './pool';
+import type {AnarciOptions, SequenceResult} from './hmmer/anarci/anarci.ts';
+import type {Scheme} from './hmmer/anarci/types.ts';
+import {HmmerPool, type Progress} from './pool';
 import {columnResidues} from './sequences';
+import {type DomainChoice, type NumberingRow, numberingRow} from './numbering-rows';
 
-export const SCHEMES: Scheme[] = ['imgt', 'kabat', 'chothia', 'martin', 'aho', 'wolfguy'];
-const SCHEME_LABELS: Record<Scheme, string> = {
-  imgt: 'IMGT', kabat: 'Kabat', chothia: 'Chothia', martin: 'Martin', aho: 'AHo', wolfguy: 'Wolfguy',
-};
-export const CHAIN_NAMES: Record<string, string> = {
-  H: 'Heavy', K: 'Kappa', L: 'Lambda', A: 'Alpha', B: 'Beta', G: 'Gamma', D: 'Delta',
-};
-/** Bio's `chain_type` groups: Heavy / Light; TCR chains by name. */
-const CHAIN_GROUPS: Record<string, string> = {
-  H: 'Heavy', K: 'Light', L: 'Light', A: 'Alpha', B: 'Beta', G: 'Gamma', D: 'Delta',
-};
+export {CHAIN_NAMES, domainChoice, regionDefs, SCHEMES, type DomainChoice} from './numbering-rows';
 
 /** The residues Bio's dialog indexes: gaps (`-`, `.`) removed, upper case. */
 export function extractSequence(raw: string | null | undefined): string {
   return (raw ?? '').replace(/[-.]/g, '').toUpperCase();
 }
 
-/** Run ANARCI on a column in the worker pool (numbering indices refer to the
- * gap-free residues, as Bio's numbering dialog expects). */
-export async function numberColumn(pool: HmmerPool, column: DG.Column<string>, options: AnarciOptions):
-  Promise<{sequences: string[]; results: SequenceResult[]}> {
+/** Run ANARCI on a column in the worker pool; the workers return the frame's
+ * rows (numbering indices refer to the gap-free residues, as Bio's numbering
+ * dialog expects). */
+export async function numberColumn(pool: HmmerPool, column: DG.Column<string>, options: AnarciOptions,
+  scheme: Scheme, choice: DomainChoice = 'first', progress?: Progress):
+  Promise<{sequences: string[]; rows: NumberingRow[]}> {
   const sequences = (await columnResidues(column)).residues;
-  const results = await pool.anarci(sequences.map((s, i) => [String(i), s]), options);
-  return {sequences, results};
+  const rows = await pool.anarciRows(sequences.map((s, i) => [String(i), s]), options, scheme, choice, undefined,
+    progress);
+  return {sequences, rows};
 }
 
-const code = ([number, insertion]: [number, string]) => `${number}${insertion.trim()}`;
-
-const SCHEME_KEYS: Record<Scheme, NumberingScheme> = {imgt: NumberingScheme.IMGT, kabat: NumberingScheme.Kabat,
-  chothia: NumberingScheme.Chothia, martin: NumberingScheme.Martin, aho: NumberingScheme.AHo,
-  wolfguy: NumberingScheme.Wolfguy};
-const REGION_CHAINS: Record<string, RegionChain> = {H: RegionChain.Heavy, K: RegionChain.Light_Kappa,
-  L: RegionChain.Light_Lambda, A: RegionChain.TCR_Alpha, B: RegionChain.TCR_Beta, G: RegionChain.TCR_Gamma,
-  D: RegionChain.TCR_Delta};
-
-/** Region definitions (FR/CDR with scheme position bounds) for a scheme and
- * ANARCI chain, from Bio's canonical tables (`numbering-schemes.ts`). */
-export function regionDefs(scheme: Scheme, chain: string):
-  {name: string; type: 'FR' | 'CDR'; from: number; to: number}[] {
-  const defs: SchemeRegionDef[] = SCHEME_REGIONS[SCHEME_KEYS[scheme]]?.[REGION_CHAINS[chain]] ?? [];
-  return defs.map((r) => ({name: r.name, type: r.type, from: parseInt(r.startPosition), to: parseInt(r.endPosition)}));
+/** The numbering DataFrame of `rows` (numberingRow): one row per input sequence. */
+export function frameFromRows(rows: NumberingRow[]): DG.DataFrame {
+  const n = rows.length;
+  const string = (name: keyof NumberingRow) => {
+    const col = DG.Column.fromType(DG.COLUMN_TYPE.STRING, name, n);
+    for (let i = 0; i < n; i++) {
+      const value = rows[i][name] as string;
+      if (value) col.set(i, value, false);
+    }
+    return col;
+  };
+  // E-values reach 1e-60 and identities are exact ratios, so floats are doubles.
+  const double = (name: keyof NumberingRow) => {
+    const values = new Float64Array(n).fill(DG.FLOAT_NULL);
+    for (let i = 0; i < n; i++) {
+      const value = rows[i][name] as number | null;
+      if (value !== null) values[i] = value;
+    }
+    return DG.Column.fromFloat64Array(name, values);
+  };
+  const domains = DG.Column.fromInt32Array('domains', Int32Array.from(rows, (r) => r.domains));
+  const cols = [string('position_names'), string('chain_type'), string('annotations_json'),
+    string('numbering_detail'), string('numbering_map'), string('chain'), string('species'), string('v_gene'),
+    string('j_gene'), double('v_identity'), double('j_identity'), double('evalue'), double('bitscore'), domains,
+    string('error')];
+  cols[11].meta.format = 'scientific';
+  for (const col of [cols[9], cols[10]]) col.meta.format = '0.00';
+  return DG.DataFrame.fromColumns(cols);
 }
 
-/** Per-row region annotations whose bounds are the first and last numbered
- * positions of each region in this row, so gapped boundaries still resolve. */
-function rowRegions(scheme: Scheme, chain: string, positions: [number, string][]): object[] {
-  const label = SCHEME_LABELS[scheme];
-  const group = CHAIN_GROUPS[chain] ?? chain;
-  const regions: object[] = [];
-  for (const def of regionDefs(scheme, chain)) {
-    const inside = positions.filter(([n]) => n >= def.from && n <= def.to);
-    if (inside.length === 0) continue;
-    regions.push({
-      id: `${scheme}-${group}-${def.name}`.toLowerCase(),
-      name: def.name,
-      description: `${def.name} (${label} ${def.from}-${def.to})`,
-      start: code(inside[0]),
-      end: code(inside[inside.length - 1]),
-      visualType: 'region',
-      category: 'structure',
-      sourceScheme: label,
-      autoGenerated: true,
-    });
-  }
-  return regions;
-}
-
-interface RowNumbering {
-  positions: [number, string][];
-  detail: {position: string; aa: string}[];
-  map: Record<string, number>;
-}
-
-/** Residue positions of one numbered domain; `start` is its first sequence index. */
-function rowNumbering(numbering: Numbering, start: number | null): RowNumbering {
-  const positions: [number, string][] = [];
-  const detail: {position: string; aa: string}[] = [];
-  const map: Record<string, number> = {};
-  let index = start ?? 0;
-  for (const [position, aa] of numbering) {
-    if (aa === '-') continue;
-    positions.push(position);
-    detail.push({position: code(position), aa});
-    map[code(position)] = index++;
-  }
-  return {positions, detail, map};
-}
-
-/** Which numbered domain of a multi-domain chain (scFv) a row reports. */
-export type DomainChoice = 'first' | 'heavy' | 'light';
-
-export function domainChoice(value: string | null | undefined): DomainChoice {
-  return value === 'heavy' || value === 'light' ? value : 'first';
-}
-
-/** VDJ (heavy-like) and VJ (light-like) chain types. */
-const HEAVY_LIKE = new Set(['H', 'B', 'D']);
-
-/** Index of the reported domain, or -1 when the chosen kind is absent. */
-function pickDomain(details: DomainDetails[], choice: DomainChoice): number {
-  if (choice === 'first') return 0;
-  return details.findIndex((d) => HEAVY_LIKE.has(d.chain_type) === (choice === 'heavy'));
-}
-
-/** The numbering DataFrame: one row per input sequence, reporting the
- * N-terminal numbered domain of each sequence, or its first heavy-like or
- * light-like domain (`choice`); `domains` counts all of them. */
+/** The numbering DataFrame of full ANARCI results (computed here; see numberColumn
+ * for the worker path): the N-terminal numbered domain of each sequence, or its
+ * first heavy-like or light-like domain (`choice`); `domains` counts all of them. */
 export function numberingFrame(scheme: Scheme, results: SequenceResult[], choice: DomainChoice = 'first'):
   DG.DataFrame {
-  const n = results.length;
-  const string = (name: string) => DG.Column.fromType(DG.COLUMN_TYPE.STRING, name, n);
-  // E-values reach 1e-60 and identities are exact ratios, so floats are doubles.
-  const double = (name: string) => DG.Column.fromFloat64Array(name, new Float64Array(n).fill(DG.FLOAT_NULL));
-  const cols = {
-    position_names: string('position_names'), chain_type: string('chain_type'),
-    annotations_json: string('annotations_json'), numbering_detail: string('numbering_detail'),
-    numbering_map: string('numbering_map'), chain: string('chain'), species: string('species'),
-    v_gene: string('v_gene'), j_gene: string('j_gene'),
-    v_identity: double('v_identity'), j_identity: double('j_identity'),
-    evalue: double('evalue'), bitscore: double('bitscore'),
-    domains: DG.Column.fromType(DG.COLUMN_TYPE.INT, 'domains', n),
-    error: string('error'),
-  };
-  for (let i = 0; i < n; i++) {
-    const r = results[i];
-    cols.annotations_json.set(i, '[]', false);
-    cols.domains.set(i, r.numbered?.length ?? 0, false);
-    if (r.error) cols.error.set(i, r.error, false);
-    if (!r.numbered || !r.details) continue;
-    const d = pickDomain(r.details, choice);
-    if (d < 0) continue;
-    const [numbering, start] = r.numbered[d];
-    const details: DomainDetails = r.details[d];
-    // ANARCI recognizes the domain but returns an empty numbering when a CDR
-    // exceeds what the scheme can number; chain, species and germlines remain.
-    const row = rowNumbering(numbering, start);
-    if (row.positions.length > 0) {
-      cols.position_names.set(i, row.detail.map((d) => d.position).join(', '), false);
-      cols.chain_type.set(i, CHAIN_GROUPS[details.chain_type] ?? '', false);
-      cols.annotations_json.set(i, JSON.stringify(rowRegions(scheme, details.chain_type, row.positions)), false);
-      cols.numbering_detail.set(i, JSON.stringify(row.detail), false);
-      cols.numbering_map.set(i, JSON.stringify(row.map), false);
-    }
-    cols.chain.set(i, CHAIN_NAMES[details.chain_type] ?? details.chain_type, false);
-    cols.species.set(i, details.species, false);
-    cols.evalue.set(i, details.evalue, false);
-    cols.bitscore.set(i, details.bitscore, false);
-    const germlines = details.germlines;
-    if (germlines && 'v_gene' in germlines) {
-      if (germlines.v_gene[0]) {
-        cols.v_gene.set(i, germlines.v_gene[0][1], false);
-        cols.v_identity.set(i, germlines.v_gene[1], false);
-      }
-      if (germlines.j_gene[0]) {
-        cols.j_gene.set(i, germlines.j_gene[0][1], false);
-        cols.j_identity.set(i, germlines.j_gene[1], false);
-      }
-    }
-  }
-  cols.evalue.meta.format = 'scientific';
-  for (const col of [cols.v_identity, cols.j_identity]) col.meta.format = '0.00';
-  return DG.DataFrame.fromColumns(Object.values(cols));
+  return frameFromRows(results.map((r) => numberingRow(scheme, r, choice)));
 }
 
 /** ANARCI's chain types per scheme (as its command line: TCRs only in IMGT and AHo). */

@@ -1,6 +1,6 @@
-/** Short notices shown wherever the names of the original programs appear:
- * this package reimplements HMMER 3.4 (translated to Rust, compiled to
- * WebAssembly) and ANARCI (translated to TypeScript); neither original
+/** Short notices, in tooltips wherever the names of the original programs
+ * appear: this package reimplements HMMER 3.4 (translated to Rust, compiled
+ * to WebAssembly) and ANARCI (translated to TypeScript); neither original
  * program runs here, and the package is not affiliated with their authors. */
 import * as ui from 'datagrok-api/ui';
 
@@ -11,10 +11,14 @@ export const ANARCI_NOTE = 'ANARCI reimplemented in TypeScript on Rusty-HMMER (H
 export const CLAN_NOTE = 'Clan competition is this package\'s implementation of Pfam\'s rule, checked against ' +
   'Pfam\'s pfam_scan.pl.';
 
-/** A small muted note for dialogs and panels. */
-export function noteDiv(...notes: string[]): HTMLElement {
-  const div = ui.divText(notes.join(' '), {style: {fontSize: '11px', lineHeight: '1.35', color: 'var(--grey-5)',
-    maxWidth: '440px', marginTop: '10px'}});
-  div.classList.add('hmm-reimplementation-note');
-  return div;
+/** A tooltip text followed by notices (dialog inputs). */
+export function withNotes(text: string, ...notes: string[]): string {
+  return [text, ...notes].filter((s) => s).join(' ');
+}
+
+/** Show notices in the tooltip of `element` (panel content); returns it. */
+export function noteTooltip<T extends HTMLElement>(element: T, ...notes: string[]): T {
+  ui.tooltip.bind(element, notes.join(' '));
+  element.classList.add('hmm-reimplementation-note');
+  return element;
 }

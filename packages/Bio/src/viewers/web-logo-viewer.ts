@@ -1170,40 +1170,51 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       }
 
       // 2022-05-05 askalkin instructed to show WebLogo based on filter (not selection)
-      const dfRowCount = this.dataFrame.rowCount;
       const filterIndexes = dfFilter.getSelectedIndexes();
-      for (let jPos = 0; jPos < length; ++jPos) {
-        // Here we want to build lists of values for every monomer in position jPos
+      const gapOriginal = this.seqHandler.defaultGapOriginal;
+      const seqHandler = this.seqHandler;
+      const start = this.startPosition;
+      // Rows outside, positions inside: each sequence is split once per pass, not once per position
+      // (100,000 rows of 450 positions: seconds of blocked UI before).
+      const forEachMonomer = (visit: (jPos: number, cm: string, rowI: number) => void): void => {
         for (const rowI of filterIndexes) {
-          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
-            this.seqHandler.defaultGapOriginal;
-          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
-          const pi = this.positions[jPos];
-          const pmi = pi.getFreq(cm);
-          ++pi.sumRowCount;
-          pmi.value = ++pmi.rowCount;
+          const seqS: ISeqSplitted = seqHandler.getSplitted(rowI);
+          for (let jPos = 0; jPos < length; ++jPos) {
+            const om: string = jPos + start < seqS.length ? seqS.getCanonical(start + jPos) : gapOriginal;
+            visit(jPos, gapOriginal === om ? GAP_SYMBOL : om, rowI);
+          }
         }
-        if (this.valueAggrType === DG.AGG.TOTAL_COUNT) continue;
+      };
+      forEachMonomer((jPos, cm) => {
+        const pi = this.positions[jPos];
+        const pmi = pi.getFreq(cm);
+        ++pi.sumRowCount;
+        pmi.value = ++pmi.rowCount;
+      });
 
-        // Now we have counts for each monomer in position jPos,
-        // this allows us to allocate list of values
+      if (this.valueAggrType !== DG.AGG.TOTAL_COUNT) {
         let valueCol: DG.Column<number> | null = null;
         try {
           valueCol = this.dataFrame.getCol(this.valueColumnName);
           if (!valueCol.matches('numerical')) valueCol = null;
-        } catch { valueCol = null; }
-        if (!valueCol) continue; // fallback to TOTAL_COUNT
-
-        for (const rowI of filterIndexes) {
-          const seqS: ISeqSplitted = this.seqHandler.getSplitted(rowI);
-          const om: string = jPos + this.startPosition < seqS.length ? seqS.getCanonical(this.startPosition + jPos) :
-            this.seqHandler.defaultGapOriginal;
-          const cm: string = this.seqHandler.defaultGapOriginal === om ? GAP_SYMBOL : om;
-          const value: number | null = valueCol.get(rowI);
-          this.positions[jPos].getFreq(cm).push(value);
+        } catch {
+          valueCol = null;
         }
-        this.positions[jPos].aggregate(this.valueAggrType);
+        if (valueCol) { // else fallback to TOTAL_COUNT
+          // The counts above size the lists of values of every monomer at every position.
+          const values = valueCol;
+          let lastRow = -1;
+          let value: number | null = null;
+          forEachMonomer((jPos, cm, rowI) => {
+            if (rowI !== lastRow) {
+              value = values.get(rowI);
+              lastRow = rowI;
+            }
+            this.positions[jPos].getFreq(cm).push(value);
+          });
+          for (let jPos = 0; jPos < length; ++jPos)
+            this.positions[jPos].aggregate(this.valueAggrType);
+        }
       }
 
       const shiftAggValue: number = this.valueAggrType === DG.AGG.TOTAL_COUNT ? 0 :

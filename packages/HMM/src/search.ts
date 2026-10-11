@@ -6,13 +6,14 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HitFlags, type SearchOptions} from './hmmer/engine.ts';
 import {resolveClanOverlaps} from './hmmer/clans.ts';
-import {HmmerPool} from './pool';
+import {HmmerPool, type Progress} from './pool';
+import {taskProgress} from './progress';
 import {columnResidues} from './sequences';
 import {type DomainHitSpan, setDomainAnnotations} from './annotations';
 import {
   fetchPfam, loadBuiltIn, loadFile, loadText, type LoadedModels, modelLabel, parseAccessions,
 } from './models';
-import {CLAN_NOTE, HMMER_NOTE, noteDiv} from './notice';
+import {CLAN_NOTE, HMMER_NOTE, withNotes} from './notice';
 
 export interface ColumnSearch {
   /** Score, E-value, domain count, significance and domain spans per row. */
@@ -29,14 +30,15 @@ export interface ColumnSearch {
  * Pfam family in a clan, overlapping domains of a sequence are resolved as
  * Pfam does (the most significant is kept; hmmer/clans.ts). */
 export async function searchColumn(pool: HmmerPool, models: LoadedModels, index: number, column: DG.Column<string>,
-  options: SearchOptions = {}, clanCompetition = true, label = models.info.models[index].name): Promise<ColumnSearch> {
+  options: SearchOptions = {}, clanCompetition = true, label = models.info.models[index].name, progress?: Progress):
+  Promise<ColumnSearch> {
   const model = models.info.models[index];
   const {residues: all, positions} = await columnResidues(column);
   const sequences: {name: string; residues: string}[] = [];
   all.forEach((residues, i) => {
     if (residues) sequences.push({name: String(i), residues});
   });
-  const merged = await pool.search(models.key, index, sequences, options);
+  const merged = await pool.search(models.key, index, sequences, options, undefined, progress);
   const n = column.length;
   const double = (name: string) => DG.Column.fromFloat64Array(name, new Float64Array(n).fill(DG.FLOAT_NULL));
   const score = double(`${label} score`);
@@ -102,7 +104,8 @@ export async function showProfileSearchDialog(pool: HmmerPool, pkg: DG.Package):
     ...(built.length > 0 ? ['Profile built in this table'] : [])];
   const columnInput = ui.input.column('Sequence', {table: df, value: seqCols[0],
     filter: (c: DG.Column) => c.semType === DG.SEMTYPE.MACROMOLECULE});
-  const sourceInput = ui.input.choice('Profile from', {value: sources[0], items: sources});
+  const sourceInput = ui.input.choice('Profile from', {value: sources[0], items: sources,
+    tooltipText: withNotes('The profile HMM to search the column with (hmmsearch).', HMMER_NOTE)});
   const familyInput = ui.input.choice<string>('Family', {value: '', items: [''], nullable: false});
   const accessionInput = ui.input.string('Accession', {value: 'PF07686', tooltipText: 'Pfam accession, e.g. PF07686'});
   const fileInput = ui.input.file('HMM file');
@@ -112,7 +115,8 @@ export async function showProfileSearchDialog(pool: HmmerPool, pkg: DG.Package):
   const cutoffInput = ui.input.bool('Pfam gathering cutoff', {value: false,
     tooltipText: 'Use the model\'s GA bit score thresholds (--cut_ga) instead of E-values'});
   const clanInput = ui.input.bool('Clan competition', {value: true,
-    tooltipText: 'Of overlapping domains of a Pfam family in a clan, keep only the most significant (as Pfam does)'});
+    tooltipText: withNotes('Of overlapping domains of a Pfam family in a clan, keep only the most significant ' +
+      '(as Pfam does).', CLAN_NOTE)});
   let library: LoadedModels | null = null;
   const refresh = async () => {
     const source = sourceInput.value;
@@ -133,7 +137,6 @@ export async function showProfileSearchDialog(pool: HmmerPool, pkg: DG.Package):
   ui.dialog({title: 'Profile HMM Search'})
     .add(ui.inputs([columnInput, sourceInput, familyInput, accessionInput, fileInput, builtInput, evalueInput,
       cutoffInput, clanInput]))
-    .add(noteDiv(HMMER_NOTE, CLAN_NOTE))
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Profile HMM search...');
       try {
@@ -152,7 +155,8 @@ export async function showProfileSearchDialog(pool: HmmerPool, pkg: DG.Package):
         }
         const options: SearchOptions = cutoffInput.value ? {cutoff: 'ga'} : {evalue: evalueInput.value ?? 10};
         const column = columnInput.value as DG.Column<string>;
-        const result = await searchColumn(pool, models, index, column, options, clanInput.value);
+        const result = await searchColumn(pool, models, index, column, options, clanInput.value, undefined,
+          taskProgress(pi, 'Searching'));
         applySearch(df, column, models, index, result);
         grok.shell.info(`${models.info.models[index].name}: ${result.reported} sequences found, ` +
           `${result.included} significant`);

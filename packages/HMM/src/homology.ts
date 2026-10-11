@@ -8,11 +8,12 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import type {SearchOptions} from './hmmer/engine.ts';
 import type {QueryModelOptions} from './hmmer/tools.ts';
-import {HmmerPool} from './pool';
+import {HmmerPool, type Progress} from './pool';
+import {taskProgress} from './progress';
 import {cellResidues} from './sequences';
 import {loadModels, type LoadedModels} from './models';
 import {applySearch, type ColumnSearch, searchColumn} from './search';
-import {HMMER_NOTE, noteDiv} from './notice';
+import {HMMER_NOTE, withNotes} from './notice';
 
 export const MATRICES = ['BLOSUM62', 'BLOSUM45', 'BLOSUM50', 'BLOSUM80', 'BLOSUM90', 'PAM30', 'PAM70', 'PAM120',
   'PAM240'];
@@ -24,14 +25,14 @@ export function queryResidues(text: string): string {
 
 /** phmmer of `query` against `column`; columns are labelled `label`. */
 export async function homologySearch(pool: HmmerPool, column: DG.Column<string>, query: string,
-  options: SearchOptions & QueryModelOptions = {}, label = 'query'):
+  options: SearchOptions & QueryModelOptions = {}, label = 'query', progress?: Progress):
   Promise<{models: LoadedModels; result: ColumnSearch}> {
   const residues = queryResidues(query);
   if (!residues) throw new Error('The query sequence is empty');
   const {popen, pextend, matrix, seed, ...search} = options;
   const bytes = await pool.queryModels([{name: label, residues}], {popen, pextend, matrix, seed});
   const models = await loadModels(pool, `phmmer ${label}`, bytes);
-  const result = await searchColumn(pool, models, 0, column, {seed, ...search}, false, label);
+  const result = await searchColumn(pool, models, 0, column, {seed, ...search}, false, label, progress);
   return {models, result};
 }
 
@@ -46,7 +47,8 @@ export async function showHomologySearchDialog(pool: HmmerPool): Promise<void> {
   const columnInput = ui.input.column('Sequence', {table: df, value: seqCols[0],
     filter: (c: DG.Column) => c.semType === DG.SEMTYPE.MACROMOLECULE});
   const sources = ['Current row', 'Sequence'];
-  const sourceInput = ui.input.choice('Query', {value: sources[0], items: sources});
+  const sourceInput = ui.input.choice('Query', {value: sources[0], items: sources,
+    tooltipText: withNotes('The query protein sequence: a row of the column, or typed (phmmer).', HMMER_NOTE)});
   const rowInput = ui.input.int('Row', {value: Math.max(0, df.currentRowIdx) + 1,
     tooltipText: 'The row whose sequence is the query (1-based)'});
   const textInput = ui.input.textArea('Query sequence', {value: '',
@@ -66,7 +68,6 @@ export async function showHomologySearchDialog(pool: HmmerPool): Promise<void> {
   ui.dialog({title: 'Homology Search (phmmer)'})
     .add(ui.inputs([columnInput, sourceInput, rowInput, textInput, evalueInput, matrixInput, popenInput,
       pextendInput]))
-    .add(noteDiv(HMMER_NOTE))
     .onOK(async () => {
       const pi = DG.TaskBarProgressIndicator.create('Homology search...');
       try {
@@ -84,7 +85,7 @@ export async function showHomologySearchDialog(pool: HmmerPool): Promise<void> {
         }
         const {models, result} = await homologySearch(pool, column, query, {evalue: evalueInput.value ?? 10,
           matrix: matrixInput.value ?? 'BLOSUM62', popen: popenInput.value ?? 0.02,
-          pextend: pextendInput.value ?? 0.4}, label);
+          pextend: pextendInput.value ?? 0.4}, label, taskProgress(pi, 'Searching'));
         applySearch(df, column, models, 0, result, `${label} (phmmer, ${matrixInput.value})`);
         grok.shell.info(`${label}: ${result.reported} sequences found, ${result.included} significant`);
       } catch (e) {

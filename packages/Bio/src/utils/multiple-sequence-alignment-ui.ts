@@ -18,6 +18,7 @@ import {kalignVersion, MSA_ENGINE_ROLE} from './constants';
 import {_package} from '../package';
 
 import '../../css/msa.css';
+import {bindEngineDescription, setEngineDescription} from './engine-description';
 
 type AlignmentMode = 'kalign' | 'engine';
 
@@ -132,6 +133,7 @@ export async function multipleSequenceAlignmentUI(
       // Wraps: a long engine description must not widen the dialog.
       const engineDescDiv = ui.div('', {style: {fontSize: '12px', opacity: '0.7', marginBottom: '6px',
         maxWidth: '460px', whiteSpace: 'normal', overflowWrap: 'break-word'}});
+      bindEngineDescription(engineDescDiv);
       const engineParamsDiv = ui.div();
       const engineParamsButton = ui.button('Alignment parameters', () => {
         engineParamsDiv.hidden = !engineParamsDiv.hidden;
@@ -156,7 +158,7 @@ export async function multipleSequenceAlignmentUI(
 
         const selectedName = engineInput.value;
         state.currentFunc = msaEngines.find((f) => f.friendlyName === selectedName) ?? null;
-        engineDescDiv.textContent = state.currentFunc?.description ?? '';
+        setEngineDescription(engineDescDiv, state.currentFunc?.description ?? '');
         if (!state.currentFunc) return;
 
         state.currentFuncCall = state.currentFunc.prepare({});

@@ -7,7 +7,7 @@
 import * as DG from 'datagrok-api/dg';
 import {HitFlags} from './hmmer/engine.ts';
 import type {ProfileAlignment} from './hmmer/tools.ts';
-import {HmmerPool} from './pool';
+import {HmmerPool, type Progress} from './pool';
 import {columnResidues} from './sequences';
 import {fetchPfam, loadBuiltIn, loadFile, loadGermlines, type LoadedModels} from './models';
 import {PROFILE_TAG} from './logo';
@@ -15,10 +15,19 @@ import {PROFILE_TAG} from './logo';
 export const PROFILES = ['Best Pfam family (auto)', 'Pfam family or accession', 'Antibody/TCR germline (auto)',
   'HMM file'];
 
-/** The model most often scoring best over `sequences` (ties: higher total score). */
+/** Rows scanned to choose a profile automatically: evenly spaced, so 100,000 rows
+ * take as long as 1,000 (the vote of a sample of this size rarely differs). */
+export const AUTO_SAMPLE = 1000;
+
+/** The model most often scoring best over `sequences` (ties: higher total score),
+ * voted on up to {@link AUTO_SAMPLE} evenly spaced non-empty sequences. */
 async function bestModel(pool: HmmerPool, models: LoadedModels, sequences: {name: string; residues: string}[],
   what: string): Promise<number> {
-  const results = await pool.scan(models.key, sequences.filter((s) => s.residues));
+  const present = sequences.filter((s) => s.residues);
+  const step = Math.max(1, present.length / AUTO_SAMPLE);
+  const sample = present.length <= AUTO_SAMPLE ? present :
+    Array.from({length: AUTO_SAMPLE}, (_, k) => present[Math.floor(k * step)]);
+  const results = await pool.scan(models.key, sample);
   const votes = new Map<number, {count: number; score: number}>();
   for (const result of results) {
     const best = result.hits.find((h) => h.flags & HitFlags.reported);
@@ -86,11 +95,11 @@ export function positionNames(consensus: boolean[]): string[] {
 
 /** hmmalign of `column` to model `index` of `models`; the aligned Bio column. */
 export async function alignColumn(pool: HmmerPool, column: DG.Column<string>, models: LoadedModels, index: number,
-  trim: boolean, sequences?: {name: string; residues: string}[]): Promise<DG.Column<string>> {
+  trim: boolean, sequences?: {name: string; residues: string}[], progress?: Progress): Promise<DG.Column<string>> {
   sequences ??= (await columnResidues(column)).residues.map((residues, i) => ({name: String(i), residues}));
   if (sequences.length === 0) throw new Error('No sequences to align');
   const model = models.info.models.length === 1 ? models.bytes : await pool.extract(models.bytes, index);
-  const aligned: ProfileAlignment = await pool.align(model, 0, sequences, trim);
+  const aligned: ProfileAlignment = await pool.align(model, 0, sequences, trim, undefined, progress);
   const result = DG.Column.fromStrings(`${column.name} (hmmalign)`,
     aligned.rows.map((row) => row.toUpperCase().replace(/\./g, '-')));
   const info = models.info.models[index];

@@ -5,7 +5,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {_package} from '../package-test';
 import {HmmerPool} from '../pool';
-import {allowedChains, numberingFrame, SCHEMES} from '../numbering';
+import {allowedChains, type DomainChoice, frameFromRows, numberingFrame, SCHEMES} from '../numbering';
 import ANARCI_FIXTURE from './anarci-fixture.json';
 import OPTIONS_FIXTURE from './anarci-options-fixture.json';
 import type {Scheme} from '../hmmer/anarci/types.ts';
@@ -92,6 +92,22 @@ category('ANARCI numbering', () => {
     const one = await HmmerPool.get(_package).anarci(many, options, 1);
     const all = await HmmerPool.get(_package).anarci(many, options, 8);
     expect(JSON.stringify(all), JSON.stringify(one));
+  });
+
+  test('rows built in the workers equal the frame of full results', async () => {
+    const sequences = ANARCI_FIXTURE.map((f, i): [string, string] => [String(i), f.sequence]);
+    for (const [scheme, choice] of [['imgt', 'first'], ['kabat', 'heavy'], ['aho', 'light']] as
+      [Scheme, DomainChoice][]) {
+      const options = {scheme, allow: allowedChains(scheme), assignGermline: true};
+      const pool = HmmerPool.get(_package);
+      const expected = numberingFrame(scheme, await pool.anarci(sequences, options), choice);
+      const actual = frameFromRows(await pool.anarciRows(sequences, options, scheme, choice));
+      expect(actual.columns.names().join(), expected.columns.names().join(), `${scheme} columns`);
+      for (const name of expected.columns.names()) {
+        expect(JSON.stringify(actual.col(name)!.toList()), JSON.stringify(expected.col(name)!.toList()),
+          `${scheme} ${choice} ${name}`);
+      }
+    }
   });
 
   test('region annotations resolve in every row', async () => {

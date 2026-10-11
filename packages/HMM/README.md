@@ -62,7 +62,8 @@ best-matching family of the built-in Pfam library, a Pfam family or
 accession, the best antibody/TCR germline model (ANARCI) or an HMM file — so
 every column is a model position (or an insertion between two positions) and
 alignments of different tables to the same model line up. Optionally trimmed
-to the model (`--trim`). Identical to C `hmmalign`.
+to the model (`--trim`). Identical to C `hmmalign`. The automatic choices vote
+on up to 1,000 evenly spaced rows, so large columns don't pay for a full scan.
 
 ## Homology search and building profiles
 
@@ -136,7 +137,9 @@ TypeScript) and checks its results against the original programs. Program
 names such as hmmsearch, hmmscan, phmmer, hmmalign, hmmbuild and hmmlogo name
 the behavior reproduced. Clan competition is this package's own implementation
 of Pfam's rule, checked against Pfam's `pfam_scan.pl`. The package is not
-affiliated with or endorsed by the authors of these projects.
+affiliated with or endorsed by the authors of these projects. In the app this
+note is in the tooltips: of each dialog's main input, of the context panels,
+and in the descriptions of the functions and engines.
 
 ## Credits
 

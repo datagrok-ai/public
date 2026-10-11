@@ -2,6 +2,9 @@
 
 ## v.next
 
+* WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)
+* Apply Numbering Scheme: Applies results row by row without keeping every row's parsed map and cells, and writes per-row annotations with one change event (100,000 rows crashed the tab); the same single event for Scan Liabilities
+* Apply Numbering Scheme, MSA: An engine's description shows its first sentence, the rest in the tooltip
 * WebLogo: Fixed the position width becoming infinite when the viewer first renders with no positions (data still loading), which left the slider collapsed at 0 until dragged; a saved infinite or zero width falls back to the default
 * MSA: A long engine description wraps instead of widening the dialog
 * Apply Numbering Scheme: An engine from another package (e.g. HMM's ANARCI) is the default when installed; the built-in immunum stays available as the fallback

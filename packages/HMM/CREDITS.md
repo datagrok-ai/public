@@ -52,6 +52,12 @@ matrices, vector routines).
   Harvard College; (C) 2000–2023 Howard Hughes Medical Institute; (C) 1995–2006
   Washington University School of Medicine; (C) 1992–1995 MRC Laboratory of
   Molecular Biology, UK.
+- Easel's 64-bit random number generator (used to subsample alignments deeper
+  than 50,000 sequences when building profiles) derives from MT19937-64,
+  Copyright (C) 2004 Makoto Matsumoto and Takuji Nishimura (BSD-3-Clause,
+  [`licenses/MT19937-64.txt`](licenses/MT19937-64.txt)); its `Deal` sampler
+  from code by Kevin Lawler, Copyright 2016 (ISC,
+  [`licenses/Lawler-Deal-ISC.txt`](licenses/Lawler-Deal-ISC.txt)).
 
 ### Arm Optimized Routines — math functions in the engine
 

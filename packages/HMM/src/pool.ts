@@ -8,8 +8,13 @@ import * as DG from 'datagrok-api/dg';
 import type {DatabaseInfo, QueryResult, SearchOptions, SequenceInput} from './hmmer/engine.ts';
 import {mergeSearch, partOptions, type MergedSearch, type SearchPart} from './hmmer/search.ts';
 import type {AnarciOptions, SequenceResult} from './hmmer/anarci/anarci.ts';
+import type {Scheme} from './hmmer/anarci/types.ts';
+import type {DomainChoice, NumberingRow} from './numbering-rows';
 import type {BuiltProfile, Logo, LogoMode, ProfileAlignment, QueryModelOptions} from './hmmer/tools.ts';
 import type {WorkerRequest, WorkerResponse} from './workers/protocol';
+
+/** Progress of a batch: items done of the total (called as chunks complete). */
+export type Progress = (done: number, total: number) => void;
 
 const IDLE_MS = 60_000;
 /** Below this many sequences per worker, extra workers cost more than they save. */
@@ -144,8 +149,8 @@ export class HmmerPool {
   }
 
   /** Run `make(chunk, offset)` for consecutive chunks of `items` on up to `workers` workers. */
-  async map<T, R>(items: T[], make: (chunk: T[], offset: number) => WorkerRequest, workers = HmmerPool.maxWorkers):
-    Promise<R[]> {
+  async map<T, R>(items: T[], make: (chunk: T[], offset: number) => WorkerRequest, workers = HmmerPool.maxWorkers,
+    progress?: Progress): Promise<R[]> {
     this.begin();
     try {
       const count = Math.max(1, Math.min(workers, Math.ceil(items.length / MIN_CHUNK)));
@@ -160,10 +165,12 @@ export class HmmerPool {
       }
       const results: R[][] = new Array(chunks.length);
       let next = 0;
+      let done = 0;
       await Promise.all(used.map(async (w) => {
         while (next < chunks.length) {
           const i = next++;
           results[i] = await this.call<R[]>(w, make(chunks[i], offsets[i]));
+          progress?.(done += chunks[i].length, items.length);
         }
       }));
       return results.flat();
@@ -175,6 +182,13 @@ export class HmmerPool {
   /** ANARCI numbering of `(name, sequence)` pairs. */
   anarci(sequences: [string, string][], options: AnarciOptions, workers?: number): Promise<SequenceResult[]> {
     return this.map(sequences, (chunk) => ({op: 'anarci', sequences: chunk, options}), workers);
+  }
+
+  /** ANARCI numbering reduced to numbering frame rows in the workers (numbering-rows.ts). */
+  anarciRows(sequences: [string, string][], options: AnarciOptions, scheme: Scheme, choice: DomainChoice,
+    workers?: number, progress?: Progress): Promise<NumberingRow[]> {
+    return this.map(sequences, (chunk) => ({op: 'anarciRows', sequences: chunk, options, scheme, choice}), workers,
+      progress);
   }
 
   /** Register a model database (HMMER text or .h3m bytes); returns its description. */
@@ -201,8 +215,9 @@ export class HmmerPool {
   }
 
   /** `hmmscan` of every sequence against a registered database. */
-  scan(key: string, sequences: SequenceInput[], options: SearchOptions = {}, workers?: number): Promise<QueryResult[]> {
-    return this.map(sequences, (chunk) => ({op: 'scan', key, sequences: chunk, options}), workers);
+  scan(key: string, sequences: SequenceInput[], options: SearchOptions = {}, workers?: number, progress?: Progress):
+    Promise<QueryResult[]> {
+    return this.map(sequences, (chunk) => ({op: 'scan', key, sequences: chunk, options}), workers, progress);
   }
 
   /** phmmer's calibrated query models (an `.h3m` database to load and search). */
@@ -214,10 +229,10 @@ export class HmmerPool {
   /** `hmmalign` of `sequences` to model `index` of `model` (HMMER text or
    * `.h3m`): traces split across workers, the alignment assembled once. */
   async align(model: Uint8Array, index: number, sequences: {name: string; residues: string}[], trim = false,
-    workers?: number): Promise<ProfileAlignment> {
+    workers?: number, progress?: Progress): Promise<ProfileAlignment> {
     const tools = await this.tools();
     const chunks = await this.map<{name: string; residues: string}, Uint8Array>(sequences,
-      (chunk) => ({op: 'alignTraces', tools, model, index, sequences: chunk}), workers);
+      (chunk) => ({op: 'alignTraces', tools, model, index, sequences: chunk}), workers, progress);
     return this.one({op: 'alignRows', tools, model, index, sequences, chunks, trim});
   }
 
@@ -240,10 +255,11 @@ export class HmmerPool {
   /** `hmmsearch` of one database model against `sequences` (unique names),
    * split across workers and merged; identical to one search (hmmer/search.ts). */
   async search(key: string, model: number, sequences: {name: string; residues: string}[],
-    options: SearchOptions = {}, workers?: number): Promise<MergedSearch> {
+    options: SearchOptions = {}, workers?: number, progress?: Progress): Promise<MergedSearch> {
     const total = sequences.length;
     const parts = await this.map<{name: string; residues: string}, SearchPart>(sequences, (chunk, offset) =>
-      ({op: 'search', key, model, sequences: chunk, options: partOptions(options, total), offset}), workers);
+      ({op: 'search', key, model, sequences: chunk, options: partOptions(options, total), offset}), workers,
+    progress);
     return mergeSearch(parts, options, total, sequences.map((s) => s.name));
   }
 }

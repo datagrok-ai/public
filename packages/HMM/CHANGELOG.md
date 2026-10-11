@@ -15,6 +15,12 @@
 * Align to profile (hmmalign) as an MSA engine; Homology Search (phmmer);
   Build Profile HMM (hmmbuild) with search and logo; profile HMM logos drawn
   by Bio's WebLogo (its Profile property; hmmlogo heights from this package).
+* Reimplementation notes are in tooltips (dialog inputs, panels, function
+  descriptions) instead of text in the dialogs.
+* ANARCI numbering of large columns: the workers reduce results to the numbering
+  frame's rows, so 100,000 chains no longer exhaust the browser's memory.
+* Long runs show progress (rows done of total) on the task bar; the automatic
+  profile of Align to profile is chosen on up to 1,000 evenly spaced rows.
 * Profile HMM Logo: choose the WebLogo's sequence column and the profile (Pfam
   family, accession, ANARCI germline or a profile built in the table); a column
   aligned to a profile proposes it.

@@ -7,7 +7,7 @@ import {cellResidues} from './sequences';
 import {CHAIN_NAMES, regionDefs} from './numbering';
 import {loadBuiltIn} from './models';
 import {queryDomains} from './domains';
-import {ANARCI_NOTE, HMMER_NOTE, noteDiv} from './notice';
+import {ANARCI_NOTE, HMMER_NOTE, noteTooltip} from './notice';
 
 function asyncWidget(fill: (root: HTMLElement) => Promise<void>): DG.Widget {
   const root = ui.div([ui.loader()]);
@@ -49,7 +49,7 @@ export function anarciWidget(pool: HmmerPool, value: DG.SemanticValue): DG.Widge
       if (result.numbered!.length > 1) sections.push(ui.h3(`Domain ${d + 1}`));
       sections.push(ui.tableFromMap(map));
     });
-    root.replaceChildren(...sections, noteDiv(ANARCI_NOTE));
+    root.replaceChildren(noteTooltip(ui.divV(sections), ANARCI_NOTE));
   });
 }
 
@@ -66,7 +66,8 @@ export function domainsWidget(pool: HmmerPool, pkg: DG.Package, value: DG.Semant
         d.printed.iEvalue.toExponential(1)]);
     }
     rows.sort((a, b) => parseInt(a[2] as string) - parseInt(b[2] as string));
-    root.replaceChildren(rows.length === 0 ? ui.divText('No Pfam domains (built-in library, gathering cutoffs)') :
-      ui.table(rows, (r) => r, ['Domain', 'Pfam', 'Region', 'Bits', 'E-value']), noteDiv(HMMER_NOTE));
+    root.replaceChildren(rows.length === 0 ?
+      noteTooltip(ui.divText('No Pfam domains (built-in library, gathering cutoffs)'), HMMER_NOTE) :
+      noteTooltip(ui.table(rows, (r) => r, ['Domain', 'Pfam', 'Region', 'Bits', 'E-value']), HMMER_NOTE));
   });
 }

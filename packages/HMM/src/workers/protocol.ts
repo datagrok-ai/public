@@ -1,5 +1,7 @@
 import type {SearchOptions, SequenceInput} from '../hmmer/engine.ts';
 import type {AnarciOptions} from '../hmmer/anarci/anarci.ts';
+import type {Scheme} from '../hmmer/anarci/types.ts';
+import type {DomainChoice} from '../numbering-rows';
 import type {LogoMode, QueryModelOptions} from '../hmmer/tools.ts';
 
 type Named = {name: string; residues: string};
@@ -8,6 +10,9 @@ type Named = {name: string; residues: string};
 export type WorkerRequest =
   | {op: 'init'; module: WebAssembly.Module; base: string}
   | {op: 'anarci'; sequences: [string, string][]; options: AnarciOptions}
+  // ANARCI with the results reduced to numbering frame rows in the worker (numbering-rows.ts).
+  | {op: 'anarciRows'; sequences: [string, string][]; options: AnarciOptions; scheme: Scheme;
+      choice: DomainChoice}
   | {op: 'load'; key: string; bytes: ArrayBuffer}
   | {op: 'unload'; key: string}
   | {op: 'scan'; key: string; sequences: SequenceInput[]; options: SearchOptions}
