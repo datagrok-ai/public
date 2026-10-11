@@ -8,6 +8,7 @@
 * WebLogo: Fixed the position width becoming infinite when the viewer first renders with no positions (data still loading), which left the slider collapsed at 0 until dragged; a saved infinite or zero width falls back to the default
 * MSA: A long engine description wraps instead of widening the dialog
 * Apply Numbering Scheme: An engine from another package (e.g. HMM's ANARCI) is the default when installed; the built-in immunum stays available as the fallback
+* Apply Numbering Scheme: Fixed an engine with options (HMM's ANARCI) offering only IMGT when the dialog was opened again
 * WebLogo: Added the Profile property: draws a sequence profile supplied by another package (functions with `meta.role: webLogoProfile`, e.g. HMM's profile HMM logos) with the viewer's own layout, scrolling and colors; when the column is aligned to the profile, clicking a letter selects the rows that have it there (in `@datagrok-libraries/bio`)
 * Annotations: Moved the annotation storage helpers (`annotation-manager.ts`) to `@datagrok-libraries/bio` so other packages write annotations the same way; Bio re-exports them
 * Tests: The BDD features no longer repeat what the package tests cover (project round trips, notation permutations, renderer checks); the MSA dialog's engine switch on a HELM column is claimed again (it contacts no container)

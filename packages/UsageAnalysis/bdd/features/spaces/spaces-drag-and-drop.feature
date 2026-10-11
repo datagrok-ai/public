@@ -54,8 +54,9 @@ Feature: Putting files into a space by dragging them
     And demog.csv link in gallery should be visible
 
   Scenario: The file's details show in the context panel
+    Given the context panel is open
     When user clicks on demog.csv link in gallery
-    Then context panel should be visible
+    Then the context panel should show "demog.csv"
     And context panel should contain text "demog"
 
   Scenario: A second file joins the first

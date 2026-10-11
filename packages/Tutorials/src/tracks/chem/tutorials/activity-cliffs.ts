@@ -76,7 +76,7 @@ export class ActivityCliffsTutorial extends Tutorial {
         plotAdded.next(true);
       });
 
-    await this.dialogOkAction(d);
+    await this.dialogOkAction(d, 'Click OK');
     await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)), null, '', null);
     plotSub.unsubscribe();
 

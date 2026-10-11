@@ -53,10 +53,14 @@ function discoverEngines(): NumberingEngine[] {
 /** Reads the `scheme` parameter's declared choices off an engine function.
  *  Engines advertise which schemes they support via the `choices` option of
  *  their `scheme: string` parameter; if the function has none we fall back to
- *  a single generic IMGT option so the dropdown is never empty. */
+ *  a single generic IMGT option so the dropdown is never empty. The declared
+ *  option is read, not `Property.choices`: the platform's editor for the
+ *  function (the engine options below) empties that list for good. */
 function getEngineSchemes(func: DG.Func): string[] {
   const schemeInput = func.inputs.find((p) => p.name.toLowerCase() === 'scheme');
-  const choices = schemeInput?.choices ?? [];
+  const declared = schemeInput?.options['choices'];
+  const choices: string[] = typeof declared === 'string' && declared.startsWith('[') ?
+    JSON.parse(declared) : schemeInput?.choices ?? [];
   return choices.length > 0 ? choices.slice() : ['imgt'];
 }
 
