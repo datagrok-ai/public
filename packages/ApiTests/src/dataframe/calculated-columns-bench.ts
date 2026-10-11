@@ -93,7 +93,7 @@ category('Benchmarks: Calculated columns and layouts', () => {
     const start = performance.now();
     table.set('b', row, table.get('b', row) + 10);
     await awaitCheck(() => deepest.get(row) !== was, 'dependent formulas were not recalculated', 60000, 5);
-    return expectFaster(performance.now() - start, 200);
+    return expectFaster(performance.now() - start, 100);
   }, {benchmark: true, timeout: 120000});
 
   test('Calculate 200 formulas', async () => {
