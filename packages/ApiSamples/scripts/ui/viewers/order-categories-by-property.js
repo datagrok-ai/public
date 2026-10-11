@@ -16,6 +16,6 @@ const df = DG.DataFrame.fromCsv('name,value\nviolet,1\nred,2\ncyan,3\nred,4\nvio
 df.col('name').semType = 'DemoNames';
 const view = grok.shell.addTableView(df);
 
-// the same id a user would pick from the menu; also: ySortByProperty (scatterplot),
-// xSortByProperty (line chart), categorySortByProperty (box plot)
-view.scatterPlot({x: 'name', y: 'value'}).setOptions({xSortByProperty: f.nqName});
+// the order is a JSON string with the same id a user would pick from the menu;
+// also: yCategoryOrder (scatterplot), xCategoryOrder (line chart), categoryOrder (box plot)
+view.scatterPlot({x: 'name', y: 'value'}).setOptions({xCategoryOrder: JSON.stringify({property: f.nqName, order: 'asc'})});

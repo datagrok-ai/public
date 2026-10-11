@@ -5,19 +5,21 @@ import {category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 const nodeSkip = typeof process !== 'undefined' ? 'grok.functions.register is browser-only' : undefined;
 
 category('Viewers: category order', () => {
-  test('sortByProperty round-trip', async () => {
+  test('category order round-trip', async () => {
     const demog = grok.data.demo.demog(100);
+    const byProperty = (property: string) => JSON.stringify({property: property, aggr: 'avg', order: 'desc'});
+    const propertyOf = (look: {[key: string]: any}, name: string) => JSON.parse(look[name]).property;
     const sp = demog.plot.scatter();
-    sp.setOptions({xSortByProperty: 'Chem:molecularProperty(MW)', ySortByProperty: 'Chem:molecularProperty(LogP)'});
+    sp.setOptions({xCategoryOrder: byProperty('Chem:molecularProperty(MW)'), yCategoryOrder: byProperty('Chem:molecularProperty(LogP)')});
     const spLook = sp.getOptions(true).look;
-    expect(spLook['xSortByProperty'], 'Chem:molecularProperty(MW)');
-    expect(spLook['ySortByProperty'], 'Chem:molecularProperty(LogP)');
+    expect(propertyOf(spLook, 'xCategoryOrder'), 'Chem:molecularProperty(MW)');
+    expect(propertyOf(spLook, 'yCategoryOrder'), 'Chem:molecularProperty(LogP)');
     const lc = demog.plot.line();
-    lc.setOptions({xSortByProperty: 'Chem:molecularProperty(MW)'});
-    expect(lc.getOptions(true).look['xSortByProperty'], 'Chem:molecularProperty(MW)');
+    lc.setOptions({xCategoryOrder: byProperty('Chem:molecularProperty(MW)')});
+    expect(propertyOf(lc.getOptions(true).look, 'xCategoryOrder'), 'Chem:molecularProperty(MW)');
     const bp = demog.plot.box();
-    bp.setOptions({categorySortByProperty: 'Chem:molecularProperty(MW)'});
-    expect(bp.getOptions(true).look['categorySortByProperty'], 'Chem:molecularProperty(MW)');
+    bp.setOptions({categoryOrder: byProperty('Chem:molecularProperty(MW)')});
+    expect(propertyOf(bp.getOptions(true).look, 'categoryOrder'), 'Chem:molecularProperty(MW)');
   });
 
   test('property keys computed for distinct categories', async () => {
@@ -38,7 +40,7 @@ category('Viewers: category order', () => {
     const view = grok.shell.addTableView(df);
     try {
       const sp = view.scatterPlot({x: 'names', y: 'val'});
-      sp.setOptions({xSortByProperty: `${f.nqName}(length)`});
+      sp.setOptions({xCategoryOrder: JSON.stringify({property: `${f.nqName}(length)`})});
       // the keys arrive asynchronously, and the calculator only ever sees the distinct categories
       for (let i = 0; i < 50 && calls.length === 0; i++)
         await delay(100);
