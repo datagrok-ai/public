@@ -4,7 +4,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, button, Control, divV, divH, signal, span} from '@datagrok-libraries/u2';
-import type {BadgeVariant} from '@datagrok-libraries/u2';
+import type {BadgeVariant, MessageInput} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, setCriterion, stagesOf,
@@ -91,8 +91,10 @@ import {FindProgram, findPrograms, matchedBy, MIN_QUERY, resolveRecents} from '.
 import {accessFrame, portfolioAccess} from '../data-access';
 import {accessNotice} from '../model/data-access';
 import {discussionOf, postToProgram, ProgramDiscussion} from '../discussion';
-import {Anchor, decisionsCiting, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl} from '../model/discussion';
-import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
+import {
+  Anchor, decisionsCiting, plainMentions, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl,
+} from '../model/discussion';
+import {composer, openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
 import {programAddress} from '../model/pinning';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -196,6 +198,8 @@ export class PortalView {
     {list: [], names: new Map(), refused: [], approver: false};
   /** The selected program's discussion (F-51): the platform chat on its folder, as threads. */
   private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
+  /** The discussion's compose box, disposed when the section is drawn again. */
+  private discussionInput: MessageInput | null = null;
   /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
   private pageCtx: ProgramContext | null = null;
   /** The selected program's documents by id, for the context a question about one carries. */
@@ -1821,12 +1825,18 @@ export class PortalView {
     const d = x.d;
     const reopen = () => this.openProgram(program.id, this.viewedStage);
     heading.textContent = `Discussion (${d.threads.reduce((n, t) => n + t.posts.length, 0)})`;
-    const input = named(document.createElement('textarea'), 'discussion-input');
-    input.rows = 2;
-    input.placeholder = `Post to ${program.code}'s discussion`;
-    const post = named(button('Post', () => void postToProgram(program, input.value).then(reopen).catch(this.failed)),
-      'discussion-post-button');
-    post.title = 'Posted to the platform chat on the program\'s folder: whoever may open the folder reads it';
+    this.discussionInput?.dispose();
+    const input = this.discussionInput = composer({name: 'discussion-input', sendLabel: 'Post',
+      placeholder: `Post to ${program.code}'s discussion. @ to mention someone`,
+      onSend: (markup) => postToProgram(program, markup).then(() => reopen()).catch((e) => {
+        this.failed(e);
+        throw e;
+      })});
+    const post = input.root.querySelector<HTMLElement>('.u2-msg-send');
+    if (post) {
+      post.dataset.u2Name = 'discussion-post-button';
+      post.title = 'Posted to the platform chat on the program\'s folder: whoever may open the folder reads it';
+    }
     const ask = named(button('Ask SME…', () => openAskSmeDialog({portfolio: ctx.portfolio, program,
       context: this.smeContext(ctx, null), onAsked: reopen})), 'discussion-ask-sme-button');
     const origin = window.location.origin;
@@ -1846,7 +1856,7 @@ export class PortalView {
       const posts = t.posts.slice(-3).map((p, j) => named(divV([
         divH([span(p.byName ?? '', 'pp-muted'), span(p.on.slice(0, 16).replace('T', ' '), 'pp-muted'),
           ...(p.question ? [badge('question', {variant: 'warning'})] : [])], 'pp-unit'),
-        span(p.body.length > 400 ? `${p.body.slice(0, 399)}…` : p.body, 'pp-post-body'),
+        span(((b) => b.length > 400 ? `${b.slice(0, 399)}…` : b)(plainMentions(p.body)), 'pp-post-body'),
       ], 'pp-post'), `thread-${i}-post-${j}`));
       const reply = named(span('Reply', 'pp-link'), `thread-${i}-reply`);
       reply.onclick = () => openDiscussDialog({program, anchor: t.anchor, onPosted: reopen});
@@ -1888,7 +1898,7 @@ export class PortalView {
     }
     return [
       heading,
-      named(divV([input, divH([post, ask], 'pp-actions')]), 'discussion-form'),
+      named(divV([input.root, divH([ask], 'pp-actions')]), 'discussion-form'),
       named(divV(items.length ? items : [span('No posts yet', 'pp-muted')], 'pp-units'), 'discussion-threads'),
       ...more,
     ];

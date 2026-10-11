@@ -19,7 +19,7 @@ import {documentsOf} from './documents';
 import {textColumn} from './columns';
 import {approverUsers, usersOfGroups} from './approvals';
 import {
-  Anchor, AnchorKind, AskSmeConfig, ChatMessage, composePost, Post, parsePost, smeContextFrom, smeNotice, smeQuestionBody, SmeContext, smeTargetOf,
+  Anchor, AnchorKind, AskSmeConfig, ChatMessage, composePost, Post, parsePost, plainMentions, smeContextFrom, smeNotice, smeQuestionBody, SmeContext, smeTargetOf,
   SmeTarget, Thread, threadsOf, threadTitle,
 } from './model/discussion';
 
@@ -137,19 +137,21 @@ export interface AskSmeResult {
 
 /** Asks an expert: the question with its context goes into the program's discussion, and the
  * people asked are told in the platform's notifications where the server lets the user notify
- * others. [to] overrides the portfolio's choice: logins. */
-export async function askSme(programId: string, question: string, context: SmeContext, to?: {logins?: string[]}):
-  Promise<AskSmeResult> {
+ * others. [to] overrides the portfolio's choice: logins, or user ids (the users mentioned in the question). */
+export async function askSme(programId: string, question: string, context: SmeContext,
+  to?: {logins?: string[], userIds?: string[]}): Promise<AskSmeResult> {
   const program = await portalDb.programs.get(programId);
   const portfolio = await portalDb.portfolios.get(program.portfolio_id);
-  const target = to?.logins?.length ? {channel: 'user' as const, groups: [], logins: to.logins, approvers: false, notice: null} :
+  const named = !!to?.logins?.length || !!to?.userIds?.length;
+  const target = named ? {channel: 'user' as const, groups: [], logins: to?.logins ?? [], approvers: false, notice: null} :
     smeTargetOf(askSmeOf(portfolio));
   const me = DG.User.current();
   let unresolved = '';
-  const asked = (await smeUsersOf(target, portfolio, programId).catch((e: any) => {
+  const resolved = await smeUsersOf(target, portfolio, programId).catch((e: any) => {
     unresolved = `; who to ask could not be read (${e?.message ?? e})`;
     return [] as string[];
-  })).filter((id) => id !== me.id);
+  });
+  const asked = [...new Set([...(to?.userIds ?? []), ...resolved])].filter((id) => id !== me.id);
   const names = await Promise.all(asked.map(async (id) => (await grok.dapi.users.find(id).catch(() => null))?.friendlyName ?? id));
   const body = smeQuestionBody(question, context);
   const {post, chatId} = await postToProgram(program, body, {anchor: context.anchor ?? null, question: true, askedOf: asked,
@@ -196,7 +198,7 @@ export function discussionFrame(threads: Thread[], name: string): DG.DataFrame {
     DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'on', rows.map((x) => new Date(x.p.on))),
     textColumn('by', rows.map((x) => x.p.byName ?? '')),
     DG.Column.fromList(DG.COLUMN_TYPE.BOOL, 'question', rows.map((x) => x.p.question)),
-    textColumn('text', rows.map((x) => x.p.body)),
+    textColumn('text', rows.map((x) => plainMentions(x.p.body))),
     textColumn('id', rows.map((x) => x.p.id)),
   ]);
   df.name = name;

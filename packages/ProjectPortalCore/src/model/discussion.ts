@@ -101,6 +101,17 @@ export function composePost(body: string, opts: {anchor?: Anchor | null, askedOf
 
 const TOKEN = /\bpp:(criterion|run|document|sme):([A-Za-z0-9,-]*)/g;
 
+/** A user mention as the platform's markup writes it (`DG.User.toMarkup()`, u2's MessageInput):
+ * `<span>#{x.<id>."<name>"}</span>`. The Chats panel renders it as a link to the user. */
+const MENTION = /<span>#\{x\.([^."]+)\."(.*?)"\}<\/span>/g;
+
+/** The ids of the users mentioned in [markup], in order, without repeats. */
+export const mentionedUserIds = (markup: string): string[] =>
+  [...new Set([...markup.matchAll(MENTION)].map((m) => m[1]))];
+
+/** [markup] with each mention as `@Name`: for the portal's own display and notification text. */
+export const plainMentions = (markup: string): string => markup.replace(MENTION, (_, _id, name) => `@${name}`);
+
 /** Reads a message back. A message without the portal's header (one written in the platform's
  * own Chats panel) is a plain post in the general thread. */
 export function parsePost(m: ChatMessage): Post {
@@ -250,12 +261,12 @@ export function smeQuestionBody(question: string, c: SmeContext): string {
 /** A one-line notification for an asked user. */
 export const smeNotice = (asker: string, c: Pick<SmeContext, 'program' | 'portfolio' | 'anchor'>, question: string): string =>
   `${asker} asks you about ${c.program.code} (${c.portfolio.code})${c.anchor ? `, ${describeAnchor(c.anchor)}` : ''}: ` +
-  `${question.trim().split('\n')[0].slice(0, 160)}`;
+  `${plainMentions(question).trim().split('\n')[0].slice(0, 160)}`;
 
 /** A feed line for a post. */
 export function postFeedText(p: Post): string {
   const about = p.anchor ? ` on ${describeAnchor(p.anchor)}` : '';
-  const first = p.body.split('\n')[0];
+  const first = plainMentions(p.body).split('\n')[0];
   const short = first.length > 100 ? `${first.slice(0, 99)}…` : first;
   return p.question ? `Question to an expert${about}: ${short}` : `Discussion${about}: ${short}`;
 }

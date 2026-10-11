@@ -73,6 +73,7 @@ export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
 import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/u2/css/message-input.css';
 import {newestFirstBy} from './model/time';
 import {seedExamples as seedExampleHistory} from './examples';
 import {askSme as askExpert, discussionFrame, discussionOf, postToProgram, resolveAnchor, smeContextOf} from './discussion';

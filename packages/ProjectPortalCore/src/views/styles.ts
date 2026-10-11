@@ -1,5 +1,6 @@
 /** The portal's own skin, over the u2 tokens so it follows the platform theme. */
 const CSS = `
+.pp-msg-nosend .u2-msg-send { display: none; }
 .pp-root { display: flex; flex-direction: row; align-items: stretch; justify-content: flex-start; gap: 12px; flex: 1 1 auto; align-self: stretch; height: 100%; width: 100%; min-width: 0; min-height: 0; padding: 8px; box-sizing: border-box; overflow: hidden; }
 .pp-root > * { align-self: stretch; }
 .pp-portfolios { flex: 1 1 0; max-width: 720px; justify-content: flex-start; gap: 6px; overflow-y: auto; }

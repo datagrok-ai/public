@@ -4,8 +4,9 @@ import {after, before, category, expect, expectExceptionAsync, test} from '@data
 import {portalDb, PortfolioRow, ProgramRow} from '../generated/db';
 import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {
-  ChatMessage, composePost, decisionsCiting, missingExamplePosts, parsePost, postFeedText, smeContextFrom, smeContextLines,
-  smeQuestionBody, smeTargetOf, threadsOf, threadTitle, threadUrl, validateAskSme,
+  ChatMessage, composePost, decisionsCiting, mentionedUserIds, missingExamplePosts, parsePost, plainMentions, postFeedText,
+  smeContextFrom, smeContextLines, smeNotice, smeQuestionBody, smeTargetOf, threadsOf, threadTitle, threadUrl,
+  validateAskSme,
 } from '../model/discussion';
 import {FeedRecords, programFeedEntries} from '../model/feed';
 import {PAGE_PANELS, panelLayout} from '../model/personas';
@@ -45,6 +46,17 @@ category('Portal: discussion rules', () => {
     const own = parsePost(msg('m3', 'Re: a thought\nwith two lines', '2026-10-01T12:00:00Z'));
     expect(`${own.anchor} ${own.question} ${own.body}`, 'null false Re: a thought\nwith two lines');
     expect(throws(() => composePost('x', {anchor: {kind: 'document', id: 'not an id!', label: 'D'}})), true);
+  });
+
+  test('mentions: the platform\'s user markup gives the asked ids and reads as @Name', async () => {
+    const a = '<span>#{x.11111111-aaaa-bbbb-cccc-000000000001."Ann Lee"}</span>';
+    const b = '<span>#{x.11111111-aaaa-bbbb-cccc-000000000002."Bo Wu"}</span>';
+    const markup = `Is the panel enough, ${a} and ${b}? ${a} ran it`;
+    expect(mentionedUserIds(markup).map((id) => id.slice(-1)).join(','), '1,2');
+    expect(plainMentions(markup), 'Is the panel enough, @Ann Lee and @Bo Wu? @Ann Lee ran it');
+    expect(mentionedUserIds('no one').length, 0);
+    const notice = smeNotice('Kim', {program: {code: 'P1'}, portfolio: {code: 'EX'}, anchor: null} as any, markup);
+    expect(notice.includes('@Ann Lee') && !notice.includes('#{x.'), true, notice);
   });
 
   test('threads: one per anchor and one general, newest thread first, posts oldest first', async () => {
@@ -164,6 +176,13 @@ category('Portal: discussion', () => {
     made.push(r.post.id);
     expect(`${r.post.question} ${r.post.anchor?.kind} ${r.post.body.includes('Context:\nPortfolio: ')}`, 'true criterion true');
     expect(r.line, 'Posted to the discussion; 1 notified', 'an admin may notify others');
+    // the users @mentioned in the question are the ones asked
+    const viewer = await grok.dapi.users.filter('login = "ppviewer"').first();
+    const markup = `Rat only, <span>#{x.${viewer.id}."${viewer.friendlyName}"}</span>? ${Date.now()}`;
+    const m = await askSme(kin1.id, markup, context, {userIds: mentionedUserIds(markup)});
+    made.push(m.post.id);
+    expect(m.asked.join(','), viewer.id);
+    expect(m.post.body.startsWith(markup), true, 'the mention is posted as the platform\'s markup');
     // a viewer asks the portfolio's approvers: posted; the server refuses to notify others for a non-manager
     const v = await withStandUser('viewer', (u) => u.asUser(() => askSme(kin1.id, `Viewer asks ${Date.now()}`, context)));
     if (v) {
@@ -180,6 +199,11 @@ category('Portal: discussion', () => {
       expect(shown.includes('Program: EXS-KIN1') && shown.includes('Next gate: ') && shown.includes('Open in the portal: '), true, shown);
       expect((dlg.root.querySelector('[data-u2-name="sme-note"]')?.textContent ?? '').startsWith('Example: an EX-SMD approver'), true);
       expect(!!dlg.root.querySelector('[data-u2-name="sme-ask-button"]'), true);
+      // the question is u2's compose box with @-mentions; no logins field
+      const box = dlg.root.querySelector('[data-u2-name="sme-question-input-composer"]');
+      expect(box?.getAttribute('data-u2'), 'message-input');
+      expect(dlg.root.querySelector('[data-u2-name="sme-question-input"]')?.getAttribute('contenteditable'), 'true');
+      expect(!!dlg.root.querySelector('[data-u2-name="sme-login-input"]'), false);
     } finally {
       dlg.close();
     }
