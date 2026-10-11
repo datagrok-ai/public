@@ -6,7 +6,7 @@
     "name": "Davit Rizhinashvili",
     "email": "drizhinashvili@datagrok.ai"
   },
-  "description": "Profile hidden Markov models in the browser: ANARCI antibody/TCR numbering with species and germlines, profile HMM search and protein domain annotation, powered by an exact Rust/WebAssembly port of HMMER 3.4.",
+  "description": "Profile hidden Markov models in the browser: ANARCI antibody/TCR numbering with species and germlines, profile HMM search, domain annotation, alignment to a profile, homology search, profile building and logos. Runs Rusty-HMMER, a reimplementation of HMMER 3.4 in Rust compiled to WebAssembly, and a TypeScript reimplementation of ANARCI (not the original programs).",
   "repository": {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git",

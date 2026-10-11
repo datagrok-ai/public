@@ -8,6 +8,7 @@ import * as DG from 'datagrok-api/dg';
 import type {DatabaseInfo, QueryResult, SearchOptions, SequenceInput} from './hmmer/engine.ts';
 import {mergeSearch, partOptions, type MergedSearch, type SearchPart} from './hmmer/search.ts';
 import type {AnarciOptions, SequenceResult} from './hmmer/anarci/anarci.ts';
+import type {BuiltProfile, Logo, LogoMode, ProfileAlignment, QueryModelOptions} from './hmmer/tools.ts';
 import type {WorkerRequest, WorkerResponse} from './workers/protocol';
 
 const IDLE_MS = 60_000;
@@ -25,6 +26,8 @@ export class HmmerPool {
   private static instance: HmmerPool | null = null;
   private readonly base: string;
   private module: Promise<WebAssembly.Module> | null = null;
+  /** The tools module (alignment, query models, logos), compiled on first use. */
+  private toolsModule: Promise<WebAssembly.Module> | null = null;
   private workers: PoolWorker[] = [];
   private nextId = 1;
   private active = 0;
@@ -48,14 +51,34 @@ export class HmmerPool {
   }
 
   private compile(): Promise<WebAssembly.Module> {
-    return this.module ??= (async () => {
-      const response = await fetch(this.base + 'hmmer_web.wasm');
-      if (!response.ok) throw new Error(`Failed to load the HMMER engine (HTTP ${response.status})`);
-      return WebAssembly.compile(await response.arrayBuffer());
-    })().catch((e) => {
+    return this.module ??= this.fetchModule('hmmer_web.wasm', 'engine').catch((e) => {
       this.module = null;
       throw e;
     });
+  }
+
+  private tools(): Promise<WebAssembly.Module> {
+    return this.toolsModule ??= this.fetchModule('hmmer_tools.wasm', 'tools').catch((e) => {
+      this.toolsModule = null;
+      throw e;
+    });
+  }
+
+  private async fetchModule(file: string, what: string): Promise<WebAssembly.Module> {
+    const response = await fetch(this.base + file);
+    if (!response.ok) throw new Error(`Failed to load the HMMER ${what} (HTTP ${response.status})`);
+    return WebAssembly.compile(await response.arrayBuffer());
+  }
+
+  /** Run one request on a worker. */
+  private async one<T>(request: WorkerRequest): Promise<T> {
+    this.begin();
+    try {
+      const [w] = await this.ensure(1);
+      return await this.call<T>(w, request);
+    } finally {
+      this.end();
+    }
   }
 
   private call<T>(w: PoolWorker, request: WorkerRequest, transfer: Transferable[] = []): Promise<T> {
@@ -180,6 +203,38 @@ export class HmmerPool {
   /** `hmmscan` of every sequence against a registered database. */
   scan(key: string, sequences: SequenceInput[], options: SearchOptions = {}, workers?: number): Promise<QueryResult[]> {
     return this.map(sequences, (chunk) => ({op: 'scan', key, sequences: chunk, options}), workers);
+  }
+
+  /** phmmer's calibrated query models (an `.h3m` database to load and search). */
+  async queryModels(queries: {name: string; residues: string}[], options: QueryModelOptions = {}):
+    Promise<Uint8Array> {
+    return this.one({op: 'queryModels', tools: await this.tools(), queries, options});
+  }
+
+  /** `hmmalign` of `sequences` to model `index` of `model` (HMMER text or
+   * `.h3m`): traces split across workers, the alignment assembled once. */
+  async align(model: Uint8Array, index: number, sequences: {name: string; residues: string}[], trim = false,
+    workers?: number): Promise<ProfileAlignment> {
+    const tools = await this.tools();
+    const chunks = await this.map<{name: string; residues: string}, Uint8Array>(sequences,
+      (chunk) => ({op: 'alignTraces', tools, model, index, sequences: chunk}), workers);
+    return this.one({op: 'alignRows', tools, model, index, sequences, chunks, trim});
+  }
+
+  /** `hmmbuild` of aligned rows: the model text C writes. */
+  async build(rows: {name: string; aligned: string}[], name: string, alphabet: 'amino' | 'dna' | 'rna' = 'amino'):
+    Promise<BuiltProfile> {
+    return this.one({op: 'build', tools: await this.tools(), rows, name, alphabet});
+  }
+
+  /** Model `index` of `models` as its own exact `.h3m` bytes. */
+  async extract(models: Uint8Array, index: number): Promise<Uint8Array> {
+    return this.one({op: 'extract', tools: await this.tools(), models, index});
+  }
+
+  /** hmmlogo values of every model in `models`. */
+  async logos(models: Uint8Array, mode: LogoMode = 'relent_all'): Promise<Logo[]> {
+    return this.one({op: 'logos', tools: await this.tools(), models, mode});
   }
 
   /** `hmmsearch` of one database model against `sequences` (unique names),

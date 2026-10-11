@@ -1,5 +1,5 @@
 /* ---
-sub_features_covered: [hmm.numbering.engine, hmm.numbering.bio-dialog, hmm.germlines.top-menu]
+sub_features_covered: [hmm.numbering.engine, hmm.numbering.bio-dialog, hmm.numbering.options, hmm.numbering.separator, hmm.germlines.top-menu]
 --- */
 import {test, expect, Page} from '@playwright/test';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
@@ -60,13 +60,19 @@ test('HMM: ANARCI numbering in Bio\'s numbering dialog, germlines from the Bio m
     expect(info.choices).toEqual(['imgt', 'kabat', 'chothia', 'martin', 'aho', 'wolfguy']);
   });
 
-  await softStep('S2: Apply Numbering Scheme with ANARCI (HMMER), Chothia', async () => {
+  await softStep('S2: Apply Numbering Scheme with ANARCI (HMMER), Chothia, heavy domain', async () => {
     await openBioMenu(page, 'Annotate', 'Apply-Numbering-Scheme...');
     const dlg = page.locator('[name="dialog-Apply-Antibody-Numbering"]');
     await dlg.waitFor({timeout: 60_000});
-    // Sequence defaults to the first Macromolecule column, AntibodyHC.
-    await setChoice(page, 'Apply-Antibody-Numbering', 'Engine', 'ANARCI (HMMER)');
+    // Sequence defaults to the first Macromolecule column, AntibodyHC; an engine of another
+    // package (this one) is preselected over Bio's built-in immunum.
+    await expect(dlg.locator('[name="input-host-Engine"] select')).toHaveValue('ANARCI (HMMER)');
     await setChoice(page, 'Apply-Antibody-Numbering', 'Scheme', 'chothia');
+    // The engine's own options appear under the scheme (Bio renders extra engine parameters).
+    for (const option of ['Species', 'Bit-score-threshold', 'Domain'])
+      await dlg.locator(`[name="input-host-${option}"]`).waitFor({state: 'visible', timeout: 30_000});
+    await page.screenshot({path: 'playwright/test-output/hmm-numbering-options.png'});
+    await setChoice(page, 'Apply-Antibody-Numbering', 'Domain', 'heavy');
     await dlg.locator('[name="button-OK"]').click();
     await page.waitForFunction(() => grok.shell.tv.dataFrame.columns.contains('AntibodyHC (aligned)'), null,
       {timeout: 120_000});
@@ -86,8 +92,14 @@ test('HMM: ANARCI numbering in Bio\'s numbering dialog, germlines from the Bio m
         if (hits.some((h: any) => h.endPositionIndex != null)) rowsWithRegions++;
       }
       const lengths = new Set(Array.from({length: df.rowCount}, (_, i) => (aligned.get(i) ?? '').length));
+      // Domain = heavy: the VH of scFv rows (VL-linker-VH) is numbered, so every row has heavy regions.
+      const groups = new Set<string>();
+      for (let i = 0; i < df.rowCount; i++) {
+        for (const h of JSON.parse(annotationCol?.get(i) || '[]'))
+          if (h.endPositionIndex != null) groups.add(h.annotationId.split('-')[1]);
+      }
       return {scheme: aligned.getTag('.numberingScheme'), positions, regions, rowsWithRegions,
-        rows: df.rowCount, lengths: [...lengths]};
+        rows: df.rowCount, lengths: [...lengths], groups: [...groups]};
     });
     expect(info.scheme).toBe('chothia');
     // Chothia places heavy-chain insertions at 31A, 52A and 82A-C.
@@ -95,6 +107,7 @@ test('HMM: ANARCI numbering in Bio\'s numbering dialog, germlines from the Bio m
     expect(info.regions).toEqual(['FR1', 'CDR1', 'FR2', 'CDR2', 'FR3', 'CDR3', 'FR4']);
     expect(info.rowsWithRegions).toBe(info.rows);
     expect(info.lengths.length).toBe(1);
+    expect(info.groups).toEqual(['heavy']);
   });
   await page.screenshot({path: 'playwright/test-output/hmm-numbering-chothia.png'});
 
@@ -146,5 +159,47 @@ test('HMM: ANARCI numbering in Bio\'s numbering dialog, germlines from the Bio m
     expect(info.evalues).toBe(info.rows);
   });
   await page.screenshot({path: 'playwright/test-output/hmm-germlines.png'});
+
+  await softStep('S5: a separator-notation column numbers like its FASTA source', async () => {
+    await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const source = df.col('AntibodyHC')!;
+      // First Macromolecule column, so the dialog selects it.
+      const col = DG.Column.string('AntibodyHC sep', df.rowCount).init((i) => (source.get(i) ?? '').split('').join('/'));
+      df.columns.insert(col, 0);
+      col.semType = 'Macromolecule';
+      col.meta.units = 'separator';
+      col.setTag('separator', '/');
+      col.setTag('alphabet', 'PT');
+      col.setTag('aligned', 'SEQ');
+    });
+    await openBioMenu(page, 'Annotate', 'Apply-Numbering-Scheme...');
+    const dlg = page.locator('[name="dialog-Apply-Antibody-Numbering"]');
+    await dlg.waitFor({timeout: 60_000});
+    await setChoice(page, 'Apply-Antibody-Numbering', 'Engine', 'ANARCI (HMMER)');
+    await setChoice(page, 'Apply-Antibody-Numbering', 'Scheme', 'imgt');
+    await dlg.locator('[name="button-OK"]').click();
+    await page.waitForFunction(() => grok.shell.tv.dataFrame.columns.contains('AntibodyHC sep (aligned)'), null,
+      {timeout: 120_000});
+    const info = await page.evaluate(() => {
+      const df = grok.shell.tv.dataFrame;
+      const fasta = df.col('AntibodyHC (aligned) (2)')!;
+      const sep = df.col('AntibodyHC sep (aligned)')!;
+      const source = df.col('AntibodyHC sep')!;
+      const annotationCol = df.col(source.getTag('.annotationColumnName') ?? '');
+      const differ: number[] = [];
+      const badHits: number[] = [];
+      for (let i = 0; i < df.rowCount; i++) {
+        if (fasta.get(i) !== sep.get(i)) differ.push(i);
+        const monomers = (source.get(i) ?? '').split('/').length;
+        for (const h of JSON.parse(annotationCol?.get(i) || '[]'))
+          if (h.endPositionIndex != null && (h.endPositionIndex >= monomers || h.positionIndex < 0)) badHits.push(i);
+      }
+      return {differ, badHits, samePositions: fasta.getTag('.positionNames') === sep.getTag('.positionNames')};
+    });
+    expect(info.differ).toEqual([]);
+    expect(info.badHits).toEqual([]);
+    expect(info.samePositions).toBe(true);
+  });
   finishSpec(stepErrors);
 });

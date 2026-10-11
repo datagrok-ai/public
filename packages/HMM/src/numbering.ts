@@ -40,23 +40,18 @@ export async function numberColumn(pool: HmmerPool, column: DG.Column<string>, o
 
 const code = ([number, insertion]: [number, string]) => `${number}${insertion.trim()}`;
 
-/** Region definitions (FR/CDR with scheme position bounds) for a scheme and ANARCI chain. */
-function regionDefs(scheme: Scheme, chain: string): {name: string; type: 'FR' | 'CDR'; from: number; to: number}[] {
-  if (scheme === 'wolfguy') {
-    // Wolfguy encodes regions in the number: hundreds = region, x01-x50 framework, x51-x99 CDR.
-    const first = chain === 'H' ? 1 : 5;
-    const names = ['FR1', 'CDR1', 'FR2', 'CDR2', 'FR3', 'CDR3', 'FR4'];
-    return names.map((name, i) => {
-      const hundred = (first + Math.floor(i / 2)) * 100;
-      const cdr = i % 2 === 1;
-      return {name, type: cdr ? 'CDR' : 'FR', from: hundred + (cdr ? 51 : 1), to: hundred + (cdr ? 99 : 50)};
-    });
-  }
-  const key = {imgt: NumberingScheme.IMGT, kabat: NumberingScheme.Kabat, chothia: NumberingScheme.Chothia,
-    martin: NumberingScheme.Chothia, aho: NumberingScheme.AHo}[scheme];
-  const regionChain = chain === 'K' ? RegionChain.Light_Kappa : chain === 'L' ? RegionChain.Light_Lambda :
-    RegionChain.Heavy;
-  const defs: SchemeRegionDef[] = SCHEME_REGIONS[key]?.[regionChain] ?? [];
+const SCHEME_KEYS: Record<Scheme, NumberingScheme> = {imgt: NumberingScheme.IMGT, kabat: NumberingScheme.Kabat,
+  chothia: NumberingScheme.Chothia, martin: NumberingScheme.Martin, aho: NumberingScheme.AHo,
+  wolfguy: NumberingScheme.Wolfguy};
+const REGION_CHAINS: Record<string, RegionChain> = {H: RegionChain.Heavy, K: RegionChain.Light_Kappa,
+  L: RegionChain.Light_Lambda, A: RegionChain.TCR_Alpha, B: RegionChain.TCR_Beta, G: RegionChain.TCR_Gamma,
+  D: RegionChain.TCR_Delta};
+
+/** Region definitions (FR/CDR with scheme position bounds) for a scheme and
+ * ANARCI chain, from Bio's canonical tables (`numbering-schemes.ts`). */
+export function regionDefs(scheme: Scheme, chain: string):
+  {name: string; type: 'FR' | 'CDR'; from: number; to: number}[] {
+  const defs: SchemeRegionDef[] = SCHEME_REGIONS[SCHEME_KEYS[scheme]]?.[REGION_CHAINS[chain]] ?? [];
   return defs.map((r) => ({name: r.name, type: r.type, from: parseInt(r.startPosition), to: parseInt(r.endPosition)}));
 }
 
@@ -105,9 +100,27 @@ function rowNumbering(numbering: Numbering, start: number | null): RowNumbering 
   return {positions, detail, map};
 }
 
-/** The numbering DataFrame: one row per input sequence; the first (N-terminal)
- * numbered domain of each sequence is reported. */
-export function numberingFrame(scheme: Scheme, results: SequenceResult[]): DG.DataFrame {
+/** Which numbered domain of a multi-domain chain (scFv) a row reports. */
+export type DomainChoice = 'first' | 'heavy' | 'light';
+
+export function domainChoice(value: string | null | undefined): DomainChoice {
+  return value === 'heavy' || value === 'light' ? value : 'first';
+}
+
+/** VDJ (heavy-like) and VJ (light-like) chain types. */
+const HEAVY_LIKE = new Set(['H', 'B', 'D']);
+
+/** Index of the reported domain, or -1 when the chosen kind is absent. */
+function pickDomain(details: DomainDetails[], choice: DomainChoice): number {
+  if (choice === 'first') return 0;
+  return details.findIndex((d) => HEAVY_LIKE.has(d.chain_type) === (choice === 'heavy'));
+}
+
+/** The numbering DataFrame: one row per input sequence, reporting the
+ * N-terminal numbered domain of each sequence, or its first heavy-like or
+ * light-like domain (`choice`); `domains` counts all of them. */
+export function numberingFrame(scheme: Scheme, results: SequenceResult[], choice: DomainChoice = 'first'):
+  DG.DataFrame {
   const n = results.length;
   const string = (name: string) => DG.Column.fromType(DG.COLUMN_TYPE.STRING, name, n);
   // E-values reach 1e-60 and identities are exact ratios, so floats are doubles.
@@ -128,8 +141,10 @@ export function numberingFrame(scheme: Scheme, results: SequenceResult[]): DG.Da
     cols.domains.set(i, r.numbered?.length ?? 0, false);
     if (r.error) cols.error.set(i, r.error, false);
     if (!r.numbered || !r.details) continue;
-    const [numbering, start] = r.numbered[0];
-    const details: DomainDetails = r.details[0];
+    const d = pickDomain(r.details, choice);
+    if (d < 0) continue;
+    const [numbering, start] = r.numbered[d];
+    const details: DomainDetails = r.details[d];
     // ANARCI recognizes the domain but returns an empty numbering when a CDR
     // exceeds what the scheme can number; chain, species and germlines remain.
     const row = rowNumbering(numbering, start);
@@ -167,11 +182,12 @@ export function allowedChains(scheme: Scheme): string[] {
 }
 
 /** Species choices: ANARCI's default (human and mouse preferred), all, or one species. */
-export const SPECIES_CHOICES = ['human, mouse', 'all', 'human', 'mouse', 'rat', 'rabbit', 'rhesus', 'pig', 'alpaca',
-  'cow'];
+// No commas in choices: Datagrok's function headers split choice lists at commas.
+export const SPECIES_CHOICES = ['human and mouse', 'all', 'human', 'mouse', 'rat', 'rabbit', 'rhesus', 'pig',
+  'alpaca', 'cow'];
 
 export function speciesOption(choice: string | null | undefined): string[] | null {
-  if (!choice || choice === 'human, mouse') return ['human', 'mouse'];
+  if (!choice || choice === 'human and mouse' || choice === 'human, mouse') return ['human', 'mouse'];
   if (choice === 'all') return null;
   return [choice];
 }

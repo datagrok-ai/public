@@ -4,6 +4,7 @@
 import {HmmDatabase, HmmerEngine, type QueryResult} from '../hmmer/engine.ts';
 import {align, numberFromAlignment, type AnarciData, type SequenceResult} from '../hmmer/anarci/anarci.ts';
 import type {ChainGermlines} from '../hmmer/anarci/germline.ts';
+import {HmmerTools} from '../hmmer/tools.ts';
 import type {WorkerRequest, WorkerResponse} from './protocol';
 
 const ctx = self as unknown as Worker;
@@ -12,6 +13,13 @@ let base = '';
 let anarciData: Promise<AnarciData> | null = null;
 const germlines = new Map<string, ChainGermlines | null>();
 const databases = new Map<string, HmmDatabase>();
+let tools: {module: WebAssembly.Module; instance: Promise<HmmerTools>} | null = null;
+
+/** The tools module instance (instantiated once per worker from the pool's compiled module). */
+function toolsOf(module: WebAssembly.Module): Promise<HmmerTools> {
+  if (tools?.module !== module) tools = {module, instance: HmmerTools.instantiate(module)};
+  return tools.instance;
+}
 
 /** Response bytes, gunzipped when they are a gzip stream (servers may or may not decode .gz). */
 async function bytesOf(response: Response): Promise<Uint8Array> {
@@ -83,6 +91,20 @@ async function handle(request: WorkerRequest): Promise<unknown> {
     return null;
   case 'scan':
     return database(request.key).scan(request.sequences, request.options) satisfies QueryResult[];
+  case 'queryModels':
+    return (await toolsOf(request.tools)).queryModels(request.queries, request.options);
+  case 'alignTraces':
+    // One chunk of a split alignment: a list, like every other batched request.
+    return [(await toolsOf(request.tools)).alignTraces(request.model, request.index, request.sequences)];
+  case 'alignRows':
+    return (await toolsOf(request.tools)).alignRows(request.model, request.index, request.sequences, request.chunks,
+      request.trim);
+  case 'build':
+    return (await toolsOf(request.tools)).build(request.rows, request.name, request.alphabet);
+  case 'extract':
+    return (await toolsOf(request.tools)).extract(request.models, request.index);
+  case 'logos':
+    return (await toolsOf(request.tools)).logos(request.models, request.mode);
   case 'search':
     // One part of a split search: a list, like every other batched request.
     return [{offset: request.offset,

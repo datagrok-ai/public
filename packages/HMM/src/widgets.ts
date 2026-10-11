@@ -4,11 +4,10 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {HmmerPool} from './pool';
 import {cellResidues} from './sequences';
-import {CHAIN_NAMES} from './numbering';
+import {CHAIN_NAMES, regionDefs} from './numbering';
 import {loadBuiltIn} from './models';
-
-/** IMGT CDR definitions (all chain types). */
-const IMGT_CDRS: [string, number, number][] = [['CDR1', 27, 38], ['CDR2', 56, 65], ['CDR3', 105, 117]];
+import {queryDomains} from './domains';
+import {ANARCI_NOTE, HMMER_NOTE, noteDiv} from './notice';
 
 function asyncWidget(fill: (root: HTMLElement) => Promise<void>): DG.Widget {
   const root = ui.div([ui.loader()]);
@@ -42,14 +41,15 @@ export function anarciWidget(pool: HmmerPool, value: DG.SemanticValue): DG.Widge
         'E-value': details.evalue.toExponential(1),
         'Bit score': details.bitscore.toFixed(1),
       };
-      for (const [name, from, to] of IMGT_CDRS) {
+      // IMGT CDRs of the chain type, from Bio's scheme tables (numbering-schemes.ts).
+      for (const {name, from, to} of regionDefs('imgt', details.chain_type).filter((r) => r.type === 'CDR')) {
         map[`${name} (IMGT)`] = numbering.filter(([[n], aa]) => n >= from && n <= to && aa !== '-')
           .map(([, aa]) => aa).join('');
       }
       if (result.numbered!.length > 1) sections.push(ui.h3(`Domain ${d + 1}`));
       sections.push(ui.tableFromMap(map));
     });
-    root.replaceChildren(...sections);
+    root.replaceChildren(...sections, noteDiv(ANARCI_NOTE));
   });
 }
 
@@ -60,13 +60,13 @@ export function domainsWidget(pool: HmmerPool, pkg: DG.Package, value: DG.Semant
     const library = await loadBuiltIn(pool, pkg);
     const [result] = await pool.scan(library.key, [{name: '0', residues}], {cutoff: 'ga'}, 1);
     const rows: (string | number)[][] = [];
-    for (const hit of result.hits) {
+    for (const {hit, d} of queryDomains(result, library.clans)) {
       const m = library.info.models[hit.target];
-      for (const d of hit.domains.filter((x) => x.reported))
-        rows.push([m.name, m.accession, `${d.envFrom}-${d.envTo}`, d.bitscore.toFixed(1), d.iEvalue.toExponential(1)]);
+      rows.push([m.name, m.accession, `${d.envFrom}-${d.envTo}`, d.printed.bitscore.toFixed(1),
+        d.printed.iEvalue.toExponential(1)]);
     }
     rows.sort((a, b) => parseInt(a[2] as string) - parseInt(b[2] as string));
     root.replaceChildren(rows.length === 0 ? ui.divText('No Pfam domains (built-in library, gathering cutoffs)') :
-      ui.table(rows, (r) => r, ['Domain', 'Pfam', 'Region', 'Bits', 'E-value']));
+      ui.table(rows, (r) => r, ['Domain', 'Pfam', 'Region', 'Bits', 'E-value']), noteDiv(HMMER_NOTE));
   });
 }

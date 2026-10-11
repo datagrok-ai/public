@@ -1,12 +1,17 @@
 {
   "source": "Rusty-HMMER crates/hmmer-web + web/ (verified against HMMER 3.4 and ANARCI 2024.05.21)",
   "abi": 2,
-  "optimizer": "none",
+  "optimizer": "wasm-opt version 132 (version_132)",
   "files": {
     "wasm/hmmer_web.wasm": {
-      "bytes": 363287,
-      "gzip": 143744,
-      "sha256": "99a651f56ac08f0d935527179efe7533b108788e89a359905601a4adc4b04995"
+      "bytes": 332164,
+      "gzip": 139969,
+      "sha256": "b3cad83ebec2e419aeeabb181064786ff3c910647e5db91d355bc18e70d88824"
+    },
+    "wasm/hmmer_tools.wasm": {
+      "bytes": 489751,
+      "gzip": 201877,
+      "sha256": "5cd0e1440e02d24033617d1b7bfa58410a9b1d32d970f4974abb5c8c93cc270b"
     },
     "src/hmmer/engine.ts": {
       "bytes": 14723,
@@ -14,9 +19,19 @@
       "sha256": "e13b05b15a1bd4bba14e2a6ec54325a188359653b5bd32fdbc67f0abf68cec06"
     },
     "src/hmmer/search.ts": {
-      "bytes": 4779,
-      "gzip": 1836,
-      "sha256": "9d832bbc02db1395683b3d3cc8ddccb93f7fa40107ba8117acded4edf00dd7d6"
+      "bytes": 5077,
+      "gzip": 2000,
+      "sha256": "c7a8e81dfb4f1440f15753aec21d05dbdb5628a2d7607a2fe7945180a0a49e5d"
+    },
+    "src/hmmer/clans.ts": {
+      "bytes": 2134,
+      "gzip": 1040,
+      "sha256": "10536c1b91e59771b3148a6658aaa2eacd3dcc1497ade85740b373254a8e55b1"
+    },
+    "src/hmmer/tools.ts": {
+      "bytes": 10451,
+      "gzip": 3383,
+      "sha256": "44f42802c11fbad2f75b1e49528d05838555a86157afd97dd6093a8d0a90a656"
     },
     "src/hmmer/anarci/alignment.ts": {
       "bytes": 11614,
@@ -109,9 +124,9 @@
       "sha256": "38c9ecc00570aef9c817c825a47771a79f725e3141d000771a1eefb30795c75b"
     },
     "wasm/pfam/pfam-biologics.json": {
-      "bytes": 9500,
-      "gzip": 2360,
-      "sha256": "c4c885df222740086c1eb01b8b4940ea67e59e924ff661f9481e1b890f78e7d4"
+      "bytes": 12431,
+      "gzip": 2837,
+      "sha256": "6fc854eb1f07f8ac7bd8b6ca9a578b96b9b38acdd9816f82b72ffadd4063a77b"
     },
     "licenses/HMMER.txt": {
       "bytes": 3556,
@@ -144,14 +159,74 @@
       "sha256": "d45961a06ebdcfc3f14803b30f2d837b3ed4e88f61ffeedf2c51bc2dab81bd3c"
     },
     "licenses/UniProt-test-sequences.txt": {
-      "bytes": 511,
-      "gzip": 319,
-      "sha256": "d4715c193b216f836cf0d3f8c5d6fa8ae8fd9c60bd5103e25875786cd5d71e95"
+      "bytes": 788,
+      "gzip": 476,
+      "sha256": "43fb5d37eb608c92c3ecdccec7c35c9b46ffdb6785f479aed1b00f0891a2e9ad"
     },
     "src/tests/anarci-fixture.json": {
       "bytes": 45499,
       "gzip": 4074,
       "sha256": "bd24bdc18301e2f3bacd78fa84d49ffc23118476c35cd45b8ba4bb8aa024dbf0"
+    },
+    "src/tests/anarci-options-fixture.json": {
+      "bytes": 31528,
+      "gzip": 2011,
+      "sha256": "aa8d1c2ce48688ed3bdd6c6dba9c8ade72cde093d30eee74970d2b7459b4e667"
+    },
+    "files/tests/align-expected.csv": {
+      "bytes": 34033,
+      "gzip": 5091,
+      "sha256": "98659070ac8c5c87e477288bc32894f224dc0075dc647ee28ee3766405d069d3"
+    },
+    "files/tests/align-sequences.csv": {
+      "bytes": 13697,
+      "gzip": 3752,
+      "sha256": "1ddd7a2ef63534324ca05d5e24763204d15944f310feb65b18887d731cb47103"
+    },
+    "files/tests/build-alignment.csv": {
+      "bytes": 539,
+      "gzip": 320,
+      "sha256": "e2ff8c5251a5fc87499626a914e1d8c5cd219a183e49b7e5a387ac7c00273d1b"
+    },
+    "files/tests/build-expected.csv": {
+      "bytes": 4285,
+      "gzip": 1377,
+      "sha256": "b73f39b6d82cf24d96ae748b5e267db5889b64d2bc47ee2af7e6a8ec10dec7cb"
+    },
+    "files/tests/build-model.hmm": {
+      "bytes": 39608,
+      "gzip": 7399,
+      "sha256": "138f5f8c3b7adf7fe1b550f8167e2495b55b96aa2e2ccd934aa29487ab8c78c9"
+    },
+    "files/tests/clans-expected.csv": {
+      "bytes": 4138,
+      "gzip": 1353,
+      "sha256": "3ee330a0c231d4396204df36531670f373d975f15e24ed9667898c46cfd375b6"
+    },
+    "files/tests/clans-queries.csv": {
+      "bytes": 18177,
+      "gzip": 9392,
+      "sha256": "a97b4eaf9fa6f578ba791165e1f3200703846d292dc4a3ae7ff65e65d6c87c82"
+    },
+    "files/tests/logo-vset.txt": {
+      "bytes": 19569,
+      "gzip": 4016,
+      "sha256": "8a637446f11e81256f8b0381429eecd1b0062cedd9aeccfd804cd01bd4b21a36"
+    },
+    "files/tests/phmmer-expected.csv": {
+      "bytes": 21275,
+      "gzip": 4364,
+      "sha256": "d7d2ca67fa878c28f825588bdef4d763174d2e48f5e6007009bf3878dc37ed31"
+    },
+    "files/tests/phmmer-queries.csv": {
+      "bytes": 637,
+      "gzip": 369,
+      "sha256": "dfb86ab57e0fe867d1c16643c53e3c291a66cc6da3e0082e47cf35345d7847f8"
+    },
+    "files/tests/phmmer-targets.csv": {
+      "bytes": 122366,
+      "gzip": 57285,
+      "sha256": "68aa109d5663cb6e75c01c751a1bd009a5acaaf5b19d00c2a2358beb3ee19bac"
     },
     "files/tests/scan-expected.csv": {
       "bytes": 1493,

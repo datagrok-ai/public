@@ -79,3 +79,25 @@ export async function cellResidues(column: DG.Column<string>, row: number):
   }
   return {residues, positions};
 }
+
+/** Aligned rows of an MSA column as hmmbuild reads them: one character per
+ * alignment column, `-` for gaps, multi-letter monomers as `X`. */
+export async function alignedRows(column: DG.Column<string>, rows: number[]): Promise<string[]> {
+  const values = rows.map((i) => column.get(i) ?? '');
+  const units = column.meta.units;
+  if (!units || units === 'fasta' && !values.some((v) => v.includes('[')))
+    return values.map((v) => v.replace(/\./g, '-'));
+  const handler = await seqHandler(column);
+  return rows.map((i) => {
+    const split = handler.getSplitted(i);
+    let text = '';
+    for (let p = 0; p < split.length; p++) {
+      if (split.isGap(p)) text += '-';
+      else {
+        const monomer = split.getCanonical(p);
+        text += monomer.length === 1 ? monomer.toUpperCase() : 'X';
+      }
+    }
+    return text;
+  });
+}

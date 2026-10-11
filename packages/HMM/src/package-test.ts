@@ -5,6 +5,7 @@ import {runTests, TestContext, tests} from '@datagrok-libraries/test/src/test';
 import './tests/numbering-tests';
 import './tests/performance-tests';
 import './tests/search-tests';
+import './tests/tier2-tests';
 
 export const _package = new DG.Package();
 export {tests};

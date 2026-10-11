@@ -7,6 +7,7 @@ import {_package} from '../package-test';
 import {HmmerPool} from '../pool';
 import {allowedChains, numberingFrame, SCHEMES} from '../numbering';
 import ANARCI_FIXTURE from './anarci-fixture.json';
+import OPTIONS_FIXTURE from './anarci-options-fixture.json';
 import type {Scheme} from '../hmmer/anarci/types.ts';
 
 const BIO_COLUMNS = ['position_names', 'chain_type', 'annotations_json', 'numbering_detail', 'numbering_map'];
@@ -50,6 +51,39 @@ category('ANARCI numbering', () => {
     });
   }
 
+  test('options (species, bit score threshold) identical to ANARCI', async () => {
+    for (const setting of [...new Set(OPTIONS_FIXTURE.map((f) => f.setting))]) {
+      const cases = OPTIONS_FIXTURE.filter((f) => f.setting === setting);
+      const [label, threshold] = setting.split('@');
+      const col = DG.Column.fromStrings('sequence', cases.map((f) => f.sequence));
+      col.semType = DG.SEMTYPE.MACROMOLECULE;
+      col.meta.units = 'fasta';
+      const df = DG.DataFrame.fromColumns([col]);
+      const result: DG.DataFrame = await grok.functions.call('HMM:anarciNumbering', {df, seqCol: col, scheme: 'imgt',
+        species: label === 'human_mouse' ? 'human and mouse' : label, bitScoreThreshold: Number(threshold)});
+      cases.forEach((f, i) => {
+        expect(result.get('position_names', i) ?? '', f.expected?.positions ?? '', `${setting} ${f.name} positions`);
+        expect(result.get('species', i) || null, f.expected?.species ?? null, `${setting} ${f.name} species`);
+        expect(result.get('v_gene', i) || null, f.expected?.vGene ?? null, `${setting} ${f.name} V gene`);
+        expect(result.get('j_gene', i) || null, f.expected?.jGene ?? null, `${setting} ${f.name} J gene`);
+      });
+    }
+  });
+
+  test('separator notation numbers like FASTA', async () => {
+    const fasta = fixtureColumn();
+    const separator = DG.Column.fromStrings('sequence', ANARCI_FIXTURE.map((f) => f.sequence.split('').join('-')));
+    separator.semType = DG.SEMTYPE.MACROMOLECULE;
+    separator.meta.units = 'separator';
+    separator.setTag('separator', '-');
+    separator.setTag('alphabet', 'PT');
+    const run = async (col: DG.Column) => (await grok.functions.call('HMM:anarciNumbering',
+      {df: DG.DataFrame.fromColumns([col]), seqCol: col, scheme: 'imgt'}) as DG.DataFrame);
+    const [a, b] = [await run(fasta), await run(separator)];
+    for (const name of BIO_COLUMNS)
+      expect(JSON.stringify(b.col(name)!.toList()), JSON.stringify(a.col(name)!.toList()), name);
+  });
+
   test('worker count does not change results', async () => {
     const sequences = ANARCI_FIXTURE.map((f, i): [string, string] => [String(i), f.sequence]);
     const many = [...sequences, ...sequences, ...sequences, ...sequences]
@@ -72,5 +106,16 @@ category('ANARCI numbering', () => {
       expect(regions.length, 7, `row ${i} regions`);
       for (const r of regions) expect(map[r.start] !== undefined && map[r.end] !== undefined, true);
     }
+    // TCR chains get IMGT regions from Bio's tables too.
+    const imgt = numberingFrame('imgt', await HmmerPool.get(_package).anarci(sequences,
+      {scheme: 'imgt', allow: allowedChains('imgt'), assignGermline: false}));
+    let tcr = 0;
+    for (let i = 0; i < imgt.rowCount; i++) {
+      if (!['Alpha', 'Beta', 'Gamma', 'Delta'].includes(imgt.get('chain', i))) continue;
+      tcr++;
+      const regions: {name: string}[] = JSON.parse(imgt.get('annotations_json', i));
+      expect(regions.map((r) => r.name).join(','), 'FR1,CDR1,FR2,CDR2,FR3,CDR3,FR4', `TCR row ${i} regions`);
+    }
+    expect(tcr > 0, true, 'fixture has TCR chains');
   });
 });

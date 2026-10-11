@@ -1,11 +1,17 @@
 UniProtKB/Swiss-Prot sequences in test fixtures
 ===============================================
 
-Five unmodified UniProtKB/Swiss-Prot entries (P01009, P02144, P02647, P68871,
-P69905) appear in the Datagrok HMM package's test fixtures (files/tests).
+Unmodified UniProtKB/Swiss-Prot entries appear in the Datagrok HMM package's
+test fixtures (files/tests):
 
-Source:  The UniProt Consortium, https://www.uniprot.org (release 2026_03)
+- five entries (P01009, P02144, P02647, P68871, P69905) in search-* and scan-*
+  (release 2026_03);
+- 166 reviewed human entries carrying families of the built-in Pfam library, in
+  clans-*, phmmer-* (sequence names sp_<accession>_<entry name>), retrieved
+  from the UniProt REST API on 2026-10-11.
+
+Source:  The UniProt Consortium, https://www.uniprot.org
 License: Creative Commons Attribution 4.0 International (CC BY 4.0),
          https://creativecommons.org/licenses/by/4.0/
          (https://www.uniprot.org/help/license)
-Changes: none.
+Changes: none (sequence names joined with underscores).

@@ -35,6 +35,12 @@ export interface MergedSearch {
 
 /** Merge parts run with {@link partOptions}. `names` (one per sequence) break
  * ranking ties as C's `strcmp` does; by default sequences are named by index. */
+/** C HMMER runs with flush-to-zero (\`impl_Init\`): products below the
+ * smallest normal double are zero there (crates/hmmer-core math::ftz). */
+export function ftz(x: number): number {
+  return x !== 0 && Math.abs(x) < 2.2250738585072014e-308 ? (x < 0 ? -0 : 0) : x;
+}
+
 export function mergeSearch(parts: SearchPart[], options: SearchOptions, total: number,
   names?: string[]): MergedSearch {
   const z = options.z ?? total;
@@ -51,10 +57,10 @@ export function mergeSearch(parts: SearchPart[], options: SearchOptions, total: 
   if (!cutoffs) {
     for (const hit of hits) {
       hit.flags &= ~both;
-      const reportable = options.score === undefined ? hit.p * z <= targetE : hit.score >= options.score;
+      const reportable = options.score === undefined ? ftz(hit.p * z) <= targetE : hit.score >= options.score;
       if (!reportable) continue;
       hit.flags |= HitFlags.reported;
-      const includable = options.incScore === undefined ? hit.p * z <= incE : hit.score >= options.incScore;
+      const includable = options.incScore === undefined ? ftz(hit.p * z) <= incE : hit.score >= options.incScore;
       if (includable) hit.flags |= HitFlags.included;
     }
   }
@@ -68,14 +74,14 @@ export function mergeSearch(parts: SearchPart[], options: SearchOptions, total: 
         d.reported = false;
         d.included = false;
         if (!(hit.flags & HitFlags.reported)) continue;
-        d.reported = options.domScore === undefined ? d.p * domZ <= domE : d.bitscore >= options.domScore;
+        d.reported = options.domScore === undefined ? ftz(d.p * domZ) <= domE : d.bitscore >= options.domScore;
         d.included = hitIncluded &&
-          (options.incdomScore === undefined ? d.p * domZ <= incdomE : d.bitscore >= options.incdomScore);
+          (options.incdomScore === undefined ? ftz(d.p * domZ) <= incdomE : d.bitscore >= options.incdomScore);
       }
     }
   }
   for (const hit of hits) {
-    for (const d of hit.domains) d.cEvalue = d.p * domZ;
+    for (const d of hit.domains) d.cEvalue = ftz(d.p * domZ);
     // workaround_bug_h74(): keep only the best of identical domain alignments.
     if (hit.overlaps === 0) continue;
     for (let i = 0; i < hit.domains.length; i++) {

@@ -7,6 +7,7 @@ import {TAGS as bioTAGS, ALIGNMENT, ALPHABET, NOTATION} from '@datagrok-librarie
 import {
   SeqAnnotation, SeqAnnotationHit, AnnotationCategory,
 } from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
+import {_package} from '../../package';
 import {
   setColumnAnnotations, getColumnAnnotations,
   getOrCreateAnnotationColumn, getRowAnnotations, setRowAnnotations, mergeRowHits,
@@ -17,12 +18,17 @@ interface NumberingEngine {
   /** Unique key — `${package}:${name}`. */
   key: string;
   func: DG.Func;
+  /** Supported schemes, read once at discovery (building an options editor
+   *  for the function can change its parameters' choices). */
+  schemes: string[];
 }
 
 /** Discovers all registered antibody numbering engines (functions with
  *  meta.role = 'antibodyNumbering'). Built-in engines: Bio package ships an
  *  immunum-WASM-based engine; other packages (Proteomics etc.) can register
- *  AntPack/ANARCI/etc. by adding their own meta.role function. */
+ *  AntPack/ANARCI/etc. by adding their own meta.role function. Engines of other
+ *  packages come first, so an installed one is the dialog's default and the
+ *  built-in immunum is the fallback. */
 function discoverEngines(): NumberingEngine[] {
   const engines: NumberingEngine[] = [];
   const funcs = DG.Func.find({meta: {role: 'antibodyNumbering'}});
@@ -36,19 +42,28 @@ function discoverEngines(): NumberingEngine[] {
       label: f.friendlyName || f.name,
       key: pkgName ? `${pkgName}:${f.name}` : f.name,
       func: f,
+      schemes: getEngineSchemes(f),
     });
   }
-  return engines;
+  const builtIn = (e: NumberingEngine) => e.func.package?.name === _package.name ? 1 : 0;
+  return engines.sort((a, b) => builtIn(a) - builtIn(b)); // stable: discovery order otherwise
 }
 
 /** Reads the `scheme` parameter's declared choices off an engine function.
  *  Engines advertise which schemes they support via the `choices` option of
  *  their `scheme: string` parameter; if the function has none we fall back to
  *  a single generic IMGT option so the dropdown is never empty. */
-function getEngineSchemes(engine: NumberingEngine): string[] {
-  const schemeInput = engine.func.inputs.find((p) => p.name.toLowerCase() === 'scheme');
+function getEngineSchemes(func: DG.Func): string[] {
+  const schemeInput = func.inputs.find((p) => p.name.toLowerCase() === 'scheme');
   const choices = schemeInput?.choices ?? [];
   return choices.length > 0 ? choices.slice() : ['imgt'];
+}
+
+/** Parameters the dialog fills itself (contract: `(df, seqCol, scheme)`). Every
+ *  other engine parameter (e.g. species, score thresholds) is an engine option. */
+function isDialogParam(p: DG.Property): boolean {
+  return p.name.toLowerCase() === 'scheme' ||
+    p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.COLUMN;
 }
 
 export function showNumberingSchemeDialog(): void {
@@ -75,7 +90,10 @@ export function showNumberingSchemeDialog(): void {
   const engineInput = ui.input.choice('Engine', {
     value: engineLabels[0], items: engineLabels,
   });
-  const initialSchemes = getEngineSchemes(engines[0]);
+  const initialSchemes = engines[0].schemes;
+  // The selected engine's description, as in the MSA dialog.
+  const engineDesc = ui.divText(engines[0].func.description ?? '',
+    {style: {fontSize: '12px', opacity: '0.7', maxWidth: '460px', marginBottom: '6px'}});
   const schemeInput = ui.input.choice('Scheme', {value: initialSchemes[0], items: initialSchemes});
 
   // Switch the scheme list when the user picks a different engine — each engine
@@ -83,22 +101,54 @@ export function showNumberingSchemeDialog(): void {
   engineInput.onChanged.subscribe(() => {
     const selected = engines.find((e) => e.label === engineInput.value);
     if (!selected) return;
-    const schemes = getEngineSchemes(selected);
+    engineDesc.textContent = selected.func.description ?? '';
+    const schemes = selected.schemes;
     const prev = schemeInput.value;
     schemeInput.items = schemes;
     schemeInput.value = schemes.includes(prev ?? '') ? prev : schemes[0];
   });
 
+  // Engine options: inputs for the selected engine's extra parameters, built
+  // from its own declaration (choices, defaults, captions), like the MSA dialog.
+  const optionsHost = ui.div([], 'ui-form');
+  let options: {engine: NumberingEngine; call: DG.FuncCall} | null = null;
+  const updateEngineOptions = async (engine: NumberingEngine): Promise<void> => {
+    ui.empty(optionsHost);
+    options = null;
+    if (engine.func.inputs.every(isDialogParam)) return;
+    const call = engine.func.prepare({});
+    // Built off-screen: only the engine options (not table, column, scheme) join the dialog.
+    const inputs = await call.buildEditor(ui.div());
+    if (engineInput.value !== engine.label) return; // the user switched engines meanwhile
+    for (const input of inputs) {
+      const prop = input.property as DG.Property | null;
+      if (prop && !isDialogParam(prop)) optionsHost.append(input.root);
+    }
+    options = {engine, call};
+  };
+  engineInput.onChanged.subscribe(() => {
+    const selected = engines.find((e) => e.label === engineInput.value);
+    if (selected) updateEngineOptions(selected).catch((e) => console.error(e));
+  });
+  updateEngineOptions(engines[0]).catch((e) => console.error(e));
+
   const dialog = ui.dialog({title: 'Apply Antibody Numbering'})
     .add(ui.inputs([tableInput, seqInput, engineInput, schemeInput]))
+    .add(engineDesc)
+    .add(optionsHost)
     .onOK(async () => {
       const seqCol = seqInput.value!;
       const schemeName = schemeInput.value!;
       const selectedLabel = engineInput.value!;
       const engine = engines.find((e) => e.label === selectedLabel) ?? engines[0];
+      const extra: Record<string, any> = {};
+      if (options?.engine === engine) {
+        for (const p of engine.func.inputs)
+          if (!isDialogParam(p)) extra[p.name] = options.call.inputs[p.name];
+      }
       const pi = DG.TaskBarProgressIndicator.create(`Applying ${schemeName} numbering...`);
       try {
-        const result: DG.DataFrame = await engine.func.apply({df: df, seqCol: seqCol, scheme: schemeName});
+        const result: DG.DataFrame = await engine.func.apply({...extra, df: df, seqCol: seqCol, scheme: schemeName});
         applyNumberingResults(df, seqCol, result, schemeName, true, engine.label);
       } catch (err: any) {
         grok.shell.error(`Numbering failed: ${err.message ?? err}`);
@@ -111,13 +161,46 @@ export function showNumberingSchemeDialog(): void {
   dialog.show();
 }
 
-/** Builds a map from ungapped character index to gapped character index.
- *  Used when the source column is already aligned (MSA) — numbering engines strip gaps,
- *  so their output indices refer to the ungapped sequence, not the gapped original. */
-function buildUngappedToGappedMap(gappedSeq: string): number[] {
+/** One cell as a list of monomer positions — what annotations index: a
+ *  one-letter code per position, gaps as `-` (`gap` marks them). Plain FASTA
+ *  cells are indexed by character; other notations (separator, HELM, FASTA
+ *  with multi-letter monomers) through Bio's sequence handler, multi-letter
+ *  monomers as `X`. */
+interface RowCells {
+  letters: string[];
+  gap: boolean[];
+}
+
+function columnCells(seqCol: DG.Column<string>): (row: number) => RowCells {
+  const units = seqCol.meta.units;
+  let sh: ReturnType<typeof _package.seqHelper.getSeqHandler> | null = null;
+  return (row: number) => {
+    const raw = seqCol.get(row) ?? '';
+    if (!units || (units === NOTATION.FASTA && !raw.includes('['))) {
+      const letters = Array.from(raw);
+      return {letters, gap: letters.map((c) => c === '-' || c === '.')};
+    }
+    sh ??= _package.seqHelper.getSeqHandler(seqCol);
+    const split = sh.getSplitted(row);
+    const letters: string[] = [];
+    const gap: boolean[] = [];
+    for (let p = 0; p < split.length; p++) {
+      const isGap = split.isGap(p);
+      const monomer = isGap ? '-' : split.getCanonical(p);
+      letters.push(monomer.length === 1 ? monomer : 'X');
+      gap.push(isGap);
+    }
+    return {letters, gap};
+  };
+}
+
+/** Builds a map from ungapped monomer index to the monomer position in the cell.
+ *  Numbering engines strip gaps, so their output indices refer to the ungapped
+ *  sequence, not the gapped original (MSA columns, separator notation). */
+function buildUngappedToGappedMap(cells: RowCells): number[] {
   const map: number[] = [];
-  for (let g = 0; g < gappedSeq.length; g++) {
-    if (gappedSeq[g] !== '-' && gappedSeq[g] !== '.')
+  for (let g = 0; g < cells.gap.length; g++) {
+    if (!cells.gap[g])
       map.push(g);
   }
   return map;
@@ -184,7 +267,7 @@ function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[]
  *  Layout: [pre-region gaps+residues] [scheme-aligned region] [post-region residues+gaps]
  *  @returns aligned column, full position list (including flanking), and the pre-region offset. */
 function createAlignedColumn(
-  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame,
+  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame, rowCells: RowCells[],
 ): {alignedCol: DG.Column<string>; unifiedPositions: string[]; preOffset: number} | null {
   const numberingMapCol = result.col('numbering_map');
   if (!numberingMapCol) return null;
@@ -200,7 +283,7 @@ function createAlignedColumn(
 
   for (let i = 0; i < result.rowCount; i++) {
     const mapStr = numberingMapCol.get(i);
-    const rawSeq = seqCol.get(i) ?? '';
+    const rawSeq = rowCells[i]?.letters ?? [];
     if (!mapStr) {
       rowMaps.push(null);
       rowPreLens.push(0);
@@ -258,7 +341,7 @@ function createAlignedColumn(
 
   for (let i = 0; i < df.rowCount; i++) {
     const map = i < rowMaps.length ? rowMaps[i] : null;
-    const rawSeq = seqCol.get(i) ?? '';
+    const rawSeq = rowCells[i]?.letters ?? [];
 
     if (!map) {
       alignedCol.set(i, '-'.repeat(totalLen));
@@ -326,14 +409,17 @@ export function applyNumberingResults(
   // If the source column is already aligned (MSA), remap numbering_map indices
   // from ungapped to gapped, since numbering engines strip gaps before processing.
   const isAligned = true; // always treat as aligned to handle remapping
+  const cellsOf = columnCells(seqCol);
+  const rowCells: RowCells[] = [];
+  for (let i = 0; i < result.rowCount; i++)
+    rowCells.push(cellsOf(i));
   if (isAligned && numberingMapCol) {
     for (let i = 0; i < result.rowCount; i++) {
       const mapStr = numberingMapCol.get(i);
       if (!mapStr) continue;
       try {
         const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
-        const rawSeq = seqCol.get(i) ?? '';
-        const ungapToGap = buildUngappedToGappedMap(rawSeq);
+        const ungapToGap = buildUngappedToGappedMap(rowCells[i]);
         const remapped: Record<string, number> = {};
         for (const [posCode, ungappedIdx] of Object.entries(posToCharIdx)) {
           if (ungappedIdx < ungapToGap.length)
@@ -418,7 +504,7 @@ export function applyNumberingResults(
   }
 
   // --- Aligned column: column-level annotations only ---
-  const alignment = createAlignedColumn(df, seqCol, result);
+  const alignment = createAlignedColumn(df, seqCol, result, rowCells);
   if (alignment) {
     df.columns.insert(alignment.alignedCol, df.columns.toList().indexOf(seqCol) + 1);
     if (grok.shell.tv?.dataFrame === df)

@@ -17,7 +17,7 @@ import {
 } from '@datagrok-libraries/bio/src/utils/macromolecule';
 import {
   FilterSources, HorizontalAlignments, IWebLogoViewer, PositionHeight, PositionMarginStates,
-  VerticalAlignments, WebLogoProps, WebLogoPropsDefault
+  VerticalAlignments, WEB_LOGO_PROFILE_ROLE, WebLogoProfile, WebLogoProps, WebLogoPropsDefault
 } from '@datagrok-libraries/bio/src/viewers/web-logo';
 import {errorToConsole} from '@datagrok-libraries/utils/src/to-console';
 import {intToHtmlA} from '@datagrok-libraries/utils/src/color';
@@ -27,6 +27,7 @@ import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {GAP_SYMBOL} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
 import {IMonomerLibBase} from '@datagrok-libraries/bio/src/types/monomer-library';
 import {HelmType} from '@datagrok-libraries/bio/src/helm/types';
+import {HelmTypes} from '@datagrok-libraries/bio/src/helm/consts';
 import {undefinedColor} from '@datagrok-libraries/bio/src/utils/cell-renderer-monomer-placer';
 
 import {AggFunc, getAgg} from '../utils/agg';
@@ -100,6 +101,8 @@ export class PositionInfo {
   sumPlotValue: number;
   /** Sum of plot value scaled to alphabet size with pseudo-count correction */
   sumPlotValueForHeight: number;
+  /** Stack height as a fraction of the maximum, set for profiles; else derived from {@link calcHeights} */
+  heightFraction: number | null = null;
 
   /** freq = {}, rowCount = 0
    * @param {number} pos Position in sequence
@@ -181,9 +184,10 @@ export class PositionInfo {
     absoluteMaxHeight: number, heightMode: PositionHeight, alphabetSizeLog: number,
     positionWidthWithMargin: number, positionWidth: number, dpr: number, positionLabelsHeight: number
   ): void {
-    const maxHeight = (heightMode === PositionHeight.Entropy) ?
-      (absoluteMaxHeight * (alphabetSizeLog - (this.sumPlotValueForHeight)) / alphabetSizeLog) :
-      absoluteMaxHeight;
+    const maxHeight = this.heightFraction !== null ? absoluteMaxHeight * this.heightFraction :
+      (heightMode === PositionHeight.Entropy) ?
+        (absoluteMaxHeight * (alphabetSizeLog - (this.sumPlotValueForHeight)) / alphabetSizeLog) :
+        absoluteMaxHeight;
     let y: number = positionLabelsHeight * dpr + (absoluteMaxHeight - maxHeight - 1);
 
     const entries = Object.entries(this._freqs)
@@ -277,6 +281,7 @@ export enum PROPS_CATS {
 export enum PROPS {
   // -- Data --
   sequenceColumnName = 'sequenceColumnName',
+  profile = 'profile',
   valueAggrType = 'valueAggrType',
   valueColumnName = 'valueColumnName',
   startPositionName = 'startPositionName',
@@ -351,6 +356,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   // Viewer's properties (likely they should be public)
   // -- Data --
   public sequenceColumnName: string | null;
+  public profile: string | null;
   public valueAggrType: DG.AggregationType;
   public valueColumnName: string;
   public skipEmptySequences: boolean;
@@ -389,6 +395,11 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
   private error: Error | null = null;
 
+  /** The profile drawn instead of the column's composition (see {@link profile}) */
+  private profileData: WebLogoProfile | null = null;
+  private profileError: Error | null = null;
+  private profileTicket: number = 0;
+
   /** Full length of {@link positions}.
    * Inclusive, for startPosition equals to endPosition Length is 1
    */
@@ -400,7 +411,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
   }
 
   public get positionMarginValue(): number {
-    if (this.positionMarginState === PositionMarginStates.AUTO && this.seqHandler!.getAlphabetIsMultichar() === true)
+    if (this.positionMarginState === PositionMarginStates.AUTO && this.seqHandler?.getAlphabetIsMultichar() === true)
       return this.positionMargin;
     else if (this.positionMarginState === PositionMarginStates.ON)
       return this.positionMargin;
@@ -418,6 +429,8 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     // -- Data --
     this.sequenceColumnName = this.string(PROPS.sequenceColumnName, defaults.sequenceColumnName,
       {category: PROPS_CATS.DATA, semType: DG.SEMTYPE.MACROMOLECULE, description: 'Column with sequences'});
+    this.profile = this.string(PROPS.profile, defaults.profile,
+      {category: PROPS_CATS.DATA, nullable: true, description: 'A sequence profile to draw instead of the composition of the column, such as a profile HMM (Pfam family V-set, accession PF07686). Profiles come from installed packages (functions with role webLogoProfile, e.g. HMM). When the column is aligned to the profile, clicking a letter selects the rows that have it there.'});
     const aggExcludeList = [DG.AGG.KEY, DG.AGG.PIVOT, DG.AGG.MISSING_VALUE_COUNT, DG.AGG.SKEW, DG.AGG.KURT,
       DG.AGG.SELECTED_ROWS_COUNT];
     const aggChoices = Object.values(DG.AGG).filter((agg) => !aggExcludeList.includes(agg));
@@ -511,6 +524,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
         this.updateSeqCol();
         this.updateEditors();
+        this.loadProfile();
 
         if (!this.viewed) {
           await this.buildView(); //requests rendering
@@ -654,6 +668,27 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
+  /** Loads {@link profile} from the first function with role {@link WEB_LOGO_PROFILE_ROLE}. */
+  private async loadProfile(): Promise<void> {
+    const ticket = ++this.profileTicket;
+    this.profileData = null;
+    this.profileError = null;
+    const spec = this.profile?.trim();
+    if (spec) {
+      this.render(WlRenderLevel.Freqs, 'loadProfile'); // shows the loading message
+      try {
+        const func = DG.Func.find({meta: {role: WEB_LOGO_PROFILE_ROLE}})[0];
+        if (!func) throw new Error(`No installed package supplies WebLogo profiles (role ${WEB_LOGO_PROFILE_ROLE})`);
+        const profile: WebLogoProfile =
+          await func.apply({table: this.dataFrame, column: this.seqCol?.name ?? '', profile: spec});
+        if (ticket === this.profileTicket) this.profileData = profile;
+      } catch (err: any) {
+        if (ticket === this.profileTicket) this.profileError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+    if (ticket === this.profileTicket) this.render(WlRenderLevel.Freqs, 'loadProfile');
+  }
+
   private getFilter(): DG.BitSet {
     let dfFilterRes: DG.BitSet;
     switch (this.filterSource) {
@@ -687,7 +722,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     this.host.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
     this.canvas.classList.remove('bio-wl-fixWidth', 'bio-wl-fitArea');
 
-    this._positionWidth = this.positionWidth;
+    // A width saved as infinite or zero (by an empty slider range before) falls back to the default
+    this._positionWidth = Number.isFinite(this.positionWidth) && this.positionWidth > 0 ?
+      this.positionWidth : defaults.positionWidth;
     this._positionMargin = this.positionMargin;
     this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
 
@@ -734,7 +771,7 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     let areaWidth: number = this._positionWidthWithMargin * this.Length;
     let width = Math.min(this.root.clientWidth, areaWidth);
-    if (this.fitArea && areaWidth < this.root.clientWidth) { // if weblogo has some space to grow
+    if (this.fitArea && areaWidth > 0 && areaWidth < this.root.clientWidth) { // if weblogo has some space to grow
       this._positionWidth = Math.floor(this._positionWidth * this.root.clientWidth / areaWidth);
       this._positionWidthWithMargin = this._positionWidth + this.positionMarginValue;
       areaWidth = this._positionWidthWithMargin * this.Length;
@@ -876,6 +913,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     switch (property.name) {
     case PROPS.sequenceColumnName:
       this.updateSeqCol();
+      if (this.profile) this.loadProfile(); // the profile maps its positions to the column
+      break;
+    case PROPS.profile:
+      this.loadProfile();
       break;
     case PROPS.sequenceColumnName:
     case PROPS.startPositionName:
@@ -1047,6 +1088,35 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     _package.logger.debug(`${this.toLog()}.render.renderInt( renderLevel=${renderLevel} ), ` +
       `start `);
 
+    /** Positions of the profile: monomer heights as given; stacks relative to the tallest (Entropy) or full (100%) */
+    const calculateProfileInt = (profile: WebLogoProfile | null): void => {
+      const all = profile?.positions ?? [];
+      this.positionNames = all.map((p) => p.name);
+      this.positionLabels = undefined;
+      const start = this.startPositionName ? this.positionNames.indexOf(this.startPositionName) : -1;
+      const end = this.endPositionName ? this.positionNames.indexOf(this.endPositionName) : -1;
+      this.startPosition = Math.max(start, 0);
+      this.endPosition = end >= 0 ? end : all.length - 1;
+      this.positions = [];
+      for (let jPos = this.startPosition; jPos <= this.endPosition; jPos++) {
+        const freqs: { [m: string]: PositionMonomerInfo } = {};
+        for (const [m, h] of Object.entries(all[jPos].heights)) {
+          if (!(h > 0)) continue;
+          const pmi = freqs[m] = new PositionMonomerInfo();
+          pmi.value = pmi.plotValue = h;
+        }
+        const pi = new PositionInfo(jPos, all[jPos].name, freqs);
+        pi.calcHeights(PositionHeight.full); // sumPlotValue is the total height of the stack
+        this.positions.push(pi);
+      }
+      const tallest = this.positions.reduce((max, pi) => Math.max(max, pi.sumPlotValue), 0);
+      for (const pi of this.positions) {
+        pi.heightFraction = this.positionHeight === PositionHeight.Entropy && tallest > 0 ?
+          pi.sumPlotValue / tallest : null;
+      }
+      this._onFreqsCalculated.next();
+    };
+
     /** Calculate freqs of monomers */
     const calculateFreqsInt = (): void => {
       _package.logger.debug(`${this.toLog()}.render.calculateFreqsInt(), start `);
@@ -1153,7 +1223,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
       const absoluteMaxHeight: number = this.canvas.height - positionLabelsHeight * dpr;
       let alphabetSizeLog: number;
-      if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
+      if (this.profile)
+        alphabetSizeLog = 1; // stack heights are set by the profile
+      else if (this.valueAggrType === DG.AGG.TOTAL_COUNT) {
         const alphabetSize: number = this.seqHandler!.getAlphabetSize();
         if ((this.positionHeight == PositionHeight.Entropy) && (alphabetSize == null))
           grok.shell.error('WebLogo: alphabet is undefined.');
@@ -1180,14 +1252,23 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
 
     if (this.msgHost)
       this.msgHost!.style.display = 'none';
+    const profileMsg = !this.profile ? null : this.profileError ? this.profileError.message :
+      !this.profileData ? 'Loading profile...' : null;
+    if (profileMsg && this.msgHost) {
+      this.msgHost.innerText = profileMsg;
+      this.msgHost.style.removeProperty('display');
+    }
 
-    if (!this.seqCol || !this.dataFrame || this.host == null || this.slider == null)
+    if ((!this.seqCol && !this.profile) || !this.dataFrame || this.host == null || this.slider == null)
       return;
 
     const dpr: number = window.devicePixelRatio;
     /** 0 is for no position labels */
     const positionLabelsHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT : 0;
-    if (renderLevel >= WlRenderLevel.Freqs) calculateFreqsInt();
+    if (renderLevel >= WlRenderLevel.Freqs) {
+      if (this.profile) calculateProfileInt(this.profileData);
+      else calculateFreqsInt();
+    }
     this.calcLayout(dpr); // after _skipEmptyPositions
     if ( /* this.positions.length === 0 || */ this.startPosition === -1 /* || this.endPosition === -1*/) return;
     const firstPos: number = Math.max(Math.floor(this.slider.min), 0);
@@ -1221,7 +1302,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       // Hacks to scale uppercase characters to target rectangle
       const uppercaseLetterAscent = 0.25;
       const uppercaseLetterHeight = 12.2;
-      const biotype = this.seqHandler!.defaultBiotype;
+      const profileAlphabet = this.profileData?.alphabet;
+      const biotype = !this.profile ? this.seqHandler!.defaultBiotype :
+        profileAlphabet === ALPHABET.DNA || profileAlphabet === ALPHABET.RNA ? HelmTypes.NUCLEOTIDE : HelmTypes.AA;
       for (let jPos = firstPos; jPos <= lastPos; jPos++)
         this.positions[jPos].render(g, fontStyle, uppercaseLetterAscent, uppercaseLetterHeight, biotype, this.monomerLib, this.maxMonomerLetters);
     } finally {
@@ -1274,6 +1357,9 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
       if (this.canvas && this.canvas.offsetWidth > 0 && (this._positionWidthWithMargin ?? 0) > 0) {
         const newRange = val.max - val.min;
         const newPositionWidth = this.canvas.offsetWidth / newRange - this.positionMarginValue;
+        // An empty range (no positions yet, e.g. data still loading) gives no width
+        if (!(newRange > 0) || !Number.isFinite(newPositionWidth) || newPositionWidth <= 0)
+          return;
         // if the range was changed on the slider
         if (!numbersWithinMaxDiff(newPositionWidth, this.positionWidth, 0.1))
           this.getProperty(PROPS.positionWidth)?.set(this, newPositionWidth);
@@ -1311,14 +1397,35 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     }
   }
 
+  /** Tooltip of a profile position: the hovered monomer's height (else the five tallest) and the profile's values */
+  private showProfileTooltip(args: MouseEvent, pi: PositionInfo | null, monomer: string | null): void {
+    const profile = this.profileData;
+    const position = pi && profile ? profile.positions[pi.pos] : undefined;
+    if (!pi || !profile || !position) {
+      ui.tooltip.hide();
+      return;
+    }
+    const heights = Object.entries(position.heights).sort((a, b) => b[1] - a[1]);
+    const map: { [name: string]: string } = {};
+    for (const [m, h] of monomer ? heights.filter(([m]) => m === monomer) : heights.slice(0, 5))
+      map[m] = `${h.toFixed(3)} ${profile.units}`;
+    Object.assign(map, position.info ?? {});
+    ui.tooltip.show(ui.divV([ui.divText(`${profile.title}, position ${pi.label}`), ui.tableFromMap(map)]),
+      args.x + 16, args.y + 16);
+  }
+
   private canvasOnMouseMove(e: MouseEvent): void {
-    if (!this.monomerLib || !this.seqHandler) return;
+    if (!this.monomerLib || (!this.seqHandler && !this.profile)) return;
     const dpr = window.devicePixelRatio;
     try {
       const args = e as MouseEvent;
 
       const cursorP: DG.Point = this.canvas.getCursorPosition(args, dpr);
       const [pi, monomer] = this.getMonomer(cursorP, dpr);
+      if (this.profile) {
+        this.showProfileTooltip(args, pi, monomer);
+        return;
+      }
       const positionLabelHeight = this.showPositionLabels ? POSITION_LABELS_HEIGHT * dpr : 0;
 
       if (pi !== null && monomer == null && 0 <= cursorP.y && cursorP.y <= positionLabelHeight) {
@@ -1360,7 +1467,10 @@ export class WebLogoViewer extends DG.JsViewer implements IWebLogoViewer {
     try {
       const args = e as MouseEvent;
       const dpr: number = window.devicePixelRatio;
-      const [pi, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
+      const [hit, monomer] = this.getMonomer(this.canvas.getCursorPosition(args, dpr), dpr);
+      // A profile's position selects at the column position aligned to it, if the profile maps them
+      const at = hit && this.profile ? this.profileData?.columnPositions?.[hit.pos] ?? -1 : -1;
+      const pi = !this.profile ? hit : at >= 0 ? new PositionInfo(at, hit!.name) : null;
 
       // prevents deselect all rows if we miss monomer bounds
       if (pi !== null && monomer !== null && this.dataFrame && this.seqCol && this.seqHandler) {

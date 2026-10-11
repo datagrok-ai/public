@@ -68,4 +68,50 @@ category('HMMER search and domains', () => {
     expect(actual.size, wanted.size, 'domain count');
     for (const k of wanted) expect(actual.has(k), true, `missing ${k}`);
   });
+
+  test('clan competition matches pfam_scan.pl', async () => {
+    const {df, col} = await sequenceTable('clans-queries.csv');
+    const expected = await expectedRows('clans-expected.csv');
+    const result: DG.DataFrame = await grok.functions.call('HMM:findDomains',
+      {table: df, sequence: col, library: 'builtin', evalue: 0.01, gathering: true});
+    const names = df.col('name')!.toList() as string[];
+    const key = (query: string, accession: string, from: number, to: number, score: number, evalue: number) =>
+      [query, accession, from, to, f1(score), g2(evalue)].join('|');
+    const actual = new Set<string>();
+    for (let i = 0; i < result.rowCount; i++) {
+      actual.add(key(names[result.get('row', i)], result.get('accession', i), result.get('from', i),
+        result.get('to', i), result.get('score', i), result.get('evalue', i)));
+    }
+    const wanted = new Set(expected.map((e) => key(e.query, e.accession, Number(e.env_from), Number(e.env_to),
+      Number(e.score), Number(e.evalue))));
+    expect(actual.size, wanted.size, 'domains after clan competition');
+    for (const k of wanted) expect(actual.has(k), true, `missing ${k}`);
+  });
+});
+
+category('HMMER homology search', () => {
+  test('homology search matches C phmmer', async () => {
+    const queries = DG.DataFrame.fromCsv(await _package.files.readAsText('tests/phmmer-queries.csv'));
+    const {df, col} = await sequenceTable('phmmer-targets.csv');
+    const expected = await expectedRows('phmmer-expected.csv');
+    const names = df.col('name')!.toList() as string[];
+    for (let q = 0; q < queries.rowCount; q++) {
+      const query = queries.get('name', q);
+      const result: DG.DataFrame = await grok.functions.call('HMM:homologySearch',
+        {table: df, sequence: col, query: queries.get('sequence', q), evalue: 10});
+      const rows = expected.filter((e) => e.query === query);
+      const found = new Set<string>();
+      for (const e of rows) {
+        const row = names.indexOf(e.target);
+        found.add(e.target);
+        expect(f1(result.columns.byIndex(0).get(row)), Number(e.score), `${query} ${e.target} score`);
+        expect(g2(result.columns.byIndex(1).get(row)), Number(e.evalue), `${query} ${e.target} E-value`);
+        expect(result.columns.byIndex(2).get(row), Number(e.reported_domains), `${query} ${e.target} domains`);
+      }
+      for (let row = 0; row < df.rowCount; row++) {
+        if (!found.has(names[row]))
+          expect(result.columns.byIndex(0).isNone(row), true, `${query}: ${names[row]} not reported`);
+      }
+    }
+  });
 });
