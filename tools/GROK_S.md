@@ -626,8 +626,11 @@ entities shared with that account, and the target's own users never get their co
 
 ```bash
 grok s pull --since 10y --type project,connection,query,script,group,layout   --out ./bundle --host dev --admin
-grok s push ./bundle --host prod --admin --on-conflict skip
+grok s push ./bundle --host prod --admin --on-conflict adopt
 ```
+
+`adopt` keeps one copy of what both instances already have, such as shared groups and spaces;
+`skip` would leave them alone and fail everything in the bundle that points at them.
 
 **Move a whole instance one space at a time.** Placement is exclusive on the server — one project
 holding an entity takes it from every other — so a single bundle carrying every space has its
