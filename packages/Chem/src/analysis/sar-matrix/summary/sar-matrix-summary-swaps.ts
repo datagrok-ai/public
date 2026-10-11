@@ -5,9 +5,7 @@ import {SarMatrix} from '../sar-matrix-types';
 import {RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
   SwapSide} from './sar-matrix-summary-types';
 
-/** Both extremes by value once a group offers more pairs than the cap allows. A cap taken in the
- *  group's own order would keep the commonest substituents and truncate away the rare one that jumped
- *  two logs; this loses only mid-range pairs. */
+/** Both extremes by value once a group exceeds the cap, so only mid-range pairs are lost. */
 function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
   if (items.length <= SWAP_ROW_CAP)
     return items;
@@ -16,13 +14,8 @@ function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
   return [...sorted.slice(0, half), ...sorted.slice(sorted.length - half)];
 }
 
-/**
- * Measured pairs inside ONE row index, pooled on the unordered fragment pair.
- *
- * The row index, not the core: a row is keyed on `[coreSmiles, ...foldedValues]`, so two rows can
- * share a core and differ at a folded position — pooling per core would break "everything else
- * identical", which is the whole claim of the card.
- */
+/** Measured pairs inside one row, pooled on the unordered fragment pair. Per row, not per core: two rows
+ *  can share a core and differ at a folded position. */
 export function poolSwaps(pools: Map<string, SwapPool>, matrix: SarMatrix, ri: number, cells: RowCell[],
   dir: number, log: boolean, root: string): void {
   const sampled = cells.length > SWAP_ROW_CAP;
@@ -43,13 +36,8 @@ export function poolSwaps(pools: Map<string, SwapPool>, matrix: SarMatrix, ri: n
   }
 }
 
-/**
- * Fold one measured pair into its pool, or decline it. Null when the two sides carry the same value,
- * when a fold cannot be taken, or when this compound pair is already counted.
- *
- * The caller records `best` rather than this: a pair found through a matrix can name the two cells it
- * came from, and a pair found by grouping the component columns cannot.
- */
+/** Fold one measured pair into its pool; null when the sides match, no fold exists, or it is counted.
+ *  The caller records `best`, since only a pair found through a matrix has cells to name. */
 function addSwapPair(pools: Map<string, SwapPool>, a: SwapSide, b: SwapSide,
   root: string, sampled: boolean, dir: number, log: boolean):
   {pool: SwapPool, delta: number, flip: boolean} | null {
@@ -60,9 +48,7 @@ function addSwapPair(pools: Map<string, SwapPool>, a: SwapSide, b: SwapSide,
   const flip = sa > sb;
   const lowerVal = flip ? vb : va;
   const upperVal = flip ? va : vb;
-  // A fold multiplies, so its statistics are geometric: pooling the log of the ratio makes the mean,
-  // min and max the fold statistics a chemist would quote, and lets one accumulator serve both
-  // scales. A non-positive raw value has no fold at all.
+  // A fold multiplies, so the log ratio is pooled; a non-positive raw value has no fold.
   if (!log && (lowerVal <= 0 || upperVal <= 0))
     return null;
   const delta = log ? dir * (upperVal - lowerVal) :
@@ -89,23 +75,14 @@ function addSwapPair(pools: Map<string, SwapPool>, a: SwapSide, b: SwapSide,
   return {pool, delta, flip};
 }
 
-/**
- * Measured swaps for every component at once, read off the component values of each measured cell
- * rather than off one matrix's columns.
- *
- * Nothing is rebuilt to reach another component. A swap is two compounds alike in every component but
- * one; where the components are given as columns that is a grouping, not a decomposition — group the
- * measured cells on every component except the one being swapped, and each pair inside a group that
- * differs in it is a matched pair. The matrix columns were only ever one route to the same thing, and
- * being one route is what made the other components cost a rebuild.
- */
+/** Measured swaps for every component at once: group the measured cells on all components but one, and
+ *  each pair in a group that differs in it is a matched pair. No rebuild per component. */
 export function poolRoleSwaps(roleNames: string[], roleValues: string[][], roleActivity: number[],
   roleMol: number[], dir: number, log: boolean): Map<string, SwapPool[]> {
   const out = new Map<string, SwapPool[]>();
   for (let r = 0; r < roleNames.length; r++) {
     const buckets = new Map<string, number[]>();
-    // One compound occupies a cell in every tier that folded it, so the same partner tuple arrives
-    // several times; the first occurrence can form every pair the later ones could.
+    // One compound recurs in every tier that folded it; its first occurrence forms every pair.
     const placed = new Map<string, Set<number>>();
     for (let k = 0; k < roleActivity.length; k++) {
       let key = '';
@@ -143,14 +120,12 @@ export function poolRoleSwaps(roleNames: string[], roleValues: string[][], roleA
   return out;
 }
 
-/** The swap's worth in its better direction: what it bought in EVERY pair we have. Ranking a mean
- *  over many small pools selects the noisiest pool instead. */
+/** What the swap bought in every pair, in its better direction; a mean would favour the noisiest pool. */
 function swapScore(pool: SwapPool): number {
   return Math.max(pool.min, -pool.max);
 }
 
-/** The single widest measured move anywhere, gate or no gate — so a card with no qualifying pool can
- *  still say what the data does hold rather than only what it does not. */
+/** The widest single measured move, gate or no gate. */
 export function largestSwap(pools: Map<string, SwapPool>): SwapPool | null {
   let best: SwapPool | null = null;
   for (const pool of pools.values()) {

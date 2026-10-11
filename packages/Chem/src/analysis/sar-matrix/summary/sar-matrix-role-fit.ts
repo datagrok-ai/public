@@ -1,26 +1,19 @@
 /**
- * One global additive (Free-Wilson) fit over every role column of a decomposition at once,
- * `y ≈ μ + Σ_r θ_r(value)`, so one run puts every value of every role on a single scale.
- *
- * Legitimate only where a role value means the same thing in every row — a named fragment column.
- * A substituent label discovered by fragmentation is local to its own series, and an offset pooled
- * across series would then be averaging unrelated quantities.
+ * One additive (Free-Wilson) fit over every component column at once, `y ≈ μ + Σ_r θ_r(value)`, so every
+ * value of every component lands on one scale. Only valid where a value means the same in every row —
+ * a named column, not a label found by fragmenting, which is local to its own series.
  */
 
-/** The ridge, applied as `acc / (count + prior)`: one notional compound at the library average added
- *  to every level. In units of count rather than activity, so it means the same in any assay units.
- *  Unpenalised, a design whose roles nearly alias each other grows offsets in the aliased direction
- *  that cancel in the prediction, and the per-role spread then reports noise as signal — a shuffled
- *  activity column produces larger spreads than the real one. */
+/** The ridge, as `acc / (count + prior)`: one notional compound at the library average per level.
+ *  Unpenalised, nearly aliased components grow offsets that cancel in prediction, and the spread then
+ *  reports noise as signal. */
 const ROLE_FIT_PRIOR = 1;
 /** Offsets are read at two decimals, so this is four orders below anything on screen. */
 const ROLE_FIT_TOLERANCE = 1e-6;
-/** A near-aliased design needs hundreds of sweeps. Stopping short leaves every role shrunk toward
- *  zero by a different amount, which reorders the roles without anything failing. */
+/** A near-aliased design needs hundreds of sweeps; stopping short silently reorders the components. */
 export const ROLE_FIT_MAX_SWEEPS = 2000;
-/** Floor under the size-aware cap: a design wide enough to hit it is one where even a converged fit
- *  would be too slow to run on the main thread, and a short run that reports itself unconverged
- *  suppresses the ranking rather than mis-stating it. */
+/** Floor under the size-aware cap. A run that hits it reports itself unconverged, which suppresses the
+ *  ranking rather than mis-stating it. */
 const ROLE_FIT_MIN_SWEEPS = 50;
 /** Sweeps scale with collinearity, not rows, so bounding rows alone refuses large easy tables and
  *  admits small expensive ones. */
@@ -32,16 +25,14 @@ const ROLE_MIN_CV_POINTS = 4;
 export interface RoleDesign {
   /** Role column names, core first. */
   names: string[];
-  /** values[r][k] — role r's value on observation k. Parallel arrays, one entry per measured cell. */
+  /** values[r][k]: component r's value on measured cell k. */
   values: string[][];
   activity: number[];
   /** Source-table row of each observation; the cross-validation folds key on it. */
   molIdx: number[];
   /** Observations a level needs before its offset is readable. */
   minSupport: number;
-  /** Which end of the activity column is the better one. The fit itself is direction-free — it is
-   *  in the column's own units — but `levels` is ordered best-first, and on a raw IC50 column the
-   *  best level is the lowest. */
+  /** Only orders `levels` best-first; the fit itself is in the column's own units. */
   higherIsBetter: boolean;
 }
 
@@ -67,8 +58,7 @@ export interface RoleSummary {
   thin: number;
   /** Count-weighted sd of this role's offsets with estimation noise subtracted. */
   spread: number;
-  /** Correlation of this role's offsets between two halves of the table; null below three comparable
-   *  levels, where a correlation is ±1 whatever the data and would read as evidence either way. */
+  /** Correlation of the offsets between two halves of the table; null below three comparable levels. */
   repeat: number | null;
   split: RoleSplit | null;
 }
@@ -87,8 +77,7 @@ export interface RoleFit {
   cvRmse: number | null;
 }
 
-/** One solved backfit over the observations named by `rows`, keyed by the caller's level codes so a
- *  refit on a subset stays comparable with the full fit level for level. */
+/** One backfit over `rows`, on the caller's level codes so a subset refit compares level for level. */
 interface Backfit {
   mu: number;
   theta: Float64Array[];
@@ -98,10 +87,7 @@ interface Backfit {
   converged: boolean;
 }
 
-/**
- * Averaging each role's margins in a single pass solves this model only when every combination is
- * measured the same number of times, which a library never is.
- */
+/** Backfitting, because averaging margins in one pass is exact only for a balanced design. */
 function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
   rows: Int32Array): Backfit {
   const roleCount = codes.length;
@@ -145,10 +131,8 @@ function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
         weighted += n[v] * acc[v];
         total += n[v];
       }
-      // The prior pulls the whole role off centre by a constant, so the shift is taken out and folded
-      // into the intercept: without it "against the library average" is simply false. It is also why
-      // the movement below has to be measured after the re-centring — measured before, it plateaus at
-      // that constant and the fit never reports convergence.
+      // The prior shifts the whole component by a constant: fold it into the intercept, and measure the
+      // movement after re-centring, or it plateaus at that constant and never converges.
       const shift = total ? weighted / total : 0;
       mu += shift;
       for (let v = 0; v < acc.length; v++) {
@@ -163,15 +147,13 @@ function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
       }
       th.set(acc);
     }
-    // Every role in the sweep, not just the last one updated: with more than two roles the last can
-    // be still while an earlier one is moving.
+    // Over every component in the sweep: the last can be still while an earlier one moves.
     converged = moved < ROLE_FIT_TOLERANCE;
   }
   return {mu, theta, counts, fitted, sweeps, converged};
 }
 
-/** Pearson correlation weighted by each level's support, so a value carrying five hundred compounds
- *  is not outvoted by one carrying three. */
+/** Pearson correlation weighted by each level's support. */
 function weightedCorrelation(xs: number[], ys: number[], weights: number[]): number | null {
   let total = 0;
   let mx = 0;
@@ -221,9 +203,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     levelValues.push(values);
   }
 
-  // Offsets are identified only within a connected component of the design: two blocks sharing no
-  // value in any role fix their offsets against unrelated baselines, so putting one block's offset
-  // beside the other's is arithmetic over incomparable quantities.
+  // Offsets are only comparable within one connected block of the design, so only the largest is fitted.
   const base: number[] = [];
   let nodes = 0;
   for (let r = 0; r < roleCount; r++) {
@@ -263,8 +243,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
       keep.push(k);
   }
 
-  // Every fit runs over the kept observations only, so a level living only in a dropped block keeps a
-  // count of zero and stays out of every sum below rather than sitting at a coefficient nothing measured.
+  // Every fit runs over the kept rows, so a level only in a dropped block has a count of zero below.
   const m = keep.length;
   const levelCounts = levelValues.map((values) => values.length);
   const y = Float64Array.from(design.activity);
@@ -278,8 +257,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   let sse = 0;
   for (const k of keep)
     sse += (y[k] - full.fitted[k]) ** 2;
-  // Effective rather than nominal degrees of freedom: the prior costs a level less than a whole
-  // parameter, and the difference grows with the number of thinly supported levels.
+  // Effective degrees of freedom: the prior costs a level less than a whole parameter.
   let edf = 1;
   for (let r = 0; r < roleCount; r++) {
     for (const support of full.counts[r])
@@ -287,8 +265,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
   }
   const residualSd = Math.sqrt(sse / Math.max(1, m - edf));
 
-  // Folds key on the source row, never on position: fragments arrive in worker-completion order, so
-  // a fold keyed on the walk index would give a different R² for identical input.
+  // Folds key on the source row, not position: rows arrive in worker order, which varies run to run.
   let ssRes = 0;
   for (let fold = 0; fold < ROLE_CV_FOLDS; fold++) {
     const train: number[] = [];
@@ -300,8 +277,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     const trained = backfit(codes, levelCounts, y, Int32Array.from(train));
     for (const i of test) {
       let predicted = trained.mu;
-      // A level the training folds never saw is left at zero, which by the centring is that role's
-      // library average — so the rest of the compound still informs the prediction.
+      // A level the training folds never saw stays at zero, the component's library average.
       for (let r = 0; r < roleCount; r++)
         predicted += trained.theta[r][codes[r][i]];
       ssRes += (y[i] - predicted) ** 2;
@@ -318,8 +294,8 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     }
   }
 
-  // Cross-validated R² checks prediction, and prediction is nearly unique even where the split of
-  // credit between roles is not. Refitting each half of the table is the only check on that split.
+  // Prediction can be unique while the split of credit between components is not; refitting each half
+  // of the table checks the split.
   const halves = [0, 1].map((half) =>
     backfit(codes, levelCounts, y, Int32Array.from(keep.filter((k) => mol[k] % 2 === half))));
 
@@ -347,9 +323,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     }
     levels.sort((a, b) => dir * (b.coef - a.coef));
     rawVar /= m;
-    // The raw count-weighted sd carries an estimation-noise term σ²·levels/observations that is
-    // negligible for a twelve-level role and dominant for a six-hundred-level one, so subtracting it
-    // is what makes two roles of one table comparable at all.
+    // Subtract the noise term σ²·levels/observations, which otherwise dominates many-level components.
     const spread = Math.sqrt(Math.max(0, rawVar - residualSd ** 2 * observed / m));
 
     let cut = 0;
@@ -362,8 +336,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
       }
     }
     let split: RoleSplit | null = null;
-    // A lone outlier at either end is one value, not a group, so the widest gap is reported only
-    // where it partitions the role rather than clipping it.
+    // Only a gap with at least two values on each side is a split; one value is an outlier.
     if (gap > error && cut >= 2 && levels.length - cut >= 2) {
       const side = (from: number, to: number): {mean: number, total: number} => {
         let weighted = 0;
@@ -380,8 +353,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
         loCount: levels.length - cut, loMean: lo.mean, loN: lo.total};
     }
 
-    // Two comparable levels correlate at exactly ±1 whatever the halves hold, so a two-value role
-    // would either wear the strongest possible repeatability chip or be refused outright, on nothing.
+    // Two levels always correlate at ±1, so repeatability needs three.
     roles.push({name: design.names[r], levels, fitted: observed,
       thin: observed - levels.length, spread,
       repeat: xs.length < 3 ? null : weightedCorrelation(xs, ys, weights), split});

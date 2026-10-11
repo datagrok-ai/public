@@ -350,8 +350,8 @@ export class SarMatrixViewer extends DG.JsViewer {
     // First, so the analysis opens on what it found rather than on one arbitrary series.
     const summaryPane = this.tabs.addPane(TAB_SUMMARY, () => this.summaryPanel.root);
     ui.tooltip.bind(summaryPane.header, 'What the whole analysis found, on one screen: the scale it is ' +
-      'read on, the three answers, and which series to open — with the fitted effects, the analogs ' +
-      'worth making and the methodology each a segment away');
+      'read on, the three answers, and which series to open — with the fitted effects and the analogs ' +
+      'worth making each a segment away');
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferPanel.root);
@@ -994,10 +994,6 @@ export class SarMatrixViewer extends DG.JsViewer {
     const matches = new Set(column.categories
       .filter((category) => standardizeFragment(category).value === wanted));
     df.selection.init((i) => matches.has(column.getString(i)));
-  }
-
-  get transferSummary(): {scanned: boolean, count: number} {
-    return this.transferPanel.scanSummary;
   }
 
   /** The column the cores came from, under the same condition as {@link axisRole}: a decomposition

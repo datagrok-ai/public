@@ -20,6 +20,7 @@ import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
 import {SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
 import {SummaryPanel} from '../analysis/sar-matrix/summary/sar-matrix-summary-panel';
+import {PANE_EFFECTS} from '../analysis/sar-matrix/summary/sar-matrix-summary-common';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
@@ -1482,7 +1483,6 @@ category('SAR Matrix: R-group columns', () => {
     matrices,
     matrixRoots: matrices.map((m) => m.parentId ?? m.id),
     matrixTiers: matrices.map((m) => m.level),
-    transferSummary: {scanned: false, count: 0},
     assayedCount: matrices.length ? 1 : 0,
     selectRoleValue: () => {},
     higherIsBetter: true,
@@ -1520,12 +1520,11 @@ category('SAR Matrix: R-group columns', () => {
       panel.activateSummaryTab();
       // Collection runs off the activation stack so the loader can paint.
       await delay(50);
-      const segment = Array.from(panel.root.querySelectorAll<HTMLElement>('.chem-sar-sum-seg'))
-        .find((el) => el.textContent === 'Effects');
-      expect(segment !== undefined, true, 'the segment bar must offer the Effects segment');
-      segment!.click();
-      const pane = panel.root.querySelector('.chem-sar-sum-pane')!;
-      const titles = Array.from(pane.querySelectorAll('.chem-sar-sum-card-title'))
+      panel.showPane(PANE_EFFECTS);
+      const pane = Array.from(panel.root.querySelectorAll('.chem-sar-sum-pane'))
+        .find((el) => el.childElementCount > 0);
+      expect(pane !== undefined, true, 'the Effects section must be built');
+      const titles = Array.from(pane!.querySelectorAll('.chem-sar-sum-card > .chem-sar-cp-section-title'))
         .map((el) => el.textContent ?? '');
       // A substituent label discovered by fragmentation is local to its own series, so there is no
       // scale on which one global offset could be read and the cards are absent rather than empty.
