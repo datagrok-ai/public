@@ -28,7 +28,7 @@ export interface FeatureSession {
   /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
    * line, the step as written, the reason, and — when Playwright gave up on an element — what the
    * page shows where the phrase looked. */
-  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void>;
+  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void>;
 }
 
 export interface Journey {
@@ -306,10 +306,10 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
       }
       return page;
     },
-    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void> {
+    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void> {
       title = text(title);
       await test.step(title, async () => {
-        await guide.begin(page, test.info(), line, title, table);
+        await guide.begin(page, test.info(), line, title, table, caption);
         try {
           await body();
         }

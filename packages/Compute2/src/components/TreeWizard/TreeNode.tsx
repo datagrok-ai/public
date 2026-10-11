@@ -10,61 +10,38 @@ import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
 import {
-  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, friendlyIoName,
+  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, statusInputs,
+  friendlyIoName,
 } from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
-  ['next warn']: 'arrow-right',
-  ['next error']: 'arrow-right',
-  [`pending`]: 'circle',
-  [`pending executed`]: 'dot-circle',
+  ['next warn']: 'exclamation-triangle',
+  ['next error']: 'pen',
+  [`pending`]: 'clock',
+  [`pending executed`]: 'history',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
-  ['succeeded info']: 'check-circle',
-  ['succeeded warn']: 'dot-circle',
-  ['succeeded inconsistent']: 'dot-circle',
+  ['succeeded info']: 'info-circle',
+  ['succeeded warn']: 'exclamation-circle',
+  ['succeeded inconsistent']: 'unlink',
   ['failed']: 'times-circle',
 };
 
 const statusToColor: Record<Status, string> = {
-  ['next']: 'green',
-  ['next warn']: 'orange',
-  ['next error']: 'black',
-  [`pending`]: 'gray',
-  [`pending executed`]: 'gray',
-  ['running']: 'blue',
-  ['succeeded']: 'green',
-  ['succeeded info']: 'blue',
-  ['succeeded warn']: 'orange',
-  ['succeeded inconsistent']: 'red',
-  ['failed']: 'red',
-};
-
-const listContributingIos = (
-  status: Status,
-  validationStates?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): string[] => {
-  const result = new Set<string>();
-  const valEntries = Object.entries(validationStates ?? {});
-  const consEntries = Object.entries(consistencyStates ?? {});
-  const addIf = (name: string, cond: boolean) => { if (cond) result.add(name); };
-  if (status === 'next error')
-    valEntries.forEach(([n, v]) => addIf(n, !!v.errors?.length));
-  else if (status === 'next warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!v.warnings?.length));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!(v.warnings?.length || v.errors?.length)));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded info')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction === 'info'));
-  else if (status === 'succeeded inconsistent')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  return [...result];
+  ['next']: 'var(--success)',
+  ['next warn']: 'var(--orange-2)',
+  ['next error']: 'var(--red-3)',
+  [`pending`]: 'var(--grey-5)',
+  [`pending executed`]: 'var(--grey-5)',
+  ['running']: 'var(--blue-1)',
+  ['succeeded']: 'var(--success)',
+  ['succeeded info']: 'var(--blue-1)',
+  ['succeeded warn']: 'var(--orange-2)',
+  ['succeeded inconsistent']: 'var(--red-3)',
+  ['failed']: 'var(--red-3)',
 };
 
 export const getToolTip = (
@@ -79,7 +56,7 @@ export const getToolTip = (
   const base = statusToTooltip[status];
   if (status === 'failed' && runError)
     return `${base}: ${runError}`;
-  const ios = listContributingIos(status, validationStates, consistencyStates);
+  const ios = statusInputs(status, validationStates, consistencyStates);
   if (!ios.length) return base;
   return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
 };
@@ -109,13 +86,16 @@ export const TreeNode = Vue.defineComponent({
     isDraggable: {
       type: Boolean,
     },
-    isDroppable: {
-      type: Boolean,
-    },
     isDeletable: {
       type: Boolean,
     },
+    isDuplicable: {
+      type: Boolean,
+    },
     isReadonly: {
+      type: Boolean,
+    },
+    isSelected: {
       type: Boolean,
     },
     hasInconsistentSubsteps: {
@@ -125,6 +105,7 @@ export const TreeNode = Vue.defineComponent({
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
     removeNode: () => true,
+    duplicateNode: () => true,
     toggleNode: () => true,
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
@@ -221,7 +202,7 @@ export const TreeNode = Vue.defineComponent({
         >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { ...isHovered.value ? [
+            { ...isHovered.value || props.isSelected ? [
               ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
                 name='save'
                 tooltip={'Save this subtree'}
@@ -231,6 +212,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
+                tooltip='Add a step'
                 rightAligned
                 items={props.stat.data.stepTypes
                   .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
@@ -250,11 +232,19 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...props.isDraggable ? [<IconFA
                 name='grip-vertical'
+                tooltip='Drag to move'
                 cursor='grab'
+                class='d4-ribbon-item'
+              />]: [],
+              ...props.isDuplicable ? [<IconFA
+                name='copy'
+                tooltip='Duplicate'
+                onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],
               ...props.isDeletable ? [<IconFA
                 name='times'
+                tooltip='Remove'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],

@@ -1,6 +1,10 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {awaitCheck} from '@datagrok-libraries/test/src/test';
+import {after, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {loadInstanceState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
+import {
+  isFuncCallSerializedState, PipelineSerializedState,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 /** Wait for a selector to appear inside a root element, return the matched element. */
 export async function awaitElement(
@@ -31,6 +35,30 @@ export async function launchApp(name: string, timeout = 10000): Promise<DG.ViewB
 /** Close a view, swallowing errors if already closed. */
 export function closeView(view: DG.ViewBase): void {
   try { view.close(); } catch (_) { /* already closed */ }
+}
+
+/** Registers views a category's tests open, so every one of them is closed after the category. */
+export function closeViewsAfter() {
+  const views: DG.ViewBase[] = [];
+  after(async () => views.splice(0).forEach(closeView));
+  return <T extends DG.ViewBase>(view: T): T => {
+    views.push(view);
+    return view;
+  };
+}
+
+const savedCallIds = (state: PipelineSerializedState): string[] => isFuncCallSerializedState(state) ?
+  (state.funcCallId ? [state.funcCallId] : []) : state.steps.flatMap(savedCallIds);
+
+/** Deletes a saved workflow run with its step calls; plain calls.delete() silently keeps them. */
+export async function deleteSavedWorkflow(id: string) {
+  const [state] = await loadInstanceState(id);
+  const calls = grok.dapi.functions.calls.allPackageVersions();
+  for (const callId of [id, ...savedCallIds(state)]) {
+    const call = await calls.find(callId);
+    if (call)
+      await calls.delete(call);
+  }
 }
 
 /** Wait for WebComponents custom elements to be registered. */

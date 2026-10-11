@@ -338,6 +338,103 @@ export const matrixDiagonal = Then('the similarity columns of table {string} sho
   expect(r.asymmetric, `pairs of "${name}" whose two cells differ`).toBe(0);
 }, {description: 'a pairwise similarity table: one numeric column per row, every molecule fully similar to itself, and some pair less so'});
 
+/** In the page: the rows of the current table's column that `query` finds (a SMARTS, or a molblock read as Chem's search
+ * reads a query molblock, unsanitized), against those `smarts` finds; the rows only one of them finds. */
+function queriesAgainst(page: Page, column: string, query: string, smarts: string):
+  Promise<{onlyQuery: number[], onlySmarts: number[], found: number, unreadable: number}> {
+  return page.evaluate(async ([c, q, s]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const qmol = (text: string) => {
+      const m = rdkit.get_qmol(text);
+      if (text.includes('M  END')) {
+        try {
+          m.convert_to_aromatic_form();
+        } catch {
+          // a query RDKit cannot aromatize is matched as it is, as Chem's search does
+        }
+      }
+      return m;
+    };
+    const a = qmol(q);
+    const b = qmol(s);
+    const onlyQuery: number[] = [];
+    const onlySmarts: number[] = [];
+    let found = 0;
+    let unreadable = 0;
+    try {
+      for (let i = 0; i < df.rowCount; i++) {
+        let mol = null;
+        try {
+          mol = rdkit.get_mol(col.get(i));
+        } catch {
+          mol = null;
+        }
+        if (!mol) {
+          unreadable++;
+          continue;
+        }
+        try {
+          const x = mol.get_substruct_match(a) !== '{}';
+          const y = mol.get_substruct_match(b) !== '{}';
+          if (x)
+            found++;
+          if (x && !y)
+            onlyQuery.push(i + 1);
+          if (y && !x)
+            onlySmarts.push(i + 1);
+        } finally {
+          mol.delete();
+        }
+      }
+    } finally {
+      a.delete();
+      b.delete();
+    }
+    return {onlyQuery, onlySmarts, found, unreadable};
+  }, [column, query, smarts] as [string, string, string]);
+}
+
+async function expectSameRows(page: Page, column: string, read: () => Promise<string>, what: string, smarts: string): Promise<void> {
+  let seen = '';
+  await expect.poll(async () => {
+    const q = await read();
+    if (!q) {
+      seen = `${what} is empty`;
+      return false;
+    }
+    const r = await queriesAgainst(page, column, q, smarts);
+    seen = `${what} (${q.includes('M  END') ? 'a molblock' : q}) finds ${r.found} molecules of "${column}"; rows only it finds: ` +
+      `${r.onlyQuery.slice(0, 10).join(', ') || 'none'}; rows only ${smarts} finds: ${r.onlySmarts.slice(0, 10).join(', ') || 'none'}`;
+    return r.unreadable === 0 && r.onlyQuery.length === 0 && r.onlySmarts.length === 0 && r.found > 0;
+  }, {message: `${what} against ${smarts}`}).toBe(true).catch(() => {
+    throw new Error(seen);
+  });
+}
+
+export const readingFindsAs = Then('the {string} reading of {widget} should find exactly the molecules of {string} column containing {string}',
+  (page: Page, reading: string, target: ElementRef, column: string, smarts: string) =>
+    expectSameRows(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
+      String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, smarts),
+{description: 'a query a widget reports (a SMARTS), matched against the current table\'s column by RDKit, finds exactly the molecules the SMARTS finds, some of them; polled'});
+
+export const ketcherQueryFinds = Then('the query Ketcher shows in sketcher dialog should find exactly the molecules of {string} column containing {string}',
+  (page: Page, column: string, smarts: string) =>
+    expectSameRows(page, column, () => page.evaluate(async () => {
+      // the molfile KetcherSketcher exported of what Ketcher shows, at its last change (`_molV2000`, once what the host set
+      // has loaded), not the host's getters, which give back the string the host set until the user's next edit
+      const shown = Array.from(document.querySelectorAll('.d4-dialog .chem-sketcher-host > *')).pop();
+      const impl = shown ? (window as any).DG.Widget.find(shown) : null;
+      if (!impl?._sketcher)
+        return '';
+      await impl._loading;
+      return impl._molV2000 ?? '';
+    }), 'the query Ketcher shows', smarts),
+{description: 'the molfile KetcherSketcher exports of what Ketcher shows in the open sketcher dialog, read by RDKit as Chem\'s search reads a query molblock, finds exactly the molecules of the current table\'s column the SMARTS finds; polled'});
+
 export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', (page: Page, column: string, reading: string, target: ElementRef) =>
   expectFilterMatches(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
     String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, true),

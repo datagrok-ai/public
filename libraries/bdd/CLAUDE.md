@@ -25,7 +25,8 @@ src/runtime/            args, locate, gestures, assertions, harness (session, jo
                         viewer-runtime (in-page window.__bdd), viewers (readers over it), viewer-pixels,
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
                         server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
-                        guide (BDD_GUIDE: per-step screenshots, located element, menu stops (hop), the page's own pointer events per stop → steps.json; full shell)
+                        guide (BDD_GUIDE: per-step screenshots, located element or the hit area a gesture aims at, menu stops (hop), the page's own pointer events per stop,
+                        a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell)
 tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second

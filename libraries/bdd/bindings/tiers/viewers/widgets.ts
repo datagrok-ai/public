@@ -810,13 +810,18 @@ export const columnListStartsWith = Then('the column list of {element} should st
 // --- one element inside another -------------------------------------------------------------------
 
 export const liesWithin = Then('{element} should lie within {element}', async (page: Page, inner: ElementRef, outer: ElementRef) => {
-  const a = await (await locate(page, inner)).filter({visible: true}).first().boundingBox();
-  const b = await (await locate(page, outer)).filter({visible: true}).first().boundingBox();
-  if (!a || !b)
-    throw new Error(`${!a ? inner.phrase : outer.phrase} has no box on the page`);
-  const inside = a.x >= b.x - 0.5 && a.y >= b.y - 0.5 && a.x + a.width <= b.x + b.width + 0.5 && a.y + a.height <= b.y + b.height + 0.5;
-  expect(inside, `${inner.phrase} spans ${Math.round(a.x)},${Math.round(a.y)}..${Math.round(a.x + a.width)},${Math.round(a.y + a.height)}, ` +
-    `outside ${outer.phrase} at ${Math.round(b.x)},${Math.round(b.y)}..${Math.round(b.x + b.width)},${Math.round(b.y + b.height)}`).toBe(true);
+  const innerLoc = (await locate(page, inner)).filter({visible: true}).first();
+  const outerLoc = (await locate(page, outer)).filter({visible: true}).first();
+  // a dialog resized a moment ago lays its parts out again over the next frames
+  await expect.poll(async () => {
+    const a = await innerLoc.boundingBox();
+    const b = await outerLoc.boundingBox();
+    if (!a || !b)
+      return `${!a ? inner.phrase : outer.phrase} has no box on the page`;
+    const inside = a.x >= b.x - 0.5 && a.y >= b.y - 0.5 && a.x + a.width <= b.x + b.width + 0.5 && a.y + a.height <= b.y + b.height + 0.5;
+    return inside ? 'inside' : `${inner.phrase} spans ${Math.round(a.x)},${Math.round(a.y)}..${Math.round(a.x + a.width)},${Math.round(a.y + a.height)}, ` +
+      `outside ${outer.phrase} at ${Math.round(b.x)},${Math.round(b.y)}..${Math.round(b.x + b.width)},${Math.round(b.y + b.height)}`;
+  }, {timeout: pollMs(5000), message: `${inner.phrase} within ${outer.phrase}`}).toBe('inside');
 }, {description: 'the first box wholly inside the second (half a pixel of rounding allowed)'});
 
 // --- the text an element shows ----------------------------------------------------------------------

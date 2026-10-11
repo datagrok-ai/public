@@ -439,9 +439,13 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   starting where the previous action ended (the renderer refuses to make a video in which it
   skips); an icon-sized target
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
-  where it is; the page after the step is revealed, and a caption above the page (clear of a
+  where it is; a gesture on a hit area of a viewer or a widget (a grid cell, an atom of a sketcher)
+  lights that area, not the viewer round it; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
-  toolbar"); a caption too long for the strip is set smaller, then on two lines, and the lines of a
+  toolbar"), or says what a `# caption: <text>` comment on the lines right above the step says — for a
+  step whose text is for the test (an atom's index, a drag in pixels, a reading), so the video speaks as
+  a person would ("Click the acid's carbon", "The centre flips from R to S"); a check with a caption is
+  shown even where `HIDDEN_CHECKS` would leave it out; a caption too long for the strip is set smaller, then on two lines, and the lines of a
   pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
   so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
   into the search short of its last letter (a complete unique name is taken on the spot) and the
@@ -459,6 +463,11 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   (the renderer prints a press more than 2 px off, or outside the element its stop lit);
 - with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair (the GIF's palette
   always holds the press colours).
+
+A set-up step can frame the video to a part of the page — `guideFrame(page, box, margin)` from
+`@datagrok-libraries/bdd/runtime` (Chem's `the Crux sketcher is open on …` frames its sketcher's
+dialog, so a guide about the sketcher shows the sketcher alone): the renderer cuts every picture to
+that box, and moves every point and box into it.
 
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last

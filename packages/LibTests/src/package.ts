@@ -317,7 +317,6 @@ export async function MockWrapper5(params: any) {
     type: 'sequential',
     nqName: 'LibTests:MockWrapper5',
     version: '1.0',
-    approversGroup: 'MockGroup',
     stepTypes: [
       {
         id: 'step1',

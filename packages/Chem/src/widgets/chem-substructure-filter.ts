@@ -16,6 +16,7 @@ import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {querySmarts} from '../utils/mol-creation_rdkit';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
@@ -149,11 +150,18 @@ export class SubstructureFilter extends DG.Filter {
     return DG.chem.isMolBlock(molecule) ? chem.Sketcher.isEmptyMolfile(molecule) : false;
   }
 
+  /**
+   * The SMARTS that names a query in the filter (its summary, its searches' keys): the query the search builds, as RDKit
+   * writes it. Two drawings share it only when the search reads them as one query. RDKit's sanitized reading, the name
+   * until 2026-10, read an aromatic bond outside an aromatic ring single, so toluene with its methyl bond marked aromatic
+   * was named as toluene, and the filter took its search for one already done (crux-sketch spike query-roundtrip).
+   */
   moleculeToSmarts(molecule: string): string {
-    return DG.chem.isMolBlock(molecule) ?
-      _convertMolNotation(molecule, DG.chem.Notation.MolBlock,
-        DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule()) :
-      molecule;
+    if (!DG.chem.isMolBlock(molecule))
+      return molecule;
+    const rdkit = PackageFunctions.getRdKitModule();
+    return querySmarts(molecule, rdkit) ??
+      _convertMolNotation(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
   }
 
   get isFiltering(): boolean {

@@ -935,7 +935,7 @@ export const RichFunctionView = Vue.defineComponent({
               ref={helpRef}
             > { Vue.withDirectives(
                 <MarkDown
-                  markdown={helpContent.value ?? 'Help file is not avaliable'}
+                  markdown={helpContent.value ?? 'Help file is not available'}
                 />, [[ifOverlapping, helpLoading.value]])
               }
             </div>: null

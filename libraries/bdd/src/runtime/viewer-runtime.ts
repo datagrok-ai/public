@@ -267,7 +267,8 @@ function install(): void {
   // a viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   // still a widget the platform knows by its root; so is a package's widget outside any viewer that
   // reports a status of its own (Chem's Crux sketcher: its atoms and bonds as hit areas), the
-  // nearest one up from the element
+  // nearest one up from the element. The containers on the way (a view, a dialog, the shell) are
+  // widgets too, but report nothing: a gallery link in the Scripts view is not a viewer's.
   const findViewer = (el: Element): any => {
     const root = el.closest('[name^="viewer-"], .d4-viewer') ?? el.querySelector('[name^="viewer-"], .d4-viewer');
     const known = viewers().find((x) => x.root === root);
@@ -282,7 +283,8 @@ function install(): void {
       if (!e.hasAttribute('data-widget'))
         continue;
       const w = DG.Widget.find(e);
-      if (isWidget(w))
+      const status = isWidget(w) ? w.getWidgetStatus() : null;
+      if (Object.keys(status?.values ?? {}).length > 0 || Object.keys(status?.hitAreas ?? {}).length > 0)
         return w;
     }
     return undefined;
@@ -936,12 +938,19 @@ function install(): void {
   };
   /** Resolves once [read] says the same thing on [frames] consecutive frames after the first — what
    * it describes has stopped moving — or after [capMs]. */
-  const stable = (read: () => string, capMs: number, frames: number): Promise<void> => new Promise((done) => {
+  const stable = (read: () => string, capMs: number, frames: number): Promise<void> => new Promise((done, fail) => {
     const t0 = Date.now();
     let last = '';
     let same = 0;
     const tick = (): void => {
-      const now = read();
+      // what throws in an animation frame is reported nowhere, and the promise would never settle
+      let now: string;
+      try {
+        now = read();
+      }
+      catch (e) {
+        return fail(e);
+      }
       same = now === last ? same + 1 : 0;
       last = now;
       if (same >= frames || Date.now() - t0 >= capMs)

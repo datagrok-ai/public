@@ -56,6 +56,8 @@ export declare const STRINGS: {
     readonly hashedWedgeBond: 'Hashed wedge bond';
     readonly wavyBond: 'Wavy bond';
     readonly crossedDoubleBond: 'Crossed double bond';
+    /** The dative bond tool and type (spike hydrogens-and-dative, R2; BOND-024): ChemDraw's and Ketcher's name. */
+    readonly dativeBond: 'Dative bond';
     readonly periodicTable: 'Periodic table';
     /** The ring tools, named after their rings (spike rings-chains, A11Y-002), and the chain tool (reading 23). */
     readonly benzene: 'Benzene';
@@ -140,6 +142,15 @@ export declare const STRINGS: {
     readonly cleanUpMenu: 'Clean Up and Layout';
     readonly cleanUpLine: 'Tidy bonds and angles, keep the drawing in place';
     readonly layoutLine: 'Redraw from scratch, fit the view';
+    /**
+     * The explicit hydrogens' commands (spike hydrogens-and-dative, R1; ATOM-028): the top bar's Hydrogens menu button and its
+     * menu's name, its items (the context menus' too) and the line under each.
+     */
+    readonly hydrogensMenu: 'Hydrogens';
+    readonly addExplicitHydrogens: 'Add explicit hydrogens';
+    readonly removeExplicitHydrogens: 'Remove explicit hydrogens';
+    readonly addExplicitHydrogensLine: 'Draw each implicit H as an atom (the selection, if any)';
+    readonly removeExplicitHydrogensLine: 'Fold H atoms back into their atoms (the selection, if any)';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
     /** Cut, Copy and Paste (spike clipboard, C3, A11Y-002). */
@@ -275,6 +286,8 @@ export declare const STRINGS: {
     readonly dropNothing: 'Nothing to add: {name} holds no structure';
     readonly unnamedFile: 'the file';
     readonly dropNotYet: 'Dropping {format} files is not supported yet';
+    /** A file dropped beside the canvas, on a bar (spike polish-feedback, row 5): nothing added, and where to drop it said. */
+    readonly dropOnCanvas: 'Drop the file on the canvas';
     /** A reaction pasted or dropped (spike formats, F12, IO-031): refused, saying so; a written one is the engine's error, in its words. */
     readonly reactionsRefused: 'Reactions are not supported';
     /**
@@ -456,6 +469,14 @@ export declare const STRINGS: {
     readonly stereoUnspecifiedItem: 'Unspecified';
     readonly setRorSFirst: 'Set R or S first';
     /**
+     * Spike atropisomers (R2, the product owner's report of 2026-10-07): an atropisomer axis bond's menu group, P and M (CIP
+     * labels, as R and S are), and the status line's word when the engine gives no wedge for a label (JDQ443's second axis).
+     */
+    readonly atropisomerGroup: 'Atropisomer';
+    readonly atropP: 'P';
+    readonly atropM: 'M';
+    readonly noAxisConfig: 'No {config} configuration for this axis';
+    /**
      * Spike abbreviations (docs/decisions/abbreviations.md, A5 to A8; I18N-006: the abbreviations' names are notations, never
      * translated, and are passed into these as they are): a contracted abbreviation's menu, named "Abbreviation", and its
      * items, ChemDraw's and Ketcher's names (title case, as theirs); the prompt before an edit inside an expanded abbreviation
@@ -584,6 +605,8 @@ export declare const STRINGS: {
     readonly typeWavy: 'wavy';
     /** A crossed double bond (milestone-3-fixes, F4), as "Bond 2 crossed" says it. */
     readonly typeCrossed: 'crossed';
+    /** A dative bond, as an announcement says its type (spike hydrogens-and-dative, R2). */
+    readonly typeDative: 'dative';
     readonly typeOther: 'other';
     /** The selection changed, by any input (K3). */
     readonly selected: '{what} selected';
@@ -597,6 +620,9 @@ export declare const STRINGS: {
     readonly bondsNow: '{bonds} {type}';
     readonly atomNow: 'Atom {number} {label}';
     readonly atomsNow: '{atoms} {label}';
+    /** An atom's charge said in words after its label (spike polish-feedback, row 8): "O, charge minus 1", "NH3, charge plus 1". */
+    readonly chargeSaidPlus: '{label}, charge plus {count}';
+    readonly chargeSaidMinus: '{label}, charge minus {count}';
     readonly changed: 'Changed {what}';
     readonly moved: 'Moved {what}';
     readonly rotated: 'Rotated {what}';
@@ -630,6 +656,9 @@ export declare const STRINGS: {
     /** A tool or a zoom chosen by key (K3). */
     readonly toolChosen: '{tool} tool';
     readonly zoomTo: 'Zoom {percent}';
+    /** The zoom menu's field (spike polish-feedback, row 13; UI-010): a percentage typed, Enter applying it, and its range. */
+    readonly zoomField: 'Zoom level';
+    readonly zoomRange: '{min}% to {max}%';
     /** A notice's close button (UI-020): it stays until the next edit, Escape, this, or 6 s. */
     readonly dismiss: 'Dismiss';
     /**
@@ -692,6 +721,8 @@ export declare const STRINGS: {
     readonly sheetJump: 'Move the hotspot three bonds';
     readonly sheetHop: 'Move the hotspot to the next structure';
     readonly sheetStart: 'Draw, or put the hotspot on the drawing';
+    /** Shift+Enter (spike polish-feedback, row 12): the active tool's structure added beside the drawing. */
+    readonly sheetNewStructure: 'Add a new structure beside the drawing';
     readonly sheetEndSelection: 'End the selection';
     /** What the number keys and a sprout over an atom (KEY-011), as the sheet names them. */
     readonly sprout1: 'A bond';
@@ -733,6 +764,8 @@ export declare const STRINGS: {
     readonly queryAsDrawn: 'As drawn';
     readonly queryNone: 'None';
     readonly queryOrMore: '{n} or more';
+    /** The query tooltip's field (spike polish-look, row 7): its name and its value, in the menus' words ("ring bond count 2"). */
+    readonly queryTipField: '{field} {value}';
     readonly queryAromatic: 'Aromatic';
     readonly queryAliphatic: 'Aliphatic';
     readonly clearQueryProperties: 'Clear query properties';
@@ -749,6 +782,12 @@ export declare const STRINGS: {
     readonly customQuery: 'Custom query';
     readonly customQuerySmarts: 'Custom query SMARTS';
     readonly smartsNotRead: 'Not valid SMARTS at character {position}: {message}';
+    /**
+     * Atom Properties' Apply refused by the engine (spike polish-feedback, row 1): said in the dialog, which stays open. An atom
+     * with radical electrons takes no query; any other refusal in the engine's words.
+     */
+    readonly queryOnRadical: 'No query on an atom with a radical: set Radical to None first';
+    readonly notApplied: 'Not applied: {reason}';
     readonly listTooLong: 'An atom list holds at most 16 elements';
     readonly listEmpty: 'An atom list needs at least one element';
     /** The periodic table in query mode (Q8, QUERY-004): its modes and its Generics row, RDKit's meanings. */
@@ -778,7 +817,7 @@ export declare const STRINGS: {
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff';
+type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -809,6 +848,12 @@ export type Catalog = {
     noRoom(atom: string, what: RefusalWhy): string;
     /** An atom on the canvas, as a refusal names it: "this C" (K14). */
     thisAtom(symbol: string): string;
+    /**
+     * A query field in the query tooltip (spike polish-look, row 7): its name and its value as the menus show them, in a
+     * phrase ("ring bond count 2", "H count 1 or more"); a word alone, a check's or a value that names its field, as itself
+     * ("unsaturated", "aromatic"). In English the first letter is lower-cased, unless it is a symbol (H).
+     */
+    queryTipField(field: string, value?: string): string;
     noRoomForRadical(symbol: string): string;
     problemValence(symbol: string): string;
     chargeLimit(symbol: string, delta: 1 | -1): string;

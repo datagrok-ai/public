@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';
 import dayjs from 'dayjs';
+import {v4 as uuidv4} from 'uuid';
 import {deepEqual, createCustomEqual, TypeEqualityComparator} from 'fast-equals';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ValidationResult} from './data/common-types';
@@ -102,6 +103,12 @@ export function pathToUUID(
     acc = {node: nnode, uuids: [...acc.uuids, uuid]};
   });
   return acc.uuids;
+}
+
+export function copyDataFrame(df: DG.DataFrame) {
+  const copy = df.clone();
+  copy.id = uuidv4();
+  return copy;
 }
 
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {

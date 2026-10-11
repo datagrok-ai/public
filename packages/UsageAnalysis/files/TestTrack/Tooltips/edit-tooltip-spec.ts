@@ -33,7 +33,7 @@ test('Viewers: Edit tooltip', async ({page}) => {
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
-  await softStep('Enable Show Visible Columns In Tooltip in grid properties', async () => {
+  await softStep('Grid: Show Tooltip = inherit from table, enable Show Visible Columns In Tooltip', async () => {
     await page.evaluate(() => {
       const grid = document.querySelector('[name="viewer-Grid"]')!;
       (grid.querySelector('[name="icon-font-icon-settings"]') as HTMLElement).click();
@@ -50,6 +50,8 @@ test('Viewers: Edit tooltip', async ({page}) => {
       return cb.checked;
     });
     expect(toggled).toBe(true);
+    await page.evaluate(() => { (grok as any).shell.tv.grid.props.showTooltip = 'inherit from table'; });
+    expect(await page.evaluate(() => (grok as any).shell.tv.grid.props.showTooltip)).toBe('inherit from table');
   });
 
   await softStep('Add a scatter plot and a box plot', async () => {

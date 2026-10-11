@@ -1,13 +1,8 @@
-import * as grok from 'datagrok-api/grok';
-import {v4 as uuidv4} from 'uuid';
-import {BaseTree, NodePath, NodePathSegment} from '../data/BaseTree';
-import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
-import {LinkSpec, MatchedIO, MatchInfo} from './link-matching';
+import {BaseTree, NodePathSegment} from '../data/BaseTree';
+import {StateTreeNode} from './StateTreeNodes';
+import {MatchedIO} from './link-matching';
 import {DriverLogger, reportError} from '../data/Logger';
 import {Link} from './Link';
-import {parseLinkIO} from '../config/LinkSpec';
-import {ruleMetaHandler, ruleValidatorHandler} from './rule-handlers';
-import {CALL, CheckOptions, expandChecks, TARGET, VALUE} from '../config/checks';
 
 export class DependenciesData {
   nodes: Set<string> = new Set();
@@ -128,67 +123,4 @@ export function pruneLinkedTargets(state: BaseTree<StateTreeNode>, links: Link[]
       }
     }
   }
-}
-
-export function createDefaultValidators(state: BaseTree<StateTreeNode>, logger?: DriverLogger) {
-  const defaultValidators = state.traverse(state.root, (acc, node, path) => {
-    const item = node.getItem();
-    if (!isFuncCallNode(item))
-      return acc;
-    const ios = item.config.io ?? [];
-    const validators = ios.flatMap((io) => {
-      if (io.direction === 'output')
-        return [];
-      const options: CheckOptions = {...io.checks, nullable: io.nullable};
-      // the annotation's validators are run by the platform, through the step's FuncCall
-      const annotationValidators = options.validators;
-      delete options.validators;
-      const expanded = expandChecks(options);
-      if (annotationValidators?.length) {
-        expanded.push({
-          key: 'validators', family: 'validator', needsTable: false, needsCall: true, needsInputs: false,
-          params: {
-            when: {'!': {missing: [VALUE]}},
-            sources: {$verdicts: {validators: {input: VALUE, call: CALL}}},
-            effects: [{effect: 'verdicts', targets: [TARGET], source: '$verdicts'}],
-          },
-        });
-      }
-      // a GrokScript expression sees every input of the step under its own name; `value` is the checked one
-      const stepInputs = ios.filter((other) => other.direction === 'input' && other.id !== VALUE);
-      return expanded.map(({key, family, needsCall, needsInputs, params}) => {
-        const spec: LinkSpec = {
-          id: `::${io.id}:${key}`,
-          from: [
-            ...parseLinkIO(`${VALUE}:${io.id}`, 'input'),
-            ...(needsCall ? parseLinkIO(`${CALL}(call,optional):.`, 'input') : []),
-            ...(needsInputs ? stepInputs.flatMap((other) => parseLinkIO(`${other.id}:${other.id}`, 'input')) : []),
-          ],
-          to: parseLinkIO(`${TARGET}:${io.id}`, 'output'),
-          type: family,
-          handler: family === 'meta' ? ruleMetaHandler : ruleValidatorHandler,
-          params,
-        } as LinkSpec;
-        const inputs: MatchInfo['inputs'] = {[VALUE]: [{path: [], ioName: io.id}]};
-        if (needsCall)
-          inputs[CALL] = [{path: []}];
-        if (needsInputs) {
-          for (const other of stepInputs)
-            inputs[other.id] = [{path: [], ioName: other.id}];
-        }
-        const minfo: MatchInfo = {
-          spec,
-          inputs,
-          outputs: {[TARGET]: [{path: [], ioName: io.id}]},
-          actions: {},
-          inputsUUID: new Map(),
-          outputsUUID: new Map(),
-          isDefaultValidator: true,
-        };
-        return new Link(path, minfo, 0, logger);
-      });
-    });
-    return [...acc, ...validators];
-  }, [] as Link[]);
-  return defaultValidators;
 }

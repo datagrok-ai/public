@@ -19,6 +19,9 @@ import './test/dock-layout';
 import './test/validation-actions';
 import './test/tree-node';
 import './test/export-summary';
+import './test/feedback';
+import './test/tree-utils';
+import './test/inspector-annotation-links';
 
 export const _package = new DG.Package();
 export {tests};

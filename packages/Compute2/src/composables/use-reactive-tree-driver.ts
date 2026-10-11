@@ -46,7 +46,6 @@ export function useReactiveTreeDriver(
   const hasNotSavedEdits = useObservable(driver.hasNotSavedEdits$);
 
   const logs = useObservable(driver.logger.logs$.pipe(bufferDuringLock(globalLock$)));
-  const config = useObservable(driver.currentConfig$.pipe(bufferDuringLock(globalLock$)));
   const links = useObservable(driver.currentLinks$.pipe(bufferDuringLock(globalLock$)));
   const result = useObservable(driver.result$);
 
@@ -193,6 +192,10 @@ export function useReactiveTreeDriver(
     driver.sendCommand({event: 'moveDynamicItem', uuid, position});
   };
 
+  const duplicateStep = (uuid: string) => {
+    driver.sendCommand({event: 'duplicateDynamicItem', uuid});
+  };
+
   const changeFuncCall = (uuid: string, call: DG.FuncCall) => {
     driver.sendCommand({event: 'updateFuncCall', stepUuid: uuid, funcCall: call});
   };
@@ -200,6 +203,9 @@ export function useReactiveTreeDriver(
   const returnResult = () => {
     driver.sendCommand({event: 'returnResult'});
   };
+
+  const inspectLinks = () => driver.inspectLinks();
+  const inspectConfig = () => driver.inspectConfig();
 
   return {
     // driver,
@@ -210,7 +216,6 @@ export function useReactiveTreeDriver(
     hasNotSavedEdits,
     states,
     logs,
-    config,
     links,
     result,
     //
@@ -225,8 +230,11 @@ export function useReactiveTreeDriver(
     addStep,
     removeStep,
     moveStep,
+    duplicateStep,
     changeFuncCall,
     returnResult,
+    inspectLinks,
+    inspectConfig,
   };
 }
 

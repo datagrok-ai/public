@@ -159,21 +159,25 @@ scenario('the mouse-over row counts from 1, and a filled element is told from on
   await fails(() => fillsParent(page!, el('Half viewer')));
 });
 
-scenario('a widget outside any viewer that reports a status is found up from its element: its hit areas and readings', async () => {
+scenario('a widget outside any viewer that reports a status is found up from its element: its hit areas and readings; a container that reports nothing is not a viewer', async () => {
   await page!.setContent(`<div style="padding:30px"><div data-widget="true" name="Probe" style="position:relative;left:5px;width:200px;height:100px">
-    <div id="inner" style="width:50px;height:50px"></div></div><div data-widget="true" name="Plain" style="width:20px;height:20px"></div></div>`);
+    <div id="inner" style="width:50px;height:50px"></div></div><div data-widget="true" name="Plain" style="width:20px;height:20px"></div>
+    <div data-widget="true" name="Gallery" style="width:200px;height:50px"><a style="display:block;width:50px;height:20px">Card</a></div></div>`);
   await page!.evaluate(() => {
     const w = window as any;
     const root = document.querySelector('[name="Probe"]')!;
     const probe = {root, type: 'Probe', isRenderPending: false,
       getWidgetStatus: () => ({parts: {}, hitAreas: {'atom 0': {x: 10, y: 20, width: 8, height: 8}}, values: {smiles: 'CC'}})};
+    const gallery = document.querySelector('[name="Gallery"]')!;
+    const view = {root: gallery, type: 'scripts', getWidgetStatus: () => ({parts: {}, hitAreas: {}})};
     w.grok = {shell: {tableViews: []}};
-    w.DG = {Widget: {find: (e: Element) => e === root ? probe : null}};
+    w.DG = {Widget: {find: (e: Element) => e === root ? probe : e === gallery ? view : null}};
   });
   const r = await page!.locator('[name="Probe"]').boundingBox();
   assert.deepEqual(await hitArea(page!, el('Probe widget'), 'atom 0'), {x: r!.x + 10, y: r!.y + 20, width: 8, height: 8});
   assert.equal(await readValue(page!, el('Probe widget'), 'smiles'), 'CC');
   await assert.rejects(() => readValue(page!, el('Plain widget'), 'smiles'), /not a viewer/);
+  await assert.rejects(() => readValue(page!, el('Card link'), 'smiles'), /not a viewer/);
 });
 
 scenario('a table tag is compared with a file byte for byte', async () => {
