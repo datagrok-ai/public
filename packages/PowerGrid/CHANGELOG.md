@@ -3,6 +3,7 @@
 ## v.next
 
 * Scatter plot: Added a WebGL renderer for plots over 50K rows where WebGPU is unavailable or blocked: dots, all marker shapes (also per row, by a Markers column), sizes, colors, opacity, borders, selection, filtered-out rows and hit testing, matching the CPU renderer
+* Scatter plot: Rewrote the WebGPU renderer to draw what the WebGL one does: it matches the CPU renderer (dots pixel for pixel, sharp on high-DPI screens), draws per-row marker shapes, borders and opacity as the canvas does, compiles its pipelines once instead of every frame, and draws in the same frame as the axes; a lost device or a validation error falls back to WebGL
 * Scatter plot: The GPU renderers leave plots with labels next to the markers, a datetime axis by a time unit, or a non-numeric, non-string axis column to the CPU renderer, which draws them right
 * Scatter plot: A large plot drawn on the CPU before the package loaded switches to the GPU when it does
 * Forms: Fixed the mouse-over card keeping a row after the pointer left the viewer, when the card under the pointer had been re-rendered (in `@datagrok-libraries/utils`)
