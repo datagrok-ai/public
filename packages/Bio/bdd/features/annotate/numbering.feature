@@ -6,7 +6,9 @@ Feature: Antibody numbering with the bundled immunum engine
   annotations on the source column. Kabat, chosen over the default IMGT, must reach the result.
   Engines of other packages (e.g. HMM's ANARCI) come first and are the default when installed, so
   the scenario picks the bundled engine.
-  The project round-trip of a numbering and its deterministic re-run are in projects/round-trips.
+  The project round-trip of a numbering (its aligned column, tags and regions) and its
+  deterministic re-run on the reopened table are tested in Bio src/tests/projects-tests.ts
+  ('antibody_numbering').
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
   platform signals; the other schemes of the md title (Chothia, AHo) — the bundled engine offers

@@ -423,8 +423,22 @@ export async function MockWrapperDF(params: any) {
 //input: double abs {consistencyTolerance: 1e-9}
 //input: double rel {consistencyRelTolerance: 1e-6}
 //input: dataframe df {consistencyTolerance: 1e-9}
+//input: double both {consistencyTolerance: 1; consistencyRelTolerance: 1e-6}
+//input: dataframe dfCols {consistencyTolerance: {"Conc": 1e-9, "*": 2}; consistencyRelTolerance: {"big": 1e-6}}
 //output: double res
-export async function TestToleranceInputs(plain: number, abs: number, rel: number, df: DG.DataFrame) {
+export async function TestToleranceInputs(plain: number, abs: number, rel: number, df: DG.DataFrame,
+  both: number, dfCols: DG.DataFrame) {
+  return 1;
+}
+
+//input: double notNumber {consistencyTolerance: small}
+//input: double columns {consistencyTolerance: {"x": 1e-9}}
+//input: int count {consistencyTolerance: 1}
+//input: dataframe badJson {consistencyTolerance: {"x": small}}
+//input: dataframe badColumn {consistencyRelTolerance: {"x": "1e-9"}}
+//output: double res
+export async function TestToleranceBadInputs(notNumber: number, columns: number, count: number,
+  badJson: DG.DataFrame, badColumn: DG.DataFrame) {
   return 1;
 }
 

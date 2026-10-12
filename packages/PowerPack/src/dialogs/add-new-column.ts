@@ -1215,6 +1215,10 @@ export class AddNewColumnDialog {
           return e.message ?? e;
         }
       }
+      //a nested vector function is computed once per column, and the enclosing call gets its per-row values
+      if (actualInputType === DG.TYPE.COLUMN && property.propertyType !== DG.TYPE.COLUMN &&
+        input?.func?.options['vectorFunc'] === 'true')
+        actualInputType = DG.TYPE.DYNAMIC;
       //handling dynamic type in actual input
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula

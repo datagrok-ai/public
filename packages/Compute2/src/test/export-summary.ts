@@ -103,6 +103,13 @@ category('Export: workflow summary', () => {
     expectDeepEqual(byName.inconsistent.inconsistentInputs, [io('a')]);
   });
 
+  test('A title given as a list is left out, as in the tree', async () => {
+    const listTitle = {...states, descriptions: {...states.descriptions, ok: {title: ['a', 'b']}}};
+    const item = getExportSummary(treeState, listTitle).find((item) => item.name === 'ok')!;
+    expect(item.title === undefined, true, 'no title');
+    expect(item.fileName!.includes('a,b'), false, `file name ${item.fileName}`);
+  });
+
   test('A step without a call is not loaded', async () => {
     const item = getExportSummary(treeState, states).find((item) => item.name === 'notLoaded')!;
     expect(item.fileName === undefined, true, 'no file name');

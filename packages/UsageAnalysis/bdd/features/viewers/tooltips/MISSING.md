@@ -32,33 +32,31 @@ viewers with the same setup). What could not be said is listed here. Run on the 
 - **The column selector of a form that rebuilds its rows** (2026-10-07 review). Edit Aggregated Tooltip redraws
   every row when one is added or changed, and a press on a selector at that moment opened nothing (1 run in
   10). The gesture presses again when no column grid opened.
+- **The order of the tooltip's columns** (2026-10-12): `the tooltip should show columns in the order {string}`
+  reads the rows as they come. The scatter plot's axis-first order under Data Values = Merge is by design (the
+  lead, 2026-10-11): `edit-tooltip` claims each viewer's own order — the scatter plot HEIGHT, WEIGHT, AGE, SEX,
+  the box plot and the grid AGE, SEX, WEIGHT (mutation-checked: a swapped order fails).
+- **The choices of a property in the context panel** (2026-10-12): `{element} should offer …` opens a property
+  grid row's lazy choice editor before reading it, so the one-in-three empty read is gone.
+- **A menu item enabled or disabled** (2026-10-12): `the open menu should list {string} as enabled` / `as disabled`
+  read the item's `aria-disabled`.
+- **The Add aggregation button of Edit Aggregated Tooltip** (2026-10-12): the button of an empty list is named
+  and labelled "Add aggregation" in core (`aggregated_columns_input.dart`); `line-chart-aggregated-tooltip` names
+  it instead of `first button`.
 
-## Missing steps and signals
+## Still open
 
-- **The order of the tooltip's columns — a step, and a question.** The cases uniform-default-tooltip and
-  edit-tooltip ask for "the same columns in the same order" on every viewer. `the tooltip should show columns {string}`
-  uppercases, de-duplicates and sorts what it reads (`src/runtime/viewer-legend.ts`, `tooltipColumns`), so
-  neither the order nor a column listed twice is claimed. Wanted: `Then the tooltip should show columns in
-  the order {string}` — the first cells of `.d4-row-tooltip-table` rows as they come. Likely a product
-  question too: with Data Values = Merge the scatter plot puts its axis columns first
-  (`tooltip.dart`, `getExpandedColumns`), so its order differs from the box plot's and the grid's.
+Nothing planned.
+
+## Won't do
+
 - **The trellis plot's own tooltip after Hide.** Its inner viewers' marks are not areas of the trellis, so
-  default-tooltip-visibility leaves it out. The line chart is left out there too, for another reason: on
-  demog-1000 it aggregates, and an aggregated line chart shows no tooltip until Edit Aggregated Tooltip
-  configures one.
-- **The choices of a property in the context panel.** `"Show Tooltip" property in context panel should offer
-  the choice …` read an empty list once in three runs: the Dart property grid's choice editor puts its
-  `<select>` in the cell only after the cell is clicked. tooltip-properties reads the default and picks the
-  other two values instead. Wanted: `{element} should offer the choice` to open a lazy choice editor before reading it.
-- **A menu item enabled or disabled.** No step claims it (`aria-disabled` on the item).
-- **The Edit Tooltip dialog's list has three columns** (type, name, box). The list steps read the names and the
-  boxes only; a reading of the list's own grid columns (`column order` of the grid inside a dialog) would
-  claim it. Low value.
-- **The Add aggregation button of Edit Aggregated Tooltip has no label.** Its Dart name is cut
-  (`button-Add-aggregation-to-calculate-and-show-in-to`), so the feature reaches it as `first button`. A
-  caption or an aria-label on the button in core would let it be named.
+  default-tooltip-visibility leaves it out; the line chart too, which aggregates on demog-1000 and shows no
+  tooltip until Edit Aggregated Tooltip configures one.
+- **The Edit Tooltip dialog's list has three columns** (type, name, box): a reading of a dialog's inner grid
+  columns for one low-value line.
 
-## Not translated, by choice
+### Not translated, by choice
 
 - **default-tooltip step 4, widening the context panel** to push the last column out of sight — it moves
   nothing the widened column does not; grid-visible-columns-tooltip pushes the columns off by the column
@@ -66,7 +64,7 @@ viewers with the same setup). What could not be said is listed here. Run on the 
 - **line-chart-aggregated-tooltip's "in-viewer filter"** — named in the case's title only; none of its steps
   sets one.
 
-## Not translated, by rule
+### Not translated, by rule
 
 - **What the tooltip's renderer draws** (molecules in SPGI's tooltip) — a renderer, not a feature
   (`libraries/bdd/CLAUDE.md`). edit-tooltip and the others use demog-1000 for this reason.

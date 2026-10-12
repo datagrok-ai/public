@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
 import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineLinkConfigurationInput, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
 import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
-import {callHandler, indexFromEnd, Tolerance} from '../utils';
+import {callHandler, indexFromEnd, IOTolerance, ToleranceSpec} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationCheckLinks, annotationRules, expandLinks} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLink, narrowToFamilyTargets} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -24,7 +24,7 @@ export type FuncCallIODescription = {
   /** Choices the platform evaluates (a function, query or file); `propagate` for `propagateChoice: all`. */
   dynamicChoices?: {propagate: boolean};
   /** Consistency comparison tolerance from the `consistencyTolerance`/`consistencyRelTolerance` annotations. */
-  tolerance?: Tolerance;
+  tolerance?: IOTolerance;
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
@@ -183,6 +183,8 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
+  const func = DG.Func.byName(conf.nqName);
+  readTolerances(func, io, logger);
   const allLinks = [
     ...processLinks(conf.links ?? []),
     ...markAnnotation(processLinks(annotationRules(conf.nqName, io, logger)), 'rule'),
@@ -190,7 +192,6 @@ async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?
   ];
   const links = allLinks.length ? allLinks : undefined;
   const actions = processActions(conf.actions ?? [], logger);
-  const func = DG.Func.byName(conf.nqName);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
   if (!viewersHook && viewersHookMakerName) {
@@ -218,6 +219,47 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedI
     disableUIDragging: conf.disableUIDragging,
     disableUIRemoving: conf.disableUIRemoving,
   } as PipelineConfigurationStaticProcessed;
+}
+
+function parseTolerance(value: string | undefined, isDataFrame: boolean): ToleranceSpec | undefined {
+  if (value == null)
+    return undefined;
+  const text = String(value).trim();
+  if (!text.startsWith('{')) {
+    const tolerance = Number(text);
+    if (!text || isNaN(tolerance))
+      throw new Error(`${text} is not a number`);
+    return tolerance;
+  }
+  if (!isDataFrame)
+    throw new Error('column tolerances need a dataframe input');
+  const columns: Record<string, number> = {};
+  for (const [name, tolerance] of Object.entries(JSON.parse(text))) {
+    if (typeof tolerance !== 'number')
+      throw new Error(`column ${name}: ${tolerance} is not a number`);
+    columns[name.toLowerCase()] = tolerance;
+  }
+  return columns;
+}
+
+function readTolerances(func: DG.Func, io: FuncCallIODescription[], logger?: DriverLogger) {
+  for (const prop of func.inputs) {
+    const {consistencyTolerance, consistencyRelTolerance} = prop.options ?? {};
+    if (consistencyTolerance == null && consistencyRelTolerance == null)
+      continue;
+    const isDataFrame = prop.propertyType === DG.TYPE.DATA_FRAME;
+    try {
+      if (!isDataFrame && prop.propertyType !== DG.TYPE.FLOAT)
+        throw new Error('consistency tolerance applies to double and dataframe inputs only');
+      const tolerance = {
+        abs: parseTolerance(consistencyTolerance, isDataFrame),
+        rel: parseTolerance(consistencyRelTolerance, isDataFrame),
+      };
+      io.find((d) => d.id === prop.name && d.direction === 'input')!.tolerance = tolerance;
+    } catch (e) {
+      reportError('warning', 'configProcessing', `${func.nqName}, input ${prop.name}: ${(e as Error).message}`, logger);
+    }
+  }
 }
 
 // io read from annotations, kept for one processing run; the FuncCall prepared to read them is dropped,
@@ -248,9 +290,6 @@ function readFuncCallIO(nqName: NqName): FuncCallIODescription[] {
     const scalar = DG.TYPES_SCALAR.has(p.property.propertyType);
     if (typeof choices === 'string' && choices && !parseChoices(choices) && scalar)
       io.dynamicChoices = {propagate: p.property.options.propagateChoice === 'all'};
-    const {consistencyTolerance, consistencyRelTolerance} = p.property.options ?? {};
-    if (consistencyTolerance != null || consistencyRelTolerance != null)
-      io.tolerance = {abs: Number(consistencyTolerance ?? 0), rel: Number(consistencyRelTolerance ?? 0)};
     return io;
   });
   const outputs = wu(fc.outputParams.values()).map((p) => (
@@ -269,7 +308,8 @@ function processActions<A extends ActionInput>(actionsInput: A[], logger?: Drive
 }
 
 function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
-  return links.flatMap((link) => expandLinks([link]).map((expanded) => withOriginal(processLinkData(expanded), link)));
+  return links.flatMap((link) => expandLink(link).map((expanded) =>
+    withOriginal(narrowToFamilyTargets(expanded, processLinkData(expanded)), link)));
 }
 
 // in place, so the links keep their originals

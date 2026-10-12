@@ -13,27 +13,23 @@ const LOOK_PROPERTIES = [
 type LookProperty = (typeof LOOK_PROPERTIES)[number];
 export type ScatterLook = Record<LookProperty, any>;
 
-type Getter = [name: string, get: (look: unknown) => any];
+type Getter = [name: string, get: ((look: unknown) => any) | undefined];
 const getters = new WeakMap<object, Getter[]>();
 
 /** Reads the properties in one pass: every `sc.props.x` access builds wrappers for all of the viewer's properties. */
 export function readLook(sc: DG.ScatterPlotViewer): ScatterLook {
-  const target = sc.propertyTarget;
-  const look: any = {};
-  // platforms before the 2026-08 JS API have no propertyTarget
-  if (target == null) {
-    for (const name of LOOK_PROPERTIES)
-      look[name] = (sc.props as any)[name];
-    return look;
-  }
   let viewerGetters = getters.get(sc.dart);
   if (!viewerGetters) {
     const byName = new Map(sc.getProperties().map((p) => [p.name, p]));
-    viewerGetters = LOOK_PROPERTIES.map((name) => [name, byName.get(name)!.get]);
+    viewerGetters = LOOK_PROPERTIES.map((name) => [name, byName.get(name)?.get]);
     getters.set(sc.dart, viewerGetters);
   }
+  // platforms before the 2026-08 JS API have no propertyTarget, and their `props` throws on a property their core
+  // lacks (1.27.7: markerSizeScaling, showMarkersWithEmptySize); it reads as undefined, the behaviour before it
+  const target = sc.propertyTarget;
+  const look: any = {};
   for (const [name, get] of viewerGetters)
-    look[name] = get(target);
+    look[name] = get && (target == null ? (sc.props as any)[name] : get(target));
   return look;
 }
 

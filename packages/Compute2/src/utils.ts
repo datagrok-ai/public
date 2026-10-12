@@ -179,19 +179,6 @@ export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, '
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
-export const hasSubtreeFixableInconsistencies = (
-  data: PipelineState,
-  callStates: Record<string, FuncCallStateInfo | undefined>,
-  consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
-) => {
-  return _findTreeNode(
-    [data],
-    (state: PipelineState) => isFuncCallState(state) ?
-      (!state.isReadonly && hasInconsistencies(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
-      false,
-  );
-};
-
 export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: string) : ViewAction[] {
   const nodePaths = _findTreeNode([data], (state) => state.uuid === currentStepUuid);
   const segments = nodePaths?.pathSegments ?? [];
@@ -226,18 +213,23 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
 export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
   anyInput(consistencyStates, isInconsistent);
 
-export const hasSubtreeAnyInconsistencies = (
+type SubtreeStates = [
   data: PipelineState,
   callStates: Record<string, FuncCallStateInfo | undefined>,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
-) => {
-  return _findTreeNode(
-    [data],
-    (state: PipelineState) => isFuncCallState(state) ?
-      (!state.isReadonly && hasAnyInconsistency(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
-      false,
-  );
-};
+];
+
+// the first writable step without pending dependencies that has an input matching cond
+const findInconsistentStep = (
+  [data, callStates, consistencyStates]: SubtreeStates, cond: (val: ConsistencyInfo) => boolean,
+) =>
+  _findTreeNode([data], (state: PipelineState) => isFuncCallState(state) && !state.isReadonly &&
+    anyInput(consistencyStates[state.uuid], cond) && !callStates[state.uuid]?.pendingDependencies?.length);
+
+export const hasSubtreeFixableInconsistencies = (...states: SubtreeStates) =>
+  findInconsistentStep(states, isFixableInconsistency);
+
+export const hasSubtreeAnyInconsistencies = (...states: SubtreeStates) => findInconsistentStep(states, isInconsistent);
 
 export const statusToTooltip: Record<Status, string> = {
   [`next`]: `This step is available to run`,
@@ -359,6 +351,10 @@ const stepFileName = (state: StepFunCallState, idx: number, callInfo: FuncCallSt
   return `${exportIndex(idx)}_${replaceForWindowsPath(rawFileName)}.xlsx`;
 };
 
+// as in the tree, a title given as a list is not used
+const textTitle = (description?: Record<string, string | string[]>) =>
+  typeof description?.title === 'string' ? description.title : undefined;
+
 const workflowDirName = (state: Exclude<PipelineState, StepFunCallState>, idx: number) =>
   `${exportIndex(idx)}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
 
@@ -376,7 +372,7 @@ const stepSummary = (
   state: StepFunCallState, idx: number, path: string[], states: ExportStates,
 ): ExportSummaryItem => {
   const name = state.friendlyName ?? state.configId;
-  const title = states.descriptions?.[state.uuid]?.title as string | undefined;
+  const title = textTitle(states.descriptions?.[state.uuid]);
   const callInfo = states.callInfoStates?.[state.uuid];
   const funcCall = state.funcCall;
   if (!funcCall || !callInfo)
@@ -430,7 +426,7 @@ export function getExportSummary(treeState: PipelineState, states: ExportStates)
       kind: 'workflow',
       path: nPath,
       name: state.friendlyName ?? state.configId,
-      title: states.descriptions?.[state.uuid]?.title as string | undefined,
+      title: textTitle(states.descriptions?.[state.uuid]),
       ...resultMessages(states.pipelineValidations?.[state.uuid]),
       inconsistentInputs: [],
     };
@@ -536,7 +532,7 @@ export async function reportTree(
         consistency,
       ).finally(() => disposeViewers(viewers));
 
-      const fileName = stepFileName(state, idx, callInfo, description?.title as string);
+      const fileName = stepFileName(state, idx, callInfo, textTitle(description));
       const configKey = [...path, fileName].join('/')
       zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
       if (cb) {

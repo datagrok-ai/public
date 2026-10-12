@@ -115,9 +115,49 @@ export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {
   return arr[arr.length - offset - 1];
 }
 
-export type Tolerance = {abs: number, rel: number};
+/** A tolerance for every float column, or per lower-cased column name with `*` for the rest. */
+export type ToleranceSpec = number | Record<string, number>;
+
+/** The `consistencyTolerance`/`consistencyRelTolerance` annotations of an io. */
+export type IOTolerance = {abs?: ToleranceSpec, rel?: ToleranceSpec};
+
+type Tolerance = {abs: number, rel: number};
 
 const DEFAULT_TOLERANCE: Tolerance = {abs: 0.0001, rel: 0};
+const EXACT: Tolerance = {abs: 0, rel: 0};
+const FLOAT_TYPES = new Set<string>([DG.TYPE.FLOAT, DG.TYPE.QNUM]);
+const INT_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.BIG_INT]);
+
+function pickTolerance(spec: ToleranceSpec | undefined, column: string) {
+  return typeof spec === 'object' ? spec[column.toLowerCase()] ?? spec['*'] : spec;
+}
+
+// a relative tolerance wins over an absolute one set for the same value
+function resolveTolerance(tolerance: IOTolerance | undefined, column = ''): Tolerance {
+  const rel = pickTolerance(tolerance?.rel, column);
+  if (rel != null)
+    return {abs: 0, rel};
+  const abs = pickTolerance(tolerance?.abs, column);
+  return abs != null ? {abs, rel: 0} : DEFAULT_TOLERANCE;
+}
+
+function areDataFramesEqual(a: DG.DataFrame, b: DG.DataFrame, tolerance?: IOTolerance) {
+  if (a.rowCount !== b.rowCount || [...a.columns].length !== [...b.columns].length)
+    return false;
+  for (const columnA of a.columns) {
+    const columnB = b.columns.byName(columnA.name);
+
+    if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
+      return false;
+
+    const equal = getDeepEqual(FLOAT_TYPES.has(columnA.type) ? resolveTolerance(tolerance, columnA.name) : EXACT);
+    for (let i = 0; i < a.rowCount; i++) {
+      if (!equal(columnA.get(i), columnB.get(i)))
+        return false;
+    }
+  }
+  return true;
+}
 
 function makeDeepEqual({abs, rel}: Tolerance) {
   const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
@@ -127,24 +167,8 @@ function makeDeepEqual({abs, rel}: Tolerance) {
   };
 
   const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
-    if (a instanceof DG.DataFrame && b instanceof DG.DataFrame) {
-      if (a.rowCount !== b.rowCount || [...a.columns].length !== [...b.columns].length)
-        return false;
-      for (const columnA of a.columns) {
-        const columnB = b.columns.byName(columnA.name);
-
-        if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
-          return false;
-
-        for (let i = 0; i < a.rowCount; i++) {
-          const valueA = columnA.get(i);
-          const valueB = columnB.get(i);
-          if (!equal(valueA, valueB))
-            return false;
-        }
-      }
-      return true;
-    }
+    if (a instanceof DG.DataFrame && b instanceof DG.DataFrame)
+      return areDataFramesEqual(a, b);
 
     if (dayjs.isDayjs(a) && dayjs.isDayjs(b))
       return a.isSame(b);
@@ -166,14 +190,20 @@ function makeDeepEqual({abs, rel}: Tolerance) {
 
 const deepEquals = new Map<string, (a: any, b: any) => boolean>();
 
-export const customDeepEqual = (a: any, b: any, tolerance = DEFAULT_TOLERANCE) => {
+function getDeepEqual(tolerance: Tolerance) {
   const key = `${tolerance.abs}|${tolerance.rel}`;
   let equal = deepEquals.get(key);
   if (!equal) {
     equal = makeDeepEqual(tolerance);
     deepEquals.set(key, equal);
   }
-  return equal(a, b);
+  return equal;
+}
+
+export const customDeepEqual = (a: any, b: any, tolerance?: IOTolerance, type?: string) => {
+  if (a instanceof DG.DataFrame && b instanceof DG.DataFrame)
+    return areDataFramesEqual(a, b, tolerance);
+  return getDeepEqual(type && INT_TYPES.has(type) ? EXACT : resolveTolerance(tolerance))(a, b);
 };
 
 /** Format a single path segment: `id[0]`, `id[2]`. */

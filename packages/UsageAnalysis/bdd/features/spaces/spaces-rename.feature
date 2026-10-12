@@ -3,9 +3,9 @@ Feature: Renaming a space
   The Rename dialog over a space in the Browse tree and over a child card in a space view.
   Translated from files/TestTrack/Spaces/spaces-general.test.ts (test 4).
 
-  Every rename is claimed twice: the name the server holds, and the name the tree draws. The old
-  spec's duplicate check accepted "a toast appeared OR the original name is still there", which
-  passes when nothing happens at all; here the claim is that the second name never took.
+  Every rename is claimed twice: the name the server holds, and the name the tree draws. A rename
+  onto the name of another root space is refused by the server, tested in datlas
+  spaces/spaces_test.dart ('forbid renaming a root space onto the name of another root space').
 
   A node inside a collapsed parent is not visible, so "should be absent" about a child is only
   worth anything once the parent is expanded — every claim about a child here is preceded by that
@@ -15,7 +15,7 @@ Feature: Renaming a space
     Given user is logged in
     And the browse panel is open
     And Spaces tree node inside browse tree is expanded
-    And no space named "BDD-Ren, BDD-Ren-New, BDD-Other, BDD-Ren-Parent, BDD-Ren-Child, BDD-Ren-ChildNew" is on the server
+    And no space named "BDD-Ren, BDD-Ren-New, BDD-Ren-Parent, BDD-Ren-Child, BDD-Ren-ChildNew" is on the server
 
   Scenario: The Rename dialog opens on the current name
     Given a space named "BDD-Ren" is on the server
@@ -41,18 +41,6 @@ Feature: Renaming a space
     And 0 spaces named "BDD-Ren" should be on the server
     And BDD-Ren-New tree node inside browse tree should be visible
     And BDD-Ren tree node inside browse tree should be absent
-
-  Scenario: Renaming onto an existing name is refused
-    Given a space named "BDD-Other" is on the server
-    And Spaces tree node inside browse tree is expanded
-    When user picks "Rename..." from the context menu of BDD-Ren-New tree node inside browse tree
-    And user enters "BDD-Other" into Name input in Rename project dialog
-    And user clicks on OK button in Rename project dialog
-    Then an error balloon containing "already exists" should have been shown
-    And 1 space named "BDD-Ren-New" should be on the server
-    And 1 space named "BDD-Other" should be on the server
-    When user closes Rename project dialog
-    Then Rename project dialog should be hidden
 
   Scenario: A child space is renamed from its card in the parent
     Given a space named "BDD-Ren-Parent" is on the server

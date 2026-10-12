@@ -532,4 +532,30 @@ category('Control comparisons: dialog', () => {
       view.close();
     }
   });
+
+  // GROK-20795: the women of demog are 104 Black, 2823 Caucasian and 279 Other (157, 5266 and 354 in all)
+  test('A filtered table compares only the rows that pass the filter', async () => {
+    const df = await grok.dapi.files.readCsv(DEMOG_FILE);
+    const sex = df.col('SEX')!;
+    df.filter.init((i) => sex.get(i) === 'F');
+    const view = grok.shell.addTableView(df);
+    runControlComparisons();
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Control comparisons')!;
+    let result: DG.DataFrame | undefined;
+    try {
+      (dlg.input('Category') as DG.InputBase<DG.Column | null>).value = df.col('RACE');
+      (dlg.input('Control') as DG.ChoiceInput<string>).value = 'Asian';
+      dlg.getButton('Run').click();
+      result = grok.shell.tables.find((t) => t.name === 'Control comparisons result');
+      expect(result !== undefined, true, 'the result table is not open');
+      expect(df.filter.trueCount, 3243, 'the run changed the filter');
+      expect(result!.col('Group')!.toList().join(', '), 'Black, Caucasian, Other');
+      expect(result!.col('n')!.toList().join(', '), '104, 2823, 279');
+    } finally {
+      DG.Dialog.getOpenDialogs().find((d) => d.title === 'Control comparisons')?.close();
+      view.close();
+      if (result)
+        grok.shell.closeTable(result);
+    }
+  }, {timeout: 60000});
 });

@@ -11,9 +11,8 @@ Feature: A layout saved from the toolbox gets a name and tags
   makes the column current, which the panel shows before Save. Collapsing and expanding the section
   does not fetch the cards again, so the server's copy is read by closing the table and opening it
   anew. The filter applies 200 ms after typing: each search that must keep the card follows one
-  that hides it. A card keeps the copy of the layout it was built with: Edit tags... is tried on a
-  second layout, saved and renamed after the table was opened again, so the first one's rename
-  is read back from the server before that.
+  that hides it. Edit tags... on a card acts on the layout as last saved: it is tried on a second
+  layout, saved and renamed in the panel after the table was opened again, and keeps that name.
 
   Background:
     Given user is logged in
@@ -45,11 +44,8 @@ Feature: A layout saved from the toolbox gets a name and tags
     And "bdd-layout-{time}" layout card should be absent
     And value of Name details field in context panel should have text "BDD height vs weight-{time}"
     And the context panel should show "BDD height vs weight-{time}"
+    And the title of context panel should be "BDD height vs weight-{time}"
     And no errors should have been logged
-
-  @known-failure
-  Scenario: The context panel title follows the new name (GROK-21137)
-    Then the title of context panel should be "BDD height vs weight-{time}"
 
   Scenario: The pencil next to Tags adds a tag that the card shows
     Given the context panel should show "BDD height vs weight-{time}"
@@ -102,13 +98,9 @@ Feature: A layout saved from the toolbox gets a name and tags
     When user types "anthropometry2" into Tags input in "Edit tags" dialog
     And user clicks on OK button in "Edit tags" dialog
     Then "Edit tags" dialog should be absent
-    # by the tag, not by the name: Edit tags... puts the old name back (GROK-21138, below)
+    And "BDD tags-{time}" layout card should contain text "#anthropometry2"
+    And "bdd-layout-{time}" layout card should be absent
     When user types "#anthropometry2" into layouts filter
     Then there should be 1 visible layout card
-    And "BDD height vs weight-{time}" layout card should be hidden
+    And "BDD tags-{time}" layout card should be visible
     When user clears layouts filter
-
-  @known-failure
-  Scenario: Edit tags... keeps the name typed into the context panel (GROK-21138)
-    Then "BDD tags-{time}" layout card should be visible
-    And "bdd-layout-{time}" layout card should be absent

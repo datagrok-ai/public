@@ -17,8 +17,8 @@ Feature: Oligo Toolkit: the Translator and Structure tools
   The prefilled Axolabs sample `Afcgacsu` (Nucleotides `ACGACU`) carries the detection and copy
   checks that pass on 1.11.5.
 
-  Two scenarios are tagged @known-failure: GROK-20806 and GROK-20959 still fail on a build of
-  master.
+  GROK-20959 is a known failure, pinned to the balloon that should name the strand. GROK-20806 (a second
+  conversion of the same column) is fixed: both columns stay, the second named "(2)"; Convert writes HELM.
 
   bulk-translation-axolabs.csv has a sixth, empty row, so the five sequences
   are claimed row by row rather than by "no missing values".
@@ -141,7 +141,6 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
-  @known-failure
   Scenario: Converting the same column twice keeps both columns under different names (GROK-20806)
     Given Files tree node inside browse tree is expanded
     And Files---App-Data tree node inside browse tree is expanded
@@ -151,11 +150,11 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     Then the "bulk-translation-axolabs" view should be current
     When user clicks on the tab of the "Oligo Translator" view
     When user clicks on Convert button
-    Then the table should have a column "AxolabsSequences (Nucleotides)"
+    Then the table should have a column "AxolabsSequences (HELM)"
     When user clicks on the tab of the "Oligo Translator" view
     When user clicks on Convert button
     And user clicks on the tab of the "bulk-translation-axolabs" view
-    Then the table should have the columns "AxolabsSequences, AxolabsSequences (Nucleotides), AxolabsSequences (Nucleotides) (2)"
+    Then the table should have the columns "AxolabsSequences, AxolabsSequences (HELM), AxolabsSequences (HELM) (2)"
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -174,7 +173,7 @@ Feature: Oligo Toolkit: the Translator and Structure tools
     And the downloaded file should contain "M  END"
     And no errors should have been logged
 
-  @known-failure
+  @known-failure:184
   Scenario: Save SDF with an antisense strand that cannot be converted is refused by name (GROK-20959)
     Given user watches downloads
     When user clicks on STRUCTURE tab

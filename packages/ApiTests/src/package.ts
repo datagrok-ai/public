@@ -87,16 +87,6 @@ export async function testIntAsync(a: number): Promise<number> {
   return new Promise((r) => r(a + 10));
 }
 
-//name: CustomStringInput
-//input: object params
-//output: object input
-export function CustomStringInput(params: any) {
-  const defaultInput = ui.input.string('Custom input', {value: ''});
-  defaultInput.root.style.backgroundColor = 'aqua';
-  defaultInput.input.style.backgroundColor = 'aqua';
-  return defaultInput;
-}
-
 //name: testOutputAnnotationJoinDf
 //input: dataframe data
 //input: column col

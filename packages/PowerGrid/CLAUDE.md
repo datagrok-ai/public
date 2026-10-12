@@ -105,6 +105,10 @@ The `addPinnedColumn()` function is exposed as a package function.
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
 - `scatterplot-gpu-tests.ts` — both GPU renderers against the CPU: dot pixels, row colors, row source, hit tests,
   disposal; and the rules that leave plots to the CPU
+- `summary-columns-tests.ts` — the eight summary columns and their settings through a layout and a project; the
+  Tags column marking only flagged rows, and the Tags and Bar renderers filling only their own shapes (GROK-20888)
+- `forms-tests.ts` — the Forms viewer's fields, Sort By and pinned row through a layout and a project
+- `utils.ts` — the layout and project round trips the two above share (they delete what they save)
 
 ## Key Patterns
 
