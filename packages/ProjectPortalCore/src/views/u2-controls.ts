@@ -43,6 +43,8 @@ export interface DialogButton {
   run: () => unknown | Promise<unknown>;
   /** True: the dialog stays open after [run] succeeds. */
   keepOpen?: boolean;
+  /** After a successful [run] has closed the dialog: what follows, such as a balloon or a redraw. */
+  then?: () => unknown | Promise<unknown>;
   enabled?: ReadonlySignal<boolean>;
 }
 
@@ -63,8 +65,8 @@ export interface DialogOptions {
 }
 
 export type PortalDialog = Dialog & {
-  /** Runs the named button as a click would, busy guard included. */
-  press: (name: string) => Promise<void>;
+  /** Runs the named button as a click would, busy guard included; answers whether it ran and succeeded. */
+  press: (name: string) => Promise<boolean>;
 };
 
 /** A u2 dialog, shown non-modal as ui.dialog was. [build] runs in the dialog's scope, so every
@@ -75,11 +77,11 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
   const dlg = Dialog.create(opts.title, {name: opts.name});
   const busy = signal(false);
   const buttons = new Map<string, HTMLButtonElement>();
-  const press = async (name: string): Promise<void> => {
+  const press = async (name: string): Promise<boolean> => {
     const b = parts.buttons?.find((x) => x.name === name);
     const el = buttons.get(name);
     if (!b || !el || busy.value || el.disabled)
-      return;
+      return false;
     busy.value = true;
     el.classList.add('pp-busy');
     try {
@@ -92,10 +94,16 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
         opts.errors.show(e);
       else
         grok.shell.error(messageOf(e));
+      return false;
     } finally {
       busy.value = false;
       el.classList.remove('pp-busy');
+      // a button disabled while it ran drops the focus to the page, where Escape no longer reaches the dialog
+      if (dlg.isOpen.value && !dlg.root.contains(document.activeElement))
+        el.focus();
     }
+    await Promise.resolve(b.then?.()).catch((e) => grok.shell.error(messageOf(e)));
+    return true;
   };
   const parts = dlg.runInScope(build);
   for (const c of Array.isArray(parts.content) ? parts.content : [parts.content])
