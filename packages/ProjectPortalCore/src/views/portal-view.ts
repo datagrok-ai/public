@@ -291,9 +291,8 @@ export class PortalView {
     this.portfolio = null;
     this.selected = null;
     this.redraw = null;
-    this.clearDetailScope();
-    this.boardScope?.dispose();
-    this.boardScope = null;
+    this.clearDetailScope(true);
+    this.clearBoard();
     this.keeper = false;
     this.portfolioList.style.display = '';
     this.board.style.display = 'none';
@@ -351,10 +350,13 @@ export class PortalView {
     const p = this.portfolios.find((x) => x.code === code);
     if (!p)
       return;
+    // another portfolio's board would stay on show, dead, while this one is read
+    if (this.portfolio && this.portfolio !== p)
+      this.clearBoard();
     this.portfolio = p;
     this.selected = null;
     this.redraw = null;
-    this.clearDetailScope();
+    this.clearDetailScope(true);
     const persona = await personaIn(p).catch(() => ({persona: 'lead' as Persona, chosen: false}));
     // another portfolio was opened meanwhile
     if (this.portfolio !== p)
@@ -628,9 +630,20 @@ export class PortalView {
     this.redraw();
   }
 
-  private clearDetailScope(): void {
+  /** Disposes the program page's controls; with [empty], also takes the page down, so no link or input
+   * whose listeners went with the scope stays on show. A redraw replaces the page itself. */
+  private clearDetailScope(empty = false): void {
     this.detailScope?.dispose();
     this.detailScope = null;
+    if (empty)
+      this.detail.replaceChildren();
+  }
+
+  /** The same for the board: its cards, links and inputs go with its scope. */
+  private clearBoard(): void {
+    this.boardScope?.dispose();
+    this.boardScope = null;
+    this.board.replaceChildren();
   }
 
   /** Mode and persona, on the board header. */
