@@ -258,6 +258,103 @@ async function expectOneChange(s: OpenSketcher, change: () => void): Promise<voi
   expect(s.changes() - before, 1, 'onChanged events');
 }
 
+/** The product owner's biaryl (2026-10-07; crux-sketch's tests/fixtures/molecules/atropisomer-report.mol): its axis
+ * C8–C9 (bond 7, atoms 7 and 8, 0-based) P, by the hash they drew on C9→C15 (bond 16, from atom 8). */
+const ATROPISOMER_REPORT = `
+     RDKit          2D
+
+ 16 17  0  0  0  0  0  0  0  0999 V2000
+    0.6495    2.6250    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6495    1.8750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.9486    2.6250    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -3.2476    1.8750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -3.2476    0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.9486   -0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.9486   -1.8750    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6495    0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.6495   -0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9486    0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9486    1.8750    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0
+    3.2476   -0.3750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    3.2476   -1.8750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.9486   -2.6250    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.6495   -1.8750    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.6495   -2.6250    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0
+  2  3  1  0
+  3  4  2  0
+  4  5  1  0
+  5  6  2  0
+  6  7  1  0
+  6  8  1  0
+  8  9  1  0
+  9 10  2  0
+ 10 11  1  0
+ 10 12  1  0
+ 12 13  2  0
+ 13 14  1  0
+ 14 15  2  0
+ 15 16  1  0
+  8  2  2  0
+  9 15  1  6
+M  END
+`;
+
+/** The bonds of a V2000 molblock in its order: their atoms, 0-based, and their stereo field. */
+function v2000Bonds(molblock: string): {atoms: [number, number], stereo: number}[] {
+  const lines = molblock.split(/\r?\n/);
+  if (!(lines[3] ?? '').includes('V2000'))
+    throw new Error(`not a V2000 molblock: ${molblock}`);
+  const [atoms, bonds] = [parseInt(lines[3].slice(0, 3)), parseInt(lines[3].slice(3, 6))];
+  return lines.slice(4 + atoms, 4 + atoms + bonds).map((l) => ({
+    atoms: [parseInt(l.slice(0, 3)) - 1, parseInt(l.slice(3, 6)) - 1] as [number, number],
+    stereo: parseInt(l.slice(9, 12)),
+  }));
+}
+
+/** The bonds a V2000 molblock draws as wedges or hashes, as `bond <i> wedge|hash from <atom>`: 0-based, from the narrow
+ * end (the bond's first atom). */
+function wedges(molblock: string): string {
+  return v2000Bonds(molblock).flatMap((b, i) => b.stereo === 1 || b.stereo === 6 ?
+    [`bond ${i} ${b.stereo === 1 ? 'wedge' : 'hash'} from ${b.atoms[0]}`] : []).join(', ');
+}
+
+/** The CIP labels RDKit.js reads in a V2000 molblock (`get_stereo_tags`, its H atoms kept), as `atom <i> (R)` and
+ * `bond <i> (P)`, 0-based: an atropisomer axis's P or M is its bond's; "(?)" is no label. */
+function stereoLabels(molblock: string): string {
+  const bonds = v2000Bonds(molblock);
+  const mol = rdkit.get_mol(molblock, JSON.stringify({removeHs: false}));
+  if (!mol)
+    throw new Error(`RDKit cannot read: ${molblock}`);
+  try {
+    const tags = JSON.parse(mol.get_stereo_tags()) as
+      {CIP_atoms?: [number, string][], CIP_bonds?: [number, number, string][]};
+    const bondOf = (x: number, y: number) => {
+      const i = bonds.findIndex(({atoms: [p, q]}) => (p === x && q === y) || (p === y && q === x));
+      return i >= 0 ? `bond ${i}` : `the bond ${x}-${y}`;
+    };
+    return [...(tags.CIP_atoms ?? []).filter(([, l]) => l !== '(?)').map(([i, l]) => `atom ${i} ${l}`),
+      ...(tags.CIP_bonds ?? []).filter(([, , l]) => l !== '(?)').map(([x, y, l]) => `${bondOf(x, y)} ${l}`)].join(', ');
+  } finally {
+    mol.delete();
+  }
+}
+
+/** A user's right-click where Crux draws bond `b` (its `positions`), as it reaches Crux's canvas, and the item `id` of
+ * the context menu it opens chosen (its test id `menu.context.<id>`). */
+async function chooseOnBond(s: OpenSketcher, b: number, id: string): Promise<void> {
+  const el = cruxElement(s)!;
+  const p = el.positions.bonds[b];
+  if (!p)
+    throw new Error(`Crux draws no bond ${b}`);
+  const r = el.getBoundingClientRect();
+  el.shadowRoot!.querySelector('[data-testid="canvas"]')!.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true,
+    cancelable: true, composed: true, clientX: r.left + p.x, clientY: r.top + p.y, button: 2}));
+  const item = () => el.shadowRoot!.querySelector<HTMLElement>(`[data-testid="menu.context.${id}"]`);
+  await awaitCheck(() => item() !== null, `no ${id} in the context menu of bond ${b}`, 3000);
+  item()!.click();
+}
+
 category('Crux sketcher', () => {
   let previousSketcherType: string;
 
@@ -1255,6 +1352,33 @@ category('Crux sketcher', () => {
     } finally {
       dialog.close();
       filter.detach();
+    }
+  });
+
+  // The product owner's ruling of 2026-10-11 (crux-sketch's stereo/kept-wedge.feature; crux-core
+  // sketch-stereo-keep-wedge): their atropisomer molfile, opened here and set M and then P from the axis bond's context
+  // menu, came back P with a wedge on bond 6 from atom 7 where they had drawn a hash on bond 16 from atom 8. The axis's
+  // own mark now flips in place: a wedge for M and a hash for P, on the bond and from the atom it was drawn on.
+  test('an atropisomer\'s drawn hash stays on its bond through the axis menu\'s M, P and M', async () => {
+    const s = await openCrux();
+    try {
+      await expectOneChange(s, () => s.host.setMolFile(ATROPISOMER_REPORT));
+      const el = cruxElement(s)!;
+      expect(wedges(el.molfile), 'bond 16 hash from 8', 'the marks of Crux\'s molfile, the file opened');
+      expect(stereoLabels(el.molfile), 'bond 7 (P)', 'RDKit.js\'s labels of Crux\'s molfile, the file opened');
+      const choices: [string, string][] = [['M', 'wedge'], ['P', 'hash'], ['M', 'wedge']];
+      for (const [choice, mark] of choices) {
+        const before = s.changes();
+        await chooseOnBond(s, 7, `atrop.${choice.toLowerCase()}`);
+        await delay(SETTLE_MS);
+        expect(s.changes() - before, 1, `onChanged events of ${choice}`);
+        expect(wedges(el.molfile), `bond 16 ${mark} from 8`, `the marks of Crux's molfile after ${choice}`);
+        expect(stereoLabels(el.molfile), `bond 7 (${choice})`, `RDKit.js's labels of Crux's molfile after ${choice}`);
+      }
+      // what the host reads back, as its OK does: Crux's own molfile, the last M's wedge on bond 16
+      expect(wedges(s.host.getMolFile()), 'bond 16 wedge from 8', 'the marks of the host\'s molblock');
+    } finally {
+      s.dialog.close();
     }
   });
 });

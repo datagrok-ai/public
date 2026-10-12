@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect, delay} from '@datagrok-libraries/test/src/test';
+import {category, test, awaitCheck, delay} from '@datagrok-libraries/test/src/test';
 import {awaitWebComponents, closeView} from './utils';
 
 const HOST_WIDTH = 1000;
@@ -16,6 +16,9 @@ function hiddenHost() {
 const widthRatio = (el: Element | null) =>
   el ? el.getBoundingClientRect().width / HOST_WIDTH : NaN;
 
+const awaitNarrowForm = (form: () => Element | null) => awaitCheck(() => Math.abs(widthRatio(form()) - 0.2) < 0.03,
+  'form should take ~20% of the width', 5000);
+
 category('Dock: layout of hidden mounts', () => {
   test('Docking ratio is kept when the dock is shown later', async () => {
     await awaitWebComponents();
@@ -23,18 +26,19 @@ category('Dock: layout of hidden mounts', () => {
     try {
       const dock = document.createElement('dock-spawn-ts');
       dock.style.cssText = 'display:block;width:100%;height:100%';
+      const initialized = new Promise((resolve) =>
+        dock.addEventListener('manager-init-finished', resolve, {once: true}));
       host.append(dock);
-      await delay(100);
+      await initialized;
       const form = document.createElement('div');
       form.setAttribute('dock-spawn-title', 'Inputs');
       form.setAttribute('dock-spawn-dock-type', 'left');
       form.setAttribute('dock-spawn-dock-ratio', '0.2');
       dock.append(form);
-      await delay(300);
+      // one task, so the dock sees the form while still hidden
+      await delay(0);
       host.style.display = 'block';
-      await delay(500);
-      const ratio = widthRatio(form);
-      expect(Math.abs(ratio - 0.2) < 0.03, true, `form should take ~20% of the width, got ${ratio.toFixed(2)}`);
+      await awaitNarrowForm(() => form);
     } finally {
       host.remove();
     }
@@ -48,11 +52,10 @@ category('Dock: layout of hidden mounts', () => {
     try {
       view.root.style.height = '100%';
       host.append(view.root);
-      await delay(2000);
+      const inputs = () => view.root.querySelector('[dock-spawn-title="Inputs"]');
+      await awaitCheck(() => inputs()?.querySelector('dg-input-form') != null, 'RFV form not rendered', 15000);
       host.style.display = 'block';
-      await delay(1000);
-      const ratio = widthRatio(view.root.querySelector('[dock-spawn-title="Inputs"]'));
-      expect(Math.abs(ratio - 0.2) < 0.03, true, `form should take ~20% of the width, got ${ratio.toFixed(2)}`);
+      await awaitNarrowForm(inputs);
     } finally {
       host.remove();
       closeView(view);

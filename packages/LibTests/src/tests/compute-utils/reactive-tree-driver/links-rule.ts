@@ -3,23 +3,11 @@ import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tre
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FuncCallInstancesBridge} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {PipelineLinkConfigurationInput} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 import * as DG from 'datagrok-api/dg';
 import {evaluate} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
-
-const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
-  id: 'pipeline1',
-  type: 'static',
-  steps: [
-    {id: 'step1', nqName: 'LibTests:TestAdd2'},
-    {id: 'step2', nqName: 'LibTests:TestMul2'},
-  ],
-  links,
-});
+import {createTestScheduler, expectThrowsAsync, twoSteps} from '../../../test-utils';
 
 category('ComputeUtils: Driver links rule', async () => {
   let testScheduler: TestScheduler;
@@ -564,6 +552,30 @@ category('ComputeUtils: Driver links rule', async () => {
     ]);
   });
 
+  test('Missing message values add no validation items', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r',
+      type: 'rule',
+      from: ['a1:step1/a', 'b1:step1/b'],
+      to: 't:step1/a',
+      debounce: 0,
+      effects: [
+        {effect: 'error', targets: 't', message: {var: 'b1'}},
+        {effect: 'warning', targets: 't', message: ['kept', {var: 'b1'}]},
+      ],
+    }]));
+    const snapshots: any[] = [];
+    testScheduler.run((helpers) => {
+      const {cold} = helpers;
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
+      cold('-a').subscribe(() => node.getStateStore().setState('a', 1));
+      cold('--a').subscribe(() => snapshots.push(node.validationInfo$.value));
+    });
+    expectDeepEqual(snapshots, [{a: {errors: [], warnings: [{description: 'kept'}], notifications: []}}]);
+  });
+
   test('Set writes a default value without consistency tracking', async () => {
     const pconf = await getProcessedConfig(twoSteps([{
       id: 'r',
@@ -697,7 +709,7 @@ category('ComputeUtils: Driver links rule', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;
@@ -787,7 +799,7 @@ category('ComputeUtils: Driver links rule', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;

@@ -7,6 +7,7 @@
 * Fixed every SMARTS and V3000 export of the page's Ketchers stopping for good once Indigo left one conversion unanswered (it does when another meets it): a conversion not answered in 15 seconds is given up, and the ones after it go on
 * Fixed Indigo leaving requests unanswered: every Ketcher of the page shares one struct service, which sends Indigo one request at a time (Indigo's one worker answered only the Ketcher mounted last, and of two requests in flight it dropped one)
 * Fixed a page that had opened Ketcher many times filling its memory until it stopped answering: a Ketcher closed or paused ends its subscription to Ketcher's settings, which kept every Ketcher ever opened alive
+* Fixed Indigo stopping for good after some 2,000 conversions in a page: a conversion is no longer sent with the hidden macromolecules editor's whole monomer library, which Indigo's worker kept in its memory, about 1 MB each time, until it ran out
 
 * Fixed a structure drawn from a template coming out twice: an export taken while the pointer was still over the canvas included the template's floating preview
 * Fixed a structure drawn right before OK being lost: the molblock is written and announced in the change itself, and the Indigo exports run one at a time (overlapping conversions got each other's replies or none)

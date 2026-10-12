@@ -53,6 +53,25 @@ function inTurnAfter<T>(before: Promise<unknown>, request: () => Promise<T>,
   }));
 }
 
+/** The conversions that read the monomer library: a macromolecule format in or out. */
+const MONOMER_FORMATS = /helm|sequence|fasta|idt|axo|monomer/i;
+
+/** ketcher-standalone sends every conversion the macromolecules editor's whole monomer library as an option (1.3 MB
+ * of JSON; the editor is mounted, though hidden), and its Indigo worker copies each request's options into its
+ * WebAssembly heap and never frees them: the heap grew about 1 MB a request to its 2 GB limit, after which Indigo answered
+ * nothing (a page that had converted some 2,100 times; crux-sketch spike query-roundtrip, K5). The page's Ketchers read no
+ * macromolecule format, so a conversion of none is sent without it. `Worker.prototype.postMessage` is looked up at each
+ * call, so a test can see what reaches the worker. */
+function withoutMonomerLibrary(worker: Worker): void {
+  worker.postMessage = (message: any, ...rest: any[]): void => {
+    const data = message?.data;
+    const options = data?.options;
+    if (options?.monomerLibrary != null && !MONOMER_FORMATS.test(`${data.format ?? ''} ${options['input-format'] ?? ''}`))
+      message = {...message, data: {...data, options: {...options, monomerLibrary: undefined}}};
+    return (Worker.prototype.postMessage as any).call(worker, message, ...rest);
+  };
+}
+
 /** The struct service's methods that send the worker nothing. */
 const LOCAL_METHODS = new Set(['addKetcherId', 'getStandardServerOptions', 'callIndigoLoadedCallback',
   'callIndigoNoRenderLoadedCallback']);
@@ -70,6 +89,7 @@ const pageStructServiceProvider = {
   createStructService(options: any): any {
     if (pageStructService === null) {
       const service: any = new StandaloneStructServiceProvider().createStructService(options);
+      withoutMonomerLibrary(service.worker);
       const loaded: Promise<unknown> = service.info().catch(() => {});
       pageStructService = new Proxy(service, {
         get(target, key) {

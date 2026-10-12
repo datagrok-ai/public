@@ -9,13 +9,13 @@ import {interval, fromEvent} from 'rxjs';
 import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY,
   getLegendDiv,
-  waitForElement} from './utils';
+  waitForElement, toggleSwitch} from './utils';
 
 // @ts-ignore
 import '../../../../css/tutorial.css';
 // @ts-ignore
 import '../../../../css/ui-describer.css';
-import { DescriptionPage, getRect, runDescriber } from './ui-describer';
+import {DescriptionPage, getRect, runDescriber} from './ui-describer';
 
 enum DS_CONSTS {
   EDIT_RIBBON_IDX = 2,
@@ -35,11 +35,11 @@ enum LINKS {
 enum SIZE_LIMITS {
   WINDOW_MIN_HEIGHT = 580,
   WINDOW_MIN_WIDTH = 930,
-  TUTORIAL_PANEL_MIN_WIDTH = 190,  
+  TUTORIAL_PANEL_MIN_WIDTH = 190,
 };
 
 /** Diff Studio editor info */
-const editorInfo = new Map([  
+const editorInfo = new Map([
   ['eqs', `# Equations
    
   Place differential equations in this block.`],
@@ -95,11 +95,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
     closeWindows();
 
     // 1. Open Apps
-    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
-    if (browseHeader === null)      
+    const browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    const browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    if (browseHeader === null)
       browseIcon.click();
-    
+
     const browsePanel = grok.shell.browsePanel;
 
     const appsGroupRoot = await getElement(browsePanel.root, 'div[name="tree-Apps"]');
@@ -117,14 +117,15 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
-    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+    appsGroupRoot.dispatchEvent(new Event('dblclick', {bubbles: true, cancelable: true}));
 
     // 2. Run Diff Studio
-    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    const galleryGrid = await getElement(document, 'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
@@ -143,6 +144,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(diffStudIcon, 'dblclick'),
       diffStudIcon,
       'Double-click the Diff Studio icon',
+      () => diffStudIcon.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     const diffStudioView = await getViewWithElement('div.ui-div.diff-studio-hub-grid');
@@ -176,6 +178,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(lotkaVolterraElement, 'dblclick'),
       lotkaVolterraElement,
       'Double-click the Lotka-Volterra model icon',
+      () => lotkaVolterraElement.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     await new Promise((resolve) => setTimeout(resolve, DELAY));
@@ -188,7 +191,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
     let inputRoots = uiFormRoot.querySelectorAll('div.ui-input.ui-input-root.ui-input-float');
     const gridRoot = dsView.grid.root;
     const lineChartRoot = dsViewRoot.querySelector('div.d4-line-chart') as HTMLElement;
-    
+
     const isTutorialPanelWide = (dsViewRoot.getBoundingClientRect().x >= SIZE_LIMITS.TUTORIAL_PANEL_MIN_WIDTH);
 
     // Set column format for better layout
@@ -231,8 +234,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
       },
       { // Single input
         root: isTutorialPanelWide ? (inputRoots[1] as HTMLElement) : (inputRoots[1].querySelector('label') ?? inputRoots[1] as HTMLElement),
-        description: this.getInputDescription(), 
-        position: isTutorialPanelWide ? 'left' : 'top', 
+        description: this.getInputDescription(),
+        position: isTutorialPanelWide ? 'left' : 'top',
         elements: {
           major: getRect(inputRoots[1] as HTMLElement, {paddingBottom: 3}),
           extra: lineChartRoot,
@@ -242,6 +245,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Explore the interface',
       fromEvent(doneBtn, 'click'),
+      null,
+      '',
+      () => doneBtn.click(),
     );
 
     // 5. Go to ODEs
@@ -253,13 +259,14 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => dsViewRoot.querySelector('div.cm-line') != null)),
       editToggle,
       'Turn on the <b>Edit</b> toggle',
+      () => toggleSwitch(editToggle),
     );
 
     // 6. Explore equations
     const editorRoot = dsViewRoot.querySelector('div.panel-base.splitter-container-horizontal') as HTMLElement;
-    let ignore = await getElement(editorRoot, 'div.cm-line');
-    const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;    
-    simulateMouseEventsWithMove(splitBar, 515, 0);    
+    await getElement(editorRoot, 'div.cm-line');
+    const splitBar = dsViewRoot.querySelector('div.splitbar-vertical') as HTMLElement;
+    simulateMouseEventsWithMove(splitBar, 515, 0);
     const lineRoots = editorRoot.querySelectorAll('div[class="cm-line"]') as unknown as HTMLElement[];
 
     await new Promise((resolve) => setTimeout(resolve, DELAY));
@@ -269,6 +276,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
     await this.action(
       'Explore editor',
       fromEvent(doneBtn, 'click'),
+      null,
+      '',
+      () => doneBtn.click(),
     );
 
     this.describe(`Diff Studio enables creating models declaratively using a simple ${ui.link('syntax', LINKS.COMPS_SYNTAX).outerHTML}.`);
@@ -279,8 +289,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     const tutorialPanelRoot = document.querySelector('div.tutorials-root-description.ui-div');
 
-    let equation = 'dy/dt = -gamma * y + delta * x * y - eta * y * y';
-    let rawEquation = equation.replaceAll(' ', '');
+    const equation = 'dy/dt = -gamma * y + delta * x * y - eta * y * y';
+    const rawEquation = equation.replaceAll(' ', '');
     let codeDiv = ui.divV([
       ui.label('Update the predator equation (🦊) to obtain'),
       ui.divH([
@@ -296,7 +306,11 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
     await this.action(
       'Complete the predator equation',
-      interval(100).pipe(filter(() => lineRoots[3].textContent?.replaceAll(' ', '') == rawEquation)),
+      interval(100).pipe(filter(() => Array.from(editorRoot.querySelectorAll('div.cm-line'))
+        .some((l) => l.textContent?.replaceAll(' ', '') == rawEquation))),
+      null,
+      '',
+      () => this.updateEditorLine(editorRoot, 'dy/dt', (line) => `${line} - eta * y * y`),
     );
 
     codeDiv.hidden = true;
@@ -323,6 +337,9 @@ export class DifferentialEquationsTutorial extends Tutorial {
         const lines = editorRoot.querySelectorAll('div.cm-line');
         return Array.from(lines).some((l) => l.textContent?.replaceAll(' ', '') === rawEtaParam);
       })),
+      null,
+      '',
+      () => this.updateEditorLine(editorRoot, 'delta =', (line) => `${line}\n  ${etaParam}`),
     );
 
     codeDiv.hidden = true;
@@ -336,6 +353,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       fromEvent(refreshIcn, 'click'),
       refreshIcn,
       'Click the Refresh icon',
+      () => refreshIcn.querySelector('i')!.click(),
     );
 
     // 10. Check meaning
@@ -349,10 +367,13 @@ export class DifferentialEquationsTutorial extends Tutorial {
         },
       }],
       btnsText: {done: 'clear', next: '', prev: ''},
-    });  
+    });
     await this.action(
       'Check the updates',
       fromEvent(clearBtn, 'click'),
+      null,
+      '',
+      () => clearBtn.click(),
     );
 
     // 11. Close editor
@@ -364,6 +385,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       //fromEvent(editToggle.querySelector('div.ui-input-editor')!, 'click'),
       editToggle,
       'Turn off the <b>Edit</b> toggle',
+      () => toggleSwitch(editToggle),
     );
 
     simulateMouseEventsWithMove(splitBar, -450, 0);
@@ -385,6 +407,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => preyEditor.value == '2')),
       preyEditor,
       'Reduce the initial value of the prey population.',
+      () => Tutorial.setInputValue(preyEditor, '2'),
     );
 
     const deltaEditor = editorOf('delta');
@@ -393,37 +416,52 @@ export class DifferentialEquationsTutorial extends Tutorial {
       interval(100).pipe(filter(() => deltaEditor.value == '0.1')),
       deltaEditor,
       'Reduce the effect of preys on the predator\'s growth rate.',
+      () => Tutorial.setInputValue(deltaEditor, '0.1'),
     );
 
     // 13. Play with inputs
-    let finishEditor = editorOf('Finish');
+    const finishEditor = editorOf('Finish');
     await this.action(
       'Set "Finish" to 150',
       interval(100).pipe(filter(() => finishEditor.value == '150')),
       finishEditor,
       'Get a simulation over a longer time period.',
+      () => Tutorial.setInputValue(finishEditor, '150'),
     );
 
     this.describe(`Find useful Diff Studio ${ui.link('models', LINKS.MODELS).outerHTML}.`);
   } // _run
 
+  private updateEditorLine(editorRoot: HTMLElement, prefix: string, update: (line: string) => string): void {
+    const view = Tutorial.codeMirrorView(editorRoot);
+    const doc = view.state.doc;
+    for (let i = 1; i <= doc.lines; ++i) {
+      const line = doc.line(i);
+      if (line.text.trim().startsWith(prefix)) {
+        view.dispatch({changes: {from: line.from, to: line.to, insert: update(line.text)}});
+        break;
+      }
+    }
+    view.dom.dispatchEvent(new KeyboardEvent('keydown', {key: 'Shift', bubbles: true}));
+  }
+
   private getLegend(): HTMLElement {
     return getLegendDiv('# Graphs\n\nThe model takes into account:', [
       '🦊➠🐰 the effect of the presence of predators on the prey death rate.',
-      '🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate.'      
+      '🐰➠🦊 the effect of the presence of prey on the predator\'s growth rate.',
     ]);
   }
 
   private getUpdatesDescription(): HTMLElement {
     return getLegendDiv('# Updates\n\nThe model now also accounts for:', [
-      '🦊↔🦊 intraspecific competition among predators.'
+      '🦊↔🦊 intraspecific competition among predators.',
     ]);
   }
 
   private getInputDescription(): HTMLElement {
     return ui.divV([
       ui.markdown('# Interact 🖱️\n\n Set "Finish" to 150 and explore the results.'),
-      getTextWithSlider('Move the slider', 'and check the updates.')
+      getTextWithSlider('Move the slider', 'and check the updates.'),
     ]);
   }
 
@@ -436,7 +474,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
         description: editorInfo.get('eqs')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[1], {width: 275, height: 57}) : viewRoot
+          major: isWide ? getRect(lineRoots[1], {width: 275, height: 57}) : viewRoot,
         },
       },
       { // Argument block
@@ -455,7 +493,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
         description: editorInfo.get('annot')!,
         position: 'left',
         elements: {
-          major: isWide ? getRect(lineRoots[5], {width: 455, height: 76}) : viewRoot
+          major: isWide ? getRect(lineRoots[5], {width: 455, height: 76}) : viewRoot,
         },
       });
     }
@@ -476,7 +514,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
         elements: {
           major: isWide ? getRect(lineRoots[14], {width: 705, height: 95}) : viewRoot,
         },
-      }
+      },
     ]);
 
     if (window.innerHeight >= SIZE_LIMITS.WINDOW_MIN_HEIGHT) {

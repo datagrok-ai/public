@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, test, before} from '@datagrok-libraries/test/src/test';
+import {category, test, before, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig, PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
@@ -12,7 +12,6 @@ import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
 // onDataChanged events, which the RxJS test scheduler cannot drive.
 
 const makeDf = (v: number) => DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', new Float32Array([v]))]);
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function makeConfig(restriction?: string): PipelineConfiguration {
   return {
@@ -102,25 +101,32 @@ category('ComputeUtils: Driver dataframe copies', async () => {
   const snapshot = (tree: StateTree) => step(tree).instancesWrapper.inputRestrictions$.value.df?.assignedValue as DG.DataFrame | undefined;
   const inconsistent = (tree: StateTree) => step(tree).consistencyInfo$.value.df?.inconsistent;
 
-  async function settle(tree: StateTree) {
-    await sleep(200);
+  // waits until the change is visible, then for the links it triggered
+  async function settle(tree: StateTree, changed: () => boolean, what: string) {
+    await awaitCheck(changed, `${what} not applied`, 3000);
     await tree.linksState.waitForLinks().toPromise();
   }
 
+  const copyState = (tree: StateTree) => tree.nodeTree.root.getItem().getStateStore().getState('copy');
+
   async function write(tree: StateTree, src: DG.DataFrame) {
+    const [prevInput, prevSnapshot, prevCopy] = [input(tree), snapshot(tree), copyState(tree)];
     tree.nodeTree.root.getItem().getStateStore().setState('src', src);
-    await settle(tree);
+    await settle(tree, () => copyState(tree) !== prevCopy &&
+      (input(tree) !== prevInput || snapshot(tree) !== prevSnapshot), 'Write');
   }
 
   async function runStep(tree: StateTree) {
     await tree.runStep(step(tree).uuid, {res: 1}).toPromise();
-    await settle(tree);
+    await settle(tree, () => step(tree).funcCallState$.value?.isOutputOutdated === false, 'Run');
   }
 
   async function editInPlace(tree: StateTree, df: DG.DataFrame) {
     df.col('x')!.set(0, 99);
-    await settle(tree);
+    await settle(tree, () => inconsistent(tree) === true, 'In-place edit');
   }
+
+  const ownInput = (tree: StateTree, src: DG.DataFrame) => () => input(tree) !== undefined && input(tree) !== src;
 
   test('Not run step gets its own input and a separate snapshot', async () => {
     const tree = await build(pconf);
@@ -152,7 +158,7 @@ category('ComputeUtils: Driver dataframe copies', async () => {
     await write(tree, src);
     const clones = await countClones(async () => {
       step(tree).instancesWrapper.setToConsistent('df');
-      await settle(tree);
+      await settle(tree, ownInput(tree, src), 'Reset');
     });
     expectDeepEqual(clones, 1, {prefix: 'Clones'});
     expectDeepEqual(input(tree) !== src && input(tree) !== snapshot(tree), true, {prefix: 'Input is a separate copy'});
@@ -168,7 +174,7 @@ category('ComputeUtils: Driver dataframe copies', async () => {
     await write(tree, src);
     const clones = await countClones(async () => {
       await step(tree).instancesWrapper.overrideToConsistent().toPromise();
-      await settle(tree);
+      await settle(tree, ownInput(tree, src), 'Update');
     });
     expectDeepEqual(clones, 1, {prefix: 'Clones'});
     expectDeepEqual(input(tree) !== src && input(tree) !== snapshot(tree), true, {prefix: 'Input is a separate copy'});

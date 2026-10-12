@@ -4,15 +4,15 @@
 /* Validation icon disabled input override */
 
 .ui-input-disabled.ui-input-root i.rfv2-validation-icon {
-    background-color: white;
+    background-color: var(--white);
 }
 
 .ui-input-disabled.ui-input-root i.rfv2-validation-icon div {
-    color: #4A4A49!important;
+    color: var(--text-color)!important;
 }
 
 .ui-input-disabled.ui-input-root i.rfv2-validation-icon a {
-    color: #2083d5!important;
+    color: var(--blue-1)!important;
     cursor: pointer!important;
 }
 

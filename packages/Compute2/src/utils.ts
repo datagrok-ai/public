@@ -21,7 +21,7 @@ import {DEFAULT_FLOAT_FORMAT} from '@datagrok-libraries/webcomponents-vue';
 import {ConsistencyInfo, FuncCallStateInfo, MetaCallInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import type Dayjs from 'dayjs';
 import {ExportCbInput, ExportSummaryItem, ExportSummaryRollup, ViewersHook} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
-import type {Status} from './components/TreeWizard/types';
+import type {AugmentedStat, Status} from './components/TreeWizard/types';
 import {BehaviorSubject} from 'rxjs';
 
 export type NodeWithPath = {
@@ -164,12 +164,18 @@ export function resolveSingleStep(
 
 export type PipelineWithAdd = PipelineStateDynamic<StepFunCallState, PipelineInstanceRuntimeData>;
 
-export const hasRunnableSteps = (data: PipelineState) =>
-  isDynamicPipelineState(data) && !data.isReadonly && data.steps.length > 0;
-
 export const hasAddControls = (data: PipelineState): data is PipelineWithAdd =>
   isDynamicPipelineState(data) && !data.isReadonly &&
     data.stepTypes.filter((item) => !item.disableUIAdding).length > 0;
+
+const isItemActionAllowed = (
+  stat: AugmentedStat, flag: 'disableUIDragging' | 'disableUIRemoving' | 'disableUIAdding',
+) => !!stat.parent && !stat.parent.data.isReadonly && isDynamicPipelineState(stat.parent.data) &&
+  !stat.parent.data.stepTypes.some((item) => item.configId === stat.data.configId && item[flag]);
+
+export const isEachDraggable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIDragging');
+export const isDeletable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIRemoving');
+export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, 'disableUIAdding');
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
@@ -200,14 +206,25 @@ export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: s
   return globalActions;
 }
 
-export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted'));
-  return !!firstInconsistency;
-};
+// per-input conditions behind a step status, shared by statesToStatus and statusInputs
+const inputHasWarning = (val: ValidationResult) => !!val.warnings?.length;
+const inputHasError = (val: ValidationResult) => !!val.errors?.length;
+const isFixableInconsistency = (val: ConsistencyInfo) =>
+  !!val.inconsistent && (val.restriction === 'disabled' || val.restriction === 'restricted');
+const isChange = (val: ConsistencyInfo) => !!val.inconsistent && val.restriction === 'info';
+const isInconsistent = (val: ConsistencyInfo) => !!val.inconsistent;
+
+const anyInput = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
+  Object.values(states ?? {}).some(cond);
+
+const inputsWhere = <T>(states: Record<string, T> | undefined, cond: (state: T) => boolean) =>
+  Object.entries(states ?? {}).filter(([, state]) => cond(state)).map(([name]) => name);
+
+export const hasInconsistencies = (consistencyStates?: Record<string, ConsistencyInfo>) =>
+  anyInput(consistencyStates, isFixableInconsistency);
 
 export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
-  Object.values(consistencyStates || {}).some((v) => v.inconsistent);
+  anyInput(consistencyStates, isInconsistent);
 
 export const hasSubtreeAnyInconsistencies = (
   data: PipelineState,
@@ -223,8 +240,8 @@ export const hasSubtreeAnyInconsistencies = (
 };
 
 export const statusToTooltip: Record<Status, string> = {
-  [`next`]: `This step is avaliable to run`,
-  [`next warn`]: `This step is avaliable to run, but has warnings`,
+  [`next`]: `This step is available to run`,
+  [`next warn`]: `This step is available to run, but has warnings`,
   [`next error`]: `This step needs user input`,
   ['pending']: 'This step has pending dependencies',
   ['pending executed']: 'This step has changed dependencies',
@@ -236,21 +253,10 @@ export const statusToTooltip: Record<Status, string> = {
   ['failed']: 'Run failed',
 };
 
-const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find((val) => val.warnings?.length);
-  return firstWarning;
-};
-
-const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'info'));
-  return firstInconsistency;
-};
-
-const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstError = Object.values(validationsState || {}).find((val) => val.errors?.length);
-  return firstError;
-};
+const hasWarnings = (validationsState?: Record<string, ValidationResult>) =>
+  anyInput(validationsState, inputHasWarning);
+const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => anyInput(consistencyStates, isChange);
+const hasErrors = (validationsState?: Record<string, ValidationResult>) => anyInput(validationsState, inputHasError);
 
 export const statesToStatus = (
   callState: FuncCallStateInfo,
@@ -277,6 +283,30 @@ export const statesToStatus = (
     return 'next warn';
 
   return 'next';
+};
+
+/** The inputs behind a step status. */
+export const statusInputs = (
+  status: Status,
+  validationsState?: Record<string, ValidationResult>,
+  consistencyStates?: Record<string, ConsistencyInfo>,
+): string[] => {
+  switch (status) {
+  case 'next error':
+    return inputsWhere(validationsState, inputHasError);
+  case 'next warn':
+    return [...new Set([...inputsWhere(validationsState, inputHasWarning),
+      ...inputsWhere(consistencyStates, isFixableInconsistency)])];
+  case 'succeeded warn':
+    return inputsWhere(validationsState, (val) => inputHasWarning(val) || inputHasError(val));
+  case 'succeeded info':
+    return inputsWhere(consistencyStates, isChange);
+  case 'succeeded inconsistent':
+    // everything the Update action resets, info inputs included
+    return inputsWhere(consistencyStates, isInconsistent);
+  default:
+    return [];
+  }
 };
 
 export const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {
@@ -560,10 +590,6 @@ function getExportName(
 }
 
 
-export function setDifference<T>(a: Set<T>, b: Set<T>) {
-  return new Set(Array.from(a).filter((item) => !b.has(item)));
-}
-
 /** Resolves the custom export named `exportName` declared on the funcCall's function
  *  (via `meta.customExports`) and applies it, passing the funcCall through. */
 export async function applyCustomExport(
@@ -631,5 +657,5 @@ export function pinView(view?: DG.ViewBase): void {
 }
 
 // shared inline-style colors; tailwind arbitrary-value classes stay literal (the JIT needs them static)
-export const STICKY_BAR_BACKGROUND = 'rgba(255, 255, 255, 0.75)';
-export const SELECTED_STEP_BACKGROUND = '#f2f2f5';
+export const STICKY_BAR_BACKGROUND = 'color-mix(in srgb, var(--white) 75%, transparent)';
+export const SELECTED_STEP_BACKGROUND = 'var(--grey-1)';

@@ -151,6 +151,8 @@ export declare const STRINGS: {
     readonly removeExplicitHydrogens: 'Remove explicit hydrogens';
     readonly addExplicitHydrogensLine: 'Draw each implicit H as an atom (the selection, if any)';
     readonly removeExplicitHydrogensLine: 'Fold H atoms back into their atoms (the selection, if any)';
+    /** Why Add explicit hydrogens is disabled in query mode (spike milestone-6-fixes, F3, R3): its tooltip in each menu. */
+    readonly addHydrogensQueryMode: 'Not in query mode: each hydrogen drawn would become part of the query';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
     /** Cut, Copy and Paste (spike clipboard, C3, A11Y-002). */
@@ -207,6 +209,11 @@ export declare const STRINGS: {
     readonly problemStereo: 'Unspecified stereocentre';
     /** An abbreviation with more bonds than attachments (spike abbreviations, A2, K1; P-row, provisional), which RDKit draws whole. */
     readonly problemAbbreviation: 'Too many bonds to this abbreviation';
+    /**
+     * An atom lying on or very close to another atom or a bond (spike v1-display, CHECK-006), in ChemDraw's words: probably
+     * meant to be bonded or merged.
+     */
+    readonly problemContact: 'This atom is very close to another atom or bond';
     /**
      * The formula and mass readout (spike charges-checks, K12; INFO-001 to INFO-009, UI-030): its name and its toggle's,
      * the caption over a selection's values, the masses' labels, what it says of a query (ChemDraw's), and the note beside
@@ -681,7 +688,8 @@ export declare const STRINGS: {
     readonly readoutShown: 'Shown';
     readonly readoutCollapsed: 'Collapsed';
     readonly readoutHidden: 'Hidden';
-    readonly settingStereoLabels: 'Show R, S, E and Z labels';
+    /** P and M too (spike atropisomers; milestone-6-fixes, F6: the ui-critic's note at milestone 6, the setting names them). */
+    readonly settingStereoLabels: 'Show R, S, E, Z, P and M labels';
     readonly settingStereoFlag: 'Show the stereo flag';
     readonly settingUnspecified: 'Draw unspecified double bonds crossed';
     readonly settingMethyl: 'Label terminal carbons CH₃';
@@ -734,7 +742,12 @@ export declare const STRINGS: {
     readonly sprout7: 'A cyclopentane';
     readonly sprout8: '=CH₂';
     readonly sprout9: 'Two methyls, or an isopropyl';
-    readonly sprout0: 'A long bond';
+    readonly sprout0: 'A long bond, or a cis bond';
+    /** Shift+K, v, u and z over an atom (KEY-012, spike v1-edits), as the sheet names them. */
+    readonly sproutTBu: 'A t-butyl';
+    readonly sproutCyclopropane: 'A cyclopropane';
+    readonly sproutCyclobutane: 'A cyclobutane';
+    readonly sproutAlkyne: 'An alkyne';
     /** Small boxes (K8): a bar's scroll buttons. */
     readonly scrollBack: 'Scroll back';
     readonly scrollForward: 'Scroll forward';
@@ -764,6 +777,8 @@ export declare const STRINGS: {
     readonly queryAsDrawn: 'As drawn';
     readonly queryNone: 'None';
     readonly queryOrMore: '{n} or more';
+    /** The query tooltip's field (spike polish-look, row 7): its name and its value, in the menus' words ("ring bond count 2"). */
+    readonly queryTipField: '{field} {value}';
     readonly queryAromatic: 'Aromatic';
     readonly queryAliphatic: 'Aliphatic';
     readonly clearQueryProperties: 'Clear query properties';
@@ -815,7 +830,7 @@ export declare const STRINGS: {
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
+type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -846,6 +861,12 @@ export type Catalog = {
     noRoom(atom: string, what: RefusalWhy): string;
     /** An atom on the canvas, as a refusal names it: "this C" (K14). */
     thisAtom(symbol: string): string;
+    /**
+     * A query field in the query tooltip (spike polish-look, row 7): its name and its value as the menus show them, in a
+     * phrase ("ring bond count 2", "H count 1 or more"); a word alone, a check's or a value that names its field, as itself
+     * ("unsaturated", "aromatic"). In English the first letter is lower-cased, unless it is a symbol (H).
+     */
+    queryTipField(field: string, value?: string): string;
     noRoomForRadical(symbol: string): string;
     problemValence(symbol: string): string;
     chargeLimit(symbol: string, delta: 1 | -1): string;

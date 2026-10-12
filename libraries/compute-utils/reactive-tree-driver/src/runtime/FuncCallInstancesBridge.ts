@@ -102,7 +102,8 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
       throw new Error(`Double funcCall bridge instance init`);
     if (data.initValues) {
       for (const [key, val] of Object.entries(this.initialValues)) {
-        if (data.restrictions[key]?.assignedValue == null)
+        const isInput = this.io.some((item) => item.id === key && item.direction === 'input');
+        if (isInput && data.restrictions[key]?.assignedValue == null)
           data.adapter.setState(key, val);
       }
       for (const [key, val] of Object.entries(data.restrictions)) {
@@ -213,7 +214,7 @@ export class FuncCallInstancesBridge implements IStateStore, IRestrictionStore, 
     const currentInstance = this.instance$.value?.adapter;
     if (currentInstance == null)
       throw new Error(`Attempting to set restriction on an empty FuncCallInstancesBridge`);
-    const assignedValue = val instanceof DG.DataFrame ? val.clone() : val;
+    const assignedValue = val instanceof DG.DataFrame && restrictionType !== 'none' ? val.clone() : val;
     const restrictionPayload = restrictionType === 'none' ? undefined : {assignedValue, type: restrictionType};
     this.inputRestrictions$.next({
       ...this.inputRestrictions$.value,

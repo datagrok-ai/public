@@ -39,6 +39,11 @@ export interface RemoveDynamicItem {
   uuid: string;
 }
 
+export interface DuplicateDynamicItem {
+  event: 'duplicateDynamicItem';
+  uuid: string;
+}
+
 export interface MoveDynamicItem {
   event: 'moveDynamicItem';
   uuid: string;
@@ -101,4 +106,4 @@ export interface ReturnResult {
   event: 'returnResult',
 }
 
-export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;
+export type ViewConfigCommands = AddDynamicItem | LoadDynamicItem | SaveDynamicItem | RemoveDynamicItem | MoveDynamicItem | DuplicateDynamicItem | RunStep | RunAction | RunSequence | SavePipeline | LoadPipeline | InitPipeline | ResetToConsistent | UpdateFuncCall | ReturnResult;

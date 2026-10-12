@@ -1,3 +1,5 @@
+/* eslint-disable max-lines-per-function */
+/* eslint-disable max-len */
 /* The in-page half of the viewer runtime: `window.__bdd`, installed once per page by
    `installViewerRuntime` (viewers.ts). Self-contained — `install` is serialized into the browser.
    Nothing here sleeps: a viewer says whether a render is pending (`isRenderPending`), announces
@@ -366,8 +368,8 @@ function install(): void {
     }
   };
   const partsOf = (v: any): Record<string, Element> => v.getWidgetStatus?.()?.parts ?? {};
-  const canvasOf = (v: any): HTMLCanvasElement => {
-    const part = partsOf(v).canvas as HTMLCanvasElement | undefined;
+  const canvasOf = (v: any, parts = partsOf(v)): HTMLCanvasElement => {
+    const part = parts.canvas as HTMLCanvasElement | undefined;
     const cv = part ?? v.root.querySelector('canvas[name="canvas"]') ?? v.root.querySelector('canvas');
     if (!cv)
       throw new Error(`${v.type} has no canvas`);
@@ -386,13 +388,50 @@ function install(): void {
     const ctx = cv.getContext('2d');
     return ctx && cv.width > 0 && cv.height > 0 ? ctx.getImageData(0, 0, cv.width, cv.height) : new ImageData(1, 1);
   };
+  /** The root of a viewer that reports one and no canvas: it lays its pictures out in the DOM (the
+   * trellis plot's inner viewers, the filter panel's cards) and its hit areas are relative to that
+   * root, so the first canvas inside it is not its picture. */
+  const domRootOf = (parts: Record<string, Element>): Element | undefined => parts.canvas ? undefined : parts.root;
+  /** Every canvas shown inside the root, drawn at its place on a bitmap of the root's size. */
+  const composite = (v: any, root: Element): ImageData => {
+    const canvases = Array.from(root.querySelectorAll('canvas')).filter((c) => {
+      const r = c.getBoundingClientRect();
+      return c.width > 0 && c.height > 0 && r.width > 0 && r.height > 0;
+    });
+    if (!canvases.length)
+      throw new Error(`${v.type} has no canvas`);
+    const box = root.getBoundingClientRect();
+    const s = window.devicePixelRatio;
+    const out = document.createElement('canvas');
+    out.width = Math.max(1, Math.round(box.width * s));
+    out.height = Math.max(1, Math.round(box.height * s));
+    const ctx = out.getContext('2d', {willReadFrequently: true})!;
+    ctx.imageSmoothingEnabled = false;
+    for (const c of canvases) {
+      const r = c.getBoundingClientRect();
+      ctx.drawImage(c, (r.x - box.x) * s, (r.y - box.y) * s, r.width * s, r.height * s);
+    }
+    return ctx.getImageData(0, 0, out.width, out.height);
+  };
+  /** Bitmap pixels per CSS pixel of the element the hit areas are relative to. */
+  const scaleOf = (v: any): number => {
+    const parts = partsOf(v);
+    if (domRootOf(parts))
+      return window.devicePixelRatio;
+    const cv = canvasOf(v, parts);
+    return cv.width / cv.getBoundingClientRect().width;
+  };
   /** The viewer's picture: its canvas with its `overlay` part composited on top when there is one
    * of the same size (the scatter plot draws regression lines, labels and stats on the overlay,
-   * the grid its selection and current cell). */
+   * the grid its selection and current cell); the canvases inside its root for a DOM viewer. */
   const pixelsOf = (v: any): ImageData => {
-    const cv = canvasOf(v);
+    const parts = partsOf(v);
+    const root = domRootOf(parts);
+    if (root)
+      return composite(v, root);
+    const cv = canvasOf(v, parts);
     const img = pixels(cv);
-    const over = partsOf(v).overlay as HTMLCanvasElement | undefined;
+    const over = parts.overlay as HTMLCanvasElement | undefined;
     if (!(over instanceof HTMLCanvasElement) || over === cv || over.width !== cv.width || over.height !== cv.height)
       return img;
     const top = pixels(over);
@@ -437,7 +476,6 @@ function install(): void {
       throw new Error(`${v.type} has no "${name}" area right now; it has: ${Object.keys(areas).join(', ') || 'none'}`);
     return key;
   };
-  const scaleOf = (cv: HTMLCanvasElement): number => cv.width / cv.getBoundingClientRect().width;
   /** A hit area (canvas coordinates) as device pixels of the canvas bitmap. */
   const deviceRect = (r: Box, scale: number): Rect =>
     ({x: Math.floor(r.x * scale), y: Math.floor(r.y * scale), w: Math.max(1, Math.floor(r.width * scale)), h: Math.max(1, Math.floor(r.height * scale))});
@@ -485,10 +523,10 @@ function install(): void {
   /** The colors drawn inside a hit area, most pixels first, with the bitmap rectangle read. */
   const areaColors = (el: Element, name: string): AreaColors => {
     const v = viewerOf(el);
-    const cv = canvasOf(v);
-    const rect = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
-    const colors = colorsIn(pixelsOf(v), rect);
-    return {colors: [...colors.entries()].sort((a, b) => b[1] - a[1]).map(([c, count]) => ({hex: hex(c), count})), rect, bitmap: [cv.width, cv.height]};
+    const img = pixelsOf(v);
+    const rect = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(v));
+    const colors = colorsIn(img, rect);
+    return {colors: [...colors.entries()].sort((a, b) => b[1] - a[1]).map(([c, count]) => ({hex: hex(c), count})), rect, bitmap: [img.width, img.height]};
   };
   /** The legend a viewer hosts, as the attributes it publishes on every commit. A legend shown in
    * the tooltip is re-parented out of the viewer, so it is looked up there. */
@@ -628,11 +666,13 @@ function install(): void {
     const rects: Record<string, Box> = {};
     for (const key of Object.keys(hit))
       rects[norm(key)] = {...hit[key]};
-    let cv: HTMLCanvasElement | undefined;
+    let bitmap = new ImageData(1, 1);
+    let scale = 1;
     try {
-      cv = canvasOf(v);
-    } catch { /* a DOM viewer: its areas, readings and legend are the snapshot */ }
-    snapshots.set(v.root, {bitmap: cv ? pixelsOf(v) : new ImageData(1, 1), scale: cv ? scaleOf(cv) : 1, renders: renders.get(v.root)!.count,
+      bitmap = pixelsOf(v);
+      scale = scaleOf(v);
+    } catch { /* a DOM viewer with no canvas: its areas, readings and legend are the snapshot */ }
+    snapshots.set(v.root, {bitmap, scale, renders: renders.get(v.root)!.count,
       range: rangeOf(v), rects, scale$: scaleRange(v), values: {...valuesOf(v)}, legend: legendState(v), areaInks: {}});
   };
   const snapshotOf = (v: any): Snapshot => {
@@ -674,7 +714,7 @@ function install(): void {
   };
   /** Where the picture differs from the snapshot, for the failure to say: the changed pixels'
    * box in CSS px and the hit areas it touches, or the two canvas sizes when they differ. */
-  const changedWhere = (v: any, cv: HTMLCanvasElement, before: ImageData, now: ImageData): string => {
+  const changedWhere = (v: any, before: ImageData, now: ImageData): string => {
     if (before.width !== now.width || before.height !== now.height)
       return `canvas ${before.width}x${before.height} → ${now.width}x${now.height}`;
     const a = before.data;
@@ -692,7 +732,7 @@ function install(): void {
     }
     if (x1 < 0)
       return '';
-    const s = scaleOf(cv);
+    const s = scaleOf(v);
     const box = {x: x0 / s, y: y0 / s, width: (x1 - x0 + 1) / s, height: (y1 - y0 + 1) / s};
     const touched = Object.entries(areasOf(v)).filter(([n, r]) => n !== 'view' && r.x < box.x + box.width && box.x < r.x + r.width && r.y < box.y + box.height && box.y < r.y + r.height).map(([n]) => n);
     return `within ${Math.round(box.x)},${Math.round(box.y)} ${Math.round(box.width)}x${Math.round(box.height)} of the canvas`
@@ -818,8 +858,7 @@ function install(): void {
    * column gridlines on its edges, which would make an empty cell "painted". */
   const areaInk = (el: Element, name: string, inset = 0): number => {
     const v = viewerOf(el);
-    const cv = canvasOf(v);
-    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
+    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(v));
     const i = r.w > 4 * inset && r.h > 4 * inset ? inset : 0;
     return inkIn(pixelsOf(v), {x: r.x + i, y: r.y + i, w: r.w - 2 * i, h: r.h - 2 * i});
   };
@@ -830,19 +869,17 @@ function install(): void {
     const inkBefore = areaInkBefore(before, norm(name));
     if (inkBefore === undefined)
       throw new Error(`${v.type} reported no "${name}" area at the snapshot; it had: ${Object.keys(before.rects).join(', ') || 'none'}`);
-    const cv = canvasOf(v);
-    return {ink: areaInk(el, name), inkBefore, rect: deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv))};
+    return {ink: areaInk(el, name), inkBefore, rect: deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(v))};
   };
   /** The pixels that changed inside one hit area since the snapshot — the area's own repaint,
    * as opposed to the whole canvas'. */
   const areaDelta = (el: Element, name: string): number => {
     const v = viewerOf(el);
     const before = snapshotOf(v);
-    const cv = canvasOf(v);
     const now = pixelsOf(v);
     if (before.bitmap.width !== now.width || before.bitmap.height !== now.height)
       throw new Error(`${v.type}: the canvas resized since the snapshot`);
-    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(cv));
+    const r = deviceRect(areasOf(v)[areaKey(v, name)], scaleOf(v));
     const a = before.bitmap.data;
     const b = now.data;
     let delta = 0;
@@ -857,15 +894,14 @@ function install(): void {
   };
   const change = (el: Element): CanvasChange => {
     const v = viewerOf(el);
-    const cv = canvasOf(v);
     const img = pixelsOf(v);
     const now = histogram(img);
     const before = snapshotOf(v);
     const stats = statsOf(before);
     const delta = pixelDelta(before, img, now.colors);
     const view = areasOf(v)['view'];
-    const scale = scaleOf(cv);
-    const viewPx = view ? deviceRect(view, scale).w * deviceRect(view, scale).h : cv.width * cv.height;
+    const scale = scaleOf(v);
+    const viewPx = view ? deviceRect(view, scale).w * deviceRect(view, scale).h : img.width * img.height;
     let selected = 0;
     try {
       selected = v.dataFrame.selection.trueCount;
@@ -896,9 +932,8 @@ function install(): void {
     const v = viewerOf(el);
     const before = snapshotOf(v);
     await quiet(v);
-    const cv = canvasOf(v);
     const delta = change(el).delta;
-    return {renders: renders.get(v.root)!.count - before.renders, delta, where: delta ? changedWhere(v, cv, before.bitmap, pixelsOf(v)) : ''};
+    return {renders: renders.get(v.root)!.count - before.renders, delta, where: delta ? changedWhere(v, before.bitmap, pixelsOf(v)) : ''};
   };
   /** The value range against the snapshot's, read once the viewer is quiet (a reset that lands a
    * tick after the change is read, not missed). */

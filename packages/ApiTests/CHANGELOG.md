@@ -2,6 +2,8 @@
 
 ## 1.10.3 (WIP)
 
+GROK-21114: `Benchmarks: Calculated columns and layouts` limits set to the goal: 1 s for applying a layout with 200 formula columns, 0.9 s for calculating them, about 1.4x the quiet-machine times for the rest; a run over a limit fails until the goal is met
+
 GROK-21035: Added the `Benchmarks: Calculated columns and layouts` category: 7 benchmarks on a synthetic table (50k rows in benchmark mode) with limits set from the 5 s goal for applying a layout with 200 formula columns and one failing formula
 
 Utils: `AI: Utils: static helpers` gained 2 `uuid4` cases (the version-4 shape, and 1000 calls all distinct)

@@ -2,7 +2,8 @@
 Feature: Bio results survive a project save and reopen
   A table saved as a project with what Bio added to it — an antibody numbering's aligned column —
   comes back from the server with the columns and their tags; the numbering run again on the
-  reopened table loads its WASM engine afresh and numbers exactly as before.
+  reopened table loads its WASM engine afresh and numbers exactly as before. Both runs pick the
+  bundled immunum engine: another package's engine (HMM's ANARCI) is the default when installed.
 
   Sequence Space's embeddings and scatter plot after a reopen (GROK-19928) are tested in Bio
   src/tests/projects-tests.ts (sequence_space), and a reopened HELM column's detection in
@@ -26,6 +27,7 @@ Feature: Bio results survive a project save and reopen
   Scenario: Antibody numbering survives a save and reopen, and numbers the same again
     Given user opens antibodies dataset keeping the first 20 rows as "antibodies"
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
+    And user selects "Immunum" in Engine input in "Apply Antibody Numbering" dialog
     And user selects "kabat" in Scheme input in "Apply Antibody Numbering" dialog
     And user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned)" should have been added
@@ -39,6 +41,7 @@ Feature: Bio results survive a project save and reopen
     And "AntibodyHC (aligned)" column should have no missing values
     And "AntibodyHC" column should carry at least 7 annotations
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
+    And user selects "Immunum" in Engine input in "Apply Antibody Numbering" dialog
     And user selects "kabat" in Scheme input in "Apply Antibody Numbering" dialog
     And user clicks on OK button in "Apply Antibody Numbering" dialog
     Then a new column "AntibodyHC (aligned) (2)" should have been added

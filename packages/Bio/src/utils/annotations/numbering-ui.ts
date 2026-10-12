@@ -7,22 +7,29 @@ import {TAGS as bioTAGS, ALIGNMENT, ALPHABET, NOTATION} from '@datagrok-librarie
 import {
   SeqAnnotation, SeqAnnotationHit, AnnotationCategory,
 } from '@datagrok-libraries/bio/src/utils/macromolecule/annotations';
+import {_package} from '../../package';
 import {
   setColumnAnnotations, getColumnAnnotations,
   getOrCreateAnnotationColumn, getRowAnnotations, setRowAnnotations, mergeRowHits,
 } from './annotation-manager';
+import {bindEngineDescription, setEngineDescription} from '../engine-description';
 /** An engine entry — a dynamically discovered DG.Func with meta.role: 'antibodyNumbering'. */
 interface NumberingEngine {
   label: string;
   /** Unique key — `${package}:${name}`. */
   key: string;
   func: DG.Func;
+  /** Supported schemes, read once at discovery (building an options editor
+   *  for the function can change its parameters' choices). */
+  schemes: string[];
 }
 
 /** Discovers all registered antibody numbering engines (functions with
  *  meta.role = 'antibodyNumbering'). Built-in engines: Bio package ships an
  *  immunum-WASM-based engine; other packages (Proteomics etc.) can register
- *  AntPack/ANARCI/etc. by adding their own meta.role function. */
+ *  AntPack/ANARCI/etc. by adding their own meta.role function. Engines of other
+ *  packages come first, so an installed one is the dialog's default and the
+ *  built-in immunum is the fallback. */
 function discoverEngines(): NumberingEngine[] {
   const engines: NumberingEngine[] = [];
   const funcs = DG.Func.find({meta: {role: 'antibodyNumbering'}});
@@ -36,19 +43,32 @@ function discoverEngines(): NumberingEngine[] {
       label: f.friendlyName || f.name,
       key: pkgName ? `${pkgName}:${f.name}` : f.name,
       func: f,
+      schemes: getEngineSchemes(f),
     });
   }
-  return engines;
+  const builtIn = (e: NumberingEngine) => e.func.package?.name === _package.name ? 1 : 0;
+  return engines.sort((a, b) => builtIn(a) - builtIn(b)); // stable: discovery order otherwise
 }
 
 /** Reads the `scheme` parameter's declared choices off an engine function.
  *  Engines advertise which schemes they support via the `choices` option of
  *  their `scheme: string` parameter; if the function has none we fall back to
- *  a single generic IMGT option so the dropdown is never empty. */
-function getEngineSchemes(engine: NumberingEngine): string[] {
-  const schemeInput = engine.func.inputs.find((p) => p.name.toLowerCase() === 'scheme');
-  const choices = schemeInput?.choices ?? [];
+ *  a single generic IMGT option so the dropdown is never empty. The declared
+ *  option is read, not `Property.choices`: the platform's editor for the
+ *  function (the engine options below) empties that list for good. */
+function getEngineSchemes(func: DG.Func): string[] {
+  const schemeInput = func.inputs.find((p) => p.name.toLowerCase() === 'scheme');
+  const declared = schemeInput?.options['choices'];
+  const choices: string[] = typeof declared === 'string' && declared.startsWith('[') ?
+    JSON.parse(declared) : schemeInput?.choices ?? [];
   return choices.length > 0 ? choices.slice() : ['imgt'];
+}
+
+/** Parameters the dialog fills itself (contract: `(df, seqCol, scheme)`). Every
+ *  other engine parameter (e.g. species, score thresholds) is an engine option. */
+function isDialogParam(p: DG.Property): boolean {
+  return p.name.toLowerCase() === 'scheme' ||
+    p.propertyType === DG.TYPE.DATA_FRAME || p.propertyType === DG.TYPE.COLUMN;
 }
 
 export function showNumberingSchemeDialog(): void {
@@ -75,7 +95,11 @@ export function showNumberingSchemeDialog(): void {
   const engineInput = ui.input.choice('Engine', {
     value: engineLabels[0], items: engineLabels,
   });
-  const initialSchemes = getEngineSchemes(engines[0]);
+  const initialSchemes = engines[0].schemes;
+  // The selected engine's description, as in the MSA dialog.
+  const engineDesc = ui.div('', {style: {fontSize: '12px', opacity: '0.7', maxWidth: '460px', marginBottom: '6px'}});
+  setEngineDescription(engineDesc, engines[0].func.description ?? '');
+  bindEngineDescription(engineDesc);
   const schemeInput = ui.input.choice('Scheme', {value: initialSchemes[0], items: initialSchemes});
 
   // Switch the scheme list when the user picks a different engine — each engine
@@ -83,22 +107,54 @@ export function showNumberingSchemeDialog(): void {
   engineInput.onChanged.subscribe(() => {
     const selected = engines.find((e) => e.label === engineInput.value);
     if (!selected) return;
-    const schemes = getEngineSchemes(selected);
+    setEngineDescription(engineDesc, selected.func.description ?? '');
+    const schemes = selected.schemes;
     const prev = schemeInput.value;
     schemeInput.items = schemes;
     schemeInput.value = schemes.includes(prev ?? '') ? prev : schemes[0];
   });
 
+  // Engine options: inputs for the selected engine's extra parameters, built
+  // from its own declaration (choices, defaults, captions), like the MSA dialog.
+  const optionsHost = ui.div([], 'ui-form');
+  let options: {engine: NumberingEngine; call: DG.FuncCall} | null = null;
+  const updateEngineOptions = async (engine: NumberingEngine): Promise<void> => {
+    ui.empty(optionsHost);
+    options = null;
+    if (engine.func.inputs.every(isDialogParam)) return;
+    const call = engine.func.prepare({});
+    // Built off-screen: only the engine options (not table, column, scheme) join the dialog.
+    const inputs = await call.buildEditor(ui.div());
+    if (engineInput.value !== engine.label) return; // the user switched engines meanwhile
+    for (const input of inputs) {
+      const prop = input.property as DG.Property | null;
+      if (prop && !isDialogParam(prop)) optionsHost.append(input.root);
+    }
+    options = {engine, call};
+  };
+  engineInput.onChanged.subscribe(() => {
+    const selected = engines.find((e) => e.label === engineInput.value);
+    if (selected) updateEngineOptions(selected).catch((e) => console.error(e));
+  });
+  updateEngineOptions(engines[0]).catch((e) => console.error(e));
+
   const dialog = ui.dialog({title: 'Apply Antibody Numbering'})
     .add(ui.inputs([tableInput, seqInput, engineInput, schemeInput]))
+    .add(engineDesc)
+    .add(optionsHost)
     .onOK(async () => {
       const seqCol = seqInput.value!;
       const schemeName = schemeInput.value!;
       const selectedLabel = engineInput.value!;
       const engine = engines.find((e) => e.label === selectedLabel) ?? engines[0];
+      const extra: Record<string, any> = {};
+      if (options?.engine === engine) {
+        for (const p of engine.func.inputs)
+          if (!isDialogParam(p)) extra[p.name] = options.call.inputs[p.name];
+      }
       const pi = DG.TaskBarProgressIndicator.create(`Applying ${schemeName} numbering...`);
       try {
-        const result: DG.DataFrame = await engine.func.apply({df: df, seqCol: seqCol, scheme: schemeName});
+        const result: DG.DataFrame = await engine.func.apply({...extra, df: df, seqCol: seqCol, scheme: schemeName});
         applyNumberingResults(df, seqCol, result, schemeName, true, engine.label);
       } catch (err: any) {
         grok.shell.error(`Numbering failed: ${err.message ?? err}`);
@@ -111,13 +167,46 @@ export function showNumberingSchemeDialog(): void {
   dialog.show();
 }
 
-/** Builds a map from ungapped character index to gapped character index.
- *  Used when the source column is already aligned (MSA) — numbering engines strip gaps,
- *  so their output indices refer to the ungapped sequence, not the gapped original. */
-function buildUngappedToGappedMap(gappedSeq: string): number[] {
+/** One cell as a list of monomer positions — what annotations index: a
+ *  one-letter code per position, gaps as `-` (`gap` marks them). Plain FASTA
+ *  cells are indexed by character; other notations (separator, HELM, FASTA
+ *  with multi-letter monomers) through Bio's sequence handler, multi-letter
+ *  monomers as `X`. */
+interface RowCells {
+  letters: string[];
+  gap: boolean[];
+}
+
+function columnCells(seqCol: DG.Column<string>): (row: number) => RowCells {
+  const units = seqCol.meta.units;
+  let sh: ReturnType<typeof _package.seqHelper.getSeqHandler> | null = null;
+  return (row: number) => {
+    const raw = seqCol.get(row) ?? '';
+    if (!units || (units === NOTATION.FASTA && !raw.includes('['))) {
+      const letters = Array.from(raw);
+      return {letters, gap: letters.map((c) => c === '-' || c === '.')};
+    }
+    sh ??= _package.seqHelper.getSeqHandler(seqCol);
+    const split = sh.getSplitted(row);
+    const letters: string[] = [];
+    const gap: boolean[] = [];
+    for (let p = 0; p < split.length; p++) {
+      const isGap = split.isGap(p);
+      const monomer = isGap ? '-' : split.getCanonical(p);
+      letters.push(monomer.length === 1 ? monomer : 'X');
+      gap.push(isGap);
+    }
+    return {letters, gap};
+  };
+}
+
+/** Builds a map from ungapped monomer index to the monomer position in the cell.
+ *  Numbering engines strip gaps, so their output indices refer to the ungapped
+ *  sequence, not the gapped original (MSA columns, separator notation). */
+function buildUngappedToGappedMap(cells: RowCells): number[] {
   const map: number[] = [];
-  for (let g = 0; g < gappedSeq.length; g++) {
-    if (gappedSeq[g] !== '-' && gappedSeq[g] !== '.')
+  for (let g = 0; g < cells.gap.length; g++) {
+    if (!cells.gap[g])
       map.push(g);
   }
   return map;
@@ -146,37 +235,49 @@ function sortPositionCodes(codes: string[]): string[] {
  *  "comes before" pairs), so schemes that number insertions backwards keep
  *  residue order (IMGT: ..., 111A, 111B, 112B, 112A, 112; likewise at 33 and 61).
  *  Codes not ordered by any row fall back to {@link sortPositionCodes}. */
-function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[] {
-  const fallback = sortPositionCodes(Array.from(codes));
-  const rank = new Map(fallback.map((c, i) => [c, i]));
-  const next = new Map<string, Set<string>>(fallback.map((c) => [c, new Set<string>()]));
-  const indegree = new Map<string, number>(fallback.map((c) => [c, 0]));
-  for (const order of rowOrders) {
+/** The order of scheme position codes, fed one row at a time (so 100,000 rows' orders are
+ *  never held at once): each row's codes in sequence order add successor edges; the result
+ *  is a topological order, ties and disagreements resolved by {@link sortPositionCodes}. */
+class PositionOrder {
+  private readonly next = new Map<string, Set<string>>();
+
+  add(order: string[]): void {
     for (let i = 1; i < order.length; i++) {
-      const successors = next.get(order[i - 1]);
-      if (!successors || !indegree.has(order[i]) || successors.has(order[i])) continue;
+      let successors = this.next.get(order[i - 1]);
+      if (!successors) this.next.set(order[i - 1], successors = new Set<string>());
       successors.add(order[i]);
-      indegree.set(order[i], indegree.get(order[i])! + 1);
     }
   }
-  const ready = fallback.filter((c) => indegree.get(c) === 0);
-  const ordered: string[] = [];
-  while (ready.length > 0) {
-    ready.sort((a, b) => rank.get(a)! - rank.get(b)!);
-    const code = ready.shift()!;
-    ordered.push(code);
-    for (const successor of next.get(code)!) {
-      const remaining = indegree.get(successor)! - 1;
-      indegree.set(successor, remaining);
-      if (remaining === 0) ready.push(successor);
+
+  ordered(codes: Set<string>): string[] {
+    const fallback = sortPositionCodes(Array.from(codes));
+    const rank = new Map(fallback.map((c, i) => [c, i]));
+    const indegree = new Map<string, number>(fallback.map((c) => [c, 0]));
+    for (const [code, successors] of this.next) {
+      if (!indegree.has(code)) continue;
+      for (const successor of successors)
+        if (indegree.has(successor)) indegree.set(successor, indegree.get(successor)! + 1);
     }
+    const ready = fallback.filter((c) => indegree.get(c) === 0);
+    const ordered: string[] = [];
+    while (ready.length > 0) {
+      ready.sort((a, b) => rank.get(a)! - rank.get(b)!);
+      const code = ready.shift()!;
+      ordered.push(code);
+      for (const successor of this.next.get(code) ?? []) {
+        if (!indegree.has(successor)) continue;
+        const remaining = indegree.get(successor)! - 1;
+        indegree.set(successor, remaining);
+        if (remaining === 0) ready.push(successor);
+      }
+    }
+    // Rows that disagree (a cycle) leave codes unplaced: append them in numeric order.
+    if (ordered.length < fallback.length) {
+      const placed = new Set(ordered);
+      ordered.push(...fallback.filter((c) => !placed.has(c)));
+    }
+    return ordered;
   }
-  // Rows that disagree (a cycle) leave codes unplaced: append them in numeric order.
-  if (ordered.length < fallback.length) {
-    const placed = new Set(ordered);
-    ordered.push(...fallback.filter((c) => !placed.has(c)));
-  }
-  return ordered;
 }
 
 /** Builds unified position list from all rows and creates an aligned sequence column.
@@ -184,58 +285,59 @@ function orderPositionCodes(rowOrders: string[][], codes: Set<string>): string[]
  *  Layout: [pre-region gaps+residues] [scheme-aligned region] [post-region residues+gaps]
  *  @returns aligned column, full position list (including flanking), and the pre-region offset. */
 function createAlignedColumn(
-  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame,
+  df: DG.DataFrame, seqCol: DG.Column<string>, result: DG.DataFrame, cellsOf: (row: number) => RowCells,
 ): {alignedCol: DG.Column<string>; unifiedPositions: string[]; preOffset: number} | null {
   const numberingMapCol = result.col('numbering_map');
   if (!numberingMapCol) return null;
   const positionNamesCol = result.col('position_names');
 
   // Pass 1: collect all scheme position codes (with each row's sequence order)
-  // and per-row flanking lengths
+  // and per-row flanking lengths. Rows are parsed again in pass 2 rather than
+  // kept: on 100,000 rows the parsed maps alone took gigabytes.
   const allCodes = new Set<string>();
-  const rowOrders: string[][] = [];
-  const rowMaps: (Record<string, number> | null)[] = [];
-  const rowPreLens: number[] = []; // chars before first numbered position
-  const rowPostLens: number[] = []; // chars after last numbered position
-
-  for (let i = 0; i < result.rowCount; i++) {
-    const mapStr = numberingMapCol.get(i);
-    const rawSeq = seqCol.get(i) ?? '';
-    if (!mapStr) {
-      rowMaps.push(null);
-      rowPreLens.push(0);
-      rowPostLens.push(0);
-      continue;
+  const order = new PositionOrder();
+  const n = result.rowCount;
+  const numbered = new Uint8Array(n);
+  const rowPreLens = new Int32Array(n); // chars before first numbered position
+  const rowPostLens = new Int32Array(n); // chars after last numbered position
+  const charRange = (map: Record<string, number>): [number, number] => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const k of Object.keys(map)) {
+      min = Math.min(min, map[k]);
+      max = Math.max(max, map[k]);
     }
+    return [min, max];
+  };
+
+  for (let i = 0; i < n; i++) {
+    const mapStr = numberingMapCol.get(i);
+    if (!mapStr) continue;
     try {
       const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
-      rowMaps.push(posToCharIdx);
       for (const code of Object.keys(posToCharIdx))
         allCodes.add(code);
       const names: string = positionNamesCol?.get(i) ?? '';
       if (names)
-        rowOrders.push(names.split(',').map((c) => c.trim()).filter((c) => c in posToCharIdx));
+        order.add(names.split(',').map((c) => c.trim()).filter((c) => c in posToCharIdx));
 
       // Find min/max char indices that were numbered
-      const charIndices = Object.values(posToCharIdx);
-      const minChar = Math.min(...charIndices);
-      const maxChar = Math.max(...charIndices);
-      rowPreLens.push(minChar); // chars before first numbered
-      rowPostLens.push(Math.max(0, rawSeq.length - maxChar - 1)); // chars after last numbered
+      const [minChar, maxChar] = charRange(posToCharIdx);
+      rowPreLens[i] = minChar; // chars before first numbered
+      rowPostLens[i] = Math.max(0, cellsOf(i).letters.length - maxChar - 1); // chars after last numbered
+      numbered[i] = 1;
     } catch {
-      rowMaps.push(null);
-      rowPreLens.push(0);
-      rowPostLens.push(0);
+      // not numbered
     }
   }
 
   if (allCodes.size === 0) return null;
 
-  const maxPreLen = Math.max(0, ...rowPreLens);
-  const maxPostLen = Math.max(0, ...rowPostLens);
+  const maxPreLen = rowPreLens.reduce((max, l) => Math.max(max, l), 0);
+  const maxPostLen = rowPostLens.reduce((max, l) => Math.max(max, l), 0);
 
   // Build position names: [pre-flanking] + [scheme positions] + [post-flanking]
-  const schemePositions = orderPositionCodes(rowOrders, allCodes);
+  const schemePositions = order.ordered(allCodes);
   const preNames: string[] = [];
   for (let p = maxPreLen; p > 0; p--)
     preNames.push(`N-${p}`);
@@ -257,13 +359,12 @@ function createAlignedColumn(
   const alignedCol = DG.Column.fromType(DG.COLUMN_TYPE.STRING, colName, df.rowCount);
 
   for (let i = 0; i < df.rowCount; i++) {
-    const map = i < rowMaps.length ? rowMaps[i] : null;
-    const rawSeq = seqCol.get(i) ?? '';
-
+    const map: Record<string, number> | null = i < n && numbered[i] ? JSON.parse(numberingMapCol.get(i)!) : null;
     if (!map) {
-      alignedCol.set(i, '-'.repeat(totalLen));
+      alignedCol.set(i, '-'.repeat(totalLen), false);
       continue;
     }
+    const rawSeq = cellsOf(i).letters;
 
     const aligned = new Array<string>(totalLen).fill('-');
 
@@ -276,19 +377,17 @@ function createAlignedColumn(
 
     // Place pre-region flanking residues (right-aligned within the pre-region block)
     const preLen = rowPreLens[i];
-    const charIndices = Object.values(map);
-    const minChar = Math.min(...charIndices);
+    const [minChar, maxChar] = charRange(map);
     for (let p = 0; p < preLen; p++)
       aligned[preOffset - preLen + p] = rawSeq[minChar - preLen + p];
 
     // Place post-region flanking residues (left-aligned within the post-region block)
     const postLen = rowPostLens[i];
-    const maxChar = Math.max(...charIndices);
     const postStart = preOffset + schemePositions.length;
     for (let p = 0; p < postLen; p++)
       aligned[postStart + p] = rawSeq[maxChar + 1 + p];
 
-    alignedCol.set(i, aligned.join(''));
+    alignedCol.set(i, aligned.join(''), false);
   }
 
   // Set macromolecule tags on the aligned column
@@ -326,20 +425,21 @@ export function applyNumberingResults(
   // If the source column is already aligned (MSA), remap numbering_map indices
   // from ungapped to gapped, since numbering engines strip gaps before processing.
   const isAligned = true; // always treat as aligned to handle remapping
+  // Cells are split per row when needed, not kept for all rows (memory on large tables).
+  const cellsOf = columnCells(seqCol);
   if (isAligned && numberingMapCol) {
     for (let i = 0; i < result.rowCount; i++) {
       const mapStr = numberingMapCol.get(i);
       if (!mapStr) continue;
       try {
         const posToCharIdx: Record<string, number> = JSON.parse(mapStr);
-        const rawSeq = seqCol.get(i) ?? '';
-        const ungapToGap = buildUngappedToGappedMap(rawSeq);
+        const ungapToGap = buildUngappedToGappedMap(cellsOf(i));
         const remapped: Record<string, number> = {};
         for (const [posCode, ungappedIdx] of Object.entries(posToCharIdx)) {
           if (ungappedIdx < ungapToGap.length)
             remapped[posCode] = ungapToGap[ungappedIdx];
         }
-        numberingMapCol.set(i, JSON.stringify(remapped));
+        numberingMapCol.set(i, JSON.stringify(remapped), false);
       } catch { /* skip */ }
     }
   }
@@ -410,7 +510,8 @@ export function applyNumberingResults(
         }
 
         const existingHits = getRowAnnotations(annotCol, i) ?? [];
-        setRowAnnotations(annotCol, i, mergeRowHits(existingHits, regionHits, true, false));
+        // No event per row: df.fireValuesChanged() below covers them.
+        setRowAnnotations(annotCol, i, mergeRowHits(existingHits, regionHits, true, false), false);
       }
     } catch (err) {
       console.warn('Failed to store per-row region data on original column:', err);
@@ -418,7 +519,7 @@ export function applyNumberingResults(
   }
 
   // --- Aligned column: column-level annotations only ---
-  const alignment = createAlignedColumn(df, seqCol, result);
+  const alignment = createAlignedColumn(df, seqCol, result, cellsOf);
   if (alignment) {
     df.columns.insert(alignment.alignedCol, df.columns.toList().indexOf(seqCol) + 1);
     if (grok.shell.tv?.dataFrame === df)

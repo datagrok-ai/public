@@ -261,13 +261,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **The context panel renders the current object (`grok.shell.o`) and nothing else**
   (`property_panel.dart` on `onCurrentObjectChanged`; `grok.shell.windows.showContextPanel`
   shows it). The setter drops a change to the object already current, one within 2 s of a
-  property edit and one while the object is frozen. An explicit click in a top-level grid releases
-  the property-edit guard, so a cell clicked just after expanding a pane still becomes current:
+  property edit and one while the object is frozen. An explicit click in a top-level grid or on a
+  gallery card (`ui.setUpSelection`) releases the property-edit guard, so a cell or a card clicked
+  just after expanding a pane still becomes current:
   `the context panel is open` is the Given, `the context panel should show "X"` names the object
   before any pane is read, and a failure inside the panel reports the current object and the
-  panes in the DOM but not shown (`explain`). **A context pane that counts its items is hidden
-  while the count is 0** (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`),
-  and the count arrives asynchronously: Activity on a space created a second ago is `present`,
+  panes in the DOM but not shown (`explain`). The header's name is read from the page by `the title of
+  context panel should be "X"` (it can lag the object after a rename); an entity's Details rows are the
+  `details field` kind (`Name details field`, `edit icon of Tags details row`, the pencil showing only
+  under the pointer). **A context pane that counts its items is hidden while the count is 0**
+  (`accordion.css`, `.grok-prop-panel .d4-accordion-pane[d4-info="0"]`), and the count arrives asynchronously: Activity on a space created a second ago is `present`,
   not `visible`, until the server has logged the creation.
 - **A navigation leaves the page as a person who chose to**: the harness accepts `beforeunload` ("Warn on
   unsaved changes" asks once the scratchpad is dirty, and Playwright's default dismissal cancels the reload, which
@@ -367,7 +370,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   vertical groups are entered with two moves inside the item, Escape does not close it. The bar
   rebuilds when a package's entries arrive, with no signal that it is done: a pick can find its
   leaf and then click a collapsed group, so `pickTopMenu` makes the whole pick once more from the
-  bar (a core "menu settled" signal would remove that).
+  bar (a core "menu settled" signal would remove that). A checkable item (On Click > Filter, a
+  radio) leaves its menu open (`menu.dart` `shouldCloseOnClick`): a gesture after the pick comes
+  after `user closes the context menu`, or it lands on the menu wherever the menu covers its target.
 - The Dart property grid's choice editor is lazy: its `<select>` enters the value cell only once
   that cell is clicked (`select` clicks it first). The Save project dialog's name field is a bare
   `<input>` (aria-label "Name"), which `text input` reaches. Typing into a column picker's search
@@ -391,6 +396,10 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   disagree. The grid reports colours lowercase; `current row` is 1-based, 0 for none.
 - `RowSet.SelectedOrCurrent` is the selection when it has anything, else the current row;
   `MouseOverGroup` is `dataFrame.highlight`, which a hover elsewhere leaves standing.
+- A viewer that reports `parts.root` and no canvas (the trellis plot, the filter panel) is read as
+  every canvas shown inside that root, drawn at its place (`composite`, viewer-runtime.ts): its
+  areas are relative to the root, and reading them on its first canvas (one trellis cell) read
+  pixels from the wrong place — a color claim on the trellis's "view" passed or failed by layout.
 - `painted in at least N colors` groups by hue: a linear scale is one colour. `repainted`
   measures the whole canvas; `the "x" area … should have repainted` one area. A hover highlight
   can be gone by the time a later step reads it: repaint checks right after the gesture.

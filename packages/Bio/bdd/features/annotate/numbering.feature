@@ -4,6 +4,8 @@ Feature: Antibody numbering with the bundled immunum engine
   offers the engines registered and the schemes the chosen one supports, and the run leaves an
   aligned column tagged with the scheme and the position names, plus the FR and CDR regions as
   annotations on the source column. Kabat, chosen over the default IMGT, must reach the result.
+  Engines of other packages (e.g. HMM's ANARCI) come first and are the default when installed, so
+  the scenario picks the bundled engine.
   The project round-trip of a numbering and its deterministic re-run are in projects/round-trips.
 
   Not translated: the md's timing bound on the worker call — a duration is not a claim the
@@ -22,7 +24,8 @@ Feature: Antibody numbering with the bundled immunum engine
     When user picks "Bio > Annotate > Apply Numbering Scheme..." from the top menu
     Then "Apply Antibody Numbering" dialog should be visible
     And editor of Sequence input in "Apply Antibody Numbering" dialog should have text "AntibodyHC"
-    And Engine input in "Apply Antibody Numbering" dialog should have value "Immunum"
+    When user selects "Immunum" in Engine input in "Apply Antibody Numbering" dialog
+    Then Engine input in "Apply Antibody Numbering" dialog should have value "Immunum"
     And Scheme input in "Apply Antibody Numbering" dialog should offer "imgt, kabat"
     And Scheme input in "Apply Antibody Numbering" dialog should have value "imgt"
 

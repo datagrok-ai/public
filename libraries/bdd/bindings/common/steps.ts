@@ -17,6 +17,9 @@ import {cssString, escapeRegExp, locate} from '../../src/runtime/locate.js';
 import {centerOf, dragFrom} from '../../src/runtime/viewers.js';
 
 export const clickOn = When('user clicks (on ){element}', (page: Page, target: ElementRef) => g.click(page, target), {tier: 'ui'});
+export const clickOnHolding = When('user clicks (on ){element} holding {key}', (page: Page, target: ElementRef, key: string) =>
+  g.withKeys(page, [key], () => g.click(page, target)),
+{tier: 'ui', description: 'a click with a key or a chord held: Control adds a card or a row to the selection, Shift extends it'});
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
 export const rightClickOn = When('user right-clicks (on ){element}', (page: Page, target: ElementRef) => g.rightclick(page, target), {tier: 'ui'});
 export const hoverOver = When('user hovers (over ){element}', (page: Page, target: ElementRef) => g.hover(page, target), {tier: 'ui'});
