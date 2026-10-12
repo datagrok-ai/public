@@ -3,7 +3,7 @@ import {RoleSummary} from './sar-matrix-role-fit';
 import {MIN_SUPPORT, RGROUP_MIN_SERIES, SummaryData, SWAP_MIN_PAIRS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-data';
 import {count, tipText} from '../sar-matrix-ui-common';
-import {FINDING_ROWS, orient, Answer, shortSmiles, roleRanks} from './sar-matrix-summary-common';
+import {FINDING_ROWS, NOTHING_AT_POSITION, orient, Answer, shortSmiles, roleRanks} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {SummaryStartHere} from './sar-matrix-summary-start-here';
 
@@ -15,12 +15,12 @@ export class SummaryOverview {
   }
 
   build(data: SummaryData): HTMLElement {
-    const startHere = tipText('Start here', 'chem-sar-cp-section-title', `Series fits: ${count(data.fitHolds)} ` +
-      `hold, ${count(data.unchecked)} unchecked, ${count(data.lowR2)} do not. Unchecked means unverified, ` +
+    const keySeries = tipText('Key series', 'chem-sar-cp-section-title', `Series fits: ${count(data.fitHolds)} ` +
+      `hold, ${count(data.unchecked)} unchecked, ${count(data.lowR2)} weak. Unchecked means unverified, ` +
       'not wrong.');
     return ui.divV([
       this.kit.scaleRow(data, this.coverage(data)),
-      ui.divH([startHere, this.kit.levelInput()], 'chem-sar-sum-title-row'),
+      ui.divH([keySeries, this.kit.levelInput()], 'chem-sar-sum-title-row'),
       ui.divV(this.startHere.build(data), 'chem-sar-sum-list'),
       this.buildAnswers(data),
     ], 'chem-sar-sum-overview');
@@ -78,11 +78,11 @@ export class SummaryOverview {
       ui.divH([ui.divText(`What to change · ${count(fit.roles.length)} components`, 'chem-sar-cp-section-title'),
         this.setupLine(data)], 'chem-sar-sum-title-row'),
       head,
-      ...fit.roles.slice(0, FINDING_ROWS).map((role, index) => this.componentRow(data, role, index)),
+      ...fit.roles.slice(0, FINDING_ROWS).map((role) => this.componentRow(data, role)),
     ];
     if (fit.roles.length > FINDING_ROWS) {
       body.push(...this.kit.lazyFold(`${fit.roles.length - FINDING_ROWS} more`, () => fit.roles.slice(FINDING_ROWS)
-        .map((role, index) => this.componentRow(data, role, FINDING_ROWS + index))));
+        .map((role) => this.componentRow(data, role))));
     }
     return ui.divV(body, 'chem-sar-sum-comp chem-sar-sum-card');
   }
@@ -115,18 +115,18 @@ export class SummaryOverview {
       'is ranked and has its swaps pooled either way.');
   }
 
-  private componentRow(data: SummaryData, role: RoleSummary, index: number): HTMLElement {
+  private componentRow(data: SummaryData, role: RoleSummary): HTMLElement {
     const host = this.kit.host;
     const detail = this.detail();
     const top = roleRanks(role) ? role.levels[0] : undefined;
     const best = ui.divH(top === undefined ? [ui.divText('not ranked', 'chem-sar-cp-hint')] : [
-      top.value === '' ? ui.divText('nothing at this position', 'chem-sar-cp-hint') :
+      top.value === '' ? ui.divText(NOTHING_AT_POSITION, 'chem-sar-cp-hint') :
         this.kit.depiction(top.value),
       this.figure(this.kit.formatEffect(top.coef), `vs average · ${count(top.n)} cpd`),
     ], 'chem-sar-sum-half');
     ui.tooltip.bind(best, () => `${role.name} typically moves ${host.activityColumnName} by ` +
       `${role.spread.toFixed(2)} (a standard deviation, not a range). Click for its full ranking.`);
-    best.onclick = () => detail.toggle(best, () => this.kit.effects.roleCard(data, index));
+    best.onclick = () => detail.toggle(best, () => this.kit.effects.roleCard(data, role));
 
     const pool = data.swapsByRole.get(role.name)?.[0];
     const only = ` Pairs alike in every component but ${role.name}, pooled across the rest of the table.`;
@@ -198,7 +198,7 @@ export class SummaryOverview {
     const top = rows[0];
     const partner = data.axisRole === null ? 'series' : 'core';
     if (!this.kit.leads(top.magnitude, rows[1]?.magnitude ?? null, data.modelError)) {
-      return {answer: `Two lead equally`,
+      return {answer: 'Two lead equally',
         negative: `the ${partner} decides — ${top.k} of ${top.tried} against ${rows[1].k} of ` +
           `${rows[1].tried}`,
         art: this.kit.pairArt(top.subst, rows[1].subst, 'or')};
@@ -219,16 +219,16 @@ export class SummaryOverview {
     // Only cores cut at the same depth compare, so the depth is named.
     const depth = this.kit.coreTiers(data).length > 1 ? `among the L${cores[0].tier} cores; ` : '';
     const negative = `${depth}mean of what was made — a core only ever paired with good caps scores high`;
-    const dir = host.higherIsBetter ? 1 : -1;
+    const dir = this.kit.dir;
     const top = cores[0];
     if (!this.kit.leads(dir * top.typical, cores.length > 1 ? dir * cores[1].typical : null, data.modelError)) {
-      return {answer: `No core runs clear`,
+      return {answer: 'No core runs clear',
         negative: `${depth}the top ${cores.length} sit inside ` +
           `${host.formatActivity(data.modelError ?? 0)} model error of each other`};
     }
     return {answer: `${top.matrix.label} · typical ${host.formatActivity(top.typical)} over ` +
       `${count(top.cpd)} cpd`, negative,
-    art: this.kit.answerArt(top.matrix.rows[0]?.keySmiles ?? null)};
+    art: this.kit.answerArt(top.matrix.rows[0].keySmiles)};
   }
 
   private potencyAnswer(data: SummaryData): Answer {

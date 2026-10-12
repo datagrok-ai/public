@@ -2,19 +2,15 @@ import * as ui from 'datagrok-api/ui';
 import {RoleLevel, RoleSummary} from './sar-matrix-role-fit';
 import {LOSER_ROWS, MIN_SUPPORT, SummaryData, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
 import {count} from '../sar-matrix-ui-common';
+import {NOTHING_AT_POSITION} from './sar-matrix-summary-common';
 import type {SummaryEffects} from './sar-matrix-summary-effects';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 
 export class SummaryRoleCards {
   constructor(private readonly kit: SummaryPanel, private readonly effects: SummaryEffects) {}
 
-  roleCard(data: SummaryData, index: number): HTMLElement {
-    return this.buildRoleCard(data, data.roleFit!.roles[index]);
-  }
-
   /** So the card's compound count is not mistaken for the table's. */
-  private roleDropped(data: SummaryData): HTMLElement[] {
-    const dropped = data.roleFit?.dropped ?? 0;
+  private roleDropped(dropped: number): HTMLElement[] {
     if (dropped === 0)
       return [];
     return [ui.divText(`${count(dropped)} compounds share no component value with the rest and are not ` +
@@ -29,14 +25,16 @@ export class SummaryRoleCards {
         .map((level) => ({level, faint: true}))];
   }
 
-  private buildRoleCard(data: SummaryData, role: RoleSummary): HTMLElement {
+  roleCard(data: SummaryData, role: RoleSummary): HTMLElement {
     const host = this.kit.host;
     const fit = data.roleFit!;
     const title = `${role.name} — effect vs the average compound`;
     const subtitle = `How far each value moves ${host.activityColumnName} from the library average of ` +
       `${host.formatActivity(fit.mean)}, the other components held fixed.`;
-    const footer = this.roleFooter();
-    const dropped = this.roleDropped(data);
+    const footer = this.kit.hint('vs average: distance from the library average, the other components held fixed.',
+      'Fitted over the whole table. Observational, not causal: neither a potency nor a prediction. The ' +
+      'measured swap beside it counts pairs made side by side instead.');
+    const dropped = this.roleDropped(fit.dropped);
     if (role.levels.length < 2) {
       return this.effects.card(title, subtitle, [...this.kit.reason(`${role.levels.length === 1 ? 'Only one' : 'No'} ` +
         `${role.name} value carries ${MIN_SUPPORT} or more compounds, so there is nothing to compare.`),
@@ -49,18 +47,14 @@ export class SummaryRoleCards {
         'components to rank.'), ...dropped], footer);
     }
 
-    const chips: HTMLElement[] = [
-      this.kit.badge(`spread ${role.spread.toFixed(2)}`, 'Count-weighted sd of this component\'s effects, ' +
-        'with estimation noise subtracted so columns with different numbers of values compare. ' +
-        'Not a range.'),
-      this.kit.badge(`${role.levels.length} of ${role.fitted} values ranked`,
-        `${role.thin} values seen fewer than ${MIN_SUPPORT} times stay in the fit but carry no readable ` +
-        'effect of their own.'),
+    const chips = [
+      this.kit.badge(`spread ${role.spread.toFixed(2)}`, `How far ${role.name} typically moves the activity, noise ` +
+        'removed. Not a range.'),
+      role.thin === 0 ?
+        this.kit.badge(`${role.levels.length} values`, 'Every value has enough compounds to be ranked.') :
+        this.kit.badge(`${role.levels.length} of ${role.fitted} ranked`, `${role.thin} values have fewer than ` +
+          `${MIN_SUPPORT} compounds: kept in the fit, not ranked.`),
     ];
-    if (role.repeat !== null) {
-      chips.push(this.kit.badge(`repeats at r ${role.repeat.toFixed(2)}`,
-        'Correlation of the effects fitted on each half of the table; below ' + TRUST_R2 + ' they are not ranked.'));
-    }
     const body: HTMLElement[] = [ui.divH(chips, 'chem-sar-sum-chips')];
     const split = role.split;
     if (split !== null) {
@@ -81,13 +75,13 @@ export class SummaryRoleCards {
         name: ref.matrix.label,
         badges: [this.roleCountBadge(role.name, level)],
         desc: `best measured ${host.formatActivity(ref.value)}` +
-          (level.value === '' ? ' · nothing at this position' : ''),
+          (level.value === '' ? ` · ${NOTHING_AT_POSITION}` : ''),
         value: this.kit.formatEffect(level.coef),
         caption: 'vs average',
         valueTip: `Over ${count(level.n)} compounds, adjusted for ${others}. A difference from the average, ` +
           'not a potency.',
         faint,
-        tip: role.name === data.coreRole ? `Open ${ref.matrix.label} in the SAR Matrix` :
+        tip: role.name === data.coreRole ? this.kit.openMatrixTip(ref.matrix) :
           this.kit.openTip(ref.matrix, ref.ri, ref.ci),
         onClick: () => role.name === data.coreRole ? host.revealMatrix(ref.matrix) :
           host.revealCell(ref.matrix, ref.ri, ref.ci, position),
@@ -105,11 +99,5 @@ export class SummaryRoleCards {
       this.kit.host.selectRoleValue(role, level.value);
     };
     return badge;
-  }
-
-  private roleFooter(): HTMLElement {
-    return this.kit.hint('vs average: distance from the library average, the other components held fixed.',
-      'Fitted over the whole table. Observational, not causal: neither a potency nor a prediction. The ' +
-      'measured swap beside it counts pairs made side by side instead.');
   }
 }

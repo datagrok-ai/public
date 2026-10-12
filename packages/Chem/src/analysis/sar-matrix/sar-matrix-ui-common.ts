@@ -6,8 +6,6 @@ import {drawMoleculeToCanvas} from '../../utils/chem-common-rdkit';
 import {standardizeFragment} from './build/sar-matrix-columns';
 import {SarMatrix} from './sar-matrix-types';
 
-/** Layout, colour and grid types shared by the viewer and its panels. */
-
 const structureCache = new Map<string, boolean>();
 const STRUCTURE_CACHE_MAX = 2000;
 
@@ -35,7 +33,7 @@ export const CHIP_H = 13;
 export const CHIP_PAD = 3;
 export const CHIP_MARGIN = 3;
 export const HEADER_W = 78;
-export const HEADER_H = 46;
+const HEADER_H = 46;
 export const COL_HEADER_H = HEADER_H + 36;
 export const CORE_W = 132;
 /** Room for the grid's own horizontal scrollbar when a grid is sized to its rows, not stretched. */
@@ -141,7 +139,7 @@ export function clearCssColorCache(): void {
   cssColorCache.clear();
 }
 
-export function argbToRgba(argb: number): [number, number, number, number] {
+function argbToRgba(argb: number): [number, number, number, number] {
   return [DG.Color.r(argb) / 255, DG.Color.g(argb) / 255, DG.Color.b(argb) / 255, DG.Color.a(argb) / 255];
 }
 
@@ -196,7 +194,7 @@ export function scrollWithin(scroller: HTMLElement, el: HTMLElement): void {
 export function renderMoleculeOnColor(smiles: string, w: number, h: number, argb: number): HTMLElement {
   const canvas = ui.canvas(w, h);
   if (smiles)
-    paintMoleculeOnColor(canvas as HTMLCanvasElement, smiles, w, h, argb);
+    paintMoleculeOnColor(canvas, smiles, w, h, argb);
   return canvas;
 }
 

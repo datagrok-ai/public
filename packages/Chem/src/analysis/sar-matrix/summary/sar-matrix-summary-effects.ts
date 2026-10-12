@@ -3,7 +3,8 @@ import {MIN_SUPPORT, SeriesStat, SummaryData, SWAP_MIN_PAIRS, SWAP_MIN_SERIES,
   SWAP_ROW_CAP} from './sar-matrix-summary-data';
 import {count} from '../sar-matrix-ui-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
-import {orient, Answer, roleRanks} from './sar-matrix-summary-common';
+import {orient, roleRanks} from './sar-matrix-summary-common';
+import type {RoleSummary} from './sar-matrix-role-fit';
 import {SummaryRoleCards} from './sar-matrix-summary-role-cards';
 import {SummaryRGroupCard} from './sar-matrix-summary-rgroup-card';
 
@@ -22,38 +23,18 @@ export class SummaryEffects {
 
   coreCardFor(data: SummaryData): HTMLElement {
     return data.coresAreSeries ? this.buildCoreCard(data, this.kit.topCores(data)) :
-      ui.divText('Cores do not compare across series here; each series\' best core is in its Start here expand.',
+      ui.divText('Cores do not compare across series here; each series\' best core is in its Key series row.',
         'chem-sar-cp-hint');
   }
 
-  roleCard(data: SummaryData, index: number): HTMLElement {
-    return this.roleCards.roleCard(data, index);
+  roleCard(data: SummaryData, role: RoleSummary): HTMLElement {
+    return this.roleCards.roleCard(data, role);
   }
 
-  roleAnswer(data: SummaryData, name: string | null): Answer | null {
-    const fit = data.roleFit;
-    if (fit === null || this.kit.roleFitRefusal(data) !== null)
-      return null;
-    const role = fit.roles.find((other) => other.name === name);
-    if (role === undefined || !roleRanks(role))
-      return null;
-    const [top, second] = role.levels;
-    const dir = this.kit.host.higherIsBetter ? 1 : -1;
-    if (!this.kit.leads(dir * top.coef, dir * second.coef, fit.cvRmse)) {
-      const split = role.split;
-      if (split !== null) {
-        return {answer: `two groups: ${count(split.hiCount)} at ${this.kit.formatEffect(split.hiMean)}, ` +
-          `${count(split.loCount)} at ${this.kit.formatEffect(split.loMean)}`,
-        negative: `no single ${role.name} leads; the groups are ${split.gap.toFixed(2)} apart, so the group ` +
-          'matters more than the choice inside it'};
-      }
-      return {answer: `No single ${role.name} leads`,
-        negative: `top two ${this.kit.formatEffect(dir * (top.coef - second.coef))} apart, within the ` +
-          `± ${this.kit.host.formatActivity(fit.cvRmse!)} this fit resolves`};
-    }
-    return {answer: `${this.kit.formatEffect(top.coef)} · over ${count(top.n)} compounds`,
-      negative: `against the library mean of ${this.kit.host.formatActivity(fit.mean)}, adjusted for the ` +
-        'other components — observational, not a potency', art: this.kit.answerArt(top.value)};
+  /** Whether the component fit ranks this component, so its own card covers it. */
+  roleRanked(data: SummaryData, name: string | null): boolean {
+    const role = data.roleFit?.roles.find((other) => other.name === name);
+    return role !== undefined && this.kit.roleFitRefusal(data) === null && roleRanks(role);
   }
 
   card(title: string, subtitle: string, body: HTMLElement[], footer?: HTMLElement): HTMLElement {
@@ -73,6 +54,7 @@ export class SummaryEffects {
     // With component columns every pair has its own background, so a count of those only repeats the pairs.
     const across = (pool: {roots: Set<string>}): string =>
       role === undefined ? ` · ${pool.roots.size} series` : '';
+    const show = (value: number): string => this.kit.formatDelta(value);
     const rows = pools.map((pool) => {
       const {forward, from, to, worst, widest: bestOf, mean, up} = orient(pool);
       const allUp = up === pool.n;
@@ -80,12 +62,11 @@ export class SummaryEffects {
       const best = pool.best;
       const ci = best === null ? -1 : forward ? best.ciTo : best.ciFrom;
       const position = best === null ? '' : best.matrix.columns[ci].position;
-      const show = this.kit.formatDelta.bind(this.kit);
       // Badges, not descriptor text, which clips to one line.
       const badges: HTMLElement[] = [];
       if (allUp) {
-        badges.push(this.kit.badge('all up', 'Every measured pair moved the same way. At 3 pairs that is ' +
-          'one-in-four under a coin-flip null.'));
+        badges.push(this.kit.badge('every pair improved', 'Every measured pair improved, none got worse. With only ' +
+          '3 pairs that still happens one time in four by chance.'));
       }
       if (pool.sampled) {
         badges.push(this.kit.badge('sampled row', 'One contributing row carried more than ' +
@@ -130,18 +111,18 @@ export class SummaryEffects {
     if (cores.length === 0)
       return this.card(title, subtitle, this.kit.reason(`No core holds ${MIN_SUPPORT} measured compounds.`));
     const body = cores.map((stat) => this.kit.summaryRow({
-      depiction: this.kit.depiction(stat.matrix.rows[0]?.coreSmiles ?? null),
+      depiction: this.kit.depiction(stat.matrix.rows[0].coreSmiles),
       name: stat.matrix.label,
-      badges: [this.kit.trustBadge(stat.matrix)],
+      badges: this.kit.trustBadges(stat.matrix),
       desc: `${count(stat.cpd)} cpd · best ${host.formatActivity(stat.best!.value)} · ` +
         `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}`,
       value: host.formatActivity(stat.typical),
       caption: 'typical',
       valueTip: 'Count-weighted fitted mean of what was made on this core; good caps lift it.',
-      tip: `Open ${stat.matrix.label} in the SAR Matrix`,
+      tip: this.kit.openMatrixTip(stat.matrix),
       onClick: () => host.revealMatrix(stat.matrix),
     }));
-    const dir = host.higherIsBetter ? 1 : -1;
+    const dir = this.kit.dir;
     let holder: SeriesStat | null = null;
     // Inside the ranked tier only: other depths do not compare.
     for (const stat of this.kit.rankableCores(data).filter((s) => s.tier === cores[0].tier)) {

@@ -818,10 +818,9 @@ i.chem-sar-card-twisty:hover {
   font-size: 11px;
 }
 
-/* Indented to the row's depiction: the border and padding of `.chem-sar-card`. */
+/* Indented past the row's depiction, so it reads as nested under that row. */
 .chem-sar-sum-expand {
-  gap: 4px;
-  padding: 2px 12px 10px 15px;
+  padding: 2px 12px 10px 48px;
 }
 
 .chem-sar-sum-detail:not(:empty) {

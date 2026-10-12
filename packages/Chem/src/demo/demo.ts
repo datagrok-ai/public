@@ -282,9 +282,9 @@ const SAR_HINTS: SarHint[] = [
     anchor: () => document.querySelector('.chem-sar-sum-list .chem-sar-card') ??
       document.querySelector('.chem-sar-sum-overview'),
     position: ui.hints.POSITION.TOP,
-    title: 'Start here',
+    title: 'Key series',
     text: 'The series to open first. The squares say why: most compounds, widest range, best ' +
-      'compound, most predictions, best-validated fit. Click a row for detail; its arrow opens the matrix.',
+      'compound, most predictions, best-validated fit. Click a row for detail; its grid icon opens the matrix.',
   },
   {
     before: () => at.components()?.scrollIntoView({block: 'nearest'}),
@@ -475,7 +475,7 @@ const PROTAC_HINTS: SarHint[] = [
     position: ui.hints.POSITION.TOP,
     title: 'Which series to open first',
     text: 'The series to open first; the squares say why each is listed. Click a row for detail; its ' +
-      'arrow opens the matrix.',
+      'grid icon opens the matrix.',
   },
   {
     before: () => at.components()?.scrollIntoView({block: 'nearest'}),

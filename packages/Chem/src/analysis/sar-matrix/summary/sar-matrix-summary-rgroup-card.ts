@@ -11,12 +11,11 @@ export class SummaryRGroupCard {
   constructor(private readonly kit: SummaryPanel, private readonly effects: SummaryEffects) {}
 
   build(data: SummaryData): HTMLElement {
-    const host = this.kit.host;
     const title = data.axisRole === null ? 'R-groups — within-series ranking' :
       `${data.axisRole} — within-series ranking`;
     const subtitle = 'Groups that came first at their position in most series that tried them: carry them ' +
       'forward. The number is the margin over each series\' most common substituent.';
-    if (!host.activityIsLog) {
+    if (!this.kit.host.activityIsLog) {
       return this.effects.card(title, subtitle, this.kit.reason('The activity is on a raw scale, where a fitted ' +
         'effect is a difference in assay units and says nothing about how large the change is. Set ' +
         'Scaling to lg or −lg, or declare the column higher-is-better if it is already a pIC50.'));
@@ -25,12 +24,12 @@ export class SummaryRGroupCard {
     const thin = data.rgroupsThin.map((row) => this.rgroupRow(row, {thin: true}));
     if (rows.length === 0 && thin.length === 0) {
       // Non-convergence is named because nothing else on screen shows it.
-      return this.effects.card(title, subtitle, this.kit.reason(`No substituent comes first at its position in ` +
+      return this.effects.card(title, subtitle, this.kit.reason('No substituent comes first at its position in ' +
         `${SWAP_MIN_SERIES} series whose additive fit holds.` + (data.nonConverged === 0 ? '' :
         ` ${count(data.nonConverged)} series whose fit did not converge are left out.`)));
     }
     const body: HTMLElement[] = [];
-    if (this.effects.roleAnswer(data, data.axisRole) !== null) {
+    if (this.effects.roleRanked(data, data.axisRole)) {
       body.push(ui.divText(`This card counts wins within each series; the ${data.axisRole} view reports one ` +
         'effect over the whole table.',
       'chem-sar-sum-prose'));
@@ -42,7 +41,7 @@ export class SummaryRGroupCard {
     }
     body.push(...rows);
     if (thin.length > 0) {
-      body.push(ui.divText(`Won in only two series — a median over two lineages is the mean of two ` +
+      body.push(ui.divText('Won in only two series — a median over two lineages is the mean of two ' +
         'numbers:', 'chem-sar-cp-hint'));
       body.push(...thin);
     }

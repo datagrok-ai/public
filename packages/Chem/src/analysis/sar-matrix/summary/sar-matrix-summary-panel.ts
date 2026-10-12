@@ -4,7 +4,7 @@ import {SummaryMaking} from './sar-matrix-summary-making';
 import {SummaryOverview} from './sar-matrix-summary-overview';
 import {SummaryEffects} from './sar-matrix-summary-effects';
 import {SummaryCollector, SummaryData} from './sar-matrix-summary-data';
-import {count} from '../sar-matrix-ui-common';
+import {chipBadge, count} from '../sar-matrix-ui-common';
 import {SummaryScale} from './sar-matrix-summary-scale';
 import {SummaryKit} from './sar-matrix-summary-kit';
 
@@ -120,11 +120,10 @@ export class SummaryPanel extends SummaryKit {
   }
 
   private levelChip(tier: number | null, label: string, n: number): HTMLElement {
-    const chip = ui.divText(`${label} · ${count(n)}`, 'chem-sar-chip-badge chem-sar-sum-level');
+    const chip = chipBadge(`${label} · ${count(n)}`, (tier === null ? `Read every ranking over all ${count(n)} ` +
+      'series.' : `Read every ranking over the ${count(n)} series cut at level ${tier} only.`) +
+      ' L1 is the finest; each level up is one cut coarser.', 'chem-sar-sum-level');
     chip.classList.toggle('chem-sar-sum-level-on', this.tierFilter === tier);
-    ui.tooltip.bind(chip, () => (tier === null ? `Read every ranking over all ${count(n)} series.` :
-      `Read every ranking over the ${count(n)} series cut at level ${tier} only.`) +
-      ' L1 is the finest; each level up is one cut coarser.');
     chip.onclick = () => this.setTierFilter(tier);
     return chip;
   }

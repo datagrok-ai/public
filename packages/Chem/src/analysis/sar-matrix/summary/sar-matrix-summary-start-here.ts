@@ -26,7 +26,7 @@ export class SummaryStartHere {
           this.kit.badge(`L${stat.tier}`, stat.tier === 1 ?
             'A leaf series: nothing finer under it.' :
             `One cut coarser than the L${stat.tier - 1} series below it.`),
-          this.kit.trustBadge(matrix),
+          ...this.kit.trustBadges(matrix),
           ...this.gainBadge(stat),
         ],
         mark: this.reasonLane(row.reasons),
@@ -41,7 +41,7 @@ export class SummaryStartHere {
         valueTip: stat.best === null ? 'This series holds no measured compound.' :
           `${host.formatActivity(stat.best.value)} measured; ${neighbours} measured cells share its core ` +
           'or substituent.',
-        tip: `Click to expand; the arrow opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted mean ` +
+        tip: `Click to expand; the grid icon opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted mean ` +
           'of what was made; a big gap to "best" suggests one lucky compound.',
         onClick: () => stat.best === null ? host.revealMatrix(matrix) :
           host.revealCell(matrix, stat.best.ri, stat.best.ci),
@@ -74,38 +74,21 @@ export class SummaryStartHere {
     }
     if (r2 === null || r2 < TRUST_R2)
       return null;
-    return {label: 'thin support', tip: 'The fit holds, but every prediction rests on fewer than ' +
+    return {label: 'support thin', tip: 'The fit holds, but every prediction rests on fewer than ' +
       MIN_SUPPORT + ' measured compounds on an axis.'};
   }
 
   private gainBadge(stat: SeriesStat): HTMLElement[] {
     const host = this.kit.host;
-    const dir = host.higherIsBetter ? 1 : -1;
-    const reach = stat.bestVirtual !== null && stat.best !== null ?
-      dir * (stat.bestVirtual.value - stat.best.value) : null;
-    let tip = 'Best prediction vs best measured. Negative suggests a cliff; near zero means no further ' +
-      'additive gain, not an exhausted series.';
-    const rmse = stat.matrix.confidence?.rmse ?? null;
-    if (reach !== null && rmse !== null && rmse > 0 && host.activityIsLog) {
-      tip += ` That is ${(reach / rmse).toFixed(1)}× this series' own leave-one-out error; under 1× the ` +
-        'model cannot tell it from the best compound already made.';
-    }
-    let label = `${this.kit.formatEffect(reach ?? 0)} vs best made`;
-    if (reach === null) {
+    if (stat.bestVirtual === null || stat.best === null) {
       const reason = this.noGainReason(stat);
-      if (reason === null)
-        return [];
-      ({label, tip} = reason);
+      return reason === null ? [] : [this.kit.badge(reason.label, reason.tip)];
     }
-    const badge = this.kit.badge(label, tip, reach === null);
-    if (stat.bestVirtual !== null) {
-      badge.classList.add('chem-sar-sum-click');
-      badge.onclick = (e: MouseEvent) => {
-        e.stopPropagation();
-        host.revealCell(stat.matrix, stat.bestVirtual!.ri, stat.bestVirtual!.ci);
-      };
-    }
-    return [badge];
+    const reach = this.kit.dir * (stat.bestVirtual.value - stat.best.value);
+    const unsure = host.activityIsLog && Math.abs(reach) < (stat.matrix.confidence?.rmse ?? 0);
+    return [this.kit.badge(`${this.kit.formatEffect(reach)} predicted`, 'Best trusted prediction for an unmade ' +
+      'analog, minus the best compound made.' +
+      (unsure ? ' Smaller than this series\' error, so not a sure gain.' : ''))];
   }
 
   private startExpandParts(stat: SeriesStat): HTMLElement[] {

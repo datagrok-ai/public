@@ -6,8 +6,6 @@ import {count} from '../sar-matrix-ui-common';
 
 /** Analog rows shown before the rest fold away; the whole ranked list goes to the Make list, which sorts it. */
 const MAKING_ROWS = 8;
-const ANALOGS_TIP = 'Predicted analogs nobody has made, ranked by how much they would beat the best compound ' +
-  'of their series. Click to open.';
 
 type Best = {value: number} | null;
 
@@ -41,7 +39,7 @@ export class SummaryMaking {
     for (const row of shelf) {
       const cell = row.matrix.cells[row.ri][row.ci];
       body.push(...this.row(row, bests.get(row.matrix.id) ?? null, host.cellIdText(cell) ?? '(no id)',
-        this.kit.cellLocation(row.matrix, row.ri, row.ci), [this.kit.trustBadge(row.matrix)], '~'));
+        this.kit.cellLocation(row.matrix, row.ri, row.ci), this.kit.trustBadges(row.matrix), '~'));
     }
     body.push(ui.divH([ui.button(shelf.length === 1 ? 'Queue this compound for testing' :
       `Queue these ${shelf.length} for testing`, () => host.addCellsToMakeList(shelf, 'Nothing to add.'))],
@@ -59,7 +57,9 @@ export class SummaryMaking {
     const rows = [...ranked, ...thin, ...(fallback ? data.analogsAny.all : [])];
     const title = rows.length === 0 ? 'Worth making · none' :
       `Worth making · ${count(rows.length)} analog${rows.length === 1 ? '' : 's'}`;
-    return this.section(title, ANALOGS_TIP,
+    const tip = 'Predicted analogs nobody has made, ranked by how much they would beat the best compound of ' +
+      'their series. Click to open.';
+    return this.section(title, tip,
       () => this.analogBody(data, rows, new Set(thin.map((row) => row.key)), fallback), 'chem-sar-sum-making-block');
   }
 
@@ -130,7 +130,7 @@ export class SummaryMaking {
       caption: 'predicted',
       cart: {matrix, ri, ci},
       valueTip: 'Fitted core effect plus substituent effect; not measured.',
-      tip: 'Click to expand; the arrow opens it in the SAR Matrix.',
+      tip: 'Click to expand; the grid icon opens it in the SAR Matrix.',
       onClick: () => host.revealCell(matrix, ri, ci),
       onChevron: expand.toggle,
     }), expand.body];
@@ -139,8 +139,7 @@ export class SummaryMaking {
   private gainText(row: SummaryRow, best: Best): string {
     if (best === null)
       return 'its series has no measured compound';
-    const dir = this.kit.host.higherIsBetter ? 1 : -1;
-    const gain = dir * (row.matrix.cells[row.ri][row.ci].value! - best.value);
+    const gain = this.kit.dir * (row.matrix.cells[row.ri][row.ci].value! - best.value);
     return `gain ${this.kit.formatEffect(gain)} over the best compound its series made`;
   }
 

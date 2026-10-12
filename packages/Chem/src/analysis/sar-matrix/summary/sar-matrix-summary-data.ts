@@ -43,15 +43,6 @@ export class SummaryCollector {
     const log = host.activityIsLog;
     const roots = host.matrixRoots;
     const tiers = host.matrixTiers;
-    let ceiling = -Infinity;
-    for (const matrix of host.matrices) {
-      for (const row of matrix.cells) {
-        for (const cell of row) {
-          if (cell.kind === 'real' && cell.value !== null)
-            ceiling = Math.max(ceiling, dir * cell.value);
-        }
-      }
-    }
 
     const compounds = new Set<number>();
     const untested = new Set<number>();
@@ -95,16 +86,19 @@ export class SummaryCollector {
     const roleMol: number[] = [];
     const roleBest = roleNames.map(() => new Map<string, MatrixCellRef & {value: number}>());
 
-    // Coverage is of the whole analysis: a tier filter must not move compounds out of "measured".
-    if (this.tierFilter !== null) {
-      for (const matrix of host.matrices) {
-        for (const row of matrix.cells) {
-          for (const cell of row) {
-            if (cell.molIdx !== null && cell.kind === 'real' && cell.value !== null)
+    // The ceiling and the coverage are of the whole analysis: a tier filter must not move compounds out of
+    // "measured". Unfiltered, the main walk below fills the coverage itself.
+    const filtered = this.tierFilter !== null;
+    let ceiling = -Infinity;
+    for (const matrix of host.matrices) {
+      for (const row of matrix.cells) {
+        for (const cell of row) {
+          if (cell.kind === 'real' && cell.value !== null) {
+            ceiling = Math.max(ceiling, dir * cell.value);
+            if (filtered && cell.molIdx !== null)
               compounds.add(cell.molIdx);
-            else if (cell.molIdx !== null && cell.kind === 'unmeasured')
-              untested.add(cell.molIdx);
-          }
+          } else if (filtered && cell.kind === 'unmeasured' && cell.molIdx !== null)
+            untested.add(cell.molIdx);
         }
       }
     }

@@ -4,7 +4,7 @@ import {SwapPool, TRUST_R2} from './sar-matrix-summary-data';
 /** Component rows shown before the rest fold away, so the swaps stay on the first screen. */
 export const FINDING_ROWS = 4;
 
-/** Index-aligned with the five picks of Start here. */
+/** Index-aligned with the five picks of Key series. */
 export const REASON_GLYPHS = ['n', '↔', '★', '✚', '✓'];
 export const REASON_WORDS = ['most measured compounds', 'widest measured range',
   'holds the best measured compound', 'most predictions worth making', 'best-validated fit'];
@@ -31,6 +31,8 @@ export interface Answer {
   /** Drawn, since truncated SMILES of related analogs read alike. */
   art?: HTMLElement;
 }
+
+export const NOTHING_AT_POSITION = 'nothing at this position';
 
 export function shortSmiles(smiles: string): string {
   return smiles.length > 20 ? `${smiles.slice(0, 19)}…` : smiles;

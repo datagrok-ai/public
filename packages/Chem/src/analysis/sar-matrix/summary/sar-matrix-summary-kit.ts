@@ -25,8 +25,9 @@ export class SummaryKit {
     cart?: MatrixCellRef,
     tip: string,
     onClick: () => void,
-    /** Makes a click on the row expand it; without it the row is still and only the open button acts. */
-    onChevron?: () => void,
+    /** Makes a click on the row expand it, returning whether it is now open; without it the row is still and
+     *  only the open button acts. */
+    onChevron?: () => boolean,
   }): HTMLElement {
     const value = ui.divText(opts.value,
       `chem-sar-card-title${opts.faint ? ' chem-sar-sum-faint' : ''}`);
@@ -54,7 +55,7 @@ export class SummaryKit {
       parts.push(cart);
     }
     const toggle = opts.onChevron;
-    const open = ui.iconFA('arrow-circle-right', (e: MouseEvent) => {
+    const open = ui.iconFA('th', (e: MouseEvent) => {
       e.stopPropagation();
       opts.onClick();
     }, toggle === undefined ? opts.tip : 'Open in the SAR Matrix');
@@ -62,30 +63,38 @@ export class SummaryKit {
     parts.push(open);
     if (toggle === undefined)
       return ui.divH(parts, 'chem-sar-card chem-sar-sum-static');
-    const twisty = ui.iconFA('chevron-down');
-    twisty.classList.add('chem-sar-card-twisty');
+    const [twisty, point] = this.twisty();
     parts.push(twisty);
     const row = ui.divH(parts, 'chem-sar-card');
     ui.tooltip.bind(row, () => opts.tip);
-    row.onclick = toggle;
+    row.onclick = () => point(toggle());
     return row;
+  }
+
+  /** A chevron that points down while its section is open. */
+  private twisty(): [HTMLElement, (open: boolean) => void] {
+    const icon = ui.iconFA('chevron-right');
+    icon.classList.add('chem-sar-card-twisty');
+    return [icon, (open) => {
+      icon.classList.toggle('fa-chevron-down', open);
+      icon.classList.toggle('fa-chevron-right', !open);
+    }];
   }
 
   /** Canvas now, RDKit on the next tick, so a tab switch is not held up by drawing. */
   depiction(smiles: string | null): HTMLElement {
-    const [w, h] = [SUM_MOL_W, SUM_MOL_H];
-    const canvas = ui.canvas(w, h);
+    const canvas = ui.canvas(SUM_MOL_W, SUM_MOL_H);
     canvas.classList.add('chem-sar-card-core');
     if (smiles) {
       this.pendingPaints.push(() => {
         if (isStructure(smiles)) {
-          paintMoleculeOnColor(canvas, smiles, w, h, CORE_BG_ARGB);
+          paintMoleculeOnColor(canvas, smiles, SUM_MOL_W, SUM_MOL_H, CORE_BG_ARGB);
           return;
         }
         // A component given by name, such as "VHL", has nothing to draw and is written out instead.
         const name = ui.divText(smiles, 'chem-sar-cp-frag-name');
-        name.style.width = `${w}px`;
-        name.style.height = `${h}px`;
+        name.style.width = `${SUM_MOL_W}px`;
+        name.style.height = `${SUM_MOL_H}px`;
         canvas.replaceWith(name);
       });
     }
@@ -103,13 +112,18 @@ export class SummaryKit {
     return chipBadge(text, tip, partial ? 'chem-sar-chip-partial' : '');
   }
 
-  /** No confidence means unchecked, not failing. */
-  trustBadge(matrix: SarMatrix): HTMLElement {
+  /** Only a fit that needs a caveat gets a badge; no confidence means unchecked, not failing. */
+  trustBadges(matrix: SarMatrix): HTMLElement[] {
     const conf = matrix.confidence;
-    return this.badge(!conf ? 'unchecked' : `R² ${conf.r2.toFixed(2)}`, !conf ?
-      'Too few cells to cross-validate, or all values identical: unverified, not wrong.' :
-      `± ${this.host.formatActivity(conf.rmse)} on held-out cells (${conf.n} of ${conf.total}); the fit ` +
-      `${conf.r2 >= TRUST_R2 ? 'holds' : 'does not hold'} at R² ${TRUST_R2}.`, !!conf && conf.r2 < TRUST_R2);
+    if (!conf) {
+      return [this.badge('fit unchecked', 'Too few measured cells to cross-validate this series\' fit, or all ' +
+        'values identical: its predictions are unverified, not wrong.')];
+    }
+    if (conf.r2 >= TRUST_R2)
+      return [];
+    return [this.badge('fit weak', `The additive fit does not predict held-out compounds well (R² ` +
+      `${conf.r2.toFixed(2)}, below ${TRUST_R2}; ± ${this.host.formatActivity(conf.rmse)} over ${conf.n} of ` +
+      `${conf.total} cells): treat this series' predictions with caution.`, true)];
   }
 
   pairArt(from: string, to: string, glyph = '→'): HTMLElement {
@@ -136,24 +150,22 @@ export class SummaryKit {
   /** A closed fold whose body is built on its first opening. */
   lazyFold(title: string, fill: () => HTMLElement[]): [HTMLElement, HTMLElement] {
     const lazy = this.lazyBody(fill);
-    const icon = ui.iconFA('chevron-right');
-    icon.classList.add('chem-sar-card-twisty');
+    const [icon, point] = this.twisty();
     const head = ui.divH([icon, ui.divText(title, 'chem-sar-cp-section-title')], 'chem-sar-sum-fold');
-    head.onclick = () => {
-      lazy.toggle();
-      const open = lazy.body.style.display !== 'none';
-      icon.classList.toggle('fa-chevron-down', open);
-      icon.classList.toggle('fa-chevron-right', !open);
-    };
+    head.onclick = () => point(lazy.toggle());
     return [head, lazy.body];
   }
 
   /** A body filled on its first opening, so an expand nobody opens draws nothing. */
-  lazyBody(fill: () => HTMLElement[]): {body: HTMLElement, open: () => void, toggle: () => void} {
+  lazyBody(fill: () => HTMLElement[]): {body: HTMLElement, toggle: () => boolean} {
     const body = ui.divV([]);
     body.style.display = 'none';
     let filled = false;
-    const open = (): void => {
+    const toggle = (): boolean => {
+      if (body.style.display !== 'none') {
+        body.style.display = 'none';
+        return false;
+      }
       if (!filled) {
         filled = true;
         body.append(...fill());
@@ -161,14 +173,14 @@ export class SummaryKit {
         this.flushPaints();
       }
       body.style.display = '';
+      return true;
     };
-    const toggle = (): void => {
-      if (body.style.display === 'none')
-        open();
-      else
-        body.style.display = 'none';
-    };
-    return {body, open, toggle};
+    return {body, toggle};
+  }
+
+  /** Which way a better value points: 1 when higher is better. */
+  get dir(): number {
+    return this.host.higherIsBetter ? 1 : -1;
   }
 
   /** Signed, at two decimals: effects live in tenths, where one decimal makes distinct rows read alike. */
@@ -192,6 +204,10 @@ export class SummaryKit {
 
   openTip(matrix: SarMatrix, ri: number, ci: number): string {
     return `Open ${this.cellLocation(matrix, ri, ci)} in the SAR Matrix`;
+  }
+
+  openMatrixTip(matrix: SarMatrix): string {
+    return `Open ${matrix.label} in the SAR Matrix`;
   }
 
   /** A front-runner is named alone only when it clears the model error. */
@@ -234,9 +250,8 @@ export class SummaryKit {
     const tier = this.tierFilter ?? this.defaultCoreTier(data);
     if (tier === null)
       return [];
-    const dir = this.host.higherIsBetter ? 1 : -1;
     return this.rankableCores(data).filter((stat) => stat.tier === tier)
-      .sort((a, b) => dir * (b.typical - a.typical) || (a.matrix.id < b.matrix.id ? -1 : 1))
+      .sort((a, b) => this.dir * (b.typical - a.typical) || (a.matrix.id < b.matrix.id ? -1 : 1))
       .slice(0, SUM_ROWS);
   }
 
