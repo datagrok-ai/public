@@ -31,7 +31,7 @@ export class SummaryStartHere {
             'A leaf series: nothing finer under it.' :
             `One cut coarser than the L${stat.tier - 1} series below it.`),
           this.kit.trustBadge(matrix),
-          this.gainBadge(stat),
+          ...this.gainBadge(stat),
         ],
         mark: this.reasonLane(row.reasons),
         // Cells the decomposition cannot express are left out of the denominator.
@@ -65,8 +65,9 @@ export class SummaryStartHere {
     return lane;
   }
 
-  /** Which part of the gate left this series with nothing to aim at; each calls for a different fix. */
-  private noGainReason(stat: SeriesStat): {label: string, tip: string} {
+  /** Which part of the gate left this series with nothing to aim at; each calls for a different fix. Null
+   *  where the trust badge beside it already says why. */
+  private noGainReason(stat: SeriesStat): {label: string, tip: string} | null {
     const r2 = stat.matrix.confidence?.r2 ?? null;
     if (!this.kit.host.predictVirtual) {
       return {label: 'predictions off', tip: '"Predict virtual analogs" is off, so this series has no ' +
@@ -76,19 +77,13 @@ export class SummaryStartHere {
       return {label: 'nothing unfilled', tip: 'Every cell this series can express is already measured ' +
         'or cannot be made, so there is no unfilled cell to predict.'};
     }
-    if (r2 === null) {
-      return {label: 'fit unchecked', tip: `${count(stat.virtualCells)} predictions, but too few cells to ` +
-        'check the fit: unchecked, not wrong.'};
-    }
-    if (r2 < TRUST_R2) {
-      return {label: 'fit fails', tip: `R² ${r2.toFixed(2)}, below ${TRUST_R2}: effects do not add up here, ` +
-        'so the predictions are not estimates.'};
-    }
+    if (r2 === null || r2 < TRUST_R2)
+      return null;
     return {label: 'thin support', tip: 'The fit holds, but every prediction rests on fewer than ' +
       MIN_SUPPORT + ' measured compounds on an axis.'};
   }
 
-  private gainBadge(stat: SeriesStat): HTMLElement {
+  private gainBadge(stat: SeriesStat): HTMLElement[] {
     const host = this.kit.host;
     const dir = host.higherIsBetter ? 1 : -1;
     const reach = stat.bestVirtual !== null && stat.best !== null ?
@@ -101,8 +96,12 @@ export class SummaryStartHere {
         'model cannot tell it from the best compound already made.';
     }
     let label = `${this.kit.formatEffect(reach ?? 0)} vs best made`;
-    if (reach === null)
-      ({label, tip} = this.noGainReason(stat));
+    if (reach === null) {
+      const reason = this.noGainReason(stat);
+      if (reason === null)
+        return [];
+      ({label, tip} = reason);
+    }
     const badge = this.kit.badge(label, tip, reach === null);
     if (stat.bestVirtual !== null) {
       badge.classList.add('chem-sar-sum-click');
@@ -111,7 +110,7 @@ export class SummaryStartHere {
         host.revealCell(stat.matrix, stat.bestVirtual!.ri, stat.bestVirtual!.ci);
       };
     }
-    return badge;
+    return [badge];
   }
 
   private startExpandParts(stat: SeriesStat): HTMLElement[] {

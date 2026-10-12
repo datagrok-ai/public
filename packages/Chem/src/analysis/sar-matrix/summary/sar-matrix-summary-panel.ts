@@ -135,7 +135,7 @@ export class SummaryPanel extends SummaryKit {
     }
 
     this.root.appendChild(ui.divH([this.scale.build(data), this.levelInput()], 'chem-sar-sum-top'));
-    const sections = ui.tabControl(null, false);
+    const sections = ui.tabControl(null, {vertical: false});
     sections.root.classList.add('chem-sar-sum-sections');
     for (const name of PANES) {
       const host = ui.div([], 'chem-sar-sum-pane');
@@ -215,7 +215,7 @@ export class SummaryPanel extends SummaryKit {
       this.flushPaints();
       if (anchor === undefined)
         return;
-      const target = paneHost.querySelector(`[data-anchor="${anchor}"]`);
+      const target = paneHost.querySelector(`[data-anchor="${CSS.escape(anchor)}"]`);
       if (target instanceof HTMLElement)
         scrollWithin(paneHost, target);
     }, 0);

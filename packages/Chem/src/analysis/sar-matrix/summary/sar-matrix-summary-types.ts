@@ -34,6 +34,13 @@ export const LOSER_ROWS = 2;
 /** Rows the analog list holds: more than a quarter's synthesis. */
 export const ANALOG_LIST_MAX = 200;
 
+/** A sparse series needs hundreds of sweeps to reach the fit tolerance; under the matrix fill's cap of 50
+ *  many would read as unconverged and drop out of every pooled comparison. */
+export const SERIES_FIT_SWEEPS = 2000;
+
+/** Measured compounds a prediction must rest on, on both axes, before it is listed at all. */
+export const MIN_LISTED_SUPPORT = 2;
+
 export interface SummaryRow {
   /** What the pool deduplicates on. */
   key: string;
@@ -75,7 +82,6 @@ export interface SummaryHost {
   observedNeighbours(matrix: SarMatrix, ri: number, ci: number): number;
   revealCell(matrix: SarMatrix, ri: number, ci: number, position?: string): void;
   revealMatrix(matrix: SarMatrix): void;
-  showTab(name: string): void;
   addCellsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void;
 }
 
@@ -145,15 +151,14 @@ export class TopList {
     }
   }
 
-  /** One row per series first, then top up from the rest. `skip` applies inside both passes, so a
-   *  filtered card still fills. */
-  take(skip?: (row: SummaryRow) => boolean): SummaryRow[] {
+  /** One row per series first, then top up from the rest. */
+  take(): SummaryRow[] {
     const out: SummaryRow[] = [];
     const seen = new Set<string>();
     for (const row of this.rows) {
       if (out.length === SUM_ROWS)
         break;
-      if (seen.has(row.matrix.id) || skip?.(row))
+      if (seen.has(row.matrix.id))
         continue;
       seen.add(row.matrix.id);
       out.push(row);
@@ -161,7 +166,7 @@ export class TopList {
     for (const row of this.rows) {
       if (out.length === SUM_ROWS)
         break;
-      if (!out.includes(row) && !skip?.(row))
+      if (!out.includes(row))
         out.push(row);
     }
     return out;

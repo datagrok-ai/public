@@ -52,14 +52,10 @@
 * GROK-20955: Names To Smiles: Fixed the run failing on a table that already has a canonical_smiles column; the structures go into a column of their own
 * GROK-18286: Scaffold Tree: Fixed removing a scaffold under a colored one taking the colors column away, and with it the coloring of a plot colored by that column
 * Scaffold Tree: Fixed a removed colored scaffold keeping its color: the removed node was still redrawn once and registered its color again, so the next update brought its highlighting back
-* SAR Matrix: Added a per-component breakdown to the Summary tab — one cross-validated additive fit over the core and R-group columns ranks every component in a single run, instead of one run per component
-* SAR Matrix: Rebuilt the Summary tab as a no-scroll overview with Effects, Worth making and Method segments
-* SAR Matrix: Replaced the Summary tab's prose findings with at-a-glance marks
-* SAR Matrix: Added a ranked, deduplicated list of virtual analogs, ranked by predicted gain in each series' own error
-* SAR Matrix: Fixed a scroll that could move the dock container instead of the panel
-* SAR Matrix: Anchored the SAR Matrix dock tab to the grid's own node
-* SAR Matrix: Added a Summary tab — best measured compounds, untested compounds in hand, trusted predictions with their cross-validated error, the widest swing at one position and substituents that travel across series, each clickable to land on its cell
-* SAR Matrix: Summary now opens with the three answers in words — which R-group wins, which core runs highest, and which swap buys the most potency — each naming its own limit and landing on the card that backs it. Added a core leaderboard where a matrix is one core, the R-groups that reliably come last, and a per-core outcome strip that separates a group good everywhere from one good on a single core. The R-group card now counts the series a group was tried in rather than the ones it won, fill density excludes cells the decomposition cannot express, and each series carries its typical potency, its remaining additive headroom and the resolution floor of these fits; predictions that pass the trust gate but carry no structure are counted and their cause named
+* SAR Matrix: Added a Summary tab, the one the viewer opens on: the scale and coverage of the analysis, which R-group, core and measured swap buys the most (with a single cross-validated additive fit ranking every component where the parts are columns), the series to open first, and the untested compounds and virtual analogs worth making; every row lands on its cell
+* SAR Matrix: Added the PROTAC SAR Matrix demo: 2,792 patent degraders split into warhead, linker and E3 ligand columns
+* SAR Matrix: Fixed a column picked as both the core and an R-group: the dialog drops it from the R-groups and the function refuses it
+* SAR Matrix: Docked the viewer as a tab beside the table's grid
 * Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
 * Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
 * Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura

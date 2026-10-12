@@ -35,13 +35,11 @@ export class SummaryEffects {
           'core is in its Start here expand.', 'chem-sar-cp-hint'), 'cores');
       }
     }
-    const roles = data.roleFit === null ? [] : data.roleFit.roles.map((role) => role.name);
-    if (roles.length === 0)
+    // The pooled card backs the Overview's potency tile, shown wherever the component band is not.
+    if (this.kit.roleFitRefusal(data) !== null)
       series.push(this.kit.anchored(this.buildSwapCard(data), 'swaps'));
-    else {
-      for (const name of roles)
-        series.push(this.kit.anchored(this.buildSwapCard(data, name), swapAnchor(name)));
-    }
+    for (const role of data.roleFit?.roles ?? [])
+      series.push(this.kit.anchored(this.buildSwapCard(data, role.name), swapAnchor(role.name)));
 
     const roleCards = this.roleCards.build(data);
     if (roleCards.length === 0) {

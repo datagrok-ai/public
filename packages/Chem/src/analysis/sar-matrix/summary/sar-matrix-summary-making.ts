@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
 
 import {closeGridQuietly} from '../sar-matrix-types';
-import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, SummaryData, SummaryRow, supportOf,
+import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, SummaryData, SummaryRow,
   TRUST_R2} from './sar-matrix-summary-data';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 import {ANALOG_W, CARD_CORE_H, CARD_CORE_W, count, MatrixCellRef, moleculeGrid} from '../sar-matrix-ui-common';
@@ -44,12 +44,11 @@ export class SummaryMaking {
     body.push(ui.divText('Already in the table, never assayed — test these first',
       'chem-sar-cp-section-title'));
     body.push(this.kit.prose('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
-      'No fit gate, only ≥ 2 measured compounds on both axes: an assay is cheap.'));
-    // Filtered inside the pool, so a support-1 extrapolation never tops the list.
-    const shelf = data.test.take((row) => supportOf(row) < 2);
+      `No fit gate, only ≥ ${MIN_LISTED_SUPPORT} measured compounds on both axes: an assay is cheap.`));
+    const shelf = data.test.take();
     if (shelf.length === 0) {
       body.push(...this.kit.reason(host.predictUnmeasured ?
-        'No untested compound rests on two measured compounds on both axes.' :
+        `No untested compound rests on ${MIN_LISTED_SUPPORT} measured compounds on both axes.` :
         '"Predict untested compounds" is off, so untested compounds carry no predicted value to rank by.'));
     }
     for (const row of shelf) {
@@ -99,18 +98,22 @@ export class SummaryMaking {
     }
 
     const ranked = data.analogs.all;
-    const thin = data.analogsThin.all;
+    // One structure can be predicted in a thin series and in its coarser parent.
+    const rankedKeys = new Set(ranked.map((row) => row.key));
+    const thin = data.analogsThin.all.filter((row) => !rankedKeys.has(row.key));
     const fallback = ranked.length === 0 && thin.length === 0;
     const spare = fallback ? data.analogsAny.all : [];
     if (fallback && spare.length === 0) {
       body.push(...this.kit.reason(!host.predictVirtual ?
         'Predicted analogs are off — turn on "Predict virtual analogs" to see what to make.' :
-        'No series predicts anything above the best compound it has already measured.'));
+        `No prediction resting on ${MIN_LISTED_SUPPORT} or more measured compounds on both axes beats its ` +
+        'series\' best measured compound.'));
       return ui.divV(body, 'chem-sar-sum-making-block');
     }
     if (fallback) {
       // The gate withholds confidence, not a next structure.
-      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it. ' +
+      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it, among ' +
+        `predictions resting on ${MIN_LISTED_SUPPORT} or more measured compounds on both axes. ` +
         this.gateShortfall(data), 'chem-sar-sum-prose chem-sar-chip-partial'));
     }
 
@@ -122,7 +125,7 @@ export class SummaryMaking {
     const dropped = data.withheldBelowError + data.withheldThinSupport + data.withheldFitFails +
       data.withheldUnchecked + data.withheldNotConverged;
     const chips: HTMLElement[] = [
-      this.kit.badge(`${count(structures)} analogs · ${count(series)} series`,
+      this.kit.badge(`${count(structures)} analog${structures === 1 ? '' : 's'} · ${count(series)} series`,
         'Molecules, not cells: each structure is listed once.'),
     ];
     if (dropped > 0) {
@@ -155,7 +158,7 @@ export class SummaryMaking {
 
     body.push(ui.divH([
       // "These", not "all": the list is capped.
-      ui.button(`Add these ${rows.length} to Make list`,
+      ui.button(rows.length === 1 ? 'Add it to Make list' : `Add these ${rows.length} to Make list`,
         () => host.addCellsToMakeList(rows.map((r) => r.row), 'Nothing to add.')),
       ui.button('Add selected', () => host.addCellsToMakeList(this.selectedAnalogs(),
         'Select rows in the list first.')),
@@ -209,11 +212,11 @@ export class SummaryMaking {
     });
     type Item = typeof items[number];
     const {FLOAT, INT, STRING} = DG.COLUMN_TYPE;
-    const spec: [string, DG.ColumnType, (item: Item) => string | number, string?][] = [
+    const spec: [string, DG.ColumnType, (item: Item) => string | number | null, string?][] = [
       ['Analog', STRING, (it) => it.cell.smiles ?? '', 'Not in this dataset, which is not the same as never made.'],
       ['Predicted', FLOAT, (it) => it.cell.value!, 'Fitted core effect plus substituent effect; not measured.'],
       ['Gain', FLOAT, (it) => it.gain, 'Over the best measured compound of the same series.'],
-      ['Gain / error', FLOAT, (it) => it.conf !== null && it.conf.rmse > 0 ? it.gain / it.conf.rmse : NaN,
+      ['Gain / error', FLOAT, (it) => it.evidence !== 'ranked' || !it.conf?.rmse ? null : it.gain / it.conf.rmse,
         'The ranking: gain in multiples of the series\' own error. Under 1 it is within noise.'],
       ['n', INT, (it) => it.cell.support ?? 0,
         'Measured compounds on the weaker of this core and this substituent.'],

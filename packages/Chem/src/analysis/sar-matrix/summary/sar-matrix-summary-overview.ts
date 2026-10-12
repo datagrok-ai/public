@@ -93,8 +93,8 @@ export class SummaryOverview {
       return null;
     const rows = fit.roles.map((role, index) => this.componentRow(role, index));
     const body: HTMLElement[] = [
-      ui.divText(`spans = the range of ${this.kit.host.activityColumnName} across that component's ` +
-        `values · offsets are against the library mean of ${this.kit.host.formatActivity(fit.mean)}`,
+      ui.divText(`spread = how far ${this.kit.host.activityColumnName} typically moves with that component's ` +
+        `value, noise removed · offsets are against the library mean of ${this.kit.host.formatActivity(fit.mean)}`,
       'chem-sar-cp-hint'),
       ...rows.slice(0, FINDING_ROWS),
     ];
@@ -108,7 +108,7 @@ export class SummaryOverview {
     const lead = fit.roles[0];
     return ui.divV([
       this.bandGroup('comp', `What to change · ${count(fit.roles.length)} components`,
-        `${lead.name} leads, spans ${lead.spread.toFixed(2)}`, ui.divV(body)),
+        `${lead.name} leads, spread ${lead.spread.toFixed(2)}`, ui.divV(body)),
       this.bandGroup('swap', `Best measured swap · ${count(fit.roles.length)} components`,
         withPairs.length === 0 ? 'none pooled' :
           `${withPairs[0].name} ${this.swapPhrase(data.swapsByRole.get(withPairs[0].name)![0])}`, ui.divV(swapRows)),
@@ -159,7 +159,7 @@ export class SummaryOverview {
     const top = roleRanks(role) ? role.levels[0] : undefined;
     const parts: HTMLElement[] = [
       ui.divText(role.name, 'chem-sar-card-title chem-sar-sum-col'),
-      ui.divText(`spans ${role.spread.toFixed(2)}`, 'chem-sar-card-desc chem-sar-sum-col'),
+      ui.divText(`spread ${role.spread.toFixed(2)}`, 'chem-sar-card-desc chem-sar-sum-col'),
     ];
     if (top === undefined)
       parts.push(ui.divH([ui.divText('not ranked', 'chem-sar-cp-hint')], 'chem-sar-sum-slot'));
@@ -171,8 +171,8 @@ export class SummaryOverview {
       parts.push(ui.divText(`over ${count(top.n)} compounds`, 'chem-sar-cp-hint'));
     }
     const row = ui.divH(parts, 'chem-sar-card');
-    ui.tooltip.bind(row, () => `${role.name} moves ${this.kit.host.activityColumnName} by ` +
-      `${role.spread.toFixed(2)} across its values. Click for its full ranking.`);
+    ui.tooltip.bind(row, () => `${role.name} typically moves ${this.kit.host.activityColumnName} by ` +
+      `${role.spread.toFixed(2)} (a standard deviation, not a range). Click for its full ranking.`);
     row.onclick = () => this.kit.showPane(PANE_EFFECTS, `role-${index}`);
     return row;
   }
@@ -247,7 +247,8 @@ export class SummaryOverview {
       `stop making ${shortSmiles(loser.subst)} — last in ${loser.k} of ${loser.tried} tried`;
     const rows = data.rgroups;
     if (rows.length === 0) {
-      return {answer: `None in ${RGROUP_MIN_SERIES} series`,
+      // The Effects card lists groups won in two series; with none of those either, it says two.
+      return {answer: `None in ${data.rgroupsThin.length ? RGROUP_MIN_SERIES : SWAP_MIN_SERIES} series`,
         negative: 'no substituent comes first at its position in that many series whose additive fit holds'};
     }
     const top = rows[0];

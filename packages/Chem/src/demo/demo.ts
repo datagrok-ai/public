@@ -211,13 +211,8 @@ function byText(selector: string, title: string): HTMLElement | null {
   return found instanceof HTMLElement ? found : null;
 }
 
-/** Click a tab header of the SAR viewer by name. */
+/** Click a tab header of the SAR viewer, or of the Summary tab's own sections, by name. */
 function sarTab(title: string): void {
-  sarTabHeader(title)?.click();
-}
-
-/** Click one of the Summary tab's own sections. */
-function sarSegment(title: string): void {
   sarTabHeader(title)?.click();
 }
 
@@ -297,8 +292,8 @@ const SAR_HINTS: SarHint[] = [
   {
     anchor: at.components,
     title: 'What to change',
-    text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its span, its ' +
-      'best value and that value\'s offset. The widest span is the one to change next.',
+    text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its spread, its ' +
+      'best value and that value\'s offset. The widest spread is the one to change next.',
   },
   {
     anchor: at.swapRow,
@@ -315,14 +310,14 @@ const SAR_HINTS: SarHint[] = [
       'compound, most predictions, best-validated fit. Hover them for the words.',
   },
   {
-    before: () => sarSegment('Effects'),
+    before: () => sarTab('Effects'),
     anchor: at.effectsBar,
     title: 'Effects: every component ranked',
     text: 'Every component ranked, each value with its adjusted offset and compound count. The last ' +
       'entry is counted, not fitted: the measured pairs.',
   },
   {
-    before: () => sarSegment('Worth making'),
+    before: () => sarTab('Worth making'),
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Worth making',
@@ -331,7 +326,7 @@ const SAR_HINTS: SarHint[] = [
   },
   {
     before: () => {
-      sarSegment('Overview');
+      sarTab('Overview');
       sarTab('SAR Matrix');
     },
     anchor: at.navCard,
@@ -510,7 +505,7 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'The series to open first; the squares say why each is listed. Hover them for the reasons.',
   },
   {
-    before: () => sarSegment('Effects'),
+    before: () => sarTab('Effects'),
     anchor: at.effectsBar,
     title: 'Every linker, warhead and ligand ranked',
     text: 'Each component\'s full ranking, drawn as structures.',
@@ -522,7 +517,7 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'Read off degraders actually made in each series; nothing here is a model output.',
   },
   {
-    before: () => sarSegment('Worth making'),
+    before: () => sarTab('Worth making'),
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Combinations nobody has built',
@@ -531,14 +526,14 @@ const PROTAC_HINTS: SarHint[] = [
   },
   {
     before: () => {
-      sarSegment('Overview');
+      sarTab('Overview');
       sarTab('SAR Matrix');
     },
     anchor: at.navCard,
     position: ui.hints.POSITION.RIGHT,
     title: 'One linker per series',
     text: 'Each card is one linker: warheads across the columns, the E3 ligand folded into the row. ' +
-      'The sparkline is its solubility spread.',
+      'Best and Mean on the right are its solubility.',
   },
   {
     anchor: at.chips,

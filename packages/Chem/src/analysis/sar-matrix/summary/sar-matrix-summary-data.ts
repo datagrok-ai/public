@@ -8,8 +8,8 @@ import {logSarTime, SarMatrix} from '../sar-matrix-types';
 import {MatrixCellRef} from '../sar-matrix-ui-common';
 import {poolRoleSwaps, poolSwaps, rankSwaps} from './sar-matrix-summary-swaps';
 import {rankRGroups, recordRGroupExtremes} from './sar-matrix-summary-rgroups';
-import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_SUPPORT, RGroupAcc, RowCell, SeriesStat, StartRow,
-  SummaryData, SummaryHost, SummaryRow, supportOf, SWAP_ROW_CAP, SwapPool, TopList,
+import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, RGroupAcc, RowCell, SeriesStat,
+  SERIES_FIT_SWEEPS, StartRow, SummaryData, SummaryHost, SummaryRow, supportOf, SWAP_ROW_CAP, SwapPool, TopList,
   TRUST_R2} from './sar-matrix-summary-types';
 
 export * from './sar-matrix-summary-types';
@@ -98,6 +98,20 @@ export class SummaryCollector {
     const roleMol: number[] = [];
     const roleBest = roleNames.map(() => new Map<string, MatrixCellRef & {value: number}>());
 
+    // Coverage is of the whole analysis: a tier filter must not move compounds out of "measured".
+    if (this.tierFilter !== null) {
+      for (const matrix of host.matrices) {
+        for (const row of matrix.cells) {
+          for (const cell of row) {
+            if (cell.molIdx !== null && cell.kind === 'real' && cell.value !== null)
+              compounds.add(cell.molIdx);
+            else if (cell.molIdx !== null && cell.kind === 'unmeasured')
+              untested.add(cell.molIdx);
+          }
+        }
+      }
+    }
+
     for (let mi = 0; mi < host.matrices.length; mi++) {
       // Skipping other tiers here keeps every ranking on the tab on the same set of series.
       if (this.tierFilter !== null && tiers[mi] !== this.tierFilter)
@@ -164,7 +178,7 @@ export class SummaryCollector {
             untested.add(cell.molIdx);
             if (cell.smiles !== null)
               measuredStructures.add(cell.smiles);
-            if (value !== null)
+            if (value !== null && (cell.support ?? 0) >= MIN_LISTED_SUPPORT)
               test.offer(String(cell.molIdx), dir * value, matrix, ri, ci);
           } else if (cell.kind === 'virtual' && value !== null) {
             const support = cell.support ?? 0;
@@ -185,7 +199,7 @@ export class SummaryCollector {
                 ciBuf.push(ci);
               }
             } else {
-              if (!measuredStructures.has(cell.smiles)) {
+              if (support >= MIN_LISTED_SUPPORT && !measuredStructures.has(cell.smiles)) {
                 riAlt.push(ri);
                 ciAlt.push(ci);
               }
@@ -207,7 +221,7 @@ export class SummaryCollector {
         }
       }
 
-      const fit = fitAdditiveFromTriples(obsRow, obsCol, obsVal, nRows, nCols);
+      const fit = fitAdditiveFromTriples(obsRow, obsCol, obsVal, nRows, nCols, SERIES_FIT_SWEEPS);
       if (!fit.converged)
         nonConverged++;
       // A fit that stopped short is shrunk by an amount of its own, so its gains do not compare.

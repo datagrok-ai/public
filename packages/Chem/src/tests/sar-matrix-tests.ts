@@ -18,7 +18,7 @@ import {matrixCore} from '../analysis/sar-matrix/render/sar-matrix-depict';
 import {SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
-import {SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
+import {SummaryCollector, SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
 import {SummaryPanel} from '../analysis/sar-matrix/summary/sar-matrix-summary-panel';
 import {PANE_EFFECTS} from '../analysis/sar-matrix/summary/sar-matrix-summary-common';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
@@ -1507,7 +1507,6 @@ category('SAR Matrix: R-group columns', () => {
     observedNeighbours: () => 0,
     revealCell: () => {},
     revealMatrix: () => {},
-    showTab: () => {},
     addCellsToMakeList: () => {},
   });
 
@@ -1533,6 +1532,18 @@ category('SAR Matrix: R-group columns', () => {
       expect(titles.length, 3, `Effects holds its three original cards, got ${titles.join(' | ')}`);
     } finally {
       panel.release();
+    }
+  });
+
+  test('the coverage bar ignores the tier filter', async () => {
+    const {molecules, activity} = mixedCoverage();
+    const matrices = await runSarMatrix(molecules, activity, e2eParams(false));
+    const host = summaryHost(matrices, molecules.length);
+    const all = new SummaryCollector(host, null).collect();
+    for (const tier of new Set(host.matrixTiers)) {
+      const one = new SummaryCollector(host, tier).collect();
+      expect(`${one.compounds}|${one.untested}`, `${all.compounds}|${all.untested}`,
+        `reading tier ${tier} alone moved compounds out of the coverage`);
     }
   });
 

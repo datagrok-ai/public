@@ -101,7 +101,7 @@ export function dockSarMatrixTabs(view: DG.TableView, viewer: DG.Viewer): void {
   const gridNode = view.dockManager.findNode(view.grid.root);
   // A miss falls back to the container root, which is the shape above — so it is said out loud rather
   // than left looking like the anchored call.
-  if (gridNode === undefined) {
+  if (gridNode == null) {
     _package.logger.warning('SAR Matrix | the grid has no dock node; docking into the container root, ' +
       'which re-forms its tab group');
   }
@@ -249,9 +249,6 @@ export class SarMatrixViewer extends DG.JsViewer {
    *  measured and one the decomposition could not place are different problems with different fixes,
    *  and the coverage bar can only separate them if it knows this. */
   assayedCount = 0;
-  get helpUrl() {
-    return 'https://raw.githubusercontent.com/datagrok-ai/public/refs/heads/master/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
-  }
 
   /** The analysis and the series on screen: where the matrices came from and what their cells hold. */
   getWidgetStatus(): DG.U2.IWidgetStatus {
@@ -381,6 +378,9 @@ export class SarMatrixViewer extends DG.JsViewer {
 
   onTableAttached(): void {
     this.detached = false;
+    // Set, not a getter override, and only once attached: the help panel reads the Dart side, which
+    // resets the value after construction.
+    this.helpUrl = '/help/datagrok/solutions/domains/chem/chem.md#sar-matrix';
     // Re-fit columns of the on-screen grid rather than rebuild the pane, so a splitter drag keeps the
     // user's scroll position (a new grid restarts at the first row).
     this.subs.push(DG.debounce(ui.onSizeChanged(this.root), 200).subscribe(() => {
@@ -523,8 +523,6 @@ export class SarMatrixViewer extends DG.JsViewer {
       this.transferPanel.invalidateTransfers();
       if (this.transferTabActive)
         this.transferPanel.activateTransferTab();
-      // The summary's transfer card just went back to "not scanned".
-      this.refreshSummary();
       return;
     }
     if (property !== null && FRAGMENT_ONLY_PROPS.includes(property.name) && this.rGroupColumns() !== null)
@@ -1324,11 +1322,6 @@ export class SarMatrixViewer extends DG.JsViewer {
         return;
       }
     }
-  }
-
-  /** Bring a tab to the front, for a panel handing work to another one. */
-  showTab(name: string): void {
-    this.tabs.currentPane = this.tabs.getPane(name);
   }
 
   addCellsToMakeList(cells: MatrixCellRef[], emptyMessage: string): void {

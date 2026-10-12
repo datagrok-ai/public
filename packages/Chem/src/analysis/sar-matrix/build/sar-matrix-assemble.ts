@@ -47,7 +47,7 @@ export interface AdditiveFit {
   rowN: Int32Array;
   colN: Int32Array;
   observed: number;
-  /** Whether the sweeps reached the tolerance instead of exhausting {@link MAX_FIT_SWEEPS}. Until they
+  /** Whether the sweeps reached the tolerance instead of exhausting their cap. Until they
    *  do, the effects are still shrunk toward the zero start by an amount that differs per design, so
    *  anything comparing effects BETWEEN matrices has to drop the ones that stopped short. */
   converged: boolean;
@@ -58,7 +58,7 @@ export interface AdditiveFit {
  * the grid for its own reasons does not pay for a second sweep over it.
  */
 export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayLike<number>,
-  obsVal: ArrayLike<number>, rowCount: number, columnCount: number): AdditiveFit {
+  obsVal: ArrayLike<number>, rowCount: number, columnCount: number, maxSweeps = MAX_FIT_SWEEPS): AdditiveFit {
   const rowAcc = new Float64Array(rowCount);
   const rowN = new Int32Array(rowCount);
   const colAcc = new Float64Array(columnCount);
@@ -85,7 +85,7 @@ export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayL
   const rowEffect = new Float64Array(rowCount);
   const colEffect = new Float64Array(columnCount);
   let converged = observed === 0;
-  for (let iteration = 0; iteration < MAX_FIT_SWEEPS; iteration++) {
+  for (let iteration = 0; iteration < maxSweeps; iteration++) {
     rowAcc.fill(0);
     for (let k = 0; k < observed; k++)
       rowAcc[obsRow[k]] += obsVal[k] - grandMean - colEffect[obsCol[k]];
@@ -227,8 +227,8 @@ export const MAX_MATRIX_ROWS = 2000;
 /** Ceiling on columns, independent of the cell budget: the pane builds a grid column per substituent,
  *  so few rows must not buy unlimited width. */
 export const MAX_MATRIX_COLS = 500;
-/** Sweep ceiling for the additive fit. It converges geometrically and reaches the tolerance in a
- *  handful of sweeps; the cap only bounds a pathologically ill-conditioned design. */
+/** Default sweep ceiling for the additive fit. A dense series reaches the tolerance in a handful of sweeps;
+ *  a sparse one can need hundreds, but stops here within ~0.01 of its fixed point, which the fill accepts. */
 const MAX_FIT_SWEEPS = 50;
 /** Largest column-effect move that still counts as converged, well under any activity unit in use. */
 const FIT_TOLERANCE = 1e-9;

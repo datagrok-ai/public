@@ -782,6 +782,16 @@ i.chem-sar-card-twisty:hover {
   align-items: center;
 }
 
+/* The fixed columns outgrow a viewer docked beside the grid; the trailing hint then drops a line. */
+.chem-sar-sum-comp .chem-sar-card {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+
+.chem-sar-sum-comp .chem-sar-card > .chem-sar-cp-hint {
+  min-width: 0;
+}
+
 .chem-sar-sum-levels {
   flex-wrap: wrap;
   gap: 4px 8px;

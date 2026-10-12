@@ -66,7 +66,8 @@ function pushExtreme(pool: Map<string, RGroupWin[]>, matrix: SarMatrix, fit: Add
   const at = held.findIndex((other) => other.root === root);
   if (at < 0)
     held.push(win);
-  else if (strongerWin(win, held[at], keep))
+  // A trusted occurrence beats an untrusted one, or the lineage drops out of the trusted count.
+  else if (win.fitHolds !== held[at].fitHolds ? win.fitHolds : strongerWin(win, held[at], keep))
     held[at] = win;
 }
 
