@@ -85,14 +85,14 @@ Format:
 ## v.next
 
 * Component: Added new feature description
-* [#4256](https://github.com/datagrok-ai/public/issues/4256): Fixed something
+* [public#4256](https://github.com/datagrok-ai/public/issues/4256): Fixed something
 
 ## 1.17.2 (2026-03-23)
 ...
 ```
 
 - One bullet per logical change, flat list (no subsections).
-- Start with the GitHub issue if available: `[#NNN](https://github.com/datagrok-ai/public/issues/NNN):` for a `public` issue, `core#NNN:` (no link, `core` is private) for a `core` one.
+- Start with the GitHub issue if available: `[public#NNN](https://github.com/datagrok-ai/public/issues/NNN):` for a `public` issue, `core#NNN:` (no link, `core` is private) for a `core` one.
 - Use past-tense verbs: Added, Fixed, Improved, Introduced, Implemented.
 - Skip trivial changes (typos, formatting, dependency bumps).
 - When the plugin is published, `/plugin-changelog` converts `v.next` to a versioned entry.
