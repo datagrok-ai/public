@@ -75,6 +75,69 @@ describe('logger set', () => {
   });
 });
 
+describe('capture', () => {
+  const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+
+  async function run(verb: string | undefined, rest: string[], argv: any, userGroupSettings: any) {
+    const calls: {method: string; path: string; body: any}[] = [];
+    const client: any = {
+      async request(method: string, path: string, body?: any) {
+        calls.push({method, path, body});
+        if (path.startsWith('/public/v1/groups/lookup'))
+          return path.includes('alice') ? [{id: 'p1', name: 'alice', personal: true}] : [{id: 'g1', name: 'Chemists'}];
+        if (path.startsWith('/public/v1/groups/'))
+          return {id: 'p1', friendlyName: 'Alice'};
+        return method === 'GET' ? {'#key': 'logger', settings: {userGroupSettings}} : null;
+      },
+      get(path: string) { return this.request('GET', path); },
+    };
+    const lines: string[] = [];
+    const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
+    try {
+      await handleObserve(new NodeDapi(client), 'capture', verb, rest, argv, 'json');
+    }
+    finally {
+      log.mockRestore();
+    }
+    return {saved: calls.find((c) => c.method === 'POST')?.body?.userGroupSettings, printed: lines.join('\n')};
+  }
+
+  it('adds an expiring entry seeded from All Users that saves requests, keeping the others', async () => {
+    const {saved} = await run('alice', [], {for: '2h'},
+      {[ALL_USERS]: {saveLevels: ['error'], postLevels: ['error'], reason: 'baseline'}, g0: {debugFlags: ['db']}});
+    expect(Object.keys(saved)).toEqual([ALL_USERS, 'g0', 'p1']);
+    expect(saved.p1.saveHttpRequests).toBe(true);
+    expect(saved.p1.saveLevels).toEqual(['error', 'usage']);
+    expect(saved.p1.postLevels).toEqual(['error', 'usage']);
+    expect(saved.p1.reason).toBeUndefined();
+    expect(Date.parse(saved.p1.expiresAt) - Date.now()).toBeGreaterThan(119 * 60000);
+  });
+
+  it('falls back to a group and defaults to 30 minutes', async () => {
+    const {saved} = await run('Chemists', [], {reason: 'ticket 1'}, {});
+    expect(saved.g1.reason).toBe('ticket 1');
+    expect(Date.parse(saved.g1.expiresAt) - Date.now()).toBeLessThanOrEqual(30 * 60000);
+  });
+
+  it('leaves an entry that does not expire alone', async () => {
+    await expect(run('alice', [], {}, {p1: {debugFlags: ['db']}})).rejects.toThrow('does not expire');
+  });
+
+  it('stop removes the entry, keeping the others', async () => {
+    const {saved} = await run('stop', ['alice'], {}, {p1: {saveHttpRequests: true, expiresAt: '2099-01-01T00:00:00Z'},
+      g0: {debugFlags: ['db']}});
+    expect(Object.keys(saved)).toEqual(['g0']);
+    await expect(run('stop', ['alice'], {}, {})).rejects.toThrow('No capture');
+  });
+
+  it('lists the active captures', async () => {
+    const {saved, printed} = await run(undefined, [], {}, {p1: {saveHttpRequests: true, expiresAt: '2099-01-01T00:00:00Z'},
+      g0: {debugFlags: ['db'], expiresAt: '2099-01-01T00:00:00Z'}});
+    expect(saved).toBeUndefined();
+    expect(JSON.parse(printed)).toEqual([{id: 'p1', name: 'Alice', expiresAt: '2099-01-01T00:00:00Z', reason: ''}]);
+  });
+});
+
 describe('timeline', () => {
   async function timelinePath(argv: any): Promise<URLSearchParams> {
     const paths: string[] = [];

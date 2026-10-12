@@ -21,6 +21,11 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   logger set --set <path>=<json> ...   Change values; with --user <login> or --group <name|id>, that
              [--for 30m | --until <ISO>] [--reason <text>]   entry of userGroupSettings, removed when it expires
   logger history [--limit 20]          The log-settings-changed audit records, with each change's diff
+  capture [<login|group> [--for 30m] [--reason <text>]]
+                                       Save every API request of a user or a group for a while (an expiring
+                                       logger entry); no argument, the active captures; read them with
+                                       timeline --session <id>
+  capture stop <login|group>           Remove that entry
   errors top [--since 24h | --date "this week" | --from <ISO> [--to <ISO>]] [--by message|signature]
              [--package <name>] [--user <login>] [--source <s>] [--limit 10]
   timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]
@@ -98,6 +103,7 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
   };
   const settings = async (key: string) => (await dapi.raw('GET', `/admin/plugins/${key}/settings`))?.settings ?? {};
   const saveSettings = (key: string, body: any) => dapi.raw('POST', `/admin/plugins/${key}/settings`, body);
+  const saveLogger = (body: any) => saveSettings('logger', body);
 
   switch (`${command} ${verb}`) {
     case 'problems list':
@@ -148,7 +154,9 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       return true;
     }
     case 'logger set':
-      return loggerSet(dapi, argv, await settings('logger'), (body) => saveSettings('logger', body), output);
+      return loggerSet(dapi, argv, await settings('logger'), saveLogger, output);
+    case 'capture stop':
+      return capture(dapi, rest[0], true, argv, await settings('logger'), saveLogger, output);
     case 'logger history': {
       const text = encodeURIComponent('eventType.name = "log-settings-changed"');
       const events: any[] = await dapi.raw('GET', `/log?text=${text}&limit=${argv.limit ?? 20}&page=1`) ?? [];
@@ -173,6 +181,8 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       return true;
     }
   }
+  if (command === 'capture')
+    return capture(dapi, verb, false, argv, await settings('logger'), saveLogger, output);
   if (command === 'logs')
     return logs(dapi, verb, rest, argv, output);
   if (command === 'timeline') {
@@ -257,5 +267,57 @@ async function loggerSet(dapi: NodeDapi, argv: any, current: any, save: (body: a
   }
   if (output !== 'quiet')
     console.log(entry ? `Saved the logger settings of ${argv.user ?? argv.group}` : 'Saved the logger settings');
+  return true;
+}
+
+const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+
+async function capture(dapi: NodeDapi, name: string | undefined, stop: boolean, argv: any, current: any,
+                       save: (body: any) => Promise<any>, output: OutputFormat): Promise<boolean> {
+  const groups = {...current.userGroupSettings};
+  if (name === undefined) {
+    if (stop)
+      throw new Error('Usage: grok s observe capture stop <login|group>');
+    const rows = [];
+    for (const [id, s] of Object.entries<any>(groups)) {
+      if (s?.saveHttpRequests === true && s.expiresAt) {
+        const group = await dapi.groups.find(id);
+        rows.push({id, name: group?.friendlyName ?? group?.name ?? id, expiresAt: s.expiresAt, reason: s.reason ?? ''});
+      }
+    }
+    printOutput(rows, output);
+    return true;
+  }
+  let group: any;
+  try {
+    group = await dapi.groups.resolve(String(name), {personalOnly: true});
+  }
+  catch {
+    group = await dapi.groups.resolve(String(name));
+  }
+  const entry = groups[group.id];
+  if (stop) {
+    if (!entry?.saveHttpRequests)
+      throw new Error(`No capture for ${name}`);
+    delete groups[group.id];
+  }
+  else {
+    if (entry && !entry.expiresAt)
+      throw new Error(`${name} has a logger entry that does not expire; change it with logger set --set saveHttpRequests=true`);
+    const settings = {...(entry ?? groups[ALL_USERS]), saveHttpRequests: true,
+      expiresAt: new Date(Date.now() + parseDuration(argv.for ?? '30m', '--for')).toISOString()};
+    for (const levels of ['postLevels', 'saveLevels'])
+      if (Array.isArray(settings[levels]) && !settings[levels].includes('usage'))
+        settings[levels] = [...settings[levels], 'usage'];
+    if (argv.reason !== undefined)
+      settings.reason = String(argv.reason);
+    else if (!entry)
+      delete settings.reason;
+    groups[group.id] = settings;
+  }
+  await save({userGroupSettings: groups});
+  if (output !== 'quiet')
+    console.log(stop ? `Stopped capturing the requests of ${name}`
+      : `Capturing the requests of ${name} until ${groups[group.id].expiresAt}`);
   return true;
 }

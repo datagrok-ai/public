@@ -468,14 +468,16 @@ Thin commands over the server's routes; `grok s observe` with no command prints 
 
 ```bash
 grok s o problems list --alert-status open                 # the open alerts; --status, --state, --kind, --since 7d
-grok s o problems get health:Jupyter                        # by id or kind:key; history <id> for its records
+grok s o problems get 'health:Jupyter@<server>'            # by id or kind:key; history <id> for its records
 grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
-grok s o problems ack health:Jupyter --reason "restarting"  # resolve <id> --reason ... closes the alert
+grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --reason ... closes the alert
 grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
 grok s o rules test                                         # evaluates the saved rules once, now
 grok s o logger get exportSettings                          # the logger settings, or one path of them
 grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry
 grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
+grok s o capture alice --for 2h --reason "ticket 123"      # save every API request of a user or a group; 30m by default
+grok s o capture                                            # the active captures; capture stop alice removes one
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
 grok s o timeline --session <id>                            # its events and requests of the last 15 min
 grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
@@ -485,7 +487,9 @@ grok s o logs archive read <key>                             # one archived obje
 ```
 
 Problems need `ManageAlerts`, errors, another session's timeline and `logs` `ViewTelemetry`, `rules test` both, logger
-and rules changes `EditPluginsSettings`. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
+and rules changes `EditPluginsSettings`. `capture` is an expiring `userGroupSettings` entry
+with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); read what it recorded with
+`timeline --session <id>`. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 
