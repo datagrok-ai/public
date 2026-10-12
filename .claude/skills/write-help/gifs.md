@@ -16,7 +16,9 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 4. **Meaningful data** where the effect is visible: demo datasets the reader can open (`demog`,
    Northwind, ChEMBL demo, package samples), or a subset of them. No placeholder columns, no test
    entity names in titles or dialogs, no personal pins or favorites.
-5. **The last frame is held about 2 s** so the reader sees what changed.
+5. **The last frame is held about 2 s** so the reader sees what changed. Where the scenario allows,
+   end in the starting state (fold the tree back, close the dialog) so the loop doesn't jump, and
+   hold it shorter: it repeats the start.
 6. **A step that looks broken on video is dropped** (a clipped popover, a half-visible selector,
    a dialog off the frame). Better to leave the action out than show it broken.
 
@@ -76,15 +78,14 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 
 | Tool | Use when |
 |---|---|
-| `grok-bdd guide` (the `bdd-answer` skill, `libraries/bdd`) | The scenario can be written as a BDD feature and its output meets the rules above. The feature also stays as a regression test. `--help-pages` films every `@help:<page dir>` feature and copies the GIF and thumbnail into the page's `img/` |
-| `tools/rec-lib.mjs` (this skill) | The output of `grok-bdd guide` breaks a rule above: a crop to one viewer, frames without captions, panels per step, a held last frame, a thumbnail of the result |
+| `tools/rec-lib.mjs` (this skill) | By default. It draws the pointer and click marks, records at 2x, and lets the scene control panels, crops, the held last frame, and the thumbnail |
+| `grok-bdd guide` (the `bdd-answer` skill, `libraries/bdd`) | A BDD feature for the scenario already exists and its output meets the rules above. `--help-pages` films every `@help:<page dir>` feature and copies the GIF and thumbnail into the page's `img/` |
 
 `grok-bdd guide` films at 1920×1080 unless `BDD_GUIDE_VIEWPORT=<w>x<h>` is set (below 1920 px the
 top menu folds its last groups, such as Chem and Bio, into "more"). The GIF is at most 880 px
-wide, and the thumbnail is the first step (`step-01.png`), not the result. For a help GIF, set the
-viewport to the final size (800×500) and check the thumbnail; switch to `rec-lib.mjs` when the
-table above says so. Its usual output (5 fps, no drawn pointer) is for `bdd-answer` replies, not
-the help: help GIFs need the pointer and the quality of requirement 10.
+wide, and the thumbnail is the first step (`step-01.png`), not the result. Its usual output (5 fps,
+no drawn pointer, captions) is for `bdd-answer` replies, not the help: help GIFs need the pointer
+and the quality of requirement 10.
 
 ## rec-lib.mjs
 
@@ -99,10 +100,12 @@ the help: help GIFs need the pointer and the quality of requirement 10.
 - The `grok` CLI (`datagrok-tools`) with the stand as a server alias in `~/.grok/config.yaml`,
   signed in with `grok login <alias>`. The recorder reads the alias's `url` and gets a session
   token from `grok s token`. Nothing secret is printed.
+- For `gif-check.py` and `gif-trim.py`: Python 3 with Pillow and numpy.
 
 **Environment**: `REC_HOST` (config alias, `dev` by default), `REC_W` / `REC_H` (window, 800×500
 by default), `REC_BROWSER_ARGS` (Chromium flags; the default enables the hardware GPU, which 3D
-viewers need), `REC_GROK` (the grok command), `REC_OUT` (output folder of the examples).
+viewers need, and forces scale 2: keep `--force-device-scale-factor=2` when you override it),
+`REC_GROK` (the grok command), `REC_OUT` (output folder of the examples).
 
 **API**
 
@@ -147,9 +150,13 @@ relative path as the examples do.
    locators by `name` and `data-testid`, not by coordinates.
 2. **Keep the recorded part short.** Loading data, opening the tree, and closing panels go to
    `setup` or `pre`.
-3. **Review every take** by its contact sheet, then by single frames at GIF size
-   (`ffmpeg -ss <t> -i <gif> -frames:v 1 frame.png`): nothing cut off, labels readable, cause
-   before effect, last frame held.
+3. **Check every take, then review it.** The recording log has no warning that the frames are
+   upscaled. `python tools/gif-check.py <gif>` passes: every click mark centred on the pointer
+   tip, no jump between the first frames, the last frame held 1–6 s. Then review by the contact
+   sheet and by single frames at GIF size (`ffmpeg -ss <t> -i <gif> -frames:v 1 frame.png`):
+   nothing cut off, labels readable, cause before effect. To cut a stray first frame or a long
+   ending, use `python tools/gif-trim.py <in> <out> --start N --end-at <s> --hold <s>`: it keeps
+   the other frames as they are, without re-recording.
 4. **Clean up the stand** and verify.
 5. Place the GIF and check the page as in SKILL.md, "Check and hand over".
 
@@ -160,7 +167,11 @@ relative path as the examples do.
   table view with the **Source** pane and **REFRESH**.
 - Clicking the sidebar Browse icon while Browse is open closes it.
 - Tree nodes load lazily: wait a few seconds after expanding, and scroll with the mouse wheel over
-  the tree until the node is in the window.
+  the tree until the node is in the window. For a recorded expand, expand the node once in `pre`
+  and fold it back: the recorded expand is then instant.
+- Recording-only code may hide an element or place it once (a balloon, a dialog moved into the
+  frame), but never keeps adjusting it: re-centring a dialog on every change makes it jump as it
+  grows, which the product doesn't do.
 - Native `<select>` lists are not captured by the screencast. Make Chromium draw them in the page
   with recording-only CSS, `select, select::picker(select) { appearance: base-select !important; }`
   (Datagrok's CSS overrides it without `!important`; hide the extra `select::picker-icon`), then

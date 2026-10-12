@@ -116,9 +116,9 @@ export async function installPointer(page) {
     };
     requestAnimationFrame(watch);
     let last = 0, down = false, hideTimer = null, px = -100, py = -100;
-    const move = (e) => {
-      // a long step (Mouse.press) jumps, or the arrow trails the press mark for a frame
-      const jump = Math.hypot(e.clientX - px, e.clientY - py) > 40;
+    const move = (e, instant = false) => {
+      // a long step and a press land at once: a gliding arrow trails the press mark for a frame
+      const jump = instant || Math.hypot(e.clientX - px, e.clientY - py) > 40;
       px = e.clientX; py = e.clientY;
       for (const el of [arrow, disc])
         el.style.transition = jump ? 'none' : 'transform 60ms linear';
@@ -130,7 +130,7 @@ export async function installPointer(page) {
       if (down && now - last < 30) return;
       last = now; down = true;
       disc.style.background = e.button === 2 ? 'rgb(34,197,94)' : 'rgb(255,214,0)';
-      move(e);
+      move(e, true);
       clearTimeout(hideTimer);
       disc.style.display = 'block';
     };

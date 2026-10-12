@@ -21,7 +21,8 @@ Companion files in this skill's folder:
 | `release.md` | Updating the help for a release: finding what shipped, help vs community post |
 | `gifs.md` | Recording or replacing a GIF: requirements, tools, process, pitfalls |
 | `tools/linkcheck.js` | Before every handover: relative links and anchors |
-| `tools/rec-lib.mjs`, `tools/examples/` | Recording a GIF when `grok-bdd guide` can't meet `gifs.md` |
+| `tools/rec-lib.mjs`, `tools/examples/` | Recording a GIF |
+| `tools/gif-check.py`, `tools/gif-trim.py` | Checking a take; cutting frames from its start or end without re-recording |
 
 ## 1. Process
 
@@ -164,7 +165,8 @@ the help needs:
 - **Only where motion or layout matters**: a new interaction or a multi-step flow. Static
   settings get none. One image per section at most. If the text says it all, remove the image.
 - **Next to the steps it shows.** A GIF never goes in a section that explains a concept or a rule.
-- **Reuse** an existing image by relative path instead of recording a duplicate.
+- **Reuse** an existing image by relative path instead of recording a duplicate. Don't add a GIF
+  that shows what another GIF on the page already shows.
 - Files go next to the page in `img/`, named by what they show. Every GIF has a `-thumb.png` of
   a meaningful frame next to it: in-app Context Help shows the thumbnail. Alt text describes the
   action. Delete images you replaced.
