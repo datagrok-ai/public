@@ -11,18 +11,16 @@ effort: medium
 Mechanics (front matter, headings, links, images, admonitions, build) are in `help/CLAUDE.md`;
 language, capitalization, and punctuation in `help/develop/help-pages/writing-style.md` and
 `word-list.md`. This skill covers what to write, how to prove it, how to shape it, and how to hand
-it over. A GIF on a help page follows `gifs.md` even when it is filmed with `grok-bdd guide`: the
-`bdd-answer` skill's full shell and captions are for answers sent to users.
+it over. GIFs are filmed with the `bdd-answer` skill (`grok-bdd guide`) in its help mode: see
+section 5.
 
-Companion files in this skill's folder:
+Companion files:
 
 | File | Read when |
 |---|---|
 | `release.md` | Updating the help for a release: finding what shipped, help vs community post |
-| `gifs.md` | Recording or replacing a GIF: requirements, tools, process, pitfalls |
 | `tools/linkcheck.js` | Before every handover: relative links and anchors |
-| `tools/rec-lib.mjs`, `tools/examples/` | Recording a GIF |
-| `tools/gif-check.py`, `tools/gif-trim.py` | Checking a take; cutting frames from its start or end without re-recording |
+| `.claude/skills/bdd-answer/SKILL.md` (another skill) | Recording or replacing a GIF: help mode, what a help GIF shows, the step vocabulary, checks |
 
 ## 1. Process
 
@@ -79,8 +77,8 @@ the help needs:
     mentions one menu of a package, check all its paths on the page: stale paths travel together.
 - **Behaviour is checked in the running product** before it is written: what a click does, what a
   dialog opens, whether a setting persists, what the result looks like. Permissions, sharing, and
-  saving are checked with two accounts (author and recipient). Use a small headless script (see
-  `gifs.md`) or the browser, and record what you observed.
+  saving are checked with two accounts (author and recipient). Use the browser or a BDD feature run
+  on the local stand (`bdd-answer`), and record what you observed.
 - **Numbers come from the data**, not from assumptions.
 - **Released, finished, user-facing.** Plugin changes under `## v.next` in a `CHANGELOG.md` are
   not released. Ask before documenting a feature whose ticket is open; its developer may own the
@@ -170,7 +168,37 @@ the help needs:
 - Files go next to the page in `img/`, named by what they show. Every GIF has a `-thumb.png` of
   a meaningful frame next to it: in-app Context Help shows the thumbnail. Alt text describes the
   action. Delete images you replaced.
-- How to record, and what a help GIF must look like: `gifs.md`.
+
+### Recording a GIF
+
+Load the `bdd-answer` skill first: it has the help mode of `grok-bdd guide`, the rules for what a
+help GIF shows, and the steps a feature can use.
+
+1. **Write the scenario as a feature** tagged `@guide @help:<page dir>`, in the `bdd/features/guides/`
+   folder of the package that owns the feature (the platform's go with the bdd library). One
+   action and its result, set and then undone, cause before effect, demo data the reader can open,
+   the whole viewer, ending where it started when the flow allows. A replaced GIF repeats the
+   original's scenario and fixes only what the reviewer asked: watch the old one frame by frame
+   first.
+2. **Keep the set-up out of the video.** Opening data, docking, and closing the grid are set-up
+   steps, which help mode doesn't film. A step that would look broken on video is marked as not
+   filmed. A GIF about one viewer frames that viewer; a gallery preview frames a small docked viewer.
+   Captions and dimming stay off unless they help, and a caption reads in the reader's words.
+3. **Check on the local stand, film on the shared one.** Run the feature locally until it passes,
+   then film with `grok-bdd guide --help-pages` against the shared stand. Help mode records the
+   page continuously at 2x (an 800×500 window, a 1600×1000 GIF, 256 colours, 12 fps), starts from a
+   clean shell, and makes the thumbnail from the result. It writes the new GIF and thumbnail
+   beside the existing ones, named by what they show, and checks the finished GIF: the command fails
+   on an upscaled frame, a click mark off the pointer tip, a jump at the start, or a last frame held
+   outside 1–6 s.
+4. **Review the take** by its contact sheet and single frames at GIF size: nothing cut off, labels
+   readable, cause before effect. Fix what the check or the review finds and film again.
+5. **Replace the old file after the reviewer approves** the new one, and delete the old one only
+   when nothing else references it (grep the help and package READMEs).
+6. **Keep the feature.** It stays in the package's BDD suite as a regression test, so the GIF
+   stays true; commit it to `public` separately from the help change. Everything the feature
+   creates on the stand is deleted by the id the action returned, and shared settings are never
+   saved.
 
 ## 6. Check and hand over
 
