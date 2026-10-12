@@ -23,11 +23,13 @@ A project holds a source table plus three tables built from it: a
 pivot, an aggregate and a join. It is saved and reopened, and every
 derived table must come back with its rows. This also covers
 GROK-19103: the join result must stay in the current workspace and
-must not be saved as a separate, broken project.
+must not be saved as a separate, broken project. The project is then
+shared, and its recipient opens the derived tables too: their creation
+scripts refer to other tables of the project.
 
 ## Setup
 
-1. Log in as the test user.
+1. Two accounts: the **owner** (test user) and a **second user**.
 2. The project in this test is `lifecycleDerived`.
 
 ## Scenario
@@ -92,7 +94,31 @@ must not be saved as a separate, broken project.
    - **Verify:** no error balloon appears.
    - Right-click the left sidebar and select **Close All**.
 
-7. **Cleanup.**
+7. **Share.**
+   - Go to **Browse > Dashboards**, type `lifecycleDerived` into the
+     search box.
+   - Right-click the `lifecycleDerived` tile and choose **Share...**.
+   - Type the second user into **User, group, or email**.
+   - Pick the second user from the suggestion list.
+   - Leave **View and use** selected.
+   - Click **OK**.
+
+8. **The recipient opens it.**
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**.
+   - Type `lifecycleDerived` into the search box.
+   - Click the refresh icon.
+   - Double-click the `lifecycleDerived` tile.
+   - **Verify:** the same four views open, each with the rows of step 6.
+   - **Verify:** no error dialog appears.
+   - Right-click the left sidebar and select **Close All**.
+   - Click your avatar at the bottom of the left sidebar.
+   - Click **Logout** in the profile view.
+   - Sign in with the owner's credentials.
+
+9. **Cleanup.**
    - Right-click the `lifecycleDerived` tile and choose **Delete
      Project**.
    - Click **DELETE**.
@@ -103,3 +129,5 @@ must not be saved as a separate, broken project.
 - Pivot, aggregate and join results are saved in the project and
   reopen with the same rows.
 - The join result is part of the project, not a separate project.
+- The recipient of the shared project opens the derived tables with
+  their rows.

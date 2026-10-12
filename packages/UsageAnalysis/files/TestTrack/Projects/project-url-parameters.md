@@ -6,7 +6,7 @@ priority: p1
 realizes: [views.projects, views.functions]
 pyramid_layer: integration
 produced_from: manual-draft
-related_bugs: [GROK-20930, GROK-20929, GROK-20006, GROK-20511]
+related_bugs: [core#569, core#568, GROK-20006, core#446]
 ---
 
 # Project URL parameters — the dashboard link, Toolbox > Source and saving new values
@@ -64,7 +64,7 @@ the link.
    - **Verify:** `typeName` is ticked, and its alias box reads
      `typeName`.
    - **Verify:** the **Share link:** line ends with
-     `.UrlParamProj?typeName=Project`. Known bug GROK-20930: the line
+     `.UrlParamProj?typeName=Project`. Known bug core#569: the line
      does not follow the name typed into the dialog.
 
 4. **Give the parameter an alias.**
@@ -85,8 +85,8 @@ the link.
    - **Verify:** the dashboard opens with one row, `Project`.
    - Close the tab.
 
-6. **The sliders icon right after saving (GROK-20929).**
-   - Known bug GROK-20929: the icon appears only after the project is
+6. **The sliders icon right after saving (core#568).**
+   - Known bug core#568: the icon appears only after the project is
      reopened.
    - **Verify:** in **Toolbox > Source**, next to **REFRESH** there is a
      sliders icon; hovering it shows *Choose which parameters the

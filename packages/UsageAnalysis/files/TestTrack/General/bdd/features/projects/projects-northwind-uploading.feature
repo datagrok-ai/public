@@ -88,9 +88,9 @@ Feature: Projects uploaded from the NorthwindTest query PostgresAll, linked and 
     And user double-clicks on <Project> gallery card
     Then the "<First view>" table view should open with <First rows> rows
     And the "<Second view>" table view should open with 830 rows
-    Given user switches to the "<First view>" table view
+    When user clicks on <First view> view
     Then the table should have been <how>
-    Given user switches to the "<Second view>" table view
+    When user clicks on <Second view> view
     Then the table should have been <how>
     And no error or warning balloon should have been shown
     When user clicks on Save ribbon item

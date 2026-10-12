@@ -31,7 +31,8 @@ from Browse, verify content, then delete the project.
 
 1. Open `System:AppData/Chem/mol1K.sdf` from Files
 2. Save it as a project named `uiSdfSync` with Data Sync on
-3. Reopen the project — molecules render, no errors
+3. Reopen the project — the `molecule` column is recognized as **Molecule**
+   (its semantic type in the column's Context Panel), no errors
 4. Delete the created project
 
 ## Project from the Get Top 100 query result
@@ -41,7 +42,9 @@ from Browse, verify content, then delete the project.
 2. Save the result as a project — `uiTop100Sync` with Data Sync on, then
    `uiTop100NoSync` with it off
 3. Reopen each project — with Sync on the query re-executes; with Sync off
-   the stored result opens
+   the stored result opens. Click **SAVE**: with Sync on the table shows
+   **Data sync** ON and a **CREATION SCRIPT**; with Sync off, Data sync is
+   OFF and there is no CREATION SCRIPT. Click **CANCEL**.
 4. Delete both created projects
 
 ## Automation notes

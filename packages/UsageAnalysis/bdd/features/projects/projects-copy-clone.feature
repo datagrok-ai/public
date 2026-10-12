@@ -195,11 +195,14 @@ Feature: A project saved as the original, as a copy with link and as a copy with
     Then the context panel should show "BDDCopyClone{time}"
     When user clicks on "Links..." link in Details pane in context panel
     Then "Links to BDDCopyClone{time}" dialog should be visible
+    And "ID" input in "Links to BDDCopyClone{time}" dialog should be visible
     And "Links to BDDCopyClone{time}" dialog should contain text "Markup"
     And "Links to BDDCopyClone{time}" dialog should contain text "URL"
     And "Grok name" input in "Links to BDDCopyClone{time}" dialog should have value "Admin:BDDCopyClone{time}"
     When user presses Escape
     Then the "Links to BDDCopyClone{time}" dialog should close
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
     When user opens the address "/p/Admin.BDDCopyClone{time}"
     Then the "demog" view should be current
     And bar chart viewer should be visible

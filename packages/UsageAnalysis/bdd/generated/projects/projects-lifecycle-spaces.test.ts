@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/projects-lifecycle-spaces.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.projects, views.space, sharing.share-dialog, GROK-21025]
+sub_features_covered: [views.projects, views.space, sharing.share-dialog, core#627]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -27,7 +27,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A project built from a file in a space, shared, and reopened after the space is renamed", () => {
   const session = feature(test, "features/projects/projects-lifecycle-spaces.feature", import.meta.url);
-  test("A project built from a file in a space, shared, and reopened after the space is renamed", {tag: ["@journey", "@serial", "@realizes:views.projects", "@realizes:views.space", "@realizes:sharing.share-dialog", "@known-failure", "@realizes:GROK-21025"]}, async ({browser}) => {
+  test("A project built from a file in a space, shared, and reopened after the space is renamed", {tag: ["@journey", "@serial", "@realizes:views.projects", "@realizes:views.space", "@realizes:sharing.share-dialog", "@known-failure", "@realizes:core#627"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 11, page);
     await session.step(28, "Given user is logged in", () => loggedIn(page));

@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/projects-regressions-pinned.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.projects, GROK-20607]
+sub_features_covered: [views.projects, core#460]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -28,7 +28,7 @@ import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Projects regressions: a project with pinned rows", () => {
   const session = feature(test, "features/projects/projects-regressions-pinned.feature", import.meta.url);
-  test("The project with pinned rows reopens without errors, sorted and without HEIGHT", {tag: ["@serial", "@realizes:views.projects", "@realizes:GROK-20607"]}, async ({browser}) => {
+  test("The project with pinned rows reopens without errors, sorted and without HEIGHT", {tag: ["@serial", "@realizes:views.projects", "@realizes:core#460"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(21, "Given user is logged in", () => loggedIn(page));
     await session.step(22, "And the browse panel is open", () => browsePanelOpen(page));

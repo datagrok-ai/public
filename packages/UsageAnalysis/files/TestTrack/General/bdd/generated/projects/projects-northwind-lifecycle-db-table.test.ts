@@ -81,7 +81,7 @@ test.describe("A project of the NorthwindTest orders table: saved, reopened and 
     });
     await run.scenario("Before the share, the second account does not see the NorthwindTest connection", async () => {
       await session.step(91, "When user closes all views", () => closeAllViews(page));
-      await session.step(92, "And user signs in as the sharing user", () => signInAsSharingUser(page));
+      await session.step(92, "When user signs in as the sharing user", () => signInAsSharingUser(page));
       await session.step(93, "Then the sharing user should be signed in", () => sharingUserSignedIn(page));
       await session.step(94, "Given the browse panel is open", () => browsePanelOpen(page));
       await session.step(95, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
@@ -110,7 +110,7 @@ test.describe("A project of the NorthwindTest orders table: saved, reopened and 
     });
     await run.scenario("With the project shared, the second account sees the connection and opens the project with its rows", async () => {
       await session.step(120, "When user closes all views", () => closeAllViews(page));
-      await session.step(121, "And user signs in as the sharing user", () => signInAsSharingUser(page));
+      await session.step(121, "When user signs in as the sharing user", () => signInAsSharingUser(page));
       await session.step(122, "Then the sharing user should be signed in", () => sharingUserSignedIn(page));
       await session.step(123, "Given the browse panel is open", () => browsePanelOpen(page));
       await session.step(124, "And Databases tree node inside browse tree is expanded", () => isExpanded(page, el("Databases tree node inside browse tree")));
@@ -124,7 +124,7 @@ test.describe("A project of the NorthwindTest orders table: saved, reopened and 
       await session.step(132, "And the table should have 830 rows", () => rowCount(page, 830));
       await session.step(133, "And \"Data loading error\" dialog should be absent", () => shouldBe(page, el("\"Data loading error\" dialog"), "absent"));
       await session.step(134, "When user closes all views", () => closeAllViews(page));
-      await session.step(135, "And user signs in as themselves again", () => signInAsSelf(page));
+      await session.step(135, "When user signs in as themselves again", () => signInAsSelf(page));
       await session.step(136, "Then the running account should be signed in", () => runningAccountSignedIn(page));
     });
     await run.scenario("Delete Project removes the table project", async () => {

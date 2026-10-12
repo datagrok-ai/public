@@ -19,16 +19,15 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
   The query's SQL is then changed to "limit 100" in its editor and, after the page is reloaded as
   the md does, the owner's reopen shows 100 rows.
 
-  The project is shared with the second account (the library's sharing user), and so is the
-  NorthwindTest connection, from its Browse tree node: sharing a project shares its query, not the
-  query's connection, and without the connection the recipient's open never finishes. The second
-  account signs in on the feature's page and opens the project before the rename, and after the rename
-  and the SQL change. The connection's grant is taken back through its Share dialog after the second
-  open; a grant left by a run that failed before that point is not swept (no step reads or removes a
-  connection grant outside the dialog — see the request document). Kept without one claim, restored
-  with the phrase: that the Save dialog lists only the query's table (the project-table rows cannot be
-  counted apart from the dialog's other rows with library phrases). The System:Datagrok version for
-  other stands is parked (row counts differ per server).
+  The project is shared with the second account (the library's sharing user). Sharing a project shares
+  its query, not the query's connection: the second account, without NorthwindTest, is told so by
+  the Data loading error dialog when it opens the project (core#755; the dialog's message, which does
+  not name the connection, is enough — operator 2026-10-12), set up by the scenario before it. Then
+  the NorthwindTest connection is shared from its Browse tree node, and the second account opens the
+  project before the rename, and after the rename and the SQL change. The connection's grant is taken back through its Share dialog after the second open; a grant
+  left by a run that failed before that point is not swept (no step reads or removes a connection
+  grant outside the dialog — see the request document). The System:Datagrok version for other stands
+  is parked (row counts differ per server).
 
   The query and the project are named with the run's time (letters and digits only) and removed,
   the query under both its names, at the start and at the end. It is serial: the Dashboards search
@@ -74,6 +73,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     When user clicks on Save button
     Then "Save project" dialog should be visible
     And "BDDNwLifeQ{time}" project table in "Save project" dialog should be visible
+    And the Save project dialog should save the tables "BDDNwLifeQ{time}" with data sync
     And Data sync switch in "BDDNwLifeQ{time}" project table in "Save project" dialog should be checked
     When user enters "BDDNwLifeQProj{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
@@ -103,7 +103,24 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     Then the context panel should show "BDDNwLifeQProj{time}"
     And the sharing pane should list the sharing user
 
+  Scenario: Without the query's connection, the second account looks for the shared project
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDNwLifeQProj{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDNwLifeQProj{time} gallery card should be visible
+
+  Scenario: Without the query's connection, the second account is told so (core#755)
+    When user double-clicks on BDDNwLifeQProj{time} gallery card
+    Then "Data loading error" dialog should be visible
+
   Scenario: The NorthwindTest connection is shared with the second account
+    When user signs in as themselves again
+    Then the running account should be signed in
     Given the browse panel is open
     And Databases tree node inside browse tree is expanded
     And Databases---Postgres tree node inside browse tree is expanded
@@ -119,7 +136,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
 
   Scenario: The second account opens the shared project
     When user closes all views
-    And user signs in as the sharing user
+    When user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -131,7 +148,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And the table should have been reloaded by data sync
     And "Data loading error" dialog should be absent
     When user closes all views
-    And user signs in as themselves again
+    When user signs in as themselves again
     Then the running account should be signed in
 
   Scenario: The query is renamed in the Browse tree
@@ -186,7 +203,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And user clicks on Save button
     Then code editor should hold the code "select * from public.orders limit 100"
     When user closes the current view
-    And user reloads the page
+    When user reloads the page
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeQProj{time}" into gallery search
@@ -199,7 +216,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
 
   Scenario: The second account opens the project after the rename and the SQL change (github-3550)
     When user closes all views
-    And user signs in as the sharing user
+    When user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -210,7 +227,7 @@ Feature: A project of the user's own NorthwindTest query survives renaming the q
     And the table should have 100 rows
     And "Data loading error" dialog should be absent
     When user closes all views
-    And user signs in as themselves again
+    When user signs in as themselves again
     Then the running account should be signed in
 
   Scenario: The owner takes the connection's share back

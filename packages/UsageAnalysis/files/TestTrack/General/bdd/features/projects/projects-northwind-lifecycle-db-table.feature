@@ -89,7 +89,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
 
   Scenario: Before the share, the second account does not see the NorthwindTest connection
     When user closes all views
-    And user signs in as the sharing user
+    When user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
     And Databases tree node inside browse tree is expanded
@@ -118,7 +118,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
 
   Scenario: With the project shared, the second account sees the connection and opens the project with its rows
     When user closes all views
-    And user signs in as the sharing user
+    When user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
     And Databases tree node inside browse tree is expanded
@@ -132,7 +132,7 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     And the table should have 830 rows
     And "Data loading error" dialog should be absent
     When user closes all views
-    And user signs in as themselves again
+    When user signs in as themselves again
     Then the running account should be signed in
 
   Scenario: Delete Project removes the table project

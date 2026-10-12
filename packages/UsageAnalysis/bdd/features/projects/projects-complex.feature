@@ -1,31 +1,35 @@
 @journey @serial @realizes:views.projects @realizes:data.menu.join-tables @realizes:views.space
 Feature: A saved project when what it is built from is renamed or moved
-  Three parts, each with its own project. Part 1 (GROK-19212): orders.csv and customers.csv from
+  Three parts, each with its own project. Part 1 (core#188): orders.csv and customers.csv from
   Browse > Files > Demo > northwind, a pivot of orders published with ADD and an inner join of the
   two made with Data > Join Tables... are saved with Data sync; the two source tables are renamed
   from their view tabs (Table > Rename...), the project is saved again and reopened from its
-  Dashboards card. Part 2 (GROK-21026): a query made with New SQL Query... on the Datagrok
+  Dashboards card. Part 2 (core#628): a query made with New SQL Query... on the Datagrok
   database's entity_types, its result and entity_types itself (Get All) are joined on id and saved;
   the query is renamed in the Browse tree and the project reopened. Part 3: a project made of a
   query's result and a script's result is moved into a space from its card, the query and the script
   are dragged into the space from the Browse tree and the Scripts view, and the project opens from
   the space. Translated from the TestTrack case Projects/complex.
 
-  The pivot's configuration (Group by ShipCountry, count(OrderID)) is set through the viewer's
-  properties: it prepares the table the part is about. Row counts of the northwind files are the
-  md's (orders 830, customers 91); the pivot and the join were measured once (40 and 830 rows). The
-  Datagrok database's tables differ per server, so its row counts are not claimed literally: the
-  query's result is claimed to have rows.
+  The pivot is configured through its own rows and chips: ShipCountry added to Group by and the
+  default ShipName chip removed, the default avg(OrderID) chip turned into count(OrderID) from its
+  menu. Row counts of the northwind files are the md's (orders 830, customers 91); the pivot and the
+  join were measured once (40 and 830 rows). The Datagrok database's tables differ per server, so its
+  row counts are not claimed literally: the query's result is claimed to have rows.
 
   Kept without one claim each, restored once the library can remember a row count (see the request
   document): Part 2's "entity_types opens with the same row count as the query" and the reopened
   entity_types and query result having those counts.
 
-  Known failures: GROK-19212 (reopened): the project whose pivot and join sources were renamed
-  does not reopen whole (on localhost 1.28.0 no view of it opened within two minutes; the md reports
-  the pivot and the join missing and "2 tasks" left in the task bar); GROK-21026: the join
-  over the renamed query does not come back ("Could not resolve table", or "Opening project" left
-  in the task bar on dev). Each is one scenario claiming what the md expects.
+  core#188 (open): the project whose pivot and join sources were renamed did not
+  reopen whole (localhost 1.28.0 in September: no view within two minutes; the md reports the pivot
+  and the join missing). On localhost f98337ae1b (2026-10-12, two runs, also with the feature as
+  committed) it reopens with all four tables, so its scenario is a plain one now. Known failure
+  core#628: the join over the renamed query does not come back ("Could not resolve table", or
+  "Opening project" left in the task bar on dev); one scenario claims what the md expects. The Part 1
+  project is then shared with the second account (the library's sharing user), who opens it with its
+  pivot and join — the recipient's open of derived tables of projects-lifecycle-derived.md step 8,
+  which is parked as a whole.
 
   Names are letters and digits only (the Dashboards search misses "-" and "_") and carry the run's
   time. The three projects, both queries (under both names of the renamed one), the script and the
@@ -60,10 +64,12 @@ Feature: A saved project when what it is built from is renamed or moved
     Given the toolbox pane is shown
     When user clicks on "pivot table" icon in toolbox
     Then pivot table viewer should be visible
-    When user sets "Group By Column Names" property of pivot table viewer to "ShipCountry"
-    And user sets properties of pivot table viewer:
-      | Aggregate Agg Types    | count   |
-      | Aggregate Column Names | OrderID |
+    # a new pivot of orders groups by ShipName, pivots on CustomerID and aggregates avg(OrderID)
+    And the "group by" reading of pivot table viewer should be "ShipName"
+    When user adds "ShipCountry" to the "group by" row of pivot table viewer
+    And user clicks on the "remove group by chip ShipName" area of pivot table viewer
+    And user picks "Aggregation > count" from the context menu of the "aggregate chip avg(OrderID)" area of pivot table viewer
+    And user closes the context menu
     Then the "group by" reading of pivot table viewer should be "ShipCountry"
     And the "aggregate" reading of pivot table viewer should be "count(OrderID)"
     When user clicks on the "add to workspace" area of pivot table viewer
@@ -113,7 +119,7 @@ Feature: A saved project when what it is built from is renamed or moved
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDComplexRename{time}" uploaded' should have been shown
 
-  @known-failure @realizes:GROK-19212
+  @realizes:core#188
   Scenario: Part 1 — reopened, the renamed sources, the pivot and the join come back
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
@@ -137,6 +143,37 @@ Feature: A saved project when what it is built from is renamed or moved
     And "Creation script" button in "result" project table in "Save project" dialog should be visible
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
+
+  Scenario: Part 1 — shared, the project's derived tables open for the second account
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDComplexRename{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user picks "Share..." from the context menu of BDDComplexRename{time} gallery card
+    Then "Share BDDComplexRename{time}" dialog should be visible
+    When user picks the sharing user in "User, group, or email" input in "Share BDDComplexRename{time}" dialog
+    And user unchecks "Send notifications" input in "Share BDDComplexRename{time}" dialog
+    And user clicks on OK button in "Share BDDComplexRename{time}" dialog
+    Then the "Share BDDComplexRename{time}" dialog should close
+    When user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    When user clicks on Dashboards tree node inside browse tree
+    And user enters "BDDComplexRename{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    And user double-clicks on BDDComplexRename{time} gallery card
+    Then the "ordersR" table view should open with 830 rows
+    And the "customersR" table view should open with 91 rows
+    And the "orders aggregation" table view should open with 40 rows
+    And the "result" table view should open with 830 rows
+    And "Data loading error" dialog should be absent
+    And no error or warning balloon should have been shown
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user signs in as themselves again
+    Then the running account should be signed in
 
   Scenario: Part 2 — a query is made on entity_types with New SQL Query...
     When user presses Escape
@@ -212,7 +249,7 @@ Feature: A saved project when what it is built from is renamed or moved
     And 1 query named "BDDComplexQueryRenamed{time}" should be on the server
     And 0 queries named "BDDComplexQuery{time}" should be on the server
 
-  @known-failure @realizes:GROK-21026
+  @known-failure @realizes:core#628
   Scenario: Part 2 — reopened, the join over the renamed query comes back
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -220,11 +257,11 @@ Feature: A saved project when what it is built from is renamed or moved
     And user clicks on "Refresh" icon inside gallery toolbar
     And user double-clicks on BDDComplexJoin{time} gallery card
     Then table "result" should be open
-    Given user switches to the "result" table view
+    When user clicks on result view
     Then the "rows" reading of grid should be at least 1
-    Given user switches to the "entity_types" table view
+    When user clicks on entity_types view
     Then the "rows" reading of grid should be at least 1
-    Given user switches to the "BDDComplexQuery{time}" table view
+    When user clicks on BDDComplexQuery{time} view
     Then the "rows" reading of grid should be at least 1
     And "Data loading error" dialog should be absent
 
@@ -250,7 +287,8 @@ Feature: A saved project when what it is built from is renamed or moved
     And user clicks on Save button
     Then 1 query named "BDDComplexMoveQuery{time}" should be on the server
     When user closes the current view
-    Given Platform tree node inside browse tree is expanded
+    Given the browse panel is open
+    And Platform tree node inside browse tree is expanded
     And Platform---Functions tree node inside browse tree is expanded
     When user clicks on Platform---Functions---Scripts tree node inside browse tree
     Then the "Scripts" view should be current
@@ -275,7 +313,11 @@ Feature: A saved project when what it is built from is renamed or moved
     When user double-clicks on Databases---Postgres---Datagrok---BDDComplexMoveQuery{time} tree node inside browse tree
     Then the "BDDComplexMoveQuery{time}" view should be current
     And the "rows" reading of grid should be at least 1
-    Given user opens the Scripts view
+    Given the browse panel is open
+    And Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDComplexScript{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
@@ -315,7 +357,11 @@ Feature: A saved project when what it is built from is renamed or moved
     When user selects "Move" in Move entity dialog
     And user clicks on YES button in Move entity dialog
     Then Move entity dialog should be hidden
-    Given user opens the Scripts view
+    Given the browse panel is open
+    And Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDComplexScript{time}" into gallery search
     And user drags "BDDComplexScript{time}" link in gallery to BDDComplexSpace{time} tree node inside browse tree
@@ -333,7 +379,7 @@ Feature: A saved project when what it is built from is renamed or moved
   Scenario: Part 3 — the moved project opens from the space with its data
     When user double-clicks on "BDDComplexMove{time}" link in gallery
     Then the "demog" table view should open with 5850 rows
-    Given user switches to the "BDDComplexMoveQuery{time}" table view
+    When user clicks on BDDComplexMoveQuery{time} view
     Then the "rows" reading of grid should be at least 1
     And "Data loading error" dialog should be absent
     When user clicks on Save ribbon item
@@ -349,7 +395,9 @@ Feature: A saved project when what it is built from is renamed or moved
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open
+    Then the browse tree should have finished loading
     When user clicks on Dashboards tree node inside browse tree
+    Then the "Projects" view should be current
     And user enters "BDDComplex" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
     And user picks "Delete Project" from the context menu of BDDComplexRename{time} gallery card

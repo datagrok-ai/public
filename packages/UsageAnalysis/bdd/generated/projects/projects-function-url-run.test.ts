@@ -4,7 +4,7 @@
 /* ---
 generated: features/projects/projects-function-url-run.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [views.functions, views.projects, GROK-20511]
+sub_features_covered: [views.functions, views.projects, core#446]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -28,7 +28,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("A function run straight from its URL", () => {
   const session = feature(test, "features/projects/projects-function-url-run.feature", import.meta.url);
-  test("A function run straight from its URL", {tag: ["@journey", "@serial", "@realizes:views.functions", "@realizes:views.projects", "@known-failure", "@realizes:GROK-20511"]}, async ({browser}) => {
+  test("A function run straight from its URL", {tag: ["@journey", "@serial", "@realizes:views.functions", "@realizes:views.projects", "@known-failure", "@realizes:core#446"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 9, page);
     await session.step(26, "Given user is logged in", () => loggedIn(page));
@@ -130,7 +130,7 @@ test.describe("A function run straight from its URL", () => {
       await session.step(124, "When user opens the address \"/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true\"", () => openAddress(page, session.text("/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true")));
       await session.step(125, "Then the \"BDDUrlRunRequired{time}\" view should be current", () => viewIsCurrent(page, session.text("BDDUrlRunRequired{time}")));
     });
-    await run.scenario("The run link without a required value falls back to the form and names it (GROK-20511)", async () => {
+    await run.scenario("The run link without a required value falls back to the form and names it (core#446)", async () => {
       await session.step(129, "Then a warning balloon containing 'Unable to run \"BDDUrlRunRequired{time}\"' should have been shown", () => warningBalloonText(page, session.text("Unable to run \"BDDUrlRunRequired{time}\"")));
       await session.step(130, "And a warning balloon containing \"rows\" should have been shown", () => warningBalloonText(page, "rows"));
       await session.step(131, "And \"Label\" input should have value \"y\"", () => shouldHaveValue(page, el("\"Label\" input"), "y"));

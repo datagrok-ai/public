@@ -112,9 +112,9 @@ Feature: Projects uploaded from files in a space, with Data sync on and off
     And user double-clicks on <Project> gallery card
     Then the "customers" table view should open with 91 rows
     And the "orders" table view should open with 830 rows
-    Given user switches to the "customers" table view
+    When user clicks on customers view
     Then the table should have been <how>
-    Given user switches to the "orders" table view
+    When user clicks on orders view
     Then the table should have been <how>
     And no error or warning balloon should have been shown
     When user clicks on Save ribbon item

@@ -63,6 +63,11 @@ Feature: A project through its card in the Dashboards gallery
     And user clicks on "Refresh" icon inside gallery toolbar
     Then the gallery counter should be lower than remembered
     And BDDSmoke{time} gallery card should be visible
+    # the Share dialog the save opened was cancelled: nobody else got access
+    When user clicks on BDDSmoke{time} gallery card
+    Then the context panel should show "BDDSmoke{time}"
+    And the sharing pane should not list the sharing user
+    And Sharing pane in context panel should not contain text "has special permissions"
 
   Scenario: A tag is added in the Details pane and the "#tag" search finds the project by it
     When user clicks on BDDSmoke{time} gallery card

@@ -13,9 +13,11 @@ Feature: The Presentation mode switch of a saved project's Save dialog
 
   The addresses are opened in the same tab (the md opens a new one) and typed, as
   /p/<namespace>.<name>, each after a Close All (a new tab starts with nothing open, and the scatter
-  plot only BDDPresentProj has tells the two projects apart); the harness turns presentation mode off after the journey and every
-  feature's start does too, so a failure in presentation mode does not leave a later feature
-  without menus.
+  plot only BDDPresentProj has tells the two projects apart); a page-load step for them is requested
+  (A28: `user loads the direct link of project` waits for the Browse tab, which a presentation-mode
+  project hides, and after it the Browse tree's Dashboards node opens nothing on a click). The harness
+  turns presentation mode off after the journey and every feature's start does too, so a failure in
+  presentation mode does not leave a later feature without menus.
 
   Kept without (see the request document): the copy icon of the URL row of Links... and opening the
   address from the clipboard, and the Description the md types for the new project (the Save
@@ -154,6 +156,8 @@ Feature: The Presentation mode switch of a saved project's Save dialog
     And status bar should be hidden
     When user clicks on "back to design mode" link
     Then status bar should be visible
+    And BDDPresentNew{time} tree node inside browse tree should be visible
+    And "New Dashboard > demog" tree node inside browse tree should be absent
     # the sidebar tab toggles the Dashboards panel; left open, it adds a second Save button to every table view
     When user clicks on Dashboards tab
     Then "New Dashboard" tree node inside browse tree should be hidden

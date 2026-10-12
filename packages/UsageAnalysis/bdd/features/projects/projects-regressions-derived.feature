@@ -2,9 +2,12 @@
 Feature: Projects regressions: a data-sync project with a published pivot saved as a zip
   Regression guard for GROK-19580 (Save as Zip of a data-sync project with a published pivot): demog
   is opened by a double-click in Browse > Files > Demo (it stands for SPGI in the report), a pivot
-  table from the toolbox is published into the workspace, the project is saved with Data sync
-  through the ribbon's Save dialog and saved as a zip from its Dashboards card. The scenario fails
-  on no zip downloaded, a zip without the pivot table, or an error balloon.
+  table from the toolbox is published into the workspace, the project is saved with Data sync through
+  the ribbon's Save dialog (its Creation script, the pivot's Aggregate call, shown there) and saved as
+  a zip from its Dashboards card. The scenario fails on no zip downloaded or an error balloon. Kept
+  without (request document): that the zip holds the pivot's Aggregate script — the file's content is
+  what the project stores, an API test (section 5, E5), and the UI way to show it (the zip opened back
+  with its pivot table) has no step yet.
 
   Parked in the request document until the library has the phrases: GROK-19664 (a pivot
   published from a second table of the same name goes into the other open project), which reads the
@@ -41,13 +44,15 @@ Feature: Projects regressions: a data-sync project with a published pivot saved 
     And "Creation script" button in "demog" project table in "Save project" dialog should be visible
     And Data sync switch in "demog" project table in "Save project" dialog should be checked
     And Data sync switch in "demog aggregation" project table in "Save project" dialog should be checked
+    When user clicks on "Creation script" button in "demog aggregation" project table in "Save project" dialog
+    Then "demog aggregation" project table in "Save project" dialog should contain text "Aggregate("
     When user enters "BDDRegZip{time}" into Name text input in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And "Share BDDRegZip{time}" dialog should be visible
+    And the "demog aggregation" table of the "BDDRegZip{time}" project should be saved with data sync
     When user clicks on CANCEL button in "Share BDDRegZip{time}" dialog
     Then the "Share BDDRegZip{time}" dialog should close
-    And the "demog aggregation" table of the "BDDRegZip{time}" project should be saved with data sync
     When user closes all views
     And the browse panel is open
     And user clicks on Dashboards tree node inside browse tree
@@ -56,5 +61,4 @@ Feature: Projects regressions: a data-sync project with a published pivot saved 
     Given user watches downloads
     When user picks "Save as Zip" from the context menu of BDDRegZip{time} gallery card
     Then a file "BDDRegZip{time}.zip" should have been downloaded
-    And the downloaded file "BDDRegZip{time}.zip" should contain the text "DemogAggregation = Aggregate("
     And no error or warning balloon should have been shown

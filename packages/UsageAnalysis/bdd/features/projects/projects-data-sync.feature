@@ -32,8 +32,8 @@ Feature: A project saved with and without Data sync
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDSyncOrig{time}" uploaded' should have been shown
-    And 1 project named "BDDSyncOrig{time}" should be on the server
     And the "demog" table of the "BDDSyncOrig{time}" project should be saved with data sync
+    And 1 project named "BDDSyncOrig{time}" should be on the server
     And "Share BDDSyncOrig{time}" dialog should be visible
     When user clicks on CANCEL button in "Share BDDSyncOrig{time}" dialog
     Then the "Share BDDSyncOrig{time}" dialog should close
@@ -51,9 +51,9 @@ Feature: A project saved with and without Data sync
     When user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "BDDSyncCopy{time}" uploaded' should have been shown
-    And 1 project named "BDDSyncCopy{time}" should be on the server
     And the "demog" table of the "BDDSyncCopy{time}" project should be saved as a snapshot
     And the "demog" table of the "BDDSyncOrig{time}" project should be saved with data sync
+    And 1 project named "BDDSyncCopy{time}" should be on the server
     When user clicks on Dashboards tab
     Then BDDSyncCopy{time} tree node inside browse tree should be visible
     And BDDSyncOrig{time} tree node inside browse tree should be absent
@@ -88,8 +88,8 @@ Feature: A project saved with and without Data sync
     Then "Save project" dialog should be visible
     When user checks Data sync switch in "demog" project table in "Save project" dialog
     And user clicks on OK button in "Save project" dialog
-    Then the "Save project" dialog should close
     And the "demog" table of the "BDDSyncCopy{time}" project should be saved with data sync
+    Then the "Save project" dialog should close
     When user picks "Close All" from the context menu of browse tab
     Then the "Home" view should be current
     Given the browse panel is open

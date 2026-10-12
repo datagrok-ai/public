@@ -6,7 +6,7 @@ priority: p1
 realizes: [views.functions, views.projects]
 pyramid_layer: integration
 produced_from: manual-draft
-related_bugs: [GROK-20511]
+related_bugs: [core#446]
 ---
 
 # Function link — run a function straight from its URL

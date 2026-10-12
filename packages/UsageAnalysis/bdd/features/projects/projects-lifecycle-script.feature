@@ -118,7 +118,10 @@ Feature: A project built from the user's own script, shared, then the script ren
     Then the running account should be signed in
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
-    And user opens the Scripts view
+    And Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDLifeScript{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
@@ -151,7 +154,10 @@ Feature: A project built from the user's own script, shared, then the script ren
   Scenario: The script is broken with a throw before its df line
     When user picks "Close All" from the context menu of browse tab
     Given the browse panel is open
-    And user opens the Scripts view
+    And Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDLifeScriptRenamed{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
@@ -214,7 +220,11 @@ Feature: A project built from the user's own script, shared, then the script ren
     # the dialog stays open, its button disabled, until the server has deleted the project
     Then the "Are you sure?" dialog should close
     And 0 projects named "BDDLifeScriptProj{time}" should be on the server
-    Given user opens the Scripts view
+    Given the browse panel is open
+    And Platform tree node inside browse tree is expanded
+    And Platform---Functions tree node inside browse tree is expanded
+    When user clicks on Platform---Functions---Scripts tree node inside browse tree
+    Then the "Scripts" view should be current
     When user clears gallery search
     And user types "BDDLifeScriptRenamed{time}" into gallery search
     And user picks "Delete" from the context menu of "BDDLifeScriptRenamed{time}" link in gallery

@@ -12,7 +12,7 @@ Feature: A function run straight from its URL
   does not open it again. Kept without (see the request document): opening the run link from the
   clipboard — the clipboard is claimed to hold it, and the same address is typed.
 
-  Known failure GROK-20511 (In Progress): a run link without the required value
+  Known failure core#446 (In Progress): a run link without the required value
   (/func/Admin.<script>?label=%22y%22&run=true — a string value in the address is quoted, as the
   copy icon writes it) should fall back to the form with an "Unable to run" warning naming rows; on
   localhost the script runs with rows empty (a table of 100,000 rows) and no warning comes. The
@@ -124,8 +124,8 @@ Feature: A function run straight from its URL
     When user opens the address "/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true"
     Then the "BDDUrlRunRequired{time}" view should be current
 
-  @known-failure @realizes:GROK-20511
-  Scenario: The run link without a required value falls back to the form and names it (GROK-20511)
+  @known-failure @realizes:core#446
+  Scenario: The run link without a required value falls back to the form and names it (core#446)
     Then a warning balloon containing 'Unable to run "BDDUrlRunRequired{time}"' should have been shown
     And a warning balloon containing "rows" should have been shown
     And "Label" input should have value "y"

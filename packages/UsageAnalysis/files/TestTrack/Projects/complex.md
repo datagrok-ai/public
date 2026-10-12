@@ -15,16 +15,16 @@ migration_date: 2026-05-04
 realized_as:
   - complex-derived-tables-spec.ts
   - complex-rename-spec.ts
-related_bugs: [GROK-19212, GROK-21026]
+related_bugs: [core#188, core#628]
 ---
 
 # Complex — renaming and moving what a project depends on
 
 A saved project keeps working when the things it is built from change:
 
-1. The source tables of a pivot and a join are renamed (GROK-19212).
+1. The source tables of a pivot and a join are renamed (core#188).
 2. A query whose result is joined with another table is renamed
-   (GROK-21026).
+   (core#628).
 3. The project, its query and its script are moved into a Space.
 
 Each part makes its own project. Saving tables from many sources,
@@ -44,7 +44,7 @@ covered by `complex-integration.md`, `complex-augment.md`,
    Datagrok > Schemas > public**; on dev it is **Datagrok > Catalogs >
    datagrok > public**.
 
-## Part 1 — renaming the sources of derived tables (GROK-19212)
+## Part 1 — renaming the sources of derived tables (core#188)
 
 1. **Open two files.**
    - Go to **Browse > Files > Demo > northwind**.
@@ -102,7 +102,7 @@ covered by `complex-integration.md`, `complex-augment.md`,
    - Type `complexRename` into the search box.
    - Click the refresh icon.
    - Double-click the `complexRename` tile.
-   - Known bug GROK-19212 (reopened): the pivot and the join do not
+   - Known bug core#188 (reopened): the pivot and the join do not
      come back; the task bar keeps showing *2 tasks* and no dialog
      appears.
    - **Verify:** four views open: `ordersR` with 830 rows, `customersR`
@@ -116,7 +116,7 @@ covered by `complex-integration.md`, `complex-augment.md`,
    - Click **CANCEL**.
    - Right-click the left sidebar and select **Close All**.
 
-## Part 2 — renaming a query used by a join (GROK-21026)
+## Part 2 — renaming a query used by a join (core#628)
 
 1. **Create the query.**
    - Go to the Datagrok database (see Setup).
@@ -160,7 +160,7 @@ covered by `complex-integration.md`, `complex-augment.md`,
    - Type `complexJoin` into the search box.
    - Click the refresh icon.
    - Double-click the `complexJoin` tile.
-   - Known bug GROK-21026: the join does not come back. The **Data
+   - Known bug core#628: the join does not come back. The **Data
      loading error** dialog says *Could not resolve table
      "complexQueryRenamed"*; on dev no dialog appears and *Opening
      project* stays in the task bar.
@@ -268,5 +268,5 @@ covered by `complex-integration.md`, `complex-augment.md`,
 
 ## Automation notes
 
-- In Part 2 the query name has no spaces on purpose: GROK-21026 shows
+- In Part 2 the query name has no spaces on purpose: core#628 shows
   only when the result table's name equals the query's internal name.

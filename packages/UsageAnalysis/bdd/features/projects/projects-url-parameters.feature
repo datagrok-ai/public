@@ -21,14 +21,14 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
   icon's menu (`checked` does not read a Dart menu item's aria-checked). Kept without: the copy
   icon of the URL row of Links... (the address is typed instead).
 
-  Known failures: no ticket (the md's note asks to record it) — right after the first save the Source
+  Known failures: core#630 — right after the first save the Source
   link carries the parameter's own name (?typeName=Project), not the alias "type" set in the Save
-  dialog; after a reopen it carries the alias. No ticket either: typeName unticked under the
+  dialog; after a reopen it carries the alias. core#630 too: typeName unticked under the
   sliders icon and the dashboard saved (the "Save dashboard to apply changes" hint gone), the
   Source link still ends with ?type=Script; it loses the parameter only after the project is
   reopened (the md checks the link right after unticking; before the save the link keeps
-  ?type=Script, as the hint says, so the claim is made after the save). GROK-20930 — the Save
-  dialog's "Share link:" line does not follow the name typed into the dialog; GROK-20929 — the sliders icon of Source appears only after the project is
+  ?type=Script, as the hint says, so the claim is made after the save). core#569 — the Save
+  dialog's "Share link:" line does not follow the name typed into the dialog; core#568 — the sliders icon of Source appears only after the project is
   reopened, not right after the first save. Each is a scenario of its own claiming what the md
   expects.
 
@@ -91,7 +91,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And user clicks on "URL Parameters" button in "BDDUrlParamQuery{time}" project table in "Save project" dialog
     Then "URL alias" text input in "Save project" dialog should have value "typeName"
 
-  @known-failure @realizes:GROK-20930
+  @known-failure @realizes:core#569
   Scenario: The Share link line follows the name typed into the dialog
     Then "Save project" dialog should contain text ".BDDUrlParamProj{time}?typeName="
 
@@ -112,11 +112,11 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And tooltip should contain text ".BDDUrlParamProj{time}?"
     And tooltip should not contain text "run=true"
 
-  @known-failure @realizes:GROK-21030
+  @known-failure @realizes:core#630
   Scenario: Right after the save, the Source link already carries the alias
     Then tooltip should contain text ".BDDUrlParamProj{time}?type=Project"
 
-  @known-failure @realizes:GROK-20929
+  @known-failure @realizes:core#568
   Scenario: Right after the save, Source offers the sliders icon
     Then sliders-h icon in Source pane in toolbox should be visible
     When user hovers over sliders-h icon in Source pane in toolbox
@@ -241,7 +241,7 @@ Feature: A dashboard on a query with a parameter: Toolbox > Source, URL paramete
     And sliders-h icon in Source pane in toolbox should be visible
     And "Save dashboard to apply changes" text in toolbox should be hidden
 
-  @known-failure @realizes:GROK-21030
+  @known-failure @realizes:core#630
   Scenario: Saved with the parameter taken out, the Source link no longer carries it
     When user moves the pointer away from Source pane in toolbox
     And user hovers over copy icon in Source pane in toolbox

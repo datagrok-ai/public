@@ -16,8 +16,7 @@ Feature: Projects uploaded from different sources, with Data sync on and off
   The link is checked with the first pair before the save and with the second pair after the
   reopen, so a filter the project merely restored cannot pass for a link that no longer works.
   Before a reopened table's Creation script is claimed shown or hidden, its Data sync switch is
-  claimed on or off, so a dialog that has not filled its rows cannot pass for "hidden". The pivot's
-  configuration is set through its properties: it prepares the table the case is about.
+  claimed on or off, so a dialog that has not filled its rows cannot pass for "hidden". The pivot is configured through its own rows and chips (ShipCountry added to Group by, ShipVia to Pivot, the defaults removed, avg(OrderID) turned into count).
 
   Parked (see the request document): TestCase2, 3 and 6 (the NorthwindTest query PostgresAll,
   dev only; the Link Tables phrases are not in the library the General/bdd project sees) and
@@ -75,9 +74,9 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     And user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And an info balloon containing 'Project "<Project>" uploaded' should have been shown
-    And 1 project named "<Project>" should be on the server
     And the "customers" table of the "<Project>" project should be saved <saved>
     And the "orders" table of the "<Project>" project should be saved <saved>
+    And 1 project named "<Project>" should be on the server
     And "Share <Project>" dialog should be visible
     When user clicks on CANCEL button in "Share <Project>" dialog
     Then the "Share <Project>" dialog should close
@@ -89,9 +88,9 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     And user double-clicks on <Project> gallery card
     Then the "customers" table view should open with 91 rows
     And the "orders" table view should open with 830 rows
-    Given user switches to the "customers" table view
+    When user clicks on customers view
     Then the table should have been <how>
-    Given user switches to the "orders" table view
+    When user clicks on orders view
     Then the table should have been <how>
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
@@ -127,11 +126,14 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     Given the toolbox pane is shown
     When user clicks on "pivot table" icon in toolbox
     Then pivot table viewer should be visible
-    When user sets properties of pivot table viewer:
-      | Group By Column Names  | ShipCountry |
-      | Pivot Column Names     | ShipVia     |
-      | Aggregate Agg Types    | count       |
-      | Aggregate Column Names | OrderID     |
+    # a new pivot of orders groups by ShipName, pivots on CustomerID and aggregates avg(OrderID)
+    And the "group by" reading of pivot table viewer should be "ShipName"
+    When user adds "ShipCountry" to the "group by" row of pivot table viewer
+    And user clicks on the "remove group by chip ShipName" area of pivot table viewer
+    And user adds "ShipVia" to the "pivot" row of pivot table viewer
+    And user clicks on the "remove pivot chip CustomerID" area of pivot table viewer
+    And user picks "Aggregation > count" from the context menu of the "aggregate chip avg(OrderID)" area of pivot table viewer
+    And user closes the context menu
     Then the "group by" reading of pivot table viewer should be "ShipCountry"
     And the "pivot" reading of pivot table viewer should be "ShipVia"
     And the "aggregate" reading of pivot table viewer should be "count(OrderID)"
@@ -160,6 +162,10 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     And user double-clicks on <Project> gallery card
     Then the "orders" table view should open with 830 rows
     And the "orders aggregation" table view should open with 40 rows
+    When user clicks on orders view
+    Then the table should have been <how>
+    When user clicks on "orders aggregation" view
+    Then the table should have been <how>
     And no error or warning balloon should have been shown
     When user clicks on Save ribbon item
     Then "Save project" dialog should be visible
@@ -171,6 +177,6 @@ Feature: Projects uploaded from different sources, with Data sync on and off
     Then the "Save project" dialog should close
 
     Examples:
-      | Sync | Project                | switch   | saved          | state | script  |
-      | ON   | BDDUpload7Sync{time}   | checks   | with data sync | on    | visible |
-      | OFF  | BDDUpload7NoSync{time} | unchecks | as a snapshot  | off   | hidden  |
+      | Sync | Project                | switch   | saved          | state | script  | how                   |
+      | ON   | BDDUpload7Sync{time}   | checks   | with data sync | on    | visible | reloaded by data sync |
+      | OFF  | BDDUpload7NoSync{time} | unchecks | as a snapshot  | off   | hidden  | loaded as a snapshot  |

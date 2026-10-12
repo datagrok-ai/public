@@ -30,7 +30,7 @@ instead of showing the saved rows.
 1. Two accounts: the **owner** (test user) and a **second user**. The
    second user gets the **NorthwindTest** connection in step 4: sharing
    a project shares its query but not the query's connection, and
-   without the connection the recipient's open does not finish.
+   without the connection the recipient must be told so.
 2. **NorthwindTest** exists only on dev.
 3. Names in this test: query `lifecycleQuery`, project
    `lifecycleQueryProj`.
@@ -63,7 +63,7 @@ instead of showing the saved rows.
    - In the **Share** dialog, click **CANCEL**.
    - Right-click the left sidebar and select **Close All**.
 
-4. **Share the project, then the connection.**
+4. **Share the project; without the connection the recipient is told so; then share the connection.**
    - Go to **Browse > Dashboards**.
    - Right-click the `lifecycleQueryProj` tile and choose **Share...**.
    - Type the second user into **User, group, or email**.
@@ -71,6 +71,13 @@ instead of showing the saved rows.
    - Leave **View and use** selected.
    - Switch **Send notifications** off.
    - Click **OK**.
+   - Click your avatar at the bottom of the left sidebar, click
+     **Logout** and sign in with the second user's credentials.
+   - Go to **Browse > Dashboards**, type `lifecycleQueryProj` into the
+     search box and click the refresh icon.
+   - Double-click the `lifecycleQueryProj` tile.
+   - **Verify:** a **Data loading error** dialog is shown (core#755).
+   - Close the dialog, log out and sign in with the owner's credentials.
    - Go to **Browse > Databases > Postgres**.
    - Right-click **NorthwindTest** and choose **Share...**.
    - Type the second user into **User, group, or email**.

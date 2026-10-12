@@ -1,6 +1,6 @@
 @serial @realizes:views.projects
 Feature: Projects regressions: a project with pinned rows
-  GROK-20607 (open; does not reproduce on localhost, core 1.28.0 bc64f40e47 — two runs, no error on
+  core#460 (open; does not reproduce on localhost, core 1.28.0 bc64f40e47 — two runs, no error on
   the reopen, so this is a plain regression scenario): demog.csv from Browse > Files > Demo is sorted by AGE, HEIGHT is hidden, and
   two rows are pinned from the grid's context menu — one by a SEX cell, one by a RACE cell. The
   project is saved with Data sync through the ribbon's Save dialog and reopened from the Dashboards
@@ -57,7 +57,7 @@ Feature: Projects regressions: a project with pinned rows
     And the table should have 5850 rows
     And the table should have been reloaded by data sync
 
-  @realizes:GROK-20607
+  @realizes:core#460
   Scenario: The project with pinned rows reopens without errors, sorted and without HEIGHT
     Then the "sort column" reading of grid should be "AGE"
     And the "column order" reading of grid should not include the text "HEIGHT"

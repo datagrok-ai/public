@@ -63,9 +63,9 @@ Feature: Projects regressions: names of projects and their tables
     And no errors should have been logged
 
     Examples:
-      | mode | switch   | kept           | loaded               |
+      | mode | switch   | kept           | loaded                |
       | On   | checks   | with data sync | reloaded by data sync |
-      | Off  | unchecks | as a snapshot  | loaded as a snapshot |
+      | Off  | unchecks | as a snapshot  | loaded as a snapshot  |
 
   @realizes:GROK-19788 @realizes:GROK-18472
   Scenario: A project named with "|" and "_" is renamed from the gallery to a name with "_"
@@ -81,12 +81,13 @@ Feature: Projects regressions: names of projects and their tables
     And "Share BDDRegPipe{time}|A_B" dialog should be visible
     When user clicks on CANCEL button in "Share BDDRegPipe{time}|A_B" dialog
     Then the "Share BDDRegPipe{time}|A_B" dialog should close
-    And 1 project named "BDDRegPipe{time}|A_B" should be on the server
     And no errors should have been logged
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
     And user enters "BDDRegPipe{time}" into gallery search
-    And user picks "Rename..." from the context menu of BDDRegPipe{time}AB gallery card
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then "BDDRegPipe{time}|A_B" gallery card should be visible
+    When user picks "Rename..." from the context menu of BDDRegPipe{time}AB gallery card
     Then "Rename project" dialog should be visible
     And Name text input in "Rename project" dialog should have value "BDDRegPipe{time}|A_B"
     And no errors should have been logged
@@ -94,8 +95,10 @@ Feature: Projects regressions: names of projects and their tables
     Then OK button in "Rename project" dialog should be enabled
     When user clicks on OK button in "Rename project" dialog
     Then the "Rename project" dialog should close
-    And 1 project named "BDDRegPiped{time}_x" should be on the server
-    And 0 projects named "BDDRegPipe{time}|A_B" should be on the server
+    When user enters "BDDRegPipe" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then "BDDRegPiped{time}_x" gallery card should be visible
+    And "BDDRegPipe{time}|A_B" gallery card should be absent
     And no error or warning balloon should have been shown
     And no errors should have been logged
 
@@ -175,7 +178,10 @@ Feature: Projects regressions: names of projects and their tables
     When user enters "BDDRegRenamed{time}" into Name text input in "Rename project" dialog
     And user clicks on OK button in "Rename project" dialog
     Then the "Rename project" dialog should close
-    And 1 project named "BDDRegRenamed{time}" should be on the server
+    When user enters "BDDRegRename" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDRegRenamed{time} gallery card should be visible
+    And BDDRegRename{time} gallery card should be absent
     When user clicks on demog view
     Then the "demog" view should be current
     When user clicks on Save ribbon item
@@ -187,14 +193,13 @@ Feature: Projects regressions: names of projects and their tables
     And an info balloon containing 'Project "BDDRegRenamed{time}" uploaded' should have been shown
     And no error or warning balloon should have been shown
     And no errors should have been logged
-    And 1 project named "BDDRegRenamed{time}" should be on the server
-    And 0 projects named "BDDRegRename{time}" should be on the server
-    And the "demog" table of the "BDDRegRenamed{time}" project should be saved with data sync
     When user closes all views
     And user clicks on Dashboards tree node inside browse tree
-    And user enters "BDDRegRenamed{time}" into gallery search
+    And user enters "BDDRegRename" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar
-    And user double-clicks on BDDRegRenamed{time} gallery card
+    Then BDDRegRenamed{time} gallery card should be visible
+    And BDDRegRename{time} gallery card should be absent
+    When user double-clicks on BDDRegRenamed{time} gallery card
     Then the "demog" view should be current
     And the table should have 5850 rows
     And the table should have been reloaded by data sync

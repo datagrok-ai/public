@@ -15,7 +15,7 @@ original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-l
 migration_date: 2026-05-04
 related_bugs:
   - GROK-18345
-  - GROK-21025
+  - core#627
 ---
 
 # Projects — lifecycle of a Space-based project
@@ -102,8 +102,8 @@ data-synced project whose table comes from a Space.
    - Change the name to `lifecycleSpaceRenamed`.
    - Click **OK**.
 
-8. **Both users reopen the project (GROK-21025).**
-   - Known bug GROK-21025: after the Space is renamed, the project does
+8. **Both users reopen the project (core#627).**
+   - Known bug core#627: after the Space is renamed, the project does
      not open; the **Data loading error** dialog shows the creation
      script with the old Space name,
      `OpenFile("LifecycleSpace:Files/demog.csv")`.

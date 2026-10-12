@@ -93,6 +93,9 @@ main project and a second one without a description, both with
    - Click the `uiSmoke` tile.
    - **Verify:** the **Context Panel** shows the description under the
      project picture in **Details**.
+   - In the **Context Panel**, expand **Sharing**.
+   - **Verify:** nobody but you is listed: the **Share** dialog
+     cancelled in step 3 gave no one access.
 
 6. **Add a tag.**
    - In **Details**, next to **Tags**, click the pencil icon (tooltip

@@ -15,7 +15,7 @@ Feature: A project built from a file in a space, shared, and reopened after the 
   starts and ends. It is serial: the Dashboards search is shared with every feature that saves a
   project.
 
-  Known failure GROK-21025: once the space is renamed, the project no longer opens (the table's
+  Known failure core#627: once the space is renamed, the project no longer opens (the table's
   creation script keeps the old namespace, OpenFile("<old space>:Files/demog.csv")). The ticket and
   the runs of 1.28.0 in September saw the open end in a "Data loading error" dialog quoting that
   line; on localhost 1.28.0 f98337ae1b (2026-10-05) no dialog comes — "Opening project" stays in
@@ -138,7 +138,7 @@ Feature: A project built from a file in a space, shared, and reopened after the 
     And user clicks on Refresh icon in gallery toolbar
     Then BDDLifeSpaceProj{time} gallery card should be visible
 
-  @known-failure @realizes:GROK-21025
+  @known-failure @realizes:core#627
   Scenario: After the space rename, the owner opens the project with its rows
     When user double-clicks on BDDLifeSpaceProj{time} gallery card
     Then the "demog" view should be current
@@ -154,7 +154,7 @@ Feature: A project built from a file in a space, shared, and reopened after the 
     And user clicks on "Refresh" icon inside gallery toolbar
     Then BDDLifeSpaceProj{time} gallery card should be visible
 
-  @known-failure @realizes:GROK-21025
+  @known-failure @realizes:core#627
   Scenario: After the space rename, the second account opens the project with its rows
     When user double-clicks on BDDLifeSpaceProj{time} gallery card
     Then the "demog" view should be current
