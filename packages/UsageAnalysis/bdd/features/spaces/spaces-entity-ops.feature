@@ -1,8 +1,9 @@
 @journey @spaces @realizes:views.space
 Feature: Working with what a space holds
-  The context menu of a file inside a space — open, rename, delete — and what a copy in another
-  space does when the original is deleted. Translated from
-  files/TestTrack/Spaces/spaces-general.test.ts (tests 13, 16 and 17).
+  The context menu of a file inside a space — open, rename, delete — and a copy into another
+  space. Translated from files/TestTrack/Spaces/spaces-general.test.ts (tests 13, 16 and 17).
+  That the copy outlives its deleted original is tested in datlas spaces/spaces_test.dart
+  ('copy files between spaces').
 
   A rename is claimed by the new name appearing AND the old one going; a cancelled rename by the
   old name still being the only one. The old spec checked only that the old name was still visible,
@@ -85,18 +86,13 @@ Feature: Working with what a space holds
       Then "Are you sure?" dialog should be hidden
       And acidiq.csv link in gallery should be visible
 
-    Scenario: A copy in another space survives the original being deleted
+    Scenario: A file is copied to another space and deleted from its own
       When user drags acidiq.csv link in gallery to Spaces---BDD-Ops-Copy tree node inside browse tree
       Then Move entity dialog should be visible
       And choice input in Move entity dialog should be visible
       When user selects "Copy" in Move entity dialog
       And user clicks on YES button in Move entity dialog
       Then Move entity dialog should be hidden
-      When user double-clicks on Spaces---BDD-Ops-Copy tree node inside browse tree
-      Then the "BDD-Ops-Copy" view should be current
-      And acidiq.csv link in gallery should be visible
-      When user double-clicks on Spaces---BDD-Ops tree node inside browse tree
-      Then the "BDD-Ops" view should be current
       When user picks "Delete..." from the context menu of acidiq.csv link in gallery
       And user clicks on DELETE button in "Are you sure?" dialog
       Then acidiq.csv link in gallery should be absent

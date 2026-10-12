@@ -170,6 +170,21 @@ export async function pickMenuPath(page: Page, path: string): Promise<void> {
 }
 
 /** The labels under [path], opening every group of it first ("" reads the top level). */
+/** Whether the last item of [path] is `enabled` or `disabled` (its `aria-disabled`), the groups before it
+ * opened; `not listed` while the menu does not show it. */
+export async function menuItemState(page: Page, path: string): Promise<string> {
+  const segments = path.split(SEP).filter((s) => s.length > 0);
+  const item = segments.pop()!;
+  let group: Locator | undefined;
+  for (let i = 0; i < segments.length; i++)
+    group = await openGroup(page, segments[i], segments[i + 1] ?? item, group);
+  const items = (group ? group.locator(CHILDREN) : page.locator(POPUP)).locator('.d4-menu-item').filter({visible: true});
+  const states = await items.evaluateAll((els, label) => els
+    .filter((e) => (e.querySelector(':scope > .d4-menu-item-label')?.textContent ?? '').trim() === label)
+    .map((e) => e.getAttribute('aria-disabled') === 'true' ? 'disabled' : 'enabled'), item);
+  return states[0] ?? 'not listed';
+}
+
 export async function menuLabels(page: Page, path: string): Promise<string[]> {
   const segments = path.split(SEP).filter((s) => s.length > 0);
   let group: Locator | undefined;

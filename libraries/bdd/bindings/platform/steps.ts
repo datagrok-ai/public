@@ -79,10 +79,13 @@ async function openTable(page: Page, dataset: DatasetEntry, rows?: number, name?
     const first = tv.grid?.columns.byIndex(1)?.column ?? df.columns.byIndex(0);
     df.currentCell = df.cell(0, first.name);
   });
+  // a semantic type whose renderer a package brings loads that package first (Chem, seconds on a fresh page) and then
+  // resizes the rows: a cell aimed at before that lands a row off
+  await page.waitForFunction(() => !(window as any).grok.shell.tv?.grid?.isRenderPending, null, {timeout: pollMs(60000)});
 }
 
 export const openDataset = Given('user opens {dataset} dataset', (page: Page, dataset: DatasetEntry) => openTable(page, dataset),
-  {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected, with row 0 current as the view would make it a second later'});
+  {tier: 'api', description: 'OpenFile through the JS API — provenance as in the UI; done when semantic types are detected and the grid has its renderers and row heights, with row 0 current as the view would make it a second later'});
 
 export const openDatasetRows = Given('user opens {dataset} dataset keeping the first {int} rows', (page: Page, dataset: DatasetEntry, rows: number) =>
   openTable(page, dataset, rows), {tier: 'api', description: 'a clone with the first N rows, named as the file — for a feature whose commands cost a call per row'});
@@ -569,17 +572,23 @@ export const contextPanelOpen = Given('the context panel is open', async (page: 
 }, {tier: 'api', description: 'idempotent: the shell setting, re-applied until the panel is shown — not a click on its toggle'});
 
 export const contextPanelShows = Then('the context panel should show {string}', async (page: Page, name: string) => {
+  // case aside: a database column's friendly name is capitalized ("Categoryid"), the panel shows it as the database has it
   await expect.poll(() => page.evaluate(() => {
     const o = grok.shell.o;
     // a viewer has no name of its own: it is its type
     return o == null ? 'nothing' : `${o.constructor?.name ?? typeof o} "${o instanceof DG.Viewer ? o.type : o.friendlyName || o.name || o.type || ''}"`;
-  }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`));
+  }), {message: `the current object (grok.shell.o), which the context panel renders`}).toMatch(new RegExp(`"${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"$`, 'i'));
   // a viewer's panel is its property grid, with no header naming it: the text is claimed for entities
   if (await page.evaluate(() => grok.shell.o instanceof DG.Viewer))
     await expect(page.locator('.grok-prop-panel .property-grid').first(), 'the viewer\'s properties in the context panel').toBeVisible();
   else
-    await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name);
-}, {description: 'the current object (grok.shell.o) is the entity of that name (a viewer: of that type), and the panel shows it (a viewer: its property grid)'});
+    await expect(page.locator('.grok-prop-panel'), 'the context panel').toContainText(name, {ignoreCase: true});
+}, {description: 'the current object (grok.shell.o) is the entity of that name, case aside (a viewer: of that type), and the panel shows it (a viewer: its property grid)'});
+
+export const contextPanelTitle = Then('the title of context panel should be {string}', (page: Page, title: string) =>
+  expect(page.locator('.grok-prop-panel .grok-entity-prop-panel > .d4-accordion > .d4-accordion-title label').first(),
+    'the name in the context panel\'s header').toHaveText(title),
+{description: 'the name the context panel\'s header shows for the current entity, read from the page, not from the entity'});
 
 /* The table view shows a moved current cell in the panel 750 ms after the move (a debounced handler),
    and replaces whatever was made current meanwhile — this is the moment a user sees it arrive. */
@@ -892,57 +901,78 @@ async function deleteGlobalGrantsOf(page: Page, entity: ServerEntity): Promise<v
       await api.remove(`/privileges/permissions/${grant.id}`);
 }
 
+/** The wrapper project, the model and — when this run made it and no other model uses it — the training table:
+ * what deleting a model leaves behind (the server's model delete keeps both), in the order they go. */
+async function modelStages(page: Page, modelId: string, owner: Owner, createdAfter: number): Promise<CleanupStage[]> {
+  const stages: CleanupStage[] = [{source: 'models', ids: [modelId]}];
+  const training: {id: string; owned: boolean} | null = await page.evaluate(async ([id, ownerId, cutoff]) => {
+    try {
+      const model = await grok.dapi.models.include('trainedOn').find(id);
+      const table = await grok.functions.call('Get', {object: model, propertyName: 'trainedOn'});
+      if (!table)
+        return null;
+      const saved = await grok.dapi.tables.find(table.id);
+      return {id: table.id, owned: saved != null && model.author.id === ownerId && saved.author.id === ownerId &&
+        model.createdOn.valueOf() > cutoff && saved.createdOn.valueOf() > cutoff};
+    }
+    catch (error) {
+      throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
+    }
+  }, [modelId, owner.id, createdAfter] as [string, string, number]);
+  const wrappers = await serverEntities(page, 'projects',
+    `isEntity = true and isPackage = false and relations.entity.id = "${modelId}"`);
+  for (const wrapper of wrappers)
+    if (wrapper.children?.length !== 1 || wrapper.children[0] !== modelId)
+      throw new Error(`project ${wrapper.id} has children outside model ${modelId}; it was retained`);
+  stages.unshift({source: 'projects', ids: wrappers.map((wrapper) => wrapper.id)});
+  // trainedOn is a used table: require a new artifact by this run's user and no other model.
+  if (training?.owned) {
+    const users = await serverEntities(page, 'models', `trainedOn.id = "${training.id}"`);
+    if (!users.some((model) => model.id === modelId))
+      throw new Error(`the training-table lookup did not return model ${modelId}; ownership is unverified`);
+    if (users.length === 1)
+      stages.push({source: 'tables', ids: [training.id]});
+  }
+  return stages;
+}
+
+/* A model deleted through the gallery takes the way to its training table and wrapper project with it:
+   the model cleanups of a page share what they found, and the count claim records a model while it lives. */
+const modelCleanups = new WeakMap<Page, {owner: Owner; createdAfter: number; pending: Map<string, CleanupStage[]>}>();
+
+async function recordModelArtifacts(page: Page, names: string[]): Promise<void> {
+  const run = modelCleanups.get(page);
+  if (!run)
+    return;
+  for (const model of await serverEntities(page, 'models'))
+    if ((names.includes(model.friendlyName) || names.includes(model.name)) && !run.pending.has(model.id))
+      run.pending.set(model.id, await modelStages(page, model.id, run.owner, run.createdAfter));
+}
+
 /** `own` keeps to the running user's entities, for a name other users have too. */
 function namedCleanup(page: Page, source: NamedSource, what: string, names: string[], own = false): () => Promise<void> {
   const families = fixtureFamilies(names);
   let createdAfter: number | undefined;
   let owner: Owner | undefined;
-  const pending = new Map<string, CleanupStage[]>();
+  let pending = new Map<string, CleanupStage[]>();
   return async () => {
     await expect.poll(async () => {
       try {
         if ((source === 'models' || own) && owner === undefined)
           owner = await currentOwner(page);
         // the server's Date header is in whole seconds
-        if (source === 'models' && createdAfter === undefined)
+        if (source === 'models' && createdAfter === undefined) {
           createdAfter = await serverNow(page) + 1000;
+          const shared = modelCleanups.get(page);
+          pending = shared?.pending ?? pending;
+          modelCleanups.set(page, {owner: owner!, createdAfter, pending});
+        }
         const named = (await serverEntities(page, source, '', true, own)).filter((entity) => (!own || ownedBy(entity, owner!)) &&
           (names.includes(entity.friendlyName) || names.includes(entity.name) || isStaleFixture(entity, families)));
         for (const entity of named) {
           if (pending.has(entity.id))
             continue;
-          const stages: CleanupStage[] = [{source, ids: [entity.id]}];
-          if (source === 'models') {
-            const training: {id: string; owned: boolean} | null = await page.evaluate(async ([id, ownerId, cutoff]) => {
-              try {
-                const model = await grok.dapi.models.include('trainedOn').find(id);
-                const table = await grok.functions.call('Get', {object: model, propertyName: 'trainedOn'});
-                if (!table)
-                  return null;
-                const saved = await grok.dapi.tables.find(table.id);
-                return {id: table.id, owned: saved != null && model.author.id === ownerId && saved.author.id === ownerId &&
-                  model.createdOn.valueOf() > cutoff && saved.createdOn.valueOf() > cutoff};
-              }
-              catch (error) {
-                throw new Error(`model ${id} trainedOn lookup: ${(error as any)?.message ?? String(error)}`);
-              }
-            }, [entity.id, owner!.id, createdAfter!] as [string, string, number]);
-            const wrappers = await serverEntities(page, 'projects',
-              `isEntity = true and isPackage = false and relations.entity.id = "${entity.id}"`);
-            for (const wrapper of wrappers)
-              if (wrapper.children?.length !== 1 || wrapper.children[0] !== entity.id)
-                throw new Error(`project ${wrapper.id} has children outside model ${entity.id}; it was retained`);
-            stages.unshift({source: 'projects', ids: wrappers.map((wrapper) => wrapper.id)});
-            // trainedOn is a used table: require a new artifact by this run's user and no other model.
-            if (training?.owned) {
-              const users = await serverEntities(page, 'models', `trainedOn.id = "${training.id}"`);
-              if (!users.some((model) => model.id === entity.id))
-                throw new Error(`the training-table lookup did not return model ${entity.id}; ownership is unverified`);
-              if (users.length === 1)
-                stages.push({source: 'tables', ids: [training.id]});
-            }
-          }
-          pending.set(entity.id, stages);
+          pending.set(entity.id, source === 'models' ? await modelStages(page, entity.id, owner!, createdAfter!) : [{source, ids: [entity.id]}]);
         }
         const left: string[] = [];
         for (const [modelId, stages] of pending) {
@@ -980,7 +1010,8 @@ function namedCleanup(page: Page, source: NamedSource, what: string, names: stri
                       return;
                     if (entity.id !== id)
                       throw new Error(`the lookup returned ${entity.id} instead of ${id}; it was retained`);
-                    if (src === 'projects' && (entity.children.length !== 1 || entity.children[0].id !== ownerId))
+                    // a model the gallery deleted leaves its wrapper with no children
+                    if (src === 'projects' && (entity.children.length > 1 || (entity.children.length === 1 && entity.children[0].id !== ownerId)))
                       throw new Error(`project ${id} has children outside model ${ownerId}; it was retained`);
                     operation = 'delete';
                     await grok.dapi[src].delete(entity);
@@ -1148,6 +1179,54 @@ export const stickyMetaFixturesGone = Given('the Sticky Meta schema {string} and
     await removeStickyMetaFixtures(page, schema, type);
     atFeatureEnd(page, () => removeStickyMetaFixtures(page, schema, type));
   }, {tier: 'api', description: 'by name, and for a {time} name its family\'s members over an hour old; each time read back from the server'});
+
+const stickyMetaHeld = (page: Page) => page.evaluate(async () => ({
+  schemas: Object.fromEntries((await grok.dapi.stickyMeta.getSchemas()).map((s: any) =>
+    [String(s.name), s.properties.map((p: any) => `${p.name}: ${p.propertyType}`).sort().join(', ')])),
+  types: (await grok.dapi.entityTypes.list()).map((t: any) => String(t.name)),
+}));
+
+/* The schema a feature writes values under, made as the New Entity Type and New Schema dialogs make it (a type
+   matching molecules, the properties in order) — those dialogs are schema-and-type's subject. */
+export const stickyMetaSchemaOnServer = Given('a Sticky Meta schema {string} for molecules, with the entity type {string}, is on the server with the properties:',
+  async (page: Page, schema: string, type: string, rows: string[][]) => {
+    await removeStickyMetaFixtures(page, schema, type);
+    atFeatureEnd(page, () => removeStickyMetaFixtures(page, schema, type));
+    await page.evaluate(([s, t, props]) => grok.dapi.stickyMeta.createSchema(s, [{name: t, matchBy: 'semtype=molecule'}],
+      props.map(([name, propertyType]) => ({name, type: propertyType}))), [schema, type, rows] as [string, string, string[][]]);
+    const want = rows.map(([name, propertyType]) => `${name}: ${propertyType}`).sort().join(', ');
+    await expect.poll(async () => {
+      const held = await stickyMetaHeld(page);
+      return `${held.schemas[schema] ?? 'no schema'} | ${held.types.includes(type) ? type : 'no entity type'}`;
+    }, {message: `the Sticky Meta schema "${schema}" and its entity type on the server`}).toBe(`${want} | ${type}`);
+  }, {tier: 'api', description: 'rows | property | type |; removed now and at feature end as `the Sticky Meta schema … and entity type … are removed` does, read back from the server'});
+
+export const stickyMetaSchemaDeleted = Given('the Sticky Meta schema {string} is deleted on the server', async (page: Page, schema: string) => {
+  await page.evaluate(async (name) => {
+    for (const s of await grok.dapi.stickyMeta.getSchemas())
+      if (s.name === name)
+        await grok.dapi.stickyMeta.deleteSchema((window as any).grok_Entity_Get_Id(s.dart));
+  }, schema);
+  await expect.poll(async () => schema in (await stickyMetaHeld(page)).schemas, {message: `the Sticky Meta schema "${schema}" on the server`}).toBe(false);
+}, {tier: 'api', description: 'the schema alone, its entity type kept — what the Schemas gallery\'s Delete does, without the walk'});
+
+export const stickyMetaSchemaHeld = Then('the Sticky Meta schema {string} should be on the server with the properties {string}', async (page: Page, schema: string, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean).sort().join(', ');
+  await expect.poll(async () => (await stickyMetaHeld(page)).schemas[schema] ?? 'no such schema',
+    {message: `the properties of the Sticky Meta schema "${schema}" on the server`}).toBe(want);
+}, {tier: 'api', description: '"name: type, …" in any order (the server keeps none) — the types the Edit schema dialog shows no control for'});
+
+export const noStickyMetaSchema = Then('no Sticky Meta schema named {string} should be on the server', async (page: Page, schema: string) => {
+  await expect.poll(async () => schema in (await stickyMetaHeld(page)).schemas, {message: `the Sticky Meta schema "${schema}" on the server`}).toBe(false);
+}, {tier: 'api'});
+
+export const entityTypeHeld = Then('the entity type {string} should be on the server', async (page: Page, type: string) => {
+  await expect.poll(async () => (await stickyMetaHeld(page)).types.includes(type), {message: `the entity type "${type}" on the server`}).toBe(true);
+}, {tier: 'api'});
+
+export const noEntityType = Then('no entity type named {string} should be on the server', async (page: Page, type: string) => {
+  await expect.poll(async () => (await stickyMetaHeld(page)).types.includes(type), {message: `the entity type "${type}" on the server`}).toBe(false);
+}, {tier: 'api'});
 
 /* A space is listed once its save returns, and the save of a ROOT space is slow: 4.8 s alone and
    18 s with four features creating at once on a local stand (2026-09-10); the claim right after OK
@@ -1491,9 +1570,10 @@ export const selectModel = When('user selects the predictive model {string} in {
   await native.selectOption({value: id});
 }, {tier: 'ui', description: 'the option of the model of that name, by its id: the shown text is "<saved at>: <name>" cut at 40 characters'});
 
-export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', (page: Page, count: number, name: string) =>
-  expectNamedCount(page, 'models', 'predictive models', name, count),
-{tier: 'api', description: 'what the server holds, not what the gallery draws'});
+export const modelsOnServer = Then('{int} predictive model(s) named {string} should be on the server', async (page: Page, count: number, name: string) => {
+  await expectNamedCount(page, 'models', 'predictive models', name, count);
+  await recordModelArtifacts(page, namesOf(name));
+}, {tier: 'api', description: 'what the server holds, not what the gallery draws; records each model\'s training table and wrapper project for the feature-end cleanup, whatever deletes the model'});
 
 /** A login typed as the text of an input — a field that lists users by login, not a typeahead. */
 async function enterLogin(page: Page, target: ElementRef, login: string): Promise<void> {

@@ -3,8 +3,11 @@
 ## v.next
 
 * GROK-20884: Added `grok s observe` (alias `grok s o`): problems and their alerts, problem rules, logger settings with expiring user and group entries, errors, the timeline and cloud logs (CloudWatch and the log archive)
-* GROK-20884: `grok s` error lines name the request id the server returned
 * GROK-20884: Added `grok s o capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires; `capture stop` removes it, `capture` lists the active ones
+
+## 6.7.7 (2026-10-09)
+
+* GROK-21156: `grok s users invite [<email>] [--prefix <P>] [--send-email]`: invites a user and prints a link that logs them in (no email sent; the email may be omitted); `--prefix` starts the code with `<P>`; `--send-email` mails the invitation instead
 * `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe

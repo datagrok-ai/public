@@ -1,4 +1,4 @@
-@journey @spaces @realizes:views.space
+@journey @serial @spaces @realizes:views.space
 Feature: Creating a space
   The Spaces node of the Browse tree: what it offers, what a new space needs, and what the platform
   refuses. Translated from files/TestTrack/Spaces/spaces-general.test.ts (tests 1, 2 and 18a) and
@@ -12,6 +12,9 @@ Feature: Creating a space
 
   A second child of the same name and a name with spaces are server rules, tested in datlas
   spaces/spaces_test.dart ('forbid duplicate subspace names', 'create space with space in name and verify files').
+
+  Serial with spaces-delete, whose tree lost its fixture space while this feature made root spaces (twice in four
+  full runs; see spaces-delete.feature).
 
   Background:
     Given user is logged in

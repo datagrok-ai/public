@@ -2,11 +2,14 @@
 Feature: A structure drawn in Ketcher reaches the substructure card as drawn
   Chem | Search | Substructure Search... on smiles (1000 rows, molecule column canonical_smiles) adds a
   substructure card and opens its sketcher, here Ketcher. The benzene template placed on the canvas
-  keeps the 924 rows with a benzene ring. Two ways the drawing got lost: with Filter as you draw
+  keeps the 924 rows with a benzene ring. Three ways the drawing got lost: with Filter as you draw
   cleared, OK right after the stroke read the molecule before Ketcher's asynchronous export had it,
-  and the dialog's closing dropped that export, so the card stayed empty; and while the pointer is
-  over the canvas, Ketcher holds the template's floating preview in its structure, so an export taken
-  then read two rings (666 rows). The pointer drifts on over the canvas after every stroke here.
+  and the dialog's closing dropped that export, so the card stayed empty; Ketcher's toolbar and canvas
+  take strokes some 300 ms before it says it is ready, and the host then loaded its empty molecule over
+  a template placed in them, so the card stayed empty too (the first Ketcher of a page, loading slowly);
+  and while the pointer is over the canvas, Ketcher holds the template's floating preview in its
+  structure, so an export taken then read two rings (666 rows). The pointer drifts on over the canvas
+  after every stroke here.
 
   Background:
     Given user is logged in

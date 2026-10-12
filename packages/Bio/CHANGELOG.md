@@ -2,10 +2,20 @@
 
 ## v.next
 
+* WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)
+* Apply Numbering Scheme: Applies results row by row without keeping every row's parsed map and cells, and writes per-row annotations with one change event (100,000 rows crashed the tab); the same single event for Scan Liabilities
+* Apply Numbering Scheme, MSA: An engine's description shows its first sentence, the rest in the tooltip
+* WebLogo: Fixed the position width becoming infinite when the viewer first renders with no positions (data still loading), which left the slider collapsed at 0 until dragged; a saved infinite or zero width falls back to the default
+* MSA: A long engine description wraps instead of widening the dialog
+* Apply Numbering Scheme: An engine from another package (e.g. HMM's ANARCI) is the default when installed; the built-in immunum stays available as the fallback
+* Apply Numbering Scheme: Fixed an engine with options (HMM's ANARCI) offering only IMGT when the dialog was opened again
+* WebLogo: Added the Profile property: draws a sequence profile supplied by another package (functions with `meta.role: webLogoProfile`, e.g. HMM's profile HMM logos) with the viewer's own layout, scrolling and colors; when the column is aligned to the profile, clicking a letter selects the rows that have it there (in `@datagrok-libraries/bio`)
+* Annotations: Moved the annotation storage helpers (`annotation-manager.ts`) to `@datagrok-libraries/bio` so other packages write annotations the same way; Bio re-exports them
 * Tests: The BDD features no longer repeat what the package tests cover (project round trips, notation permutations, renderer checks); the MSA dialog's engine switch on a HELM column is claimed again (it contacts no container)
 * Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
 * GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+* Tests: Added package tests for Scan Liabilities (rule hits and positions, the annotation and count columns), Similarity against another row and a shorter or longer reference (GROK-20963), Sequence Space and Activity Cliffs on HELM and MSA, an antibody numbering's project round trip and an MSA column of multi-letter monomers converted to HELM; the BDD features keep the dialogs and leave these numbers to the tests, and the project round-trip tests delete their projects
 
 ## 2.28.4 (2026-09-29)
 

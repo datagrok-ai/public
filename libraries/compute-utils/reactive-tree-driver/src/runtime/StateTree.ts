@@ -146,6 +146,21 @@ export class StateTree {
 
   // --- Internal unguarded primitives (caller must hold the tree lock) ---
 
+  private findNode(uuid: string) {
+    const data = this.nodeTree.find((item) => item.uuid === uuid);
+    if (data == null)
+      throw new Error(`Node uuid ${uuid} not found`);
+    return data;
+  }
+
+  // the options a subtree built into this tree shares with it
+  private subtreeOptions() {
+    return {
+      annotationChecks: this.annotationChecks, batchLinks: this.batchLinks,
+      mockMode: this.mockMode, logger: this.logger,
+    };
+  }
+
   private addSubTreeInternal(parentPath: NodePath, id: string, pos: number): TreeUpdateMutationPayload {
     const subConfig = StateTree.getSubConfig(this.config, parentPath, id);
     if (isPipelineStepConfig(subConfig)) {
@@ -159,30 +174,21 @@ export class StateTree {
         startPath: [...parentPath, {id, idx: pos}],
         startState: this,
         isReadonly: false,
-        annotationChecks: this.annotationChecks,
-        batchLinks: this.batchLinks,
-        mockMode: this.mockMode,
-        logger: this.logger,
+        ...this.subtreeOptions(),
       });
     }
     return {mutationRootPath: parentPath, addIdx: pos, id};
   }
 
   private removeSubtreeInternal(uuid: string): TreeUpdateMutationPayload {
-    const data = this.nodeTree.find((item) => item.uuid === uuid);
-    if (data == null)
-      throw new Error(`Node uuid ${uuid} not found`);
-    const [node, path] = data;
+    const [node, path] = this.findNode(uuid);
     this.nodeTree.removeBrunch(path);
     const [mutationRootPath, removeIdx] = this.getMutationSlice(path);
     return {mutationRootPath, removeIdx, id: node.getItem().config.id};
   }
 
   private moveSubtreeInternal(uuid: string, newIdx: number): TreeUpdateMutationPayload {
-    const data = this.nodeTree.find((item) => item.uuid === uuid);
-    if (data == null)
-      throw new Error(`Node uuid ${uuid} not found`);
-    const [node, path] = data;
+    const [node, path] = this.findNode(uuid);
     this.nodeTree.removeBrunch(path);
     const [ppath, oldIdx] = this.getMutationSlice(path);
     this.nodeTree.attachBrunch(ppath, node, node.getItem().config.id, newIdx);
@@ -199,10 +205,7 @@ export class StateTree {
       instanceConfig: initConfig,
       config: this.config,
       isReadonly: false,
-      annotationChecks: this.annotationChecks,
-      batchLinks: this.batchLinks,
-      mockMode: this.mockMode,
-      logger: this.logger,
+      ...this.subtreeOptions(),
     };
     if (!last) {
       const subTree = StateTree.fromInstanceConfig(options);
@@ -240,10 +243,7 @@ export class StateTree {
 
   public duplicateSubtree(uuid: string) {
     return this.mutateTree(() => {
-      const data = this.nodeTree.find((item) => item.uuid === uuid);
-      if (data == null)
-        throw new Error(`Node uuid ${uuid} not found`);
-      const [node, path] = data;
+      const [node, path] = this.findNode(uuid);
       const [ppath, idx] = this.getMutationSlice(path);
       const parent = this.nodeTree.getItem(ppath);
       if (path.length === 0 || isFuncCallNode(parent) || !isDynamicType(parent.nodeType))
@@ -254,10 +254,7 @@ export class StateTree {
         instanceConfig: Serializer.toInstanceConfigRec(node),
         startPath: [...ppath, {id, idx: idx + 1}],
         startState: this,
-        annotationChecks: this.annotationChecks,
-        batchLinks: this.batchLinks,
-        mockMode: this.mockMode,
-        logger: this.logger,
+        ...this.subtreeOptions(),
       });
       return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
         mapTo([{isMutation: true, details: [{mutationRootPath: ppath, addIdx: idx + 1, id}]}]),

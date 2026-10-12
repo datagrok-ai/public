@@ -767,7 +767,9 @@ export namespace chem {
         // a value set while the implementation initialized was only stored, and is newer than the one taken above
         if (this._valuesSet !== valuesSet)
           this._setStoredMolecule();
-        else if (molecule)
+        // an empty one is not loaded: the implementation starts empty, and Ketcher takes strokes before it is ready,
+        // which loading it would wipe
+        else if (molecule && !Sketcher.isEmptyMolfile(molecule))
           this.setMolecule(molecule!, this._smarts !== null);
         // Ready: initialized, listened to, showing the host's molecule. Announced here, synchronously, so a subscriber
         // acts before any user input; unless a later switch has begun, whose implementation will be announced instead.

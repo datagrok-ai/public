@@ -6,8 +6,10 @@ Feature: Sequence Activity Cliffs
   cliffs themselves are claimed by the plot's "cliffs" reading (what its "N cliffs" button shows):
   the sali column and the plot are there even when no pair qualifies.
 
-  Not translated, and why: the HELM and MSA runs of the manual cases are in other-notations; the
-  empty current row (GROK-16111) is in empty-current-row. The "Show only cliffs" switch and the
+  The HELM and MSA runs of the manual cases are tested in Bio src/tests/activity-cliffs-tests.ts
+  ('activityCliffsHelm', 'activityCliffsMsa').
+
+  Not translated, and why: the empty current row (GROK-16111) is in empty-current-row. The "Show only cliffs" switch and the
   cliffs grid it opens are not claimed here, and neither did the old spec.
 
   Background:

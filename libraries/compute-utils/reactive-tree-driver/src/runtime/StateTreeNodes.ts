@@ -278,8 +278,8 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const tolerance = this.config.io?.find((io) => io.id === inputName)?.tolerance;
-      const inconsistent = !customDeepEqual(currentVal, assignedValue, tolerance);
+      const io = this.config.io?.find((d) => d.id === inputName);
+      const inconsistent = !customDeepEqual(currentVal, assignedValue, io?.tolerance, io?.type);
       return {
         restriction: type,
         inconsistent,

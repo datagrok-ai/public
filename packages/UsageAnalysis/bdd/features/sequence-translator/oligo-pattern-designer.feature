@@ -1,4 +1,4 @@
-@serial @realizes:sequencetranslator.app.oligo-toolkit
+@skip @serial @realizes:sequencetranslator.app.oligo-toolkit
 Feature: Oligo Pattern: the default example, the strand switches, saving, reloading and deleting a pattern
   The Oligo Pattern app (Browse > Apps > Peptides > Oligo Toolkit > Oligo Pattern) opens on the
   shipped <default example> pattern of the current user: the Load and Edit blocks, the pattern
@@ -14,6 +14,11 @@ Feature: Oligo Pattern: the default example, the strand switches, saving, reload
   inputs are named after the position their row shows ("Sense modification 1"), and the translation
   examples after their strand and role ("Sense example output"). Kept without: the pattern picture
   being drawn (an SVG with no reading).
+
+  TODO: skipped since 2026-10-11 by the lead's call (nobody uses the app): "An edited pattern is saved, and
+  reopening the app loads it back" fails intermittently on the "Pattern … saved" balloon. The core's
+  `UserSettingsStorage._sync` writes a storage's whole map, so a page holding an older copy of `OligoToolkit`
+  brings deleted patterns back; take the tag off once saving a pattern survives that.
 
   Background:
     Given user is logged in

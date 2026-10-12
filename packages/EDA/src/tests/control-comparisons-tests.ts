@@ -14,6 +14,7 @@ import {category, expect, test} from '@datagrok-libraries/test/src/test';
 import {
   controlComparisons, holmCorrect, ControlComparison, ControlComparisonsMethod,
 } from '../control-comparisons/control-comparisons-tools';
+import {runControlComparisons} from '../control-comparisons/control-comparisons-ui';
 import {CatCol, NumCol} from '../anova/anova-tools';
 import {twoSampleTTest} from '../ttest/ttest-tools';
 import {
@@ -503,4 +504,58 @@ category('Control comparisons: demog.csv references', () => {
       }
     }, {timeout: 60000});
   }
+});
+
+category('Control comparisons: dialog', () => {
+  test('ID-like category leaves Control empty and disabled', async () => {
+    const df = grok.data.demo.demog(100);
+    const id = df.columns.addNewString('id').init((i) => `id${i}`);
+    const race = df.col('race')!;
+    const view = grok.shell.addTableView(df);
+    runControlComparisons();
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Control comparisons')!;
+    try {
+      const factorInput = dlg.input('Category') as DG.InputBase<DG.Column | null>;
+      const controlInput = dlg.input('Control') as DG.ChoiceInput<string>;
+      const select = controlInput.input as HTMLSelectElement;
+
+      factorInput.value = id;
+      expect(controlInput.items.length, 0);
+      expect(select.disabled, true);
+
+      factorInput.value = race;
+      expect(controlInput.items.length, race.categories.length);
+      expect(select.disabled, false);
+      expect(controlInput.value, race.categories[0]);
+    } finally {
+      dlg.close();
+      view.close();
+    }
+  });
+
+  // GROK-20795: the women of demog are 104 Black, 2823 Caucasian and 279 Other (157, 5266 and 354 in all)
+  test('A filtered table compares only the rows that pass the filter', async () => {
+    const df = await grok.dapi.files.readCsv(DEMOG_FILE);
+    const sex = df.col('SEX')!;
+    df.filter.init((i) => sex.get(i) === 'F');
+    const view = grok.shell.addTableView(df);
+    runControlComparisons();
+    const dlg = DG.Dialog.getOpenDialogs().find((d) => d.title === 'Control comparisons')!;
+    let result: DG.DataFrame | undefined;
+    try {
+      (dlg.input('Category') as DG.InputBase<DG.Column | null>).value = df.col('RACE');
+      (dlg.input('Control') as DG.ChoiceInput<string>).value = 'Asian';
+      dlg.getButton('Run').click();
+      result = grok.shell.tables.find((t) => t.name === 'Control comparisons result');
+      expect(result !== undefined, true, 'the result table is not open');
+      expect(df.filter.trueCount, 3243, 'the run changed the filter');
+      expect(result!.col('Group')!.toList().join(', '), 'Black, Caucasian, Other');
+      expect(result!.col('n')!.toList().join(', '), '104, 2823, 279');
+    } finally {
+      DG.Dialog.getOpenDialogs().find((d) => d.title === 'Control comparisons')?.close();
+      view.close();
+      if (result)
+        grok.shell.closeTable(result);
+    }
+  }, {timeout: 60000});
 });

@@ -3,6 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagrok-libraries/test/src/test';
 
 import './tests/webgpu-tests';
+import './tests/scatterplot-gpu-tests';
+import './tests/summary-columns-tests';
+import './tests/forms-tests';
 
 
 export const _package = new DG.Package();

@@ -73,11 +73,7 @@ async function searchEntities(query: string, type: EntityType): Promise<DG.Entit
 }
 
 
-export function showManageFavoritesDialog(
-  group: DG.Group,
-  currentEntities: DG.Entity[],
-  onChange: () => void,
-): void {
+export function showManageFavoritesDialog(group: DG.Group, currentEntities: DG.Entity[]): void {
   const pinnedIds = new Set(currentEntities.map((e) => e.id));
 
   // Pinned section
@@ -105,7 +101,6 @@ export function showManageFavoritesDialog(
         pinnedIds.delete(entity.id);
         currentEntities = currentEntities.filter((e) => e.id !== entity.id);
         refreshPinnedList(currentEntities);
-        onChange();
       });
       removeBtn.classList.add('pp-manage-fav-row-action');
       ui.tooltip.bind(removeBtn, 'Remove');
@@ -142,7 +137,6 @@ export function showManageFavoritesDialog(
     row.remove();
     if (searchResultsDiv.querySelectorAll('.pp-manage-fav-row').length === 0)
       searchResultsDiv.appendChild(ui.divText('No results', 'pp-manage-fav-search-hint'));
-    onChange();
   }
 
   async function doSearch(): Promise<void> {

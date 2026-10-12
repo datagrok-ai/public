@@ -11,7 +11,7 @@ Monomers view and Match dialog, BILN rendering, the two-column settings of the t
 server side of library deletion — each feature says in its description what it leaves out and
 why. The Similarity command used to leave the rows of `filter_HELM` whose length differed from
 the reference's empty (GROK-20963, fixed 2026-09-21 in `@datagrok-libraries/bio`;
-`calculate/scoring.feature` asserts no blanks). The diversity search's worker chunk failures
+`src/tests/scoring.ts` scores a shorter and a longer reference). The diversity search's worker chunk failures
 of the first round were the distance-matrix service terminating workers it had spawned beyond
 the job (fixed in `@datagrok-libraries/ml`).
 
@@ -21,13 +21,12 @@ The folders, by subject (each is a `grok-bdd run generated/<folder>` unit):
 |--------------|--------------------------------------------------------|--------------------------------------------------------------------------------|
 | `analyze/`   | sequence-space, activity-cliffs, msa, composition      | the Bio \| Analyze commands: embeddings and the docked scatter plot with the edited method in its description, cliffs over the Activity column, kalign per cluster, the WebLogo's glyphs as hit areas |
 | `transform/` | convert, atomic-level                                  | region, notation (separator, HELM), one Monomer column per position, a V3000 molfile per sequence |
-| `calculate/` | scoring                                                | Identity is exactly 1 on the reference row, Similarity peaks there and leaves no cell blank |
+| `calculate/` | scoring                                                | Identity is exactly 1 on the reference row, Similarity peaks there |
 | `search/`    | subsequence, similarity, diversity                     | the substructure filter keeps the one row that contains the query (with two sequence columns the dialog's OK does, in `menu/`); the neighbour set changes with the current row; a HELM table gets a HELM subset |
-| `annotate/`  | annotate, numbering                                    | the difference column is the two chains joined by `#`, liabilities sit where they say, Manage Annotations lists and drops them, Kabat reaches the aligned column |
+| `annotate/`  | annotate, numbering                                    | the difference column is the two chains joined by `#`, Scan Liabilities writes the annotation or the count column with the rules checked, Manage Annotations lists and drops them, Kabat reaches the aligned column |
 | `menu/`      | top-menu                                               | every command under its group, every dialog opens and cancels, the manage views open with their content, the search viewers compute; on a two-column table Subsequence Search filters by the query, Composition binds the chosen column, To Atomic Level runs with Non-linear off |
 | `render/`    | renderers, cell-actions, fasta-file, msa-header        | the grid reports `helm` / `sequence` / `Monomer` as each column's cell type (BILN included) and paints monomers in their colors, a converted column takes its own notation's renderer (GROK-12164); Copy puts the cell on the clipboard in each of the four notations, the current cell's composition and a monomer's details show on the context panel; a .fasta file opened from the computer is a detected sequence table (GROK-18616), Download > As FASTA... writes it back and the file opens as the same sequences; both antibody chains get the WebLogo header, and CDR3 cut out of the numbering's aligned column (Extract Region or the cell menu) is ruled from 105, not from 1 |
 | `manage/`    | libraries, collections, monomers                       | the shipped library is loaded; toggling a library checkbox reloads the monomer library and Bio says so (`bio-monomer-lib-loaded`) and leaves the others selected, Add uploads `fixtures/bdd-test-lib.json` through the file chooser and it is still listed when the manager opens again, Delete removes it from every storage; the dialog entry lists what the view lists; a collection is made from the New Collection card, selects on click, is deleted after confirmation; Bio \| Manage \| Monomers is a table of every monomer, Match with Monomer Library offers PEPTIDE/RNA/CHEM |
-| `projects/`  | round-trips                                            | Sequence Space's embeddings and scatter plot (GROK-19928), an antibody numbering's aligned column, a HELM table's renderer and library survive a project save and reopen; the numbering run again gives the same result |
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` with this
 package published (`npx webpack && grok publish localhost` here — the features need the widget
@@ -54,10 +53,9 @@ answers "Files" — a stand with the files alone never shows that dialog. PepSeA
 container), Molecules to HELM (a Python script), the functions called directly (scoring, numbering,
 library standardization, the single-sequence converters, the service getters — no UI, so package
 tests; the library's `CLAUDE.md`, "What never becomes a feature"), Bio | Folding and the Manage
-Monomers view's CRUD are not exercised; projects are
-saved through the project API (the ribbon Save dialog and Data Sync are not — see
-`projects/round-trips.feature`). `@serial` features (libraries, round-trips) read or toggle the
-user's library selection and run one at a time.
+Monomers view's CRUD are not exercised; what a project stores of Bio's results (Sequence Space,
+Activity Cliffs, an antibody numbering) is tested in `src/tests/projects-tests.ts`. The `@serial`
+features (libraries, atomic-level) read or toggle the user's library selection and run one at a time.
 
 Atomic-level conversion selects `HELMCoreLibrary.json` for its standard monomer fixtures and
 restores the previous selection afterwards. Custom libraries can redefine symbols such as E
