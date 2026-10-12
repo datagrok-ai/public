@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Formula Lines: Fixed the dialog opened from a viewer failing when the platform passes an unset line index as null (the Dart 3 client)
 * [#4253](https://github.com/datagrok-ai/public/issues/4253): Add New Column: Fixed the validation rejecting vector functions nested in scalar expressions (`CumSum(${x}) * 2`, `CumSum(${x}) / Sum($[x])`, `${x} * Lookup(...)`)
 * Tests: Added the Enrichment tests (an enrichment saved, applied and checked row by row, edited, deleted and applied again, a clashing column coming in as `result.<name>`, the foreign key lookup); the enrichment storage and apply functions moved from `db-explorer.ts` to `enrichment.ts`, and the data enrichment feature keeps to the pane and the editor
 * Tests: Added the Excel: Import "three sheets" test (the sheets, columns, types and values of the workbook the XLSX features open); the features keep to the ways of opening it
