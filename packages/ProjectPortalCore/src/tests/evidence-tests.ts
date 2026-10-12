@@ -170,12 +170,18 @@ category('Portal: decisions with evidence', () => {
       await v.load('EX-SMD');
       await v.showProgram('EX-SMD', p.id);
       const q = (name: string) => v.detailRoot.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
-      expect(q('evidence-readiness')?.parentElement?.textContent, 'Readiness of Hit Finding: 1 criterion');
-      expect((q('evidence-readiness') as HTMLInputElement).checked, true);
-      (q('evidence-link-input') as HTMLInputElement).value = 'https://example.org/hf-review';
+      // on a u2 input the name is on its root, and its value follows the editor's input events
+      const type = (name: string, value: string) => {
+        const editor = q(name)!.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement;
+        editor.value = value;
+        editor.dispatchEvent(new Event('input'));
+      };
+      expect(q('evidence-readiness')?.textContent, 'Readiness of Hit Finding: 1 criterion');
+      expect((q('evidence-readiness')!.querySelector('input') as HTMLInputElement).checked, true);
+      type('evidence-link-input', 'https://example.org/hf-review');
       q('add-evidence-link-button')!.click();
-      expect(q('evidence-link-0')?.parentElement?.textContent, 'Link: example.org/…/hf-review');
-      (q('rationale-input') as HTMLTextAreaElement).value = 'assay validated';
+      expect(q('evidence-link-0')?.textContent, 'Link: example.org/…/hf-review');
+      type('rationale-input', 'assay validated');
       q('advance-button')!.click();
       await DG.delay(100);
       for (let i = 0; i < 100 && !q('decision-evidence-0'); i++)

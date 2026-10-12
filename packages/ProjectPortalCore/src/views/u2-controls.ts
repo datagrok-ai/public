@@ -3,7 +3,7 @@
  * They fill the gaps u2's Dialog and BasicTable leave for this package (no getButton, no busy state,
  * no close hook, no row hook) so each view does not repeat the workaround. */
 import * as grok from 'datagrok-api/grok';
-import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divV, signal, span, TextArea,
+import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divH, divV, signal, span, TextArea,
   TextInput} from '@datagrok-libraries/u2';
 import type {MessageInput, ReadonlySignal, TableColumn} from '@datagrok-libraries/u2';
 import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -132,7 +132,8 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
 
 /** A single-line text input; [name] lands on the input's root, as the old field wrappers had it. */
 export const text = (name: string, label?: string,
-  o: {placeholder?: string, value?: string, search?: boolean, inline?: boolean} = {}): TextInput =>
+  o: {placeholder?: string, value?: string, search?: boolean, inline?: boolean, tooltipText?: string,
+    onChanged?: (v: string) => void} = {}): TextInput =>
   new TextInput({name, label, ...o});
 
 /** A multi-line text input, [rows] lines tall to start with; it grows with the text. */
@@ -159,6 +160,11 @@ export function choice(name: string, label: string | undefined, options: {code: 
 
 /** The chosen code, '' for none. */
 export const choiceValue = (input: ChoiceInput): string => input.value.value ?? '';
+
+/** [input] behind a muted [label] on one row, which carries [name] as the old select wrappers did:
+ * the filter rows, and the board's mode and persona. */
+export const labelled = (name: string, label: string, input: Control): HTMLElement =>
+  named(divH([span(label, 'pp-muted'), input.root], 'pp-preference'), name);
 
 /** A checkbox. */
 export const check = (name: string, label?: string, value = false,

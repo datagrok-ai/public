@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {button, divH, divV, Scope, span} from '@datagrok-libraries/u2';
 import {countByKind, describeEntry, FEED_KIND_LABELS, FEED_KINDS, FeedEntry, FeedKind, filterFeed, pageFeed} from '../model/feed';
 import {feedUserNames, myFeedOf} from '../feed';
-import {choice, named, openDialog, PortalDialog} from './u2-controls';
+import {choice, labelled, named, openDialog, PortalDialog} from './u2-controls';
 
 /** Entries per page, on the program page and in My feed. */
 export const FEED_PAGE_SIZE = 8;
@@ -16,7 +16,7 @@ export function feedSelect(name: string, label: string, options: {code: string, 
   onChange: (v: string) => void): HTMLElement {
   const input = choice(`${name}-choice`, undefined, options, value, {inline: true,
     onChanged: (v) => queueMicrotask(() => onChange(v))});
-  return named(divH([span(label, 'pp-muted'), input.root], 'pp-preference'), name);
+  return labelled(name, label, input);
 }
 
 /** The kind filter: All, then each kind present, with its count. */

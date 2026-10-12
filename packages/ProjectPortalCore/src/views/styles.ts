@@ -20,7 +20,6 @@ const CSS = `
 .pp-portfolio.pp-selected, .pp-card.pp-selected { border-color: var(--u2-accent, #2083d5); box-shadow: 0 0 0 1px var(--u2-accent, #2083d5); }
 .pp-portfolio-name { font-weight: 600; }
 .pp-search-box { gap: 4px; margin-bottom: 6px; }
-.pp-search { flex: 0 0 auto; width: 100%; box-sizing: border-box; }
 .pp-search-results, .pp-recent { gap: 3px; }
 .pp-search-hit { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 1px; }
 .pp-search-hit:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
@@ -93,9 +92,19 @@ const CSS = `
 .pp-fill > .u2-input-root { flex: 1 1 0; min-width: 0; }
 [data-u2-name="decision-results"] > .pp-unit { align-items: flex-start; }
 .pp-checklist > .u2-input-root { padding: 0; }
+/* a text input that takes what its row leaves (the program search, the evidence link, the role principal),
+   and the rationale box, as wide as the gate panel */
+.u2-input-root.pp-grow { flex: 1 1 0; min-width: 120px; padding: 0; }
+.u2-input-root.pp-wide { width: 100%; padding: 0; }
+.u2-input-root.pp-grow > .u2-input-box, .u2-input-root.pp-wide > .u2-input-box { flex: 1 1 0; min-width: 0; }
+.u2-input-root.pp-grow[data-u2] > .u2-input-box > .u2-input-editor,
+.u2-input-root.pp-wide[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
+/* the evidence ticks read as a checklist: box first, so the boxes line up, and a long label wraps in a narrow panel */
+.pp-evidence-picker > .u2-input-root { padding: 0; align-items: center; }
+.pp-evidence-picker > .u2-input-root > .u2-input-box { order: -1; margin-right: 4px; }
+.pp-evidence-picker > .u2-input-root > .u2-input-label { min-width: 0; flex-shrink: 1; height: auto; white-space: normal; margin-right: 0; }
 .pp-field { gap: 8px; align-items: center; }
 .pp-field-label { flex: 0 0 110px; font-size: 12px; color: var(--u2-text-muted, #666); }
-.pp-select, .pp-text { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 13px; }
 .pp-warnings { gap: 2px; }
 .pp-choose-run { gap: 8px; min-width: 560px; max-height: 70vh; overflow-y: auto; }
 .pp-choose-run > * { flex-shrink: 0; }
@@ -109,7 +118,6 @@ const CSS = `
 .pp-preference { gap: 4px; align-items: center; }
 .pp-preference .u2-input-root { flex-shrink: 1; min-width: 0; padding: 0; }
 .pp-preference select.u2-input-editor { width: auto; max-width: 180px; }
-.pp-select-small { height: 22px; font-size: 12px; flex: 0 0 auto; }
 .pp-quick-cards { gap: 6px; flex-wrap: wrap; }
 .pp-quick { flex: 0 0 132px; gap: 2px; padding: 6px; border: 1px solid var(--u2-border, #e0e0e0); border-radius: 5px; cursor: pointer; font-size: 12px; }
 .pp-quick:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
@@ -117,9 +125,7 @@ const CSS = `
 .pp-quick-off { cursor: default; opacity: .5; }
 .pp-quick-off:hover { background: none; }
 .pp-role-form { align-items: center; flex-wrap: wrap; }
-.pp-role-form .pp-text { flex: 1 1 120px; height: 22px; font-size: 12px; }
 .pp-evidence-picker { gap: 2px; font-size: 12px; }
-.pp-evidence-pick { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 .pp-evidence { padding-left: 12px; gap: 1px; }
 .pp-provenance { gap: 4px; min-width: 520px; max-height: 70vh; overflow-y: auto; }
 .pp-provenance > * { flex-shrink: 0; }

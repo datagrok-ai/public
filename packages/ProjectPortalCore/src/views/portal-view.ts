@@ -95,7 +95,7 @@ import {
   Anchor, decisionsCiting, plainMentions, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl,
 } from '../model/discussion';
 import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
-import {composer} from './u2-controls';
+import {area, check, choice, choiceValue, composer, labelled, table, text} from './u2-controls';
 import {programAddress} from '../model/pinning';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -135,7 +135,9 @@ export class PortalView {
   /** The program page: shown in the platform's context panel, or docked by whoever hosts it. */
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
   /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
-  private readonly searchInput = named(document.createElement('input'), 'program-search-input');
+  private readonly searchInput = text('program-search-input', undefined, {search: true,
+    placeholder: 'Find a program: code, name, alias',
+    tooltipText: 'Searches every portfolio you can see, by code, name, target or a registry alias'});
   private readonly searchResults = named(divV([], 'pp-search-results'), 'search-results');
   private readonly recentList = named(divV([], 'pp-recent'), 'recent-programs');
   /** The programs the user can see, every portfolio, read once per load. */
@@ -201,6 +203,8 @@ export class PortalView {
   private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
   /** Owns the u2 controls of the program page as last drawn; disposed when it is drawn again or cleared. */
   private detailScope: Scope | null = null;
+  /** Owns the u2 controls of the board as last drawn (mode and persona). */
+  private boardScope: Scope | null = null;
   /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
   private pageCtx: ProgramContext | null = null;
   /** The selected program's documents by id, for the context a question about one carries. */
@@ -225,22 +229,22 @@ export class PortalView {
 
   constructor() {
     this.root.append(this.portfolioList, this.board);
-    this.searchInput.className = 'pp-text pp-search';
-    this.searchInput.placeholder = 'Find a program: code, name, alias';
-    this.searchInput.title = 'Searches every portfolio you can see, by code, name, target or a registry alias';
+    this.searchInput.root.classList.add('pp-grow');
     let timer: any = null;
-    this.searchInput.oninput = () => {
+    this.searchInput.effect(() => {
+      this.searchInput.value.value;
       clearTimeout(timer);
       timer = setTimeout(() => this.renderSearch(), 150);
-    };
-    this.searchInput.onkeydown = (e) => {
+    });
+    this.searchInput.root.addEventListener('keydown', (e) => {
       if (e.key === 'Enter')
         (this.searchResults.querySelector('.pp-search-hit') as HTMLElement | null)?.click();
       else if (e.key === 'Escape') {
-        this.searchInput.value = '';
+        this.searchInput.value.value = '';
+        clearTimeout(timer);
         this.renderSearch();
       }
-    };
+    });
   }
 
   /** The program page, which opening a program puts in the context panel. */
@@ -288,6 +292,8 @@ export class PortalView {
     this.selected = null;
     this.redraw = null;
     this.clearDetailScope();
+    this.boardScope?.dispose();
+    this.boardScope = null;
     this.keeper = false;
     this.portfolioList.style.display = '';
     this.board.style.display = 'none';
@@ -299,7 +305,7 @@ export class PortalView {
 
   /** The search's results under the box: each opens its program, in its portfolio. */
   private renderSearch(): void {
-    const q = this.searchInput.value;
+    const q = this.searchInput.value.value;
     const hits = findPrograms(q, this.findable);
     this.searchResults.replaceChildren(...(q.trim().length < MIN_QUERY ? [] : hits.length ? hits.map((h) => {
       const why = matchedBy(h);
@@ -327,7 +333,7 @@ export class PortalView {
 
   private renderPortfolios(counts: number[]): void {
     this.renderRecent();
-    this.portfolioList.replaceChildren(named(divV([this.searchInput, this.searchResults], 'pp-search-box'), 'program-search'),
+    this.portfolioList.replaceChildren(named(divV([divH([this.searchInput.root]), this.searchResults], 'pp-search-box'), 'program-search'),
       this.recentList, span('Portfolios', 'pp-heading'));
     const cards = named(divH([], 'pp-portfolio-cards'), 'portfolio-cards');
     this.portfolioList.append(cards);
@@ -398,7 +404,7 @@ export class PortalView {
       badge(`${model?.code ?? ''}`, {variant: 'accent'}),
       badge(p.stage_authority === 'feed' ? 'stages from registry' : 'stages decided here',
         {variant: p.stage_authority === 'feed' ? 'warning' : 'success'}),
-      this.preferences(),
+      this.boardPreferences(),
     ], 'pp-board-header'), 'board-header');
     const columns = divH([], 'pp-columns');
     const unstaged = this.programs.filter((x) => !x.stage_id);
@@ -620,28 +626,26 @@ export class PortalView {
     this.detailScope = null;
   }
 
-  /** Mode and persona, on the board header. */
-  private preferences(): HTMLElement {
-    const mode = this.select('mode', 'Mode', PORTAL_MODES.map((m) => ({code: m, name: m === 'simple' ? 'Simple' : 'Advanced'})),
-      this.mode);
-    mode.title = 'Simple keeps analytics, runs and history behind More; remembered for you';
-    mode.onchange = () => this.setMode(mode.value as PortalMode);
-    const persona = this.select('persona', 'Persona', PERSONAS.map((p) => ({code: p, name: PERSONA_LABELS[p]})),
-      this.persona?.persona ?? '');
-    persona.title = this.persona?.chosen ? 'Your persona: it picks the quick actions; remembered for you' :
-      'Picked from your groups in this portfolio; choose one to keep it';
-    persona.onchange = () => this.setPersona(persona.value as Persona);
-    return named(divH([mode.parentElement!, persona.parentElement!], 'pp-preferences'), 'preferences');
+  /** Mode and persona, on the board header, owned by a scope of their own: the board is drawn again
+   * on each open of a portfolio. */
+  private boardPreferences(): HTMLElement {
+    this.boardScope?.dispose();
+    const scope = this.boardScope = new Scope();
+    return Scope.runWith(scope, () => this.preferences());
   }
 
-  /** A labelled native select; its wrapper carries the name, as in the dialogs. */
-  private select(name: string, label: string, options: {code: string, name: string}[], value: string): HTMLSelectElement {
-    const el = document.createElement('select');
-    el.className = 'pp-select pp-select-small';
-    el.append(...options.map((o) => Object.assign(document.createElement('option'), {value: o.code, textContent: o.name})));
-    el.value = value;
-    named(divH([span(label, 'pp-muted'), el], 'pp-preference'), `${name}-input`);
-    return el;
+  private preferences(): HTMLElement {
+    // a change settles first: setPersona draws the board, and with it these inputs, again
+    const mode = choice('mode-choice', undefined, PORTAL_MODES.map((m) => ({code: m, name: m === 'simple' ? 'Simple' : 'Advanced'})),
+      this.mode, {inline: true, onChanged: (v) => queueMicrotask(() => this.setMode(v as PortalMode))});
+    const persona = choice('persona-choice', undefined, PERSONAS.map((p) => ({code: p, name: PERSONA_LABELS[p]})),
+      this.persona?.persona ?? '', {inline: true, onChanged: (v) => queueMicrotask(() => this.setPersona(v as Persona))});
+    const modeRow = labelled('mode-input', 'Mode', mode);
+    modeRow.title = 'Simple keeps analytics, runs and history behind More; remembered for you';
+    const personaRow = labelled('persona-input', 'Persona', persona);
+    personaRow.title = this.persona?.chosen ? 'Your persona: it picks the quick actions; remembered for you' :
+      'Picked from your groups in this portfolio; choose one to keep it';
+    return named(divH([modeRow, personaRow], 'pp-preferences'), 'preferences');
   }
 
   get currentMode(): PortalMode {
@@ -754,9 +758,8 @@ export class PortalView {
         readiness.score === 0 ? 'error' : 'warning'}),
     ], 'pp-readiness'), 'readiness-score') : null;
 
-    const rationale = named(document.createElement('textarea'), 'rationale-input');
-    rationale.placeholder = 'Rationale';
-    rationale.rows = 2;
+    const rationale = area('rationale-input', undefined, {placeholder: 'Rationale', rows: 2});
+    rationale.root.classList.add('pp-wide');
     const verdict = verdictFor(ctx, 'advance');
     const reasons = named(divV(verdict.reasons.map((r) => span(r, 'pp-reason'))), 'gate-reasons');
     const approval = approvalOf(ctx.portfolio.approval);
@@ -765,7 +768,7 @@ export class PortalView {
       try {
         const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
         // in a portfolio that asks for approval of this decision, it is proposed instead (F-30)
-        const out = await decideOrPropose(program.id, d, rationale.value, {source: 'approver', items,
+        const out = await decideOrPropose(program.id, d, rationale.value.value, {source: 'approver', items,
           snapshot: !!this.picked.snapshot});
         this.picked = {programId: program.id, off: new Set(), links: []};
         if (out.proposed) {
@@ -824,11 +827,12 @@ export class PortalView {
     // where the registry owns the stage, a decision is recorded here with its evidence, and nothing moves
     let record: HTMLElement | null = null;
     if (ctx.portfolio.stage_authority === 'feed' && next) {
-      const outcome = this.select('record-outcome', 'Outcome', DECISION_OUTCOMES.map((o) => ({code: o, name: OUTCOME_LABELS[o]})), 'go');
+      const outcome = choice('record-outcome-choice', undefined, DECISION_OUTCOMES.map((o) => ({code: o, name: OUTCOME_LABELS[o]})),
+        'go', {inline: true});
       const rec = named(button(`Record decision for ${next.name}`, async () => {
         try {
           const items = [...evidence.suggested, ...this.picked.links].filter((e) => !this.picked.off.has(evidenceKey(e)));
-          const out = await recordGateDecision(program.id, {outcome: outcome.value as DecisionOutcome, rationale: rationale.value,
+          const out = await recordGateDecision(program.id, {outcome: choiceValue(outcome) as DecisionOutcome, rationale: rationale.value.value,
             items, snapshot: !!this.picked.snapshot});
           this.picked = {programId: program.id, off: new Set(), links: []};
           grok.shell.info([out.line, ...out.evidence.errors].join('\n'));
@@ -840,7 +844,7 @@ export class PortalView {
       rec.disabled = !ctx.approver;
       rec.title = ctx.approver ? 'Keep the gate review\'s outcome, rationale and evidence with the program. The stage does not move: ' +
         'the registry sets it' : 'Only the portfolio\'s approvers record gate decisions';
-      record = named(divV([divH([outcome.parentElement!, rec], 'pp-actions'),
+      record = named(divV([divH([labelled('record-outcome-input', 'Outcome', outcome), rec], 'pp-actions'),
         named(span('Recording keeps the decision and its evidence here; the stage is set by the registry', 'pp-muted'), 'record-note')]),
       'record-decision');
     }
@@ -896,7 +900,7 @@ export class PortalView {
     const quick = this.quickActions(ctx, {next, spaceLive, choices, attention, recommendation, followed,
       openSave, gate: () => {
         gateHeading.scrollIntoView({block: 'start'});
-        rationale.focus();
+        rationale.root.querySelector('textarea')?.focus();
       }});
 
     // Simple mode keeps the heavier sections behind More
@@ -914,7 +918,7 @@ export class PortalView {
         ...(readiness?.dataError ? [named(span(`Program data could not be read: ${readiness.dataError}`, 'pp-reason'),
           'data-error')] : []),
         reasons,
-        rationale,
+        rationale.root,
         ...(picker ? [picker] : []),
         divH([advance, hold, terminate], 'pp-actions'),
         ...(record ? [record] : []),
@@ -1166,16 +1170,12 @@ export class PortalView {
         .catch((e) => grok.shell.error(e?.message ?? String(e)))), `predicted-vs-measured-${key}`);
       scatter.title = 'The predictions and the measured values as a table, with a scatter plot';
       const runId = this.predictions.find((p) => p.model === f.model && p.predicts === f.predicts && p.modelRunId)?.modelRunId;
-      const t = named(document.createElement('table'), `predictions-table-${key}`);
-      t.className = 'pp-card-table';
-      const h = t.insertRow();
-      for (const x of ['Compound', `Predicted${f.units ? ` (${f.units})` : ''}`, 'Measured'])
-        h.append(Object.assign(document.createElement('th'), {textContent: x}));
-      for (const pr of f.pairs.slice(0, 12)) {
-        const tr = t.insertRow();
-        for (const x of [pr.compound, fmt(pr.predicted), fmt(pr.measured)])
-          tr.insertCell().textContent = x;
-      }
+      type Pair = typeof f.pairs[number];
+      const t = table<Pair>(`predictions-table-${key}`, [
+        {header: 'Compound', render: (pr) => pr.compound},
+        {header: `Predicted${f.units ? ` (${f.units})` : ''}`, render: (pr) => fmt(pr.predicted)},
+        {header: 'Measured', render: (pr) => fmt(pr.measured)},
+      ], f.pairs.slice(0, 12)).root;
       out.push(named(divV([
         divH([span(`${f.modelName} ${f.version} · ${f.predicts}`), scatter,
           ...(runId ? [this.provenanceLink('model_run', runId, `provenance-predictions-${key}`)] : [])], 'pp-run-meta'),
@@ -1526,18 +1526,9 @@ export class PortalView {
   /** What the next decision will rest on: the gate's readiness (one tick for its criteria), the run
    * selected for each criterion, and links added here. Everything is ticked; untick to leave it out. */
   private evidencePicker(programId: string, suggested: EvidenceItem[], stageName: string): HTMLElement {
-    const box = (name: string, label: string, keys: string[], title?: string) => {
-      const input = named(document.createElement('input'), name);
-      input.type = 'checkbox';
-      input.checked = keys.every((k) => !this.picked.off.has(k));
-      input.onchange = () => keys.forEach((k) => input.checked ? this.picked.off.delete(k) : this.picked.off.add(k));
-      const label_ = document.createElement('label');
-      label_.className = 'pp-evidence-pick';
-      label_.append(input, span(label));
-      if (title)
-        label_.title = title;
-      return label_;
-    };
+    const box = (name: string, label: string, keys: string[], title?: string) =>
+      check(name, label, keys.every((k) => !this.picked.off.has(k)), {tooltipText: title,
+        onChanged: (on) => keys.forEach((k) => on ? this.picked.off.delete(k) : this.picked.off.add(k))}).root;
     const readiness = suggested.filter((e) => e.role === 'readiness');
     const rows: HTMLElement[] = [];
     if (readiness.length) {
@@ -1550,21 +1541,14 @@ export class PortalView {
       rows.push(box(`evidence-document-${slug(String(e.context?.criterion ?? e.target))}`, `Document: ${e.name}` +
         ` (v${e.context?.version ?? '?'}, for ${e.context?.criterion ?? '?'})`, [evidenceKey(e)], e.target));
     this.picked.links.forEach((e, i) => rows.push(box(`evidence-link-${i}`, `${EVIDENCE_LABELS[e.kind]}: ${e.name}`, [evidenceKey(e)], e.target)));
-    const snap = named(document.createElement('input'), 'evidence-snapshot');
-    snap.type = 'checkbox';
-    snap.checked = !!this.picked.snapshot;
-    snap.onchange = () => this.picked.snapshot = snap.checked;
-    const snapLabel = document.createElement('label');
-    snapLabel.className = 'pp-evidence-pick';
-    snapLabel.title = 'Freeze the stage, criteria, selected runs and the program dataset now, before the decision, and attach it';
-    snapLabel.append(snap, span('Snapshot now'));
-    rows.push(snapLabel);
-    const link = named(document.createElement('input'), 'evidence-link-input');
-    link.className = 'pp-text';
-    link.placeholder = 'Link or file path to attach';
+    rows.push(check('evidence-snapshot', 'Snapshot now', !!this.picked.snapshot, {
+      tooltipText: 'Freeze the stage, criteria, selected runs and the program dataset now, before the decision, and attach it',
+      onChanged: (on) => this.picked.snapshot = on}).root);
+    const link = text('evidence-link-input', undefined, {placeholder: 'Link or file path to attach'});
+    link.root.classList.add('pp-grow');
     const add = named(button('Attach', () => {
-      const item = linkEvidence(link.value);
-      const problems = link.value.trim() ? validateEvidence(item) : ['Type a link or a file path'];
+      const item = linkEvidence(link.value.value);
+      const problems = link.value.value.trim() ? validateEvidence(item) : ['Type a link or a file path'];
       if (problems.length) {
         grok.shell.warning(problems.join('; '));
         return;
@@ -1578,7 +1562,7 @@ export class PortalView {
     return named(divV([
       span('Evidence for the decision', 'pp-muted'),
       ...rows,
-      named(divH([link, add], 'pp-actions pp-role-form'), 'evidence-link'),
+      named(divH([link.root, add], 'pp-actions pp-role-form'), 'evidence-link'),
     ], 'pp-evidence-picker'), 'decision-evidence');
   }
 
@@ -1687,21 +1671,22 @@ export class PortalView {
     ], 'pp-unit'), `program-role-${slug(r.name)}`)) :
       [span('None: the portfolio\'s groups decide', 'pp-muted')], 'pp-units'), 'program-roles'));
     if (this.roles.manage) {
-      const who = named(document.createElement('input'), 'role-principal-input');
-      who.className = 'pp-text';
-      who.placeholder = 'Group or user login';
-      const role = this.select('role', 'as', PROGRAM_ROLES.map((r) => ({code: r, name: PROGRAM_ROLE_LABELS[r]})), 'viewer');
+      // u2 has a user picker and a one-source entity picker, not one over users and groups: a login or group name
+      const who = text('role-principal-input', undefined, {placeholder: 'Group or user login'});
+      who.root.classList.add('pp-grow');
+      const role = choice('role-choice', undefined, PROGRAM_ROLES.map((r) => ({code: r, name: PROGRAM_ROLE_LABELS[r]})), 'viewer',
+        {inline: true});
       const add = named(button('Add', async () => {
         try {
-          const g = await resolvePrincipal(who.value);
-          await change(g.id, role.value as ProgramRole);
+          const g = await resolvePrincipal(who.value.value);
+          await change(g.id, choiceValue(role) as ProgramRole);
         } catch (e: any) {
           this.roleLine.set(program.id, e?.message ?? String(e));
           this.redraw?.();
         }
       }), 'add-role-button');
       add.title = 'Give this group or user the role on this program, and share its workspace folder to match';
-      out.push(named(divH([who, role.parentElement!, add], 'pp-actions pp-role-form'), 'add-role'));
+      out.push(named(divH([who.root, labelled('role-input', 'as', role), add], 'pp-actions pp-role-form'), 'add-role'));
     }
     if (this.roleLine.has(program.id))
       out.push(named(span(this.roleLine.get(program.id)!, 'pp-muted'), 'role-result'));
