@@ -8,6 +8,8 @@ category('Grid: Color Coding', () => {
   let v: DG.TableView;
   let grid: DG.Grid;
   let demog = grok.data.demo.demog(1000);
+  const startedMin = +new Date(1989, 9, 24) * 1000;
+  const startedMax = +new Date(1990, 9, 24) * 1000;
 
   test('colorCoding.api', async () => {
     v = grok.shell.addTableView(demog);
@@ -15,13 +17,13 @@ category('Grid: Color Coding', () => {
     demog.col('age')!.meta.colors.setLinear();
     demog.col('age')!.meta.colors.setConditional({'<30': DG.Color.green, '30-70': '#ff0000'});
     demog.col('sex')!.meta.colors.setCategorical({'M': 0xFF0000FF, 'F': 0xFF800080});
-    demog.col('started')!.meta.colors.setLinear([DG.Color.white, DG.Color.red], {min: +new Date(1989, 9, 24) * 1000, max: +new Date(1990, 9, 24) * 1000});
+    demog.col('started')!.meta.colors.setLinear([DG.Color.white, DG.Color.red], {min: startedMin, max: startedMax});
     demog.col('height')!.meta.colors.setLinearAbsolute({58.31: '#73aff5', 97.98: '#ff5140', 137.65: '#ffa500', 177.32: '#50af28', 197.16: '#d9d9d9', 217: '#9467bd'}, {belowMinColor: '#000000', aboveMaxColor: '#ffffff'});
     grid.setOptions({colorCoding: 'None'});
     grid.setOptions({colorCoding: 'Auto'});
     testTags();
     grid.setOptions({colorCoding: 'All'});
-    grid.setOptions({colorScheme: [4294922560, 4294944000, 4283477800]});
+    grid.setOptions({linearColorScheme: [4294922560, 4294944000, 4283477800]});
     if (grid.cell('weight', 0).color !== 4288522774)
       throw new Error('Grid Color Coding > Color Scheme was not applied');
     const layout = v.saveLayout();
@@ -31,7 +33,7 @@ category('Grid: Color Coding', () => {
     v = grok.shell.addTableView(demog);
     v.loadLayout(layout);
     testTags(' after layout');
-  }, {owner: 'dkovalyov@datagrok.ai', skipReason: 'GROK-17728'});
+  }, {owner: 'dkovalyov@datagrok.ai'});
 
   function testTags(after: string = '') {
     const ageCol = demog.col('age')!;
@@ -47,8 +49,8 @@ category('Grid: Color Coding', () => {
     const startedCol = demog.col('started')!;
     if (startedCol.meta.colors.getType() !== DG.COLOR_CODING_TYPE.LINEAR ||
       startedCol.getTag(DG.TAGS.COLOR_CODING_LINEAR) !== '[4294967295,4294901760]' ||
-      startedCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MIN) !== '625179600000000' ||
-      startedCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MAX) !== '656715600000000')
+      startedCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MIN) !== `${startedMin}` ||
+      startedCol.getTag(DG.TAGS.COLOR_CODING_SCHEME_MAX) !== `${startedMax}`)
       throw new Error('Linear Color Coding error on Started column' + after);
 
     const heightCol = demog.col('height')!;
