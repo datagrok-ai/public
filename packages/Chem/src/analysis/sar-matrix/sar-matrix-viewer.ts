@@ -347,8 +347,7 @@ export class SarMatrixViewer extends DG.JsViewer {
     // First, so the analysis opens on what it found rather than on one arbitrary series.
     const summaryPane = this.tabs.addPane(TAB_SUMMARY, () => this.summaryPanel.root);
     ui.tooltip.bind(summaryPane.header, 'What the whole analysis found, on one screen: the scale it is ' +
-      'read on, the three answers, and which series to open — with the fitted effects and the analogs ' +
-      'worth making each a segment away');
+      'read on, which series to open, what to change and the analogs worth making');
     const matrixPane = this.tabs.addPane(TAB_MATRIX, () => this.host);
     ui.tooltip.bind(matrixPane.header, 'Core × substituent potency matrices, one per series');
     const transferPane = this.tabs.addPane(TAB_TRANSFER, () => this.transferPanel.root);
@@ -2109,6 +2108,20 @@ export class SarMatrixViewer extends DG.JsViewer {
         },
       });
       controls.push(varyInput.root);
+    }
+    const axis = this.axisRole;
+    if (axis !== null && this.roleColumns.length >= 2) {
+      const axisInput = ui.input.choice('Columns', {
+        value: axis,
+        items: this.roleColumns,
+        onValueChanged: (value) => {
+          if (value && value !== axis && !this.computing)
+            this.setColumnAxis(value);
+        },
+      });
+      axisInput.setTooltip('The component that runs across the matrix columns; the others fold into the rows. ' +
+        'Changing it rebuilds every matrix; the fitted effects on the Summary stay the same.');
+      controls.push(axisInput.root);
     }
     const labelInput = ui.input.choice('Caption', {
       value: this.columnCaption,

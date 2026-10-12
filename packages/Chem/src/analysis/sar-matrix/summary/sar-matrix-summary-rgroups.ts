@@ -1,29 +1,32 @@
-/* Which substituent comes first, and which reliably last, at each position across the series whose
-   additive fit holds. Pure functions of their arguments. */
 import {AdditiveFit} from '../build/sar-matrix-assemble';
 import {median} from '../build/sar-matrix-decompose';
-import {SarMatrix} from '../sar-matrix-types';
-import {bestMeasured, LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, SUM_ROWS,
+import {SarMatrix, SarMatrixCell} from '../sar-matrix-types';
+import {LOSER_ROWS, RGROUP_MIN_SERIES, RGroupAcc, RGroupRow, RGroupWin, SUM_ROWS,
   SWAP_MIN_SERIES} from './sar-matrix-summary-types';
 
-/** The substituents the fit puts first and last at this matrix's position, once per lineage, plus every
- *  substituent tried. The fit, not the column mean, which confounds a group with its cores; the
- *  magnitude is against the series' own reference, so it pools across matrices. */
+function bestMeasured(cells: SarMatrixCell[], dir: number): number {
+  let best = -1;
+  cells.forEach((cell, i) => {
+    if (cell.kind === 'real' && cell.value !== null && (best < 0 || dir * cell.value > dir * cells[best].value!))
+      best = i;
+  });
+  return best;
+}
+
+/** Ranked on the fit, not the column mean, which confounds a group with its cores. */
 export function recordRGroupExtremes(acc: RGroupAcc, matrix: SarMatrix, fit: AdditiveFit, dir: number,
   root: string, fitHolds: boolean): void {
-  // Only a converged fit may be compared with another matrix's, so a series whose fit stopped short
-  // contributes to no pool.
+  // Only a converged fit may be compared with another matrix's.
   if (!fit.converged)
     return;
   const reference = matrix.refValues[matrix.positions[0] ?? ''];
   const found = reference ? matrix.columns.findIndex((c) => c.substSmiles === reference) : -1;
-  // A reference measured once is one residual, too noisy to compare against.
+  // A column measured once has a fitted effect made of one residual, too noisy to compare.
   const refCi = found >= 0 && fit.colN[found] >= 2 ? found : -1;
   let bestCi = -1;
   let worstCi = -1;
   for (let c = 0; c < matrix.columns.length; c++) {
     const subst = matrix.columns[c].substSmiles;
-    // A column measured once has a fitted effect made of one residual.
     if (fit.colN[c] < 2)
       continue;
     let attempts = acc.tried.get(subst);
@@ -44,10 +47,9 @@ export function recordRGroupExtremes(acc: RGroupAcc, matrix: SarMatrix, fit: Add
     pushExtreme(acc.losses, matrix, fit, dir, root, fitHolds, worstCi, refCi, -1);
 }
 
-/** Record one column as this lineage's extreme. `keep` is +1 for winners, −1 for losers. */
+/** `keep` is +1 for winners, −1 for losers. */
 function pushExtreme(pool: Map<string, RGroupWin[]>, matrix: SarMatrix, fit: AdditiveFit, dir: number,
   root: string, fitHolds: boolean, ci: number, refCi: number, keep: number): void {
-  // The column's most potent measured cell, so the row lands on a compound.
   const ri = bestMeasured(matrix.cells.map((cells) => cells[ci]), dir);
   if (ri < 0)
     return;
@@ -71,8 +73,7 @@ function pushExtreme(pool: Map<string, RGroupWin[]>, matrix: SarMatrix, fit: Add
     held[at] = win;
 }
 
-/** Orders two occurrences of one substituent. On the difference to each matrix's reference, never the
- *  fitted level, whose zero differs between matrices; without a reference, on cell count. */
+/** Never on the fitted level, whose zero differs between matrices. */
 function strongerWin(a: RGroupWin, b: RGroupWin, keep: number): boolean {
   if (a.refDelta !== null && b.refDelta !== null && a.refDelta !== b.refDelta)
     return keep * a.refDelta > keep * b.refDelta;
@@ -93,7 +94,6 @@ export function rankRGroups(acc: RGroupAcc):
   };
 }
 
-/** One pool ordered strongest first; `keep` is +1 for wins, −1 for losses. */
 function rankPool(pool: Map<string, RGroupWin[]>, tried: Map<string, Set<string>>,
   keep: number): RGroupRow[] {
   const rows: RGroupRow[] = [];
@@ -112,7 +112,6 @@ function rankPool(pool: Map<string, RGroupWin[]>, tried: Map<string, Set<string>
       magnitudeSeries: deltas.length,
     });
   }
-  // Rows with no comparator sort last in either pool: they still rank on how often the group placed.
   const strength = (row: RGroupRow): number =>
     row.magnitude === null ? Number.NEGATIVE_INFINITY : keep * row.magnitude;
   rows.sort((a, b) => b.k - a.k || strength(b) - strength(a) || (a.subst < b.subst ? -1 : 1));

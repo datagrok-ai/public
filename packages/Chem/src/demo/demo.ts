@@ -216,16 +216,6 @@ function sarTab(title: string): void {
   sarTabHeader(title)?.click();
 }
 
-/** Show the last entry of the Effects section's chooser: what was counted rather than fitted. Datagrok
- *  choice inputs react to `input`, not `change`. */
-function sarShowCounted(): void {
-  const select = document.querySelector('.chem-sar-sum-show select');
-  if (!(select instanceof HTMLSelectElement))
-    return;
-  select.selectedIndex = select.options.length - 1;
-  select.dispatchEvent(new Event('input', {bubbles: true}));
-}
-
 /** A tab header of the SAR viewer, used as the fallback anchor for hints about a tab the tour has
  *  not opened yet — that tab's own markup does not exist until it is shown once. */
 function sarTabHeader(title: string): HTMLElement | null {
@@ -260,8 +250,7 @@ const at = {
   coverage: () => document.querySelector('.chem-sar-sum-coverage') ??
     document.querySelector('.chem-sar-sum-overview'),
   components: () => document.querySelector('.chem-sar-sum-comp') ?? document.querySelector('.chem-sar-sum-answers'),
-  swapRow: () => document.querySelector('.chem-sar-sum-band-swap') ?? document.querySelector('.chem-sar-sum-answers'),
-  effectsBar: () => document.querySelector('.chem-sar-sum-show') ?? document.querySelector('.chem-sar-sum-effects'),
+  swapRow: () => document.querySelector('.chem-sar-sum-swap') ?? document.querySelector('.chem-sar-sum-answers'),
   making: () => document.querySelector('.chem-sar-sum-making-block') ?? document.querySelector('.chem-sar-sum-making'),
   navCard: () => document.querySelector('.chem-sar-nav-list:not(.chem-sar-xfer-list) .chem-sar-card') ??
     sarTabHeader('SAR Matrix'),
@@ -281,25 +270,13 @@ const SAR_HINTS: SarHint[] = [
     anchor: at.scale,
     title: 'Start on the Summary',
     text: 'What the analysis concluded. This line is the scale everything rests on: the endpoint, its ' +
-      'transform, which direction is better, the observed range and the model error.',
+      'transform, which direction is better and the observed range.',
   },
   {
     anchor: at.coverage,
     title: 'What reached a matrix',
     text: 'How much of the table reached a series: measured, never assayed, or assayed with no analog ' +
-      'to pair with. Beside it, how the molecules were split.',
-  },
-  {
-    anchor: at.components,
-    title: 'What to change',
-    text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its spread, its ' +
-      'best value and that value\'s offset. The widest spread is the one to change next.',
-  },
-  {
-    anchor: at.swapRow,
-    title: 'Best measured swap, per component',
-    text: 'Measured pairs that differ in one component only, with no model involved. Fold either half ' +
-      'away to read the other.',
+      'to pair with.',
   },
   {
     anchor: () => document.querySelector('.chem-sar-sum-list .chem-sar-card') ??
@@ -307,28 +284,36 @@ const SAR_HINTS: SarHint[] = [
     position: ui.hints.POSITION.TOP,
     title: 'Start here',
     text: 'The series to open first. The squares say why: most compounds, widest range, best ' +
-      'compound, most predictions, best-validated fit. Hover them for the words.',
+      'compound, most predictions, best-validated fit. Click a row for detail; its arrow opens the matrix.',
   },
   {
-    before: () => sarTab('Effects'),
-    anchor: at.effectsBar,
-    title: 'Effects: every component ranked',
-    text: 'Every component ranked, each value with its adjusted offset and compound count. The last ' +
-      'entry is counted, not fitted: the measured pairs.',
+    before: () => at.components()?.scrollIntoView({block: 'nearest'}),
+    anchor: at.components,
+    title: 'What to change',
+    text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its spread, its ' +
+      'best value and how far it sits above the average. The widest spread is the one to change next.',
   },
   {
-    before: () => sarTab('Worth making'),
+    anchor: at.swapRow,
+    title: 'Best measured swap, per component',
+    text: 'Measured pairs that differ in one component only, with no model involved. Click one for its ' +
+      'full pool.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-sum-answers') ?? document.querySelector('.chem-sar-sum-comp'),
+    title: 'The evidence, in place',
+    text: 'Click a tile to open the evidence behind its answer right underneath; click it again to close it.',
+  },
+  {
+    before: () => document.querySelector('.chem-sar-sum-making')?.scrollIntoView(),
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Worth making',
-    text: 'Analogs not in the table, ranked on their gain over the best compound their series made. ' +
-      'Compounds you hold but never assayed come first.',
+    text: 'Click to open: analogs not in the table, ranked on their gain over the best compound their ' +
+      'series made. Compounds you hold but never assayed sit just above.',
   },
   {
-    before: () => {
-      sarTab('Overview');
-      sarTab('SAR Matrix');
-    },
+    before: () => sarTab('SAR Matrix'),
     anchor: at.navCard,
     position: ui.hints.POSITION.RIGHT,
     title: 'The series themselves',
@@ -483,15 +468,22 @@ const PROTAC_HINTS: SarHint[] = [
   {
     anchor: at.coverage,
     title: 'What reached a matrix',
-    text: 'How many degraders landed in a series, and how many had no analog to pair with. Beside it: ' +
-      'the linker is the core, warheads run across the columns and the E3 ligand folds into the ' +
-      'row.',
+    text: 'How many degraders landed in a series, and how many had no analog to pair with.',
   },
   {
+    anchor: () => document.querySelector('.chem-sar-sum-list'),
+    position: ui.hints.POSITION.TOP,
+    title: 'Which series to open first',
+    text: 'The series to open first; the squares say why each is listed. Click a row for detail; its ' +
+      'arrow opens the matrix.',
+  },
+  {
+    before: () => at.components()?.scrollIntoView({block: 'nearest'}),
     anchor: at.components,
     title: 'Which of the three to change',
     text: 'One additive fit over all three components ranks them by how far each moves solubility, ' +
-      'each adjusted for the other two.',
+      'each adjusted for the other two. On the right: the linker is the core, warheads run across the ' +
+      'columns and the E3 ligand folds into the row.',
   },
   {
     anchor: at.swapRow,
@@ -499,36 +491,21 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'Measured pairs alike in every part but one, per component. No model involved.',
   },
   {
-    anchor: () => document.querySelector('.chem-sar-sum-list'),
-    position: ui.hints.POSITION.TOP,
-    title: 'Which series to open first',
-    text: 'The series to open first; the squares say why each is listed. Hover them for the reasons.',
-  },
-  {
-    before: () => sarTab('Effects'),
-    anchor: at.effectsBar,
+    anchor: () => document.querySelector('.chem-sar-sum-comp .chem-sar-sum-half') ?? at.components(),
     title: 'Every linker, warhead and ligand ranked',
-    text: 'Each component\'s full ranking, drawn as structures.',
+    text: 'Click a component\'s value for its full ranking, drawn as structures, or its swap for the measured ' +
+      'pairs behind it. Both open right under the row.',
   },
   {
-    before: sarShowCounted,
-    anchor: at.effectsBar,
-    title: 'Counted, not fitted',
-    text: 'Read off degraders actually made in each series; nothing here is a model output.',
-  },
-  {
-    before: () => sarTab('Worth making'),
+    before: () => document.querySelector('.chem-sar-sum-making')?.scrollIntoView(),
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Combinations nobody has built',
-    text: 'Warhead, linker and E3 ligand combinations never made, ranked on gain over their series\' ' +
-      'best. Listed even when none clears the trust gate.',
+    text: 'Click to open: warhead, linker and E3 ligand combinations never made, ranked on gain over ' +
+      'their series\' best. Listed even when none clears the trust gate.',
   },
   {
-    before: () => {
-      sarTab('Overview');
-      sarTab('SAR Matrix');
-    },
+    before: () => sarTab('SAR Matrix'),
     anchor: at.navCard,
     position: ui.hints.POSITION.RIGHT,
     title: 'One linker per series',
@@ -538,7 +515,8 @@ const PROTAC_HINTS: SarHint[] = [
   {
     anchor: at.chips,
     title: 'What the open matrix holds',
-    text: 'Degraders measured, cells the components could fill, predictions and the series\' R².',
+    text: 'Degraders measured, cells the components could fill, predictions and the series\' R². ' +
+      'Columns, on the right, puts another component across the top.',
   },
   {
     anchor: matrixCellAnchor,

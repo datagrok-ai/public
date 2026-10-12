@@ -1,10 +1,8 @@
-/* The Effects segment's R-group card: the substituents the fitted model most often places first at
-   their position, counted over the series that tried them. */
 import * as ui from 'datagrok-api/ui';
 import {getRdKitModule} from '../../../utils/chem-common-rdkit';
 import {cachedAtomCount} from '../build/sar-matrix-decompose';
 import {RGroupRow, SummaryData, SUM_ROWS, SWAP_MIN_SERIES} from './sar-matrix-summary-data';
-import {CARD_CORE_H, CARD_CORE_W, count} from '../sar-matrix-ui-common';
+import {count} from '../sar-matrix-ui-common';
 import {shortSmiles} from './sar-matrix-summary-common';
 import type {SummaryEffects} from './sar-matrix-summary-effects';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
@@ -16,17 +14,15 @@ export class SummaryRGroupCard {
     const host = this.kit.host;
     const title = data.axisRole === null ? 'R-groups — within-series ranking' :
       `${data.axisRole} — within-series ranking`;
-    const subtitle = 'How often the fit places a group first at its position; the number is its margin over ' +
-      'that series\' most common substituent.';
-    // An additive effect in raw assay units has no fold to state.
+    const subtitle = 'Groups that came first at their position in most series that tried them: carry them ' +
+      'forward. The number is the margin over each series\' most common substituent.';
     if (!host.activityIsLog) {
       return this.effects.card(title, subtitle, this.kit.reason('The activity is on a raw scale, where a fitted ' +
         'effect is a difference in assay units and says nothing about how large the change is. Set ' +
         'Scaling to lg or −lg, or declare the column higher-is-better if it is already a pIC50.'));
     }
-    const rows = data.rgroups.slice(0, SUM_ROWS).map((row, i) =>
-      this.rgroupBlock(data, row, {primary: i === 0}));
-    const thin = data.rgroupsThin.map((row) => this.rgroupBlock(data, row, {thin: true}));
+    const rows = data.rgroups.slice(0, SUM_ROWS).map((row) => this.rgroupRow(row, {}));
+    const thin = data.rgroupsThin.map((row) => this.rgroupRow(row, {thin: true}));
     if (rows.length === 0 && thin.length === 0) {
       // Non-convergence is named because nothing else on screen shows it.
       return this.effects.card(title, subtitle, this.kit.reason(`No substituent comes first at its position in ` +
@@ -34,10 +30,9 @@ export class SummaryRGroupCard {
         ` ${count(data.nonConverged)} series whose fit did not converge are left out.`)));
     }
     const body: HTMLElement[] = [];
-    // Where the cross-table fit also ranks this column, say how the two numbers differ.
     if (this.effects.roleAnswer(data, data.axisRole) !== null) {
       body.push(ui.divText(`This card counts wins within each series; the ${data.axisRole} view reports one ` +
-        'offset over the whole table.',
+        'effect over the whole table.',
       'chem-sar-sum-prose'));
     }
     if (data.nonConverged > 0) {
@@ -52,51 +47,20 @@ export class SummaryRGroupCard {
       body.push(...thin);
     }
     if (data.rgroupLosers.length > 0) {
-      const head = data.rgroupLosers[0];
-      body.push(ui.divText(`Stop making: ${shortSmiles(head.subst)} came last at its position in ` +
-        `${head.k} of the ${head.tried} series it was tried in` +
-        (head.magnitude === null ? '.' : `, costing ${this.kit.formatEffect(head.magnitude)} against each ` +
-        'series\' own reference.'), 'chem-sar-cp-hint'));
-      body.push(...data.rgroupLosers.map((row) => this.rgroupBlock(data, row, {loser: true})));
+      body.push(ui.divText('Stop making — last at their position in most series that tried them:',
+        'chem-sar-cp-hint'));
+      body.push(...data.rgroupLosers.map((row) => this.rgroupRow(row, {loser: true})));
     }
     return this.effects.card(title, subtitle, body, this.sizeVerdict(data));
   }
 
-  /** Out of the series that tried the group, not out of its wins. */
   private tallyBadge(row: RGroupRow, placed: string): HTMLElement {
     return this.kit.badge(`${placed} in ${row.k} of ${row.tried}`,
       `${placed} in ${row.k} of the ${row.tried} series that tried it` + (row.m > row.k ?
         `, plus ${row.m - row.k} whose fit does not hold: likely core-dependent.` : '.'));
   }
 
-  /** One leaderboard entry: the row, and an expand that says what the row does and does not claim. */
-  private rgroupBlock(data: SummaryData, row: RGroupRow,
-    opts: {thin?: boolean, loser?: boolean, primary?: boolean}): HTMLElement {
-    const parts: HTMLElement[] = [this.rgroupRow(row, opts)];
-    const expand = this.kit.lazyBody(() => [this.rgroupClaim(data, row)]);
-    const toggle = ui.divText('What this row claims →', 'chem-sar-cp-hint');
-    toggle.classList.add('chem-sar-sum-click');
-    toggle.onclick = expand.toggle;
-    // The answer tile above asked for its evidence, and the pane it asked for is only built now.
-    if (opts.primary && this.kit.expandTopRGroup) {
-      this.kit.expandTopRGroup = false;
-      expand.open();
-    }
-    parts.push(toggle, expand.body);
-    return ui.divV(parts);
-  }
-
-  /** A reading instruction, not a restatement of the marks above it. */
-  private rgroupClaim(data: SummaryData, row: RGroupRow): HTMLElement {
-    // Only where a matrix IS one core is a series a core; with a series column one series holds several.
-    const slot = data.coresAreSeries ? 'core' : 'series';
-    const read = ui.divText(`First on most ${slot}s it was tried on: carry it forward. First on one ${slot} ` +
-      'only: keep it there and vary elsewhere.',
-    'chem-sar-sum-prose');
-    return ui.divH([this.kit.depiction(row.subst, CARD_CORE_W * 2, CARD_CORE_H * 2), read], 'chem-sar-sum-pair');
-  }
-
-  /** One size verdict for the card: the sum of the groups is what matters, not each one. */
+  /** One verdict for the card: the total size of the groups matters, not each one's. */
   private sizeVerdict(data: SummaryData): HTMLElement | undefined {
     const rows = data.rgroups;
     if (rows.length === 0)
@@ -118,10 +82,16 @@ export class SummaryRGroupCard {
           n++;
         }
       }
-      line.innerText = n === 0 ? '' : `Your top ${n} groups average ${Math.round(groups / n)} heavy ` +
-        `atoms; the series references they beat average ${Math.round(references / n)}.`;
+      if (n === 0)
+        return;
+      const won = Math.round(groups / n);
+      const beaten = Math.round(references / n);
+      line.innerText = won > beaten ? `The winners are bigger than what they beat (${won} vs ${beaten} heavy ` +
+        'atoms): part of the gain may be size alone.' :
+        `The winners are no bigger than what they beat (${won} vs ${beaten} heavy atoms).`;
     });
-    ui.tooltip.bind(line, 'Heavy atoms including the attachment point: a size warning, not a property model.');
+    ui.tooltip.bind(line, 'Heavy atoms including the attachment point, averaged over the groups above and the ' +
+      'series references they are compared with. Potency alone tends to favour larger groups.');
     return line;
   }
 
@@ -141,7 +111,7 @@ export class SummaryRGroupCard {
     // Only one series' reference can be named; a pooled median has several.
     const comparator = row.magnitudeSeries > 1 ? 'each series\' own reference' : shortSmiles(reference);
     return this.kit.summaryRow({
-      depiction: this.kit.depiction(row.subst, CARD_CORE_W, CARD_CORE_H),
+      depiction: this.kit.depiction(row.subst),
       name: `${win.matrix.label} · ${position}`,
       badges,
       desc: row.magnitude === null ? 'no reference substituent to compare against' :

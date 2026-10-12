@@ -1,3 +1,10 @@
+/* The platform's tab host does not shrink below its content, and a grid keeps the canvas height it was last
+   given; without this the matrix tab overflows its dock panel and hides the panel's tab strip. */
+.d4-sar-matrix-viewer .d4-tab-host {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 .chem-sar-matrix {
   display: flex;
   flex-direction: row;
@@ -144,9 +151,17 @@ i.chem-sar-card-twisty:hover {
   background: var(--grey-1);
 }
 
+.chem-sar-card.chem-sar-sum-static {
+  cursor: default;
+}
+
+.chem-sar-card.chem-sar-sum-static:hover {
+  background: none;
+}
+
 .chem-sar-card.selected {
-  background: #2083D530;
-  border-left-color: var(--blue-1);
+  background: color-mix(in srgb, var(--blue-2) 15%, transparent);
+  border-left-color: var(--blue-2);
 }
 
 .chem-sar-card-core {
@@ -372,7 +387,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-chip-transfer {
-  color: var(--blue-3);
+  color: var(--white);
   background: var(--blue-2);
   border-color: var(--grey-2);
   font-weight: 600;
@@ -514,8 +529,8 @@ i.chem-sar-card-twisty:hover {
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--blue-3);
-  background: #2083D530;
+  color: var(--steel-5);
+  background: color-mix(in srgb, var(--blue-2) 15%, transparent);
   border-radius: 4px;
   padding: 1px 6px;
 }
@@ -602,7 +617,7 @@ i.chem-sar-card-twisty:hover {
 }
 
 .chem-sar-struct-icon.chem-sar-filter-on {
-  color: var(--blue-1);
+  color: var(--blue-2);
   position: relative;
 }
 
@@ -614,7 +629,7 @@ i.chem-sar-card-twisty:hover {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--blue-1);
+  background: var(--blue-2);
 }
 
 .chem-sar-nav-controls {
@@ -679,7 +694,7 @@ i.chem-sar-card-twisty:hover {
   width: 3px;
   height: 14px;
   margin-left: -2px;
-  background: var(--blue-1);
+  background: var(--blue-2);
 }
 
 .chem-sar-cp-strip-scale {
@@ -704,31 +719,30 @@ i.chem-sar-card-twisty:hover {
 
 /* ---- Summary tab ------------------------------------------------------------------------- */
 
+/* Short of room, the chips move to a line of their own as a block rather than splitting. */
 .chem-sar-sum-top {
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 10px 0;
+  gap: 4px 6px;
 }
 
-/* A ui-box directly inside a ui-div is pinned to a fixed width by the platform, and this host has to
-   fill the pane, so the selector outranks `div.ui-div > div.ui-box`. */
-.chem-sar-main > .chem-sar-sum-sections.ui-box {
-  flex: 1;
-  min-height: 0;
-  width: 100%;
+.chem-sar-sum-title-row {
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
 }
 
 .chem-sar-sum-pane {
-  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 8px;
   overflow: auto;
   box-sizing: border-box;
   padding: 8px 10px;
 }
 
-.chem-sar-sum-overview,
-.chem-sar-sum-effects,
-.chem-sar-sum-scroll {
+.chem-sar-sum-overview {
   gap: 8px;
 }
 
@@ -754,7 +768,9 @@ i.chem-sar-card-twisty:hover {
   cursor: pointer;
 }
 
-.chem-sar-sum-answer:hover {
+.chem-sar-sum-answer:hover,
+.chem-sar-sum-half:hover,
+.chem-sar-sum-open {
   background: var(--grey-1);
 }
 
@@ -772,76 +788,60 @@ i.chem-sar-card-twisty:hover {
   color: var(--grey-4);
 }
 
-/* Fixed widths, so the values of the component band line up from row to row. */
-.chem-sar-sum-col {
-  flex: 0 0 80px;
-}
-
-.chem-sar-sum-slot {
-  flex: 0 0 160px;
+.chem-sar-sum-comp-row {
   align-items: center;
+  gap: 8px;
 }
 
-/* The fixed columns outgrow a viewer docked beside the grid; the trailing hint then drops a line. */
-.chem-sar-sum-comp .chem-sar-card {
-  flex-wrap: wrap;
-  row-gap: 2px;
+.chem-sar-sum-col {
+  flex: 0 0 90px;
 }
 
-.chem-sar-sum-comp .chem-sar-card > .chem-sar-cp-hint {
+/* The value and the swap halves share the row equally, so both line up down the table. */
+.chem-sar-sum-half,
+.chem-sar-sum-half-head {
+  flex: 1 1 0;
   min-width: 0;
 }
 
+.chem-sar-sum-half {
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.chem-sar-sum-half-head {
+  padding-left: 6px;
+  color: var(--grey-5);
+  font-size: 11px;
+}
+
+/* Indented to the row's depiction: the border and padding of `.chem-sar-card`. */
+.chem-sar-sum-expand {
+  gap: 4px;
+  padding: 2px 12px 10px 15px;
+}
+
+.chem-sar-sum-detail:not(:empty) {
+  padding: 4px 0 8px 24px;
+}
+
 .chem-sar-sum-levels {
-  flex-wrap: wrap;
-  gap: 4px 8px;
+  flex: 0 0 auto;
+  gap: 8px;
 }
 
 .chem-sar-sum-level {
-  color: var(--blue-1);
-  border-color: var(--blue-1);
+  color: var(--blue-2);
+  border-color: var(--blue-2);
   cursor: pointer;
 }
 
 .chem-sar-sum-level-on {
   color: var(--white);
-  background: var(--blue-1);
-}
-
-.chem-sar-sum-coverage {
-  gap: 4px;
-}
-
-.chem-sar-sum-cov {
-  height: 10px;
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-.chem-sar-sum-cov-seg {
-  min-width: 2px;
-  box-sizing: border-box;
-}
-
-.chem-sar-sum-cov-real {
-  background: var(--green-2);
-}
-
-.chem-sar-sum-cov-held {
-  background: repeating-linear-gradient(45deg, var(--grey-4) 0 2px, transparent 2px 6px), var(--grey-1);
-}
-
-.chem-sar-sum-cov-bad {
-  background: var(--red-3);
-}
-
-/* Outlined: the measurement exists, only the grouping failed. */
-.chem-sar-sum-cov-out {
-  border: 1px dashed var(--grey-3);
-}
-
-.chem-sar-sum-cov-none {
-  background: var(--grey-1);
+  background: var(--blue-2);
 }
 
 .chem-sar-sum-lane {
@@ -882,6 +882,9 @@ i.chem-sar-card-twisty:hover {
 .chem-sar-sum-fold {
   align-items: center;
   gap: 6px;
+}
+
+* + .chem-sar-sum-fold {
   padding-top: 8px;
 }
 
@@ -890,27 +893,6 @@ i.chem-sar-card-twisty:hover {
   cursor: pointer;
 }
 
-/* The analog grid needs a definite height to virtualize against, so this section does not scroll as a
-   whole: the shelf above the grid scrolls inside its own share. */
 .chem-sar-sum-making {
-  height: 100%;
-  gap: 10px;
-  overflow: hidden;
-}
-
-.chem-sar-sum-shelf {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: 40%;
-  overflow: auto;
-}
-
-.chem-sar-sum-making-block,
-.chem-sar-sum-analog-grid {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.chem-sar-sum-analog-grid {
-  min-height: 200px;
+  gap: 8px;
 }

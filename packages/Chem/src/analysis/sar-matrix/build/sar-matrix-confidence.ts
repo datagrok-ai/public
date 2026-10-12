@@ -1,5 +1,5 @@
 import {fitAdditiveModel} from './sar-matrix-assemble';
-import {Confidence, Residual, SarMatrix, SarMatrixCell, SarMatrixCellKind} from '../sar-matrix-types';
+import {Confidence, SarMatrix, SarMatrixCell, SarMatrixCellKind} from '../sar-matrix-types';
 
 /** Below this many cross-validatable observed cells a leave-one-out estimate is too noisy to report. */
 const MIN_CV_POINTS = 4;
@@ -28,8 +28,6 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
   const rowCount = matrix.rows.length;
   const pairs: {observed: number, predicted: number}[] = [];
   let total = 0;
-  let hi: Residual | null = null;
-  let lo: Residual | null = null;
   for (const position of matrix.positions) {
     const colIdxs = matrix.columns
       .map((c, ci) => (c.position === position ? ci : -1)).filter((ci) => ci >= 0);
@@ -43,11 +41,6 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
         if (predicted === null)
           continue;
         pairs.push({observed: cell.value, predicted});
-        const residual = cell.value - predicted;
-        if (hi === null || residual > hi.residual)
-          hi = {ri, ci: colIdxs[k], residual};
-        if (lo === null || residual < lo.residual)
-          lo = {ri, ci: colIdxs[k], residual};
       }
     }
   }
@@ -64,5 +57,5 @@ export function computeMatrixConfidence(matrix: SarMatrix): Confidence | null {
   if (ssTot === 0)
     return null; // all observed values identical — R² is undefined
 
-  return {r2: 1 - ssRes / ssTot, rmse: Math.sqrt(ssRes / pairs.length), n: pairs.length, total, hi, lo};
+  return {r2: 1 - ssRes / ssTot, rmse: Math.sqrt(ssRes / pairs.length), n: pairs.length, total};
 }

@@ -1,16 +1,12 @@
-/* The Overview's Start here list: the series that win one of five reasons to open them — most compounds,
-   widest range, best compound, most trusted predictions, best-validated fit — one row per lineage. */
 import * as ui from 'datagrok-api/ui';
-import {bestMeasured, MIN_SUPPORT, SeriesStat, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
-import {BENEFIT_MOL_H, BENEFIT_MOL_W, CARD_CORE_H, CARD_CORE_W, count} from '../sar-matrix-ui-common';
-import {REASON_GLYPHS, REASON_WORDS, shortSmiles} from './sar-matrix-summary-common';
+import {MIN_SUPPORT, SeriesStat, SummaryData, TRUST_R2} from './sar-matrix-summary-data';
+import {count} from '../sar-matrix-ui-common';
+import {REASON_GLYPHS, REASON_WORDS} from './sar-matrix-summary-common';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
 
 export class SummaryStartHere {
   constructor(private readonly kit: SummaryPanel) {}
 
-  /** Each row's gain is the best unmade compound against the best measured one: an additive floor, so near
-   *  zero means no further additive gain, never no further potency. */
   build(data: SummaryData): HTMLElement[] {
     const host = this.kit.host;
     const parts: HTMLElement[] = [];
@@ -24,7 +20,7 @@ export class SummaryStartHere {
         host.observedNeighbours(matrix, stat.best.ri, stat.best.ci);
       const expand = this.kit.lazyBody(() => this.startExpandParts(stat));
       parts.push(this.kit.summaryRow({
-        depiction: this.kit.depiction(rowKey ?? null, CARD_CORE_W, CARD_CORE_H),
+        depiction: this.kit.depiction(rowKey ?? null),
         name: matrix.label,
         badges: [
           this.kit.badge(`L${stat.tier}`, stat.tier === 1 ?
@@ -45,8 +41,8 @@ export class SummaryStartHere {
         valueTip: stat.best === null ? 'This series holds no measured compound.' :
           `${host.formatActivity(stat.best.value)} measured; ${neighbours} measured cells share its core ` +
           'or substituent.',
-        tip: `Open ${matrix.label} in the SAR Matrix. "Typical" is the fitted mean of what was made; a big ` +
-          'gap to "best" suggests one lucky compound.',
+        tip: `Click to expand; the arrow opens ${matrix.label} in the SAR Matrix. "Typical" is the fitted mean ` +
+          'of what was made; a big gap to "best" suggests one lucky compound.',
         onClick: () => stat.best === null ? host.revealMatrix(matrix) :
           host.revealCell(matrix, stat.best.ri, stat.best.ci),
         onChevron: expand.toggle,
@@ -56,7 +52,7 @@ export class SummaryStartHere {
     return parts;
   }
 
-  /** All five reasons in a fixed order, won or not, so the lanes compare down the list. */
+  /** Every reason in a fixed slot, won or not, so the lanes compare down the list. */
   private reasonLane(reasons: number[]): HTMLElement {
     const won = new Set(reasons);
     const lane = ui.divH(REASON_GLYPHS.map((glyph, i) => ui.divText(won.has(i) ? glyph : '',
@@ -65,8 +61,7 @@ export class SummaryStartHere {
     return lane;
   }
 
-  /** Which part of the gate left this series with nothing to aim at; each calls for a different fix. Null
-   *  where the trust badge beside it already says why. */
+  /** Null where the trust badge beside it already says why. */
   private noGainReason(stat: SeriesStat): {label: string, tip: string} | null {
     const r2 = stat.matrix.confidence?.r2 ?? null;
     if (!this.kit.host.predictVirtual) {
@@ -114,68 +109,25 @@ export class SummaryStartHere {
   }
 
   private startExpandParts(stat: SeriesStat): HTMLElement[] {
-    const host = this.kit.host;
+    if (stat.bestRow === null)
+      return [];
     const {matrix} = stat;
-    const dir = host.higherIsBetter ? 1 : -1;
-    const parts: HTMLElement[] = [];
-
-    if (stat.colRange !== null && stat.rowRange !== null) {
-      const story = stat.colRange > stat.rowRange ? 'this is a column story' : 'this is a row story';
-      parts.push(this.kit.hint(`Spread: substituent choice spans ${stat.colRange.toFixed(2)} · core ` +
-        `choice spans ${stat.rowRange.toFixed(2)} — ${story}`, 'Ranges of this series\' fitted effects, ' +
-        'each over values with at least ' + MIN_SUPPORT + ' measurements; comparable only within the series.'));
-    }
-
-    if (stat.bestRow !== null) {
-      const row = matrix.rows[stat.bestRow.ri];
-      const folded = Object.values(row.foldedValues);
-      const oneStructure = matrix.rows.length > 1 &&
-        new Set(matrix.rows.map((r) => r.keySmiles)).size === 1;
-      const heading = folded.length === 0 ? 'Best core' :
-        oneStructure ? 'Best R-group combination' : 'Best core + fixed R-groups';
-      // Where every row draws the same core, the folded substituents are what tell rows apart.
-      const art = folded.length > 0 && oneStructure ?
-        ui.divH(folded.slice(0, 3).map((subst) =>
-          this.kit.depiction(subst, BENEFIT_MOL_W, BENEFIT_MOL_H)), 'chem-sar-sum-pair') :
-        this.kit.depiction(row.keySmiles, CARD_CORE_W, CARD_CORE_H);
-      const text = ui.divV([
-        ui.divText(`${heading}: ${row.label} · ${this.kit.formatEffect(stat.bestRow.effect)} ` +
-          `(n = ${stat.bestRow.n})`, 'chem-sar-sum-prose'),
-        ui.divText('Best on average across the substituents it was actually measured at — not the ' +
-          'single best compound, and not comparable to another series.', 'chem-sar-cp-hint'),
-      ]);
-      const block = ui.divH([art, text], 'chem-sar-sum-pair');
-      block.classList.add('chem-sar-sum-click');
-      const ci = bestMeasured(matrix.cells[stat.bestRow.ri], dir);
-      if (ci >= 0)
-        block.onclick = () => host.revealCell(matrix, stat.bestRow!.ri, ci);
-      parts.push(block);
-    }
-
-    // A cell well above its additive prediction: here non-additivity is a finding, not a trust problem.
-    const conf = matrix.confidence;
-    // `?? null`: a matrix restored from an older project may lack these keys.
-    const outlier = (conf ? (dir > 0 ? conf.hi : conf.lo) : null) ?? null;
-    if (conf && outlier !== null && Math.abs(outlier.residual) > conf.rmse &&
-      outlier.ri < matrix.rows.length && outlier.ci < matrix.columns.length) {
-      const beat = this.kit.hint(`${matrix.rows[outlier.ri].label} × ` +
-        `${shortSmiles(matrix.columns[outlier.ci].substSmiles)} beats its additive expectation by ` +
-        `${this.kit.formatEffect(dir * outlier.residual)}, against this series' own ` +
-        `±${host.formatActivity(conf.rmse)} — hold that pair and vary elsewhere.`,
-      'Predicted with this cell held out, so the model could not pull toward it.');
-      beat.classList.add('chem-sar-sum-click');
-      beat.onclick = () => host.revealCell(matrix, outlier.ri, outlier.ci);
-      parts.push(beat);
-    }
-
-    const position = matrix.positions[0] ?? '';
-    const reference = matrix.refValues[position];
-    const refLine = this.kit.hint(reference ? `Varies ${position} · reference substituent:` :
-      `Varies ${position} · no reference substituent recorded`, 'The most common substituent, the comparator ' +
-      'for this series\' effects. R-labels are local to each series.');
-    parts.push(reference ?
-      ui.divH([refLine, this.kit.depiction(reference, BENEFIT_MOL_W, BENEFIT_MOL_H)], 'chem-sar-sum-pair') :
-      refLine);
-    return parts;
+    const row = matrix.rows[stat.bestRow.ri];
+    const folded = Object.values(row.foldedValues);
+    const oneStructure = matrix.rows.length > 1 &&
+      new Set(matrix.rows.map((r) => r.keySmiles)).size === 1;
+    const heading = folded.length === 0 ? 'Best core' :
+      oneStructure ? 'Best R-group combination' : 'Best core + fixed R-groups';
+    // Where every row draws the same core, the folded substituents are what tell rows apart.
+    const art = folded.length > 0 && oneStructure ?
+      ui.divH(folded.slice(0, 3).map((subst) => this.kit.depiction(subst)), 'chem-sar-sum-pair') :
+      this.kit.depiction(row.keySmiles);
+    const text = ui.divV([
+      ui.divText(`${heading}: ${row.label} · ${this.kit.formatEffect(stat.bestRow.effect)} ` +
+        `(n = ${stat.bestRow.n})`, 'chem-sar-sum-prose'),
+      ui.divText('Best on average over its measured substituents — not the single best compound, and not ' +
+        'comparable across series.', 'chem-sar-cp-hint'),
+    ]);
+    return [ui.divH([art, text], 'chem-sar-sum-pair chem-sar-sum-expand')];
   }
 }

@@ -44,10 +44,9 @@ export const BENEFIT_MOL_W = 62;
 export const BENEFIT_MOL_H = 34;
 export const CARD_CORE_W = 78;
 export const CARD_CORE_H = 44;
-/** The component strip puts one structure on each row of the landing band, where a truncated SMILES
- *  reads as the same string for every analog of one scaffold. */
-export const STRIP_MOL_W = 70;
-export const STRIP_MOL_H = 28;
+/** The Summary spans the viewer, not the 320px series pane, so its structures can be read at a glance. */
+export const SUM_MOL_W = 136;
+export const SUM_MOL_H = 76;
 /** A whole assembled analog needs more room than the core or substituent it was built from. */
 export const ANALOG_W = 220;
 /** Must track the `.chem-sar-nav` width in the stylesheet, or cells are fitted against the wrong pane. */

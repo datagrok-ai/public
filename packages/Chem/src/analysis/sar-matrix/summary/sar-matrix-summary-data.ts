@@ -1,5 +1,3 @@
-/* The Summary's computation: one walk over every matrix that produces everything the tab shows. No DOM.
-   The types are re-exported so callers import from here. */
 import {_package} from '../../../package';
 import {fitAdditiveFromTriples} from '../build/sar-matrix-assemble';
 import {median} from '../build/sar-matrix-decompose';
@@ -38,8 +36,6 @@ function betterEvidenced(a: SummaryRow, b: SummaryRow): boolean {
 export class SummaryCollector {
   constructor(private readonly host: SummaryHost, private readonly tierFilter: number | null) {}
 
-  /** One pass over every cell of every matrix. Observed cells are collected as triples for the fit, so
-   *  the grid is walked once; the buffers are reused across matrices to spare the garbage collector. */
   collect(): SummaryData {
     const t0 = performance.now();
     const host = this.host;
@@ -47,30 +43,34 @@ export class SummaryCollector {
     const log = host.activityIsLog;
     const roots = host.matrixRoots;
     const tiers = host.matrixTiers;
+    let ceiling = -Infinity;
+    for (const matrix of host.matrices) {
+      for (const row of matrix.cells) {
+        for (const cell of row) {
+          if (cell.kind === 'real' && cell.value !== null)
+            ceiling = Math.max(ceiling, dir * cell.value);
+        }
+      }
+    }
 
     const compounds = new Set<number>();
     const untested = new Set<number>();
-    // Measured and virtual SMILES are canonicalised differently, so this catches matches but proves no
-    // novelty: an analog says "not in this dataset", never "never made".
+    // Measured and virtual SMILES are canonicalised differently, so this catches matches but proves no novelty.
     const measuredStructures = new Set<string>();
     const test = new TopList(betterSupported);
     const analogs = new TopList(betterEvidenced, ANALOG_LIST_MAX);
     const analogsThin = new TopList(betterEvidenced, ANALOG_LIST_MAX);
-    // What the gate turned down, by raw gain: the gate withholds confidence, not a next structure.
     const analogsAny = new TopList(betterEvidenced, ANALOG_LIST_MAX);
     const swaps = new Map<string, SwapPool>();
     const acc: RGroupAcc = {wins: new Map(), losses: new Map(), tried: new Map()};
     const series: SeriesStat[] = [];
-    const lowR2: SarMatrix[] = [];
+    let lowR2 = 0;
 
     let measuredCells = 0;
     let trustedNoStructure = 0;
-    let withheldBelowError = 0;
     let withheldThinSupport = 0;
     let withheldFitFails = 0;
     let withheldUnchecked = 0;
-    let withheldNotConverged = 0;
-    const alreadyHeld = new Set<string>();
     let unchecked = 0;
     let fitHolds = 0;
     let nonConverged = 0;
@@ -85,13 +85,10 @@ export class SummaryCollector {
     // An analog's gain needs the matrix's best measured cell, final only after its rows are walked.
     const riBuf: number[] = [];
     const ciBuf: number[] = [];
-    // The same, for the candidates the trust gate turned down.
     const riAlt: number[] = [];
     const ciAlt: number[] = [];
 
-    // The core column is prepended, since `roleColumns` excludes it. Empty when cores came from fragmentation.
     const roleNames = host.axisRole === null ? [] : [host.coreRole!, ...host.roleColumns];
-    // Where each value lives: the core on the row, the axis on the column, the rest folded into the row.
     const roleKind = roleNames.map((name) => name === host.coreRole ? 0 : name === host.axisRole ? 1 : 2);
     const roleValues: string[][] = roleNames.map(() => []);
     const roleActivity: number[] = [];
@@ -113,7 +110,6 @@ export class SummaryCollector {
     }
 
     for (let mi = 0; mi < host.matrices.length; mi++) {
-      // Skipping other tiers here keeps every ranking on the tab on the same set of series.
       if (this.tierFilter !== null && tiers[mi] !== this.tierFilter)
         continue;
       const matrix = host.matrices[mi];
@@ -192,9 +188,7 @@ export class SummaryCollector {
                 trustedNoStructure++;
             } else if (passes) {
               trusted++;
-              if (measuredStructures.has(cell.smiles))
-                alreadyHeld.add(cell.smiles);
-              else {
+              if (!measuredStructures.has(cell.smiles)) {
                 riBuf.push(ri);
                 ciBuf.push(ci);
               }
@@ -226,9 +220,7 @@ export class SummaryCollector {
         nonConverged++;
       // A fit that stopped short is shrunk by an amount of its own, so its gains do not compare.
       const conf = matrix.confidence ?? null;
-      if (!fit.converged || best === null || conf === null)
-        withheldNotConverged += riBuf.length;
-      else {
+      if (fit.converged && best !== null && conf !== null) {
         // An error from a handful of cells is no scale to divide by: it is tiny and would top every ranking.
         const thin = conf.n < BEST_FIT_MIN_N || conf.rmse <= 0;
         for (let k = 0; k < riBuf.length; k++) {
@@ -237,18 +229,16 @@ export class SummaryCollector {
           if (thin) {
             if (gain > 0)
               analogsThin.offer(cell.smiles!, gain, matrix, riBuf[k], ciBuf[k]);
-          } else if (gain < conf.rmse)
-            withheldBelowError++;
-          else
+          } else if (gain >= conf.rmse)
             analogs.offer(cell.smiles!, gain / conf.rmse, matrix, riBuf[k], ciBuf[k]);
         }
       }
-      // Raw gain: these fits were not trusted, so their error is no scale to divide by.
       if (best !== null) {
         for (let k = 0; k < riAlt.length; k++) {
           const cell = matrix.cells[riAlt[k]][ciAlt[k]];
           const gain = dir * (cell.value! - best.value);
-          if (gain > 0)
+          // An untrusted fit predicting past every measured value is extrapolating, not proposing.
+          if (gain > 0 && dir * cell.value! <= ceiling)
             analogsAny.offer(cell.smiles!, gain, matrix, riAlt[k], ciAlt[k]);
         }
       }
@@ -256,7 +246,7 @@ export class SummaryCollector {
         matrix, root: roots[mi], tier: tiers[mi], cpd: mols.size, realCells, impossibleCells,
         totalCells: nRows * nCols, lo: realCells ? lo : 0, hi: realCells ? hi : 0, best, bestVirtual,
         typical: fit.grandMean, trusted, virtualCells,
-        ...this.extractRanges(matrix, fit, dir),
+        bestRow: this.bestRow(matrix, fit, dir),
       };
       series.push(stat);
       recordRGroupExtremes(acc, matrix, fit, dir, roots[mi], holds);
@@ -264,7 +254,7 @@ export class SummaryCollector {
       if (r2 === null)
         unchecked++;
       else if (r2 < TRUST_R2)
-        lowR2.push(matrix);
+        lowR2++;
       else
         fitHolds++;
     }
@@ -279,18 +269,12 @@ export class SummaryCollector {
     }
 
     // A molecule first measured in a later matrix is only caught after the walk.
-    const dropHeld = (key: string): boolean => {
-      if (!measuredStructures.has(key))
-        return false;
-      alreadyHeld.add(key);
-      return true;
-    };
+    const dropHeld = (key: string): boolean => measuredStructures.has(key);
     analogs.prune(dropHeld);
     analogsThin.prune(dropHeld);
     analogsAny.prune(dropHeld);
 
     const measured = series.filter((stat) => stat.realCells > 0);
-    // Over the matrices this walk read, so the model error matches the tier on screen.
     const confs = series.flatMap((stat) => stat.matrix.confidence ?? []);
     const roleFit = fitRoleEffects({names: roleNames, values: roleValues, activity: roleActivity,
       molIdx: roleMol, minSupport: MIN_SUPPORT, higherIsBetter: host.higherIsBetter});
@@ -316,36 +300,24 @@ export class SummaryCollector {
       swapCandidates,
       ...rankRGroups(acc),
       test, analogs, analogsThin, analogsAny,
-      withheldBelowError, withheldThinSupport, withheldFitFails, withheldUnchecked, withheldNotConverged,
-      alreadyHeld: alreadyHeld.size,
+      withheldThinSupport, withheldFitFails, withheldUnchecked,
       analogOverflow: analogs.overflow + analogsThin.overflow,
     };
     logSarTime('summary', t0);
     return data;
   }
 
-  /** The scalars kept from one fit, so its arrays can be dropped. Both ranges use one support floor, or
-   *  the looser side would come out wider on noise alone. */
-  private extractRanges(matrix: SarMatrix, fit: ReturnType<typeof fitAdditiveFromTriples>, dir: number):
-    {colRange: number | null, rowRange: number | null, bestRow: {ri: number, effect: number, n: number} | null} {
-    const range = (effect: Float64Array, n: Int32Array, count: number): number | null => {
-      const kept = effect.subarray(0, count).filter((_e, i) => n[i] >= MIN_SUPPORT);
-      return kept.length >= 2 ? Math.max(...kept) - Math.min(...kept) : null;
-    };
-    let bestRow: {ri: number, effect: number, n: number} | null = null;
+  private bestRow(matrix: SarMatrix, fit: ReturnType<typeof fitAdditiveFromTriples>, dir: number):
+    {ri: number, effect: number, n: number} | null {
+    let best: {ri: number, effect: number, n: number} | null = null;
     for (let ri = 0; ri < matrix.rows.length; ri++) {
-      if (fit.rowN[ri] >= MIN_SUPPORT && (bestRow === null || dir * fit.rowEffect[ri] > dir * bestRow.effect))
-        bestRow = {ri, effect: fit.rowEffect[ri], n: fit.rowN[ri]};
+      if (fit.rowN[ri] >= MIN_SUPPORT && (best === null || dir * fit.rowEffect[ri] > dir * best.effect))
+        best = {ri, effect: fit.rowEffect[ri], n: fit.rowN[ri]};
     }
-    return {
-      colRange: range(fit.colEffect, fit.colN, matrix.columns.length),
-      rowRange: range(fit.rowEffect, fit.rowN, matrix.rows.length),
-      bestRow,
-    };
+    return best;
   }
 
-  /** Five independent argmaxes, merged by lineage root: one series can win several reasons, and a
-   *  lineage is one place to look. */
+  /** Merged by lineage root: one series can win several reasons, and a lineage is one place to look. */
   private mergeStartHere(series: SeriesStat[], confN: number[], dir: number): StartRow[] {
     if (series.length === 0)
       return [];

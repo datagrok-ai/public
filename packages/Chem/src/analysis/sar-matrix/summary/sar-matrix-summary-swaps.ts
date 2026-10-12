@@ -1,11 +1,12 @@
-/* Matched-pair swap pooling. A swap is one component value exchanged for another with every other
-   component held fixed, so a pool is a grouping on all-but-one component: each component's measured
-   pairs come out of one walk, with no rebuild. Pure functions of their arguments. */
 import {SarMatrix} from '../sar-matrix-types';
-import {RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool,
-  SwapSide} from './sar-matrix-summary-types';
+import {RowCell, SUM_ROWS, SWAP_MIN_PAIRS, SWAP_MIN_SERIES, SWAP_ROW_CAP, SwapPool} from './sar-matrix-summary-types';
 
-/** Both extremes by value once a group exceeds the cap, so only mid-range pairs are lost. */
+interface SwapSide {
+  value: string;
+  activity: number;
+  mol: number;
+}
+
 function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
   if (items.length <= SWAP_ROW_CAP)
     return items;
@@ -14,8 +15,7 @@ function keepExtremes<T>(items: T[], valueOf: (item: T) => number): T[] {
   return [...sorted.slice(0, half), ...sorted.slice(sorted.length - half)];
 }
 
-/** Measured pairs inside one row, pooled on the unordered fragment pair. Per row, not per core: two rows
- *  can share a core and differ at a folded position. */
+/** Per row, not per core: two rows can share a core and differ at a folded position. */
 export function poolSwaps(pools: Map<string, SwapPool>, matrix: SarMatrix, ri: number, cells: RowCell[],
   dir: number, log: boolean, root: string): void {
   const sampled = cells.length > SWAP_ROW_CAP;
@@ -36,8 +36,7 @@ export function poolSwaps(pools: Map<string, SwapPool>, matrix: SarMatrix, ri: n
   }
 }
 
-/** Fold one measured pair into its pool; null when the sides match, no fold exists, or it is counted.
- *  The caller records `best`, since only a pair found through a matrix has cells to name. */
+/** The caller records `best`, since only a pair found through a matrix has cells to name. */
 function addSwapPair(pools: Map<string, SwapPool>, a: SwapSide, b: SwapSide,
   root: string, sampled: boolean, dir: number, log: boolean):
   {pool: SwapPool, delta: number, flip: boolean} | null {
@@ -75,8 +74,6 @@ function addSwapPair(pools: Map<string, SwapPool>, a: SwapSide, b: SwapSide,
   return {pool, delta, flip};
 }
 
-/** Measured swaps for every component at once: group the measured cells on all components but one, and
- *  each pair in a group that differs in it is a matched pair. No rebuild per component. */
 export function poolRoleSwaps(roleNames: string[], roleValues: string[][], roleActivity: number[],
   roleMol: number[], dir: number, log: boolean): Map<string, SwapPool[]> {
   const out = new Map<string, SwapPool[]>();
@@ -120,7 +117,7 @@ export function poolRoleSwaps(roleNames: string[], roleValues: string[][], roleA
   return out;
 }
 
-/** What the swap bought in every pair, in its better direction; a mean would favour the noisiest pool. */
+/** The worst pair in the better direction; a mean would favour the noisiest pool. */
 function swapScore(pool: SwapPool): number {
   return Math.max(pool.min, -pool.max);
 }

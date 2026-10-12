@@ -1,179 +1,164 @@
-/* The Summary's Worth-making segment: the compounds the table holds but never assayed, and the
-   analogs nobody has made, ranked by what each would gain over its own series' best. It owns the
-   grid it draws. */
 import * as ui from 'datagrok-api/ui';
-import * as DG from 'datagrok-api/dg';
-import {Subscription} from 'rxjs';
 
-import {closeGridQuietly} from '../sar-matrix-types';
-import {ANALOG_LIST_MAX, BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, SummaryData, SummaryRow,
-  TRUST_R2} from './sar-matrix-summary-data';
+import {BEST_FIT_MIN_N, MIN_LISTED_SUPPORT, MIN_SUPPORT, SummaryData, SummaryRow} from './sar-matrix-summary-data';
 import type {SummaryPanel} from './sar-matrix-summary-panel';
-import {ANALOG_W, CARD_CORE_H, CARD_CORE_W, count, MatrixCellRef, moleculeGrid} from '../sar-matrix-ui-common';
+import {count} from '../sar-matrix-ui-common';
 
-/** One row of the Worth-making grid and which list it came off. */
-interface AnalogRow {
-  row: SummaryRow;
-  evidence: 'ranked' | 'thin' | 'ungated';
-}
+/** Analog rows shown before the rest fold away; the whole ranked list goes to the Make list, which sorts it. */
+const MAKING_ROWS = 8;
+const ANALOGS_TIP = 'Predicted analogs nobody has made, ranked by how much they would beat the best compound ' +
+  'of their series. Click to open.';
+
+type Best = {value: number} | null;
 
 export class SummaryMaking {
-  private analogGrid: DG.Grid | null = null;
-  private analogSub: Subscription | null = null;
-  private analogSources: MatrixCellRef[] = [];
-
   constructor(private readonly kit: SummaryPanel) {}
 
-  close(): void {
-    this.analogSub?.unsubscribe();
-    this.analogSub = null;
-    closeGridQuietly(this.analogGrid);
-    this.analogGrid = null;
-    this.analogSources = [];
-  }
-
-  /** Not a scroll pane: the grid needs a definite height to virtualize against. */
   build(data: SummaryData): HTMLElement {
-    return ui.divV([this.buildShelfSegment(data), this.buildAnalogBlock(data)], 'chem-sar-sum-making');
+    return ui.divV([this.buildShelf(data), this.buildAnalogs(data)], 'chem-sar-sum-making');
   }
 
-  /** Compounds the table holds with no activity value. Not gated on R²: an assay is cheap. */
-  private buildShelfSegment(data: SummaryData): HTMLElement {
-    const host = this.kit.host;
-    const body: HTMLElement[] = [];
-    body.push(ui.divText('Already in the table, never assayed — test these first',
-      'chem-sar-cp-section-title'));
-    body.push(this.kit.prose('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
-      `No fit gate, only ≥ ${MIN_LISTED_SUPPORT} measured compounds on both axes: an assay is cheap.`));
+  private buildShelf(data: SummaryData): HTMLElement {
     const shelf = data.test.take();
+    return this.section(`Already in the table, never assayed · ${count(shelf.length)}`,
+      'Compounds in your table with no activity value, ranked by their predicted value. Testing them needs ' +
+      'no synthesis. Click to open.', () => this.shelfBody(data, shelf));
+  }
+
+  private shelfBody(data: SummaryData, shelf: SummaryRow[]): HTMLElement[] {
+    const host = this.kit.host;
+    const body: HTMLElement[] = [
+      this.kit.prose('Rows of your table with no activity value, ranked by prediction. No synthesis needed.',
+        `No fit gate, only ≥ ${MIN_LISTED_SUPPORT} measured compounds on both axes: an assay is cheap.`),
+    ];
     if (shelf.length === 0) {
       body.push(...this.kit.reason(host.predictUnmeasured ?
         `No untested compound rests on ${MIN_LISTED_SUPPORT} measured compounds on both axes.` :
         '"Predict untested compounds" is off, so untested compounds carry no predicted value to rank by.'));
+      return body;
     }
+    const bests = this.seriesBests(data);
     for (const row of shelf) {
-      const {matrix, ri, ci} = row;
-      const cell = matrix.cells[ri][ci];
-      const support = cell.support ?? 0;
-      body.push(this.kit.summaryRow({
-        depiction: this.kit.depiction(cell.smiles, CARD_CORE_W, CARD_CORE_H),
-        name: host.cellIdText(cell) ?? '(no id)',
-        badges: [
-          this.kit.badge(`n=${support}`, 'Measured compounds backing the prediction on the weaker of this ' +
-            'core and this substituent.'),
-          this.kit.trustBadge(matrix),
-        ],
-        desc: this.kit.cellLocation(matrix, ri, ci),
-        value: `~${host.formatActivity(cell.value!)}`,
-        caption: 'predicted',
-        cart: {matrix, ri, ci},
-        valueTip: 'Predicted, not measured — the compound exists, only the number is estimated. This ' +
-          'segment is deliberately not gated on R²: a plate is cheap and a synthesis is not.',
-        tip: this.kit.openTip(matrix, ri, ci),
-        onClick: () => host.revealCell(matrix, ri, ci),
-      }));
+      const cell = row.matrix.cells[row.ri][row.ci];
+      body.push(...this.row(row, bests.get(row.matrix.id) ?? null, host.cellIdText(cell) ?? '(no id)',
+        this.kit.cellLocation(row.matrix, row.ri, row.ci), [this.kit.trustBadge(row.matrix)], '~'));
     }
-    if (shelf.length > 0) {
-      body.push(ui.divH([ui.button(shelf.length === 1 ? 'Queue this compound for testing' :
-        `Queue these ${shelf.length} for testing`,
-      () => host.addCellsToMakeList(shelf, 'Nothing to add.'))], 'chem-sar-sum-chips'));
-    }
-
-    return ui.divV(body, 'chem-sar-sum-shelf');
+    body.push(ui.divH([ui.button(shelf.length === 1 ? 'Queue this compound for testing' :
+      `Queue these ${shelf.length} for testing`, () => host.addCellsToMakeList(shelf, 'Nothing to add.'))],
+    'chem-sar-sum-chips'));
+    return body;
   }
 
-  /** Analogs ranked on gain over their series' best measured compound, in that series' own error. Not
-   *  on the predicted value, which only ranks series by what was already made. */
-  private buildAnalogBlock(data: SummaryData): HTMLElement {
-    const host = this.kit.host;
-    const body: HTMLElement[] = [
-      ui.divText('Worth making — ranked by gain over what this series has already made',
-        'chem-sar-cp-section-title'),
-      ui.divText('Predicted, not measured. The additive model cannot see a cliff, so a gain is a hypothesis.',
-        'chem-sar-cp-hint'),
-    ];
-    if (data.trustedNoStructure > 0) {
-      body.push(ui.divText(`${count(data.trustedNoStructure)} more predictions have no structure: add the ` +
-        'R-group column that fills their open attachment point.', 'chem-sar-cp-hint'));
-    }
-
+  /** Ranked on gain, not on the predicted value, which only ranks series by what was already made. */
+  private buildAnalogs(data: SummaryData): HTMLElement {
     const ranked = data.analogs.all;
     // One structure can be predicted in a thin series and in its coarser parent.
     const rankedKeys = new Set(ranked.map((row) => row.key));
     const thin = data.analogsThin.all.filter((row) => !rankedKeys.has(row.key));
     const fallback = ranked.length === 0 && thin.length === 0;
-    const spare = fallback ? data.analogsAny.all : [];
-    if (fallback && spare.length === 0) {
+    const rows = [...ranked, ...thin, ...(fallback ? data.analogsAny.all : [])];
+    const title = rows.length === 0 ? 'Worth making · none' :
+      `Worth making · ${count(rows.length)} analog${rows.length === 1 ? '' : 's'}`;
+    return this.section(title, ANALOGS_TIP,
+      () => this.analogBody(data, rows, new Set(thin.map((row) => row.key)), fallback), 'chem-sar-sum-making-block');
+  }
+
+  private analogBody(data: SummaryData, rows: SummaryRow[], thinKeys: Set<string>, fallback: boolean):
+    HTMLElement[] {
+    const host = this.kit.host;
+    const body: HTMLElement[] = [ui.divText('Ranked by gain over the best compound each series made. Predicted, ' +
+      'not measured: the additive model cannot see a cliff.', 'chem-sar-cp-hint')];
+    if (data.trustedNoStructure > 0) {
+      body.push(ui.divText(`${count(data.trustedNoStructure)} more predictions have no structure: add the ` +
+        'R-group column that fills their open attachment point.', 'chem-sar-cp-hint'));
+    }
+    if (rows.length === 0) {
       body.push(...this.kit.reason(!host.predictVirtual ?
         'Predicted analogs are off — turn on "Predict virtual analogs" to see what to make.' :
         `No prediction resting on ${MIN_LISTED_SUPPORT} or more measured compounds on both axes beats its ` +
         'series\' best measured compound.'));
-      return ui.divV(body, 'chem-sar-sum-making-block');
+      return body;
     }
     if (fallback) {
-      // The gate withholds confidence, not a next structure.
-      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it, among ' +
-        `predictions resting on ${MIN_LISTED_SUPPORT} or more measured compounds on both axes. ` +
+      body.push(ui.divText('Nothing clears the trust gate; these are the largest gains without it. ' +
         this.gateShortfall(data), 'chem-sar-sum-prose chem-sar-chip-partial'));
     }
 
-    const rows: AnalogRow[] = [...ranked.map((row): AnalogRow => ({row, evidence: 'ranked'})),
-      ...thin.map((row): AnalogRow => ({row, evidence: 'thin'})),
-      ...spare.map((row): AnalogRow => ({row, evidence: 'ungated'}))];
-    const structures = new Set(rows.map((r) => r.row.key)).size;
-    const series = new Set(rows.map((r) => r.row.matrix.id)).size;
-    const dropped = data.withheldBelowError + data.withheldThinSupport + data.withheldFitFails +
-      data.withheldUnchecked + data.withheldNotConverged;
-    const chips: HTMLElement[] = [
-      this.kit.badge(`${count(structures)} analog${structures === 1 ? '' : 's'} · ${count(series)} series`,
-        'Molecules, not cells: each structure is listed once.'),
-    ];
-    if (dropped > 0) {
-      chips.push(this.kit.badge(`${count(dropped)} dropped: ${count(data.withheldBelowError)} gain under ` +
-        `this series' own error · ${count(data.withheldThinSupport)} thin support`,
-      'A gain under the series\' own error cannot be told from what was made; thin support means fewer ' +
-      `than ${MIN_SUPPORT} measured compounds on an axis.`, true));
-    }
-    if (data.withheldFitFails > 0) {
-      chips.push(this.kit.badge(`${count(data.withheldFitFails)} in a fit checked and failed`,
-        `These series' own R² is below ${TRUST_R2}.`, true));
-    }
-    if (data.withheldUnchecked + data.withheldNotConverged > 0) {
-      chips.push(this.kit.badge(`${count(data.withheldUnchecked)} fit never checked · ` +
-        `${count(data.withheldNotConverged)} fit did not converge`,
-      'Unchecked: too few cells to verify, not wrong. Not converged: the fit stopped short of its ' +
-      'tolerance.', true));
-    }
-    if (data.alreadyHeld > 0) {
-      chips.push(this.kit.badge(`${count(data.alreadyHeld)} already in the table — see the block above`,
-        'The structure is one the table already carries, so this is an assay to run rather than a ' +
-        'synthesis.'));
-    }
-    body.push(ui.divH(chips, 'chem-sar-sum-chips'));
-
+    const bests = this.seriesBests(data);
+    const draw = (part: SummaryRow[]): HTMLElement[] => part.flatMap((row) => {
+      const best = bests.get(row.matrix.id) ?? null;
+      return this.row(row, best, this.kit.cellLocation(row.matrix, row.ri, row.ci), this.gainText(row, best),
+        // An ungated list says so once above it, so only a thin row among ranked ones is marked.
+        thinKeys.has(row.key) ? [this.kit.badge('thin', `The series has fewer than ${BEST_FIT_MIN_N} checkable ` +
+          'cells, so this is listed, not ranked.', true)] : [], '');
+    });
+    body.push(...draw(rows.slice(0, MAKING_ROWS)));
+    if (rows.length > MAKING_ROWS)
+      body.push(...this.kit.lazyFold(`${count(rows.length - MAKING_ROWS)} more`, () => draw(rows.slice(MAKING_ROWS))));
+    body.push(ui.divH([ui.button(rows.length === 1 ? 'Add it to Make list' : `Add all ${rows.length} to Make list`,
+      () => host.addCellsToMakeList(rows, 'Nothing to add.'))], 'chem-sar-sum-chips'));
     if (data.analogOverflow > 0) {
-      body.push(ui.divText(`Top ${count(ANALOG_LIST_MAX)} per list; ${count(data.analogOverflow)} more ` +
-        'qualified. Narrow the analysis to reach them.', 'chem-sar-cp-hint'));
+      body.push(ui.divText(`${count(data.analogOverflow)} more qualified past these; narrow the analysis to ` +
+        'reach them.', 'chem-sar-cp-hint'));
     }
-
-    body.push(ui.divH([
-      // "These", not "all": the list is capped.
-      ui.button(rows.length === 1 ? 'Add it to Make list' : `Add these ${rows.length} to Make list`,
-        () => host.addCellsToMakeList(rows.map((r) => r.row), 'Nothing to add.')),
-      ui.button('Add selected', () => host.addCellsToMakeList(this.selectedAnalogs(),
-        'Select rows in the list first.')),
-    ], 'chem-sar-sum-chips'));
-    if (thin.length > 0) {
-      body.push(ui.divText(ranked.length === 0 ?
-        'Thin evidence: every fit rests on fewer than ' + BEST_FIT_MIN_N + ' checkable cells; none is ranked.' :
-        `${count(thin.length)} rows marked thin rest on fewer than ${BEST_FIT_MIN_N} checkable cells.`,
-      'chem-sar-cp-hint'));
-    }
-    body.push(this.buildAnalogGrid(data, rows));
-    return ui.divV(body, 'chem-sar-sum-making-block');
+    return body;
   }
 
-  /** What the ungated candidates are short of; each cause calls for a different fix. */
+  private section(title: string, tip: string, fill: () => HTMLElement[], cls = ''): HTMLElement {
+    const [head, body] = this.kit.lazyFold(title, fill);
+    ui.tooltip.bind(head, tip);
+    return ui.divV([head, body], `chem-sar-sum-card ${cls}`.trim());
+  }
+
+  private seriesBests(data: SummaryData): Map<string, Best> {
+    return new Map(data.series.map((stat) => [stat.matrix.id, stat.best]));
+  }
+
+  private row(row: SummaryRow, best: Best, name: string, desc: string, badges: HTMLElement[],
+    approx: string): HTMLElement[] {
+    const host = this.kit.host;
+    const {matrix, ri, ci} = row;
+    const cell = matrix.cells[ri][ci];
+    const expand = this.kit.lazyBody(() => this.detail(row, best));
+    return [this.kit.summaryRow({
+      depiction: this.kit.depiction(cell.smiles),
+      name,
+      badges: [this.kit.badge(`n=${cell.support ?? 0}`, 'Measured compounds behind the prediction on the weaker ' +
+        'of its core and its substituent.'), ...badges],
+      desc,
+      value: `${approx}${host.formatActivity(cell.value!)}`,
+      caption: 'predicted',
+      cart: {matrix, ri, ci},
+      valueTip: 'Fitted core effect plus substituent effect; not measured.',
+      tip: 'Click to expand; the arrow opens it in the SAR Matrix.',
+      onClick: () => host.revealCell(matrix, ri, ci),
+      onChevron: expand.toggle,
+    }), expand.body];
+  }
+
+  private gainText(row: SummaryRow, best: Best): string {
+    if (best === null)
+      return 'its series has no measured compound';
+    const dir = this.kit.host.higherIsBetter ? 1 : -1;
+    const gain = dir * (row.matrix.cells[row.ri][row.ci].value! - best.value);
+    return `gain ${this.kit.formatEffect(gain)} over the best compound its series made`;
+  }
+
+  private detail(row: SummaryRow, best: Best): HTMLElement[] {
+    const {matrix, ri, ci} = row;
+    const real = (c: {kind: string} | undefined): boolean => c?.kind === 'real';
+    const coreN = matrix.cells[ri].filter(real).length;
+    const substN = matrix.cells.filter((cells) => real(cells[ci])).length;
+    const half = (smiles: string, label: string): HTMLElement => ui.divV([
+      this.kit.depiction(smiles), ui.divText(label, 'chem-sar-cp-hint')]);
+    const facts = [`${count(coreN)} with this core`, `${count(substN)} with this substituent`];
+    if (best !== null)
+      facts.push(`series best ${this.kit.host.formatActivity(best.value)}`);
+    return [ui.divH([half(matrix.rows[ri].keySmiles, 'core'), ui.divText('+', 'chem-sar-sum-arrow'),
+      half(matrix.columns[ci].substSmiles, 'substituent'), ui.divText(facts.join(' · '), 'chem-sar-cp-hint')],
+    'chem-sar-sum-pair chem-sar-sum-expand')];
+  }
+
   private gateShortfall(data: SummaryData): string {
     if (this.kit.host.matrices.every((matrix) => !matrix.confidence))
       return 'No series has a cross-validated fit, so none of them could be checked.';
@@ -187,60 +172,5 @@ export class SummaryMaking {
     if (data.withheldUnchecked > 0)
       parts.push(`${count(data.withheldUnchecked)} sit in a series with too few cells to check`);
     return parts.length === 0 ? '' : `Of what was withheld, ${parts.join('; ')}.`;
-  }
-
-  private selectedAnalogs(): MatrixCellRef[] {
-    const grid = this.analogGrid;
-    if (grid === null)
-      return [];
-    const selection = grid.dataFrame.selection;
-    return this.analogSources.filter((_ref, i) => selection.get(i));
-  }
-
-  /** A grid, so the list can be sorted, filtered and sent to the Make list. */
-  private buildAnalogGrid(data: SummaryData, rows: AnalogRow[]): HTMLElement {
-    const host = this.kit.host;
-    const dir = host.higherIsBetter ? 1 : -1;
-    const best = new Map(data.series.map((s) => [s.matrix.id, s.best]));
-    const items = rows.map(({row, evidence}) => {
-      const {matrix, ri, ci} = row;
-      const cell = matrix.cells[ri][ci];
-      const anchor = best.get(matrix.id) ?? null;
-      // Nullable: an ungated row can come off a series whose fit was never cross-validated at all.
-      return {matrix, ri, ci, cell, evidence, conf: matrix.confidence ?? null,
-        gain: anchor === null ? 0 : dir * (cell.value! - anchor.value)};
-    });
-    type Item = typeof items[number];
-    const {FLOAT, INT, STRING} = DG.COLUMN_TYPE;
-    const spec: [string, DG.ColumnType, (item: Item) => string | number | null, string?][] = [
-      ['Analog', STRING, (it) => it.cell.smiles ?? '', 'Not in this dataset, which is not the same as never made.'],
-      ['Predicted', FLOAT, (it) => it.cell.value!, 'Fitted core effect plus substituent effect; not measured.'],
-      ['Gain', FLOAT, (it) => it.gain, 'Over the best measured compound of the same series.'],
-      ['Gain / error', FLOAT, (it) => it.evidence !== 'ranked' || !it.conf?.rmse ? null : it.gain / it.conf.rmse,
-        'The ranking: gain in multiples of the series\' own error. Under 1 it is within noise.'],
-      ['n', INT, (it) => it.cell.support ?? 0,
-        'Measured compounds on the weaker of this core and this substituent.'],
-      ['Series', STRING, (it) => it.matrix.label],
-      ['Evidence', STRING, (it) => it.evidence, `"thin": fewer than ${BEST_FIT_MIN_N} checkable cells, so ` +
-        'listed, not ranked. "ungated": cleared no gate, shown because nothing else did.'],
-    ];
-    const frame = DG.DataFrame.fromColumns(spec.map(([name, type, value, description]) => {
-      const column = DG.Column.fromList(type, name, items.map(value));
-      if (description !== undefined)
-        column.setTag(DG.TAGS.DESCRIPTION, description);
-      return column;
-    }));
-    frame.col('Analog')!.semType = DG.SEMTYPE.MOLECULE;
-
-    this.analogSources = items;
-    const grid = moleculeGrid(frame, [['Analog', ANALOG_W]]);
-    this.analogGrid = grid;
-    // A click, not the current row: the grid sets its current row itself while it is built.
-    this.analogSub = grid.onCellClick.subscribe((cell: DG.GridCell) => {
-      const at = cell.tableRowIndex ?? -1;
-      if (at >= 0 && at < items.length)
-        host.revealCell(items[at].matrix, items[at].ri, items[at].ci);
-    });
-    return ui.div([grid.root], 'chem-sar-sum-analog-grid');
   }
 }

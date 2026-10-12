@@ -65,10 +65,12 @@ export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayL
   const colN = new Int32Array(columnCount);
   const observed = obsVal.length;
   let grandSum = 0;
+  let sumSq = 0;
   for (let k = 0; k < observed; k++) {
     rowN[obsRow[k]]++;
     colN[obsCol[k]]++;
     grandSum += obsVal[k];
+    sumSq += obsVal[k] * obsVal[k];
   }
 
   const grandMean = observed ? grandSum / observed : 0;
@@ -85,6 +87,8 @@ export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayL
   const rowEffect = new Float64Array(rowCount);
   const colEffect = new Float64Array(columnCount);
   let converged = observed === 0;
+  let lastShift = 0;
+  let remaining = Infinity;
   for (let iteration = 0; iteration < maxSweeps; iteration++) {
     rowAcc.fill(0);
     for (let k = 0; k < observed; k++)
@@ -108,7 +112,15 @@ export function fitAdditiveFromTriples(obsRow: ArrayLike<number>, obsCol: ArrayL
       converged = true;
       break;
     }
+    // The sweeps converge geometrically, so the distance left to the fixed point is shift·r/(1−r).
+    const rate = lastShift > 0 ? shift / lastShift : 1;
+    remaining = rate < 1 ? shift * rate / (1 - rate) : Infinity;
+    lastShift = shift;
   }
+  // A sparse design can need thousands of sweeps to reach the fixed step while already sitting a
+  // negligible share of the data's spread from its answer; that is converged for every comparison made.
+  if (!converged)
+    converged = remaining < FIT_TOLERANCE_SD * Math.sqrt(Math.max(0, sumSq / observed - grandMean ** 2));
   return {grandMean, rowEffect, colEffect, rowN, colN, observed, converged};
 }
 
@@ -232,6 +244,9 @@ export const MAX_MATRIX_COLS = 500;
 const MAX_FIT_SWEEPS = 50;
 /** Largest column-effect move that still counts as converged, well under any activity unit in use. */
 const FIT_TOLERANCE = 1e-9;
+/** Distance left to the fixed point, as a share of the observed values' SD, that a capped fit may still be
+ *  off by and count as converged. */
+const FIT_TOLERANCE_SD = 1e-3;
 
 /** Claim a cell for a compound the set holds but has no activity for, so `fillVirtualCells` cannot
  *  predict it and offer it as one to make. Never over a measured cell: two members can share a slot,

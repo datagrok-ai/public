@@ -209,7 +209,7 @@ export class MatrixPainter {
     // Host-grid link: a selected row's cell gets a blue ring.
     if (cell.molIdx !== null && this.host.dataFrame.selection.get(cell.molIdx)) {
       g.lineWidth = 2;
-      g.strokeStyle = cssColor(this.host.root, '--blue-1', '#2083d5');
+      g.strokeStyle = cssColor(this.host.root, '--blue-2', '#50a9c5');
       g.strokeRect(b.x + 1, b.y + 1, b.width - 2, b.height - 2);
     }
   }

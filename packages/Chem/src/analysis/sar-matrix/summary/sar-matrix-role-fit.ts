@@ -1,36 +1,23 @@
-/**
- * One additive (Free-Wilson) fit over every component column at once, `y ≈ μ + Σ_r θ_r(value)`, so every
- * value of every component lands on one scale. Only valid where a value means the same in every row —
- * a named column, not a label found by fragmenting, which is local to its own series.
- */
+/* Free-Wilson fit; valid only for named columns, not fragmentation labels, which are local to one series. */
 
-/** The ridge, as `acc / (count + prior)`: one notional compound at the library average per level.
- *  Unpenalised, nearly aliased components grow offsets that cancel in prediction, and the spread then
- *  reports noise as signal. */
+/** Ridge prior: unpenalised, near-aliased components grow offsets that cancel in prediction and read as spread. */
 const ROLE_FIT_PRIOR = 1;
 /** Offsets are read at two decimals, so this is four orders below anything on screen. */
 const ROLE_FIT_TOLERANCE = 1e-6;
 /** A near-aliased design needs hundreds of sweeps; stopping short silently reorders the components. */
 export const ROLE_FIT_MAX_SWEEPS = 2000;
-/** Floor under the size-aware cap. A run that hits it reports itself unconverged, which suppresses the
- *  ranking rather than mis-stating it. */
+/** A run that hits this floor reports itself unconverged, suppressing the ranking rather than mis-stating it. */
 const ROLE_FIT_MIN_SWEEPS = 50;
-/** Sweeps scale with collinearity, not rows, so bounding rows alone refuses large easy tables and
- *  admits small expensive ones. */
+/** Sweeps scale with collinearity, not rows, so a row cap alone refuses large easy tables. */
 const ROLE_FIT_WORK_BUDGET = 40_000_000;
 const ROLE_CV_FOLDS = 5;
-/** Below this many held-out points an R² is noise rather than a quality. */
 const ROLE_MIN_CV_POINTS = 4;
 
 export interface RoleDesign {
-  /** Role column names, core first. */
   names: string[];
-  /** values[r][k]: component r's value on measured cell k. */
   values: string[][];
   activity: number[];
-  /** Source-table row of each observation; the cross-validation folds key on it. */
   molIdx: number[];
-  /** Observations a level needs before its offset is readable. */
   minSupport: number;
   /** Only orders `levels` best-first; the fit itself is in the column's own units. */
   higherIsBetter: boolean;
@@ -42,7 +29,6 @@ export interface RoleLevel {
   n: number;
 }
 
-/** Two clusters of values separated by more than the fit can resolve. */
 interface RoleSplit {
   gap: number;
   hiCount: number; hiMean: number; hiN: number;
@@ -51,24 +37,21 @@ interface RoleSplit {
 
 export interface RoleSummary {
   name: string;
-  /** Levels carrying at least `minSupport` observations, best first. */
   levels: RoleLevel[];
-  /** Levels carrying any observation at all, and how many of those are below the support floor. */
   fitted: number;
   thin: number;
-  /** Count-weighted sd of this role's offsets with estimation noise subtracted. */
+  /** Estimation noise subtracted. */
   spread: number;
-  /** Correlation of the offsets between two halves of the table; null below three comparable levels. */
+  /** Correlation of the offsets between two halves of the table. */
   repeat: number | null;
   split: RoleSplit | null;
 }
 
 export interface RoleFit {
   roles: RoleSummary[];
-  /** Count-weighted mean activity of the fitted compounds — what every offset is read against. */
   mean: number;
   compounds: number;
-  /** Observations outside the largest connected component, which are not fitted. */
+  /** Outside the largest connected component, so not fitted. */
   dropped: number;
   sweeps: number;
   converged: boolean;
@@ -77,7 +60,7 @@ export interface RoleFit {
   cvRmse: number | null;
 }
 
-/** One backfit over `rows`, on the caller's level codes so a subset refit compares level for level. */
+/** On the caller's level codes so a subset refit compares level for level. */
 interface Backfit {
   mu: number;
   theta: Float64Array[];
@@ -131,8 +114,7 @@ function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
         weighted += n[v] * acc[v];
         total += n[v];
       }
-      // The prior shifts the whole component by a constant: fold it into the intercept, and measure the
-      // movement after re-centring, or it plateaus at that constant and never converges.
+      // Re-centre before measuring movement: the prior's constant shift would otherwise never converge.
       const shift = total ? weighted / total : 0;
       mu += shift;
       for (let v = 0; v < acc.length; v++) {
@@ -153,7 +135,6 @@ function backfit(codes: Int32Array[], levelCounts: number[], y: Float64Array,
   return {mu, theta, counts, fitted, sweeps, converged};
 }
 
-/** Pearson correlation weighted by each level's support. */
 function weightedCorrelation(xs: number[], ys: number[], weights: number[]): number | null {
   let total = 0;
   let mx = 0;
@@ -243,7 +224,6 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
       keep.push(k);
   }
 
-  // Every fit runs over the kept rows, so a level only in a dropped block has a count of zero below.
   const m = keep.length;
   const levelCounts = levelValues.map((values) => values.length);
   const y = Float64Array.from(design.activity);
@@ -294,8 +274,7 @@ export function fitRoleEffects(design: RoleDesign): RoleFit | null {
     }
   }
 
-  // Prediction can be unique while the split of credit between components is not; refitting each half
-  // of the table checks the split.
+  // Prediction can be unique while the split of credit between components is not; the halves check it.
   const halves = [0, 1].map((half) =>
     backfit(codes, levelCounts, y, Int32Array.from(keep.filter((k) => mol[k] % 2 === half))));
 

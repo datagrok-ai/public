@@ -7,7 +7,7 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {MmpFragments} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-misc';
 import {buildMatchedSeries, clusterRelatedCores} from '../analysis/sar-matrix/build/sar-matrix-clustering';
-import {assembleSinglePositionMatrix, fitAdditiveModel,
+import {assembleSinglePositionMatrix, fitAdditiveFromTriples, fitAdditiveModel,
   linkStaged} from '../analysis/sar-matrix/build/sar-matrix-assemble';
 import {checkAgainstMolecules, cutWarning, decomposeByColumns, defaultAxis, holdsFragments, SarFragmentColumns,
   standardizeFragment}
@@ -19,8 +19,8 @@ import {SarRankScheme} from '../analysis/sar-matrix/build/sar-matrix-ranking';
 import {fitRoleEffects, RoleDesign, RoleFit, RoleSummary, ROLE_FIT_MAX_SWEEPS}
   from '../analysis/sar-matrix/summary/sar-matrix-role-fit';
 import {SummaryCollector, SummaryHost} from '../analysis/sar-matrix/summary/sar-matrix-summary-data';
+import {SERIES_FIT_SWEEPS} from '../analysis/sar-matrix/summary/sar-matrix-summary-types';
 import {SummaryPanel} from '../analysis/sar-matrix/summary/sar-matrix-summary-panel';
-import {PANE_EFFECTS} from '../analysis/sar-matrix/summary/sar-matrix-summary-common';
 import {runSarMatrix, SarGrouping, SarMatrixParams} from '../analysis/sar-matrix/build/sar-matrix-run';
 import {SCALING_METHODS} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-constants';
 import {computeAllTransfers, spearman, transferStats} from '../analysis/sar-matrix/transfer/sar-matrix-transfer';
@@ -1157,6 +1157,27 @@ category('SAR Matrix: R-group columns', () => {
     expect(bridged!.rows.every((row) => !row.keySmiles.includes('[*:100]') && !row.keySmiles.includes('[*:101]')),
       true, 'their bridge is closed in every row');
   }, {timeout: 300000});
+
+  test('SPGI: every series fit converges within the Summary\'s sweep cap', async () => {
+    const df = await spgiWithCore();
+    const matrices = await runSarMatrix(df.col('Structure')!, df.col('Average Mass') as DG.Column<number>,
+      {...e2eParams(false), minCompounds: 3, fragmentColumns: spgiColumns(df)});
+    for (const matrix of matrices) {
+      const rows: number[] = [];
+      const cols: number[] = [];
+      const values: number[] = [];
+      matrix.cells.forEach((row, ri) => row.forEach((cell, ci) => {
+        if (cell.kind === 'real' && cell.value !== null) {
+          rows.push(ri);
+          cols.push(ci);
+          values.push(cell.value);
+        }
+      }));
+      const fit = fitAdditiveFromTriples(rows, cols, values, matrix.rows.length, matrix.columns.length,
+        SERIES_FIT_SWEEPS);
+      expect(fit.converged, true, `${matrix.label}: ${matrix.rows.length} × ${matrix.columns.length}`);
+    }
+  }, {timeout: 300000});
   // ---- One additive fit over every role column ---------------------------------------------------
 
   const CORE_EFFECT: {[value: string]: number} = {C1: 0.3, C2: 0.0, C3: -0.3};
@@ -1497,7 +1518,6 @@ category('SAR Matrix: R-group columns', () => {
     coresAreSeries: matrices.length > 0 &&
       matrices.every((m) => new Set(m.rows.map((r) => r.coreSmiles)).size === 1),
     roleColumns: [],
-    setColumnAxis: () => {},
     predictVirtual: true,
     predictUnmeasured: true,
     computing: false,
@@ -1519,17 +1539,19 @@ category('SAR Matrix: R-group columns', () => {
       panel.activateSummaryTab();
       // Collection runs off the activation stack so the loader can paint.
       await delay(50);
-      panel.showPane(PANE_EFFECTS);
-      const pane = Array.from(panel.root.querySelectorAll('.chem-sar-sum-pane'))
-        .find((el) => el.childElementCount > 0);
-      expect(pane !== undefined, true, 'the Effects section must be built');
-      const titles = Array.from(pane!.querySelectorAll('.chem-sar-sum-card > .chem-sar-cp-section-title'))
-        .map((el) => el.textContent ?? '');
-      // A substituent label discovered by fragmentation is local to its own series, so there is no
-      // scale on which one global offset could be read and the cards are absent rather than empty.
-      expect(titles.some((t) => t.includes('offsets from the additive fit')), false,
-        `a role card rendered without a fragment column: ${titles.join(' | ')}`);
-      expect(titles.length, 3, `Effects holds its three original cards, got ${titles.join(' | ')}`);
+      // A substituent label discovered by fragmentation is local to its own series, so there is no scale on
+      // which one global effect could be read: the Overview shows the three tiles, not the component table.
+      expect(panel.root.querySelector('.chem-sar-sum-comp') === null, true, 'no component table');
+      const tiles = Array.from(panel.root.querySelectorAll<HTMLElement>('.chem-sar-sum-answer'));
+      expect(tiles.length, 3, 'the three answer tiles');
+      const opened = tiles.map((tile) => {
+        tile.click();
+        return panel.root.querySelector('.chem-sar-sum-detail .chem-sar-cp-section-title')?.textContent ??
+          panel.root.querySelector('.chem-sar-sum-detail')?.textContent ?? '';
+      });
+      expect(opened.every((text) => text !== ''), true, `every tile opens its evidence: ${opened.join(' | ')}`);
+      expect(opened.some((text) => text.includes('vs the average compound')), false,
+        `a role card opened without a fragment column: ${opened.join(' | ')}`);
     } finally {
       panel.release();
     }

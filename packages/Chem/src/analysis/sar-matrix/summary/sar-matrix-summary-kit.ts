@@ -1,23 +1,16 @@
-/* The building blocks every Summary segment draws with — rows, badges, depictions, number formats —
-   and the rankings more than one segment reads. The panel extends this. */
 import * as ui from 'datagrok-api/ui';
 import {SarMatrix} from '../sar-matrix-types';
 import {MIN_SUPPORT, SeriesStat, SummaryData, SummaryHost, SUM_ROWS, TRUST_R2} from './sar-matrix-summary-data';
-import {chipBadge, CORE_BG_ARGB, isStructure, MatrixCellRef, paintMoleculeOnColor, STRIP_MOL_H,
-  STRIP_MOL_W, tipText} from '../sar-matrix-ui-common';
+import {chipBadge, CORE_BG_ARGB, isStructure, MatrixCellRef, paintMoleculeOnColor, SUM_MOL_H,
+  SUM_MOL_W, tipText} from '../sar-matrix-ui-common';
 
 export class SummaryKit {
-  /** Depictions waiting for the tick after the pane lands. */
   pendingPaints: (() => void)[] = [];
-  /** The fold tier every ranking on the tab reads, or null for all. It picks which matrices are walked;
-   *  nothing is rebuilt. */
+  /** Tier the summary is read at; null for all. */
   protected tierFilter: number | null = null;
 
   constructor(readonly host: SummaryHost) {}
 
-  // ---- Elements ----------------------------------------------------------------------------------------
-
-  /** Every clickable row on the tab, styled as a navigator card. */
   summaryRow(opts: {
     depiction: HTMLElement | null,
     name: string,
@@ -32,7 +25,7 @@ export class SummaryKit {
     cart?: MatrixCellRef,
     tip: string,
     onClick: () => void,
-    /** Makes the chevron a toggle of its own rather than a repeat of the row's click. */
+    /** Makes a click on the row expand it; without it the row is still and only the open button acts. */
     onChevron?: () => void,
   }): HTMLElement {
     const value = ui.divText(opts.value,
@@ -61,21 +54,26 @@ export class SummaryKit {
       parts.push(cart);
     }
     const toggle = opts.onChevron;
-    const go = toggle === undefined ? ui.iconFA('chevron-right') :
-      ui.iconFA('chevron-down', (e: MouseEvent) => {
-        e.stopPropagation();
-        toggle();
-      }, 'What is worth opening this series for');
-    go.classList.add('chem-sar-card-twisty');
-    parts.push(go);
+    const open = ui.iconFA('arrow-circle-right', (e: MouseEvent) => {
+      e.stopPropagation();
+      opts.onClick();
+    }, toggle === undefined ? opts.tip : 'Open in the SAR Matrix');
+    open.classList.add('chem-sar-struct-icon');
+    parts.push(open);
+    if (toggle === undefined)
+      return ui.divH(parts, 'chem-sar-card chem-sar-sum-static');
+    const twisty = ui.iconFA('chevron-down');
+    twisty.classList.add('chem-sar-card-twisty');
+    parts.push(twisty);
     const row = ui.divH(parts, 'chem-sar-card');
     ui.tooltip.bind(row, () => opts.tip);
-    row.onclick = opts.onClick;
+    row.onclick = toggle;
     return row;
   }
 
   /** Canvas now, RDKit on the next tick, so a tab switch is not held up by drawing. */
-  depiction(smiles: string | null, w: number, h: number): HTMLElement {
+  depiction(smiles: string | null): HTMLElement {
+    const [w, h] = [SUM_MOL_W, SUM_MOL_H];
     const canvas = ui.canvas(w, h);
     canvas.classList.add('chem-sar-card-core');
     if (smiles) {
@@ -105,7 +103,7 @@ export class SummaryKit {
     return chipBadge(text, tip, partial ? 'chem-sar-chip-partial' : '');
   }
 
-  /** Whether this series' fit was checked and held. No confidence means unchecked, not failing. */
+  /** No confidence means unchecked, not failing. */
   trustBadge(matrix: SarMatrix): HTMLElement {
     const conf = matrix.confidence;
     return this.badge(!conf ? 'unchecked' : `R² ${conf.r2.toFixed(2)}`, !conf ?
@@ -114,48 +112,40 @@ export class SummaryKit {
       `${conf.r2 >= TRUST_R2 ? 'holds' : 'does not hold'} at R² ${TRUST_R2}.`, !!conf && conf.r2 < TRUST_R2);
   }
 
-  /** Two structures and the glyph between them: the shape every swap is drawn in. */
-  pairArt(from: string, to: string, cls: string, glyph = '→', w = STRIP_MOL_W, h = STRIP_MOL_H): HTMLElement {
-    return ui.divH([this.depiction(from, w, h), ui.divText(glyph, 'chem-sar-sum-arrow'), this.depiction(to, w, h)],
-      cls);
+  pairArt(from: string, to: string, glyph = '→'): HTMLElement {
+    return ui.divH([this.depiction(from), ui.divText(glyph, 'chem-sar-sum-arrow'), this.depiction(to)],
+      'chem-sar-sum-pair');
   }
 
-  /** The substituent a tile's conclusion is about, drawn; undefined where there is no single one. */
   answerArt(smiles: string | null): HTMLElement | undefined {
-    return smiles ? this.depiction(smiles, STRIP_MOL_W, STRIP_MOL_H) : undefined;
+    return smiles ? this.depiction(smiles) : undefined;
   }
 
-  /** A statement on the pane, with its qualification on the hover. */
   prose(text: string, tip: string): HTMLElement {
     return tipText(text, 'chem-sar-sum-prose', tip);
   }
 
-  /** The same, in the faint style a row uses for its trailing clause. */
   hint(text: string, tip: string): HTMLElement {
     return tipText(text, 'chem-sar-cp-hint', tip);
   }
 
-  /** Why a card has no rows; the card still renders, so finding nothing is visible. */
   reason(text: string): HTMLElement[] {
     return [ui.divText(text, 'chem-sar-cp-hint')];
   }
 
-  /** A chevron heading that shows and hides `body`; the caller owns whatever else sits on the row. */
-  foldHead(title: string, body: HTMLElement, open: boolean, cls = '',
-    onToggle?: (open: boolean) => void): HTMLElement {
-    const icon = ui.iconFA(open ? 'chevron-down' : 'chevron-right');
+  /** A closed fold whose body is built on its first opening. */
+  lazyFold(title: string, fill: () => HTMLElement[]): [HTMLElement, HTMLElement] {
+    const lazy = this.lazyBody(fill);
+    const icon = ui.iconFA('chevron-right');
     icon.classList.add('chem-sar-card-twisty');
-    body.style.display = open ? '' : 'none';
-    const head = ui.divH([icon, ui.divText(title, 'chem-sar-cp-section-title')],
-      `chem-sar-sum-fold ${cls}`.trim());
+    const head = ui.divH([icon, ui.divText(title, 'chem-sar-cp-section-title')], 'chem-sar-sum-fold');
     head.onclick = () => {
-      const show = body.style.display === 'none';
-      body.style.display = show ? '' : 'none';
-      icon.classList.toggle('fa-chevron-down', show);
-      icon.classList.toggle('fa-chevron-right', !show);
-      onToggle?.(show);
+      lazy.toggle();
+      const open = lazy.body.style.display !== 'none';
+      icon.classList.toggle('fa-chevron-down', open);
+      icon.classList.toggle('fa-chevron-right', !open);
     };
-    return head;
+    return [head, lazy.body];
   }
 
   /** A body filled on its first opening, so an expand nobody opens draws nothing. */
@@ -181,21 +171,13 @@ export class SummaryKit {
     return {body, open, toggle};
   }
 
-  anchored(el: HTMLElement, anchor: string): HTMLElement {
-    el.dataset.anchor = anchor;
-    return el;
-  }
-
-  // ---- Text --------------------------------------------------------------------------------------------
-
   /** Signed, at two decimals: effects live in tenths, where one decimal makes distinct rows read alike. */
   formatEffect(value: number): string {
     const abs = Math.abs(value);
     return `${value < 0 ? '−' : '+'}${abs < 10 ? abs.toFixed(2) : abs.toFixed(1)}`;
   }
 
-  /** A measured difference: a signed log difference on a log scale, otherwise a fold. A loss is written
-   *  as a reciprocal fold, since 10^value rounds every large loss to "0.0×". */
+  /** A loss is a reciprocal fold, since 10^value rounds every large loss to "0.0×". */
   formatDelta(value: number): string {
     if (this.host.activityIsLog)
       return this.formatEffect(value);
@@ -212,9 +194,7 @@ export class SummaryKit {
     return `Open ${this.cellLocation(matrix, ri, ci)} in the SAR Matrix`;
   }
 
-  // ---- Readings more than one segment shares -----------------------------------------------------------
-
-  /** Whether the front-runner leads by more than the model error, so it may be named alone. */
+  /** A front-runner is named alone only when it clears the model error. */
   leads(first: number | null, second: number | null, modelError: number | null): boolean {
     if (second === null)
       return true;
@@ -223,7 +203,6 @@ export class SummaryKit {
     return first - second > (modelError ?? 0);
   }
 
-  /** Why the whole fit cannot be read, or null when it can. */
   roleFitRefusal(data: SummaryData): string | null {
     const fit = data.roleFit;
     if (fit === null) {
@@ -231,7 +210,7 @@ export class SummaryKit {
         'there is nothing to compare.';
     }
     if (!fit.converged) {
-      return `The fit did not settle within ${fit.sweeps} passes. Each component's offsets are ` +
+      return `The fit did not settle within ${fit.sweeps} passes. Each component's effects are ` +
         'still shrunk toward zero by a different amount and cannot be compared, so nothing is ranked.';
     }
     if (fit.cvR2 === null)
@@ -239,7 +218,7 @@ export class SummaryKit {
 
     if (fit.cvR2 < TRUST_R2) {
       return `Cross-validated R² ${fit.cvR2.toFixed(2)}, below ${TRUST_R2}: the components do not predict ` +
-        'unseen compounds, so the offsets are not ranked.';
+        'unseen compounds, so the effects are not ranked.';
     }
     return null;
   }
@@ -261,7 +240,6 @@ export class SummaryKit {
       .slice(0, SUM_ROWS);
   }
 
-  /** The tier ranked by default: the one with the most cores. */
   private defaultCoreTier(data: SummaryData): number | null {
     const tiers = this.coreTiers(data);
     if (tiers.length === 0)
@@ -271,7 +249,6 @@ export class SummaryKit {
     return tiers.reduce((best, tier) => counts.get(tier)! > counts.get(best)! ? tier : best, tiers[0]);
   }
 
-  /** The fold tiers that carry rankable cores, shallowest first. */
   coreTiers(data: SummaryData): number[] {
     return [...new Set(this.rankableCores(data).map((stat) => stat.tier))].sort((a, b) => a - b);
   }
