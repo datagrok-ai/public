@@ -8,7 +8,7 @@ import {isApprover} from '../portal';
 import {workspaceOrphans} from '../workspace';
 import {parkedFoldersOf, parkOrphans, summarizeParkResult, unparkFolder} from '../parking';
 import {installStyles} from './styles';
-import {openDialog, PortalDialog} from './u2-controls';
+import {linkTo, openDialog, PortalDialog} from './u2-controls';
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -54,10 +54,10 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
       'Only the portfolio\'s approvers park folders';
     const orphans = report.orphans.map((o) => {
       const key = slug(o.path.split('/').pop() ?? o.id);
-      const one = named(span('Park', approver ? 'pp-link' : 'pp-muted'), `park-orphan-${key}`);
-      one.title = approver ? `Move it into _Parked/<today> under ${report.root}` : 'Only the portfolio\'s approvers park folders';
-      if (approver)
-        one.onclick = () => parkSome([o.id]);
+      const one = approver ? linkTo('Park', `park-orphan-${key}`, () => parkSome([o.id]),
+        {title: `Move it into _Parked/<today> under ${report.root}`}) : named(span('Park', 'pp-muted'), `park-orphan-${key}`);
+      if (!approver)
+        one.title = 'Only the portfolio\'s approvers park folders';
       return named(divH([badge(o.kind === 'park' ? 'program ended' : 'unclaimed', {variant: o.kind === 'park' ? 'warning' : 'default'}),
         span(o.path), span(o.reason, 'pp-muted'), one], 'pp-unit'), `orphan-${key}`);
     });

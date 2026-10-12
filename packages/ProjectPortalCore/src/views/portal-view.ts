@@ -95,7 +95,7 @@ import {
   Anchor, decisionsCiting, plainMentions, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl,
 } from '../model/discussion';
 import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
-import {area, check, choice, choiceValue, composer, labelled, table, text} from './u2-controls';
+import {area, check, choice, choiceValue, composer, labelled, linkTo, table, text} from './u2-controls';
 import {programAddress} from '../model/pinning';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
@@ -392,9 +392,8 @@ export class PortalView {
     const model = this.models.get(p.stage_model_id);
     const back: HTMLElement[] = [];
     if (this.severalPortfolios) {
-      const toLanding = named(span('Portfolios ›', 'pp-link'), 'portfolios-link');
-      toLanding.title = 'Back to the choice of portfolio';
-      toLanding.onclick = () => this.showLanding();
+      const toLanding = linkTo('Portfolios ›', 'portfolios-link', () => this.showLanding(),
+        {title: 'Back to the choice of portfolio'});
       back.push(toLanding);
     }
     const header = named(divH([
@@ -1084,9 +1083,8 @@ export class PortalView {
   private recommendation(r: ProgramRecommendation): HTMLElement[] {
     const out: HTMLElement[] = [];
     const modelLink = (code: string, name: string, prefix = 'recommended-card') => {
-      const link = named(span(name, 'pp-link'), `${prefix}-${slug(code)}`);
-      link.title = 'Open the model card';
-      link.onclick = () => void showModelCard(code);
+      const link = linkTo(name, `${prefix}-${slug(code)}`, () => void showModelCard(code),
+        {title: 'Open the model card'});
       return link;
     };
     if (r.missing.length) {
@@ -1203,10 +1201,9 @@ export class PortalView {
       named(badge(`${x.items.length} ${x.name}`, {variant: variant(x.severity)}), `attention-rule-${slug(x.code)}`)),
     'pp-card-meta'), 'attention-rules');
     const items = r.items.map((it) => {
-      const link = named(span(it.item, 'pp-link'), `attention-open-${slug(it.item)}`);
-      link.title = 'Open the program data at this row';
-      link.onclick = () => void openAttentionItem(portfolioCode, programCode, it.item, flagged)
-        .catch((e) => grok.shell.error(e?.message ?? String(e)));
+      const link = linkTo(it.item, `attention-open-${slug(it.item)}`,
+        () => void openAttentionItem(portfolioCode, programCode, it.item, flagged)
+        .catch((e) => grok.shell.error(e?.message ?? String(e))), {title: 'Open the program data at this row'});
       return named(divV([
         divH([link, ...it.rules.map((code) => badge(nameOf.get(code) ?? code,
           {variant: variant(r.rules.find((x) => x.code === code)!.severity)}))], 'pp-unit'),
@@ -1223,13 +1220,13 @@ export class PortalView {
       if (!ctx)
         return [];
       const on = this.follows.some((f) => f.work_unit_kind === 'series' && f.work_unit_code === code);
-      const b = named(span(on ? 'Unfollow' : 'Follow', 'pp-link'), `follow-series-${slug(code)}`);
-      b.title = on ? 'Stop being notified of new data in this series' : 'Be notified when new results land in this series';
-      b.onclick = () => void this.toggleFollow(ctx, {kind: 'series', code}).catch(this.failed);
+      const b = linkTo(on ? 'Unfollow' : 'Follow', `follow-series-${slug(code)}`,
+        () => void this.toggleFollow(ctx, {kind: 'series', code}).catch(this.failed),
+        {title: on ? 'Stop being notified of new data in this series' : 'Be notified when new results land in this series'});
       // what is new in the series: the Activity section narrowed to it
-      const a = named(span('Activity', 'pp-link'), `series-activity-${slug(code)}`);
-      a.title = 'What happened in this series: its work-unit changes, new data and compound roles';
-      a.onclick = () => void this.setFeedSeries(ctx, code, true).catch(this.failed);
+      const a = linkTo('Activity', `series-activity-${slug(code)}`,
+        () => void this.setFeedSeries(ctx, code, true).catch(this.failed),
+        {title: 'What happened in this series: its work-unit changes, new data and compound roles'});
       return [b, a];
     };
     const unitVariant = (s?: string): BadgeVariant => ['active', 'running', 'in_development'].includes(s ?? '') ?
@@ -1277,12 +1274,11 @@ export class PortalView {
    * a click), the stage at run, unit operation, run type, purpose, author's date. */
   private savedRuns(items: SavedRunItem[]): HTMLElement {
     return named(divV(items.map(({run, model, stage, unitOperation, runType}) => {
-      const modelLink = named(span(model?.name ?? run.model_name, model ? 'pp-link' : 'pp-muted'),
-        `model-link-${slug(run.model_name)}`);
-      if (model) {
-        modelLink.title = 'Open the model card';
-        modelLink.onclick = () => void showModelCard(model.code);
-      } else
+      const modelLink = model ?
+        linkTo(model.name, `model-link-${slug(run.model_name)}`,
+          () => void showModelCard(model.code), {title: 'Open the model card'}) :
+        named(span(run.model_name, 'pp-muted'), `model-link-${slug(run.model_name)}`);
+      if (!model)
         modelLink.title = 'Not in the model catalogue';
       return named(divV([
         span(run.title ?? run.run_id ?? run.model_name),
@@ -1426,18 +1422,17 @@ export class PortalView {
       return b;
     };
     const line = (row: DocumentRow, name: string) => {
-      const open = named(span(describeDocument({title: row.title, version: row.doc_version, status: row.status as DocumentStatus}),
-        row.status === 'superseded' ? 'pp-link pp-gap' : 'pp-link'), `${name}-open`);
-      open.title = row.path;
-      open.onclick = () => void openDocumentFile(row).catch(failed);
+      const open = linkTo(describeDocument({title: row.title, version: row.doc_version, status: row.status as DocumentStatus}),
+        `${name}-open`, () => void openDocumentFile(row).catch(failed),
+        {cls: row.status === 'superseded' ? 'pp-gap' : undefined, title: row.path});
       const items: HTMLElement[] = [open, this.provenanceLink('document', row.id, `provenance-${name}`),
         ...this.anchorLinks({kind: 'document', id: row.id, label: describeDocument({title: row.title, version: row.doc_version,
           status: row.status as DocumentStatus})}, name)];
       // a generated evidence table (F-40) opens as a table too
       if (generatedOf(row)) {
-        const table = named(span('Table', 'pp-link'), `table-${name}`);
-        table.title = 'Open the evidence table this document was generated with';
-        table.onclick = () => void evidenceTableOf(row).then((df) => grok.shell.addTableView(df)).catch(failed);
+        const table = linkTo('Table', `table-${name}`,
+          () => void evidenceTableOf(row).then((df) => grok.shell.addTableView(df)).catch(failed),
+          {title: 'Open the evidence table this document was generated with'});
         items.push(table);
         // its evidence changed since it was written: stale, and a new version offered (F-41)
         const changes = d.changes?.get(row.id) ?? [];
@@ -1446,28 +1441,24 @@ export class PortalView {
           const why = named(span(describeChanges(changes), 'pp-gap'), `${name}-changes`);
           items.push(why);
           if (canLink && row.status !== 'submitted') {
-            const again = named(span('Regenerate', 'pp-link'), `regenerate-${name}`);
-            again.title = 'Generate the table again from the evidence now, as a new draft version';
-            again.onclick = () => void generateEvidenceTableFor(program, generatedOf(row)!.criterion).then((r) => {
+            const again = linkTo('Regenerate', `regenerate-${name}`, () => void generateEvidenceTableFor(program, generatedOf(row)!.criterion).then((r) => {
               grok.shell.info(summarizeGenerated(program, r));
               return reopen();
-            }).catch(failed);
+            }).catch(failed), {title: 'Generate the table again from the evidence now, as a new draft version'});
             items.push(again);
           }
         }
       }
       if ((row.status === 'draft' || row.status === 'rejected') && submits && canLink) {
-        const submit = named(span('Submit for approval', 'pp-link'), `submit-${name}`);
-        submit.title = `${ctx.portfolio.code} asks for approval of documents: another approver approves it`;
-        submit.onclick = () => void submitDocument(program, row.id).then((x) => {
+        const submit = linkTo('Submit for approval', `submit-${name}`, () => void submitDocument(program, row.id).then((x) => {
           this.approvalLine.set(program.id, x.line);
           return reopen();
-        }).catch(failed);
+        }).catch(failed), {title: `${ctx.portfolio.code} asks for approval of documents: another approver approves it`});
         items.push(submit);
       } else if (row.status === 'draft' && ctx.approver && !submits) {
-        const approve = named(span('Approve', 'pp-link'), `approve-${name}`);
-        approve.title = 'Approve this version: meets the criterion unless waived, supersedes the older approved one';
-        approve.onclick = () => void setDocumentStatus(program, row.id, 'approved').then(reopen).catch(failed);
+        const approve = linkTo('Approve', `approve-${name}`,
+          () => void setDocumentStatus(program, row.id, 'approved').then(reopen).catch(failed),
+          {title: 'Approve this version: meets the criterion unless waived, supersedes the older approved one'});
         items.push(approve);
       }
       return named(divH(items, 'pp-unit'), name);
@@ -1515,9 +1506,9 @@ export class PortalView {
       named(span(`Snapshots (${rows.length})`, 'pp-heading'), 'snapshots-heading'),
       divH([take], 'pp-actions'),
       rows.length ? named(divV(rows.map((s, i) => {
-        const el = named(span(`${s.label} · ${describeSnapshot(summaryOf(s))}`, 'pp-link pp-history-row'), `snapshot-${i}`);
-        el.title = 'Open the snapshot, read-only';
-        el.onclick = () => void openSnapshotDialog(s.id).catch((e) => grok.shell.error(e?.message ?? String(e)));
+        const el = linkTo(`${s.label} · ${describeSnapshot(summaryOf(s))}`, `snapshot-${i}`,
+          () => void openSnapshotDialog(s.id).catch((e) => grok.shell.error(e?.message ?? String(e))),
+          {cls: 'pp-history-row', title: 'Open the snapshot, read-only'});
         return divH([el, this.provenanceLink('snapshot', s.id, `provenance-snapshot-${i}`)], 'pp-unit');
       })), 'program-snapshots') : named(span('No snapshots yet', 'pp-muted'), 'no-snapshots'),
     ];
@@ -1587,23 +1578,16 @@ export class PortalView {
 
   /** A small Provenance link beside a row. */
   private provenanceLink(kind: string, id: string, name: string): HTMLElement {
-    const el = named(span('Provenance', 'pp-link pp-gap'), name);
-    el.title = 'What this rests on, and what rests on it';
-    el.onclick = (e) => {
-      e.stopPropagation();
-      this.provenance(kind, id);
-    };
-    return el;
+    return linkTo('Provenance', name, () => this.provenance(kind, id),
+      {cls: 'pp-gap', title: 'What this rests on, and what rests on it', stop: true});
   }
 
   /** One piece of a decision's evidence: what it is, and a click to open it. A target that is gone
    * shows what was recorded. */
   private evidenceLink(ctx: ProgramContext, l: EvidenceLine, name: string): HTMLElement {
-    const el = named(span(l.text, l.state === 'gone' ? 'pp-gap' : 'pp-link pp-gap'), name);
     const recorded = () => grok.shell.info([`${EVIDENCE_LABELS[l.row.kind]}: ${l.row.name}`, `target: ${l.row.target}`,
       ...Object.entries(l.row.context ?? {}).map(([k, v]) => `${k}: ${v}`)].join('\n'));
-    el.title = l.state === 'gone' ? 'Gone since it was attached; click for what was recorded' : l.row.target;
-    el.onclick = () => void (async () => {
+    const open = async () => {
       if (l.state === 'gone')
         return recorded();
       switch (l.row.kind) {
@@ -1637,8 +1621,11 @@ export class PortalView {
       default:
         return recorded();
       }
-    })().catch((e) => grok.shell.error(e?.message ?? String(e)));
-    return el;
+    };
+    // a target gone since it was attached still opens what was recorded, in the plain text colour
+    return linkTo(l.text, name, () => void open().catch((e) => grok.shell.error(e?.message ?? String(e))), {
+      cls: l.state === 'gone' ? 'pp-gap pp-link-gone' : 'pp-gap',
+      title: l.state === 'gone' ? 'Gone since it was attached; click for what was recorded' : l.row.target});
   }
 
   /** The program's own viewers, contributors and approvers, on top of the portfolio's groups. The
@@ -1664,8 +1651,7 @@ export class PortalView {
       span(r.name),
       badge(PROGRAM_ROLE_LABELS[r.role as ProgramRole] ?? r.role, {variant: r.role === 'approver' ? 'success' : 'accent'}),
       ...(this.roles.manage ? [(() => {
-        const remove = named(span('Remove', 'pp-link'), `remove-role-${slug(r.name)}`);
-        remove.onclick = () => void change(r.group_id, null);
+        const remove = linkTo('Remove', `remove-role-${slug(r.name)}`, () => void change(r.group_id, null));
         return remove;
       })()] : []),
     ], 'pp-unit'), `program-role-${slug(r.name)}`)) :
@@ -1736,8 +1722,8 @@ export class PortalView {
     newSelection.title = d.refused.join('; ') || (!compounds.length ? 'The program holds no compounds' :
       'A hit list: compounds picked from a campaign, with the rationale');
     const sets = d.sets.map((x) => {
-      const open = named(span(x.set.name, 'pp-link'), `design-set-${slug(x.set.code)}`);
-      open.onclick = () => openDesignSetDialog(program, x, d.refused, reopen);
+      const open = linkTo(x.set.name, `design-set-${slug(x.set.code)}`,
+        () => openDesignSetDialog(program, x, d.refused, reopen));
       return named(divH([open, span(`series ${x.set.series_code} · ${x.set.source}`, 'pp-muted'),
         span(describeDesignSet(summarizeDesignSet(x.proposals)))], 'pp-unit'), `design-set-row-${slug(x.set.code)}`);
     });
@@ -1763,18 +1749,13 @@ export class PortalView {
     if (!ctx)
       return [];
     const reopen = () => this.openProgram(ctx.program.id, this.viewedStage);
-    const discuss = named(span('Discuss', 'pp-link pp-gap'), `discuss-${name}`);
-    discuss.title = 'Start or continue a thread about this in the program\'s discussion';
-    discuss.onclick = (e) => {
-      e.stopPropagation();
-      openDiscussDialog({program: ctx.program, anchor, onPosted: reopen});
-    };
-    const ask = named(span('Ask SME', 'pp-link pp-gap'), `ask-sme-${name}`);
-    ask.title = 'Ask an expert about this; the context goes with the question';
-    ask.onclick = (e) => {
-      e.stopPropagation();
-      openAskSmeDialog({portfolio: ctx.portfolio, program: ctx.program, context: this.smeContext(ctx, anchor), onAsked: reopen});
-    };
+    const discuss = linkTo('Discuss', `discuss-${name}`,
+      () => openDiscussDialog({program: ctx.program, anchor, onPosted: reopen}),
+      {cls: 'pp-gap', title: 'Start or continue a thread about this in the program\'s discussion', stop: true});
+    const ask = linkTo('Ask SME', `ask-sme-${name}`,
+      () => openAskSmeDialog({portfolio: ctx.portfolio, program: ctx.program,
+      context: this.smeContext(ctx, anchor), onAsked: reopen}),
+    {cls: 'pp-gap', title: 'Ask an expert about this; the context goes with the question', stop: true});
     return [discuss, ask];
   }
 
@@ -1839,12 +1820,10 @@ export class PortalView {
     const shown = x.all ? d.threads : d.threads.slice(0, 5);
     const items = shown.map((t: Thread, i) => {
       const url = d.chatId ? threadUrl(origin, t.posts[0].chatId, t.key) : '';
-      const title = named(span(threadTitle(t), t.anchor ? 'pp-link' : ''), `thread-${i}-title`);
-      if (t.anchor) {
-        const a = t.anchor;
-        title.title = 'Open what this thread is about';
-        title.onclick = () => this.openAnchor(ctx, a);
-      }
+      const a = t.anchor;
+      const title = a ? linkTo(threadTitle(t), `thread-${i}-title`,
+        () => this.openAnchor(ctx, a), {title: 'Open what this thread is about'}) :
+        named(span(threadTitle(t)), `thread-${i}-title`);
       const decisions = url ? decisionsCiting(url, new Map([...evidence].map(([k, v]) => [k, v.map((l) => l.row)]))) : [];
       const led = decisions.map((id) => transitions.find((tr) => tr.id === id)).filter((tr): tr is StageTransitionRow => !!tr)
         .map((tr) => `${(tr.decided_on ?? tr.created_on)?.format?.('YYYY-MM-DD') ?? ''} · ${tr.decision === 'record' ?
@@ -1854,26 +1833,23 @@ export class PortalView {
           ...(p.question ? [badge('question', {variant: 'warning'})] : [])], 'pp-unit'),
         span(((b) => b.length > 400 ? `${b.slice(0, 399)}…` : b)(plainMentions(p.body)), 'pp-post-body'),
       ], 'pp-post'), `thread-${i}-post-${j}`));
-      const reply = named(span('Reply', 'pp-link'), `thread-${i}-reply`);
-      reply.onclick = () => openDiscussDialog({program, anchor: t.anchor, onPosted: reopen});
+      const reply = linkTo('Reply', `thread-${i}-reply`,
+        () => openDiscussDialog({program, anchor: t.anchor, onPosted: reopen}));
       const actions: HTMLElement[] = [reply];
       if (ctx.approver && url) {
-        const cite = named(span('Cite in the next decision', 'pp-link'), `thread-${i}-cite`);
-        cite.title = 'Attach this thread to the next gate decision\'s evidence; the thread then shows the decision';
-        cite.onclick = () => {
+        const cite = linkTo('Cite in the next decision', `thread-${i}-cite`, () => {
           const item: EvidenceItem = {kind: 'url', target: url, name: `Discussion: ${threadTitle(t)}`, role: 'supporting'};
           if (!this.picked.links.some((l) => evidenceKey(l) === evidenceKey(item)))
             this.picked.links.push(item);
           this.picked.off.delete(evidenceKey(item));
           grok.shell.info(`${threadTitle(t)}: attached to the next decision`);
           this.redraw?.();
-        };
+        }, {title: 'Attach this thread to the next gate decision\'s evidence; the thread then shows the decision'});
         actions.push(cite);
       }
       if (url) {
-        const chats = named(span('Open in Chats', 'pp-link'), `thread-${i}-chats`);
-        chats.title = 'The platform\'s own page of this chat';
-        chats.onclick = () => window.open(url, '_blank', 'noopener');
+        const chats = linkTo('Open in Chats', `thread-${i}-chats`, () => window.open(url, '_blank', 'noopener'),
+          {title: 'The platform\'s own page of this chat'});
         actions.push(chats);
       }
       return named(divV([
@@ -1884,14 +1860,10 @@ export class PortalView {
         divH(actions, 'pp-actions'),
       ], 'pp-observation'), `thread-${i}`);
     });
-    const more = d.threads.length > 5 ? [named(span(x.all ? 'Fewer threads' : `All ${d.threads.length} threads`, 'pp-link'),
-      'discussion-all')] : [];
-    if (more.length) {
-      more[0].onclick = () => {
-        x.all = !x.all;
-        this.redraw?.();
-      };
-    }
+    const more = d.threads.length > 5 ? [linkTo(x.all ? 'Fewer threads' : `All ${d.threads.length} threads`, 'discussion-all', () => {
+      x.all = !x.all;
+      this.redraw?.();
+    })] : [];
     return [
       heading,
       named(divV([input.root, divH([ask], 'pp-actions')]), 'discussion-form'),
@@ -1920,8 +1892,7 @@ export class PortalView {
         span(who, 'pp-muted'),
       ], 'pp-unit');
       if (x.status === 'current' && (x.by === me || o.approver)) {
-        const retract = named(span('Retract', 'pp-link'), `retract-observation-${i}`);
-        retract.onclick = () => openRetractDialog(x, reopen);
+        const retract = linkTo('Retract', `retract-observation-${i}`, () => openRetractDialog(x, reopen));
         head.append(retract);
       }
       return named(divV([

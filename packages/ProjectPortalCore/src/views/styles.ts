@@ -68,8 +68,10 @@ const CSS = `
 .pp-runs { gap: 4px; }
 .pp-run { gap: 1px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
 .pp-run-meta { gap: 4px; align-items: center; flex-wrap: wrap; }
-.pp-link { color: var(--u2-accent, #2083d5); cursor: pointer; }
-.pp-link:hover { text-decoration: underline; }
+/* .pp-gap sets the small type of the links beside a row; their colour stays the link's */
+.u2-link.pp-gap { color: var(--dg-accent, #2083d5); }
+/* evidence whose target is gone still opens what was recorded, but reads muted, as before */
+.u2-link.pp-link-gone { color: var(--u2-text-muted, #888); }
 .pp-model-card { gap: 4px; font-size: 12px; max-width: 520px; }
 .pp-model-card > * { flex-shrink: 0; }
 .pp-card-text { white-space: pre-wrap; }

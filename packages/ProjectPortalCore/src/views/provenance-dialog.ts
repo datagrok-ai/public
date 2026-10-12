@@ -14,7 +14,7 @@ import {openDocumentFile} from './document-dialog';
 import {openProgramTable} from '../program-data';
 import {showModelCard} from './model-card';
 import {installStyles} from './styles';
-import {named, openDialog, PortalDialog} from './u2-controls';
+import {linkTo, named, openDialog, PortalDialog} from './u2-controls';
 
 export interface ProvenanceDialogOptions {
   /** Opens a program on the program page; without it a program node only traces. */
@@ -84,19 +84,16 @@ function tree(p: Provenance & {records: ProvenanceRecords}, direction: 'up' | 'd
     return named(span('Nothing', 'pp-muted'), `provenance-${direction}-none`);
   return named(divV(lines.map((l, i) => {
     const name = `provenance-${direction}-${i}`;
-    const label = named(span(describeNode(l.node), 'pp-link'), `${name}-open`);
-    label.title = `${l.node.relation}: open it`;
-    label.onclick = () => void openNode(l.node, p.records, opts).then((opened) => {
+    const label = linkTo(describeNode(l.node), `${name}-open`, () => void openNode(l.node, p.records, opts).then((opened) => {
       if (!opened && traceable(l.node))
         retrace(l.node.kind, l.node.id);
       else if (opened && l.node.kind === 'program')
         close();
-    }).catch((e) => grok.shell.error(e?.message ?? String(e)));
+    }).catch((e) => grok.shell.error(e?.message ?? String(e))), {title: `${l.node.relation}: open it`});
     const items: HTMLElement[] = [label, span(l.node.relation ?? '', 'pp-muted')];
     if (traceable(l.node)) {
-      const trace = named(span('Trace', 'pp-link'), `${name}-trace`);
-      trace.title = 'Trace provenance from here';
-      trace.onclick = () => retrace(l.node.kind, l.node.id);
+      const trace = linkTo('Trace', `${name}-trace`, () => retrace(l.node.kind, l.node.id),
+        {title: 'Trace provenance from here'});
       items.push(trace);
     }
     const row = named(divH(items, 'pp-unit'), name);

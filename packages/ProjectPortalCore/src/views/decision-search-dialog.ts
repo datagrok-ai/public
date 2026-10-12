@@ -5,7 +5,7 @@ import {divH, divV, span} from '@datagrok-libraries/u2';
 import {decisionsOf} from '../decision-records';
 import {DecisionQuery, DecisionView, describeDecision, searchDecisions} from '../model/decision-records';
 import {feedSelect} from './feed-dialog';
-import {check, named, openDialog, PortalDialog, text as textInput} from './u2-controls';
+import {check, linkTo, named, openDialog, PortalDialog, text as textInput} from './u2-controls';
 
 /** Results shown at once. */
 const SHOWN = 50;
@@ -62,12 +62,10 @@ export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promis
     summary.textContent = `${found.length} of ${all.length} decision${all.length === 1 ? '' : 's'}` +
       (found.length > SHOWN ? `; the newest ${SHOWN} shown` : '');
     results.replaceChildren(...(found.length ? found.slice(0, SHOWN).map((d, i) => {
-      const line = named(span(describeDecision(d), 'pp-link'), `decision-hit-${i}`);
-      line.title = `Open ${d.programCode} in ${d.portfolio}`;
-      line.onclick = () => {
+      const line = linkTo(describeDecision(d), `decision-hit-${i}`, () => {
         dlg.close();
         void Promise.resolve(o.openProgram(d.portfolio, d.programId)).catch((x) => grok.shell.error(x?.message ?? String(x)));
-      };
+      }, {title: `Open ${d.programCode} in ${d.portfolio}`});
       const ev = d.evidence.length ? [named(span(`Evidence: ${d.evidence.map((e) => e.name).join('; ')}`, 'pp-muted'),
         `decision-hit-evidence-${i}`)] : [];
       return named(divV([line, ...ev], 'pp-unit'), `decision-${i}`);

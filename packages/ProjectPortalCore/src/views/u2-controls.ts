@@ -3,7 +3,7 @@
  * They fill the gaps u2's Dialog and BasicTable leave for this package (no getButton, no busy state,
  * no close hook, no row hook) so each view does not repeat the workaround. */
 import * as grok from 'datagrok-api/grok';
-import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divH, divV, signal, span, TextArea,
+import {BasicTable, BoolInput, ChoiceInput, Control, Dialog, divH, divV, link, signal, span, TextArea,
   TextInput} from '@datagrok-libraries/u2';
 import type {MessageInput, ReadonlySignal, TableColumn} from '@datagrok-libraries/u2';
 import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
@@ -214,4 +214,18 @@ export function composer(opts: {name: string, placeholder: string, onSend: (mark
   if (opts.ownSend === false)
     input.root.classList.add('pp-msg-nosend');
   return input;
+}
+
+/** A u2 link carrying [name]: reachable with Tab, run with a click or Enter. [cls] adds the package's
+ * classes (pp-gap ...); [stop] keeps the click from the row it sits in, which opens something else. */
+export function linkTo(text: string, name: string, onClick: () => void,
+  o: {cls?: string, title?: string, stop?: boolean} = {}): HTMLAnchorElement {
+  const el = named(link(text, onClick), name);
+  if (o.cls)
+    el.classList.add(...o.cls.split(' '));
+  if (o.title)
+    el.title = o.title;
+  if (o.stop)
+    el.addEventListener('click', (e) => e.stopPropagation());
+  return el;
 }

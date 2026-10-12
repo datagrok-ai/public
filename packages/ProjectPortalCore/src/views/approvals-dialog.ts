@@ -7,7 +7,7 @@ import {ApprovalRow, portalDb} from '../generated/db';
 import {describeRequest, reviewRequest, userNames, waitingForMe, withdrawRequest} from '../approvals';
 import {reviewsOf} from '../model/approvals';
 import {ROW_LIMIT} from '../rows';
-import {named, openDialog, PortalDialog, text} from './u2-controls';
+import {linkTo, named, openDialog, PortalDialog, text} from './u2-controls';
 
 export interface RequestItemOptions {
   names: Map<string, string>;
@@ -92,11 +92,10 @@ export async function openWaitingDialog(opts: WaitingOptions): Promise<PortalDia
           await draw();
         }});
       if (r.program_id) {
-        const open = named(span(`Open in ${portfolios.get(r.portfolio_id)?.name ?? 'the portal'}`, 'pp-link'), `waiting-${i}-open`);
-        open.onclick = () => {
+        const open = linkTo(`Open in ${portfolios.get(r.portfolio_id)?.name ?? 'the portal'}`, `waiting-${i}-open`, () => {
           dlg.close();
           void opts.openProgram(portfolios.get(r.portfolio_id)?.code ?? '', r.program_id!);
-        };
+        });
         item.append(open);
       }
       return item;

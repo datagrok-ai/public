@@ -11,6 +11,7 @@ import {summarizeWorkUnitPlan} from './model/work-units';
 import {CompoundRole, summarizeCompoundPlan} from './model/compounds';
 import {portalAppView, portfolioTree} from './views/portal-view';
 import {installStyles} from './views/styles';
+import {linkTo} from './views/u2-controls';
 import {registerProgramRecordHandler} from './program-record';
 import {portfolioTableView, TABLE_SEGMENT} from './views/portfolio-table-view';
 import {portfolioTables} from './portfolio-table';
@@ -85,9 +86,8 @@ export const _package = new DG.Package();
 /** After a run of a catalogued model: a balloon that opens the save-to-program dialog for it. */
 function offerSave(call: DG.FuncCall): void {
   installStyles();
-  const link = span('Save to program…', 'pp-link');
-  link.dataset.u2Name = 'save-run-link';
-  link.onclick = () => void openSaveRunDialog({call}).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  const link = linkTo('Save to program…', 'save-run-link',
+    () => void openSaveRunDialog({call}).catch((e) => grok.shell.error(e?.message ?? String(e))));
   const box = document.createElement('div');
   box.append(span(`${call.func.friendlyName ?? call.func.name} ran. `), link);
   grok.shell.info(box, {timeout: 20});

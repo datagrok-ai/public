@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import {button, divH, divV, Scope, span} from '@datagrok-libraries/u2';
 import {countByKind, describeEntry, FEED_KIND_LABELS, FEED_KINDS, FeedEntry, FeedKind, filterFeed, pageFeed} from '../model/feed';
 import {feedUserNames, myFeedOf} from '../feed';
-import {choice, labelled, named, openDialog, PortalDialog} from './u2-controls';
+import {choice, labelled, linkTo, named, openDialog, PortalDialog} from './u2-controls';
 
 /** Entries per page, on the program page and in My feed. */
 export const FEED_PAGE_SIZE = 8;
@@ -49,16 +49,13 @@ export function feedList(o: FeedListOptions): HTMLElement[] {
   const items = p.items.map((e, i) => {
     const parts: HTMLElement[] = [];
     if (o.withProgram && o.onProgram) {
-      const link = named(span(e.program, 'pp-link'), `${o.prefix}-program-${i}`);
-      link.title = 'Open the program';
-      link.onclick = () => o.onProgram!(e);
+      const link = linkTo(e.program, `${o.prefix}-program-${i}`, () => o.onProgram!(e), {title: 'Open the program'});
       parts.push(link);
     }
     parts.push(span(describeEntry(e, e.who ? o.names.get(e.who) ?? null : null)));
     if (e.ref && e.ref.kind !== 'program' && o.onTrace) {
-      const trace = named(span('Provenance', 'pp-link pp-gap'), `${o.prefix}-trace-${i}`);
-      trace.title = 'What this rests on, and what rests on it';
-      trace.onclick = () => o.onTrace!(e);
+      const trace = linkTo('Provenance', `${o.prefix}-trace-${i}`, () => o.onTrace!(e),
+        {cls: 'pp-gap', title: 'What this rests on, and what rests on it'});
       parts.push(trace);
     }
     return named(divH(parts, 'pp-unit'), `${o.prefix}-entry-${i}`);
