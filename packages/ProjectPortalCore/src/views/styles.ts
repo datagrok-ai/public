@@ -84,8 +84,9 @@ const CSS = `
 .pp-save-run { gap: 8px; min-width: 400px; }
 /* u2 pins its editors to the platform's fixed widths; in the package's forms and filter rows they take the room there is */
 .pp-save-run > .u2-input-root:not([data-u2='bool-input']) { width: 100%; }
+/* basis 0: a long option (a run's description) must not push the editor under its label */
 .pp-save-run > .u2-input-root:not([data-u2='bool-input']) > .u2-input-box,
-.pp-fill > .u2-input-root > .u2-input-box { flex: 1 1 auto; min-width: 0; }
+.pp-fill > .u2-input-root > .u2-input-box { flex: 1 1 0; min-width: 0; }
 /* as specific as u2's own text-box pin (.u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor) */
 .pp-save-run > .u2-input-root[data-u2]:not([data-u2='bool-input']) > .u2-input-box > .u2-input-editor,
 .pp-fill > .u2-input-root[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
