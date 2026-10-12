@@ -2,7 +2,6 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {before, after, category, test, expect, awaitCheck} from '@datagrok-libraries/test/src/test';
 import {ViewHandler} from '../view-handler';
-import {queries} from '../package-api';
 
 
 category('App', () => {
@@ -35,8 +34,9 @@ category('App', () => {
     expect(errors.now.count >= errors.top.length, true);
     for (const e of errors.top)
       expect(typeof e.signature, 'string');
-    const signature = errors.top[0]?.signature ?? '00000000-0000-0000-0000-000000000000';
-    expect((await queries.errorAlerts(signature)).col('alert') != null, true);
+    const signature = errors.top[0]?.signature ?? '000000000000';
+    const problem = await grok.dapi.admin.getProblem(`error-incident:${signature.substring(0, 12)}`);
+    expect(problem === null || problem.kind === 'error-incident', true);
   });
 
   test('Log: the timeline of the current session', async () => {

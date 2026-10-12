@@ -21,6 +21,13 @@ class JsonLogFormatter(logging.Formatter):
     """One JSON line per record in the shape the Datagrok server prints, plus `service`.
     Secrets are redacted as the server's `LogRedactor` does (Redaction contract, core/docs/AUDIT_LOGGING.md)."""
     REDACTED = '[REDACTED]'
+
+    @classmethod
+    def _keep_quotes(cls, m):
+        rest = m.group(0)[len(m.group(1)):]
+        q = rest[0] if rest[:1] in ('"', "'") else ''
+        return m.group(1) + q + cls.REDACTED + q
+
     SECRET_KEYS = ('password', 'passwd', 'secret', 'token', 'apikey', 'authorization', 'cookie', 'credential',
                    'privatekey', 'accesskey')
     SECRETS = [re.compile(r'\beyJ[\w\-]+\.[\w\-]*\.[\w\-]*'), re.compile(r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'),
@@ -41,7 +48,7 @@ class JsonLogFormatter(logging.Formatter):
         for r in cls.SECRETS:
             s = r.sub(cls.REDACTED, s)
         for r in cls.PREFIXED:
-            s = r.sub(lambda m: m.group(1) + cls.REDACTED, s)
+            s = r.sub(cls._keep_quotes, s)
         return s
 
     @classmethod

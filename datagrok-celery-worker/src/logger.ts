@@ -11,7 +11,7 @@ export function redactText(s: string): string {
   for (const re of SECRETS)
     s = s.replace(re, REDACTED);
   for (const re of PREFIXED)
-    s = s.replace(re, (_, kept) => kept + REDACTED);
+    s = s.replace(re, (all, kept) => { const q = /^["']/.test(all.slice(kept.length)) ? all[kept.length] : ''; return kept + q + REDACTED + q; });
   return s;
 }
 

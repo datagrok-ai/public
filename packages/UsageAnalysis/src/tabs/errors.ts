@@ -7,7 +7,7 @@ import {UaToolbox} from "../ua-toolbox";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
 import {UaFilter} from "../filter";
 import {loadUsers, setupUserIconRenderer} from "../utils";
-import {funcs, queries} from "../package-api";
+import {funcs} from "../package-api";
 
 import '../../css/usage_analysis.css';
 
@@ -220,11 +220,12 @@ export class ErrorsView extends UaView {
     }));
 
     accordion.addPane('Alert', () => ui.wait(async () => {
-      const t = await queries.errorAlerts(table.getCol('error_stack_trace_hash').get(rowIdx));
-      if (t.rowCount === 0)
+      const signature: string = table.getCol('error_stack_trace_hash').get(rowIdx) ?? '';
+      const p = await grok.dapi.admin.getProblem(`error-incident:${signature.substring(0, 12)}`);
+      if (p === null)
         return ui.divText('No error incident');
-      return ui.tableFromMap({'Problem': t.get('problem', 0), 'Alert': t.get('alert', 0) ?? 'none',
-        'Summary': t.get('summary', 0), 'Alerted': t.get('alerted_at', 0), 'Last seen': t.get('last_seen', 0)});
+      return ui.tableFromMap({'Problem': p.status, 'Alert': p.alertStatus ?? 'none', 'Summary': p.summary,
+        'Alerted': p.alertedAt, 'Last seen': p.lastSeen});
     }));
     grok.shell.o = properties;
   }

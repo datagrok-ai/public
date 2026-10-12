@@ -502,8 +502,8 @@ export class AdminDataSource {
     return api.grok_Dapi_Admin_GetServiceInfos(this.dart);
   }
 
-  /** Server metrics for a time window: HTTP request latency per route, the function-call queue,
-   *  and database statistics. Admin only. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
+  /** Server metrics for a time window: HTTP request latency per route, the errors, the function-call queue,
+   *  and database statistics. Needs the `ViewTelemetry` permission. Sample: {@link https://public.datagrok.ai/js/samples/dapi/admin} */
   async getMetrics(options?: ServerMetricsOptions): Promise<ServerMetrics> {
     const iso = (d: Date | string) => d instanceof Date ? d.toISOString() : d;
     const params = new URLSearchParams();
@@ -522,6 +522,19 @@ export class AdminDataSource {
     const r = await fetch(`${api.grok_Dapi_Root()}/admin/metrics?${params}`, {credentials: 'include'});
     if (!r.ok)
       throw new Error(await r.text());
+    return r.json();
+  }
+
+  /** A problem the platform detected and its current alert, by id or `kind:key`; null when there is none.
+   *  Needs the `ManageAlerts` permission. Sample: {@link https://public.datagrok.ai/js/samples/dapi/problems} */
+  async getProblem(id: string): Promise<Problem | null> {
+    const r = await fetch(`${api.grok_Dapi_Root()}/problems/${encodeURIComponent(id)}`, {credentials: 'include'});
+    // The server answers an error with 200 and the api-error-code header.
+    const code = r.headers.get('api-error-code') ?? (r.ok ? null : `${r.status}`);
+    if (code === '404')
+      return null;
+    if (code !== null)
+      throw new Error((await r.json().catch(() => null))?.message ?? `HTTP ${code}`);
     return r.json();
   }
 
@@ -704,6 +717,32 @@ export interface ServerMetricsConnections {
   waitingOnLock: number,
   /** Age of the oldest idle transaction, seconds (0 when none). */
   oldestIdleTransactionSeconds: number,
+}
+
+/** Result of {@link AdminDataSource.getProblem}. Times are ISO 8601. */
+export interface Problem {
+  id: string,
+  kind: string,
+  key: string,
+  /** The alert name, e.g. `DatagrokErrorIncident`. */
+  name: string,
+  severity: 'info' | 'warning' | 'critical',
+  audience: 'platform' | 'owner',
+  status: 'active' | 'muted' | 'not-a-problem' | 'fixed',
+  state: 'ongoing' | 'cleared',
+  summary: string | null,
+  url: string | null,
+  details: {[key: string]: any} | null,
+  lastSeen: string,
+  startedAt: string,
+  clearedAt: string | null,
+  mutedUntil: string | null,
+  mutedUntilVersion: string | null,
+  statusReason: string | null,
+  statusAt: string | null,
+  alertId: string | null,
+  alertStatus: 'open' | 'acknowledged' | 'resolved' | null,
+  alertedAt: string | null,
 }
 
 /** Result of {@link AdminDataSource.getMetrics}. */
