@@ -16,7 +16,7 @@ Feature: A folder in your files, shared
   grant row of the sharing user in a dialog). What the second account may do with the files (read,
   not write) and that files outside the folder stay closed to it is an API test.
 
-  Known failure: GitHub #4268 "Sharing: My files: error on opening the shared folder" — the second
+  Known failure: public#4268 "Sharing: My files: error on opening the shared folder" — the second
   account gets a "Credentials required" view instead of the file list (localhost, 2026-10-12). The
   folder's view is first opened from Shared with me and claimed current in an ordinary scenario, and
   closed; the known-failure scenario opens it again the same way and claims only its content.
@@ -87,7 +87,7 @@ Feature: A folder in your files, shared
     Then the "Home" view should be current
 
   @known-failure
-  Scenario: The second account sees the folder's files, not a credentials form (#4268)
+  Scenario: The second account sees the folder's files, not a credentials form (public#4268)
     When user double-clicks on "My files/ShareFolder1" shared by the running account
     Then data1.csv link in gallery should be visible
     And "Credentials required" text should be absent

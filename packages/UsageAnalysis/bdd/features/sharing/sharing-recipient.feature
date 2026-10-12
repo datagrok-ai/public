@@ -21,7 +21,7 @@ Feature: What the other user gets, and losing it
   access level read. That the second account may not edit, rename or delete the query is the
   server's answer and an API test.
 
-  Known failure: GROK-21142 — Link, unlike Move, puts the shared query into the space shared with the
+  Known failure: core#693 — Link, unlike Move, puts the shared query into the space shared with the
   second account at View and use, with no message (localhost, 2026-10-12). The claim is the refusal
   (any error or warning balloon about privileges or permissions, whatever its wording) and then the
   outcome: after Escape, which closes the dialog if the refusal keeps it open, the space's view lists
@@ -125,8 +125,8 @@ Feature: What the other user gets, and losing it
     Then "Move entity" dialog should be visible
     And choice input in "Move entity" dialog should have value "Link"
 
-  @known-failure @realizes:GROK-21142
-  Scenario: The Link is refused, and the space does not get the query (GROK-21142)
+  @known-failure @realizes:core#693
+  Scenario: The Link is refused, and the space does not get the query (core#693)
     When user clicks on YES button in "Move entity" dialog
     Then an error or warning balloon matching "privilege|permission" should have been shown
     When user presses Escape

@@ -11,7 +11,7 @@ related_bugs:
   - GROK-12795
   - GROK-11266
   - GROK-10449
-  - "#4268"
+  - public#4268
 ---
 
 # Sharing — a folder in your files
@@ -54,7 +54,7 @@ finds the folder under **Shared with me**.
 9. **Verify:** the dialog now shows a **Copy link** icon at the top and lists the second user.
 10. Click **CANCEL**.
 
-### 3. The second user sees the folder (GROK-10449, #4268)
+### 3. The second user sees the folder (GROK-10449, public#4268)
 
 1. Sign in as the second user.
 2. In **Browse**, expand **My stuff > Shared with me > (your name)**.
@@ -81,6 +81,6 @@ finds the folder under **Shared with me**.
   shared; what it copies is not checked.
 - Scenario 3, step 5: the second user gets a *Credentials required* view (Login, Password, SAVE)
   for `My files/ShareFolder1` instead of the file list, while the owner's own view lists the file —
-  GitHub issue #4268 "Sharing: My files: error on opening the shared folder".
+  public#4268 "Sharing: My files: error on opening the shared folder".
 - What the second user may do with the files (read, not write) and that files outside the folder
   stay closed to them is an API test.

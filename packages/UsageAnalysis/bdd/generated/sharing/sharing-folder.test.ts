@@ -89,7 +89,7 @@ test.describe("A folder in your files, shared", () => {
       await session.step(86, "When user picks \"Close All\" from the context menu of browse tab", () => pickFromContextMenu(page, "Close All", el("browse tab")));
       await session.step(87, "Then the \"Home\" view should be current", () => viewIsCurrent(page, "Home"));
     });
-    await run.scenario("The second account sees the folder's files, not a credentials form (#4268)", async () => {
+    await run.scenario("The second account sees the folder's files, not a credentials form (public#4268)", async () => {
       await session.step(91, "When user double-clicks on \"My files/ShareFolder1\" shared by the running account", () => openShared(page, "My files/ShareFolder1"));
       await session.step(92, "Then data1.csv link in gallery should be visible", () => shouldBe(page, el("data1.csv link in gallery"), "visible"));
       await session.step(93, "And \"Credentials required\" text should be absent", () => shouldBe(page, el("\"Credentials required\" text"), "absent"));

@@ -11,7 +11,7 @@ related_bugs:
   - GROK-19401
   - GROK-18525
   - GROK-18210
-  - GROK-21142
+  - core#693
 ---
 
 # Sharing — what the other user gets, and losing it
@@ -73,7 +73,7 @@ holds for every kind of entity; which privileges each kind gets is an API test.
    dialog stays open.
 8. Click **CANCEL**.
 
-### 4. The second user cannot put a query into a space shared for viewing (GROK-21142)
+### 4. The second user cannot put a query into a space shared for viewing (core#693)
 
 1. As the second user, in **Browse > My stuff > Shared with me > (your name)**, find
    `ShareRecipient2` and `ShareSpace1`.
@@ -124,7 +124,7 @@ holds for every kind of entity; which privileges each kind gets is an API test.
   through the API (the share of a space through the dialog is `spaces-share-and-edges`).
 - Scenario 3, step 5: picking the running account in the user field is not a library step yet
   (there is one for the second user only).
-- Scenario 4 is a known failure while GROK-21142 is open: on localhost (2026-10-09) **Move** was
+- Scenario 4 is a known failure while core#693 is open: on localhost (2026-10-09) **Move** was
   refused as written, but **Link** made the link without any message and `ShareSpace1` then listed
   `ShareRecipient2` for the second user. Remove the known-failure mark when a link by a user with
   **View and use** on the space is refused.

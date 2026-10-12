@@ -4,7 +4,7 @@
 /* ---
 generated: features/sharing/sharing-recipient.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
-sub_features_covered: [sharing.share-dialog, sharing.browse-shared-with-me, views.queries, views.space, GROK-21142]
+sub_features_covered: [sharing.share-dialog, sharing.browse-shared-with-me, views.queries, views.space, core#693]
 --- */
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
@@ -29,7 +29,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("What the other user gets, and losing it", () => {
   const session = feature(test, "features/sharing/sharing-recipient.feature", import.meta.url);
-  test("What the other user gets, and losing it", {tag: ["@journey", "@serial", "@realizes:sharing.share-dialog", "@realizes:sharing.browse-shared-with-me", "@realizes:views.queries", "@realizes:views.space", "@known-failure", "@realizes:GROK-21142"]}, async ({browser}) => {
+  test("What the other user gets, and losing it", {tag: ["@journey", "@serial", "@realizes:sharing.share-dialog", "@realizes:sharing.browse-shared-with-me", "@realizes:views.queries", "@realizes:views.space", "@known-failure", "@realizes:core#693"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 8, page);
     await session.step(41, "Given user is logged in", () => loggedIn(page));
@@ -118,7 +118,7 @@ test.describe("What the other user gets, and losing it", () => {
       await session.step(125, "Then \"Move entity\" dialog should be visible", () => shouldBe(page, el("\"Move entity\" dialog"), "visible"));
       await session.step(126, "And choice input in \"Move entity\" dialog should have value \"Link\"", () => shouldHaveValue(page, el("choice input in \"Move entity\" dialog"), "Link"));
     });
-    await run.scenario("The Link is refused, and the space does not get the query (GROK-21142)", async () => {
+    await run.scenario("The Link is refused, and the space does not get the query (core#693)", async () => {
       await session.step(130, "When user clicks on YES button in \"Move entity\" dialog", () => clickOn(page, el("YES button in \"Move entity\" dialog")));
       await session.step(131, "Then an error or warning balloon matching \"privilege|permission\" should have been shown", () => errorOrWarningBalloonMatching(page, "privilege|permission"));
       await session.step(132, "When user presses Escape", () => pressKey(page, "Escape"));
