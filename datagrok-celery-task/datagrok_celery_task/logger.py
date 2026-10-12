@@ -29,7 +29,7 @@ class JsonLogFormatter(logging.Formatter):
         return m.group(1) + q + cls.REDACTED + q
 
     SECRET_KEYS = ('password', 'passwd', 'secret', 'token', 'apikey', 'authorization', 'cookie', 'credential',
-                   'privatekey', 'accesskey')
+                   'privatekey', 'accesskey', 'pwd')
     SECRETS = [re.compile(r'\beyJ[\w\-]+\.[\w\-]*\.[\w\-]*'), re.compile(r'\b(?:AKIA|ASIA)[A-Z0-9]{16}\b'),
                re.compile(r'-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|\Z)')]
     PREFIXED = [re.compile(r'\b((?:Bearer|Basic)\s+)[\w\-.~+/]+=*', re.I),
