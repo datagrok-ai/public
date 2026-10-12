@@ -92,6 +92,7 @@ const CSS = `
 .pp-fill > .u2-input-root[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
 .pp-fill > .u2-input-root { flex: 1 1 0; min-width: 0; }
 [data-u2-name="decision-results"] > .pp-unit { align-items: flex-start; }
+.pp-checklist > .u2-input-root { padding: 0; }
 .pp-field { gap: 8px; align-items: center; }
 .pp-field-label { flex: 0 0 110px; font-size: 12px; color: var(--u2-text-muted, #666); }
 .pp-select, .pp-text { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 13px; }

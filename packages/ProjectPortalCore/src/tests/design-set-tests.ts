@@ -112,8 +112,8 @@ category('Portal: design sets', () => {
     const dlg = openDesignSetDialog(kin1, para, []);
     try {
       expect(dlg.root.querySelectorAll('[data-u2-name^="proposal-"]').length, 6);
-      expect((dlg.root.querySelector('[data-u2-name="choose-KIN-A-D01"]') as HTMLInputElement).checked, true);
-      expect((dlg.root.querySelector('[data-u2-name="choose-KIN-A-D06"]') as HTMLInputElement).checked, false);
+      expect((dlg.root.querySelector('[data-u2-name="choose-KIN-A-D01"] input') as HTMLInputElement).checked, true);
+      expect((dlg.root.querySelector('[data-u2-name="choose-KIN-A-D06"] input') as HTMLInputElement).checked, false);
       expect(!!dlg.root.querySelector('[data-u2-name="save-choices-button"]'), true);
     } finally {
       dlg.close();
