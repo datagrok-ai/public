@@ -91,7 +91,7 @@ are read-only Jira history; leave them as they are.
 | Commit header (max 70 chars) | `#4256: Scope: what was done` | `Scope: what was done`, body `Refs datagrok-ai/core#707` |
 | Branch | `claude/public-4256` | `claude/core-707` (same name in both repos) |
 | PR body | `Closes #4256` | `Closes datagrok-ai/core#707` |
-| Changelog bullet | `* [#4256](https://github.com/datagrok-ai/public/issues/4256): Fixed …` | `* [core#707](https://github.com/datagrok-ai/core/issues/707): Fixed …` |
+| Changelog bullet | `* [#4256](https://github.com/datagrok-ai/public/issues/4256): Fixed …` | `* core#707: Fixed …` (no link, `core` is private) |
 
 Use `gh issue view|list|comment|close|edit -R datagrok-ai/public` and
 `gh search issues --owner datagrok-ai`.

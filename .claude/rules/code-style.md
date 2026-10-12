@@ -92,7 +92,7 @@ Format:
 ```
 
 - One bullet per logical change, flat list (no subsections).
-- Start with the GitHub issue if available: `[#NNN](https://github.com/datagrok-ai/public/issues/NNN):` for a `public` issue, `[core#NNN](https://github.com/datagrok-ai/core/issues/NNN):` for a `core` one.
+- Start with the GitHub issue if available: `[#NNN](https://github.com/datagrok-ai/public/issues/NNN):` for a `public` issue, `core#NNN:` (no link, `core` is private) for a `core` one.
 - Use past-tense verbs: Added, Fixed, Improved, Introduced, Implemented.
 - Skip trivial changes (typos, formatting, dependency bumps).
 - When the plugin is published, `/plugin-changelog` converts `v.next` to a versioned entry.
