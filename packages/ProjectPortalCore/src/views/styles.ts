@@ -82,6 +82,15 @@ const CSS = `
 .pp-card-fact { gap: 6px; }
 .pp-card-fact > .pp-muted { flex: 0 0 110px; }
 .pp-save-run { gap: 8px; min-width: 400px; }
+/* u2 pins its editors to the platform's fixed widths; in the package's forms and filter rows they take the room there is */
+.pp-save-run > .u2-input-root:not([data-u2='bool-input']) { width: 100%; }
+.pp-save-run > .u2-input-root:not([data-u2='bool-input']) > .u2-input-box,
+.pp-fill > .u2-input-root > .u2-input-box { flex: 1 1 auto; min-width: 0; }
+/* as specific as u2's own text-box pin (.u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor) */
+.pp-save-run > .u2-input-root[data-u2]:not([data-u2='bool-input']) > .u2-input-box > .u2-input-editor,
+.pp-fill > .u2-input-root[data-u2] > .u2-input-box > .u2-input-editor { width: 100%; box-sizing: border-box; }
+.pp-fill > .u2-input-root { flex: 1 1 0; min-width: 0; }
+[data-u2-name="decision-results"] > .pp-unit { align-items: flex-start; }
 .pp-field { gap: 8px; align-items: center; }
 .pp-field-label { flex: 0 0 110px; font-size: 12px; color: var(--u2-text-muted, #666); }
 .pp-select, .pp-text { flex: 1 1 auto; min-width: 0; height: 26px; font-size: 13px; }

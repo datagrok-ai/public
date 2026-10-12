@@ -135,9 +135,15 @@ export const text = (name: string, label?: string,
   o: {placeholder?: string, value?: string, search?: boolean, inline?: boolean} = {}): TextInput =>
   new TextInput({name, label, ...o});
 
-/** A multi-line text input. */
-export const area = (name: string, label?: string, o: {placeholder?: string, value?: string} = {}): TextArea =>
-  new TextArea({name, label, autoGrow: true, ...o});
+/** A multi-line text input, [rows] lines tall to start with; it grows with the text. */
+export function area(name: string, label?: string,
+  o: {placeholder?: string, value?: string, rows?: number} = {}): TextArea {
+  const {rows, ...rest} = o;
+  const input = new TextArea({name, label, autoGrow: true, ...rest});
+  if (rows)
+    input.root.querySelector('textarea')!.rows = rows;
+  return input;
+}
 
 /** A native select over {code, name} options. With [blank], an option of that text stands for no
  * choice (value ''); without it, the value starts at [value] or the first option. Read the value
@@ -156,7 +162,7 @@ export const choiceValue = (input: ChoiceInput): string => input.value.value ?? 
 
 /** A checkbox. */
 export const check = (name: string, label?: string, value = false,
-  o: {enabled?: boolean, tooltipText?: string} = {}): BoolInput =>
+  o: {enabled?: boolean, tooltipText?: string, onChanged?: (v: boolean) => void} = {}): BoolInput =>
   new BoolInput({name, label, value, ...o});
 
 /** A u2 BasicTable whose rows can be named, classed and titled, which BasicTable cannot do itself.

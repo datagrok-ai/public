@@ -1,18 +1,11 @@
 /** Searching gate decisions: by text (rationale, outcome, evidence), program, gate and portfolio,
  * across the portfolios the user can see. A result opens its program. */
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {divH, divV, span} from '@datagrok-libraries/u2';
 import {decisionsOf} from '../decision-records';
 import {DecisionQuery, DecisionView, describeDecision, searchDecisions} from '../model/decision-records';
 import {feedSelect} from './feed-dialog';
-import {installStyles} from './styles';
-
-const named = <T extends HTMLElement>(el: T, name: string): T => {
-  el.dataset.u2Name = name;
-  return el;
-};
+import {check, named, openDialog, PortalDialog, text as textInput} from './u2-controls';
 
 /** Results shown at once. */
 const SHOWN = 50;
@@ -24,44 +17,35 @@ export interface DecisionSearchOptions {
   openProgram: (portfolioCode: string, programId: string) => void | Promise<void>;
 }
 
-export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promise<DG.Dialog> {
-  installStyles();
-  const dlg = ui.dialog({title: 'Decisions'});
-  dlg.root.dataset.u2Name = 'decision-search-dialog';
+export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promise<PortalDialog> {
   const q: DecisionQuery = {portfolio: o.current ?? '', withoutSync: true};
   const text = (name: string, placeholder: string, key: 'text' | 'program' | 'gate') => {
-    const el = named(document.createElement('input'), name);
-    el.className = 'pp-text';
-    el.placeholder = placeholder;
     let timer: any = null;
-    el.oninput = () => {
+    const input = textInput(name, undefined, {placeholder, inline: true});
+    input.effect(() => {
+      const v = input.value.value;
       clearTimeout(timer);
       timer = setTimeout(() => {
-        q[key] = el.value;
+        if (q[key] === v || (!q[key] && !v))
+          return;
+        q[key] = v;
         draw();
       }, 150);
-    };
-    return el;
+    });
+    input.own(() => clearTimeout(timer));
+    return input.root;
   };
-  const box = (name: string, label: string, key: 'withoutSync' | 'withEvidence') => {
-    const el = named(document.createElement('input'), name);
-    el.type = 'checkbox';
-    el.checked = !!q[key];
-    el.onchange = () => {
-      q[key] = el.checked;
+  const box = (name: string, label: string, key: 'withoutSync' | 'withEvidence') =>
+    check(name, label, !!q[key], {onChanged: (v) => {
+      q[key] = v;
       draw();
-    };
-    const l = document.createElement('label');
-    l.className = 'pp-evidence-pick';
-    l.append(el, span(label));
-    return l;
-  };
+    }}).root;
   const results = named(divV([span('Reading decisions…', 'pp-muted')], 'pp-units'), 'decision-results');
   const summary = named(span('', 'pp-muted'), 'decision-summary');
-  dlg.add(divV([
-    divH([text('decision-text-input', 'Words in the rationale, outcome or evidence', 'text')], 'pp-actions'),
-    divH([text('decision-program-input', 'Program code or name', 'program'), text('decision-gate-input', 'Gate (stage code or name)', 'gate')],
-      'pp-actions'),
+  const dlg = openDialog({title: 'Decisions', name: 'decision-search-dialog', width: 760}, () => ({content: divV([
+    divH([text('decision-text-input', 'Words in the rationale, outcome or evidence', 'text')], 'pp-actions pp-fill'),
+    divH([text('decision-program-input', 'Program code or name', 'program'),
+      text('decision-gate-input', 'Gate (stage code or name)', 'gate')], 'pp-actions pp-fill'),
     divH([feedSelect('decision-portfolio-input', 'Portfolio', [{code: '', name: 'All I can see'}, ...o.portfolios],
       q.portfolio ?? '', (v) => {
         q.portfolio = v;
@@ -70,8 +54,7 @@ export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promis
     box('decision-with-evidence', 'Only with evidence', 'withEvidence')], 'pp-actions'),
     summary,
     results,
-  ], 'pp-feed'));
-  dlg.show({width: 760});
+  ], 'pp-feed')}));
 
   let all: DecisionView[] = [];
   const draw = () => {
