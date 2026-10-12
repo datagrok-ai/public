@@ -868,7 +868,9 @@ i.chem-sar-card-twisty:hover {
 
 .chem-sar-sum-valuebox {
   flex: 0 0 auto;
-  align-items: flex-end;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
   min-width: 64px;
 }
 

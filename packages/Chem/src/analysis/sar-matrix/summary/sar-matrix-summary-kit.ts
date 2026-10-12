@@ -32,7 +32,7 @@ export class SummaryKit {
     const value = ui.divText(opts.value,
       `chem-sar-card-title${opts.faint ? ' chem-sar-sum-faint' : ''}`);
     const caption = ui.divText(opts.caption, 'chem-sar-card-desc');
-    const valueBox = ui.divV([value, caption], 'chem-sar-sum-valuebox');
+    const valueBox = ui.divH([value, caption], 'chem-sar-sum-valuebox');
     if (opts.valueTip)
       ui.tooltip.bind(valueBox, () => opts.valueTip!);
     const parts: HTMLElement[] = [];

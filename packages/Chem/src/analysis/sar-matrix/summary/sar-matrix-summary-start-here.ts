@@ -30,8 +30,9 @@ export class SummaryStartHere {
           ...this.gainBadge(stat),
         ],
         mark: this.reasonLane(row.reasons),
-        // Cells the decomposition cannot express are left out of the denominator.
-        desc: `${count(stat.cpd)} cpd · ${count(stat.realCells)} of ` +
+        // Cells the decomposition cannot express are left out of the denominator. The compound count only
+        // differs from the measured cells where one compound sits in several cells.
+        desc: (stat.cpd === stat.realCells ? '' : `${count(stat.cpd)} cpd · `) + `${count(stat.realCells)} of ` +
           `${count(stat.totalCells - stat.impossibleCells)} ` +
           `${stat.impossibleCells > 0 ? 'makeable cells' : 'cells'} measured · ` +
           `${host.formatActivity(stat.lo)}–${host.formatActivity(stat.hi)}` +
