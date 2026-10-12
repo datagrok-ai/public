@@ -179,19 +179,6 @@ export const isDuplicable = (stat: AugmentedStat) => isItemActionAllowed(stat, '
 
 export const couldBeSaved = (data: PipelineState) => !isFuncCallState(data) && !!data.nqName && !data.disableHistory;
 
-export const hasSubtreeFixableInconsistencies = (
-  data: PipelineState,
-  callStates: Record<string, FuncCallStateInfo | undefined>,
-  consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
-) => {
-  return _findTreeNode(
-    [data],
-    (state: PipelineState) => isFuncCallState(state) ?
-      (!state.isReadonly && hasInconsistencies(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
-      false,
-  );
-};
-
 export function getRelevantGlobalActions(data: PipelineState, currentStepUuid: string) : ViewAction[] {
   const nodePaths = _findTreeNode([data], (state) => state.uuid === currentStepUuid);
   const segments = nodePaths?.pathSegments ?? [];
@@ -226,18 +213,23 @@ export const hasInconsistencies = (consistencyStates?: Record<string, Consistenc
 export const hasAnyInconsistency = (consistencyStates?: Record<string, ConsistencyInfo>) =>
   anyInput(consistencyStates, isInconsistent);
 
-export const hasSubtreeAnyInconsistencies = (
+type SubtreeStates = [
   data: PipelineState,
   callStates: Record<string, FuncCallStateInfo | undefined>,
   consistencyStates: Record<string, Record<string, ConsistencyInfo> | undefined>,
-) => {
-  return _findTreeNode(
-    [data],
-    (state: PipelineState) => isFuncCallState(state) ?
-      (!state.isReadonly && hasAnyInconsistency(consistencyStates[state.uuid]) && !callStates[state.uuid]?.pendingDependencies?.length) :
-      false,
-  );
-};
+];
+
+// the first writable step without pending dependencies that has an input matching cond
+const findInconsistentStep = (
+  [data, callStates, consistencyStates]: SubtreeStates, cond: (val: ConsistencyInfo) => boolean,
+) =>
+  _findTreeNode([data], (state: PipelineState) => isFuncCallState(state) && !state.isReadonly &&
+    anyInput(consistencyStates[state.uuid], cond) && !callStates[state.uuid]?.pendingDependencies?.length);
+
+export const hasSubtreeFixableInconsistencies = (...states: SubtreeStates) =>
+  findInconsistentStep(states, isFixableInconsistency);
+
+export const hasSubtreeAnyInconsistencies = (...states: SubtreeStates) => findInconsistentStep(states, isInconsistent);
 
 export const statusToTooltip: Record<Status, string> = {
   [`next`]: `This step is available to run`,
