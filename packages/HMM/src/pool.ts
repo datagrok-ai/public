@@ -1,0 +1,265 @@
+/** A pool of HMMER workers sharing one compiled WebAssembly module.
+ *
+ * Comparisons of different query sequences are independent, so a batch is
+ * split into chunks that idle workers pull in turn; results are identical for
+ * any number of workers. The pool starts on first use and terminates its
+ * workers after a minute without work, releasing their memory. */
+import * as DG from 'datagrok-api/dg';
+import type {DatabaseInfo, QueryResult, SearchOptions, SequenceInput} from './hmmer/engine.ts';
+import {mergeSearch, partOptions, type MergedSearch, type SearchPart} from './hmmer/search.ts';
+import type {AnarciOptions, SequenceResult} from './hmmer/anarci/anarci.ts';
+import type {Scheme} from './hmmer/anarci/types.ts';
+import type {DomainChoice, NumberingRow} from './numbering-rows';
+import type {BuiltProfile, Logo, LogoMode, ProfileAlignment, QueryModelOptions} from './hmmer/tools.ts';
+import type {WorkerRequest, WorkerResponse} from './workers/protocol';
+
+/** Progress of a batch: items done of the total (called as chunks complete). */
+export type Progress = (done: number, total: number) => void;
+
+const IDLE_MS = 60_000;
+/** Below this many sequences per worker, extra workers cost more than they save. */
+const MIN_CHUNK = 16;
+
+interface PoolWorker {
+  worker: Worker;
+  pending: Map<number, {resolve: (value: unknown) => void; reject: (error: Error) => void}>;
+  ready: Promise<unknown>;
+  databases: Set<string>;
+}
+
+export class HmmerPool {
+  private static instance: HmmerPool | null = null;
+  private readonly base: string;
+  private module: Promise<WebAssembly.Module> | null = null;
+  /** The tools module (alignment, query models, logos), compiled on first use. */
+  private toolsModule: Promise<WebAssembly.Module> | null = null;
+  private workers: PoolWorker[] = [];
+  private nextId = 1;
+  private active = 0;
+  private idleTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Model databases by key, kept to load them into workers started later. */
+  private readonly databases = new Map<string, ArrayBuffer>();
+
+  private constructor(base: string) {
+    this.base = base;
+  }
+
+  /** The shared pool; `base` is the package's dist/ URL. */
+  static get(pkg: DG.Package): HmmerPool {
+    return HmmerPool.instance ??= new HmmerPool(`${pkg.webRoot}dist/`);
+  }
+
+  /** Workers used for a batch: one per spare hardware thread, at most 8. */
+  static get maxWorkers(): number {
+    const threads = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 2 : 2;
+    return Math.max(1, Math.min(8, threads - 1));
+  }
+
+  private compile(): Promise<WebAssembly.Module> {
+    return this.module ??= this.fetchModule('hmmer_web.wasm', 'engine').catch((e) => {
+      this.module = null;
+      throw e;
+    });
+  }
+
+  private tools(): Promise<WebAssembly.Module> {
+    return this.toolsModule ??= this.fetchModule('hmmer_tools.wasm', 'tools').catch((e) => {
+      this.toolsModule = null;
+      throw e;
+    });
+  }
+
+  private async fetchModule(file: string, what: string): Promise<WebAssembly.Module> {
+    const response = await fetch(this.base + file);
+    if (!response.ok) throw new Error(`Failed to load the HMMER ${what} (HTTP ${response.status})`);
+    return WebAssembly.compile(await response.arrayBuffer());
+  }
+
+  /** Run one request on a worker. */
+  private async one<T>(request: WorkerRequest): Promise<T> {
+    this.begin();
+    try {
+      const [w] = await this.ensure(1);
+      return await this.call<T>(w, request);
+    } finally {
+      this.end();
+    }
+  }
+
+  private call<T>(w: PoolWorker, request: WorkerRequest, transfer: Transferable[] = []): Promise<T> {
+    const id = this.nextId++;
+    return new Promise<T>((resolve, reject) => {
+      w.pending.set(id, {resolve: resolve as (value: unknown) => void, reject});
+      w.worker.postMessage({id, request}, transfer);
+    });
+  }
+
+  private async spawn(): Promise<PoolWorker> {
+    const module = await this.compile();
+    const worker = new Worker(new URL('./workers/hmmer.worker', import.meta.url));
+    const w: PoolWorker = {worker, pending: new Map(), ready: Promise.resolve(), databases: new Set()};
+    worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
+      const message = event.data;
+      const entry = w.pending.get(message.id);
+      if (!entry) return;
+      w.pending.delete(message.id);
+      if (message.ok) entry.resolve(message.result);
+      else entry.reject(new Error(message.error));
+    };
+    worker.onerror = (event) => {
+      for (const {reject} of w.pending.values()) reject(new Error(event.message || 'HMMER worker failed'));
+      w.pending.clear();
+    };
+    w.ready = this.call(w, {op: 'init', module, base: this.base});
+    await w.ready;
+    return w;
+  }
+
+  /** Make sure `count` workers are running, with every registered database loaded. */
+  private async ensure(count: number): Promise<PoolWorker[]> {
+    const missing = count - this.workers.length;
+    if (missing > 0)
+      this.workers.push(...await Promise.all(Array.from({length: missing}, () => this.spawn())));
+    const used = this.workers.slice(0, count);
+    await Promise.all(used.map(async (w) => {
+      for (const [key, bytes] of this.databases) {
+        if (w.databases.has(key)) continue;
+        await this.call(w, {op: 'load', key, bytes: bytes.slice(0)});
+        w.databases.add(key);
+      }
+    }));
+    return used;
+  }
+
+  private begin(): void {
+    this.active++;
+    if (this.idleTimer) clearTimeout(this.idleTimer);
+    this.idleTimer = null;
+  }
+
+  private end(): void {
+    if (--this.active > 0) return;
+    this.idleTimer = setTimeout(() => this.terminate(), IDLE_MS);
+  }
+
+  /** Stop all workers (they restart on the next request). */
+  terminate(): void {
+    for (const w of this.workers) w.worker.terminate();
+    this.workers = [];
+  }
+
+  /** Run `make(chunk, offset)` for consecutive chunks of `items` on up to `workers` workers. */
+  async map<T, R>(items: T[], make: (chunk: T[], offset: number) => WorkerRequest, workers = HmmerPool.maxWorkers,
+    progress?: Progress): Promise<R[]> {
+    this.begin();
+    try {
+      const count = Math.max(1, Math.min(workers, Math.ceil(items.length / MIN_CHUNK)));
+      const used = await this.ensure(count);
+      // Several chunks per worker keep all of them busy until the end.
+      const size = Math.max(1, Math.ceil(items.length / (count * 4)));
+      const chunks: T[][] = [];
+      const offsets: number[] = [];
+      for (let i = 0; i < items.length; i += size) {
+        chunks.push(items.slice(i, i + size));
+        offsets.push(i);
+      }
+      const results: R[][] = new Array(chunks.length);
+      let next = 0;
+      let done = 0;
+      await Promise.all(used.map(async (w) => {
+        while (next < chunks.length) {
+          const i = next++;
+          results[i] = await this.call<R[]>(w, make(chunks[i], offsets[i]));
+          progress?.(done += chunks[i].length, items.length);
+        }
+      }));
+      return results.flat();
+    } finally {
+      this.end();
+    }
+  }
+
+  /** ANARCI numbering of `(name, sequence)` pairs. */
+  anarci(sequences: [string, string][], options: AnarciOptions, workers?: number): Promise<SequenceResult[]> {
+    return this.map(sequences, (chunk) => ({op: 'anarci', sequences: chunk, options}), workers);
+  }
+
+  /** ANARCI numbering reduced to numbering frame rows in the workers (numbering-rows.ts). */
+  anarciRows(sequences: [string, string][], options: AnarciOptions, scheme: Scheme, choice: DomainChoice,
+    workers?: number, progress?: Progress): Promise<NumberingRow[]> {
+    return this.map(sequences, (chunk) => ({op: 'anarciRows', sequences: chunk, options, scheme, choice}), workers,
+      progress);
+  }
+
+  /** Register a model database (HMMER text or .h3m bytes); returns its description. */
+  async loadDatabase(key: string, bytes: Uint8Array): Promise<DatabaseInfo> {
+    this.begin();
+    try {
+      const copy = bytes.slice().buffer;
+      this.databases.set(key, copy);
+      const [first] = await this.ensure(1);
+      for (const w of this.workers) w.databases.delete(key);
+      const info = await this.call<DatabaseInfo>(first, {op: 'load', key, bytes: copy.slice(0)});
+      first.databases.add(key);
+      return info;
+    } catch (e) {
+      this.databases.delete(key);
+      throw e;
+    } finally {
+      this.end();
+    }
+  }
+
+  hasDatabase(key: string): boolean {
+    return this.databases.has(key);
+  }
+
+  /** `hmmscan` of every sequence against a registered database. */
+  scan(key: string, sequences: SequenceInput[], options: SearchOptions = {}, workers?: number, progress?: Progress):
+    Promise<QueryResult[]> {
+    return this.map(sequences, (chunk) => ({op: 'scan', key, sequences: chunk, options}), workers, progress);
+  }
+
+  /** phmmer's calibrated query models (an `.h3m` database to load and search). */
+  async queryModels(queries: {name: string; residues: string}[], options: QueryModelOptions = {}):
+    Promise<Uint8Array> {
+    return this.one({op: 'queryModels', tools: await this.tools(), queries, options});
+  }
+
+  /** `hmmalign` of `sequences` to model `index` of `model` (HMMER text or
+   * `.h3m`): traces split across workers, the alignment assembled once. */
+  async align(model: Uint8Array, index: number, sequences: {name: string; residues: string}[], trim = false,
+    workers?: number, progress?: Progress): Promise<ProfileAlignment> {
+    const tools = await this.tools();
+    const chunks = await this.map<{name: string; residues: string}, Uint8Array>(sequences,
+      (chunk) => ({op: 'alignTraces', tools, model, index, sequences: chunk}), workers, progress);
+    return this.one({op: 'alignRows', tools, model, index, sequences, chunks, trim});
+  }
+
+  /** `hmmbuild` of aligned rows: the model text C writes. */
+  async build(rows: {name: string; aligned: string}[], name: string, alphabet: 'amino' | 'dna' | 'rna' = 'amino'):
+    Promise<BuiltProfile> {
+    return this.one({op: 'build', tools: await this.tools(), rows, name, alphabet});
+  }
+
+  /** Model `index` of `models` as its own exact `.h3m` bytes. */
+  async extract(models: Uint8Array, index: number): Promise<Uint8Array> {
+    return this.one({op: 'extract', tools: await this.tools(), models, index});
+  }
+
+  /** hmmlogo values of every model in `models`. */
+  async logos(models: Uint8Array, mode: LogoMode = 'relent_all'): Promise<Logo[]> {
+    return this.one({op: 'logos', tools: await this.tools(), models, mode});
+  }
+
+  /** `hmmsearch` of one database model against `sequences` (unique names),
+   * split across workers and merged; identical to one search (hmmer/search.ts). */
+  async search(key: string, model: number, sequences: {name: string; residues: string}[],
+    options: SearchOptions = {}, workers?: number, progress?: Progress): Promise<MergedSearch> {
+    const total = sequences.length;
+    const parts = await this.map<{name: string; residues: string}, SearchPart>(sequences, (chunk, offset) =>
+      ({op: 'search', key, model, sequences: chunk, options: partOptions(options, total), offset}), workers,
+    progress);
+    return mergeSearch(parts, options, total, sequences.map((s) => s.name));
+  }
+}

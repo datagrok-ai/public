@@ -135,9 +135,10 @@ const isEmptyDataFrame = (df: any) =>
 
 const isEmptyGraphics = (v: any) => v == null || v === '';
 
+const isHiddenOutput = (prop: DG.Property) => JSON.parse(prop.options.hidden || 'false');
+
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
-  const isHidden = JSON.parse(prop.options.hidden || 'false');
-  if (isHidden)
+  if (isHiddenOutput(prop))
     return;
   const scalarValue = funcCall.outputs[prop.name];
   let formattedScalarValue = scalarValue;
@@ -213,12 +214,8 @@ const tabToProperties = (fc: DG.FuncCall) => {
   });
 
   [...fc.outputParams.values()].forEach(({property}) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) {
-      processVisual(property, true);
-      return;
-    }
-    if (property.propertyType === DG.TYPE.GRAPHICS) {
-      if (!JSON.parse(property.options.hidden || 'false'))
+    if (property.propertyType === DG.TYPE.DATA_FRAME || property.propertyType === DG.TYPE.GRAPHICS) {
+      if (!isHiddenOutput(property))
         processVisual(property, true);
       return;
     }

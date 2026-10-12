@@ -184,7 +184,8 @@ node history/history.mjs record --note "after the chem-gaps review"
 node history/history.mjs html
 ```
 
-`record` keeps each project's last report as one dated file in `history/runs/` (commit it): every
+`record` keeps each project's last report as one dated file in `history/runs/` (commit it), and removes the
+oldest records past the 15 newest, so the folder stays small: every
 test with its outcome, time, worker and start, a journey's scenarios with theirs, the failed step
 and error of a failure, and where the run ran — the machine (host, CPU, threads, memory, OS), the
 stand and the branch and commit. A project whose last report is more than 12 hours older than the

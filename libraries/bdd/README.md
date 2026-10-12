@@ -176,6 +176,14 @@ time — a fuzzy gallery search that brings up the fixtures other features creat
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
 the Background runs plainly, and only the scenario's own steps are the expected failure.
+`@known-failure:<line>` pins the defect to the step at that feature line: a failure of any other step
+fails the test as a plain failure would. Pin every tag — a scenario that breaks earlier for another
+reason stays green under a bare one.
+
+**`@skip`** on a scenario, or on a journey's feature, declares the test and does not run it; the run
+reports it skipped. It is for a test the lead has set aside (a flaky feature of an app nobody uses),
+never for a defect (`@known-failure`) or a stand without a capability (the gates). The feature's
+description says, in a `TODO:` paragraph, why and what brings it back.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey

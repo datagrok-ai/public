@@ -1,5 +1,9 @@
 # math changelog
 
+## 1.2.9
+
+* getGPUDevice: Returns the device at once instead of waiting 10 ms on every call to see if it was lost; a lost device, and its adapter, are replaced on the next call
+
 ## 1.2.6 (2024-12-17)
 
 * Vector distance functions support on webGPU

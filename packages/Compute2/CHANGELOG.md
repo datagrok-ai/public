@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
 * TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation
 * Replaced hardcoded colours with the platform design tokens

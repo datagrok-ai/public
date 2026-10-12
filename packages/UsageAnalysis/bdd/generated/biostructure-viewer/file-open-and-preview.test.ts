@@ -24,7 +24,7 @@ import {valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {autostartsCompleted, browsePanelOpen, simpleModeOff, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {tableViewOpened} from '@datagrok-libraries/bdd/bindings/platform/workspace';
 import {noBalloons, noErrors, pickFromContextMenu, propertyShouldBe} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
-import {el, feature, knownFailure} from '@datagrok-libraries/bdd/runtime';
+import {el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Opening and previewing structure files from the Files browser", () => {
   const session = feature(test, "features/biostructure-viewer/file-open-and-preview.feature", import.meta.url);
@@ -216,7 +216,7 @@ test.describe("Opening and previewing structure files from the Files browser", (
     await session.step(167, "And no errors should have been logged", () => noErrors(page));
     await session.step(168, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("Open table residues from a PDB file's menu opens a residue table with an NGL viewer", {tag: ["@viewers", "@realizes:biostructureviewer.preview.biostructure", "@realizes:biostructureviewer.import.pdb", "@realizes:biostructureviewer.import.pdbqt"]}, async ({browser}) => {
+  test("Open table residues from a PDB file's menu opens a residue table with an NGL viewer (GROK-21118)", {tag: ["@viewers", "@realizes:biostructureviewer.preview.biostructure", "@realizes:biostructureviewer.import.pdb", "@realizes:biostructureviewer.import.pdbqt"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(30, "Given user is logged in", () => loggedIn(page));
     await session.step(31, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -230,10 +230,11 @@ test.describe("Opening and previewing structure files from the Files browser", (
     await session.step(173, "When user picks \"Open table residues\" from the context menu of 1bdq.pdb link in gallery", () => pickFromContextMenu(page, "Open table residues", el("1bdq.pdb link in gallery")));
     await session.step(174, "Then the \"Table\" view should be current", () => viewIsCurrent(page, "Table"));
     await session.step(175, "And NGL viewer should be visible", () => shouldBe(page, el("NGL viewer"), "visible"));
-    await session.step(176, "And no errors should have been logged", () => noErrors(page));
-    await session.step(177, "And no error or warning balloon should have been shown", () => noBalloons(page));
+    await session.step(176, "And the value of \"compId\" column in row 1 should be \"PRO\"", () => valueInRow(page, "compId", 1, "PRO"));
+    await session.step(177, "And no errors should have been logged", () => noErrors(page));
+    await session.step(178, "And no error or warning balloon should have been shown", () => noBalloons(page));
   });
-  test("Open table residues gives the residue names in compId (GROK-21118)", {tag: ["@viewers", "@realizes:biostructureviewer.preview.biostructure", "@realizes:biostructureviewer.import.pdb", "@realizes:biostructureviewer.import.pdbqt", "@known-failure"]}, async ({browser}) => {
+  test("A Biostructure viewer added to a structure table takes the structure column by itself (GROK-21119)", {tag: ["@viewers", "@realizes:biostructureviewer.preview.biostructure", "@realizes:biostructureviewer.import.pdb", "@realizes:biostructureviewer.import.pdbqt"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(30, "Given user is logged in", () => loggedIn(page));
     await session.step(31, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -242,31 +243,12 @@ test.describe("Opening and previewing structure files from the Files browser", (
     await session.step(34, "And Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
     await session.step(35, "And Files---App-Data---BiostructureViewer tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---BiostructureViewer tree node inside browse tree")));
     await session.step(36, "And Files---App-Data---BiostructureViewer---samples tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---BiostructureViewer---samples tree node inside browse tree")));
-    await knownFailure(async () => {
-      await session.step(181, "When user clicks on Files---App-Data---BiostructureViewer---samples tree node inside browse tree", () => clickOn(page, el("Files---App-Data---BiostructureViewer---samples tree node inside browse tree")));
-      await session.step(182, "Then 1bdq.pdb link in gallery should be visible", () => shouldBe(page, el("1bdq.pdb link in gallery"), "visible"));
-      await session.step(183, "When user picks \"Open table residues\" from the context menu of 1bdq.pdb link in gallery", () => pickFromContextMenu(page, "Open table residues", el("1bdq.pdb link in gallery")));
-      await session.step(184, "Then the \"Table\" table view should open with 198 rows", () => tableViewOpened(page, "Table", 198));
-      await session.step(185, "And the value of \"compId\" column in row 1 should be \"PRO\"", () => valueInRow(page, "compId", 1, "PRO"));
-    });
-  });
-  test("A Biostructure viewer added to a structure table takes the structure column by itself (GROK-21119)", {tag: ["@viewers", "@realizes:biostructureviewer.preview.biostructure", "@realizes:biostructureviewer.import.pdb", "@realizes:biostructureviewer.import.pdbqt", "@known-failure"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(30, "Given user is logged in", () => loggedIn(page));
-    await session.step(31, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(32, "And the browse panel is open", () => browsePanelOpen(page));
-    await session.step(33, "And Files tree node inside browse tree is expanded", () => isExpanded(page, el("Files tree node inside browse tree")));
-    await session.step(34, "And Files---App-Data tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data tree node inside browse tree")));
-    await session.step(35, "And Files---App-Data---BiostructureViewer tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---BiostructureViewer tree node inside browse tree")));
-    await session.step(36, "And Files---App-Data---BiostructureViewer---samples tree node inside browse tree is expanded", () => isExpanded(page, el("Files---App-Data---BiostructureViewer---samples tree node inside browse tree")));
-    await knownFailure(async () => {
-      await session.step(189, "When user double-clicks on Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree")));
-      await session.step(190, "Then the \"pdb_data\" table view should open with 6 rows", () => tableViewOpened(page, "pdb_data", 6));
-      await session.step(191, "When user clicks on \"Add viewer\" icon in toolbar", () => clickOn(page, el("\"Add viewer\" icon in toolbar")));
-      await session.step(192, "And user types \"Biostructure\" into viewer gallery search in \"Add Viewer\" dialog", () => typeInto(page, "Biostructure", el("viewer gallery search in \"Add Viewer\" dialog")));
-      await session.step(193, "And user clicks on first \"Biostructure\" button in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Biostructure\" button in \"Add Viewer\" dialog")));
-      await session.step(194, "Then Biostructure viewer should be visible", () => shouldBe(page, el("Biostructure viewer"), "visible"));
-      await session.step(195, "And \"Biostructure Id\" property of Biostructure viewer should be \"pdb\"", () => propertyShouldBe(page, "Biostructure Id", el("Biostructure viewer"), "pdb"));
-    });
+    await session.step(181, "When user double-clicks on Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree", () => doubleClickOn(page, el("Files---App-Data---BiostructureViewer---pdb_data.csv tree node inside browse tree")));
+    await session.step(182, "Then the \"pdb_data\" table view should open with 6 rows", () => tableViewOpened(page, "pdb_data", 6));
+    await session.step(183, "When user clicks on \"Add viewer\" icon in toolbar", () => clickOn(page, el("\"Add viewer\" icon in toolbar")));
+    await session.step(184, "And user types \"Biostructure\" into viewer gallery search in \"Add Viewer\" dialog", () => typeInto(page, "Biostructure", el("viewer gallery search in \"Add Viewer\" dialog")));
+    await session.step(185, "And user clicks on first \"Biostructure\" button in \"Add Viewer\" dialog", () => clickOn(page, el("first \"Biostructure\" button in \"Add Viewer\" dialog")));
+    await session.step(186, "Then Biostructure viewer should be visible", () => shouldBe(page, el("Biostructure viewer"), "visible"));
+    await session.step(187, "And \"Biostructure Id\" property of Biostructure viewer should be \"pdb\"", () => propertyShouldBe(page, "Biostructure Id", el("Biostructure viewer"), "pdb"));
   });
 });

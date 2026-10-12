@@ -734,13 +734,23 @@ export namespace chem {
         if(currentSketcherType !== sketcherType) //in case sketcher type has been changed while previous sketcher was loading
           return;
         const sketcher = await sketcherFunc!.apply();
+        // A later switch began while the function applied (a package not in the browser's cache loads for seconds): the
+        // sketcher chosen then is the host's, and this one, never shown, is let go
+        if (switchId !== this._switches || localChangeId !== this._sketcherChangeId) {
+          sketcher?.detach();
+          return;
+        }
         this.sketcher = sketcher; //setting this.sketcher only after ensuring that this is last selected sketcher
         ui.empty(this.host);
         this.host.appendChild(this.sketcher!.root);
         this._setSketcherSize(); //update sketcher size according to base sketcher width and height
         if (this.isInPopupContainer()) //workaround for sketcher not to be truncated when showed in a popup menu in the end of the screen (on last dataframe column)
           this.host.style.minWidth = `0px`;
-        await this.sketcher!.init(this);
+        await sketcher.init(this);
+        // A later switch began while this one initialized: the host, its change subscription and its molecule are that
+        // switch's now
+        if (switchId !== this._switches || this.sketcher !== sketcher)
+          return;
         ui.setUpdateIndicator(this.host, false);
         this._sketcherTypeChanged = false;
         this.changedSub = this.sketcher!.onChanged.subscribe((_: any) => {
@@ -757,7 +767,9 @@ export namespace chem {
         // a value set while the implementation initialized was only stored, and is newer than the one taken above
         if (this._valuesSet !== valuesSet)
           this._setStoredMolecule();
-        else if (molecule)
+        // an empty one is not loaded: the implementation starts empty, and Ketcher takes strokes before it is ready,
+        // which loading it would wipe
+        else if (molecule && !Sketcher.isEmptyMolfile(molecule))
           this.setMolecule(molecule!, this._smarts !== null);
         // Ready: initialized, listened to, showing the host's molecule. Announced here, synchronously, so a subscriber
         // acts before any user input; unless a later switch has begun, whose implementation will be announced instead.

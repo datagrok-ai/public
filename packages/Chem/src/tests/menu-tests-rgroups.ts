@@ -6,7 +6,7 @@ import {_package} from '../package-test';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {readDataframe} from './utils';
 import {getMCS} from '../utils/most-common-subs';
-import {rGroupsMinilib} from '../analysis/r-group-analysis';
+import {RGroupDecompRes, rGroupsMinilib} from '../analysis/r-group-analysis';
 import {newChemOpId, runCancellableChemOp} from '../utils/chem-common';
 
 
@@ -200,6 +200,29 @@ M  END
       .every((it) => sampleTable.columns.names().includes(it)), true);
   });
 
+  test('rgroups.noRGroups.sameMolecules', async () => {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', new Array(5).fill('c1ccccc1'))]);
+    await grok.data.detectSemanticTypes(df);
+    const core = await getMCS(df.col('smiles')!, true, true);
+    expect(core, '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
+    const res = await _rGroupDecomposition(df, core);
+    expect(res != null && !res.xAxisColName && !res.yAxisColName, true, 'R groups were found in five copies of benzene');
+    expect(df.col('R1'), null);
+    expect(df.rowCount, 5);
+  });
+
+  test('rgroups.noRGroups.unrelatedMolecules', async () => {
+    const df = await readDataframe('smiles.csv');
+    await grok.data.detectSemanticTypes(df);
+    const core = await getMCS(df.col('canonical_smiles')!, true, true);
+    expect(core, '[#6]');
+    const columns = df.columns.names();
+    const res = await _rGroupDecomposition(df, core, 'canonical_smiles');
+    expect(res != null && !res.xAxisColName && !res.yAxisColName, true, 'R groups were found in unrelated molecules');
+    expectArray(df.columns.names(), columns);
+    expect(df.rowCount, 1000);
+  }, {timeout: 60000});
+
   // --- kill-based cancellation machinery ---
 
   test('cancellable.runCancellableChemOp', async () => {
@@ -277,6 +300,19 @@ M  END
     expect(next, 'ok', 'critical section released after the kill — next op runs');
   }, {timeout: 30000});
 });
+
+async function _rGroupDecomposition(df: DG.DataFrame, core: string, molColName = 'smiles'):
+  Promise<RGroupDecompRes | undefined> {
+  const call = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
+    df: df,
+    molColName: molColName,
+    core: core,
+    rGroupName: 'R',
+    rGroupMatchingStrategy: 'Greedy',
+    onlyMatchAtRGroups: false,
+  }).call(undefined, undefined, {processed: false});
+  return call.getOutputParamValue();
+}
 
 const sampleTable = DG.DataFrame.fromCsv(`smiles
 O=C1CN=C(c2ccccc2N1)C3CCCCC3

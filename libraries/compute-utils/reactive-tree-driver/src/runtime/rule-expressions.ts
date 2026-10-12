@@ -185,7 +185,8 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
   return ctx;
 }
 
-const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
+/** Array ops whose second argument runs over each element. */
+export const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `$all.` prefix stripped.
  *  `fields` collects the roots read as `{var: 'name'}` in the element argument of an array op, which JSON Logic

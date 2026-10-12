@@ -220,7 +220,7 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 | `demo` | + world, test_db, northwind |
 | `full` | + grok_spawner, JKG, demo DBs |
 
-See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (Jira/GitHub), and troubleshooting.
+See `.devcontainer/PACKAGES_DEV.md` for detailed usage docs, architecture diagram, MCP plugin setup (GitHub/Jira), and troubleshooting.
 
 ### `grok server` / `grok s` Command
 

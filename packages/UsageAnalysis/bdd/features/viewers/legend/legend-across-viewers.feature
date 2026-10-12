@@ -29,8 +29,8 @@ Feature: One legend column across seven viewers
   visibility-and-positioning case uses the scatter plot, whose picker the "(no value)" scenario
   drives). The legend-equals-canvas check of the first scenario reads the two default colors that
   matter here, Caucasian's green and Other's red, on every canvas (the trellis plot's "view" is its
-  own small canvas, its cells are inner viewers, so only Caucasian's green is read there); the grid
-  scenario then moves them away from the defaults and reads them on every legend and canvas again.
+  grid of cells, read as the picture its inner scatter plots paint there); the grid scenario then
+  moves them away from the defaults and reads them on every legend and canvas again.
   Not translated: the SPGI columns of the manual case are replaced by demog-1000's (RACE for Stereo
   Category); demog-1000 has no categorical column with empty values, so the "(no value)" item is
   checked on a calculated column that empties RACE for the 153 rows with AGE over 60. The two
@@ -106,6 +106,7 @@ Feature: One legend column across seven viewers
     And the "view" area of line chart viewer should contain the color "#D62728"
     And the "view" area of bar chart viewer should contain the color "#D62728"
     And the "view" area of pie chart viewer should contain the color "#D62728"
+    And the "view" area of trellis plot viewer should contain the color "#D62728"
     And the "view" area of box plot viewer should contain the color "#D62728"
     And no errors should have been logged
 

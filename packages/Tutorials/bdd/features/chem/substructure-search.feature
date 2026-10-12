@@ -41,6 +41,8 @@ Feature: The Substructure Search and Filtering tutorial
     And 186 rows should pass the filter
     And the "structure of smiles" reading of filter panel should be "c1ccc2ccccc2c1"
 
+    # the tutorial lists the step once the card has drawn the molecule and its Clear: a click before that is not seen
+    And the tutorial step "In the filter panel, click CLEAR" should not be done yet
     # the card shows Clear while it is hovered
     When user hovers over the "card smiles" area of filter panel
     And user clicks on "Clear" button in filter panel

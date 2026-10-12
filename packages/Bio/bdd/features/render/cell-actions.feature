@@ -3,7 +3,8 @@ Feature: Sequence cell actions and panels
   A cell of a Macromolecule column offers Copy in every notation on its context menu and puts
   the sequence in the chosen notation on the clipboard (separator notation with the package's
   default separator, a dot); the cell made current shows its monomer composition on the context
-  panel, and a cell of a Monomer column the monomer itself.
+  panel, and a cell of a Monomer column the monomer itself. The Copy group comes from Bio's
+  autostart, which the platform runs a few seconds after boot, so a fresh page waits for it.
 
   Not translated: the md's "Get Region" cell action — the product calls it Extract Region and its
   dialog is claimed in transform/convert; the Split to Monomers function editor — its OK path is
@@ -13,6 +14,7 @@ Feature: Sequence cell actions and panels
     Given user is logged in
     And user opens filter_FASTA dataset keeping the first 9 rows
     And the Bio package is initialized
+    And the package autostarts have completed
     Then "fasta" column should have units "fasta"
     And the "cell type of fasta" reading of grid should be "sequence"
 

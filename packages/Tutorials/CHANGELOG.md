@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Activity Cliffs: Fixed the OK step's text, which had become 'Click "OK"' with the step-skipping change; it is "Click OK" again, as in the other Chem tutorials
 * Tests: Data Aggregation and Multivariate Analysis wait for the package autostarts before their top-menu pick
 * GROK-20153: Tutorials | Sticky meta: Stuck on annotate dataset step in some cases
 * Tutorials: Fixed the step counters of Scatter Plot, Embedded Viewers, Filters, Grid Customization, Calculated Columns and Data Aggregation (each declared one step more than it lists), so "Step N of M" names the step in progress

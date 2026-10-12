@@ -1,5 +1,11 @@
 # bio changelog
 
+## 6.0.8
+
+* `viewers/web-logo.ts`: `WebLogoProfile`, `WEB_LOGO_PROFILE_ROLE` and the `profile` property: WebLogo draws a profile supplied by a package instead of the column's composition
+* `annotation-manager.ts`: `setRowAnnotations(..., notify)` to write many rows with one change event
+* Added `utils/macromolecule/annotation-manager.ts` (moved from Bio): read and write sequence annotations (`.annotations` tag and the hidden per-row companion column)
+
 ## 6.0.4 (2026-09-08)
 
 * Added `monomer-works/lib-events.ts`: `onMonomerLibLoaded` / `fireMonomerLibLoaded`, the `bio-monomer-lib-loaded` custom platform event Bio fires after every monomer library load, for packages that render or validate monomers without a library object of their own

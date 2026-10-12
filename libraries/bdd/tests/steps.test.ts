@@ -18,6 +18,7 @@ import {select} from '../src/runtime/gestures.js';
 import {hitArea, readValue} from '../src/runtime/viewers.js';
 import {locate} from '../src/runtime/locate.js';
 import {knownFailure} from '../src/runtime/harness.js';
+import {StepFailure} from '../src/runtime/failure.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
 
 let missing = '';
@@ -196,6 +197,14 @@ scenario('a table tag is compared with a file byte for byte', async () => {
 test('a known failure passes when its steps fail and fails when they pass', async () => {
   await knownFailure(async () => { throw new Error('the defect'); });
   await assert.rejects(() => knownFailure(async () => undefined), /tagged @known-failure and passed/);
+});
+
+test('a known failure pinned to a line passes only when the step at that line fails', async () => {
+  const at = (line: number) => new StepFailure(`features/a.feature:${line}`, 'Then x', 'the defect');
+  await knownFailure(async () => { throw at(12); }, 12);
+  await assert.rejects(() => knownFailure(async () => { throw at(9); }, 12), /tagged @known-failure:12, but did not fail at line 12/);
+  await assert.rejects(() => knownFailure(async () => { throw new Error('a binding broke'); }, 12), /did not fail at line 12/);
+  await assert.rejects(() => knownFailure(async () => undefined, 12), /tagged @known-failure and passed/);
 });
 
 test('a fixture of a dead run is stale after an hour; a live, a foreign or an unsuffixed one is not', () => {

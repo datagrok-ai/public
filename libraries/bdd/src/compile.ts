@@ -42,6 +42,11 @@ export const JOURNEY_TAG = '@journey';
 /** A guide runs in the full shell, filmed or not: every scenario carries [FULL_SHELL_STEP]. */
 export const GUIDE_TAG = '@guide';
 export const FULL_SHELL_STEP = 'simple mode is off';
+/** A test that is not run, reported as skipped: the feature's description says why and what would bring it back. */
+export const SKIP_TAG = '@skip';
+/** A scenario that describes a product defect: `@known-failure:<line>` passes only on a failure of the step at
+ * that feature line, so a failure anywhere else is reported. */
+export const KNOWN_FAILURE_TAG = '@known-failure';
 export const GENERATED_DIR = 'generated';
 export const FEATURES_DIR = 'features';
 export const RUNTIME_SPECIFIER = `${PACKAGE_NAME}/runtime`;
@@ -174,6 +179,11 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
   for (const scenario of feature.scenarios) {
     if ([...feature.tags, ...scenario.tags].includes(GUIDE_TAG) && ![...feature.background, ...scenario.steps].some((s) => s.text === FULL_SHELL_STEP))
       diag(scenario.line, 'error', `a ${GUIDE_TAG} scenario runs in the full shell: add "And ${FULL_SHELL_STEP}" after "Given user is logged in"`);
+    if (feature.tags.includes(JOURNEY_TAG) && scenario.tags.includes(SKIP_TAG) && !feature.tags.includes(SKIP_TAG))
+      diag(scenario.line, 'error', `a ${JOURNEY_TAG} is one test: tag the feature ${SKIP_TAG}, not one of its scenarios`);
+    const known = knownFailureOf(scenario.tags);
+    if (known?.line !== undefined && !scenario.steps.some((s) => s.line === known.line))
+      diag(scenario.line, 'error', `${KNOWN_FAILURE_TAG}:${known.line} names no step of this scenario: the line is the feature line of the step expected to fail`);
   }
 
   const body: string[] = feature.tags.includes(JOURNEY_TAG) ?
@@ -219,11 +229,13 @@ function tagOptions(tags: string[]): string {
 function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitle: (s: string) => string, emitStep: EmitStep, helpers: Set<string>): string[] {
   const out: string[] = [];
   const state: ScenarioState = {};
-  out.push(`  test(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions([...feature.tags, ...scenario.tags])}, async ({browser}) => {`);
+  const tags = [...feature.tags, ...scenario.tags];
+  out.push(`  ${testCall(tags)}(${JSON.stringify(uniqueTitle(scenario.name))}${tagOptions(tags)}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
   for (const step of feature.background)
     out.push(...emitStep(step, '    ', state));
-  if (!scenario.tags.includes('@known-failure')) {
+  const known = knownFailureOf(scenario.tags);
+  if (!known) {
     for (const step of scenario.steps)
       out.push(...emitStep(step, '    ', state));
   }
@@ -232,10 +244,20 @@ function emitScenario(scenario: ScenarioModel, feature: FeatureModel, uniqueTitl
     out.push('    await knownFailure(async () => {');
     for (const step of scenario.steps)
       out.push(...emitStep(step, '      ', state));
-    out.push('    });');
+    out.push(known.line === undefined ? '    });' : `    }, ${known.line});`);
   }
   out.push('  });');
   return out;
+}
+
+function testCall(tags: string[]): string {
+  return tags.includes(SKIP_TAG) ? 'test.skip' : 'test';
+}
+
+/** The scenario's `@known-failure` tag, and the line it pins (`@known-failure:<line>`) if any. */
+function knownFailureOf(tags: string[]): {line?: number} | undefined {
+  const tag = tags.find((t) => t === KNOWN_FAILURE_TAG || t.startsWith(`${KNOWN_FAILURE_TAG}:`));
+  return tag === undefined ? undefined : tag === KNOWN_FAILURE_TAG ? {} : {line: Number(tag.slice(KNOWN_FAILURE_TAG.length + 1))};
 }
 
 /** One test for the feature: the Background, then every scenario as a soft step on the same state. */
@@ -243,7 +265,7 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
   helpers.add('journey');
   const out: string[] = [];
   const state: ScenarioState = {};
-  out.push(`  test(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
+  out.push(`  ${testCall(feature.tags)}(${JSON.stringify(feature.name)}${tagOptions([...feature.tags, ...feature.scenarios.flatMap((s) => s.tags)])}, async ({browser}) => {`);
   out.push('    const page = await session.page(browser);');
   out.push(`    const run = journey(test, ${feature.scenarios.length}, page);`);
   for (const step of feature.background)
@@ -252,7 +274,8 @@ function emitJourney(feature: FeatureModel, uniqueTitle: (s: string) => string, 
     out.push(`    await run.scenario(${JSON.stringify(uniqueTitle(scenario.name))}, async () => {`);
     for (const step of scenario.steps)
       out.push(...emitStep(step, '      ', state));
-    out.push(scenario.tags.includes('@known-failure') ? '    }, {knownFailure: true});' : '    });');
+    const known = knownFailureOf(scenario.tags);
+    out.push(!known ? '    });' : known.line === undefined ? '    }, {knownFailure: true});' : `    }, {knownFailure: true, line: ${known.line}});`);
   }
   out.push('    run.finish();');
   out.push('  });');
