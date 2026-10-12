@@ -36,6 +36,24 @@ function findFfmpeg() {
 }
 const FFMPEG = findFfmpeg();
 
+let checker;
+/** Runs gif-check.py on a finished take and prints its report. REC_CHECK=0 skips it. */
+function checkGif(gif) {
+  if (process.env.REC_CHECK === '0') return;
+  if (checker === undefined)
+    checker = ['python3', 'python', 'py'].find((py) => spawnSync(py, ['-c', 'import PIL, numpy'], {stdio: 'ignore'}).status === 0) ?? null;
+  if (!checker) {
+    console.warn('gif-check skipped: no Python with Pillow and numpy');
+    return;
+  }
+  const r = spawnSync(checker, [path.join(HERE, 'gif-check.py'), gif], {encoding: 'utf8'});
+  process.stdout.write(r.stdout ?? '');
+  if (r.status === 1)
+    console.warn('gif-check: fix the FAIL lines above before review');
+  else if (r.status !== 0)
+    console.warn(`gif-check failed to run: ${(r.stderr ?? '').trim().split('\n').pop()}`);
+}
+
 // The server URL comes from the grok CLI config; the session token from 'grok s token', so no key is read here.
 function serverUrl(alias) {
   const lines = fs.readFileSync(path.join(os.homedir(), '.grok', 'config.yaml'), 'utf8').split(/\r?\n/);
@@ -78,7 +96,7 @@ export async function cleanShell(page) {
     grok.shell.closeAll();
     const w = grok.shell.windows;
     w.showBrowse = false; w.showToolbox = false; w.showContextPanel = false; w.showHelp = false;
-    w.showConsole = false; w.showVariables = false;
+    w.showConsole = false; w.showVariables = false; w.showSidebar = false;
     try { w.simpleMode = false; } catch (_) {}
   });
   await page.waitForTimeout(800);
@@ -245,12 +263,12 @@ export class Recorder {
     // a still page sends no frames, so the last frame lasts until the stop: a final wait in the scene is kept
     this.end = this.frames.length ? Math.max(this.frames[this.frames.length - 1].t + 0.1, Date.now() / 1000) : 0;
   }
-  /** Writes <out>.gif and <out>-thumb.png; thumbAt is a fraction of the timeline. Without size: 800×500, or with a
-   *  crop, at most 800 px wide with the crop's aspect ratio. */
-  make(out, {fps = 12, thumbAt = 0.95, colors = 128, crop = null, size = null} = {}) {
+  /** Writes <out>.gif and <out>-thumb.png; thumbAt is a fraction of the timeline. Without size: twice the viewport
+   *  (1600×1000), or with a crop, twice the crop and at most 1600 px wide. */
+  make(out, {fps = 12, thumbAt = 0.95, colors = 256, crop = null, size = null} = {}) {
     if (!size) {
-      const w = crop ? Math.min(800, Math.round(crop[2])) : 800;
-      size = crop ? [w & ~1, Math.round(w * crop[3] / crop[2]) & ~1] : [800, 500];
+      const w = crop ? Math.min(1600, Math.round(crop[2] * 2)) : W * 2;
+      size = crop ? [w & ~1, Math.round(w * crop[3] / crop[2]) & ~1] : [W * 2, H * 2];
     }
     const list = path.join(this.dir, 'list.txt');
     const lines = [];
@@ -272,6 +290,7 @@ export class Recorder {
     const kb = Math.round(fs.statSync(`${out}.gif`).size / 1024);
     const dur = (this.end - this.frames[0].t).toFixed(1);
     console.log(`gif ${out}.gif: ${size[0]}x${size[1]}, ${this.frames.length} frames, ${dur}s, ${kb} KB`);
+    checkGif(`${out}.gif`);
   }
   /** A contact sheet of evenly spaced frames, for reviewing a take without watching it. */
   sheet(out, n = 12) {

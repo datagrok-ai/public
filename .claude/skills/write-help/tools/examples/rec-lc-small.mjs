@@ -47,7 +47,7 @@ await film('line-chart-small', setup, async (page, m) => {
   await m.click(xp[0] + 40, xp[1] + 48, {after: 1200});
   console.log('x', await page.evaluate(prop('xColumnName')));
   await m.moveTo(vb.x + vb.width / 2, vb.y + vb.height / 2 + 40);
-  await page.waitForTimeout(2200);
-}, {pre, start: [420, 300], thumbAt: 0.98, noTooltips: false, colors: 64, fps: 10, size: [400, 300],
+  await page.waitForTimeout(1200);
+}, {pre, start: [150, 300], thumbAt: 0.98, noTooltips: false, colors: 64, fps: 10, size: [800, 600],
   crop: async (page) => { const b = await page.locator('[name="viewer-Line-chart"]').first().boundingBox(); const h = b.width * 3 / 4; console.log('viewer', JSON.stringify(b)); return [b.x, b.y + b.height - h, b.width, h]; },
   out: (process.env.REC_OUT ?? 'out') + '/line-chart-small'});

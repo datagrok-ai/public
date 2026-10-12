@@ -3,8 +3,9 @@ frames, and the hold of the last frame. Exit code 1 when a check fails.
 
 Usage: python gif-check.py <file.gif> [...]    Requires Pillow and numpy.
 
-It does not judge sharpness: an upscaled recording is caught when it is made (rec-lib warns when the frames
-are not twice the viewport).
+Click marks are checked in 2x recordings, rec-lib's default: in a GIF scaled down to half, the marks are too small
+to be told from icons, and none are found. It does not judge sharpness: an upscaled recording is caught when it is
+made (rec-lib warns when the frames are not twice the viewport).
 """
 import sys
 import numpy as np
@@ -20,7 +21,7 @@ def mark_mask(a):
     """Click marks: rec-lib's yellow (left button) or green (right button) disc at 75% opacity."""
     r, g, b = a[..., 0].astype(np.int32), a[..., 1].astype(np.int32), a[..., 2].astype(np.int32)
     yellow = (r > 170) & (g * 100 > r * 78) & (g * 100 < r * 93) & (b * 100 < r * 36)
-    green = (g > 140) & (r * 100 < g * 55) & (b * 100 < g * 72) & (b * 100 > g * 45)
+    green = (g > 175) & (r * 100 < g * 55) & (b * 100 < g * 72) & (b * 100 > g * 45)
     return yellow | green
 
 
@@ -44,6 +45,7 @@ def circle(m, cx, cy):
 def tip_offset(a, m, cx, cy):
     """Offset of the pointer tip from the mark's centre. Inside the mark only the arrow's fill stays white."""
     x0, y0, r, round_ = circle(m, cx, cy)
+    # the mark of a 2x recording (rec-lib's default): a radius of about 24 px
     if not round_ or not 16 <= r <= 34:
         return 'not a mark'
     top, left = int(max(0, y0 - r)), int(max(0, x0 - r))
@@ -79,6 +81,9 @@ def check(path):
                 # only what appeared in this frame: yellow icons and highlights that were already there drop out
                 appeared = mark_mask(full) if prev_full is None else mark_mask(full) & ~mark_mask(prev_full)
                 off = tip_offset(full, appeared, 2 * cx, 2 * cy)
+                # a click where the previous mark is still fading: only part of the mark is new
+                if (off is None or off == 'not a mark') and prev_full is not None:
+                    off = tip_offset(full, mark_mask(full), 2 * cx, 2 * cy)
                 where = f'click at {t:.2f}s (frame {i})'
                 if off == 'not a mark':
                     pass

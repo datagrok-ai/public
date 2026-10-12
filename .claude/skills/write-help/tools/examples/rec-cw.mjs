@@ -1,7 +1,8 @@
 import {film, W, H} from '../rec-lib.mjs';
 
 // Never clicks SAVE AND APPLY: the sync block exists only in the page and is gone when the browser closes.
-const setup = ``;
+// the settings gear is on the sidebar, which film() hides
+const setup = `grok.shell.windows.showSidebar = true;`;
 const pre = async (page) => {
   await page.addStyleTag({content: '.d4-balloon, .d4-balloon-container { display: none !important; }'});
 };

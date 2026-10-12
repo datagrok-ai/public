@@ -1,6 +1,7 @@
 import {film, W, H} from '../rec-lib.mjs';
 
-// Saves one project named NAME on the stand; run 'node dd-projects.mjs delete' after every take.
+// Saves one project named NAME on the stand and prints its id; run 'node dd-projects.mjs --delete <id>' after every
+// take, and 'node dd-projects.mjs "<NAME>"' after a failed one to find what it saved.
 // Point TREE and QUERY at a parameterized query the stand has (Browse path to its connection, and the query label).
 const TREE = ['Databases', 'Postgres', 'Northwind'];
 const QUERY = 'customers in @country';
@@ -56,7 +57,7 @@ await film('dynamic-dashboards', setup, async (page, m) => {
   await m.hoverEl(page.locator('.d4-dialog :text-is("Data sync")').first());
   await page.waitForTimeout(1500);
   await m.clickEl(page.locator('.d4-dialog [name="button-OK"]').first(), {after: 4000});
-  console.log('saved');
+  console.log('saved', await page.evaluate(() => `${grok.shell.project?.id} ${grok.shell.project?.friendlyName}`));
 
   const share = page.locator('.d4-dialog [name="button-CANCEL"]').first();
   if (await share.count()) { await page.waitForTimeout(1200); await m.clickEl(share, {after: 1200}); }

@@ -25,8 +25,9 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 **Frame**
 
 7. **Only what the GIF is about.** Keep the shell (menus, tabs, status bar). Hide the left sidebar
-   (`grok.shell.windows.showSidebar = false`, session-only) unless the GIF is about it. Close
-   Browse, Toolbox, Context Panel, and Help unless a step needs one. Open a panel only for that step and close it again.
+   unless the GIF is about it, and close Browse, Toolbox, Context Panel, and Help unless a step
+   needs one: `film()` does both (`cleanShell`); a scene that needs one sets it back in `setup`
+   (`grok.shell.windows.showSidebar = true`, session-only). Open a panel only for that step and close it again.
    No full-screen mode (`Alt+F`): it is recorded shrunk with black bars. Move a splitter or close
    the grid instead.
 8. **A viewer GIF shows the whole viewer.** Show the grid only when the result is visible in the
@@ -78,14 +79,16 @@ Part of the `write-help` skill. What a help GIF must look like, which tool recor
 
 | Tool | Use when |
 |---|---|
-| `tools/rec-lib.mjs` (this skill) | By default. It draws the pointer and click marks, records at 2x, and lets the scene control panels, crops, the held last frame, and the thumbnail |
+| `tools/rec-lib.mjs` (this skill) | By default. It records the page continuously at 2x, draws the pointer and click marks, and lets the scene control panels, crops, the held last frame, and the thumbnail |
 | `grok-bdd guide` (the `bdd-answer` skill, `libraries/bdd`) | A BDD feature for the scenario already exists and its output meets the rules above. `--help-pages` films every `@help:<page dir>` feature and copies the GIF and thumbnail into the page's `img/` |
 
 `grok-bdd guide` films at 1920×1080 unless `BDD_GUIDE_VIEWPORT=<w>x<h>` is set (below 1920 px the
-top menu folds its last groups, such as Chem and Bio, into "more"). The GIF is at most 880 px
-wide, and the thumbnail is the first step (`step-01.png`), not the result. Its usual output (5 fps,
-no drawn pointer, captions) is for `bdd-answer` replies, not the help: help GIFs need the pointer
-and the quality of requirement 10.
+top menu folds its last groups, such as Chem and Bio, into "more"). It takes a still before and
+after each step and animates the pointer between them, so typing, wheel scrolling, and a viewer
+redrawing during a drag don't show. The GIF is at most 880 px wide, 10 fps, 96 colours, at 1x,
+starts with a title card, and has a caption strip and dimming on every step; the thumbnail is the
+first step (`step-01.png`), not the result. That suits `bdd-answer` replies, not the help:
+help GIFs need the quality of requirement 10.
 
 ## rec-lib.mjs
 
@@ -105,7 +108,8 @@ and the quality of requirement 10.
 **Environment**: `REC_HOST` (config alias, `dev` by default), `REC_W` / `REC_H` (window, 800×500
 by default), `REC_BROWSER_ARGS` (Chromium flags; the default enables the hardware GPU, which 3D
 viewers need, and forces scale 2: keep `--force-device-scale-factor=2` when you override it),
-`REC_GROK` (the grok command), `REC_OUT` (output folder of the examples).
+`REC_GROK` (the grok command), `REC_OUT` (output folder of the examples), `REC_CHECK=0` (skip
+the automatic `gif-check.py` after a take).
 
 **API**
 
@@ -115,8 +119,8 @@ viewers need, and forces scale 2: keep `--force-device-scale-factor=2` when you 
   - `scene(page, mouse)` is the recorded part.
   - Options: `out` (path without extension; default `./out/<name>` in the current directory, keep
     it outside the repository), `crop` (`[x, y, w, h]` in CSS pixels, or `async (page) => box`),
-    `size` (default 800×500; with a crop, at most 800 px wide in the crop's aspect ratio), `fps`
-    (12), `colors` (palette size, 128; 64 keeps long GIFs small), `thumbAt` (fraction of the
+    `size` (default twice the viewport, 1600×1000; with a crop, twice the crop and at most 1600 px
+    wide), `fps` (12), `colors` (palette size, 256; 64 keeps long GIFs small), `thumbAt` (fraction of the
     timeline for the thumbnail), `noTooltips`, `start` (pointer's starting point).
   - It writes `<out>.gif`, `<out>-thumb.png`, and `<out>-sheet.png` (12 frames for review). A
     final `waitForTimeout(2000)` in the scene holds the last frame. The browser closes even when the
@@ -139,9 +143,9 @@ relative path as the examples do.
 | `rec-sc-ma.mjs` | Slider there and back, switching an axis column, a native `<select>` (older take, with the keyboard) |
 | `rec-lc-small.mjs` | A 400×300 gallery preview: viewer docked next to the grid, cropped to the viewer |
 | `rec-helm.mjs` | A full-screen editor addressed by `data-testid`, waiting for slow tabs |
-| `rec-cw.mjs` | A settings page, stopping before **Save and apply** |
+| `rec-cw.mjs` | A settings page, stopping before **Save and apply**. Outdated: the Logger page no longer has **Add new sync block** (October 2026 build); use it for the pattern, not as a working scene |
 | `rec-dd.mjs` | Opening the Browse tree in `pre`, saving a project and reopening it from **Dashboards** |
-| `dd-projects.mjs` | `node dd-projects.mjs "<project name>" [--delete]`: lists or deletes the current user's projects with that name. Run it after every take, failed ones too |
+| `dd-projects.mjs` | `node dd-projects.mjs --delete <id>` deletes the project a take saved, by the id it printed, and only if it is yours. `node dd-projects.mjs "<project name>"` lists your projects with that name, to find what a failed take saved |
 
 ## Process
 
@@ -151,8 +155,9 @@ relative path as the examples do.
 2. **Keep the recorded part short.** Loading data, opening the tree, and closing panels go to
    `setup` or `pre`.
 3. **Check every take, then review it.** The recording log has no warning that the frames are
-   upscaled. `python tools/gif-check.py <gif>` passes: every click mark centred on the pointer
-   tip, no jump between the first frames, the last frame held 1–6 s. Then review by the contact
+   upscaled, and no FAIL lines from `gif-check.py`, which rec-lib runs after every take (run it
+   yourself with `python tools/gif-check.py <gif>` after a trim): every click mark centred on the
+   pointer tip, no jump between the first frames, the last frame held 1–6 s. Then review by the contact
    sheet and by single frames at GIF size (`ffmpeg -ss <t> -i <gif> -frames:v 1 frame.png`):
    nothing cut off, labels readable, cause before effect. To cut a stray first frame or a long
    ending, use `python tools/gif-trim.py <in> <out> --start N --end-at <s> --hold <s>`: it keeps
