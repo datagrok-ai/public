@@ -635,7 +635,7 @@ export function mapPositionalParams(params: Record<string, any>, parameterInfos:
   return mapped;
 }
 
-function tryParseJson(s: string): any {
+export function tryParseJson(s: string): any {
   try { return JSON.parse(s); } catch { return null; }
 }
 

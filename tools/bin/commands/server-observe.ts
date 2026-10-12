@@ -2,8 +2,9 @@
 /// over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`, `/log/timeline`,
 /// `/log/cloud/*` and `/log/archive/*`.
 import * as fs from 'fs';
-import {NodeDapi, buildQuery} from '../utils/node-dapi';
+import {NodeDapi, buildQuery, tryParseJson} from '../utils/node-dapi';
 import {printOutput, OutputFormat} from '../utils/server-output';
+import {ALL_USERS} from '../utils/migrate/walker';
 
 export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]      (alias: grok s o)
 
@@ -31,14 +32,18 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
                                        CloudWatch events; no --group, the instance's own group;
                                        --filter is a CloudWatch filter pattern
   logs archive list [--prefix <p>] [--since 7d] [--limit n]
-                                       Objects in the log archive (WORM bucket), by key
+                                       Objects in the log archive (WORM bucket), by key; --since filters
+                                       only the page the server returned, so narrow it with --prefix
   logs archive read <key>              One archived object decoded to events
+                                       logs cloud and logs archive take [--connection <id>]; without it,
+                                       the instance's AWS role
   logs capture [<login|group> [--for 30m] [--reason <text>]]
                                        Save every API request of a user or a group for a while: logger set
-                                       of saveHttpRequests on their expiring entry; no argument, the active
-                                       captures; read them with timeline --session <id>
-  logs capture stop <login|group>      Remove that entry
-                                       logs take [--connection <id>]; without it, the instance's AWS role
+                                       of saveHttpRequests on their expiring entry (an entry that already
+                                       expires later keeps its time); no argument, the active captures;
+                                       read them with timeline --session <id>
+  logs capture stop <login|group>      Remove that expiring entry; one that holds other settings is left
+                                       to logger set --remove
 
 Durations are 30m (minutes), 24h, 7d, 2w; times are ISO 8601 (UTC without an offset) or
 relative, written with = (--from=-2h).`;
@@ -47,7 +52,7 @@ const UNIT_MS: Record<string, number> = {m: 60000, h: 3600000, d: 86400000, w: 6
 
 /** `30m`, `2h`, `7d`, `1w` in milliseconds; `m` is minutes, unlike `grok s pull --since`, where it is months. */
 export function parseDuration(value: any, flag: string): number {
-  const m = /^-?(\d+)([mhdw])$/.exec(String(value ?? '').trim());
+  const m = /^(\d+)([mhdw])$/.exec(String(value ?? '').trim());
   if (!m || Number(m[1]) <= 0)
     throw new Error(`${flag} expects a duration such as 30m, 2h, 7d or 1w, got '${value}'`);
   return Number(m[1]) * UNIT_MS[m[2]];
@@ -55,9 +60,11 @@ export function parseDuration(value: any, flag: string): number {
 
 /** ISO 8601 (UTC without an offset), or relative to [now] (`-2h`). */
 export function parseTime(value: any, flag: string, now: Date = new Date()): Date {
-  const s = String(value ?? '').trim();
+  let s = String(value ?? '').trim();
   if (s.startsWith('-'))
-    return new Date(now.getTime() - parseDuration(s, flag));
+    return new Date(now.getTime() - parseDuration(s.substring(1), flag));
+  if (/[T ].*[+-]\d{2}$/.test(s))
+    s = `${s}:00`;
   const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(s) || /(Z|[+-]\d{2}:?\d{2})$/i.test(s) ? s : `${s}Z`);
   if (!/^\d{4}-\d{2}-\d{2}/.test(s) || isNaN(d.getTime()))
     throw new Error(`${flag} expects an ISO time (2026-10-04T06:00) or a relative one (-2h), got '${value}'`);
@@ -101,11 +108,11 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
   let id: string | undefined;
   const needId = async () => {
     const given = rest[0] === undefined ? '' : String(rest[0]);
-    if (!given)
-      throw new Error(`Usage: grok s observe ${command} ${verb} <id|kind:key>`);
     const colon = given.indexOf(':');
+    if (!given || colon === 0 || colon === given.length - 1)
+      throw new Error(`Usage: grok s observe ${command} ${verb} <id|kind:key>`);
     if (colon < 0) {
-      id = encodeURIComponent(given);
+      id = given;
       return;
     }
     const found = await dapi.problems.list({kind: given.substring(0, colon), key: given.substring(colon + 1), limit: 1});
@@ -113,6 +120,7 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       throw new Error(`No problem '${given}'`);
     id = found[0].id;
   };
+  const problemPath = () => `/problems/${encodeURIComponent(id!)}`;
   // The route answers JSON as text/plain.
   const settings = async (key: string) => {
     const r = await dapi.raw('GET', `/admin/plugins/${key}/settings`);
@@ -136,16 +144,16 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     }
     case 'problems history':
       await needId();
-      printOutput(await dapi.raw('GET', `/problems/${id}/history${buildQuery({limit: argv.limit})}`), output);
+      printOutput(await dapi.raw('GET', `${problemPath()}/history${buildQuery({limit: argv.limit})}`), output);
       return true;
     case 'problems status':
       await needId();
-      printOutput(await dapi.raw('POST', `/problems/${id}/status`, readBody(argv)), output);
+      printOutput(await dapi.raw('POST', `${problemPath()}/status`, readBody(argv)), output);
       return true;
     case 'problems ack':
     case 'problems resolve':
       await needId();
-      printOutput(await dapi.raw('POST', `/problems/${id}/${verb}`, {reason: argv.reason}), output);
+      printOutput(await dapi.raw('POST', `${problemPath()}/${verb}`, {reason: argv.reason}), output);
       return true;
     case 'rules get': {
       const rules = (await settings('alerts'))?.problemRules;
@@ -179,13 +187,15 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
         for (const p of e.parameters ?? [])
           params[p.parameter?.name] = p.value;
         const row = {time: e.eventTime, user: params.user, changed: params.changed};
-        return output === 'table' ? row : {...row, diff: params.diff ? JSON.parse(params.diff) : null};
+        return output === 'table' ? row : {...row, diff: params.diff ? tryParseJson(params.diff) ?? params.diff : null};
       }), output);
       return true;
     }
     case 'errors top': {
       if (argv.since !== undefined && (argv.from !== undefined || argv.date !== undefined))
         throw new Error('--since is not used with --from or --date');
+      if (argv.date !== undefined && argv.from !== undefined)
+        throw new Error('--date is not used with --from');
       const metrics = await dapi.raw('GET', `/admin/metrics${buildQuery({
         date_start: argv.since !== undefined ? new Date(Date.now() - parseDuration(argv.since, '--since')).toISOString()
           : iso(argv.from, '--from'),
@@ -202,15 +212,20 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
   if (command === 'timeline') {
     if (argv.session === undefined)
       throw new Error('Usage: grok s observe timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]');
+    needFrom(argv);
     const window = argv.from === undefined ? {from: iso('-15m', '--from'), to: new Date().toISOString()}
       : {from: iso(argv.from, '--from'), to: iso(argv.to, '--to')};
     printOutput(await dapi.raw('GET', `/log/timeline${buildQuery({session: argv.session, ...window,
       limit: argv.limit})}`), output);
     return true;
   }
-  console.log(OBSERVE_USAGE);
-  return true;
+  throw new Error(`Unknown command '${[command, verb].filter(Boolean).join(' ')}'\n${OBSERVE_USAGE}`);
 }
+
+const needFrom = (argv: any) => {
+  if (argv.to !== undefined && argv.from === undefined)
+    throw new Error('--to needs --from');
+};
 
 async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], argv: any,
                     output: OutputFormat): Promise<boolean> {
@@ -218,6 +233,7 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
   if (verb === 'cloud') {
     if (argv.since !== undefined && argv.from !== undefined)
       throw new Error('--since is not used with --from');
+    needFrom(argv);
     const group = argv.group ?? (await dapi.raw('GET', `/log/cloud/groups${buildQuery({connection})}`))?.[0];
     if (!group)
       throw new Error('No log group to read: pass --group');
@@ -285,8 +301,11 @@ async function loggerSet(dapi: NodeDapi, argv: any, current: any, save: (body: a
         setPath(settings, s);
       if (argv.for !== undefined)
         settings.expiresAt = new Date(Date.now() + parseDuration(argv.for, '--for')).toISOString();
-      else if (argv.until !== undefined)
+      else if (argv.until !== undefined) {
         settings.expiresAt = iso(argv.until, '--until');
+        if (Date.parse(settings.expiresAt) <= Date.now())
+          throw new Error(`--until ${argv.until} is in the past`);
+      }
       if (argv.reason !== undefined)
         settings.reason = String(argv.reason);
       groups[group.id] = settings;
@@ -298,8 +317,6 @@ async function loggerSet(dapi: NodeDapi, argv: any, current: any, save: (body: a
       : `Saved the logger settings of ${name}`);
   return true;
 }
-
-const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
 
 /// `logs capture`: logger set of saveHttpRequests, and the usage level it is saved at, on an expiring entry.
 async function capture(dapi: NodeDapi, rest: string[], argv: any, current: any,
@@ -326,12 +343,25 @@ async function capture(dapi: NodeDapi, rest: string[], argv: any, current: any,
   catch {
     group = await dapi.groups.resolve(String(name));
   }
-  if (stop && !groups[group.id]?.saveHttpRequests)
-    throw new Error(`No capture for ${name}`);
-  const base = groups[group.id] ?? groups[ALL_USERS] ?? {};
-  const sets = stop ? [] : ['saveHttpRequests=true', ...['postLevels', 'saveLevels']
+  const existing = groups[group.id];
+  if (stop) {
+    if (!existing?.saveHttpRequests)
+      throw new Error(`No capture for ${name}`);
+    if (!existing.expiresAt)
+      throw new Error(`The logger entry of ${name} does not expire; change it with logger set`);
+    const own = ['saveHttpRequests', 'postLevels', 'saveLevels', 'expiresAt', 'reason'];
+    const others = Object.keys(existing).filter((k) => !own.includes(k) &&
+      JSON.stringify(existing[k]) !== JSON.stringify(groups[ALL_USERS]?.[k]));
+    if (others.length)
+      throw new Error(`The logger entry of ${name} also holds ${others.join(', ')}; remove it with ` +
+        `grok s o logger set --${group.personal ? 'user' : 'group'} ${name} --remove`);
+    return loggerSet(dapi, {target: group, name, remove: true}, current, save, output);
+  }
+  const base = existing ?? groups[ALL_USERS] ?? {};
+  const sets = ['saveHttpRequests=true', ...['postLevels', 'saveLevels']
     .filter((l) => Array.isArray(base[l]) && !base[l].includes('usage'))
     .map((l) => `${l}=${JSON.stringify([...base[l], 'usage'])}`)];
-  return loggerSet(dapi, {target: group, name, set: sets, remove: stop, reason: argv.reason,
-    for: stop ? undefined : argv.for ?? '30m'}, current, save, output);
+  const end = Math.max(Date.now() + parseDuration(argv.for ?? '30m', '--for'), Date.parse(existing?.expiresAt) || 0);
+  return loggerSet(dapi, {target: group, name, set: sets, reason: argv.reason, until: new Date(end).toISOString()},
+    current, save, output);
 }

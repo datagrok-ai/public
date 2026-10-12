@@ -1,17 +1,52 @@
 import {describe, it, expect, vi} from 'vitest';
 import {NodeDapi} from '../utils/node-dapi';
+import {OutputFormat} from '../utils/server-output';
+import {ALL_USERS} from '../utils/migrate/walker';
 import {handleObserve, parseDuration, parseTime, setPath} from '../commands/server-observe';
+
+type Call = {method: string; path: string; body: any};
+
+/** Runs one observe command against a fake client that answers with [answer]; returns its calls and what it printed. */
+async function observe(command: string, verb: string | undefined, rest: string[], argv: any,
+                       answer: (method: string, path: string) => any = () => [], output: OutputFormat = 'json') {
+  const calls: Call[] = [];
+  const client: any = {
+    async request(method: string, path: string, body?: any) {
+      calls.push({method, path, body});
+      return answer(method, path);
+    },
+    get(path: string) { return this.request('GET', path); },
+  };
+  const lines: string[] = [];
+  const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
+  try {
+    await handleObserve(new NodeDapi(client), command, verb, rest, argv, output);
+  }
+  finally {
+    log.mockRestore();
+  }
+  return {calls, printed: lines.join('\n'), saved: calls.find((c) => c.method === 'POST')?.body?.userGroupSettings};
+}
+
+/** The server answers the settings as text, not application/json. */
+const loggerSettings = (userGroupSettings: any) => (method: string, path: string) => {
+  if (path.startsWith('/public/v1/groups/lookup'))
+    return path.includes('alice') ? [{id: 'p1', name: 'alice', personal: true}] : [{id: 'g1', name: 'Chemists'}];
+  if (path.startsWith('/public/v1/groups/'))
+    return {id: 'p1', friendlyName: 'Alice'};
+  return method === 'GET' ? JSON.stringify({'#key': 'logger', settings: {userGroupSettings}}) : null;
+};
 
 describe('parseDuration', () => {
   it('reads m as minutes, and h, d, w', () => {
     expect(parseDuration('30m', '--for')).toBe(30 * 60000);
     expect(parseDuration('2h', '--for')).toBe(2 * 3600000);
-    expect(parseDuration('-7d', '--since')).toBe(7 * 86400000);
+    expect(parseDuration('7d', '--since')).toBe(7 * 86400000);
     expect(parseDuration('1w', '--for')).toBe(604800000);
   });
 
-  it('refuses anything else', () => {
-    for (const bad of ['', '0m', '5', '2y', 'soon'])
+  it('refuses anything else, negative values included', () => {
+    for (const bad of ['', '0m', '5', '2y', 'soon', '-7d'])
       expect(() => parseDuration(bad, '--for')).toThrow(/--for expects a duration/);
   });
 });
@@ -22,13 +57,15 @@ describe('parseTime', () => {
   it('reads ISO as UTC unless it has an offset, and relative times', () => {
     expect(parseTime('2026-10-04T06:00', '--from', now).toISOString()).toBe('2026-10-04T06:00:00.000Z');
     expect(parseTime('2026-10-04T06:00+02:00', '--from', now).toISOString()).toBe('2026-10-04T04:00:00.000Z');
+    expect(parseTime('2026-10-04T06:00+02', '--from', now).toISOString()).toBe('2026-10-04T04:00:00.000Z');
+    expect(parseTime('2026-10-04T06:00-0130', '--from', now).toISOString()).toBe('2026-10-04T07:30:00.000Z');
     expect(parseTime('2026-10-04', '--from', now).toISOString()).toBe('2026-10-04T00:00:00.000Z');
     expect(parseTime('-2h', '--from', now).toISOString()).toBe('2026-10-08T10:00:00.000Z');
   });
 
   it('refuses anything else', () => {
-    for (const bad of ['yesterday', '10:00', '2026-13-45'])
-      expect(() => parseTime(bad, '--to', now)).toThrow(/--to expects an ISO time/);
+    for (const bad of ['yesterday', '10:00', '2026-13-45', '--2h'])
+      expect(() => parseTime(bad, '--to', now)).toThrow(/--to expects/);
   });
 });
 
@@ -46,28 +83,27 @@ describe('setPath', () => {
   });
 });
 
+describe('problems', () => {
+  it('reads an id without a colon by its route, encoded once', async () => {
+    const {calls} = await observe('problems', 'get', ['a b'], {}, () => ({id: 'a b'}));
+    expect(calls.map((c) => c.path)).toEqual(['/problems/a%20b']);
+  });
+
+  it('looks kind:key up by the list filters', async () => {
+    const {calls} = await observe('problems', 'history', ['health:Jupyter@x'], {limit: 3},
+      (_, path) => path.startsWith('/problems?') ? [{id: 'p 1'}] : []);
+    expect(calls.map((c) => c.path)).toEqual(['/problems?kind=health&key=Jupyter%40x&limit=1', '/problems/p%201/history?limit=3']);
+  });
+
+  it('refuses an empty kind or key', async () => {
+    for (const bad of [':x', 'health:', ':', ''])
+      await expect(observe('problems', 'get', [bad], {})).rejects.toThrow('Usage');
+  });
+});
+
 describe('logger set', () => {
-  async function set(argv: any, userGroupSettings: any) {
-    const calls: {method: string; body: any}[] = [];
-    const client: any = {
-      async request(method: string, path: string, body?: any) {
-        calls.push({method, body});
-        if (path.startsWith('/public/v1/groups/lookup'))
-          return [{id: 'g1', name: 'Chemists'}];
-        return method === 'GET' ? JSON.stringify({'#key': 'logger', settings: {userGroupSettings}}) : null;
-      },
-      get(path: string) { return this.request('GET', path); },
-    };
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    try {
-      await handleObserve(new NodeDapi(client), 'logger', 'set', [], {group: 'Chemists', ...argv}, 'table');
-    }
-    finally {
-      log.mockRestore();
-    }
-    return calls.find((c) => c.method === 'POST')?.body?.userGroupSettings;
-  }
-  const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+  const set = async (argv: any, userGroupSettings: any) =>
+    (await observe('logger', 'set', [], {group: 'Chemists', ...argv}, loggerSettings(userGroupSettings), 'table')).saved;
 
   it('starts a new entry from All users, without its reason', async () => {
     const saved = await set({set: 'debugFlags=["db"]'}, {[ALL_USERS]: {saveLevels: ['error', 'audit'], reason: 'base'}});
@@ -83,25 +119,14 @@ describe('logger set', () => {
     await expect(set({set: 'debugFlags=["db"]', for: '1h'}, {g1: {debugFlags: []}})).rejects.toThrow('does not expire');
   });
 
+  it('refuses --until in the past', async () => {
+    await expect(set({set: 'debugFlags=["db"]', until: '2020-01-01T00:00'}, {})).rejects.toThrow('in the past');
+  });
+
   it('adds an expiring entry to userGroupSettings, keeping the others', async () => {
-    const calls: {method: string; path: string; body: any}[] = [];
-    const client: any = {
-      async request(method: string, path: string, body?: any) {
-        calls.push({method, path, body});
-        if (path.startsWith('/public/v1/groups/lookup'))
-          return [{id: 'g1', name: 'Chemists'}];
-        return method === 'GET' ? {'#key': 'logger', settings: {userGroupSettings: {g0: {debugFlags: []}}}} : null;
-      },
-      get(path: string) { return this.request('GET', path); },
-    };
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    try {
-      await handleObserve(new NodeDapi(client), 'logger', 'set', [],
-        {group: 'Chemists', set: 'debugFlags=["db"]', for: '30m', reason: 'ticket 1'}, 'table');
-    }
-    finally {
-      log.mockRestore();
-    }
+    const {calls} = await observe('logger', 'set', [], {group: 'Chemists', set: 'debugFlags=["db"]', for: '30m',
+      reason: 'ticket 1'}, (method, path) => path.startsWith('/public/v1/groups/lookup') ? [{id: 'g1', name: 'Chemists'}]
+      : method === 'GET' ? {'#key': 'logger', settings: {userGroupSettings: {g0: {debugFlags: []}}}} : null, 'table');
     const saved = calls.find((c) => c.method === 'POST')!;
     expect(saved.path).toBe('/admin/plugins/logger/settings');
     expect(Object.keys(saved.body.userGroupSettings)).toEqual(['g0', 'g1']);
@@ -111,33 +136,19 @@ describe('logger set', () => {
   });
 });
 
-describe('logs capture', () => {
-  const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+describe('logger history', () => {
+  it('keeps a diff the server truncated as text', async () => {
+    const event = (diff: string) => ({eventTime: '2026-10-09T10:00:00Z',
+      parameters: [{parameter: {name: 'user'}, value: 'admin'}, {parameter: {name: 'diff'}, value: diff}]});
+    const {printed} = await observe('logger', 'history', [], {},
+      () => [event('[{"path": "saveHttpRequests"}]'), event('[{"path": "saveHt…')]);
+    expect(JSON.parse(printed).map((r: any) => r.diff)).toEqual([[{path: 'saveHttpRequests'}], '[{"path": "saveHt…']);
+  });
+});
 
-  async function run(verb: string | undefined, rest: string[], argv: any, userGroupSettings: any) {
-    const calls: {method: string; path: string; body: any}[] = [];
-    const client: any = {
-      async request(method: string, path: string, body?: any) {
-        calls.push({method, path, body});
-        if (path.startsWith('/public/v1/groups/lookup'))
-          return path.includes('alice') ? [{id: 'p1', name: 'alice', personal: true}] : [{id: 'g1', name: 'Chemists'}];
-        if (path.startsWith('/public/v1/groups/'))
-          return {id: 'p1', friendlyName: 'Alice'};
-        // The server answers the settings as text, not application/json.
-        return method === 'GET' ? JSON.stringify({'#key': 'logger', settings: {userGroupSettings}}) : null;
-      },
-      get(path: string) { return this.request('GET', path); },
-    };
-    const lines: string[] = [];
-    const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
-    try {
-      await handleObserve(new NodeDapi(client), 'logs', 'capture', verb === undefined ? rest : [verb, ...rest], argv, 'json');
-    }
-    finally {
-      log.mockRestore();
-    }
-    return {saved: calls.find((c) => c.method === 'POST')?.body?.userGroupSettings, printed: lines.join('\n')};
-  }
+describe('logs capture', () => {
+  const run = (verb: string | undefined, rest: string[], argv: any, userGroupSettings: any) =>
+    observe('logs', 'capture', verb === undefined ? rest : [verb, ...rest], argv, loggerSettings(userGroupSettings));
 
   it('adds an expiring entry seeded from All Users that saves requests, keeping the others', async () => {
     const {saved} = await run('alice', [], {for: '2h'},
@@ -153,7 +164,16 @@ describe('logs capture', () => {
   it('falls back to a group and defaults to 30 minutes', async () => {
     const {saved} = await run('Chemists', [], {reason: 'ticket 1'}, {});
     expect(saved.g1.reason).toBe('ticket 1');
-    expect(Date.parse(saved.g1.expiresAt) - Date.now()).toBeLessThanOrEqual(30 * 60000);
+    const left = Date.parse(saved.g1.expiresAt) - Date.now();
+    expect(left).toBeGreaterThan(29 * 60000);
+    expect(left).toBeLessThanOrEqual(30 * 60000);
+  });
+
+  it('keeps the later of the entry\'s expiry and --for', async () => {
+    const later = '2099-01-01T00:00:00.000Z';
+    expect((await run('alice', [], {for: '1h'}, {p1: {debugFlags: ['db'], expiresAt: later}})).saved.p1.expiresAt).toBe(later);
+    const {saved} = await run('alice', [], {for: '1h'}, {p1: {expiresAt: new Date(Date.now() + 60000).toISOString()}});
+    expect(Date.parse(saved.p1.expiresAt) - Date.now()).toBeGreaterThan(59 * 60000);
   });
 
   it('leaves an entry that does not expire alone', async () => {
@@ -161,10 +181,16 @@ describe('logs capture', () => {
   });
 
   it('stop removes the entry, keeping the others', async () => {
-    const {saved} = await run('stop', ['alice'], {}, {p1: {saveHttpRequests: true, expiresAt: '2099-01-01T00:00:00Z'},
-      g0: {debugFlags: ['db']}});
-    expect(Object.keys(saved)).toEqual(['g0']);
+    const {saved} = await run('stop', ['alice'], {}, {[ALL_USERS]: {debugFlags: []},
+      p1: {saveHttpRequests: true, saveLevels: ['usage'], debugFlags: [], expiresAt: '2099-01-01T00:00:00Z'}, g0: {debugFlags: ['db']}});
+    expect(Object.keys(saved)).toEqual([ALL_USERS, 'g0']);
     await expect(run('stop', ['alice'], {}, {})).rejects.toThrow('No capture');
+  });
+
+  it('stop leaves an entry that does not expire, or holds other settings, to logger set', async () => {
+    await expect(run('stop', ['alice'], {}, {p1: {saveHttpRequests: true}})).rejects.toThrow('does not expire');
+    await expect(run('stop', ['alice'], {}, {p1: {saveHttpRequests: true, debugFlags: ['db'], expiresAt: '2099-01-01T00:00:00Z'}}))
+      .rejects.toThrow('also holds debugFlags; remove it with grok s o logger set --user alice --remove');
   });
 
   it('lists the active captures', async () => {
@@ -175,63 +201,43 @@ describe('logs capture', () => {
   });
 });
 
+const query = (path: string): [string, URLSearchParams] => [path.split('?')[0], new URLSearchParams(path.split('?')[1])];
+
 describe('timeline', () => {
-  async function timelinePath(argv: any): Promise<URLSearchParams> {
-    const paths: string[] = [];
-    const client: any = {
-      async request(method: string, path: string) {
-        paths.push(path);
-        return [];
-      },
-      get(path: string) { return this.request('GET', path); },
-    };
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    try {
-      await handleObserve(new NodeDapi(client), 'timeline', undefined, [], argv, 'json');
-    }
-    finally {
-      log.mockRestore();
-    }
-    expect(paths[0].startsWith('/log/timeline?')).toBe(true);
-    return new URLSearchParams(paths[0].split('?')[1]);
+  async function timelineQuery(argv: any): Promise<URLSearchParams> {
+    const {calls} = await observe('timeline', undefined, [], argv);
+    const [path, q] = query(calls[0].path);
+    expect(path).toBe('/log/timeline');
+    return q;
   }
 
   it('a session without --from reads its last 15 minutes', async () => {
-    const q = await timelinePath({session: 's1'});
+    const q = await timelineQuery({session: 's1'});
     expect(q.get('session')).toBe('s1');
     expect(Date.parse(q.get('to')!) - Date.parse(q.get('from')!)).toBe(15 * 60000);
   });
 
   it('a session with --from leaves --to to the server unless given', async () => {
-    const q = await timelinePath({session: 's1', from: '2026-10-09T10:00', limit: 5});
+    const q = await timelineQuery({session: 's1', from: '2026-10-09T10:00', limit: 5});
     expect([q.get('from'), q.has('to'), q.get('limit')]).toEqual(['2026-10-09T10:00:00.000Z', false, '5']);
   });
 
-  it('needs a session', async () => {
-    await expect(handleObserve(new NodeDapi({} as any), 'timeline', undefined, [], {}, 'json')).rejects.toThrow('--session');
+  it('needs a session, and --from for --to', async () => {
+    await expect(observe('timeline', undefined, [], {})).rejects.toThrow('--session');
+    await expect(observe('timeline', undefined, [], {session: 's1', to: '2026-10-09T10:00'})).rejects.toThrow('--to needs --from');
+  });
+});
+
+describe('errors top', () => {
+  it('refuses --date with --from', async () => {
+    await expect(observe('errors', 'top', [], {date: 'today', from: '-2h'})).rejects.toThrow('--date is not used with --from');
   });
 });
 
 describe('logs', () => {
   async function run(verb: string, rest: string[], argv: any, answers: Record<string, any> = {}) {
-    const paths: string[] = [];
-    const client: any = {
-      async request(method: string, path: string) {
-        paths.push(path);
-        return answers[path.split('?')[0]] ?? [];
-      },
-      get(path: string) { return this.request('GET', path); },
-    };
-    const lines: string[] = [];
-    const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
-    try {
-      await handleObserve(new NodeDapi(client), 'logs', verb, rest, argv, 'json');
-    }
-    finally {
-      log.mockRestore();
-    }
-    return {queries: paths.map((p) => [p.split('?')[0], new URLSearchParams(p.split('?')[1])] as [string, URLSearchParams]),
-      printed: lines.join('\n')};
+    const {calls, printed} = await observe('logs', verb, rest, argv, (_, path) => answers[path.split('?')[0]] ?? []);
+    return {queries: calls.map((c) => query(c.path)), printed};
   }
 
   it('cloud reads the first group of the instance for the last hour, as JSON rows', async () => {
@@ -240,7 +246,9 @@ describe('logs', () => {
     const [path, q] = queries[1];
     expect(path).toBe('/log/cloud/events');
     expect([q.get('group'), q.get('filter'), q.get('format'), q.has('end')]).toEqual(['/datagrok/dev', 'ERROR', 'json', false]);
-    expect(Date.now() - Date.parse(q.get('start')!)).toBeGreaterThanOrEqual(3600000 - 1000);
+    const age = Date.now() - Date.parse(q.get('start')!);
+    expect(age).toBeGreaterThanOrEqual(3600000 - 1000);
+    expect(age).toBeLessThan(3600000 + 60000);
   });
 
   it('cloud takes a group and an absolute window', async () => {
@@ -250,6 +258,7 @@ describe('logs', () => {
     expect([q.get('group'), q.get('start'), q.get('end'), q.get('limit')])
       .toEqual(['/g', '2026-10-09T10:00:00.000Z', '2026-10-09T11:00:00.000Z', '5']);
     await expect(run('cloud', [], {group: '/g', since: '1h', from: '-2h'})).rejects.toThrow('--since');
+    await expect(run('cloud', [], {group: '/g', to: '2026-10-09T11:00'})).rejects.toThrow('--to needs --from');
   });
 
   it('archive list keeps the objects modified within --since', async () => {
@@ -266,5 +275,11 @@ describe('logs', () => {
     expect([queries[0][1].get('key'), queries[0][1].get('connection'), queries[0][1].get('format')])
       .toEqual(['cw/tenant-a/app/2026/10/09/x.gz', 'c1', 'json']);
     await expect(run('archive', ['read'], {})).rejects.toThrow('Usage');
+  });
+});
+
+describe('an unknown command', () => {
+  it('fails with the usage', async () => {
+    await expect(observe('problem', 'list', [], {})).rejects.toThrow(/Unknown command 'problem list'\nUsage: grok s observe/);
   });
 });

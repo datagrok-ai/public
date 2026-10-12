@@ -49,7 +49,9 @@ export class ErrorsView extends UaView {
     const filter = this.uaToolbox.filterStream.value;
     if (this.metrics?.filter !== filter)
       this.metrics = {filter, errors: grok.dapi.admin.getMetrics({date: filter.date, limit: 15, errorsBy: 'signature'})
-        .then((m) => m.errors)};
+        .then((m) => m.errors, (e) => {
+          throw e?.status === 403 ? new Error('Needs View Telemetry') : e;
+        })};
     return this.metrics.errors;
   }
 
@@ -87,6 +89,7 @@ export class ErrorsView extends UaView {
 
         viewer.col('id')!.visible = false;
         viewer.col('error_stack_trace_hash')!.visible = false;
+        viewer.col('incident_key')!.visible = false;
 
         viewer.onCellPrepare((gc) => {
           if (gc.gridColumn.name === 'event_time') {
@@ -121,7 +124,7 @@ export class ErrorsView extends UaView {
             const signatures = new Set([...Array(t.rowCount).keys()].filter((i) => t.get('error', i) === error)
               .map((i) => t.get('signature', i)));
             if (df)
-              df.filter.handleClick((i) => signatures.has(df.get('error_stack_trace_hash', i)), new MouseEvent(''));
+              df.filter.handleClick((i) => signatures.has(df.get('error_stack_trace_hash', i) ?? ''), new MouseEvent(''));
           });
           return viewer;
         }
@@ -220,8 +223,16 @@ export class ErrorsView extends UaView {
     }));
 
     accordion.addPane('Alert', () => ui.wait(async () => {
-      const signature: string = table.getCol('error_stack_trace_hash').get(rowIdx) ?? '';
-      const p = await grok.dapi.admin.getProblem(`error-incident:${signature.substring(0, 12)}`);
+      const key: string = table.getCol('incident_key').get(rowIdx) ?? '';
+      let p: DG.Problem | null = null;
+      try {
+        p = key ? await grok.dapi.admin.getProblem(`error-incident:${key}`) : null;
+      }
+      catch (e: any) {
+        if (e?.status === 403)
+          return ui.divText('Needs Manage Alerts');
+        throw e;
+      }
       if (p === null)
         return ui.divText('No error incident');
       return ui.tableFromMap({'Problem': p.status, 'Alert': p.alertStatus ?? 'none', 'Summary': p.summary,

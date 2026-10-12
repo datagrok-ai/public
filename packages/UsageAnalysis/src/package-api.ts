@@ -92,10 +92,6 @@ export namespace queries {
     return await grok.data.query('UsageAnalysis:TopPackageErrors', { date, users });
   }
 
-  export async function topErrorSources(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrorSources', { date });
-  }
-
   export async function eventErrors(date: string ): Promise<DG.DataFrame> {
     return await grok.data.query('UsageAnalysis:EventErrors', { date });
   }
@@ -106,10 +102,6 @@ export namespace queries {
 
   export async function sameErrors(date: string , event_id: string | null): Promise<number> {
     return await grok.data.query('UsageAnalysis:SameErrors', { date, event_id });
-  }
-
-  export async function topErrors(date: string ): Promise<DG.DataFrame> {
-    return await grok.data.query('UsageAnalysis:TopErrors', { date });
   }
 
   export async function packageInfo(name: string ): Promise<DG.DataFrame> {

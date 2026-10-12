@@ -15,6 +15,6 @@ category('Dapi: log timeline', () => {
       rows = await grok.dapi.log.getTimeline({session, from});
     }
     expect(rows.some((r) => r.kind === 'request'), true, 'no request of the current session in the last minute');
-    expect(rows.every((r, i) => i === 0 || rows[i - 1].time <= r.time), true, 'rows are not in time order');
+    expect(rows.every((r, i) => i === 0 || Date.parse(rows[i - 1].time) <= Date.parse(r.time)), true, 'rows are not in time order');
   }, {owner: 'aparamonov@datagrok.ai'});
 });

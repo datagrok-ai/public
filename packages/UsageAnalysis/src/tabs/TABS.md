@@ -38,9 +38,11 @@ session), so the groups filter applies to records with a user and passes the res
 packages input is hidden on it, like Projects. Both queries are uncached: this is a security log.
 
 `ErrorsView` (tab `Errors`): Top errors and Top source come from one `grok.dapi.admin.getMetrics` call
-(`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`); a Top errors bar click
-filters the `EventErrors` grid to its signatures. A row's context panel shows its reports and `SameErrors`, and an
-Alert pane with the signature's `error-incident` problem (`grok.dapi.admin.getProblem`, which needs `ManageAlerts`). The context
+(`GET /admin/metrics`, `errorsBy: 'signature'`, the toolbox's date; needs `ViewTelemetry`, else both say so); a Top
+errors bar click filters the `EventErrors` grid to its signatures. A row's context panel shows its reports and
+`SameErrors`, and an Alert pane with the `error-incident` problem of the row's `incident_key` (the incident's key: the
+stack hash, or the event type id of an error without a stack trace; `grok.dapi.admin.getProblem`, which needs
+`ManageAlerts`). The context
 panel of an event in the Log and System Activity tabs has a Timeline button (`openTimeline` in `utils.ts`:
 `grok.dapi.log.getTimeline` for the event's session from a minute before it to five minutes after, opened as a
 table view).

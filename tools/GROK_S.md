@@ -493,14 +493,17 @@ grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics
 grok s o timeline --session <id>                            # its events and requests of the last 15 min
 grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
 grok s o logs cloud --since 2h --filter ERROR                # CloudWatch, the instance's own group; --group, --from/--to
-grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket)
+grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket); --since filters the returned page only
 grok s o logs archive read <key>                             # one archived object decoded to events
 ```
 
-Problems need `ManageAlerts`, errors, another session's timeline and `logs` `ViewTelemetry`, `rules test` both, logger
-and rules changes `EditPluginsSettings`. `capture` is an expiring `userGroupSettings` entry
-with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); read what it recorded with
-`timeline --session <id>`. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
+Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,
+`rules test` both, logger and rules changes and `logs capture` `EditPluginsSettings`. `capture` is an expiring
+`userGroupSettings` entry with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); on an entry
+that already expires later it keeps that time. `capture stop` removes only an expiring entry that holds nothing but the
+capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
+`timeline --session <id>`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
+the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 
