@@ -1,16 +1,16 @@
 import * as DG from 'datagrok-api/dg';
 import {Observable, defer, of, merge, Subject, BehaviorSubject, from, combineLatest} from 'rxjs';
-import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, debounceTime, scan, withLatestFrom, filter} from 'rxjs/operators';
+import {finalize, map, mapTo, toArray, concatMap, tap, takeUntil, withLatestFrom, filter} from 'rxjs/operators';
 import {NodePath, BaseTree, TreeNode} from '../data/BaseTree';
 import {PipelineConfigurationProcessed} from '../config/config-processing-utils';
 import {PipelineInstanceConfig, PipelineSerializedState, PipelineState} from '../config/PipelineInstance';
 import {isPipelineStepConfig} from '../config/config-utils';
 import {FuncCallAdapter} from './FuncCallAdapters';
 import {saveFuncCall, saveInstanceState} from './funccall-utils';
-import {ConsistencyInfo, FuncCallNode, FuncCallStateInfo, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
+import {FuncCallNode, isFuncCallNode, StateTreeNode, StateTreeSerializationOptions} from './StateTreeNodes';
 import {indexFromEnd, pruneByKeys} from '../utils';
 import {LinksState} from './LinksState';
-import {GranularMutationOp, ValidationResult} from '../data/common-types';
+import {GranularMutationOp, isDynamicType} from '../data/common-types';
 import {DriverLogger, TreeUpdateMutationPayload} from '../data/Logger';
 import {ItemMetadata} from '../view/ViewCommunication';
 import * as Factory from './StateTreeFactory';
@@ -41,12 +41,12 @@ export class StateTree {
     item: StateTreeNode,
     public config: PipelineConfigurationProcessed,
     private mockMode = false,
-    private defaultValidators = false,
+    private annotationChecks = false,
     private logger?: DriverLogger,
     private batchLinks = false,
   ) {
     this.nodeTree = new BaseTree(item);
-    this.linksState = new LinksState(defaultValidators, this.logger, batchLinks);
+    this.linksState = new LinksState(annotationChecks, this.logger, batchLinks);
 
     combineLatest([this.linksState.runningLinks$, this.globalROLocked$]).pipe(
       map(([links, roLocked]) => !!links?.length || roLocked),
@@ -159,7 +159,7 @@ export class StateTree {
         startPath: [...parentPath, {id, idx: pos}],
         startState: this,
         isReadonly: false,
-        defaultValidators: this.defaultValidators,
+        annotationChecks: this.annotationChecks,
         batchLinks: this.batchLinks,
         mockMode: this.mockMode,
         logger: this.logger,
@@ -189,33 +189,29 @@ export class StateTree {
     return {mutationRootPath: ppath, addIdx: newIdx, removeIdx: oldIdx, id: node.getItem().config.id};
   }
 
-  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): {detail: TreeUpdateMutationPayload, subTree: StateTree} {
+  private replaceSubtreeInternal(path: NodePath, initConfig: PipelineInstanceConfig): TreeUpdateMutationPayload {
     const ppath = path.slice(0, -1);
     const last = indexFromEnd(path);
     const subConfig = last ? StateTree.getSubConfig(this.config, ppath, last.id) : this.config;
     if (isPipelineStepConfig(subConfig))
       throw new Error(`FuncCall node ${JSON.stringify(path)}, but pipeline is expected`);
-    const subTree = StateTree.fromInstanceConfig({
+    const options = {
       instanceConfig: initConfig,
-      config: subConfig,
+      config: this.config,
       isReadonly: false,
-      defaultValidators: this.defaultValidators,
+      annotationChecks: this.annotationChecks,
       batchLinks: this.batchLinks,
       mockMode: this.mockMode,
       logger: this.logger,
-    });
-    if (last) {
-      this.nodeTree.removeBrunch(path);
-      this.nodeTree.attachBrunch(ppath, subTree.nodeTree.root, last.id, last.idx);
-    } else
+    };
+    if (!last) {
+      const subTree = StateTree.fromInstanceConfig(options);
       this.nodeTree.replaceRoot(subTree.nodeTree.root);
-
-    const detail: TreeUpdateMutationPayload = last ? {
-      mutationRootPath: ppath,
-      addIdx: last.idx,
-      id: last.id,
-    } : {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
-    return {detail, subTree};
+      return {mutationRootPath: [], id: subTree.nodeTree.root.getItem().config.id};
+    }
+    this.nodeTree.removeBrunch(path);
+    StateTree.fromInstanceConfig({...options, startPath: path, startState: this});
+    return {mutationRootPath: ppath, addIdx: last.idx, id: last.id};
   }
 
   // --- Public guarded methods ---
@@ -242,6 +238,33 @@ export class StateTree {
     });
   }
 
+  public duplicateSubtree(uuid: string) {
+    return this.mutateTree(() => {
+      const data = this.nodeTree.find((item) => item.uuid === uuid);
+      if (data == null)
+        throw new Error(`Node uuid ${uuid} not found`);
+      const [node, path] = data;
+      const [ppath, idx] = this.getMutationSlice(path);
+      const parent = this.nodeTree.getItem(ppath);
+      if (path.length === 0 || isFuncCallNode(parent) || !isDynamicType(parent.nodeType))
+        throw new Error(`Node uuid ${uuid} is not a dynamic pipeline item`);
+      const id = node.getItem().config.id;
+      StateTree.fromInstanceConfig({
+        config: this.config,
+        instanceConfig: Serializer.toInstanceConfigRec(node),
+        startPath: [...ppath, {id, idx: idx + 1}],
+        startState: this,
+        annotationChecks: this.annotationChecks,
+        batchLinks: this.batchLinks,
+        mockMode: this.mockMode,
+        logger: this.logger,
+      });
+      return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(
+        mapTo([{isMutation: true, details: [{mutationRootPath: ppath, addIdx: idx + 1, id}]}]),
+      );
+    });
+  }
+
   public loadSubTree(puuid: string, dbId: string, id: string, pos: number, isReadonly: boolean, isReplace = false) {
     return this.mutateTree(() => {
       const [_root, _nqName, ppath] = StateTree.findPipelineNode(this, puuid);
@@ -253,7 +276,7 @@ export class StateTree {
           dbId,
           config: subConfig,
           mockMode: this.mockMode,
-          defaultValidators: this.defaultValidators,
+          annotationChecks: this.annotationChecks,
           batchLinks: this.batchLinks,
           isReadonly,
         },
@@ -301,6 +324,8 @@ export class StateTree {
       const node = snode.getItem();
       if (!isFuncCallNode(node))
         throw new Error(`Step uuid ${uuid} is not FuncCall`);
+      if (node.isReadonly)
+        throw new Error(`Step uuid ${uuid} is read-only`);
       return node.instancesWrapper.run(mockResults, mockDelay).pipe(mapTo(undefined));
     });
   }
@@ -316,7 +341,7 @@ export class StateTree {
         return of(undefined);
       return from(nodesSeq.slice(startIdx)).pipe(
         concatMap((node) => {
-          if (!isFuncCallNode(node) || node.pendingDependencies$.value?.length)
+          if (!isFuncCallNode(node) || node.isReadonly || node.pendingDependencies$.value?.length)
             return of(undefined);
           if (rerunWithConsistent) {
             return node.getStateStore().overrideToConsistent(includeInfo).pipe(
@@ -350,8 +375,8 @@ export class StateTree {
           concatMap(({pipelineMutations, granularMutations}) => {
             const replacements$ = from(pipelineMutations ?? []).pipe(
               concatMap((data) => {
-                const {detail, subTree} = this.replaceSubtreeInternal(data.path, data.initConfig);
-                return StateTree.loadOrCreateCalls(subTree, this.mockMode).pipe(mapTo(detail));
+                const detail = this.replaceSubtreeInternal(data.path, data.initConfig);
+                return StateTree.loadOrCreateCalls(this, this.mockMode).pipe(mapTo(detail));
               }),
             );
 

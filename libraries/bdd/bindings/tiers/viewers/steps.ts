@@ -148,8 +148,11 @@ export const menuLists = Then('the open menu should list {string}', async (page:
 export const menuDoesNotList = Then('the open menu should not list {string}', async (page: Page, path: string) => {
   const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
   const item = parts.pop();
-  // the group is opened first, so "not listed" cannot pass on a menu that never opened
-  await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).not.toContain(item);
+  // a group hovered a moment ago shows no items yet: "not listed" is read on a group that lists something
+  await expect.poll(async () => {
+    const labels = await v.menuLabels(page, parts.join(' > '));
+    return labels.length === 0 ? 'nothing shown yet' : labels.includes(item!) ? `lists "${item}": ${labels.join(' | ')}` : 'not listed';
+  }, {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toBe('not listed');
 }, {tier: 'ui'});
 
 export const clickArea = When('user clicks on the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {

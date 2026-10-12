@@ -552,6 +552,29 @@ category('clone and layout tests', async () => {
     await applyLayout(tvInitial, layoutCloned, df, 5);
   });
 
+  //25_clone_layout_scenario's cause, without its timing: a filter given its structure by a layout searches a second
+  //later; one closed within that second used to search anyway and take the column over, so that the next filter
+  //with the same structure took the search for done and left the table unfiltered
+  test('filter closed before its layout search does not take the column over', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tvInitial = await createTableView(df);
+    const initial = await getFilterGroupAndFilter(tvInitial, 'Structure');
+    await initializeFilter(initial.filter);
+    await filterByStructure(df, initial.filter, molFileForCloneTest1, 5);
+    const layout = await saveLayout(tvInitial);
+    await closeFilterGroup(initial.group);
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+    //a second view gets the layout, and its filter panel is closed at once
+    const tvCloned = grok.shell.addTableView(df);
+    tvCloned.loadLayout(layout);
+    await closeFilterGroup((await getFilterGroupAndFilter(tvCloned, 'Structure')).group);
+    await delay(1500);
+    //the first view's filter panel, opened again with its structure, filters the table
+    await switchToView(tvInitial);
+    await getFilterGroupAndFilter(tvInitial, 'Structure');
+    await awaitCheck(() => df.filter.trueCount === 5, 'the filter opened again hasn\'t filtered', 5000);
+  });
+
   test('26_clone_layout_scenario', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tvInitial = await createTableView(df);
@@ -837,8 +860,7 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
   await ui.tools.waitForElementInDom(withMolecule ? filter.sketcher.extSketcherCanvas :
     filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
   withMolecule ? filter.sketcher.extSketcherCanvas.click() : filter.sketcher.emptySketcherLink.click();
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true,
-    `${DG.chem.currentSketcherType} sketcher hasn't been initialized`, 3000);
+  await filter.sketcher.sketcherReady();
   //close sketcher
   const sketcherDlg = document.getElementsByClassName('d4-dialog')[0];
   Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();

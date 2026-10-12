@@ -11,6 +11,7 @@ import { BitArrayMetrics } from '@datagrok-libraries/ml/src/typed-metrics';
 import { Fingerprint } from '../utils/chem-common';
 import { SubstructureSearchType } from '../constants';
 import { sketchersWarmUp } from './sketcher-tests';
+import {SubstructureSearchEngine, setSubstructureSearchEngine} from '../crux/crux-searches';
 
 const expectedResults: {[key: string]: any} = {
   'oneColumn': [737141248, 593097, 3256025153, 4],
@@ -132,6 +133,29 @@ MJ201900
 M  END
 `;
 
+/** Toluene drawn with its ring Kekulé and its methyl bond aromatic (MDL type 4), as a sketcher writes it once the user
+ * marks that bond aromatic (the product owner's report of 2026-10-07, crux-sketch spike query-roundtrip). */
+const TOLUENE_AROMATIC_METHYL_BOND = `
+  query-roundtrip
+
+  7  7  0  0  0  0  0  0  0  0999 V2000
+    2.5714    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    1.0714    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.3214   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.1786   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.9286    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+   -1.1786    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+    0.3214    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  4  0
+  2  3  2  0
+  3  4  1  0
+  4  5  2  0
+  5  6  1  0
+  6  7  2  0
+  7  2  1  0
+M  END
+`;
+
 category('substructure filters', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -140,6 +164,72 @@ category('substructure filters', async () => {
     }
     const funcs = DG.Func.find({meta: {role: DG.FUNC_TYPES.MOLECULE_SKETCHER}});
     await sketchersWarmUp(funcs);
+  });
+
+  // The report's rows: with Filter as you draw on, toluene filtered first, then its methyl bond marked aromatic. The
+  // filter named a query by RDKit's sanitized SMARTS, which reads that bond single, so the second query had the first's
+  // name and its search was skipped: toluene's 822 rows of mol1K stayed, where the aromatic bond passes 293.
+  test('a query that only an unsanitized reading tells from the last one is searched again: toluene, ' +
+    'then its methyl bond aromatic', async () => {
+    const df = await readDataframe('mol1K.csv');
+    await grok.data.detectSemanticTypes(df);
+    const dialogs: DG.Dialog[] = [];
+    const filter = await createFilter('molecule', df, dialogs);
+    try {
+      const rdkit = chemCommonRdKit.getRdKitModule();
+      const matches = (smarts: string): number => {
+        const q = rdkit.get_qmol(smarts);
+        let n = 0;
+        try {
+          for (let i = 0; i < df.rowCount; i++) {
+            const m = rdkit.get_mol(df.get('molecule', i));
+            try {
+              if (m.get_substruct_match(q) !== '{}')
+                n++;
+            } finally {
+              m.delete();
+            }
+          }
+        } finally {
+          q.delete();
+        }
+        return n;
+      };
+      const toluene = matches('[#6]-[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
+      const marked = matches('[#6]:[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1');
+      expect(toluene !== marked && marked > 0, true, `mol1K tells the two apart (${toluene}, ${marked})`);
+      // the same written V3000 (RDKit's writer would kekulize the bond away)
+      const v3000 = ['', '  query-roundtrip', '', '  0  0  0     0  0            999 V3000', 'M  V30 BEGIN CTAB',
+        'M  V30 COUNTS 7 7 0 0 0', 'M  V30 BEGIN ATOM', 'M  V30 1 C 2.5714 0 0 0', 'M  V30 2 C 1.0714 0 0 0',
+        'M  V30 3 C 0.3214 -1.299 0 0', 'M  V30 4 C -1.1786 -1.299 0 0', 'M  V30 5 C -1.9286 0 0 0',
+        'M  V30 6 C -1.1786 1.299 0 0', 'M  V30 7 C 0.3214 1.299 0 0', 'M  V30 END ATOM', 'M  V30 BEGIN BOND',
+        'M  V30 1 4 1 2', 'M  V30 2 2 2 3', 'M  V30 3 1 3 4', 'M  V30 4 2 4 5', 'M  V30 5 1 5 6', 'M  V30 6 2 6 7',
+        'M  V30 7 1 7 2', 'M  V30 END BOND', 'M  V30 END CTAB', 'M  END', ''].join('\n');
+      // with either engine of the search, and the same query written V3000 (the search reads it unsanitized too)
+      for (const engine of [SubstructureSearchEngine.RDKit, SubstructureSearchEngine.Crux]) {
+        setSubstructureSearchEngine(engine);
+        for (const [what, query] of [['V2000', TOLUENE_AROMATIC_METHYL_BOND], ['V3000', v3000]]) {
+          filter.sketcher.setMolFile(TOLUENE_AROMATIC_METHYL_BOND.replace('  1  2  4  0', '  1  2  1  0'));
+          await awaitCheck(() => df.filter.trueCount === toluene, `${engine}: toluene: ${toluene} rows contain it`,
+            15000);
+          filter.sketcher.setMolFile(query);
+          await awaitCheck(() => df.filter.trueCount === marked, 'see below', 15000).catch(() => {
+            const kept = filter.moleculeToSmarts(filter.currentMolecule);
+            const given = filter.moleculeToSmarts(filter.getSketcherMolecule());
+            throw new Error(`with ${engine} and the molblock ${what}, ${df.filter.trueCount} rows pass, ` +
+              `${marked} contain it; the filter keeps ${kept}, its sketcher ` +
+              `(${filter.sketcher.sketcher?.constructor.name}) gives ${given}; ` +
+              `searches ${filter.currentSearches.size}, sync ${filter.syncEvent}, calculating ${filter.calculating}`);
+          });
+          expect(filter.currentMolecule, query, `${engine}, ${what}: the molecule the filter keeps`);
+        }
+      }
+    } finally {
+      setSubstructureSearchEngine(null);
+      dialogs.forEach((d) => d.close());
+      filter.detach();
+      await delay(1000);
+    }
   });
 
   test('filterBy2Columns', async () => {
@@ -351,7 +441,7 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     DG.chem.currentSketcherType = 'Ketcher';
-    const filter1 = await createFilter('Structure', df, sketcherDialogs, 30000);
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
@@ -372,8 +462,8 @@ M  END
     const sketcherDialogs: DG.Dialog[] = [];
 
     DG.chem.currentSketcherType = 'OpenChemLib';
-    const filter1 = await createFilter('Structure', df, sketcherDialogs, 10000);
-    const filter2 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
+    const filter2 = await createFilter('Structure', df, sketcherDialogs);
 
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('C1CCCCC1');
@@ -385,7 +475,7 @@ M  END
     await delay(500); //waiting for detach to complete
     expect(df.filter.trueCount, 5, 'filter has been reset 1');
 
-    const filter3 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter3 = await createFilter('Structure', df, sketcherDialogs);
     //filter by structure and wait for results
     filter1.sketcher.setSmiles('c1ccccc1');
     await awaitCheck(() => df.filter.trueCount === 32, 'df hasn\'t been filtered 2', 5000);
@@ -396,7 +486,7 @@ M  END
     await delay(1000); //waiting for detach to complete
     expect(df.filter.trueCount, 32, 'filter has been reset 2');
 
-    const filter4 = await createFilter('Structure', df, sketcherDialogs, 10000);
+    const filter4 = await createFilter('Structure', df, sketcherDialogs);
 
     //detaching active filter3 while bitset hasn't yet been synchronized with filter4
     filter3.detach();
@@ -437,7 +527,7 @@ M  END
 });
 
 
-async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[], waitForSketcherMs?: number):
+async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: DG.Dialog[]):
   Promise<SubstructureFilter> {
   const filter = new SubstructureFilter();
   filter.attach(df);
@@ -447,7 +537,7 @@ async function createFilter(colName: string, df: DG.DataFrame, sketcherDialogs: 
   filter.column = df.col(colName);
   filter.columnName = colName;
   filter.tableName = df.name;
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true, 'sketcher hasn\'t been initialized', waitForSketcherMs ?? 5000);
+  await filter.sketcher.sketcherReady();
   return filter;
 }
 

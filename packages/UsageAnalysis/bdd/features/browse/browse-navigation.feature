@@ -100,6 +100,14 @@ Feature: The Browse panel and the icons of its toolbar
 
   Scenario: Refresh brings in a script saved on the server meanwhile
     Given no script named "BDD-Browse-Script-{run}" is on the server
+    # My stuff lists a Scripts bucket only while the account owns a script (project_meta.dart): one of its own
+    # makes the bucket exist on any stand, and a Refresh brings it in
+    And a script "BDD-Browse-Anchor-{run}" is on the server:
+      """
+      //language: javascript
+      let y = 1;
+      """
+    When user refreshes the browse tree
     And My stuff tree node inside browse tree is expanded
     # a bucket loads its children when it opens: open before the script exists, it can learn of it only by Refresh
     And user expands the "Scripts" bucket of My stuff

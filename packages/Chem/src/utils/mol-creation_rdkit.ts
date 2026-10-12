@@ -75,7 +75,10 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
   let queryMol = null;
 
   if (isMolBlock(queryMolString)) {
-    if (queryMolString.includes(' H ') || queryMolString.includes('V3000'))
+    // a query molblock is read as a query, unsanitized, V2000 or V3000: sanitizing changes what it asks for (an aromatic bond
+    // outside an aromatic ring read single, crux-sketch spike query-roundtrip); one with explicit H is read with its H
+    // merged into their atoms, which only the molecule reader does
+    if (queryMolString.includes(' H '))
       queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
     else {
       try {
@@ -116,4 +119,20 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
     }
   }
   return queryMol;
+}
+
+/**
+ * The query a substructure search builds from `molString` ({@link getQueryMolSafe}), as RDKit's SMARTS: what names a query
+ * where two drawings must be told apart exactly when the search tells them apart (the substructure filter's key). Null
+ * when RDKit cannot read it.
+ */
+export function querySmarts(molString: string, rdKitModule: RDModule): string | null {
+  const queryMol = getQueryMolSafe(molString, '', rdKitModule);
+  try {
+    return queryMol?.get_smarts() ?? null;
+  } catch {
+    return null;
+  } finally {
+    queryMol?.delete();
+  }
 }

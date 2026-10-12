@@ -4,11 +4,9 @@ Feature: The substructure filter card and its search types
   substructure card on the molecule columns. Removing them with their close icons leaves no
   substructure card; Add Filter | Substructure Filter... with every column checked in its picker
   puts them back. Pyridine drawn on the Structure card keeps 17 rows and the header counter reads 1.
-  The card offers seven search types: Contains and Not contains split the table into 17 and 83 rows,
-  Included in and Not included in split it into 0 and 100, Exact, Stereo agnostic and Similar keep
-  none (pyridine is no molecule of the table and is similar to none), and Contains again keeps the
-  same 17 rows. A search type that keeps none is picked only after one that keeps some, so its 0 is
-  its own and not what the type before it left.
+  The card offers seven search types: Not contains splits the table into the other 83 rows, and
+  Contains again keeps the same 17 rows. What each search type keeps is tested in Chem
+  src/tests/substructure-search-tests.ts ('substructure search: search types', 'substructure search: stereo agnostic').
 
   Background:
     Given user is logged in
@@ -63,26 +61,12 @@ Feature: The substructure filter card and its search types
     And counter of filter panel should have text "1"
     And no errors should have been logged
 
-  Scenario: The search types split and nest the rows
+  Scenario: The card offers the search types, and a switch to Not contains and back changes the rows
     When user opens the settings of the "Structure" filter card
     Then the "Structure" filter card should offer search types "Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in"
     When user picks search type "Not contains" in the "Structure" filter card
     Then 83 rows should pass the filter
     And the "search type of Structure" reading of filter panel should be "Not contains"
-    When user picks search type "Included in" in the "Structure" filter card
-    Then 0 rows should pass the filter
-    When user picks search type "Not included in" in the "Structure" filter card
-    Then all rows should pass the filter
-    When user picks search type "Exact" in the "Structure" filter card
-    Then 0 rows should pass the filter
-    When user picks search type "Contains" in the "Structure" filter card
-    Then 17 rows should pass the filter
-    When user picks search type "Similar" in the "Structure" filter card
-    Then 0 rows should pass the filter
-    When user picks search type "Not contains" in the "Structure" filter card
-    Then 83 rows should pass the filter
-    When user picks search type "Stereo agnostic" in the "Structure" filter card
-    Then 0 rows should pass the filter
     When user picks search type "Contains" in the "Structure" filter card
     Then 17 rows should pass the filter
     And the "search type of Structure" reading of filter panel should be "Contains"

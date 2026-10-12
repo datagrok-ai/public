@@ -6,8 +6,9 @@ Feature: A connection in the connections browser and its context panel
   (playwright-public connections/04-browser.test.ts).
 
   The subject is a Postgres connection saved through the API without credentials,
-  BDD-Conn-Browser-{run}; the share, the chat and the connection are removed at feature end and
-  checked gone (a chat goes before its connection — a chat must not outlive what it is about).
+  BDD-Conn-Browser-{run}; it is removed at feature end with its share and its chat, and checked gone
+  (a chat goes before its connection — a chat must not outlive what it is about). That a posted chat
+  is stored and read back is tested in datlas dapi/chats_test.dart 'new chat, get chat, watch chat, vote comments'.
 
   Not translated, and why: the md's "Filter templates (magic wand)" icon — the view has no such icon
   any more (its toolbar has a plain filter). The old spec's checks that proved nothing are not
@@ -56,12 +57,9 @@ Feature: A connection in the connections browser and its context panel
     Then the sharing pane should list the sharing user
     And no error or warning balloon should have been shown
 
-  Scenario: A chat message is posted on the connection and removed with it
+  Scenario: A chat message is posted on the connection
     Given Chats section in context panel is expanded
     When user types "BDD chat {run}" into chat post input in context panel
     And user presses Enter in chat post input in context panel
     Then Chats section in context panel should contain the text "BDD chat {run}"
-    And the "BDD-Conn-Browser-{run}" connection should have a chat on the server
-    When user deletes the chat of the "BDD-Conn-Browser-{run}" connection
-    Then the "BDD-Conn-Browser-{run}" connection should have no chat on the server
     And no errors should have been logged

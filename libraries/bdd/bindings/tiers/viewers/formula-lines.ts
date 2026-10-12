@@ -61,6 +61,9 @@ export const editFormulaLine = When('user changes the formula line {string} in t
     return {rows: Number(s?.values?.['rows'] ?? 0), current: Number(s?.values?.['current row'] ?? 0),
       first: a ? {x: c.x + a.x + a.width / 2, y: c.y + a.y + a.height / 2} : null};
   });
+  // the list can still be in its first layout as the dialog opens (its overlay 300×150): a click aimed
+  // before it lands on the bare canvas, which takes the focus the Down arrow needs
+  await grid.evaluate((el) => (window as any).__bdd.settle(el, 300));
   const st = await status();
   if (!st.first)
     throw new Error('the Formula Lines dialog lists no line');

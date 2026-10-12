@@ -2,10 +2,12 @@
 Feature: Sequence cell renderers
   A Macromolecule column is painted by the renderer its units tag selects, and the grid reports
   that renderer as the column's cell type: a HELM column by the HELM renderer, a separator column
-  by the sequence renderer, each with its monomers in their own colors; a column a transform
-  derives takes the renderer of its own notation, not its source's (GROK-12164); a BILN column is
-  detected as BILN and painted by the sequence renderer; every per-position column of Split to
-  Monomers takes the monomer renderer.
+  by the sequence renderer; a column a transform derives takes the renderer of its own notation,
+  not its source's (GROK-12164); a BILN column is detected as BILN and painted by the sequence
+  renderer; every per-position column of Split to Monomers takes the monomer renderer.
+
+  What the renderers draw, monomers in their own colors, is tested in Bio src/tests/renderers-test.ts
+  ('renderers').
 
   Not translated: a column with custom units (the md's fallback case) — the old spec asserted the
   HELM renderer for it, the opposite of the md, and neither describes what the product does; the
@@ -16,29 +18,20 @@ Feature: Sequence cell renderers
     Given user is logged in
     And the Bio package is initialized
 
-  Scenario: A HELM column renders with the HELM renderer in monomer colors
+  Scenario: HELM, separator and BILN columns report the renderer their units select
     Given user opens filter_HELM dataset
     Then "HELM string" column should have semantic type "Macromolecule"
     And "HELM string" column should have units "helm"
     And the "cell type of HELM string" reading of grid should be "helm"
-    And the "cell 1 of HELM string" area of grid should be painted in at least 3 colors
-    And no error or warning balloon should have been shown
-
-  Scenario: A separator column renders with the sequence renderer in monomer colors
     Given user opens filter_MSA dataset
     Then "MSA" column should have semantic type "Macromolecule"
     And "MSA" column should have units "separator"
     And "MSA" column should have tag "separator" equal to "/"
     And the "cell type of MSA" reading of grid should be "sequence"
-    And the "cell 1 of MSA" area of grid should be painted in at least 3 colors
-    And no error or warning balloon should have been shown
-
-  Scenario: A BILN column is detected and renders with the sequence renderer in monomer colors
     Given user opens BILN dataset
     Then "biln" column should have semantic type "Macromolecule"
     And "biln" column should have units "biln"
     And the "cell type of biln" reading of grid should be "sequence"
-    And the "cell 1 of biln" area of grid should be painted in at least 3 colors
     And no error or warning balloon should have been shown
 
   Scenario: Converting HELM to separator gives the new column the separator renderer

@@ -13,6 +13,8 @@ Feature: An Excel workbook opens from Shared with me
 
   Background:
     Given user is logged in
+    # the last scenario claims the running account's Home page, which shows what its stored settings let it
+    And every widget of the Home page is stored as shown, now and when the feature ends
 
   Scenario: A space holding the workbook is shared with the sharing user
     Given no space named "bdd-xlsx-{time}" is on the server

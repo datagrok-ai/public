@@ -12,6 +12,7 @@ export type SketcherMode = 'molecule' | 'query';
 export type ChangeSource = 'user' | 'api';
 /** What a `change` listener receives, once per completed edit. */
 export interface ChangeDetail {
+    /** `'user'` for a user's edit (its undo and redo by key or button included), `'api'` for the host's write or `undo()`. */
     readonly source: ChangeSource;
 }
 /**
@@ -42,10 +43,11 @@ export type SketchErrorCode = 'loading' | 'unavailable';
 /**
  * What a warning is about (spike charges-checks, K11): an atom with a valence RDKit's sanitization rejects (`valence`),
  * aromatic bonds with no Kekulé structure (`aromaticity`), a label kept as an alias, which nothing interprets (`label`),
- * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), or something a
- * getter's format cannot hold (`format`).
+ * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), an atom on or very
+ * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), or something a getter's format cannot hold
+ * (`format`).
  */
-export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'format';
+export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'format';
 /**
  * The loss table's rows (spike formats, F2, F11): what a format cannot hold, as a `format` warning's `code` names it.
  * `v3000` is no loss but a notice: under `molV2000`, that the molfile getter (and `value` after an edit) writes V3000, and
@@ -119,21 +121,44 @@ export type WarningMarks = 'shown' | 'hidden';
  */
 export type AnalysisPanel = 'shown' | 'collapsed' | 'hidden';
 /**
+ * What a `render` listener receives (API-061; spike datagrok-platform, R5): the canvas's render count once this drawing is
+ * shown, as `renderCount` then reads it.
+ */
+export interface RenderDetail {
+    readonly renderCount: number;
+}
+/**
  * The events a sketcher emits, and what each listener receives. `settings` (spike settings-touch, K6, P9): the settings in
  * force once a user's Apply in the Settings dialog changed them, so that a host may store them; never for a host's write.
+ * `render` (API-061; spike datagrok-platform, R5): the canvas shows a new drawing (the first one included, then after an
+ * edit, a write, a view change or a resize), once per drawing, as `renderCount` counts them, with the drawing on the page
+ * when it comes. What the canvas marks on a drawing it shows (a tool's preview, the hover, the selection) is no render. A
+ * host that waits for the sketcher to settle waits on it and on `isPending` (Datagrok's settles do), never on a timeout.
  */
 export interface SketcherEvents {
     change: ChangeDetail;
     error: SketchError;
     settings: SketcherSettings;
+    render: RenderDetail;
 }
+/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings` or `render`. */
 export type SketcherEventType = keyof SketcherEvents;
+/** A listener of the event `T`, called with that event's detail (`SketcherEvents[T]`). */
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
+/** How `setValue` reads its text, and where it shows the molecule. */
 export interface SetValueOptions {
     /** Read the text as this format instead of detecting it (e.g. SMARTS that is also SMILES). */
     format?: SketcherFormat;
+    /**
+     * Where the view goes (API-014): `'fit'`, the default, fits the new molecule into the view as every value write does
+     * (CANVAS-008: centred, and zoomed out only when it would not fit, never above 100%); `'keep'` keeps the view shown,
+     * its zoom and its centre, as an edit does, so that a molecule written in the coordinates of the one shown (the host's
+     * own copy of it, changed) is drawn where that one was. With no view to keep yet (before the first drawing) the molecule
+     * is fitted. Any other value is `'fit'`.
+     */
+    view?: 'fit' | 'keep';
 }
 /**
  * An action a toolbar can hold: it does something once, and is no tool that stays chosen. `element.table`
@@ -150,14 +175,17 @@ export type ToolbarReadout = 'zoom.level';
  * A menu button a toolbar can hold (spike bar-fit, B7, B9): `zoom`, the zoom level as Ketcher shows it, whose menu holds Zoom
  * in, Zoom out, Actual size and Fit to view (it and `zoom.level` show the same level, and a configuration shows the first
  * of them it names); `options`, the gear, whose menu holds Settings…, Query mode (spike reports-oct5, R3) and Keyboard
- * shortcuts….
+ * shortcuts…; `hydrogens` (spike hydrogens-and-dative, R1), whose menu holds Add explicit hydrogens and Remove explicit
+ * hydrogens, each acting on the selection's atoms, or on the whole drawing with nothing selected.
  */
-export type ToolbarMenu = 'zoom' | 'options';
+export type ToolbarMenu = 'zoom' | 'options' | 'hydrogens';
 /**
  * An item of a menu that is no control of a bar (spike reports-oct5, R3), which a configuration's `hidden` takes away as it
- * takes a control: `mode`, the gear's Query mode, a check item that switches `mode` between `'molecule'` and `'query'`.
+ * takes a control: `mode`, the gear's Query mode, a check item that switches `mode` between `'molecule'` and `'query'`;
+ * `hydrogens.add` and `hydrogens.remove`, the Hydrogens menu's Add explicit hydrogens and Remove explicit hydrogens (spike
+ * hydrogens-and-dative, R1). A menu whose items are all hidden leaves the bar with them.
  */
-export type ToolbarMenuItem = 'mode';
+export type ToolbarMenuItem = 'mode' | 'hydrogens.add' | 'hydrogens.remove';
 /** The 118 element symbols, as written. */
 export type ElementSymbol = 'H' | 'He' | 'Li' | 'Be' | 'B' | 'C' | 'N' | 'O' | 'F' | 'Ne' | 'Na' | 'Mg' | 'Al' | 'Si' | 'P' | 'S' | 'Cl' | 'Ar' | 'K' | 'Ca' | 'Sc' | 'Ti' | 'V' | 'Cr' | 'Mn' | 'Fe' | 'Co' | 'Ni' | 'Cu' | 'Zn' | 'Ga' | 'Ge' | 'As' | 'Se' | 'Br' | 'Kr' | 'Rb' | 'Sr' | 'Y' | 'Zr' | 'Nb' | 'Mo' | 'Tc' | 'Ru' | 'Rh' | 'Pd' | 'Ag' | 'Cd' | 'In' | 'Sn' | 'Sb' | 'Te' | 'I' | 'Xe' | 'Cs' | 'Ba' | 'La' | 'Ce' | 'Pr' | 'Nd' | 'Pm' | 'Sm' | 'Eu' | 'Gd' | 'Tb' | 'Dy' | 'Ho' | 'Er' | 'Tm' | 'Yb' | 'Lu' | 'Hf' | 'Ta' | 'W' | 'Re' | 'Os' | 'Ir' | 'Pt' | 'Au' | 'Hg' | 'Tl' | 'Pb' | 'Bi' | 'Po' | 'At' | 'Rn' | 'Fr' | 'Ra' | 'Ac' | 'Th' | 'Pa' | 'U' | 'Np' | 'Pu' | 'Am' | 'Cm' | 'Bk' | 'Cf' | 'Es' | 'Fm' | 'Md' | 'No' | 'Lr' | 'Rf' | 'Db' | 'Sg' | 'Bh' | 'Hs' | 'Mt' | 'Ds' | 'Rg' | 'Cn' | 'Nh' | 'Fl' | 'Mc' | 'Lv' | 'Ts' | 'Og';
 /** An element tool, named by its symbol in lower case: `element.n`, `element.cl` (spike atoms). */
@@ -175,11 +203,12 @@ export type ToolbarRingTool = `ring.${RingName}`;
  * attachment-point tool (`rgroup.attachment`, spike rgroups); the selection tools, the rectangle
  * (`select.rect`), the lasso (`select.lasso`) and the structure tool (`select.structure`, spike select); the S-Group tool
  * (`sgroup`, spike sgroups).
- * `bond.wavy` and `bond.crossed` are the wavy bond and the crossed double bond (spike stereo). The query bond tools,
+ * `bond.wavy` and `bond.crossed` are the wavy bond and the crossed double bond (spike stereo); `bond.dative` the dative bond,
+ * drawn from its donor to its acceptor, the arrow on the acceptor (spike hydrogens-and-dative, R2). The query bond tools,
  * `bond.any`, `bond.single-or-double`, `bond.single-or-aromatic` and `bond.double-or-aromatic`, show in query mode only
  * (spike query-edit, API-021). A misspelt name fails to compile.
  */
-export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | ToolbarRingTool | ToolbarElementTool;
+export type ToolbarTool = ToolbarAction | ToolbarReadout | ToolbarMenu | 'select.rect' | 'select.lasso' | 'select.structure' | 'hand' | 'erase' | 'bond.single' | 'bond.double' | 'bond.triple' | 'bond.aromatic' | 'bond.wedge' | 'bond.hash' | 'bond.wavy' | 'bond.crossed' | 'bond.dative' | 'bond.any' | 'bond.single-or-double' | 'bond.single-or-aromatic' | 'bond.double-or-aromatic' | 'chain' | 'template.library' | 'rgroup.label' | 'rgroup.attachment' | 'sgroup' | 'charge.plus' | 'charge.minus' | ToolbarRingTool | ToolbarElementTool;
 /**
  * A sub-palette of a toolbar: its id (a test-id path of your own, such as `bond.multiple`: its main
  * button is `toolbar.<palette>`), its name, and its tools. Its main button shows the tool used last.
@@ -257,9 +286,14 @@ export type MethylLabels = 'shown' | 'hidden';
  * value is `'auto'`, and reads back so.
  */
 export type Density = 'auto' | 'regular' | 'compact';
+/**
+ * What `createSketcher` takes (H29): the initial molecule and mode, the toolbars, and the options the handle reads and
+ * changes later by the same names. Every option is optional; left out, it takes its default.
+ */
 export interface CreateSketcherOptions {
     /** The initial molecule, in any format the sketcher reads. Showing it emits no change event. */
     value?: string;
+    /** `'molecule'` (the default) or `'query'` (API-021): the handle's `mode` switches it later. */
     mode?: SketcherMode;
     /**
      * What the toolbars hold (UI-002): `{ top, left, right, bottom }`, each a list of groups `{ label,
@@ -333,6 +367,56 @@ export interface CreateSketcherOptions {
      */
     disabledQueryElements?: readonly string[];
 }
+/** A point of the canvas as `positions` gives it: CSS px from the top-left corner of the `<crux-sketch>` element. */
+export interface DrawnPoint {
+    readonly x: number;
+    readonly y: number;
+}
+/**
+ * Where the canvas draws the drawing (API-056): each atom's position and each bond's midpoint, by index (the order of the
+ * `molfile`'s atoms and bonds, as the test ids `atom.N` and `bond.N` number them), where a press lands on that atom or
+ * bond. An atom drawn nowhere (one a contracted abbreviation hides) and a bond drawn nowhere are null. `bondLength` is a
+ * bond's drawn length at the current zoom, in px; 0 when there is nothing drawn.
+ */
+export interface DrawnPositions {
+    readonly atoms: readonly (DrawnPoint | null)[];
+    readonly bonds: readonly (DrawnPoint | null)[];
+    readonly bondLength: number;
+}
+/** A box of the sketcher as `layout` gives it: CSS px from the top-left corner of the `<crux-sketch>` element. */
+export interface DrawnBox {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+}
+/** A toolbar's place around the canvas: the top bar, the left bar, the element palette on the right, the ring bar below. */
+export type ToolbarPlace = 'top' | 'left' | 'right' | 'bottom';
+/**
+ * Where the sketcher shows its parts now (API-058; spike datagrok-platform, R3, R4), for a host that points at them, as
+ * Datagrok's hit areas do: the canvas; each toolbar shown, by its place; each control a toolbar shows, by its name in a
+ * toolbar configuration (`bond.single`, `ring.benzene`, `element.n`, `undo`, `zoom`; a sub-palette's button by the
+ * palette's name, `select`, `bond.stereo`), where a press lands on it; and the label editor while it is open. What is not
+ * shown is left out: a toolbar the configuration leaves out, a control in a closed palette or a folded group, one its bar
+ * has scrolled out of view.
+ */
+export interface SketcherLayout {
+    readonly canvas: DrawnBox | null;
+    readonly toolbars: Readonly<Partial<Record<ToolbarPlace, DrawnBox>>>;
+    readonly controls: Readonly<Record<string, DrawnBox>>;
+    readonly labelEditor: DrawnBox | null;
+}
+/** The atoms and bonds the user has selected (API-059), by index (the `molfile`'s order, as `positions` numbers them), ascending. */
+export interface SketchSelection {
+    readonly atoms: readonly number[];
+    readonly bonds: readonly number[];
+}
+/**
+ * A tool the sketcher can have chosen (API-060), named as a toolbar configuration names it (`select.rect`, `bond.single`,
+ * `ring.benzene`, `element.n`, `chain`, `erase`, `template.library` while a template from the Structure Library is the
+ * tool), or `element.query`, the query atom picked last in the periodic table (query mode).
+ */
+export type SketcherTool = Exclude<ToolbarTool, ToolbarAction | ToolbarReadout | ToolbarMenu> | 'element.query';
 /**
  * What `createSketcher` resolves to; `<crux-sketch>` has the same members.
  *
@@ -433,6 +517,13 @@ export interface SketcherApi {
      * Writing it replaces the molecule and starts a new history.
      */
     value: string;
+    /**
+     * Writes `text` as `value` does, read as `options.format` when it is given instead of detected from its shape (API-010:
+     * SMARTS that is also SMILES), and fitted into the view as `value` fits it unless `options.view` is `'keep'`, which keeps
+     * the zoom and the centre shown (API-014). One change event with `{ source: 'api' }` when it is accepted; a text it
+     * cannot read changes nothing, sets `lastError` and emits `error`, never throwing (API-013). Throws on a destroyed
+     * sketcher.
+     */
     setValue(text: string, options?: SetValueOptions): void;
     /** The last refused write's error, until the next accepted write clears it to `null`. */
     readonly lastError: SketchError | null;
@@ -441,10 +532,11 @@ export interface SketcherApi {
      * neither (spike charges-checks, K11, CHECK-012; decision `rgroups`). First the problems, in atom order: an atom
      * whose valence RDKit's sanitization rejects (`kind: 'valence'`), aromatic atoms with no Kekulé structure
      * (`'aromaticity'`), a label kept as an alias (`'label'`), a stereocentre nothing specifies in a structure drawn with
-     * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), each with the
-     * status line's words and every atom concerned. Then the losses (`'format'`), one per format and loss: a combined R
-     * label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number, and attachment points, which SMARTS
-     * does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
+     * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), and atoms on or
+     * very close to other atoms or bonds (`'contact'`, the atoms of a pair together, an atom on a bond alone; spike
+     * v1-display, CHECK-006), each with the status line's words and every atom concerned. Then the losses (`'format'`),
+     * one per format and loss: a combined R label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number,
+     * and attachment points, which SMARTS does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
      * for attachment points, so they warn under `smarts` alone; `plainSmiles` has no entries, since it loses something
      * exactly when it differs from `smiles`. Nothing is refused for any of them. Synchronous and current at every moment,
      * as the getters are; it changes only with the molecule, so a `change` listener reads it as it reads the getters.
@@ -495,6 +587,7 @@ export interface SketcherApi {
      * or `'hidden'`. The toggle changes it too. It reads back the value in force as `atomColours` does; no edit.
      */
     analysisPanel: AnalysisPanel;
+    /** Whether the drawing is empty (API-019), as it is after a clear, a write of `""` and the last atom erased. A read. */
     readonly isEmpty: boolean;
     /**
      * Whether the drawing has a query feature (spike query, Q14; API-020): a generic atom, an atom list or NOT list, a query
@@ -525,6 +618,38 @@ export interface SketcherApi {
     readonly engineRev: string;
     /** How many times the canvas has rendered (API-042); mirrored as `data-render-count` on the canvas. */
     readonly renderCount: number;
+    /**
+     * Where the canvas draws each atom and bond now (API-056; spike datagrok-chem, R1): for a host that points at them, as
+     * Datagrok's hit areas do. A read, which renders and emits nothing; current at every moment. Empty before the sketcher
+     * is ready, for an empty drawing and after `destroy()`.
+     */
+    readonly positions: DrawnPositions;
+    /**
+     * Whether the sketcher has something on its way (API-057; spike datagrok-chem, R1): a press or a drag held on the canvas,
+     * or a drawing, a preview, a view change, a tooltip or a read of the clipboard waiting for a coming frame, a short wait
+     * (a ring's preview waits for the pointer to rest) or a promise. False when the canvas shows all it will until the next
+     * input or write: a host or a test that waits for the sketcher to settle waits on this, never on a timeout. A notice's
+     * time on the status line is not counted. False after `destroy()`.
+     */
+    readonly isPending: boolean;
+    /**
+     * Where the sketcher shows its canvas, its toolbars, each control they show and the label editor now (API-058; spike
+     * datagrok-platform, R3, R4): for a host that points at them, as Datagrok's hit areas do. A read, which renders and
+     * emits nothing; current at every moment. Empty (no canvas, no toolbars, no controls) before the sketcher is ready, while
+     * it is out of the page and after `destroy()`.
+     */
+    readonly layout: SketcherLayout;
+    /**
+     * The atoms and bonds selected (API-059; spike datagrok-platform, R4), by index, ascending; none with nothing selected,
+     * before the sketcher is ready and after `destroy()`. The selection is the user's: the API reads it and never sets it. A
+     * read, which emits nothing.
+     */
+    readonly selection: SketchSelection;
+    /**
+     * The tool chosen now (API-060; spike datagrok-platform, R4), however it was chosen (its button, a key, the canvas menu),
+     * named as a toolbar configuration names it; `bond.single` at first. After `destroy()`, the last one. A read.
+     */
+    readonly tool: SketcherTool;
     /**
      * Undoes the last completed edit (API-043) and returns whether it did anything: with nothing to
      * undo it returns `false` and changes nothing. When it undoes, it emits one `change` with
@@ -631,6 +756,7 @@ export interface SketcherApi {
     settings: SketcherSettings;
     /** Adds a listener; returns the function that removes it. */
     on<T extends SketcherEventType>(type: T, listener: SketcherListener<T>): () => void;
+    /** Removes a listener `on()` added (API-018); a listener it never added is ignored. */
     off<T extends SketcherEventType>(type: T, listener: SketcherListener<T>): void;
     /** Releases the sketcher. The getters keep answering; writes throw. Calling it twice is harmless. */
     destroy(): void;

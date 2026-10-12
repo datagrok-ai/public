@@ -6,7 +6,9 @@ generated: features/guides/scatter-plot-marker-labels.feature
 generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/flow.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';
 import '../../bindings/trellis-plot.js';
@@ -14,10 +16,11 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, isExpanded, shouldBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {openDataset, simpleModeOff} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewerWith, readingAtLeast} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewerWith, propertyShouldContain, readingAtLeast} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -38,6 +41,9 @@ test.describe("Label scatter plot markers with the structure, the ID and a poten
     await session.step(22, "And user types \"Cellular assay 1\" into \"Search\" input in \"Select columns...\" dialog", () => typeInto(page, "Cellular assay 1", el("\"Search\" input in \"Select columns...\" dialog")));
     await session.step(23, "And user toggles the \"Cellular assay 1\" column in the column list of \"Select columns...\" dialog", () => toggleInColumnList(page, "Cellular assay 1", el("\"Select columns...\" dialog")));
     await session.step(24, "And user clicks on OK button in \"Select columns...\" dialog", () => clickOn(page, el("OK button in \"Select columns...\" dialog")));
-    await session.step(25, "Then the \"labels shown\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "labels shown", el("scatter plot viewer"), 1));
+    await session.step(25, "Then \"Label Columns\" property of scatter plot viewer should contain \"Structure\"", () => propertyShouldContain(page, "Label Columns", el("scatter plot viewer"), "Structure"));
+    await session.step(26, "And \"Label Columns\" property of scatter plot viewer should contain \"Id\"", () => propertyShouldContain(page, "Label Columns", el("scatter plot viewer"), "Id"));
+    await session.step(27, "And \"Label Columns\" property of scatter plot viewer should contain \"Cellular assay 1\"", () => propertyShouldContain(page, "Label Columns", el("scatter plot viewer"), "Cellular assay 1"));
+    await session.step(28, "And the \"labels shown\" reading of scatter plot viewer should be at least 1", () => readingAtLeast(page, "labels shown", el("scatter plot viewer"), 1));
   });
 });

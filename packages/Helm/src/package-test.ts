@@ -18,6 +18,7 @@ import './tests/helm-substructure-filter';
 import './tests/helm-activity-cliffs';
 import './tests/to-atomic-level-ui-non-linear';
 import './tests/wrap-width-tests';
+import './tests/bio-functions-showcase-tests';
 
 export const _package = new DG.Package();
 export {tests};

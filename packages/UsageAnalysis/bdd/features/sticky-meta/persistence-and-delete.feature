@@ -3,9 +3,8 @@ Feature: Sticky metadata belongs to the molecule, not to the table that shows it
   Metadata written for two SPGI molecules is found again wherever those molecules are shown: in a
   clone of the table and a new view of it, in a CSV file the table was exported to and opened again,
   in a project saved and reopened, in the same project moved into a space and opened from there,
-  after the page is reloaded and after another account has signed in on the page and the running
-  one has come back. Removed with Clear values for the schema, it is gone, and stays gone after a
-  reload; emptied in the cell's dialog and saved, it stays. Translated from TestTrack
+  and after the page is reloaded. Removed with Clear values for the schema, it is gone, and stays
+  gone after a reload; emptied in the cell's dialog and saved, it stays. Translated from TestTrack
   StickyMeta/03-persistence-copy-delete.md (Tests 3.1-3.4), its primary copy-clone-delete case, and
   playwright-tests/e2e/stickymeta/03-persistence-copy-delete.test.ts.
 
@@ -15,12 +14,11 @@ Feature: Sticky metadata belongs to the molecule, not to the table that shows it
   pane first, whose fields appear only once the values have come from the server; an absence ("No
   sticky meta for this cell") is read only after such a read. The old spec drove these operations
   through the JS API and read the values back with getAllValues; here each one is made the way a user
-  makes it. The session the running account comes back with is the one it had: the library signs an
-  account in with its token, and the old spec's logout through the login form cannot run where the
-  suite is given a token, not a password (a fresh session of the same account is in MISSING.md). The
-  case's export and import is a CSV downloaded from the table and opened again from the file (the old
-  spec's d42 round trip ran in the page, not through a file). Not translated: a server restart, which
-  a feature cannot cause.
+  makes it. Another account signing in and the running one coming back (3.3) is not claimed: the
+  library signs the account back in with the session it had, which proves nothing a reload does not
+  (a fresh session of the same account is in MISSING.md). The case's export and import is a CSV
+  downloaded from the table and opened again from the file (the old spec's d42 round trip ran in the
+  page, not through a file). Not translated: a server restart, which a feature cannot cause.
 
   An emptied field saved in the cell's dialog keeps its value: GROK-15602 ("cannot remove values") was
   resolved with Clear values for the schema, so the case's "delete the fields, save" is claimed as the
@@ -185,22 +183,6 @@ Feature: Sticky metadata belongs to the molecule, not to the table that shows it
     When user hovers over the "top right corner of cell 2 of Structure" area of grid
     Then the tooltip should show "rating" as "4"
     And the tooltip should show "notes" as "good"
-    And no errors should have been logged
-
-  Scenario: The metadata is there after another account has signed in on the page and the running one has come back (3.3)
-    When user signs in as the sharing user
-    Then the sharing user should be signed in
-    When user signs in as themselves again
-    Then the running account should be signed in
-    When user opens spgi dataset
-    And user clicks on the "cell 1 of Structure" area of grid
-    Then the context panel should show the current cell
-    Given "Sticky meta" pane in context panel is expanded
-    Then Rating input in context panel should have value "5"
-    And Notes input in context panel should have value "excellent"
-    When user hovers over the "top right corner of cell 1 of Structure" area of grid
-    Then the tooltip should show "rating" as "5"
-    And the tooltip should show "notes" as "excellent"
     And no errors should have been logged
 
   Scenario: Clear values for the schema removes the cell's metadata, also after a reload (3.4)

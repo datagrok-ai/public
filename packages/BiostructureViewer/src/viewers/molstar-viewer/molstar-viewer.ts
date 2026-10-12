@@ -35,7 +35,6 @@ import {
 import {TAGS as pdbTAGS} from '@datagrok-libraries/bio/src/pdb/index';
 import {Molecule3DUnits} from '@datagrok-libraries/bio/src/molecule-3d/molecule-3d-units-handler';
 import {IMolecule3DBrowser, Molecule3DData} from '@datagrok-libraries/bio/src/viewers/molecule3d';
-import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 import {getDataProviderList} from '@datagrok-libraries/bio/src/utils/data-provider';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
@@ -59,10 +58,12 @@ import {
   BindingSiteOverlayElement,
 } from './binding-site';
 import {MolScriptBuilder as MS} from 'molstar/lib/mol-script/language/builder';
+import {molstarStatus} from './molstar-status';
+import {PendingSyncer} from '../pending-syncer';
+import {ligandMapItems} from '../ligand-map';
 
 import {_package} from '../../package';
 import {convertWasm} from '../../conversion/wasm/converterWasm';
-import {StateObjectRef} from 'molstar/lib/mol-state';
 import {createStructureRepresentationParams} from 'molstar/lib/mol-plugin-state/helpers/structure-representation-params';
 import {StructureRepresentationRegistry} from 'molstar/lib/mol-repr/structure/registry';
 import {StateTransforms} from 'molstar/lib/mol-plugin-state/transforms';
@@ -323,7 +324,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.root.style.textAlign = 'center';
 
     this.logger = _package.logger;
-    this.viewSyncer = new PromiseSyncer(this.logger);
+    this.viewSyncer = new PendingSyncer(this.logger, () => this._onRendered.next());
 
     this.highlightController = new MolstarHighlightController({
       getPlugin: () => this.viewer?.plugin,
@@ -361,7 +362,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       }));
 
     this.setDataRequest = new Subject<void>();
-    this.subs.push(DG.debounce(this.setDataRequest, DebounceIntervals.setData)
+    this.subs.push(this.viewSyncer.debounce(this.setDataRequest, DebounceIntervals.setData)
       .subscribe(() => { this.onSetDataRequestDebounced(); }));
     this.viewSubs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this._initButtonExpand();
@@ -516,13 +517,11 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     }
 
     case PROPS.representation: {
-      const checkAndUpdate = () => {
-        if (!this.setDataInProgress && this.viewer)
-          this.updateView(this.representation);
-        else
-          requestAnimationFrame(checkAndUpdate);
-      };
-      checkAndUpdate();
+      // queued behind a load in progress; a load queued later re-applies a non-default representation itself
+      this.viewSyncer.sync(`${logPrefix}.updateView()`, async () => {
+        if (this.viewer)
+          await this.updateView(this.representation, this.dataEffStructureRefs);
+      });
       break;
     }
 
@@ -828,7 +827,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
   // -- View --
 
   private readonly logger: ILogger;
-  private readonly viewSyncer: PromiseSyncer;
+  private readonly viewSyncer: PendingSyncer;
   public readonly highlightController: MolstarHighlightController;
   private _stateChangeTimer: ReturnType<typeof setTimeout> | null = null;
   private setDataInProgress: boolean = false;
@@ -920,6 +919,8 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
       await this.destroyViewLigands(0, callLog);
       await removeVisualsData(plugin, oldStructureRefs, callLog);
       const newStructureRefs: string[] = await parseAndVisualsData(plugin, dataEff, callLog);
+      if (this.representation !== defaults.representation)
+        await this.updateView(this.representation, newStructureRefs);
       await this.buildViewLigands(0, callLog);
       return [dataEff, newStructureRefs];
     } finally {
@@ -963,13 +964,15 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
     const hasValidDataProvider = this.biostructureDataProviderFunc && !isPdbColumn;
     if (this.dataFrame && (hasValidDataProvider || isPdbColumn)) {
-      this.viewSubs.push(DG.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
+      this.viewSubs.push(this.viewSyncer.debounce(this.dataFrame.onCurrentRowChanged, DebounceIntervals.currentRow).subscribe(
         this.dataFrameOnCurrentRowChangedDebounced.bind(this)));
       [this.dataEff, this.dataEffStructureRefs] = await this.rebuildViewCurrentRow(
         null, this.dataFrame.currentRowIdx, logIndent + 1, callLog);
     } else if (this.dataEff) {
       // display a structure of this.dataEff
       this.dataEffStructureRefs = await parseAndVisualsData(plugin, this.dataEff, callLog);
+      if (this.representation !== defaults.representation)
+        await this.updateView(this.representation, this.dataEffStructureRefs);
     }
 
     if (this.dataEff) {
@@ -1075,7 +1078,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
           this.dataFrameOnCurrentRowChanged.bind(this)));
         this.viewSubs.push(this.dataFrame.onMouseOverRowChanged.subscribe(
           this.dataFrameOnMouseOverRowChanged.bind(this)));
-        this.viewSubs.push(DG.debounce(this.onRebuildViewLigandsRequest, DebounceIntervals.ligands).subscribe(
+        this.viewSubs.push(this.viewSyncer.debounce(this.onRebuildViewLigandsRequest, DebounceIntervals.ligands).subscribe(
           this.onRebuildViewLigandsDebounced.bind(this)));
 
         await this.buildViewLigands(logIndent, callLog);
@@ -1127,20 +1130,19 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     this.logger.debug(`${logPrefix}, end`);
   }
 
-  private async updateView(type: any) {
-    const entries = this.viewer!.plugin.managers.structure.selection.entries;
-    const state = this.viewer!.plugin.state;
-    entries.forEach(async ({selection}, ref) => {
-      const cell = StateObjectRef.resolveAndCheck(state!.data, ref);
-      if (cell) {
-        const components = this.viewer!.plugin.build().to(cell);
-        const repr = createStructureRepresentationParams(this.viewer!.plugin, void 0, {
-          type: type
-        });
-        components.applyOrUpdate(`${StateElements.SequenceVisual}-${ref}`, StateTransforms.Representation.StructureRepresentation3D, repr);
-        await components.commit();
-      }
-    });
+  /** Applies the representation over the loaded data structures. Ligand overlays keep their row-colored
+   * ball-and-stick: they are rebuilt on every current / mouse-over row change. */
+  private async updateView(type: any, structureRefs: string[] | null) {
+    const plugin = this.viewer!.plugin;
+    for (const structure of plugin.managers.structure.hierarchy.current.structures) {
+      const ref = structure.cell.transform.ref;
+      if (!structure.cell.obj || !structureRefs?.includes(ref))
+        continue;
+      const components = plugin.build().to(structure.cell);
+      const repr = createStructureRepresentationParams(plugin, void 0, {type: type});
+      components.applyOrUpdate(`${StateElements.SequenceVisual}-${ref}`, StateTransforms.Representation.StructureRepresentation3D, repr);
+      await components.commit();
+    }
   }
 
   private calcSize(logIndent: number, caller: string): void {
@@ -1288,11 +1290,7 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
     await this.clearBindingSiteView();
     if (!this.ligandColumnName) return;
 
-    const allLigands: LigandMapItem[] = [
-      ...this.ligands.selected,
-      ...(this.ligands.current ? [this.ligands.current] : []),
-      ...(this.ligands.hovered ? [this.ligands.hovered] : []),
-    ];
+    const allLigands: LigandMapItem[] = ligandMapItems(this.ligands);
 
     for (const ligand of allLigands) {
       if (!ligand.structureRefs) continue;
@@ -1612,7 +1610,22 @@ export class MolstarViewer extends DG.JsViewer implements IBiostructureViewer, I
 
   private _onRendered: Subject<void> = new Subject<void>();
 
+  /** Fires on {@link invalidate} and whenever the queue of loads and updates drains. */
   get onRendered(): Observable<void> { return this._onRendered; }
+
+  /** True while a change is on its way to the scene: a queued load, ligand or representation
+   * update, a debounced request for one, or a Mol* state-tree update. */
+  override get isRenderPending(): boolean {
+    return this.viewSyncer.isPending || !!this.viewer?.plugin.behaviors.state.isUpdating.value;
+  }
+
+  override getWidgetStatus(): DG.IWidgetStatus {
+    return molstarStatus(super.getWidgetStatus(), this.viewer?.plugin ?? null, {
+      structureRefs: this.dataEffStructureRefs,
+      ligands: this.ligands,
+      bindingSiteRefs: this.bindingSiteRefs,
+    });
+  }
 
   invalidate(caller?: string): void {
     const logPrefix = `${this.viewerToLog()}.invalidate(${caller ? ` <- ${caller} ` : ''})`;

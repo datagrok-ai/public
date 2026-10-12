@@ -10,6 +10,10 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
   Translated from TestTrack PowerPack/autocomplete.md, hints.md and the demog scenarios of
   highlight.md (the SPGI paste of GROK-17004 is in functions-panel.feature).
 
+  Ctrl+Space is the physical Control key on every platform — CodeMirror's binding, which the hint line
+  names; on macOS Command+Space is the system's own — so the step presses ControlLeft, not Control
+  (which the library turns into Command there).
+
   Inserted functions use the parameter names as placeholders ("Abs(x)", "Round(a)"), as the dialog
   does since GROK-20931; the md still expects the parameter types ("Abs(num)").
 
@@ -43,7 +47,7 @@ Feature: The formula editor of Add New Column on demog: autocomplete, hints and 
     When user clears formula editor
     And user presses Escape in formula editor
     Then completion list should be hidden
-    When user presses Control+Space in formula editor
+    When user presses ControlLeft+Space in formula editor
     Then completion list should be visible
     And "Abs" completion should be visible
     And no errors should have been logged

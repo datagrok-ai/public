@@ -45,6 +45,7 @@ export {
 };
 
 export type * from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
+export {isFuncCallState, isStaticPipelineState, isDynamicPipelineState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/index';
 
 import {
   ComputationView, RichFunctionView, PipelineView, CustomFunctionView,

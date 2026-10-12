@@ -100,6 +100,10 @@ export namespace funcs {
     return await grok.functions.call('LibTests:MockWrapperDF', { params });
   }
 
+  export async function testToleranceInputs(plain: number , abs: number , rel: number , df: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceInputs', { plain, abs, rel, df });
+  }
+
   /**
    * @param {string} mode
    *   choices: ["fast", "exact"]

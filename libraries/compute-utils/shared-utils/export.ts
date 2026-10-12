@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import type ExcelJS from 'exceljs';
 import type html2canvas from 'html2canvas';
 import {DEFAULT_FLOAT_FORMAT, viewerTypesMapping} from './consts';
-import {delay, getPropViewers} from './utils';
+import {delay, getPropViewers, graphicsDataUrl, isSvgGraphics} from './utils';
 import type {ValidationResult} from '../reactive-tree-driver/src/data/common-types';
 import type {ConsistencyInfo} from '../reactive-tree-driver/src/runtime/StateTreeNodes';
 
@@ -178,6 +178,19 @@ export const richFunctionViewReport = async (
           validationStates,
           consistencyStates,
         );
+      }
+
+      for (const graphicsOutput of func.outputs.filter((output) => output.propertyType === DG.TYPE.GRAPHICS)) {
+        const value = lastCall.outputs[graphicsOutput.name];
+        if (value == null || value === '')
+          continue;
+        const visibleTitle = graphicsOutput.options.caption || graphicsOutput.name;
+        const sheet = exportWorkbook.addWorksheet(getSheetName(visibleTitle, exportWorkbook));
+        const {dataUrl, width, height} = await graphicsToPng(value);
+        sheet.addImage(exportWorkbook.addImage({base64: dataUrl, extension: 'png'}), {
+          tl: {col: 0, row: 0},
+          ext: {width, height},
+        });
       }
 
       for (const inputProp of func.inputs.filter((prop) => isDataFrame(prop))) {
@@ -375,7 +388,45 @@ const dfToSheet = (
 
 const isDataFrame = (prop: DG.Property) => (prop.propertyType === DG.TYPE.DATA_FRAME);
 
-const isEmptyDf = (df?: DG.DataFrame) => !df || df.rowCount === 0;
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const img = new Image();
+  img.onload = () => resolve(img);
+  img.onerror = () => reject(new Error('Failed to load a graphics output'));
+  img.src = src;
+});
+
+const svgSize = (markup: string) => {
+  const svg = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement;
+  const px = (attr: string) => /^\s*[\d.]+(px)?\s*$/.test(svg.getAttribute(attr) ?? '') ?
+    parseFloat(svg.getAttribute(attr)!) : NaN;
+  const [width, height] = [px('width'), px('height')];
+  if (width > 0 && height > 0)
+    return {width, height};
+  const [, , vbWidth, vbHeight] = (svg.getAttribute('viewBox') ?? '').trim().split(/[\s,]+/).map(Number);
+  if (vbWidth > 0 && vbHeight > 0)
+    return {width: vbWidth, height: vbHeight};
+  // no intrinsic proportions: square rather than stretched to the chart box
+  return {width: 1, height: 1};
+};
+
+// Raster graphics keep their native pixel size; SVG is rasterized into the chart box, keeping its aspect ratio
+const graphicsToPng = async (value: string) => {
+  const img = await loadImage(graphicsDataUrl(value));
+  if (!isSvgGraphics(value))
+    return {dataUrl: graphicsDataUrl(value), width: img.naturalWidth, height: img.naturalHeight};
+
+  const size = svgSize(value);
+  const scale = Math.min(EXPORT_VIEWER_WIDTH / size.width, EXPORT_VIEWER_HEIGHT / size.height);
+  const width = Math.round(size.width * scale);
+  const height = Math.round(size.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+  return {dataUrl: canvas.toDataURL('image/png'), width, height};
+};
+
+const isEmptyDf =(df?: DG.DataFrame) => !df || df.rowCount === 0;
 
 const configToViewer = async (df: DG.DataFrame | undefined, config: Record<string, any>) => {
   if (!df)

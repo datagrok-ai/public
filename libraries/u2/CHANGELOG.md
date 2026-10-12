@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Fixed `VirtualGrid` laying out one column before it had a width and then, on its first measure, re-flowing those cells onto other items (a click on an icon right after the Icon input's popup opened picked another icon); it renders once it has a width, and a taller grid now renders the rows that came into view
 * GROK-20753: The headless test stub loads `string-distances` from the js-api `dist/` emit, the layout the pnpm toolchain produces (the in-place `src/**/*.js` emit is gone)
 * GROK-20753: A live domain source reads the change token only where it answers — `support.version` AND the table-level View grant — and aggregates over what the caller may see otherwise, so a row-grant-only reader's live list no longer dies after three 403s and a platform-written table no longer looks frozen
 * GROK-20753: Fixed a virtualized list rendering three rows after an in-place refresh (a bulk edit, a filter, leaving the trash) while the status bar said fifty: a scroller measured mid-swap answers height 0, the window that yields is the overscan alone, and since the height afterwards is the height it had BEFORE, no resize ever fired to put the rest back — `VirtualRows` now re-renders on the next frame once per zero, so a list that is truly off screen still settles

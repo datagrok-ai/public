@@ -59,7 +59,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
-  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
+  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail, ev.additionalParams));
   icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(t.value, ev.detail));
 
   const wrapper = ui.element('i') as HTMLElement;

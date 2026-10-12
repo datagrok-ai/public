@@ -63,7 +63,8 @@ body > div.MuiPopover-root {
 
 /* ---------------------------------------------------------------------------
  * Hide Extended Table generic-atom buttons that cannot be faithfully translated
- * to RDKit-compatible V2000 query features. Scoped to the substructure filter
+ * to RDKit-compatible V2000 query features (AH, QH, XH, MH and *, which RDKit
+ * reads itself, are offered: crux-sketch spike query-roundtrip). Scoped to the substructure filter
  * sketcher only (Chem package adds the .chem-substructure-filter-sketcher class
  * to its DG.chem.Sketcher.host); other sketchers keep the full button set.
  *
@@ -77,7 +78,6 @@ body > div.MuiPopover-root {
  * the parent's supported siblings. Orphaned labels (e.g. "alkynyl" with no
  * buttons) are acceptable; lost supported buttons are not.
  * --------------------------------------------------------------------------- */
-.chem-substructure-filter-sketcher button[data-testid="AH-button"],
 .chem-substructure-filter-sketcher button[data-testid="ACH-button"],
 .chem-substructure-filter-sketcher button[data-testid="AHH-button"],
 .chem-substructure-filter-sketcher button[data-testid="ABH-button"],
@@ -85,10 +85,6 @@ body > div.MuiPopover-root {
 .chem-substructure-filter-sketcher button[data-testid="CBH-button"],
 .chem-substructure-filter-sketcher button[data-testid="CHH-button"],
 .chem-substructure-filter-sketcher button[data-testid="CXH-button"],
-.chem-substructure-filter-sketcher button[data-testid="QH-button"],
-.chem-substructure-filter-sketcher button[data-testid="MH-button"],
-.chem-substructure-filter-sketcher button[data-testid="XH-button"],
-.chem-substructure-filter-sketcher button[data-testid="*-button"],
 .chem-substructure-filter-sketcher button[data-testid="Pol-button"],
 .chem-substructure-filter-sketcher button[data-testid="G-button"],
 .chem-substructure-filter-sketcher button[data-testid="GH-button"],
