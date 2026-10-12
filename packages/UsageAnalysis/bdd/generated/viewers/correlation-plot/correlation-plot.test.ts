@@ -83,7 +83,7 @@ test.describe("Correlation plot — the matrix and the numbers in it", () => {
       await session.step(72, "And the \"text of cell STARTED x AGE\" reading of correlation plot viewer should be \"-0.01\"", () => readingReads(page, "text of cell STARTED x AGE", el("correlation plot viewer"), "-0.01"));
       await session.step(73, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Show Pearson R empties the cells and halves their width, and moves no coefficient", async () => {
+    await run.scenario("Show Coefficients empties the cells and halves their width, and moves no coefficient", async () => {
       await session.step(76, "Then the \"cell width\" reading of correlation plot viewer should be 40", () => readingIs(page, "cell width", el("correlation plot viewer"), 40));
       await session.step(77, "And the \"column width of HEIGHT\" reading of correlation plot viewer should be 40", () => readingIs(page, "column width of HEIGHT", el("correlation plot viewer"), 40));
       await session.step(78, "When user sets \"showPearsonR\" property of correlation plot viewer to \"false\"", () => setProperty(page, "showPearsonR", el("correlation plot viewer"), "false"));
