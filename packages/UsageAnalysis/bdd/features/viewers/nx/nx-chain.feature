@@ -69,17 +69,19 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
   FilteredSelected and nothing selected the plot draws no rows, so the property is claimed; the
   trellis plot's legend and the box plot's (neither draws one here); the
   Context Panel as the place a Legend Position is read.
-  Known failures: a layout saved before Chemical Space X was renamed, applied after the rename,
-  puts the old column name back into the "${Spec} result" formula, and a project saved afterwards
-  warns on reopen that the column is missing (localhost and dev); the calc-columns layout is
-  therefore applied before the layout this part saved, which puts the renamed formula back. A
-  molecule used as a filter (Current Value > Use as filter) in a view while the first view's
-  Scaffold Tree filters the same Structure column puts a card that reports the molecule and
-  "filtering", yet the rows that pass do not contain the molecule (localhost; dev runs an older
-  Chem). Not claimed, because of it: how many rows pass after the master switch goes off and on
-  and after NxProjectFiltering is reopened — every view's panel reports the same cards and
-  summaries, but the count differs from run to run (9 before; 9 or 1 after) — nor that a category
-  click in the clone lets fewer rows through (when one row is left, it may be the category's).
+  The calc-columns layout, saved before Chemical Space X was renamed, is applied after the rename and
+  leaves the "${Spec} result" column its renamed formula: a layout does not write its own copy of a
+  formula over a column the table has (xamgle table_view.dart applyUserDataTags; until 2026-10-12 it
+  did, and a project saved afterwards warned on reopen that the column was missing). A molecule used
+  as a filter (Current Value > Use as filter) in SPGI (2) lets through only rows that contain it: Remove
+  All on the first view's panel deactivates its Structure card before removing it, and the removed
+  card no longer keeps the Structure cards of the other views from filtering (Chem
+  chem-substructure-filter.ts detach, tested in src/tests/substructure-filter-tests.ts
+  'removedDisabledFilterReleasesPeers'; until 2026-10-12 every row the Scaffold Tree let through
+  passed). Not claimed: how many rows pass after the master switch goes off and on and after
+  NxProjectFiltering is reopened (they differed from run to run while the card did not filter), nor
+  that a category click in the clone lets fewer rows through (when one row is left, it may be the
+  category's).
 
   Background:
     Given user is logged in
@@ -944,7 +946,6 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     Then grid should show every row that passes the filter of its table
     And no errors should have been logged
 
-  @known-failure
   Scenario: Filtering - the rows a molecule used as a filter lets through contain that molecule
     Then every row that passes the filter should contain the molecule of the cell picked
 
@@ -1005,7 +1006,6 @@ Feature: The NX chain: linked tables, calculated columns, viewers, legends and f
     And no viewer of the current view should report an error
     And no errors should have been logged
 
-  @known-failure
   Scenario: Filtering - after a layout saved before Chemical Space X was renamed, the calculated column's formula names only existing columns
     Then every column the formula of "${Spec} result" column refers to should exist
     And "${Spec} result" column should have tag "formula" equal to "if(${NIBR logP} != null, ${NIBR logP}, if(${Route Admin}==\"PO\", ${Whole blood assay 1} / ${Chem Space X} * 100 / 6 / ${Average Mass} * 1000000.0,null))/if(Contains(${Spec}, 'Rat') || Contains(${Spec}, 'Rat Legacy'), 80, if(Contains(${Spec}, 'Mouse'), 125, if(${Spec}==\"Dog\", 30.9, if(${Spec}==\"Monkey\", 43.6, if(${Spec}==\"Minipig\", 39, null)))))*100"

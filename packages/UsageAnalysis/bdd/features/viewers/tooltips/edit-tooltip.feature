@@ -79,14 +79,14 @@ Feature: Editing the table's tooltip from a viewer
       | X | HEIGHT |
       | Y | WEIGHT |
     When user hovers over the "marker of row 11" area of scatter plot viewer
-    Then the tooltip should show columns "AGE, SEX, WEIGHT, HEIGHT"
+    Then the tooltip should show columns in the order "HEIGHT, WEIGHT, AGE, SEX"
     When user moves the pointer away from grid
     Then tooltip should be hidden
     When user hovers over the "marker" area of box plot viewer
-    Then the tooltip should show columns "AGE, SEX, WEIGHT"
+    Then the tooltip should show columns in the order "AGE, SEX, WEIGHT"
     When user moves the pointer away from grid
     Then tooltip should be hidden
     When user hovers over the "cell 11 of AGE" area of grid
-    Then the tooltip should show columns "AGE, SEX, WEIGHT"
+    Then the tooltip should show columns in the order "AGE, SEX, WEIGHT"
     When user moves the pointer away from grid
     Then no errors should have been logged

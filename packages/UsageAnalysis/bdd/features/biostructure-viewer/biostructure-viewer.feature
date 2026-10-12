@@ -5,11 +5,8 @@ Feature: Biostructure viewer on a structure table — structure column, represen
   `pdb_id` holds PDB IDs). Nothing here reaches an outside service. Translated from the TestTrack
   case BiostructureViewer/biostructure-viewer (GROK-11759 for the representation switch).
 
-  The md expects the viewer to take the `pdb` column by itself. On the stand it does not: the
-  viewer added from the gallery keeps Biostructure Id empty and shows its Data file input
-  (GROK-21119; its known-failure scenario is in file-open-and-preview). The Background therefore
-  picks `pdb` in Biostructure Id through the settings, as a user facing the empty viewer does; what
-  the viewer then shows is the subject of the scenarios.
+  The viewer takes the `pdb` column in Biostructure Id by itself, as the md expects (GROK-21119,
+  claimed in file-open-and-preview); what the viewer then shows is the subject of the scenarios.
 
   That the Mol* engine is built is claimed through its Reset Camera overlay button, which only a
   built engine has. What the 3D viewport draws (the representation, the camera) is not claimed:
@@ -42,7 +39,6 @@ Feature: Biostructure viewer on a structure table — structure column, represen
     Then "Add Viewer" dialog should be absent
     And Biostructure viewer should be visible
     When user clicks on settings icon of Biostructure viewer
-    And user selects "pdb" in "Biostructure Id" property in context panel
     Then "Reset Camera" button in Biostructure viewer should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

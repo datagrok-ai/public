@@ -15,6 +15,7 @@
 * Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
 * GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
 * Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+* Tests: Added package tests for Scan Liabilities (rule hits and positions, the annotation and count columns), Similarity against another row and a shorter or longer reference (GROK-20963), Sequence Space and Activity Cliffs on HELM and MSA, an antibody numbering's project round trip and an MSA column of multi-letter monomers converted to HELM; the BDD features keep the dialogs and leave these numbers to the tests, and the project round-trip tests delete their projects
 
 ## 2.28.4 (2026-09-29)
 

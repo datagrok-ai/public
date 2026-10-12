@@ -120,6 +120,53 @@ test('a @known-failure scenario outside a journey runs its own steps as the expe
   assert.match(code, /import \{ds, el, feature, knownFailure\} from '@datagrok-libraries\/bdd\/runtime';/);
 });
 
+test('@known-failure:<line> pins the step expected to fail, and must name a step of its scenario', () => {
+  const pinned = compile(`Feature: Toolbox
+  @known-failure:4
+  Scenario: Add a viewer
+    Given user opens spgi dataset
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.equal(pinned.diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(pinned.code, /\n    \}, 4\);\n  \}\);/);
+  const journeyPinned = compile(`@journey
+Feature: Toolbox
+  @known-failure:5
+  Scenario: Add a viewer
+    Given user opens spgi dataset
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(journeyPinned.code, /\}, \{knownFailure: true, line: 5\}\);/);
+  const wrong = compile(`Feature: Toolbox
+  @known-failure:9
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(wrong.diagnostics.map((d) => d.message).join('\n'), /@known-failure:9 names no step of this scenario/);
+});
+
+test('@skip declares the test skipped; a journey skips as a whole', () => {
+  const {code, diagnostics} = compile(`Feature: Toolbox
+  @skip
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+
+  Scenario: Another
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.equal(diagnostics.filter((d) => d.level === 'error').length, 0);
+  assert.match(code, /\n  test\.skip\("Add a viewer", \{tag: \["@skip"\]\}/);
+  assert.match(code, /\n  test\("Another"/);
+  assert.match(compile('@journey @skip ' + FEATURE).code, /\n  test\.skip\("Toolbox"/);
+  const scenarioInJourney = compile(`@journey
+Feature: Toolbox
+  @skip
+  Scenario: Add a viewer
+    When user clicks on scatter plot icon on toolbox
+`);
+  assert.match(scenarioInJourney.diagnostics.map((d) => d.message).join('\n'), /tag the feature @skip/);
+});
+
 test('{widget} is an element phrase that names a viewer or a widget', () => {
   fns.setProp = When('user sets {string} property of {widget} to {string}', async () => undefined);
   const {code, diagnostics} = compile(`Feature: A

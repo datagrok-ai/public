@@ -5,7 +5,7 @@ The first list of gaps was reviewed on 2026-10-07 against the library's rules (`
 a feature claims what only the browser shows, what an API test can check goes there, and a feature is
 fast). Section numbers are the first list's.
 
-## Done
+## Resolved
 
 - **§5, a signed-out page.** `user is logged in` on a page a failed scenario left on the login form signs
   the context's own session back in (`bindings/common/session.ts`) instead of waiting 180 s for a shell.
@@ -29,21 +29,25 @@ fast). Section numbers are the first list's.
 
 ## Still open
 
-- **"and" / "or" in the table view's Search box (GROK-20229).** The box parses its whole text with one
-  matcher per column type (`xamgle features/search.dart`); the fix would route it through the row matcher
-  the expression filter uses, with its test beside the fix.
-- **§2, a valid sign-in through the login form.** Needs an account whose password the run knows; CI signs
-  in by dev key. A lead's decision: a per-stand fixture account with a password, or none.
-- **§7, the profile picture.** An image fixture, the file chooser step for a project file, a reading of the
-  profile's own avatar (`user_profile.dart`), and a signal from the core when a non-image is dropped, which
-  is silent today (`if (img == null) return;`).
-- **§8, Change password.** The mismatched confirmation is the dialog's own check and is UI; it needs a gate
-  on the signed-in account having a password (`User.hasPassword`, which the JS `DG.User` does not expose).
-  The refusal of a wrong current password is the server's answer — a datlas test.
-- **§13a, a query drawn in the HELM substructure filter.** A name on the filter's clickable panel and an
+Nothing planned.
+
+## Won't do (the lead's triage, 2026-10-11)
+
+- **"and" / "or" in the table view's Search box (GROK-20229).** Deferred: the box parses its whole text with one
+  matcher per column type (`xamgle features/search.dart`); the fix would route it through the row matcher the
+  expression filter uses, with its test beside the fix (the two cases wait skipped in ddt `matcher_test.dart`).
+- **§2, a valid sign-in through the login form.** The lead's decision: no per-stand fixture account with a
+  password; CI signs in by dev key, and `login-logout.feature` claims the form's own part.
+- **§7, the profile picture.** It needs an image fixture, a file chooser step for a project file, a reading of the
+  profile's own avatar (`user_profile.dart`) and a core signal for a dropped non-image, which is silent today
+  (`if (img == null) return;`).
+- **§8, Change password.** The mismatched confirmation would need a gate on the account having a password
+  (`User.hasPassword`, which the JS `DG.User` does not expose); the refusal of a wrong current password is the
+  server's answer, a datlas test.
+- **§13a, a query drawn in the HELM substructure filter.** It needs a name on the filter's clickable panel and an
   element for its editor dialog (`Bio/src/widgets/bio-substructure-filter-helm.ts`).
 
-## Not gaps
+### Not gaps
 
 - **§1, the credential matrix.** Fourteen wrong, empty, boundary and injection pairs are one server answer
   each — the server's authentication, a datlas test; `login-logout.feature` claims the form's own part once.
@@ -67,7 +71,7 @@ fast). Section numbers are the first list's.
 - **§20, the check mark of a menu item.** The server claim is the proof of Add To Favorites; the account
   administering a group is how every stand the suite runs on is set up.
 
-## Not translated by rule
+### Not translated by rule
 
 - Login with Google (login-ui.md 1-4): Google's consent screen is an outside service.
 - First login (first-login-case-ui.md 1-6): needs an account that has never signed in; a run spends it and

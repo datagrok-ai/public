@@ -1,9 +1,10 @@
 @journey @realizes:chem.int.empty-input-analyses
-Feature: R-Groups Analysis and Chemical Space on an all-empty molecule column
+Feature: R-Groups Analysis on an all-empty molecule column
   A ten-row table whose structure column is a Molecule column with nothing in it. R-Groups Analysis
   with the MCS strategy derives no core from it, says so in a balloon and adds no column, and the
-  grid keeps working afterwards (GROK-16329). Chemical Space runs on the same column: it adds the
-  pair of embedding columns, a cluster column and the scatter plot of the embedding.
+  grid keeps working afterwards (GROK-16329).
+
+  Chemical Space on such a column is tested in Chem src/tests/menu-tests-chem-space.ts 'chemSpace.allEmpty'.
 
   Background:
     Given user is logged in
@@ -36,19 +37,4 @@ Feature: R-Groups Analysis and Chemical Space on an all-empty molecule column
     When user clicks on the "cell 4 of structure" area of grid
     Then row 4 should be current
     And the current column should be "structure"
-    And no errors should have been logged
-
-  Scenario: Chemical Space embeds the empty column and plots it
-    When user picks "Chem > Analyze > Chemical Space..." from the top menu
-    Then "Chem Space" dialog should be visible
-    And Column input in "Chem Space" dialog should contain text "structure"
-    When user clicks on OK button in "Chem Space" dialog
-    Then the "Chem Space" dialog should close
-    And the top menu command should have completed
-    And a new column matching "^Embed_X_" should have been added
-    And a new column matching "^Embed_Y_" should have been added
-    And the newest column matching "^Embed_X_" should have no missing values
-    And a new column matching "^Cluster " should have been added
-    And scatter plot viewer should be visible
-    And the table should have 10 rows
     And no errors should have been logged

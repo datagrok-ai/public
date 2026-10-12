@@ -2,11 +2,12 @@
 Feature: R-Groups Analysis with MCS, Replace latest and no core
   On five copies of benzene, R-Groups Analysis with the MCS core and Visual analysis on says "No
   R-Groups were found" and adds no R-group column (the decomposition's Core, highlight and isMatch
-  columns come all the same), and on the 1000 unrelated molecules of smiles, once MCS has drawn its
-  core, it says the same and adds nothing. On sar-small the same run adds R-group columns and a trellis plot;
+  columns come all the same). On sar-small the same run adds R-group columns and a trellis plot;
   run again with Replace latest off it adds a second set (R1_1, ...) beside the first, and run again
   with Replace latest on it takes the latest set away and puts its own in place under the same names.
   A run with an empty sketcher says "No core was provided" and keeps the latest set and its plot.
+
+  No R-groups over five benzenes and over the 1000 unrelated molecules of smiles (MCS: one carbon) are tested in Chem src/tests/menu-tests-rgroups.ts 'rgroups.noRGroups.sameMolecules' and 'rgroups.noRGroups.unrelatedMolecules'.
 
   The menu command only opens the dialog, so no claim waits on it: each run is over when its result
   is there — the balloon, the columns, or the task bar's "R-Group analysis running..." entry gone.
@@ -82,14 +83,3 @@ Feature: R-Groups Analysis with MCS, Replace latest and no core
     Then an error balloon containing "No core was provided" should have been shown
     And the table should have a column "R1_1"
     And the open tableview should have 2 trellis plot viewers
-
-  Scenario: MCS over a table of unrelated molecules finds no R-groups
-    Given user opens smiles dataset
-    When user picks "Chem > Analyze > R-Groups Analysis..." from the top menu
-    And user clicks on MCS button in "R-Groups Analysis" dialog
-    And "R-Groups Analysis" dialog should have finished updating
-    Then the sketcher in "R-Groups Analysis" dialog should hold the molecule "C"
-    When user clicks on OK button in "R-Groups Analysis" dialog
-    Then an error balloon containing "No R-Groups were found" should have been shown
-    And no new column should have been added
-    And the table should have 1000 rows

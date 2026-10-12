@@ -21,7 +21,7 @@ import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clearField, clickOn, shouldBe, shouldHaveValue, typeInto, uncheck} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {dialogCloses, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, hoverArea, noErrors, pickFromContextMenu, pointerAway, propertiesShouldBe, setProperties, tooltipColumns} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, hoverArea, noErrors, pickFromContextMenu, pointerAway, propertiesShouldBe, setProperties, tooltipColumnsInOrder} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {checkedInColumnList, columnListExactly, columnListStartsWith, toggleInColumnList, uncheckedInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
@@ -78,15 +78,15 @@ test.describe("Editing the table's tooltip from a viewer", () => {
       await session.step(77, "Then the \"Edit Tooltip\" dialog should close", () => dialogCloses(page, "Edit Tooltip"));
       await session.step(78, "And properties of scatter plot viewer should be:", () => propertiesShouldBe(page, el("scatter plot viewer"), [["X","HEIGHT"],["Y","WEIGHT"]]), [["X","HEIGHT"],["Y","WEIGHT"]]);
       await session.step(81, "When user hovers over the \"marker of row 11\" area of scatter plot viewer", () => hoverArea(page, "marker of row 11", el("scatter plot viewer")));
-      await session.step(82, "Then the tooltip should show columns \"AGE, SEX, WEIGHT, HEIGHT\"", () => tooltipColumns(page, "AGE, SEX, WEIGHT, HEIGHT"));
+      await session.step(82, "Then the tooltip should show columns in the order \"HEIGHT, WEIGHT, AGE, SEX\"", () => tooltipColumnsInOrder(page, "HEIGHT, WEIGHT, AGE, SEX"));
       await session.step(83, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
       await session.step(84, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
       await session.step(85, "When user hovers over the \"marker\" area of box plot viewer", () => hoverArea(page, "marker", el("box plot viewer")));
-      await session.step(86, "Then the tooltip should show columns \"AGE, SEX, WEIGHT\"", () => tooltipColumns(page, "AGE, SEX, WEIGHT"));
+      await session.step(86, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
       await session.step(87, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
       await session.step(88, "Then tooltip should be hidden", () => shouldBe(page, el("tooltip"), "hidden"));
       await session.step(89, "When user hovers over the \"cell 11 of AGE\" area of grid", () => hoverArea(page, "cell 11 of AGE", el("grid")));
-      await session.step(90, "Then the tooltip should show columns \"AGE, SEX, WEIGHT\"", () => tooltipColumns(page, "AGE, SEX, WEIGHT"));
+      await session.step(90, "Then the tooltip should show columns in the order \"AGE, SEX, WEIGHT\"", () => tooltipColumnsInOrder(page, "AGE, SEX, WEIGHT"));
       await session.step(91, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
       await session.step(92, "Then no errors should have been logged", () => noErrors(page));
     });

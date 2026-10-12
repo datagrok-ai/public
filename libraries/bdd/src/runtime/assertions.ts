@@ -2,7 +2,7 @@
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {CHECKABLE, editorOf, readExpanded, readSwitch, switchOf, whenPresent} from './gestures.js';
+import {CHECKABLE, editorOf, openPropertyEditor, readExpanded, readSwitch, switchOf, whenPresent} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 import type {State} from '../states.js';
@@ -202,6 +202,7 @@ function dropdownChoices(loc: Locator): Promise<string[]> {
 export async function expectOptions(page: Page, target: ElementRef, list: string): Promise<void> {
   const want = list.split(/\s*,\s*/).filter(Boolean);
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
   await expect.poll(() => dropdownChoices(loc), {message: `the choices ${target.phrase} offers`}).toEqual(want);
 }
 
@@ -209,6 +210,7 @@ export async function expectOptions(page: Page, target: ElementRef, list: string
  * so an empty or missing one cannot pass. */
 export async function expectOption(page: Page, target: ElementRef, option: string, offered: boolean): Promise<void> {
   const loc = await locate(page, target);
+  await openPropertyEditor(loc);
   const message = `the choices ${target.phrase} offers`;
   if (offered) {
     await expect.poll(() => dropdownChoices(loc), {message}).toContain(option);

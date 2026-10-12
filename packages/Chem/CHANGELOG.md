@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Substructure filter: Fixed a structure card that stopped filtering after Remove All on another view's panel of the same table: the removed card, deactivated first, kept its peers disabled (Use as filter in that view let every row through)
+* Cluster MCS: A one-molecule cluster's MCS is the molecule itself with its hydrogens: read as a query, its NH hydrogens were dropped (a urazole came out as the triazolinedione)
+* Tests: Added package tests for activity cliffs at the cutoffs 20 and 95, elemental analysis on SMARTS, Chemical Space on an all-empty column, R-groups analyses that find none, BitBIRCH, the similarity matrix and Cluster MCS (`clustering`), the Transform reactions (`Reactions`), the notation round trip over smiles.csv, similarity search on the other fingerprints and the mixture cell renderer; the BDD features they replace keep only their UI gestures
 * Substructure filter: Fixed a query marked with a feature RDKit's sanitizing drops (toluene drawn, then its methyl bond marked aromatic) keeping the rows of the query before it, and that query as the filter's state: the filter names a query by the query its search builds (read unsanitized), not by RDKit's sanitized molecule, which took the two for one and skipped the second search
 * Substructure search: A V3000 query molblock without explicit hydrogens is read as a query, unsanitized, as a V2000 one is: an aromatic bond outside an aromatic ring is no longer read as single
 * Substructure filter: The generic atoms X, XH, M and MH are kept as drawn instead of being rewritten into atom lists: RDKit reads them with their own meanings; the lists lost astatine and the metals beyond 38, and those of XH and MH matched no explicit hydrogen

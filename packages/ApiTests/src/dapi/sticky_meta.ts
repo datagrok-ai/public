@@ -3,7 +3,7 @@ import type * as _DG from 'datagrok-api/dg';
 declare let grok: typeof _grok, DG: typeof _DG;
 
 //@ts-ignore
-import {assure, before, category, expect, test} from '@datagrok-libraries/test/src/test';
+import {after, assure, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 category('Dapi: sticky meta', () => { 
   let schema: _DG.Schema;
@@ -85,3 +85,62 @@ category('Dapi: sticky meta', () => {
 }, {
   owner: 'aparamonov@datagrok.ai'
 });
+
+// Sticky meta keyed by a molecule: the platform canonicalizes the SMILES (Chem's canonicalizer) on write
+// and on read, so the values follow the molecule, not the string or the table that holds it. Read the
+// way the grid's "Sticky meta" columns read them (AddStickyPropertiesColumns).
+category('Dapi: sticky meta: molecules', () => {
+  const name = `apitests-sm-${DG.Utils.randomString(6)}`;
+  const typeName = `${name}-type`;
+  let schema: _DG.Schema;
+  const idOf = (x: {dart: any}) => new DG.Entity(x.dart).id;
+
+  function molecules(smiles: string[]): _DG.DataFrame {
+    const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smiles)]);
+    df.col('smiles')!.semType = DG.SEMTYPE.MOLECULE;
+    df.col('smiles')!.meta.units = DG.UNITS.Molecule.SMILES;
+    return df;
+  }
+
+  async function valuesOf(df: _DG.DataFrame): Promise<string> {
+    const before = df.columns.names();
+    await grok.functions.call('AddStickyPropertiesColumns', {table: df, column: df.col('smiles'),
+      entityTypeName: typeName, propertyIds: schema.properties.map(idOf)});
+    const added = df.columns.toList().filter((c) => !before.includes(c.name));
+    return added.map((c) => `${c.name}: ${c.toList().join(', ')}`).sort().join('; ');
+  }
+
+  const written = 'notes: excellent, good; rating: 5, 4';
+
+  before(async () => {
+    await grok.dapi.stickyMeta.createSchema(name, [{name: typeName, matchBy: 'semtype=molecule'}],
+      [{name: 'rating', type: 'int'}, {name: 'notes', type: 'string'}]);
+    schema = (await grok.dapi.stickyMeta.getSchemas()).find((s) => s.name === name)!;
+    await grok.dapi.stickyMeta.setAllValues(schema, molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).col('smiles')!,
+      DG.DataFrame.fromColumns([DG.Column.fromList('int', 'rating', [5, 4]),
+        DG.Column.fromList('string', 'notes', ['excellent', 'good'])]));
+  });
+
+  after(async () => {
+    if (schema)
+      await grok.dapi.stickyMeta.deleteSchema(idOf(schema));
+    for (const t of (await grok.dapi.entityTypes.list()).filter((t) => t.name === typeName))
+      await grok.dapi.entityTypes.delete(t);
+  });
+
+  test('A clone of the table shows the values', async () => {
+    expect(await valuesOf(molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).clone()), written);
+  });
+
+  test('A table exported to CSV and read back shows the values', async () => {
+    const df = DG.DataFrame.fromCsv(molecules(['CC(=O)Oc1ccccc1C(=O)O', 'Oc1ccccc1']).toCsv());
+    await grok.data.detectSemanticTypes(df);
+    expect(df.col('smiles')!.semType, DG.SEMTYPE.MOLECULE);
+    expect(await valuesOf(df), written);
+  });
+
+  test('Another SMILES of the same molecule shows its values, another molecule none', async () => {
+    expect(await valuesOf(molecules(['OC(=O)c1ccccc1OC(C)=O', 'c1ccc(O)cc1'])), written);
+    expect(await valuesOf(molecules(['CCCCCCCC'])), 'notes: ; rating: ');
+  });
+}, {owner: 'aparamonov@datagrok.ai'});

@@ -7,9 +7,7 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
   poses) and the protein 1bdq.pdb, both in App Data > BiostructureViewer > samples.
 
   The Mol* engine is claimed by its Reset Camera overlay button; the empty state by the Data file
-  input. Kept without one line of Scenario 1: that Ligand Column Name names the molecule column —
-  on the stand the viewer leaves it empty (the same defect as the structure column not
-  being taken, GROK-21119).
+  input. The viewer takes the molecule column as its Ligand by itself (GROK-21119).
 
   Which rows' ligands a viewer shows is its `ligand rows` reading (distinct rows; the row under the
   pointer counts, as Show Mouse-Over Row Ligand is on by default), and how many its `ligands shown`.
@@ -39,6 +37,7 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
     And user clicks on first "Biostructure" button in "Add Viewer" dialog
     Then "Add Viewer" dialog should be absent
     And "Data File" input in Biostructure viewer should be visible
+    And "ligandColumnName" property of Biostructure viewer should be "molecule"
     And "Reset Camera" button in Biostructure viewer should be absent
     When user clicks on "folder-tree" icon in "Data File" input in Biostructure viewer
     Then "Select a file" dialog should be visible
@@ -53,11 +52,7 @@ Feature: A structure loaded into an empty Biostructure viewer survives saving an
     And no error or warning balloon should have been shown
 
   Scenario: Only the current row's ligand is shown, in Biostructure and in NGL (GROK-17967)
-    The viewers leave Ligand empty on this table (GROK-21119), so it is picked in their settings first.
-    When user clicks on settings icon of Biostructure viewer
-    Given "Data" category in context panel is expanded
-    When user selects "molecule" in "Ligand" property in context panel
-    Then "ligandColumnName" property of Biostructure viewer should be "molecule"
+    The NGL viewer's Ligand is picked in its settings.
     When user clicks on the "cell 1 of molecule" area of grid
     Then the "ligand rows" reading of Biostructure viewer should be "1"
     And the "ligands shown" reading of Biostructure viewer should be 1
