@@ -7,8 +7,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {divV, span} from '@datagrok-libraries/u2';
-import type {MessageInput} from '@datagrok-libraries/u2';
-import {messageInput} from '@datagrok-libraries/u2/src/dg/index.js';
+import {composer} from './u2-controls';
 import {PortfolioRow, ProgramRow} from '../generated/db';
 import {askSme, askSmeOf, postToProgram} from '../discussion';
 import {Anchor, describeAnchor, mentionedUserIds, smeContextLines, SmeContext, smeTargetOf} from '../model/discussion';
@@ -18,28 +17,6 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
   return el;
 };
-
-/** A compose box: u2's MessageInput with the platform's user mentions. [name] goes on the editable
- * part, `<name>-send` on its Send button. Ctrl+Enter (and Send) call [onSend]; a throw keeps the text.
- * In a dialog, [ownSend] false hides Send: the dialog's button sends instead. */
-export function composer(opts: {name: string, placeholder: string, onSend: (markup: string) => Promise<void>,
-  ownSend?: boolean, sendLabel?: string}): MessageInput {
-  installStyles();
-  const input = messageInput({placeholder: opts.placeholder, sendOn: 'ctrlEnter', onSend: opts.onSend});
-  input.root.dataset.u2Name = `${opts.name}-composer`;
-  const editor = input.root.querySelector<HTMLElement>('.u2-msg-editor');
-  if (editor)
-    editor.dataset.u2Name = opts.name;
-  const send = input.root.querySelector<HTMLElement>('.u2-msg-send');
-  if (send) {
-    send.dataset.u2Name = `${opts.name}-send`;
-    if (opts.sendLabel)
-      send.textContent = opts.sendLabel;
-  }
-  if (opts.ownSend === false)
-    input.root.classList.add('pp-msg-nosend');
-  return input;
-}
 
 /** A post to the program's discussion, about [anchor] when given. */
 export function openDiscussDialog(opts: {program: ProgramRow, anchor?: Anchor | null, onPosted?: () => void | Promise<void>}): DG.Dialog {

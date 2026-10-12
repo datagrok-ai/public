@@ -94,7 +94,8 @@ import {discussionOf, postToProgram, ProgramDiscussion} from '../discussion';
 import {
   Anchor, decisionsCiting, plainMentions, SmeContext, smeContextFrom, Thread, threadTitle, threadUrl,
 } from '../model/discussion';
-import {composer, openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
+import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
+import {composer} from './u2-controls';
 import {programAddress} from '../model/pinning';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
