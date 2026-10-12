@@ -10,8 +10,7 @@ Feature: The Home page of a user who is neither a developer nor an administrator
   refuses a sharing account that is not a bdd fixture, since a person's notifications are not its to
   delete.
 
-  Not translated: "N unread", the "Mark all as read" link and Mark all as read itself, and the project
-  under "Shared with me".
+  Not translated: the project under "Shared with me".
 
   Translated from TestTrack PowerPack/Widgets/home_widgets_manual_tests.md, case Perm-01, and case
   Spotlight-03 (with the unread badge of Spotlight-01).
@@ -62,6 +61,11 @@ Feature: The Home page of a user who is neither a developer nor an administrator
     When user clicks on Notifications tab in Spotlight home widget
     Then the "Notifications" tab of Spotlight home widget should be showing
     And notifications page of Spotlight home widget should contain text "bdd-home-shared-{time}"
+    And notifications page of Spotlight home widget should contain text "1 unread"
+    When user clicks on "Mark all as read" link in Spotlight home widget
+    Then badge of Spotlight home widget should be absent
+    And notifications page of Spotlight home widget should not contain text "1 unread"
+    And the signed-in user should have 0 unread notifications on the server
     And no errors should have been logged
 
   Scenario: Back in the running account, the Home page has all four widgets

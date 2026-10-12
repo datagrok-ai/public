@@ -447,6 +447,7 @@ Test entry point: `src/package-test.ts` — imports all test files, exports `tes
 | `msa-tests.ts` | Multiple sequence alignment |
 | `pepsea-tests.ts` | PepSeA Docker MSA |
 | `antibody-numbering-tests.ts` | Immunum antibody numbering worker + DataFrame shape (IMGT/Kabat, heavy/light, empty-input handling) |
+| `liability-scanner-tests.ts` | Scan Liabilities rules: hits and their positions, the annotation and summary count columns |
 | `to-atomic-level-tests.ts` | Sequence → molfile conversion |
 | `to-atomic-level-ui-tests.ts` | Atomic level UI widgets |
 | `activity-cliffs-tests.ts` | Activity cliff detection |

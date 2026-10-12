@@ -1,4 +1,4 @@
-@journey @spaces @realizes:views.space
+@journey @serial @spaces @realizes:views.space
 Feature: Deleting a space
   The confirmation the platform asks for, what a cancel preserves, and what a confirmed delete removes.
   Translated from files/TestTrack/Spaces/spaces-general.test.ts (test 5).
@@ -6,6 +6,11 @@ Feature: Deleting a space
   How far a delete reaches (a child's sibling stays, a parent takes its children) is tested in datlas
   spaces/spaces_test.dart ('delete child space preserves parent and siblings', 'delete space with child spaces cascade').
   The space is made through the API: the Create Space dialog is spaces-create's subject.
+
+  Serial with spaces-create: twice in four full runs, spaces-create making root spaces on the other worker at the
+  moment this feature's tree listed Spaces left BDD-Del out of the tree (it was on the server), and the right-click
+  landed on the Spaces root. The mechanism is not pinned down (no server push of spaces reaches the tree); the two
+  do not overlap any more.
 
   Background:
     Given user is logged in

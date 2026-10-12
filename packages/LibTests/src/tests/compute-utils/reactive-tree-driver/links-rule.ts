@@ -94,6 +94,36 @@ category('ComputeUtils: Driver links rule', async () => {
     }])), /output alias b is not targeted/);
   });
 
+  test('A template rule mixing effect families gives each link only its own targets', async () => {
+    const mixed = {
+      id: 'r', type: 'rule' as const, from: 'm:step1/a', to: '_(template):step2/a|b',
+      effects: [{effect: 'set' as const, targets: 'a', value: {var: 'm'}}, {effect: 'hide' as const, targets: 'b'}],
+    };
+    const pconf = await getProcessedConfig(twoSteps([mixed]));
+    const byId = Object.fromEntries(pconf.links!.map((link) => [link.id, link.to.map((io) => io.name)]));
+    expectDeepEqual(byId, {'r::meta': ['b'], 'r::data': ['a']});
+  });
+
+  test('A linked exclusion keeps inputs that a mixed template rule only hides', async () => {
+    const pconf = await getProcessedConfig(twoSteps([{
+      id: 'r', type: 'rule', from: 'm:step1/a', to: '_(template):step2/a|b',
+      effects: [{effect: 'set', targets: 'a', value: {var: 'm'}}, {effect: 'hide', targets: 'b', when: false}],
+    }, {
+      id: 'w', type: 'rule', from: 'm:step1/a', to: 'x_(template):step2/inputs(LibTests:TestMul2, $linked)',
+      effects: [{effect: 'meta', targets: ['x_a', 'x_b'], meta: {units: 'K'}}],
+    }]));
+    const metas: any[] = [];
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      const inStore = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore();
+      const outBridge = tree.nodeTree.getNode([{idx: 1}]).getItem().getStateStore() as FuncCallInstancesBridge;
+      cold('-a').subscribe(() => inStore.setState('a', 1));
+      cold('--a').subscribe(() => metas.push(outBridge.meta.b.value?.units));
+    });
+    expectDeepEqual(metas, ['K']);
+  });
+
   test('Assign validation', async () => {
     await expectThrowsAsync(() => getProcessedConfig(twoSteps([{
       id: 'r', type: 'rule', from: 'm:step1/a', to: 't:step2/a',

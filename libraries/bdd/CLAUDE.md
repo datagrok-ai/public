@@ -26,8 +26,10 @@ src/runtime/            args, locate, gestures, assertions, harness (session, jo
                         viewer-menus, viewer-legend, menus (top menu), events, functions, patience, failure,
                         server (endpoints the JS API lacks, layouts, fixture families), memory (BDD_MEMORY_LOG),
                         guide (BDD_GUIDE: per-step screenshots, located element or the hit area a gesture aims at, menu stops (hop), the page's own pointer events per stop,
-                        a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell)
-tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif, guide-thumb.png)
+                        pictures taken while typing, dragging and wheeling, a `# caption:` comment's caption, a frame (frameTo) → steps.json; full shell,
+                        no test styles; a window under 1600 px at device scale 2; BDD_GUIDE_HELP: the bare shell of a help GIF)
+tool/guide-render.py    steps.json → guide.mp4 / step-NN.png / steps.md / audit.png (+ --gif: guide.gif from the lossless frames,
+                        guide-thumb.png of the result, guide-sheet.png; --help: no title, strip, dimming, zoom or Given steps)
 bindings/common/        parameter-types, kinds (every u2 data-u2 kind + Dart conventions), steps, session — always loaded
 bindings/platform/      the shell: elements, datasets, steps (views, projects and the Save dialog, server fixtures, the second
                         account and signing in as another), data (rows, filter, links between tables), columns, commands,
@@ -114,7 +116,9 @@ as the minimal CI stack is); it may sit in the Background when every scenario ne
 never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
 a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
 own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
-serves none). Nothing else skips.
+serves none). Nothing else skips, but a test the lead set aside: `@skip` (compiled to `test.skip`), with a
+`TODO:` paragraph in the feature's description. A `@known-failure` is pinned to the step it describes
+(`@known-failure:<line>`, the feature line): a failure elsewhere fails the test.
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
@@ -205,7 +209,10 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **A dataset is read once per page and every feature gets a clone** (`platform/steps.ts`
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
-  row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step.
+  row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step. It then
+  waits for the grid to settle: a renderer a package brings (Chem's, seconds on a fresh page) is pending
+  grid work (`grid_core.dart` `detectRenderers`), and the rows it grows moved a cell aimed at before it
+  one row up — a click "on cell 2" made row 1 current. Claim the current row after a cell click.
 - **`expect` comes from `src/runtime/patience.js`** in every check — package bindings included, through
   `@datagrok-libraries/bdd/runtime`: a `@known-failure` scenario narrows it to 3 s, a check that names its own
   timeout wraps it in `pollMs`, and `expect.poll` reads every 100 ms, then every 250 ms, instead of Playwright's backoff to 1 s
@@ -356,11 +363,16 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
   overflow-hidden ancestors too, and the page with them.
 - An entity saved through the JS API gets its first Activity entry late, and a counting pane hides
   at 0: claim its count (`should count at least`), never the pane's presence right after the save.
+- A guide films without the `selenium` body class, so the page looks as a person's does: a panel's title
+  bar shows its icons only while the pointer is over the panel (`dock-manager.css`), and a guide feature
+  hovers the panel in a step of its own before clicking one (a step's first picture is taken before its
+  gestures, so a hover inside the clicking step never shows the icon). Typing through a locator (`fill`, `pressSequentially`) or the keyboard and a wheel turn are
+  pictured as they go (`beat` in `guide.ts`, at most six pictures each).
 - A guide takes the pointer from the page, not from `page.mouse`: a locator's `click()`, `hover()`,
   `dragTo()` never pass through it, and a recorder that wrapped only the mouse had 60 of 80 clicks
   with no place (drawn unmarked, at the element's centre). `guide.ts` logs trusted pointer events
   in the page (capture listeners on every document) and drains them into the stop of the step they
-  belong to; `page.mouse` is wrapped only to picture a drag.
+  belong to; `page.mouse` is wrapped only to picture a drag and a wheel turn.
 - Package tools that decorate a view on `onViewAdded` (DevTools' Signature Editor icon) attach in
   the package's autostart; a view opened before it runs used to miss them (fixed in DevTools
   2026-09-24 by decorating the open views too).
@@ -475,8 +487,9 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - The table view's Search box applies `NumericMatcher` / `StringMatcher` / `DateTimeMatcher` to each
   column of their type; its syntax is ddt's `matcher_test.dart` claim, not a feature's.
 - A Dart choice input's phrase can resolve to its `<select>` itself; `select` handles both. The Share
-  dialog of an entity that is not a project (a model) fetches the entity's project after it opens and
-  its OK throws "Not initialized" before that: wait for the owner's grant row ("Full access").
+  dialog fetches the entity's project after it opens, and its OK waits for that (since 2026-10-12;
+  before, it threw "Not initialized"). Its own grant row is kept hidden, and `contain text "Full
+  access"` reads it: claim the visible parts, and the sharing user's row by its access level.
 - A viewer outside a table view (a function view's docked chart, a facet's small multiples) is
   reached through `DG.Widget.find(root)`; the function view's tabs are dock-spawn-ts handles in a
   shadow root (`.dockspan-tab-handle`, a CSS locator pierces it), and the viewers of its other

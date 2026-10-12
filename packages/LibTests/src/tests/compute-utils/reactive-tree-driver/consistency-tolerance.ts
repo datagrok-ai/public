@@ -6,6 +6,7 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
+import {DriverLogger} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/Logger';
 import {createTestScheduler} from '../../../test-utils';
 
 const config: PipelineConfiguration = {
@@ -37,6 +38,14 @@ category('ComputeUtils: Driver consistency tolerance', async () => {
     return inconsistent;
   }
 
+  const jsonError = (text: string) => {
+    try {
+      JSON.parse(text);
+    } catch (e) {
+      return (e as Error).message;
+    }
+  };
+
   const df = (value: number) => DG.DataFrame.fromColumns([DG.Column.fromFloat32Array('x', new Float32Array([value]))]);
 
   test('Without an annotation small changes stay within the default tolerance', async () => {
@@ -58,5 +67,54 @@ category('ComputeUtils: Driver consistency tolerance', async () => {
   test('A tolerance annotation applies to dataframe cells', async () => {
     expectDeepEqual(isInconsistent('df', df(1e-6), df(5e-5)), true);
     expectDeepEqual(isInconsistent('df', df(1e-6), df(1e-6)), false);
+  });
+
+  test('A relative tolerance wins over an absolute one', async () => {
+    expectDeepEqual(isInconsistent('both', 1e-3, 0.5), true);
+    expectDeepEqual(isInconsistent('both', 1e6, 1e6 + 0.5), false);
+  });
+
+  const cols = ({conc = 1, other = 1, big = 1e6, n = 1}) => DG.DataFrame.fromColumns([
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'conc', [conc]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'other', [other]),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'big', [big]),
+    DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [n]),
+  ]);
+
+  test('Column tolerances match names ignoring case', async () => {
+    expectDeepEqual(isInconsistent('dfCols', cols({conc: 1e-6}), cols({conc: 5e-5})), true);
+    expectDeepEqual(isInconsistent('dfCols', cols({conc: 1e-6}), cols({conc: 1e-6 + 1e-10})), false);
+  });
+
+  test('The wildcard covers columns not listed', async () => {
+    expectDeepEqual(isInconsistent('dfCols', cols({other: 1}), cols({other: 2})), false);
+    expectDeepEqual(isInconsistent('dfCols', cols({other: 1}), cols({other: 4})), true);
+  });
+
+  test('A relative column tolerance wins over the absolute wildcard', async () => {
+    expectDeepEqual(isInconsistent('dfCols', cols({big: 1e6}), cols({big: 1e6 + 0.5})), false);
+    expectDeepEqual(isInconsistent('dfCols', cols({big: 1}), cols({big: 2})), true);
+  });
+
+  test('Int columns compare exactly', async () => {
+    expectDeepEqual(isInconsistent('dfCols', cols({n: 1}), cols({n: 2})), true);
+    expectDeepEqual(isInconsistent('dfCols', cols({n: 1}), cols({n: 1})), false);
+  });
+
+  test('Malformed tolerance annotations are warned about and ignored', async () => {
+    const logger = new DriverLogger();
+    const bad = await getProcessedConfig({
+      id: 'pipeline', type: 'static', steps: [{id: 'step', nqName: 'LibTests:TestToleranceBadInputs'}],
+    }, logger) as any;
+    expectDeepEqual(bad.steps[0].io.filter((io: any) => io.tolerance).map((io: any) => io.id), []);
+    expectDeepEqual(logger.errors.map((item) => [item.severity, item.message]), [
+      ['warning', 'LibTests:TestToleranceBadInputs, input notNumber: small is not a number'],
+      ['warning', 'LibTests:TestToleranceBadInputs, input columns: column tolerances need a dataframe input'],
+      ['warning',
+        'LibTests:TestToleranceBadInputs, input count: ' +
+        'consistency tolerance applies to double and dataframe inputs only'],
+      ['warning', `LibTests:TestToleranceBadInputs, input badJson: ${jsonError('{"x": small}')}`],
+      ['warning', 'LibTests:TestToleranceBadInputs, input badColumn: column x: 1e-9 is not a number'],
+    ]);
   });
 });

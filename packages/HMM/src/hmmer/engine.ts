@@ -1,4 +1,4 @@
-// Synced from Rusty-HMMER web/engine.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/engine.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
 /** Typed wrapper of the lean HMMER WebAssembly engine (crates/hmmer-web).
  *
  * The module has no imports, so it instantiates the same way in browsers,

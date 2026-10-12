@@ -554,7 +554,9 @@ import{$ as e,$n as t,$r as n,$t as r,A as i,Ar as a,At as o,B as s,Bn as c,Br a
       min-height: 0;
       gap: var(--bar-gap);
       padding: var(--bar-pad);
-      background: #f4f5f7;
+      /* White, as the canvas and a host's dialog are (the product owner, 2026-10-12, white-bars): the line on
+         each bar's canvas side, below, keeps the drawing area's edge. */
+      background: #ffffff;
       scrollbar-width: none;
     }
     /* The same in a WebKit browser that does not read scrollbar-width yet (Safari before 18.2). */
@@ -593,10 +595,10 @@ import{$ as e,$n as t,$r as n,$t as r,A as i,Ar as a,At as o,B as s,Bn as c,Br a
       padding: 0;
       border: 0;
       border-radius: 4px;
-      background: #f4f5f7;
+      background: #ffffff;
       color: #1f2328;
       cursor: pointer;
-      box-shadow: 0 0 6px 4px #f4f5f7;
+      box-shadow: 0 0 6px 4px #ffffff;
     }
     .bar .scroll .icon {
       width: var(--scroll-icon);
@@ -856,7 +858,7 @@ import{$ as e,$n as t,$r as n,$t as r,A as i,Ar as a,At as o,B as s,Bn as c,Br a
     }
     /* The tiles of the buttons that show an element's symbol (spike palette-colours, ATOM-033, P3; the numbers
        are in config/panel-fills.ts). The symbols are drawn in the canvas's hues, and O, F, P, S and Cl keep
-       4.5:1 only on a fill at least about 0.935 light (the bar's #f4f5f7 is 0.91 and the other bars' hover and
+       4.5:1 only on a fill at least about 0.935 light (the bars are white since white-bars, but their hover and
        pressed fills are 0.76 and darker). So such a button has an opaque fill of its own in every state, white
        or a pale tint, and what the other bars show by a darker fill it shows by a ring: hovered, a thin
        grey-blue one; pressed, a 2 px blue one (never by colour alone, WCAG 1.4.1, 1.4.11). */

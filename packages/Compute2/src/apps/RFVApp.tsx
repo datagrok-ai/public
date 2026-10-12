@@ -215,9 +215,8 @@ export const RFVApp = Vue.defineComponent({
       currentFuncCall.value.options['title'] = editOptions.title;
       currentFuncCall.value.options['description'] = editOptions.description;
       currentFuncCall.value.options['tags'] = editOptions.tags;
-      currentFuncCall.value.newId();
       try {
-        await historyUtils.saveRun(currentFuncCall.value);
+        await historyUtils.saveRun(currentFuncCall.value, {newId: true});
         await saveIsFavorite(currentFuncCall.value, !!editOptions.isFavorite);
       } catch (e: any) {
         grok.shell.error(e);

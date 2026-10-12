@@ -8,6 +8,7 @@ import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Given, Then, When} from '../../src/registry.js';
 import {el, type ElementRef} from '../../src/runtime/args.js';
 import {atFeatureEnd} from '../../src/runtime/harness.js';
+import {guideDir} from '../../src/runtime/guide.js';
 import {locate} from '../../src/runtime/locate.js';
 import {fixtureFamilies, isStaleFixture} from '../../src/runtime/server.js';
 import {installViewerRuntime, pickMenuPath, settleAll} from '../../src/runtime/viewers.js';
@@ -68,10 +69,10 @@ export const openDirectLink = When('user loads the direct link of project {strin
   await page.locator('[name="Browse"]').first().waitFor({timeout: 180000});
   await expect.poll(() => page.evaluate(() => grok.shell.tv?.dataFrame?.name ?? 'no table view'),
     {message: `the table view the direct link ${path} opens`, timeout: pollMs(60000)}).not.toBe('no table view');
-  await page.evaluate((s) => {
-    document.body.classList.add('selenium');
+  await page.evaluate(([s, filmed]) => {
+    document.body.classList.toggle('selenium', !filmed);
     grok.shell.windows.simpleMode = s;
-  }, simple);
+  }, [simple, !!guideDir()] as [boolean, boolean]);
   await installViewerRuntime(page);
 }, {tier: 'ui', description: 'the page loaded anew on /p/<namespace>.<name>, the address the platform gives the project; done when a table view is current'});
 
@@ -163,6 +164,12 @@ async function putIntoUsersFiles(page: Page, name: string, write: (path: string)
   }
   const path = `${home}/${name}`;
   atFeatureEnd(page, () => deleteServerFile(page, path));
+  // the folder the file goes into is the fixture's when the feature makes it, or finds it holding nothing but this
+  // file (a killed run left them): it goes after the file
+  const folder = name.includes('/') ? `${home}/${name.split('/')[0]}` : null;
+  if (folder && await page.evaluate(async ([f, file]) => !await grok.dapi.files.exists(f) ||
+    (await grok.dapi.files.list(`${f}/`, true)).every((x: any) => x.isDirectory || x.name === file), [folder, name.split('/').pop()!]))
+    atFeatureEnd(page, () => deleteServerFile(page, folder));
   await write(path);
 }
 

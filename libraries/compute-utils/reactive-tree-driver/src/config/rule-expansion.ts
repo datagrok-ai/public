@@ -5,7 +5,7 @@ import {
   PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr, RuleSource,
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
-import {parseLinkIO} from './LinkSpec';
+import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import {compileCheckFormulas, compileRuleFormulas} from './rule-formula';
 import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
 import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
@@ -112,11 +112,11 @@ export function annotationCheckLinks(
       }));
 }
 
-export function expandLinks(
-  links: PipelineLinkConfigurationInput<LinkSpecString>[],
+export function expandLink(
+  link: PipelineLinkConfigurationInput<LinkSpecString>,
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
-    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link]);
+  return isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
+    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link];
 }
 
 function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {
@@ -207,6 +207,16 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
   case 'assign': return [effect.values];
   default: return [];
   }
+}
+
+// a template query yields every io it matches, so a family link keeps only the aliases its own effects target
+const familyTargetsOf = new WeakMap<object, Set<string>>();
+
+export function narrowToFamilyTargets<L extends {to: LinkIOParsed[]}>(expanded: object, processed: L): L {
+  const targets = familyTargetsOf.get(expanded);
+  if (targets)
+    processed.to = processed.to.filter((io) => targets.has(io.name));
+  return processed;
 }
 
 // expects compiled formulas: every effect and source is an object
@@ -365,30 +375,34 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
       return undefined;
     const familyTargets = new Set(familyEffects.flatMap(effectTargets));
     const to = [...new Set([...toAliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw))];
-    return {to, params: {when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {})}};
+    return {to, params: {when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {})}, familyTargets};
   };
 
   const result: PipelineLinkConfiguration<LinkSpecString>[] = [];
   const meta = familyLink(metaEffects);
   if (meta) {
     const link: PipelineMetaConfiguration<LinkSpecString> = {
-      ...common, ...meta, id: `${id}::meta`, type: 'meta', handler: ruleMetaHandler,
+      ...common, to: meta.to, params: meta.params, id: `${id}::meta`, type: 'meta', handler: ruleMetaHandler,
     };
+    familyTargetsOf.set(link, meta.familyTargets);
     result.push(link);
   }
   const validator = familyLink(validatorEffects);
   if (validator) {
     const link: PipelineValidatorConfiguration<LinkSpecString> = {
-      ...common, ...validator, id: `${id}::validator`, type: 'validator', handler: ruleValidatorHandler,
-      debounce: rule.debounce,
+      ...common, to: validator.to, params: validator.params, id: `${id}::validator`, type: 'validator',
+      handler: ruleValidatorHandler, debounce: rule.debounce,
     };
+    familyTargetsOf.set(link, validator.familyTargets);
     result.push(link);
   }
   const data = familyLink(dataEffects);
   if (data) {
     const link: PipelineHandlerConfiguration<LinkSpecString> = {
-      ...common, ...data, id: `${id}::data`, type: 'data', handler: ruleDataHandler, runOnInit: rule.runOnInit,
+      ...common, to: data.to, params: data.params, id: `${id}::data`, type: 'data', handler: ruleDataHandler,
+      runOnInit: rule.runOnInit,
     };
+    familyTargetsOf.set(link, data.familyTargets);
     result.push(link);
   }
   return result;

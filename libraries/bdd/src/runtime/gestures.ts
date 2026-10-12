@@ -181,7 +181,7 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
 
 /** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
  * only when the value cell is clicked: open it first, so the gesture finds the editor. */
-async function openPropertyEditor(loc: Locator): Promise<void> {
+export async function openPropertyEditor(loc: Locator): Promise<void> {
   const row = loc.first();
   if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
     return;
@@ -512,8 +512,10 @@ async function selectNative(page: Page, select: Locator, option: string): Promis
   await page.waitForTimeout(300);
   await guide.hop(page, select);
   await page.keyboard.press('Enter');
-  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '');
-  if (taken !== option)
+  // a property grid closes its editor on Enter and shows the value as text again: nothing left to correct
+  const taken = await select.evaluate((e) => (e as HTMLSelectElement).selectedOptions[0]?.label ?? '', undefined, {timeout: 1000})
+    .catch(() => null);
+  if (taken !== null && taken !== option)
     await select.selectOption({label: option});
 }
 

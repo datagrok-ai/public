@@ -2,6 +2,9 @@
 
 ## v.next
 
+* [public#4233](https://github.com/datagrok-ai/public/issues/4233): Fixed the Color, Tags and Multi Choice renderers drawing the first row's value for every item in viewer legends and pie chart labels
+* Scatter plot: Fixed "Failed to autostart: viewers is not iterable" logged at startup when a non-table view (a script, a Diff Studio model) was open
+* Tests: Added package tests for the summary columns and the Forms viewer through a layout and a project, and for the Tags renderer marking only flagged rows without painting the grid over (GROK-20888); the bdd features keep the UI gestures
 * Scatter plot: Added a WebGL renderer for plots over 50K rows where WebGPU is unavailable or blocked: dots, all marker shapes (also per row, by a Markers column), sizes, colors, opacity, borders, selection, filtered-out rows and hit testing, matching the CPU renderer
 * Scatter plot: Rewrote the WebGPU renderer to draw what the WebGL one does: it matches the CPU renderer (dots pixel for pixel, sharp on high-DPI screens), draws per-row marker shapes, borders and opacity as the canvas does, compiles its pipelines once instead of every frame, and draws in the same frame as the axes; a lost device or a validation error falls back to WebGL
 * Scatter plot: The GPU renderers leave plots with labels next to the markers, a datetime axis by a time unit, or a non-numeric, non-string axis column to the CPU renderer, which draws them right

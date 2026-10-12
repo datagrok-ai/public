@@ -26,7 +26,8 @@ import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
-import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
+import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
+import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
 import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
 // every sheet the domain stack paints with, in one import

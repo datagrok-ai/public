@@ -2,15 +2,17 @@
 Feature: A project saved with and without Data sync
   demog.csv opened from Browse > Files > Demo is saved through the ribbon's Save dialog with Data
   sync on, then saved as a copy with Data sync off, and the copy is saved again with Data sync on.
-  What the server keeps is claimed for every save (the table's data-sync flag and creation script),
-  and every reopen is claimed by how the table came back: rebuilt by its creation script, or loaded
-  from the uploaded snapshot. Translated from the TestTrack case Projects/complex-save-copy.
+  What the server keeps is claimed for every save (the table's data-sync flag and creation script).
+  Translated from the TestTrack case Projects/complex-save-copy.
+
+  How a reopened project brings the table back — rebuilt by its creation script, or loaded from the
+  uploaded snapshot — is ApiTests `Dapi: projects: data sync` (src/dapi/projects.ts).
 
   Both projects are named with the run's time and removed, with their tables and views, when the
-  feature ends. It is @serial: a save uploads the table and the reopen reads it back.
+  feature ends. It is @serial: a save uploads the table and the server reads it back.
 
   Not translated, and why: opening the projects from the Dashboards tiles (the tile gallery is
-  Browse's subject; the projects open through the API here) and the Share dialog the first save
+  Browse's subject) and the Share dialog the first save
   shows, which is cancelled (a copy of a saved project shows none).
 
   Background:
@@ -55,11 +57,7 @@ Feature: A project saved with and without Data sync
     And the "demog" table of the "BDD-Sync-Orig-{time}" project should be saved with data sync
     And no errors should have been logged
 
-  Scenario: The copy opens from its snapshot
-    When user closes all views
-    And user opens the "BDD-Sync-Copy-{time}" project and waits for its table
-    Then the table should have 5850 rows
-    And the table should have been loaded as a snapshot
+  Scenario: The copy's Save dialog keeps Data sync off
     When user clicks on Save button
     Then "Save project" dialog should be visible
     And Data sync switch in "demog" project table in "Save project" dialog should be unchecked
@@ -67,7 +65,7 @@ Feature: A project saved with and without Data sync
     Then the "Save project" dialog should close
     And no errors should have been logged
 
-  Scenario: Turning Data sync on for the copy makes it reread the file
+  Scenario: Turning Data sync on for the copy saves its creation script
     When user clicks on Save button
     Then "Save project" dialog should be visible
     When user checks Data sync switch in "demog" project table in "Save project" dialog
@@ -76,16 +74,5 @@ Feature: A project saved with and without Data sync
     When user clicks on OK button in "Save project" dialog
     Then the "Save project" dialog should close
     And the "demog" table of the "BDD-Sync-Copy-{time}" project should be saved with data sync
-    When user closes all views
-    And user opens the "BDD-Sync-Copy-{time}" project and waits for its table
-    Then the table should have 5850 rows
-    And the table should have been reloaded by data sync
-    And no errors should have been logged
-
-  Scenario: The original still opens by rereading the file
-    When user closes all views
-    And user opens the "BDD-Sync-Orig-{time}" project and waits for its table
-    Then the table should have 5850 rows
-    And the table should have been reloaded by data sync
     And no errors should have been logged
     And no error or warning balloon should have been shown

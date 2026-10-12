@@ -2,6 +2,12 @@
 
 ## 1.10.3 (WIP)
 
+Permissions: new `Dapi: permissions` (6 cases, read as a kept grantee account — View and use lets it see and use but not change, delete or share further; Full access gives everything; a revoke, leaving a group and removing All users take the access back; a space shared for viewing passes View and use to its content and takes no new content from the grantee)
+Projects: new `Dapi: projects: data sync` (4 cases — a table saved with data sync keeps its creation script and reopens rebuilt by it (`.data-sync = success`), a snapshot reopens from the uploaded data with no mark and, with data sync turned on, rebuilt, and a calculated-column chain over a file and over a query result surviving a data-sync round trip, the edited cell reread from the source, and a rename before and after the reopen)
+Entities: new `Dapi: entities: recent` — `getRecentEntities` lists a project the account saved, once it is opened
+Sticky meta: new `Dapi: sticky meta: molecules` (3 cases — values written for molecules read back on a clone, after a CSV round trip, and through another SMILES of the same molecule, none for another molecule)
+Models: new `Dapi: models` (4 cases — every `meta.mlrole: train` function has an `apply` of the same `mlname`; a saved model found, listed and suggested only for a table with its inputs; blobs and images round-trip and `/ml/zip/{id}` is a zip holding them and the model; a deleted model takes its blobs and images)
+
 GROK-21114: `Benchmarks: Calculated columns and layouts` limits set to the goal: 1 s for applying a layout with 200 formula columns, 0.9 s for calculating them, about 1.4x the quiet-machine times for the rest; a run over a limit fails until the goal is met
 
 GROK-21035: Added the `Benchmarks: Calculated columns and layouts` category: 7 benchmarks on a synthetic table (50k rows in benchmark mode) with limits set from the 5 s goal for applying a layout with 200 formula columns and one failing formula

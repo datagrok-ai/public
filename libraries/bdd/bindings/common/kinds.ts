@@ -356,7 +356,7 @@ kind('filter card', {
   dartNames: ['filter-card-{q}'],
   parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
-    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input.d4-search-input'},
 });
 // the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
 const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};

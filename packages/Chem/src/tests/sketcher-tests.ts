@@ -274,10 +274,11 @@ async function testInchi(rdkitModule: any, funcs: DG.Func[]) {
     await s.sketcherReady();
     s.molInput.value = exampleInchi;
     s.molInput.dispatchEvent(new KeyboardEvent('keydown', {key: 'Enter'}));
+    // InChI is read by a Python script (inchiToMol), whose first call may start a kernel
     await awaitCheck(() => {
       const resMolblock = s.getMolFile();
       return compareTwoMols(rdkitModule, mol, resMolblock);
-    }, 'mols are not equal', 3000);
+    }, `${func.friendlyName}: mols are not equal`, 20000);
     d.close();
   }
   mol?.delete();

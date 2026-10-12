@@ -112,12 +112,21 @@ Feature: Viewer chrome — title and description, Pick Up / Apply, the context m
       | pc plot      | Columns > Columns         |
       | trellis plot | Pick Up / Apply > Pick Up |
 
-  Scenario Outline: The <viewer> docks along the left edge and opens its help from the title bar
+  Scenario Outline: The <viewer> docks along the left edge by its title bar
     Given user adds a <viewer> viewer
     Then <viewer> viewer should not be docked along the left edge of the view
     When user docks <viewer> viewer to the left edge of the view
     Then <viewer> viewer should be docked along the left edge of the view
+    And no errors should have been logged
+
+    Examples:
+      | viewer       |
+      | pc plot      |
+      | trellis plot |
+
+  Scenario Outline: The <viewer> opens its help from the title bar
     Given the stand serves the help pages
+    And user adds a <viewer> viewer
     When user opens the help of <viewer> viewer
     Then help panel should contain text "<help>"
     And no errors should have been logged

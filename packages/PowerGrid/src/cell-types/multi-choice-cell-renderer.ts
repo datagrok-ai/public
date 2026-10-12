@@ -41,7 +41,7 @@ export class MultiChoiceCellRenderer extends DG.GridCellRenderer {
     const choices = getChoices(gridCell.tableColumn!);
     if (!choices)
       return;
-    const values: string[] = gridCell.cell.valueString.split(',').map((s) => s.trim());
+    const values: string[] = String(gridCell.value ?? '').split(',').map((s) => s.trim());
 
     for (let i = 0; i < choices.length; i++) {
       const choice = choices[i];

@@ -1,4 +1,5 @@
-// Synced from Rusty-HMMER web/anarci/germline.ts by web/sync-datagrok.mjs — do not edit here.
+// Synced from crux-core crates/hmmer-web/web/anarci/germline.ts by crates/hmmer-web/web/sync-datagrok.mjs — do not edit here.
+// Ported from ANARCI 2024.05.21 (oxpig/ANARCI 79f6c57, the Bioconda 2024.05.21 build): anarci.py, schemes.py
 /** ANARCI's germline assignment, ported from anarci.py (ANARCI 2024.05.21,
  * BSD-3-Clause, Copyright 2019 Charlotte Deane, James Dunbar, Alexsandr
  * Kovaltsuk, Claire Marks; notice in licenses/ANARCI.txt): `get_identity` and

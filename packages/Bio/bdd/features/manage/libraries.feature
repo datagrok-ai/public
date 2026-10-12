@@ -9,7 +9,7 @@ Feature: Managing monomer libraries
   uploaded library is still listed when the manager opens again, and Delete removes the file from
   every storage, not only the checkbox. The dialog entry (Bio:manageMonomerLibraries, the panel link)
   lists the same libraries as the view. Serial: the library selection is the user's, and other
-  features (atomic level, the HELM project round-trip) depend on it.
+  features (atomic level) depend on it.
 
   Not translated: writing a library file straight to the file share and editing it there (the
   lifecycle md's S2.1-2.2 — the old spec wrote a file and read it back, which tests the file

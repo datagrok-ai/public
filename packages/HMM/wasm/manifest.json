@@ -1,62 +1,62 @@
 {
-  "source": "Rusty-HMMER crates/hmmer-web + web/ (verified against HMMER 3.4 and ANARCI 2024.05.21)",
+  "source": "crux-core crates/hmmer-web, crates/hmmer-web-tools and crates/hmmer-web/web (Rusty-HMMER; verified against HMMER 3.4 and ANARCI 2024.05.21)",
   "abi": 2,
   "optimizer": "wasm-opt version 132 (version_132)",
   "files": {
     "wasm/hmmer_web.wasm": {
       "bytes": 332164,
-      "gzip": 139969,
-      "sha256": "b3cad83ebec2e419aeeabb181064786ff3c910647e5db91d355bc18e70d88824"
+      "gzip": 139948,
+      "sha256": "54092bfd78b07ef53b9d59ad4f71cb2be3685859a4f6f2449bfe2222d06681a2"
     },
     "wasm/hmmer_tools.wasm": {
-      "bytes": 496892,
-      "gzip": 204612,
-      "sha256": "cea56303f08fc2af2c8cc6256c7e35f45cdc4d057ff803f3dce8d1ea4615190a"
+      "bytes": 496884,
+      "gzip": 204578,
+      "sha256": "aeb42c2759c4771ab37fdaa4e122ecf8c0604f925677e05f521b4736205fba0f"
     },
     "src/hmmer/engine.ts": {
-      "bytes": 14723,
+      "bytes": 14755,
       "gzip": 4308,
-      "sha256": "e13b05b15a1bd4bba14e2a6ec54325a188359653b5bd32fdbc67f0abf68cec06"
+      "sha256": "57242941891f105134bedecc8bcee2198115906779ffab51b1ba4a712184d143"
     },
     "src/hmmer/search.ts": {
-      "bytes": 5077,
-      "gzip": 2000,
-      "sha256": "c7a8e81dfb4f1440f15753aec21d05dbdb5628a2d7607a2fe7945180a0a49e5d"
+      "bytes": 5109,
+      "gzip": 2004,
+      "sha256": "81bf718dd3250c110374f9f1d65a96948d91baa0208ac02b8f66b96008655f32"
     },
     "src/hmmer/clans.ts": {
-      "bytes": 2134,
-      "gzip": 1040,
-      "sha256": "10536c1b91e59771b3148a6658aaa2eacd3dcc1497ade85740b373254a8e55b1"
+      "bytes": 2166,
+      "gzip": 1046,
+      "sha256": "267879f02bbe7f4ef2f3c059817fe39d559867edc2b17192d8aee7cd1d504a1c"
     },
     "src/hmmer/tools.ts": {
-      "bytes": 10930,
-      "gzip": 3569,
-      "sha256": "3eb12dd29dd1371ffa49586f026d9c6fc2f9208b15029e334b9080f4c5b74915"
+      "bytes": 10962,
+      "gzip": 3568,
+      "sha256": "6f1abc33119c99fd931272ae2f972ca723746f7a205b58e018cb1a0375d9c029"
     },
     "src/hmmer/anarci/alignment.ts": {
-      "bytes": 11614,
-      "gzip": 4075,
-      "sha256": "14c91e958a099c76c45105a7c39e9fa24adf5da69688059d154209cbbcb19326"
+      "bytes": 11756,
+      "gzip": 4132,
+      "sha256": "641a5eb0576f68af9265529eee0daefaf871ce465b8c059e92efe5e67765c046"
     },
     "src/hmmer/anarci/anarci.ts": {
-      "bytes": 5476,
-      "gzip": 2060,
-      "sha256": "399476792f07d7f1d554b7bc47b7966c272a4504f12ff6d37953521d55265086"
+      "bytes": 5618,
+      "gzip": 2117,
+      "sha256": "8a65a77a2ef0d87e92a0282a668765ce4687247d6dcd451fd5af23e63cca0763"
     },
     "src/hmmer/anarci/germline.ts": {
-      "bytes": 3411,
-      "gzip": 1403,
-      "sha256": "f3d9a086c687cc56dffc89665882696590c9aa49ebc4f0bfe5ddf3f7f4ef56b2"
+      "bytes": 3553,
+      "gzip": 1461,
+      "sha256": "d008f606b0abc5b9e7bfea5f4a9328c195a87da5ee9d8eb9fa77dbb67225ce68"
     },
     "src/hmmer/anarci/schemes.ts": {
-      "bytes": 49225,
-      "gzip": 12637,
-      "sha256": "999444db5ada06094626fd4ff8aba5bef6287f4965b0eed1a0072102ec4078b6"
+      "bytes": 49367,
+      "gzip": 12696,
+      "sha256": "0dae39f4108c50c70cc4df90add08088702c452e0d4f8bc73feaa1c4cd040df2"
     },
     "src/hmmer/anarci/types.ts": {
-      "bytes": 1886,
-      "gzip": 963,
-      "sha256": "24cca28ece5fda98285883d692b7fae9f75a88a126d16a17a3fa44bbd567bc6f"
+      "bytes": 2028,
+      "gzip": 1023,
+      "sha256": "d17da2e5785562a86d6c74f78271b6e15dfa0db1b8b69e69688fe7282ca7dd43"
     },
     "wasm/anarci/ALL.hmm.h3m.gz": {
       "bytes": 221467,
@@ -162,6 +162,16 @@
       "bytes": 788,
       "gzip": 476,
       "sha256": "43fb5d37eb608c92c3ecdccec7c35c9b46ffdb6785f479aed1b00f0891a2e9ad"
+    },
+    "licenses/MT19937-64.txt": {
+      "bytes": 1761,
+      "gzip": 972,
+      "sha256": "9e40838da74ebd84a832176fbfa9bce5be058d52e7c5de9fcc0c8bd150b8984d"
+    },
+    "licenses/Lawler-Deal-ISC.txt": {
+      "bytes": 902,
+      "gzip": 591,
+      "sha256": "ff158df4cdb9c94dc4a81ce60fe69e13036e8bea7e35501a207f468cefe1bc18"
     },
     "src/tests/anarci-fixture.json": {
       "bytes": 45499,

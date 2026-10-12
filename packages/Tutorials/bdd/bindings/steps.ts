@@ -135,6 +135,12 @@ export const stepDone = Then('the tutorial step {string} should be done', async 
   }, {message: `the tutorial step "${instruction}"`}).toBe('done');
 }, {description: 'the entry with exactly this instruction is listed and checked (aria-checked) — not shown as could-not-complete'});
 
+export const stepCurrent = Then('the tutorial step {string} should be current', async (page: Page, instruction: string) => {
+  const entries = await stepEntry(page, instruction);
+  await expect.poll(() => entries.evaluateAll((els) => els.length === 0 ? 'not listed' : els.some((e) => e.getAttribute('aria-current') === 'step') ? 'current' : 'not current'),
+    {message: `the tutorial step "${instruction}"`}).toBe('current');
+}, {description: 'the entry the tutorial is waiting on (aria-current): a step listens only once it is current, so a gesture it checks comes after this'});
+
 export const stepDoneTimes = Then('the tutorial step {string} should be done {int} times', async (page: Page, instruction: string, times: number) => {
   const entries = await stepEntry(page, instruction);
   await expect.poll(() => entries.evaluateAll((els) => els.filter((e) => e.getAttribute('aria-checked') === 'true').length),

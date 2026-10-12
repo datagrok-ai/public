@@ -5,7 +5,7 @@ Translated on 2026-10-09 with the bindings as they are; the review of 2026-10-11
 `files/TestTrack/Models/*.md` and `playwright-public/Models/*.test.ts`. Probed and run on a local stand
 built from core master `1847d054e8`.
 
-## Resolved in the review of 2026-10-11
+## Resolved
 
 - **Ctrl+click two cards, then Compare** (models-testdemog-lifecycle-smoke block 4, GROK-19550): the library has
   `user clicks on {element} holding {key}` now, and `models-gallery` ends on the comparison. Under the test a
@@ -26,122 +26,48 @@ built from core master `1847d054e8`.
 - **Tip typos**: "contains contain too many unique categories" and "No models registred" are fixed
   (`predictive_modeling_validators.dart`, `predictive_modeling_view.dart`); `train-data-checks` claims the
   whole tip.
+- **The training table of a model deleted through the gallery** (2026-10-12): `N predictive model(s) named … should be
+  on the server` records each model's training table and wrapper project for the feature-end cleanup
+  (`recordModelArtifacts`, library `platform/steps.ts`), so they go whatever deletes the model; the EDA model
+  features leave no table, project or model behind. The server's model delete keeps its `trainedOn` table — by
+  design, the lead's call (2026-10-11).
+- **A signal for the Positive class cutoff re-render** (2026-10-12): the preview is `aria-busy` from the move until
+  the debounced re-render ends (`predictive_modeling_previews.dart`); `train-options` claims Accuracy 0.800 at a
+  cutoff of 0.8. Earlier previews no longer listen to the cutoff once replaced (`PredictiveModelPreview.dispose`).
+- **A second model saved from the same Train Model view took the first one's name** (2026-10-12): the name was kept
+  from the server's answer to the first save; it follows the friendly name again (`fillModelParameters`). xamgle
+  test `Train View | Second model saved takes its own name`.
+- **One-hot on a table that lacks a category** (2026-10-12): confirmed — a table with featureA = Yes only handed
+  the model `featureA=Yes` alone. Training records each input's categories (`options['oneHotCategories']`) and
+  apply rebuilds the training columns from them. xamgle test `Apply | One-hot rebuilds the training categories`.
+- **§3, the API tests** (2026-10-12): the data checks and Ignore missing are xamgle tests ("Core: xamgle:
+  Predictive modeling", 14/14); engine discovery, `/ml/zip`, blobs, images and save / suggested / delete are
+  ApiTests `Dapi: models`. One-hot on apply is the xamgle test above (the one-hot logic lives in core, and the JS
+  API cannot make a model with preprocessing options).
 
-## 1. Steps wanted
+## Still open
 
-### 1.1 Removing a table the UI saved to the server
+Nothing planned.
 
-The Is applicable to... quick filter of the gallery saves the chosen open table to the server when it is
-not there yet (`predictive_models_view.dart` `_isApplicableFilter`, `dapi.tables.save`). No step deletes
-such a table at feature end, so the filter is not translated. Wanted: `Given the tables named {string}
-are deleted now and at feature end` (the library already lists tables as a cleanup source in
-`serverEntities`). With it, and once 2.1 is answered:
+## Won't do
 
-```gherkin
-  Scenario: Is applicable to... keeps the models that fit the chosen table
-    Given the tables named "readings, levels" are deleted now and at feature end
-    When user clicks on "Toggle filters" icon
-    And user clicks on "Is applicable to..." tag
-    Then the open menu should list "levels"
-    When user picks "levels" from the open menu
-    Then "BDD-Osprey-{run}" label in gallery should be visible
-    And "BDD-Kestrel-{run}" label in gallery should be absent
-```
+- **Is applicable to...** (the old §1.1 and §2.1): the filter only writes `isApplicableTo = "<id>"` into the search,
+  which neither narrows the gallery nor sorts it by applicability, and saves the chosen table again (a foreign-key
+  error the second time). Filed on GitHub by Olesia; the feature waits for the answer to "filter or sort".
+- **"Trained on" shows an id** (the old §2.2): an enhancement, filed by Olesia.
+- **The old cases' expectations** (the old §2.5): models-validators-edge ("a categorical feature does not block
+  training"), models-one-hot-suffix-collision (inputs listed as `featureA=Yes, …`) and models-lifecycle-csv-table
+  (a save-success notification) describe what the platform does not do; the features claim what it does, and the
+  md cases are their owner's to update.
+- **Chemprop** (`chemprop.md`, `chemprop-ui.md`): trains and predicts in the chem-chemprop Docker container.
+- **`predictive-models.md` scenario 3** (apply to Tools > Dev > Open test dataset, random walk): the random-walk
+  columns are none of the model's inputs, so Apply offers no model.
+- **`browse/modelhub.test.ts`**: the Compute Model Hub, not predictive models — the Browse and DiffStudio features
+  cover it.
 
-### 1.2 The training table of a model deleted through the gallery
+### Notes
 
-The model sweep (`namedCleanup`, `bindings/platform/steps.ts`) finds a model's uploaded training table
-and its wrapper project through the live model. A feature that deletes its model through the gallery
-(apply-and-delete does; models-gallery leaves Delete to it for that reason) leaves both on the server: the server's model delete
-(`ml_service.dart` `deleteModel`) keeps the `trainedOn` table. Wanted: `N predictive model(s) named …
-should be on the server` (or the save itself) records the training table and the wrapper project for
-the feature-end cleanup, so they go whatever deletes the model.
-
-### 1.3 A signal for the Positive class cutoff re-render
-
-Moving Predict probability's cutoff re-renders the confusion matrix and the metrics after a 200 ms
-debounce (`predictive_modeling_previews.dart`) without setting `aria-busy` on the preview, so no claim
-can wait for it. With the busy state set around it:
-
-```gherkin
-    When user enters "0.8" into "Positive class cutoff" input
-    Then model preview should be ready
-    And "Accuracy" table row should not contain text "0.900"
-```
-
-## 2. To check by hand (candidate findings — nothing filed)
-
-### 2.1 Is applicable to... does not narrow the gallery, and saves the open table
-
-Steps: train and save one model on table A (columns f1, f2, target) and one on table B (g1, g2,
-score), keep both tables open, Browse > Platform > Predictive models, the filter icon, **Is applicable
-to...**, pick B.
-
-Expected: only the model trained on B. Actual (local stand): the search reads `isApplicableTo = "<id>"`
-and the counter stays 2. The filter only writes that text into the search, which the server reads as
-a smart filter; nothing turns it into the `tableId` parameter of `getModels` (`ml_service.dart`), and
-even that branch only sorts the list, with a one-argument comparator
-(`models.sort((pmi, _) => pmi.isApplicable(tableInfo) ? 0 : 1)`). Picking a table that was never saved also saves it to the server (1.2). Whether "Is applicable
-to" was meant to filter or to sort is the question.
-
-Walked by hand on dev 2026-10-09 (Screenshot_42): Is applicable to... > Table (2) gives
-`isApplicableTo = "<id>"` in the search and the address (`/models?q=isApplicableTo+%3D+"<id>"`), and
-the gallery lists 21 models — Check-B (applicable to Table (2)) first, then Check-A ("Applicable to
-Table" only) and models over other columns entirely ("Predict b by a", "Predict accel_x by accel_y,
-accel_z, time_offset"). All gives 28, so the filter drops 7 models, by what is unclear, and keeps
-ones that do not fit. Picking Table (2) a second time (after All) logs, from the client's POST,
-`ERROR 23503 update or delete on table "table_columns" violates foreign key constraint
-"pm_input_columns_column_id_fkey" on table "pm_input_columns"`, and the search stays empty
-(Screenshot_43): the filter saves the table again, and its columns are the ones the model's inputs
-point to. The ticket goes to GitHub, filed by Olesia.
-
-### 2.2 Details pane: "Trained on" shows an id (confirmed by hand; an enhancement, filed by Olesia)
-
-A model trained in the view and saved shows `Trained on 12a571e0-bde0-…` in its Details pane, not a
-table name (the training table is built without a name in `fillModelParameters`). Intended?
-
-### 2.3 A second model saved from the same Train Model view takes the first one's name (not walked yet)
-
-Train, save as `A-LR`; change Model Engine, save as `A-PLS`. On the server the second model is
-`name = ALR_1`, `friendlyName = A-PLS` (its card is `div-ALR-1`). The friendly name shows everywhere a
-person looks, so this matters only where `name` is used (URL, scripting by name). Intended?
-
-### 2.4 Apply to from a card — not a finding
-
-Under the test the context panel kept the model clicked before when a card's Apply to opened the
-dialog of another model. Walked by hand 2026-10-09: not reproduced — the panel follows the dialog's
-model. The feature claims the dialog's Model input instead; why the panel dropped the change under
-the test (most likely one of its guards after a fast click sequence) is not instrumented.
-
-### 2.5 Questions on the old cases' expectations
-
-- models-validators-edge.md says a categorical feature "does not block training". With no engine
-  taking a text feature, the view shows no Model Engine and SAVE stays disabled until One-hot
-  encoding is ticked. The feature claims that; the md needs updating if it is intended.
-- models-one-hot-suffix-collision.md expects the saved model's inputs as `featureA=Yes, featureA=No,
-  …`. The model keeps the table's columns (featureA, featureB) as its inputs and expands them inside;
-  Apply maps (2/2) and predicts. The feature claims the latter.
-- models-lifecycle-csv-table.md expects a "save-success notification" after Save; none is shown.
-- One-hot on a fresh table that lacks a category: `oneHotEncoded` builds the 0/1 columns from the
-  apply table's own categories, so a table whose featureA holds only Yes may hand the model one input
-  short. Not probed yet — apply the One-hot model of train-options to a table with featureA = Yes only.
-
-## 3. API tests wanted (none exists — rule "Anything an API test can check")
-
-| Behaviour | Where | Old source |
-|---|---|---|
-| Engine discovery: functions with `meta.mlrole` train/apply pair up by `mlname` | ApiTests `src/dapi/models.ts` (new) | models-engines-discovery-api |
-| `/ml/zip/{id}` is a zip; blobs, images and the image list round-trip | ApiTests `src/dapi/models.ts` | models-api-misc-api |
-| `dapi.models` save / suggested / delete; a deleted model's blobs go | ApiTests `src/dapi/models.ts` | the dapi count checks of every Models spec |
-| The data checks (class imbalance ±20 %, categorical features, >0.8 unique, Pearson > 0.9, missing values) | xamgle Dart test beside `predictive_modeling_validators.dart` | models-validators-edge, GROK-3525 |
-| One-hot on apply rebuilds `<name>=<category>` columns from the table's columns | EDA `src/tests/model-serialization-tests.ts` | models-one-hot-suffix-collision |
-| Ignore missing trains on the rows left (10 rows with 2 missing targets → 8), and the per-column counts the missing-values tip prints for two or more columns | xamgle Dart test beside `predictive_modeling_validators.dart` | models-bug-grok-3525 |
-
-## 4. Not translated, with the reason
-
-- Chemprop (`chemprop.md`, `chemprop-ui.md`): trains and predicts in the chem-chemprop Docker container.
-- `predictive-models.md` scenario 3 (apply to Tools > Dev > Open test dataset, random walk): the
-  random-walk columns are none of the model's inputs, so Apply offers no model; the old spec fell back
-  to the first option and asserted only a column count.
-- `browse/modelhub.test.ts`: the Compute Model Hub, not predictive models — the Browse and DiffStudio
-  features cover it.
+- **Apply to from a card** (the old §2.4) — not a finding: walked by hand on 2026-10-09, the panel follows the
+  dialog's model.
+- **A strong negative correlation is never reported** by the Highly correlated check (`highlyCorrelated` flags
+  only r > 0.9) — a candidate finding for the models' owner.
