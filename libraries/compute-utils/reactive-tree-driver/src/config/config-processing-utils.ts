@@ -4,7 +4,7 @@ import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from 
 import {callHandler, indexFromEnd, Tolerance} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationCheckLinks, annotationRules, expandLink} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLink, narrowToFamilyTargets} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -269,7 +269,8 @@ function processActions<A extends ActionInput>(actionsInput: A[], logger?: Drive
 }
 
 function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
-  return links.flatMap((link) => expandLink(link).map((expanded) => withOriginal(processLinkData(expanded), link)));
+  return links.flatMap((link) => expandLink(link).map((expanded) =>
+    withOriginal(narrowToFamilyTargets(expanded, processLinkData(expanded)), link)));
 }
 
 // in place, so the links keep their originals
