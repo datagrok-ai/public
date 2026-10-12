@@ -132,7 +132,7 @@ export function openDialog(opts: DialogOptions, build: () => DialogParts): Porta
 
 /** A single-line text input; [name] lands on the input's root, as the old field wrappers had it. */
 export const text = (name: string, label?: string,
-  o: {placeholder?: string, value?: string, search?: boolean} = {}): TextInput =>
+  o: {placeholder?: string, value?: string, search?: boolean, inline?: boolean} = {}): TextInput =>
   new TextInput({name, label, ...o});
 
 /** A multi-line text input. */
@@ -143,11 +143,11 @@ export const area = (name: string, label?: string, o: {placeholder?: string, val
  * choice (value ''); without it, the value starts at [value] or the first option. Read the value
  * with [choiceValue]. */
 export function choice(name: string, label: string | undefined, options: {code: string, name: string}[],
-  value = '', o: {blank?: string, onChanged?: (v: string) => void} = {}): ChoiceInput {
+  value = '', o: {blank?: string, inline?: boolean, onChanged?: (v: string) => void} = {}): ChoiceInput {
   const items = [...(o.blank !== undefined ? [{value: '', label: o.blank}] : []),
     ...options.map((x) => ({value: x.code, label: x.name}))];
   const start = items.some((i) => i.value === value) ? value : (o.blank !== undefined ? '' : items[0]?.value ?? '');
-  return new ChoiceInput({name, label, items, value: start, nullable: false,
+  return new ChoiceInput({name, label, items, value: start, nullable: false, inline: o.inline,
     onChanged: o.onChanged ? (v) => o.onChanged!(v ?? '') : undefined});
 }
 

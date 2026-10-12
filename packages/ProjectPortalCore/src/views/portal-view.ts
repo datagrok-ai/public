@@ -3,8 +3,8 @@
  * columns from its own stages, so three portfolios show three different boards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {badge, button, Control, divV, divH, signal, span} from '@datagrok-libraries/u2';
-import type {BadgeVariant, MessageInput} from '@datagrok-libraries/u2';
+import {badge, button, Control, divV, divH, Scope, signal, span} from '@datagrok-libraries/u2';
+import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
 import {ContextCriterion, programContext, ProgramContext, programData, readinessFor, setCriterion, stagesOf,
@@ -199,8 +199,8 @@ export class PortalView {
     {list: [], names: new Map(), refused: [], approver: false};
   /** The selected program's discussion (F-51): the platform chat on its folder, as threads. */
   private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
-  /** The discussion's compose box, disposed when the section is drawn again. */
-  private discussionInput: MessageInput | null = null;
+  /** Owns the u2 controls of the program page as last drawn; disposed when it is drawn again or cleared. */
+  private detailScope: Scope | null = null;
   /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
   private pageCtx: ProgramContext | null = null;
   /** The selected program's documents by id, for the context a question about one carries. */
@@ -287,6 +287,7 @@ export class PortalView {
     this.portfolio = null;
     this.selected = null;
     this.redraw = null;
+    this.clearDetailScope();
     this.keeper = false;
     this.portfolioList.style.display = '';
     this.board.style.display = 'none';
@@ -348,6 +349,7 @@ export class PortalView {
     this.portfolio = p;
     this.selected = null;
     this.redraw = null;
+    this.clearDetailScope();
     const persona = await personaIn(p).catch(() => ({persona: 'lead' as Persona, chosen: false}));
     // another portfolio was opened meanwhile
     if (this.portfolio !== p)
@@ -604,9 +606,18 @@ export class PortalView {
     this.feed.names = feedNames;
     this.feed.error = feedError;
     this.approvals = {rows: requests, names: approvalNames};
-    this.redraw = () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive, runs,
-      choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents);
+    this.redraw = () => {
+      this.clearDetailScope();
+      const scope = this.detailScope = new Scope();
+      Scope.runWith(scope, () => this.renderDetail(ctx, transitions, successors, readiness, units, compounds, spaceLive,
+        runs, choices, attention, recommendation, news, {lines: evidence, suggested}, snapshots, documents));
+    };
     this.redraw();
+  }
+
+  private clearDetailScope(): void {
+    this.detailScope?.dispose();
+    this.detailScope = null;
   }
 
   /** Mode and persona, on the board header. */
@@ -1826,8 +1837,7 @@ export class PortalView {
     const d = x.d;
     const reopen = () => this.openProgram(program.id, this.viewedStage);
     heading.textContent = `Discussion (${d.threads.reduce((n, t) => n + t.posts.length, 0)})`;
-    this.discussionInput?.dispose();
-    const input = this.discussionInput = composer({name: 'discussion-input', sendLabel: 'Post',
+    const input = composer({name: 'discussion-input', sendLabel: 'Post',
       placeholder: `Post to ${program.code}'s discussion. @ to mention someone`,
       onSend: (markup) => postToProgram(program, markup).then(() => reopen()).catch((e) => {
         this.failed(e);

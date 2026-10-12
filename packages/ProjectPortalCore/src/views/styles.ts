@@ -96,6 +96,8 @@ const CSS = `
 .pp-criterion-run { gap: 4px; align-items: center; flex-wrap: wrap; font-size: 12px; }
 .pp-preferences { gap: 8px; align-items: center; margin-left: auto; }
 .pp-preference { gap: 4px; align-items: center; }
+.pp-preference .u2-input-root { flex-shrink: 1; min-width: 0; padding: 0; }
+.pp-preference select.u2-input-editor { width: auto; max-width: 180px; }
 .pp-select-small { height: 22px; font-size: 12px; flex: 0 0 auto; }
 .pp-quick-cards { gap: 6px; flex-wrap: wrap; }
 .pp-quick { flex: 0 0 132px; gap: 2px; padding: 6px; border: 1px solid var(--u2-border, #e0e0e0); border-radius: 5px; cursor: pointer; font-size: 12px; }

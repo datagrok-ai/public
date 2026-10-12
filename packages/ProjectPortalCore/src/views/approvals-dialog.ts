@@ -2,19 +2,12 @@
  * it (what is proposed, by whom, the reviews so far, and Approve or Reject with a rationale, or
  * Withdraw for the proposer), and the Waiting for me dialog over every request the user may review. */
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
+import {badge, button, divH, divV, Scope, span} from '@datagrok-libraries/u2';
 import {ApprovalRow, portalDb} from '../generated/db';
 import {describeRequest, reviewRequest, userNames, waitingForMe, withdrawRequest} from '../approvals';
 import {reviewsOf} from '../model/approvals';
-import {installStyles} from './styles';
 import {ROW_LIMIT} from '../rows';
-
-const named = <T extends HTMLElement>(el: T, name: string): T => {
-  el.dataset.u2Name = name;
-  return el;
-};
+import {named, openDialog, PortalDialog, text} from './u2-controls';
 
 export interface RequestItemOptions {
   names: Map<string, string>;
@@ -43,8 +36,7 @@ export function requestItem(r: ApprovalRow, o: RequestItemOptions): HTMLElement 
     const failed = (e: any) => grok.shell.error(e?.message ?? String(e));
     const actions: HTMLElement[] = [];
     if (o.canReview) {
-      const rationale = named(document.createElement('input'), `${o.name}-rationale`);
-      rationale.placeholder = 'Rationale';
+      const rationale = text(`${o.name}-rationale`, undefined, {placeholder: 'Rationale', inline: true});
       // one review at a time: a second click would append a second review, or apply the decision twice
       let busy = false;
       const review = (verdict: 'approve' | 'reject') => () => {
@@ -52,7 +44,7 @@ export function requestItem(r: ApprovalRow, o: RequestItemOptions): HTMLElement 
           return;
         busy = true;
         approve.disabled = reject.disabled = true;
-        void reviewRequest(r.id, verdict, rationale.value)
+        void reviewRequest(r.id, verdict, rationale.value.value)
           .then((x) => o.onDone([x.line, ...(x.notified ? [`Proposer: ${x.notified}`] : [])].join('\n'))).catch(failed)
           .finally(() => {
             busy = false;
@@ -63,7 +55,7 @@ export function requestItem(r: ApprovalRow, o: RequestItemOptions): HTMLElement 
       approve.title = 'Approve with the rationale: on the last approval it takes effect';
       const reject = named(button('Reject', review('reject')), `${o.name}-reject`) as HTMLButtonElement;
       reject.title = 'Reject with the rationale: it does not take effect, and the proposer is told';
-      actions.push(rationale, approve, reject);
+      actions.push(rationale.root, approve, reject);
     }
     if (o.canWithdraw) {
       const withdraw = named(button('Withdraw', () => void withdrawRequest(r.id)
@@ -82,16 +74,18 @@ export interface WaitingOptions {
 }
 
 /** Waiting for me: every pending request the current user may review, oldest first. */
-export async function openWaitingDialog(opts: WaitingOptions): Promise<DG.Dialog> {
-  installStyles();
+export async function openWaitingDialog(opts: WaitingOptions): Promise<PortalDialog> {
   const body = named(divV([], 'pp-units'), 'waiting-list');
   const result = named(span('', 'pp-muted'), 'waiting-result');
-  const dlg = ui.dialog({title: 'Waiting for me'});
+  // each draw owns its rationale inputs; the last one goes with the dialog
+  let scope: Scope | null = null;
   const draw = async () => {
     const rows = await waitingForMe();
     const names = await userNames(rows.flatMap((r) => [r.proposed_by, ...reviewsOf(r.reviews).map((x) => x.by)]));
     const portfolios = new Map((await portalDb.portfolios.query({limit: ROW_LIMIT})).map((p) => [p.id, p]));
-    body.replaceChildren(...(rows.length ? rows.map((r, i) => {
+    scope?.dispose();
+    scope = new Scope();
+    Scope.runWith(scope, () => body.replaceChildren(...(rows.length ? rows.map((r, i) => {
       const item = requestItem(r, {names, canReview: true, canWithdraw: false, name: `waiting-${i}`,
         onDone: async (line) => {
           result.textContent = line;
@@ -106,11 +100,11 @@ export async function openWaitingDialog(opts: WaitingOptions): Promise<DG.Dialog
         item.append(open);
       }
       return item;
-    }) : [named(span('Nothing is waiting for you', 'pp-muted'), 'waiting-none')]));
+    }) : [named(span('Nothing is waiting for you', 'pp-muted'), 'waiting-none')])));
   };
   await draw();
-  dlg.add(divV([result, body]));
-  dlg.root.dataset.u2Name = 'waiting-dialog';
-  dlg.show({width: 600});
+  const dlg = openDialog({title: 'Waiting for me', name: 'waiting-dialog', width: 600},
+    () => ({content: divV([result, body])}));
+  dlg.own(() => scope?.dispose());
   return dlg;
 }

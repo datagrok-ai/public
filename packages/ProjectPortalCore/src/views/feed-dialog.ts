@@ -2,30 +2,21 @@
  * section and the My feed dialog (everything the user follows). Newest first, filtered by kind,
  * paged; an entry over a record traces its provenance, and in My feed the program opens. */
 import * as grok from 'datagrok-api/grok';
-import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import {button, divH, divV, span} from '@datagrok-libraries/u2';
+import {button, divH, divV, Scope, span} from '@datagrok-libraries/u2';
 import {countByKind, describeEntry, FEED_KIND_LABELS, FEED_KINDS, FeedEntry, FeedKind, filterFeed, pageFeed} from '../model/feed';
 import {feedUserNames, myFeedOf} from '../feed';
-import {installStyles} from './styles';
-
-const named = <T extends HTMLElement>(el: T, name: string): T => {
-  el.dataset.u2Name = name;
-  return el;
-};
+import {choice, named, openDialog, PortalDialog} from './u2-controls';
 
 /** Entries per page, on the program page and in My feed. */
 export const FEED_PAGE_SIZE = 8;
 
-/** A labelled native select; its wrapper carries the name. */
+/** A labelled u2 choice in a filter row; its wrapper carries the name. [onChange] runs after the change has
+ * settled, so it may redraw the page that holds the choice. */
 export function feedSelect(name: string, label: string, options: {code: string, name: string}[], value: string,
   onChange: (v: string) => void): HTMLElement {
-  const el = document.createElement('select');
-  el.className = 'pp-select pp-select-small';
-  el.append(...options.map((o) => Object.assign(document.createElement('option'), {value: o.code, textContent: o.name})));
-  el.value = value;
-  el.onchange = () => onChange(el.value);
-  return named(divH([span(label, 'pp-muted'), el], 'pp-preference'), name);
+  const input = choice(`${name}-choice`, undefined, options, value, {inline: true,
+    onChanged: (v) => queueMicrotask(() => onChange(v))});
+  return named(divH([span(label, 'pp-muted'), input.root], 'pp-preference'), name);
 }
 
 /** The kind filter: All, then each kind present, with its count. */
@@ -89,21 +80,22 @@ export interface MyFeedOptions {
 }
 
 /** My feed: the activity of every program (or series) the current user follows. */
-export async function openMyFeedDialog(opts: MyFeedOptions): Promise<DG.Dialog> {
-  installStyles();
-  const dlg = ui.dialog({title: 'My feed'});
-  dlg.root.dataset.u2Name = 'my-feed-dialog';
+export async function openMyFeedDialog(opts: MyFeedOptions): Promise<PortalDialog> {
   const body = named(divV([span('Reading what you follow…', 'pp-muted')], 'pp-feed'), 'my-feed-content');
-  dlg.add(body);
-  dlg.show({width: 680});
+  const dlg = openDialog({title: 'My feed', name: 'my-feed-dialog', width: 680}, () => ({content: body}));
+  // each draw owns its kind filter; the last one goes with the dialog
+  let scope: Scope | null = null;
+  dlg.own(() => scope?.dispose());
   try {
     const {entries, programs} = await myFeedOf();
     const names = await feedUserNames(entries);
     let kind = '';
     let page = 0;
     const draw = () => {
+      scope?.dispose();
+      scope = new Scope();
       const shown = filterFeed(entries, {kinds: kind ? [kind as FeedKind] : null});
-      body.replaceChildren(
+      Scope.runWith(scope, () => body.replaceChildren(
         named(span(programs ? `${programs} program${programs === 1 ? '' : 's'} followed; newest first` :
           'You follow nothing yet: Follow a program or a series on its page', 'pp-muted'), 'my-feed-summary'),
         ...(entries.length ? [divH([feedSelect('my-feed-kind-input', 'Show', kindOptions(entries), kind, (v) => {
@@ -119,9 +111,10 @@ export async function openMyFeedDialog(opts: MyFeedOptions): Promise<DG.Dialog> 
           onTrace: (e) => opts.trace(e.ref!.kind, e.ref!.id),
           onProgram: (e) => {
             dlg.close();
-            void Promise.resolve(opts.openProgram(e.portfolio ?? '', e.programId)).catch((x) => grok.shell.error(x?.message ?? String(x)));
+            void Promise.resolve(opts.openProgram(e.portfolio ?? '', e.programId))
+              .catch((x) => grok.shell.error(x?.message ?? String(x)));
           }}),
-      );
+      ));
     };
     draw();
   } catch (e: any) {
