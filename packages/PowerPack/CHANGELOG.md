@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Formula Lines: Fixed the dialog opened from a viewer failing when the platform passes an unset line index as null (the Dart 3 client)
 * GROK-20076: Home: Fixed the Spotlight widget's remove icon covering the top of the tab scrollbar, and the scrollbars showing when nothing scrolls
 * Home: The Workspace tab picks up favorites added or removed anywhere in the platform without a page reload
 * Home: Fixed the Spotlight tab of the Spotlight widget staying blank when every entity of the account's recent activity had been deleted: it shows the Interactive Tutorials and Demo Apps a new user gets
