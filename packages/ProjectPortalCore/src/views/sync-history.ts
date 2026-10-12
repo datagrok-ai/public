@@ -2,7 +2,6 @@
  * first. Opened from the board's Sync history button; `syncHistory(portfolio)` returns the runs as a
  * table. */
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
 import {PortfolioRow, SyncLogRow} from '../generated/db';
 import {dueState, syncRunsOf} from '../sync-runs';
@@ -11,6 +10,7 @@ import {autoAdvance, autoAdvanceOf, summarizeAutoAdvanceResult} from '../auto-ad
 import {describeAutoAdvanceConfig} from '../model/auto-advance';
 import {stagesOf} from '../portal';
 import {userNames} from '../users';
+import {openDialog} from './u2-controls';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -100,7 +100,6 @@ export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Pro
 /** Opens the history of [portfolio] in a dialog. */
 export async function openSyncHistory(portfolio: PortfolioRow): Promise<void> {
   const panel = await syncHistoryPanel(portfolio);
-  const dlg = ui.dialog({title: `${portfolio.name}: sync history`}).add(panel);
-  dlg.root.dataset.u2Name = 'sync-history-dialog';
-  dlg.show({width: 560});
+  openDialog({title: `${portfolio.name}: sync history`, name: 'sync-history-dialog', width: 560},
+    () => ({content: panel}));
 }

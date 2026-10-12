@@ -2,13 +2,13 @@
  * of programs that ended), **Preview park** and **Park** for approvers, and the parked folders with
  * **Unpark** each. Opened from the board's Workspace button. */
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
 import {PortfolioRow} from '../generated/db';
 import {isApprover} from '../portal';
 import {workspaceOrphans} from '../workspace';
 import {parkedFoldersOf, parkOrphans, summarizeParkResult, unparkFolder} from '../parking';
 import {installStyles} from './styles';
+import {openDialog, PortalDialog} from './u2-controls';
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -92,10 +92,8 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
 }
 
 /** Opens the workspace panel of [portfolio] in a dialog. */
-export async function openWorkspaceDialog(portfolio: PortfolioRow): Promise<DG.Dialog> {
+export async function openWorkspaceDialog(portfolio: PortfolioRow): Promise<PortalDialog> {
   const panel = await workspacePanel(portfolio);
-  const dlg = ui.dialog({title: `${portfolio.name}: workspace`}).add(panel);
-  dlg.root.dataset.u2Name = 'workspace-dialog';
-  dlg.show({width: 620});
-  return dlg;
+  return openDialog({title: `${portfolio.name}: workspace`, name: 'workspace-dialog', width: 620},
+    () => ({content: panel}));
 }

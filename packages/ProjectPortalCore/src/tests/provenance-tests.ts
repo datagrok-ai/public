@@ -150,7 +150,7 @@ category('Portal: provenance', () => {
   after(async () => {
     for (const u of undo.splice(0).reverse())
       await u().catch(() => {});
-    document.querySelectorAll('[data-u2-name="provenance-dialog"]').forEach((d) => d.closest('.d4-dialog')?.remove());
+    document.querySelectorAll('[data-u2-name="provenance-dialog"]').forEach((d) => d.closest('.u2-dialog')?.remove());
   });
 
   test('a document rests on the run selected for its criterion and its model; the run wrote its tables', async () => {

@@ -3,7 +3,6 @@
  * program data, a model card, a table); Trace starts the walk again from that node. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {divH, divV, span} from '@datagrok-libraries/u2';
 import {portalDb} from '../generated/db';
 import {provenanceOf} from '../provenance';
@@ -15,11 +14,7 @@ import {openDocumentFile} from './document-dialog';
 import {openProgramTable} from '../program-data';
 import {showModelCard} from './model-card';
 import {installStyles} from './styles';
-
-const named = <T extends HTMLElement>(el: T, name: string): T => {
-  el.dataset.u2Name = name;
-  return el;
-};
+import {named, openDialog, PortalDialog} from './u2-controls';
 
 export interface ProvenanceDialogOptions {
   /** Opens a program on the program page; without it a program node only traces. */
@@ -112,13 +107,11 @@ function tree(p: Provenance & {records: ProvenanceRecords}, direction: 'up' | 'd
 }
 
 /** Opens the provenance of [kind] [id] in a dialog. */
-export async function openProvenanceDialog(kind: string, id: string, opts: ProvenanceDialogOptions = {}): Promise<DG.Dialog> {
+export async function openProvenanceDialog(kind: string, id: string,
+  opts: ProvenanceDialogOptions = {}): Promise<PortalDialog> {
   installStyles();
-  const dlg = ui.dialog({title: 'Provenance'});
-  dlg.root.dataset.u2Name = 'provenance-dialog';
   const body = named(divV([span('Reading the portal\'s records…', 'pp-muted')], 'pp-provenance'), 'provenance-content');
-  dlg.add(body);
-  dlg.show({width: 620});
+  const dlg = openDialog({title: 'Provenance', name: 'provenance-dialog', width: 620}, () => ({content: body}));
   const draw = async (k: string, i: string) => {
     try {
       const p = await provenanceOf(k, i, opts.depth ?? 4);

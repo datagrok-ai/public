@@ -3,18 +3,13 @@
  * with editing off. Whether the table file still holds what was frozen is checked on open. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
-import {divV, span} from '@datagrok-libraries/u2';
+import {button, divV, span} from '@datagrok-libraries/u2';
 import {portalDb, ProgramSnapshotRow} from '../generated/db';
 import {frozenCriteria, frozenRuns, snapshotTable, summaryOf} from '../snapshots';
 import {describeSnapshot, snapshotDate} from '../model/snapshots';
 import {installStyles} from './styles';
 import {userNames} from '../users';
-
-const named = <T extends HTMLElement>(el: T, name: string): T => {
-  el.dataset.u2Name = name;
-  return el;
-};
+import {named, openDialog, PortalDialog, table as u2Table} from './u2-controls';
 
 const CHECK_TEXT = {
   'intact': 'the file holds what was frozen',
@@ -23,19 +18,8 @@ const CHECK_TEXT = {
   'not kept': 'not kept',
 } as const;
 
-function table(head: string[], rows: string[][], name: string): HTMLElement {
-  const t = named(document.createElement('table'), name);
-  t.className = 'pp-card-table';
-  const h = t.insertRow();
-  for (const x of head)
-    h.append(Object.assign(document.createElement('th'), {textContent: x}));
-  for (const r of rows) {
-    const tr = t.insertRow();
-    for (const x of r)
-      tr.insertCell().textContent = x;
-  }
-  return t;
-}
+const table = (head: string[], rows: string[][], name: string): HTMLElement =>
+  u2Table(name, head.map((header, i) => ({header, render: (r: string[]) => r[i]})), rows).root;
 
 /** Opens the frozen table as a table view the user cannot edit. */
 export async function openSnapshotTable(s: ProgramSnapshotRow): Promise<DG.TableView | null> {
@@ -51,7 +35,7 @@ export async function openSnapshotTable(s: ProgramSnapshotRow): Promise<DG.Table
   return tv;
 }
 
-export async function openSnapshotDialog(snapshotId: string): Promise<DG.Dialog> {
+export async function openSnapshotDialog(snapshotId: string): Promise<PortalDialog> {
   installStyles();
   const s = await portalDb.programSnapshots.get(snapshotId);
   const program = await portalDb.programs.get(s.program_id).catch(() => null);
@@ -60,13 +44,12 @@ export async function openSnapshotDialog(snapshotId: string): Promise<DG.Dialog>
   const {check} = s.table_file ? await snapshotTable(s).catch(() => ({check: 'missing' as const})) : {check: 'not kept' as const};
   const criteria = frozenCriteria(s);
   const runs = frozenRuns(s);
-  const open = named(ui.button('Open table', () => void openSnapshotTable(s).catch((e) => grok.shell.error(e?.message ?? String(e)))),
+  const open = named(button('Open table', () => void openSnapshotTable(s)
+    .catch((e) => grok.shell.error(e?.message ?? String(e)))),
     'snapshot-open-table');
   open.title = 'The program dataset as frozen, in a table view you cannot edit';
   (open as HTMLButtonElement).disabled = !s.table_file || check === 'missing';
-  const dlg = ui.dialog({title: `Snapshot of ${program?.code ?? 'a program'} · ${snapshotDate(summary.takenOn)}`});
-  dlg.root.dataset.u2Name = 'snapshot-dialog';
-  dlg.add(named(divV([
+  const content = named(divV([
     named(span(describeSnapshot(summary)), 'snapshot-summary'),
     span(`${s.label}${by ? ` · taken by ${by}` : ''}`, 'pp-muted'),
     named(span(`Stage: ${s.stage_name ?? 'unstaged'}${s.stage_code ? ` (${s.stage_code})` : ''} · status ${String(s.status ?? '').replace(/_/g, ' ')}`),
@@ -85,7 +68,7 @@ export async function openSnapshotDialog(snapshotId: string): Promise<DG.Dialog>
       `${s.table_rows} rows${s.table_file ? ` · ${s.table_file}` : ''} · ${CHECK_TEXT[check]}`, check === 'changed' ? 'pp-reason' : ''),
     'snapshot-table'),
     open,
-  ], 'pp-units'), 'snapshot-content'));
-  dlg.show({width: 600});
-  return dlg;
+  ], 'pp-units'), 'snapshot-content');
+  return openDialog({title: `Snapshot of ${program?.code ?? 'a program'} · ${snapshotDate(summary.takenOn)}`,
+    name: 'snapshot-dialog', width: 600}, () => ({content}));
 }

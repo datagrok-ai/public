@@ -1,6 +1,6 @@
 /** The portal's three icons, one place for all of them: the app, a portfolio and a program. Single-colour
  * Font Awesome glyphs, as the platform draws its own, so Browse, the Workspace on Home and the app agree. */
-import * as ui from 'datagrok-api/ui';
+import {icon} from '@datagrok-libraries/u2';
 
 export const PORTAL_ICONS = {
   app: 'project-diagram',
@@ -12,7 +12,5 @@ export type PortalIconKind = keyof typeof PORTAL_ICONS;
 
 /** The icon of [kind], muted and not clickable; [tooltip] says what it stands for. */
 export function portalIcon(kind: PortalIconKind, tooltip: string | null = null): HTMLElement {
-  const i = ui.iconFA(PORTAL_ICONS[kind], null, tooltip);
-  i.classList.add('pp-icon', `pp-icon-${kind}`);
-  return i;
+  return icon(PORTAL_ICONS[kind], {tooltip: tooltip ?? undefined, cls: `pp-icon pp-icon-${kind}`});
 }

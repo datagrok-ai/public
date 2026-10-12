@@ -4,7 +4,6 @@
  * and the platform's info panel. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import * as ui from 'datagrok-api/ui';
 import {badge, divH, divV, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {CardParam, cardPortfolios, catalogueCodesOf} from '../model/catalogue';
@@ -12,6 +11,7 @@ import {ModelCardView, modelCardOf} from '../catalogue';
 import {catalogueCodes} from '../save-run';
 import {installStyles} from './styles';
 import {inMyCatalogues, myPortfolioCodes} from '../secured-rows';
+import {openDialog, table} from './u2-controls';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -29,23 +29,11 @@ const range = (p: CardParam): string =>
   p.min === undefined && p.max === undefined ? '' : `${p.min ?? '…'} – ${p.max ?? '…'}`;
 
 function paramTable(params: CardParam[], kind: 'input' | 'output'): HTMLElement {
-  const table = document.createElement('table');
-  table.className = 'pp-card-table';
-  const head = table.createTHead().insertRow();
-  for (const h of kind === 'input' ? ['Input', 'Units', 'Valid for'] : ['Output', 'Units'])
-    head.append(Object.assign(document.createElement('th'), {textContent: h}));
-  const body = table.createTBody();
-  for (const p of params) {
-    const row = body.insertRow();
-    row.dataset.u2Name = `model-card-${kind}-${slug(p.name)}`;
-    row.insertCell().textContent = p.caption ?? p.name;
-    row.insertCell().textContent = p.units ?? '';
-    if (kind === 'input')
-      row.insertCell().textContent = range(p);
-    if (p.description)
-      row.title = p.description;
-  }
-  return named(table, `model-card-${kind}s`);
+  return table(`model-card-${kind}s`, [
+    {header: kind === 'input' ? 'Input' : 'Output', render: (p: CardParam) => p.caption ?? p.name},
+    {header: 'Units', render: (p: CardParam) => p.units ?? ''},
+    ...(kind === 'input' ? [{header: 'Valid for', render: range}] : []),
+  ], params, {name: (p) => `model-card-${kind}-${slug(p.name)}`, title: (p) => p.description ?? null}).root;
 }
 
 /** A labelled section, left out when there is nothing to say. */
@@ -181,9 +169,7 @@ export const MODEL_CARD_PANE = 'Model card';
 export async function showModelCard(code: string): Promise<void> {
   try {
     const w = await modelCardWidget(code);
-    const dlg = ui.dialog({title: 'Model card'}).add(w.root);
-    dlg.root.dataset.u2Name = 'model-card-dialog';
-    dlg.show({width: 520});
+    openDialog({title: 'Model card', name: 'model-card-dialog', width: 520}, () => ({content: w.root}));
   } catch (e: any) {
     grok.shell.error(e?.message ?? String(e));
   }
