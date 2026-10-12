@@ -17,16 +17,17 @@ import {saveModel} from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
 import {defaultFeatures} from '../training/default-features';
 import {checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining, recutResult, retrainsLive,
-  SelectionCheck, TrainingResult, TrainingSelection, trainModel} from '../training/train-model';
+  SelectionCheck, TrainingRequest, TrainingResult, TrainingSelection, trainModel, trainPredictionOf}
+  from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
 import {CollapsibleGroup} from './collapsible-group';
 import {ForgeApp} from './forge-app';
 import {MissingValuesInputs} from './missing-values-inputs';
-import {MetricsTable} from './model-panes';
 import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
+import {ResultsPane} from './results-pane';
 import {saveModelDialog, StorageChoice} from './save-model-dialog';
 
 const PREFERRED_ENGINE = 'XGBoost';
@@ -60,6 +61,8 @@ interface TrainForm {
 
 export interface Training {
   result: TrainingResult;
+  /** What the method got: the prepared columns, the selection's target and the rows kept. */
+  request: TrainingRequest;
   runId: string;
   engine: Engine;
   table: DG.DataFrame;
@@ -74,15 +77,15 @@ export class TrainView extends DG.ViewBase {
   /** **Train** under the inputs: shown only for a method that does not retrain on every change. */
   readonly trainButton: HTMLButtonElement;
   readonly saveButton: HTMLButtonElement;
+  private readonly resultsStatus = ui.div([], 'forge-results-status');
+  /** The results: the **Performance** panel with the training loader in its header, the insights and the viewers. */
+  readonly resultsPane = new ResultsPane(this.resultsStatus);
   lastTraining: Training | undefined;
   private readonly trainRow: HTMLDivElement;
   private readonly trainGate: ButtonGate;
   /** The complete methods discovered when the view opened, in discovery order. */
   private readonly engines: Engine[];
   private readonly formPane: HTMLDivElement;
-  private readonly resultsStatus = ui.div([], 'forge-results-status');
-  private readonly resultsBody = ui.div([]);
-  private metricsTable: MetricsTable | undefined;
   private readonly changes = new rxjs.Subject<void>();
   private readonly queue = new TrainingQueue();
   /** Hyperparameter values per method name, kept for the session of the view (a Table change keeps them). */
@@ -131,8 +134,7 @@ export class TrainView extends DG.ViewBase {
         this.recut();
     }));
     this.form = this.createForm(table);
-    const results = ui.panel([ui.divH([ui.h2('Results'), this.resultsStatus], 'forge-results-header'),
-      this.resultsBody], 'forge-train-results');
+    const results = ui.panel([this.resultsPane.root], 'forge-train-results');
     const left = ui.box(this.formPane);
     left.style.width = `${FORM_WIDTH}px`;
     this.root.appendChild(ui.splitH([left, ui.box(results)], {}, true));
@@ -146,6 +148,7 @@ export class TrainView extends DG.ViewBase {
     this.queue.supersede();
     this.unsubscribeForm();
     this.unsubscribeMethod();
+    this.resultsPane.clear();
     super.detach();
   }
 
@@ -302,6 +305,7 @@ export class TrainView extends DG.ViewBase {
     formRoot.append(...groups.map((g) => g.root), this.trainRow);
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
+    this.resultsPane.clear();
     this.showHint(RESULTS_HINT);
     const form: TrainForm = {table, tableInput, target: targetInput, features: featuresInput, preparation,
       method: methodInput, hyperparameters: new Map(), methodBody, groups};
@@ -415,6 +419,7 @@ export class TrainView extends DG.ViewBase {
       }
       // The prepared columns (one-hot copies of the whole table) are not kept beyond this check.
       this.check = {...check, prepared: undefined};
+      this.resultsPane.setDataInsights(check.insights);
       this.showMethods(check);
       const settings = this.form.preparation.missingValues.visibleInputs;
       const hyperparameters = this.form.hyperparameters.values();
@@ -435,6 +440,7 @@ export class TrainView extends DG.ViewBase {
       if (checkNumber !== this.checkNumber)
         return;
       this.check = failedCheck({method: [errorMessage(e)]});
+      this.resultsPane.setDataInsights([]);
       this.showTrainRow();
       this.updateControls();
       reportError(e, true);
@@ -520,13 +526,14 @@ export class TrainView extends DG.ViewBase {
     this.showTraining(isLive);
     // The task-bar progress, created when the training starts: a request superseded while waiting shows none; the run's
     // record, built once the data is prepared, before the shared frame is given back.
-    const run: {progress?: DG.TaskBarProgressIndicator; record?: TrainingRunRecord; fingerprint?: DatasetFingerprint;
-      startedOn?: number} = {};
+    const run: {progress?: DG.TaskBarProgressIndicator; request?: TrainingRequest; record?: TrainingRunRecord;
+      fingerprint?: DatasetFingerprint; startedOn?: number} = {};
     try {
       this.updateControls();
       const queued = await this.queue.run(async (loop) => {
         run.startedOn = Date.now();
         const request = await prepareTraining(selection);
+        run.request = request;
         run.fingerprint = datasetFingerprint(request.features, request.target);
         run.record = trainingRunOf({request, datasetName, fingerprint: run.fingerprint, status: 'completed',
           startedOn: new Date(run.startedOn).toISOString(), durationMs: 0});
@@ -544,9 +551,9 @@ export class TrainView extends DG.ViewBase {
       if (queued.outcome === 'completed') {
         const {result} = queued;
         const runId = await record('completed', result.metrics);
-        if (isCurrent() && run.fingerprint !== undefined) {
-          this.lastTraining = {result, runId, engine, table, columns: [...features, target], datasetName,
-            fingerprint: run.fingerprint, isSaved: false};
+        if (isCurrent() && run.fingerprint !== undefined && run.request !== undefined) {
+          this.lastTraining = {result, request: run.request, runId, engine, table, columns: [...features, target],
+            datasetName, fingerprint: run.fingerprint, isSaved: false};
           this.isTrained = true;
           // The cutoff may have moved while the model trained.
           this.recut();
@@ -581,16 +588,15 @@ export class TrainView extends DG.ViewBase {
   }
 
   private showHint(text: string): void {
-    ui.empty(this.resultsBody);
-    this.resultsBody.append(ui.divText(text));
+    this.resultsPane.showHint(text);
   }
 
-  /** The loader next to the Results header; the previous results stay for a live training. */
+  /** The loader next to the Performance header; the previous results stay for a live training. */
   private showTraining(isLive: boolean): void {
     ui.empty(this.resultsStatus);
     this.resultsStatus.append(ui.loader());
     if (!isLive)
-      ui.empty(this.resultsBody);
+      this.resultsPane.showHint('');
   }
 
   /** Shows the last training cut at the current **Positive class cutoff**, without retraining; Save writes it so. */
@@ -608,16 +614,15 @@ export class TrainView extends DG.ViewBase {
     this.showResults(training);
   }
 
-  /** Shows the metrics in the grid Results already holds when the result has the same metric rows, so the grid keeps
-   * its column widths and does not flicker; builds a new one otherwise (after a hint, or for other rows). */
-  private showResults({result}: Training): void {
+  /** Shows [training] in **Results**: its metrics (in the grid it already holds while the metric rows stay), the
+   * insights and the viewers over the rows it was trained on. */
+  private showResults({result, request, engine, table}: Training): void {
     const summary = {metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS, seed: result.seed,
       skippedRows: result.options.missingValues?.skippedRows ?? 0};
-    if (this.metricsTable?.root.parentElement === this.resultsBody && this.metricsTable.update(summary))
-      return;
-    this.metricsTable = new MetricsTable(summary);
-    ui.empty(this.resultsBody);
-    this.resultsBody.append(this.metricsTable.root);
+    this.resultsPane.show({engine, table, columns: request.prepared.columns, target: request.target,
+      prediction: trainPredictionOf(result), score: result.scores?.train, keptRows: request.keptRows,
+      positiveClass: result.metrics.positiveClass, cutoff: result.options.binaryClassificationThreshold,
+      blob: result.blob, summary}).catch((e) => reportError(e));
   }
 
   private static valuesOf(inputs: ReadonlyMap<string, DG.InputBase>): Hyperparameters {

@@ -9,13 +9,14 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {defaultFeatures} from '../training/default-features';
 import {kFold} from '../training/k-fold';
-import {aucOf} from '../metrics/metrics';
+import {aucOf, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
+import {dataInsights, metricInsights, resultInsights} from '../training/insights';
 import {checkSelection, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
-  TrainingSelection, trainModel} from '../training/train-model';
+  TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
 import {columnNamed, columnsOf, engineByName, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE,
   inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, ONE_HOT_STEPS, openIris,
@@ -588,7 +589,7 @@ category('Training', () => {
       positiveClass: 'a', negativeClass: 'b', binaryClassificationThreshold: 0.5, targetType: 'string'};
     const result: TrainingResult = {task: 'regression', target: {name: 'y', type: 'string', categories: ['a', 'b']},
       features: {columns: []}, options, splitting: {scheme: 'kfold', folds: 5}, blob: new Uint8Array(),
-      metrics: {train: {}, validation: {}}, seed: 1, hyperparameters: {}, rowCount: 4,
+      prediction: scores, metrics: {train: {}, validation: {}}, seed: 1, hyperparameters: {}, rowCount: 4,
       scores: {actual, positiveClass: 'a', train: scores, validation: scores,
         auc: {train: aucOf(actual, scores, 'a'), validation: aucOf(actual, scores, 'a')}}};
     const allPositive = recutResult(result, 0);
@@ -640,6 +641,119 @@ category('Training', () => {
         'XGBoost returned 0/1 scores');
       expect(scores?.actual === species, true, 'The scores are measured against another target');
     }, {timeout: TIMEOUT});
+
+  test('dataInsights: unbalanced classes, correlated columns, almost unique values', async () => {
+    const rows = 10;
+    const float = (name: string, value: (i: number) => number) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, valuesOf(rows, value));
+    const text = (name: string, value: (i: number) => string) =>
+      DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, Array.from({length: rows}, (_, i) => value(i)));
+    const x = float('x', (i) => i);
+    const z = float('z', (i) => (i * 7) % 5);
+    const balanced = text('t', (i) => i % 2 === 0 ? 'a' : 'b');
+
+    const unbalanced = dataInsights([text('f', (i) => i < 1 ? 'c' : 'd')], text('t', (i) => i < 8 ? 'a' : 'b'));
+    expect(JSON.stringify(unbalanced), JSON.stringify([
+      {text: 'The classes are unbalanced.', detail: 'a: 80.0%\nb: 20.0%', panel: 'classBalance'},
+      {text: 'The classes of f are unbalanced.', detail: 'c: 10.0%\nd: 90.0%'}]));
+    // 1 : 1 : 4 is 16.67% : 16.67% : 66.67%; the two largest remainders round up so the shares sum to 100%.
+    const sixths = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 't', ['a', 'b', 'c', 'c', 'c', 'c']);
+    const shares = dataInsights([], sixths)[0].detail ?? '';
+    expect(shares, 'a: 16.7%\nb: 16.7%\nc: 66.6%');
+    const percents = shares.split('\n').map((line) => Number(line.slice(line.indexOf(': ') + 2, -1)));
+    expectFloat(percents.reduce((sum, p) => sum + p, 0), 100, 1e-9);
+    const wine = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'type',
+      Array.from({length: 6497}, (_, i) => i < 1599 ? 'red' : 'white'));
+    expect(dataInsights([], wine)[0].detail, 'red: 24.6%\nwhite: 75.4%');
+    // One short line for every correlated pair, the pairs in its list.
+    const correlated = dataInsights([x, float('y', (i) => 2 * i), float('w', (i) => -i), float('v', (i) => 3 * i)],
+      balanced);
+    expectArray(correlated.map((i) => i.text), ['Features are highly correlated.']);
+    expectArray(correlated[0].items ?? [], ['x and y: 1.00', 'x and v: 1.00', 'y and v: 1.00']);
+    expect(correlated[0].detail === undefined, true, 'The correlation has a detail line');
+    expect(correlated[0].panel, 'correlation');
+    expect(dataInsights([x], float('y', (i) => 2 * i))[0].panel === undefined, true, 'A pair with the target points ' +
+      'to Features correlation');
+    const unique = dataInsights([z], text('t', (i) => `v${Math.min(i, 8)}`));
+    const uniqueInsight = unique.find((i) =>
+      i.text === 'Almost every value of t is different; it will not help the model.');
+    expect(uniqueInsight?.detail, '90% of its values are unique (above 80%).');
+    expectArray(dataInsights([x, z], balanced), []);
+  });
+
+  test('checkSelection gives the data insights of iris', async () => {
+    const iris = await openIris();
+    const check = await checkSelection(selectionOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')),
+      EngineRegistry.discover());
+    const correlated = check.insights.find((i) => i.text === 'Features are highly correlated.');
+    expect(correlated?.items?.includes('Petal.Length and Petal.Width: 0.96'), true, JSON.stringify(check.insights));
+    const failed = await checkSelection(selectionOf([], iris.getCol('Species')), EngineRegistry.discover());
+    expectArray(failed.insights, []);
+  }, {timeout: TIMEOUT});
+
+  test('resultInsights: a classifier\'s accuracy and class balance, a regressor\'s residuals and statistics',
+    async () => {
+      const rows = 20;
+      const labels = (value: (i: number) => string) =>
+        DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'c', Array.from({length: rows}, (_, i) => value(i)));
+      const classes = labels((i) => i % 2 === 0 ? 'a' : 'b');
+      const texts = (values: MetricValues, positiveClass?: string) =>
+        resultInsights({values, target: classes, prediction: classes, positiveClass}).map((i) => i.text);
+      expectArray(texts({accuracy: 0.1}), ['Only 10% of the rows are predicted correctly.']);
+      expectArray(texts({sensitivity: 0.9, specificity: 0.3}, 'a'), ['The model finds a much better than b.']);
+      expectArray(texts({sensitivity: 0.3, specificity: 0.9}, 'a'), ['The model finds b much better than a.']);
+      expectArray(texts({accuracy: 1, sensitivity: 1, specificity: 1}, 'a'), []);
+
+      const target = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', valuesOf(rows, (i) => i));
+      const predicted = (value: (i: number) => number) =>
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'p', valuesOf(rows, value));
+      const near = (i: number) => i + (i % 2 === 0 ? 0.1 : -0.1);
+      const insightsOf = (prediction: DG.Column) => resultInsights({values: {}, target, prediction});
+      const regression = (prediction: DG.Column) => insightsOf(prediction).map((i) => i.text);
+      expect(regression(predicted((i) => i === 5 ? 100 : near(i))).includes(
+        'Large errors are mostly on one side: the model over-predicts.'), true);
+      expect(regression(predicted((i) => i === 5 ? -100 : near(i))).includes(
+        'Large errors are mostly on one side: the model under-predicts.'), true);
+      const constant = insightsOf(predicted(() => 9.5));
+      const deviations = constant.filter((i) => i.panel === 'statistics');
+      expectArray(deviations.map((i) => i.text),
+        ['The predictions\' statistics deviate significantly from the actual ones.']);
+      const items = deviations[0].items ?? [];
+      expect(items.length > 1 && items.some((item) => item.startsWith('variance: predicted 0.000, actual ')), true,
+        items.join(' | '));
+      expectArray(regression(target), []);
+    });
+
+  test('metricInsights: a value below its threshold as is, the overfitting metrics in one insight', async () => {
+    const insights = metricInsights({train: {r2: 0.2, mse: 1, mae: 1}, validation: {r2: 0.9, mse: 4, mae: 1.05}});
+    expectArray(insights.map((i) => i.text), ['R2 is below 0.3.', 'The model may be overfitting.']);
+    expect(insights[0].detail, 'Train 0.200, validation 0.900.');
+    expectArray(insights[1].items ?? [], ['MSE: train 1.000, validation 4.000', 'R2: train 0.200, validation 0.900']);
+    expect(insights.every((i) => i.panel === 'metrics'), true, JSON.stringify(insights));
+    expectArray(metricInsights({train: {accuracy: 0.97}, validation: {accuracy: 0.95}}), []);
+  });
+
+  test('trainModel keeps the prediction of the training rows; prepareTraining the kept rows', async () => {
+    const iris = await openIris();
+    const result = await trainModel(await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species')));
+    expect(result.prediction.length, 150);
+    const labels = trainPredictionOf(result);
+    expect(labels === result.prediction && labels.type === DG.COLUMN_TYPE.STRING, true, labels.type);
+
+    const twoSpecies = await twoSpeciesIris();
+    const probability = await trainModel(await requestOf(columnsOf(twoSpecies, MEASUREMENTS),
+      twoSpecies.getCol('Species'), PREDICT_PROBABILITY));
+    expect(probability.prediction === probability.scores?.train, true, 'The prediction is not the train scores');
+    expect(trainPredictionOf(probability).toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
+      trainPredictionOf(probability).categories.join());
+
+    expect((await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'))).keptRows === null, true,
+      'Rows were skipped without a missing value');
+    iris.getCol('Sepal.Width').set(3, null);
+    const skipped = await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'));
+    expect(skipped.keptRows?.trueCount, 149);
+    expect(skipped.keptRows?.get(3), false);
+  }, {timeout: TIMEOUT});
 
   for (const [name, targets] of ENGINE_TARGETS) {
     test(`${name} trains and applies with missing values under Skip rows and Impute`, async () => {

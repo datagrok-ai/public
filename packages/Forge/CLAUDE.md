@@ -1,16 +1,15 @@
 # Forge
 
-Predictive modeling (train, apply, model catalog) as a package; it replaces the built-in `ML | Models` tool at the
-switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITECTURE.md).
+Predictive modeling (train, apply, catalog), replacing `ML | Models` at the switchover. Design: [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Entry points
 
 - `src/package.ts` — annotated functions only, each delegating: `forgeApp`, `forgeModels`, `forgeTrain`, `forgeApply`
   (`ML | Forge | ...`), the API `applyModel`, `_initForge` (autostart) and the column panel **Predicted by**.
-- `src/ui/`: the screens `train-view.ts`, `apply-model-dialog.ts`, `forge-app.ts` (the catalog); the model wherever it
-  shows: `model-handler.ts`, `model-panes.ts`, `model-actions.ts`, `model-comparison.ts`; `data-grid.ts` for tables.
-- `src/training/` (`training-queue.ts`: one training at a time), `src/apply/`, `src/preparation/` (`pipeline.ts`: skip
-  unique, one-hot, predict probability and their replay; `Eda:knnImpute`), `src/catalog/` (one function per file).
+- `src/ui/`: `train-view.ts` and `evaluation-view.ts` (both on `results-pane.ts`, `results-viewers.ts`, `results-layout.ts`,
+  `metrics-table.ts`), `apply-model-dialog.ts`, `forge-app.ts` (catalog), `model-{handler,panes,actions,comparison}.ts`.
+- `src/training/` (`training-queue.ts`: one at a time; `insights.ts`; `evaluation.ts`: records nothing), `src/apply/`,
+  `src/preparation/` (`pipeline.ts`: steps and their replay; `Eda:knnImpute`), `src/catalog/` (one function per file).
 - `databases/forge/schema.json` — the EMS schema; `src/generated/db.ts` is its generated typed client `forgeDb`.
 
 ## Glossary
@@ -31,6 +30,7 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
   log or call `grok.shell`; expected failures throw `ForgeError`. Catches: `applyAndRecord`, `TrainingQueue.run`.
 - Pass column lists, never frames: the engine calls, the imputer and the copy upload run on a `sharedFrame` through
   `onFrame`, which gives it back with `releaseFrame` (a frame gets its columns' events). Never write into a user's column.
+  `ResultsPane` keeps frames and viewers until `clear()`, a hint or other data; `ui.empty` kills widgets (`close` needs a view).
 - A masked `clone` of a text column keeps every source category (the empty one too): copy rows with `columnRowCopy`,
   never compact a user's column; the k-fold copies keep the full list on purpose.
 - The method gets `TrainingRequest.prepared` (Predict probability: a float 0/1 target); `features`/`target` are the
@@ -38,7 +38,7 @@ switchover. Design, data shapes and what works so far: [ARCHITECTURE.md](ARCHITE
 - Awaited engine calls without I/O resume as microtasks: a loop of them must `yieldToEventLoop`, or a cancel click
   and the progress repaint wait for the end (batches: every 50 ms; training: before each fit).
 - `ignore-missing` / `impute-missing` are recorded in `options`, never replayed. Prediction columns carry
-  `PREDICTION_TAG` (`forge.model`). `ApplicationInsert` needs explicit `source` and `status`.
+  `PREDICTION_TAG` (`forge.model`); `predictRows` adds none. `ApplicationInsert` needs explicit `source`, `status`.
 - Header defaults (`= 20`) are in `Property.initialValue`, strings in quotes (`'RBF'`): use `defaultValuesOf`.
 - `deleteModel` deletes only Forge's own: a blob's `forge/model/<uuid>/` folder, a table named `<x> (training data)`.
 - Validators read the form's problems, not their argument, and run only on non-empty values. A dialog validates every

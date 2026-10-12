@@ -5,13 +5,14 @@ import {Engine, Hyperparameters} from '../engines/engine';
 import {apply, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
-import {aucOf, classificationMetrics, METRIC_IDS, MetricValues, metricsOf} from '../metrics/metrics';
+import {aucOf, METRIC_IDS, MetricValues, metricsOf, probabilityValues, Split, taskOf} from '../metrics/metrics';
 import {missingColumnsOf, MissingValuesSettings, missingValuesProblems, prepareMissingValues}
   from '../preparation/missing-values';
 import {PreparationSteps, PreparedFeatures, prepareFeatures, replayPostprocessing} from '../preparation/pipeline';
 import {BINARY_CLASSIFICATION, IGNORE_MISSING, IMPUTE_MISSING, isRecord, MissingValuesRecord, PreparationOptions}
   from '../preparation/preparation-options';
 import {bigIntProblem} from './default-features';
+import {dataInsights, Insight} from './insights';
 import {kFold} from './k-fold';
 
 export interface ColumnSchema { name: string; type: string; semType?: string }
@@ -40,6 +41,8 @@ export interface TrainingRequest {
   engine: Engine;
   features: DG.Column[];
   target: DG.Column;
+  /** The selection's rows the request holds, or null when no row was skipped. */
+  keptRows: DG.BitSet | null;
   prepared: PreparedFeatures;
   hyperparameters: Hyperparameters;
   seed: number;
@@ -67,6 +70,9 @@ export interface TrainingSetup {
 
 export interface TrainingResult extends TrainingSetup {
   blob: Uint8Array;
+  /** The final model's prediction of the training rows, as the method returned it (with Predict probability, the
+   * scores: `scores.train`); {@link trainPredictionOf} gives the labels. */
+  prediction: DG.Column;
   metrics: MetricsRecord;
   seed: number;
   hyperparameters: Hyperparameters;
@@ -87,6 +93,9 @@ export interface SelectionCheck {
   failed: EngineFailure[];
   /** The columns and target the methods were asked about; none while a target or features rule fails. */
   prepared?: PreparedFeatures;
+  /** The data insights of the prepared columns and the selection's target; none while a target or features rule
+   * fails. */
+  insights: Insight[];
 }
 
 const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
@@ -97,12 +106,11 @@ const NO_FEATURE_LEFT = 'Skip unique categories leaves no feature. Check more fe
  * describes the selection's target. */
 export function trainingSetupOf(request: TrainingRequest): TrainingSetup {
   const {target, features, folds, prepared} = request;
-  const task: ModelTask = prepared.target.matches(NUMERICAL) ? 'regression' : 'classification';
   const targetSchema: TargetSchema = columnSchemaOf(target);
   if (!target.matches(NUMERICAL))
     targetSchema.categories = target.categories;
   return {
-    task,
+    task: taskOf(prepared.target),
     target: targetSchema,
     features: {columns: features.map(columnSchemaOf)},
     options: prepared.options,
@@ -126,12 +134,14 @@ export async function checkSelection(selection: TrainingSelection, engines: Engi
   if (!isListed)
     problems.method.push(applicable.length === 0 ? NO_METHOD : cannotLearn(engine));
   return {problems, engines: applicable, best: selectBestEngine(applicable, columns, target),
-    isInteractive: isListed && await retrainsLive(engine, columns, target), failed, prepared};
+    isInteractive: isListed && await retrainsLive(engine, columns, target), failed, prepared,
+    insights: dataInsights(columns, selection.target)};
 }
 
 /** A check that lists no method: the selection cannot be trained for [problems]. */
 export function failedCheck(problems: Partial<TrainingProblems>): SelectionCheck {
-  return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: []};
+  return {problems: {...noProblems(), ...problems}, engines: [], best: undefined, isInteractive: false, failed: [],
+    insights: []};
 }
 
 function noProblems(): TrainingProblems {
@@ -217,7 +227,7 @@ export async function prepareTraining(selection: TrainingSelection): Promise<Tra
     {mode: 'impute', neighbors: impute.neighbors, distance: impute.distance, skippedRows};
   const prepared = prepareFeatures(features, target, selection.steps,
     {preprocessingInfo, postprocessingInfo: [], missingValues: record});
-  return {engine, features, target, prepared, hyperparameters, seed, folds};
+  return {engine, features, target, keptRows: handled.keptRows, prepared, hyperparameters, seed, folds};
 }
 
 export async function trainModel(request: TrainingRequest, progress?: LoopProgress): Promise<TrainingResult> {
@@ -248,7 +258,7 @@ export async function trainModel(request: TrainingRequest, progress?: LoopProgre
   const trainPrediction = await apply(engine, columns, blob);
   progress?.update(100, 'Final model');
 
-  const result = {...setup, blob, seed, hyperparameters: {...hyperparameters}, rowCount};
+  const result = {...setup, blob, prediction: trainPrediction, seed, hyperparameters: {...hyperparameters}, rowCount};
   const {options} = setup;
   if (options.postprocessingInfo.includes(BINARY_CLASSIFICATION) && options.positiveClass !== undefined) {
     const {positiveClass} = options;
@@ -277,14 +287,16 @@ export function recutResult(result: TrainingResult, cutoff: number): TrainingRes
   return {...result, options, metrics: probabilityMetrics(result.scores, options)};
 }
 
+/** The final model's labels of the training rows: with Predict probability, its scores cut at the result's cutoff. */
+export function trainPredictionOf(result: TrainingResult): DG.Column {
+  return result.scores === undefined ? result.prediction : replayPostprocessing(result.prediction, result.options);
+}
+
 /** The metrics of the labels the scores give at the cutoff of [options], and AUC-ROC of the scores themselves. */
 function probabilityMetrics(scores: ProbabilityScores, options: PreparationOptions): MetricsRecord {
   const {actual, positiveClass} = scores;
-  const valuesOf = (split: 'train' | 'validation'): MetricValues => {
-    const values = classificationMetrics(actual, replayPostprocessing(scores[split], options), positiveClass);
-    const auc = scores.auc[split];
-    return auc === undefined ? values : {...values, auc};
-  };
+  const valuesOf = (split: Split): MetricValues =>
+    probabilityValues(actual, replayPostprocessing(scores[split], options), positiveClass, scores.auc[split]);
   return {train: valuesOf('train'), validation: valuesOf('validation'), positiveClass};
 }
 

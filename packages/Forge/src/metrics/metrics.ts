@@ -47,6 +47,23 @@ export const METRIC_DESCRIPTIONS: Record<MetricId, string> = {
     'random guessing.',
 };
 
+/** A training's two measurements: the final model on its training rows, and the out-of-fold predictions. */
+export type Split = 'train' | 'validation';
+const SPLITS: Split[] = ['train', 'validation'];
+
+/** The values below which a metric is marked (the built-in tool's thresholds). */
+const METRIC_THRESHOLDS: Partial<Record<MetricId, number>> = {r2: 0.3, auc: 0.5};
+
+/** A metric value worth a word: below its threshold, or a validation value far from the train one. */
+export interface MetricFinding {
+  id: MetricId;
+  kind: 'threshold' | 'mismatch';
+  /** The splits whose values the finding marks. */
+  splits: Split[];
+  text: string;
+  detail: string;
+}
+
 interface ClassCounts { tp: number; fp: number; fn: number }
 
 export function regressionMetrics(actual: DG.Column, predicted: DG.Column): MetricValues {
@@ -131,6 +148,19 @@ export function metricsOf(task: ModelTask, actual: DG.Column, predicted: DG.Colu
     classificationMetrics(actual, predicted, positiveClass ?? actual.categories[0]);
 }
 
+/** A numerical target makes a regression, any other a classification. */
+export function taskOf(target: DG.Column): ModelTask {
+  return target.matches(DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME) ? 'regression' : 'classification';
+}
+
+/** The metrics of the [labels] a Predict probability model cut its scores into, with the scores' [auc] when there is
+ * one. */
+export function probabilityValues(actual: DG.Column, labels: DG.Column, positiveClass: string,
+  auc: number | undefined): MetricValues {
+  const values = classificationMetrics(actual, labels, positiveClass);
+  return auc === undefined ? values : {...values, auc};
+}
+
 /** The area under the ROC curve of [score] for [positiveClass] of [actual]: the trapezoid over the rows sorted by
  * score, highest first, with the rows of one score as one step (a diagonal segment, as scikit-learn; the built-in
  * tool stepped row by row, so ties counted in their row order); undefined when the rows hold only one of the
@@ -159,6 +189,78 @@ export function aucOf(actual: DG.Column, score: DG.Column, positiveClass: string
     auc += (fp / negatives - fpr) * (tp / positives + tpr) / 2;
   }
   return auc;
+}
+
+/** The cutoffs the ROC curve is drawn at: 0, 0.01, ..., 1. */
+export const ROC_THRESHOLDS: readonly number[] = Array.from({length: 101}, (_, i) => i / 100);
+
+/** The points of a ROC curve, one per threshold of {@link ROC_THRESHOLDS}. */
+interface RocCurve {
+  /** The share of the negative rows scored at or above the threshold. */
+  fpr: Float32Array;
+  /** The share of the positive rows scored at or above the threshold. */
+  tpr: Float32Array;
+}
+
+/** The ROC curve of [score] for [positiveClass] of [actual]: at each of {@link ROC_THRESHOLDS}, a row is predicted
+ * positive when its score is at least the threshold (as the cutoff cuts the scores); a rate whose class has no row is
+ * 0. */
+export function rocCurveOf(actual: DG.Column, score: DG.Column, positiveClass: string): RocCurve {
+  const paired = pairedRows(actual, score);
+  const values = Float64Array.from(paired, (i) => score.getNumber(i));
+  const isPositive = paired.map((i) => String(actual.get(i)) === positiveClass);
+  const positives = isPositive.filter((p) => p).length;
+  const negatives = paired.length - positives;
+  const fpr = new Float32Array(ROC_THRESHOLDS.length);
+  const tpr = new Float32Array(ROC_THRESHOLDS.length);
+  for (const [t, threshold] of ROC_THRESHOLDS.entries()) {
+    let tp = 0;
+    let fp = 0;
+    for (let k = 0; k < values.length; k++) {
+      if (values[k] >= threshold) {
+        if (isPositive[k])
+          tp++;
+        else
+          fp++;
+      }
+    }
+    tpr[t] = positives > 0 ? tp / positives : 0;
+    fpr[t] = negatives > 0 ? fp / negatives : 0;
+  }
+  return {fpr, tpr};
+}
+
+/** The built-in tool's closeness of two values: within 0.1 when both are small (their mean magnitude below 1),
+ * otherwise within 90% of that mean, so that only values several times apart differ. */
+export function areValuesSimilar(a: number, b: number): boolean {
+  const mean = (Math.abs(a) + Math.abs(b)) / 2;
+  return mean < 1 ? Math.abs(a - b) <= 0.1 : Math.abs(a - b) / mean <= 0.9;
+}
+
+/** For each metric: the splits whose value is below its threshold, then a validation value far from the train one. */
+export function metricFindings(metrics: Record<Split, MetricValues>): MetricFinding[] {
+  const findings: MetricFinding[] = [];
+  for (const id of METRIC_IDS) {
+    const train = metrics.train[id];
+    const validation = metrics.validation[id];
+    const label = METRIC_LABELS[id];
+    const detail = `Train ${fixed(train)}, validation ${fixed(validation)}.`;
+    const threshold = METRIC_THRESHOLDS[id];
+    const below = threshold === undefined ? [] :
+      SPLITS.filter((split) => (metrics[split][id] ?? threshold) < threshold);
+    if (below.length > 0)
+      findings.push({id, kind: 'threshold', splits: below, text: `${label} is below ${threshold}.`, detail});
+    if (train !== undefined && validation !== undefined && !areValuesSimilar(train, validation)) {
+      findings.push({id, kind: 'mismatch', splits: ['validation'], detail,
+        text: `The validation ${label} is far from the training one: the model may be overfitting.`});
+    }
+  }
+  return findings;
+}
+
+/** [value] with 3 decimals, `-` when there is none. */
+function fixed(value: number | undefined): string {
+  return value === undefined ? '-' : value.toFixed(3);
 }
 
 function pairedRows(actual: DG.Column, predicted: DG.Column): number[] {

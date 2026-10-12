@@ -1,13 +1,25 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
+import {featureSchemasOf} from '../apply/apply-model';
 import {featureFit} from '../catalog/applicable-tables';
 import {MODEL_TYPE} from '../constants';
-import {forgeDb, ModelRow} from '../generated/db';
+import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
+import {tagsOf} from '../storage/model-fields';
 import {modelAccordion, modelIcon} from './model-panes';
+import {richTooltip, shortList} from './rich-tooltip';
+import {STORAGE_CAPTIONS} from './save-model-dialog';
+import '../../css/forge.css';
 
 const HANDLER_NAME = 'Forge model handler';
 const CARD_FEATURES = 5;
+const DATE_FORMAT = 'YYYY-MM-DD';
+/** The authors' logins by user id, read once per session for the tooltips; a failed read is tried again. */
+const LOGINS = new Map<string, Promise<string>>();
+type FeatureRow = Pick<ModelRow, 'features' | 'options'>;
+/** The feature lists and options of the models whose rows came without them, by id, read once per session; a failed
+ * read is tried again. */
+const FEATURE_ROWS = new Map<string, Promise<FeatureRow | null>>();
 
 /** Forge's presentation of `forge.model` rows wherever the platform shows them: the catalog's context panel, the
  * Domains view, the Browse tree, the Predicted by pane. */
@@ -52,31 +64,101 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     return ui.span([this.renderIcon(), ui.label(this.rowOrThrow(x).displayName)]);
   }
 
+  /** The name; what it predicts from how many features with which method, the task and the training rows, then the
+   * features; in grey the creation date and author, the data storage and the tags. */
   renderTooltip(x: unknown): HTMLElement {
     const row = this.rowOrThrow(x);
     const v = row.values;
-    return ui.divV([ui.label(row.displayName), ui.tableFromMap({'Method': v.engine_name, 'Task': v.task,
-      'Target': v.target_name, 'Training rows': v.row_count ?? ''})]);
+    const facts = ui.divText('');
+    const list = ui.divText('');
+    const fill = (features: string[]) => {
+      const count = typeof v.feature_count === 'number' ? v.feature_count : features.length;
+      const from = count > 0 ? ` from ${ForgeModelHandler.featureCount(count)}` : '';
+      facts.textContent = [`Predicts ${v.target_name}${from} with ${v.engine_name}`, v.task,
+        ...(typeof v.row_count === 'number' ? [`${v.row_count} rows`] : [])].join(' · ');
+      list.textContent = shortList(features);
+      ui.setDisplay(list, features.length > 0);
+    };
+    fill([]);
+    ForgeModelHandler.withFeatures(row, (fit) => fill((featureSchemasOf(fit.features) ?? []).map((f) => f.name)));
+    return richTooltip({title: row.displayName, main: [facts, list], minor: [ForgeModelHandler.minorLine(row)]});
   }
 
-  /** The built-in tool's card: name, the open tables it fits, target, features, method and creation date. */
+  /** The built-in tool's card in five lines of one height: the name (with an icon when an open table fits), target,
+   * features, method and creation date; the rest is in the tooltip. */
   renderCard(x: unknown): HTMLElement {
     const row = this.rowOrThrow(x);
     const v = row.values;
-    const {names: features, tables} = featureFit({features: v.features, options: v.options}, grok.shell.tables);
-    const lines: HTMLElement[] = [ui.label(row.displayName, 'grok-gallery-grid-item-title')];
-    if (tables.length > 0)
-      lines.push(ui.label(`Applicable to ${tables.map((t) => t.name).join(', ')}`));
-    lines.push(ui.label(`Predict ${v.target_name}`));
-    if (features.length > 0) {
-      const more = features.length > CARD_FEATURES ? '...' : '';
-      lines.push(ui.label(`by ${features.slice(0, CARD_FEATURES).join(', ')}${more}`));
-    }
-    lines.push(ui.label(`using ${v.engine_name}`));
+    const title = ui.divH([ui.label(row.displayName, 'grok-gallery-grid-item-title')], 'forge-model-card-title');
+    const count = typeof v.feature_count === 'number' && v.feature_count > 0 ? v.feature_count : 0;
+    const by = ui.label(count > 0 ? `by ${ForgeModelHandler.featureCount(count)}` : '');
+    ForgeModelHandler.withFeatures(row, (fit) => {
+      const {names, tables} = featureFit(fit, grok.shell.tables);
+      if (names.length > 0)
+        by.textContent = `by ${names.slice(0, CARD_FEATURES).join(', ')}${names.length > CARD_FEATURES ? '...' : ''}`;
+      if (tables.length > 0)
+        title.append(ui.iconFA('table', null, `Applicable to ${tables.map((t) => t.name).join(', ')}`));
+    });
     const created = row.createdOn;
-    if (created !== null)
-      lines.push(ui.label(`Created on ${created.format('YYYY-MM-DD')}`, 'grok-gallery-grid-item-date'));
-    return ui.bind(row, ui.divV(lines, 'd4-gallery-item'));
+    return ui.bind(row, ui.divV([title, ui.label(`Predict ${v.target_name}`), by, ui.label(`using ${v.engine_name}`),
+      ui.label(created === null ? '' : `Created on ${created.format(DATE_FORMAT)}`, 'grok-gallery-grid-item-date'),
+    ], 'd4-gallery-item forge-model-card'));
+  }
+
+  /** Calls [use] with the model's feature list and options: at once when [row] has them, otherwise when they are read
+   * (the Domains view's rows come without the json columns), once per model and session. */
+  private static withFeatures(row: DG.DomainRow, use: (fit: FeatureRow) => void): void {
+    const v = row.values;
+    if (v.features != null && v.options != null) {
+      use({features: v.features, options: v.options});
+      return;
+    }
+    let read = FEATURE_ROWS.get(row.id);
+    if (read === undefined) {
+      // A model deleted or not shared with the user is not found: the lines stay as they are.
+      read = forgeDb.models.query().where('id', '=', row.id).select('features', 'options').first()
+        .then((model): FeatureRow | null => model ?? null, () => {
+          FEATURE_ROWS.delete(row.id);
+          return null;
+        });
+      FEATURE_ROWS.set(row.id, read);
+    }
+    read.then((fit) => {
+      if (fit !== null)
+        use(fit);
+    });
+  }
+
+  /** `Created <date> by <author> · Data storage: <mode> · Tags: <tags>`, the parts the row has; the author's login is
+   * read once and filled in when it comes. */
+  private static minorLine(row: DG.DomainRow): HTMLElement {
+    const v = row.values;
+    const created = row.createdOn;
+    const storage: string | undefined = STORAGE_CAPTIONS[v.storage_mode as ModelStorageMode];
+    const tags = tagsOf(typeof v.tags === 'string' ? v.tags : '');
+    const text = (author: string | undefined) => [
+      ...(created === null ? [] : [`Created ${created.format(DATE_FORMAT)}${author ? ` by ${author}` : ''}`]),
+      ...(storage === undefined ? [] : [`Data storage: ${storage}`]),
+      ...(tags.length === 0 ? [] : [`Tags: ${tags.join(', ')}`]),
+    ].join(' · ');
+    const authorId = row.authorId;
+    const line = ui.divText(text(undefined), 'forge-tooltip-minor');
+    if (authorId) {
+      let login = LOGINS.get(authorId);
+      if (login === undefined) {
+        login = grok.dapi.users.find(authorId).then((user: DG.User) => user.login);
+        LOGINS.set(authorId, login);
+      }
+      // A deleted author is not found: the line stays without a login.
+      login.then((name) => {
+        line.textContent = text(name);
+      }, () => LOGINS.delete(authorId));
+    }
+    return line;
+  }
+
+  private static featureCount(count: number): string {
+    return `${count} ${count === 1 ? 'feature' : 'features'}`;
   }
 
   /** The model's accordion, from its full row read once. */

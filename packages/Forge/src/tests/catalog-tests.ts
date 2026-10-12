@@ -185,13 +185,75 @@ category('Catalog', () => {
     expect(forgeModelHandler.isApplicable(row), true);
     expect(forgeModelHandler.isApplicable('forge-test-string'), false);
     expect(forgeModelHandler.getCaption(row), model.name);
-    const card = forgeModelHandler.renderCard(row).textContent ?? '';
+    const card = forgeModelHandler.renderCard(row);
+    expect(card.children.length, 5);
     for (const text of ['Predict Species', 'by Sepal.Length, Sepal.Width, Petal.Length, Petal.Width', 'using XGBoost',
       `Created on ${model.created_on.format('YYYY-MM-DD')}`])
-      expect(card.includes(text), true, `The card misses '${text}': ${card}`);
-    const tooltip = forgeModelHandler.renderTooltip(row).textContent ?? '';
-    for (const text of [model.name, 'XGBoost', 'classification', 'Species', 'Training rows', '150'])
-      expect(tooltip.includes(text), true, `The tooltip misses '${text}': ${tooltip}`);
+      expect((card.textContent ?? '').includes(text), true, `The card misses '${text}': ${card.textContent}`);
+    const applicable = card.querySelector('.forge-model-card-title > .grok-icon');
+    expect(applicable !== null, applicableTables(IRIS_ROW, grok.shell.tables).length > 0,
+      'The Applicable to icon does not follow the open tables');
+    const tooltip = forgeModelHandler.renderTooltip(row);
+    const text = tooltip.textContent ?? '';
+    for (const part of [model.name, 'Predicts Species from 4 features with XGBoost · classification · 150 rows',
+      'Sepal.Length, Sepal.Width, Petal.Length, Petal.Width',
+      `Created ${model.created_on.format('YYYY-MM-DD')}`, 'Data storage: None'])
+      expect(text.includes(part), true, `The tooltip misses '${part}': ${text}`);
+    expect(tooltip.querySelector('.forge-tooltip-title')?.textContent, model.name);
+    await awaitCheck(() => (tooltip.textContent ?? '').includes(`by ${DG.User.current().login}`),
+      `The tooltip does not name the author: ${tooltip.textContent}`, WAIT_MS);
+  });
+
+  test('a row without its json columns, as the Domains view gives it, gets its features read once', async () => {
+    const model = await forgeDb.models.get(shared().id);
+    const row = ForgeModelHandler.rowOf({...model, features: undefined, options: undefined});
+    expect(row.values.features == null && row.values.options == null, true, 'The row carries its json columns');
+    const card = forgeModelHandler.renderCard(row);
+    const byLine = () => card.children[2]?.textContent ?? '';
+    expect(byLine(), 'by 4 features');
+    const tooltip = forgeModelHandler.renderTooltip(row);
+    const tooltipText = () => tooltip.textContent ?? '';
+    expect(tooltipText().includes('Predicts Species from 4 features with XGBoost'), true, tooltipText());
+    const names = 'Sepal.Length, Sepal.Width, Petal.Length, Petal.Width';
+    await awaitCheck(() => byLine() === `by ${names}`, `The by line stays '${byLine()}'`, WAIT_MS);
+    await awaitCheck(() => tooltipText().includes(names), `The tooltip lists no features: ${tooltipText()}`, WAIT_MS);
+    expect(tooltipText().includes('0 features'), false, tooltipText());
+    expect(card.children.length, 5);
+    const applicable = card.querySelector('.forge-model-card-title > .grok-icon');
+    expect(applicable !== null, applicableTables(IRIS_ROW, grok.shell.tables).length > 0,
+      'The Applicable to icon does not follow the open tables');
+    const again = forgeModelHandler.renderCard(row);
+    await awaitCheck(() => again.children[2]?.textContent === `by ${names}`, 'A second card is not filled', WAIT_MS);
+  });
+
+  test('model cards have one height whatever the model holds; the tooltip cuts a long feature list', async () => {
+    const features = (n: number) => ({columns: Array.from({length: n},
+      (_, i) => ({name: `forge-test-feature-${i + 1}`, type: DG.COLUMN_TYPE.FLOAT}))});
+    const rows = [{name: 'forge-test-short', features: features(1)},
+      {name: `forge-test-${'long-name-'.repeat(8)}`, features: features(12)}]
+      .map((values) => ForgeModelHandler.rowOf({id: DG.Utils.uuid4(), target_name: 'y', engine_name: 'XGBoost',
+        options: {}, ...values}));
+    const cards = rows.map((row) => forgeModelHandler.renderCard(row));
+    // As the Domains view shows a card: ui.card's class in the gallery's wrapper (xamgle grok_api.dart:1238).
+    for (const card of cards)
+      card.classList.add('d4-gallery-card');
+    const host = ui.div(cards.map((card) => ui.div([card], 'grok-gallery-grid-item-wrapper')));
+    document.body.append(host);
+    try {
+      const heights = cards.map((card) => card.offsetHeight);
+      expect(heights[0] > 0 && heights[0] === heights[1], true, `Card heights ${heights.join(', ')}`);
+      for (const card of cards) {
+        expect(card.scrollHeight <= card.clientHeight, true,
+          `The card's lines do not fit: ${card.scrollHeight} > ${card.clientHeight}`);
+        const last = card.lastElementChild;
+        expect(last instanceof HTMLElement && last.getBoundingClientRect().bottom <=
+          card.getBoundingClientRect().bottom, true, 'The last line is cut');
+      }
+    } finally {
+      host.remove();
+    }
+    const tooltip = forgeModelHandler.renderTooltip(rows[1]).textContent ?? '';
+    expect(/\+\d+ more/.test(tooltip) && !tooltip.includes('forge-test-feature-12'), true, tooltip);
   });
 
   test('isPredictionColumn and the Predicted by panel', async () => {

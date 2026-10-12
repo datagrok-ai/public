@@ -7,11 +7,11 @@ import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
 import {ApplicationInsert, ApplicationSource, forgeDb, ModelRow} from '../generated/db';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
-import {isRecord, PreparationOptions, preparationOptionsOf} from '../preparation/preparation-options';
+import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
 import {ownBlob, UUID} from '../storage/model-store';
-import {ColumnSchema} from '../training/train-model';
+import {ColumnSchema, TargetSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
 import {featureColumns} from './feature-columns';
@@ -44,6 +44,20 @@ export interface ApplyRequest {
 }
 
 export interface ApplyResult { column: DG.Column; skippedRows: number }
+
+/** The predictions of the rows a request keeps; nothing is added to the table. */
+export interface RowPredictions {
+  /** What the method got: the feature columns with the missing values handled and the preprocessing replayed. */
+  columns: DG.Column[];
+  /** The method's own output column. */
+  raw: DG.Column;
+  /** [raw] with the postprocessing replayed (the labels of Predict probability); [raw] itself without a step. */
+  labels: DG.Column;
+  /** The table's rows predicted, or null when no row was skipped. */
+  keptRows: DG.BitSet | null;
+  skippedRows: number;
+  blob: Uint8Array;
+}
 
 const MODEL_ID = new RegExp(`^${UUID}$`, 'i');
 
@@ -85,7 +99,7 @@ export function loadedModelOf(row: ApplyModelRow, engines: Engine[]): LoadedMode
  * cancelled; mapping problems and an empty table are refused first, without a record. */
 export async function applyAndRecord(request: ApplyRequest, source: ApplicationSource,
   progress?: LoopProgress): Promise<ApplyResult> {
-  checkRequest(request);
+  checkApplyRequest(request);
   const {model, table} = request;
   const startedOn = Date.now();
   const record = (outcome: Pick<ApplicationInsert, 'status' | 'column_name' | 'skipped_rows' | 'error'>) =>
@@ -139,7 +153,8 @@ export function predictionName(table: DG.DataFrame, target: string): string {
   return name;
 }
 
-function checkRequest({model, table, mapping}: ApplyRequest): void {
+/** Refuses a request whose mapping has problems or whose table has no rows. */
+export function checkApplyRequest({model, table, mapping}: ApplyRequest): void {
   const problems = mappingProblems(model.features, mapping, table, model.engine.name);
   if (problems.length > 0)
     throw new ForgeError(problems.map((p) => p.message).join(' '));
@@ -147,7 +162,9 @@ function checkRequest({model, table, mapping}: ApplyRequest): void {
     throw new ForgeError('The table has no rows to predict.');
 }
 
-async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
+/** The model's predictions of the request's rows: the missing values handled, the preparation replayed, the method
+ * called in batches. Nothing is added to the table and nothing is recorded. */
+export async function predictRows(request: ApplyRequest, progress?: LoopProgress): Promise<RowPredictions> {
   const {model, table, mapping} = request;
   const prepared = await prepareMissingValues(featureColumns(table, model.features, mapping), undefined,
     request.missingValues);
@@ -156,16 +173,21 @@ async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<
     throw new ForgeError('Every row has a missing value in the columns the model needs, so nothing can be ' +
       'predicted. Fill the missing values or choose Impute.');
   }
-  const features = replayPreprocessing(prepared.features, model.options);
+  const columns = replayPreprocessing(prepared.features, model.options);
   const blob = await grok.dapi.files.readAsBytes(model.blobPath);
-  const predictions = replayPostprocessing(
-    await predictInBatches(model.engine, features, rowCount, blob, request.batchSize, progress), model.options);
-  const column = prepared.keptRows === null ? predictions :
-    scattered(predictions, prepared.keptRows, table.rowCount);
+  const raw = await predictInBatches(model.engine, columns, rowCount, blob, request.batchSize, progress);
+  return {columns, raw, labels: replayPostprocessing(raw, model.options), keptRows: prepared.keptRows,
+    skippedRows: prepared.skippedRows, blob};
+}
+
+async function predict(request: ApplyRequest, progress?: LoopProgress): Promise<ApplyResult> {
+  const {model, table} = request;
+  const {labels, keptRows, skippedRows} = await predictRows(request, progress);
+  const column = keptRows === null ? labels : scatteredColumn(labels, keptRows, table.rowCount);
   column.name = predictionName(table, model.row.target_name);
   column.setTag(PREDICTION_TAG, model.row.id);
   table.columns.add(column);
-  return {column, skippedRows: prepared.skippedRows};
+  return {column, skippedRows};
 }
 
 /** One engine call on [features] themselves ([rowCount] rows) when they fit a batch; otherwise one call per batch of
@@ -204,7 +226,8 @@ function rowRange(rowCount: number, start: number, end: number): DG.BitSet {
   return DG.BitSet.fromBytes(words.buffer, rowCount);
 }
 
-function copyInto(target: DG.Column, source: DG.Column, offset: number): void {
+/** The values of [source] written into [target] from row [offset], without events. */
+export function copyInto(target: DG.Column, source: DG.Column, offset: number): void {
   const targetRaw = rawNumbers(target);
   const sourceRaw = rawNumbers(source);
   if (targetRaw !== null && sourceRaw !== null && target.type === source.type)
@@ -216,7 +239,7 @@ function copyInto(target: DG.Column, source: DG.Column, offset: number): void {
 }
 
 /** [prediction] of the kept rows spread over all [rowCount] rows; the skipped rows stay empty. */
-function scattered(prediction: DG.Column, keptRows: DG.BitSet, rowCount: number): DG.Column {
+export function scatteredColumn(prediction: DG.Column, keptRows: DG.BitSet, rowCount: number): DG.Column {
   const column = DG.Column.fromType(prediction.type, prediction.name, rowCount);
   const rows = keptRows.getSelectedIndexes();
   const targetRaw = rawNumbers(column);
@@ -267,6 +290,16 @@ export function requiredFeaturesOf(row: Pick<ModelRow, 'features' | 'options'>):
   const features = featureSchemasOf(row.features);
   const skipped = preparationOptionsOf(row.options).skippedColumns ?? [];
   return features === null ? null : features.filter((f) => !skipped.includes(f.name));
+}
+
+/** A stored `model.target`: `{name, type, semType?}` with its `categories` when they are a list of strings; null
+ * without a name and a type. */
+export function targetSchemaOf(value: unknown): TargetSchema | null {
+  const schema = parsedColumnSchema(value);
+  if (schema === null || !isRecord(value) || !Array.isArray(value.categories))
+    return schema;
+  const categories = stringsOf(value.categories);
+  return categories.length === value.categories.length ? {...schema, categories} : schema;
 }
 
 function parsedColumnSchema(value: unknown): ColumnSchema | null {

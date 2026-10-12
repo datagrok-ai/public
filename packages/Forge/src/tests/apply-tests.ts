@@ -2,8 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
-import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, predictionName}
-  from '../apply/apply-model';
+import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, LoadedModel, loadModel, predictionName, predictRows,
+  scatteredColumn, targetSchemaOf} from '../apply/apply-model';
 import {compatibility, exactMapping, isSuggested, MAX_NAME_DISTANCE, mappedColumns, mappingProblems, nameDistance,
   suggestMapping} from '../apply/column-matching';
 import {featureColumns} from '../apply/feature-columns';
@@ -17,6 +17,7 @@ import {MissingValuesSettings} from '../preparation/missing-values';
 import {replayPostprocessing} from '../preparation/pipeline';
 import {ONE_HOT, preparationOptionsOf} from '../preparation/preparation-options';
 import {BLOB_ROOT, deleteModel} from '../storage/model-store';
+import {evaluateModel} from '../training/evaluation';
 import {ColumnSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
 import {columnNamed, columnsOf, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE, MEASUREMENTS,
   ONE_HOT_STEPS, openIris, PREDICT_PROBABILITY, rawValues, requestOf, savedFixture, saveIrisModel,
@@ -476,6 +477,83 @@ category('Apply', () => {
       await deleteModel(id);
     }
   }, {timeout: TIMEOUT});
+
+  test('predictRows predicts the kept rows and adds and records nothing', async () => {
+    const {id, model, reference} = shared();
+    const applications = () => forgeDb.applications.query().where('model_id', '=', id).count();
+    const before = await applications();
+    const table = irisCopy('rows');
+    const columnCount = table.columns.length;
+    const rows = await predictRows(requestFor(model, table));
+    expect(rows.labels.length, 150);
+    expect(rows.raw === rows.labels, true, 'A model without postprocessing gave other labels');
+    expectArray(rows.labels.toList(), reference);
+    expect(rows.keptRows === null && rows.skippedRows === 0, true, 'Rows were skipped');
+    expect(rows.blob.length > 0, true, 'Empty blob');
+    expectArray(rows.columns.map((c) => c.name), MEASUREMENTS);
+
+    table.getCol('Sepal.Width').set(3, null);
+    const skipped = await predictRows(requestFor(model, table));
+    expect(skipped.keptRows?.trueCount, 149);
+    expect(skipped.skippedRows, 1);
+    expect(skipped.labels.length, 149);
+    const spread = scatteredColumn(skipped.labels, skipped.keptRows ?? DG.BitSet.create(150), 150);
+    expect(spread.isNone(3), true, 'The skipped row has a prediction');
+    expect(spread.get(4), reference[4]);
+    expect(table.columns.length, columnCount);
+    expect(await applications(), before);
+  }, {timeout: TIMEOUT});
+
+  test('evaluateModel measures a saved model on a table without a column or a record', async () => {
+    const {id, model, result} = shared();
+    const applications = () => forgeDb.applications.query().where('model_id', '=', id).count();
+    const before = await applications();
+    const table = irisCopy('evaluate');
+    const columnCount = table.columns.length;
+    const target = table.getCol('Species');
+    const evaluation = await evaluateModel({model, table, target, mapping: exactMapping(model.features, table),
+      positiveClass: result.metrics.positiveClass});
+    expectMetrics(evaluation.values, result.metrics.train, 1e-6);
+    expect(evaluation.rowCount, 150);
+    expect(evaluation.target === target && evaluation.keptRows === null, true, 'The target was copied');
+    expect(evaluation.score === undefined, true, 'A score without Predict probability');
+    expect(table.columns.length, columnCount);
+    expect(await applications(), before);
+
+    table.getCol('Petal.Width').set(0, null);
+    const skipped = await evaluateModel({model, table, target, mapping: exactMapping(model.features, table)});
+    expect(skipped.rowCount, 149);
+    expect(skipped.target.length, 149);
+    expect(skipped.skippedRows, 1);
+  }, {timeout: TIMEOUT});
+
+  test('evaluateModel of a predict-probability model gives its scores and AUC-ROC', async () => {
+    const iris = await twoSpeciesIris();
+    const species = iris.getCol('Species');
+    const {id, result} = await saveTestModel(columnsOf(iris, MEASUREMENTS), species, iris.name, {},
+      PREDICT_PROBABILITY);
+    try {
+      const model = await loadModel(id);
+      const evaluation = await evaluateModel({model, table: iris, target: species,
+        mapping: exactMapping(model.features, iris), positiveClass: result.metrics.positiveClass});
+      expect(evaluation.score !== undefined, true, 'No score');
+      expect(evaluation.values.auc !== undefined, true, 'No AUC-ROC');
+      expectMetrics(evaluation.values, result.metrics.train, 1e-6);
+      expect(evaluation.prediction.toList().every((v) => v === 'versicolor' || v === 'virginica'), true,
+        evaluation.prediction.categories.join());
+      expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
+    } finally {
+      await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('targetSchemaOf reads a stored target', async () => {
+    expect(JSON.stringify(targetSchemaOf({name: 'Species', type: 'string', categories: ['a', 'b']})),
+      JSON.stringify({name: 'Species', type: 'string', categories: ['a', 'b']}));
+    expect(JSON.stringify(targetSchemaOf({name: 'y', type: 'double', categories: ['a', 1]})),
+      JSON.stringify({name: 'y', type: 'double'}));
+    expect(targetSchemaOf({name: 'y'}) === null && targetSchemaOf('y') === null, true, 'A partial schema');
+  });
 
   test('a table whose every row has a missing value gets no prediction', async () => {
     const {model} = shared();

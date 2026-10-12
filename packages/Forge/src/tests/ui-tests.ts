@@ -2,34 +2,38 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
-import {after, awaitCheck, before, category, delay, expect, expectArray, test}
+import {after, awaitCheck, before, category, delay, expect, expectArray, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
 import {APP_NAME, MENU_PATH, MODEL_TYPE} from '../constants';
 import {EngineRegistry} from '../engines/engine-registry';
+import {ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
 import {METRIC_DESCRIPTIONS} from '../metrics/metrics';
 import {preparationOptionsOf} from '../preparation/preparation-options';
 import {datasetRefOf, storedDatasetRef} from '../storage/dataset-ref';
 import {deleteModel, modelsChanged} from '../storage/model-store';
-import {metricsRecordOf} from '../training/train-model';
+import {metricsRecordOf, trainPredictionOf} from '../training/train-model';
 import {applyModelDialog, ApplyDialogOptions, isOpen, modelLabels} from '../ui/apply-model-dialog';
 import {ButtonGate} from '../ui/button-gate';
 import {gridTooltip} from '../ui/data-grid';
 import {editModelDialog} from '../ui/edit-model-dialog';
+import {EvaluationView, runEvaluation} from '../ui/evaluation-view';
 import {ForgeApp} from '../ui/forge-app';
 import {CATALOG_ACTIONS, MODEL_ACTIONS} from '../ui/model-actions';
 import {hasFormsViewer, ModelComparison} from '../ui/model-comparison';
 import {ForgeModelHandler} from '../ui/model-handler';
+import {MetricsTable} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
+import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, TrainView} from '../ui/train-view';
-import {columnsOf, expectNoFrames, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris,
-  openIrisFromFile, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, valuesOf, XGBOOST_FIELDS}
-  from './test-data';
+import {columnsOf, expectNoFrames, expectReleased, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable,
+  openIris, openIrisFromFile, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, twoSpeciesIris,
+  unbalancedIris, valuesOf, XGBOOST_FIELDS} from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -341,7 +345,7 @@ category('UI', () => {
       expect(view.name, 'Predictive model');
       expect(view.getIcon().classList.contains('svg-model'), true, 'The tab icon is not the model icon');
       const text = view.root.textContent ?? '';
-      for (const caption of ['Table', 'Target', 'Features', 'Method', 'Results'])
+      for (const caption of ['Table', 'Target', 'Features', 'Method', 'Performance'])
         expect(text.includes(caption), true, `${caption} is missing`);
       expect(text.includes('Choose the target and the features; the model trains as you change them.'), true,
         'No hint before the first training');
@@ -714,9 +718,10 @@ category('UI', () => {
       expect(choice.inputType, 'Radio');
       expect(choice.value, 'Skip rows');
       expectOptionsInRow(choice);
-      // The skipped row makes every training column a copy: no frame holds a column of the table.
+      // The skipped row makes every training column a copy: no frame but the Results pane's holds a column of the
+      // table.
       const [, frames] = await framesSharing(iris.columns.toList(), () => view.train());
-      expectNoFrames(frames);
+      expectNoFrames(frames.filter((f) => !view.resultsPane.frames.includes(f)));
       expect(Array.from(view.root.querySelectorAll('ul > li'), (li) => li.textContent)
         .includes('Rows: 149 used, 1 skipped (missing values)'), true, 'The Results rows item is missing');
       expect((await runs())[0]?.row_count, 149);
@@ -1016,6 +1021,656 @@ category('UI: Train', () => {
       await closeTrainView(view, [demog]);
     }
   }, {timeout: 120000});
+});
+
+/** The Results rows of [view], in order. */
+const rowsOf = (view: TrainView | EvaluationView) =>
+  Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-row'));
+
+const titleOf = (panel: Element) => (panel.firstElementChild?.textContent ?? '').trim();
+
+/** The panel boxes of a Results row. */
+const slotsOf = (row: HTMLElement) => Array.from(row.children)
+  .filter((c): c is HTMLElement => c instanceof HTMLElement && !c.classList.contains('ui-split-h-divider'));
+
+/** The panel titles of each Results row of [view], in order. */
+const rowTitles = (view: TrainView | EvaluationView) =>
+  rowsOf(view).map((row) => Array.from(row.querySelectorAll('.forge-results-panel'), titleOf));
+
+const expectRows = (actual: unknown, expected: unknown) => expect(JSON.stringify(actual), JSON.stringify(expected));
+
+/** The viewer of the Results panel titled [title] of [view]. */
+function panelViewer(view: TrainView, title: string): DG.Viewer {
+  const element = panelOf(view, title).querySelector('.d4-viewer');
+  const viewer: unknown = element instanceof HTMLElement ? DG.toJs(DG.Widget.find(element)) : null;
+  if (!(viewer instanceof DG.Viewer))
+    throw new Error(`No viewer in the panel ${title}`);
+  return viewer;
+}
+
+/** The text of the Insights & Tips block of [view]; '' while it is hidden. */
+function insightsText(view: TrainView): string {
+  const block = view.resultsPane.root.querySelector('.forge-insights');
+  return block instanceof HTMLElement && isShown(block) ? block.textContent ?? '' : '';
+}
+
+/** The text of each line of Insights & Tips of [view], its pointer line included. */
+const insightLines = (view: TrainView) =>
+  Array.from(view.resultsPane.root.querySelectorAll('.forge-insights > ul > li'), (li) => li.textContent ?? '');
+
+/** The line of Insights & Tips of [view] whose text starts with [text]. */
+function insightItem(view: TrainView, text: string): HTMLElement {
+  const item = Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-insights > ul > li'))
+    .find((li) => (li.textContent ?? '').startsWith(text));
+  if (item === undefined)
+    throw new Error(`No insight ${text}: ${insightLines(view).join(' | ')}`);
+  return item;
+}
+
+/** The panel titled [title] of [view]. */
+function panelOf(view: TrainView, title: string): HTMLElement {
+  const panel = Array.from(view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-panel'))
+    .find((p) => titleOf(p) === title);
+  if (panel === undefined)
+    throw new Error(`No panel ${title}`);
+  return panel;
+}
+
+/** Checks that every panel title of [view] answers the mouse with a tooltip. */
+async function expectTitleTooltips(view: TrainView): Promise<void> {
+  for (const span of view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-title > span')) {
+    expect(getComputedStyle(span).pointerEvents, 'auto', `${span.textContent}: the title lets the mouse through`);
+    expect((await enterTooltip(span)).length > 10, true, `${span.textContent} has no tooltip`);
+  }
+}
+
+/** Checks that in every panel of [view]'s rows the title is shown, the content starts under it and ends inside the
+ * panel, which does not scroll (its content does). */
+function expectUnderTitles(view: TrainView): void {
+  for (const panel of view.resultsPane.root.querySelectorAll<HTMLElement>('.forge-results-row .forge-results-panel')) {
+    const title = panel.firstElementChild?.getBoundingClientRect();
+    const content = panel.children[1]?.getBoundingClientRect();
+    const box = panel.getBoundingClientRect();
+    expect(title !== undefined && content !== undefined && title.height > 30 && content.top >= title.bottom - 0.5 &&
+      content.bottom <= box.bottom + 0.5 && panel.scrollHeight <= panel.clientHeight + 1, true,
+    `${titleOf(panel)}: title ${title?.top}-${title?.bottom}, content ${content?.top}-${content?.bottom}, panel ` +
+      `${box.top}-${box.bottom}, scroll ${panel.scrollHeight} of ${panel.clientHeight}`);
+  }
+}
+
+/** The row of the metric [label] in a metrics grid. */
+const metricRow = (grid: DG.Grid, label: string) => grid.dataFrame.getCol('Metric').toList().indexOf(label);
+
+/** Predict probability on two iris species: ROC Curve over its own frame, kept by a cutoff change and a retrain. */
+async function expectRocCurve(): Promise<void> {
+  const iris = await twoSpeciesIris();
+  const view = await openTrainView(iris);
+  const {predictProbability, cutoff} = view.preparationInputs;
+  try {
+    predictProbability.value = true;
+    const rocTitle = () => rowTitles(view).flat().find((t) => t.startsWith('ROC Curve')) ?? '';
+    await awaitCheck(() => rocTitle() !== '' && view.lastTraining?.result.scores !== undefined && !view.isTraining,
+      'No ROC Curve', TIMEOUT);
+    const aucTitle = () => `ROC Curve (AUC = ${view.lastTraining?.result.metrics.train.auc?.toFixed(3)})`;
+    expect(rocTitle(), aucTitle());
+    const roc = panelViewer(view, rocTitle());
+    const frame = roc.dataFrame;
+    expect(roc.type, DG.VIEWER.SCATTER_PLOT);
+    expectArray([roc.props.xColumnName, roc.props.yColumnName, roc.props.linesOrderColumnName], ['FPR', 'TPR', 'FPR']);
+    expectArray(frame.columns.names(), ['Threshold', 'FPR', 'TPR']);
+    expect(frame.rowCount, 101);
+    expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
+    expect(frame.meta.formulaLines.items.some((line) => line.title === 'Non-informative baseline'), true,
+      'No baseline');
+    expect(frame.currentRowIdx, 50, 'The cutoff 0.5 is not marked');
+    const content = (title: string) => panelOf(view, title).lastElementChild;
+    const confusions = content('Confusions');
+    let curveChanges = 0;
+    const sub = frame.onValuesChanged.subscribe(() => curveChanges++);
+    try {
+      cutoff.value = 0.9;
+      await awaitCheck(() => view.lastTraining?.result.options.binaryClassificationThreshold === 0.9,
+        'The cutoff does not re-cut the result', WAIT_MS);
+      await delay(CHECK_DELAY_MS * 3);
+    } finally {
+      sub.unsubscribe();
+    }
+    const recut = panelViewer(view, rocTitle());
+    expect(recut.root === roc.root && roc.root.isConnected && recut.dataFrame.dart === frame.dart, true,
+      'The cutoff rebuilt ROC Curve');
+    expect(curveChanges, 0, 'The cutoff changed the curve');
+    expect(frame.currentRowIdx, 90, 'The mark did not move to the cutoff 0.9');
+    expect(content('Confusions') === confusions, true, 'The cutoff rebuilt Confusions');
+
+    const fpr = frame.getCol('FPR').toList();
+    const tpr = frame.getCol('TPR').toList();
+    const before = view.lastTraining;
+    if (before?.engine.name === 'XGBoost')
+      setHyperparameter(view, 'iterations', 1);
+    else
+      view.methodInput.value = 'XGBoost';
+    await awaitCheck(() => view.lastTraining !== before && view.lastTraining?.engine.name === 'XGBoost' &&
+      !view.isTraining, 'No XGBoost retrain', TIMEOUT);
+    await delay(CHECK_DELAY_MS * 3);
+    const retrained = panelViewer(view, rocTitle());
+    expect(retrained.root === roc.root && retrained.dataFrame.dart === frame.dart && frame.rowCount === 101, true,
+      'The retrain rebuilt ROC Curve or its frame');
+    expect(rocTitle(), aucTitle());
+    expect(frame.getCol('FPR').toList().some((v, i) => v !== fpr[i]) ||
+      frame.getCol('TPR').toList().some((v, i) => v !== tpr[i]), true, 'The retrain left the curve as it was');
+    expect(frame.currentRowIdx, 90, 'The retrain moved the mark');
+  } finally {
+    await closeTrainView(view, [iris]);
+  }
+}
+
+/** A viewer that throws while it is built, then the Wrong predictions grid: each time the frames go back and no result
+ * is shown. */
+async function expectFailedBuildReleased(): Promise<void> {
+  // One iteration of depth 1 gets rows wrong.
+  const unbalanced = await unbalancedIris();
+  const viewerFailure = 'forge-test-viewer-failure';
+  const gridFailure = 'forge-test-grid-failure';
+  const {confusionMatrix, grid} = DG.Viewer;
+  let view: TrainView | undefined;
+  try {
+    DG.Viewer.confusionMatrix = () => {
+      throw new ForgeError(viewerFailure);
+    };
+    const [opened, built] = await framesSharing(unbalanced.columns.toList(), async () => {
+      const trainView = await openTrainView(unbalanced);
+      await awaitCheck(() => balloonWith(viewerFailure) !== null, 'The failing viewer was not reported', WAIT_MS);
+      return trainView;
+    });
+    view = opened;
+    expect(view.resultsPane.frames.length, 0, 'A result was shown without its viewers');
+    expectReleased(built);
+
+    DG.Viewer.confusionMatrix = confusionMatrix;
+    // Only the frame of Wrong predictions, every column of the table and the prediction, gets a grid with both.
+    DG.Viewer.grid = (df, options) => {
+      if (df.col('Species') !== null && df.col('Predicted Species') !== null)
+        throw new ForgeError(gridFailure);
+      return grid(df, options);
+    };
+    const trainView = view;
+    const [, rebuilt] = await framesSharing(unbalanced.columns.toList(), async () => {
+      setHyperparameter(trainView, 'iterations', 1);
+      setHyperparameter(trainView, 'maxDepth', 1);
+      await awaitTrained(trainView);
+      await awaitCheck(() => balloonWith(gridFailure) !== null, 'The failing grid was not reported', WAIT_MS);
+    });
+    expect(view.resultsPane.frames.length, 0, 'A result was shown without Wrong predictions');
+    expectReleased(rebuilt);
+  } finally {
+    DG.Viewer.confusionMatrix = confusionMatrix;
+    DG.Viewer.grid = grid;
+    if (view !== undefined)
+      await closeTrainView(view, [unbalanced]);
+  }
+}
+
+category('UI: Results', () => {
+  test('resultsLayout: the template rows, the absent panels dropped, the method\'s rows', async () => {
+    const all = new Set<PanelKey>(['predictedVsActual', 'rocCurve', 'metrics', 'confusions', 'insights',
+      'wrongPredictions', 'features', 'correlation', 'classBalance']);
+    const binary = resultsLayout('binary', all, 0);
+    expectRows(binary.map((r) => r.panels), [['predictedVsActual', 'rocCurve', 'metrics'],
+      ['insights', 'confusions', 'wrongPredictions'], ['features', 'correlation', 'classBalance']]);
+    expectArray(binary.map((r) => r.height), [350, 300, 450]);
+    expectRows(binary.map((r) => r.weights), [[2, 2, 1], [1, 1.5, 2.5], [1, 1, 1]]);
+    const multiclass = resultsLayout('multiclass', new Set<PanelKey>(['predictedVsActual', 'features', 'correlation',
+      'classBalance']), 0);
+    expectRows(multiclass.map((r) => r.panels), [['predictedVsActual'], ['metrics', 'classBalance'],
+      ['features', 'correlation']]);
+    expectRows(multiclass.map((r) => r.weights), [[1], [1.5, 1.5], [1, 1]]);
+    const regression = resultsLayout('regression', new Set<PanelKey>(['predictedVsActual', 'residuals',
+      'distributions', 'statistics']), 4);
+    expectRows(regression.map((r) => r.panels), [['predictedVsActual', 'residuals', 'distributions'],
+      ['metrics', 'statistics'], ['visualize:0', 'visualize:1', 'visualize:2'], ['visualize:3']]);
+    expectArray(regression.map((r) => r.height), [350, 300, 350, 350]);
+    expectRows(regression.map((r) => r.weights), [[1, 1, 1], [1.5, 1.5], [1, 1, 1], [1]]);
+    expectRows(resultsLayout('binary', new Set<PanelKey>(['metrics']), 0).map((r) => r.panels), [['metrics']]);
+  });
+
+  test('resultsLayout: a row 2 of two panels takes Class balance from row 3', async () => {
+    const withoutWrong = new Set<PanelKey>(['predictedVsActual', 'confusions', 'insights', 'features', 'correlation',
+      'classBalance']);
+    expectRows(resultsLayout('multiclass', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual', 'confusions'],
+      ['insights', 'metrics', 'classBalance'], ['features', 'correlation']]);
+    expectRows(resultsLayout('binary', withoutWrong, 0).map((r) => r.panels), [['predictedVsActual', 'metrics'],
+      ['insights', 'confusions', 'classBalance'], ['features', 'correlation']]);
+    const withoutInsights = new Set<PanelKey>(['predictedVsActual', 'confusions', 'wrongPredictions', 'classBalance']);
+    expectRows(resultsLayout('binary', withoutInsights, 0).map((r) => r.panels), [['predictedVsActual', 'metrics'],
+      ['confusions', 'wrongPredictions', 'classBalance']]);
+    const full = new Set<PanelKey>([...withoutWrong, 'wrongPredictions']);
+    expectRows(resultsLayout('multiclass', full, 0).map((r) => r.panels), [['predictedVsActual', 'confusions'],
+      ['insights', 'metrics', 'wrongPredictions'], ['features', 'correlation', 'classBalance']]);
+  });
+
+  test('iris: Insights & Tips, the classifier rows, Class balance, the frames given back on close', async () => {
+    const iris = await openIris();
+    const [view, frames] = await framesSharing(iris.columns.toList(), () => openTrainView(iris));
+    try {
+      expect(insightsText(view).includes('Insights & Tips'), true, 'No Insights & Tips');
+      expect(insightsText(view).includes('Features are highly correlated.'), true, insightsText(view));
+      const training = view.lastTraining;
+      if (training === undefined)
+        throw new Error('No training');
+      const labels = trainPredictionOf(training.result);
+      const target = training.request.target;
+      const hasWrong = Array.from({length: target.length}, (_, i) => i)
+        .some((i) => String(target.get(i)) !== String(labels.get(i)));
+      // Without wrong predictions row 2 has two panels and takes Class balance.
+      expectRows(rowTitles(view), [['Predicted Species vs Actual', 'Confusions'],
+        ['Insights & Tips', 'Performance', hasWrong ? 'Wrong predictions' : 'Class balance'],
+        ['Features', 'Features correlation', ...(hasWrong ? ['Class balance'] : [])]]);
+      if (hasWrong)
+        expect(gridWith(view.resultsPane.root, 'Predicted Species').root.classList.contains('d4-grid'), true);
+
+      const chart = panelViewer(view, 'Class balance');
+      expect(chart.type, DG.VIEWER.BAR_CHART);
+      expect(chart.dataFrame.dart === view.resultsPane.frames[0].dart, true, 'Class balance has a frame of its own');
+      expect(chart.props.splitColumnName, target.name);
+      expect(chart.props.stackColumnName, target.name);
+      expect(chart.props.valueAggrType, DG.AGG.TOTAL_COUNT);
+      expect(chart.props.showStackSelector || chart.props.showCategorySelector || chart.props.showValueSelector, false,
+        'Class balance shows a column selector');
+      expect(panelViewer(view, 'Features correlation').props.description ?? '', 'Features are highly correlated.');
+      // The panel shows the short line only; the pairs and the pointer are in its tooltip.
+      const correlated = insightItem(view, 'Features are highly correlated.');
+      expect(correlated.textContent, 'Features are highly correlated.');
+      const correlatedTooltip = await enterTooltip(correlated);
+      expect(correlatedTooltip.includes('Petal.Length and Petal.Width: 0.96') &&
+        correlatedTooltip.endsWith('See Features correlation.'), true, correlatedTooltip);
+      expect(insightsText(view).includes('See '), false, `A pointer is on the panel: ${insightsText(view)}`);
+      await expectTitleTooltips(view);
+      expectUnderTitles(view);
+
+      // The panels start in the ratio of their weights and every viewer fills its panel.
+      const [first, second, third] = rowsOf(view);
+      await awaitCheck(() => slotsOf(first).every((s) => s.offsetWidth > 0), 'Row 1 is not laid out', WAIT_MS);
+      const ratio = (row: HTMLElement, i: number) => slotsOf(row)[i].offsetWidth / slotsOf(row)[0].offsetWidth;
+      expectFloat(ratio(first, 1), 1, 0.05);
+      expectFloat(ratio(second, 1), 1.5, 0.05);
+      expectFloat(ratio(third, 1), 1, 0.05);
+      for (const panel of view.resultsPane.root.querySelectorAll<HTMLElement>(
+        '.forge-results-panel:not(.forge-results-metrics):not(.forge-insights)')) {
+        const content = panel.lastElementChild;
+        expect(content instanceof HTMLElement && Math.abs(content.offsetWidth - panel.clientWidth) <= 1 &&
+          content.offsetHeight > 0, true, `${titleOf(panel)}: ${content instanceof HTMLElement ?
+          content.offsetWidth : 0} of ${panel.clientWidth} px`);
+      }
+      expect(panelOf(view, 'Performance').firstElementChild?.classList.contains('d4-dialog-header'), true,
+        'Performance has its own header');
+      const shown = view.resultsPane.frames;
+      expect(shown.length > 0 && shown.every((f) => frames.includes(f) && f.columns.length > 0), true,
+        'The previews hold no frame of the table\'s columns');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+    expectReleased(frames);
+  }, {timeout: TIMEOUT});
+
+  test('winequality: the regression rows, Statistics and the method\'s own views', async () => {
+    const wine = await openDemoTable('System:DemoFiles/winequality.csv', 'wine');
+    const view = await openTrainView(wine);
+    try {
+      view.targetInput.value = wine.getCol('quality');
+      await awaitCheck(() => view.featuresInput.validity !== null, 'Features is not marked', WAIT_MS);
+      view.featuresInput.value = view.featuresInput.value.filter((c) => c.name !== 'quality');
+      await awaitTrained(view);
+      expect(view.lastTraining?.engine.name, 'PLS Regression');
+      await awaitCheck(() => rowTitles(view).length > 3, `No PLS Regression row: ${JSON.stringify(rowTitles(view))}`,
+        TIMEOUT);
+      const titles = rowTitles(view);
+      const second = titles[1].filter((t) => t !== 'Insights & Tips');
+      expectRows([titles[0], second, titles[2]], [['Predicted quality vs Actual', 'Residuals',
+        'Distributions of predicted and actual quality'], ['Performance', 'Statistics'],
+      ['Features', 'Features correlation']]);
+      expect(titles[1].indexOf('Insights & Tips') <= 0, true, 'Insights & Tips is not first in row 2');
+      expect(titles.slice(3).every((row) => row.length > 0 && row.length <= 3 &&
+        row.every((t) => t === 'PLS Regression')), true, JSON.stringify(titles));
+      const statistics = gridWith(view.resultsPane.root, 'Statistic');
+      expect(statistics.dataFrame.rowCount, 11);
+      expect(headerTooltip(statistics, 'Predicted'), 'The statistic of the model\'s predictions on the same rows.');
+      // One line for every statistic far from the target's, pointing to Statistics and shown as its description.
+      const deviation = 'The predictions\' statistics deviate significantly from the actual ones.';
+      const lines = insightLines(view);
+      expect(lines.filter((l) => l.includes('deviate significantly')).length <= 1 &&
+        !lines.some((l) => l.includes('is far from the actual one')), true, lines.join(' | '));
+      const deviating = lines.filter((l) => l.startsWith(deviation));
+      expectArray(deviating, deviating.length === 0 ? [] : [deviation]);
+      expect(statistics.props.description ?? '', deviating.length === 0 ? '' : deviation);
+      if (deviating.length > 0) {
+        const tooltip = await enterTooltip(insightItem(view, deviation));
+        expect(tooltip.endsWith('See Statistics.'), true, tooltip);
+      }
+      await expectTitleTooltips(view);
+      expectUnderTitles(view);
+      const r2 = view.lastTraining?.result.metrics.train.r2 ?? NaN;
+      const metrics = gridWith(view.resultsPane.root, 'Metric');
+      const tooltip = gridTooltip(metrics, metrics.cell('Train', metricRow(metrics, 'R2')));
+      expect(tooltip.endsWith('R2 is below 0.3.'), r2 < 0.3, `Train R2 ${r2}: ${tooltip}`);
+    } finally {
+      await closeTrainView(view, [wine]);
+    }
+  }, {timeout: 120000});
+
+  test('a hovered row is linked through the kept rows', async () => {
+    const iris = await openIris();
+    iris.getCol('Sepal.Width').set(3, null);
+    const view = await openTrainView(iris);
+    try {
+      const frame = view.resultsPane.frames[0];
+      frame.mouseOverRowIdx = 5;
+      // The kept rows are 0, 1, 2, 4, 5, 6, ...: the 6th is row 6.
+      await awaitCheck(() => iris.mouseOverRowIdx === 6, `The table hovers row ${iris.mouseOverRowIdx}`, WAIT_MS);
+      iris.mouseOverRowIdx = 3;
+      await awaitCheck(() => frame.mouseOverRowIdx === -1, `The frame hovers row ${frame.mouseOverRowIdx}`, WAIT_MS);
+      expect(iris.mouseOverRowIdx, 3, 'The skipped row came back as none');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a retrain keeps the grid, the rows and the viewers; a Features change rebuilds the viewers; a hint ' +
+    'releases the frames and keeps the grid', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const grid = gridWith(view.resultsPane.root, 'Metric').root;
+      const rows = rowsOf(view);
+      const titles = rowTitles(view);
+      for (const row of rows) {
+        expect(row.style.height !== '' && slotsOf(row).every((s) => s.style.flexGrow !== ''), true,
+          `A row or a slot without a size: ${row.style.height}`);
+      }
+      expect(view.resultsPane.root.closest('.forge-train-results')?.querySelector(':scope > .ui-box') ?? null, null,
+        'A box is a direct child of the Results panel');
+      const viewerRoots = () => ['Predicted Species vs Actual', 'Features'].map((t) => panelViewer(view, t).root);
+      const roots = viewerRoots();
+      const [frame] = view.resultsPane.frames;
+      setHyperparameter(view, 'maxDepth', 1);
+      await awaitTrained(view);
+      expect(gridWith(view.resultsPane.root, 'Metric').root === grid, true, 'A retrain built a new metrics grid');
+      const after = rowsOf(view);
+      const retrained = rowTitles(view);
+      for (let i = 0; i < rows.length; i++) {
+        const isSame = JSON.stringify(titles[i]) === JSON.stringify(retrained[i]);
+        expect(after[i] === rows[i], isSame, `Row ${i + 1}: ${JSON.stringify(titles[i])}`);
+      }
+      expect(after[0] === rows[0], true, 'Row 1 was rebuilt');
+      expect(viewerRoots().every((root, i) => root === roots[i]), true, 'A retrain rebuilt the viewers');
+      expect(view.resultsPane.frames[0] === frame && frame.columns.length > 0, true, 'A retrain replaced the frame');
+      const training = view.lastTraining;
+      if (training === undefined)
+        throw new Error('No training');
+      expectArray(frame.getCol('Predicted Species').toList().map(String),
+        trainPredictionOf(training.result).toList().map(String));
+
+      const shown = [...view.resultsPane.frames];
+      view.featuresInput.value = view.featuresInput.value.slice(0, 3);
+      await awaitTrained(view);
+      await awaitCheck(() => view.resultsPane.frames[0] !== frame, 'A Features change kept the frame', WAIT_MS);
+      expect(viewerRoots().every((root, i) => root !== roots[i]), true, 'A Features change kept the viewers');
+      expectArray(shown.map((f) => f.columns.length), shown.map(() => 0));
+
+      const current = [...view.resultsPane.frames];
+      view.resultsPane.showHint('');
+      expect(rowsOf(view).length, 0, 'The rows stay with a hint');
+      expect(view.resultsPane.frames.length, 0, 'Frames stay with a hint');
+      expectArray(current.map((f) => f.columns.length), current.map(() => 0));
+      expect(resultsText(view).includes('Performance'), true, 'No Performance header with a hint');
+      setHyperparameter(view, 'maxDepth', 6);
+      await awaitTrained(view);
+      expect(gridWith(view.resultsPane.root, 'Metric').root === grid, true, 'The hint dropped the metrics grid');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('switching to another view and back keeps the rows and their sizes', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    let other: DG.ViewBase | undefined;
+    try {
+      await awaitCheck(() => rowsOf(view).every((row) => slotsOf(row).every((s) => s.offsetWidth > 0)),
+        'The rows are not laid out', WAIT_MS);
+      const heights = rowsOf(view).map((row) => row.offsetHeight);
+      other = grok.shell.addView(DG.View.create());
+      await delay(1000);
+      grok.shell.v = view;
+      await delay(1000);
+      const rows = rowsOf(view);
+      expectArray(rows.map((row) => row.offsetHeight), heights);
+      expect(rows.every((row) => slotsOf(row).length > 0 && slotsOf(row).every((s) => s.offsetWidth > 0 &&
+        s.offsetHeight > 0)), true, 'A panel collapsed');
+    } finally {
+      other?.close();
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('unbalanced iris: the class shares, Class balance\'s description, Wrong predictions under its title with row ' +
+    'numbers, its frame given back when it goes', async () => {
+    const unbalanced = await unbalancedIris();
+    const view = await openTrainView(unbalanced);
+    let shown: DG.DataFrame[] = [];
+    try {
+      const balance = panelViewer(view, 'Class balance');
+      expect(balance.props.description, 'The classes are unbalanced.');
+      expect(balance.props.descriptionVisibilityMode, 'Always');
+      const line = insightItem(view, 'The classes are unbalanced.');
+      expect(line.textContent, 'The classes are unbalanced.');
+      // 41.67% each for setosa and versicolor take the two tenths left over: the shares sum to 100%. The pointer is the
+      // tooltip's last line, in grey.
+      expect(await enterTooltip(line), 'setosa: 41.7%versicolor: 41.7%virginica: 16.6%See Class balance.');
+      const rect = line.getBoundingClientRect();
+      line.dispatchEvent(new MouseEvent('mouseenter', {clientX: rect.left + 2, clientY: rect.top + 2}));
+      await delay(600);
+      const pointer = ui.tooltip.root.querySelector('.forge-tooltip-minor');
+      ui.tooltip.hide();
+      expect(pointer?.textContent, 'See Class balance.');
+
+      setHyperparameter(view, 'iterations', 1);
+      setHyperparameter(view, 'maxDepth', 1);
+      await awaitTrained(view);
+      await awaitCheck(() => rowTitles(view).flat().includes('Wrong predictions'), 'No Wrong predictions', WAIT_MS);
+      const wrong = gridWith(view.resultsPane.root, 'Predicted Species');
+      expect(wrong.props.showRowHeader, true, 'Wrong predictions shows no row numbers');
+      const title = panelOf(view, 'Wrong predictions').firstElementChild?.getBoundingClientRect();
+      const canvas = wrong.canvas.getBoundingClientRect();
+      expect(title !== undefined && canvas.top >= title.bottom - 0.5 && canvas.height > 0, true,
+        `The grid from ${canvas.top}, the title to ${title?.bottom}`);
+      expectUnderTitles(view);
+
+      shown = [...view.resultsPane.frames];
+      expect(shown.length, 2, 'Wrong predictions has no frame of its own');
+      const mismatches = shown[1];
+      setHyperparameter(view, 'iterations', 100);
+      setHyperparameter(view, 'maxDepth', 6);
+      await awaitTrained(view);
+      await awaitCheck(() => !rowTitles(view).flat().includes('Wrong predictions'), 'Wrong predictions stays',
+        WAIT_MS);
+      expect(view.resultsPane.frames[0] === shown[0], true, 'The retrain replaced the viewers\' frame');
+      expect(mismatches.columns.length, 0, 'The frame of Wrong predictions was not given back');
+    } finally {
+      await closeTrainView(view, [unbalanced]);
+    }
+    expectReleased(shown);
+  }, {timeout: TIMEOUT});
+
+  test('a viewer or the Wrong predictions grid that fails to build gives its frame back', expectFailedBuildReleased,
+    {timeout: TIMEOUT});
+
+  test('a retrain of a regression redraws the regression line', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      view.targetInput.value = iris.getCol('Petal.Width');
+      view.featuresInput.value = columnsOf(iris, ['Sepal.Length', 'Sepal.Width', 'Petal.Length']);
+      await awaitTrained(view);
+      view.methodInput.value = 'XGBoost';
+      await awaitCheck(() => view.lastTraining?.engine.name === 'XGBoost' && !view.isTraining, 'No XGBoost regression',
+        TIMEOUT);
+      const plot = panelViewer(view, 'Predicted Petal.Width vs Actual');
+      if (!(plot instanceof DG.ScatterPlotViewer))
+        throw new Error('Predicted Petal.Width vs Actual is not a scatter plot');
+      const [frame] = view.resultsPane.frames;
+      // The plot recomputes its line when the state of its inputs changes, the filter's version among them
+      // (regression_line.dart getRegressionState), not the columns' values: the line cannot be read, its trigger can.
+      let filterChanges = 0;
+      const sub = frame.onFilterChanged.subscribe(() => filterChanges++);
+      try {
+        setHyperparameter(view, 'iterations', 1);
+        await awaitTrained(view);
+        await delay(500);
+      } finally {
+        sub.unsubscribe();
+      }
+      expect(view.resultsPane.frames[0] === frame && plot.root.isConnected, true, 'The retrain rebuilt the plot');
+      expect(filterChanges > 0, true, 'The values changed in place without a filter change');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('ROC Curve: a line over its own frame of 101 thresholds, the AUC of Performance; a cutoff moves only its ' +
+    'mark, a retrain refills the frame', expectRocCurve, {timeout: 120000});
+
+  test('MetricsTable: the Evaluation column and bullet, a finding in the failure color\'s tooltip', async () => {
+    const evaluated = new MetricsTable({metrics: {train: {accuracy: 0.9, f1: 0.9}, validation: {accuracy: 0.85,
+      f1: 0.8}}, rowCount: 150, skippedRows: 0, evaluation: {values: {accuracy: 0.9, f1: 0.9}, tableName: 't',
+      rowCount: 150, skippedRows: 0}});
+    expectArray(gridWith(evaluated.root, 'Metric').dataFrame.columns.names(),
+      ['Metric', 'Train', 'Validation', 'Evaluation']);
+    expect(Array.from(evaluated.root.querySelectorAll('ul > li'), (li) => li.textContent)
+      .includes('Evaluation: t (150 rows)'), true, evaluated.root.textContent ?? '');
+    const low = new MetricsTable({metrics: {train: {mse: 1, rmse: 1, mae: 1, r2: 0.1}, validation: {mse: 1, rmse: 1,
+      mae: 1, r2: 0.12}}, rowCount: 150, skippedRows: 0});
+    const grid = gridWith(low.root, 'Metric');
+    const tooltip = gridTooltip(grid, grid.cell('Train', metricRow(grid, 'R2')));
+    expect(tooltip.endsWith('R2 is below 0.3.'), true, tooltip);
+  });
+
+  test('EvaluationView: the Evaluation column equals Train on the training data; no column, no application',
+    async () => {
+      const iris = await openIris();
+      const {id} = await saveIrisModel(iris);
+      let view: EvaluationView | undefined;
+      try {
+        const model = await forgeDb.models.get(id);
+        const loaded = await loadModel(id);
+        const columnCount = iris.columns.length;
+        const [opened, frames] = await framesSharing(iris.columns.toList(), () => EvaluationView.open(model, loaded,
+          iris, iris.getCol('Species'), exactMapping(loaded.features, iris)));
+        view = opened;
+        expect(view.name, `Evaluation: ${model.name}`);
+        const metrics = gridWith(view.resultsPane.root, 'Metric').dataFrame;
+        expectArray(metrics.columns.names(), ['Metric', 'Train', 'Validation', 'Evaluation']);
+        for (let i = 0; i < metrics.rowCount; i++)
+          expectFloat(metrics.get('Evaluation', i), metrics.get('Train', i), 1e-6);
+        const text = view.resultsPane.root.textContent ?? '';
+        expect(text.includes(`Evaluation: ${iris.name} (150 rows)`), true, text);
+        const titles = rowTitles(view);
+        expectRows(titles[0], ['Predicted Species vs Actual', 'Confusions']);
+        expect(titles[1]?.includes('Performance'), true, JSON.stringify(titles));
+        expect(iris.columns.length, columnCount, 'A column was added');
+        expect(await forgeDb.applications.query().where('model_id', '=', id).count(), 0);
+        view.close();
+        view = undefined;
+        expectReleased(frames);
+      } finally {
+        view?.close();
+        await deleteModel(id);
+      }
+    }, {timeout: TIMEOUT});
+
+  test('Run Evaluation opens a reference model\'s data without a dialog and outside the workspace', async () => {
+    const iris = await openIrisFromFile();
+    const ref = datasetRefOf(iris);
+    let id: string | undefined;
+    let view: DG.ViewBase | undefined;
+    try {
+      if (ref === null)
+        throw new Error('iris has no origin');
+      id = (await saveTestModel(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'), iris.name,
+        {storage_mode: 'reference', dataset_ref: ref})).id;
+      grok.shell.closeTable(iris);
+      const tableCount = grok.shell.tables.length;
+      const dialogCount = DG.Dialog.getOpenDialogs().length;
+      const model = await forgeDb.models.get(id);
+      await runEvaluation(model);
+      view = Array.from(grok.shell.views).find((v) => v.name === `Evaluation: ${model.name}`);
+      expect(view instanceof EvaluationView, true, 'No evaluation view');
+      expect(DG.Dialog.getOpenDialogs().length, dialogCount, 'A dialog opened');
+      expect(grok.shell.tables.length, tableCount, 'The data joined the workspace');
+    } finally {
+      view?.close();
+      if (isOpen(iris))
+        grok.shell.closeTable(iris);
+      if (id !== undefined)
+        await deleteModel(id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Run Evaluation of a model without data asks for an open table, and warns without one', async () => {
+    const iris = await openIris();
+    const {id} = await saveIrisModel(iris);
+    const unfit = await saveSkipUniqueModel();
+    const tableView = grok.shell.addTableView(iris);
+    let dialog: DG.Dialog | undefined;
+    try {
+      const shown = new Set(DG.Dialog.getOpenDialogs().map((d) => d.root));
+      await runEvaluation(await forgeDb.models.get(id));
+      dialog = DG.Dialog.getOpenDialogs().find((d) => !shown.has(d.root));
+      expect(dialog?.title, 'Evaluate model');
+      expect(dialog?.input('Table').value?.name, iris.name);
+      expect(dialog?.input('Target').value?.name, 'Species');
+      dialog?.close();
+      await runEvaluation(await forgeDb.models.get(unfit.id));
+      const warning = await readUntil(() => balloonWith('No open table has the columns the model needs. Open its ' +
+        'training data or a similar table.'), (b) => b !== null);
+      expect(warning !== null, true, 'No warning without a fitting table');
+    } finally {
+      dialog?.close();
+      tableView.close();
+      if (isOpen(iris))
+        grok.shell.closeTable(iris);
+      await deleteModel(id);
+      await deleteModel(unfit.id);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Performance has Run Evaluation for a saved model only', async () => {
+    const iris = await openIris();
+    const {id} = await saveIrisModel(iris);
+    const manual = await insertModelRow({name: `forge-test-model-${Date.now()}-manual`});
+    const accordions: DG.Accordion[] = [];
+    const buttonsOf = async (modelId: string) => {
+      const model = await forgeDb.models.get(modelId);
+      const accordion = modelAccordion(ForgeModelHandler.rowOf(model), model);
+      accordions.push(accordion);
+      document.body.append(accordion.root);
+      const pane = accordion.getPane('Performance');
+      pane.expanded = true;
+      return Array.from(pane.root.querySelectorAll('button'));
+    };
+    const texts = (buttons: HTMLElement[]) => buttons.map((b) => (b.textContent ?? '').trim());
+    try {
+      const buttons = await buttonsOf(id);
+      expectArray(texts(buttons), ['Run Evaluation']);
+      expect(await enterTooltip(buttons[0]),
+        'Apply the model to its training data, or to an open table, and show how well it predicts.');
+      expectArray(texts(await buttonsOf(manual)), []);
+    } finally {
+      for (const accordion of accordions)
+        accordion.root.remove();
+      await deleteModel(id);
+      await forgeDb.models.delete(manual);
+    }
+  }, {timeout: TIMEOUT});
 });
 
 category('UI: Save model', () => {

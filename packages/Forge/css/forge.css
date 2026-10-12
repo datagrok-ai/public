@@ -84,12 +84,109 @@
   overflow: auto;
 }
 
-/* The Data header's offsets: the grid's header text lines up with the first input's label. */
-.forge-results-header {
-  height: 16px;
-  margin: 12px 0 8px;
+.forge-insights > ul {
+  margin: 0 0 12px;
 }
 
-.forge-results-header > h2 {
-  margin: 0;
+/* A viewer or a grid fills its panel under the title, whatever size it was given (the platform gives a box in a div
+   400 x 300 px, ui.css div.ui-div > div.ui-box); a grid's own height is overridden so it scrolls inside the slot. The
+   Performance and Insights panels keep their content's height and scroll. */
+div.ui-div.forge-results-panel:not(.forge-results-metrics):not(.forge-insights) > :last-child {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  height: auto;
+}
+
+/* In a row the title stays where it is and the content under it scrolls (ui.css div.ui-box > div.ui-div scrolls the
+   whole panel). */
+div.ui-box > div.ui-div.forge-results-panel {
+  overflow: hidden !important;
+}
+
+.forge-results-row .forge-insights > ul,
+.forge-results-row .forge-results-metrics > .forge-results-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* The grid and the bullets under the Performance title, aligned with the titles' text. */
+.forge-results-body {
+  padding: 0 10px;
+}
+
+/* The title's text answers the mouse for its tooltip (d4-dialog-title lets the mouse through), without the dialog
+   header's hover. */
+.forge-results-title > span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: auto;
+}
+
+.d4-dialog-header.forge-results-title:hover {
+  cursor: default;
+  background-color: transparent;
+}
+
+.forge-results-rows {
+  margin-top: 12px;
+}
+
+/* The panels share a row by their growth alone (set from the weights, re-split by a drag); the widths the splitter
+   writes when it measures the row would otherwise keep a passing layout. */
+div.ui-box.ui-split-h.forge-results-row > div.ui-box:not(.ui-split-h-divider) {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+/* The platform gives a box in a div 400 x 300 px (ui.css div.ui-div > div.ui-box): the rows span the width and are as
+   tall as their inline heights. */
+div.ui-div.forge-results-rows > div.ui-box {
+  width: 100%;
+  height: auto;
+}
+
+/* Five lines of one height, whatever the model holds. The height is the lines' own: ui.css div.ui-div counts the padding
+   a gallery card gets (dataset_gallery.css .d4-gallery-card) into the height. */
+div.ui-div.forge-model-card {
+  box-sizing: content-box;
+  height: 90px;
+  overflow: hidden;
+}
+
+.forge-model-card > * {
+  flex: none;
+  height: 18px;
+  line-height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.forge-model-card-title {
+  align-items: center;
+  gap: 4px;
+}
+
+.forge-model-card-title > .grok-icon {
+  flex: none;
+}
+
+.forge-model-card-title > label {
+  min-width: 0;
+}
+
+.forge-tooltip {
+  max-width: 320px;
+  white-space: normal;
+}
+
+.forge-tooltip-title {
+  font-weight: bold;
+}
+
+.forge-tooltip-minor {
+  color: var(--text-color-light);
 }

@@ -42,7 +42,12 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                    ├─> catalog/                     (Applicable to, Compare)
            │                    └─> ui/model-actions.ts, ui/model-handler.ts, ui/model-comparison.ts,
            │                        ui/apply-model-dialog.ts, ui/data-grid.ts
-           ├─> ui/train-view.ts ──> training/ ──> preparation/, engines/, metrics/
+           ├─> ui/train-view.ts ──> training/ ──> preparation/, engines/, metrics/, apply/ (evaluation.ts)
+           │                    ├─> ui/results-pane.ts ──> training/insights.ts, ui/metrics-table.ts, ui/results-layout.ts,
+           │                    │                      │   the method's visualize (preparation/shared-frame.ts)
+           │                    │                      └─> ui/results-viewers.ts ──> metrics/, preparation/shared-frame.ts,
+           │                    │                                                    apply/ (scatteredColumn, copyInto), ui/data-grid.ts,
+           │                    │                                                    ui/results-layout.ts (classesOf)
            │                    ├─> ui/save-model-dialog.ts, ui/apply-model-dialog.ts, ui/forge-app.ts (the balloon)
            │                    └─> storage/  ──> generated/db.ts  (grok.dapi.domains -> EMS schema forge)
            │                                  ├─> grok.dapi.files  (System:DomainFiles/forge/model)
@@ -50,10 +55,18 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            ├─> ui/apply-model-dialog.ts ──> apply/, engines/, preparation/, generated/db.ts (model query)
            ├─> apply/ (runApplyModel) ──> preparation/, engines/, storage/ (blob path), generated/db.ts,
            │                              grok.dapi.files (blob read)
-           ├─> ui/model-handler.ts ──> ui/model-panes.ts ──> catalog/, generated/db.ts, grok.dapi (users,
+           ├─> ui/model-handler.ts ──> ui/rich-tooltip.ts (the tooltip), generated/db.ts (features read once),
+           │                       apply/ (featureSchemasOf), catalog/ (featureFit),
+           │                       storage/model-fields.ts (tagsOf), ui/save-model-dialog.ts (STORAGE_CAPTIONS)
+           │                       └─> ui/model-panes.ts ──> catalog/, generated/db.ts, grok.dapi (users,
            │                                                  entities, permissions), DG.DomainObjectHandler
            │                                                  (audit, sharing), ui/data-grid.ts,
-           │                                                  ui/save-model-dialog.ts (writeModelInfo)
+           │                                                  ui/save-model-dialog.ts (writeModelInfo),
+           │                                                  ui/metrics-table.ts (MetricsTable, storedSummary),
+           │                                                  ui/evaluation-view.ts ──> training/evaluation.ts, apply/,
+           │                                                  catalog/ (applicableTables), engines/,
+           │                                                  storage/dataset-ref.ts, ui/metrics-table.ts,
+           │                                                  ui/results-pane.ts, ui/button-gate.ts
            ├─> ui/model-actions.ts ──> catalog/, storage/, ui/model-handler.ts, ui/apply-model-dialog.ts,
            │                           ui/edit-model-dialog.ts
            ├─> ui/model-comparison.ts ──> catalog/, ui/data-grid.ts, ui/model-panes.ts (modelIcon),
@@ -71,10 +84,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   (`DG.ObjectHandler.list()`) and both `registerOnce` calls skip a handler already there, so a second `_initForge` (or
   the test bundle) registers nothing twice; the model commands are registered only with a newly registered handler.
 - Every table of data in the UI is `readOnlyGrid` (`ui/data-grid.ts`): `DG.Viewer.grid` without editing, row header,
-  current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15, then it scrolls: an
-  inline height of `(rows + 1) * rowHeight + 2` px), with tooltips from `{headers, cells}` (by column name; the cells
+  current-row indicator and new-row icon, as wide as its host and as tall as its rows (up to 15,
+  then it scrolls: an inline height of `(rows + 1) * rowHeight + 2` px), with tooltips from `{headers, cells}` (by column name; the cells
   as functions of the row) through `onCellTooltip` (`gridTooltip`; a cell without its own text shows its value).
-  `textColumn` builds the grids' string columns.
+  `textColumn` builds the grids' string columns, `numberColumn` their float columns (format `0.000`).
 - `ForgeApp` lists the methods (section **Methods**, the grid `methodsGrid`: Method, Package, Method type, Roles,
   Hyperparameters; the Method type cell's tooltip says what a function or a script method is, the Roles cell's gives
   each role's meaning, the Hyperparameters cell's each input's description) and the catalog.
@@ -122,7 +135,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   (`PreparationInputs`, below; hidden while none of its inputs applies), the group **Method** (Method and the
   hyperparameters), all expanded at the start, and the **Train** row
   (`ui.buttonsInput`, `trainButton`). The view is a resizable split (`ui.splitH(..., true)`): the form's panel starts 400 px wide
-  (`FORM_WIDTH`) and scrolls by itself; **Results** takes the rest, its header line holding the training loader.
+  (`FORM_WIDTH`) and scrolls by itself; the results take the rest (`forge-train-results`, scrolling), with the
+  training loader (`resultsStatus`) in the header of the pane's **Performance** panel.
   The `trainRow` is right-aligned (`forge-train-row`). The ribbon holds only **Save** (`ui.bigButton`). A Table change rebuilds the form; the groups'
   subscriptions (`formSubs`) are dropped then and in `detach()`, the hyperparameter inputs' (`methodSubs`) on every
   Method change too. The view keeps the latest training in `lastTraining`: `result`, `runId`, the method, the table and the user's feature and target
@@ -135,16 +149,22 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   a name for the model."), so OK is disabled with that tooltip and the dialog's own validation blocks Enter too. The
   same form (`modelInfoDialog`; `saveModelDialog` adds the storage block to it) is **Edit model**. After a save the balloon `Model "<name>"
   saved.` has the links **Apply...** (`openApplyDialog` on the training table, the new model preset) and **Show in the
-  catalog** (`ForgeApp.open()`, which focuses an open catalog view instead of opening a second one). The Results grid is a `MetricsTable` of `ui/model-panes.ts`, shared
-  with the model's **Performance** pane (it builds one there). The Train view keeps one while results come (a training,
-  a cutoff re-cut): `update(summary)` rewrites the values in place and refills the bullet list when the metric rows are
-  the same, so the grid neither flickers nor loses its column widths; other rows (task, AUC-ROC, a hint shown in between)
-  build a new one. It is a frame of **Metric**, **Train** and **Validation** (format `0.000`) in a
+  catalog** (`ForgeApp.open()`, which focuses an open catalog view instead of opening a second one). The results are
+  a `ResultsPane` (`resultsPane`, see "Results"); `Training.request` keeps the `TrainingRequest` the
+  result was trained on (the prepared columns, the selection's target, `keptRows`) for it. The Performance panel's grid is a
+  `MetricsTable` of `ui/metrics-table.ts`, shared
+  with the model's **Performance** pane (it builds one there). The pane keeps one while results come (a training,
+  a cutoff re-cut): `update(summary)` rewrites the values in place, refills the bullet list and repaints the marks when
+  the metric rows and the value columns are the same, so the grid neither flickers nor loses its column widths; other
+  rows (task, AUC-ROC) build a new one; a hint shown in between detaches the grid and keeps it. It is a frame of **Metric**, **Train**, **Validation**
+  and, with `MetricsSummary.evaluation`, **Evaluation** (format `0.000`) in a
   `readOnlyGrid` with the header texts, the metric descriptions and the full-precision values as tooltips, then a
   bullet list (`ul`): `Rows: <used> used, <skipped> skipped (missing values)` (only when rows were skipped),
   `Validation: <folds>-fold cross-validation on <rows> rows`, `Seed: <seed>` with the seed in a selectable
-  `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Seed <seed> copied.`), and
-  `Positive class: <class>` (two classes only).
+  `forge-seed` span and the copy icon right after it (**Copy the seed**, balloon `Seed <seed> copied.`),
+  `Positive class: <class>` (two classes only) and `Evaluation: <table> (<rows> rows[, <n> skipped (missing values)])`
+  (with an evaluation). The `metricFindings` of the metrics mark their cells: `onCellPrepare` paints a marked value
+  (the finding's `splits`) in `DG.Color.failure`, and its tooltip ends with the finding's text (`R2 is below 0.3.`).
 - `CollapsibleGroup` (`ui/collapsible-group.ts`, classes `forge-group*` in `css/forge.css`) is the folding block of
   the Train view groups and of the Apply dialog's **Columns** and **More options**: a header with a chevron, the
   caption and an optional summary (red with `forge-group-invalid`), in Diff Studio's style; the chevron sits in a
@@ -190,7 +210,8 @@ missing-value handling and the preparation steps (`steps`, a `PreparationSteps`,
 takes them from `PreparationInputs.steps()`). `prepareTraining(selection)`
 handles the missing values (see "Missing values"), then applies the steps (`prepareFeatures`), and returns the
 `TrainingRequest`: `features` and `target`, the selection's columns with the missing values handled (the user's own
-columns where nothing changed; the model's feature list, target schema and data summary describe them), and
+columns where nothing changed; the model's feature list, target schema and data summary describe them), `keptRows`
+(the selection's rows they hold, a `BitSet` over the table, or `null` when no row was skipped), and
 `prepared` (`PreparedFeatures`), what the method is trained on, with the `options` that record the whole preparation
 (`options.missingValues.skippedRows` is the one record of the skipped rows). No frame is built: the engine calls
 build their own. After preparation fewer than `2 * folds` rows is a `ForgeError` ("After skipping rows with missing
@@ -199,7 +220,7 @@ values, N rows remain; training needs at least 10.").
 **Missing values in the view.** **Missing values** (see Components) is the first input of **Preparation** and follows
 the checked features. The **Target** tooltip adds "<target>: N rows without a value are skipped." ("1 row without a value is
 skipped.") when the target has gaps; it is information, not a problem. After a training with skipped rows,
-**Results** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid.
+**Performance** lists `Rows: N used, M skipped (missing values)` first in the bullet list under the metrics grid.
 
 **Defaults in the view.** Target: the table's last column. Features (`defaultFeatures`): every column the methods
 read as numbers (`isReadableNumber`: numerical, not dates, not bigint) except the target and integer columns without
@@ -240,8 +261,9 @@ becomes: the selection's method is not among them (the rule 8 text), or none is 
 selection. Check the features and the target.`). The result (`SelectionCheck`) also has `best` (`selectBestEngine`
 over the listed methods and the prepared columns), `failed` (the methods whose check threw, for the caller to log),
 `isInteractive`: the selection's method is listed and `retrainsLive` (its `isLiveUpdate` is on and its
-`isInteractive` says yes on the prepared columns), and `prepared`, those columns and target (none from
-`failedCheck`). A method's `isInteractive` that throws makes the whole check throw.
+`isInteractive` says yes on the prepared columns), `prepared`, those columns and target (none from
+`failedCheck`), and `insights`, the data insights of the prepared columns and the selection's target (see "Insights";
+empty from `failedCheck`). A method's `isInteractive` that throws makes the whole check throw.
 
 The view adds a validator to **Target**, **Features**, **Method** (the `method` messages) and **Missing values** that
 returns the view's current problems for that input. Every change of Table, Target, Features, a **Preparation** input
@@ -278,13 +300,13 @@ the error as its tooltip and shows each distinct error once. Platform validators
 Features shows the platform's "Can't be empty". A rejected selection writes nothing.
 
 **Live training.** A check without problems starts a training at once when `isInteractive` is true (`startTraining`
-live); otherwise **Results** shows `<Method> takes a while on <N> rows, so it does not retrain on every change. Click
+live); otherwise **Performance** shows `<Method> takes a while on <N> rows, so it does not retrain on every change. Click
 Train.` (N, the target's length). **Train** (`train()`) starts one when the selection has no problem and nothing
 trains. Every training runs through the view's `TrainingQueue` with a task-bar indicator `Training <Method> model`,
 created when the training starts (a request superseded while waiting shows none; cancellable: the indicator's cancel
 stops it before its next fit); a loader without text
-stands on the **Results** header line, above the previous results (live) or an empty pane (**Train**). The
-queued function prepares the data, builds the run record from the request and trains. Before any training, and after a problem, a failure or a cancel, **Results** reads `Choose the
+stands next to the **Performance** header, over the previous results (live) or an empty panel (**Train**). The
+queued function prepares the data, builds the run record from the request and trains. Before any training, and after a problem, a failure or a cancel, **Performance** reads `Choose the
 target and the features; the model trains as you change them.` (the not-interactive hint after a cancel of such a
 method); when the only problems are invalid settings (hyperparameters, missing-values settings or the **Positive class
 cutoff**), it reads `Fix the settings.`. `isTraining` is true from the start of a training until its run is recorded; **Save** waits for it. A result
@@ -327,8 +349,10 @@ writes nothing, and neither does a failure before the data was prepared (too few
 `linkTrainingRun` when the model is saved; deleting the model keeps the run (`setnull`).
 
 The result (`TrainingResult`) carries the blob, the task, the metrics, the target and feature schemas, the
-preparation options, the splitting, the seed, the hyperparameters and the row count (the prepared rows the model
-learned from); the skipped rows are in `options.missingValues`. The run and model rows record that row count, and the
+preparation options, the splitting, the seed, the hyperparameters, the row count (the prepared rows the model
+learned from; the skipped rows are in `options.missingValues`) and `prediction`, the final model's prediction of
+those rows as the method returned it (with Predict probability the scores, the same column as `scores.train`);
+`trainPredictionOf(result)` gives its labels (the scores cut at the result's cutoff). The run and model rows record that row count, and the
 dataset fingerprint is computed on the request's `features` and `target` (before the preparation steps). With
 Predict probability it also keeps `scores` (`ProbabilityScores`: the method's train and out-of-fold predictions, the
 selection's target, the positive class and both AUC-ROC values, measured once), so `recutResult(result, cutoff)` cuts
@@ -445,6 +469,226 @@ all-unique columns (the core's rule); without `oneHotCategories` one-hot uses th
   labels the cutoff gives (`replayPostprocessing` of the scores) against the selection's target, with its positive
   class, and `auc` on the scores themselves. The scores are regression outputs, not calibrated probabilities (real
   class probabilities come when the EDA methods return them, phase 9).
+- `rocCurveOf(actual, score, positiveClass)` (the points of **ROC Curve**, ported from EDA's probabilistic MPO): at each
+  of `ROC_THRESHOLDS` (0, 0.01, ..., 1) a row is positive when its score is at least the threshold (as the cutoff cuts
+  the scores); `tpr` and `fpr` are float arrays of 101 values, a rate whose class has no row 0. The curve is drawn,
+  not measured: `auc` stays the metric, so the AUC of the 101 points may differ slightly from it.
+
+**Findings.** `metricFindings(metrics)` lists the values worth a word, per metric in `METRIC_IDS` order (a
+`MetricFinding`: `id`, `kind`, the `splits` it marks, `text`, `detail` `Train 0.912, validation 0.405.`, 3 decimals, `-`
+for a missing value):
+
+- `threshold`: the splits whose value is below `METRIC_THRESHOLDS` (`r2` 0.3, `auc` 0.5, the built-in tool's):
+  `R2 is below 0.3.` The built-in tool tested the train value only; Forge tests both splits.
+- `mismatch`: a validation value far from the train one (`areValuesSimilar` false), marking the validation value:
+  `The validation <label> is far from the training one: the model may be overfitting.`
+
+`areValuesSimilar(a, b)` is the built-in tool's closeness: within 0.1 when the mean magnitude of the two is below 1,
+otherwise a relative difference (to that mean) of at most 0.9, so only values several times apart differ.
+
+**Statistics** (`metrics/statistics.ts`). `statisticsOf(actual, predicted)` gives a `StatisticRow` per id of
+`STATISTIC_IDS` (`min, max, med, avg, stdev, variance, skew, kurt, q1, q2, q3`, the built-in tool's order; `q2` is the
+median again) from `DG.Stats` of each column; the ids are shown as they are, `STATISTIC_DESCRIPTIONS` holds the
+platform's texts of the statistics. `residualsOf(target, prediction)` is a float column `residuals`, prediction minus target per
+row, empty where either is.
+
+## Insights
+
+`training/insights.ts`, the built-in tool's tips; an `Insight` is `{text, detail?, items?, panel?}`: the detail holds
+the numbers (one line per `\n`), `items` a list of them, `panel` (`InsightPanel`: `classBalance`, `statistics`,
+`correlation`, `residuals`, `confusions`, `metrics`) the results panel that shows what it says. No DOM: the UI shows
+them.
+
+`dataInsights(columns, target)` runs on the columns a method gets and the selection's target (`SelectionCheck.insights`;
+with Predict probability that is the text target, not the 0/1 one, so its classes are checked too):
+
+| Check | Columns | Text |
+|---|---|---|
+| Unbalanced classes | text and yes/no, the target first; a class whose rows are more than 20% off the average per class (empty cells and unused categories aside); the first four such columns | the target: `The classes are unbalanced.` (panel `classBalance`); a feature: `The classes of <column> are unbalanced.`; detail `<class>: 24.6%` per class, one decimal, rounded so the shares add up to exactly 100% (largest remainders); past ten classes the nine largest and `other <n> classes: <share>%` |
+| Highly correlated | numerical (not dates), 2 to 99 of them; the pairs with Pearson correlation above 0.9 | one insight `Features are highly correlated.`; `items` `<a> and <b>: 0.96` per pair; panel `correlation` when a pair has no target |
+| Almost unique | text and yes/no without a semantic type, more than 80% of the values different | `Almost every value of <column> is different; it will not help the model.`; detail `90% of its values are unique (above 80%).` |
+
+The built-in tool's `<column> is text` tip is gone: rule 7 already reports such a feature, and the insights are
+computed only when no target or features rule fails.
+
+`resultInsights({values, target, prediction, positiveClass?})` checks a trained model's predictions of `target` (the
+kept rows), `values` being its metrics:
+
+- text or yes/no target: accuracy below 0.2 -> `Only 15% of the rows are predicted correctly.` (detail
+  `Accuracy 0.150 (below 0.2).`, panel `metrics`); with sensitivity and specificity, one ratio of them below 0.6 ->
+  `The model finds <negative> much better than <positive>.` or the other way round (detail `Sensitivity 0.900,
+  specificity 0.300.`, panel `confusions`);
+- numerical target: the residuals' quartiles: the top quarter more than four times as wide as the middle half ->
+  `Large errors are mostly on one side: the model over-predicts.`, the bottom quarter -> `... under-predicts.` (detail
+  the built-in arithmetic `Q4 - Q3 = a - b = c` and `Q3 - Q1 = ...`, panel `residuals`); then one insight for the
+  statistics of `statisticsOf` whose predicted value is not similar to the actual one (`areValuesSimilar`; a value that
+  is not finite is skipped): `The predictions' statistics deviate significantly from the actual ones.`, `items`
+  `variance: predicted 0.214, actual 0.762` per such statistic, panel `statistics`.
+
+The metric findings are not part of `resultInsights`: the caller adds `metricInsights(metrics)`, the findings as
+insights with panel `metrics`: each `threshold` finding as it is (its text and detail), and all `mismatch` findings in
+one `The model may be overfitting.` with `items` `<label>: train 0.912, validation 0.405` per metric (the grid's cell
+tooltips keep the finding's own text per metric).
+
+## Results
+
+`ui/results-pane.ts`, `ResultsPane`: the Train view's results and the content of the `EvaluationView` (see "Run
+Evaluation"). The pane holds the insights, the hint and the rows; the viewers and the data under them are built,
+refilled and given back by `ui/results-viewers.ts` (`buildShown`, `refillShown`, `markRoc`, `updateWrongPredictions`,
+`releaseShown`, `releaseLinkedFrame`; the panel titles `PANEL_TEXTS`, `resultsTitle`, `resultsPanel`). Its constructor takes the element shown next to the **Performance** title (the Train view's loader host;
+the evaluation passes none). Two panels are built once and never rebuilt: the **Performance** panel
+(`forge-results-panel forge-results-metrics`: its title with the status, then the metrics host `forge-results-body`
+with a hint text or the `MetricsTable` root) and **Insights & Tips** (`forge-insights`: one `li` per insight, its text
+only; its tooltip the detail lines, the `items` as a bulleted list and, last, `See <panel title>.` in grey
+(`forge-tooltip-minor`) when the insight's `panel` is mounted; repeated texts once; hidden while empty). The insights of a viewer panel
+(every `InsightPanel` but `metrics`, whose grid marks its own findings) are also its viewer's `description`
+(`descriptionVisibilityMode: 'Always'`, the texts joined by a space, escaped as literal Markdown), refreshed with the
+list. Every panel's title is the built-in tool's widget title, `ui.div([span], 'd4-dialog-header d4-dialog-title
+forge-results-title')`; `PANEL_TEXTS` holds each title (`<name>` for the target's or the method's name) with what the
+panel shows, the span's tooltip (the span takes the mouse, `d4-dialog-title` lets it through). The root holds the hint
+host (the two panels while there is no result) and the rows host (`forge-results-rows`).
+
+- `setDataInsights(insights)`: the check's `SelectionCheck.insights`, set after every check (also when a problem or a
+  hint follows), shown first until the next call.
+- `show(data: ResultsData)`: `engine`, `table`, `columns` (what the method saw), `target` (the selection's), `prediction`
+  (labels or values; the Train view passes `trainPredictionOf(result)`), `score` (Predict probability), `keptRows`,
+  `positiveClass`, `cutoff` (Predict probability: the Train view's `binaryClassificationThreshold` of the result, the
+  evaluation's of the model), `blob`, `summary`. The grid is the `MetricsTable` in place at once (see "Components");
+  the result insights are `resultInsights` of `summary.evaluation?.values ?? summary.metrics.train` and then
+  `metricInsights`.
+  Then the method's `visualize` is awaited, and the rows are mounted in one step: the previous rows stay until the
+  whole result is ready, and a show that a newer show or hint outdated (a `version` counter) detaches the views it got
+  and mounts nothing. A result of the same data keeps the viewers (see "Keeping the viewers" below); the method's own
+  views are new every time.
+- `showHint(text)`: the two panels go back to the hint host first (`append` moves without killing, `ui.empty` kills
+  every widget under it), then the rows go, the frames are given back, the result insights go (the data insights stay)
+  and the metrics host shows the text (`''` for nothing). The grid is detached, not disposed: the next result with the
+  same metric rows shows it again. `clear()`: everything goes, the grid disposed. The view calls it on a Table change
+  and in `detach()`.
+- `frames`: the shared frames of the shown result (tests); kept until `clear()`, a hint or a result of other data.
+
+`ui/results-layout.ts` (no DOM): `resultsLayout(kind, available, visualizeCount)` gives the rows, each a height, its
+panel keys and their weights (the initial shares of the row's width). `kind` (`resultKindOf(target)`) is `regression` for a numerical target,
+`binary` for exactly two non-empty classes (Predict probability too: the pane's target is the selection's text
+column), `multiclass` otherwise. A key the result lacks is dropped and an empty row disappears; a row keeps its
+template height. When row 2 is left with fewer than three panels, `classBalance` moves from row 3 to its right end
+(weight 1.5). Weights in brackets, 1 where none is given:
+
+| kind | row 1 (350 px) | row 2 (300 px) | row 3 (450 px) |
+|---|---|---|---|
+| `binary` | `predictedVsActual` (2), `rocCurve` (2), `metrics` | `insights`, `confusions` (1.5), `wrongPredictions` (2.5) | `features`, `correlation`, `classBalance` |
+| `multiclass` | `predictedVsActual`, `confusions` | `insights`, `metrics` (1.5), `wrongPredictions` (2.5) | `features`, `correlation`, `classBalance` |
+| `regression` | `predictedVsActual`, `residuals`, `distributions` | `insights`, `metrics` (1.5), `statistics` (1.5) | `features`, `correlation` |
+
+Then `visualize:0`, `visualize:1`, ... in rows of at most `VISUALIZE_PER_ROW` (3), `VISUALIZE_ROW_HEIGHT` (350 px).
+
+`mountRows(layout, panels)`: a row is a `ui.splitH(slots, null, true)` (`forge-results-row`, inline `height`) of slots,
+`ui.box(panel)` each, so the splitter's dividers bind the slots themselves. A row whose signature (the keys and the
+height) equals a mounted row's is reused: a slot that holds its panel already is left alone, another is emptied and
+takes its panel (a panel the new layout uses elsewhere is moved out first, the two stable panels go back to the hint
+host, the rest is disposed), so the widths and heights the user dragged survive; another row is built at its initial
+sizes, and a mounted row that is not reused is emptied the same way. The rows go into a `ui.splitV(rows, null, true)`,
+rebuilt only when the sequence of rows changes (its dividers bind the rows); a single row is mounted as is (a lone box
+in a `ui-split-v` gets `flex-basis: 50%`). Platform facts this relies on (`js-api/ui.ts` `splitH` / `splitV`):
+
+- once in the DOM, `splitH` sets each slot's `flexGrow` from the widths it measures (0 px in a hidden view), and on
+  every size change of the row writes the rendered widths back as inline widths (`handleResize`), which can keep a
+  passing layout; a drag sets both neighbours' widths and re-splits their `flexGrow` by the dragged widths. So the slots
+  share the row by `flexGrow` alone (`flex-basis: 0`, `min-width: 0` on `.forge-results-row` slots): each slot is built
+  with the growth of its weight and a width of `SLOT_WIDTH` (100 px) per weight unit, so whatever widths the splitter
+  finds (the preset ones, or rendered ones in the same ratio) it derives the weights' ratio; a row whose slots all
+  lost their growth (measured in a hidden view) gets the weights back;
+- `splitV`'s `handleResize` (`ui.ts` ~1947) sets every row's height to `$(row).height()` plus a share of the size
+  change, with no check that the root is in the document (`splitH` has one); `cash-dom` measures a detached or hidden
+  element as 0 px, so switching to another view zeroed every row. The pane keeps each row's inline height while the
+  rows are shown (a `MutationObserver` on the mounted rows' and slots' `style`, observed anew on every mount and
+  disconnected when the rows go) and puts it back when it changes while they are hidden; a workaround to drop once
+  `splitV` has `splitH`'s guard;
+- the rows host is a `ui-div`, and the platform rule `div.ui-div > div.ui-box` (`ui.css`) makes a box in a div 400 x
+  300 px: `div.ui-div.forge-results-rows > div.ui-box` sets the split root to the full width and its content's height
+  (the sum of the rows), so the scrolling `forge-train-results` panel scrolls the rows and the splitters resize inside;
+- `div.ui-box > div.ui-div` makes a panel (a `ui.divV`) fill its slot and scroll, so the title scrolled away with the
+  content: Forge's `div.ui-box > div.ui-div.forge-results-panel` keeps the panel from scrolling (`overflow: hidden`,
+  `!important` as the platform's); the viewer, the panel's last child (a `ui-box`, so 400 x 300 px by the same platform
+  rule), fills the panel's width and the rest under the title (`width: 100%`, `flex: 1 1 0`, a grid's own height
+  overridden), and in a row the Performance panel's body and the insights list do the same and scroll inside.
+
+One frame, `sharedFrame([...columns, target, prediction, marks, score?])`, holds the user's columns where the method
+saw them (no row skipped, no preparation step) and Forge's own columns: the prediction renamed `Predicted <target>`,
+`residuals` (`residualsOf`, a regression) or `correctness` (a bool, right label or not; markers `true` circle border,
+`false` cross; a classifier) and `score`. Forge's columns get a name neither the table nor the frame has (` 2`, ` 3`,
+... appended). The panels (the built-in tool's titles and conditions):
+
+| Target | Panel | Viewer |
+|---|---|---|
+| numerical | **Predicted <target> vs Actual** | `scatterPlot`: target by prediction, regression line |
+| | **Residuals** | `scatterPlot`: residuals by prediction, regression line, y from `-m` to `m`, `m` the target's largest magnitude |
+| | **Distributions of predicted and actual <target>** | `histogram` of Forge's own frame of 2N rows: `targets` (the target, then the prediction), split by `label` (`TARGET` / `PREDICTION`) |
+| | **Statistics** | `readOnlyGrid` of **Statistic / Actual / Predicted** (`statisticsOf`, `0.000`), header tooltips, the statistic's description on **Statistic** |
+| text or yes/no | **ROC Curve** (with Predict probability) | `scatterPlot` over Forge's own frame of `Threshold`, `FPR`, `TPR` (`rocCurveOf` of the score for the positive class, 101 rows), as EDA's probabilistic MPO: a line (`linesOrderColumnName` `FPR`, `linesWidth` 5, `markerType` `dot`), the dashed formula line `${TPR} = ${FPR}` `Non-informative baseline`, no column selectors; the frame's current row is the cutoff's threshold (`round(cutoff * 100)`); the panel title `ROC Curve (AUC = 0.912)`, the AUC-ROC of **Performance** (`summary.evaluation?.values.auc ?? summary.metrics.train.auc`) |
+| | **Predicted <target> vs Actual** | `scatterPlot` of the first two numerical columns, colored by the target, markers by `correctness` (two or more numerical columns) |
+| | **Confusions** | `confusionMatrix`: target by prediction (fewer than 10 classes) |
+| | **Wrong predictions** | when a row is wrong: a `readOnlyGrid` of a second shared frame, every column of the table and the prediction spread over its rows (`scatteredColumn`; the same column when no row was skipped), filtered to the wrong rows, with the row header (the table's row numbers); header tooltip `The model's prediction for the row.` |
+| | **Class balance** | `barChart` of the same frame: split and stacked by the target, the row count (`count`), so one bar per class in the class's own color (the target column's colors), the Stack, Category and Value selectors hidden; the kept rows only, as every viewer of the frame; no predicted bars |
+| both | **Features** | `pcPlot` of the numerical columns (and, for a numerical target, the target and the prediction), colored by the target (3 to 20 numerical columns) |
+| | **Features correlation** | `correlationPlot` of the numerical columns (3 to 20, as **Features**) |
+| | the method's name | the method's `visualize(df, targetColumn, predictColumn, model)` (on a shared frame of `columns`), one panel per element it returns (EDA's PLS: its viewers' roots), rows 4+; a failure is reported once (`reportError`, repeating) and the other panels are mounted |
+
+The hovered row is linked both ways between each frame and the table: through `keptRows` (the frame's row `i` is the
+table's `kept[i]`, the inverse `-1` for a skipped row), directly for the wrong-predictions frame; a value is set only
+when it differs, and the events a set fires are not passed back (a skipped table row would come back as none). A
+frame's extra parent changes nothing for the user's columns (`Column.parent` is the first one, the table).
+
+Keeping the viewers: the pane keeps the shown result's data (table, kind, `columns`, `target`, `keptRows`), its frame,
+Forge's columns, Forge's own frames of **Distributions ...**, **Statistics** and **ROC Curve** (with its title), the
+wrong-predictions frame and the viewer panels. A new result whose table and kind are the same, with or without a score as before, the same kept rows
+and the same columns and target (the same objects, or copies with the same name, type and values: a skipped row or a
+preparation step gives new copies on every training) only refills: the new prediction and score are written into the
+old columns in place (`copyInto` of `apply/apply-model.ts`, or `init` for a text column so its categories are rebuilt, then `fireValuesChanged`; only when the type and the length match, otherwise everything
+is rebuilt; a score equal to the shown one, as after a cutoff change, is not written; a new score refills the ROC
+frame's `FPR` and `TPR` in place, its 101 rows kept), then the marks, the distribution values and the statistics are recomputed in place, so the viewers redraw with
+their state (zoom, sizes) kept. A scatter plot recomputes its regression line only when the state of its inputs
+changes (its columns, its filter's version, its settings: `getRegressionState`, `d4/.../scatterplot/features/
+regression_line.dart`), not when the values of its columns do, so a regression refill fires the frame's filter
+(`filter.fireChanged()`, the filter itself unchanged). **Wrong predictions** follows the new prediction: its scattered
+column refilled and its filter re-set while a row is wrong, built when one becomes wrong, dropped (and its frame given
+back after the mount) when none is. **ROC Curve** is on its own frame, so no refill of the preview frame reaches it: a
+cutoff change only moves its current row, and the title and the current row are set only when they change (on the
+platform's ROC curve viewer, which shared the preview frame, every refill of the prediction and the marks redrew the
+curve). A hyperparameter, Method or cutoff change gives such a result; a change of the
+data (Table, Target, Features, other skipped rows or imputed values, Predict probability, another task kind) builds
+everything again. A panel that appears or goes (Wrong predictions, Insights & Tips, the method's own views) changes
+only the rows it is in, and row 3 too when **Class balance** moves between rows 2 and 3. A mount disposes the viewers it no longer shows with `ui.empty` of their slots and rows (the platform's
+`Widget.kill`; `Viewer.close` works only in a table view); after a rebuild the previous result's subscriptions are
+dropped and its shared frames given back (`releaseFrame`); a hint and `clear` do the same for the shown result. A
+viewer or the **Wrong predictions** grid that fails to build gives its frame and hover links back before the error
+goes on (the shown result stays).
+
+## Run Evaluation
+
+`ui/evaluation-view.ts`. `runEvaluation(model)` (the Performance button; a UI boundary, `reportError`) loads the model
+(`loadedModelOf`) and finds data with known targets: a stored reference (`storedDatasetRef` -> `openDatasetRef`), else
+the uploaded copy (`grok.dapi.tables.getTable(dataset_table_id)`); neither adds the table to the workspace. Such a
+table is evaluated on its exact column names (`exactMapping`) and its column `target_name` (none: `The data source has
+no column '<target>' the model predicts. Choose another table.`). A model that keeps neither gets
+`evaluateModelDialog(model, loaded, tables)` over the open tables it fits (`applicableTables`; none: `No open table has
+the columns the model needs. Open its training data or a similar table.`): **Evaluate model** with **Table** (the
+current table when listed, else the first) and **Target** (the columns `compatibility` accepts for the stored target
+schema, `targetSchemaOf(model.target)`, else a `double` for a regression and a `string` otherwise; `target_name`
+preset when it passes), refilled on a Table change; OK, kept disabled by a `ButtonGate` (`Choose a table.` / `Choose a
+target.`), evaluates with `suggestMapping`.
+
+`EvaluationView` (a `DG.ViewBase`, tab `Evaluation: <model>` with the model icon) holds a `ResultsPane` (`resultsPane`)
+in a scrolling `forge-train-results` panel: the same rows as a training, the **Performance** header without a loader.
+`EvaluationView.open(model, loaded, table, target, mapping)` adds the view, shows `Evaluating the model...` and runs
+`evaluateModel` under the cancellable task-bar progress `Evaluating <model>` (closed when it ends). A cancel
+(`progress.canceled`; the batch loop's message is not read) shows `Evaluation was cancelled.` and closes the view;
+another failure is reported and closes it. The result goes to `ResultsPane.show` with the stored summary
+(`storedSummary`, as Performance reads it) plus `evaluation` (the values, the table's name, the kept rows and the
+skipped ones), so the grid has the **Evaluation** column, the bullets end with `Evaluation: <table> (<rows> rows)` and
+the result insights read the evaluation's values; the positive class is the stored one, else the options'. The view's
+`detach()` clears the pane (its frames given back); a result that comes after the view closed is dropped. The evaluated
+table is held by the view only; no column is added and no application is recorded.
 
 ## Saving
 
@@ -498,7 +742,8 @@ the target is the row's `target_name`.
 An `ApplyRequest` is the model, the table, the column mapping, the batch size (`DEFAULT_BATCH_SIZE` 10000) and the
 missing-value settings. `applyAndRecord(request, source, progress?)`:
 
-1. Refuses the request when `mappingProblems` reports anything or the table has no rows; a refusal is not recorded.
+1. Refuses the request when `mappingProblems` reports anything or the table has no rows (`checkApplyRequest`); a
+   refusal is not recorded.
 2. Takes the feature columns (`featureColumns`, `apply/feature-columns.ts`): the mapped columns of the table in training
    order, the table's own. A column whose name differs from its feature is a renamed copy: renaming the table's
    column would rename it in the user's table, and the engines find features by name.
@@ -515,10 +760,27 @@ missing-value settings. `applyAndRecord(request, source, progress?)`:
    repaint get through: fast engine calls resume as microtasks and would otherwise hold the page to the last batch.
 6. `replayPostprocessing` replays `binary-classification`: scores at or above `binaryClassificationThreshold` become
    `positiveClass`, the others `negativeClass`, in a column of `targetType`.
-7. With skipped rows, the predictions are spread over a full-length column; skipped rows stay empty.
+7. With skipped rows, the predictions are spread over a full-length column (`scatteredColumn`); skipped rows stay
+   empty.
 8. Names the column `predictionName(table, target)`: `<target> (predicted)`, or `<target> (predicted 2)`, ... when a
    column of that name exists (ignoring case); tags it `forge.model` = the model id (`PREDICTION_TAG` in
    `constants.ts`) and adds it to the table.
+
+Steps 2-6 are `predictRows(request, progress?)`, which adds nothing to the table: it returns `RowPredictions`, the
+columns the method got, its own output (`raw`), the labels (`raw` with the postprocessing replayed, `raw` itself
+without a step), `keptRows`, `skippedRows` and the blob read. `targetSchemaOf(model.target)` reads a stored target
+schema with its categories.
+
+**Evaluation** (`training/evaluation.ts`). `evaluateModel(request, progress?)` measures a saved model on a table whose
+`target` column holds the actual values (an `EvaluationRequest`: the `LoadedModel`, the table, the target, the column
+mapping, the positive class): `checkApplyRequest`, then `predictRows` with the default batch size and Skip rows; the
+target is the given column, or a copy of its kept rows (`columnRowCopy`). A Predict probability model is measured as at
+training: the classification metrics of the labels with the positive class (the request's, else the options') plus
+`auc` of the scores (`probabilityValues`, shared with training), the scores coming back as `score`; any other model
+uses `metricsOf(taskOf(target), ...)` (`taskOf`: regression for a numerical target). A
+row without an actual value is left out by the metrics. The `EvaluationResult` holds the columns, the target and the
+prediction of the kept rows, `keptRows`, `skippedRows`, `rowCount` (the kept rows), the metric `values` and the blob.
+Nothing is added to the table and no application is recorded.
 
 No step writes into the table's columns: the engines read their inputs and return new frames, the replay builds new
 lists with Forge's own one-hot columns, and the imputer only gets copies of the columns it fills. The pipeline builds
@@ -665,13 +927,22 @@ renders model rows wherever the platform shows them: the catalog's context panel
 and the **Predicted by** pane (which reads only the card's columns). The autostart function `_initForge` registers it
 once (`ForgeModelHandler.registerOnce`), together with the model commands. Its members read only the row's values; a
 row made from catalog values (`ForgeModelHandler.rowOf`, through the platform's `rowFrom`, with the system dates as
-text) carries the catalog columns only.
+text) carries the catalog columns only. The Domains view's rows come without the json columns: the card and the
+tooltip take the count from `feature_count` and read `features` and `options` once per model and session
+(`withFeatures`), filling the feature list and the **Applicable to** icon in when they come.
 
-- Icon: the model icon. Markup: the icon and the name. Tooltip: the name and **Method**, **Task**, **Target**,
-  **Training rows**.
-- Card, the built-in tool's (`grok-gallery-grid-item-title`): the name, `Applicable to <open tables it fits>` (only
-  when one fits), `Predict <target>`, `by <first five features>...`, `using <method>`, `Created on <YYYY-MM-DD>`. A
-  double-click is the platform's Open (the row's own view).
+- Icon: the model icon. Markup: the icon and the name. Tooltip: Forge's rich tooltip (`ui/rich-tooltip.ts`,
+  `richTooltip`: a bold title, the main lines, the minor lines in grey, at most 320 px wide; `shortList` cuts a list
+  after about two lines with `+N more`; the same file's `bulletList` fills a `ul` for the insights' tooltips and the metrics
+  grid's bullets): the name; `Predicts <target> from <N> features with <method> · <task> · <rows>
+  rows` (no `from` part without features); the features; in grey `Created <YYYY-MM-DD> by <login> · Data storage: <mode> · Tags: <tags>` (the parts the
+  row has; the author's login is read with `grok.dapi.users.find` once per session and filled in when it comes).
+  Grid header and cell tooltips stay single short lines.
+- Card, the built-in tool's in five lines of one height (`forge-model-card`: 90 px of content, each line 18 px, cut
+  with an ellipsis; `content-box`, because `ui.card` gives a gallery card 10 px of padding and `div.ui-div` counts it
+  into the height): the name (`grok-gallery-grid-item-title`) with a table icon when an open table fits the model (its
+  tooltip `Applicable to <tables>`), `Predict <target>`, `by <first five features>...` (`by <N> features` until the
+  list is read), `using <method>`, `Created on <YYYY-MM-DD>`; a missing part leaves its line empty. A double-click is the platform's Open (the row's own view).
 - `renderProperties` reads the full row once and returns `modelAccordion` (`ui/model-panes.ts`), whose title is the
   one the platform gives a row: the model icon, the favorites star (`ui.star`), the name and the row's commands
   (`ui.contextActions`), added before the panes (`Accordion.addTitle` appends); a row the user can no longer read shows
@@ -683,7 +954,7 @@ text) carries the catalog columns only.
 | Pane | Content |
 |---|---|
 | **Details** (open) | The description, then **Author**, **Created**, **Updated**, **Table** (`<table> (<rows> rows)`), **Data storage** (`None` / `Reference` / `Copy`), **Data source** (a reference: its `path`, else its query `name`, else `a script`), **Data copy** (a copy: `ui.render` of the uploaded `TableInfo`, `missing` when `grok.dapi.tables.find` gives none), **Last run** (the newest application's time, with ` (failed)` / ` (cancelled)` when it did not complete; `Never` when none), **Applications** (the count), **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables it fits; left out when none), then **Tags**: every change is written with `writeModelInfo` (`ui/save-model-dialog.ts`, shared with Edit model; tags only), one write at a time, each against the version the previous one returned, so quick changes are no conflict; a model changed elsewhere meanwhile asks with the platform's conflict dialog to reload (Details is rebuilt from a fresh read) or overwrite |
-| **Performance** | `MetricsTable` of the stored metrics (the Train view's grid: Metric / Train / Validation and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics |
+| **Performance** | `MetricsTable` of the stored metrics (`storedSummary`; the Train view's grid: Metric / Train / Validation, the findings marked in red, and its bullet list of rows, validation, seed with the copy icon, positive class); "No metrics were recorded for this model." without metrics; then the button **Run Evaluation** (`runEvaluation`, see "Run Evaluation"; tooltip `Apply the model to its training data, or to an open table, and show how well it predicts.`) when the model's blob is Forge's own (`ownBlob`), so a row made by hand has none |
 | **Activity** | `N application(s)` and a grid of the newest applications (up to 100): **When**, **Who** (login, the authors read with one `grok.dapi.getEntities`; empty for a deleted user), **Table**, **Rows**, **Prediction column**, **Status**, **Source**, **Duration (ms)**, with a tooltip per header, the time with seconds on **When**, the meaning on **Status** (`Completed: the column was added.`, `Failed: <error>`, `Cancelled: stopped between batches, no column added.`) and on **Source** (`The Apply dialog or the catalog.`, `A script, through Forge:applyModel.`); "Not applied yet." without one |
 | **Sharing** | The groups the model was shared with (**Can view**, **Can edit**) or "Not shared yet. Only its author and administrators can see this model.", the button **Share...** (`DG.DomainObjectHandler.shareRow`: the platform's sharing dialog; its one `try/catch` reports a refusal before the dialog opens), and "Sharing a model needs the Share permission on this model; ask an administrator." for a user without Share on the row (`~can_share`; only for such a user is a refused read of the shares expected, and it leaves the groups out) |
 | **History** | The platform's audit pane (`DG.DomainObjectHandler.auditPane`): one line per change of the row (user, time, `insert` / `promote` / `update`), newest first |
@@ -735,7 +1006,8 @@ the Compare view: the table view of `compareModels` with the same Forms viewer a
 
 `isPredictionColumn(col)` (`Forge:isPredictionColumn`) is true when the column carries the `forge.model` tag
 (`PREDICTION_TAG`). The panel function `predictedByPanel` (friendly name **Predicted by**, `PANEL_PREDICTED_BY`;
-`meta.role: panel`, condition `Forge:isPredictionColumn(col)`) shows the card of the model whose id the tag holds, or
+`meta.role: panel`, condition `Forge:isPredictionColumn(col)`) shows the card (with its rich tooltip; it reads the
+card's and the tooltip's columns) of the model whose id the tag holds, or
 "The model that predicted this column is no longer available to you.". The raw tag stays in the column's tags.
 
 ## Sharing
@@ -790,7 +1062,19 @@ application, and names and tags the prediction column with Forge's own `<target>
 
 The catalog stays a grid (with **Applicable to** filtering open tables in the browser instead of uploading one), the
 card shows in the Domains view. The model's activity comes from its application records, not from log events, and
-"Last run" from the newest of them. Performance shows the stored metrics; there is no Run Evaluation yet. The panel
+"Last run" from the newest of them. Performance shows the stored metrics, with the values below a threshold or far
+from the training one in red as in the Train view (the built-in tool marked them only in its preview). Run Evaluation
+opens the model's reference or copy, or asks for an open table, shows the stored metrics with an **Evaluation**
+column and the plots in a view of its own, and records nothing. The card has five lines of one height, **Applicable to** an icon on its first line, and the
+model's tooltip is a compact rich one with the full information (the built-in cards had three to six lines). The
+results are rows of panels in the platform's splitters, with initial heights of 350 / 300 / 450 / 350 px, initial
+widths by weight and resizable (the built-in previews were cards of 300 to 600 px wide and 350 px high that wrapped),
+kept with their viewers while a retrain keeps the data (the built-in previews were built again), with the
+**Performance** title over the metrics panel, a tooltip on every title and a **Class balance** bar chart of the
+target's classes (the built-in tool's stacked target and prediction chart was never shown); an insight about a panel
+points to it and is that viewer's description, the unbalanced classes are one line with the shares, and the deviating
+prediction statistics are one line instead of one per statistic (the built-in tool listed each); the threshold is tested on both splits (the built-in tool tested the train value), and **Wrong predictions** shows the
+table's own columns and the prediction (the built-in tool cloned the target and the prediction). The panel
 has no Chats pane. Two or more selected models show in the panel as forms (the built-in tool compared them only as a
 command). Tags are a column of the model, not entity tags. The model file downloads as `<name>.bin` instead
 of a zip.

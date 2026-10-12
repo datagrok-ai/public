@@ -1,7 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectExceptionAsync, expectFloat, test} from '@datagrok-libraries/test/src/test';
+import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+  from '@datagrok-libraries/test/src/test';
 import {ForgeError} from '../forge-error';
-import {classificationMetrics, MetricId, MetricValues, regressionMetrics} from '../metrics/metrics';
+import {areValuesSimilar, classificationMetrics, metricFindings, MetricId, MetricValues, regressionMetrics,
+  ROC_THRESHOLDS, rocCurveOf} from '../metrics/metrics';
+import {residualsOf, STATISTIC_IDS, statisticsOf} from '../metrics/statistics';
 
 const numbers = (values: (number | null)[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'n', values);
 const labels = (values: string[]) => DG.Column.fromList(DG.COLUMN_TYPE.STRING, 's', values);
@@ -77,5 +80,75 @@ category('Metrics', () => {
     await expectExceptionAsync(async () => {
       classificationMetrics(labels(['a', 'b']), DG.Column.fromList(DG.COLUMN_TYPE.STRING, 's', [null, null]), 'a');
     }, isForgeError);
+  });
+
+  test('areValuesSimilar: an absolute tolerance for small values, a relative one otherwise', async () => {
+    expect(areValuesSimilar(0.5, 0.55), true);
+    expect(areValuesSimilar(0.5, 0.7), false);
+    expect(areValuesSimilar(10, 20), true);
+    expect(areValuesSimilar(10, 30), false);
+  });
+
+  test('metricFindings: values below the threshold and a validation value far from the train one', async () => {
+    const low = metricFindings({train: {r2: 0.2, mse: 1}, validation: {r2: 0.2, mse: 1.1}});
+    expect(low.length, 1, JSON.stringify(low));
+    expect(low[0].kind, 'threshold');
+    expectArray(low[0].splits, ['train', 'validation']);
+    expect(low[0].text, 'R2 is below 0.3.');
+    expect(low[0].detail, 'Train 0.200, validation 0.200.');
+
+    const far = metricFindings({train: {accuracy: 0.9}, validation: {accuracy: 0.4}});
+    expect(far.length, 1, JSON.stringify(far));
+    expect(far[0].kind, 'mismatch');
+    expectArray(far[0].splits, ['validation']);
+    expect(far[0].text, 'The validation Accuracy is far from the training one: the model may be overfitting.');
+    expect(far[0].detail, 'Train 0.900, validation 0.400.');
+
+    expect(metricFindings({train: {accuracy: 0.97, f1: 0.97, auc: 0.99}, validation: {accuracy: 0.95, f1: 0.95,
+      auc: 0.98}}).length, 0);
+    const oneSplit = metricFindings({train: {auc: 0.6}, validation: {auc: 0.55}});
+    expect(oneSplit.length, 0, JSON.stringify(oneSplit));
+    const belowOnValidation = metricFindings({train: {auc: 0.52}, validation: {auc: 0.45}});
+    expectArray(belowOnValidation.map((f) => `${f.kind}: ${f.splits.join()}`), ['threshold: validation']);
+  });
+
+  test('rocCurveOf: perfect separation, a hand-made curve, the rows without a score skipped', async () => {
+    const perfect = rocCurveOf(labels(['a', 'a', 'b', 'b']), numbers([0.9, 0.8, 0.2, 0.1]), 'a');
+    expect(perfect.fpr.length, ROC_THRESHOLDS.length);
+    const at = (threshold: number) => Math.round(threshold * 100);
+    expectArray([perfect.fpr[at(0.5)], perfect.tpr[at(0.5)]], [0, 1]);
+    expectArray([perfect.fpr[0], perfect.tpr[0]], [1, 1]);
+    expectArray([perfect.fpr[100], perfect.tpr[100]], [0, 0]);
+
+    // Positives a at 0.9 and 0.4, negatives b at 0.6 and 0.1; a score equal to the threshold counts as positive.
+    const curve = rocCurveOf(labels(['a', 'b', 'a', 'b', 'a']), numbers([0.9, 0.6, 0.4, 0.1, null]), 'a');
+    const point = (threshold: number) => [curve.fpr[at(threshold)], curve.tpr[at(threshold)]];
+    expectArray(point(0.05), [1, 1]);
+    expectArray(point(0.1), [1, 1]);
+    expectArray(point(0.3), [0.5, 1]);
+    expectArray(point(0.4), [0.5, 1]);
+    expectArray(point(0.5), [0.5, 0.5]);
+    expectArray(point(0.7), [0, 0.5]);
+    expectArray(point(0.95), [0, 0]);
+  });
+
+  test('statisticsOf lists the eleven statistics, q2 being the median', async () => {
+    const rows = statisticsOf(numbers([1, 2, 3, 4, 10]), numbers([1, 1, 2, 2, 3]));
+    expectArray(rows.map((r) => r.id), [...STATISTIC_IDS]);
+    const valueOf = (id: string, side: 'actual' | 'predicted') => rows.find((r) => r.id === id)?.[side] ?? NaN;
+    for (const side of ['actual', 'predicted'] as const)
+      expect(valueOf('q2', side), valueOf('med', side));
+    expect(valueOf('min', 'actual'), 1);
+    expect(valueOf('max', 'actual'), 10);
+    expectFloat(valueOf('avg', 'predicted'), 1.8, 1e-6);
+  });
+
+  test('residualsOf: the prediction minus the target, empty where either is', async () => {
+    const residuals = residualsOf(numbers([1, 2, null, 4]), numbers([1.5, 1, 3, null]));
+    expect(residuals.name, 'residuals');
+    expect(residuals.type, DG.COLUMN_TYPE.FLOAT);
+    expectFloat(residuals.get(0), 0.5, 1e-6);
+    expectFloat(residuals.get(1), -1, 1e-6);
+    expect(residuals.isNone(2) && residuals.isNone(3), true, 'A residual without both values');
   });
 });

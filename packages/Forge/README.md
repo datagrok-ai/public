@@ -12,7 +12,7 @@ activity, compares them, and applies them to new data, from the menu, the model'
 Open a table, then **ML | Forge | Train...**. The **Predictive model** view opens with the inputs on the left, in
 groups you can fold with their chevrons: **Data** (Table, Target, Features), **Preparation** (see "Preparation"; shown
 only while one of its inputs applies) and **Method** (Method and its settings). They start open, and a group with a
-problem opens itself. **Results** is on the right; drag the splitter between them to resize.
+problem opens itself. The results are on the right; drag the splitter between them to resize.
 
 * **Table**: the table to learn from, the current one by default
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
@@ -38,16 +38,16 @@ problem.
 
 The model trains by itself: 200 ms after each change that leaves a valid selection, a new training starts, and a
 change during a training stops it (it is not recorded). A method that says it is too slow for this data (for example
-SVM on 20000 rows) does not retrain on every change; **Results** then reads `<Method> takes a while on <N> rows, so it
+SVM on 20000 rows) does not retrain on every change; **Performance** then reads `<Method> takes a while on <N> rows, so it
 does not retrain on every change. Click Train.` and a **Train** button appears under the inputs, at their right edge.
 It trains the current selection (its tooltip: `Train the model on the current selection.`). **Train** is never shown
 for a method that retrains by itself. For a slow method it is disabled, with the reason as its tooltip, while the
 selection has a problem (the target, the features, or a setting out of its range), is checked, a training runs, or
 after a training until you change an input. When the problem is a setting out of its range (a hyperparameter or a
-missing-values setting), **Results** reads `Fix the settings.` A progress bar `Training <Method> model` shows each training in
-the task bar; you can cancel it there (`Training was cancelled.`). While a training runs, a small loader is
-shown next to the **Results** header (the previous results stay while the model retrains by itself). The **Results** pane then shows a grid of metrics
-with a **Metric**, a **Train** and a **Validation** column:
+missing-values setting), **Performance** reads `Fix the settings.` A progress bar `Training <Method> model` shows each
+training in the task bar; you can cancel it there (`Training was cancelled.`). While a training runs, a small loader is
+shown next to the **Performance** header (the previous results stay while the model retrains by itself). The
+**Performance** panel then shows a grid of metrics with a **Metric**, a **Train** and a **Validation** column:
 
 * **Train**: the quality of the model on the rows it was trained on
 * **Validation**: the quality on rows the model has not seen. Forge splits the table into five parts at random,
@@ -69,6 +69,78 @@ Hover a column header or a metric name to see what it means; hover a value to se
 | Predict probability | the classification metrics of the labels the cutoff gives, and **AUC-ROC** (the area under the ROC curve of the probabilities: 0.5 is a coin toss, 1 is perfect) |
 
 Training runs in the browser's main thread: on large tables the page pauses for a few seconds.
+
+### Results
+
+The results area holds rows of panels, each under a grey title line (hover it for what the panel shows), every plot and
+grid filling its panel under the title; a list or a grid longer than its panel scrolls inside it. The rows
+start with set heights and the panels with set shares of the row's width: the plots wider than **Performance** in the
+first row of a two-class model, **Insights & Tips** narrower and **Wrong predictions** wider in the second row, equal
+widths elsewhere. Drag the divider between two panels or two rows to resize them, and scroll the area for the rows
+below; the sizes are kept when you switch to another view and back. A panel that does not apply is absent (its
+neighbours share the row) and an empty row disappears:
+
+| Task | Row 1 (350 px) | Row 2 (300 px) | Row 3 (450 px) |
+|---|---|---|---|
+| Regression | **Predicted <target> vs Actual**, **Residuals**, **Distributions of predicted and actual <target>** | **Insights & Tips**, **Performance**, **Statistics** | **Features**, **Features correlation** |
+| Two classes | **Predicted <target> vs Actual**, **ROC Curve**, **Performance** | **Insights & Tips**, **Confusions**, **Wrong predictions** | **Features**, **Features correlation**, **Class balance** |
+| More classes | **Predicted <target> vs Actual**, **Confusions** | **Insights & Tips**, **Performance**, **Wrong predictions** | **Features**, **Features correlation**, **Class balance** |
+
+When the second row is left with fewer than three panels (no **Wrong predictions**, or no **Insights & Tips**),
+**Class balance** moves to its right end. Then come the method's own views where the method has them (**PLS
+Regression**), at most three in a row of 350 px. Before the first result, and while **Train** runs, the area shows
+only the **Performance** panel (its title and a hint) with **Insights & Tips** under it.
+
+**Insights & Tips** lists what is worth a look in the data and in the trained model (the panel is absent when there is
+nothing to say). Each line is short; hover it to see the numbers behind it, and the tooltip's last line, in grey
+(`See Class balance.`), names the panel that shows what it is about, when that panel is shown. That panel's viewer
+shows the line as its description too (not **Performance**, whose grid marks its own values):
+
+* about the data, after every check: the target's classes far from equally frequent (`The classes are unbalanced.`;
+  hover: each class with its share, `red: 24.6%`, `white: 75.4%`, the shares adding up to 100%; see **Class
+  balance**), the same for a text feature (`The classes of <column> are unbalanced.`), numerical columns with a
+  correlation above 0.9, in one line (`Features are highly correlated.`; hover: a list of the pairs such as
+  `Petal.Length and Petal.Width: 0.96`; see **Features correlation** when a pair of features is among them), a text
+  column whose values are almost all different
+* about a classifier: few correct predictions (`Only 15% of the rows are predicted correctly.`; see
+  **Performance**), one class found much better than the other (`The model finds M much better than F.`; see
+  **Confusions**)
+* about a regression model: large errors mostly on one side (`... the model over-predicts.` or `under-predicts.`; see
+  **Residuals**), statistics of the predictions far from the actual ones, in one line (`The predictions' statistics
+  deviate significantly from the actual ones.`; hover: a list such as `variance: predicted 0.214, actual 0.762`; see
+  **Statistics**)
+* about the metrics: **R2** or **AUC-ROC** below its threshold (`R2 is below 0.3.`, `AUC-ROC is below 0.5.`) and
+  validation values far from the training ones, in one line (`The model may be overfitting.`; hover: a list such as
+  `Accuracy: train 0.900, validation 0.400`); see **Performance**, whose grid shows each such value in red, with
+  `The validation <metric> is far from the training one: the model may be overfitting.` in its tooltip
+
+The viewers:
+
+* a regression model: **Predicted <target> vs Actual** (a scatter plot with a regression line), **Residuals** (the
+  prediction minus the actual value, against the prediction), **Distributions of predicted and actual <target>** (a
+  histogram in two colors, `TARGET` and `PREDICTION`), **Statistics** (a grid of the eleven summary statistics, `min`
+  ... `q3`, of the actual and of the predicted values; hover a statistic for its meaning)
+* a classifier: **ROC Curve** (with **Predict probability**: the rate of true positives against the rate of false
+  positives at the cutoffs 0, 0.01, ..., 1, drawn as a line with a dot per cutoff, the dashed `Non-informative
+  baseline` and the current **Positive class cutoff** marked; the title shows **AUC-ROC** as **Performance** does,
+  `ROC Curve (AUC = 0.912)`, the area under all the scores, which can differ slightly from the area under the 101
+  points drawn), **Predicted <target> vs Actual** (the first two
+  numerical features colored by the target, when there are two; a right prediction is a circle, a wrong one a cross),
+  **Confusions** (a confusion matrix, for fewer than 10 classes), **Wrong predictions** (when the model gets a training
+  row wrong: a grid of those rows with their row numbers, every column of the table and, last, **Predicted
+  <target>**), **Class balance** (a bar per class of the target with its number of rows, each class in its own color,
+  without the chart's column selectors; rows skipped for missing values are not counted)
+* both: **Features** (a PC plot of the numerical features and, for a regression, the target and the prediction,
+  colored by the target) and **Features correlation**, both for 3 to 20 numerical features
+
+The plots show your table's own columns, without copies: hover a point and the table's grid highlights its row, hover
+a row of the grid and the point lights up (rows skipped for missing values shift nothing). While **Table**,
+**Target**, **Features** and the rows used stay the same (a hyperparameter or **Method** change, a change of **Positive
+class cutoff**), a new result keeps the viewers, their zoom and the sizes you dragged, and only the predictions in them
+change; a panel that appears or goes (**Wrong predictions**, **Insights & Tips**, the method's own views) lays out again
+only the rows it changes (also row 3 when **Class balance** moves), at their starting sizes. Any other change builds the viewers again. A change of **Positive class cutoff**
+re-cuts the scores of the last training, without retraining: **ROC Curve** stays as it is and only its mark moves,
+the panels of the labels change; a retrain redraws the curve in the same plot.
 
 ### Preparation
 
@@ -101,9 +173,9 @@ that disappears goes back to its default. Hover an input to see what it does.
   probability, and it can fall outside 0..1; **AUC-ROC** uses the scores, the other metrics the labels after the
   cutoff. **Positive class cutoff** appears under it, a number from 0 to 1 (0.5 by default) with a slider: type a value
   or move the slider, and a row whose score reaches the cutoff is predicted as the positive class. A value that is not
-  a number from 0 to 1 marks the input red, **Results** says `Fix the settings.` and **Save** is unavailable. Changing
-  the cutoff does not retrain: the metrics are computed again from the scores of the last training, **AUC-ROC** stays,
-  and **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
+  a number from 0 to 1 marks the input red, **Performance** says `Fix the settings.` and **Save** is unavailable. Changing
+  the cutoff does not retrain: the metrics are computed again from the scores of the last training, **AUC-ROC** and
+  **ROC Curve** stay (only its mark moves), and **Save** saves the model with the current cutoff. Applied to a table, the model adds the class labels, not the
   scores
 
 ## Save a model
@@ -199,8 +271,17 @@ model's commands, then come the panes:
   or `a script`), **Data copy** (with a copy: the uploaded table, or `missing` when it is gone), **Last run** (the newest application, with `(failed)` or `(cancelled)` when it did not complete; `Never` before the
   first one), **Applications**, **Features**, **Target**, **Method**, **Task**, **Applicable to** (the open tables
   that fit), and **Tags**, which you can edit right there
-* **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training) and
-  how it was validated
+* **Performance**: the metrics saved with the model (the **Metric / Train / Validation** grid of the training, a value
+  below its threshold or far from the training one in red, as in the results) and how it was validated, then **Run
+  Evaluation** (for a model trained and saved in Forge; its tooltip: "Apply the model to its training data, or to an
+  open table, and show how well it predicts."). It measures the model again on data with known targets: the
+  file or query the model keeps a reference to, or its uploaded copy; for a model that keeps neither, the **Evaluate
+  model** dialog asks for **Table** (the open tables the model fits) and **Target** (the column with the actual
+  values), and without a fitting open table a warning says to open one. While it runs, the task bar shows
+  `Evaluating <model>` with a cancel. The view **Evaluation: <model>** then shows the results in rows as after
+  training: the insights, the **Performance** panel with an **Evaluation** column next to **Train** and **Validation** and
+  the bullet `Evaluation: <table> (<rows> rows)`, and the plots. Nothing is added to the table, a referenced or copied table does not
+  join your workspace, and an evaluation is not recorded as an application
 * **Activity**: a grid of the model's applications, newest first (up to 100): **When**, **Who**, **Table**, **Rows**,
   **Prediction column**, **Status**, **Source** (`ui` or `api`) and **Duration (ms)**; hover a header, a status or a
   source for what it means
@@ -225,10 +306,15 @@ selected model; with neither it is emptied.
 target, training rows and creation date, and the train and validation value of every metric the models have, with the
 Forms viewer next to the grid.
 
-In **Browse > Platform > Domains > forge > model**, the card view shows each model as the built-in tool did: the open
-tables it fits, what it predicts, by which features, the method and the creation date.
+In **Browse > Platform > Domains > forge > model**, the card view shows each model in five lines of one height: the
+name (with a table icon when an open table fits the model; hover it for `Applicable to <tables>`), what it predicts,
+by which features, the method and the creation date; a long line ends with `...`. Hover a card, or a model anywhere
+the platform shows it, for the full picture: the name in bold, `Predicts <target> from <N> features with <method> ·
+<task> · <rows> rows`, the features (a long list ends with `+N more`), and in grey `Created <date> by <author> · Data
+storage: <mode> · Tags: <tags>`.
 
-A prediction column's context panel has a **Predicted by** pane with the card of the model that made it.
+A prediction column's context panel has a **Predicted by** pane with the card of the model that made it, with the same
+tooltip.
 
 ## Share a model
 

@@ -149,6 +149,14 @@ export async function twoSpeciesIris(): Promise<DG.DataFrame> {
   return twoSpecies;
 }
 
+/** The iris rows 0-119 under iris's name: 50 setosa, 50 versicolor, 20 virginica. */
+export async function unbalancedIris(): Promise<DG.DataFrame> {
+  const iris = await openIris();
+  const unbalanced = iris.clone(DG.BitSet.create(iris.rowCount, (i) => i < 120));
+  unbalanced.name = iris.name;
+  return unbalanced;
+}
+
 /** Trains a model of [target] by [features] and saves it as a `forge-test-` model; [fields] override the row. */
 export async function saveTestModel(features: DG.Column[], target: DG.Column, datasetName: string,
   fields: Partial<ModelFields> = {}, steps: PreparationSteps = NO_PREPARATION_STEPS):
