@@ -5,11 +5,16 @@ Feature: A project through its card in the Dashboards gallery
   Copy items, Add To Favorites (a submenu: Only for me, or a group), Save as Zip, reopening by a double click and Delete Project.
   Translated from the TestTrack case Projects/projects-ui-smoke.
 
-  Parked (see the request document): the tag added in Context Panel > Details and the "#tag"
-  search (the Add tag box is a bare input no element reaches); everything about the description:
+  A tag is added through the pencil of the Tags row in Context Panel > Details (the library's
+  details field; the "Add tag" box the pencil shows has no element of its own, so the click aims at
+  the Tags value it fills), and the gallery's "#tag" search finds the project by it: the full list
+  is claimed back before the tag is typed, so the one card it then shows comes from the search.
+
+  Parked (see the request document): everything about the description:
   typing it into the Save dialog (its Description box is a bare text area no element reaches), the
   second project saved without one, the card and the Details pane showing it, and changing it by
-  saving again; the tag and the description surviving a page reload (no reload step); Copy > ID
+  saving again; the tag and the description surviving a page reload (the md claims both, and the
+  description is the one still missing); Copy > ID
   (a UUID the feature cannot know without reading the project on the server); the filled star in
   the context panel's header after Add To Favorites. The words of the recipient's line in the
   Sharing pane ("has special permissions") are claimed on the pane as a whole.
@@ -58,6 +63,37 @@ Feature: A project through its card in the Dashboards gallery
     And user clicks on "Refresh" icon inside gallery toolbar
     Then the gallery counter should be lower than remembered
     And BDDSmoke{time} gallery card should be visible
+
+  Scenario: A tag is added in the Details pane and the "#tag" search finds the project by it
+    When user clicks on BDDSmoke{time} gallery card
+    Then the context panel should show "BDDSmoke{time}"
+    When user hovers over Tags details row in context panel
+    And user hovers over edit icon of Tags details row in context panel
+    Then tooltip should contain text "Edit tags and metadata"
+    When user clicks on edit icon of Tags details row in context panel
+    # the pencil turns the Tags value into a tag editor with an "Add tag" box that fills the value cell
+    And user clicks on value of Tags details row in context panel
+    And user types "bddtag{time}" at the caret
+    And user presses Enter
+    And user presses Escape
+    Then Details pane in context panel should contain text "#bddtag{time}"
+    When user remembers the number of visible gallery card
+    And user clears gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then there should be more visible gallery card than remembered
+    When user enters "#bddtag{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then there should be 1 visible gallery card
+    And BDDSmoke{time} gallery card should be visible
+    When user clears gallery search
+    And user enters "#bddnotag{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then gallery counter should have text "0"
+    And there should be 0 visible gallery card
+    When user clears gallery search
+    And user enters "BDDSmoke{time}" into gallery search
+    And user clicks on "Refresh" icon inside gallery toolbar
+    Then BDDSmoke{time} gallery card should be visible
 
   Scenario: The project is shared from its card
     When user clicks on BDDSmoke{time} gallery card

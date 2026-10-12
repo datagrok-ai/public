@@ -16,15 +16,14 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
   TestTrack case Projects/projects-lifecycle-db; Test 1 (the PostgresAll query) is
   projects-northwind-lifecycle-db-query.
 
-  The second account (the library's sharing user) signs in on the feature's page and opens the
-  shared project with its 830 rows. Parked (see the request document): the md's recipient without
-  access to the connection (the Data loading error with OPEN ANYWAY and CLOSE PROJECT, no EDIT
-  SCRIPT...) and the connection shared with it afterwards — on dev the sharing account has no
-  grant on NorthwindTest (Dbtests:PostgresTest; its share list, 2026-10-05), yet the table
-  project opens for it with the 830 rows, so the md's error never comes (unlike the query project
-  of projects-northwind-lifecycle-query, which needs the connection shared). The
-  System:Datagrok version for other stands is parked too (its row counts differ per server and
-  need a remembered row count).
+  The second account (the library's sharing user) signs in on the feature's page before the share,
+  when its Browse > Databases > Postgres does not list NorthwindTest (on dev it has no grant on
+  Dbtests:PostgresTest, 2026-10-12), and after it: sharing the table project brings the connection
+  along — NorthwindTest is listed — and the project opens with its 830 rows and no error dialog
+  (intended, operator 2026-10-05; a project of a saved query does not bring its connection, see
+  projects-northwind-lifecycle-query). The md's "recipient without access gets a Data loading error"
+  and the connection share after it were corrected in the md to this. The System:Datagrok version for
+  other stands is parked (its row counts differ per server and need a remembered row count).
 
   The project name carries the run's time (letters and digits only); the project (with its table,
   view and grant) is removed at the start and at the end. It is serial: the Dashboards search is
@@ -88,7 +87,20 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     When user clicks on CANCEL button in "Save project" dialog
     Then the "Save project" dialog should close
 
+  Scenario: Before the share, the second account does not see the NorthwindTest connection
+    When user closes all views
+    And user signs in as the sharing user
+    Then the sharing user should be signed in
+    Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    Then Databases---Postgres---Datagrok tree node inside browse tree should be visible
+    And Databases---Postgres---NorthwindTest tree node inside browse tree should be absent
+    When user signs in as themselves again
+    Then the running account should be signed in
+
   Scenario: Only the project is shared with the second account
+    Then the running account should be signed in
     When user closes all views
     Given the browse panel is open
     When user clicks on Dashboards tree node inside browse tree
@@ -104,11 +116,14 @@ Feature: A project of the NorthwindTest orders table: saved, reopened and shared
     Then the context panel should show "BDDNwLifeDbTable{time}"
     And the sharing pane should list the sharing user
 
-  Scenario: The second account opens the shared project with its rows
+  Scenario: With the project shared, the second account sees the connection and opens the project with its rows
     When user closes all views
     And user signs in as the sharing user
     Then the sharing user should be signed in
     Given the browse panel is open
+    And Databases tree node inside browse tree is expanded
+    And Databases---Postgres tree node inside browse tree is expanded
+    Then Databases---Postgres---NorthwindTest tree node inside browse tree should be visible
     When user clicks on Dashboards tree node inside browse tree
     And user enters "BDDNwLifeDbTable{time}" into gallery search
     And user clicks on "Refresh" icon inside gallery toolbar

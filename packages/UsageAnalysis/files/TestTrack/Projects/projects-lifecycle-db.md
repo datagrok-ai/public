@@ -21,20 +21,20 @@ related_bugs: []
 Two projects built from a database: one from a saved query and one
 from a database table opened directly. Each is saved with Data sync and
 reopened; the reopened project must still carry Data sync and its
-creation script. The table project is also shared. Sharing a project
-does not share the database connection behind it: a recipient without
-**View and use** on the connection cannot load the data and must be
-told so. Once the connection is shared with them, the project opens
-with data.
+creation script. The table project is also shared: sharing a project
+of a database table brings its connection along, so the recipient sees
+the connection and opens the project with the data (intended, operator
+2026-10-05; a project of a saved query does not bring its connection —
+see `projects-lifecycle-query.md`).
 
 ## Setup
 
 1. Two accounts: the **owner** (test user) and a **second user**.
 2. **NorthwindTest** exists only on dev.
-3. At the start, the second user must not have access to the
+3. Before the test, the second user has no access to the
    **NorthwindTest** Postgres connection: signed in as the second user,
-   **Browse > Databases > Postgres** does not list **NorthwindTest**.
-   Test 2 shares the connection with them.
+   **Browse > Databases > Postgres** does not list **NorthwindTest**. The
+   connection is not shared by hand in this test.
 4. Projects in this test: `lifecycleDbQuery` and `lifecycleDbTable`.
 
 ## Scenario
@@ -117,50 +117,25 @@ with data.
    - Leave **View and use** selected.
    - Click **OK**.
 
-5. **The recipient opens it without access to the connection.**
+5. **The recipient sees the connection and opens the project.**
    - Click your avatar at the bottom of the left sidebar.
    - Click **Logout** in the profile view.
    - Sign in with the second user's credentials.
-   - Go to **Browse > Dashboards**.
-   - Type `lifecycleDbTable` into the search box.
-   - Click the refresh icon.
-   - Double-click the `lifecycleDbTable` tile.
-   - **Verify:** the **Data loading error** dialog opens and shows the
-     `DbQuery(...)` line with `public.orders`; it offers **OPEN ANYWAY**
-     and **CLOSE PROJECT**, and no **EDIT SCRIPT...**.
-   - **Verify:** the page does not stay on a loading spinner, and no
-     empty table opens without a message.
-   - Click **CLOSE PROJECT**.
-   - Click your avatar at the bottom of the left sidebar.
-   - Click **Logout** in the profile view.
-   - Sign in with the owner's credentials.
-
-6. **Share the connection.**
    - Go to **Browse > Databases > Postgres**.
-   - Right-click **NorthwindTest** and choose **Share...**.
-   - Type the second user into **User, group, or email**.
-   - Pick the second user from the suggestion list.
-   - Leave **View and use** selected.
-   - Click **OK**.
-
-7. **The recipient opens it with access.**
-   - Sign out and sign in with the second user's credentials, as in
-     step 5.
+   - **Verify:** **NorthwindTest** is listed now: the share of the
+     table project brought its connection along.
    - Go to **Browse > Dashboards**.
    - Type `lifecycleDbTable` into the search box.
    - Click the refresh icon.
    - Double-click the `lifecycleDbTable` tile.
-   - **Verify:** the `orders` table opens with 830 rows.
-   - **Verify:** no error dialog appears.
+   - **Verify:** the `orders` table opens with 830 rows, and no error
+     dialog appears.
    - Right-click the left sidebar and select **Close All**.
    - Click your avatar at the bottom of the left sidebar.
    - Click **Logout** in the profile view.
    - Sign in with the owner's credentials.
 
-8. **Cleanup.**
-   - Go to **Browse > Databases > Postgres**, right-click
-     **NorthwindTest** and choose **Share...**. Next to the second user,
-     click the cross icon (tooltip *Remove*). Click **OK**.
+6. **Cleanup.**
    - In **Browse > Dashboards**, type `lifecycleDbTable` into the search
      box.
    - Right-click the `lifecycleDbTable` tile and choose **Delete
@@ -172,11 +147,9 @@ with data.
 
 - A project with a query or a database table reopens with its data and
   keeps Data sync and its creation script.
-- Sharing a project does not share the database connection behind it.
-- A recipient without access to the connection gets a clear error, not
-  an endless spinner or an empty table.
-- After the connection is shared, the recipient opens the shared table
-  project with data.
+- Sharing a database-table project brings its connection along: the
+  recipient, who could not see the connection before, sees it and opens
+  the project with its data.
 
 ## Automation notes
 
@@ -187,8 +160,8 @@ with data.
   re-read by changing its own query's SQL.
 - The help page `help/datagrok/concepts/project/dashboard.md` says that
   a recipient without the connection permission cannot run the query;
-  its planned illustration shows the page staying on the loading
-  spinner. What the product shows today (Test 2, step 5) was not
-  confirmed from source; record it on the first run.
-- The cross icon with the tooltip *Remove* in the Share dialog is read
-  from `permissions_browser.dart`.
+  that is the saved-query case (`projects-lifecycle-query.md`). On dev
+  (2026-10-12) the second user, with no grant of its own on NorthwindTest,
+  does not see the connection before the share of Test 2 and sees it
+  after; the project opens with its 830 rows (intended, operator
+  2026-10-05).

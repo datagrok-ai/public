@@ -2,31 +2,33 @@
 Feature: A function run straight from its URL
   /func/<Namespace>.<Name>?<param>=<value> opens a script's parameter form; &run=true runs it at
   once and shows only the result; the copy icon left of RUN gives such a link for the current
-  values. A JavaScript script, demog(rows) with a default, is written in the Scripts view, and the
-  namespace of the address is read from the Grok name the script's Links... dialog shows.
-  Translated from the TestTrack case Projects/function-url-run.
+  values; a run link without a required value falls back to the form and names what is missing.
+  Two JavaScript scripts are written in the Scripts view (demog(rows) with a default, and one with a
+  required rows), and the namespace of the address is read from the Grok name the first script's
+  Links... dialog shows. Translated from the TestTrack case Projects/function-url-run.
 
   The addresses are opened in the same tab and typed (the md pastes them into a new one), each after
   a Close All, as a new tab starts with nothing open: an address of a function whose view is open
   does not open it again. Kept without (see the request document): opening the run link from the
   clipboard — the clipboard is claimed to hold it, and the same address is typed.
 
-  Not translated: the md's last step, a run link without a required value (its script, with a
-  required rows, is not made either). On localhost (1.28.0, f98337ae1b)
-  /func/Admin.<script>?label=%22y%22&run=true runs the script with rows empty (a table of 100,000
-  rows) instead of falling back to the form with an "Unable to run" warning — a suspected defect
-  (GROK-20511 introduced the run links), described outside the repository; the md's unquoted
-  label=y is read as an expression ("Variable "y" not found").
+  Known failure GROK-20511 (In Progress): a run link without the required value
+  (/func/Admin.<script>?label=%22y%22&run=true — a string value in the address is quoted, as the
+  copy icon writes it) should fall back to the form with an "Unable to run" warning naming rows; on
+  localhost the script runs with rows empty (a table of 100,000 rows) and no warning comes. The
+  address is opened in a plain scenario that waits for the script's view; the known failure only
+  claims the warning, the form and a run with the value then typed.
 
-  The script is named with the run's time (letters and digits only) and removed when the feature
+  The scripts are named with the run's time (letters and digits only) and removed when the feature
   starts and ends. It is serial: the Scripts view's search is shared with the features that use it.
 
   Background:
     Given user is logged in
     And the browse panel is open
     And no script named "BDDUrlRunScript{time}" is on the server
+    And no script named "BDDUrlRunRequired{time}" is on the server
 
-  Scenario: The script is written in the Scripts view
+  Scenario: Two scripts are written in the Scripts view
     Given Platform tree node inside browse tree is expanded
     And Platform---Functions tree node inside browse tree is expanded
     When user clicks on Platform---Functions---Scripts tree node inside browse tree
@@ -41,6 +43,19 @@ Feature: A function run straight from its URL
     And user appends "df = grok.data.demo.demog(rows);" to code editor
     And user saves the script
     Then 1 script named "BDDUrlRunScript{time}" should be on the server
+    When user closes the current view
+    Then the "Scripts" view should be current
+    When user clicks on New button
+    And user picks "JavaScript Script..." from the open menu
+    Then the "Template" view should be current
+    When user replaces the code of code editor with "//name: BDDUrlRunRequired{time}"
+    And user appends "//language: javascript" to code editor
+    And user appends "//input: int rows" to code editor
+    And user appends '//input: string label = "x"' to code editor
+    And user appends "//output: dataframe df" to code editor
+    And user appends "df = grok.data.demo.demog(rows);" to code editor
+    And user saves the script
+    Then 1 script named "BDDUrlRunRequired{time}" should be on the server
 
   Scenario: The script's Links... dialog gives its Grok name
     When user closes the current view
@@ -102,3 +117,21 @@ Feature: A function run straight from its URL
     Then "Rows" input should have value "25"
     And RUN button should be visible
     And status bar should contain text "Rows: 0"
+
+  Scenario: A run link without the required value is opened
+    When user picks "Close All" from the context menu of browse tab
+    Then the "Home" view should be current
+    When user opens the address "/func/Admin.BDDUrlRunRequired{time}?label=%22y%22&run=true"
+    Then the "BDDUrlRunRequired{time}" view should be current
+
+  @known-failure @realizes:GROK-20511
+  Scenario: The run link without a required value falls back to the form and names it (GROK-20511)
+    Then a warning balloon containing 'Unable to run "BDDUrlRunRequired{time}"' should have been shown
+    And a warning balloon containing "rows" should have been shown
+    And "Label" input should have value "y"
+    And RUN button should be visible
+    And status bar should contain text "Rows: 0"
+    When user enters "5" into "Rows" input
+    And user clicks on RUN button
+    Then the current view should be a TableView view
+    And the table should have 5 rows
