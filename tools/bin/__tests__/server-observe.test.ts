@@ -47,6 +47,42 @@ describe('setPath', () => {
 });
 
 describe('logger set', () => {
+  async function set(argv: any, userGroupSettings: any) {
+    const calls: {method: string; body: any}[] = [];
+    const client: any = {
+      async request(method: string, path: string, body?: any) {
+        calls.push({method, body});
+        if (path.startsWith('/public/v1/groups/lookup'))
+          return [{id: 'g1', name: 'Chemists'}];
+        return method === 'GET' ? JSON.stringify({'#key': 'logger', settings: {userGroupSettings}}) : null;
+      },
+      get(path: string) { return this.request('GET', path); },
+    };
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    try {
+      await handleObserve(new NodeDapi(client), 'logger', 'set', [], {group: 'Chemists', ...argv}, 'table');
+    }
+    finally {
+      log.mockRestore();
+    }
+    return calls.find((c) => c.method === 'POST')?.body?.userGroupSettings;
+  }
+  const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
+
+  it('starts a new entry from All users, without its reason', async () => {
+    const saved = await set({set: 'debugFlags=["db"]'}, {[ALL_USERS]: {saveLevels: ['error', 'audit'], reason: 'base'}});
+    expect(saved.g1).toEqual({saveLevels: ['error', 'audit'], debugFlags: ['db']});
+  });
+
+  it('--remove deletes the entry, keeping the others', async () => {
+    expect(await set({remove: true}, {g1: {debugFlags: ['db']}, g0: {}})).toEqual({g0: {}});
+    await expect(set({remove: true}, {})).rejects.toThrow('no logger entry');
+  });
+
+  it('refuses an expiry over an entry that does not expire', async () => {
+    await expect(set({set: 'debugFlags=["db"]', for: '1h'}, {g1: {debugFlags: []}})).rejects.toThrow('does not expire');
+  });
+
   it('adds an expiring entry to userGroupSettings, keeping the others', async () => {
     const calls: {method: string; path: string; body: any}[] = [];
     const client: any = {
@@ -75,7 +111,7 @@ describe('logger set', () => {
   });
 });
 
-describe('capture', () => {
+describe('logs capture', () => {
   const ALL_USERS = 'a4b45840-9a50-11e6-9cc9-8546b8bf62e6';
 
   async function run(verb: string | undefined, rest: string[], argv: any, userGroupSettings: any) {
@@ -95,7 +131,7 @@ describe('capture', () => {
     const lines: string[] = [];
     const log = vi.spyOn(console, 'log').mockImplementation((s) => { lines.push(String(s)); });
     try {
-      await handleObserve(new NodeDapi(client), 'capture', verb, rest, argv, 'json');
+      await handleObserve(new NodeDapi(client), 'logs', 'capture', verb === undefined ? rest : [verb, ...rest], argv, 'json');
     }
     finally {
       log.mockRestore();

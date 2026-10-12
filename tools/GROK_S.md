@@ -484,10 +484,11 @@ grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --rea
 grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
 grok s o rules test                                         # evaluates the saved rules once, now
 grok s o logger get exportSettings                          # the logger settings, or one path of them
-grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry
+grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry, from All users
+grok s o logger set --user alice --remove                  # delete that entry
 grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
-grok s o capture alice --for 2h --reason "ticket 123"      # save every API request of a user or a group; 30m by default
-grok s o capture                                            # the active captures; capture stop alice removes one
+grok s o logs capture alice --for 2h --reason "ticket 123" # logger set of saveHttpRequests on an expiring entry; 30m by default
+grok s o logs capture                                       # the active captures; logs capture stop alice removes one
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
 grok s o timeline --session <id>                            # its events and requests of the last 15 min
 grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later

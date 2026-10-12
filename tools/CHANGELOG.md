@@ -3,7 +3,7 @@
 ## v.next
 
 * GROK-20884: Added `grok s observe` (alias `grok s o`): problems and their alerts, problem rules, logger settings with expiring user and group entries, errors, the timeline and cloud logs (CloudWatch and the log archive)
-* GROK-20884: Added `grok s o capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires; `capture stop` removes it, `capture` lists the active ones
+* GROK-20884: Added `grok s o logs capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires (a `logger set` of `saveHttpRequests`); `logs capture stop` removes it, `logs capture` lists the active ones
 
 ## 6.7.7 (2026-10-09)
 
