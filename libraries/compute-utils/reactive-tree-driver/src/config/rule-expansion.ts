@@ -112,11 +112,11 @@ export function annotationCheckLinks(
       }));
 }
 
-export function expandLinks(
-  links: PipelineLinkConfigurationInput<LinkSpecString>[],
+export function expandLink(
+  link: PipelineLinkConfigurationInput<LinkSpecString>,
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
-    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link]);
+  return isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
+    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link];
 }
 
 function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {

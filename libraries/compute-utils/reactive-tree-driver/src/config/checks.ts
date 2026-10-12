@@ -19,7 +19,7 @@ export type CheckOptions = {
   /** Column kind, column type or semantic type. */
   type?: string;
   semType?: string;
-  /** Id of the dataframe io the column belongs to. */
+  /** Query of the dataframe io the column belongs to. */
   table?: string;
   allowNulls?: boolean;
 };
