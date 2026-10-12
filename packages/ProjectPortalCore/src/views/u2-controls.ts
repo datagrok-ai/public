@@ -152,12 +152,14 @@ export const check = (name: string, label?: string, value = false,
   new BoolInput({name, label, value, ...o});
 
 /** A u2 BasicTable whose rows can be named, classed and titled, which BasicTable cannot do itself.
+ * Its cells wrap (styles.ts), as the hand-built tables did, so a wide table fits its dialog.
  * The rows are fixed: a table over changing items needs a fresh call. */
 export function table<T>(name: string, columns: TableColumn<T>[], items: T[],
   rows: {name?: (item: T, i: number) => string | null, cls?: (item: T, i: number) => string | null,
     title?: (item: T, i: number) => string | null} = {}): BasicTable<T> {
   const t = new BasicTable<T>({columns, items});
   t.root.dataset.u2Name = name;
+  t.root.classList.add('pp-table');
   t.root.querySelectorAll<HTMLElement>('tr.u2-table-row').forEach((tr, i) => {
     const n = rows.name?.(items[i], i);
     if (n)

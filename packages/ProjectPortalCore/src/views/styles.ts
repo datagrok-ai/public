@@ -75,6 +75,7 @@ const CSS = `
 .pp-model-card > * { flex-shrink: 0; }
 .pp-card-text { white-space: pre-wrap; }
 .pp-card-table { border-collapse: collapse; font-size: 12px; }
+.pp-table.u2-table td { white-space: normal; height: auto; padding-top: 3px; padding-bottom: 3px; }
 .pp-card-table th { text-align: left; font-weight: 600; color: var(--u2-text-muted, #666); padding: 2px 10px 2px 0; }
 .pp-card-table td { padding: 2px 10px 2px 0; border-top: 1px solid var(--u2-border, #eee); }
 .pp-card-facts { gap: 2px; margin-top: 6px; }

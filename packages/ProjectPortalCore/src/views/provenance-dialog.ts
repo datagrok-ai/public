@@ -111,7 +111,8 @@ export async function openProvenanceDialog(kind: string, id: string,
   opts: ProvenanceDialogOptions = {}): Promise<PortalDialog> {
   installStyles();
   const body = named(divV([span('Reading the portal\'s records…', 'pp-muted')], 'pp-provenance'), 'provenance-content');
-  const dlg = openDialog({title: 'Provenance', name: 'provenance-dialog', width: 620}, () => ({content: body}));
+  // the first tree is drawn before the dialog opens, so it is placed at its full height
+  let dlg: PortalDialog | undefined;
   const draw = async (k: string, i: string) => {
     try {
       const p = await provenanceOf(k, i, opts.depth ?? 4);
@@ -121,14 +122,15 @@ export async function openProvenanceDialog(kind: string, id: string,
         named(span(describeNode(start), 'pp-title'), 'provenance-start'),
         span(`${p.nodes.length - 1} record${p.nodes.length === 2 ? '' : 's'} within ${opts.depth ?? 4} steps; click one to open it`, 'pp-muted'),
         span('Rests on', 'pp-heading'),
-        tree(p, 'up', opts, retrace, () => dlg.close()),
+        tree(p, 'up', opts, retrace, () => dlg?.close()),
         span('Used by', 'pp-heading'),
-        tree(p, 'down', opts, retrace, () => dlg.close()),
+        tree(p, 'down', opts, retrace, () => dlg?.close()),
       );
     } catch (e: any) {
       body.replaceChildren(named(span(e?.message ?? String(e), 'pp-reason'), 'provenance-error'));
     }
   };
   await draw(kind, id);
+  dlg = openDialog({title: 'Provenance', name: 'provenance-dialog', width: 620}, () => ({content: body}));
   return dlg;
 }
