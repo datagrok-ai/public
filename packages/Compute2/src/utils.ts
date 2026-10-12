@@ -351,6 +351,10 @@ const stepFileName = (state: StepFunCallState, idx: number, callInfo: FuncCallSt
   return `${exportIndex(idx)}_${replaceForWindowsPath(rawFileName)}.xlsx`;
 };
 
+// as in the tree, a title given as a list is not used
+const textTitle = (description?: Record<string, string | string[]>) =>
+  typeof description?.title === 'string' ? description.title : undefined;
+
 const workflowDirName = (state: Exclude<PipelineState, StepFunCallState>, idx: number) =>
   `${exportIndex(idx)}_${replaceForWindowsPath(state.friendlyName ?? state.nqName ?? '')}`;
 
@@ -368,7 +372,7 @@ const stepSummary = (
   state: StepFunCallState, idx: number, path: string[], states: ExportStates,
 ): ExportSummaryItem => {
   const name = state.friendlyName ?? state.configId;
-  const title = states.descriptions?.[state.uuid]?.title as string | undefined;
+  const title = textTitle(states.descriptions?.[state.uuid]);
   const callInfo = states.callInfoStates?.[state.uuid];
   const funcCall = state.funcCall;
   if (!funcCall || !callInfo)
@@ -422,7 +426,7 @@ export function getExportSummary(treeState: PipelineState, states: ExportStates)
       kind: 'workflow',
       path: nPath,
       name: state.friendlyName ?? state.configId,
-      title: states.descriptions?.[state.uuid]?.title as string | undefined,
+      title: textTitle(states.descriptions?.[state.uuid]),
       ...resultMessages(states.pipelineValidations?.[state.uuid]),
       inconsistentInputs: [],
     };
@@ -528,7 +532,7 @@ export async function reportTree(
         consistency,
       ).finally(() => disposeViewers(viewers));
 
-      const fileName = stepFileName(state, idx, callInfo, description?.title as string);
+      const fileName = stepFileName(state, idx, callInfo, textTitle(description));
       const configKey = [...path, fileName].join('/')
       zipConfig[configKey] = [new Uint8Array(await blob.arrayBuffer()), { level: 0 }];
       if (cb) {
