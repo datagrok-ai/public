@@ -2,7 +2,7 @@
  * section and the My feed dialog (everything the user follows). Newest first, filtered by kind,
  * paged; an entry over a record traces its provenance, and in My feed the program opens. */
 import * as grok from 'datagrok-api/grok';
-import {button, divH, divV, Scope, span} from '@datagrok-libraries/u2';
+import {button, divH, divV, loader, Scope, span} from '@datagrok-libraries/u2';
 import {countByKind, describeEntry, FEED_KIND_LABELS, FEED_KINDS, FeedEntry, FeedKind, filterFeed, pageFeed} from '../model/feed';
 import {feedUserNames, myFeedOf} from '../feed';
 import {choice, labelled, linkTo, named, openDialog, PortalDialog} from './u2-controls';
@@ -78,7 +78,7 @@ export interface MyFeedOptions {
 
 /** My feed: the activity of every program (or series) the current user follows. */
 export async function openMyFeedDialog(opts: MyFeedOptions): Promise<PortalDialog> {
-  const body = named(divV([span('Reading what you follow…', 'pp-muted')], 'pp-feed'), 'my-feed-content');
+  const body = named(divV([loader('Reading what you follow…')], 'pp-feed'), 'my-feed-content');
   const dlg = openDialog({title: 'My feed', name: 'my-feed-dialog', width: 680}, () => ({content: body}));
   // each draw owns its kind filter; the last one goes with the dialog
   let scope: Scope | null = null;

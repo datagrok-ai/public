@@ -1,7 +1,7 @@
 /** Searching gate decisions: by text (rationale, outcome, evidence), program, gate and portfolio,
  * across the portfolios the user can see. A result opens its program. */
 import * as grok from 'datagrok-api/grok';
-import {divH, divV, span} from '@datagrok-libraries/u2';
+import {divH, divV, loader, span} from '@datagrok-libraries/u2';
 import {decisionsOf} from '../decision-records';
 import {DecisionQuery, DecisionView, describeDecision, searchDecisions} from '../model/decision-records';
 import {feedSelect} from './feed-dialog';
@@ -40,7 +40,7 @@ export async function openDecisionSearchDialog(o: DecisionSearchOptions): Promis
       q[key] = v;
       draw();
     }}).root;
-  const results = named(divV([span('Reading decisions…', 'pp-muted')], 'pp-units'), 'decision-results');
+  const results = named(divV([loader('Reading decisions…')], 'pp-units'), 'decision-results');
   const summary = named(span('', 'pp-muted'), 'decision-summary');
   const dlg = openDialog({title: 'Decisions', name: 'decision-search-dialog', width: 760}, () => ({content: divV([
     divH([text('decision-text-input', 'Words in the rationale, outcome or evidence', 'text')], 'pp-actions pp-fill'),

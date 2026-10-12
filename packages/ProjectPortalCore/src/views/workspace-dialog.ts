@@ -2,7 +2,7 @@
  * of programs that ended), **Preview park** and **Park** for approvers, and the parked folders with
  * **Unpark** each. Opened from the board's Workspace button. */
 import * as DG from 'datagrok-api/dg';
-import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
+import {badge, button, divH, divV, loader, span} from '@datagrok-libraries/u2';
 import {PortfolioRow} from '../generated/db';
 import {isApprover} from '../portal';
 import {workspaceOrphans} from '../workspace';
@@ -29,7 +29,7 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
     const report = await workspaceOrphans(portfolio.code);
     const parked = await parkedFoldersOf(portfolio);
     const preview = named(button('Preview park', () => {
-      result.replaceChildren(span('Planning…', 'pp-muted'));
+      result.replaceChildren(loader('Planning…'));
       parkOrphans(portfolio.code, true).then((r) => result.replaceChildren(...lines(summarizeParkResult(r)))).catch(failed);
     }), 'park-preview-button');
     preview.title = 'What parking would move, and where; nothing changes';
@@ -43,7 +43,7 @@ export async function workspacePanel(portfolio: PortfolioRow): Promise<HTMLEleme
       void work().catch(failed).finally(() => busy = false);
     };
     const parkSome = (only?: string[]) => once(async () => {
-      result.replaceChildren(span('Parking…', 'pp-muted'));
+      result.replaceChildren(loader('Parking…'));
       const r = await parkOrphans(portfolio.code, false, only);
       await draw();
       result.replaceChildren(...lines(summarizeParkResult(r)));

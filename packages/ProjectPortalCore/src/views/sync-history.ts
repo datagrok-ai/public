@@ -2,7 +2,7 @@
  * first. Opened from the board's Sync history button; `syncHistory(portfolio)` returns the runs as a
  * table. */
 import * as DG from 'datagrok-api/dg';
-import {badge, button, divH, divV, span} from '@datagrok-libraries/u2';
+import {badge, button, divH, divV, loader, span} from '@datagrok-libraries/u2';
 import {PortfolioRow, SyncLogRow} from '../generated/db';
 import {dueState, syncRunsOf} from '../sync-runs';
 import {describeChange, describeSchedule, ProgramChange} from '../model/sync-runs';
@@ -63,7 +63,7 @@ export async function syncHistoryPanel(portfolio: PortfolioRow, limit = 20): Pro
   const through = advance ? (await stagesOf(portfolio.stage_model_id)).find((s) => s.code === advance.through)?.name : undefined;
   const preview = named(divV([], 'pp-units'), 'auto-advance-preview');
   const previewButton = named(button('Preview advance by data', () => {
-    preview.replaceChildren(span('Checking each program\'s next gate…', 'pp-muted'));
+    preview.replaceChildren(loader('Checking each program\'s next gate…'));
     autoAdvance(portfolio.code, true)
       .then((r) => preview.replaceChildren(...summarizeAutoAdvanceResult(r).split('\n').map((l) => span(l.trim(), 'pp-muted'))))
       .catch((e) => preview.replaceChildren(span(e?.message ?? String(e), 'pp-reason')));

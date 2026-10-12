@@ -2,7 +2,7 @@
  * by side (inputs and outputs), and the one chosen with a rationale. Selection instead of
  * approval: a run chosen before is superseded, not erased. Every control carries a data-u2-name. */
 import * as grok from 'datagrok-api/grok';
-import {badge, computed, divV, divH, span} from '@datagrok-libraries/u2';
+import {badge, computed, divH, divV, loader, span} from '@datagrok-libraries/u2';
 import {CriterionRuns, runComparison, SavedRunItem, selectRunForCriterion} from '../model-runs';
 import {describeRunFilter, describeSelection, RunFilter} from '../model/run-selection';
 import {area, check, choice, choiceValue, ErrorRegion, named, openDialog, PortalDialog} from './u2-controls';
@@ -84,7 +84,7 @@ export async function openChooseRunDialog(opts: ChooseRunDialogOptions): Promise
       comparison.replaceChildren(span('Tick two or more runs to compare them', 'pp-muted'));
       return;
     }
-    comparison.replaceChildren(span('Loading…', 'pp-muted'));
+    comparison.replaceChildren(loader('Loading…'));
     const table = await comparisonTable(picked).catch((e) => span(`Cannot compare: ${e?.message ?? e}`, 'pp-reason'));
     if (mine === drawn)
       comparison.replaceChildren(table);

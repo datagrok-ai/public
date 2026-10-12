@@ -3,7 +3,7 @@
  * program data, a model card, a table); Trace starts the walk again from that node. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {divH, divV, span} from '@datagrok-libraries/u2';
+import {divH, divV, loader, span} from '@datagrok-libraries/u2';
 import {portalDb} from '../generated/db';
 import {provenanceOf} from '../provenance';
 import {
@@ -107,7 +107,7 @@ function tree(p: Provenance & {records: ProvenanceRecords}, direction: 'up' | 'd
 export async function openProvenanceDialog(kind: string, id: string,
   opts: ProvenanceDialogOptions = {}): Promise<PortalDialog> {
   installStyles();
-  const body = named(divV([span('Reading the portal\'s records…', 'pp-muted')], 'pp-provenance'), 'provenance-content');
+  const body = named(divV([loader('Reading the portal\'s records…')], 'pp-provenance'), 'provenance-content');
   // the first tree is drawn before the dialog opens, so it is placed at its full height
   let dlg: PortalDialog | undefined;
   const draw = async (k: string, i: string) => {
