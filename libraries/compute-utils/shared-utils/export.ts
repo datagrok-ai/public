@@ -411,9 +411,10 @@ const svgSize = (markup: string) => {
 
 // Raster graphics keep their native pixel size; SVG is rasterized into the chart box, keeping its aspect ratio
 const graphicsToPng = async (value: string) => {
-  const img = await loadImage(graphicsDataUrl(value));
+  const dataUrl = graphicsDataUrl(value);
+  const img = await loadImage(dataUrl);
   if (!isSvgGraphics(value))
-    return {dataUrl: graphicsDataUrl(value), width: img.naturalWidth, height: img.naturalHeight};
+    return {dataUrl, width: img.naturalWidth, height: img.naturalHeight};
 
   const size = svgSize(value);
   const scale = Math.min(EXPORT_VIEWER_WIDTH / size.width, EXPORT_VIEWER_HEIGHT / size.height);
@@ -426,7 +427,7 @@ const graphicsToPng = async (value: string) => {
   return {dataUrl: canvas.toDataURL('image/png'), width, height};
 };
 
-const isEmptyDf =(df?: DG.DataFrame) => !df || df.rowCount === 0;
+const isEmptyDf = (df?: DG.DataFrame) => !df || df.rowCount === 0;
 
 const configToViewer = async (df: DG.DataFrame | undefined, config: Record<string, any>) => {
   if (!df)
