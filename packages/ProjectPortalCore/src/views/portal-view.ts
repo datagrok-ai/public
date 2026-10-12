@@ -3,7 +3,7 @@
  * columns from its own stages, so three portfolios show three different boards. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {badge, button, Control, divV, divH, Scope, signal, span} from '@datagrok-libraries/u2';
+import {badge, button, Card, Control, divV, divH, Scope, signal, span} from '@datagrok-libraries/u2';
 import type {BadgeVariant} from '@datagrok-libraries/u2';
 import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
 import {portalDb, PortfolioRow, ProgramRow, StageModelRow, StageRow, StageTransitionRow} from '../generated/db';
@@ -203,7 +203,7 @@ export class PortalView {
   private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
   /** Owns the u2 controls of the program page as last drawn; disposed when it is drawn again or cleared. */
   private detailScope: Scope | null = null;
-  /** Owns the u2 controls of the board as last drawn (mode and persona). */
+  /** Owns the u2 controls of the board as last drawn: its cards, mode and persona. */
   private boardScope: Scope | null = null;
   /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
   private pageCtx: ProgramContext | null = null;
@@ -339,12 +339,11 @@ export class PortalView {
     this.portfolioList.append(cards);
     this.portfolios.forEach((p, i) => {
       const model = this.models.get(p.stage_model_id);
-      const card = named(divV([
-        divH([portalIcon('portfolio'), span(p.name, 'pp-portfolio-name')], 'pp-icon-line'),
-        span(`${counts[i]} ${(p.program_noun ?? 'program').toLowerCase()}s · ${model?.name ?? ''}`, 'pp-muted'),
-      ], 'pp-portfolio'), `portfolio-${slug(p.code)}`);
-      card.onclick = () => void this.openPortfolio(p.code).catch(this.failed);
-      cards.append(card);
+      const card = new Card({icon: portalIcon('portfolio'), title: p.name,
+        subtitle: `${counts[i]} ${(p.program_noun ?? 'program').toLowerCase()}s · ${model?.name ?? ''}`,
+        onClick: () => void this.openPortfolio(p.code).catch(this.failed)});
+      card.root.classList.add('pp-portfolio');
+      cards.append(named(card.root, `portfolio-${slug(p.code)}`));
     });
   }
 
@@ -387,7 +386,15 @@ export class PortalView {
       `${p.stage_authority === 'feed' ? 'registry' : 'portal'}`;
   }
 
+  /** The board, drawn in a scope of its own (its cards and the mode and persona inputs): it is drawn again
+   * on each open of a portfolio and on a change of persona. */
   private renderBoard(): void {
+    this.boardScope?.dispose();
+    const scope = this.boardScope = new Scope();
+    Scope.runWith(scope, () => this.drawBoard());
+  }
+
+  private drawBoard(): void {
     const p = this.portfolio!;
     const model = this.models.get(p.stage_model_id);
     const back: HTMLElement[] = [];
@@ -403,7 +410,7 @@ export class PortalView {
       badge(`${model?.code ?? ''}`, {variant: 'accent'}),
       badge(p.stage_authority === 'feed' ? 'stages from registry' : 'stages decided here',
         {variant: p.stage_authority === 'feed' ? 'warning' : 'success'}),
-      this.boardPreferences(),
+      this.preferences(),
     ], 'pp-board-header'), 'board-header');
     const columns = divH([], 'pp-columns');
     const unstaged = this.programs.filter((x) => !x.stage_id);
@@ -453,19 +460,20 @@ export class PortalView {
   }
 
   private card(x: ProgramRow): HTMLElement {
-    const el = named(divV([
-      span(x.name, 'pp-card-title'),
+    const card = new Card({title: x.name, onClick: () => void this.openProgram(x.id).catch(this.failed), children: [
       divH([
         badge(x.status ?? 'active', {variant: statusVariant[x.status ?? 'active'] ?? 'default'}),
         ...(x.modality ? [span(x.modality, 'pp-muted')] : []),
         ...(x.predecessor_id ? [badge('continued', {variant: 'accent'})] : []),
         ...(pinOf(this.pins, {programId: x.id, spaceId: x.space_id}) ? [named(span('pinned', 'pp-pinned-mark'), `pinned-${slug(x.code)}`)] : []),
       ], 'pp-card-meta'),
-    ], 'pp-card'), `program-${slug(x.code)}`);
+    ]});
+    // the open program is marked here, not with u2's selected state: that one only comes with selectable,
+    // where a click toggles it
+    card.root.classList.add('pp-card');
     if (x.id === this.selected)
-      el.classList.add('pp-selected');
-    el.onclick = () => void this.openProgram(x.id).catch(this.failed);
-    return el;
+      card.root.classList.add('pp-selected');
+    return named(card.root, `program-${slug(x.code)}`);
   }
 
   async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
@@ -625,14 +633,7 @@ export class PortalView {
     this.detailScope = null;
   }
 
-  /** Mode and persona, on the board header, owned by a scope of their own: the board is drawn again
-   * on each open of a portfolio. */
-  private boardPreferences(): HTMLElement {
-    this.boardScope?.dispose();
-    const scope = this.boardScope = new Scope();
-    return Scope.runWith(scope, () => this.preferences());
-  }
-
+  /** Mode and persona, on the board header. */
   private preferences(): HTMLElement {
     // a change settles first: setPersona draws the board, and with it these inputs, again
     const mode = choice('mode-choice', undefined, PORTAL_MODES.map((m) => ({code: m, name: m === 'simple' ? 'Simple' : 'Advanced'})),

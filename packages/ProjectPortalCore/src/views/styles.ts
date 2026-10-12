@@ -4,7 +4,7 @@ const CSS = `
 .pp-root { display: flex; flex-direction: row; align-items: stretch; justify-content: flex-start; gap: 12px; flex: 1 1 auto; align-self: stretch; height: 100%; width: 100%; min-width: 0; min-height: 0; padding: 8px; box-sizing: border-box; overflow: hidden; }
 .pp-root > * { align-self: stretch; }
 .pp-portfolios { flex: 1 1 0; max-width: 720px; justify-content: flex-start; gap: 6px; overflow-y: auto; }
-.pp-portfolio-cards { flex-wrap: wrap; gap: 8px; }
+.pp-portfolio-cards { flex-wrap: wrap; gap: 8px; align-items: stretch; }
 .pp-portfolio-cards > .pp-portfolio { flex: 0 0 220px; }
 .pp-board { flex: 1 1 0; min-width: 0; gap: 8px; overflow: hidden; justify-content: flex-start; }
 .pp-detail { justify-content: flex-start; gap: 6px; padding: 4px 8px; box-sizing: border-box; }
@@ -15,10 +15,11 @@ const CSS = `
 .pp-icon-line .pp-icon { flex: 0 0 auto; }
 .pp-muted { color: var(--u2-text-muted, #888); font-size: 12px; }
 .pp-question { font-style: italic; font-size: 12px; }
-.pp-portfolio { padding: 8px; border-radius: 6px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 2px; }
+.u2-card.pp-portfolio { padding: 8px; border-radius: 6px; gap: 2px; }
+.u2-card.pp-portfolio .u2-card-title { font-size: 14px; font-weight: 600; white-space: normal; }
+.u2-card.pp-portfolio .u2-card-header { align-items: flex-start; }
 .pp-portfolio:hover, .pp-card:hover { background: var(--u2-hover, rgba(0,0,0,.04)); }
 .pp-portfolio.pp-selected, .pp-card.pp-selected { border-color: var(--u2-accent, #2083d5); box-shadow: 0 0 0 1px var(--u2-accent, #2083d5); }
-.pp-portfolio-name { font-weight: 600; }
 .pp-search-box { gap: 4px; margin-bottom: 6px; }
 .pp-search-results, .pp-recent { gap: 3px; }
 .pp-search-hit { padding: 4px 6px; border-radius: 4px; border: 1px solid var(--u2-border, #e0e0e0); cursor: pointer; gap: 1px; }
@@ -39,6 +40,9 @@ const CSS = `
 .pp-column-title { font-weight: 600; font-size: 12px; }
 .pp-count { font-size: 11px; color: var(--u2-text-muted, #888); }
 .pp-card { background: var(--u2-surface, #fff); border: 1px solid var(--u2-border, #e0e0e0); border-radius: 5px; padding: 6px; cursor: pointer; gap: 4px; }
+/* the board's program cards are u2 Cards, as compact as the hand-built ones were */
+.u2-card.pp-card { padding: 6px; gap: 4px; border-radius: 5px; }
+.u2-card.pp-card .u2-card-title { font-size: 12px; font-weight: 500; white-space: normal; }
 .pp-card-title { font-size: 12px; font-weight: 500; }
 .pp-card-meta { gap: 4px; align-items: center; flex-wrap: wrap; }
 .pp-track { gap: 2px; flex-wrap: wrap; }
