@@ -2121,6 +2121,7 @@ export class SarMatrixViewer extends DG.JsViewer {
       });
       axisInput.setTooltip('The component that runs across the matrix columns; the others fold into the rows. ' +
         'Changing it rebuilds every matrix; the fitted effects on the Summary stay the same.');
+      axisInput.root.classList.add('chem-sar-axis-input');
       controls.push(axisInput.root);
     }
     const labelInput = ui.input.choice('Caption', {

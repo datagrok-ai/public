@@ -222,6 +222,27 @@ function sarTabHeader(title: string): HTMLElement | null {
   return byText('.d4-tab-header', title);
 }
 
+/** Open a Summary row or fold while it is closed, which its right-pointing chevron shows, so a step shown
+ *  again, or one the reader already opened, stays open. */
+function openIfClosed(el: Element | null): void {
+  if (el instanceof HTMLElement && el.querySelector(':scope > .chem-sar-card-twisty.fa-chevron-right'))
+    el.click();
+}
+
+/** Show a trigger's evidence in its slot, unless it is already the one shown. */
+function showEvidence(trigger: Element | null): void {
+  if (trigger instanceof HTMLElement && !trigger.classList.contains('chem-sar-sum-open'))
+    trigger.click();
+}
+
+/** Open the analogs worth making and their first row, then bring them into view. */
+function openMaking(): void {
+  const block = document.querySelector('.chem-sar-sum-making-block');
+  openIfClosed(block?.querySelector(':scope > .chem-sar-sum-fold') ?? null);
+  openIfClosed(block?.querySelector('.chem-sar-card') ?? null);
+  block?.scrollIntoView({block: 'start'});
+}
+
 /** The matrix is a canvas grid, so its cells are not elements to anchor to. This lays a marker over
  *  the first data cell — past the core column and the substituent header — so the hint about cells
  *  opens against one instead of against the pane. Fixed-positioned and outside the grid so it cannot
@@ -279,38 +300,53 @@ const SAR_HINTS: SarHint[] = [
       'to pair with.',
   },
   {
+    before: () => openIfClosed(document.querySelector('.chem-sar-sum-list > .chem-sar-card')),
     anchor: () => document.querySelector('.chem-sar-sum-list .chem-sar-card') ??
       document.querySelector('.chem-sar-sum-overview'),
     position: ui.hints.POSITION.TOP,
     title: 'Key series',
     text: 'The series to open first. The squares say why: most compounds, widest range, best ' +
-      'compound, most predictions, best-validated fit. Click a row for detail; its grid icon opens the matrix.',
+      'compound, most predictions, best-validated fit. A row expands for detail, as the first one here; ' +
+      'its grid icon opens the matrix.',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-sum-levels') ?? document.querySelector('.chem-sar-sum-overview'),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Fold levels',
+    text: 'Read the whole Summary at one level: L1 is the finest cut, each level up one cut coarser. All ' +
+      'counts every series.',
   },
   {
     before: () => at.components()?.scrollIntoView({block: 'nearest'}),
     anchor: at.components,
+    position: ui.hints.POSITION.TOP,
     title: 'What to change',
     text: 'One additive (Free-Wilson) fit over the whole table. Each component shows its spread, its ' +
       'best value and how far it sits above the average. The widest spread is the one to change next.',
   },
   {
     anchor: at.swapRow,
+    position: ui.hints.POSITION.TOP,
     title: 'Best measured swap, per component',
     text: 'Measured pairs that differ in one component only, with no model involved. Click one for its ' +
       'full pool.',
   },
   {
+    before: () => showEvidence([...document.querySelectorAll('.chem-sar-sum-answer')].pop() ?? null),
     anchor: () => document.querySelector('.chem-sar-sum-answers') ?? document.querySelector('.chem-sar-sum-comp'),
+    position: ui.hints.POSITION.TOP,
     title: 'The evidence, in place',
-    text: 'Click a tile to open the evidence behind its answer right underneath; click it again to close it.',
+    text: 'Each tile opens the evidence behind its answer right underneath, as this one shows its measured ' +
+      'swaps; click it again to close it.',
   },
   {
-    before: () => document.querySelector('.chem-sar-sum-making')?.scrollIntoView(),
+    before: openMaking,
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Worth making',
-    text: 'Click to open: analogs not in the table, ranked on their gain over the best compound their ' +
-      'series made. Compounds you hold but never assayed sit just above.',
+    text: 'Analogs not in the table, ranked on their gain over the best compound their series made; the ' +
+      'first is open to show what its prediction adds up from. Compounds you hold but never assayed sit ' +
+      'just above.',
   },
   {
     before: () => sarTab('SAR Matrix'),
@@ -471,38 +507,44 @@ const PROTAC_HINTS: SarHint[] = [
     text: 'How many degraders landed in a series, and how many had no analog to pair with.',
   },
   {
+    before: () => openIfClosed(document.querySelector('.chem-sar-sum-list > .chem-sar-card')),
     anchor: () => document.querySelector('.chem-sar-sum-list'),
     position: ui.hints.POSITION.TOP,
     title: 'Which series to open first',
-    text: 'The series to open first; the squares say why each is listed. Click a row for detail; its ' +
-      'grid icon opens the matrix.',
+    text: 'The series to open first; the squares say why each is listed. A row expands for detail, as ' +
+      'the first one here; its grid icon opens the matrix.',
   },
   {
     before: () => at.components()?.scrollIntoView({block: 'nearest'}),
     anchor: at.components,
+    position: ui.hints.POSITION.TOP,
     title: 'Which of the three to change',
-    text: 'One additive fit over all three components ranks them by how far each moves solubility, ' +
-      'each adjusted for the other two. On the right: the linker is the core, warheads run across the ' +
-      'columns and the E3 ligand folds into the row.',
+    text: 'The three components ranked by how far each moves solubility, the other two held fixed.',
   },
   {
-    anchor: at.swapRow,
-    title: 'And what was actually measured',
-    text: 'Measured pairs alike in every part but one, per component. No model involved.',
-  },
-  {
+    before: () => showEvidence(
+      document.querySelector('.chem-sar-sum-comp .chem-sar-sum-half:not(.chem-sar-sum-swap)')),
     anchor: () => document.querySelector('.chem-sar-sum-comp .chem-sar-sum-half') ?? at.components(),
+    position: ui.hints.POSITION.TOP,
     title: 'Every linker, warhead and ligand ranked',
-    text: 'Click a component\'s value for its full ranking, drawn as structures, or its swap for the measured ' +
-      'pairs behind it. Both open right under the row.',
+    text: 'A component\'s value opens its full ranking, drawn as structures, as the warheads show here; ' +
+      'its swap opens the measured pairs. Both open right under the row.',
   },
   {
-    before: () => document.querySelector('.chem-sar-sum-making')?.scrollIntoView(),
+    before: () => showEvidence(at.swapRow()),
+    anchor: at.swapRow,
+    position: ui.hints.POSITION.TOP,
+    title: 'And what was actually measured',
+    text: 'Measured pairs alike in every part but one, per component. No model involved. Opened here: ' +
+      'every warhead swap behind the best one.',
+  },
+  {
+    before: openMaking,
     anchor: at.making,
     position: ui.hints.POSITION.TOP,
     title: 'Combinations nobody has built',
-    text: 'Click to open: warhead, linker and E3 ligand combinations never made, ranked on gain over ' +
-      'their series\' best. Listed even when none clears the trust gate.',
+    text: 'Warhead, linker and E3 ligand combinations never made, ranked on gain over their series\' best; ' +
+      'the first is open. Listed even when none clears the trust gate.',
   },
   {
     before: () => sarTab('SAR Matrix'),
@@ -515,8 +557,14 @@ const PROTAC_HINTS: SarHint[] = [
   {
     anchor: at.chips,
     title: 'What the open matrix holds',
-    text: 'Degraders measured, cells the components could fill, predictions and the series\' R². ' +
-      'Columns, on the right, puts another component across the top.',
+    text: 'Degraders measured, cells the components could fill, predictions and the series\' R².',
+  },
+  {
+    anchor: () => document.querySelector('.chem-sar-axis-input') ?? at.chips(),
+    position: ui.hints.POSITION.LEFT,
+    title: 'Pick what runs across',
+    text: 'Choose which component fills the columns: warheads now, or E3 ligands. Every matrix is rebuilt; ' +
+      'the Summary stays the same.',
   },
   {
     anchor: matrixCellAnchor,
@@ -549,8 +597,7 @@ const PROTAC_HINTS: SarHint[] = [
     anchor: at.transferSources,
     position: ui.hints.POSITION.RIGHT,
     title: 'Sources, nested by series',
-    text: 'Each group is a linker lending its trend. "r 1.00 over 10 shared": ten warheads ranked the ' +
-      'same way on both.',
+    text: 'Each group is a linker lending its trend.',
   },
   {
     anchor: at.transferGrid,
