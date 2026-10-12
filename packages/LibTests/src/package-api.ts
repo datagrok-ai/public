@@ -100,8 +100,12 @@ export namespace funcs {
     return await grok.functions.call('LibTests:MockWrapperDF', { params });
   }
 
-  export async function testToleranceInputs(plain: number , abs: number , rel: number , df: DG.DataFrame ): Promise<number> {
-    return await grok.functions.call('LibTests:TestToleranceInputs', { plain, abs, rel, df });
+  export async function testToleranceInputs(plain: number , abs: number , rel: number , df: DG.DataFrame , both: number , dfCols: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceInputs', { plain, abs, rel, df, both, dfCols });
+  }
+
+  export async function testToleranceBadInputs(notNumber: number , columns: number , count: number , badJson: DG.DataFrame , badColumn: DG.DataFrame ): Promise<number> {
+    return await grok.functions.call('LibTests:TestToleranceBadInputs', { notNumber, columns, count, badJson, badColumn });
   }
 
   /**
