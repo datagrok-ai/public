@@ -1,4 +1,4 @@
-import {category, test, expectArray, before} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, before} from '@datagrok-libraries/test/src/test';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import {readDataframe} from './utils';
@@ -108,6 +108,36 @@ category('rendering', () => {
 
     console.log(`rendering of ${rowCount} molecules with highlight took ${performance.now() - start} milliseconds`);
   }, {timeout: 180000, benchmark: true});
+
+  test('mixture cell renderer', async () => {
+    const df = await readDataframe('test_mixtures.csv');
+    await grok.data.detectSemanticTypes(df);
+    expect(df.col('mixture')!.semType, 'ChemicalMixture');
+    const grid = df.plot.grid();
+    const renderer: DG.GridCellRenderer =
+      await DG.Func.find({package: 'Chem', meta: {cellType: 'ChemicalMixture', role: 'cellRenderer'}})[0].apply();
+    const r = window.devicePixelRatio;
+    const [w, h, margin] = [300, 100, 4].map((v) => Math.round(v * r));
+    const leafComponents = [2, 3, 3, 3];
+    for (let row = 0; row < df.rowCount; row++) {
+      const canvas = ui.canvas(w, h);
+      const g = canvas.getContext('2d')!;
+      const cell = grid.cell('mixture', row);
+      renderer.render(g, 0, 0, w / r, h / r, cell, cell.style);
+      const pixels = g.getImageData(0, 0, w, h).data;
+      const slot = (w - 2 * margin) / leafComponents[row];
+      const ink = new Array(leafComponents[row]).fill(0);
+      for (let y = 0; y < h; y++) {
+        for (let x = margin; x < w - margin; x++) {
+          const i = (y * w + x) * 4;
+          if (pixels[i + 3] < 128 || Math.min(pixels[i], pixels[i + 1], pixels[i + 2]) > 230)
+            continue;
+          ink[Math.min(Math.floor((x - margin) / slot), ink.length - 1)]++;
+        }
+      }
+      expect(ink.every((n) => n > 10), true, `row ${row}: a component drew no ink (${ink.join(', ')})`);
+    }
+  });
 
   test('stereochemistry', async () => {
     const df = await readDataframe('tests/stereochemistry.csv');

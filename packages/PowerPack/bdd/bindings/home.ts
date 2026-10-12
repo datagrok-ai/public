@@ -156,6 +156,9 @@ export const tipOfTheDay = Then('the tip of the day of {element} should open wha
   const tip = (await locate(page, target)).first().locator('.power-pack-activity-widget-spotlight-tip');
   await expect(tip, `the tip of the day of ${target.phrase}`).toContainText(/(Demo|Tutorial|Tip) of the day/);
   const kind = /(Demo|Tutorial|Tip) of the day/.exec(await tip.innerText())![1];
+  // the kind follows the weekday in the browser's time (spotlight-widget.ts TIP_TYPE_BY_DAY; the weekend takes Friday's)
+  const day = await page.evaluate(() => new Date().getDay());
+  expect(kind, `the kind of tip on day ${day} of the week (0 = Sunday)`).toBe(['Demo', 'Demo', 'Tip', 'Tutorial', 'Tip', 'Demo', 'Demo'][day]);
   const link = tip.locator('a.ui-link');
   if (kind === 'Tip') {
     await expect(link, 'a link in a plain tip of the day').toHaveCount(0);
@@ -178,4 +181,4 @@ export const tipOfTheDay = Then('the tip of the day of {element} should open wha
   const demos: string[] = await page.evaluate(() => DG.Func.find({meta: {demoPath: null}})
     .map((f: any) => String(f.options?.demoPath ?? '').split('|').pop()!.trim()));
   expect(demos, `the platform's demos, among them the demo of the day "${name}"`).toContain(name);
-}, {tier: 'ui', description: 'the tip changes with the weekday (a demo Monday, Friday and the weekend, a tutorial Wednesday, a plain tip Tuesday and Thursday): a tutorial has to open the Tutorials panel, which is closed again with the Home page current; a demo is not opened (it may need a container), its link has to name one of the platform\'s demos; a plain tip must carry text and no link'});
+}, {tier: 'ui', description: 'the kind of tip is the one for the weekday in the browser (a demo Monday, Friday and the weekend, a tutorial Wednesday, a plain tip Tuesday and Thursday): a tutorial has to open the Tutorials panel, which is closed again with the Home page current; a demo is not opened (it may need a container), its link has to name one of the platform\'s demos; a plain tip must carry text and no link'});

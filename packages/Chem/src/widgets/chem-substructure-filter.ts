@@ -113,6 +113,7 @@ export class SubstructureFilter extends DG.Filter {
   searchNotCompleted = false;
   recalculateFilter = false;
   _peerFilterDisabled = false;
+  private peersDisabled = false;
   statusPanel: DG.Widget | null = null;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
@@ -124,6 +125,11 @@ export class SubstructureFilter extends DG.Filter {
     // while the root is still attached. TODO: replace with a reliable user-vs-teardown signal.
     if (!document.body.contains(this.root))
       return;
+    this.peersDisabled = !active;
+    this.fireEnabledSync(active);
+  }
+
+  private fireEnabledSync(active: boolean): void {
     grok.events.fireCustomEvent(FILTER_ENABLED_SYNC_EVENT, {
       colName: this.columnName,
       tableName: this.tableName,
@@ -415,6 +421,11 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
+    // Remove All deactivates a card before it removes it: a card that is gone must not keep its peers from filtering
+    if (this.peersDisabled) {
+      this.peersDisabled = false;
+      this.fireEnabledSync(true);
+    }
     //in case detaching active filter -> send sync event to other filters and reset active filter id
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: -1};

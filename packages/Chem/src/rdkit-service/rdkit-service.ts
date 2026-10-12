@@ -700,13 +700,15 @@ export class RdKitService {
       }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
     if (rawSmarts)
       return res;
-    return res.map((it) => {
+    const rdkit = PackageFunctions.getRdKitModule();
+    return res.map((it, i) => {
       if (!it)
         return '';
       try {
-        const qm = getQueryMolSafe(it, '', PackageFunctions.getRdKitModule());
-        const smiles = qm?.get_smiles();
-        qm?.delete();
+        // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
+        const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, rdkit).mol : getQueryMolSafe(it, '', rdkit);
+        const smiles = mol?.get_smiles();
+        mol?.delete();
         return smiles ?? '';
       } catch (_) {}
       return '';

@@ -12,8 +12,8 @@ Feature: The preprocessing options of Train Model, kept by the saved model
   a missing-value option before any engine is offered; a change of the target clears the options
   ticked. Predict probability turns the two classes into 0 and 1 for a regression engine and turns its
   output back into the class names at the default cutoff (0.5), so the model applied to new rows writes
-  A and B, not numbers; the cutoff is not moved, since its re-render sets no busy state to wait on
-  (MISSING.md). One-hot encoding expands featureA and featureB into one 0/1 column per category inside the
+  A and B, not numbers. Moved after the save, the cutoff re-renders only the preview: at 0.8 the
+  regression gets 8 of the 10 rows right, against 9 at 0.5. One-hot encoding expands featureA and featureB into one 0/1 column per category inside the
   model; the model's inputs stay featureA and featureB, which is what Apply Model maps (2/2) on a fresh
   table. The old case expected the inputs listed as featureA=Yes, featureA=No, ... (MISSING.md, to ask).
 
@@ -102,6 +102,9 @@ Feature: The preprocessing options of Train Model, kept by the saved model
     And user clicks on OK button in dialog
     Then dialog should be absent
     And 1 predictive model named "BDD-Probability-{run}" should be on the server
+    When user enters "0.8" into "Positive class cutoff" input
+    Then model preview should be ready
+    And "Accuracy" table row in model preview should contain text "0.800"
     And no errors should have been logged
 
   Scenario: The probability model applied to new rows writes the class names

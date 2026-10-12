@@ -2,6 +2,9 @@
 
 ## v.next
 
+* Tests: Added the Enrichment tests (an enrichment saved, applied and checked row by row, edited, deleted and applied again, a clashing column coming in as `result.<name>`, the foreign key lookup); the enrichment storage and apply functions moved from `db-explorer.ts` to `enrichment.ts`, and the data enrichment feature keeps to the pane and the editor
+* Tests: Added the Excel: Import "three sheets" test (the sheets, columns, types and values of the workbook the XLSX features open); the features keep to the ways of opening it
+* Tests: Added the Search tests of what "new", "use", "1+1" and "Project[0-9]+" suggest and find, over the suggestions now computed by `searchSuggestions`; the Enter-in-search feature keeps to Enter and the menu
 * GROK-20076: Home: Fixed the Spotlight widget's remove icon covering the top of the tab scrollbar, and the scrollbars showing when nothing scrolls
 * Home: The Workspace tab picks up favorites added or removed anywhere in the platform without a page reload
 * Home: Fixed the Spotlight tab of the Spotlight widget staying blank when every entity of the account's recent activity had been deleted: it shows the Interactive Tutorials and Demo Apps a new user gets

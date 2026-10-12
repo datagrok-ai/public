@@ -7,7 +7,8 @@ Feature: An Excel workbook opens from Shared with me
   "Send notifications" off: nothing here claims the notification, and it would stay unread there. The
   second account signs in on the same page, finds the space under the name of the account that
   shared it, opens the workbook from it and gets the same three table views as every other path;
-  the running account signs back in at the end, and the space is deleted.
+  the running account signs back in at the end, and the space is deleted. What the sheets hold is
+  PowerPack's package test, Excel: Import "three sheets" (src/tests/excel.ts).
 
   It runs @serial with the other features that sign in as the second account on their page.
 
@@ -39,12 +40,6 @@ Feature: An Excel workbook opens from Shared with me
     And user double-clicks on "bdd-xlsx-{time} > xlsx-open-test.xlsx" shared by the running account
     Then the open table views should be exactly "Customers, Orders, Products"
     And the "Products" view should be current
-    And table "Customers" should have 5 rows
-    And table "Customers" should have columns "CustomerID, Name, Country, Since"
-    And table "Orders" should have 6 rows
-    And the "Amount" cell of row 1 of table "Orders" should be displayed as "250.50"
-    And table "Products" should have 4 rows
-    And the "InStock" cell of row 2 of table "Products" should be displayed as "17"
     And no errors should have been logged
     And no error or warning balloon should have been shown
 

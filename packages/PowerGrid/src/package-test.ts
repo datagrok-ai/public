@@ -4,6 +4,8 @@ import {runTests, TestContext, tests, initAutoTests as initTests } from '@datagr
 
 import './tests/webgpu-tests';
 import './tests/scatterplot-gpu-tests';
+import './tests/summary-columns-tests';
+import './tests/forms-tests';
 
 
 export const _package = new DG.Package();

@@ -145,6 +145,14 @@ export const menuLists = Then('the open menu should list {string}', async (page:
   await expect.poll(() => v.menuLabels(page, parts.join(' > ')), {message: `the items under "${parts.join(' > ') || 'the menu'}"`}).toContain(item);
 }, {tier: 'ui', description: `the last segment of ${PATH} is among the items, the ones before it are the groups opened to reach them — the menu must already be open`});
 
+export const menuListsEnabled = Then('the open menu should list {string} as enabled', async (page: Page, path: string) => {
+  await expect.poll(() => v.menuItemState(page, path), {message: `the item "${path}" of the open menu`}).toBe('enabled');
+}, {tier: 'ui', description: `the last segment of ${PATH} is listed and can be picked (no aria-disabled) — the menu must already be open`});
+
+export const menuListsDisabled = Then('the open menu should list {string} as disabled', async (page: Page, path: string) => {
+  await expect.poll(() => v.menuItemState(page, path), {message: `the item "${path}" of the open menu`}).toBe('disabled');
+}, {tier: 'ui', description: `the last segment of ${PATH} is listed greyed out (aria-disabled) — the menu must already be open`});
+
 export const menuDoesNotList = Then('the open menu should not list {string}', async (page: Page, path: string) => {
   const parts = path.split(/\s*[>|]\s*/).filter((s) => s.length > 0);
   const item = parts.pop();
@@ -793,6 +801,9 @@ export const infoBalloon = Then('an info balloon should have been shown', (page:
 
 export const tooltipColumns = Then('the tooltip should show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list),
   {description: 'the row tooltip lists exactly these columns (comma-separated, any order)'});
+
+export const tooltipColumnsInOrder = Then('the tooltip should show columns in the order {string}', (page: Page, list: string) => v.expectTooltipColumnsInOrder(page, list),
+  {description: 'the row tooltip lists exactly these columns, top to bottom (comma-separated, case aside) — a column listed twice counts twice'});
 
 export const tooltipNotColumns = Then('the tooltip should not show columns {string}', (page: Page, list: string) => v.expectTooltipColumns(page, list, true),
   {description: 'the row tooltip lists a different set of columns'});

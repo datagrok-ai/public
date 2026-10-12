@@ -311,6 +311,14 @@ async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<void> {
   }
 }
 
+/** Ketcher's adapter has exported what Ketcher shows: each molecule the host loaded has answered with its change event
+ * (`since` given: a change exported after it), and the export's Indigo notations are in; or `ms` passed, the fixed wait
+ * this used to be. */
+async function ketcherExported(impl: any, ms: number, since?: number): Promise<void> {
+  await awaitCheck(() => impl.importedMoleculesCounter === 0 && impl._molV3000 !== null &&
+    (since === undefined || impl._exportId > since), '', ms).catch(() => {});
+}
+
 /** The query the dialog's sketcher itself holds, not the host's getters (which give back the string the host set until the
  * user's next edit): its own molblock, as the search reads it, and its own SMARTS. */
 async function heldQuery(filter: SubstructureFilter): Promise<{search: string, smarts: string}> {
@@ -326,7 +334,7 @@ async function heldQuery(filter: SubstructureFilter): Promise<{search: string, s
     // what the host set loads asynchronously, and its change exports what Ketcher shows (before it, the adapter holds the
     // host's string)
     await within(impl._loading ?? Promise.resolve(), 'Ketcher did not load what the host set');
-    await delay(300);
+    await ketcherExported(impl, 300);
     await awaitCheck(() => impl._molV2000 !== null, 'Ketcher exported nothing', 10000);
     return {search: searchReads(impl._molV2000), smarts: await impl.getSmarts()};
   }
@@ -370,7 +378,8 @@ async function roundTrip(file: string, column: string, sketcher: string, other: 
       filter.sketcher.sketcherType = type;
       await within(filter.sketcher.sketcherReady(), `${type} did not get ready after the switch`);
       // Ketcher's drawing loads asynchronously after it is ready
-      await delay(type === 'Ketcher' ? 1000 : 0);
+      if (type === 'Ketcher')
+        await ketcherExported(filter.sketcher.sketcher, 1000);
     }
     at.stage = 'reading the sketcher switched back';
     const back = await heldQuery(filter);
@@ -394,7 +403,8 @@ const cruxDraws = (base: string, steps: CruxStep[]) => async (filter: Substructu
 /** Draws on Ketcher in the filter's dialog: the molecule (each query atom an element, each query bond single), then the
  * structure with the feature, as its tools leave it. */
 const ketcherDraws = (atoms: any[], bonds: any[]) => async (filter: SubstructureFilter): Promise<void> => {
-  const ketcher = (filter.sketcher.sketcher as any)._sketcher;
+  const impl = filter.sketcher.sketcher as any;
+  const ketcher = impl._sketcher;
   const plainAtoms = atoms.map((a) => ({label: a.type === 'atom-list' || !/^[A-Z][a-z]?$/.test(a.label) ||
     ['A', 'Q', 'X', 'M'].includes(a.label) ? 'C' : a.label, location: a.location}));
   const plainBonds = bonds.map((b) => ({type: (b.type ?? 1) > 3 ? 1 : (b.type ?? 1), atoms: b.atoms}));
@@ -402,9 +412,10 @@ const ketcherDraws = (atoms: any[], bonds: any[]) => async (filter: Substructure
     delay(15000).then(() => {throw new Error('Ketcher did not load the structure');})]);
   await load(ketOf(plainAtoms, plainBonds));
   await settle(filter);
+  const before = impl._exportId;
   await load(ketOf(atoms, bonds));
   // the change's exports run in turn after it (V2000 at once, Indigo's then)
-  await delay(1000);
+  await ketcherExported(impl, 1000, before);
 };
 
 /** How long a test of the category may take before it starts no other feature: under its own timeout, so that it ends

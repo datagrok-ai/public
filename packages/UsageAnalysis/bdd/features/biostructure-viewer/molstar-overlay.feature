@@ -11,9 +11,8 @@ Feature: Mol* viewport overlay buttons of the Biostructure viewer
   settings panel, "Turn selection mode off" for the selection toolbar. The expanded layout is the
   viewer's `layout expanded` reading, and Escape brings it back with the table view still current.
 
-  The Background picks the `pdb` column in Biostructure Id through the settings, because the viewer
-  does not take it by itself on the stand (GROK-21119). Adding the
-  viewer and building its engine are checked for errors and balloons at the end of the Background.
+  The viewer takes the `pdb` column in Biostructure Id by itself (GROK-21119). Adding the viewer and
+  building its engine are checked for errors and balloons at the end of the Background.
 
   Layout Show Controls drives the Mol* layout, but the Toggle Controls Panel button does not write
   back into it: after the button, the property still reads false (checked on the stand, a fact of
@@ -43,7 +42,6 @@ Feature: Mol* viewport overlay buttons of the Biostructure viewer
     Then "Add Viewer" dialog should be absent
     And Biostructure viewer should be visible
     When user clicks on settings icon of Biostructure viewer
-    And user selects "pdb" in "Biostructure Id" property in context panel
     Then "Reset Camera" button in Biostructure viewer should be visible
     And no errors should have been logged
     And no error or warning balloon should have been shown

@@ -4,23 +4,32 @@ The audit of 2026-10-07 applied `CLAUDE.md` "Anything an API test can check" to 
 existing test already covered were removed then; these are the ones that wait for a test. Write the test, run it,
 then remove the scenario or lines named, with one line in the feature's description pointing at the test.
 
+## Still to write
+
 | Behaviour | Where the test goes | What it lets go |
 |---|---|---|
-| A project saved with Data sync reopens with `.data-sync = success`; a snapshot reopens with no mark; a calculated-column chain survives a data-sync round trip and a source rename | ApiTests `src/dapi/projects.ts` (new) | UsageAnalysis `projects/projects-data-sync` S5 and the reopen halves of S3/S4; PowerPack `add-new-column/persistence-sources`, `persistence-northwind` |
-| `getRecentEntities()` holds a project after `project.open()` | ApiTests `src/dapi/entities.ts` | the Recent claim's wait in `browse/browse-my-stuff` |
-| A plain user does not list a connection another user owns and has not shared | datlas `test/users_groups/read_routes_authorization_test.dart` | `browse/browse-platform-and-databases` "Another user does not see a connection…" (two sign-ins) |
-| A second root space of the same name, and a rename onto one, are refused; a copy outlives its deleted original | datlas `test/spaces/spaces_test.dart` | one of the two refusal scenarios (spaces-create / spaces-rename); the copy half of spaces-entity-ops |
-| Sticky meta keyed by molecule survives a clone, a CSV round trip and a non-canonical SMILES; Clear values; no values after the schema is deleted (GROK-18980) | Chem `src/tests` (sticky meta) and datlas `test/sticky_meta` | `sticky-meta/persistence-and-delete` 3.2–3.4 |
-| Database meta: one field deleted leaves the others; string-list Values round trip; a table's or column's annotation is absent on its namesakes | DBTests `src/db-annotations/db-annotations.ts` | `sticky-meta/database-meta` isolation lines |
-| Every DBTests query that declares `meta.testExpectedRows` returns that count; a parameter choice filters | DBTests (new `expected-rows-test.ts`) | the `^France$` line of `queries/parameterized-queries` |
-| SequenceTranslator: Convert over all of `cyclized.csv`, Combine Sequences, Combine Sense+Antisense, the Translator's outputs and bulk conversion, GROK-20958 | SequenceTranslator `src/tests` | value lines of `oligo-polytool`, `oligo-nucleotide-grid`, `oligo-toolkit-translator-structure` |
-| Enrichment: apply, edit, delete, the FK lookup, a clashing name | PowerPack `src/tests/enrichment.ts` (new) | row-by-row checks and the replay half of `enrichment/data-enrichment` |
+| SequenceTranslator: Convert over all of `cyclized.csv`, Combine Sequences, Combine Sense+Antisense, the Translator's outputs and bulk conversion, GROK-20958 | SequenceTranslator `src/tests` | value lines of `oligo-polytool`, `oligo-nucleotide-grid`, `oligo-toolkit-translator-structure` — set aside with the oligo features (the lead, 2026-10-11) |
+| The toolbox Search box with "and" / "or" (GROK-20229) | with the fix, beside xamgle `features/search.dart` | — (the cases left the feature already); the fix is deferred |
+
+## Written on 2026-10-12
+
+| Behaviour | Test | What went |
+|---|---|---|
+| Projects with Data sync, snapshots, a calculated-column chain through a round trip and a source rename | ApiTests `Dapi: projects: data sync` (`src/dapi/projects.ts`) | `projects-data-sync` S5 and the reopen halves of S3/S4; the post-reopen value checks of PowerPack `persistence-sources`, `persistence-northwind` |
+| `getRecentEntities()` after a project is saved and opened | ApiTests `Dapi: entities: recent` | nothing: `browse-my-stuff` keeps its wait, the tree reads Recent before the server lists the project (1 run in 3 without it); Recent is built from audit events, so the save puts the project there, not the open |
+| A plain user does not list another user's unshared connection | datlas `test/users_groups/read_routes_authorization_test.dart` | `browse-platform-and-databases` "Another user does not see a connection…" |
+| A second root space of the same name and a rename onto one are refused; a copy outlives its deleted original | datlas `test/spaces/spaces_test.dart` | the rename refusal scenario of `spaces-rename`; the survival half of `spaces-entity-ops` |
+| Sticky meta keyed by molecule through a clone, a CSV round trip and another SMILES; Clear values; no values after the schema is deleted (GROK-18980) | ApiTests `Dapi: sticky meta: molecules`, datlas `test/sticky_meta` | `persistence-and-delete`'s CSV scenario and the reload of its Clear values scenario |
+| Database meta: one field deleted leaves the others; string-list Values round trip; an annotation absent on its namesakes | DBTests `Database Meta: DbSchemaInfo` | `database-meta`'s namesake lines |
+| Every DBTests query declaring `meta.testExpectedRows` returns that count; a choice parameter filters | DBTests `Queries: expected rows` (`src/expected-rows-test.ts`) | the `^France$` line of `queries/parameterized-queries` |
+| Enrichment: apply, edit, delete, the FK lookup, a clashing name | PowerPack `src/tests/enrichment.ts` | the row-by-row checks and the replay half of `enrichment/data-enrichment` |
 | A three-sheet workbook imports with its sheets, columns and values | PowerPack `src/tests/excel.ts` | the content claims of `io/xlsx-open`, `io/xlsx-shared-with-me` |
-| Power search templates and syntax ("new", "use", "1+1", "Project[0-9]+") | PowerPack `src/tests/search.ts` | those rows of `search/power-search-enter` |
-| Summary columns and the Forms viewer through a layout and a project; the Tags renderer (GROK-20888) | PowerGrid `src/tests` | the project halves of `grid/summary-columns`, `viewers/forms/forms-persistence`; the GROK-20888 scenario |
-| Chem: activity cliffs at cutoffs 20/95, elemental analysis on SMARTS, chemical space on an all-empty column, R-groups "No R-Groups were found", BitBIRCH / similarity matrix / Cluster MCS, reactions, notation round trips (GROK-20956), the other fingerprints, a mixture renderer | Chem `src/tests` | the permutation scenarios of those Chem features |
-| Bio: scan liabilities, similarity with a short/long reference (GROK-20963), sequence space and cliffs on HELM/MSA, a numbering round trip, multi-letter separator → HELM | Bio `src/tests` | `annotate/annotate`, `calculate/scoring` 3–5, the `analyze/other-notations` Outlines, `projects/round-trips` S2 |
-| Peptides: exports, mutation-cliff counts on the 200-row subset, MCL threshold → cluster count, LST statistics | Peptides `src/tests` | `sar/export`, `sar/mutation-cliffs`, the `sar/similarity-threshold` Outline |
-| Dendrogram centroid and median linkage with inversions (GROK-19595) | Dendrogram `src/tests/hierarchical-clustering-tests.ts` | `clustering/chem-dialog` centroid |
-| EDA control comparisons on a filtered table (GROK-20795) | EDA `src/tests` | `analyze/filtered-group-comparison` S2 |
-| The toolbox Search box with "and" / "or" (GROK-20229) | with the fix, beside xamgle `features/search.dart` | — (the cases left the feature already) |
+| Power search templates and syntax ("new", "use", "1+1", "Project[0-9]+") | PowerPack `src/tests/search.ts` | those rows of `search/power-search-enter` (the "Project[0-9]+" Enter stays: it is the one case with no suggestion menu) |
+| Summary columns and the Forms viewer through a project; the Tags renderer (GROK-20888) | PowerGrid `src/tests` | the project halves of `grid/summary-columns`, `viewers/forms/forms-persistence`; the GROK-20888 scenario |
+| Chem: cliffs at cutoff 20, elemental analysis on SMARTS, chemical space on an all-empty column, R-groups with none found, BitBIRCH / similarity matrix / Cluster MCS, reactions, notation round trips, the other fingerprints, a mixture renderer | Chem `src/tests` | the permutation scenarios of those Chem features (the cutoff-95 cliffs scenario stays: the only proof the dialog's cutoff reaches the analysis) |
+| Bio: scan liabilities, similarity with a short/long reference (GROK-20963), sequence space and cliffs on HELM/MSA, a numbering round trip, multi-letter separator → HELM | Bio `src/tests` | `annotate/annotate`, `calculate/scoring` 3–5, the `analyze/other-notations` Outlines, `projects/round-trips` |
+| Peptides: exports, mutation-cliff counts, MCL threshold → cluster count, LST statistics | Peptides `src/tests` | `sar/export`, `sar/mutation-cliffs`, the `sar/similarity-threshold` Outline, the LST statistics lines of `sar/tooltips` |
+| Dendrogram centroid and median linkage with inversions (GROK-19595) | Dendrogram `hierarchicalClustering` tests | `clustering/chem-dialog` centroid |
+| EDA control comparisons on a filtered table (GROK-20795) | EDA `Control comparisons: dialog` | `analyze/filtered-group-comparison` S2 |
+| Predictive models: data checks, Ignore missing, One-hot on apply, a second model's own name | xamgle "Core: xamgle: Predictive modeling" | — (the EDA model features claim the gestures) |
+| Predictive models: engine discovery, `/ml/zip`, blobs and images, save / suggested / delete | ApiTests `Dapi: models` (`src/dapi/models.ts`) | — (the EDA count checks prove the UI's Save and Delete) |

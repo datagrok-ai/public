@@ -52,6 +52,19 @@ category('RFV: graphics outputs', () => {
   });
 });
 
+category('RFV: hidden outputs', () => {
+  const track = closeViewsAfter();
+
+  test('A hidden dataframe output gets no tab', async () => {
+    const call = DG.Func.byName('Compute2:HiddenOutputsTest').prepare({a: 1});
+    const view = track(await openEditor(call));
+    await run(view);
+    await awaitCheck(() => view.root.querySelector('[dock-spawn-title="shown"]') !== null,
+      'shown output tab not rendered', 15000);
+    expect(view.root.querySelector('[dock-spawn-title="secret"]') === null, true, 'hidden output tab rendered');
+  });
+});
+
 // exceljs typings omit `ext`, which addImage({tl, ext}) keeps on the range
 const imageSize = (range: unknown) => (range as {ext?: {width: number, height: number}}).ext;
 

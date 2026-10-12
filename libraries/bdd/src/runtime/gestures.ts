@@ -181,7 +181,7 @@ export async function hover(page: Page, target: ElementRef): Promise<void> {
 
 /** A Dart property grid row shows its value as a label and builds its editor (a select, an input)
  * only when the value cell is clicked: open it first, so the gesture finds the editor. */
-async function openPropertyEditor(loc: Locator): Promise<void> {
+export async function openPropertyEditor(loc: Locator): Promise<void> {
   const row = loc.first();
   if (!await row.evaluate((e) => e.matches('tr.property-grid-item')).catch(() => false))
     return;

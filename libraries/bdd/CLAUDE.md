@@ -114,7 +114,9 @@ as the minimal CI stack is); it may sit in the Background when every scenario ne
 never names the package under test, whose absence is a failure. Two more, agreed 2026-09-30: `the stand has
 a reachable {string} connection` for a connection a package brings (its absence skips, unlike the feature's
 own fixture connection), and `the stand serves the help pages` before a claim on the help panel (a dev stack
-serves none). Nothing else skips.
+serves none). Nothing else skips, but a test the lead set aside: `@skip` (compiled to `test.skip`), with a
+`TODO:` paragraph in the feature's description. A `@known-failure` is pinned to the step it describes
+(`@known-failure:<line>`, the feature line): a failure elsewhere fails the test.
 
 A TestTrack case marked `target_layer: manual-only` or `apitest` is never translated. In a
 `playwright` case, a scenario of either kind is skipped, and the feature description says so in
@@ -205,7 +207,10 @@ ruling, 2026-10-06). A feature spends its time on the gestures it tests:
 - **A dataset is read once per page and every feature gets a clone** (`platform/steps.ts`
   `openTable`): the clone keeps the semantic types, so the platform's detection on it skips the
   typed columns; the step still ends on `ddt-semantic-type-detected` for that frame, and makes
-  row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step.
+  row 0 current itself so the table view's 1 s timer does not repaint every viewer mid-step. It then
+  waits for the grid to settle: a renderer a package brings (Chem's, seconds on a fresh page) is pending
+  grid work (`grid_core.dart` `detectRenderers`), and the rows it grows moved a cell aimed at before it
+  one row up — a click "on cell 2" made row 1 current. Claim the current row after a cell click.
 - **`expect` comes from `src/runtime/patience.js`** in every check — package bindings included, through
   `@datagrok-libraries/bdd/runtime`: a `@known-failure` scenario narrows it to 3 s, a check that names its own
   timeout wraps it in `pollMs`, and `expect.poll` reads every 100 ms, then every 250 ms, instead of Playwright's backoff to 1 s

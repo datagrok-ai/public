@@ -11,7 +11,7 @@ import {randomUUID} from 'node:crypto';
 import type {Browser, Page, PlaywrightTestArgs, PlaywrightTestOptions, PlaywrightWorkerArgs, PlaywrightWorkerOptions,
   TestType} from '@playwright/test';
 import {leave} from './args.js';
-import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf} from './failure.js';
+import {failure, isSkip, isWaitFailure, journeyFailure, reasonOf, StepFailure} from './failure.js';
 import * as guide from './guide.js';
 import {explain} from './locate.js';
 import {logMemory, rendererMb} from './memory.js';
@@ -34,8 +34,9 @@ export interface FeatureSession {
 export interface Journey {
   /** Runs a scenario as a soft step: a failure is recorded and the next scenario still runs.
    * `knownFailure` inverts that scenario: its failure is expected and does not fail the test,
-   * while its passing does — the bug it describes is fixed and the tag has to go. */
-  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void>;
+   * while its passing does — the bug it describes is fixed and the tag has to go. With `line`, only a
+   * failure of the step at that feature line is the expected one. */
+  scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void>;
   /** Fails the test when any scenario failed, listing them. */
   finish(): void;
 }
@@ -52,7 +53,7 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
   test.setTimeout(test.info().timeout + SCENARIO_BUDGET_MS * scenarios);
   const failed: {name: string; error: unknown}[] = [];
   return {
-    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean}): Promise<void> {
+    async scenario(name: string, body: () => Promise<void>, options?: {knownFailure?: boolean; line?: number}): Promise<void> {
       const overlays = page ? await openOverlays(page) : 0;
       try {
         if (page) {
@@ -68,6 +69,8 @@ export function journey(test: Test, scenarios: number, page?: Page): Journey {
           throw failed.length > 0 ? journeyFailure(failed, scenarios, `the rest was skipped at "${name}": ${reasonOf(e)}`) : e;
         if (!options?.knownFailure)
           failed.push({name, error: e});
+        else if (!failedAt(e, options.line))
+          failed.push({name, error: failedElsewhere(e, options.line!)});
         // a scenario that stopped midway leaves its dialog or menu over the viewers the next one uses;
         // those open before it (a dialog the Background opened for every scenario) stay
         if (page)
@@ -88,16 +91,27 @@ const KNOWN_FAILURE_PASSED = 'tagged @known-failure and passed — the bug it de
 
 /** A `@known-failure` scenario outside a journey: its steps failing is the defect it describes and
  * passes the test; its steps passing fails it — the bug is fixed and the tag has to go. */
-export async function knownFailure(body: () => Promise<void>): Promise<void> {
+export async function knownFailure(body: () => Promise<void>, line?: number): Promise<void> {
   try {
     await whileExpectedToFail(body);
   }
   catch (e) {
     if (isSkip(e))
       throw e;
+    if (!failedAt(e, line))
+      throw failedElsewhere(e, line!);
     return;
   }
   throw new Error(KNOWN_FAILURE_PASSED);
+}
+
+/** Whether the failure is the one a `@known-failure:<line>` tag pins: the step at that feature line. */
+export function failedAt(e: unknown, line: number | undefined): boolean {
+  return line === undefined || (e instanceof StepFailure && e.at.endsWith(`:${line}`));
+}
+
+function failedElsewhere(e: unknown, line: number): Error {
+  return new Error(`tagged @known-failure:${line}, but did not fail at line ${line}:\n\n${e instanceof Error ? e.message : String(e)}`);
 }
 
 /** `<root>/generated/x/y.test.ts` + `features/x/y.feature` → the feature file (the layout

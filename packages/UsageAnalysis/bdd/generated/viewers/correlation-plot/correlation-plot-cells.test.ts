@@ -78,7 +78,7 @@ test.describe("Correlation plot — a cell as a click, hover and menu target", (
     });
     await run.scenario("The cell menu is the grid's, with the plot's own items on it", async () => {
       await session.step(70, "When user right-clicks on the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => rightClickArea(page, "cell HEIGHT x AGE", el("correlation plot viewer")));
-      await session.step(71, "Then the open menu should list \"Show Pearson R\"", () => menuLists(page, "Show Pearson R"));
+      await session.step(71, "Then the open menu should list \"Show Coefficients\"", () => menuLists(page, "Show Coefficients"));
       await session.step(72, "And the open menu should list \"Open as table\"", () => menuLists(page, "Open as table"));
       await session.step(73, "And the open menu should list \"Columns\"", () => menuLists(page, "Columns"));
       await session.step(74, "And the open menu should list \"Tooltip\"", () => menuLists(page, "Tooltip"));
@@ -87,12 +87,12 @@ test.describe("Correlation plot — a cell as a click, hover and menu target", (
       await session.step(77, "When user closes the context menu", () => closeContextMenu(page));
       await session.step(78, "Then no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Show Pearson R from the cell menu does what the property does", async () => {
-      await session.step(81, "When user picks \"Show Pearson R\" from the context menu of the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => pickFromAreaContextMenu(page, "Show Pearson R", "cell HEIGHT x AGE", el("correlation plot viewer")));
+    await run.scenario("Show Coefficients from the cell menu does what the property does", async () => {
+      await session.step(81, "When user picks \"Show Coefficients\" from the context menu of the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => pickFromAreaContextMenu(page, "Show Coefficients", "cell HEIGHT x AGE", el("correlation plot viewer")));
       await session.step(82, "Then the \"show pearson r\" reading of correlation plot viewer should be \"false\"", () => readingReads(page, "show pearson r", el("correlation plot viewer"), "false"));
       await session.step(83, "And the \"text of cell HEIGHT x AGE\" reading of correlation plot viewer should be \"\"", () => readingReads(page, "text of cell HEIGHT x AGE", el("correlation plot viewer"), ""));
       await session.step(84, "And the \"cell width\" reading of correlation plot viewer should be 20", () => readingIs(page, "cell width", el("correlation plot viewer"), 20));
-      await session.step(85, "When user picks \"Show Pearson R\" from the context menu of the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => pickFromAreaContextMenu(page, "Show Pearson R", "cell HEIGHT x AGE", el("correlation plot viewer")));
+      await session.step(85, "When user picks \"Show Coefficients\" from the context menu of the \"cell HEIGHT x AGE\" area of correlation plot viewer", () => pickFromAreaContextMenu(page, "Show Coefficients", "cell HEIGHT x AGE", el("correlation plot viewer")));
       await session.step(86, "Then the \"show pearson r\" reading of correlation plot viewer should be \"true\"", () => readingReads(page, "show pearson r", el("correlation plot viewer"), "true"));
       await session.step(87, "And the \"text of cell HEIGHT x AGE\" reading of correlation plot viewer should be \"-0.23\"", () => readingReads(page, "text of cell HEIGHT x AGE", el("correlation plot viewer"), "-0.23"));
       await session.step(88, "And no errors should have been logged", () => noErrors(page));

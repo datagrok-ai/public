@@ -25,7 +25,7 @@ Feature: The line chart's aggregated tooltip with a split
     Then the "aggregated" reading of line chart viewer should be "true"
     When user picks "Tooltip > Edit..." from the context menu of line chart viewer
     Then "Edit Aggregated Tooltip" dialog should be visible
-    When user clicks on first button in "Edit Aggregated Tooltip" dialog
+    When user clicks on "Add aggregation" button in "Edit Aggregated Tooltip" dialog
     And user picks "Stereo Category" in the column selector of the "Edit Aggregated Tooltip" dialog
     And user selects "concat unique" in choice input in "Edit Aggregated Tooltip" dialog
     And user clicks on "Add aggregation" button in "Edit Aggregated Tooltip" dialog

@@ -639,7 +639,7 @@ export class PdbResDataFrame extends DG.DataFrame implements PdbResDataFrameType
     seq: string, frame: number,
   ): PdbResDataFrame {
     const codeCol = DG.Column.string('code', length).init((i) => code(i));
-    const compIdCol = DG.Column.int('compId', length).init((i) => compId(i));
+    const compIdCol = DG.Column.string('compId', length).init((i) => compId(i));
     const seqIdCol = DG.Column.int('seqId', length).init((i) => seqId(i));
     const labelCol = DG.Column.string('label', length).init((i) => label(i));
     const seqCol = DG.Column.string('seq', length).init((_i) => seq);

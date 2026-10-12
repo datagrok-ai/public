@@ -8,6 +8,8 @@
 * Biostructure: Fixed the Representation property skipping structures not yet interacted with in the 3D view, and a structure loaded later (current-row reload) keeping the default representation
 * Fixed Show > Biostructure / Show > NGL docking the viewer's root instead of a viewer (no title bar, not listed)
 * NGL: Fixed the double-click view not attaching its viewer host; the file preview view is named after the file
+* GROK-21118: Fixed Open table residues leaving the compId column empty (it was an int column for residue names)
+* GROK-21119: Fixed a Biostructure viewer added to a table not taking its structure (Molecule3D / PDB id) and ligand columns by itself
 
 ## 1.4.11 (2026-07-13)
 

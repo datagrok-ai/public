@@ -1,5 +1,5 @@
 /* What the molecules in a column are, read through RDKit in the page (Chem:getRdKitModule): the
-   same molecule in two notations, which rows a transform changed, fragments and substructures.
+   same molecule in two notations, which rows a transform changed, substructures.
    Empty cells are compared as empty; a cell RDKit cannot read fails the step with its row. */
 import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
@@ -9,10 +9,9 @@ declare const grok: any;
 
 type Pair = {row: number; a: string; b: string};
 
-/** Canonical SMILES of every row of the named columns of the current table, '' for an empty cell;
- * flat drops the stereo marks (chiral tags, double-bond directions) before canonicalizing. */
-async function canonical(page: Page, columns: string[], flat = false): Promise<{values: string[][]; unreadable: string[]}> {
-  return page.evaluate(async ([names, noStereo]) => {
+/** Canonical SMILES of every row of the named columns of the current table, '' for an empty cell. */
+async function canonical(page: Page, columns: string[]): Promise<{values: string[][]; unreadable: string[]}> {
+  return page.evaluate(async (names) => {
     const df = grok.shell.t;
     for (const n of names)
       if (!df.col(n))
@@ -31,14 +30,7 @@ async function canonical(page: Page, columns: string[], flat = false): Promise<{
         let mol = null;
         try {
           mol = rdkit.get_mol(v);
-          const smiles = mol.get_smiles();
-          if (!noStereo)
-            out.push(smiles);
-          else {
-            const bare = rdkit.get_mol(smiles.replace(/[@\/\\]/g, ''));
-            out.push(bare.get_smiles());
-            bare.delete();
-          }
+          out.push(mol.get_smiles());
         }
         catch {
           out.push('');
@@ -51,15 +43,15 @@ async function canonical(page: Page, columns: string[], flat = false): Promise<{
       return out;
     });
     return {values, unreadable};
-  }, [columns, flat] as [string[], boolean]);
+  }, columns);
 }
 
 function pairs(a: string[], b: string[]): Pair[] {
   return a.map((x, i) => ({row: i + 1, a: x, b: b[i]}));
 }
 
-async function expectSameMolecules(page: Page, x: string, y: string, flat: boolean): Promise<void> {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y], flat);
+async function expectSameMolecules(page: Page, x: string, y: string): Promise<void> {
+  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
   expect(unreadable, 'cells RDKit could not read').toEqual([]);
   expect(a.filter(Boolean).length, `molecules in "${x}"`).toBeGreaterThan(0);
   const bad = pairs(a, b).filter((p) => p.a !== p.b).map((p) => `row ${p.row}: ${p.a} vs ${p.b}`);
@@ -67,17 +59,7 @@ async function expectSameMolecules(page: Page, x: string, y: string, flat: boole
 }
 
 export const sameMolecules = Then('every molecule of {string} column should be the same as in {string} column', (page: Page, x: string, y: string) =>
-  expectSameMolecules(page, x, y, false), {description: 'canonical SMILES of the two columns equal row by row: the same molecules in any notation'});
-
-export const sameFlatMolecules = Then('every molecule of {string} column should be the same as in {string} column ignoring stereochemistry', (page: Page, x: string, y: string) =>
-  expectSameMolecules(page, x, y, true), {description: 'canonical SMILES without chiral tags and double-bond directions equal row by row: the same atoms and bonds'});
-
-export const noSameMolecule = Then('no molecule of {string} column should be the same as in {string} column', async (page: Page, x: string, y: string) => {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
-  expect(unreadable, 'cells RDKit could not read').toEqual([]);
-  const same = pairs(a, b).filter((p) => p.a !== '' && p.a === p.b).map((p) => `row ${p.row}: ${p.a}`);
-  expect(same, `rows where "${x}" repeats the molecule of "${y}"`).toEqual([]);
-}, {description: 'no filled cell holds the molecule of the other column\'s cell in its row'});
+  expectSameMolecules(page, x, y), {description: 'canonical SMILES of the two columns equal row by row: the same molecules in any notation'});
 
 export const someMoleculesChanged = Then('some but not all molecules of {string} column should differ from {string} column', async (page: Page, x: string, y: string) => {
   const {values: [a, b], unreadable} = await canonical(page, [x, y]);
@@ -117,21 +99,9 @@ function rowsContaining(page: Page, column: string, query: string): Promise<stri
   }, [column, query] as [string, string]);
 }
 
-export const noSubstructure = Then('no molecule of {string} column should contain {string}', async (page: Page, column: string, query: string) => {
-  expect(await rowsContaining(page, column, query), `molecules of "${column}" containing ${query}`).toEqual([]);
-}, {description: 'an RDKit substructure query (SMILES or SMARTS) matched against every filled cell'});
-
 export const moleculesMatching = Then('{int} molecules of {string} column should contain {string}', async (page: Page, count: number, column: string, query: string) => {
   expect((await rowsContaining(page, column, query)).length, `molecules of "${column}" containing ${query}`).toBe(count);
 });
-
-export const noMoreFragments = Then('no molecule of {string} column should have more fragments than in {string} column', async (page: Page, x: string, y: string) => {
-  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
-  expect(unreadable, 'cells RDKit could not read').toEqual([]);
-  const parts = (s: string) => s === '' ? 0 : s.split('.').length;
-  const bad = pairs(a, b).filter((p) => parts(p.a) > parts(p.b)).map((p) => `row ${p.row}: ${p.a}`);
-  expect(bad, `rows where "${x}" has more fragments than "${y}"`).toEqual([]);
-}, {description: 'dot-separated components of the canonical SMILES, row by row'});
 
 /** RDKit's canonical SMILES of the cell and of a text; a text RDKit cannot read comes back marked. */
 function sameAsCell(page: Page, row: number, column: string, text: string): Promise<{text: string; cell: string}> {
@@ -309,34 +279,6 @@ export const cardsFromFilteredRows = Then('every card of {widget} should show a 
     throw new Error(`the cards are not the rows that pass the filter: ${seen}`);
   });
 }, {description: 'the viewer\'s "card row set" reading against the table filter: each card is a passing row, and there are as many cards as passing rows up to the limit'});
-
-export const matrixDiagonal = Then('the similarity columns of table {string} should be symmetric, read {float} on the diagonal and less somewhere off it', async (page: Page, name: string, self: number) => {
-  const r = await page.evaluate(([n, s]) => {
-    const df = (grok.shell.tables ?? []).find((t: any) => t.name === n);
-    if (!df)
-      throw new Error(`no "${n}" table among ${(grok.shell.tables ?? []).map((t: any) => t.name).join(', ')}`);
-    const cols = df.columns.toList().filter((c: any) => c.type === 'double' || c.type === 'float');
-    const diagonal: number[] = [];
-    let offDiagonal = 0;
-    let asymmetric = 0;
-    for (let i = 0; i < df.rowCount && i < cols.length; i++) {
-      diagonal.push(cols[i].get(i));
-      for (let j = 0; j < cols.length; j++) {
-        if (j === i)
-          continue;
-        if (cols[j].get(i) < s)
-          offDiagonal++;
-        if (Math.abs(cols[j].get(i) - cols[i].get(j)) > 1e-5)
-          asymmetric++;
-      }
-    }
-    return {rows: df.rowCount, cols: cols.length, wrong: diagonal.filter((v) => Math.abs(v - s) > 1e-6).length, offDiagonal, asymmetric};
-  }, [name, self] as [string, number]);
-  expect(r.cols, `the similarity columns of "${name}" against its ${r.rows} rows`).toBe(r.rows);
-  expect(r.wrong, `diagonal cells of "${name}" that are not ${self}`).toBe(0);
-  expect(r.offDiagonal, `off-diagonal cells of "${name}" below ${self}`).toBeGreaterThan(0);
-  expect(r.asymmetric, `pairs of "${name}" whose two cells differ`).toBe(0);
-}, {description: 'a pairwise similarity table: one numeric column per row, every molecule fully similar to itself, and some pair less so'});
 
 /** In the page: the rows of the current table's column that `query` finds (a SMARTS, or a molblock read as Chem's search
  * reads a query molblock, unsanitized), against those `smarts` finds; the rows only one of them finds. */

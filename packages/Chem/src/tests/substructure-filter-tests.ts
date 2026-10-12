@@ -498,6 +498,29 @@ M  END
     sketcherDialogs.forEach((it) => it.close());
   });
 
+  test('removedDisabledFilterReleasesPeers', async () => { //Remove All deactivates a card before it removes it
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    grok.shell.addTableView(df);
+    const sketcherDialogs: DG.Dialog[] = [];
+
+    DG.chem.currentSketcherType = 'OpenChemLib';
+    const filter1 = await createFilter('Structure', df, sketcherDialogs);
+    const filter2 = await createFilter('Structure', df, sketcherDialogs);
+
+    filter1.onActiveChanged(false);
+    expect(filter2._peerFilterDisabled, true, 'the peer of a deactivated filter should stop applying');
+    filter1.detach();
+    expect(filter2._peerFilterDisabled, false, 'a removed filter should release its peers');
+
+    filter2.sketcher.setSmiles('C1CCCCC1');
+    await awaitCheck(() => df.filter.trueCount === 5, 'the peer of a removed filter doesn\'t filter', 5000);
+    await delay(500); //for closing the progress bar
+    filter2.detach();
+    await delay(1000); //waiting for detach to complete
+    sketcherDialogs.forEach((it) => it.close());
+  });
+
   test('runMultipleUseASFilter', async () => { //#2628 (https://github.com/datagrok-ai/public/issues/2628)
     const df = await readDataframe('tests/sar-small_test.csv');
     await grok.data.detectSemanticTypes(df);
