@@ -61,14 +61,14 @@ Feature: Correlation plot — a cell as a click, hover and menu target
     And no errors should have been logged
 
   Scenario: The cell menu is the grid's, with the plot's own items on it
-    # The whole top level, in order: the plot adds "Open as table", "Show Pearson R" and "Columns"
+    # The whole top level, in order: the plot adds "Open as table", "Show Coefficients" and "Columns"
     # to what the inner grid puts on a cell. Correlation Type, Show Tooltip and Ignore Double Click
     # are NOT here — they live only in the mirror under "Properties...", where every property of a
     # Dart viewer is repeated in a zero-size submenu; a group label that occurs twice cannot be
     # opened by name (the library's opener waits on the first item carrying it, the hidden one), so
     # those three are claimed through their properties instead, in correlation-plot.feature.
     When user right-clicks on the "cell HEIGHT x AGE" area of correlation plot viewer
-    Then the open menu should list "Show Pearson R"
+    Then the open menu should list "Show Coefficients"
     And the open menu should list "Open as table"
     And the open menu should list "Columns"
     And the open menu should list "Tooltip"
@@ -77,12 +77,12 @@ Feature: Correlation plot — a cell as a click, hover and menu target
     When user closes the context menu
     Then no errors should have been logged
 
-  Scenario: Show Pearson R from the cell menu does what the property does
-    When user picks "Show Pearson R" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
+  Scenario: Show Coefficients from the cell menu does what the property does
+    When user picks "Show Coefficients" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
     Then the "show pearson r" reading of correlation plot viewer should be "false"
     And the "text of cell HEIGHT x AGE" reading of correlation plot viewer should be ""
     And the "cell width" reading of correlation plot viewer should be 20
-    When user picks "Show Pearson R" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
+    When user picks "Show Coefficients" from the context menu of the "cell HEIGHT x AGE" area of correlation plot viewer
     Then the "show pearson r" reading of correlation plot viewer should be "true"
     And the "text of cell HEIGHT x AGE" reading of correlation plot viewer should be "-0.23"
     And no errors should have been logged

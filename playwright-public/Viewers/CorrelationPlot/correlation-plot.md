@@ -40,7 +40,7 @@ expected_results:
       masking other console errors.
   - anchor: "Context-menu toggles mirror properties"
     expectation: >-
-      Clicking the Show Pearson R context-menu item flips the Show Pearson R
+      Clicking the Show Coefficients context-menu item flips the Show Coefficients
       setting to off AND the matrix visibly repaints (settle-gated canvas diff —
       the in-cell digits disappear and the value columns narrow); clicking
       Tooltip > Visible flips the Show Tooltip setting to off AND hovering a
@@ -166,16 +166,16 @@ Expected:
 
 ## Context-menu toggles mirror properties
 
-1. Right-click a correlation cell and click the **Show Pearson R** menu item.
-2. Verify the **Show Pearson R** setting is now off and the matrix repainted
+1. Right-click a correlation cell and click the **Show Coefficients** menu item.
+2. Verify the **Show Coefficients** setting is now off and the matrix repainted
    — the in-cell digits disappear and the value columns narrow (settle-gated
    canvas diff).
 3. Right-click again and click **Tooltip** > **Visible**.
 4. Verify the **Show Tooltip** setting is now off, and hovering a
    correlation cell no longer shows a tooltip.
-5. Restore both settings through the same menu items: **Show Pearson R**,
+5. Restore both settings through the same menu items: **Show Coefficients**,
    then **Tooltip** > **Visible**.
-6. Verify **Show Pearson R** and **Show Tooltip** are on again and the hover
+6. Verify **Show Coefficients** and **Show Tooltip** are on again and the hover
    tooltip is back.
 
 Expected:

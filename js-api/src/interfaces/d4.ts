@@ -1604,7 +1604,7 @@ export interface ICorrelationPlotSettings {
 
   correlationType: keyof typeof CorrelationType;
 
-  /** Shows the Pearson correlation coefficient inside the corresponding cell. */
+  /** Shows the correlation coefficient (Pearson or Spearman, see Correlation Type) inside the corresponding cell. */
   showPearsonR: boolean;
 
   /** Shows the tooltip with the corresponding scatter plot inside. */
