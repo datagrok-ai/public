@@ -66,7 +66,6 @@ const CSS = `
 .pp-actions { gap: 6px; }
 .pp-data-actions { flex-wrap: wrap; }
 .pp-history-row, .pp-lineage { font-size: 12px; }
-.pp-detail textarea { width: 100%; box-sizing: border-box; }
 /* a long gate panel scrolls; its rows must not shrink (the rationale box collapsed to a line) */
 .pp-detail > * { flex-shrink: 0; }
 .pp-runs { gap: 4px; }
@@ -114,7 +113,6 @@ const CSS = `
 .pp-warnings { gap: 2px; }
 .pp-choose-run { gap: 8px; min-width: 560px; max-height: 70vh; overflow-y: auto; }
 .pp-choose-run > * { flex-shrink: 0; }
-.pp-choose-run textarea { width: 100%; box-sizing: border-box; }
 .pp-candidate { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
 .pp-candidate input { margin-top: 6px; }
 .pp-compare-box { overflow-x: auto; }
