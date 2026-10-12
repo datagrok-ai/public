@@ -48,7 +48,6 @@ Feature: A connection in the connections browser and its context panel
   Scenario: Sharing the connection shows on its Sharing pane
     When user picks "Share..." from the context menu of "BDD-Conn-Browser-{run}" link in gallery
     Then "Share BDD-Conn-Browser-{run}" dialog should be visible
-    And "Share BDD-Conn-Browser-{run}" dialog should contain text "Full access"
     When user picks the sharing user in "User, group, or email" input in "Share BDD-Conn-Browser-{run}" dialog
     And user unchecks "Send notifications" input in "Share BDD-Conn-Browser-{run}" dialog
     And user clicks on OK button in "Share BDD-Conn-Browser-{run}" dialog

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok.dapi.permissions.check` takes a privilege of the entity's type (`DataQuery.Execute`) as well as View, Edit, Delete and Share — its type said only the four, while the server checks any
 * Sketcher: Fixed a structure drawn in Ketcher before it reported ready (its toolbar and canvas take strokes some 300 ms earlier, longer on a cold load) being wiped once it was: the host no longer loads its empty molecule into the new implementation, which starts empty (a substructure filter's sketcher then filtered by nothing on OK)
 * Sketcher: Fixed a sketcher chosen from the options menu while another was still loading (Ketcher on an empty browser cache) being replaced by the one loading once it arrived: a switch overtaken by a later one, while its function applies or its implementation initializes, leaves the host alone, and an implementation it never showed is detached; before, a late Ketcher also took the chosen sketcher's change subscription, so each change was announced twice
 * Sketcher: Added `SketcherBase.onRendered` and `SketcherBase.isRenderPending`, the render signals a viewer has (`onViewerRendered`, `isRenderPending`), for a sketcher implementation that draws asynchronously: it fires `onRendered` once per drawing it shows and says what is still on its way, so that automated tests wait on them instead of a timeout. The base never fires and says nothing (`undefined`)

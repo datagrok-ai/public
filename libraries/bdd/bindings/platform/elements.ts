@@ -52,6 +52,10 @@ element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source e
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('privilege tree', {selector: '.grok-privilege-selector-tree', aliases: ['access level list'],
+  description: 'the popup of an access selector, portaled outside its dialog: one tree node per level ("Full access", "View and use", …)'});
+element('share message', {selector: '.grok-permissions-message textarea',
+  description: 'the message box of a Share dialog, shown once a user is picked: a bare textarea no input kind reaches'});
 element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',

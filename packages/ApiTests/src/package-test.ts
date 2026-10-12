@@ -56,6 +56,7 @@ import './dapi/entities-save';
 import './dapi/layouts';
 import './dapi/models';
 import './dapi/packages';
+import './dapi/permissions';
 import './dapi/projects';
 import './dapi/tables';
 import './dapi/sticky_meta';

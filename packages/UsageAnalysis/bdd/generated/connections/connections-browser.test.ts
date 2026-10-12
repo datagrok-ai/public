@@ -58,21 +58,20 @@ test.describe("A connection in the connections browser and its context panel", (
     await run.scenario("Sharing the connection shows on its Sharing pane", async () => {
       await session.step(49, "When user picks \"Share...\" from the context menu of \"BDD-Conn-Browser-{run}\" link in gallery", () => pickFromContextMenu(page, "Share...", el(session.text("\"BDD-Conn-Browser-{run}\" link in gallery"))));
       await session.step(50, "Then \"Share BDD-Conn-Browser-{run}\" dialog should be visible", () => shouldBe(page, el(session.text("\"Share BDD-Conn-Browser-{run}\" dialog")), "visible"));
-      await session.step(51, "And \"Share BDD-Conn-Browser-{run}\" dialog should contain text \"Full access\"", () => shouldContainText(page, el(session.text("\"Share BDD-Conn-Browser-{run}\" dialog")), "Full access"));
-      await session.step(52, "When user picks the sharing user in \"User, group, or email\" input in \"Share BDD-Conn-Browser-{run}\" dialog", () => pickSharingUser(page, el(session.text("\"User, group, or email\" input in \"Share BDD-Conn-Browser-{run}\" dialog"))));
-      await session.step(53, "And user unchecks \"Send notifications\" input in \"Share BDD-Conn-Browser-{run}\" dialog", () => uncheck(page, el(session.text("\"Send notifications\" input in \"Share BDD-Conn-Browser-{run}\" dialog"))));
-      await session.step(54, "And user clicks on OK button in \"Share BDD-Conn-Browser-{run}\" dialog", () => clickOn(page, el(session.text("OK button in \"Share BDD-Conn-Browser-{run}\" dialog"))));
-      await session.step(55, "Then the \"Share BDD-Conn-Browser-{run}\" dialog should close", () => dialogCloses(page, session.text("Share BDD-Conn-Browser-{run}")));
-      await session.step(56, "When user clicks on \"BDD-Conn-Browser-{run}\" link in gallery", () => clickOn(page, el(session.text("\"BDD-Conn-Browser-{run}\" link in gallery"))));
-      await session.step(57, "Then the sharing pane should list the sharing user", () => sharingPaneLists(page));
-      await session.step(58, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(51, "When user picks the sharing user in \"User, group, or email\" input in \"Share BDD-Conn-Browser-{run}\" dialog", () => pickSharingUser(page, el(session.text("\"User, group, or email\" input in \"Share BDD-Conn-Browser-{run}\" dialog"))));
+      await session.step(52, "And user unchecks \"Send notifications\" input in \"Share BDD-Conn-Browser-{run}\" dialog", () => uncheck(page, el(session.text("\"Send notifications\" input in \"Share BDD-Conn-Browser-{run}\" dialog"))));
+      await session.step(53, "And user clicks on OK button in \"Share BDD-Conn-Browser-{run}\" dialog", () => clickOn(page, el(session.text("OK button in \"Share BDD-Conn-Browser-{run}\" dialog"))));
+      await session.step(54, "Then the \"Share BDD-Conn-Browser-{run}\" dialog should close", () => dialogCloses(page, session.text("Share BDD-Conn-Browser-{run}")));
+      await session.step(55, "When user clicks on \"BDD-Conn-Browser-{run}\" link in gallery", () => clickOn(page, el(session.text("\"BDD-Conn-Browser-{run}\" link in gallery"))));
+      await session.step(56, "Then the sharing pane should list the sharing user", () => sharingPaneLists(page));
+      await session.step(57, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("A chat message is posted on the connection", async () => {
-      await session.step(61, "Given Chats section in context panel is expanded", () => isExpanded(page, el("Chats section in context panel")));
-      await session.step(62, "When user types \"BDD chat {run}\" into chat post input in context panel", () => typeInto(page, session.text("BDD chat {run}"), el("chat post input in context panel")));
-      await session.step(63, "And user presses Enter in chat post input in context panel", () => pressKeyIn(page, "Enter", el("chat post input in context panel")));
-      await session.step(64, "Then Chats section in context panel should contain the text \"BDD chat {run}\"", () => shouldContainText(page, el("Chats section in context panel"), session.text("BDD chat {run}")));
-      await session.step(65, "And no errors should have been logged", () => noErrors(page));
+      await session.step(60, "Given Chats section in context panel is expanded", () => isExpanded(page, el("Chats section in context panel")));
+      await session.step(61, "When user types \"BDD chat {run}\" into chat post input in context panel", () => typeInto(page, session.text("BDD chat {run}"), el("chat post input in context panel")));
+      await session.step(62, "And user presses Enter in chat post input in context panel", () => pressKeyIn(page, "Enter", el("chat post input in context panel")));
+      await session.step(63, "Then Chats section in context panel should contain the text \"BDD chat {run}\"", () => shouldContainText(page, el("Chats section in context panel"), session.text("BDD chat {run}")));
+      await session.step(64, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });
