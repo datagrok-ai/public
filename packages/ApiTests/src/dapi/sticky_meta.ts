@@ -5,7 +5,11 @@ declare let grok: typeof _grok, DG: typeof _DG;
 //@ts-ignore
 import {after, assure, before, category, expect, test} from '@datagrok-libraries/test/src/test';
 
-category('Dapi: sticky meta', () => { 
+const idOf = (x: {dart: any}) => new DG.Entity(x.dart).id;
+
+category('Dapi: sticky meta', () => {
+  const name = `apitests-sm-${DG.Utils.randomString(6)}`;
+  const semType = `${name}-semtype`;
   let schema: _DG.Schema;
   let entityType: _DG.EntityType;
   let property: _DG.EntityProperty;
@@ -15,51 +19,27 @@ category('Dapi: sticky meta', () => {
   let valDf: _DG.DataFrame;
 
   before(async () => {
-    let schemas = await grok.dapi.stickyMeta.getSchemas();
-    for (let i = 0; i < schemas.length; i++) {
-      if (schemas[i].name == "default") {
-        schema = schemas[i];
-        break;
-      }
-    }
-    if (schema == undefined) {
-      schema = DG.Schema.create('default');
-      await grok.dapi.stickyMeta.saveSchema(schema);
-    }
-    for (let i = 0; i < schema.entityTypes.length; i++) {
-      if (schema.entityTypes[i].matching == 'semtype=test') {
-        entityType = schema.entityTypes[i];
-        break;
-      }
-    }
-    if (entityType == undefined) {
-      entityType = DG.EntityType.create('apiTest', 'semtype=test');
-      const et = schema.entityTypes;
-      et.push(entityType);
-      schema.entityTypes = et;
-      await grok.dapi.stickyMeta.saveSchema(schema);
-    }
-    for (let i = 0; i < schema.properties.length; i++) {
-      if (schema.properties[i].name == 'apiTest') {
-        property = schema.properties[i];
-      }
-    }
-    if (property == undefined) {
-      property = DG.EntityProperty.create('apiTest', 'string');
-      const props = schema.properties;
-      props.push(property);
-      schema.properties = props;
-      await grok.dapi.stickyMeta.saveSchema(schema);
-    }
+    schema = DG.Schema.create(name);
+    entityType = DG.EntityType.create(`${name}-type`, `semtype=${semType}`);
+    property = DG.EntityProperty.create('apiTest', 'string');
+    schema.entityTypes = [entityType];
+    schema.properties = [property];
+    await grok.dapi.stickyMeta.saveSchema(schema);
+    schema = (await grok.dapi.stickyMeta.getSchemas()).find((s) => s.name === name)!;
     assure.notNull(schema);
-    assure.notNull(entityType);
-    assure.notNull(property);
     col = DG.Column.string('key', 1);
-    col.semType = 'test';
+    col.semType = semType;
     col.set(0, handle);
     valDf = DG.DataFrame.create(1);
     valDf.columns.addNewString(property.name);
     valDf.set(property.name, 0, value);
+  });
+
+  after(async () => {
+    if (schema)
+      await grok.dapi.stickyMeta.deleteSchema(idOf(schema));
+    for (const t of (await grok.dapi.entityTypes.list()).filter((t) => t.name === entityType.name))
+      await grok.dapi.entityTypes.delete(t);
   });
 
   test('save values', async () => {
@@ -93,7 +73,6 @@ category('Dapi: sticky meta: molecules', () => {
   const name = `apitests-sm-${DG.Utils.randomString(6)}`;
   const typeName = `${name}-type`;
   let schema: _DG.Schema;
-  const idOf = (x: {dart: any}) => new DG.Entity(x.dart).id;
 
   function molecules(smiles: string[]): _DG.DataFrame {
     const df = DG.DataFrame.fromColumns([DG.Column.fromStrings('smiles', smiles)]);

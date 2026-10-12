@@ -124,7 +124,7 @@ category('screening tools: benchmarks', () => {
     await awaitCheck(() => v.dataFrame.name === 'test', undefined, 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
-    DG.timeAsync('Elemental Analysis', async () => {
+    await DG.timeAsync('Elemental Analysis', async () => {
       await PackageFunctions.elementalAnalysis(df, col, false, false);
     });
   });
