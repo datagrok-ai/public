@@ -138,4 +138,20 @@ category('Summary columns', () => {
       expect(inCell > 0 && inCell < 80 * 28 / 2, paints, `${what}: ${inCell} pixels painted in the cell`);
     }
   });
+
+  test('Color fills each legend item with its own category (#4233)', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromStrings('color', ['red', 'lime', 'blue', 'red']),
+      DG.Column.fromList(DG.COLUMN_TYPE.INT, 'value', [1, 2, 3, 4]),
+    ]);
+    df.col('color')!.setTag(DG.TAGS.CELL_RENDERER, 'Color');
+    const view = grok.shell.addTableView(df);
+    await awaitCheck(() => view.grid.col('color')?.renderer?.cellType === 'Color',
+      'the Color renderer did not load', 5000);
+    const sp = view.addViewer(DG.VIEWER.SCATTER_PLOT, {x: 'value', y: 'value', colorColumnName: 'color'});
+    const centers = () => Array.from(sp.root.querySelectorAll<HTMLCanvasElement>('canvas.d4-legend-value'), (c) =>
+      Array.from(c.getContext('2d')!.getImageData(c.width >> 1, c.height >> 1, 1, 1).data.slice(0, 3)).join(','));
+    await awaitCheck(() => centers().length === 3, 'the legend shows no Color items', 5000);
+    expectArray(centers().sort(), ['0,0,255', '0,255,0', '255,0,0']);
+  });
 });
