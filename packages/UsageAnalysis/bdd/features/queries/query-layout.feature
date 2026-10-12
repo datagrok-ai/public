@@ -15,6 +15,7 @@ Feature: A query's layout
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-layout-{time}" is on the server
     And the layouts named "BDD-Q-layout-{time}" are deleted when the feature ends

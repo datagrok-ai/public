@@ -1,19 +1,18 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter, map } from 'rxjs/operators';
-import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { fromEvent, interval, merge } from 'rxjs';
-import $ from 'cash-dom';
-import { elementClick, selectionMade } from './utils';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {filter, map} from 'rxjs/operators';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {fromEvent, interval, merge} from 'rxjs';
+import {elementClick, selectionMade} from './utils';
+import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 export class ViewersTutorial extends Tutorial {
-  get name() { return 'Viewers'; }
+  get name() {return 'Viewers';}
   get description() {
     return 'Learn how to use different viewers together';
   }
-  get steps() { return 20; }
+  get steps() {return 20;}
 
   get icon() {
     return '📊👁️';
@@ -44,36 +43,40 @@ export class ViewersTutorial extends Tutorial {
     // leaves both the click listener and the highlight on the node that was replaced
     const addViewerIcon = (): HTMLElement | null => grok.shell.v.getRibbonPanels().flat()
       .find((item) => item.querySelector('i[aria-label="Add viewer"]') != null) ?? null;
+    const clickAddViewer = () => addViewerIcon()!.querySelector<HTMLElement>('i[aria-label="Add viewer"]')!.click();
     await this.action(
       'Click the Add viewer icon to open the gallery',
-      elementClick(addViewerIcon), addViewerIcon);
+      elementClick(addViewerIcon), addViewerIcon, '', clickAddViewer);
 
     const getChartsTag = (): HTMLElement | null =>
       document.querySelector('[name="viewer-tag-Charts"]');
-    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag);
+    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag, '',
+      () => getChartsTag()!.click());
 
     const radarCard = () => this.getViewerCard('Radar');
-    await this.action('Select the Radar viewer', elementClick(radarCard), radarCard);
+    await this.action('Select the Radar viewer', elementClick(radarCard), radarCard, '', () => radarCard()!.click());
 
     const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
-    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), addViewerIcon, sunburstInfo);
+    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), addViewerIcon, sunburstInfo,
+      clickAddViewer);
 
     // the gallery may be rebuilt while the step is up, so the box is found by the event, not captured
     const searchInput = (): HTMLInputElement | null => document.querySelector('[name="viewer-gallery-search"]');
     await this.action('Type "Sunburst" in the search box',
-      fromEvent<InputEvent>(document, 'input').pipe(filter((e) => (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
+      fromEvent<InputEvent>(document, 'input').pipe(filter((e) =>
+        (e.target as HTMLElement)?.getAttribute('name') === 'viewer-gallery-search' &&
         (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
-      searchInput);
+      searchInput, '', () => Tutorial.setInputValue(searchInput()!, 'Sunburst'));
 
     // the card appears only once the search has filtered the gallery, so it is resolved per tick
     await this.action('Select the Sunburst viewer',
       grok.events.onViewerAdded.pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst')),
-      () => this.getViewerCard('Sunburst'));
+      () => this.getViewerCard('Sunburst'), '', () => this.getViewerCard('Sunburst')!.click());
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
-    const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
-    const pie = await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
+    await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
+    await this.openPlot('pie chart', (x) => x.type === DG.VIEWER.PIE_CHART);
 
     const hover = 'Move the mouse over the histogram bins to see how the points ' +
     'that fall into that bin are reflected in other viewers. Similarly, hover the ' +
@@ -82,23 +85,29 @@ export class ViewersTutorial extends Tutorial {
       merge(this.t!.onMouseOverRowGroupChanged, this.t!.onMouseOverRowChanged), null, hover);
 
     const selection = 'Select points by dragging a rectangle on a viewer while holding <b>Shift</b>.';
-    await this.action('Select points on the scatter plot', selectionMade(this.t!), null, selection);
+    await this.action('Select points on the scatter plot', selectionMade(this.t!), null, selection,
+      () => this.t!.selection.init((i) => this.t!.get('HEIGHT', i) > 180));
 
     const selectionSync = 'Note that the selection is synchronized between ' +
       'all viewers. When you select one of the bins on the histogram by clicking on it, ' +
       'you will see the corresponding records being highlighted on both scatter plot ' +
       'and grid. The same concept applies to the rest of the viewers, such as a pie chart ' +
       'or histogram. To select multiple data points, click on a segment while holding <b>Shift</b>. ' +
-      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
-    await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync);
+      `To deselect, hold <b>${platformKeyMap['Ctrl'][this.platform]}+Shift</b> while clicking. ` +
+      `To invert, hold <b>${platformKeyMap['Ctrl'][this.platform]}</b> while clicking.`;
+    await this.action('Select one of the bins on the histogram', selectionMade(this.t!), null, selectionSync,
+      () => this.t!.selection.init((i) => this.t!.get('AGE', i) >= 40 && this.t!.get('AGE', i) < 50));
 
-    const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected and synced to the other viewers.';
-    await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect);
+    const sunburstSelect = 'Click a <b>Sunburst</b> segment: every row under that branch is selected ' +
+      'and synced to the other viewers.';
+    await this.action('Click a Sunburst segment to select its rows', selectionMade(this.t!), null, sunburstSelect,
+      () => this.t!.selection.init((i) => this.t!.get('SEX', i) === 'F'));
 
     const currentRecord = 'Move the mouse over records on the scatter plot and grid, ' +
       'and note that the corresponding records are being highlighted in other viewers. ' +
       'Click on a point to make it current, and see how other viewers indicate where the current record is.';
-    await this.action('Click on a point to set the current record', this.t!.onCurrentRowChanged, null, currentRecord);
+    await this.action('Click on a point to set the current record', this.t!.onCurrentRowChanged, null, currentRecord,
+      () => this.t!.currentRowIdx++);
 
     this.title('Properties');
 
@@ -109,33 +118,34 @@ export class ViewersTutorial extends Tutorial {
       '<b>Markers</b> or <b>Axes</b>.';
     await this.action('Open the scatter plot\'s properties', interval(1000)
       .pipe(map((_) => grok.shell.o), filter((o) => o instanceof DG.ScatterPlotViewer)),
-      null, spProperties);
+    null, spProperties, () => grok.shell.setCurrentObject(sp, false));
 
 
     const initialProps = JSON.stringify((sp.getOptions() as {[key: string]: any }).look);
     await this.action('Change a few visual properties, e.g., the background color or marker size',
       interval(1000).pipe(map((_) => grok.shell.o), filter((o) => o instanceof DG.ScatterPlotViewer &&
-      JSON.stringify((o.getOptions() as {[key: string]: any }).look) !== initialProps)));
+      JSON.stringify((o.getOptions() as {[key: string]: any }).look) !== initialProps)), null, '',
+      () => sp.setOptions({markerDefaultSize: 10}));
 
     const cloneViewerInfo = 'Change some visual properties of the viewer and right-click on the scatter plot. ' +
       'In the context menu, select <b>General | Clone</b>. Note that the new viewer inherited all properties of the ' +
       'original viewer.<br> Close the new viewer by clicking on <b>"x"</b> in the top right corner of the header.';
-    await this.contextMenuAction('Clone the scatter plot', 'Clone', null, cloneViewerInfo);
+    await this.contextMenuAction('Clone the scatter plot', 'Clone', null, cloneViewerInfo, sp.root);
 
     this.title('Style');
 
     const stylePickInfo = 'You can apply the style of one viewer to another. ' +
       'To do that, right-click on the viewer and select <b>Pick Up / Apply | Pick Up</b>.';
-    await this.contextMenuAction('Pick up the scatter plot\'s style', 'Pick Up', null, stylePickInfo);
+    await this.contextMenuAction('Pick up the scatter plot\'s style', 'Pick Up', null, stylePickInfo, sp.root);
 
-    await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
+    const newSp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
 
     const styleApplyInfo = 'To apply the style, choose <b>Pick Up / Apply | Apply</b> in the context menu ' +
       'of the new viewer. Depending on the situation, you might want to apply only visual or only ' +
       'data-related attributes; in this case, use <b>Apply Style Settings</b> or ' +
       '<b>Apply Data Settings</b>. Note that style settings can be applied even to ' +
       'viewers that have different source of data.';
-    await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo);
+    await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo, newSp.root);
   }
 
   private getViewerCard(name: string): HTMLElement | null {

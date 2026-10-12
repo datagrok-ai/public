@@ -903,6 +903,14 @@ export function openChemLibSketcher() : any {
   return PackageFunctions.openChemLibSketcher();
 }
 
+//name: Crux
+//description: Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)
+//output: widget sketcher
+//meta.role: moleculeSketcher
+export function cruxSketcher() : any {
+  return PackageFunctions.cruxSketcher();
+}
+
 //description: Opens SDF file
 //input: list bytes 
 //output: list<dataframe> result
@@ -1083,13 +1091,14 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //input: bool rotatableBonds = false { caption: Rotatable bonds }
 //input: bool stereoCenters = false { caption: Stereo centers }
 //input: bool moleculeCharge = false { caption: Molecule charge }
+//input: bool molecularFormula = false { caption: Molecular formula }
 //meta.function_family: biochem-calculator
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
 //meta.role: hitTriageFunction,transform
-export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
-  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
+export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean, molecularFormula?: boolean) : Promise<void> {
+  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula);
 }
 
 //name: Chemical Properties

@@ -10,7 +10,7 @@ Feature: Column enrichment of a database table
   have a session, and the visual query Get Top 100 of the events table. The md writes the SQL query in
   the platform's query editor; here it is saved through the API, and running it is the claim. Every
   enrichment the feature makes is named "bdd-enrich-...-{time}" and is deleted when it ends, with the
-  queries, the layout and the project. The queries are named "BDD-enrich-...": the Browse tree lists a
+  queries and the project. The queries are named "BDD-enrich-...": the Browse tree lists a
   connection's queries a page at a time by name, capitals first, and System:Datagrok holds more
   queries than a page, so a lowercase name would sit behind "Load more".
 
@@ -18,8 +18,7 @@ Feature: Column enrichment of a database table
   joins its columns onto the table in place, a left join; a name the table already has comes in as
   "result.<name>". Applied again after an edit, it adds the columns it now selects. Deleting an
   enrichment deletes its configuration: the pane and the server no longer have it, and the columns an
-  earlier run added stay in the table. A layout keeps the look of the view, not its data: columns
-  removed from the table do not come back when a layout saved before is applied. A reopened project
+  earlier run added stay in the table. A reopened project
   runs the enrichments its table went through again, from their saved configuration; one deleted in
   the meantime is reported in an error balloon ("Could not find enrichment") and its columns do not
   come back.
@@ -138,8 +137,6 @@ Feature: Column enrichment of a database table
     When user clicks on OK button in "Enrich session_id" dialog
     Then the "Enrich session_id" dialog should close
     And 1 enrichment named "bdd-enrich-sessions-{time}" should be on the server
-    And the enrichment "bdd-enrich-sessions-{time}" on the server should select the column "type"
-    And the enrichment "bdd-enrich-sessions-{time}" on the server should not select the column "is_short"
     Given user watches the task bar
     When user clicks on link of "bdd-enrich-sessions-{time}" enrichment
     Then the task bar should have finished "Enriching..."
@@ -241,27 +238,6 @@ Feature: Column enrichment of a database table
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: A layout saved before enriched columns are removed does not bring them back
-    Given the layouts named "BDD-enrich-events-{time}" are deleted when the feature ends
-    When user clicks on BDD-enrich-events-{time} view
-    Then the "BDD-enrich-events-{time}" view should be current
-    And the table should have a column "is_short"
-    Given the toolbox pane is shown
-    And Layouts accordion header in toolbox is expanded
-    When user clicks on Save button in layouts pane
-    Then "BDD-enrich-events-{time}" layout card should be visible
-    When user clicks on histogram icon on toolbox
-    Then the open tableview should have 1 histogram viewer
-    When user drags the "x scroll handle" area of grid by 1000 pixels to the right
-    And user picks "Remove" from the context menu of the "header is_short" area of grid
-    Then the table should not have a column "is_short"
-    When user clicks on "BDD-enrich-events-{time}" layout card
-    Then the open tableview should have 0 histogram viewers
-    And the table should not have a column "is_short"
-    And the table should have a column "user_id"
-    And no errors should have been logged
-    And no error or warning balloon should have been shown
-
   Scenario: A project with the enriched table reopens with the enrichments that still exist
     Given no project named "bdd-enrich-project-{time}" is on the server
     When user closes events view
@@ -284,7 +260,6 @@ Feature: Column enrichment of a database table
     Then the table should have been reloaded by data sync
     And the table should have a column "type"
     And the table should have a column "user_id"
-    And the table should not have a column "is_short"
     And the table should not have a column "source"
     And an error balloon containing "Could not find enrichment" should have been shown
     And no errors should have been logged

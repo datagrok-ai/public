@@ -1,0 +1,151 @@
+# HMM
+
+Profile hidden Markov models in the browser, powered by Rusty-HMMER: a
+reimplementation of [HMMER 3.4](http://hmmer.org) in Rust, compiled to
+WebAssembly (not the original HMMER). Nothing leaves the browser: sequences are
+compared in Web Workers, and results are identical to the C programs (verified
+against the canonical Linux build, see "Verification").
+
+## Antibody and T-cell receptor numbering (ANARCI)
+
+`Bio | Annotate | Apply Numbering Scheme...` gains the **ANARCI (HMMER)**
+engine next to Bio's own. It reimplements
+[ANARCI](https://github.com/oxpig/ANARCI) (Dunbar & Deane, 2016) in TypeScript
+on the engine above (not the original ANARCI):
+
+* schemes: IMGT, Kabat, Chothia, Martin, AHo, Wolfguy;
+* chains: heavy, kappa, lambda and TCR alpha, beta, gamma, delta (TCRs in IMGT
+  and AHo, as ANARCI);
+* the aligned column, FR/CDR regions and per-row annotations, as with any
+  numbering engine, for FASTA and separator columns;
+* options in the dialog: preferred species, bit score threshold, and which
+  domain of scFv and other multi-domain chains to number (the N-terminal one,
+  the first heavy or the first light domain).
+
+`Bio | Annotate | Germlines and Species (ANARCI)...` adds the chain type,
+species, closest V and J germline genes with their identities, and the HMMER
+E-value and bit score. Species default to ANARCI's preference for human and
+mouse; pick "all" or one species to change it.
+
+Results are identical to ANARCI 2024.05.21 run on the same germline data
+(numbering, germlines, E-values), including for long CDR3s and N/C-terminal
+extensions, for every species and score setting offered. The germline models and tables are rebuilt from current IMGT® data
+(October 2026) with ANARCI's own build pipeline.
+
+## Profile HMM search
+
+`Bio | Search | Profile HMM Search...` searches a sequence column with one
+profile HMM (`hmmsearch`): a family of the built-in Pfam library, any Pfam
+family by accession (fetched from InterPro), or an HMM file (HMMER2/3 text or
+`hmmpress` `.h3m`, optionally gzipped). It adds score, E-value, domain count,
+significance (inclusion threshold) and domain region columns, and annotates the
+domains on the sequences. E-values treat the column as the database (Z = the
+number of non-empty rows). Pfam gathering thresholds (`--cut_ga`) are
+available for models that have them.
+
+## Protein domains
+
+`Bio | Annotate | Find Domains (HMMER)...` annotates domains (`hmmscan`) from
+the built-in Pfam library of antibody- and biologics-relevant families, Pfam
+accessions or an HMM file, with Pfam gathering thresholds or E-values. Domains
+are drawn as colored regions on the sequences, with a summary column.
+Overlapping matches of families in the same Pfam clan are resolved as Pfam
+does (clan competition: the most significant one is kept; identical to Pfam's
+`pfam_scan.pl`), here and in Profile HMM Search; families fetched from InterPro
+are cached in the browser.
+
+## Align to a profile
+
+`Bio | Analyze | MSA...` offers **Profile HMM (hmmalign)** next to Kalign for
+protein and nucleotide columns. Sequences are aligned to one profile HMM — the
+best-matching family of the built-in Pfam library, a Pfam family or
+accession, the best antibody/TCR germline model (ANARCI) or an HMM file — so
+every column is a model position (or an insertion between two positions) and
+alignments of different tables to the same model line up. Optionally trimmed
+to the model (`--trim`). Identical to C `hmmalign`. The automatic choices vote
+on up to 1,000 evenly spaced rows, so large columns don't pay for a full scan.
+
+## Homology search and building profiles
+
+`Bio | Search | Homology Search (phmmer)...` scores every row of a protein
+column against one query sequence (a row or typed) with bit scores and
+E-values, as `phmmer` does (choice of substitution matrix and gap
+probabilities).
+
+`Bio | Search | Build Profile HMM...` builds a profile HMM (`hmmbuild`) from the
+selected, filtered or all rows of an aligned column, searches a sequence
+column with it and annotates the hits, shows its logo, and can download the
+`.hmm` file. The model text is identical to C `hmmbuild`'s. The profile is kept
+with the table (saved with projects), so its logo can be reopened later.
+
+## Profile HMM logos
+
+Logos are drawn by Bio's **WebLogo**: its **Profile** property (Data) names a
+profile HMM, and this package supplies the `hmmlogo` residue heights (bits) of
+every match position. A profile is a Pfam family of the built-in library
+(`V-set`), a Pfam accession (`PF07686`), an ANARCI germline model
+(`germline:human_H`) or a profile built in the table.
+`Bio | Analyze | Profile HMM Logo...` adds one. All WebLogo settings apply
+(position width, fit to area, the range slider for long models, Entropy or
+100% heights); the tooltip shows the heights, consensus, occupancy and insert
+values. When the WebLogo's sequence column is aligned to the profile (an
+hmmalign column of it, or the alignment it was built from), clicking a letter
+selects the rows that have it at that position.
+
+## Scripting
+
+* `HMM:anarciNumbering(df, seqCol, scheme)` — the numbering engine (Bio's
+  five-column contract plus chain, species, germline and E-value columns).
+* `HMM:searchWithHmm(table, sequence, model, evalue, gathering)` — model is
+  HMMER text, Pfam accession(s) or `builtin:<index>`.
+* `HMM:findDomains(table, sequence, library, evalue, gathering, clanCompetition)` —
+  library is `builtin`, Pfam accessions or HMMER text; returns one row per domain.
+* `HMM:alignToProfile(sequences, profile, family, hmmFile, trim)` — the MSA
+  engine (returns the aligned column).
+* `HMM:homologySearch(table, sequence, query, evalue, matrix)` — phmmer.
+* `HMM:buildProfile(table, alignment, name, selectedOnly)` — hmmbuild; returns
+  the model text (search with it via `searchWithHmm`).
+* `HMM:hmmWebLogoProfile(table, column, profile)` — the WebLogo profile
+  (`meta.role: webLogoProfile`): hmmlogo heights per position.
+
+## Performance
+
+The engine is a 332 KB WebAssembly module (140 KB gzipped) compiled with SIMD,
+loaded on first use and shared by up to eight workers; alignment, profile
+building, phmmer query models and logos are in a second module loaded only
+when one of them is first used. On a laptop, numbering 1,000 antibody chains
+against all 29 ANARCI germline models takes about 1.5 seconds. Size and speed
+budgets are enforced by the engine's test harness.
+
+## Verification
+
+The engine and the ANARCI port live in the Rusty-HMMER repository
+(`crates/hmmer-web`, `web/`), which verifies them against the C HMMER 3.4
+oracle (hmmsearch/hmmscan/phmmer tabular outputs, including searches split
+across workers; hmmalign alignments; hmmbuild model files; hmmlogo values)
+and against unmodified ANARCI (numbering, germlines and E-values for 2,500
+sequences × 6 schemes × 2 species settings, plus every species and threshold
+option) and Pfam's pfam_scan.pl (clan competition), all run in Docker. The
+package tests repeat a sample of those comparisons in the browser.
+
+## About the names
+
+HMMER, ANARCI, Pfam and IMGT® are the names of their projects. This package
+does not run the original HMMER or ANARCI: it reimplements them (HMMER 3.4
+translated to Rust and compiled to WebAssembly; ANARCI translated to
+TypeScript) and checks its results against the original programs. Program
+names such as hmmsearch, hmmscan, phmmer, hmmalign, hmmbuild and hmmlogo name
+the behavior reproduced. Clan competition is this package's own implementation
+of Pfam's rule, checked against Pfam's `pfam_scan.pl`. The package is not
+affiliated with or endorsed by the authors of these projects. In the app this
+note is in the tooltips: of each dialog's main input, of the context panels,
+and in the descriptions of the functions and engines.
+
+## Credits
+
+The engine is a Rust translation of HMMER 3.4 and Easel (BSD-3-Clause,
+BSD-2-Clause) with math routines from Arm Optimized Routines (MIT); the
+numbering is a TypeScript translation of ANARCI (BSD-3-Clause). The germline
+models and tables are derived from IMGT® data (CC BY 4.0); the domain library
+is Pfam 37.0 (CC0). See [CREDITS.md](CREDITS.md) for the full attribution and
+`licenses/` for the license texts.

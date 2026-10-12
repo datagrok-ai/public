@@ -41,15 +41,15 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
         try {
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
           if (!cmd) throw new Error('CmdNewNotebook command function not registered (Notebooks plugin not installed?)');
-          // Snapshot newest-first top so we detect the freshly-created entity by id.
-          const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-          const beforeIds = new Set(before.map((n: any) => n.id));
+          // The command makes the new notebook the current object of this page. Taking the newest one on
+          // the server instead picks up notebooks the other specs create in parallel workers.
+          const prevId = grok.shell.o?.id;
           try { await cmd.apply(); } catch (e: any) { result.applyErr = String(e?.message ?? e).slice(0, 300); }
           let fresh: any = null;
           for (let i = 0; i < 40 && !fresh; i++) {
             await new Promise((r) => setTimeout(r, 500));
-            const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-            fresh = cur.find((n: any) => !beforeIds.has(n.id));
+            const id = grok.shell.o?.id;
+            if (id && id !== prevId) fresh = await grok.dapi.notebooks.find(id).catch(() => null);
           }
           if (fresh) {
             result.seeded = true;
@@ -182,16 +182,15 @@ test('Notebooks Lifecycle (apitest) — linked-table source class CRUD round-tri
           // The notebooks_tables join + tags are cleared server-side by
           // repository.delete -> delete-tables-relations (no FK left dangling); a
           // subsequent seed must still succeed (no FK conflict from the removed row).
-          const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-          const beforeIds = new Set(before.map((n: any) => n.id));
+          const prevId = grok.shell.o?.id;
           const cmd = (window as any).DG.Func.find({name: 'CmdNewNotebook'})[0];
           if (cmd) {
             await cmd.apply().catch(() => {});
             let fresh2: any = null;
             for (let i = 0; i < 30 && !fresh2; i++) {
               await new Promise((r) => setTimeout(r, 500));
-              const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-              fresh2 = cur.find((n: any) => !beforeIds.has(n.id));
+              const id = grok.shell.o?.id;
+              if (id && id !== prevId) fresh2 = await grok.dapi.notebooks.find(id).catch(() => null);
             }
             result.recreatable = fresh2 != null;
             // Clean up this verification notebook immediately.

@@ -96,6 +96,8 @@ async function storedWidgetSetting(page: Page, widget: string): Promise<string> 
     const f = DG.Func.find({meta: {role: 'dashboard'}}).find((x: any) => x.friendlyName === title) ?? DG.Func.byName(known ?? title);
     if (!f)
       return `no Home widget "${title}"`;
+    // the page keeps its settings changes for a periodic sync; the claim is what it stores, not when
+    await grok.userSettings.flush();
     const stored = await grok.dapi.userDataStorage.get('widgets', true);
     const setting = stored?.[f.name];
     return setting == null ? 'not stored' : JSON.parse(setting).ignored ? 'hidden' : 'shown';

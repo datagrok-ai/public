@@ -1,0 +1,262 @@
+{
+  "source": "Rusty-HMMER crates/hmmer-web + web/ (verified against HMMER 3.4 and ANARCI 2024.05.21)",
+  "abi": 2,
+  "optimizer": "wasm-opt version 132 (version_132)",
+  "files": {
+    "wasm/hmmer_web.wasm": {
+      "bytes": 332164,
+      "gzip": 139969,
+      "sha256": "b3cad83ebec2e419aeeabb181064786ff3c910647e5db91d355bc18e70d88824"
+    },
+    "wasm/hmmer_tools.wasm": {
+      "bytes": 496892,
+      "gzip": 204612,
+      "sha256": "cea56303f08fc2af2c8cc6256c7e35f45cdc4d057ff803f3dce8d1ea4615190a"
+    },
+    "src/hmmer/engine.ts": {
+      "bytes": 14723,
+      "gzip": 4308,
+      "sha256": "e13b05b15a1bd4bba14e2a6ec54325a188359653b5bd32fdbc67f0abf68cec06"
+    },
+    "src/hmmer/search.ts": {
+      "bytes": 5077,
+      "gzip": 2000,
+      "sha256": "c7a8e81dfb4f1440f15753aec21d05dbdb5628a2d7607a2fe7945180a0a49e5d"
+    },
+    "src/hmmer/clans.ts": {
+      "bytes": 2134,
+      "gzip": 1040,
+      "sha256": "10536c1b91e59771b3148a6658aaa2eacd3dcc1497ade85740b373254a8e55b1"
+    },
+    "src/hmmer/tools.ts": {
+      "bytes": 10930,
+      "gzip": 3569,
+      "sha256": "3eb12dd29dd1371ffa49586f026d9c6fc2f9208b15029e334b9080f4c5b74915"
+    },
+    "src/hmmer/anarci/alignment.ts": {
+      "bytes": 11614,
+      "gzip": 4075,
+      "sha256": "14c91e958a099c76c45105a7c39e9fa24adf5da69688059d154209cbbcb19326"
+    },
+    "src/hmmer/anarci/anarci.ts": {
+      "bytes": 5476,
+      "gzip": 2060,
+      "sha256": "399476792f07d7f1d554b7bc47b7966c272a4504f12ff6d37953521d55265086"
+    },
+    "src/hmmer/anarci/germline.ts": {
+      "bytes": 3411,
+      "gzip": 1403,
+      "sha256": "f3d9a086c687cc56dffc89665882696590c9aa49ebc4f0bfe5ddf3f7f4ef56b2"
+    },
+    "src/hmmer/anarci/schemes.ts": {
+      "bytes": 49225,
+      "gzip": 12637,
+      "sha256": "999444db5ada06094626fd4ff8aba5bef6287f4965b0eed1a0072102ec4078b6"
+    },
+    "src/hmmer/anarci/types.ts": {
+      "bytes": 1886,
+      "gzip": 963,
+      "sha256": "24cca28ece5fda98285883d692b7fae9f75a88a126d16a17a3fa44bbd567bc6f"
+    },
+    "wasm/anarci/ALL.hmm.h3m.gz": {
+      "bytes": 221467,
+      "gzip": 220229,
+      "sha256": "04798b629b79746685c7a507303fe2522ec233254e90576afbb72942e164e940"
+    },
+    "wasm/anarci/germlines-A.json": {
+      "bytes": 57431,
+      "gzip": 7022,
+      "sha256": "5f8e9857fed305bdcd8dd0c2320e2faf096e3a1be0e942cd7741297a5c962178"
+    },
+    "wasm/anarci/germlines-B.json": {
+      "bytes": 23261,
+      "gzip": 3881,
+      "sha256": "4c5be13ebbe90919eacd81607939952b6b52f11117abb715268ea9042c6311ca"
+    },
+    "wasm/anarci/germlines-D.json": {
+      "bytes": 8814,
+      "gzip": 1751,
+      "sha256": "fb5dc22ce1917378658fec5aeeb10e6f8f574179846b5bb361937373a3758f61"
+    },
+    "wasm/anarci/germlines-G.json": {
+      "bytes": 5536,
+      "gzip": 840,
+      "sha256": "ff98b389d63785b1a2d1edf11a089037b082eaf3b444abd3ba812d42bb45757c"
+    },
+    "wasm/anarci/germlines-H.json": {
+      "bytes": 161584,
+      "gzip": 15969,
+      "sha256": "ff444b5b0d185eb07a61fe0a74201f479ccb80596a5fec99e6f66a20344caca6"
+    },
+    "wasm/anarci/germlines-K.json": {
+      "bytes": 61143,
+      "gzip": 7884,
+      "sha256": "010dbe9db920343cb76e36fa57ed3143647c4a9470adaf192de3e3875e236794"
+    },
+    "wasm/anarci/germlines-L.json": {
+      "bytes": 43832,
+      "gzip": 5448,
+      "sha256": "3b9922639f0af3204a521e8bfc6b456f82ee5cf58940f142fc48057916847a61"
+    },
+    "wasm/anarci/hmm-lengths.json": {
+      "bytes": 398,
+      "gzip": 148,
+      "sha256": "a0402be343c933ab47dd2e9497aa937c6364c21c2b3648f0c96abaeb45f4c02e"
+    },
+    "wasm/anarci/manifest.json": {
+      "bytes": 1528,
+      "gzip": 707,
+      "sha256": "ed1587caffc464b5e91968ce87d22e2a80285c920f6d0fc1409331420f191175"
+    },
+    "wasm/anarci/provenance.json": {
+      "bytes": 6510,
+      "gzip": 3077,
+      "sha256": "f7f8c4594cdbc80700ac9c86051b3a27ff3d39d39e7e4212041b82db17221a43"
+    },
+    "wasm/anarci/species.json": {
+      "bytes": 69,
+      "gzip": 71,
+      "sha256": "06f4364d7cc3fe9db5053fa546b95a732774a571ec63196817bf5b982eca5ae6"
+    },
+    "wasm/pfam/pfam-biologics.h3m.gz": {
+      "bytes": 618968,
+      "gzip": 618938,
+      "sha256": "38c9ecc00570aef9c817c825a47771a79f725e3141d000771a1eefb30795c75b"
+    },
+    "wasm/pfam/pfam-biologics.json": {
+      "bytes": 12431,
+      "gzip": 2837,
+      "sha256": "6fc854eb1f07f8ac7bd8b6ca9a578b96b9b38acdd9816f82b72ffadd4063a77b"
+    },
+    "licenses/HMMER.txt": {
+      "bytes": 3556,
+      "gzip": 1737,
+      "sha256": "d7652641990f11c1167e2888f3cc8ce1d336ae2df0a8d1d802993e131d367453"
+    },
+    "licenses/Easel.txt": {
+      "bytes": 3642,
+      "gzip": 1750,
+      "sha256": "a81d106aeed4f4b6b3f3f4750c048dcb129c2281bbe9e84cdf3818fc06a5e49a"
+    },
+    "licenses/ANARCI.txt": {
+      "bytes": 1509,
+      "gzip": 816,
+      "sha256": "a96381064678f6052d1e291d83e0fe8bc0fc8fcb03930a145548c76124b9516c"
+    },
+    "licenses/ARM-optimized-routines.txt": {
+      "bytes": 13491,
+      "gzip": 4794,
+      "sha256": "650afbf29f214451e02241adc42534e82c9d6ae2b38e2444b92b5a1ffcaf9346"
+    },
+    "licenses/Rust-standard-library.txt": {
+      "bytes": 4298,
+      "gzip": 1755,
+      "sha256": "079552fda1042ff4c375bccb8494fbdbb011a04810ad2487fc49a628a22be64b"
+    },
+    "licenses/IMGT-data.txt": {
+      "bytes": 1756,
+      "gzip": 954,
+      "sha256": "d45961a06ebdcfc3f14803b30f2d837b3ed4e88f61ffeedf2c51bc2dab81bd3c"
+    },
+    "licenses/UniProt-test-sequences.txt": {
+      "bytes": 788,
+      "gzip": 476,
+      "sha256": "43fb5d37eb608c92c3ecdccec7c35c9b46ffdb6785f479aed1b00f0891a2e9ad"
+    },
+    "src/tests/anarci-fixture.json": {
+      "bytes": 45499,
+      "gzip": 4074,
+      "sha256": "bd24bdc18301e2f3bacd78fa84d49ffc23118476c35cd45b8ba4bb8aa024dbf0"
+    },
+    "src/tests/anarci-options-fixture.json": {
+      "bytes": 31528,
+      "gzip": 2011,
+      "sha256": "aa8d1c2ce48688ed3bdd6c6dba9c8ade72cde093d30eee74970d2b7459b4e667"
+    },
+    "files/tests/align-expected.csv": {
+      "bytes": 34033,
+      "gzip": 5091,
+      "sha256": "98659070ac8c5c87e477288bc32894f224dc0075dc647ee28ee3766405d069d3"
+    },
+    "files/tests/align-sequences.csv": {
+      "bytes": 13697,
+      "gzip": 3752,
+      "sha256": "1ddd7a2ef63534324ca05d5e24763204d15944f310feb65b18887d731cb47103"
+    },
+    "files/tests/build-alignment.csv": {
+      "bytes": 539,
+      "gzip": 320,
+      "sha256": "e2ff8c5251a5fc87499626a914e1d8c5cd219a183e49b7e5a387ac7c00273d1b"
+    },
+    "files/tests/build-expected.csv": {
+      "bytes": 4285,
+      "gzip": 1377,
+      "sha256": "b73f39b6d82cf24d96ae748b5e267db5889b64d2bc47ee2af7e6a8ec10dec7cb"
+    },
+    "files/tests/build-model.hmm": {
+      "bytes": 39608,
+      "gzip": 7399,
+      "sha256": "138f5f8c3b7adf7fe1b550f8167e2495b55b96aa2e2ccd934aa29487ab8c78c9"
+    },
+    "files/tests/clans-expected.csv": {
+      "bytes": 4138,
+      "gzip": 1353,
+      "sha256": "3ee330a0c231d4396204df36531670f373d975f15e24ed9667898c46cfd375b6"
+    },
+    "files/tests/clans-queries.csv": {
+      "bytes": 18177,
+      "gzip": 9392,
+      "sha256": "a97b4eaf9fa6f578ba791165e1f3200703846d292dc4a3ae7ff65e65d6c87c82"
+    },
+    "files/tests/logo-vset.txt": {
+      "bytes": 19569,
+      "gzip": 4016,
+      "sha256": "8a637446f11e81256f8b0381429eecd1b0062cedd9aeccfd804cd01bd4b21a36"
+    },
+    "files/tests/phmmer-expected.csv": {
+      "bytes": 21275,
+      "gzip": 4364,
+      "sha256": "d7d2ca67fa878c28f825588bdef4d763174d2e48f5e6007009bf3878dc37ed31"
+    },
+    "files/tests/phmmer-queries.csv": {
+      "bytes": 637,
+      "gzip": 369,
+      "sha256": "dfb86ab57e0fe867d1c16643c53e3c291a66cc6da3e0082e47cf35345d7847f8"
+    },
+    "files/tests/phmmer-targets.csv": {
+      "bytes": 122366,
+      "gzip": 57285,
+      "sha256": "68aa109d5663cb6e75c01c751a1bd009a5acaaf5b19d00c2a2358beb3ee19bac"
+    },
+    "files/tests/scan-expected.csv": {
+      "bytes": 1493,
+      "gzip": 529,
+      "sha256": "5f230e2d79a4dc60aac4fd792c782dc4adc9ea4b8e3643e3dd84d3dc655d1dcc"
+    },
+    "files/tests/scan-library.hmm": {
+      "bytes": 188722,
+      "gzip": 39416,
+      "sha256": "55547a007dbd545ec4fb998a6cb1a483fe445fe924740995b170e3ae38762a8f"
+    },
+    "files/tests/scan-queries.csv": {
+      "bytes": 6120,
+      "gzip": 2568,
+      "sha256": "7161c56e70d41c89c83b03885df125e6d133c7054dd7f633787847465760bb87"
+    },
+    "files/tests/search-expected.csv": {
+      "bytes": 364,
+      "gzip": 222,
+      "sha256": "7f49fa1e9cdd04b40babbe00c737b305d10530298cc61eee2f35702350fc2202"
+    },
+    "files/tests/search-model.hmm": {
+      "bytes": 20278,
+      "gzip": 4914,
+      "sha256": "457496e356f734808215ce206fb10ff03c83e2ddee0693d9fc7259fbe811e7b7"
+    },
+    "files/tests/search-targets.csv": {
+      "bytes": 6120,
+      "gzip": 2568,
+      "sha256": "7161c56e70d41c89c83b03885df125e6d133c7054dd7f633787847465760bb87"
+    }
+  }
+}

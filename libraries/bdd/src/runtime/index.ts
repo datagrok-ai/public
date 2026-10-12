@@ -11,7 +11,7 @@ export * from './failure.js';
 export {callFunction} from './functions.js';
 export {columnsSince, menuNames, openTopMenu, pickTopMenu, waitCommand} from './menus.js';
 export {expectCustomEvent, listenCustomEvent} from './events.js';
-export {silent} from './guide.js';
+export {silent, frameTo as guideFrame} from './guide.js';
 export {serverRequests, chatIdsOf, deleteChatsOf, deleteLayoutsAtEnd, serverNow, fixtureFamilies, isStaleFixture, savedScriptOf,
   type SavedScript,
   RUN_SUFFIX, STALE_AFTER_MS, serviceGap, reportedServices} from './server.js';

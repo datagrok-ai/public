@@ -566,9 +566,10 @@ export class PackageFunctions {
       return;
     }
 
-    const axesNames = getEmbeddingColsNames(table);
-
     const runCliffs = async (): Promise<void> => {
+      const axesNames = getEmbeddingColsNames(table);
+      for (const name of axesNames)
+        table.columns.addNewFloat(name);
       await DG.Func.find({name: 'seqActivityCliffsTransform'})[0].prepare({
         table: table,
         molecules: molecules,

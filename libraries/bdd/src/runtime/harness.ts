@@ -28,7 +28,7 @@ export interface FeatureSession {
   /** One Gherkin step: a Playwright step located at the feature line, whose failure names the
    * line, the step as written, the reason, and — when Playwright gave up on an element — what the
    * page shows where the phrase looked. */
-  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void>;
+  step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void>;
 }
 
 export interface Journey {
@@ -306,10 +306,10 @@ export function feature(test: Test, path = '', specUrl = ''): FeatureSession {
       }
       return page;
     },
-    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][]): Promise<void> {
+    async step(line: number, title: string, body: () => Promise<unknown>, table?: string[][], caption?: string): Promise<void> {
       title = text(title);
       await test.step(title, async () => {
-        await guide.begin(page, test.info(), line, title, table);
+        await guide.begin(page, test.info(), line, title, table, caption);
         try {
           await body();
         }
@@ -395,6 +395,10 @@ export async function resetShell(page: Page): Promise<void> {
     if (w.grok.shell.windows.presentationMode)
       w.grok.shell.windows.presentationMode = false;
     w.grok.shell.closeAll();
+    // a context pane's expanded state is kept per accordion in localStorage (accordion.dart): what one
+    // feature expanded would build, server-backed or not, in every later feature on the page
+    for (const key of Object.keys(localStorage).filter((k) => k.startsWith('Accordion:')))
+      localStorage.removeItem(key);
     return Array.from(document.querySelectorAll('.d4-dialog, [data-u2="dialog"]'))
       .filter((e) => (e as HTMLElement).offsetParent !== null).map((e) => e.getAttribute('name') ?? e.tagName).join(', ');
   }, NOTICES).catch(() => '');

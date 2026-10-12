@@ -48,14 +48,15 @@ kind('input', {
 });
 // a bare <input> outside any input host that names itself (aria-label) is a text input too: the
 // Save project dialog's Name
-inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not(.ui-input-root *)', ['text field', 'textbox'],
+inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *)', ['text field', 'textbox'],
   {match: [...INPUT_MATCH, 'aria']});
 inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multiline input']);
 inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
 inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
 inputKind('number input', ['number-input', 'bigint-input', 'qnum-input'], '.ui-input-int, .ui-input-float', ['numeric input', 'number field']);
-inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
-  {match: [...INPUT_MATCH, 'text']});
+// a bare box outside any input host that names itself (aria-label): the Binding site popover's "Show side chains"
+inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, ' +
+  'input[type="checkbox"][aria-label]:not(.ui-input-root *)', ['bool input', 'switch', 'toggle'], {match: [...INPUT_MATCH, 'text', 'aria']});
 inputKind('date input', ['date-input', 'datetime-input'], '.ui-input-date', ['date field', 'datetime input', 'date picker']);
 inputKind('color input', ['color-input'], '.ui-input-color', ['color picker']);
 inputKind('font input', ['font-input'], '', ['font picker']);

@@ -22,4 +22,7 @@ Feature: Label scatter plot markers with the structure, the ID and a potency val
     And user types "Cellular assay 1" into "Search" input in "Select columns..." dialog
     And user toggles the "Cellular assay 1" column in the column list of "Select columns..." dialog
     And user clicks on OK button in "Select columns..." dialog
-    Then the "labels shown" reading of scatter plot viewer should be at least 1
+    Then "Label Columns" property of scatter plot viewer should contain "Structure"
+    And "Label Columns" property of scatter plot viewer should contain "Id"
+    And "Label Columns" property of scatter plot viewer should contain "Cellular assay 1"
+    And the "labels shown" reading of scatter plot viewer should be at least 1

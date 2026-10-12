@@ -34,6 +34,9 @@ Feature: Legends follow the rows that are left
   the journey: under Row Source All its wedge click leaves the table's filter untouched, and once
   the pie chart has been through the menu the click stays inert for the rest of the run, so the
   wedge-click scenario comes earlier and sets On Click by itself, keeping Row Source on Filtered.
+  On Click's items are radio items, and a checkable item leaves its menu open (`menu.dart`
+  `shouldCloseOnClick`), so every pick is followed by closing the menu: left open, it lies over
+  the bars, and the bar click that follows lands on one of its items.
   A layout does not bring a click-filter back, and that too is the right behaviour by the operator's
   decision: the scenario that saves a layout while a bar click is filtering loads it again and
   claims the panel's own range filter returned while the click-filter did not — every row of the
@@ -183,6 +186,7 @@ Feature: Legends follow the rows that are left
 
   Scenario: A click on a bar with On Click Filter leaves only its race in the other legends
     When user picks "On Click > Filter" from the context menu of bar chart viewer
+    And user closes the context menu
     Then "On Click" property of bar chart viewer should be "Filter"
     And "Row Source" property of bar chart viewer should be "All"
     And the legend of bar chart viewer should list 4 items
@@ -328,8 +332,9 @@ Feature: Legends follow the rows that are left
     And user adds a range filter on "WEIGHT" from 100 to 170
     Then 143 rows should pass the filter
     When user picks "On Click > Filter" from the context menu of bar chart viewer
+    And user closes the context menu
     And user clicks on the "bar Black" area of bar chart viewer
-    Then fewer than 143 rows should pass the filter
+    Then 6 rows should pass the filter
     And the legend of box plot viewer should list 1 item
     And "Black" legend item in legend of box plot viewer should be visible
     When user saves the layout of the current table view to the server
@@ -358,6 +363,7 @@ Feature: Legends follow the rows that are left
     Then 12 rows should pass the filter
     And the legend of pie chart viewer should list 2 items
     When user picks "On Click > Filter" from the context menu of pie chart viewer
+    And user closes the context menu
     Then "On Click" property of pie chart viewer should be "Filter"
     And "Row Source" property of pie chart viewer should be "All"
     And the legend of pie chart viewer should list 4 items

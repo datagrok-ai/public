@@ -394,7 +394,7 @@ export class AddNewColumnDialog {
         this.autocompleteEnter = false;
       } else if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
         e.stopPropagation();
-      else if (e.code === 'KeyA' && e.ctrlKey) {
+      else if (e.code === 'KeyA' && (e.ctrlKey || e.metaKey)) {
         e.stopPropagation();
         this.codeMirror?.dispatch({
           selection: {

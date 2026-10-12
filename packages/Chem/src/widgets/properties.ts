@@ -12,6 +12,7 @@ import {IChemProperty, OCLService, CHEM_PROP_MAP as PROP_MAP} from '../open-chem
 const DGTypeMap = {
   'float': DG.TYPE.FLOAT,
   'int': DG.TYPE.INT,
+  'string': DG.TYPE.STRING,
 } as const;
 
 export function getChemPropertyFunc(name: string) : null | ((smiles: string) => any) {

@@ -317,7 +317,6 @@ export async function MockWrapper5(params: any) {
     type: 'sequential',
     nqName: 'LibTests:MockWrapper5',
     version: '1.0',
-    approversGroup: 'MockGroup',
     stepTypes: [
       {
         id: 'step1',
@@ -416,6 +415,17 @@ export async function MockWrapperDF(params: any) {
     ],
   };
   return c;
+}
+
+// consistency tolerance annotations
+
+//input: double plain
+//input: double abs {consistencyTolerance: 1e-9}
+//input: double rel {consistencyRelTolerance: 1e-6}
+//input: dataframe df {consistencyTolerance: 1e-9}
+//output: double res
+export async function TestToleranceInputs(plain: number, abs: number, rel: number, df: DG.DataFrame) {
+  return 1;
 }
 
 // annotation checks

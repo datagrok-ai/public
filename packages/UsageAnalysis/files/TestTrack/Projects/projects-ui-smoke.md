@@ -116,8 +116,8 @@ project with `demog.csv`.
     - **Verify:** the pasted text is the server address, then `/p/`,
       your login and `.UiSmokeRenamed`.
 
-11. **Add to favorites.**
-    - Right-click the tile and choose **Add to favorites**.
+11. **Add To Favorites.**
+    - Right-click the tile and choose **Add To Favorites**.
     - Go to **Browse > My stuff > Favorites**.
     - **Verify:** `uiSmokeRenamed` is listed.
     - Right-click `uiSmokeRenamed` and choose **Remove from favorites**.

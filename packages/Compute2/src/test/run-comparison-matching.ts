@@ -488,4 +488,45 @@ category('RunComparison: cluster pairing', () => {
     expect(targets[0].confidence, 'exact');
     expectArray(targets[0].bindings.map((b) => b.value), [2, 3]);
   });
+
+  test('earlier fuzzy sibling does not block an exact scalar match', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperature', value: 1}]),
+      makeEntry('b', [{name: 'temperatures', value: 2}, {name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'exact');
+    expectArray(targets[0].bindings.map((b) => b.value), [1, 3]);
+  });
+
+  test('earlier fuzzy sibling does not block an exact column match', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [
+        {name: 'time', type: 'int'}, {name: 'temperatures'}, {name: 'temperature'},
+      ]}]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(targets.length, 1);
+    const [target] = targets;
+    expect(target.displayName, 'temperature');
+    expect(target.confidence, 'exact');
+    expectArray(target.bindings.map((b) => `${b.entryId}|${b.columnName}`), ['a|temperature', 'b|temperature']);
+    const fuzzy = target.candidates.find((c) => c.binding.columnName === 'temperatures')!;
+    expect(fuzzy.auto, false);
+    expect(fuzzy.enabled, false);
+  });
+
+  test('unmatched item still joins a fuzzy cluster', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperatures', value: 1}]),
+      makeEntry('b', [{name: 'temperature', value: 2}]),
+      makeEntry('c', [{name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'fuzzy');
+    expect(targets[0].coverage, 3);
+  });
 });

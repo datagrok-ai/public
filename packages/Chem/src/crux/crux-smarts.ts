@@ -21,7 +21,27 @@ export function getCruxSmarts(queryMol: RDMol): string | null {
   return hasRadicals(queryMol) ? null : normalizeSmarts(queryMol.get_smarts());
 }
 
+/** Whether a bond expression of `smarts` (outside the atoms' brackets) holds both `,` and `&`. RDKit's SMARTS writer
+ * writes an AND over an OR bond query (single or double, in a ring: MDL's type 5 with ring topology) `-,=&@`, which a
+ * SMARTS parser, crux's too, reads as `-,(=&@)`: such a query is searched by RDKit, which matches the query molecule
+ * itself (crux-sketch spike query-roundtrip, L6). */
+function hasAmbiguousBond(smarts: string): boolean {
+  let outside = '';
+  let depth = 0;
+  for (const ch of smarts) {
+    if (ch === '[')
+      depth++;
+    else if (ch === ']')
+      depth--;
+    else if (depth === 0)
+      outside += ch;
+  }
+  return outside.split(/[^-=#:~@!,&;/\\]+/).some((bond) => bond.includes(',') && bond.includes('&'));
+}
+
 function normalizeSmarts(smarts: string): string | null {
+  if (hasAmbiguousBond(smarts))
+    return null;
   let out = '';
   for (let i = 0; i < smarts.length;) {
     const ch = smarts[i];
@@ -58,6 +78,10 @@ function normalizeAtom(content: string): string | null {
 }
 
 function normalizeQueryAtom(c: string): string | null {
+  // only exclusions, none of hydrogen (MH, QH: any metal, any atom but carbon): it may be a hydrogen, below
+  const parts = c.replace(/:\d+$/, '').split(/[&;]/);
+  if (!c.includes(',') && parts.every((p) => p.startsWith('!')) && !parts.includes('!#1'))
+    return null;
   let out = '';
   for (let i = 0; i < c.length;) {
     const ch = c[i];
@@ -78,6 +102,11 @@ function normalizeQueryAtom(c: string): string | null {
     } else if (ch === '#' || ch === 'H' || ch === 'D' || ch === 'X') {
       end = readDigits(c, i + 1);
       if (ch === '#' && end === i + 1)
+        return null;
+      // a query atom that may be a hydrogen (XH, MH: halogen or H, metal or H): crux reads the column's molblocks as
+      // RDKit's SMILES, whose hydrogens it does not keep, where RDKit keeps a wedged one; RDKit searches it
+      // (crux-sketch spike query-roundtrip: XH passed 275 rows of mol1K for 309, MH none for 42)
+      if (ch === '#' && c.slice(i + 1, end) === '1')
         return null;
       out += c.slice(i, end);
     } else if (ch === '@') {

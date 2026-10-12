@@ -201,7 +201,7 @@ category('ComputeUtils: Driver hooks running', async () => {
     ],
   };
 
-  test('onInit writes reach plain data links', async () => {
+  test('Plain data links follow writes after onInit', async () => {
     const pconf = await getProcessedConfig(initChainConfig(false));
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
@@ -219,7 +219,7 @@ category('ComputeUtils: Driver hooks running', async () => {
     expectDeepEqual(snapshots, [[5, 5, 5], [9, 9, 9]]);
   });
 
-  test('onInit writes reach runOnInit links and chain through them', async () => {
+  test('onInit writes chain through runOnInit links within one frame', async () => {
     const pconf = await getProcessedConfig(initChainConfig(true));
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
@@ -234,7 +234,7 @@ category('ComputeUtils: Driver hooks running', async () => {
     expectDeepEqual(snapshots, [[5, 5, 5]]);
   });
 
-  test('runOnInit link writes reach plain data links', async () => {
+  test('Plain data links follow writes after runOnInit links', async () => {
     const pconf = await getProcessedConfig(runOnInitConfig);
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
@@ -269,7 +269,7 @@ category('ComputeUtils: Driver hooks running', async () => {
         const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
         tree.init().subscribe();
         if (placement === 'added')
-          cold('-a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, inner.id, 0).subscribe());
+          cold('-a').subscribe(() => tree.addSubTree(tree.nodeTree.root.getItem().uuid, inner.id!, 0).subscribe());
         cold('100ms a').subscribe(() => {
           const base = placement === 'root' ? [] : [{idx: 0}];
           const stores = [base, [...base, {idx: 0}], [...base, {idx: 1}]]

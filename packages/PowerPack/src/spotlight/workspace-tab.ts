@@ -142,11 +142,34 @@ export class WorkspaceTab {
       this.renderGroupSections(groupContainer, freshFavorites, freshAdminGroups);
       this.rebuildOverlayZones(freshAdminGroups);
 
-      // If the current selection was unpinned, clear it.
-      if (this.selectedEntity && !this.listPane.querySelector(
-          `.pp-workspace-item[data-entity-id="${this.selectedEntity.id}"]`))
+      if (!this.selectedEntity || this.listPane.contains(this.selectedRow!))
+        return;
+      const row = this.listPane.querySelector<HTMLElement>(
+        `.pp-workspace-item[data-entity-id="${this.selectedEntity.id}"]`);
+      if (row) {
+        this.selectedRow = row;
+        row.classList.add('pp-workspace-item-selected');
+      }
+      else
         this.clearSelection();
     };
+
+    // Favorites change from anywhere in the platform (the star, Browse, the Favorites panel); a hidden
+    // Workspace is detached from the DOM, so it re-fetches once it is shown again.
+    let stale = false;
+    const refresh = (): void => {
+      stale = !root.isConnected;
+      if (!stale)
+        this.rebuildSections!();
+    };
+    const favoritesChanged = rxjs.merge(
+      grok.events.onEvent('d4-entity-added'), grok.events.onEvent('d4-entity-removed'));
+    this.spotlight.subs.push(
+      DG.debounce(favoritesChanged, 300).subscribe(refresh),
+      ui.onSizeChanged(root).subscribe(() => {
+        if (stale)
+          refresh();
+      }));
 
     this.renderPersonalSection(personalContainer, personalFavorites);
     this.renderGroupSections(groupContainer, groupFavorites, adminGroups);
@@ -188,7 +211,6 @@ export class WorkspaceTab {
     groupFavorites: GroupFavorites[],
     adminGroups: DG.Group[],
   ): void {
-    const rebuild = this.rebuildSections!;
     const displayedGroupIds = new Set<string>();
 
     if (groupFavorites.length > 0) {
@@ -197,7 +219,7 @@ export class WorkspaceTab {
         if (entities.length > 0) {
           displayedGroupIds.add(group.id);
           const onEdit = isAdmin ? () => {
-            showManageFavoritesDialog(group, [...entities], rebuild);
+            showManageFavoritesDialog(group, [...entities]);
           } : undefined;
           container.appendChild(
             this.renderSection(group.friendlyName, 'star', entities, isAdmin ? group : undefined, onEdit),
@@ -212,7 +234,7 @@ export class WorkspaceTab {
     //     const menu = DG.Menu.popup();
     //     for (const g of extraGroups) {
     //       menu.item(g.friendlyName || g.name, () => {
-    //         showManageFavoritesDialog(g, [], rebuild);
+    //         showManageFavoritesDialog(g, []);
     //       });
     //     }
     //     menu.show();
@@ -266,10 +288,7 @@ export class WorkspaceTab {
     this.bindRow(entity, row);
 
     if (group) {
-      const removeBtn = ui.icons.close(async () => {
-        await DG.Favorites.remove(entity, group);
-        await this.rebuildSections?.();
-      }, `Unpin from ${group.friendlyName}`);
+      const removeBtn = ui.icons.close(() => DG.Favorites.remove(entity, group), `Unpin from ${group.friendlyName}`);
       removeBtn.classList.add('pp-workspace-item-remove');
       removeBtn.addEventListener('click', (e: MouseEvent) => e.stopPropagation());
       row.appendChild(removeBtn);
@@ -801,7 +820,6 @@ export class WorkspaceTab {
             else {
               await pinEntityToGroup(entity, group);
               grok.shell.info(`Pinned "${entity.friendlyName}" to ${label}`);
-              await this.rebuildSections!();
             }
           }
           catch (e) {

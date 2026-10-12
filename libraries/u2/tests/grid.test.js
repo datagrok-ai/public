@@ -153,3 +153,32 @@ grid('an empty grid renders nothing and ignores keys', () => {
   assert.equal(g.selectedIndex.value, -1);
   g.dispose();
 });
+
+grid('a grid with no size yet renders nothing; its first measure lays out the real columns', () => {
+  const g = new VirtualGrid({cellWidth: 20, cellHeight: 20, render: (n) => {
+    const s = document.createElement('span');
+    s.textContent = String(n);
+    return s;
+  }});
+  g.setItems(NUMBERS);
+  assert.equal(g.renderedCount, 0, 'no single-column cells to re-flow and hand to other items later');
+  document.body.append(g.root);
+  g.root.clientWidth = 200;
+  g.root.clientHeight = 100;
+  const observer = ResizeObserver.instances.find((o) => o.targets.includes(g.root));
+  observer.callback([]);
+  assert.equal(g.columns.value, 10);
+  assert.equal(g.renderedCount, 70);
+  assert.equal(cells(g).find((c) => c.dataset.index === '1').style.left, '20px');
+  g.dispose();
+});
+
+grid('a taller grid renders the rows that came into view', () => {
+  const g = make();
+  g.setItems(NUMBERS);
+  assert.equal(g.renderedCount, 70);
+  g.root.clientHeight = 200;
+  ResizeObserver.instances.find((o) => o.targets.includes(g.root)).callback([]);
+  assert.equal(g.renderedCount, 120, '10 visible rows + 2 overscan, 10 per row');
+  g.dispose();
+});

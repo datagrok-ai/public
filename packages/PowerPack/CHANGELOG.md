@@ -2,6 +2,13 @@
 
 ## v.next
 
+* GROK-20076: Home: Fixed the Spotlight widget's remove icon covering the top of the tab scrollbar, and the scrollbars showing when nothing scrolls
+* Home: The Workspace tab picks up favorites added or removed anywhere in the platform without a page reload
+* Home: Fixed the Spotlight tab of the Spotlight widget staying blank when every entity of the account's recent activity had been deleted: it shows the Interactive Tutorials and Demo Apps a new user gets
+* Tests: The Home widget features read the stored widget settings after flushing the page's settings sync, pin the running account's widgets, and reload once instead of four times
+* Add New Column: Fixed Cmd+A in the formula editor (macOS) selecting every row and column of the table behind the dialog
+* Home: Fixed every Home page load writing back all the widget settings it had read, which undid a widget hidden or shown on another page of the same account
+* GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups
 * Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
 * GROK-21019: Add New Column: Fixed the dialog dropping the error behavior of the call it was opened with
 * GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages

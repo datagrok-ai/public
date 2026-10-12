@@ -128,36 +128,46 @@ interface Cluster<P> {
   entryIds: Set<string>;
 }
 
+function bestCluster<P>(
+  clusters: Cluster<P>[], item: ClusterItem<P>, allowFuzzy: boolean, aliases?: Map<string, number>,
+): {cluster: Cluster<P>, confidence: MatchConfidence} | null {
+  let best: {cluster: Cluster<P>, confidence: MatchConfidence, score: number} | null = null;
+  for (const cluster of clusters) {
+    if (cluster.entryIds.has(item.entryId))
+      continue;
+    const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
+    if (!confidence || (confidence === 'fuzzy' && !allowFuzzy))
+      continue;
+    if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
+      continue;
+    const seedIndex = cluster.items[0].indexColumnName;
+    if (seedIndex && item.indexColumnName &&
+      !nameMatchConfidence(seedIndex, item.indexColumnName, aliases))
+      continue;
+    const score = nameSimilarity(cluster.canonicalName, item.name) +
+      (cluster.canonicalSecondary && item.secondaryName ?
+        nameSimilarity(cluster.canonicalSecondary, item.secondaryName) * 0.5 : 0);
+    if (!best || CONFIDENCE_RANK[confidence] < CONFIDENCE_RANK[best.confidence] ||
+      (confidence === best.confidence && score > best.score))
+      best = {cluster, confidence, score};
+  }
+  return best;
+}
+
+function addToCluster<P>(cluster: Cluster<P>, item: ClusterItem<P>, confidence: MatchConfidence) {
+  cluster.items.push(item);
+  cluster.entryIds.add(item.entryId);
+  cluster.confidence = weakerConfidence(cluster.confidence, confidence);
+  if (unitsCompatibility(cluster.items[0].units, item.units) === 'warn')
+    cluster.unitsWarning = true;
+}
+
 function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>): Cluster<P>[] {
   const clusters: Cluster<P>[] = [];
   for (const item of items) {
-    let best: {cluster: Cluster<P>, confidence: MatchConfidence, score: number} | null = null;
-    for (const cluster of clusters) {
-      if (cluster.entryIds.has(item.entryId))
-        continue;
-      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
-      if (!confidence)
-        continue;
-      if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
-        continue;
-      const seedIndex = cluster.items[0].indexColumnName;
-      if (seedIndex && item.indexColumnName &&
-        !nameMatchConfidence(seedIndex, item.indexColumnName, aliases))
-        continue;
-      const score = nameSimilarity(cluster.canonicalName, item.name) +
-        (cluster.canonicalSecondary && item.secondaryName ?
-          nameSimilarity(cluster.canonicalSecondary, item.secondaryName) * 0.5 : 0);
-      if (!best || CONFIDENCE_RANK[confidence] < CONFIDENCE_RANK[best.confidence] ||
-        (confidence === best.confidence && score > best.score))
-        best = {cluster, confidence, score};
-    }
+    const best = bestCluster(clusters, item, false, aliases);
     if (best) {
-      const cluster = best.cluster;
-      cluster.items.push(item);
-      cluster.entryIds.add(item.entryId);
-      cluster.confidence = weakerConfidence(cluster.confidence, best.confidence);
-      if (unitsCompatibility(cluster.items[0].units, item.units) === 'warn')
-        cluster.unitsWarning = true;
+      addToCluster(best.cluster, item, best.confidence);
     } else {
       clusters.push({
         canonicalName: item.name,
@@ -167,6 +177,18 @@ function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>
         items: [item],
         entryIds: new Set([item.entryId]),
       });
+    }
+  }
+  // fuzzy matches run second, so a fuzzy name never takes a run's slot from an exact one;
+  // lone items join earlier clusters or established ones, keeping the first-seen name canonical
+  for (const lone of clusters.filter((cluster) => cluster.items.length === 1)) {
+    const position = clusters.indexOf(lone);
+    const candidates = clusters.filter((cluster, i) =>
+      i < position || (i > position && cluster.items.length > 1));
+    const best = bestCluster(candidates, lone.items[0], true, aliases);
+    if (best) {
+      addToCluster(best.cluster, lone.items[0], best.confidence);
+      clusters.splice(clusters.indexOf(lone), 1);
     }
   }
   return clusters;

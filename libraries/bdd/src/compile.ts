@@ -143,7 +143,8 @@ export function compileFeature(feature: FeatureModel, ctx: CompileContext): Comp
       call.push(emitText(step.table));
     if (step.docString !== undefined)
       call.push(emitText(step.docString));
-    const detail = step.table ? `, ${emitText(step.table)}` : '';
+    const detail = (step.table ? `, ${emitText(step.table)}` : step.caption ? ', undefined' : '') +
+      (step.caption ? `, ${JSON.stringify(step.caption)}` : '');
     const out = [`${indent}await session.step(${step.line}, ${title}, () => ${exported.name}(page${call.map((c) => ', ' + c).join('')})${detail});`];
     if (def.meta.enters !== undefined) {
       const entered = lookupContext(def.meta.enters);
