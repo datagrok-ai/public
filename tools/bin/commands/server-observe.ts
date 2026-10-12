@@ -96,12 +96,27 @@ const iso = (value: any, flag: string) => value === undefined ? undefined : pars
 
 export async function handleObserve(dapi: NodeDapi, command: string | undefined, verb: string | undefined,
                                     rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
-  const id = rest[0] === undefined ? undefined : encodeURIComponent(String(rest[0]));
-  const needId = () => {
-    if (!id)
+  // A `:` cannot pass through a route parameter behind the proxy, so kind:key is looked up by the list's filters.
+  let id: string | undefined;
+  const needId = async () => {
+    const given = rest[0] === undefined ? '' : String(rest[0]);
+    if (!given)
       throw new Error(`Usage: grok s observe ${command} ${verb} <id|kind:key>`);
+    const colon = given.indexOf(':');
+    if (colon < 0) {
+      id = encodeURIComponent(given);
+      return;
+    }
+    const found = await dapi.problems.list({kind: given.substring(0, colon), key: given.substring(colon + 1), limit: 1});
+    if (!found?.length)
+      throw new Error(`No problem '${given}'`);
+    id = found[0].id;
   };
-  const settings = async (key: string) => (await dapi.raw('GET', `/admin/plugins/${key}/settings`))?.settings ?? {};
+  // The route answers JSON as text/plain.
+  const settings = async (key: string) => {
+    const r = await dapi.raw('GET', `/admin/plugins/${key}/settings`);
+    return (typeof r === 'string' ? JSON.parse(r) : r)?.settings ?? {};
+  };
   const saveSettings = (key: string, body: any) => dapi.raw('POST', `/admin/plugins/${key}/settings`, body);
   const saveLogger = (body: any) => saveSettings('logger', body);
 
@@ -111,24 +126,24 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
         kind: argv.kind, key: argv.key, since: argv.since, limit: argv.limit}), output);
       return true;
     case 'problems get': {
-      needId();
-      const problem = await dapi.problems.find(String(rest[0]));
+      await needId();
+      const problem = await dapi.problems.find(id!);
       if (!problem)
         throw new Error(`No problem '${rest[0]}'`);
       printOutput(problem, output);
       return true;
     }
     case 'problems history':
-      needId();
+      await needId();
       printOutput(await dapi.raw('GET', `/problems/${id}/history${buildQuery({limit: argv.limit})}`), output);
       return true;
     case 'problems status':
-      needId();
+      await needId();
       printOutput(await dapi.raw('POST', `/problems/${id}/status`, readBody(argv)), output);
       return true;
     case 'problems ack':
     case 'problems resolve':
-      needId();
+      await needId();
       printOutput(await dapi.raw('POST', `/problems/${id}/${verb}`, {reason: argv.reason}), output);
       return true;
     case 'rules get': {

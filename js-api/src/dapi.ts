@@ -528,14 +528,19 @@ export class AdminDataSource {
   /** A problem the platform detected and its current alert, by id or `kind:key`; null when there is none.
    *  Needs the `ManageAlerts` permission. Sample: {@link https://public.datagrok.ai/js/samples/dapi/problems} */
   async getProblem(id: string): Promise<Problem | null> {
-    const r = await fetch(`${api.grok_Dapi_Root()}/problems/${encodeURIComponent(id)}`, {credentials: 'include'});
+    // A `:` cannot pass through a route parameter behind the proxy, so kind:key is looked up by the list's filters.
+    const colon = id.indexOf(':');
+    const path = colon < 0 ? `/problems/${encodeURIComponent(id)}`
+      : `/problems?kind=${encodeURIComponent(id.substring(0, colon))}&key=${encodeURIComponent(id.substring(colon + 1))}&limit=1`;
+    const r = await fetch(`${api.grok_Dapi_Root()}${path}`, {credentials: 'include'});
     // The server answers an error with 200 and the api-error-code header.
     const code = r.headers.get('api-error-code') ?? (r.ok ? null : `${r.status}`);
     if (code === '404')
       return null;
     if (code !== null)
       throw new Error((await r.json().catch(() => null))?.message ?? `HTTP ${code}`);
-    return r.json();
+    const result = await r.json();
+    return colon < 0 ? result : (result[0] ?? null);
   }
 
   /** Returns the configured report email address from admin settings.

@@ -87,7 +87,8 @@ describe('capture', () => {
           return path.includes('alice') ? [{id: 'p1', name: 'alice', personal: true}] : [{id: 'g1', name: 'Chemists'}];
         if (path.startsWith('/public/v1/groups/'))
           return {id: 'p1', friendlyName: 'Alice'};
-        return method === 'GET' ? {'#key': 'logger', settings: {userGroupSettings}} : null;
+        // The server answers the settings as text, not application/json.
+        return method === 'GET' ? JSON.stringify({'#key': 'logger', settings: {userGroupSettings}}) : null;
       },
       get(path: string) { return this.request('GET', path); },
     };
