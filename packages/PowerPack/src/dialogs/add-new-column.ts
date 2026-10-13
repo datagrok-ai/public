@@ -1606,10 +1606,10 @@ export class AddNewColumnDialog {
     const layout =
         ui.div([
           ui.div([
-            ui.block([
-              ui.block([this.inputName!.root], {style: {width: '65%'}}),
-              ui.block([this.inputType!.root], {style: {width: '35%'}}),
-            ]),
+            ui.div([
+              ui.div([this.inputName!.root], 'add-new-column-name'),
+              ui.div([this.inputType!.root], 'add-new-column-type'),
+            ], 'add-new-column-name-row'),
             ui.block([this.codeMirrorDiv!, this.hintDiv, this.errorDiv]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], 'ui-addnewcolumn-expression-pane'),
