@@ -4,7 +4,7 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
 import {normalizeName, nameSimilarity, normalizeUnits, FUZZY_NAME_THRESHOLD} from './matching';
@@ -127,6 +127,9 @@ const sameValue = (x: unknown, y: unknown) => {
 
 const exactValue = (x: unknown, y: unknown) => x === y || (x !== x && y !== y);
 
+const toTargetValues = (values: ArrayLike<unknown> | undefined, factor?: number) =>
+  values == null || factor == null ? values : Array.from(values, (value) => toTargetUnits(value, factor));
+
 /**
  * True when every bound run carries the same data for the target: scalar values or
  * element-wise value/index/split columns, with numbers compared to within
@@ -141,8 +144,10 @@ export function isTargetEqualAcrossRuns(
 ): boolean {
   if (target.bindings.length < 2)
     return false;
-  if (target.kind === 'scalar')
-    return target.bindings.every((b) => sameValue(b.value, target.bindings[0].value));
+  if (target.kind === 'scalar') {
+    const first = toTargetUnits(target.bindings[0].value, target.bindings[0].factor);
+    return target.bindings.every((b) => sameValue(toTargetUnits(b.value, b.factor), first));
+  }
   const indexCompare = getColumnType != null && target.bindings.every((b) =>
     getColumnType(b.entryId, b.tablePath, b.indexColumnName) === 'datetime') ? exactValue : sameValue;
   const sameValues = (
@@ -158,7 +163,7 @@ export function isTargetEqualAcrossRuns(
     return true;
   };
   const series = target.bindings.map((b) => ({
-    value: getColumnValues(b.entryId, b.tablePath, b.columnName),
+    value: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.columnName), b.factor),
     index: getColumnValues(b.entryId, b.tablePath, b.indexColumnName),
     split: b.splitColumnName ? getColumnValues(b.entryId, b.tablePath, b.splitColumnName) : null,
   }));

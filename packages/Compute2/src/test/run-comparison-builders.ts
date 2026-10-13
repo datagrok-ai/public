@@ -4,7 +4,7 @@ import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/
 import {
   ScalarTarget, ColumnTarget, ComparisonEntry, RUN_COLUMN, TimeUnit,
 } from '../components/RunComparison/types';
-import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
+import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
 import {
   buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
@@ -615,5 +615,71 @@ category('RunComparison: union of runs', () => {
       expectArray([...new Set(result.chartDf.getCol(RUN_COLUMN).toList())], ['r1', 'r2', 'r3']);
       expectArray(numbers(result.chartDf.getCol('x').toList()), [1, 2, 5, 6, null, null]);
     }
+  });
+});
+
+category('RunComparison: unit conversion dataframes', () => {
+  const col = (name: string, values: number[], units?: string) => {
+    const column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+    if (units)
+      column.meta.units = units;
+    return column;
+  };
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const indexesFor = (entries: ComparisonEntry[]) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+  const scalar = (id: string, value: number, units: string) => {
+    const e = scalarsEntry(id, id, []);
+    e.nodes.scalars.push({path: 'p', name: 'p', valueType: 'double', units, value});
+    e.nodes.scalars.push({path: 'q', name: 'q', valueType: 'double', value: 1});
+    return e;
+  };
+  const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'bar', factor: 100, to: 'kPa'}]);
+
+  test('a scalar converts into the first run\'s units', async () => {
+    const entries = [scalar('a', 2, 'g/L'), scalar('b', 3000, 'mg/L')];
+    const target = matchScalarTargets(entries.map((e) => e.nodes), undefined, convert)
+      .find((t) => t.displayName === 'p')!;
+    const result = buildScalarComparison(target, entries);
+    expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [2, 3]);
+  });
+
+  test('several scalars convert into their target units', async () => {
+    const entries = [scalar('a', 1, 'bar'), scalar('b', 50, 'kPa')];
+    const targets = matchScalarTargets(entries.map((e) => e.nodes), undefined, convert);
+    const result = buildMultiScalarComparison(targets, entries)!;
+    expectArray(result.chartDf.getCol('p').toList(), [1, 0.5]);
+    expectArray(result.chartDf.getCol('q').toList(), [1, 1]);
+  });
+
+  test('column values convert, the index does not', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [0.5, 1], 'g/L')]),
+      tableEntry('r2', [col('Time', [0, 2], 'min'), col('x', [250, 750], 'mg/L')]),
+    ];
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
+      undefined, undefined, undefined, convert);
+    const result = buildColumnComparison(target, entries)!;
+    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 2]);
+    expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [0.5, 1, 0.25, 0.75]);
+  });
+
+  test('the melted scatter converts values', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2], 'bar'), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [100, 200], 'kPa'), col('y', [5, 6])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
+      undefined, undefined, undefined, convert);
+    const modes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, {mode: 'points' as const}]])]));
+    const result = buildMultiColumnComparison(targets, entries, modes)!;
+    const melted = result.melted!;
+    const values = result.chartDf.getCol(melted.valueColumnName).toList();
+    const series = result.chartDf.getCol(melted.seriesColumnName).toList();
+    expectArray(values.filter((_, i) => series[i] === 'x'), [1, 2, 1, 2]);
   });
 });

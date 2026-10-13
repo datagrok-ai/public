@@ -4,11 +4,14 @@
 
 import {
   ComparisonEntryNodes, MatchConfidence, ScalarBinding, ColumnBinding, ColumnCandidate,
-  CandidateOverrides, NameMapping, ScalarTarget, ColumnTarget, TargetBase, isNumericType, candidateId,
-  TIME_UNIT_ALIASES,
+  CandidateOverrides, NameMapping, UnitMapping, ScalarTarget, ColumnTarget, TargetBase, isNumericType,
+  candidateId, TIME_UNIT_ALIASES,
 } from './types';
 
-export type UnitsCompatibility = 'match' | 'warn' | 'mismatch';
+export type UnitsCompatibility = 'match' | 'warn' | 'convert' | 'mismatch';
+
+// multiplier from one unit into another, or null when no mapping covers the pair
+export type UnitConverter = (from?: string, to?: string) => number | null;
 
 export const FUZZY_NAME_THRESHOLD = 0.7;
 
@@ -119,15 +122,35 @@ export function normalizeUnits(units?: string): string {
   return alias ?? compact;
 }
 
-export function unitsCompatibility(a?: string, b?: string): UnitsCompatibility {
+/**
+ * Converter over user unit mappings: each pair works in both directions, pairs never chain,
+ * incomplete and non-positive factors are ignored.
+ */
+export function buildUnitConverter(mappings: UnitMapping[]): UnitConverter {
+  const factors = new Map<string, number>();
+  for (const {from, factor, to} of mappings) {
+    const [a, b] = [normalizeUnits(from), normalizeUnits(to)];
+    if (!a || !b || a === b || !Number.isFinite(factor) || factor <= 0)
+      continue;
+    factors.set(`${a}\u0000${b}`, factor);
+    factors.set(`${b}\u0000${a}`, 1 / factor);
+  }
+  return (from, to) => factors.get(`${normalizeUnits(from)}\u0000${normalizeUnits(to)}`) ?? null;
+}
+
+export function unitsCompatibility(a?: string, b?: string, convert?: UnitConverter): UnitsCompatibility {
   const ua = normalizeUnits(a);
   const ub = normalizeUnits(b);
   if (ua === ub)
     return 'match';
   if (!ua || !ub)
     return 'warn';
-  return 'mismatch';
+  return convert?.(ua, ub) != null ? 'convert' : 'mismatch';
 }
+
+// multiplier from `units` into `targetUnits`, omitted when no conversion is involved
+const conversionFactor = (units?: string, targetUnits?: string, convert?: UnitConverter) =>
+  unitsCompatibility(units, targetUnits, convert) === 'convert' ? convert!(units, targetUnits)! : undefined;
 
 interface ClusterItem<P> {
   entryId: string;
@@ -151,6 +174,7 @@ interface Cluster<P> {
 
 function bestCluster<P>(
   clusters: Cluster<P>[], item: ClusterItem<P>, allowFuzzy: boolean, aliases?: Map<string, number>,
+  convert?: UnitConverter,
 ): {cluster: Cluster<P>, confidence: MatchConfidence} | null {
   let best: {cluster: Cluster<P>, confidence: MatchConfidence, score: number} | null = null;
   for (const cluster of clusters) {
@@ -159,7 +183,7 @@ function bestCluster<P>(
     const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
     if (!confidence || (confidence === 'fuzzy' && !allowFuzzy))
       continue;
-    if (unitsCompatibility(cluster.items[0].units, item.units) === 'mismatch')
+    if (unitsCompatibility(cluster.items[0].units, item.units, convert) === 'mismatch')
       continue;
     const seedIndex = cluster.items[0].indexColumnName;
     if (seedIndex && item.indexColumnName &&
@@ -183,10 +207,12 @@ function addToCluster<P>(cluster: Cluster<P>, item: ClusterItem<P>, confidence: 
     cluster.unitsWarning = true;
 }
 
-function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>): Cluster<P>[] {
+function clusterByName<P>(
+  items: ClusterItem<P>[], aliases?: Map<string, number>, convert?: UnitConverter,
+): Cluster<P>[] {
   const clusters: Cluster<P>[] = [];
   for (const item of items) {
-    const best = bestCluster(clusters, item, false, aliases);
+    const best = bestCluster(clusters, item, false, aliases, convert);
     if (best) {
       addToCluster(best.cluster, item, best.confidence);
     } else {
@@ -206,7 +232,7 @@ function clusterByName<P>(items: ClusterItem<P>[], aliases?: Map<string, number>
     const position = clusters.indexOf(lone);
     const candidates = clusters.filter((cluster, i) =>
       i < position || (i > position && cluster.items.length > 1));
-    const best = bestCluster(candidates, lone.items[0], true, aliases);
+    const best = bestCluster(candidates, lone.items[0], true, aliases, convert);
     if (best) {
       addToCluster(best.cluster, lone.items[0], best.confidence);
       clusters.splice(clusters.indexOf(lone), 1);
@@ -228,7 +254,7 @@ function dedupeTargetKeys<T extends TargetBase>(targets: T[]): T[] {
 
 /** Groups numeric scalars across entries into candidate targets (coverage >= 2). */
 export function matchScalarTargets(
-  entries: ComparisonEntryNodes[], aliases?: Map<string, number>,
+  entries: ComparisonEntryNodes[], aliases?: Map<string, number>, convert?: UnitConverter,
 ): ScalarTarget[] {
   const items: ClusterItem<ScalarBinding>[] = [];
   for (const entry of entries) {
@@ -252,7 +278,7 @@ export function matchScalarTargets(
       });
     }
   }
-  return dedupeTargetKeys(clusterByName(items, aliases)
+  return dedupeTargetKeys(clusterByName(items, aliases, convert)
     .filter((cluster) => cluster.entryIds.size >= 2)
     .map((cluster) => ({
       kind: 'scalar' as const,
@@ -260,7 +286,10 @@ export function matchScalarTargets(
       displayName: cluster.canonicalName,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
-      bindings: cluster.items.map((item) => item.payload),
+      bindings: cluster.items.map((item) => {
+        const factor = conversionFactor(item.units, cluster.items[0].units, convert);
+        return factor == null ? item.payload : {...item.payload, factor};
+      }),
       coverage: cluster.entryIds.size,
       total: entries.length,
     })));
@@ -283,6 +312,7 @@ export function matchColumnTargets(
   splitColumns?: Map<string, Map<string, string>>,
   overrides?: CandidateOverrides,
   aliases?: Map<string, number>,
+  convert?: UnitConverter,
 ): ColumnTarget[] {
   const items: ClusterItem<ColumnBinding>[] = [];
   for (const entry of entries) {
@@ -316,7 +346,7 @@ export function matchColumnTargets(
     }
   }
 
-  const withCandidates = clusterByName(items, aliases).map((cluster) => {
+  const withCandidates = clusterByName(items, aliases, convert).map((cluster) => {
     const members = new Set(cluster.items);
     const seed = cluster.items[0];
     const candidates: ColumnCandidate[] = [];
@@ -324,9 +354,10 @@ export function matchColumnTargets(
       const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
       if (!confidence)
         continue;
-      const units = unitsCompatibility(seed.units, item.units);
+      const units = unitsCompatibility(seed.units, item.units, convert);
       if (units === 'mismatch')
         continue;
+      const factor = conversionFactor(item.units, seed.units, convert);
       if (seed.indexColumnName && item.indexColumnName &&
         !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
         continue;
@@ -334,7 +365,7 @@ export function matchColumnTargets(
       // raw items join every cluster whose name they share (up to normalization) — but a
       // fuzzy guess is not confident enough to become the run's pick by default
       candidates.push({
-        binding: item.payload,
+        binding: factor == null ? item.payload : {...item.payload, factor},
         confidence,
         unitsWarn: units === 'warn',
         auto,

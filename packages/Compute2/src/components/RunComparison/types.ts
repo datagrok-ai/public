@@ -65,6 +65,8 @@ export interface ScalarBinding {
   friendlyPath?: string;
   units?: string;
   value: number | null;
+  // multiplier into the target's units, set when a unit mapping converts this binding
+  factor?: number;
 }
 
 export interface ColumnBinding {
@@ -76,7 +78,20 @@ export interface ColumnBinding {
   units?: string;
   indexColumnName: string;
   splitColumnName?: string;
+  // multiplier into the target's units, set when a unit mapping converts this binding
+  factor?: number;
 }
+
+// 1 `from` = `factor` `to`; applies both ways
+export interface UnitMapping {
+  from: string;
+  factor: number;
+  to: string;
+}
+
+// a value in a binding's own units, in its target's units
+export const toTargetUnits = <T, >(value: T, factor?: number): T | number =>
+  factor == null || (typeof value !== 'number' && typeof value !== 'bigint') ? value : Number(value) * factor;
 
 export interface TargetBase {
   key: string;

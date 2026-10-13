@@ -13,10 +13,12 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
-  ComparisonEntry, EntrySourceKind, NameMapping, RUN_COLUMN, candidateId,
+  ComparisonEntry, EntrySourceKind, NameMapping, UnitMapping, RUN_COLUMN, candidateId,
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
-import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matching';
+import {
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, normalizeUnits,
+} from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
@@ -216,13 +218,16 @@ export const RunComparison = Vue.defineComponent({
 
     const nameMappings = Vue.ref<NameMapping[]>([]);
     const aliasGroups = Vue.computed(() => buildAliasGroups(nameMappings.value));
+    const unitMappings = Vue.ref<UnitMapping[]>([]);
+    const unitConverter = Vue.computed(() => buildUnitConverter(unitMappings.value));
+    const mappingCount = Vue.computed(() => nameMappings.value.length + unitMappings.value.length);
 
     const targets = Vue.computed<ComparisonTarget[]>(() => {
       const nodes = entries.value.map((entry) => entry.nodes);
       return [
-        ...matchScalarTargets(nodes, aliasGroups.value),
+        ...matchScalarTargets(nodes, aliasGroups.value, unitConverter.value),
         ...matchColumnTargets(nodes, indexColumnsMap.value, splitColumnsMap.value, candidateOverrides.value,
-          aliasGroups.value),
+          aliasGroups.value, unitConverter.value),
       ].sort((a, b) => a.kind !== b.kind ?
         (a.kind === 'scalar' ? -1 : 1) :
         a.displayName.localeCompare(b.displayName));
@@ -416,37 +421,72 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    const editNameMappings = () => {
-      const rows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
-      const list = ui.divV([], {style: {gap: '4px'}});
-      const addRow = (from = '', to = '') => {
-        const fromInput = ui.input.string('', {value: from});
-        const toInput = ui.input.string('', {value: to});
-        (fromInput.input as HTMLInputElement).placeholder = 'name';
-        (toInput.input as HTMLInputElement).placeholder = 'same as';
-        const row = {from: fromInput, to: toInput};
-        rows.push(row);
-        const rowDiv = ui.divH([fromInput.root, toInput.root, ui.icons.delete(() => {
-          rows.splice(rows.indexOf(row), 1);
-          rowDiv.remove();
-        }, 'Remove mapping')], {style: {alignItems: 'center', gap: '6px'}});
-        list.append(rowDiv);
+    const editMappings = () => {
+      const nameRows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
+      const unitRows: {
+        from: DG.InputBase<string>, factor: DG.InputBase<number | null>, to: DG.InputBase<string>,
+      }[] = [];
+      const nameList = ui.divV([], 'c2-mapping-list');
+      const unitList = ui.divV([], 'c2-mapping-list');
+      const removable = <T, >(rows: T[], row: T, rowDiv: HTMLElement) => ui.icons.delete(() => {
+        rows.splice(rows.indexOf(row), 1);
+        rowDiv.remove();
+      }, 'Remove mapping');
+      const addNameRow = (from = '', to = '') => {
+        const row = {from: ui.input.string('', {value: from}), to: ui.input.string('', {value: to})};
+        (row.from.input as HTMLInputElement).placeholder = 'name';
+        (row.to.input as HTMLInputElement).placeholder = 'same as';
+        nameRows.push(row);
+        const rowDiv = ui.divH([row.from.root, row.to.root], 'c2-mapping-row');
+        rowDiv.append(removable(nameRows, row, rowDiv));
+        nameList.append(rowDiv);
+      };
+      const addUnitRow = (from = '', factor?: number, to = '') => {
+        const row = {
+          from: ui.input.string('', {value: from}),
+          factor: ui.input.float('', {value: factor}),
+          to: ui.input.string('', {value: to}),
+        };
+        (row.from.input as HTMLInputElement).placeholder = 'units';
+        (row.factor.input as HTMLInputElement).placeholder = 'factor';
+        (row.to.input as HTMLInputElement).placeholder = 'units';
+        row.from.root.classList.add('c2-mapping-unit');
+        row.factor.root.classList.add('c2-mapping-factor');
+        row.to.root.classList.add('c2-mapping-unit');
+        unitRows.push(row);
+        const rowDiv = ui.divH([ui.divText('1'), row.from.root, ui.divText('='), row.factor.root, row.to.root],
+          'c2-mapping-row');
+        rowDiv.append(removable(unitRows, row, rowDiv));
+        unitList.append(rowDiv);
       };
       for (const {from, to} of nameMappings.value)
-        addRow(from, to);
-      if (rows.length === 0)
-        addRow();
-      ui.dialog('Name mappings')
-        .add(ui.divText('Mapped names match as the same value, ignoring case and separators.',
-          {style: {color: 'var(--grey-4)'}}))
-        .add(list)
-        .add(ui.button('Add', () => addRow()))
+        addNameRow(from, to);
+      for (const {from, factor, to} of unitMappings.value)
+        addUnitRow(from, factor, to);
+      if (nameRows.length === 0)
+        addNameRow();
+      if (unitRows.length === 0)
+        addUnitRow();
+      const section = (title: string, hint: string, list: HTMLElement, onAdd: () => void) => ui.divV([
+        ui.divH([ui.divText(title, 'c2-mapping-title'), ui.divText(hint, 'c2-mapping-hint')], 'c2-mapping-header'),
+        list,
+        ui.button('Add', onAdd),
+      ], 'c2-mapping-section');
+      ui.dialog('Mappings')
+        .add(section('Names', 'Mapped names match as the same value, ignoring case and separators.',
+          nameList, () => addNameRow()))
+        .add(section('Units', 'Values in one unit are multiplied into the other; works both ways.',
+          unitList, () => addUnitRow()))
         .onOK(() => {
-          nameMappings.value = rows
+          nameMappings.value = nameRows
             .map((row) => ({from: row.from.value.trim(), to: row.to.value.trim()}))
             .filter((row) => row.from && row.to);
+          unitMappings.value = unitRows
+            .map((row) => ({from: row.from.value.trim(), factor: row.factor.value ?? NaN, to: row.to.value.trim()}))
+            .filter((row) => row.from && row.to && normalizeUnits(row.from) !== normalizeUnits(row.to) &&
+              Number.isFinite(row.factor) && row.factor > 0);
         })
-        .show({center: true});
+        .show({center: true, width: 520});
     };
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
@@ -796,12 +836,12 @@ export const RunComparison = Vue.defineComponent({
               />
             }
             <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-              <span class='c2-comparison-link' onClick={editNameMappings}>
-                <IconFA name='exchange-alt' tooltip='Treat differently named values as the same quantity'/>
-                <span>Name mappings...</span>
+              <span class='c2-comparison-link' onClick={editMappings}>
+                <IconFA name='exchange-alt' tooltip='Names that mean the same value, and unit conversion factors'/>
+                <span>Mappings...</span>
               </span>
-              { nameMappings.value.length > 0 &&
-                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{nameMappings.value.length}</span> }
+              { mappingCount.value > 0 &&
+                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{mappingCount.value}</span> }
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
-import {matchScalarTargets, matchColumnTargets} from '../components/RunComparison/matching';
+import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
 import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
@@ -653,5 +653,28 @@ category('RunComparison: selection gaps', () => {
     const y = targets.find((t) => t.displayName === 'y')!;
     expectArray(selectionGaps([x, y]).get(x.key)!, ['c']);
     expectArray(selectionGaps([y, x]).get(x.key)!, ['c']);
+  });
+});
+
+category('RunComparison: equal values in mapped units', () => {
+  test('converted scalars compare equal in the target units', async () => {
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}]);
+    const [target] = matchScalarTargets([
+      makeEntry('a', [{name: 'P', units: 'bar', value: 1}]), makeEntry('b', [{name: 'P', units: 'kPa', value: 100}]),
+    ], undefined, convert);
+    expect(isTargetEqualAcrossRuns(target, () => undefined), true);
+  });
+
+  test('converted columns compare equal in the target units', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
+    const profile = (units: string) => ({path: 'profile', columns: [{name: 'Time'}, {name: 'Biomass', units}]});
+    const entries = [makeEntry('a', [], [profile('g/L')]), makeEntry('b', [], [profile('mg/L')])];
+    const indexes = indexMap({a: {profile: 'Time'}, b: {profile: 'Time'}});
+    const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
+    const data: Record<string, Record<string, unknown[]>> = {
+      a: {Time: [0, 1], Biomass: [0.1, 2]},
+      b: {Time: [0, 1], Biomass: [100, 2000]},
+    };
+    expect(isTargetEqualAcrossRuns(target, (entryId, _path, column) => data[entryId][column]), true);
   });
 });

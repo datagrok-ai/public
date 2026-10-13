@@ -2,7 +2,7 @@ import {category, test, expect, expectFloat, expectArray} from '@datagrok-librar
 import {isNumericType} from '../components/RunComparison/types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, normalizeUnits,
-  matchScalarTargets, matchColumnTargets, buildAliasGroups, FUZZY_NAME_THRESHOLD,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
@@ -598,5 +598,59 @@ category('RunComparison: unit spelling', () => {
     expect(normalizeUnits('constructor'), 'constructor');
     expect(unitsCompatibility('seconds', 's'), 'match');
     expect(unitsCompatibility('m', 'min'), 'mismatch');
+  });
+});
+
+category('RunComparison: unit mappings', () => {
+  const pressure = (units: string, value: number) => [{name: 'P', units, value}];
+
+  test('converter works both ways, through spelling rules, and does not chain', async () => {
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}, {from: 'kPa', factor: 1000, to: 'Pa'}]);
+    expectFloat(convert('bar', 'kPa')!, 100);
+    expectFloat(convert('kPa', 'bar')!, 0.01);
+    expectFloat(convert(' k Pa', 'Pa')!, 1000);
+    expect(convert('bar', 'Pa'), null);
+    expect(convert('bar', 'psi'), null);
+    expect(convert('bar', undefined), null);
+  });
+
+  test('converter skips incomplete, same-unit and non-positive mappings', async () => {
+    const convert = buildUnitConverter([
+      {from: 'm', factor: 0, to: 'cm'}, {from: 'm', factor: NaN, to: 'mm'}, {from: '', factor: 2, to: 'x'},
+      {from: 'g/l', factor: 5, to: 'g/L'},
+    ]);
+    expect(convert('m', 'cm'), null);
+    expect(convert('m', 'mm'), null);
+    expect(convert('g/l', 'g/L'), null);
+  });
+
+  test('unitsCompatibility reports convertible units', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
+    expect(unitsCompatibility('mg/L', 'g/L', convert), 'convert');
+    expect(unitsCompatibility('mg/L', 'g/L'), 'mismatch');
+    expect(unitsCompatibility('g/L', 'g/l', convert), 'match');
+  });
+
+  test('a mapped scalar joins the target with the factor into the first run\'s units', async () => {
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}]);
+    expect(matchScalarTargets([makeEntry('a', pressure('bar', 1)), makeEntry('b', pressure('kPa', 100))]).length, 0);
+    const targets = matchScalarTargets([
+      makeEntry('a', pressure('bar', 1)), makeEntry('b', pressure('kPa', 100)),
+    ], undefined, convert);
+    expect(targets.length, 1);
+    expectFloat(targets[0].bindings.find((b) => b.entryId === 'b')!.factor!, 0.01);
+    expect(targets[0].bindings.find((b) => b.entryId === 'a')!.factor == null, true);
+  });
+
+  test('a mapped column is a candidate with the factor into the seed units', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
+    const table = (units: string) => ({path: 't', columns: [{name: 'time'}, {name: 'biomass', units}]});
+    const entries = [makeEntry('a', [], [table('g/L')]), makeEntry('b', [], [table('mg/L')])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    expect(matchColumnTargets(entries, indexes).length, 0);
+    const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
+    expect(target.bindings.length, 2);
+    expectFloat(target.bindings.find((b) => b.entryId === 'b')!.factor!, 0.001);
+    expect(target.candidates.find((c) => c.binding.entryId === 'b')!.unitsWarn, false);
   });
 });

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built
 * Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours
 * Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
 * Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first

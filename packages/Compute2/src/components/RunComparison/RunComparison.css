@@ -83,3 +83,13 @@
     cursor: pointer;
     white-space: nowrap;
 }
+
+/* Mappings dialog */
+.c2-mapping-section { gap: 6px; padding-bottom: 12px; }
+.c2-mapping-header { align-items: baseline; gap: 8px; }
+.c2-mapping-title { font-weight: 500; }
+.c2-mapping-hint { color: var(--grey-4); }
+.c2-mapping-list { gap: 4px; }
+.c2-mapping-row { align-items: center; gap: 6px; }
+.c2-mapping-unit .ui-input-editor { width: 90px; }
+.c2-mapping-factor .ui-input-editor { width: 90px; text-align: right; }

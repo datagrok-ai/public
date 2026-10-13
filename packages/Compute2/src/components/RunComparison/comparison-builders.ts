@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {
   ComparisonEntry, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
-  TimeUnit, TIME_UNIT_MS, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit} from './selection';
 
@@ -41,7 +41,8 @@ export function buildScalarComparison(
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, ordered.map((entry) => entry.name)),
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.friendlyPath ?? b.path)),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName, toFloatValues(bindings.map((b) => b.value))),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName,
+      toFloatValues(bindings.map((b) => toTargetUnits(b.value, b.factor)))),
   ]);
   chartDf.name = `Comparison: ${target.displayName}`;
   return {chartDf, valueColumnName};
@@ -75,8 +76,10 @@ export function buildMultiScalarComparison(
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, participating.map((entry) => entry.name)),
     ...targets.map((target) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, labels.get(target.key)!,
-      toFloatValues(participating.map((entry) =>
-        target.bindings.find((b) => b.entryId === entry.id)?.value ?? null)))),
+      toFloatValues(participating.map((entry) => {
+        const binding = target.bindings.find((b) => b.entryId === entry.id);
+        return binding ? toTargetUnits(binding.value, binding.factor) : null;
+      })))),
   ]);
   chartDf.name = 'Comparison: multiple values';
   return {chartDf, valueColumnNames};
@@ -291,7 +294,9 @@ export function buildMultiColumnComparison(
     for (const target of targets) {
       const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
       const usable = targetBinding != null && targetBinding.tablePath === binding.tablePath;
-      const values = usable ? df.getCol(targetBinding.columnName).toList() : index.map(() => null);
+      const values = usable ?
+        df.getCol(targetBinding.columnName).toList().map((v) => toTargetUnits(v, targetBinding.factor)) :
+        index.map(() => null);
       longValues.get(labels.get(target.key)!)!.push(...values);
     }
   }
