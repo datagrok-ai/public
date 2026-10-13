@@ -78,11 +78,14 @@ export async function withRestrictedUser<T>(prefix: string,
     if (user?.id == null)
       console.log(`no test user ${login} to block`);
     else {
+      // The route takes {user, transfers}. It answers a failure with 200 and an ApiError body,
+      // so the status alone does not say the user was blocked.
       const blocked = await fetch(`${grok.dapi.root}/users/block`, {
         method: 'POST', credentials: 'include', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({'#type': 'User', 'id': user.id, 'login': login}),
+        body: JSON.stringify({user: {'#type': 'User', 'id': user.id, 'login': login}}),
       });
-      expect(blocked.ok, true, `test user ${login} not blocked: ${blocked.status}`);
+      const reply = await blocked.text();
+      expect(blocked.ok && !reply.includes('ApiError'), true, `test user ${login} not blocked: ${blocked.status} ${reply.slice(0, 160)}`);
     }
   }
 }
