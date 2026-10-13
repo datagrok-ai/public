@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
+* Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
 * Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
 * Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
 * Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
