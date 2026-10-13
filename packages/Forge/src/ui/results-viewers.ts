@@ -373,35 +373,38 @@ function classifierPanels(shown: Shown, positiveClass: string | undefined): void
     showStackSelector: false, showCategorySelector: false, showValueSelector: false}));
 }
 
+const FPR = 'False Positive Rate';
+const TPR = 'True Positive Rate';
+
 /** **ROC Curve** of [shown]'s scores: a scatter plot over Forge's own frame of the curve's points (`Threshold`,
- * `FPR`, `TPR`, one row per threshold of {@link ROC_THRESHOLDS}) drawn as a line, with the dashed non-informative
- * baseline.
+ * {@link FPR}, {@link TPR}, one row per threshold of {@link ROC_THRESHOLDS}) drawn as a line, with the dashed
+ * non-informative baseline.
  * Nothing but the scores changes it: a retrain refills the frame ({@link fillRoc}), a cutoff moves its current row
  * ({@link markRoc}). */
 function rocPanel(shown: Shown, positiveClass: string | undefined): void {
   if (shown.score === undefined)
     return;
   const frame = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'Threshold', [...ROC_THRESHOLDS]),
-    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'FPR', ROC_THRESHOLDS.length),
-    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, 'TPR', ROC_THRESHOLDS.length)]);
+    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, FPR, ROC_THRESHOLDS.length),
+    DG.Column.fromType(DG.COLUMN_TYPE.FLOAT, TPR, ROC_THRESHOLDS.length)]);
   fillRoc(frame, shown.score, shown, positiveClass);
-  frame.meta.formulaLines.addLine({title: 'Non-informative baseline', formula: `\${TPR} = \${FPR}`, width: 1,
+  frame.meta.formulaLines.addLine({title: 'Non-informative baseline', formula: `\${${TPR}} = \${${FPR}}`, width: 1,
     style: 'dashed', min: 0, max: 1});
-  const viewer = DG.Viewer.scatterPlot(frame, {xColumnName: 'FPR', yColumnName: 'TPR', linesOrderColumnName: 'FPR',
-    linesWidth: 5, markerType: 'dot', showCurrentPoint: true, showXSelector: false, showYSelector: false,
-    showSizeSelector: false, showColorSelector: false});
+  const viewer = DG.Viewer.scatterPlot(frame, {xColumnName: FPR, yColumnName: TPR, linesOrderColumnName: FPR,
+    linesWidth: 5, markerType: 'dot', showCurrentPoint: true, showXAxis: true, showYAxis: true,
+    autoLayout: false, showXSelector: true, showYSelector: true, showSizeSelector: false, showColorSelector: false});
   const title = ui.span([PANEL_TEXTS.rocCurve[0]]);
   shown.panels.set('rocCurve', ui.divV([resultsTitle('rocCurve', '', title), viewer.root], 'forge-results-panel'));
   shown.viewers.set('rocCurve', viewer);
   shown.roc = {frame, title};
 }
 
-/** The `FPR` and `TPR` of [frame] from [score] against [shown]'s target, in place. */
+/** The {@link FPR} and {@link TPR} of [frame] from [score] against [shown]'s target, in place. */
 function fillRoc(frame: DG.DataFrame, score: DG.Column, {target, classes}: Shown,
   positiveClass: string | undefined): void {
   const {fpr, tpr} = rocCurveOf(target, score, positiveClass ?? classes[0]);
-  frame.getCol('FPR').init((i) => fpr[i]).fireValuesChanged();
-  frame.getCol('TPR').init((i) => tpr[i]).fireValuesChanged();
+  frame.getCol(FPR).init((i) => fpr[i]).fireValuesChanged();
+  frame.getCol(TPR).init((i) => tpr[i]).fireValuesChanged();
 }
 
 /** **ROC Curve**'s title with the AUC-ROC of the shown scores (the value of **Performance**, the trapezoid over every

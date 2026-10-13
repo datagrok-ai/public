@@ -1116,8 +1116,10 @@ async function expectRocCurve(): Promise<void> {
     const roc = panelViewer(view, rocTitle());
     const frame = roc.dataFrame;
     expect(roc.type, DG.VIEWER.SCATTER_PLOT);
-    expectArray([roc.props.xColumnName, roc.props.yColumnName, roc.props.linesOrderColumnName], ['FPR', 'TPR', 'FPR']);
-    expectArray(frame.columns.names(), ['Threshold', 'FPR', 'TPR']);
+    const [fprName, tprName] = ['False Positive Rate', 'True Positive Rate'];
+    expectArray([roc.props.xColumnName, roc.props.yColumnName, roc.props.linesOrderColumnName],
+      [fprName, tprName, fprName]);
+    expectArray(frame.columns.names(), ['Threshold', fprName, tprName]);
     expect(frame.rowCount, 101);
     expect(view.resultsPane.frames.some((f) => f.dart === frame.dart), false, 'ROC Curve is on the preview frame');
     expect(frame.meta.formulaLines.items.some((line) => line.title === 'Non-informative baseline'), true,
@@ -1142,8 +1144,8 @@ async function expectRocCurve(): Promise<void> {
     expect(frame.currentRowIdx, 90, 'The mark did not move to the cutoff 0.9');
     expect(content('Confusions') === confusions, true, 'The cutoff rebuilt Confusions');
 
-    const fpr = frame.getCol('FPR').toList();
-    const tpr = frame.getCol('TPR').toList();
+    const fpr = frame.getCol(fprName).toList();
+    const tpr = frame.getCol(tprName).toList();
     const before = view.lastTraining;
     if (before?.engine.name === 'XGBoost')
       setHyperparameter(view, 'iterations', 1);
@@ -1156,8 +1158,8 @@ async function expectRocCurve(): Promise<void> {
     expect(retrained.root === roc.root && retrained.dataFrame.dart === frame.dart && frame.rowCount === 101, true,
       'The retrain rebuilt ROC Curve or its frame');
     expect(rocTitle(), aucTitle());
-    expect(frame.getCol('FPR').toList().some((v, i) => v !== fpr[i]) ||
-      frame.getCol('TPR').toList().some((v, i) => v !== tpr[i]), true, 'The retrain left the curve as it was');
+    expect(frame.getCol(fprName).toList().some((v, i) => v !== fpr[i]) ||
+      frame.getCol(tprName).toList().some((v, i) => v !== tpr[i]), true, 'The retrain left the curve as it was');
     expect(frame.currentRowIdx, 90, 'The retrain moved the mark');
   } finally {
     await closeTrainView(view, [iris]);
