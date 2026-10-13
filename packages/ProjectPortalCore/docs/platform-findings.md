@@ -137,14 +137,17 @@ Each says what is missing, what the portal does instead, and what the platform w
    the people asked are not told; an admin's question tells them. A user cannot make someone else watch a chat
    either. Need: @mentions that notify in the platform, or a notification API that a package may call for the
    members of a portfolio's groups (item 10).
-42. **Anyone who reads a chat can rewrite or delete any comment in it.** Posting a comment with an existing id
-   replaces its text and keeps its author (proved: a viewer rewrote the admin's comment); `DELETE
-   /chats/comments/{id}` checks nothing. A discussion that a decision cites can be changed after the decision. The
-   portal offers no edit or delete, and a decision cites the thread's address, not a copy. Need: edit and delete by
-   the author (and admins) only, and an edit history.
-43. **A post is not checked against the chat's entities.** Reads are filtered by View on an attached entity, but a
-   post only checks a private chat's group: a user who knows a public chat's id may post to it without seeing it.
-   Ids are not listed to such a user, so the risk is small. Need: posting checked like reading.
+42. **Anyone who reads a chat can rewrite any comment in it.** Posting a comment with an existing id
+   replaces its text and keeps its author and date (proved again 2026-10-12: a second user rewrote the first's
+   comment). `CommentsRepository.save` refuses an edit by another author, but `postComment` copies the stored author
+   onto the incoming comment first, so the check never fires. Delete is guarded (author, or `DELETE_COMMENTS`;
+   the 10-11 note that it checks nothing was wrong). A discussion that a decision cites can be changed after the
+   decision. The portal offers no edit or delete, and a decision cites the thread's address, not a copy. Need: edit
+   by the author only, and an edit history. Filed core#768.
+43. **With a chat's id, a user who cannot see its entity can read, post to and edit it.** Listing filters by View on
+   an attached entity, but reading comments and posting check only a private chat's group (proved 2026-10-12 on a
+   project the second user could not open). Ids are not listed to such a user, so it needs a leaked id. Need:
+   reading and posting checked like listing. Filed core#769.
 44. **A comment cannot be back-dated.** The server sets `posted` to now. The example threads are dated when seeded,
    not in the example history's past. Need: an admin import with a date (as the gate log allows).
 45. **A chat on a domain row needs the row promoted.** Criteria, runs and documents are domain rows; a chat on one
