@@ -1,8 +1,8 @@
 /// `grok s observe` (alias `grok s o`): problems, problem rules, logger settings, errors, the timeline and cloud logs,
 /// over `/problems`, `/admin/plugins/<key>/settings`, `/alerts/Test_rules`, `/log`, `/admin/metrics`, `/log/timeline`,
-/// `/log/cloud/*` and `/log/archive/*`.
+/// `/log/cloud/*`, `/log/archive/*` and `/docker/containers`.
 import * as fs from 'fs';
-import {NodeDapi, buildQuery, tryParseJson} from '../utils/node-dapi';
+import {NodeDapi, UUID_RE, buildQuery, tryParseJson} from '../utils/node-dapi';
 import {printOutput, OutputFormat} from '../utils/server-output';
 import {ALL_USERS} from '../utils/migrate/walker';
 
@@ -10,7 +10,7 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
 
   problems list [--status <s>] [--state <s>] [--alert-status <s>] [--kind <k>] [--key <k>] [--since 7d] [--limit 100]
                                        Comma lists or all; --alert-status open lists the open alerts
-  problems get <id|kind:key>
+  problems get <id|kind:key>           One field per line, details by path
   problems history <id|kind:key> [--limit 50]
   problems status <id|kind:key> --data '{"status": "muted", "reason": "...", "until": "<ISO>"}' | --json body.json
   problems ack <id|kind:key> --reason <text>
@@ -25,6 +25,14 @@ export const OBSERVE_USAGE = `Usage: grok s observe <command> <verb> [args]     
   logger history [--limit 20]          The log-settings-changed audit records, with each change's diff
   errors top [--since 24h | --date "this week" | --from <ISO> [--to <ISO>]] [--by message|signature]
              [--package <name>] [--user <login>] [--source <s>] [--limit 10]
+                                       Ranked by distinct users, so errors nobody saw (scheduler, health
+                                       probes) come last: narrow those with --source server
+  errors get <signature|problem> [--since 7d] [--limit 50]
+                                       Each occurrence of an error (a signature from errors top, or the
+                                       id or kind:key of its problem): time, user, function, session
+  logs container [<name|id> [--since 1h | --from <ISO> [--to <ISO>]] [--grep <regex>] [--limit 20000]]
+                                       A docker container's log lines (its latest --limit, then the
+                                       window and --grep); no name, the containers and their status
   timeline --session <id> [--from <ISO|-15m>] [--to <ISO>] [--limit 500]
                                        A session's events and requests in a window: no --from, the last
                                        15 min; --to defaults to --from + 10 min, at most 2 h
@@ -102,6 +110,17 @@ function readBody(argv: any): any {
 
 const iso = (value: any, flag: string) => value === undefined ? undefined : parseTime(value, flag).toISOString();
 
+/** A record as `field, value` rows, nested objects by dotted path, so a table shows every value in full. */
+export function fieldRows(record: any, prefix: string = ''): {field: string, value: any}[] {
+  const rows: {field: string, value: any}[] = [];
+  for (const [key, value] of Object.entries(record ?? {}))
+    if (value !== null && typeof value === 'object' && !Array.isArray(value))
+      rows.push(...fieldRows(value, `${prefix}${key}.`));
+    else
+      rows.push({field: `${prefix}${key}`, value});
+  return rows;
+}
+
 export async function handleObserve(dapi: NodeDapi, command: string | undefined, verb: string | undefined,
                                     rest: string[], argv: any, output: OutputFormat): Promise<boolean> {
   // A `:` cannot pass through a route parameter behind the proxy, so kind:key is looked up by the list's filters.
@@ -151,7 +170,7 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
       const problem = await dapi.problems.find(id!);
       if (!problem)
         throw new Error(`No problem '${rest[0]}'`);
-      printOutput(problem, output);
+      printOutput(output === 'table' ? fieldRows(problem) : problem, output);
       return true;
     }
     case 'problems history':
@@ -213,7 +232,38 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
           : iso(argv.from, '--from'),
         date_end: iso(argv.to, '--to'), date: argv.date, limit: argv.limit, errors_by: argv.by,
         package: argv.package, user: argv.user, source: argv.source})}`);
-      printOutput(output === 'json' ? metrics?.errors : metrics?.errors?.top ?? [], output);
+      // The server answers the top `limit` of every source, in the global order.
+      const top = (metrics?.errors?.top ?? []).slice(0, Number(argv.limit ?? 10));
+      printOutput(output === 'json' ? {...metrics?.errors, top} : top, output);
+      return true;
+    }
+    case 'errors get': {
+      if (rest[0] === undefined)
+        throw new Error('Usage: grok s observe errors get <signature|problem id|kind:key> [--since 7d] [--limit 50]');
+      const given = String(rest[0]);
+      if (given.includes(':'))
+        await needId();
+      const problem = await dapi.problems.find(id ?? given);
+      const signature = problem ? problem.details?.signatureId : given;
+      if (!signature)
+        throw new Error(`Problem '${given}' is not about an error: it has no signatureId`);
+      // An error with a stack is grouped by its stack hash, one without by its event type (ErrorIncidentProblem).
+      const text = `(eventType.id = "${signature}" or eventType.errorStackTraceHash = "${signature}") and ` +
+        `eventTime > "${new Date(Date.now() - parseDuration(argv.since ?? '7d', '--since')).toISOString()}"`;
+      const events: any[] = await dapi.raw('GET', `/log${buildQuery({text, limit: argv.limit ?? 50, page: 1})}`) ?? [];
+      const logins = new Map<string, string>();
+      for (const e of events)
+        for (const p of e.parameters ?? [])
+          if (p.parameter?.name === 'user' && p.value && !logins.has(p.value))
+            logins.set(p.value, (await dapi.users.find(p.value))?.login ?? p.value);
+      printOutput(events.map((e) => {
+        const params: Record<string, any> = {};
+        for (const p of e.parameters ?? [])
+          params[p.parameter?.name] = p.value;
+        const row = {time: e.eventTime, source: params.source, user: logins.get(params.user) ?? null,
+          function: params.function ?? null, session: e.session?.id ?? null, message: e.description};
+        return output === 'table' ? row : {...row, eventId: e.id, params};
+      }), output);
       return true;
     }
   }
@@ -255,6 +305,8 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
       filter: argv.filter, limit: argv.limit, format: 'json'})}`), output);
     return true;
   }
+  if (verb === 'container')
+    return containerLogs(dapi, rest[0], argv, output);
   if (verb === 'archive' && rest[0] === 'list') {
     let objects: any[] = await dapi.raw('GET', `/log/archive/objects${buildQuery({connection, prefix: argv.prefix,
       limit: argv.limit, format: 'json'})}`) ?? [];
@@ -270,8 +322,53 @@ async function logs(dapi: NodeDapi, verb: string | undefined, rest: string[], ar
       format: 'json'})}`), output);
     return true;
   }
-  throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs archive list [--prefix <p>] | ' +
-    'logs archive read <key> | logs capture [<login|group>] | logs capture stop <login|group>');
+  throw new Error('Usage: grok s observe logs cloud [--group <g>] ... | logs container [<name|id>] | ' +
+    'logs archive list [--prefix <p>] | logs archive read <key> | logs capture [<login|group>] | ' +
+    'logs capture stop <login|group>');
+}
+
+/// `logs container`: the server only cuts a container's log by line count, so the window and --grep apply here.
+async function containerLogs(dapi: NodeDapi, name: string | undefined, argv: any,
+                             output: OutputFormat): Promise<boolean> {
+  if (name === undefined) {
+    const all: any[] = await dapi.raw('GET', `/docker/containers${buildQuery({limit: 1000})}`) ?? [];
+    printOutput(all.map((c) => ({id: c.id, name: c.name, status: c.status})), output);
+    return true;
+  }
+  if (argv.since !== undefined && argv.from !== undefined)
+    throw new Error('--since is not used with --from');
+  needFrom(argv);
+  let id = String(name);
+  if (!UUID_RE.test(id)) {
+    const found: any[] = await dapi.raw('GET', `/docker/containers${buildQuery({text: id, limit: 100})}`) ?? [];
+    const container = found.find((c) => c.name === id);
+    if (!container)
+      throw new Error(`No container '${id}'${found.length ? `; similar: ${found.map((c) => c.name).join(', ')}` : ''}`);
+    id = container.id;
+  }
+  const from = argv.from !== undefined ? parseTime(argv.from, '--from').getTime()
+    : argv.since !== undefined ? Date.now() - parseDuration(argv.since, '--since') : -Infinity;
+  const to = argv.to !== undefined ? parseTime(argv.to, '--to').getTime() : Infinity;
+  const grep = argv.grep === undefined ? null : new RegExp(String(argv.grep), 'i');
+  const text = await dapi.raw('GET', `/docker/containers/${id}/logs${buildQuery({limit: argv.limit ?? 20000})}`);
+  // A line without its own timestamp (a stack frame) belongs to the window of the line before it.
+  let inWindow = from === -Infinity && to === Infinity;
+  const lines: string[] = [];
+  for (const line of String(text ?? '').split('\n')) {
+    const stamp = /^(\d{4}-\d{2}-\d{2}T[\d:]{8})(?:\.\d+)?(Z|[+-]\d{2}:\d{2})/.exec(line);
+    if (stamp) {
+      const t = Date.parse(`${stamp[1]}${stamp[2]}`);
+      inWindow = t >= from && t <= to;
+    }
+    if (inWindow && line && (!grep || grep.test(line)))
+      lines.push(line);
+  }
+  if (output === 'json')
+    printOutput(lines, output);
+  else
+    for (const line of lines)
+      console.log(line);
+  return true;
 }
 
 async function loggerSet(dapi: NodeDapi, argv: any, current: any, save: (body: any) => Promise<any>,

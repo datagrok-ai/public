@@ -99,6 +99,62 @@ describe('problems', () => {
     for (const bad of [':x', 'health:', ':', ''])
       await expect(observe('problems', 'get', [bad], {})).rejects.toThrow('Usage');
   });
+
+  it('get prints one field per line in a table, details by path', async () => {
+    const {printed} = await observe('problems', 'get', ['p1'], {},
+      () => ({id: 'p1', details: {error: 'x'.repeat(80), nested: {n: 1}}}), 'table');
+    expect(printed).toContain('x'.repeat(80));
+    expect(printed).toMatch(/details\.nested\.n\s+1/);
+  });
+});
+
+describe('errors', () => {
+  const top = [{message: 'a', source: 'client'}, {message: 'b', source: 'server'}, {message: 'c', source: 'server'}];
+
+  it('top keeps the global top --limit of the per-source answer', async () => {
+    const {printed} = await observe('errors', 'top', [], {limit: 2}, () => ({errors: {top}}));
+    expect(JSON.parse(printed).top.map((e: any) => e.message)).toEqual(['a', 'b']);
+  });
+
+  it('get reads a problem\'s signature and searches both kinds of signature', async () => {
+    const {calls, printed} = await observe('errors', 'get', ['error-incident:sig'], {limit: 5}, (_, path) =>
+      path.startsWith('/problems?') ? [{id: 'p1'}]
+        : path === '/problems/p1' ? {id: 'p1', details: {signatureId: 's-1'}}
+          : path.includes('/users/') ? {login: 'system'}
+            : [{id: 'e1', eventTime: 't', description: 'boom', parameters: [
+              {parameter: {name: 'user'}, value: 'u1'}, {parameter: {name: 'function'}, value: 'Test'}]}]);
+    const search = decodeURIComponent(calls.find((c) => c.path.startsWith('/log?'))!.path);
+    expect(search).toContain('(eventType.id = "s-1" or eventType.errorStackTraceHash = "s-1") and eventTime > "');
+    expect(search).toContain('limit=5');
+    expect(JSON.parse(printed)[0]).toMatchObject({time: 't', user: 'system', function: 'Test', message: 'boom'});
+  });
+
+  it('get refuses a problem that is not about an error', async () => {
+    await expect(observe('errors', 'get', ['p1'], {}, () => ({id: 'p1', details: {}}))).rejects.toThrow('no signatureId');
+  });
+});
+
+describe('logs container', () => {
+  const lines = ['2026-10-13T17:21:14.1+02:00 Kernel started', '  at frame', '2026-10-13T17:25:00.5+02:00 Kernel shutdown',
+    'no stamp at the start'].join('\n');
+
+  it('cuts the window in UTC across the container\'s offset, keeping continuation lines', async () => {
+    const {calls, printed} = await observe('logs', 'container', ['c1'], {from: '2026-10-13T15:21:00', to: '2026-10-13T15:22:00'},
+      (_, path) => path.startsWith('/docker/containers?') ? [{id: 'id-1', name: 'c1'}] : lines, 'table');
+    expect(calls.map((c) => c.path)).toEqual(['/docker/containers?text=c1&limit=100', '/docker/containers/id-1/logs?limit=20000']);
+    expect(printed).toBe('2026-10-13T17:21:14.1+02:00 Kernel started\n  at frame');
+  });
+
+  it('--grep filters the lines', async () => {
+    const {printed} = await observe('logs', 'container', ['8b6f2a1e-0000-4000-8000-000000000001'], {grep: 'shutdown'},
+      () => lines, 'table');
+    expect(printed).toBe('2026-10-13T17:25:00.5+02:00 Kernel shutdown');
+  });
+
+  it('names similar containers when the name does not match', async () => {
+    await expect(observe('logs', 'container', ['py'], {}, () => [{id: 'i', name: 'scripting-python_1'}]))
+      .rejects.toThrow("No container 'py'; similar: scripting-python_1");
+  });
 });
 
 describe('logger set', () => {
