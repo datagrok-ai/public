@@ -21,7 +21,7 @@ export async function andOrControl(page: Page, column: string | null, toggle: bo
     const name = col === null ? 'expression' : col;
     const card = col === null
       ? (document.querySelector('.d4-expression-filter') as HTMLElement | null)?.closest('.d4-filter')
-      : [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+      : [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
         .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent ?? '').trim() === col);
     if (!card) throw new Error(`the panel carries no ${name} card to read its AND/OR control on`);
     const header = card.querySelector('.d4-filter-header');
