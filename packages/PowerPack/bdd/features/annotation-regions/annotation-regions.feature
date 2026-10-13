@@ -12,9 +12,9 @@ Feature: Annotation regions
   opens after a region is drawn and each scenario accepts it with OK; the spec's "PowerPack absent"
   section cannot be translated here. Both the axis annotations group and the viewer's annotation
   property group are called "Annotations", so the claim about the count axis is made about
-  its Add Line, Add Band and Add Region items. Picking one of them is not translated: the platform
-  hides a group's flyout as soon as the pointer leaves the group row, and it takes the item away
-  before the click lands, so no honest gesture reaches it. The count axis is
+  its Add Line, Add Band and Add Region items. Picking one of them, and the line, band or region it
+  adds, is formula-lines-axis-annotations.feature: the axis is right-clicked at its end, away from
+  the column selector in its middle, and the pick walks into the group's flyout. The count axis is
   not claimed about: a right-click there carries the viewer's whole menu, where the viewer's own
   "Annotations" property group has the same name, so the difference cannot be stated honestly at
   the label level. Region hover and click selection are covered by

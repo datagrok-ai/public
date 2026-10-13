@@ -1,7 +1,7 @@
 /* The datasets Bio's features open: the package's own test and sample files on the stand
    (`System:AppData/Bio/...`, published with the package). Platform names (toolbox, grid, ...)
    are reserved; a Bio view's own names go on a context here when a feature needs one. */
-import {dataset} from '@datagrok-libraries/bdd';
+import {dataset, element} from '@datagrok-libraries/bdd';
 
 dataset('filter_FASTA', {path: 'System:AppData/Bio/tests/filter_FASTA.csv', aliases: ['filter-fasta'],
   description: 'one column "fasta" (peptides, fasta notation, 9 sequences + 4 empty cells, 14 rows)'});
@@ -17,5 +17,10 @@ dataset('HELM_sample', {path: 'System:AppData/Bio/samples/HELM.csv', aliases: ['
   description: '540 peptides: HELM (helm notation, multichar monomers), Activity'});
 dataset('MSA_sample', {path: 'System:AppData/Bio/samples/MSA.csv', aliases: ['msa-sample'],
   description: '540 aligned peptides: MSA (separator "/", multichar monomers), Activity'});
+dataset('cyclized', {path: 'System:AppData/SequenceTranslator/samples/cyclized.csv',
+  description: 'SequenceTranslator\'s sample: "seqs", separator sequences with cyclized monomers ("C(1)"), which its notation refiner turns into custom units'});
 dataset('BILN', {path: 'System:AppData/Bio/samples/BILN.csv', aliases: ['biln-sample'],
   description: 'column "biln" (BILN notation: "-" between monomers, "(n,m)" ring bonds, "." between chains) and Activity'});
+
+element('monomer libraries link', {selector: '.d4-link-action[data-source="Bio:Bioinformatics | Manage Monomer Libraries"]',
+  description: 'the "Manage monomer libraries" link of a Macromolecule column\'s Bioinformatics > Manage Monomer Libraries pane: the dialog, or the Manage Monomer Libraries view when one is open'});

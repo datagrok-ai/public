@@ -182,7 +182,9 @@ Feature: The preprocessing options of Train Model, kept by the saved model
     Then the "Apply predictive model" dialog should close
     And a new column "target" should have been added
     And "target" column should have no missing values
-    # Yes adds about 2 for featureA and about 3 for featureB: swapped inputs would swap rows 2 and 3
+    # Yes adds about 2 for featureA and about 3 for featureB: swapped inputs would swap rows 2 and 3, and
+    # one-hot columns named by the category alone (featureA's Yes and featureB's Yes in one column) would
+    # make them equal
     And the "target" cell of row 2 should be displayed as "2.42"
     And the "target" cell of row 3 should be displayed as "3.35"
     And no error or warning balloon should have been shown

@@ -335,7 +335,10 @@ kind('viewer', {
     'legend splitter': '[name="legend-splitter"]',
     'legend inner splitter': '[name="legend-inner-splitter"]',
     'legend close chevron': '[name="icon-hide-corner-legend"]',
-    'legend markers selector': '[name="legend-markers-selector"]',
+    // the legend's one column selector, named after the property it is bound to, as every on-viewer selector
+    'legend markers selector': '[name="legend"] [name^="div-column-combobox-"]',
+    // the date map (year, quarter, …) the markers selector shows beside a datetime column
+    'legend markers map': '[name="legend"] select[name^="input-aggr-selector-"]',
   },
 });
 // an entry of a viewer's legend: "R_ONE" legend item in legend of scatter plot viewer; selected while

@@ -10,6 +10,10 @@ element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('favorites sidebar tab', {selector: '[name="sidebar"] [name="Favorites"]',
+  description: 'the star of the sidebar: it docks the Favorites panel, and closes it while it is shown'});
+element('favorites panel', {selector: '.grok-favorites-pane',
+  description: 'the docked panel the sidebar\'s Favorites opens: the account\'s favorites as a tree, Browse\'s nodes, and a drop target that adds what is dropped on it'});
 element('browse toolbar', {selector: '.grok-browse-icons',
   description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],

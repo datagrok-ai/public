@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Deprotect: Fixed the default Fmoc fragment taking the protected amine's nitrogen with the group (Fmoc-Gly came out as acetic acid, Fmoc-Pro unchanged): its attachment point is now the nitrogen itself, which keeps its hydrogens
 * Substructure filter: Fixed a structure card that stopped filtering after Remove All on another view's panel of the same table: the removed card, deactivated first, kept its peers disabled (Use as filter in that view let every row through)
 * Cluster MCS: A one-molecule cluster's MCS is the molecule itself with its hydrogens: read as a query, its NH hydrogens were dropped (a urazole came out as the triazolinedione)
 * Tests: Added package tests for activity cliffs at the cutoffs 20 and 95, elemental analysis on SMARTS, Chemical Space on an all-empty column, R-groups analyses that find none, BitBIRCH, the similarity matrix and Cluster MCS (`clustering`), the Transform reactions (`Reactions`), the notation round trip over smiles.csv, similarity search on the other fingerprints and the mixture cell renderer; the BDD features they replace keep only their UI gestures

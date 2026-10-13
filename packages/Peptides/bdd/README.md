@@ -43,7 +43,7 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 | `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; Distribution and Selection panes after each |
 | `sar/tooltips` | Cell statistics, cliff glyphs, highlight cleanup, cluster statistics and selection |
 | `sar/mutation-cliffs` | A cliff cell drawn and a cliff-free cell left blank, the position chart drawn and its no-cliffs message, the cluster summary on the MCL clusters |
-| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns |
+| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns; its parameters pane: the inputs a distance needs, a new distance embedding again |
 | `sar/similarity-threshold` | A fresh analysis at threshold 90 on all 647 (GROK-19145) and header selection after it |
 | `sar/export` | Both viewers' invariant-map export, the mutation-cliff export dialog with and without the ID column |
 | `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |

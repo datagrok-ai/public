@@ -257,6 +257,19 @@ export const noProjectOnServer = Given('no project named {string} is on the serv
   await cleanup();
 }, {tier: 'api', description: 'deletes the projects an earlier run left under those names (comma-separated; with their tables and views), and again when the feature ends — for a save made through the Save dialog'});
 
+export const taggedProjectOnServer = Given('a project named {string} tagged {string} is on the server', async (page: Page, name: string, tag: string) => {
+  const cleanup = () => deleteLeftoverProjects(page, [name]);
+  atFeatureEnd(page, cleanup);
+  await cleanup();
+  await page.evaluate(async ([n, t]) => {
+    const project = DG.Project.create();
+    project.name = n;
+    project.tag(t);
+    await grok.dapi.projects.save(project);
+  }, [name, tag] as [string, string]);
+  await expectNamedCount(page, 'projects', 'projects', name, 1);
+}, {tier: 'api', description: 'an empty project saved through the JS API with that entity tag, which a "#tag" search finds; an earlier one of the name goes first, and it is deleted at feature end'});
+
 /* The "user's own" cleanups are for names a feature does not choose — a tutorial dictates them, and
    people who took it by hand saved theirs under the same names: those of other users stay. */
 export const ownProjectGone = Given('the user\'s own project {string} is removed now and at feature end', async (page: Page, name: string) => {
@@ -390,6 +403,14 @@ export const currentViewType = Then('the current view should be a {word} view', 
 export const viewIsCurrent = Then('the {string} view should be current', async (page: Page, name: string) => {
   await expect.poll(() => page.evaluate(() => String((window as any).grok.shell.v?.name ?? '')), {message: 'the current view'}).toBe(name);
 }, {description: 'grok.shell.v by name — what a command that opens a view leaves in front'});
+
+export const currentViewShows = Then('the current view should show the text {string}', async (page: Page, text: string) => {
+  let shown = '';
+  await expect.poll(async () => (shown = (await page.evaluate(() => String((window as any).grok.shell.v?.root?.innerText ?? '')))
+    .replace(/\s+/g, ' ')).includes(text)).toBe(true).catch(() => {
+    throw new Error(`the current view does not show "${text}"; it shows "${shown.slice(0, 300)}"`);
+  });
+}, {description: 'the rendered text of grok.shell.v (innerText: what is shown, not what is hidden), case-sensitive — a document a viewer renders as text'});
 
 export const closeCurrentView = When('user closes the current view', async (page: Page) => {
   await page.evaluate(() => { (window as any).grok.shell.v?.close(); });

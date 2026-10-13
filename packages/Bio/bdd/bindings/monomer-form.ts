@@ -6,7 +6,10 @@ import {element, Then} from '@datagrok-libraries/bdd';
 import {expect} from '@datagrok-libraries/bdd/runtime';
 
 element('monomer sketcher', {selector: '.monomer-manager-sketcher',
+  parts: {'molecule input': 'input[placeholder^="SMILES"]'},
   description: 'the editor\'s sketcher host (DG.chem.Sketcher): its molecule field, its options menu (≡) and the sketcher in it; made once, with the sketcher of that moment, and kept for the page\'s life'});
+element('monomer form', {selector: '.ui-form:has(> .monomer-manager-sketcher)',
+  description: 'the editor of the Manage Monomers view: the sketcher, the monomer\'s inputs on their tabs and Save, which writes the monomer into the library the view shows'});
 
 export const rgroupLabels = Then('the R-groups grid of the monomer form should list {string}', async (page: Page, list: string) => {
   const want = list.split(/\s*,\s*/).filter(Boolean);

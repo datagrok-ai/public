@@ -357,8 +357,9 @@ The `viewers` tier drives viewers the way the platform sees them:
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before; an area `painted in no color` (greys only).
 - **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
-  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
-  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
+  collapsed to the mini icon, shown in the mini icon's tooltip, placed nowhere — its slot, its items
+  and their colors, its size against before after a splitter drag, whether its box stays clear of a
+  hit area, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`; a balloon that should have been
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
