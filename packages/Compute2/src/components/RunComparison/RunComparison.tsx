@@ -787,8 +787,19 @@ export const RunComparison = Vue.defineComponent({
               value={hideEqual.value}
               onUpdate:value={(val) => hideEqual.value = val}
             />
+            { (multiMode.value || compatibleTargets.value.length > 1) &&
+              <ToggleInput
+                caption='Multiple values'
+                tooltip='Chart several values together; Shift+click on a row does the same'
+                value={multiMode.value}
+                onUpdate:value={setMultiMode}
+              />
+            }
             <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-              <IconFA name='exchange-alt' tooltip='Edit name mappings' onClick={editNameMappings}/>
+              <span class='c2-comparison-link' onClick={editNameMappings}>
+                <IconFA name='exchange-alt' tooltip='Treat differently named values as the same quantity'/>
+                <span>Name mappings...</span>
+              </span>
               { nameMappings.value.length > 0 &&
                 <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{nameMappings.value.length}</span> }
             </div>
@@ -901,21 +912,8 @@ export const RunComparison = Vue.defineComponent({
       <div style={{display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px 50px'}}>
         <div style={{fontWeight: 'bold', padding: '4px 0px'}}>Results</div>
         <div style={{display: 'flex', alignItems: 'center', gap: '4px 12px', flexWrap: 'wrap'}}>
-          { (multiMode.value || compatibleTargets.value.length > 1) &&
-            <ToggleInput
-              caption='Multiple values'
-              value={multiMode.value}
-              onUpdate:value={setMultiMode}
-            />
-          }
           { comparison.value && comparison.value.chartDf.rowCount > 0 &&
-            <span
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                cursor: 'pointer', color: 'var(--blue-1)',
-              }}
-              onClick={exportComparison}
-            >
+            <span class='c2-comparison-link' onClick={exportComparison}>
               <IconFA
                 name='external-link'
                 tooltip='Open a snapshot of the data and chart in the workspace, or save and share it as a project'

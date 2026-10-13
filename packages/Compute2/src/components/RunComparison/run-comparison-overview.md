@@ -86,7 +86,7 @@ All builders produce a *long/concatenated* DataFrame — there is deliberately n
 | `hideEqual` | "Hide equal values" toggle (on by default): targets whose data is identical across all bound runs (`isTargetEqualAcrossRuns` in selection.ts — scalar values, or value/index/split column contents) are dropped from `filteredTargets`; multi-mode selections stay visible |
 | `selectedTargetKey` | which target is being charted |
 | `candidateOverrides` | `Record<targetKey, Record<candidateId, boolean>>` — manual enable/disable toggles, fed into `matchColumnTargets`; a watcher on `targets` prunes entries whose target/candidate no longer resolves |
-| `nameMappings` | user-defined name pairs treated as the same quantity; edited in a `ui.dialog` (exchange icon by the value filter), converted via `buildAliasGroups` and fed into both matchers |
+| `nameMappings` | user-defined name pairs treated as the same quantity; edited in a `ui.dialog` (**Name mappings...** link by the value filter), converted via `buildAliasGroups` and fed into both matchers |
 | `expandedTargetKeys` | which target rows have their candidate checklist expanded |
 | `multiMode`, `multiKeys` | multi-value mode flag and its selected target keys; unchecking the last value exits the mode (consistent with the initial no-selection state) with that value as the single selection — otherwise the mode never auto-exits: keys are pruned only when their target vanishes structurally, and the chart pads conflicting/missing runs (`partial` chip on the row) |
 | `scalarChartType` | radar/PC-plot switch for multi-scalar charts; `radarAvailable` (Charts package deployed?) forces PC plot and hides the switch when radar can't render |
