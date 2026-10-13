@@ -1,7 +1,7 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
 import {isNumericType} from '../components/RunComparison/types';
 import {
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, normalizeUnits,
   matchScalarTargets, matchColumnTargets, buildAliasGroups, FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -30,7 +30,8 @@ category('RunComparison: names and units', () => {
   });
 
   test('unitsCompatibility match, warn, mismatch', async () => {
-    expect(unitsCompatibility('mg', 'MG'), 'match');
+    expect(unitsCompatibility('mg', ' mg '), 'match');
+    expect(unitsCompatibility('mg', 'Mg'), 'mismatch');
     expect(unitsCompatibility(undefined, undefined), 'match');
     expect(unitsCompatibility('mg', undefined), 'warn');
     expect(unitsCompatibility('mg', 'g'), 'mismatch');
@@ -554,5 +555,48 @@ category('RunComparison: repeated steps', () => {
     ]);
     const withF = targets.find((t) => t.bindings.some((b) => b.entryId === 'f'))!;
     expect(withF.bindings.find((b) => b.entryId === 'a')!.value, 1);
+  });
+});
+
+category('RunComparison: unit spelling', () => {
+  test('case matters: prefixes and symbols differ by case', async () => {
+    expect(unitsCompatibility('MPa', 'mPa'), 'mismatch');
+    expect(unitsCompatibility('mS', 'ms'), 'mismatch');
+    expect(unitsCompatibility('S', 's'), 'mismatch');
+  });
+
+  test('spacing, trailing period, micro sign, and superscripts fold', async () => {
+    expect(normalizeUnits(' g / L '), 'g/L');
+    expect(normalizeUnits('µg/mL'), normalizeUnits('μg/mL'));
+    expect(normalizeUnits('µg/mL'), 'ug/mL');
+    expect(normalizeUnits('m²'), 'm2');
+    expect(normalizeUnits('m⁻³'), 'm-3');
+    expect(normalizeUnits('J/C.'), 'J/C');
+  });
+
+  test('liters fold to L, with or without a prefix, but not inside other symbols', async () => {
+    expect(normalizeUnits('g/l'), 'g/L');
+    expect(normalizeUnits('ml'), 'mL');
+    expect(normalizeUnits('cl'), 'cL');
+    expect(normalizeUnits('l/min'), 'L/min');
+    expect(normalizeUnits('uL/L'), 'uL/L');
+    expect(normalizeUnits('umol/dl'), 'umol/dL');
+    expect(normalizeUnits('Ml'), 'Ml');
+    expect(normalizeUnits('mmol'), 'mmol');
+    expect(normalizeUnits('kcal'), 'kcal');
+    expect(normalizeUnits('lb'), 'lb');
+  });
+
+  test('time aliases fold to one unit, short symbols keep their case', async () => {
+    expect(normalizeUnits('sec.'), 's');
+    expect(normalizeUnits('Hours'), 'h');
+    expect(normalizeUnits('MIN'), 'min');
+    expect(normalizeUnits('min'), 'min');
+    expect(normalizeUnits('d'), 'days');
+    expect(normalizeUnits('D'), 'D');
+    expect(normalizeUnits('H'), 'H');
+    expect(normalizeUnits('constructor'), 'constructor');
+    expect(unitsCompatibility('seconds', 's'), 'match');
+    expect(unitsCompatibility('m', 'min'), 'mismatch');
   });
 });

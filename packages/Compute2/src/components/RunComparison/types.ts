@@ -135,6 +135,15 @@ export const TIME_UNITS: TimeUnit[] = ['ms', 's', 'min', 'h', 'days'];
 export const TIME_UNIT_MS: Record<TimeUnit, number> =
   {ms: 1, s: 1000, min: 60_000, h: 3_600_000, days: 86_400_000};
 
+// lowercase spellings of time units; bare 'm' is deliberately absent — ambiguous with meters
+export const TIME_UNIT_ALIASES = new Map<string, TimeUnit>(Object.entries({
+  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
+  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
+  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
+  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
+  d: 'days', day: 'days', days: 'days',
+}) as [string, TimeUnit][]);
+
 // row semantics of a table: 'series' (default — an indexed series, charts as lines),
 // 'timeseries' (a series on a run-relative elapsed-time axis), 'points' (independent
 // observations, chart as unconnected points)

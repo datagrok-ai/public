@@ -4,10 +4,10 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, AxisMode, AxisModeSelection, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
-import {normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD} from './matching';
+import {normalizeName, nameSimilarity, normalizeUnits, FUZZY_NAME_THRESHOLD} from './matching';
 
 /** Substring match on the displayed text, with fuzzy per-token fallback for typos. */
 export function matchesFilter(query: string, text: string): boolean {
@@ -170,17 +170,10 @@ export function isTargetEqualAcrossRuns(
     (s.split === first.split || sameValues(s.split, first.split)));
 }
 
-const UNIT_ALIASES: Record<string, TimeUnit> = {
-  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
-  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
-  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
-  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
-  d: 'days', day: 'days', days: 'days',
-};
-
 // bare 'm' is deliberately not recognized — ambiguous with meters
 export function parseTimeUnit(units?: string): TimeUnit | undefined {
-  return units ? UNIT_ALIASES[units.trim().toLowerCase()] : undefined;
+  const unit = normalizeUnits(units);
+  return TIME_UNITS.find((item) => item === unit);
 }
 
 /**

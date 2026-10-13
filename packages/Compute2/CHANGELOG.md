@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours
 * Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
 * Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
 * Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step

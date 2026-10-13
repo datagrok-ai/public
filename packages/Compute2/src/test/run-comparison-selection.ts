@@ -457,7 +457,9 @@ category('RunComparison: axis mode selection', () => {
     expect(parseTimeUnit('hr'), 'h');
     expect(parseTimeUnit('day'), 'days');
     expect(parseTimeUnit('ms'), 'ms');
+    expect(parseTimeUnit('Hours'), 'h');
     expect(parseTimeUnit('m') === undefined, true);
+    expect(parseTimeUnit('H') === undefined, true);
     expect(parseTimeUnit('meters') === undefined, true);
     expect(parseTimeUnit(undefined) === undefined, true);
   });

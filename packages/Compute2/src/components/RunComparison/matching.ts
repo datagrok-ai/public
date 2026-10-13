@@ -5,6 +5,7 @@
 import {
   ComparisonEntryNodes, MatchConfidence, ScalarBinding, ColumnBinding, ColumnCandidate,
   CandidateOverrides, NameMapping, ScalarTarget, ColumnTarget, TargetBase, isNumericType, candidateId,
+  TIME_UNIT_ALIASES,
 } from './types';
 
 export type UnitsCompatibility = 'match' | 'warn' | 'mismatch';
@@ -98,9 +99,29 @@ export function weakerConfidence(a: MatchConfidence, b: MatchConfidence): MatchC
   return CONFIDENCE_RANK[a] >= CONFIDENCE_RANK[b] ? a : b;
 }
 
+const SUPERSCRIPTS: Record<string, string> = {
+  '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9', '⁻': '-',
+};
+
+/**
+ * Case-sensitive canonical units (MPa and mPa differ by 10^9): only spelling variants that
+ * never change the meaning fold together — spaces, a trailing period, micro signs, superscript
+ * digits, liters as l or L, and time unit aliases (sec, hours, ...). Never fuzzy.
+ */
+export function normalizeUnits(units?: string): string {
+  const compact = (units ?? '').replace(/\s+/g, '').replace(/\.$/, '')
+    .replace(/[µμ]/g, 'u')
+    .replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]/g, (c) => SUPERSCRIPTS[c])
+    .replace(/(^|[^A-Za-z])([munpdck]?)l(?![A-Za-z])/g, '$1$2L');
+  // whole-word aliases may differ in case (Hours, SEC); one- and two-letter symbols may not
+  const alias = TIME_UNIT_ALIASES.get(compact) ??
+    (compact.length > 2 ? TIME_UNIT_ALIASES.get(compact.toLowerCase()) : undefined);
+  return alias ?? compact;
+}
+
 export function unitsCompatibility(a?: string, b?: string): UnitsCompatibility {
-  const ua = a?.trim().toLowerCase() ?? '';
-  const ub = b?.trim().toLowerCase() ?? '';
+  const ua = normalizeUnits(a);
+  const ub = normalizeUnits(b);
   if (ua === ub)
     return 'match';
   if (!ua || !ub)
