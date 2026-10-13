@@ -134,6 +134,40 @@ category('Add new column', () => {
     expect(t.col('parsed errors'), null);
   });
 
+  test('a suggested error column name follows the result name, a typed one stays', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a'])]);
+    const expression = 'DateParse(${s})';
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, expression}));
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    const type = (input: HTMLInputElement, value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+    };
+    try {
+      dlg.showErrorBehaviorPopup();
+      const popup = document.querySelector('.add-new-column-error-popup')!;
+      const popupInput = (label: string) => Array.from(popup.querySelectorAll('.ui-input-root'))
+        .find((root) => root.querySelector('label')?.textContent?.includes(label))!.querySelector('input')!;
+      popupInput('Error column').click();
+      const name = dlg.inputName!.input as HTMLInputElement;
+      const previewHas = (col: string) => dlg.gridPreview!.dataFrame.col(col) != null;
+      type(name, 'c2');
+      await awaitCheck(() => previewHas('c2 errors'), 'the preview has no error column for c2', 5000);
+      type(name, 'c3');
+      await awaitCheck(() => previewHas('c3 errors'), 'the preview error column does not follow the name', 500);
+      expect(dlg.getErrorBehaviorParam()?.errorColName, 'c3 errors');
+
+      type(popupInput('Column name'), 'mine');
+      await awaitCheck(() => previewHas('mine'), 'the preview does not use the typed name', 5000);
+      type(name, 'c4');
+      expect(dlg.getErrorBehaviorParam()?.errorColName, 'mine');
+    } finally {
+      document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      dlg.close();
+    }
+  });
+
   test('hints', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);

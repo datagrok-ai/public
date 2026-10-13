@@ -129,6 +129,8 @@ type ErrorBehaviorSettings = {
   valueType?: string,
   errorColumn: boolean,
   errorColName: string,
+  /** The name is "<result column> errors" and follows the result column's name until one is typed in. */
+  errorColNameSuggested?: boolean,
 }
 
 type PreviewFailure = {failed: number, total: number, row: number, message: string};
@@ -183,6 +185,7 @@ export class AddNewColumnDialog {
   call: DG.FuncCall;
   edit: boolean = false;
   currentCalculatedColName = '';
+  currentErrorColName = '';
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
@@ -584,10 +587,16 @@ export class AddNewColumnDialog {
     return typeof value === 'number' && this.getErrorValueType() === DG.COLUMN_TYPE.QNUM ? DG.Qnum.toString(value) : `${value}`;
   }
 
+  /** The name typed in for the error column, or the one suggested from the result column's name. */
+  getErrorColName(): string {
+    const b = this.errorBehavior;
+    return b.errorColNameSuggested ? `${this.getResultColumnName().colName} errors` : b.errorColName;
+  }
+
   /** The `errorBehavior` parameter of AddNewColumn and EditColumnFormula; null when failed rows are just left empty. */
   getErrorBehaviorParam(): ErrorBehaviorParam | null {
     const value = this.getErrorColumnValue();
-    const errorColName = this.errorBehavior.errorColumn ? this.errorBehavior.errorColName.trim() : '';
+    const errorColName = this.errorBehavior.errorColumn ? this.getErrorColName().trim() : '';
     if (value == null && !errorColName)
       return null;
     const param: ErrorBehaviorParam = {};
@@ -630,14 +639,17 @@ export class AddNewColumnDialog {
     const value = this.createErrorValueInput(changed);
     const errorColumn = ui.input.bool('Error column', {value: b.errorColumn, onValueChanged: (v) => {
       b.errorColumn = v;
-      if (v && !b.errorColName)
-        name.value = b.errorColName = `${this.getResultColumnName().colName} errors`;
+      if (v && !b.errorColName) {
+        b.errorColNameSuggested = true;
+        name.value = this.getErrorColName();
+      }
       changed();
     }});
-    const name = ui.input.string('Column name', {value: b.errorColName, onValueChanged: (v) => {
-      if (v === b.errorColName)
+    const name = ui.input.string('Column name', {value: this.getErrorColName(), onValueChanged: (v) => {
+      if (v === this.getErrorColName())
         return;
       b.errorColName = v;
+      b.errorColNameSuggested = false;
       changed();
     }});
     value.root.style.display = b.useValue ? '' : 'none';
@@ -1661,6 +1673,13 @@ export class AddNewColumnDialog {
         this.gridPreview!.invalidate();
         this.currentCalculatedColName = colName;
       }
+      const errorColName = this.getErrorBehaviorParam()?.errorColName;
+      const gridErrorCol = this.currentErrorColName ? this.gridPreview!.dataFrame.col(this.currentErrorColName) : null;
+      if (gridErrorCol && errorColName) {
+        gridErrorCol.name = errorColName;
+        this.gridPreview!.invalidate();
+        this.currentErrorColName = errorColName;
+      }
       return;
     }
 
@@ -1711,6 +1730,7 @@ export class AddNewColumnDialog {
     for (const colName of errorColName && errorColIds.length ? potentialColIds.concat(errorColName) : potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.currentCalculatedColName = potentialColIds[0];
+    this.currentErrorColName = errorColName && errorColIds.length ? errorColName : '';
 
     for (const colName of potentialColIds.concat(errorColIds))
       this.previwDf!.columns.remove(colName);
