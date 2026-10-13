@@ -200,16 +200,15 @@ export const RunComparison = Vue.defineComponent({
       axisModeSelection.value = updatedSelection(axisModeSelection.value, members, config);
     };
 
-    const indexColumnType = (entryId: string, tablePath: string, columnName: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      const table = entry?.nodes.tables.find((item) => item.path === tablePath);
-      return table?.columns.find((col) => col.name === columnName)?.type;
-    };
+    const entriesById = Vue.computed(() => new Map(entries.value.map((entry) => [entry.id, entry])));
 
-    const defaultIndexOf = (entryId: string, tablePath: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      return entry?.nodes.tables.find((item) => item.path === tablePath)?.defaultIndexColumn;
-    };
+    const tableNode = (entryId: string, tablePath: string) =>
+      entriesById.value.get(entryId)?.nodes.tables.find((table) => table.path === tablePath);
+
+    const indexColumnType = (entryId: string, tablePath: string, columnName: string) =>
+      tableNode(entryId, tablePath)?.columns.find((col) => col.name === columnName)?.type;
+
+    const defaultIndexOf = (entryId: string, tablePath: string) => tableNode(entryId, tablePath)?.defaultIndexColumn;
 
     const indexColumnsMap = Vue.computed(() => selectionToMap(indexSelection.value,
       (entryId, tablePath, columnName) =>
@@ -277,8 +276,7 @@ export const RunComparison = Vue.defineComponent({
 
     // dayjs and other value objects collapse to primitives so cross-run compares work
     const columnValues = (entryId: string, tablePath: string, columnName: string) => {
-      const entry = entries.value.find((item) => item.id === entryId);
-      const col = entry?.dataFrames.get(tablePath)?.col(columnName);
+      const col = entriesById.value.get(entryId)?.dataFrames.get(tablePath)?.col(columnName);
       if (!col)
         return undefined;
       const values = new Array(col.length);
@@ -742,7 +740,7 @@ export const RunComparison = Vue.defineComponent({
           last.candidates.push(candidate);
           continue;
         }
-        const entry = entries.value.find((item) => item.id === candidate.binding.entryId);
+        const entry = entriesById.value.get(candidate.binding.entryId);
         if (entry)
           groups.push({entry, candidates: [candidate]});
       }
@@ -813,7 +811,7 @@ export const RunComparison = Vue.defineComponent({
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const context = contexts.value.get(target.key);
             const gapRuns = (gaps.value.get(target.key) ?? [])
-              .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id);
+              .map((id) => entriesById.value.get(id)?.name ?? id);
             const row = <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
@@ -886,7 +884,7 @@ export const RunComparison = Vue.defineComponent({
       // target get amber ones — they still chart, just as a plain series
       const chips = entryStatuses.value
         .map((status) => {
-          const entry = entries.value.find((item) => item.id === status.entryId);
+          const entry = entriesById.value.get(status.entryId);
           if (!entry)
             return null;
           if (!status.matched)
