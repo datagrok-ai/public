@@ -6,7 +6,6 @@
 * GROK-20298: `createDomainBinding` answers the created schema's name out of the dialog's `{name, access}` result (the dialog now ends on a Created step when access rows were applied)
 * GROK-20298: Added `createDomainBinding` (`tags: domainAuthoring`) — the u2 "Create domain schema" dialog over an external database (Connection › Design › Review), the function the platform's "Create domain schema..." commands on a database schema or table and "New schema over a connection..." on the Domains node run
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Data | Compare Columns is disabled while no table is open
-* [#3525](https://github.com/datagrok-ai/public/issues/3525): Add New Column: Added `${table.column}` for a column of a linked table: the validation accepts it, and `${` offers the other open tables, then their columns
 * Formula Lines: Fixed the dialog opened from a viewer failing when the platform passes an unset line index as null (the Dart 3 client)
 * [#4253](https://github.com/datagrok-ai/public/issues/4253): Add New Column: Fixed the validation rejecting vector functions nested in scalar expressions (`CumSum(${x}) * 2`, `CumSum(${x}) / Sum($[x])`, `${x} * Lookup(...)`)
 * Tests: Added the Enrichment tests (an enrichment saved, applied and checked row by row, edited, deleted and applied again, a clashing column coming in as `result.<name>`, the foreign key lookup); the enrichment storage and apply functions moved from `db-explorer.ts` to `enrichment.ts`, and the data enrichment feature keeps to the pane and the editor
