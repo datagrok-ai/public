@@ -4,7 +4,12 @@ src/**/*.ts
 
 node_modules/
 gallery/
-tests/
+# keep the four harness modules EMS's tests import
+tests/*
+!tests/dg-stub.mjs
+!tests/dom-shim.js
+!tests/platform-doubles.mjs
+!tests/filter-grammar.corpus.json
 e2e/
 scripts/
 tsconfig.json

@@ -8,8 +8,9 @@
 import * as grok from 'datagrok-api/grok';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Filters, Rows} from '@datagrok-libraries/u2';
-import type {DomainSource, FilterSchema, FilterValue} from '@datagrok-libraries/u2';
-import {domains, DomainApp, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {FilterSchema, FilterValue} from '@datagrok-libraries/u2';
+import type {DomainSource} from '@datagrok-libraries/ems';
+import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
 const SCHEMA = 'northwind';
 const ORDERS = `${SCHEMA}.order`;

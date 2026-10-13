@@ -1,13 +1,15 @@
 /* Do not change these import lines to match external modules in webpack configuration */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {button, computed, Control, Section, SharedSession, Splitter} from '@datagrok-libraries/u2';
-import {appView, domains, DomainApp} from '@datagrok-libraries/u2/src/dg/index.js';
-import type {DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {button, computed, Control, Section, Splitter} from '@datagrok-libraries/u2';
+import {SharedSession} from '@datagrok-libraries/ems';
+import {appView} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains, DomainApp} from '@datagrok-libraries/ems/src/dg';
+import type {DomainTable} from '@datagrok-libraries/ems/src/dg';
 export * from './package.g';
 
 // the skins of everything the u2 domain stack renders
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/ems/src/dg/styles.js';
 
 export const _package = new DG.Package();
 

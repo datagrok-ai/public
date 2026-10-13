@@ -1,17 +1,13 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {propertyFields} from '../../core/property-like.js';
 import {Filters, FilterError} from '../../core/filter/index.js';
 import type {FilterRef} from '../../core/filter/model.js';
-import type {FilterProperty, FilterSchema, FilterValueItem} from '../../core/filter/schema.js';
+import type {FilterProperty, FilterSchema} from '../../core/filter/schema.js';
 import type {ObjectRenderer} from '../../core/object-renderer.js';
 import {moleculeRenderer} from '../inputs/molecule.js';
 import {dapiSource} from '../entities/dapi-source.js';
 import type {DapiSourceLike} from '../entities/dapi-source.js';
 import {HandlerRenderer} from '../entities/entity.js';
-
-const VALUES_LIMIT = 50;
-const REF_ADDRESS = /^\w+\.\w+$/;
 
 /** The entity types whose rows a dapi collection lists — the ref values of {@link FilterSchemas.forEntityType}. */
 const ENTITY_SOURCES: Record<string, () => DapiSourceLike<DG.Entity>> = {
@@ -41,14 +37,14 @@ class EntityRefRenderer extends HandlerRenderer<unknown> {
   }
 }
 
-function rendererFor(prop: FilterProperty, refRenderer: ObjectRenderer<unknown> = REF_RENDERER):
+export function filterRenderer(prop: FilterProperty, refRenderer: ObjectRenderer<unknown> = REF_RENDERER):
   ObjectRenderer<any> | undefined {
   if (prop.semType === DG.SEMTYPE.MOLECULE)
     return moleculeRenderer();
   return prop.ref ? refRenderer : undefined;
 }
 
-function ref(type: string, id: unknown, name?: string | null): FilterRef {
+export function filterRef(type: string, id: unknown, name?: string | null): FilterRef {
   const r: FilterRef = {type, id: String(id)};
   if (name != null)
     r.name = name;
@@ -92,41 +88,9 @@ export class FilterSchemas {
           categoriesOf(col).filter((c) => c.toLowerCase().includes(q)) : [];
         return Promise.resolve(items.map((value) => ({value, label: value})));
       },
-      renderer: rendererFor,
+      renderer: filterRenderer,
     };
     return schema;
-  }
-
-  /** The registry's row properties of `'<schema>.<table>'`; a ref column's semType is its
-   * target address. Values come from the table's `categories` facet under the typed text — on a
-   * `'basic'` backend (`support.filters`) for string and ref columns only, the ones it searches. */
-  static async forDomainTable(address: string): Promise<FilterSchema> {
-    const registry = grok.dapi.domains.registry;
-    const properties = (await registry.rowProperties(address)).map((p) => {
-      const prop: FilterProperty = {...propertyFields(p), name: p.name};
-      if (REF_ADDRESS.test(p.semType ?? ''))
-        prop.ref = p.semType;
-      return prop;
-    });
-    return {
-      properties,
-      values: async (prop, query) => {
-        const table = grok.dapi.domains.table(address);
-        const kind = Filters.kindOf(prop);
-        if (kind !== Filters.KIND.STRING && kind !== Filters.KIND.REF &&
-            (await table.access()).support.filters === 'basic')
-          return [];
-        const {facets} = await table.facets({facets: [{
-          id: 'v', kind: 'categories', column: prop.name, search: query, limit: VALUES_LIMIT}]});
-        return facets.v.categories.map((c): FilterValueItem => ({
-          value: prop.ref ? ref(prop.ref, c.value, c.display) : c.value,
-          label: c.display ?? String(c.value),
-          ...(typeof c.total === 'number' ? {count: c.total} : {}),
-        }));
-      },
-      resolveRef: (prop) => FilterSchemas.forDomainTable(prop.ref!),
-      renderer: rendererFor,
-    };
   }
 
   /** The properties a filter string may name on a platform type (`'User'`, `'Project'`); a ref
@@ -153,10 +117,10 @@ export class FilterSchemas {
         if (!source)
           return [];
         const entities = await dapiSource(source)(query, signal);
-        return entities.map((e) => ({value: ref(prop.ref!, e.id, e.friendlyName), label: e.friendlyName}));
+        return entities.map((e) => ({value: filterRef(prop.ref!, e.id, e.friendlyName), label: e.friendlyName}));
       },
       resolveRef: (prop) => FilterSchemas.forEntityType(prop.ref!),
-      renderer: (prop) => rendererFor(prop, refRenderer),
+      renderer: (prop) => filterRenderer(prop, refRenderer),
     };
   }
 }

@@ -17,7 +17,7 @@ const dbFile = 'db.ts';
 const dbUiFile = 'db-ui.ts';
 /** Where `db-ui.ts` takes the u2 domain stack from — the same specifier Grit and Stockroom use
  * (u2 is a relative-path dependency without a `dg` subpath export). */
-const u2DgModule = '@datagrok-libraries/u2/src/dg/index.js';
+const emsDgModule = '@datagrok-libraries/ems/src/dg';
 
 /** Naive English plural of a (snake_case) table name — `issue` → `issues`, `box` →
  * `boxes`, `category` → `categories`. */
@@ -283,7 +283,7 @@ export function generateDomainClients(packageDir: string = curDir, options?: {ui
 
   if (ui) {
     const uiContent = annotationForDbUiFile +
-      `import {domains, DomainTable} from '${u2DgModule}';${sep}` +
+      `import {domains, DomainTable} from '${emsDgModule}';${sep}` +
       wrapTokens(`import {`, dbImports, ', ', `} from './${dbFile.replace(/\.ts$/, '')}';`) + sep +
       sep + uiParts.join(sep);
     fs.writeFileSync(path.join(genDir, dbUiFile), normEol(uiContent).replace(/\n/g, '\r\n'), 'utf8');

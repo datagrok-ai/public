@@ -2,6 +2,7 @@
    offers: a DataFrame (client-side, evaluated into `df.filter`), an entity type (the smart-filter
    string a dapi `filter()` takes) and a domain table (the condition tree a domain query takes).
    The active tab and its query ride the app URL as `?tab=<id>&q=<query>`, so a filter is a link. */
+import {domainFilterSchema} from '@datagrok-libraries/ems/src/dg';
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {
@@ -163,7 +164,7 @@ function domainTablePane(): HTMLElement {
   const open = (): void => {
     const a = address.value.peek();
     pane?.dispose();
-    pane = asyncPane(() => FilterSchemas.forDomainTable(a), (schema) => {
+    pane = asyncPane(() => domainFilterSchema(a), (schema) => {
       const {tree} = restored(Scope.ambient!, 'domain', schema, 'domain');
       const count = signal('(not run)');
       const run = async (): Promise<void> => {

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
 * GROK-20884: Added `grok s observe` (alias `grok s o`): problems and their alerts, problem rules, logger settings with expiring user and group entries, errors, the timeline and cloud logs (CloudWatch and the log archive)
 * GROK-20884: Added `grok s o logs capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires (a `logger set` of `saveHttpRequests`; an entry that expires later keeps its time); `logs capture stop` removes an expiring entry that holds only the capture, `logs capture` lists the active ones
 * GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)

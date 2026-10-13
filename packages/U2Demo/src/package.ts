@@ -7,9 +7,9 @@ import '@datagrok-libraries/u2/css/all.css';
 import '../css/u2demo.css';
 
 import {computed} from '@datagrok-libraries/u2';
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
-import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents,
-  registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
+import {appView, designerView, disposePanel, registerControlInspector, registerPlatformComponents, registerSpecNodeHandler} from '@datagrok-libraries/u2/src/dg/index.js';
+import {registerEmsComponents} from '@datagrok-libraries/ems/src/dg';
 import {DemoShell, buildDemo} from './demo';
 import {DemoLeaf, leafForPath, pathOf} from './nav';
 import {buildBrowseTree} from './browse';
@@ -107,6 +107,7 @@ export function reportsBrowserApp(): DG.ViewBase {
 //output: view result
 export function u2DesignerApp(): DG.ViewBase {
   registerPlatformComponents();
+  registerEmsComponents();
   registerSpecNodeHandler();
   return designerView(DESIGNER_SPEC, {name: 'U2 Designer', ctx: designerContext()});
 }

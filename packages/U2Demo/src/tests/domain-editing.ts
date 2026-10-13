@@ -9,7 +9,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Control} from '@datagrok-libraries/u2';
-import type {ManifestEditor} from '@datagrok-libraries/u2/src/dg/domain/authoring/manifest-editor.js';
+import type {ManifestEditor} from '@datagrok-libraries/ems/src/dg/authoring/manifest-editor.js';
 
 const CONNECTION = 'NorthwindBinding:PostgresNorthwind';
 

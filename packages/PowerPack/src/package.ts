@@ -29,9 +29,9 @@ import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
 import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 // every sheet the domain stack paints with, in one import
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
+import '@datagrok-libraries/ems/src/dg/styles.js';
 import '@datagrok-libraries/u2/css/tokens.css';
 import '@datagrok-libraries/u2/css/elements.css';
 import '@datagrok-libraries/u2/css/inputs.css';

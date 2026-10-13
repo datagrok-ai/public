@@ -152,19 +152,6 @@ export type {AccessData, FieldAccess, Capability} from './core/access.js';
 export type {ActionsOptions, ActionGroup, ActionsMenuOptions} from './components/actions/actions.js';
 export {arrayRows, Rows} from './sources/rows-like.js';
 export type {ColumnOf, DomainRowLike, RowsLike, RowValues, RowView} from './sources/rows-like.js';
-export {DomainBackendError} from './sources/domain-backend.js';
-export type {DomainBackend, DomainTableLike, DomainTableInfoLike, DomainFrameLike, DomainQueryLike,
-  DomainReadScope, DomainSupportLike, DomainTransactionOpLike, DomainTransactionResultLike, AuditEntryLike,
-  DomainBatchOptionsLike, DomainBatchReportLike, DomainBatchValidationLike, DomainDeletedMode,
-  DomainProbeLike} from './sources/domain-backend.js';
-export {MemoryDomainBackend} from './sources/memory-domain.js';
-export type {MemorySchemaJson, MemoryTableJson, MemoryColumnJson, MemoryDomainOptions}
-  from './sources/memory-domain.js';
-export type {EditState, EditSaved, RowState} from './sources/edit-state.js';
-export {DomainSource} from './sources/domain-source.js';
-export type {DomainSourceOptions, DomainSourceState, DomainSchema} from './sources/domain-source.js';
-export {SharedSession, confirmDiscard} from './sources/session.js';
-export type {DomainSession} from './sources/session.js';
 export {SuggestInput} from './components/inputs/suggest-input.js';
 export type {SuggestInputOptions} from './components/inputs/suggest-input.js';
 export {Card} from './components/containers/card.js';
@@ -190,5 +177,16 @@ export {FilterQueryInput} from './components/filter/filter-query-input.js';
 export type {FilterQueryInputOptions, FilterQueryInputStatus} from './components/filter/filter-query-input.js';
 export {RefInput} from './components/filter/ref-input.js';
 export type {RefInputOptions} from './components/filter/ref-input.js';
+
+export {Emitter} from './core/emitter.js';
+export {EMPTY, isEmpty, plural, text, camelCaseToWords} from './core/text.js';
+export {labelText} from './core/input-base.js';
+export type {LiveOption} from './core/input-base.js';
+export {subBind} from './sources/sub-bind.js';
+export {FrameRows} from './sources/df-rows.js';
+export {MemoryFrame} from './sources/memory-frame.js';
+export type {MemoryColumn} from './sources/memory-frame.js';
+export {requireBackend} from './sources/backends.js';
+export {setSpecAmbient} from './spec/spec.js';
 
 export const VERSION = '0.1.0';

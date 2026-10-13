@@ -32,11 +32,9 @@
     "prepublishOnly": "npm run build",
     "test": "grok tsc -p tsconfig.json --outDir . && node --test tests/*.test.js",
     "e2e:local": "node e2e/run.mjs",
-    "e2e:local:domain": "node e2e/run.mjs --lane domain,session",
     "e2e:boot": "node e2e/boot-smoke.mjs",
     "e2e:stand": "node e2e/designer.stand.spec.mjs",
     "e2e:stand-u2demo": "node e2e/u2demo.stand.spec.mjs",
-    "e2e:stand-domain": "node e2e/domain.stand.spec.mjs",
     "manifest": "node scripts/gen-manifest.mjs",
     "manifest:check": "node scripts/gen-manifest.mjs --check",
     "icons": "node scripts/gen-icon-names.mjs",
@@ -58,10 +56,10 @@
     },
     "./package.json": "./package.json",
     "./css/*": "./css/*",
-    "./tests/conformance/scenarios": {
-      "types": "./tests/conformance/scenarios.d.ts",
-      "default": "./tests/conformance/scenarios.mjs"
-    },
+    "./tests/dg-stub.mjs": "./tests/dg-stub.mjs",
+    "./tests/dom-shim.js": "./tests/dom-shim.js",
+    "./tests/platform-doubles.mjs": "./tests/platform-doubles.mjs",
+    "./tests/filter-grammar.corpus.json": "./tests/filter-grammar.corpus.json",
     "./src/core/filter": {
       "types": "./dist/src/core/filter/index.d.ts",
       "default": "./dist/src/core/filter/index.js"
@@ -77,14 +75,6 @@
     "./src": {
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.js"
-    },
-    "./src/dg/domain": {
-      "types": "./dist/src/dg/domain/index.d.ts",
-      "default": "./dist/src/dg/domain/index.js"
-    },
-    "./src/dg/domain/authoring": {
-      "types": "./dist/src/dg/domain/authoring/index.d.ts",
-      "default": "./dist/src/dg/domain/authoring/index.js"
     },
     "./*.js": {
       "types": "./dist/*.d.ts",

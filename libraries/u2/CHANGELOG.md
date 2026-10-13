@@ -2,6 +2,11 @@
 
 ## v.next
 
+* EMS (domain tables) moved to `@datagrok-libraries/ems`
+* **Breaking**: `DomainSelection.bind` is now `collectionSelection` in `src/dg/shell/`
+* Added `tests/boundaries.test.js`: no `datagrok-api` below `src/dg` except `u2core`, no EMS imports
+* `under(path, base)` exported from `src/dg` with `mountView`; `DomainAddress.under` is gone
+* E2E: `run.mjs --checks <dir>` runs another library's check files; `startGalleryServer(root, served)` serves another root
 * `Wizard`: added `WizardAction.visible` — an action follows the signal on its own step (shown when absent), without re-activating the step
 * GROK-20298: Binding editing, the testing round's fixes: editing a column's readers never touches an editor the snapshot holds apart from them; the name column and the searchable one rebase as the table's choices (competing picks conflict) and a pick whose column is gone is dropped; column readers rebase per group, by name, with a conflict on a column whose restriction or readers moved meanwhile; column access ops carry `from` (the state they were made from) and an `access-conflict` reloads like a version conflict; a lost answer the registry cannot confirm, or a binding deleted and re-created under the name, ends the edit — Outcome on Review, REOPEN in place of SAVE, nothing replayed; a registered table taken out reads as text on its panel; an apply the server answers as a no-op reads "Nothing to save" on Saved, not a new version
 * `Wizard`: `nextText` accepts a signal, so the button's wording follows the state

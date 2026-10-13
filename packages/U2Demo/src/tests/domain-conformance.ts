@@ -1,4 +1,4 @@
-/* The backend conformance scenarios (`u2/tests/conformance/scenarios.mjs`) run against the
+/* The backend conformance scenarios (`ems/tests/conformance/scenarios.mjs`) run against the
    PLATFORM backend — the same file the headless suite runs over `MemoryTable`, so a memory
    backend that drifts from the server fails on one side or the other. Fixture: a throwaway
    user-managed schema carrying ONE copy of the contract's `folder` table per scenario
@@ -8,12 +8,12 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, expect, expectArray, expectExceptionAsync, expectObject, test}
   from '@datagrok-libraries/test/src/test';
-import {backends} from '@datagrok-libraries/u2';
-import type {DomainTableLike, DomainTransactionOpLike} from '@datagrok-libraries/u2';
+import {emsBackends} from '@datagrok-libraries/ems';
+import type {DomainTableLike, DomainTransactionOpLike} from '@datagrok-libraries/ems';
 import '@datagrok-libraries/u2/src/dg/index.js';
 // extensionless: tsc reads `scenarios.d.ts` next to it, webpack resolves the `.mjs` itself
-import {scenarios} from '@datagrok-libraries/u2/tests/conformance/scenarios';
-import type {ConformanceAssert, ConformanceSeedRow} from '@datagrok-libraries/u2/tests/conformance/scenarios';
+import {scenarios} from '@datagrok-libraries/ems/tests/conformance/scenarios';
+import type {ConformanceAssert, ConformanceSeedRow} from '@datagrok-libraries/ems/tests/conformance/scenarios';
 
 const REF = '$ref:';
 
@@ -118,7 +118,7 @@ category('U2: domain conformance', () => {
     test(scenario.name, async () => {
       if (skipped())
         return;
-      const table = await backends.domain!.table(address);
+      const table = await emsBackends.domain!.table(address);
       const missing = scenario.requires.filter((required: string) => !declares(table, required));
       if (missing.length > 0) {
         console.log(`skipped: the fixture answers no ${missing.join(', ')}`);

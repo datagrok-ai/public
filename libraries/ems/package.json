@@ -1,0 +1,76 @@
+{
+  "name": "@datagrok-libraries/ems",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": {
+    "name": "Andrew Skalkin",
+    "email": "askalkin@datagrok.ai"
+  },
+  "fullName": "EMS",
+  "version": "0.1.0",
+  "description": "Entity-mapped domain tables: the domain source, the unit of work, and the u2 controls and app shell over them",
+  "type": "module",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "dependencies": {
+    "@datagrok-libraries/u2": "workspace:^",
+    "rxjs": "catalog:"
+  },
+  "peerDependencies": {
+    "datagrok-api": "workspace:^"
+  },
+  "devDependencies": {
+    "datagrok-api": "workspace:^"
+  },
+  "scripts": {
+    "build": "grok tsc -p tsconfig.json && npm run manifest:check",
+    "lint": "eslint --ext .ts,.tsx src",
+    "prepublishOnly": "npm run build",
+    "test": "grok tsc -p tsconfig.json --outDir . && node --test tests/*.test.js",
+    "e2e:local": "node ../u2/e2e/run.mjs --checks e2e/checks",
+    "e2e:stand-domain": "node e2e/domain.stand.spec.mjs",
+    "manifest": "node scripts/gen-manifest.mjs",
+    "manifest:check": "node scripts/gen-manifest.mjs --check"
+  },
+  "canEdit": [
+    "Developers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/datagrok-ai/public.git",
+    "directory": "libraries/ems"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./package.json": "./package.json",
+    "./css/*": "./css/*",
+    "./tests/conformance/scenarios": {
+      "types": "./tests/conformance/scenarios.d.ts",
+      "default": "./tests/conformance/scenarios.mjs"
+    },
+    "./src": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./src/dg": {
+      "types": "./dist/src/dg/index.d.ts",
+      "default": "./dist/src/dg/index.js"
+    },
+    "./src/dg/authoring": {
+      "types": "./dist/src/dg/authoring/index.d.ts",
+      "default": "./dist/src/dg/authoring/index.js"
+    },
+    "./*.js": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  }
+}
