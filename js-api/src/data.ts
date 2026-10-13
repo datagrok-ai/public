@@ -381,6 +381,17 @@ export class Data {
   }
 
   /**
+   * Appends [tables] on top of each other into a new table, matching columns by name, and
+   * calculates the formula columns that only some of them have. This is what `Data | Append
+   * Tables...` does, so the result carries the same recorded transformation.
+   * @example
+   * grok.shell.addTableView(await grok.data.appendTables([t1, t2]));
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/modification/append-async} */
+  async appendTables(tables: DataFrame[]): Promise<DataFrame> {
+    return api.grok_AppendTables(tables.map((t) => t.dart));
+  }
+
+  /**
    * Opens a table by its id.
    * Sample: {@link https://public.datagrok.ai/js/samples/data-access/open-table-by-id}
    * @param id - table GUID */

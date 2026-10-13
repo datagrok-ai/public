@@ -63,6 +63,10 @@ Actelion Java MolfileCreator 1.0
 M  END
 `;
 
+// a filter's search, a layout's restore and a clone's sync are waited for, not timed: a 2-vCPU CI runner searches with
+// one RDKit worker and takes seconds where a workstation takes milliseconds
+const WAIT = 10000;
+
 category('clone and layout tests', async () => {
   before(async () => {
     if (!chemCommonRdKit.moduleInitialized) {
@@ -119,7 +123,7 @@ category('clone and layout tests', async () => {
     await initializeFilter(filter2);
     await filterByStructure(df, filter2, molFileForCloneTest1, 5);
     await checkFilterSynchronized(filter1, 'C1CCCCC1');
-    switchToView(tvInitial);
+    await switchToView(tvInitial);
     const layout = await saveLayout(tvInitial);
     await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
     await applyLayout(tvInitial, layout, df, 5);
@@ -348,7 +352,7 @@ category('clone and layout tests', async () => {
     await initializeFilter(filter2);
     await filterByStructure(df, filter2, molFileForCloneTest1, 5);
     await checkFilterSynchronized(filter1, 'C1CCCCC1');
-    switchToView(tvInitial);
+    await switchToView(tvInitial);
     const layout = await saveLayout(tvInitial);
     await changeFilterBeforeApplyLayout(tvInitial, 'Core', molFileForCloneTest3, df, 3);
     await applyLayout(tvInitial, layout, df, 5);
@@ -552,6 +556,29 @@ category('clone and layout tests', async () => {
     await applyLayout(tvInitial, layoutCloned, df, 5);
   });
 
+  //25_clone_layout_scenario's cause, without its timing: a filter given its structure by a layout searches a second
+  //later; one closed within that second used to search anyway and take the column over, so that the next filter
+  //with the same structure took the search for done and left the table unfiltered
+  test('filter closed before its layout search does not take the column over', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    const tvInitial = await createTableView(df);
+    const initial = await getFilterGroupAndFilter(tvInitial, 'Structure');
+    await initializeFilter(initial.filter);
+    await filterByStructure(df, initial.filter, molFileForCloneTest1, 5);
+    const layout = await saveLayout(tvInitial);
+    await closeFilterGroup(initial.group);
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', WAIT);
+    //a second view gets the layout, and its filter panel is closed at once
+    const tvCloned = grok.shell.addTableView(df);
+    tvCloned.loadLayout(layout);
+    await closeFilterGroup((await getFilterGroupAndFilter(tvCloned, 'Structure')).group);
+    await delay(1500);
+    //the first view's filter panel, opened again with its structure, filters the table
+    await switchToView(tvInitial);
+    await getFilterGroupAndFilter(tvInitial, 'Structure');
+    await awaitCheck(() => df.filter.trueCount === 5, 'the filter opened again hasn\'t filtered', 5000);
+  });
+
   test('26_clone_layout_scenario', async () => {
     const df = await readDataframe('tests/spgi-100.csv');
     const tvInitial = await createTableView(df);
@@ -696,13 +723,13 @@ category('clone and layout tests', async () => {
 
     //change search type in initial filter and check that cloned filter is synchronized
     filter1.searchTypeInput.value = SubstructureSearchType.IS_SIMILAR;
-    await awaitCheck(() => df.filter.trueCount === 0, 'df hasn\'t been filtered after search type changed', 3000);
+    await awaitCheck(() => df.filter.trueCount === 0, 'df hasn\'t been filtered after search type changed', WAIT);
     await delay(1000);
     filter1.similarityCutOffInput.value = 0.03;
-    await awaitCheck(() => df.filter.trueCount === 25, 'df hasn\'t been filtered after search type changed', 3000);
+    await awaitCheck(() => df.filter.trueCount === 25, 'df hasn\'t been filtered after search type changed', WAIT);
     await awaitCheck(() => filter2.searchType === SubstructureSearchType.IS_SIMILAR &&
       filter2.similarityCutOff === 0.03 && filter2.sketcher.getSmiles() === 'C1CCCCC1',
-    'search type hasn\'t been synchronized', 3000);
+    'search type hasn\'t been synchronized', WAIT);
 
     await closeFilterGroup(initialFilterAndFilterGroup.group);
     await switchToView(tvCloned);
@@ -710,9 +737,9 @@ category('clone and layout tests', async () => {
     await closeFilterGroup((await getFilterGroupAndFilter(tvCloned, 'Structure')).group);
 
     //check that filter and highlight have been reset
-    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', WAIT);
     await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null,
-      'highlight hasn\'t been reset after all filter closed', 3000);
+      'highlight hasn\'t been reset after all filter closed', WAIT);
   });
 
   test('32_clone_layout_scenario', async () => {
@@ -724,9 +751,9 @@ category('clone and layout tests', async () => {
     await filterByStructure(df, filter1, molFileForCloneTest1, 5);
     await closeFilterGroup(initialFilterAndFilterGroup.group);
     //check that filter and highlight have been reset
-    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', WAIT);
     await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null,
-      'highlight hasn\'t been reset after all filter closed', 3000);
+      'highlight hasn\'t been reset after all filter closed', WAIT);
   });
 
   test('33_clone_layout_scenario', async () => {
@@ -757,9 +784,9 @@ category('clone and layout tests', async () => {
     await switchToView(tvInitial);
     await closeFilterGroup(initialFgAndFilter.group);
     //check that filter and highlight have been reset
-    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', 3000);
+    await awaitCheck(() => df.filter.trueCount === 100, 'filter hasn\'t been reset', WAIT);
     await awaitCheck(() => df.col('Structure')!.temp[FILTER_SCAFFOLD_TAG] === null,
-      'highlight hasn\'t been reset after all filter closed', 3000);
+      'highlight hasn\'t been reset after all filter closed', WAIT);
   });
 
   test('terminate search by filter disable', async () => {
@@ -775,7 +802,7 @@ category('clone and layout tests', async () => {
     await awaitCheck(() => df.filter.trueCount !== df.rowCount, 'filtering by 1st structure hasn\'t been started', 60000);
     await disableSubstructureFilter(df, df.rowCount, fgAndFilter.group, fgAndFilter.filter);
     await awaitCheck(() => df.col('smiles')!.temp[FILTER_SCAFFOLD_TAG] === null,
-    'highlight hasn\'t been reset after all filter closed', 3000);
+    'highlight hasn\'t been reset after all filter closed', WAIT);
   });
 
   test('simple layout apply', async () => {
@@ -825,7 +852,7 @@ async function getFilterGroupAndFilter(tv: DG.TableView, colName: string): Promi
   //open filter panel
   const fg = tv.getFiltersGroup();
   //wait for filters added to filter panel
-  await awaitCheck(() => fg.filters.length !== 0, 'filter panel hasn\'t been created', 3000);
+  await awaitCheck(() => fg.filters.length !== 0, 'filter panel hasn\'t been created', WAIT);
   //get required filter from filter panel
   const filter = fg.filters.filter((it: any) => it?.columnName === colName)[0] as SubstructureFilter;
   return {group: fg, filter: filter};
@@ -837,8 +864,7 @@ async function initializeFilter(filter: SubstructureFilter, withMolecule?: boole
   await ui.tools.waitForElementInDom(withMolecule ? filter.sketcher.extSketcherCanvas :
     filter.sketcher.emptySketcherLink); //need to wait for Sketch button to appear in DOM to click it
   withMolecule ? filter.sketcher.extSketcherCanvas.click() : filter.sketcher.emptySketcherLink.click();
-  await awaitCheck(() => filter.sketcher.sketcher?.isInitialized === true,
-    `${DG.chem.currentSketcherType} sketcher hasn't been initialized`, 3000);
+  await filter.sketcher.sketcherReady();
   //close sketcher
   const sketcherDlg = document.getElementsByClassName('d4-dialog')[0];
   Array.from(sketcherDlg!.getElementsByTagName('span')).find((el) => el.textContent === 'OK')?.click();
@@ -857,13 +883,13 @@ async function useAsFilter(tv: DG.TableView, molfile: string, trueCount: number)
     columnName: 'Structure',
     molBlock: molfile,
   }, false);
-  await awaitCheck(() => tv.dataFrame.filter.trueCount === trueCount, 'df hasn\'t been filtered', 3000);
+  await awaitCheck(() => tv.dataFrame.filter.trueCount === trueCount, 'df hasn\'t been filtered', WAIT);
 }
 
 async function checkFilterSynchronized(filter: SubstructureFilter, smiles: string) {
   //check that structure in filter has been updated
   await awaitCheck(() => filter.sketcher.getSmiles() === smiles,
-    'structure in filter in cloned view hasn\'t been updated', 3000);
+    'structure in filter in cloned view hasn\'t been updated', WAIT);
 }
 
 async function cloneView(viewToClone: DG.TableView, df: DG.DataFrame) {
@@ -899,10 +925,7 @@ async function applyLayout(tv: DG.TableView, layout: DG.ViewLayout, df: DG.DataF
   //apply saved layout
   tv.loadLayout(layout);
   //waiting for layout to be applied
-  await awaitCheck(() => {
-    console.log(df.filter.trueCount);
-    return df.filter.trueCount === trueCount;
-  }, 'layout hasn\'t been applied', 3000);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'layout hasn\'t been applied', WAIT);
 }
 
 async function closeView(tv: DG.TableView) {
@@ -915,7 +938,7 @@ async function closeView(tv: DG.TableView) {
         return false;
     }
     return true;
-  }, 'cloned view hasn\'t been closed', 3000);
+  }, 'cloned view hasn\'t been closed', WAIT);
 }
 
 async function closeFilterGroup(fg: DG.FilterGroup) {
@@ -925,10 +948,10 @@ async function closeFilterGroup(fg: DG.FilterGroup) {
 
 async function disableSubstructureFilter(df: DG.DataFrame, trueCount: number, fg: DG.FilterGroup, filter: DG.Filter) {
   fg.setEnabled(filter, false);
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter disable', 3000);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter disable', WAIT);
 } 
 
 async function enableSubstructureFilter(df: DG.DataFrame, trueCount: number, fg: DG.FilterGroup, filter: DG.Filter) {
   fg.setEnabled(filter, true);
-  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter enable', 3000);
+  await awaitCheck(() => df.filter.trueCount === trueCount, 'incorrect true count after filter enable', WAIT);
 } 

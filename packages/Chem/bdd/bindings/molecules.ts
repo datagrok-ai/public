@@ -1,0 +1,418 @@
+/* What the molecules in a column are, read through RDKit in the page (Chem:getRdKitModule): the
+   same molecule in two notations, which rows a transform changed, substructures.
+   Empty cells are compared as empty; a cell RDKit cannot read fails the step with its row. */
+import {Page} from '@playwright/test';
+import {Then} from '@datagrok-libraries/bdd';
+import {type ElementRef, expect, gestures, locate, viewers} from '@datagrok-libraries/bdd/runtime';
+
+declare const grok: any;
+
+type Pair = {row: number; a: string; b: string};
+
+/** Canonical SMILES of every row of the named columns of the current table, '' for an empty cell. */
+async function canonical(page: Page, columns: string[]): Promise<{values: string[][]; unreadable: string[]}> {
+  return page.evaluate(async (names) => {
+    const df = grok.shell.t;
+    for (const n of names)
+      if (!df.col(n))
+        throw new Error(`no "${n}" column in ${df.name}; it has: ${df.columns.names().join(', ')}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const unreadable: string[] = [];
+    const values = names.map((n: string) => {
+      const col = df.col(n);
+      const out: string[] = [];
+      for (let i = 0; i < df.rowCount; i++) {
+        const v = col.isNone(i) ? '' : String(col.get(i));
+        if (v === '') {
+          out.push('');
+          continue;
+        }
+        let mol = null;
+        try {
+          mol = rdkit.get_mol(v);
+          out.push(mol.get_smiles());
+        }
+        catch {
+          out.push('');
+          unreadable.push(`${n} row ${i + 1}`);
+        }
+        finally {
+          mol?.delete();
+        }
+      }
+      return out;
+    });
+    return {values, unreadable};
+  }, columns);
+}
+
+function pairs(a: string[], b: string[]): Pair[] {
+  return a.map((x, i) => ({row: i + 1, a: x, b: b[i]}));
+}
+
+async function expectSameMolecules(page: Page, x: string, y: string): Promise<void> {
+  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
+  expect(unreadable, 'cells RDKit could not read').toEqual([]);
+  expect(a.filter(Boolean).length, `molecules in "${x}"`).toBeGreaterThan(0);
+  const bad = pairs(a, b).filter((p) => p.a !== p.b).map((p) => `row ${p.row}: ${p.a} vs ${p.b}`);
+  expect(bad.slice(0, 10), `rows where "${x}" and "${y}" hold different molecules (${bad.length})`).toEqual([]);
+}
+
+export const sameMolecules = Then('every molecule of {string} column should be the same as in {string} column', (page: Page, x: string, y: string) =>
+  expectSameMolecules(page, x, y), {description: 'canonical SMILES of the two columns equal row by row: the same molecules in any notation'});
+
+export const someMoleculesChanged = Then('some but not all molecules of {string} column should differ from {string} column', async (page: Page, x: string, y: string) => {
+  const {values: [a, b], unreadable} = await canonical(page, [x, y]);
+  expect(unreadable, 'cells RDKit could not read').toEqual([]);
+  const changed = pairs(a, b).filter((p) => p.a !== p.b).length;
+  expect(changed, `rows where "${x}" holds another molecule than "${y}"`).toBeGreaterThan(0);
+  expect(changed, `rows where "${x}" holds another molecule than "${y}"`).toBeLessThan(a.length);
+});
+
+/** The filled rows (1-based) whose molecule contains the query, an RDKit substructure match. */
+function rowsContaining(page: Page, column: string, query: string): Promise<string[]> {
+  return page.evaluate(async ([n, q]) => {
+    const col = grok.shell.t.col(n);
+    if (!col)
+      throw new Error(`no "${n}" column in ${grok.shell.t.name}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const qmol = rdkit.get_qmol(q);
+    const out: string[] = [];
+    try {
+      for (let i = 0; i < col.length; i++) {
+        if (col.isNone(i) || col.get(i) === '')
+          continue;
+        const mol = rdkit.get_mol(col.get(i));
+        try {
+          if (mol.get_substruct_match(qmol) !== '{}')
+            out.push(`row ${i + 1}`);
+        }
+        finally {
+          mol.delete();
+        }
+      }
+    }
+    finally {
+      qmol.delete();
+    }
+    return out;
+  }, [column, query] as [string, string]);
+}
+
+export const moleculesMatching = Then('{int} molecules of {string} column should contain {string}', async (page: Page, count: number, column: string, query: string) => {
+  expect((await rowsContaining(page, column, query)).length, `molecules of "${column}" containing ${query}`).toBe(count);
+});
+
+/** RDKit's canonical SMILES of the cell and of a text; a text RDKit cannot read comes back marked. */
+function sameAsCell(page: Page, row: number, column: string, text: string): Promise<{text: string; cell: string}> {
+  return page.evaluate(async ([i, n, t]) => {
+    const col = grok.shell.t.col(n);
+    if (!col)
+      throw new Error(`no "${n}" column in ${grok.shell.t.name}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const smiles = (v: string) => {
+      const mol = rdkit.get_mol(v);
+      try {
+        return mol.get_smiles();
+      }
+      finally {
+        mol.delete();
+      }
+    };
+    let read = '';
+    try {
+      read = t === '' ? '' : smiles(t);
+    }
+    catch {
+      read = `unreadable: ${t.slice(0, 60)}`;
+    }
+    return {text: read, cell: col.isNone(i - 1) ? '' : smiles(String(col.get(i - 1)))};
+  }, [row, column, text] as [number, string, string]);
+}
+
+export const clipboardMolecule = Then('the clipboard should hold the molecule of row {int} of {string} column', async (page: Page, row: number, column: string) => {
+  let last = {text: '', cell: ''};
+  try {
+    await expect.poll(async () => {
+      last = await sameAsCell(page, row, column, await gestures.readClipboard(page));
+      return last.text === last.cell;
+    }).toBe(true);
+  }
+  catch {
+    throw new Error(`the clipboard holds ${last.text || 'nothing'}, not the molecule of row ${row} of "${column}" (${last.cell})`);
+  }
+}, {description: 'the clipboard text read by RDKit (SMILES, SMARTS or molfile) is the cell\'s molecule; polled, since a copy writes the clipboard asynchronously'});
+
+export const sortedBySimilarity = Then('the first {int} rows of grid should be in falling similarity to row {int} of {string} column', async (page: Page, count: number, row: number, column: string) => {
+  await expect.poll(() => page.evaluate(() => (grok.shell.tv.grid.getRowOrder() as Int32Array)[0] + 1),
+    {message: 'the table row the grid shows first'}).toBe(row);
+  const r = await page.evaluate(async ([k, q, n]) => {
+    const grid = grok.shell.tv.grid;
+    const col = grid.dataFrame.col(n);
+    if (!col)
+      throw new Error(`no "${n}" column in ${grid.dataFrame.name}`);
+    const order: number[] = Array.from(grid.getRowOrder() as Int32Array).slice(0, k);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const fp = (v: string) => {
+      const mol = rdkit.get_mol(v);
+      try {
+        return mol.get_morgan_fp_as_uint8array(JSON.stringify({radius: 2, nBits: 2048}));
+      }
+      finally {
+        mol.delete();
+      }
+    };
+    const bits = (a: Uint8Array) => a.reduce((s, x) => s + x.toString(2).split('1').length - 1, 0);
+    const query = fp(String(col.get(q - 1)));
+    const scores = order.map((i) => {
+      const f = fp(String(col.get(i)));
+      const both = bits(f.map((x: number, j: number) => x & query[j]));
+      const any = bits(f.map((x: number, j: number) => x | query[j]));
+      return any === 0 ? 0 : both / any;
+    });
+    return {first: order[0] + 1, scores};
+  }, [count, row, column] as [number, number, string]);
+  expect(r.first, 'the table row the grid shows first').toBe(row);
+  expect(r.scores[0], 'the similarity of the first row').toBe(1);
+  for (let i = 1; i < r.scores.length; i++)
+    expect(r.scores[i], `the similarity of grid row ${i + 1} against grid row ${i} (${r.scores.join(', ')})`).toBeLessThanOrEqual(r.scores[i - 1] + 1e-9);
+}, {description: 'the grid\'s row order (getRowOrder): the query row first, then Tanimoto on Morgan fingerprints (radius 2, 2048 bits) never rising'});
+
+/** The rows of the current table where the filter and an RDKit substructure match of the query
+ * disagree, with how many rows contain the query, how many pass, and how many RDKit could not read. */
+function filterAgainstQuery(page: Page, column: string, query: string, without = false):
+  Promise<{wrong: string[]; matched: number; unreadable: number; passed: number}> {
+  return page.evaluate(async ([c, q, out]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const qmol = rdkit.get_qmol(q);
+    const wrong: string[] = [];
+    let matched = 0;
+    let unreadable = 0;
+    try {
+      for (let i = 0; i < df.rowCount; i++) {
+        let hit = false;
+        try {
+          const mol = rdkit.get_mol(col.get(i));
+          hit = mol.get_substruct_match(qmol) !== '{}';
+          mol.delete();
+        }
+        catch {
+          unreadable++;
+        }
+        if (hit)
+          matched++;
+        if (hit === out ? df.filter.get(i) : !df.filter.get(i))
+          wrong.push(`row ${i + 1} ${hit ? 'contains it' : 'lacks it'} and ${df.filter.get(i) ? 'passes' : 'is filtered out'}`);
+      }
+    }
+    finally {
+      qmol.delete();
+    }
+    return {wrong, matched, unreadable, passed: df.filter.trueCount};
+  }, [column, query, without] as [string, string, boolean]);
+}
+
+/** Polled until the filter keeps exactly the rows whose molecule contains the query: a filter card
+ * or a tree applies its bitset after the search it started ends. */
+async function expectFilterMatches(page: Page, column: string, query: () => Promise<string>, what: string, someMatch: boolean, without = false): Promise<void> {
+  let q = undefined as string | undefined;
+  let r = undefined as Awaited<ReturnType<typeof filterAgainstQuery>> | undefined;
+  try {
+    await expect.poll(async () => {
+      r = undefined;
+      q = await query();
+      if (q === '')
+        return false;
+      r = await filterAgainstQuery(page, column, q, without);
+      return r.unreadable === 0 && r.wrong.length === 0 && (!someMatch || r.matched > 0);
+    }).toBe(true);
+  }
+  catch (e) {
+    if (q === undefined || (q !== '' && r === undefined))
+      throw e;
+    throw new Error(r === undefined ? `${what} is empty` : `the filter against ${what} (${q}): ${r.unreadable} molecules of "${column}" ` +
+      `RDKit could not read, ${r.wrong.length} rows off (${r.wrong.slice(0, 10).join('; ')}); ${r.matched} contain it, ${r.passed} pass`);
+  }
+}
+
+export const filterPassesMatching = Then('the filter should pass exactly the molecules of {string} column containing {string}', (page: Page, column: string, query: string) =>
+  expectFilterMatches(page, column, async () => query, query, false),
+{description: 'every row passes the filter if and only if its molecule contains the query (RDKit substructure match), polled'});
+
+export const filterPassesLacking = Then('the filter should pass exactly the molecules of {string} column not containing {string}', (page: Page, column: string, query: string) =>
+  expectFilterMatches(page, column, async () => query, query, true, true),
+{description: 'every row passes the filter if and only if its molecule does not contain the query (RDKit substructure match), and some molecule does; polled'});
+
+export const readingIsRowMolecule = Then('the {string} reading of filter panel should be the molecule of row {int} of {string} column', async (page: Page, reading: string, row: number, column: string) => {
+  await expect.poll(() => page.evaluate(async ([name, i, c]) => {
+    // a cloned view leaves the first view's panel in the DOM, hidden
+    const host = Array.from(document.querySelectorAll('[name="viewer-Filters"]')).find((e) => (e as HTMLElement).offsetParent !== null);
+    const values = host == null ? {} : (window as any).__bdd.viewerOf(host).getWidgetStatus()?.values ?? {};
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const smiles = (v: string) => {
+      if (!v)
+        return '';
+      const mol = rdkit.get_mol(v);
+      try {
+        return mol.get_smiles();
+      }
+      finally {
+        mol.delete();
+      }
+    };
+    return smiles(String(values[name] ?? '')) === smiles(String(grok.shell.t.col(c).get(i - 1)));
+  }, [reading, row, column] as [string, number, string]), {message: `the "${reading}" reading as the molecule of row ${row} of "${column}"`}).toBe(true);
+}, {description: 'the reading and the cell read by RDKit as the same molecule'});
+
+export const cardsFromFilteredRows = Then('every card of {widget} should show a row that passes the filter', async (page: Page, target: ElementRef) => {
+  let seen = '';
+  await expect.poll(async () => {
+    const r = await viewers.onViewer(page, target, (e) => {
+      const v = (window as any).__bdd.viewerOf(e);
+      const rows = String(v.getWidgetStatus()?.values?.['card row set'] ?? '').split(', ').filter(Boolean).map(Number);
+      const df = grok.shell.t;
+      return {rows, out: rows.filter((i: number) => !df.filter.get(i)).length, passing: df.filter.trueCount, limit: v.limit};
+    });
+    seen = `cards ${r.rows.join(', ')}; ${r.out} of them filtered out; ${r.passing} rows pass, limit ${r.limit}`;
+    return r.out === 0 && r.rows.length === Math.min(r.passing, r.limit);
+  }, {message: 'the cards against the rows that pass the filter'}).toBe(true).catch(() => {
+    throw new Error(`the cards are not the rows that pass the filter: ${seen}`);
+  });
+}, {description: 'the viewer\'s "card row set" reading against the table filter: each card is a passing row, and there are as many cards as passing rows up to the limit'});
+
+/** In the page: the rows of the current table's column that `query` finds (a SMARTS, or a molblock read as Chem's search
+ * reads a query molblock, unsanitized), against those `smarts` finds; the rows only one of them finds. */
+function queriesAgainst(page: Page, column: string, query: string, smarts: string):
+  Promise<{onlyQuery: number[], onlySmarts: number[], found: number, unreadable: number}> {
+  return page.evaluate(async ([c, q, s]) => {
+    const df = grok.shell.t;
+    const col = df.col(c);
+    if (!col)
+      throw new Error(`no "${c}" column in ${df.name}`);
+    const rdkit = await grok.functions.call('Chem:getRdKitModule');
+    const qmol = (text: string) => {
+      const m = rdkit.get_qmol(text);
+      if (text.includes('M  END')) {
+        try {
+          m.convert_to_aromatic_form();
+        } catch {
+          // a query RDKit cannot aromatize is matched as it is, as Chem's search does
+        }
+      }
+      return m;
+    };
+    const a = qmol(q);
+    const b = qmol(s);
+    const onlyQuery: number[] = [];
+    const onlySmarts: number[] = [];
+    let found = 0;
+    let unreadable = 0;
+    try {
+      for (let i = 0; i < df.rowCount; i++) {
+        let mol = null;
+        try {
+          mol = rdkit.get_mol(col.get(i));
+        } catch {
+          mol = null;
+        }
+        if (!mol) {
+          unreadable++;
+          continue;
+        }
+        try {
+          const x = mol.get_substruct_match(a) !== '{}';
+          const y = mol.get_substruct_match(b) !== '{}';
+          if (x)
+            found++;
+          if (x && !y)
+            onlyQuery.push(i + 1);
+          if (y && !x)
+            onlySmarts.push(i + 1);
+        } finally {
+          mol.delete();
+        }
+      }
+    } finally {
+      a.delete();
+      b.delete();
+    }
+    return {onlyQuery, onlySmarts, found, unreadable};
+  }, [column, query, smarts] as [string, string, string]);
+}
+
+async function expectSameRows(page: Page, column: string, read: () => Promise<string>, what: string, smarts: string): Promise<void> {
+  let seen = '';
+  await expect.poll(async () => {
+    const q = await read();
+    if (!q) {
+      seen = `${what} is empty`;
+      return false;
+    }
+    const r = await queriesAgainst(page, column, q, smarts);
+    seen = `${what} (${q.includes('M  END') ? 'a molblock' : q}) finds ${r.found} molecules of "${column}"; rows only it finds: ` +
+      `${r.onlyQuery.slice(0, 10).join(', ') || 'none'}; rows only ${smarts} finds: ${r.onlySmarts.slice(0, 10).join(', ') || 'none'}`;
+    return r.unreadable === 0 && r.onlyQuery.length === 0 && r.onlySmarts.length === 0 && r.found > 0;
+  }, {message: `${what} against ${smarts}`}).toBe(true).catch(() => {
+    throw new Error(seen);
+  });
+}
+
+export const readingFindsAs = Then('the {string} reading of {widget} should find exactly the molecules of {string} column containing {string}',
+  (page: Page, reading: string, target: ElementRef, column: string, smarts: string) =>
+    expectSameRows(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
+      String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, smarts),
+{description: 'a query a widget reports (a SMARTS), matched against the current table\'s column by RDKit, finds exactly the molecules the SMARTS finds, some of them; polled'});
+
+export const ketcherQueryFinds = Then('the query Ketcher shows in sketcher dialog should find exactly the molecules of {string} column containing {string}',
+  (page: Page, column: string, smarts: string) =>
+    expectSameRows(page, column, () => page.evaluate(async () => {
+      // the molfile KetcherSketcher exported of what Ketcher shows, at its last change (`_molV2000`, once what the host set
+      // has loaded), not the host's getters, which give back the string the host set until the user's next edit
+      const shown = Array.from(document.querySelectorAll('.d4-dialog .chem-sketcher-host > *')).pop();
+      const impl = shown ? (window as any).DG.Widget.find(shown) : null;
+      if (!impl?._sketcher)
+        return '';
+      await impl._loading;
+      return impl._molV2000 ?? '';
+    }), 'the query Ketcher shows', smarts),
+{description: 'the molfile KetcherSketcher exports of what Ketcher shows in the open sketcher dialog, read by RDKit as Chem\'s search reads a query molblock, finds exactly the molecules of the current table\'s column the SMARTS finds; polled'});
+
+export const filterMatchesReading = Then('the filter should pass exactly the molecules of {string} column containing the {string} reading of {widget}', (page: Page, column: string, reading: string, target: ElementRef) =>
+  expectFilterMatches(page, column, () => viewers.onViewer(page, target, (e, name: any) =>
+    String((window as any).__bdd.viewerOf(e).getWidgetStatus()?.values?.[name] ?? ''), reading), `the "${reading}" reading`, true),
+{description: 'the scaffold a viewer reports, matched against the column by RDKit, against what the table filter keeps; some molecule must contain it; polled'});
+
+export const sketcherHolds = Then('the sketcher in {element} should hold the molecule {string}', async (page: Page, target: ElementRef, smiles: string) => {
+  const root = (await locate(page, target)).filter({visible: true}).first();
+  let seen = '';
+  await expect.poll(async () => {
+    const r = await root.evaluate(async (e, want: string) => {
+      // the sketcher the host shows in its box, a widget the platform knows (DG.chem.SketcherBase): whichever it is
+      const shown = e.querySelector('.chem-sketcher-host > *');
+      const sketcher = shown ? (window as any).DG.Widget.find(shown) : null;
+      if (!sketcher?.isInitialized)
+        return {value: '', want: '', note: 'no sketcher ready'};
+      const rdkit = await grok.functions.call('Chem:getRdKitModule');
+      const canonical = (v: string) => {
+        if (!v)
+          return '';
+        const mol = rdkit.get_mol(v);
+        try {
+          return mol.get_smiles();
+        }
+        finally {
+          mol.delete();
+        }
+      };
+      return {value: canonical(sketcher.smiles), want: canonical(want), note: ''};
+    }, smiles);
+    seen = r.note || r.value;
+    return r.value !== '' && r.value === r.want;
+  }, {message: `the molecule the sketcher in ${target.phrase} holds`}).toBe(true).catch(() => {
+    throw new Error(`the sketcher in ${target.phrase} holds ${seen || 'nothing'}, not ${smiles}`);
+  });
+}, {description: 'what the molecule sketcher in the element draws, whichever sketcher it is: its SMILES getter (the platform\'s SketcherBase), read by RDKit and compared with the one named'});

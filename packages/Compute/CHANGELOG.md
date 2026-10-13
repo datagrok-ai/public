@@ -1,6 +1,6 @@
 # Compute changelog
 
-## v.next
+## 1.45.4 (2026-09-23)
 
 * Removed the developer-only Test runner menu (Run/Execute/Update Test JSON) and the `testPipeline` export; the helper's import cycle in compute-utils broke package initialization on the workspace build
 

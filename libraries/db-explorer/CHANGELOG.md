@@ -1,5 +1,9 @@
 # db-explorer changelog
 
+## v.next
+
+* A connection whose schema cannot be loaded (a database the stand cannot reach) is reported as a warning with its error, no longer also as a console error on the first molecule made current
+
 ## 1.7.2 (2026-01-21)
 
 * Fix tooltip texts in join editor

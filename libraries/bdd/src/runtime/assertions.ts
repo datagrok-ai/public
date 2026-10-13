@@ -2,7 +2,7 @@
 import {Locator, Page} from '@playwright/test';
 import {expect} from './patience.js';
 import type {ElementRef} from './args.js';
-import {editorOf, readExpanded, readSwitch, switchOf} from './gestures.js';
+import {CHECKABLE, editorOf, openPropertyEditor, readExpanded, readSwitch, switchOf, whenPresent} from './gestures.js';
 import {exactText, locate, locateActionable, refOf} from './locate.js';
 
 import type {State} from '../states.js';
@@ -12,9 +12,11 @@ export {STATES} from '../states.js';
 const INVALID_CLASSES = ['d4-invalid', 'd4-forced-invalid', 'u2-input-invalid'];
 
 const ROWS = ['.u2-list-row', '[role="option"]', '[role="row"]', '[role="tab"]', 'option', '.d4-list-item', '[name="legend-item"]', 'tbody tr', 'tr', 'li'];
-// a dock manager's tab says which of its handles is shown with a class of its own, and nothing else
+// a dock manager's tab, a gallery's view-mode icon and a Mol* viewport toggle say which is on with a
+// class of their own; d4-current elsewhere in a gallery marks the current card, not a selection
 const SELECTED = '[aria-selected="true"], [aria-pressed="true"], [aria-checked="true"], [aria-current]:not([aria-current="false"]), ' +
-  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected';
+  '.u2-list-row-selected, .tab-handle-selected, .dockspan-tab-handle-selected, .grok-gallery-search-bar .d4-current, ' +
+  '.msp-btn-link-toggle-on';
 
 export async function expectState(page: Page, target: ElementRef, state: State, negate = false): Promise<void> {
   const loc = ['visible', 'hidden', 'present', 'absent', 'enabled', 'disabled'].includes(state) ?
@@ -57,10 +59,10 @@ export async function expectSwitched(page: Page, target: ElementRef, on: boolean
 }
 
 /** Several matches (stacked balloons, repeated rows): visible when any is, hidden when none is —
- * one query either way. */
-async function expectVisible(loc: Locator, visible: boolean): Promise<void> {
+ * one query either way. `timeout` is for what a long computation produces (a search's hits). */
+export async function expectVisible(loc: Locator, visible: boolean, timeout?: number): Promise<void> {
   const shown = loc.filter({visible: true});
-  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0) : expect(shown, 'hidden expected').toHaveCount(0));
+  await (visible ? expect(shown, 'visible expected').not.toHaveCount(0, {timeout}) : expect(shown, 'hidden expected').toHaveCount(0, {timeout}));
 }
 
 /** Options and tabs say `aria-selected`, toggles and cards `aria-pressed`, radio-like buttons
@@ -89,7 +91,7 @@ async function expectEnabled(loc: Locator, enabled: boolean): Promise<void> {
     if (els.length === 0)
       return undefined;
     const marked = (e: Element) => e.getAttribute('aria-disabled') === 'true' ||
-      ['u2-input-disabled', 'd4-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
+      ['u2-input-disabled', 'd4-disabled', 'd4-filter-disabled', 'd4-menu-item-disabled'].some((c) => e.classList.contains(c));
     return els.every((el) => {
       for (let e: Element | null = el; e; e = e.parentElement) {
         if (marked(e))
@@ -119,7 +121,7 @@ async function expectInvalid(loc: Locator, invalid: boolean): Promise<void> {
 }
 
 async function expectChecked(loc: Locator, checked: boolean): Promise<void> {
-  const box = loc.locator('input[type="checkbox"], input[type="radio"], [role="checkbox"], [role="switch"]').first();
+  const box = (await whenPresent(loc)).locator(CHECKABLE).first();
   const target = await box.count() > 0 ? box : loc;
   await (checked ? expect(target) : expect(target).not).toBeChecked();
 }
@@ -164,7 +166,7 @@ export async function expectValueBetween(page: Page, target: ElementRef, lo: num
  * instead of waiting for the input that is about to arrive (a model reopened from its own address).
  * `undefined` is "nothing can answer yet", which keeps the poll going. A `<select>` answers with the
  * text of the chosen option, which is what the reader sees. */
-async function readValue(page: Page, target: ElementRef): Promise<string | undefined> {
+export async function readValue(page: Page, target: ElementRef): Promise<string | undefined> {
   const editor = await editorOf(page, target).catch(() => undefined);
   if (editor === undefined)
     return undefined;
@@ -185,6 +187,37 @@ export async function expectValue(page: Page, target: ElementRef, value: string,
   }
   await expect.poll(() => readValue(page, target), {message: `${message} (something that can hold one)`}).not.toBe(undefined);
   await expect.poll(() => readValue(page, target), {message}).not.toBe(value);
+}
+
+/** The choices a dropdown offers, in order: a native `<select>`'s options, else the element's own
+ * option rows. The blank option of a nullable dropdown is no choice, and a phrase cannot name it. */
+function dropdownChoices(loc: Locator): Promise<string[]> {
+  return loc.first().evaluate((e) => {
+    const select = e.tagName === 'SELECT' ? e as HTMLSelectElement : e.querySelector('select');
+    const items = select ? Array.from(select.options) : Array.from(e.querySelectorAll('[role="option"]'));
+    return items.map((o) => (o.textContent ?? '').trim()).filter(Boolean);
+  }).catch(() => [] as string[]);
+}
+
+export async function expectOptions(page: Page, target: ElementRef, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  const loc = await locate(page, target);
+  await openPropertyEditor(loc);
+  await expect.poll(() => dropdownChoices(loc), {message: `the choices ${target.phrase} offers`}).toEqual(want);
+}
+
+/** One choice among those a dropdown offers, or missing from them; the dropdown must offer something,
+ * so an empty or missing one cannot pass. */
+export async function expectOption(page: Page, target: ElementRef, option: string, offered: boolean): Promise<void> {
+  const loc = await locate(page, target);
+  await openPropertyEditor(loc);
+  const message = `the choices ${target.phrase} offers`;
+  if (offered) {
+    await expect.poll(() => dropdownChoices(loc), {message}).toContain(option);
+    return;
+  }
+  await expect.poll(async () => (await dropdownChoices(loc)).length, {message: `${message}: any`}).toBeGreaterThan(0);
+  await expect.poll(() => dropdownChoices(loc), {message}).not.toContain(option);
 }
 
 /** Rows of a collection: the first row vocabulary that has any is the one counted. */

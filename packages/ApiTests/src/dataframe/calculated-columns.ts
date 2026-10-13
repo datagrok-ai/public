@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {Subscription} from 'rxjs';
+import dayjs from 'dayjs';
 import {after, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 
@@ -45,6 +46,36 @@ category('DataFrame: Calculated columns', () => {
       df.columns.remove('new');
     }
   }, {skipReason: typeof process !== 'undefined' ? 'client package functions are not loaded in NodeJS' : undefined});
+
+  test('Rows the formula fails on', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a', '2023-03-07'])]);
+    const empty = await t.columns.addNewCalculated('empty', 'DateParse(${s})');
+    expect(empty.isNone(1), true);
+    expect(empty.getTag(DG.Tags.FormulaErrorBehavior) == null, true);
+
+    const filled = await t.columns.addNewCalculated('filled', 'DateParse(${s})',
+      {type: 'datetime', onError: {mode: 'value', value: dayjs.utc('1900-01-01'), errorColumn: true}});
+    expect(filled.get(1)!.valueOf(), dayjs.utc('1900-01-01').valueOf());
+    const errors = t.col('filled errors')!;
+    expect(errors.get(1).includes('n/a'), true);
+    expect(errors.isNone(0), true);
+    expect(JSON.parse(filled.getTag(DG.Tags.FormulaErrorBehavior)!).errorColName, 'filled errors');
+
+    let rejected = false;
+    try {
+      await t.columns.addNewCalculated('strict', 'DateParse(${s})', {onError: {mode: 'stop'}});
+    } catch (_) {
+      rejected = true;
+    }
+    expect(rejected, true);
+    expect(t.col('strict'), null);
+
+    const q = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['1.5', 'n/a'])]);
+    const qnum = await q.columns.addNewCalculated('q', 'ParseFloat(${s})',
+      {type: 'qnum', onError: {mode: 'value', value: DG.Qnum.less(5)}});
+    expect(DG.Qnum.qualifier(qnum.get(1)), '<');
+    expect(DG.Qnum.getValue(qnum.get(1)), 5);
+  });
 
   test('Add new column dialog', () => new Promise(async (resolve, reject) => {
     if ((await grok.dapi.packages.filter('PowerPack').list({pageSize: 5})).length > 0)

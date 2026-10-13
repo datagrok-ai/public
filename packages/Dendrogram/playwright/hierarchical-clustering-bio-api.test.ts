@@ -86,16 +86,8 @@ sub_features_covered: [dendrogram.clustering.api, dendrogram.api.get-tree-helper
 // Spec BODY unchanged (no paradigm pivot — same apitest paradigm, same
 // compute path, same softStep structure, same assertion shape).
 //
-// SR-03 centroid+sequence platform bug: the centroid-linkage compute path
-// throws a downstream TypeError ("Cannot read properties of undefined (reading
-// 'children')") after the WASM cluster-matrix worker, so euclidean+centroid
-// and manhattan+centroid never mount. Bilateral evidence with the chem-api
-// sibling (centroid+molecule) localizes it to the centroid-linkage tree
-// traversal in hierarchical-clustering.ts (~lines 165-170). We do NOT soften
-// this to a console.warn: the 12 stable combos hard-assert the full contract,
-// and the 2 centroid combos assert the current broken state (xfail) so the
-// test goes RED the moment the platform fix lands. File a GROK ticket and
-// restore the hard mounted==true assertion for centroid then.
+// SR-03 (centroid linkage on the sequence path never mounting) is fixed since
+// cf13df6572 (math: centroid clustering); all 14 combos assert the full contract.
 //
 // Scope reductions (recorded during MCP recon 2026-06-03):
 //   SR-01: `getClusterMatrixWorker` direct import not available.
@@ -343,11 +335,7 @@ test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix 
           // The registered function returns BEFORE the async compute
           // resolves — wait for the neighbor mount as the deterministic
           // ready signal (same pattern as the chem-api sibling spec).
-          // The 12 non-centroid combos mount in 126-191ms; the 2
-          // centroid+sequence combos exhaust the budget (15s wall-clock)
-          // due to the known platform TypeError (SR-03). A shorter
-          // per-combo budget (30 * 500ms = 15s) bounds the worst case
-          // at ~30s total for the 2 broken combos.
+          // Combos mount in 126-191ms; 30 * 500ms = 15s bounds a hang.
           let mounted = false;
           for (let i = 0; i < 30; i++) {
             if (document.querySelector('.dendrogram-assign-clusters-bttn')) { mounted = true; break; }
@@ -378,30 +366,14 @@ test('Dendrogram / Hierarchical Clustering (bio) — Distance × Linkage matrix 
         expect(result.unsupportedType,
           `(distance=${distance}, linkage=${linkage}) no "Unsupported column type" error — macromolecule branch must run`)
           .toEqual([]);
-        if (linkage === 'centroid') {
-          // SR-03 known platform bug: the centroid-linkage compute path throws
-          // a downstream TypeError ("Cannot read properties of undefined
-          // (reading 'children')") after the WASM cluster-matrix worker, so the
-          // neighbor never mounts and a fatal console error fires. Bilateral
-          // evidence with hierarchical-clustering-chem-api centroid combos.
-          // We assert the CURRENT broken state (xfail) so this test goes RED —
-          // prompting restoration of the hard fatalErrors==[]/mounted==true
-          // invariants below — the moment the platform fix lands. File/track
-          // under a GROK ticket; do NOT silently pass.
-          expect(result.mounted,
-            `(distance=${distance}, linkage=centroid) SR-03 known platform bug: neighbor must NOT mount until fixed — when this FAILS the bug is resolved: delete this branch and assert mounted==true`)
-            .toBe(false);
-        } else {
-          // The scenario's contract for the 12 stable combos: no fatal console
-          // error, and the neighbor mounts — i.e. parseClusterMatrix returned a
-          // valid NodeType and injectTreeForGridUI2 wired it to the grid.
-          expect(result.fatalErrors,
-            `(distance=${distance}, linkage=${linkage}) no fatal console error during compute`)
-            .toEqual([]);
-          expect(result.mounted,
-            `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted — parseClusterMatrix returned a valid NodeType and injectTreeForGridUI2 wired the tree to the grid`)
-            .toBe(true);
-        }
+        // Contract for all 14 combos: no fatal console error, and the neighbor mounts — i.e.
+        // parseClusterMatrix returned a valid NodeType and injectTreeForGridUI2 wired it to the grid.
+        expect(result.fatalErrors,
+          `(distance=${distance}, linkage=${linkage}) no fatal console error during compute`)
+          .toEqual([]);
+        expect(result.mounted,
+          `(distance=${distance}, linkage=${linkage}) GridNeighbor mounted — parseClusterMatrix returned a valid NodeType and injectTreeForGridUI2 wired the tree to the grid`)
+          .toBe(true);
       });
     }
   }

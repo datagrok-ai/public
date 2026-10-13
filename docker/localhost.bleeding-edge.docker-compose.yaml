@@ -1,26 +1,35 @@
 # Datagrok local stack tracking unreleased images.
 #
-# This file is bound to a single release train. `x-datagrok-release` names it, and every
-# datagrok/* image below defaults to a tag from that train. The compose file and the images
-# it starts must always come from the same train — pairing them across trains makes the
-# server fail to start. See `localhost.docker-compose.yaml` for the full rationale.
+# Generated from `localhost.docker-compose.yaml`: same body, same `bleeding-edge` train.
+# Do not edit the services here -- change the canonical file and regenerate this one, or the
+# two drift and this file ends up starting bleeding-edge images with a body written for an
+# older release. See `localhost.docker-compose.yaml` for the release-binding rationale.
 x-datagrok-release: bleeding-edge
 
 # Shared by every jkg_* gateway below. They differ only in image and network alias.
 x-jkg: &jkg
+  platform: linux/amd64
   environment:
     GROK_PARAMETERS: |
       {
-        "queueSettings": {"amqpHost": "rabbitmq", "pipeHost": "grok_pipe", "pipeKey": "test-key", "maxConcurrentCalls": 6}
+        "queueSettings": {"useQueue": true, "amqpHost": "rabbitmq", "amqpUser": "guest", "amqpPassword": "guest", "amqpPort": 5672, "pipeHost": "grok_pipe", "pipePort": 3000, "pipeKey": "test-key", "maxConcurrentCalls": 4}
       }
   restart: unless-stopped
   depends_on:
     rabbitmq:
       condition: service_started
+      restart: true
+    grok_pipe:
+      condition: service_started
+      restart: false
+    datagrok:
+      condition: service_started
+      restart: false
 
 services:
   rabbitmq:
     image: rabbitmq:4.0.5-management
+    platform: linux/amd64
     container_name: rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: guest
@@ -37,9 +46,10 @@ services:
 
   grok_pipe:
     image: datagrok/grok_pipe:${GROK_PIPE_VERSION:-bleeding-edge}
+    platform: linux/amd64
     container_name: grok_pipe
     ports:
-      - "3000:3000"
+      - "${GROK_PIPE_PORT:-3000}:3000"
     environment:
       API_KEY: test-key
     networks:
@@ -52,6 +62,7 @@ services:
   datagrok:
     privileged: true
     image: datagrok/datagrok:${DATAGROK_VERSION:-bleeding-edge}
+    platform: linux/amd64
     environment:
       GROK_PARAMETERS: |
         {
@@ -65,32 +76,32 @@ services:
           "adminPassword": "admin",
           "adminDevKey": "admin",
           "isolatesCount": 2,
-          "connectorsSettings": {
-            "dataframeParsingMode":"New Thread",
-            "externalDataFrameCompress":true,
-            "grokConnectHost":"grok_connect",
-            "grokConnectPort":1234,
-            "localFileSystemAccess":false,
-            "sambaSpaceEscape":"none",
-            "sambaVersion":"3.0"
-          },
+          "dataframeParsingMode":"New Thread",
+          "externalDataFrameCompress":true,
+          "localFileSystemAccess":false,
+          "sambaSpaceEscape":"none",
+          "sambaVersion":"3.0",
+          "connectorsSettings": [
+            {"grokConnectHost":"grok_connect","grokConnectPort":1234},
+            {"grokConnectHost":"grok_connect_adbc","grokConnectPort":1235}
+          ],
           "dockerSettings": {
             "grokSpawnerApiKey": "test-x-api-key",
             "grokSpawnerHost": "grok_spawner",
             "grokSpawnerPort": 8000,
             "imageBuildTimeoutMinutes": 30,
-            "containerStatusTimeoutMinutes": 5,
             "proxyRequestTimeout": 60000
           },
           "queueSettings": {
+            "useQueue": true,
             "amqpHost": "rabbitmq",
             "amqpPassword": "guest",
             "amqpPort": 5672,
             "amqpUser": "guest",
             "pipeHost": "grok_pipe",
             "pipeKey": "test-key"
+            }
           }
-        }
     ports:
       - "${DATAGROK_PORT:-8080}:8080/tcp"
     networks:
@@ -101,8 +112,6 @@ services:
       db:
         condition: service_healthy
         restart: false
-      rabbitmq:
-        condition: service_started
     volumes:
       - datagrok_data:/home/grok/data
       - datagrok_cfg:/home/grok/cfg
@@ -111,12 +120,12 @@ services:
 
   grok_spawner:
     image: datagrok/grok_spawner:${GROK_SPAWNER_VERSION:-bleeding-edge}
+    platform: linux/amd64
     user: root
     environment:
-      GROK_SPAWNER_DATAGROK_API_URL: http://datagrok:8080/api
       X_API_KEY: test-x-api-key
       GROK_SPAWNER_ENVIRONMENT: ${COMPOSE_PROJECT_NAME:-localhost}
-      GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-true}
+      GROK_SPAWNER_CORE_MODE: ${GROK_SPAWNER_CORE_MODE:-false}
     ports:
       - "${GROK_SPAWNER_PORT:-8000}:8000/tcp"
     networks:
@@ -130,18 +139,34 @@ services:
 
   grok_connect:
     image: datagrok/grok_connect:${GROK_CONNECT_VERSION:-bleeding-edge}
-    networks:
-      datagrok:
-        aliases:
-          - grok_connect
+    platform: linux/amd64
     environment:
       CONNECTION_POOL_MAXIMUM_SIZE: 50
       CONNECTION_POOL_IDLE_TIMEOUT: 300000
       GROK_CONNECT_PORT: 1234
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect
     ports:
       - "${GROK_CONNECT_PORT:-1234}:1234/tcp"
     restart: unless-stopped
     profiles: [ "all", "grok_connect" ]
+
+  grok_connect_adbc:
+    image: datagrok/grok_connect_adbc:${GROK_CONNECT_ADBC_VERSION:-bleeding-edge}
+    platform: linux/amd64
+    environment:
+      GROK_CONNECT_PORT: 1235
+      RUST_LOG: grok_connect_adbc=info
+    networks:
+      datagrok:
+        aliases:
+          - grok_connect_adbc
+    ports:
+      - "${GROK_CONNECT_ADBC_PORT:-1235}:1235/tcp"
+    restart: unless-stopped
+    profiles: [ "all", "grok_connect_adbc" ]
 
   # Per-language kernel gateways. These replaced the single all-languages
   # datagrok/jupyter_kernel_gateway image, which is no longer built. `scripting` (and
@@ -195,6 +220,7 @@ services:
 
   db:
     image: pgvector/pgvector:pg17
+    platform: linux/amd64
     shm_size: 2gb
     environment:
       POSTGRES_USER: postgres

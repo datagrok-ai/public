@@ -4,10 +4,10 @@ import * as DG from 'datagrok-api/dg';
 
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
-import {Observable} from 'rxjs';
+import {BehaviorSubject, Observable, interval} from 'rxjs';
 import $ from 'cash-dom';
-import { _package } from '../../../package';
-import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
+import {_package} from '../../../package';
+import {getPlatform, Platform, platformKeyMap} from '../../shortcuts';
 
 
 export class ActivityCliffsTutorial extends Tutorial {
@@ -27,7 +27,7 @@ export class ActivityCliffsTutorial extends Tutorial {
   get icon() {
     return '🧬⛰️';
   }
-  
+
   helpUrl: string = 'https://datagrok.ai/help/datagrok/solutions/domains/chem/#activity-cliffs';
   demoTable: string = '';
   prerequisites: TutorialPrerequisites = {packages: ['Chem']};
@@ -55,7 +55,8 @@ export class ActivityCliffsTutorial extends Tutorial {
     Let's launch the Activity Cliffs tool.`);
 
     const d = await this.openDialog('On the Top Menu, click Chem > Analyze > Activity Cliffs...',
-    'Activity Cliffs', this.getMenuItem('Chem', true));
+      'Activity Cliffs', () => this.getMenuItem('Chem', true), '',
+      () => grok.shell.v.ribbonMenu.find('Chem | Analyze | Activity Cliffs...').click());
 
     // <a href="https://datagrok.ai/help/datagrok/solutions/domains/chem/#exploring-chemical-data">
     //Learn more about exploring chemical data</a><br>
@@ -64,51 +65,56 @@ export class ActivityCliffsTutorial extends Tutorial {
     this.describe(`In the <b>Activity Cliffs</b> dialog, you can specify parameters like the similarity
     cutoff or the dimensionality reduction algorithm. For this tutorial, let's continue with the default settings.`);
 
-    await this.action('Click OK', d.onClose, $(d.root).find('button.ui-btn.ui-btn-ok')[0]);
-
+    // the analysis can finish before the next step starts, so the plot is captured from the moment OK is clicked
     let v: DG.ScatterPlotViewer;
-    await this.action('Wait for analysis to complete',
-      grok.events.onViewerAdded.pipe(filter((data: DG.EventData) => {
-        const found = data.args.viewer.type === DG.VIEWER.SCATTER_PLOT;
-        if (found)
-          v = data.args.viewer;
-        return found;
-      })));
+    const plotAdded = new BehaviorSubject<boolean>(false);
+    const plotSub = grok.events.onViewerAdded
+      .pipe(filter((data: DG.EventData) => data.args.viewer.type === DG.VIEWER.SCATTER_PLOT))
+      .subscribe((data: DG.EventData) => {
+        v = data.args.viewer;
+        plotSub.unsubscribe();
+        plotAdded.next(true);
+      });
+
+    await this.dialogOkAction(d, 'Click OK');
+    await this.action('Wait for analysis to complete', plotAdded.pipe(filter((added) => added)), null, '', null);
+    plotSub.unsubscribe();
 
     this.title('Start analyzing the results', true);
     this.describe(`Activity cliffs are visualized on an interactive scatterplot,
     where the proximity of the points indicates structural similarity.`);
 
-    await this.action('Hover over data points for molecule information', new Observable((subscriber: any) => {
-      const onMousemove = () => {
-        if ($('.d4-tooltip').css('display') === 'block') {
-          subscriber.next(true);
-          v.root.removeEventListener('mousemove', onMousemove);
-        }
-      };
-      v.root.addEventListener('mousemove', onMousemove);
-    }));
+    // the platform reports the tooltip; checking for it on mousemove needed a second move, because
+    // the first one is what raises it
+    await this.action('Hover over data points for molecule information',
+      grok.events.onTooltipShown.pipe(filter(() => v.root.matches(':hover'))));
 
-    await this.action('To view only the cliffs, toggle Show only cliffs.', new Observable((subscriber: any) => {
-      $('.ui-input-switch').one('click', () => subscriber.next(true));
-    }), $('.ui-input-switch').get(0));
+    // the switch filters the table to the cliffs and says so in a tag; any other switch on the page does not
+    const cliffsSwitch = () => v.root.querySelector('.cliffs_div .ui-input-switch') as HTMLElement ?? null;
+    await this.action('To view only the cliffs, toggle Show only cliffs.',
+      interval(200).pipe(filter(() => !!v.dataFrame.getTag('filterCliffs'))), cliffsSwitch, '',
+      () => cliffsSwitch().click());
 
     this.title('Zoom in on the area of interest', true);
     this.describe(`On the scatterplot, the marker color corresponds to the activity level, and the size represents
     the maximum detected activity cliff for that molecule. The pairs with larger red markers may be
-    particularly interesting as they indicate molecules with high activity levels and significant detected activity cliffs.<br>
+    particularly interesting as they indicate molecules with high activity levels and significant ` +
+      `detected activity cliffs.<br>
     Let’s zoom in. Use <b>${platformKeyMap['Alt'][this.platform]} + Mouse Drag</b>.`);
 
-    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed);
-    
+    await this.action(`Press Use ${platformKeyMap['Alt'][this.platform]} + Mouse Drag to zoom in`, v!.onZoomed,
+      null, '', () => v.zoom(v.viewport.x, v.viewport.y, v.viewport.midX, v.viewport.midY));
+
     this.title('Explore the pairs of molecules', true);
-    this.describe(`The opacity of the green line connecting molecules corresponds to the magnitude of the activity cliff.
-    Hover over it to view structural differences between a molecule pair, or click it to see the pair in the <b>Context Panel</b>`);
+    this.describe(`The opacity of the green line connecting molecules corresponds to the magnitude of the ` +
+      `activity cliff.
+    Hover over it to view structural differences between a molecule pair, or click it to see the pair in the ` +
+      `<b>Context Panel</b>`);
 
     await this.action('Hover over the green line to see the pair of molecules',
       grok.events.onTooltipShown.pipe(filter((_) => {
         return $('.d4-tooltip').text().startsWith('smilesActivity');
-    })), undefined, 'Note the difference in their structures');
+      })), undefined, 'Note the difference in their structures');
 
     await this.action('Click on the green line connecting that molecule pair', new Observable((subscriber: any) => {
       const observer = new MutationObserver((mutationsList, observer) => {
@@ -123,7 +129,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     }));
 
     await this.action('On the Context Panel, click any molecule', this.t.onCurrentRowChanged,
-      undefined, 'Note changes in the grid');
+      undefined, 'Note changes in the grid', () => this.t!.currentRowIdx = this.t!.currentRowIdx === 0 ? 1 : 0);
 
     this.title('Add a summary table with cliffs', true);
     this.describe(`Let’s help our analysis and include a table listing all pairs identified as cliffs.
@@ -131,7 +137,7 @@ export class ActivityCliffsTutorial extends Tutorial {
     and other interactions.`);
 
     await this.buttonClickAction(v!.root, 'At the top right corner of the scatterplot, click 15 CLIFFS', '15 cliffs',
-    'A table is added to the view');
+      'A table is added to the view');
 
     let initH: number;
     const grid: DG.Grid = [...tv.viewers].find((v) => v.dataFrame.columns.length === 6) as DG.Grid;
@@ -160,6 +166,7 @@ export class ActivityCliffsTutorial extends Tutorial {
             sub.unsubscribe();
           }
         });
-    }), undefined, 'Note the changes on the scatterplot’s view and the source table');
+      }), undefined, 'Note the changes on the scatterplot’s view and the source table',
+      () => Tutorial.clickCell(grid, 'From', 0));
   }
 }

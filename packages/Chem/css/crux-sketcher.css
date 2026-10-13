@@ -1,0 +1,20 @@
+/* A preferred size, not a minimum: a box sized by its content (a dialog as it opens) gives the sketcher 500 x 400,
+   a box sized from outside (a resized dialog) shrinks or grows it. */
+.crux-sketcher {
+  position: relative;
+  contain: size;
+  contain-intrinsic-size: 500px 400px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.crux-sketcher > crux-sketch {
+  position: absolute;
+  inset: 0;
+}
+
+.crux-sketcher-error {
+  margin: auto;
+  padding: 12px;
+  color: var(--red-3);
+}

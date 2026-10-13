@@ -128,8 +128,9 @@ export function applyLiabilityScanResults(
   const annotCol = getOrCreateAnnotationColumn(df, seqCol);
   for (let i = 0; i < result.rowData.length; i++) {
     const existingHits = getRowAnnotations(annotCol, i) ?? [];
-    setRowAnnotations(annotCol, i, mergeRowHits(existingHits, result.rowData[i], false, true));
+    setRowAnnotations(annotCol, i, mergeRowHits(existingHits, result.rowData[i], false, true), false);
   }
+  df.fireValuesChanged(); // once for all rows
 }
 
 /** Creates a liability summary count column (total hits per row). */

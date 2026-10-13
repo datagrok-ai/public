@@ -21,7 +21,8 @@ related_bugs:
   - id: GROK-20027
     status: fixed
   - id: GROK-20380
-    status: open
+    status: fixed
+    fixed_in: 6fb35432e1 (libraries/utils forms-viewer.ts getSortByColumns honours useGridSort)
 realized_as:
   - formsviewer-forms-core-spec.ts
   - formsviewer-forms-core-server-spec.ts
@@ -61,12 +62,8 @@ expected_results:
   - anchor: "Step 5c"
     expectation: >-
       With useGridSort toggled OFF, the grid sort is NOT mirrored — the card
-      order stops following the grid sort. GROK-20380 is open, so the product
-      still mirrors: the strict assertion of the desired behaviour is kept
-      unchanged and wrapped in knownOpenBug('GROK-20380'), which absorbs the
-      failure and reports the defect as reproduced. If the product is fixed the
-      wrapper throws loudly, which is the signal to unwrap it — the check is
-      never softened and never skipped.
+      order stops following the grid sort (GROK-20380, fixed: a plain hard
+      assertion on the exact card sequence).
   - anchor: "Step 5d"
     expectation: >-
       Three successive double-clicks on the header label of the viewer-sort
@@ -242,8 +239,8 @@ Steps:
    re-render. Read the card order again: it must NO LONGER match the grid's HEIGHT
    sort order. IMPORTANT: if the product continues to mirror the grid sort after
    Use Grid Sort is turned off, this step must FAIL as a hard assertion failure —
-   do not weaken the check or skip it. This is the deliberate known-red state for
-   GROK-20380. Label this Step 5c.
+   do not weaken the check or skip it (regression guard for GROK-20380, fixed).
+   Label this Step 5c.
 6. Reset: re-enable **Use Grid Sort** and make sure **Sort By** is still empty.
    Now set **Sort By** to AGE and confirm the AGE direction indicator appears. Now double-click the AGE
    header label in the Forms viewer. Record the indicator state after the
@@ -273,11 +270,8 @@ Expected:
   follows that column while the grid's own sort is unchanged; the indicator
   appears on the viewer-set column's header label, not on the grid-sort column's label.
 - With useGridSort toggled OFF, the grid sort is NOT mirrored — the card order
-  stops following the grid sort. GROK-20380 is open, so the product still
-  mirrors: the strict assertion is kept unchanged and wrapped in
-  knownOpenBug('GROK-20380'), which absorbs the failure and reports the defect as
-  reproduced; a fix makes the wrapper throw loudly, which is the signal to unwrap
-  it. The check is never softened and never skipped.
+  stops following the grid sort (GROK-20380, fixed). The check is a plain hard
+  assertion, never softened and never skipped.
 - Three successive double-clicks on the header label of the viewer-sort column
   produce three DIFFERENT indicator states, one of which is "no indicator". The
   order of the three states is not claimed — the incoming sort direction is not a
@@ -439,13 +433,8 @@ Expected:
   a child with class `.d4-multi-form-column-sort-indicator`. Assert its presence
   on the expected label and absence on all others; do NOT assert the arrow text
   direction (↑ / ↓) for the persistence check (GROK-20666 exception).
-- **GROK-20380 is guarded by `knownOpenBug`**: the useGridSort OFF assertion in
-  Scenario 5c keeps the REAL strict `expect` on the desired behaviour, wrapped in
-  `knownOpenBug('GROK-20380', ...)`. This is not a softening — the same hard assert
-  runs every time; the wrapper only makes it self-flipping (an expected failing
-  reproduction is logged and green while the defect is open, and an unexpected pass
-  throws loudly once it is fixed). Do NOT weaken the assertion inside the wrapper,
-  and do NOT remove the wrapper while GROK-20380 is open.
+- **GROK-20380 is fixed** (useGridSort OFF now stops mirroring the grid sort,
+  verified on dev 2026-09-17): the Scenario 5c assertion is a plain hard `expect`.
 - **Layout save is silent**: View | Layout | Save to Gallery (Ctrl+S) produces no
   dialog and no confirmation balloon. The step verifies the save by locating the
   saved layout itself — never by waiting for a dialog.
@@ -577,18 +566,11 @@ Expected:
   `gate_f_verdict`, not a claim that the panel route works.
 - **Probe cleanup (layout, project) runs in a `finally`** so it happens even when
   an assertion above it fails.
-- **Step 5c (useGridSort OFF, GROK-20380) is wrapped in
-  `knownOpenBug('GROK-20380', () => { expect(stillMirrorsGridSort).toBe(false); })`**
-  with the REAL strict assertion inside. `stillMirrorsGridSort` is the exact-sequence
+- **Step 5c (useGridSort OFF, GROK-20380, fixed) asserts `stillMirrorsGridSort === false`
+  as a plain hard `expect`.** `stillMirrorsGridSort` is the exact-sequence
   equality of the card order with `df.getSortedOrder(grid.sortByColumns, grid.sortTypes,
   selection∩filter)` — NOT monotonicity of three HEIGHT values, which could pass by
-  accident on the (fixed-state) unsorted set and then the wrapper would NOT throw on
-  fix-day, silently losing the self-flip signal exactly when it is the only thing that
-  matters. The wrapper is not a softening: the same hard `expect` on the desired
-  behaviour (Use Grid Sort off must stop mirroring the grid sort) runs every time.
-  While the defect is open the reproduction fails and is logged green; the day it is
-  fixed the wrapper throws loudly (`[KNOWN_BUG_FIXED:GROK-20380]`). Do NOT remove the
-  wrapper and do NOT weaken the assertion inside it. When the defect is fixed, replace
-  the wrapper with a plain hard `expect` and set `related_bugs[].status: fixed` (+ `fixed_in`).
+  accident on the unsorted set and miss a regression. The knownOpenBug wrapper was
+  removed on 2026-09-17 after it threw `[KNOWN_BUG_FIXED:GROK-20380]` on dev.
 - **Persistence asserts sort-indicator IDENTITY, not arrow direction** (GROK-20666
   keeps the direction out of scope).

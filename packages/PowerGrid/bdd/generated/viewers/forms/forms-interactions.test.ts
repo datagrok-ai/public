@@ -16,7 +16,7 @@ import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {makeRowCurrent} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {allOfSelected, currentColumnIs, currentRowValue, noneOfSelected, selectWhereOneOf, selectedRowCount} from '@datagrok-libraries/bdd/bindings/platform/data';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, clickArea, clickAreaHolding, hasArea, hasNoArea, hoverArea, noErrors, pointerAway, propertiesShouldBe, readingHigher, readingIs, readingLower, readingReads, readingSame, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {addViewer, clickArea, clickAreaHolding, hasArea, hasNoArea, hoverArea, noErrors, pointerAway, propertiesShouldBe, readingIs, readingReads, readingSame, setProperty, takeSnapshot} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Forms viewer interactions and row binding", () => {
@@ -28,7 +28,7 @@ test.describe("Forms viewer interactions and row binding", () => {
     await session.step(12, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
     await session.step(13, "And user adds a forms viewer", () => addViewer(page, "forms"));
     await session.step(14, "Then forms viewer should be visible", () => shouldBe(page, el("forms viewer"), "visible"));
-    await session.step(15, "And properties of forms viewer should be:", () => propertiesShouldBe(page, el("forms viewer"), [["Show Current Row","true"],["Show Mouse Over Row","true"],["Show Selected Rows","true"]]));
+    await session.step(15, "And properties of forms viewer should be:", () => propertiesShouldBe(page, el("forms viewer"), [["Show Current Row","true"],["Show Mouse Over Row","true"],["Show Selected Rows","true"]]), [["Show Current Row","true"],["Show Mouse Over Row","true"],["Show Selected Rows","true"]]);
     await session.step(19, "When user makes row 6 current", () => makeRowCurrent(page, 6));
     await session.step(20, "And user selects rows where \"USUBJID\" is one of \"X0273T21000400001, X0273T21000500008, X0273T21000900003, X0273T21001500015\"", () => selectWhereOneOf(page, "USUBJID", "X0273T21000400001, X0273T21000500008, X0273T21000900003, X0273T21001500015"));
     await session.step(21, "Then the \"cards\" reading of forms viewer should be 6", () => readingIs(page, "cards", el("forms viewer"), 6));
@@ -105,25 +105,25 @@ test.describe("Forms viewer interactions and row binding", () => {
     });
     await run.scenario("Show Mouse Over Row off drops the card and the grid hover with it", async () => {
       await session.step(95, "When user sets \"Show Mouse Over Row\" property of forms viewer to \"false\"", () => setProperty(page, "Show Mouse Over Row", el("forms viewer"), "false"));
-      await session.step(96, "Then the \"cards\" reading of forms viewer should be lower than before", () => readingLower(page, "cards", el("forms viewer")));
+      await session.step(96, "Then the \"cards\" reading of forms viewer should be 5", () => readingIs(page, "cards", el("forms viewer"), 5));
       await session.step(97, "And forms viewer should not have a \"mouse-over card\" area", () => hasNoArea(page, el("forms viewer"), "mouse-over card"));
       await session.step(98, "When user takes a snapshot of forms viewer", () => takeSnapshot(page, el("forms viewer")));
       await session.step(99, "And user hovers over the \"cell 12 of AGE\" area of grid", () => hoverArea(page, "cell 12 of AGE", el("grid")));
       await session.step(100, "Then the \"cards\" reading of forms viewer should be the same as before", () => readingSame(page, "cards", el("forms viewer")));
       await session.step(101, "When user moves the pointer away from grid", () => pointerAway(page, el("grid")));
       await session.step(102, "And user sets \"Show Mouse Over Row\" property of forms viewer to \"true\"", () => setProperty(page, "Show Mouse Over Row", el("forms viewer"), "true"));
-      await session.step(103, "Then the \"cards\" reading of forms viewer should be higher than before", () => readingHigher(page, "cards", el("forms viewer")));
+      await session.step(103, "Then the \"cards\" reading of forms viewer should be 6", () => readingIs(page, "cards", el("forms viewer"), 6));
       await session.step(104, "And no errors should have been logged", () => noErrors(page));
     });
-    await run.scenario("Show Current Row off drops the current card", async () => {
-      await session.step(107, "When user sets \"Show Current Row\" property of forms viewer to \"false\"", () => setProperty(page, "Show Current Row", el("forms viewer"), "false"));
-      await session.step(108, "Then forms viewer should not have a \"current card\" area", () => hasNoArea(page, el("forms viewer"), "current card"));
-      await session.step(109, "And the \"cards\" reading of forms viewer should be lower than before", () => readingLower(page, "cards", el("forms viewer")));
-      await session.step(110, "When user sets \"Show Current Row\" property of forms viewer to \"true\"", () => setProperty(page, "Show Current Row", el("forms viewer"), "true"));
-      await session.step(111, "Then forms viewer should have a \"current card\" area", () => hasArea(page, el("forms viewer"), "current card"));
-      await session.step(112, "And the \"cards\" reading of forms viewer should be higher than before", () => readingHigher(page, "cards", el("forms viewer")));
-      await session.step(113, "And the \"USUBJID of current card\" reading of forms viewer should be \"X0273T21000500008\"", () => readingReads(page, "USUBJID of current card", el("forms viewer"), "X0273T21000500008"));
-      await session.step(114, "And no errors should have been logged", () => noErrors(page));
+    await run.scenario("Show Current Row off drops the current card and leaves the selected cards where they were", async () => {
+      await session.step(111, "When user sets \"Show Current Row\" property of forms viewer to \"false\"", () => setProperty(page, "Show Current Row", el("forms viewer"), "false"));
+      await session.step(112, "Then forms viewer should not have a \"current card\" area", () => hasNoArea(page, el("forms viewer"), "current card"));
+      await session.step(113, "And the \"cards\" reading of forms viewer should be 5", () => readingIs(page, "cards", el("forms viewer"), 5));
+      await session.step(114, "When user sets \"Show Current Row\" property of forms viewer to \"true\"", () => setProperty(page, "Show Current Row", el("forms viewer"), "true"));
+      await session.step(115, "Then forms viewer should have a \"current card\" area", () => hasArea(page, el("forms viewer"), "current card"));
+      await session.step(116, "And the \"cards\" reading of forms viewer should be 6", () => readingIs(page, "cards", el("forms viewer"), 6));
+      await session.step(117, "And the \"USUBJID of current card\" reading of forms viewer should be \"X0273T21000500008\"", () => readingReads(page, "USUBJID of current card", el("forms viewer"), "X0273T21000500008"));
+      await session.step(118, "And no errors should have been logged", () => noErrors(page));
     });
     run.finish();
   });

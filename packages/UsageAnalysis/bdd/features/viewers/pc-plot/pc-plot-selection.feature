@@ -14,8 +14,8 @@ Feature: PC plot selection, current row and mouse-over
   two axes. With the blanks filtered, a drag over the inner 80% of the AGE-HEIGHT band selects
   exactly the 872 rows on screen. Two of the 15 Asian rows (899 and 902) have no HEIGHT, so they are
   outside that filter and survive the drag only because the drag adds.
-  Opening the table makes row 1 current, so `current row` reads 1 and `lines drawn` never falls
-  below that one line. Every scenario clears what it selected and puts the current row back.
+  The Background makes row 1 current (as the table view does a second after a table opens), so
+  `current row` reads 1 and `lines drawn` never falls below that one line. Every scenario clears what it selected and puts the current row back.
   Defect found while writing this: `_belongsToRect` and `_hitTest` call `col.toDouble(row)` without
   the `isFinite` guard `_renderLines` uses, so a row with a blank value is hit-tested at ~0 instead
   of being skipped — on the full table 61 of the 128 blank-HEIGHT rows are selected by a drag that
@@ -26,6 +26,7 @@ Feature: PC plot selection, current row and mouse-over
     And user opens demog-1000 dataset
     And user adds a pc plot viewer with:
       | Column Names | AGE, HEIGHT, WEIGHT |
+    And user makes row 1 current
     Then pc plot viewer should show 1000 rows
     And the "rows selected" reading of pc plot viewer should be 0
     And the "current row" reading of pc plot viewer should be 1

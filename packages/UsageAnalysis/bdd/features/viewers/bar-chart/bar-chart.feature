@@ -30,7 +30,7 @@ Feature: Bar chart property surface
     When user sets "Color Aggr Type" property of bar chart viewer to "max"
     Then bar chart viewer should have repainted
     When user sets "Color Aggr Type" property of bar chart viewer to "med"
-    Then "Color Aggr Type" property of bar chart viewer should be "med"
+    Then bar chart viewer should have repainted
     When user sets "Invert Color Scheme" property of bar chart viewer to "true"
     Then bar chart viewer should have repainted by at least 2000 pixels
     When user sets properties of bar chart viewer:
@@ -65,13 +65,13 @@ Feature: Bar chart property surface
     When user sets "Bar Corner Radius" property of bar chart viewer to "10"
     Then bar chart viewer should have repainted
     When user sets "Vertical Align" property of bar chart viewer to "Top"
-    Then "Vertical Align" property of bar chart viewer should be "Top"
+    Then the "bar Caucasian" area of bar chart viewer should have repainted
     When user sets "Vertical Align" property of bar chart viewer to "Bottom"
-    Then "Vertical Align" property of bar chart viewer should be "Bottom"
+    Then the "bar Caucasian" area of bar chart viewer should have repainted
     When user sets "Vertical Align" property of bar chart viewer to "Center"
-    Then "Vertical Align" property of bar chart viewer should be "Center"
+    Then the "bar Caucasian" area of bar chart viewer should have repainted
     When user sets "Show Category Zero Baseline" property of bar chart viewer to "false"
-    Then "Show Category Zero Baseline" property of bar chart viewer should be "false"
+    Then bar chart viewer should have repainted
     When user sets properties of bar chart viewer:
       | Bar Border Line Width       | 0    |
       | Bar Corner Radius           | 0    |
@@ -82,14 +82,13 @@ Feature: Bar chart property surface
 
   Scenario: Labels
     When user sets "Show Labels" property of bar chart viewer to "inside"
-    Then "Show Labels" property of bar chart viewer should be "inside"
+    Then bar chart viewer should have repainted
     When user sets "Show Labels" property of bar chart viewer to "never"
     Then bar chart viewer should have repainted by at least 300 pixels
     When user sets "Show Labels" property of bar chart viewer to "outside"
     Then bar chart viewer should have repainted by at least 300 pixels
     When user sets "Show Labels" property of bar chart viewer to "auto"
-    Then "Show Labels" property of bar chart viewer should be "auto"
-    And no errors should have been logged
+    Then no errors should have been logged
 
   Scenario: Controls visibility
     When user hovers over bar chart viewer

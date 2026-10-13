@@ -222,7 +222,7 @@ test('SAR — save project with SAR layout + selection + scaling, reopen and ver
       }
       const namedPanes = Array.from(document.querySelectorAll('[name^="pane-"]'))
         .map((p) => p.getAttribute('name'));
-      const lastError = grok.shell.lastError ? String(grok.shell.lastError) : null;
+      const lastError = ((await grok.shell.lastError) ?? null);
       return {svmFound, selBefore, selAfter: df.selection.trueCount, namedPanes, lastError};
     });
     expect(result.svmFound, 'Sequence Variability Map not present on the reopened state for the broadcast click').toBe(true);

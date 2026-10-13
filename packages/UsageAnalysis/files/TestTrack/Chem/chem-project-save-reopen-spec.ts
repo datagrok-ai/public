@@ -79,7 +79,7 @@ async function aimAtScaffoldViewer(page: any, where: string) {
 }
 
 async function openDatasetWithChem(page: any) {
-  await page.evaluate(async (path: string) => {
+  await page.evaluate(async ({path, expectedMolCols}: {path: string; expectedMolCols: number}) => {
     document.querySelectorAll('.d4-dialog').forEach((d) => {
       const cancel = d.querySelector('[name="button-CANCEL"]') as HTMLElement | null;
       if (cancel) cancel.click();
@@ -95,6 +95,14 @@ async function openDatasetWithChem(page: any) {
       const sub = df.onSemanticTypeDetected.subscribe(() => { sub.unsubscribe(); resolve(); });
       setTimeout(resolve, 4000);
     });
+    // onSemanticTypeDetected fires after the synchronous pass, which only types the molblock
+    // column. The SMILES-shaped ones (Core, R*) are typed by the detector's own async
+    // Chem:detectSmiles call (Chem/detectors.js) seconds later, and a loaded stand takes longer
+    // still. Hold for the full set the step below branches on; a stand that never reaches it runs
+    // into the step's own assertion rather than into a silent no-picker branch.
+    const molDeadline = Date.now() + 90000;
+    while (Date.now() < molDeadline && df.columns.bySemTypeAll('Molecule').length < expectedMolCols)
+      await new Promise((r) => setTimeout(r, 250));
     for (let i = 0; i < 50; i++) {
       if (document.querySelector('[name="viewer-Grid"] canvas')) break;
       await new Promise((r) => setTimeout(r, 100));
@@ -127,7 +135,7 @@ async function openDatasetWithChem(page: any) {
         orig.apply(console, args as any);
       };
     }
-  }, datasetPath);
+  }, {path: datasetPath, expectedMolCols: MOL_COL_COUNT});
   await page.evaluate(installScaffoldResolver);
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
   await waitForChemMenu(page);
@@ -470,6 +478,16 @@ test('Chem: project save and reopen with Chem state (GROK-17595)', async ({page}
         await picker.locator('[name="button-OK"]').first().click();
       }
       await page.locator('.d4-dialog input[placeholder*="SMILES" i]').waitFor({timeout: 12000});
+      // The sketcher backend mounts lazily — Ketcher renders its toolbars ~9 s after the SMILES
+      // input becomes visible, and a query written before that is dropped, so OK commits the
+      // empty molecule and the filter never narrows.
+      await page.waitForFunction(() => {
+        const d = Array.from(document.querySelectorAll('.d4-dialog'))
+          .find((x) => x.querySelector('input[placeholder*="SMILES" i]'));
+        if (!d) return false;
+        return (d.querySelector('.Ketcher-root')?.querySelectorAll('button').length ?? 0) > 5
+          || !!d.querySelector('canvas');
+      }, null, {timeout: 60_000});
       await page.evaluate(async () => {
         const dlg = Array.from(document.querySelectorAll('.d4-dialog'))
           .find((d) => d.querySelector('input[placeholder*="SMILES" i]'))!;

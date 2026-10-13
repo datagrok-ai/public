@@ -13,6 +13,7 @@ import * as chemSearches from './chem-searches';
 import {GridCellRendererProxy, RDKitCellRenderer} from './rendering/rdkit-cell-renderer';
 import {assure} from '@datagrok-libraries/utils/src/test';
 import {OpenChemLibSketcher} from './open-chem/ocl-sketcher';
+import {CruxSketcher} from './crux/crux-sketcher';
 import {_importSdf} from './open-chem/sdf-importer';
 import Sketcher = DG.chem.Sketcher;
 import {FuncCallParamsEditor, MessageFuncCallEditor} from '@datagrok-libraries/utils/src/func-call-params-editor';
@@ -50,9 +51,9 @@ import {getInchiKeysImpl, getInchisImpl} from './panels/inchi';
 import {getMolColumnPropertyPanel} from './panels/chem-column-property-panel';
 import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
-import {Fingerprint, hasNewLines, waitFor} from './utils/chem-common';
+import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
 import {molToMolblock} from './utils/convert-notation-utils';
@@ -67,6 +68,7 @@ import {chemSimilaritySearch, ChemSimilarityViewer} from './analysis/chem-simila
 import {chemSpace, runChemSpace} from './analysis/chem-space';
 import {RGroupDecompRes, RGroupParams, rGroupAnalysis, rGroupDecomp} from './analysis/r-group-analysis';
 import {MatchedMolecularPairsViewer} from './analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
+import {SarMatrixEditor} from './analysis/sar-matrix/sar-matrix-editor';
 import {dockSarMatrixTabs, SarMatrixViewer} from './analysis/sar-matrix/sar-matrix-viewer';
 
 //file importers
@@ -163,6 +165,7 @@ const SKETCHER_FUNCS_FRIENDLY_NAMES: { [key: string]: string } = {
   Ketcher: 'Ketcher',
   Marvin: 'Marvin',
   ChemDraw: 'ChemDraw',
+  Crux: 'Crux',
 };
 
 const PREVIOUS_SKETCHER_NAMES: { [key: string]: string } = {
@@ -783,7 +786,9 @@ export class PackageFunctions {
       grok.shell.warning(`Too many rows, maximum for substructure search is ${MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT}`);
       return;
     }
-    const molColumns = grok.shell.tv.dataFrame.columns.bySemTypeAll(DG.SEMTYPE.MOLECULE);
+    // a search leaves a hidden (~) canonical SMILES column that is detected as molecules too
+    const isMolecules = (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE && !col.name.startsWith('~');
+    const molColumns = grok.shell.tv.dataFrame.columns.toList().filter(isMolecules);
     if (!molColumns.length) {
       grok.shell.warning(`Data doesn't contain molecule columns`);
       return;
@@ -791,7 +796,7 @@ export class PackageFunctions {
       call.func.prepare({molecules: molColumns[0]}).call(true);
     else {
       const colInput = ui.input.column('Molecules', {table: grok.shell.tv.dataFrame, value: molColumns[0],
-        filter: (col: DG.Column) => col.semType === DG.SEMTYPE.MOLECULE});
+        filter: isMolecules});
       ui.dialog({title: 'Substructure search'})
         .add(colInput)
         .onOK(async () => {
@@ -1327,6 +1332,9 @@ export class PackageFunctions {
     }
 
     const runActCliffs = async (): Promise<void> => {
+      const axesNames = getEmbeddingColsNames(table);
+      for (const name of axesNames)
+        table.columns.addNewFloat(name);
       await DG.Func.find({name: 'activityCliffsTransform'})[0].prepare({
         table: table,
         molecules: molecules,
@@ -1360,7 +1368,6 @@ export class PackageFunctions {
       }) as DG.ScatterPlotViewer;
     };
 
-    const axesNames = getEmbeddingColsNames(table);
     if (table.rowCount > fastRowCount && !isTest) {
       ui.dialog().add(ui.divText(`Activity cliffs analysis might take several minutes.
       Do you want to continue?`))
@@ -2025,11 +2032,14 @@ export class PackageFunctions {
     }
     sketcher.setMolecule(molecule);
     if (ogSmiles) {
-      waitFor(() => !!sketcher.sketcher?.isInitialized)
-        .then((inited) => {
-          if (inited)
-            sketcher.sketcher!.explicitMol = {notation: 'smiles', value: ogSmiles};
-        });
+      // The cell's own SMILES, given back the moment the sketcher is ready (before any edit can reach it), so that OK
+      // without an edit keeps the cell as it was: in place of the molblock above, while that is still the caller's
+      // string. A value the host took while the sketcher loaded (typed into its field and entered, picked from Recent)
+      // is the one the sketcher shows and holds by then, and OK writes it.
+      sketcher.sketcherReady().then((ready) => {
+        if (ready.explicitMol?.value === molecule)
+          ready.explicitMol = {notation: 'smiles', value: ogSmiles!};
+      });
     }
 
     const dlg = ui.dialog()
@@ -2071,6 +2081,16 @@ export class PackageFunctions {
   })
   static openChemLibSketcher(): OpenChemLibSketcher {
     return new OpenChemLibSketcher();
+  }
+
+  @grok.decorators.func({
+    name: 'Crux',
+    description: 'Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)',
+    outputs: [{name: 'sketcher', type: 'widget'}],
+    meta: {role: 'moleculeSketcher'},
+  })
+  static cruxSketcher(): CruxSketcher {
+    return new CruxSketcher();
   }
 
   @grok.decorators.fileHandler({
@@ -2206,7 +2226,7 @@ export class PackageFunctions {
   })
   static copyAsAction(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue) {
-    const formats = ['Smiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
+    const formats = ['Smiles', 'CXSmiles', 'MolfileV2000', 'MolfileV3000', 'Smarts'];
     const menu = DG.Menu.popup();
 
     formats.forEach((format) => {
@@ -2229,6 +2249,19 @@ export class PackageFunctions {
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
     const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
       _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    navigator.clipboard.writeText(smiles);
+    grok.shell.info('Smiles copied to clipboard');
+  }
+
+  @grok.decorators.func({
+    name: 'Copy as CXSMILES',
+    description: 'Copies structure as smiles',
+    meta: {'action': 'Copy as CXSMILES', 'exclude-actions-panel': 'true'},
+  })
+  static copyAsCXSmiles(
+    @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
+    const smiles =
+      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.CxSmiles, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2334,7 +2367,7 @@ export class PackageFunctions {
 
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
   }
 
   @grok.decorators.func()
@@ -2396,11 +2429,12 @@ export class PackageFunctions {
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Rotatable bonds'}}) rotatableBonds?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Stereo centers'}}) stereoCenters?: boolean,
     @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecule charge'}}) moleculeCharge?: boolean,
+    @grok.decorators.param({options: {initialValue: 'false', caption: 'Molecular formula'}}) molecularFormula?: boolean,
   ): Promise<void> {
     const propArgs: string[] = ([] as string[]).concat(MW ? ['MW'] : [], HBA ? ['HBA'] : [],
       HBD ? ['HBD'] : [], logP ? ['LogP'] : [], logS ? ['LogS'] : [], PSA ? ['PSA'] : [],
       rotatableBonds ? ['Rotatable bonds'] : [], stereoCenters ? ['Stereo centers'] : [],
-      moleculeCharge ? ['Molecule charge'] : []);
+      moleculeCharge ? ['Molecule charge'] : [], molecularFormula ? ['Molecular formula'] : []);
     const pb = DG.TaskBarProgressIndicator.create('Chemical properties ...');
     try {
       await addPropertiesAsColumns(table, molecules, propArgs);
@@ -2584,10 +2618,21 @@ export class PackageFunctions {
     return ['', ...(grok.shell.t?.columns.names() ?? [])];
   }
 
+  @grok.decorators.editor({
+    name: 'SarMatrixEditor',
+    outputs: [{name: 'result', type: 'widget'}],
+  })
+  static sarMatrixEditor(call: DG.FuncCall): DG.Widget {
+    if (!call.inputs['table'] && !grok.shell.tv?.dataFrame)
+      return new MessageFuncCallEditor('SAR Matrix requires an open table');
+    return new SarMatrixEditor(call);
+  }
+
   @grok.decorators.func({
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
     table: DG.DataFrame,
@@ -2632,6 +2677,21 @@ export class PackageFunctions {
         choices: 'Chem:sarSeriesColumnChoices()',
         description: 'Optional. Your own grouping: compounds sharing a value become one matrix named with that value. Leave empty to group by structure'},
     }) seriesColumn: string = '',
+    @grok.decorators.param({
+      type: 'column',
+      options: {nullable: true, caption: 'Core',
+        description: 'Optional. Column with the core of an existing R-group decomposition, used instead of fragmenting the molecules'},
+    }) coreColumn: DG.Column | null = null,
+    @grok.decorators.param({
+      type: 'column_list',
+      options: {nullable: true, caption: 'R-groups',
+        description: 'Columns with the substituent at each attachment point of the core'},
+    }) rGroupColumns: DG.Column[] = [],
+    @grok.decorators.param({
+      type: 'string',
+      options: {nullable: true, caption: 'Matrix columns',
+        description: 'The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows'},
+    }) matrixColumns: string = '',
   ): Promise<void> {
     // A DateTime column reports isNumerical and so passes the 'numerical' input filter (dates are
     // numeric internally, which is what lets them serve as a plot axis). Potency arithmetic on a
@@ -2651,11 +2711,20 @@ export class PackageFunctions {
         'Pick a series column from that table, or leave it empty to group by structure.');
       return;
     }
+    const rgroups = rGroupColumns ?? [];
+    const axis = matrixColumns ?? '';
+    const named = coreColumn !== null || rgroups.length > 0;
+    if (named && (coreColumn === null || coreColumn.name === axis || !rgroups.some((c) => c.name === axis))) {
+      grok.shell.error('SAR Matrix: pick the core, the R-groups, and which R-group becomes the matrix columns.');
+      return;
+    }
     checkCurrentView(table);
     const view = grok.shell.tv as DG.TableView;
     const viewer = view.addViewer('SAR Matrix Viewer', {moleculesColumnName: molecules.name,
       activityColumnName: activity.name,
       seriesColumnName: seriesName,
+      coreColumnName: named ? coreColumn!.name : '', axisColumnName: named ? axis : '',
+      rGroupColumnNames: named ? rgroups.map((c) => c.name) : [],
       scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors});
     dockSarMatrixTabs(view, viewer);
   }
@@ -2707,8 +2776,15 @@ export class PackageFunctions {
   })
   static removeDuplicates(molecules: string[], molecule: string): string[] {
     const mol1 = checkMoleculeValid(molecule);
-    if (!mol1)
+    if (!mol1) {
+      // try to get qmol
+      const qMol = getQueryMolSafe(molecule, '', PackageFunctions.getRdKitModule());
+      if (qMol) {
+        qMol?.delete();
+        return molecules;
+      }
       throw new Error(`Molecule is possibly malformed`);
+    }
     const filteredMolecules = molecules.filter((smiles) => !checkMolEqualSmiles(mol1, smiles));
     mol1.delete();
     return filteredMolecules;
@@ -2791,6 +2867,7 @@ export class PackageFunctions {
     const namesList = names.toList();
     const res = await grok.functions.call('Chembl:namesToSmiles', {names: namesList});
     const col = res.col('canonical_smiles');
+    col.name = data.columns.getUnusedName(col.name);
     col.meta.units = DG.UNITS.Molecule.SMILES;
     col.semType = DG.SEMTYPE.MOLECULE;
     data.columns.add(col);

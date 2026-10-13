@@ -1,5 +1,7 @@
+import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-// import * as ui from 'datagrok-api/ui';
+import * as ui from 'datagrok-api/ui';
+import {zipSync} from 'fflate';
 
 import {UaToolbox} from '../ua-toolbox';
 import {UaQueryViewer} from '../viewers/abstract/ua-query-viewer';
@@ -28,6 +30,30 @@ export class UaView extends DG.ViewBase {
     if (uaToolbox)
       this.setToolbox(uaToolbox);
     this.box = true;
+    this.setRibbonPanels([[ui.iconFA('arrow-to-bottom', () => this.download(), 'Download data')]]);
+  }
+
+  static csvFiles(tables: {[name: string]: DG.DataFrame | null | undefined}): DG.FileInfo[] {
+    return Object.entries(tables).filter(([_, df]) => df != null && df.rowCount > 0)
+      .map(([name, df]) => DG.FileInfo.fromString(`${name}.csv`, df!.toCsv()));
+  }
+
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return UaView.csvFiles(Object.fromEntries(this.viewers.filter((v) => v.errorDiv == null)
+      .map((v) => [v.name, v.viewer?.dataFrame])));
+  }
+
+  async download(): Promise<void> {
+    const progress = DG.TaskBarProgressIndicator.create('Preparing download...');
+    const files = await this.exportFiles().finally(() => progress.close());
+    const fileName = (s: string) => s.toLowerCase().replace(/[^a-z0-9.]+/g, '-');
+    if (files.length === 0)
+      grok.shell.warning('Nothing to download');
+    else if (files.length === 1)
+      DG.Utils.download(fileName(`${this.name}-${files[0].name}`), files[0].data as BlobPart);
+    else
+      DG.Utils.download(fileName(`${this.name}.zip`),
+        zipSync(Object.fromEntries(files.map((f) => [fileName(f.name), f.data])), {level: 1}) as BlobPart);
   }
 
   setToolbox(uaToolbox: UaToolbox) {

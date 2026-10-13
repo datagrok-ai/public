@@ -173,16 +173,16 @@ test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
     // saves it, and opens the editor — this makes the seeded notebook Apply-to-applicable to demog
     // (Scenario 6) AND gives us a server-persisted, owned notebook to Rename/Delete (Scenarios 3/7).
     seededId = await page.evaluate(async (name) => {
-      const before = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10});
-      const beforeIds = new Set(before.map((n: any) => n.id));
+      // The command makes the new notebook the current object of this page. Taking the newest one on
+      // the server instead picks up notebooks the other specs create in parallel workers.
+      const prevId = grok.shell.o?.id;
       const f = (window as any).DG.Func.find({name: 'CmdOpenInNotebook'})[0];
       await f.apply();
       let fresh: any = null;
-      for (let i = 0; i < 40; i++) {
+      for (let i = 0; i < 40 && !fresh; i++) {
         await new Promise((r) => setTimeout(r, 500));
-        const cur = await grok.dapi.notebooks.order('createdOn', true).list({pageSize: 10}).catch(() => [] as any[]);
-        fresh = cur.find((n: any) => !beforeIds.has(n.id));
-        if (fresh) break;
+        const id = grok.shell.o?.id;
+        if (id && id !== prevId) fresh = await grok.dapi.notebooks.find(id).catch(() => null);
       }
       if (!fresh) return null;
       fresh.friendlyName = name;
@@ -331,9 +331,9 @@ test('Notebooks — Context Menu Smoke (all 7 pcmd flows)', async ({page}) => {
     await page.evaluate(() => (document.querySelector('[name="div-Rename..."]') as HTMLElement)?.click());
 
     // Rename modal: title "Rename Notebook"; input pre-filled with the current name. The input name
-    // carries the dialog-title prefix on public ([name="input-Rename-Notebook---New-name-"]) — live
-    // recon 2026-06-18.
-    const input = page.locator('[name="input-Rename-Notebook---New-name-"]');
+    // carried the dialog-title prefix on public in June ([name="input-Rename-Notebook---New-name-"]);
+    // master names it [name="input-New-name-"] (25 Sep 2026).
+    const input = page.locator('.d4-dialog [name="input-New-name-"], [name="input-Rename-Notebook---New-name-"]').first();
     await input.waitFor({timeout: 30_000});
     await expect(page.locator('.d4-dialog .d4-dialog-title').filter({hasText: 'Rename Notebook'}).first())
       .toBeVisible();

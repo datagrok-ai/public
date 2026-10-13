@@ -5,6 +5,35 @@
 * GROK-20298: Added `editDomainBinding` (`tags: domainAuthoring`, `meta.mode: edit`; `createDomainBinding` is `meta.mode: create`) — the u2 "Edit binding" dialog over a registered external binding (Design › Review › Saved), the function the platform's "Edit binding..." command on a binding's node runs
 * GROK-20298: `createDomainBinding` answers the created schema's name out of the dialog's `{name, access}` result (the dialog now ends on a Created step when access rows were applied)
 * GROK-20298: Added `createDomainBinding` (`tags: domainAuthoring`) — the u2 "Create domain schema" dialog over an external database (Connection › Design › Review), the function the platform's "Create domain schema..." commands on a database schema or table and "New schema over a connection..." on the Domains node run
+* Formula Lines: Fixed the dialog opened from a viewer failing when the platform passes an unset line index as null (the Dart 3 client)
+* [#4253](https://github.com/datagrok-ai/public/issues/4253): Add New Column: Fixed the validation rejecting vector functions nested in scalar expressions (`CumSum(${x}) * 2`, `CumSum(${x}) / Sum($[x])`, `${x} * Lookup(...)`)
+* Tests: Added the Enrichment tests (an enrichment saved, applied and checked row by row, edited, deleted and applied again, a clashing column coming in as `result.<name>`, the foreign key lookup); the enrichment storage and apply functions moved from `db-explorer.ts` to `enrichment.ts`, and the data enrichment feature keeps to the pane and the editor
+* Tests: Added the Excel: Import "three sheets" test (the sheets, columns, types and values of the workbook the XLSX features open); the features keep to the ways of opening it
+* Tests: Added the Search tests of what "new", "use", "1+1" and "Project[0-9]+" suggest and find, over the suggestions now computed by `searchSuggestions`; the Enter-in-search feature keeps to Enter and the menu
+* GROK-20076: Home: Fixed the Spotlight widget's remove icon covering the top of the tab scrollbar, and the scrollbars showing when nothing scrolls
+* Home: The Workspace tab picks up favorites added or removed anywhere in the platform without a page reload
+* Home: Fixed the Spotlight tab of the Spotlight widget staying blank when every entity of the account's recent activity had been deleted: it shows the Interactive Tutorials and Demo Apps a new user gets
+* Tests: The Home widget features read the stored widget settings after flushing the page's settings sync, pin the running account's widgets, and reload once instead of four times
+* Add New Column: Fixed Cmd+A in the formula editor (macOS) selecting every row and column of the table behind the dialog
+* Home: Fixed every Home page load writing back all the widget settings it had read, which undid a widget hidden or shown on another page of the same account
+* GROK-21108: Removed the "Group favorites" context menu; the platform's "Add to favorites" menu covers groups
+* Viewer gallery: A table view opened before the package's autostart ran kept the core Add viewer icon; every open view is configured now
+* GROK-21019: Add New Column: Fixed the dialog dropping the error behavior of the call it was opened with
+* GROK-21019: Add New Column: Added the gear next to the type that sets what happens to the rows the formula fails on: left empty or filled with a value, optionally with a column of per-row messages
+* Tests: Added the `bdd/` project: the TestTrack PowerPack section translated into features — Add New Column (the dialog, the formula editor, the functions panel, formula refreshing, persistence over a file and over Northwind query results), the Home widgets, Enter in the Home search, a project opened by its direct link, XLSX opened five ways, data enrichment; the annotation regions and formula lines features moved here from UsageAnalysis, plus the Formula Lines regressions #2487, #671 and #2747
+* Formula Lines: Added the item the dialog's preview was handed to its widget status (`current item`)
+* Home: Named the widget hosts `widget-<name>`
+* Home: Added `aria-busy` to the search results until the search paths have answered
+* Home: Fixed the Community widget throwing when the community forum cannot be reached; it now says so
+* Add New Column: Fixed the Name tooltip's "Column name.", which began with a Cyrillic С, so a search for the text missed it
+* GROK-20931: Add New Column: Resizing the dialog now widens only the formula and preview pane; the column and function lists keep their width
+* GROK-20931: Add New Column: Clicking a function in the formula makes it the current object, so its help shows in the context panel
+* GROK-20931: Add New Column: Table-name and column-name selectors pop up automatically for parameters that take a table or a column, or for string parameters with the `TableName` / `ColumnName` semantic type; a column argument is offered from the table named by the parameter's `options.table` sibling (else the call's table argument), filtered by the parameter's column type filter
+* GROK-20931: Add New Column: Autocomplete shows the highlighted function's signature and description; the hint below the editor describes the call the caret is inside of; inserted functions use parameter names as placeholders instead of types
+* GROK-20931: Add New Column: Functions marked with the `accessor` option (`Table`, `Column`) are offered in autocomplete although they return a table or a column; a column-returning call satisfies a column parameter in validation
+* Viewer gallery: Named the gallery surfaces — `viewer-card-<name>`, `card-label-<name>`, `viewer-tag-<tag>`, `viewer-gallery-root`, `viewer-gallery-controls`, `viewer-gallery-search`, `viewer-gallery-list`, `viewer-gallery-recent` — with `aria-label`, `role` and `aria-disabled` on the cards
+* Status bar: The window toggles now carry `name`, `aria-label` and `aria-pressed`, so they are addressable by what they do rather than by the FontAwesome class of their icon; the Tabs toggle no longer bypasses the shared state setter
+* GROK-20922: Apply the Learn overflow class to the Spotlight tab pane restored on start
 * GROK-20753: Added `domainRouteView` (`tags: domainRoutes`) — the platform's `/domains/<schema>/<table>[/<keyOrId>]` addresses resolve to the u2 domain app through it
 * GROK-17068: Formula Lines: The formula editor now accepts the axis tokens `X`/`Y` on the left side of a line (`Y = X + 25`) or a band (`X in(160, 190)`), not only a `${column}` reference, and no longer rewrites a token into a concrete column when the item is selected or the preview's axis changes
 * GROK-20909: Open the playlist when the Learn > VIDEO play icon is clicked

@@ -1,4 +1,4 @@
-/** this file was generated automatically from ddt classes declarations */
+// this file was generated automatically from ddt classes declarations
 import { toDart } from "../wrappers";
 let api = (typeof window !== 'undefined' ? window : global.window) as any;
 
@@ -99,6 +99,12 @@ export class Tags {
   static FormulaColumnIsVectorFunc = '.%formula-column-is-vector-func';
 
   static IgnoreFormulaColumnRecalculation = '.%ignore-formula-column-recalculation';
+
+  /** What a formula column does with the rows its formula fails on, as JSON; absent when they are left empty. */
+  static FormulaErrorBehavior = '.%formula-error-behavior';
+
+  /** On a column of per-row error messages: the name of the formula column it belongs to. */
+  static FormulaErrorColumn = '.%formula-error-column';
 
   /** JSON-encoded list of strings to be used in a cell editor.
    * Applicable for string columns only.
@@ -338,6 +344,10 @@ export class FuncOptions {
 
   static AutostartImmediate = 'autostartImmediate';
 
+  /** Returns a table or a column to pass to another function in a formula, such as `Column("x")`.
+   * Offered in formula editors although its result is not a scalar. */
+  static Accessor = 'accessor';
+
   static IncludeInCreationScript = 'includeInCreationScript';
 
   /** Applies to [FuncTypes.CellRenderer].
@@ -503,6 +513,10 @@ export class FuncParamOptions {
    * Applies to dataframes and columns
    * Example: `{columns: numerical}` */
   static Columns = 'columns';
+
+  /** Name of the parameter that supplies the table a column (or column name) parameter belongs to.
+   * Example: `{table: data}` */
+  static Table = 'table';
 
   /** A viewer that visualizes the result
    * Example: `viewer: Line chart(x: "time", y: "temperature")` */

@@ -12,11 +12,14 @@ import $ from 'cash-dom';
 import {RDModule, RDMol, RDReaction} from '@datagrok-libraries/chem-meta/src/rdkit-api';
 import {ISubstruct} from '@datagrok-libraries/chem-meta/src/types';
 import {IMolContext, getMolSafe} from './mol-creation_rdkit';
+import {initRdKitFrom} from '../rdkit-service/rdkit-service-worker-api';
 
 export let _rdKitModule: RDModule;
 export let _rdKitService: RdKitService;
 export let _webRoot: string | null;
 export let moduleInitialized = false;
+/** The RDKit build compiled once here, so the RDKit workers only instantiate it. */
+let _rdKitWasm: WebAssembly.Module | undefined;
 
 export const RDKIT_COMMON_RENDER_OPTS: {[key: string]: any} = {
   clearBackground: false,
@@ -56,19 +59,29 @@ export function setRdKitWebRoot(webRootValue: string): void {
 }
 
 export async function initRdKitModuleLocal(): Promise<void> {
-  _rdKitModule = await initRDKitModule(
-    {locateFile: () => `${_webRoot}/dist/${rdKitLibVersion}.wasm`});
+  const url = `${_webRoot}/dist/${rdKitLibVersion}.wasm`;
+  // streaming needs application/wasm; like Emscripten, fall back to the bytes from a server that does not send it
+  _rdKitWasm = await WebAssembly.compileStreaming(fetch(url)).catch(async () => {
+    const response = await fetch(url);
+    if (!response.ok)
+      throw new Error(`RDKit wasm is not available: ${response.status} ${response.statusText}`);
+    return WebAssembly.compile(await response.arrayBuffer());
+  });
+  _rdKitModule = await initRdKitFrom(initRDKitModule, _rdKitWasm);
   if (!_rdKitModule)
     throw new Error('RdKit Module is not loaded');
   _rdKitModule.prefer_coordgen(false);
   _rdKitModule.use_legacy_stereo_perception(false);
   console.log('RDKit module package instance was initialized');
   moduleInitialized = true;
-  _rdKitService = new RdKitService();
+  // A second init (a test category's `before`) keeps the worker pool: a new service would leave the old one's workers
+  // running for the rest of the page's life, each holding an RDKit instance, and a page has room for only so many
+  // WebAssembly memories (instantiation fails with "Out of memory" past it)
+  _rdKitService ??= new RdKitService();
 }
 
 export async function initRdKitService(): Promise<void> {
-  await _rdKitService!.init(_webRoot!);
+  await _rdKitService!.init(_webRoot!, _rdKitWasm!);
 }
 
 export function getRdKitModule(): RDModule {

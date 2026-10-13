@@ -2,6 +2,31 @@
 
 ## v.next
 
+* Manage Monomers: Fixed an error logged when the monomer table reloads within half a second of a save (the scroll to the saved monomer ran on the replaced table)
+* WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)
+* Apply Numbering Scheme: Applies results row by row without keeping every row's parsed map and cells, and writes per-row annotations with one change event (100,000 rows crashed the tab); the same single event for Scan Liabilities
+* Apply Numbering Scheme, MSA: An engine's description shows its first sentence, the rest in the tooltip
+* WebLogo: Fixed the position width becoming infinite when the viewer first renders with no positions (data still loading), which left the slider collapsed at 0 until dragged; a saved infinite or zero width falls back to the default
+* MSA: A long engine description wraps instead of widening the dialog
+* Apply Numbering Scheme: An engine from another package (e.g. HMM's ANARCI) is the default when installed; the built-in immunum stays available as the fallback
+* Apply Numbering Scheme: Fixed an engine with options (HMM's ANARCI) offering only IMGT when the dialog was opened again
+* WebLogo: Added the Profile property: draws a sequence profile supplied by another package (functions with `meta.role: webLogoProfile`, e.g. HMM's profile HMM logos) with the viewer's own layout, scrolling and colors; when the column is aligned to the profile, clicking a letter selects the rows that have it there (in `@datagrok-libraries/bio`)
+* Annotations: Moved the annotation storage helpers (`annotation-manager.ts`) to `@datagrok-libraries/bio` so other packages write annotations the same way; Bio re-exports them
+* Tests: The BDD features no longer repeat what the package tests cover (project round trips, notation permutations, renderer checks); the MSA dialog's engine switch on a HELM column is claimed again (it contacts no container)
+* Demo: Fixed Similarity, Diversity clustering the next demo's table ("Could not resolve column sequence") when that one opened within a second
+* GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
+* Demo: Fixed Similarity, Diversity returning before its layout was applied, which then landed on whatever view was open next
+* Tests: Added package tests for Scan Liabilities (rule hits and positions, the annotation and count columns), Similarity against another row and a shorter or longer reference (GROK-20963), Sequence Space and Activity Cliffs on HELM and MSA, an antibody numbering's project round trip and an MSA column of multi-letter monomers converted to HELM; the BDD features keep the dialogs and leave these numbers to the tests, and the project round-trip tests delete their projects
+
+## 2.28.4 (2026-09-29)
+
+* MSA header: Numbered positions by the column's position names on the ruler and in the WebLogo tooltip, so a region extracted from a numbered aligned column (Extract Region, or Extract CDR3 from the cell menu) keeps the scheme's numbering, e.g. CDR3 from 105 instead of 1 (in `@datagrok-libraries/bio`)
+* MSA header: Fixed long columns sometimes left without the header: it now repaints once installed, shows on a column wider than the view, and a new column no longer shrinks the shared header height; a scrolled-away header no longer blocks clicks on other columns' headers (in `@datagrok-libraries/bio`)
+* Tests: Added `render/msa-header.feature` — both chains get the header, and CDR3 extracted either way is ruled from 105; the header reports its tracks, ruler names and positions through the grid's status
+
+* Manage Monomer Libraries: Deleting a library removes its file first, so its row leaves the list as soon as the file is gone instead of after a settings save and a reload of every library
+* Similarity scoring: Fixed blank scores for sequences whose length differs from the reference's; the score covers the reference's positions, as identity does (in `@datagrok-libraries/bio`)
+* Tests: BDD suite closed its gaps against the TestTrack cases and the old Playwright specs: HELM and MSA runs of Analyze and Convert, the empty current row (GROK-16111), Molecules to HELM, the FASTA file handler and exporter, project round-trips, monomer library CRUD, BILN rendering; every feature states what it does not translate
 * Fixed sequence and monomer context panels staying on the previous cell when a grid cell is clicked within two seconds of expanding a section (core grid fix).
 * Tests: Atomic-level conversion selects the standard HELM library so custom monomers on the stand cannot change the fixture's chemistry, and restores the previous selection afterwards.
 * Tests: Monomer library uploads support stands with only Files storage as well as stands with multiple storage providers.

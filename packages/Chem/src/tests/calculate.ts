@@ -1,13 +1,15 @@
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
-import {category, before, after, expect, test, delay, awaitCheck} from '@datagrok-libraries/test/src/test';
+import {category, before, after, expect, expectArray, expectFloat, test, delay, awaitCheck}
+  from '@datagrok-libraries/test/src/test';
 import {ensureContainerRunning} from '@datagrok-libraries/test/src/test-container-utils';
-import {CONTAINER_TIMEOUT} from './utils';
+import {CONTAINER_TIMEOUT, readDataframe} from './utils';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {getMapIdentifiers} from '../widgets/identifiers';
 import {PackageFunctions} from '../package';
+import {getQueryMolSafe} from '../utils/mol-creation_rdkit';
 
 category('calculate', () => {
   let smiles: DG.DataFrame;
@@ -98,6 +100,85 @@ category('calculate', () => {
   });
 });
 
+
+category('clustering', () => {
+  before(async () => {
+    if (!chemCommonRdKit.moduleInitialized) {
+      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+      await chemCommonRdKit.initRdKitModuleLocal();
+    }
+  });
+
+  test('bitbirch', async () => {
+    const df = await readDataframe('smiles.csv');
+    await grok.data.detectSemanticTypes(df);
+    await _bitbirch(df, df.col('canonical_smiles')!);
+    const clusters = df.col('Cluster (BitBIRCH)')!;
+    expect(clusters.stats.missingValueCount, 0);
+    expect(clusters.stats.uniqueCount, 366);
+    expect(df.rowCount, 1000);
+  });
+
+  test('similarity matrix', async () => {
+    const df = await readDataframe('smiles.csv');
+    df.rows.removeAt(50, df.rowCount - 50);
+    await grok.data.detectSemanticTypes(df);
+    const molecules = df.col('canonical_smiles')!;
+    const matrix = await PackageFunctions.similarityMatrixTopMenu(df, molecules, df.col('molregno')!);
+    try {
+      expect(matrix.name, 'canonical_smiles similarity matrix');
+      expect(matrix.rowCount, 50);
+      expectArray(matrix.columns.names(), ['symbol', ...df.col('molregno')!.toList().map((v) => `${v}`)]);
+      const cols = matrix.columns.toList().slice(1);
+      let offDiagonal = 0;
+      for (let i = 0; i < 50; i++) {
+        expect(cols[i].get(i), 1, `diagonal cell ${i}`);
+        for (let j = 0; j < 50; j++) {
+          expectFloat(cols[j].get(i), cols[i].get(j), 1e-6, `cells ${i},${j} and ${j},${i}`);
+          if (cols[j].get(i) < 1)
+            offDiagonal++;
+        }
+      }
+      expect(offDiagonal > 0, true, 'every pair of molecules is fully similar');
+      const scores = (await PackageFunctions.getSimilarities(molecules, molecules.get(0))).columns.byIndex(0);
+      for (let i = 1; i < 50; i++)
+        expectFloat(cols[0].get(i), scores.get(i), 1e-4, `similarity of row ${i} to row 0`);
+    } finally {
+      grok.shell.tableView(matrix.name)?.close();
+    }
+  });
+
+  test('cluster MCS', async () => {
+    const df = await readDataframe('tests/spgi-100.csv');
+    await grok.data.detectSemanticTypes(df);
+    const molecules = df.col('Structure')!;
+    await _bitbirch(df, molecules);
+    const clusters = df.col('Cluster (BitBIRCH)')!;
+    const mcs = await PackageFunctions.performClusterMCS(molecules, clusters);
+    expect(mcs.semType, DG.SEMTYPE.MOLECULE);
+    expect(mcs.stats.missingValueCount, 0);
+    expect(mcs.stats.uniqueCount, 81);
+    const rdkit = PackageFunctions.getRdKitModule();
+    for (let i = 0; i < df.rowCount; i++) {
+      const mol = rdkit.get_mol(molecules.get(i));
+      const query = getQueryMolSafe(mcs.get(i)!, '', rdkit)!;
+      try {
+        expect(mol.get_substruct_match(query) !== '{}', true,
+          `row ${i} does not contain the MCS of its cluster, ${mcs.get(i)}`);
+      } finally {
+        mol.delete();
+        query.delete();
+      }
+    }
+  });
+});
+
+// through the registered function: the worker loads its wasm from a web root only the package bundle knows
+async function _bitbirch(df: DG.DataFrame, molecules: DG.Column): Promise<void> {
+  await DG.Func.find({package: 'Chem', name: 'bitbirchClusteringTopMenu'})[0]
+    .prepare({table: df, molecules: molecules, threshold: 0.55, fingerprintType: 'Morgan'})
+    .call(undefined, undefined, {processed: false});
+}
 
 async function testGroup(groupName: string, funcName: string, colName: string, dlgName: string) {
   console.log(`testGroup, dlgName: ${dlgName}`);

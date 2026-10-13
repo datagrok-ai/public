@@ -2,6 +2,70 @@
 
 ## v.next
 
+* Deprotect: Fixed the default Fmoc fragment taking the protected amine's nitrogen with the group (Fmoc-Gly came out as acetic acid, Fmoc-Pro unchanged): its attachment point is now the nitrogen itself, which keeps its hydrogens
+* Substructure filter: Fixed a structure card that stopped filtering after Remove All on another view's panel of the same table: the removed card, deactivated first, kept its peers disabled (Use as filter in that view let every row through)
+* Cluster MCS: A one-molecule cluster's MCS is the molecule itself with its hydrogens: read as a query, its NH hydrogens were dropped (a urazole came out as the triazolinedione)
+* Tests: Added package tests for activity cliffs at the cutoffs 20 and 95, elemental analysis on SMARTS, Chemical Space on an all-empty column, R-groups analyses that find none, BitBIRCH, the similarity matrix and Cluster MCS (`clustering`), the Transform reactions (`Reactions`), the notation round trip over smiles.csv, similarity search on the other fingerprints and the mixture cell renderer; the BDD features they replace keep only their UI gestures
+* Substructure filter: Fixed a query marked with a feature RDKit's sanitizing drops (toluene drawn, then its methyl bond marked aromatic) keeping the rows of the query before it, and that query as the filter's state: the filter names a query by the query its search builds (read unsanitized), not by RDKit's sanitized molecule, which took the two for one and skipped the second search
+* Substructure search: A V3000 query molblock without explicit hydrogens is read as a query, unsanitized, as a V2000 one is: an aromatic bond outside an aromatic ring is no longer read as single
+* Substructure filter: The generic atoms X, XH, M and MH are kept as drawn instead of being rewritten into atom lists: RDKit reads them with their own meanings; the lists lost astatine and the metals beyond 38, and those of XH and MH matched no explicit hydrogen
+* Crux substructure search: A query whose bond is single-or-double with a ring or chain topology is searched by RDKit: RDKit writes it `-,=&@`, which a SMARTS parser reads as single anywhere or double in a ring
+* Sketcher: OpenChemLib's SMARTS is the query its molfile makes, read unsanitized (an aromatic bond outside an aromatic ring is kept)
+* Sketcher: The Crux sketcher's status reports its SMARTS (`smarts`)
+* Tests: Added the `query round trip` category: every query feature Crux and Ketcher offer, drawn in the substructure filter on mol1K, SPGI and smiles.csv, filters the rows of its intended SMARTS and comes back the same reopened and through the other sketcher; and the BDD features `filters/query-roundtrip-*` for the report's case on each dataset
+
+* Substructure filter: Fixed a query marked with a feature RDKit's sanitizing drops (toluene drawn, then its methyl bond marked aromatic) keeping the rows of the query before it, and that query as the filter's state: the filter names a query by the query its search builds (read unsanitized), not by RDKit's sanitized molecule, which took the two for one and skipped the second search
+* Substructure search: A V3000 query molblock without explicit hydrogens is read as a query, unsanitized, as a V2000 one is: an aromatic bond outside an aromatic ring is no longer read as single
+* Substructure filter: The generic atoms X, XH, M and MH are kept as drawn instead of being rewritten into atom lists: RDKit reads them with their own meanings; the lists lost astatine and the metals beyond 38, and those of XH and MH matched no explicit hydrogen
+* Crux substructure search: A query whose bond is single-or-double with a ring or chain topology is searched by RDKit: RDKit writes it `-,=&@`, which a SMARTS parser reads as single anywhere or double in a ring
+* Sketcher: OpenChemLib's SMARTS is the query its molfile makes, read unsanitized (an aromatic bond outside an aromatic ring is kept)
+* Sketcher: The Crux sketcher's status reports its SMARTS (`smarts`)
+* Tests: Added the `query round trip` category: every query feature Crux and Ketcher offer, drawn in the substructure filter on mol1K, SPGI and smiles.csv, filters the rows of its intended SMARTS and comes back the same reopened and through the other sketcher; and the BDD features `filters/query-roundtrip-*` for the report's case on each dataset
+
+* GROK-21063: Chem Space, Activity Cliffs: Fixed an error when the table is closed while the dialog is opening
+* Tests: Added the `save as csv` test category (MOLBLOCK columns exported as SMILES read back as molecules); the BDD features no longer repeat the notation permutations and renderer checks the package tests cover
+* GROK-21049: Activity Cliffs: Fixed the "Column already exists" error when run alongside another embedding analysis
+* Crux substructure search: At most 16 crux workers: each holds a WebAssembly instance, and a page has room for only about 120 WebAssembly memories, which crux's pool and RDKit's (both `hardwareConcurrency - 2`) filled on a 32-thread machine, so that every WebAssembly start after them failed with "Out of memory" (the Crux sketcher, DBSCAN, RDKit). A crux start that failed lets go of the workers it started (each search retried it, and the page piled up hundreds of workers); a second RDKit init (a test category's) keeps the RDKit worker pool instead of leaving the old one running
+* RDKit: At most 16 RDKit workers (`hardwareConcurrency - 2` before), as crux's pool: a page has room for only about 120 WebAssembly memories, and on a machine with many threads the RDKit pool would fill it by itself
+* Sketcher: Added Crux, the Crux Sketch molecule sketcher on the Crux chemistry engine (WebAssembly), to the choices of the Sketcher setting (crux-sketch 4731046, engine c7103d6370e8; vendored in `vendor/crux-sketch/`, loaded at its first use); in the substructure filter it opens in query mode
+* Sketcher: Fixed the substructure filter losing a structure typed into its sketcher dialog when OK was pressed before the Crux sketcher had loaded ("Filter as you draw" on): Crux, its dialog closed while it loaded, now takes the value the host stored meanwhile and says so, as a sketcher closed after it was ready does
+* Sketcher: Fixed a stroke drawn in the Crux sketcher being lost when the page moved focus while it was held (a table view focuses its grid about a second after it opens, which could fall in the middle of a stroke in a molecule cell's editor, and OK then left the cell as it was): only Tab and Shift+Tab cancel a held stroke now
+* Sketcher: The Crux sketcher's root is named `cruxSketch` for the platform's automation, and its status reports its canvas, toolbars and label editor, each tool's button (`tool <name>`), and what it holds (the selected atoms and bonds, the tool, whether it holds a query or nothing, the changes it has said); it fires `onRendered` after each drawing it shows. Crux keeps its look under a strict Content-Security-Policy (no `'unsafe-inline'` for styles), which it needs nothing of beyond `'wasm-unsafe-eval'`
+* Sketcher: Fixed an edit made in a molecule cell's editor right after its sketcher was ready being undone (OK then left the cell as it was): the editor gives the sketcher the cell's own SMILES back the moment it is ready (`Sketcher.sketcherReady()`), not by polling for it; the substructure filter decides its sketcher's mode once its card is in the page, instead of polling for it for up to 1.5 s
+* Sketcher: Fixed a molecule typed into a molecule cell's editor and entered while its sketcher was still loading being ignored on OK (the cell kept its value): the editor gives the sketcher the cell's own SMILES back once it is ready only while the sketcher still holds the cell's molecule, not over a value set meanwhile
+* Substructure filter: Fixed a structure filter restored by a layout sometimes leaving the table unfiltered: a filter closed within a second of getting its state (a cloned view's filter panel closed at once) still ran the search its state had scheduled and took the column over, so the filter restored later took that search for its own and never ran it; detaching a filter now cancels its scheduled search
+* Sketcher: The 400px minimum width given back to a sketcher dialog opened from a popup no longer applies to a sketcher with no minimum size
+* Demo: Fixed Similarity & Diversity Search, Matched Molecular Pairs and Scaffold Tree returning before their layouts were applied, which then landed on whatever view was open next
+* Reaction Enumerator: Added "Repeat until it stops" with Max cycles: single-reactant templates are re-applied to their own products within one step, and only the end products are kept (e.g. a triene gives the fully reduced product in step 1)
+* Activity Cliffs: The molecules of the pair in the Cliff Details pane carry `role="button"` and `aria-label` ("molecule of row N"), so assistive tools and tests can name them
+* Reaction Enumerator: Fixed columns of the reaction templates, building blocks and reagents grids collapsing when another column is resized; columns are now sized once to fixed widths instead of being fitted to the available space
+* SAR Matrix: Added building the matrices from core and R-group columns already in the table (Use existing R-groups); attachment points are read in any common notation ([*:n], [n*], R# molfiles, CXSMILES labels), a bridge written in two columns is joined as one piece, and a warning names R-groups that do not rebuild the table's molecules
+* SAR Matrix: Fixed predicted structures inverting a stereocenter or double-bond geometry next to an attachment point
+* SAR Matrix: A series whose largest connected block has a single row or column now shows its largest block with at least two of each, instead of no matrix or a one-column one
+* SAR Matrix: The Core header marks the varied position on the series core, and the context panel shows the core and the row's own R-groups
+* Matched Molecular Pairs: Fixed missing values of an integer activity becoming -2147483648 when the activity is log-scaled
+
+* Substructure Search: Added the Crux engine (Substructure Search Engine package property) for Contains / Not contains searches; queries it cannot express run on RDKit
+* Substructure Search: Improved Crux parity with RDKit — nitro / N-oxides, perchlorates, elements beyond Rn and aromatic rings RDKit reads only without Kekulize are read as RDKit reads them (Chem datasets: 67 → 0 molecules Crux could not parse, 277 → 7 read differently)
+* Substructure Search: Fixed typed queries such as `[OH]`, `[CH3]`, `[N+]`, `c1cc[n+]cc1` finding almost nothing — a query whose SMILES reading is a radical is now read as SMARTS, by both engines
+* Substructure Search: Added a fallback to RDKit when a Crux search fails (e.g. a worker runs out of memory); Crux restarts to free its memory
+* Improved RDKit start-up: the RDKit wasm is compiled once on the main thread and shared with the workers, and in Crux mode the substructure filter no longer starts the RDKit workers
+* Substructure Search: A second run no longer asks for the molecule column, which offered the hidden canonical SMILES column the first search leaves
+* Reaction renderer: Replaced inter-step arrows with numbered panels and improved scaffold alignment using cached molecular coordinates
+* Substructure filter: Fixed the search progress staying in the task bar at 100% — a search's end closes it, a detached filter terminates every search it started, and the fingerprint precalculation clears its own entry
+* GROK-20955: Names To Smiles: Fixed the run failing on a table that already has a canonical_smiles column; the structures go into a column of their own
+* GROK-18286: Scaffold Tree: Fixed removing a scaffold under a colored one taking the colors column away, and with it the coloring of a plot colored by that column
+* Scaffold Tree: Fixed a removed colored scaffold keeping its color: the removed node was still redrawn once and registered its color again, so the next update brought its highlighting back
+* Similarity/Diversity search: Each molecule card now announces the row it shows (`data-row`, `name="card-<row>"`), and the viewers report the `search-results` status of `@datagrok-libraries/ml` — `card <row>` hit areas plus `cards` / `current card` / `selected cards` readings — instead of being addressed by position; `isRenderPending` / `onRendered` cover a scheduled or running render
+* Generate Conformers: Fixed the run failing with `AttributeError: Cannot set unknown attribute 'maxAttempts'` — ETKDGv3 takes `maxIterations`
+* Chem | Calculate | IUPAC Name: Added a Python script that names molecules with openclatura
+* Substructure filter: Added the card's structure, search type, fingerprint, similarity cutoff, searching state and whether it is still drawing (the cards below it move until it has) as readings of the filter panel it sits in
+* Similarity and Diversity Search: Added a `chem-search` status beside `search-results` — metric, fingerprint, size, row source, header, the set of rows the cards show, card sizes and properties; Similarity adds the target row, cutoff and scores
+* Scaffold Tree: Added status readings of its nodes (count, checked, coloured, each node's scaffold, hits and colour), its message and why generation is blocked, hit areas for each node and its icons, and `aria-disabled` on a blocked icon
+* Matched Molecular Pairs: Added status readings of its activities, current tab, substitutions, pairs and generated molecules
+* Activity cliffs: Added the `only cliffs` reading beside `cliffs`, and named the cliff-count button `button-cliffs`
+* R-Groups Analysis: Fixed OK with an empty sketcher removing the latest analysis before reporting that no core was provided
+* Added BDD features for the Chem section of TestTrack
 * GROK-20753: Added `moleculeFilterOperators` (`meta.role: filterOperators`) — substructure, superstructure, exact, stereo-agnostic and similarity operators for the u2 filter builder
 * GROK-20808: MMP: Fixed a crash when no table was selected in the dialog
 * GROK-20829: Guard isBitsetStale against the valueless root tree group

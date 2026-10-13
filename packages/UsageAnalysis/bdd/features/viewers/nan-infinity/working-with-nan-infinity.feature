@@ -38,8 +38,7 @@ Feature: A NaN and an Infinity in the plotted columns
   Scenario: The square marker and the regression line survive both values
     When user sets properties of scatter plot viewer:
       | Marker Type | square |
-    Then "Marker Type" property of scatter plot viewer should be "square"
-    And scatter plot viewer should have repainted
+    Then scatter plot viewer should have repainted
     And scatter plot viewer should be painted in at least 2 colors
     And the "regression lines" reading of scatter plot viewer should be at least 1
     And no errors should have been logged

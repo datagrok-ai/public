@@ -35,21 +35,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [ 'connectors', 'packages', 'tools', 'js-api', 'libraries' ]
+        target: [ 'packages', 'tools', 'js-api', 'libraries' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up JDK 8
-        if: matrix.target == 'connectors'
-        uses: actions/setup-java@v2
-        with:
-          java-version: '8'
-          distribution: 'adopt'
-          cache: maven
-      - name: Build with Maven
-        if: matrix.target == 'connectors'
-        working-directory: ./${{ matrix.target }}
-        run: mvn -Dmaven.test.skip=true package
       - name: Create SBOM by Syft
         uses: docker://anchore/syft:latest
         with:

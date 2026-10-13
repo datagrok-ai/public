@@ -38,7 +38,7 @@ const readLegend = (page: Page): Promise<Legend> => page.evaluate(() => {
     coloring: colorItems.length,
     extra: items.length - colorItems.length,
     colorLabels: colorItems.map(txt),
-    glyphLabels: items.filter((i) => i.querySelector('i[name="legend-icon-color-picker"]')).map(txt),
+    glyphLabels: items.filter((i) => i.querySelector('i[name="legend-item-marker"]')).map(txt),
   };
 });
 
@@ -136,7 +136,7 @@ test('Scatter Plot — Legend Persistence', async ({page}: {page: Page}) => {
             color: s?.props.colorColumnName, markers: s?.props.markersColumnName,
             legendPresent: !!s?.root.querySelector('[name="legend"]'),
             colorLabels: items.filter((i) => !i.classList.contains('d4-legend-item-extra')).map(txt),
-            glyphLabels: items.filter((i) => i.querySelector('i[name="legend-icon-color-picker"]')).map(txt),
+            glyphLabels: items.filter((i) => i.querySelector('i[name="legend-item-marker"]')).map(txt),
           };
         }), (r) => r.found && r.colorLabels.length === RACE_CATEGORIES.length &&
           r.glyphLabels.length === SEX_CATEGORIES.length, 20_000, 200);

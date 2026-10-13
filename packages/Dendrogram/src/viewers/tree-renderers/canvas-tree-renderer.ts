@@ -42,6 +42,8 @@ export class CanvasTreeRenderer<TNode extends MarkupNodeType>
   protected _mainStyler: ITreeStyler<TNode>;
   protected _mainStylerOnChangedSub!: rxjs.Unsubscribable;
   protected xZoomFactor: number = 1;
+  get xZoom(): number { return this.xZoomFactor; }
+
   protected get xZoomNorm(): number { return Math.min(Math.max(Math.floor(this.xZoomFactor * 4) / 4, 1), 100); }
   public updateXZoom(newZoom: number) {
     this.xZoomFactor = newZoom;

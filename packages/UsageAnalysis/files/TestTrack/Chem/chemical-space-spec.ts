@@ -43,7 +43,7 @@ async function openChemicalSpaceDialog(page: Page, label: string) {
     await page.locator('.d4-dialog').waitFor({timeout: 15000});
     const title = await page.evaluate(() =>
       document.querySelector('.d4-dialog .d4-dialog-header, .d4-dialog .d4-dialog-title')?.textContent?.trim() ?? '');
-    expect(title, `Dialog title expected /Chemical/, got "${title}"`).toMatch(/Chemical/i);
+    expect(title, `Dialog title expected /Chem(ical)? Space/, got "${title}"`).toMatch(/Chem(ical)?\s*Space/i);
   });
 }
 
@@ -62,7 +62,8 @@ async function clickOkAndWaitForEmbedding(page: Page, label: string, minSuffix: 
           if (maxSuffix > lastSuffix) {
 
             let hasTag = false;
-            for (let j = 0; j < 10; j++) {
+            // 60 s: the tag lands 5-8 s after the columns on a warm client, later on a loaded one.
+            for (let j = 0; j < 30; j++) {
               const newCol = grok.shell.tv?.dataFrame?.col(`Embed_X_${maxSuffix}`);
               if (newCol && Array.from(newCol.tags.keys()).some((k: any) => /chem-space-embedding-col/.test(k))) {
                 hasTag = true;
@@ -83,7 +84,7 @@ async function clickOkAndWaitForEmbedding(page: Page, label: string, minSuffix: 
       `[${label}] Chemical Space did not produce a fresh Embed_X_N (N > ${minSuffix}) within 90s. result=${JSON.stringify(result)}`,
     ).toBe(true);
     expect((result as any).hasTag,
-      `[${label}] new Embed_X column missing '.%chem-space-embedding-col' tag after 20s wait`,
+      `[${label}] new Embed_X column missing '.%chem-space-embedding-col' tag after 60s wait`,
     ).toBe(true);
     foundSuffix = (result as any).maxSuffix;
   });

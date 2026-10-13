@@ -46,3 +46,6 @@ test-console-output.log
 
 # Package-owned Playwright E2E suite — not shipped in the npm artifact
 playwright/
+
+# The vendored Crux Sketch, which the build bundles into the package's chunks
+vendor/

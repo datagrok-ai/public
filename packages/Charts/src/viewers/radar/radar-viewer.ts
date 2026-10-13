@@ -3,11 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, WARNING_CLASS} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {EChartViewer} from '../echart/echart-viewer';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
 import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {radarStatus} from './radar-status';
+import {Observable} from 'rxjs';
 import _ from 'lodash';
 
 import '../../../css/radar-viewer.css';
@@ -15,7 +17,6 @@ import '../../../css/radar-viewer.css';
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 type Normalization = 'Column' | 'Global';
-const WARNING_CLASS = 'radar-warning';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 @grok.decorators.viewer({
@@ -51,6 +52,14 @@ export class RadarViewer extends EChartViewer {
   private static _canvas: HTMLCanvasElement | null = null;
   private static _ctx: CanvasRenderingContext2D | null = null;
 
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
+
+  getWidgetStatus(): DG.IWidgetStatus {return radarStatus(this);}
+
   constructor() {
     super();
     this.title = this.string('title', 'Radar');
@@ -76,7 +85,7 @@ export class RadarViewer extends EChartViewer {
     this.valuesColumnNames = this.addProperty('valuesColumnNames', DG.TYPE.COLUMN_LIST, null,
       {columnTypeFilter: DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME, category: 'Value', groupWith: 'minValues, maxValues'});
     this.minValues = this.addProperty('minValues', DG.TYPE.MAP, null,
-      {category: 'Value', description: 'Axis minimum per column; defaults to 0, or below the minimum for negative columns'}) ?? {};
+      {category: 'Value', description: 'Axis minimum per column; defaults to the column minimum'}) ?? {};
     this.maxValues = this.addProperty('maxValues', DG.TYPE.MAP, null,
       {category: 'Value', description: 'Axis maximum per column; defaults to the column maximum'}) ?? {};
     this.legendVisibility = <VisibilityMode> this.string('legendVisibility', VISIBILITY_MODE.AUTO,
@@ -205,8 +214,10 @@ export class RadarViewer extends EChartViewer {
     this.root.appendChild(this.legendHelper.legendDiv);
     this.updateLegend();
     this.filter = this.dataFrame.filter;
-    this.valuesColumnNames = Array.from(this.dataFrame.columns.numericalNoDateTime)
-      .map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
+    const numericalColumns = Array.from(this.dataFrame.columns.numericalNoDateTime);
+    for (const c of numericalColumns)
+      this.initMinMax(c);
+    this.valuesColumnNames = numericalColumns.map((c: DG.Column) => c.name).slice(0, MAXIMUM_COLUMN_NUMBER);
     this.resubscribe(() => this.addSubs());
     this.render();
   }
@@ -246,10 +257,12 @@ export class RadarViewer extends EChartViewer {
       }
     }));
     this.subs.push(
-      DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+      this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+        const release = this.signals.hold();
         requestAnimationFrame(() => {
           this.chart?.resize();
           this.render();
+          release();
         });
       }),
     );
@@ -438,12 +451,14 @@ export class RadarViewer extends EChartViewer {
     return indicators;
   }
 
+  initMinMax(c: DG.Column): void {
+    this.minValues[c.name] ??= c.min;
+    this.maxValues[c.name] ??= c.max;
+  }
+
   createRadarIndicator(c: DG.Column): Required<RadarIndicator> {
-    return {
-      name: c.name,
-      min: this.minValues?.[c.name] ?? (c.min < 0 ? c.min + c.min * 0.1 : 0),
-      max: this.maxValues?.[c.name] ?? c.max,
-    };
+    this.initMinMax(c);
+    return {name: c.name, min: this.minValues[c.name], max: this.maxValues[c.name]};
   }
 
   private cellValue(c: DG.Column, colIdx: number, rowIdx: number): number | null {
@@ -538,6 +553,10 @@ export class RadarViewer extends EChartViewer {
   }
 
   render(indexes?: number[]) {
+    this.signals.render(() => this.draw(indexes));
+  }
+
+  private draw(indexes?: number[]) {
     if (!this.dataFrame)
       return;
 

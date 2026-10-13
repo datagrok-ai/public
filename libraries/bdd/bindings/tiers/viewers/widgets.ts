@@ -12,9 +12,13 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from '../../../src/runtime/patience.js';
 import {Then, When} from '../../../src/registry.js';
 import type {ElementRef} from '../../../src/runtime/args.js';
-import {exactText} from '../../../src/runtime/locate.js';
+import {el} from '../../../src/runtime/args.js';
+import {atFeatureEnd} from '../../../src/runtime/harness.js';
+import {cssString, exactText, locate} from '../../../src/runtime/locate.js';
 import * as g from '../../../src/runtime/gestures.js';
+import * as guide from '../../../src/runtime/guide.js';
 import * as v from '../../../src/runtime/viewers.js';
+import {openContextMenuAt} from '../../../src/runtime/viewer-menus.js';
 
 const settle = v.settle;
 
@@ -23,10 +27,13 @@ const settle = v.settle;
 /* A reading whose value is a comma-separated list: the tile viewer's `fields` and `lane names`, the
    pc plot's `axes`, the trellis plot's `x columns`. */
 async function expectReadingContains(page: Page, target: ElementRef, name: string, item: string, negate: boolean): Promise<void> {
+  if (item.includes(','))
+    throw new Error(`"${item}" holds a comma, so it is never one member of the "${name}" list and a negative claim on it cannot fail; name one member`);
   let last = '';
   const poll = expect.poll(async () => {
-    last = String(await v.readValue(page, target, name));
-    return last.split(/\s*,\s*/).includes(item);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.split(/\s*,\s*/).includes(item);
   }, {timeout: pollMs(5000), message: `"${name}" of ${target.phrase} is "${last}"`});
   await (negate ? poll.not : poll).toBe(true);
 }
@@ -124,6 +131,12 @@ export const doubleClickEmptySpace = When('user double-clicks on empty plot spac
   const p = await emptySpace(page, target);
   await page.mouse.dblclick(p.x, p.y);
 }, {tier: 'ui', description: 'resets the view'});
+
+export const hoverEmptySpace = When('user hovers over empty plot space of {widget}', async (page: Page, target: ElementRef) => {
+  const p = await emptySpace(page, target);
+  await page.mouse.move(p.x - 3, p.y - 3);
+  await page.mouse.move(p.x, p.y);
+}, {tier: 'ui', description: 'the pointer on the plot with nothing under it — what a viewer\'s mouse-over group falls back to when no category is hovered'});
 
 // --- range sliders --------------------------------------------------------------------------------
 
@@ -244,8 +257,11 @@ async function openColumnSelector(page: Page, target: ElementRef, which: string)
   const loc = await v.viewerLocator(page, target);
   const centre = v.centerOf(await v.hitArea(page, target, 'view'));
   await page.mouse.move(centre.x, centre.y);
-  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase()}"]`);
+  // the selector is named by its property without spaces: "Category 1" is category1
+  const selector = loc.locator(`[name="div-column-combobox-${which.toLowerCase().replace(/\s+/g, '')}"]`);
   await selector.waitFor({state: 'visible', timeout: 5000});
+  // the guide lights the selector, not the whole viewer the phrase named
+  await guide.located(page, selector);
   await g.openColumnSelector(page, selector, false);
   return selector;
 }
@@ -258,6 +274,44 @@ export const pickInColumnSelector = When('user picks {string} in the {string} co
     await settle(page, target);
   }, {tier: 'ui', description: 'the column re-picked on the chart itself, the way a user re-picks it'});
 
+/* The trellis plot's axis selectors all carry the same empty name (`div-column-combobox-`), so they
+   are told apart by the hit area each one reports (`x selector 1`, `y selector 2`). */
+export const pickInAreaSelector = When('user picks {string} in the column selector at the {string} area of {widget}',
+  async (page: Page, column: string, area: string, target: ElementRef) => {
+    const c = v.centerOf(await v.hitArea(page, target, area, true));
+    const loc = await v.viewerLocator(page, target);
+    const found = await loc.evaluate((root, p) => {
+      for (const marked of Array.from(document.querySelectorAll('[data-bdd-selector]')))
+        marked.removeAttribute('data-bdd-selector');
+      for (const s of Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]) {
+        const r = s.getBoundingClientRect();
+        if (p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom) {
+          s.setAttribute('data-bdd-selector', '');
+          return true;
+        }
+      }
+      return false;
+    }, c);
+    if (!found)
+      throw new Error(`${target.phrase}: no column selector lies under its "${area}" area`);
+    const selector = loc.locator('[data-bdd-selector]');
+    await guide.located(page, selector);
+    await g.openColumnSelector(page, selector, false);
+    await g.pickInColumnGrid(page, column, `the column selector at the "${area}" area of ${target.phrase}`, selector);
+    // the viewer rebuilds its selectors after a pick: read the one that now lies under the area
+    await expect.poll(async () => {
+      const at = v.centerOf(await v.hitArea(page, target, area, true));
+      return loc.evaluate((root, p) => {
+        const s = (Array.from(root.querySelectorAll('.d4-column-selector')) as HTMLElement[]).find((e) => {
+          const r = e.getBoundingClientRect();
+          return p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
+        });
+        return s?.querySelector('.d4-column-selector-column')?.textContent ?? 'no selector';
+      }, at);
+    }, {timeout: pollMs(5000), message: `the column selector at the "${area}" area of ${target.phrase}`}).toBe(column);
+    await settle(page, target);
+  }, {tier: 'ui', description: 'a column selector the viewer names only by its hit area'});
+
 /** The same selector, typed into and committed, with no claim about the result: a selector that
  * offers only some columns leaves the column it had, and the feature reads it afterwards. */
 export const typeInColumnSelector = When('user types {string} into the {string} column selector of {widget}',
@@ -266,6 +320,19 @@ export const typeInColumnSelector = When('user types {string} into the {string} 
     await g.typeInColumnGrid(page, column, `the "${which}" column selector of ${target.phrase}`, selector);
     await settle(page, target);
   }, {tier: 'ui', description: 'for the negative: the selector takes the name typed only when it offers that column'});
+
+/** A line chart's split selectors sit in its top-left corner, revealed on hover: the ones that hold a
+ * split, and the empty "add-split" one after them that takes the next. */
+export const addLineChartSplit = When('user adds {string} to the splits of {widget}', async (page: Page, column: string, target: ElementRef) => {
+  const root = await v.viewerLocator(page, target);
+  await root.hover();
+  const add = root.locator('[name="add-split"]').first();
+  await expect(add, 'the empty split selector of the line chart').toBeVisible({timeout: pollMs(5000)});
+  await v.snapshot(page, target);
+  await g.openColumnSelector(page, add);
+  await g.pickInColumnGrid(page, column, 'the split selector of the line chart');
+  await settle(page, target);
+}, {tier: 'ui', description: 'hovers the chart, opens its empty split selector and picks the column in the popup'});
 
 /** The type selector of a viewer that hosts another viewer (a `ComboPopup` named "viewer
  * selector"): a click opens the list, and the pick goes through the host's `setViewerType`, which
@@ -296,10 +363,22 @@ export const setInnerProperty = When('user sets {string} inner property of {widg
     const coerced: unknown = /^(true|false)$/i.test(value) ? /^true$/i.test(value)
       : value !== '' && !Number.isNaN(Number(value)) ? Number(value) : value;
     await loc.evaluate((e, [n, val]) => {
-      (window as any).__bdd.viewerOf(e).setOptions({innerViewerLook: {[n as string]: val}});
+      const viewer = (window as any).__bdd.viewerOf(e);
+      const list = Array.isArray(viewer.getOptions(true)?.look?.innerViewerLook?.[n as string]) && typeof val === 'string';
+      viewer.setOptions({innerViewerLook: {[n as string]: list ? (val === '' ? [] : (val as string).split(/\s*,\s*/)) : val}});
     }, [name, coerced] as [string, unknown]);
     await settle(page, target, 3000);
-  }, {tier: 'api', description: 'by the field name the inner look serializes, not by a property caption'});
+  }, {tier: 'api', description: 'by the field name the inner look serializes, not by a property caption; a list field takes "A, B, C"'});
+
+export const innerPropertyShouldBe = Then('{string} inner property of {widget} should be {string}',
+  async (page: Page, name: string, target: ElementRef, value: string) => {
+    const loc = await v.viewerLocator(page, target);
+    await expect.poll(() => loc.evaluate((e, n) => {
+      const look = (window as any).__bdd.viewerOf(e).getOptions(true)?.look?.innerViewerLook;
+      const x = look?.[n as string];
+      return x === undefined || x === null ? '' : String(x);
+    }, name), {timeout: pollMs(5000), message: `"${name}" of the inner viewer of ${target.phrase}`}).toBe(value);
+  }, {description: 'the inner look as the viewer serializes it (`getOptions().look.innerViewerLook`), "" when the field is not written'});
 
 // --- geometry of a viewer laid out in cells ----------------------------------------------------------
 
@@ -338,6 +417,44 @@ async function rowSelected(page: Page, target: ElementRef, row: number): Promise
 export const lineSelected = Then('the line of row {int} of {widget} should be selected', async (page: Page, row: number, target: ElementRef) => {
   await expect.poll(() => rowSelected(page, target, row), {message: `row ${row} of the table ${target.phrase} draws`}).toBe(true);
 }, {description: 'the row behind a line the viewer drew, by the number its hit areas use'});
+
+// --- the grid of the view in front -------------------------------------------------------------------
+
+/** A wide table shows a dozen of its columns: a header a feature right-clicks is scrolled into view
+ * first, as a user drags the scroll bar to it. */
+export const scrollGridTo = When('user scrolls the grid to the {string} column', async (page: Page, column: string) => {
+  await page.evaluate((c) => {
+    const grid = (window as any).grok.shell.tv?.grid;
+    if (!grid?.dataFrame.col(c))
+      throw new Error(`the grid of the current view has no "${c}" column`);
+    grid.scrollToCell(c, 0);
+  }, column);
+  await v.settleAll(page);
+}, {tier: 'api', description: 'grid.scrollToCell on the first row of the column, then the viewers settle'});
+
+/** The grid draws nothing to the right of its last column when the columns are narrower than the
+ * view: a right-click there, in a row, once failed. The point is the middle of that
+ * space, at the height of the row's cells. */
+export const rightClickRowSpace = When('user right-clicks on empty space of row {int} of {widget}', async (page: Page, row: number, target: ElementRef) => {
+  const areas = await v.hitAreas(page, target);
+  const cells = Object.entries(areas).filter(([name]) => name.startsWith(`cell ${row} of `)).map(([, box]) => box);
+  if (cells.length === 0)
+    throw new Error(`${target.phrase} shows no cell of row ${row}`);
+  const right = Math.max(...cells.map((b) => b.x + b.width));
+  const canvas = await (await v.viewerLocator(page, target)).locator('canvas[name="canvas"]').first().boundingBox();
+  if (!canvas || canvas.x + canvas.width - right < 8)
+    throw new Error(`row ${row} of ${target.phrase} has no empty space past its last column`);
+  await openContextMenuAt(page, (right + canvas.x + canvas.width) / 2, cells[0].y + cells[0].height / 2);
+}, {tier: 'ui', description: 'the space past the last column of a grid narrower than its view, in that row; leaves the menu open'});
+
+export const gridPins = Then('the grid should pin the columns {string}', async (page: Page, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  await expect.poll(() => v.onViewer(page, el('grid'), (e) => {
+    const w = (window as any).__bdd.viewerOf(e);
+    const order = String(w.getWidgetStatus()?.values?.['column order'] ?? '').split(', ');
+    return order.slice(0, Number(w.props.frozenColumns) - 1);
+  }), {message: 'the columns left of the frozen line (Frozen Columns counts the row header)'}).toEqual(want);
+}, {description: 'the first columns of the grid\'s "column order" reading, as many as Frozen Columns keeps (less the row header), in order'});
 
 // --- viewers that lay a card out per row ---------------------------------------------------------
 
@@ -450,8 +567,9 @@ export const dragLasso = When('user drags a lasso over the {string} area of {wid
 async function expectTextIn(page: Page, name: string, target: ElementRef, text: string, negate: boolean): Promise<void> {
   let last = '';
   const holds = async (): Promise<boolean> => {
-    last = String(await v.readValue(page, target, name));
-    return last.includes(text);
+    const r = await v.readingOf(page, target, name);
+    last = String(r);
+    return r instanceof v.MissingReading ? negate : last.includes(text);
   };
   try {
     const poll = expect.poll(holds, {timeout: pollMs(5000)});
@@ -565,3 +683,602 @@ export const dragAreaOntoWidget = When('user drags the {string} area of {widget}
     await page.mouse.up();
     await settle(page, target);
   }, {tier: 'ui', description: 'a grid column header onto a pivot row, a card onto a lane — drag and drop across two widgets'});
+
+export const dragAreaOntoElement = When('user drags the {string} area of {widget} onto {element}',
+  async (page: Page, from: string, source: ElementRef, target: ElementRef) => {
+    const a = v.centerOf(await v.hitArea(page, source, from, true));
+    const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+    if (!box)
+      throw new Error(`${target.phrase} has no box to drop onto`);
+    const b = {x: box.x + Math.min(40, box.width / 2), y: box.y + Math.min(10, box.height / 2)};
+    await page.mouse.move(a.x, a.y);
+    await page.mouse.down();
+    for (let i = 1; i <= 10; i++)
+      await page.mouse.move(a.x + (b.x - a.x) * i / 10, a.y + (b.y - a.y) * i / 10);
+    await page.mouse.up();
+  }, {tier: 'ui', description: 'a hit area of a widget (a grid column header) dropped near the start of an element outside it, a text field'});
+
+// --- the column list of a "Select columns..." dialog -------------------------------------------------
+
+/* The dialog a column-list property opens (the "..." of Y, Group By, Aggregate): a search box, All /
+   None, and a grid whose rows are the table's columns — `__name` holds the column name and `x` the
+   check box. The grid reports `cell <r> of <col>` and `text of cell <r> of <col>` like any grid, so a
+   row is found by its name and its box is clicked where the grid says it is. */
+interface ColumnListRow {row: number; name: string; checked: boolean; x: number; y: number}
+
+async function columnListRows(page: Page, target: ElementRef): Promise<ColumnListRow[]> {
+  await v.installViewerRuntime(page);
+  const host = (await locate(page, target)).filter({visible: true}).first();
+  const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
+  await grid.waitFor({timeout: pollMs(5000)});
+  return grid.evaluate((el) => {
+    const w = (window as any).__bdd.viewerOf(el);
+    const s = w.getWidgetStatus();
+    const canvas = (s.parts?.canvas ?? el.querySelector('canvas')) as Element;
+    const c = canvas.getBoundingClientRect();
+    const rows: ColumnListRow[] = [];
+    for (const key of Object.keys(s.hitAreas)) {
+      const m = /^cell (\d+) of __name$/.exec(key);
+      const box = m ? s.hitAreas[`cell ${m[1]} of x`] : undefined;
+      if (!m || !box)
+        continue;
+      rows.push({row: Number(m[1]), name: String(s.values[`text of cell ${m[1]} of __name`] ?? ''),
+        checked: s.values[`text of cell ${m[1]} of x`] === 'true', x: c.x + box.x + box.width / 2, y: c.y + box.y + box.height / 2});
+    }
+    return rows.sort((a, b) => a.row - b.row);
+  });
+}
+
+const rowNamed = (rows: ColumnListRow[], name: string): ColumnListRow | undefined => rows.find((r) => r.name === name);
+const namesOf = (rows: ColumnListRow[]): string => rows.map((r) => r.name).join(', ');
+
+export const toggleInColumnList = When('user toggles the {string} column in the column list of {element}',
+  async (page: Page, column: string, target: ElementRef) => {
+    let rows: ColumnListRow[] = [];
+    await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column) !== undefined,
+      {timeout: pollMs(5000), message: `no "${column}" row in the column list of ${target.phrase}; it shows: ${namesOf(rows)}`}).toBe(true);
+    let row = rowNamed(rows, column)!;
+    // a list in a dialog that just opened is still finding its place: the box is clicked where
+    // two reads in a row agree it is
+    await expect.poll(async () => {
+      const again = rowNamed(await columnListRows(page, target), column);
+      const still = again !== undefined && again.x === row.x && again.y === row.y;
+      row = again ?? row;
+      return still;
+    }, {timeout: pollMs(3000), message: `the "${column}" row of the column list of ${target.phrase} keeps moving`}).toBe(true);
+    await page.mouse.move(row.x, row.y);
+    await page.mouse.click(row.x, row.y);
+    const flipped = async (ms: number): Promise<boolean> => expect.poll(async () => rowNamed(await columnListRows(page, target), column)?.checked,
+      {timeout: pollMs(ms)}).toBe(!row.checked).then(() => true, () => false);
+    // the first click on a list that just opened is now and then spent on giving it the focus
+    if (!(await flipped(1500)))
+      await page.mouse.click(row.x, row.y);
+    await expect.poll(async () => rowNamed(await columnListRows(page, target), column)?.checked,
+      {timeout: pollMs(5000), message: `the box of "${column}" in the column list of ${target.phrase} did not flip`}).toBe(!row.checked);
+  }, {tier: 'ui', description: 'a click on the check box of the row that names the column; done once the box has flipped'});
+
+async function expectChecked(page: Page, column: string, target: ElementRef, checked: boolean): Promise<void> {
+  let rows: ColumnListRow[] = [];
+  await expect.poll(async () => rowNamed(rows = await columnListRows(page, target), column)?.checked,
+    {timeout: pollMs(5000), message: `"${column}" in the column list of ${target.phrase} (it shows: ${namesOf(rows)})`}).toBe(checked);
+}
+
+export const checkedInColumnList = Then('the {string} column should be checked in the column list of {element}',
+  (page: Page, column: string, target: ElementRef) => expectChecked(page, column, target, true));
+
+export const uncheckedInColumnList = Then('the {string} column should not be checked in the column list of {element}',
+  (page: Page, column: string, target: ElementRef) => expectChecked(page, column, target, false));
+
+/** Every column the list holds, in its order. */
+async function columnListNames(page: Page, target: ElementRef): Promise<string[]> {
+  const host = (await locate(page, target)).filter({visible: true}).first();
+  const grid = host.locator('[name="viewer-Grid"]').filter({visible: true}).first();
+  await grid.waitFor({timeout: pollMs(5000)});
+  return g.columnGridNames(grid);
+}
+
+export const columnListExactly = Then('the column list of {element} should be exactly {string}',
+  async (page: Page, target: ElementRef, list: string) => {
+    const want = list.split(/\s*,\s*/).filter(Boolean);
+    await expect.poll(() => columnListNames(page, target), {message: `the column list of ${target.phrase}`}).toEqual(want);
+  }, {description: 'every column the list offers, comma-separated and in its order'});
+
+export const columnListLacks = Then('the column list of {element} should not list {string}',
+  async (page: Page, target: ElementRef, column: string) => {
+    const message = `the column list of ${target.phrase}`;
+    await expect.poll(async () => (await columnListNames(page, target)).length, {message: `${message}: any`}).toBeGreaterThan(0);
+    await expect.poll(() => columnListNames(page, target), {message}).not.toContain(column);
+  }, {description: 'a column the list leaves out; the list must hold others, so an empty one cannot pass'});
+
+export const offersColumns = Then('{element} should offer the columns {string}', async (page: Page, target: ElementRef, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean);
+  expect((await g.columnSelectorChoices(page, target)).filter((c) => c !== ''), `the columns ${target.phrase} offers`).toEqual(want);
+}, {tier: 'ui', description: 'opens the column picker of a column property or selector, reads every column it offers in its order and dismisses it; the empty choice of a nullable property is left out (claim it with "should not offer the column \'\'")'});
+
+export const doesNotOfferColumn = Then('{element} should not offer the column {string}', async (page: Page, target: ElementRef, column: string) => {
+  const offered = await g.columnSelectorChoices(page, target);
+  expect(offered.length, `the columns ${target.phrase} offers`).toBeGreaterThan(0);
+  expect(offered, `the columns ${target.phrase} offers`).not.toContain(column);
+}, {tier: 'ui', description: 'opens the column picker, reads what it offers and dismisses it; "" is the empty choice of a nullable column property'});
+
+export const columnListStartsWith = Then('the column list of {element} should start with {string}',
+  async (page: Page, target: ElementRef, column: string) => {
+    await expect.poll(async () => namesOf((await columnListRows(page, target)).slice(0, 1)),
+      {timeout: pollMs(5000), message: `the first row of the column list of ${target.phrase}`}).toBe(column);
+  }, {description: 'the row the search puts first'});
+
+// --- one element inside another -------------------------------------------------------------------
+
+export const liesWithin = Then('{element} should lie within {element}', async (page: Page, inner: ElementRef, outer: ElementRef) => {
+  const innerLoc = (await locate(page, inner)).filter({visible: true}).first();
+  const outerLoc = (await locate(page, outer)).filter({visible: true}).first();
+  // a dialog resized a moment ago lays its parts out again over the next frames
+  await expect.poll(async () => {
+    const a = await innerLoc.boundingBox();
+    const b = await outerLoc.boundingBox();
+    if (!a || !b)
+      return `${!a ? inner.phrase : outer.phrase} has no box on the page`;
+    const inside = a.x >= b.x - 0.5 && a.y >= b.y - 0.5 && a.x + a.width <= b.x + b.width + 0.5 && a.y + a.height <= b.y + b.height + 0.5;
+    return inside ? 'inside' : `${inner.phrase} spans ${Math.round(a.x)},${Math.round(a.y)}..${Math.round(a.x + a.width)},${Math.round(a.y + a.height)}, ` +
+      `outside ${outer.phrase} at ${Math.round(b.x)},${Math.round(b.y)}..${Math.round(b.x + b.width)},${Math.round(b.y + b.height)}`;
+  }, {timeout: pollMs(5000), message: `${inner.phrase} within ${outer.phrase}`}).toBe('inside');
+}, {description: 'the first box wholly inside the second (half a pixel of rounding allowed)'});
+
+// --- the text an element shows ----------------------------------------------------------------------
+
+/* `should contain text` reads `textContent`, which keeps the text of children that are hidden — the
+   status bar keeps its "Filtered: N" panel in the DOM and only hides it. These read `innerText`: what
+   is rendered. */
+async function expectShownText(page: Page, target: ElementRef, text: string, negate: boolean): Promise<void> {
+  const loc = (await locate(page, target)).filter({visible: true}).first();
+  let last = '';
+  const poll = expect.poll(async () => (last = (await loc.innerText()).replace(/\s+/g, ' ')).includes(text), {timeout: pollMs(5000)});
+  try {
+    await (negate ? poll.not : poll).toBe(true);
+  }
+  catch {
+    throw new Error(`${target.phrase} ${negate ? 'still shows' : 'does not show'} "${text}"; it shows "${last}"`);
+  }
+}
+
+export const showsText = Then('{element} should show the text {string}', (page: Page, target: ElementRef, text: string) =>
+  expectShownText(page, target, text, false), {description: 'the rendered text (innerText) contains it; hidden children do not count'});
+
+export const notShowsText = Then('{element} should not show the text {string}', (page: Page, target: ElementRef, text: string) =>
+  expectShownText(page, target, text, true), {description: 'the rendered text (innerText) does not contain it'});
+
+// --- docking a viewer by its title bar ---------------------------------------------------------------
+
+/* Dragging a viewer by its title bar shows dock-spawn's wheels: a compass of `.dock-wheel-left|right|
+   top|down|fill` items over the panel under the pointer, and a second `.dock-wheel-base` with one item
+   at each edge of the view. Both carry the same side classes; only the compass holds the fill item.
+   dock-spawn marks the item under the pointer on mouseover, and the drop waits for that mark. */
+const DOCK_SIDES: Record<string, string> = {left: 'left', right: 'right', top: 'top', bottom: 'down'};
+type Rect = {x: number; y: number; width: number; height: number};
+const centreOf = (r: Rect) => ({x: r.x + r.width / 2, y: r.y + r.height / 2});
+
+async function panelOf(page: Page, target: ElementRef): Promise<Locator> {
+  const loc = await v.viewerLocator(page, target);
+  return loc.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " panel-base ")][1]');
+}
+
+async function dockViewer(page: Page, target: ElementRef, side: string, over: ElementRef | null): Promise<void> {
+  const wheelSide = DOCK_SIDES[side];
+  if (!wheelSide)
+    throw new Error(`a viewer docks to the left, right, top or bottom — not "${side}"`);
+  const title = (await panelOf(page, target)).locator('.panel-titlebar').first();
+  const t = await title.boundingBox();
+  if (!t)
+    throw new Error(`${target.phrase} has no title bar to drag`);
+  const view = await (await locate(page, over ?? el('open tableview'))).filter({visible: true}).first().boundingBox();
+  if (!view)
+    throw new Error(`${over ? over.phrase : 'the table view'} has no box to dock against`);
+  const aim = centreOf(view);
+  const what = over ? `the "${side}" item of the dock compass over ${over.phrase}` : `the "${side}" edge item of the view`;
+  await page.mouse.move(t.x + Math.min(30, t.width / 4), t.y + t.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(t.x + Math.min(30, t.width / 4) + 20, t.y + t.height / 2 + 20, {steps: 4});
+  await page.mouse.move(aim.x, aim.y, {steps: 8});
+  const wheel = over ? '.dock-wheel-base:has(.dock-wheel-fill)' : '.dock-wheel-base:not(:has(.dock-wheel-fill))';
+  const item = page.locator(`${wheel} .dock-wheel-item.dock-wheel-${wheelSide}`).filter({visible: true}).first();
+  try {
+    await item.waitFor({timeout: pollMs(5000)}).catch(() => {
+      throw new Error(`dragging ${target.phrase} showed no ${what}`);
+    });
+    const box = await item.boundingBox();
+    if (!box)
+      throw new Error(`${what} has no box`);
+    const p = centreOf(box);
+    await page.mouse.move(p.x, p.y, {steps: 6});
+    await expect(item, `${what} under the pointer`).toHaveClass(new RegExp(`dock-wheel-${wheelSide}-icon-hover`), {timeout: pollMs(3000)});
+  }
+  catch (e) {
+    await page.mouse.up();
+    throw e;
+  }
+  await page.mouse.up();
+  await v.settleAll(page);
+}
+
+export const dockToViewEdge = When('user docks {widget} to the {word} edge of the view', (page: Page, target: ElementRef, side: string) =>
+  dockViewer(page, target, side, null), {tier: 'ui', description: 'drags the viewer by its title bar onto the dock wheel item at that edge of the table view'});
+
+export const dockBesideViewer = When('user docks {widget} to the {word} side of {widget}', (page: Page, target: ElementRef, side: string, other: ElementRef) =>
+  dockViewer(page, target, side, other), {tier: 'ui', description: 'drags the viewer by its title bar onto the dock wheel that appears over the other viewer, on the item of that side'});
+
+async function panelBox(page: Page, target: ElementRef): Promise<Rect> {
+  const b = await (await panelOf(page, target)).boundingBox();
+  if (!b)
+    throw new Error(`${target.phrase} is not on screen`);
+  return b;
+}
+
+const EDGE = 6;
+
+/** Whether the viewer's panel runs along an edge of the area the docked panels cover; the reason
+ * names both boxes. Read in a poll: dock-spawn relays the panels out after the drop. */
+async function dockedArea(page: Page): Promise<{x: number; y: number; right: number; bottom: number}> {
+  const view = (await locate(page, el('open tableview'))).filter({visible: true}).first();
+  const root = await view.boundingBox();
+  const views = await view.locator('.panel-base').evaluateAll((els) =>
+    els.map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0).map((r) => ({x: r.x, y: r.y, width: r.width, height: r.height})));
+  if (!root)
+    throw new Error('the table view has no box');
+  // the grid is the view's document, not a dock panel: the view's own box gives the left, right and bottom
+  return {x: Math.min(root.x, ...views.map((r) => r.x)), y: Math.min(...views.map((r) => r.y)),
+    right: Math.max(root.x + root.width, ...views.map((r) => r.x + r.width)), bottom: Math.max(root.y + root.height, ...views.map((r) => r.y + r.height))};
+}
+
+async function alongEdge(page: Page, target: ElementRef, side: string): Promise<{ok: boolean; why: string}> {
+  const a = await panelBox(page, target);
+  const all = await dockedArea(page);
+  const ok = side === 'right' ? Math.abs(a.x + a.width - all.right) <= EDGE && a.y <= all.y + EDGE && a.y + a.height >= all.bottom - EDGE :
+    side === 'left' ? Math.abs(a.x - all.x) <= EDGE && a.y <= all.y + EDGE && a.y + a.height >= all.bottom - EDGE :
+      side === 'bottom' ? Math.abs(a.y + a.height - all.bottom) <= EDGE && a.x <= all.x + EDGE && a.x + a.width >= all.right - EDGE :
+        side === 'top' ? Math.abs(a.y - all.y) <= EDGE && a.x <= all.x + EDGE && a.x + a.width >= all.right - EDGE : undefined;
+  if (ok === undefined)
+    throw new Error(`a view has a left, right, top or bottom edge — not "${side}"`);
+  return {ok, why: `${target.phrase} spans ${Math.round(a.x)},${Math.round(a.y)}..${Math.round(a.x + a.width)},${Math.round(a.y + a.height)}; ` +
+    `the docked viewers span ${Math.round(all.x)},${Math.round(all.y)}..${Math.round(all.right)},${Math.round(all.bottom)}`};
+}
+
+/** Whether the viewer's panel touches both edges of a corner of the docked area, whatever its length. */
+async function inCorner(page: Page, target: ElementRef, vertical: string, horizontal: string): Promise<{ok: boolean; why: string}> {
+  if (!['top', 'bottom'].includes(vertical) || !['left', 'right'].includes(horizontal))
+    throw new Error(`a view has a top or bottom, left or right corner — not "${vertical} ${horizontal}"`);
+  const a = await panelBox(page, target);
+  const all = await dockedArea(page);
+  const ok = (vertical === 'top' ? Math.abs(a.y - all.y) : Math.abs(a.y + a.height - all.bottom)) <= EDGE &&
+    (horizontal === 'left' ? Math.abs(a.x - all.x) : Math.abs(a.x + a.width - all.right)) <= EDGE;
+  return {ok, why: `${target.phrase} spans ${Math.round(a.x)},${Math.round(a.y)}..${Math.round(a.x + a.width)},${Math.round(a.y + a.height)}; ` +
+    `the docked viewers span ${Math.round(all.x)},${Math.round(all.y)}..${Math.round(all.right)},${Math.round(all.bottom)}`};
+}
+
+export const dockedInCorner = Then('{widget} should be docked in the {word} {word} corner of the view', (page: Page, target: ElementRef, vertical: string, horizontal: string) =>
+  expectDocked(page, () => inCorner(page, target, vertical, horizontal), false),
+{description: 'the viewer\'s panel touches both edges of that corner of the docked area, whatever its length (6 px slack)'});
+
+export const notDockedInCorner = Then('{widget} should not be docked in the {word} {word} corner of the view', (page: Page, target: ElementRef, vertical: string, horizontal: string) =>
+  expectDocked(page, () => inCorner(page, target, vertical, horizontal), true),
+{description: 'the state before a drag'});
+
+async function besides(page: Page, target: ElementRef, where: string, other: ElementRef): Promise<{ok: boolean; why: string}> {
+  const a = await panelBox(page, target);
+  const b = await panelBox(page, other);
+  const ok = where === 'below' ? Math.abs(a.y - (b.y + b.height)) <= EDGE && Math.abs(a.x - b.x) <= EDGE && Math.abs(a.width - b.width) <= EDGE :
+    where === 'above' ? Math.abs(a.y + a.height - b.y) <= EDGE && Math.abs(a.x - b.x) <= EDGE && Math.abs(a.width - b.width) <= EDGE :
+      where === 'left-of' ? Math.abs(a.x + a.width - b.x) <= EDGE && Math.abs(a.y - b.y) <= EDGE && Math.abs(a.height - b.height) <= EDGE :
+        where === 'right-of' ? Math.abs(a.x - (b.x + b.width)) <= EDGE && Math.abs(a.y - b.y) <= EDGE && Math.abs(a.height - b.height) <= EDGE : undefined;
+  if (ok === undefined)
+    throw new Error(`a viewer is docked below, above, left-of or right-of another — not "${where}"`);
+  return {ok, why: `${target.phrase} spans ${Math.round(a.x)},${Math.round(a.y)} ${Math.round(a.width)}x${Math.round(a.height)}; ` +
+    `${other.phrase} ${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)}`};
+}
+
+async function expectDocked(page: Page, read: () => Promise<{ok: boolean; why: string}>, negate: boolean): Promise<void> {
+  await v.settleAll(page);
+  let why = '';
+  try {
+    await expect.poll(async () => { const r = await read(); why = r.why; return r.ok; }, {timeout: pollMs(5000)}).toBe(!negate);
+  }
+  catch {
+    throw new Error(`${negate ? 'still docked there' : 'not docked there'}: ${why}`);
+  }
+}
+
+export const dockedAtViewEdge = Then('{widget} should be docked along the {word} edge of the view', (page: Page, target: ElementRef, side: string) =>
+  expectDocked(page, () => alongEdge(page, target, side), false),
+{description: 'the viewer\'s panel runs the whole length of that edge of the docked area and touches it (6 px slack)'});
+
+export const notDockedAtViewEdge = Then('{widget} should not be docked along the {word} edge of the view', (page: Page, target: ElementRef, side: string) =>
+  expectDocked(page, () => alongEdge(page, target, side), true),
+{description: 'the state before a drag, so that the docking after it is the drag\'s doing'});
+
+export const dockedBeside = Then('{widget} should be docked {word} {widget}', (page: Page, target: ElementRef, where: string, other: ElementRef) =>
+  expectDocked(page, () => besides(page, target, where, other), false),
+{description: 'below / above: the two panels touch and share their width; left-of / right-of: they touch and share their height (6 px slack)'});
+
+export const notDockedBeside = Then('{widget} should not be docked {word} {widget}', (page: Page, target: ElementRef, where: string, other: ElementRef) =>
+  expectDocked(page, () => besides(page, target, where, other), true),
+{description: 'the state before a drag'});
+
+/* Viewers stacked as the tabs of one panel. Dragging a viewer by its title bar over another shows the
+   dock compass over that viewer; its middle item (`.dock-wheel-fill`) puts the dragged viewer into the
+   other's panel as a tab. A tabbed panel is a `.dock-container-fill` with one `view-handle: <title>` tab
+   handle per viewer, and only the selected tab's viewer is in the page. */
+export const stackViewer = When('user stacks {widget} onto {widget} as a tab', async (page: Page, target: ElementRef, other: ElementRef) => {
+  const title = (await panelOf(page, target)).locator('.panel-titlebar').first();
+  const t = await title.boundingBox();
+  if (!t)
+    throw new Error(`${target.phrase} has no title bar to drag`);
+  const start = {x: t.x + Math.min(30, t.width / 4), y: t.y + t.height / 2};
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(start.x + 20, start.y + 20, {steps: 4});
+  const fill = page.locator('.dock-wheel-base .dock-wheel-item.dock-wheel-fill').filter({visible: true}).first();
+  try {
+    // the dragged panel leaves the layout once the drag starts, and the others take its room: the
+    // target is measured after that
+    const over = await (await v.viewerLocator(page, other)).boundingBox();
+    if (!over)
+      throw new Error(`${other.phrase} has no box to drop on`);
+    await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, {steps: 8});
+    await fill.waitFor({timeout: pollMs(5000)}).catch(() => {
+      throw new Error(`dragging ${target.phrase} over ${other.phrase} showed no dock compass`);
+    });
+    const box = (await fill.boundingBox())!;
+    const inside = box.x + box.width / 2 > over.x && box.x + box.width / 2 < over.x + over.width &&
+      box.y + box.height / 2 > over.y && box.y + box.height / 2 < over.y + over.height;
+    if (!inside)
+      throw new Error(`the dock compass did not open over ${other.phrase}`);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 6});
+    await expect(fill, 'the middle item of the dock compass under the pointer').toHaveClass(/dock-wheel-fill-icon-hover/, {timeout: pollMs(3000)});
+  }
+  catch (e) {
+    await page.mouse.up();
+    throw e;
+  }
+  await page.mouse.up();
+  await v.settleAll(page);
+}, {tier: 'ui', description: 'drags the viewer by its title bar onto the middle item of the dock compass over the other viewer, which makes it a tab of that viewer\'s panel'});
+
+/** The tabs of the tabbed panels of the view in front, by panel. */
+function tabPanels(page: Page): Promise<{tabs: string[]; selected: string}[]> {
+  return page.evaluate(() => {
+    const root = (window as any).grok.shell.v?.root as HTMLElement | undefined;
+    return Array.from(root?.querySelectorAll('.dock-container-fill') ?? []).map((c) => {
+      const handles = Array.from(c.querySelectorAll('.tab-handle[name^="view-handle: "]'))
+        .filter((h) => h.closest('.dock-container-fill') === c);
+      return {tabs: handles.map((h) => h.getAttribute('name')!.slice('view-handle: '.length)),
+        selected: handles.filter((h) => h.classList.contains('tab-handle-selected')).map((h) => h.getAttribute('name')!.slice('view-handle: '.length))[0] ?? ''};
+    }).filter((p) => p.tabs.length > 1);
+  });
+}
+
+export const viewersTabbed = Then('the viewers {string} should be the tabs of one panel', async (page: Page, list: string) => {
+  const want = list.split(/\s*,\s*/).filter(Boolean).sort().join(', ');
+  await expect.poll(async () => (await tabPanels(page)).map((p) => [...p.tabs].sort().join(', ')),
+    {message: 'the tabbed panels of the current view, by their tabs'}).toContain(want);
+}, {description: 'one tabbed panel of the view in front holds exactly these viewers (their titles, comma-separated) as its tabs'});
+
+export const noTabbedPanel = Then('no panel of the current view should hold tabs', async (page: Page) => {
+  await expect.poll(async () => (await tabPanels(page)).map((p) => p.tabs.join(', ')), {message: 'the tabbed panels of the current view'}).toEqual([]);
+}, {description: 'every viewer of the view in front has a panel of its own'});
+
+export const switchTab = When('user switches the tabbed panel to the {string} tab', async (page: Page, title: string) => {
+  const handle = page.locator(`.dock-container-fill .tab-handle[name="view-handle: ${cssString(title)}"]`).filter({visible: true}).first();
+  await expect(handle, `the "${title}" tab of a tabbed panel`).toBeVisible({timeout: pollMs(5000)});
+  await handle.click();
+  await expect.poll(async () => (await tabPanels(page)).some((p) => p.selected === title), {message: `the "${title}" tab selected`}).toBe(true);
+  await v.settleAll(page);
+}, {tier: 'ui', description: 'a click on the tab handle of that title; done when it is the selected tab and the viewers have settled'});
+
+export const openViewerHelp = When('user opens the help of {widget}', async (page: Page, target: ElementRef) => {
+  const icon = (await panelOf(page, target)).locator('.panel-titlebar [name="icon-font-icon-help"]').first();
+  await (await panelOf(page, target)).locator('.panel-titlebar').first().hover();
+  await icon.click();
+}, {tier: 'ui', description: 'the "?" icon of the viewer\'s title bar (shown on hover)'});
+// --- where an area sits -------------------------------------------------------------------------------
+
+/* Hit areas are read in the viewer's own canvas coordinates here, so a rectangle remembered before
+   a gesture, a property change or a resize-and-restore compares with the one read after it whatever
+   the page did around the viewer. An annotation region's title is the case: it must stay where the
+   viewer put it when the title is clicked, when the plot style changes, when the viewer regrows. */
+const areaPlaces = new WeakMap<Page, Map<string, v.Box>>();
+const placeKey = (target: ElementRef, area: string): string => `${target.phrase}|${area.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+const fmtBox = (b: v.Box | undefined): string => b ? `${Math.round(b.x)},${Math.round(b.y)} ${Math.round(b.width)}x${Math.round(b.height)}` : 'none';
+const sameBox = (a: v.Box, b: v.Box): boolean => [a.x - b.x, a.y - b.y, a.width - b.width, a.height - b.height].every((d) => Math.abs(d) <= 1);
+
+const areaRect = async (page: Page, target: ElementRef, area: string): Promise<v.Box> => (await v.areaRects(page, target, [area]))[0];
+
+export const rememberAreaPlace = When('user remembers the place of the {string} area of {widget}', async (page: Page, area: string, target: ElementRef) => {
+  if (!areaPlaces.has(page))
+    areaPlaces.set(page, new Map());
+  areaPlaces.get(page)!.set(placeKey(target, area), await areaRect(page, target, area));
+}, {tier: 'api', description: 'the rectangle the viewer reports for the area now, kept for "placed as remembered" after any number of changes'});
+
+export const areaPlacedAsRemembered = Then('the {string} area of {widget} should be placed as remembered', async (page: Page, area: string, target: ElementRef) => {
+  const remembered = areaPlaces.get(page)?.get(placeKey(target, area));
+  if (remembered === undefined)
+    throw new Error(`no place was remembered for the "${area}" area of ${target.phrase} — "user remembers the place of the <area> area of <widget>" comes first`);
+  const now = await areaRect(page, target, area);
+  expect(sameBox(remembered, now), `the "${area}" area of ${target.phrase} was remembered at ${fmtBox(remembered)} and is now at ${fmtBox(now)}`).toBe(true);
+}, {description: 'the same rectangle within a pixel, read once the viewer is quiet — a region title that a click or a resize-and-restore must not move'});
+
+type Relation = 'inside' | 'outside' | 'above' | 'below' | 'left' | 'right';
+const RELATION: Record<Relation, (a: v.Box, b: v.Box) => boolean> = {
+  inside: (a, b) => a.x >= b.x - 1 && a.y >= b.y - 1 && a.x + a.width <= b.x + b.width + 1 && a.y + a.height <= b.y + b.height + 1,
+  outside: (a, b) => a.x + a.width <= b.x + 1 || b.x + b.width <= a.x + 1 || a.y + a.height <= b.y + 1 || b.y + b.height <= a.y + 1,
+  above: (a, b) => a.y + a.height <= b.y + 1,
+  below: (a, b) => a.y >= b.y + b.height - 1,
+  left: (a, b) => a.x + a.width <= b.x + 1,
+  right: (a, b) => a.x >= b.x + b.width - 1,
+};
+
+async function expectAreaRelation(page: Page, target: ElementRef, a: string, relation: string, b: string): Promise<void> {
+  if (!(relation in RELATION))
+    throw new Error(`an area lies inside, outside, above or below another, or to the left or right of it — not "${relation}"`);
+  const [ra, rb] = await v.areaRects(page, target, [a, b]);
+  const where = relation === 'left' || relation === 'right' ? `to the ${relation} of` : relation;
+  expect(RELATION[relation as Relation](ra, rb), `the "${a}" area of ${target.phrase} is at ${fmtBox(ra)} and does not lie ${where} ` +
+    `the "${b}" area at ${fmtBox(rb)}`).toBe(true);
+}
+
+export const areaLies = Then('the {string} area of {widget} should lie {word} the {string} area',
+  (page: Page, a: string, target: ElementRef, relation: string, b: string) => expectAreaRelation(page, target, a, relation, b),
+  {description: 'inside, outside, above or below — a region title drawn in its region, or in the strip the layout reserved above the plot'});
+
+export const areaLiesBeside = Then('the {string} area of {widget} should lie to the {word} of the {string} area',
+  (page: Page, a: string, target: ElementRef, side: string, b: string) => expectAreaRelation(page, target, a, side, b),
+  {description: 'left or right — a vertical band title in the strip the layout reserved to the right of the plot'});
+
+// --- the row a click made current -------------------------------------------------------------------
+
+/* A click on a crowded canvas makes current whatever row the viewer hit-tests on top at that point,
+   not necessarily the marker aimed at. What the click claims is that the row under the pointer — the
+   viewer's own `hovered row` (from 1, 0 for none) — is the table's current row now. */
+export const currentRowIsHovered = Then('the {string} reading of {widget} should be the current row', async (page: Page, name: string, target: ElementRef) => {
+  await expect.poll(async () => {
+    const reading = await v.readingOf(page, target, name);
+    if (reading instanceof v.MissingReading)
+      return String(reading);
+    const current = await page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx + 1);
+    return Number(reading) > 0 && Number(reading) === current ? 'same' : `the ${name} is ${reading}, the current row is ${current}`;
+  }, {message: `the ${name} of ${target.phrase} against the current row`}).toBe('same');
+}, {description: 'a row reading counted from 1 (`hovered row`) names the table\'s current row, and is not 0'});
+
+// --- result cards ---------------------------------------------------------------------------------
+
+/* A search viewer (similarity, diversity) reports each result card as `card <row>`, the table row it
+   shows (from 0), in the order the cards are laid out; which rows they are depends on the data, so a
+   card is named by its place: "card 2 of <viewer>" is the second card drawn. */
+async function nthCard(page: Page, target: ElementRef, n: number): Promise<{name: string; row: number}> {
+  let names: string[] = [];
+  // a search viewer lays its cards out again after a click: their order is read off a finished frame
+  await settle(page, target);
+  await expect.poll(async () => {
+    names = Object.keys(await v.hitAreas(page, target)).filter((k) => /^card \d+$/.test(k));
+    return names.length >= n;
+  }, {message: `${target.phrase} showing ${n} result card(s)`, timeout: pollMs(10000)}).toBe(true);
+  const name = names[n - 1];
+  return {name, row: Number(name.slice('card '.length))};
+}
+
+const clickedCardRow = new WeakMap<Page, number>();
+
+function rememberClickedCard(page: Page, row: number): void {
+  if (!clickedCardRow.has(page))
+    atFeatureEnd(page, async () => { clickedCardRow.delete(page); });
+  clickedCardRow.set(page, row);
+}
+
+/* A click on the molecule drawing of a card makes the molecule current through `grok.shell.o`, which
+   freezes the context panel for a second and drops a gear or a card clicked within it; a click on the
+   card beside the drawing (its score, its margin) only moves the current row. */
+export const clickNthCardBesideDrawing = When('user clicks on card {int} of {widget} beside its drawing', async (page: Page, n: number, target: ElementRef) => {
+  const {name, row} = await nthCard(page, target, n);
+  rememberClickedCard(page, row);
+  const r = await v.hitArea(page, target, name, true);
+  const point = await page.evaluate(([x, y, w, h]) => {
+    const card = document.elementFromPoint(x + w / 2, y + h / 2)?.closest('[name^="card-"]');
+    // from the bottom up, where the score and the properties sit under the drawing
+    for (let dy = h - 2; dy > 1; dy -= 2) {
+      for (const dx of [w / 2, w / 4, 3 * w / 4, 2, w - 2]) {
+        const e = document.elementFromPoint(x + dx, y + dy);
+        if (e && card?.contains(e) && e.tagName !== 'CANVAS' && !e.closest('.chem-canvas'))
+          return {x: x + dx, y: y + dy};
+      }
+    }
+    return null;
+  }, [r.x, r.y, r.width, r.height]);
+  if (!point)
+    throw new Error(`${name} of ${target.phrase} has no point outside its drawing`);
+  await page.mouse.click(point.x, point.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the Nth result card, clicked on a point of the card that is not the molecule drawing (its score, its margin); its row is remembered'});
+
+/* A click on a similarity card makes its row current, and the viewer then searches again around it,
+   so the claim is made against the row the card showed when it was clicked. */
+export const currentRowIsClickedCard = Then('the current row should be the row of the clicked card', async (page: Page) => {
+  const row = clickedCardRow.get(page);
+  if (row === undefined)
+    throw new Error('no result card was clicked in this scenario');
+  await expect.poll(() => page.evaluate(() => (window as any).grok.shell.t?.currentRowIdx), {message: `the current row against the clicked card (row ${row + 1})`}).toBe(row);
+}, {description: 'the table row the last clicked result card showed is the current row'});
+
+export const hoverNthCard = When('user hovers over card {int} of {widget}', async (page: Page, n: number, target: ElementRef) => {
+  const {name} = await nthCard(page, target, n);
+  const c = v.centerOf(await v.hitArea(page, target, name, true));
+  await page.mouse.move(c.x, c.y);
+}, {tier: 'ui', description: 'the pointer on the Nth result card, which shows the icons a card reveals on hover'});
+
+// --- the grid's current cell -----------------------------------------------------------------------
+
+/* A column far to the right is reached the way a user reaches it from the keyboard: the current cell
+   walks there one arrow press at a time and the grid scrolls to keep it in view. */
+export const walkToColumn = When('user moves the current cell of {widget} to the {string} column', async (page: Page, target: ElementRef, column: string) => {
+  const steps = await v.onViewer(page, target, (root, column) => {
+    const grid = (window as any).DG.Widget.find(root);
+    const names: string[] = [];
+    for (let i = 0; i < grid.columns.length; i++) {
+      const c = grid.columns.byIndex(i);
+      if (c.visible && c.column != null)
+        names.push(c.name);
+    }
+    const to = names.indexOf(column);
+    if (to < 0)
+      throw new Error(`the grid shows no "${column}" column; it shows: ${names.join(', ')}`);
+    return to - names.indexOf(grid.dataFrame.currentCol?.name);
+  }, column) as number;
+  for (let i = 0; i < Math.abs(steps); i++)
+    await g.pressIn(page, target, steps > 0 ? 'ArrowRight' : 'ArrowLeft');
+  await expect.poll(() => v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentCol?.name),
+    {message: `the current column of ${target.phrase}`}).toBe(column);
+  await settle(page, target);
+}, {tier: 'ui', description: 'arrow presses in the grid from the current column; the grid scrolls the column into view'});
+
+/* Where the grid is scrolled depends on the row a card or a search made current, so the cell is the
+   first one of the column the grid shows, skipping the current row: a click must move the current cell. */
+export const clickOtherCell = When('user clicks on a {string} cell of {widget} other than the current one', async (page: Page, column: string, target: ElementRef) => {
+  await settle(page, target);
+  const current = await v.onViewer(page, target, (root) => (window as any).DG.Widget.find(root).dataFrame.currentRowIdx + 1) as number;
+  const re = new RegExp(`^cell (\\d+) of ${column.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`);
+  const cells = Object.keys(await v.hitAreas(page, target)).filter((k) => re.test(k) && Number(re.exec(k)![1]) !== current);
+  if (cells.length === 0)
+    throw new Error(`${target.phrase} shows no "${column}" cell other than the current row's`);
+  const c = v.centerOf(await v.hitArea(page, target, cells[0], true));
+  await page.mouse.click(c.x, c.y);
+  await settle(page, target);
+}, {tier: 'ui', description: 'a click on the first cell of the column the grid shows that is not in the current row'});
+
+// --- the dock around a viewer ----------------------------------------------------------------------
+
+/* The border between a docked viewer and what is docked above it is the dock manager's horizontal
+   splitbar: a sibling of the container the viewer sits in, or of one of that container's ancestors.
+   The step drags it and claims the viewer grew. */
+export const dragTopBorder = When('user drags the top border of {widget} by {int} pixels up', async (page: Page, target: ElementRef, px: number) => {
+  const loc = await v.viewerLocator(page, target);
+  const before = (await loc.boundingBox())!;
+  const bar = await loc.evaluate((root) => {
+    const top = root.getBoundingClientRect().top;
+    for (let e: Element | null = root; e != null; e = e.parentElement) {
+      const prev = e.previousElementSibling as HTMLElement | null;
+      if (prev != null && prev.classList.contains('splitbar-horizontal')) {
+        const r = prev.getBoundingClientRect();
+        if (Math.abs(r.bottom - top) < 40)
+          return {x: r.left + r.width / 2, y: r.top + r.height / 2};
+      }
+    }
+    return null;
+  });
+  if (bar == null)
+    throw new Error(`${target.phrase} has no dock border above it: it is not docked below another panel`);
+  await page.mouse.move(bar.x, bar.y);
+  await page.mouse.down();
+  await page.mouse.move(bar.x, bar.y - px / 2);
+  await page.mouse.move(bar.x, bar.y - px);
+  await page.mouse.up();
+  await expect.poll(async () => Math.round((await loc.boundingBox())?.height ?? 0),
+    {message: `the height of ${target.phrase} after the drag (was ${Math.round(before.height)})`}).toBeGreaterThan(Math.round(before.height) + px / 2);
+  await settle(page, target);
+}, {tier: 'ui', description: 'the dock splitbar right above the viewer dragged up; the viewer is claimed taller by at least half the distance'});

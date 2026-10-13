@@ -9,8 +9,10 @@ import {
   CONTEXT_PANEL_EXPAND_ALL,
   RIBBON,
   SIDEBAR_BROWSE_ICON,
+  TREE_CHILDREN_HOST_CLASS,
   TREE_EXPAND_ARROW,
   TREE_EXPAND_ARROW_EXPANDED,
+  TREE_NODE_GROUP_LABEL,
   VIEW_TAB_SELECTED,
   treeGroupByName,
   treeNodeByPath,
@@ -161,9 +163,14 @@ export async function clickCollapseAll(page: Page): Promise<void> {
   await page.waitForTimeout(400);
 }
 
-/** Expand a tree node (group) by name if not already expanded. Returns the label locator. */
-export async function expandTreeGroup(page: Page, name: string): Promise<Locator> {
-  const label = treeGroupByName(page, name);
+/**
+ * Expand a tree node (group) if not already expanded. Returns the label locator.
+ * Pass a path when the name repeats in the tree: Apps > Demo > Compute shadows Apps > Compute.
+ */
+export async function expandTreeGroup(page: Page, name: string | string[]): Promise<Locator> {
+  const label = typeof name === 'string'
+    ? treeGroupByName(page, name)
+    : treeNodeByPath(page, name).locator(TREE_NODE_GROUP_LABEL).first();
   await label.waitFor({ state: 'visible', timeout: 10_000 });
   await label.scrollIntoViewIfNeeded();
   // Click the arrow if collapsed; click the label as a fallback.
@@ -176,17 +183,24 @@ export async function expandTreeGroup(page: Page, name: string): Promise<Locator
     } else {
       await label.click();
     }
-    // Wait for the arrow to flip to expanded; fall back to a short sleep if the wait misses.
-    await tri.evaluate((el) => new Promise<void>((resolve) => {
-      if (el.classList.contains('d4-tree-view-tri-expanded')) { resolve(); return; }
-      const o = new MutationObserver(() => {
-        if (el.classList.contains('d4-tree-view-tri-expanded')) { o.disconnect(); resolve(); }
-      });
-      o.observe(el, { attributes: true, attributeFilter: ['class'] });
-      setTimeout(() => { o.disconnect(); resolve(); }, 800);
-    })).catch(() => page.waitForTimeout(400));
   }
+  await waitForChildrenLoaded(node);
   return label;
+}
+
+/**
+ * Wait until the group's children are in the DOM, reading the children host's `data-state`.
+ * `d4-tree-view-tri-expanded` only reports the intent to expand — it is added synchronously by
+ * the click, before the group has any children and before the request goes out.
+ * `node` is the group's own row (`.d4-tree-view-node`); its next sibling is the children host.
+ * Returns false if the group never got there, so a caller can assert on it rather than read a
+ * half-built subtree.
+ */
+export async function waitForChildrenLoaded(node: Locator, timeout = 15_000): Promise<boolean> {
+  return node
+    .locator(`xpath=following-sibling::div[contains(@class,"${TREE_CHILDREN_HOST_CLASS}") and @data-state="loaded"][1]`)
+    .waitFor({ state: 'attached', timeout })
+    .then(() => true, () => false);
 }
 
 /**
@@ -238,6 +252,34 @@ export async function clickTreePath(
   await locator.scrollIntoViewIfNeeded();
   if (opts?.dblclick) await locator.dblclick();
   else await locator.click();
+}
+
+/**
+ * Sets the personal favorite state of the object whose context menu is open, and closes the menu.
+ * "Add To Favorites" is a check item, or, for a user who administers groups, a submenu whose
+ * "Only for me" item carries the check (GROK-21108). Returns the state before the change.
+ */
+export async function setPersonalFavorite(page: Page, on: boolean): Promise<boolean> {
+  // The label's parent, not `.d4-menu-item:has(label)`: a group item contains its submenu items.
+  const menuItem = (label: RegExp) => page.locator('.d4-menu-item-label', { hasText: label }).first().locator('xpath=..');
+  const add = menuItem(/^Add to favorites$/i);
+  await expect(add, '"Add To Favorites" must be in the context menu').toBeVisible({ timeout: 5_000 });
+  let item = add;
+  if (await add.evaluate((el) => el.classList.contains('d4-menu-group'))) {
+    await add.hover();
+    item = menuItem(/^Only for me$/);
+    await expect(item, '"Only for me" must be in the Add To Favorites submenu').toBeVisible({ timeout: 5_000 });
+  }
+  const was = await item.locator('.d4-menu-item-check [name="icon-check"]').count() > 0;
+  if (was !== on) {
+    await item.click();
+    await page.waitForTimeout(1000);
+  }
+  else {
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+  }
+  return was;
 }
 
 /** Returns how many tree-view nodes are currently in the "expanded" state. */

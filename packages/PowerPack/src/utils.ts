@@ -2,7 +2,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {_package} from './package';
 import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
@@ -68,9 +67,11 @@ function initWidgetHost(host: HTMLDivElement, w: DG.Widget, title?: string) {
   ui.tools.setHoverVisibility(host, Array.from(host.querySelectorAll('i')));
   if (w.factory?.name) {
     const widgetSettings = settings[w.factory.name] ?? (settings[w.factory.name] = { });
-    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null)
+    // saved only when new: a save writes back every setting the page read at load, undoing changes made elsewhere
+    if (widgetSettings.ignored === undefined || widgetSettings.ignored === null) {
       widgetSettings.ignored = false;
-    saveSettings();
+      saveSettings();
+    }
   }
 }
 
@@ -79,6 +80,8 @@ function createWidgetHost(title: string, titleAttr?: string): HTMLDivElement {
   const host = ui.box(null, 'power-pack-widget-host');
   if (titleAttr)
     host.setAttribute('widget-title', titleAttr);
+  if (titleAttr || title)
+    host.setAttribute('name', `widget-${titleAttr || title}`);
   host.appendChild(header);
   host.appendChild(ui.box(null, 'power-pack-widget-content'));
   return host;

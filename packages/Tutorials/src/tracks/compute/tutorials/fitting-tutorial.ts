@@ -6,8 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay} from './utils';
-import { runDescriber } from './ui-describer';
+import {getElement, getView, closeWindows, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption,
+  toggleSwitch} from './utils';
+import {runDescriber} from './ui-describer';
 
 /** Fitting results info */
 const fittingInfo = [
@@ -57,8 +58,8 @@ export class FittingTutorial extends Tutorial {
     closeWindows();
 
     // 1. Open Apps
-    let browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
-    let browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
+    const browseHeader = document.querySelector('div[class="panel-titlebar disable-selection grok-browse-header"]');
+    const browseIcon = document.querySelector('div[name="Browse"]') as HTMLElement;
     if (browseHeader === null)
       browseIcon.click();
 
@@ -78,14 +79,15 @@ export class FittingTutorial extends Tutorial {
       fromEvent(appsGroupRoot, 'click'),
       appsGroupRoot,
       'Go to <b>Browse</b> and click <b>Apps</b>',
+      () => appsGroupRoot.click(),
     );
 
     await new Promise((resolve) => setTimeout(resolve, PAUSE));
 
-    appsGroupRoot.dispatchEvent(new Event("dblclick", { bubbles: true, cancelable: true }));
+    appsGroupRoot.dispatchEvent(new Event('dblclick', {bubbles: true, cancelable: true}));
 
     // 2. Run Model catalog
-    const galleryGrid = await getElement(document,'div[class="grok-gallery-grid"]');
+    const galleryGrid = await getElement(document, 'div[class="grok-gallery-grid"]');
     if (galleryGrid === null) {
       grok.shell.warning('Failed to open apps');
       return;
@@ -94,8 +96,8 @@ export class FittingTutorial extends Tutorial {
     browseIcon.click();
 
     let name = 'Model-Hub';
-    const modelCatalogIcn = await getElement(galleryGrid,`div[name="div-${name}"]`);
-    name = name.replace('-',' ');
+    const modelCatalogIcn = await getElement(galleryGrid, `div[name="div-${name}"]`);
+    name = name.replace('-', ' ');
 
     if (modelCatalogIcn === null) {
       grok.shell.warning(`${name} not found: install the Compute package`);
@@ -107,6 +109,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(modelCatalogIcn, 'dblclick'),
       modelCatalogIcn,
       `Double-click the ${name} icon`,
+      () => modelCatalogIcn.dispatchEvent(new MouseEvent('dblclick', {bubbles: true})),
     );
 
     // 3. Run model
@@ -121,6 +124,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(modelIconRoot, 'dblclick'),
       modelIconRoot,
       'Double click <b>Ball flight</b>.',
+      Tutorial.apiSkip(() => DG.Func.find({package: 'DiffStudio', name: 'ballFlight'})[0].prepare().edit()),
     );
 
     // 4. Play
@@ -147,8 +151,8 @@ export class FittingTutorial extends Tutorial {
       }],
       btnsText: {done: 'OK', next: '', prev: ''},
     });
-    
-    await this.action('Click "OK"', fromEvent(btnToClick, 'click'));
+
+    await this.action('Click "OK"', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     // 5. Run fitting
     this.title('Fit scalar output');
@@ -173,6 +177,7 @@ export class FittingTutorial extends Tutorial {
       fromEvent(fitIcnRoot, 'click'),
       fitIcnRoot,
       'Click the "Fit inputs" icon on the top panel.',
+      () => fitIcnRoot.querySelector('i')!.click(),
     );
 
     // 6. Switch Velocity
@@ -183,15 +188,18 @@ export class FittingTutorial extends Tutorial {
     }
 
     const fitFormRoot = await getElement(fittingView.root, 'div.ui-form');
+    // by caption, from the model's own parameter declarations - see DiffStudio ballFlight
+    const input = (caption: string) => inputRootByCaption(fitFormRoot!, caption)!;
+    // this view carries the caption on the value row and lays the toggle out as its previous
+    // sibling, unlike sensitivity analysis, which nests the toggle inside the row
+    const toggleOf = (caption: string) =>
+      (input(caption).previousElementSibling as HTMLElement).querySelector('div.ui-input-editor') as HTMLElement;
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    
-    const distFitInputRoot = fitFormRoot!.children[38] as HTMLElement;
-    const distSwitcher = distFitInputRoot.querySelector('input.ui-input-editor') as HTMLInputElement;
+
+    const distSwitcher = input('Max distance').querySelector('input.ui-input-editor') as HTMLInputElement;
     distSwitcher.value = '0';
 
-    const switchers = fitFormRoot!.querySelectorAll('div.ui-input-bool-switch');
-    const velocitySwitcher = switchers[3] as HTMLElement;
-    const velocityToggle = velocitySwitcher.querySelector('div.ui-input-editor') as HTMLElement;
+    const velocityToggle = toggleOf('Velocity');
 
     this.describe('Let\'s find the initial velocity and angle.');
 
@@ -202,13 +210,14 @@ export class FittingTutorial extends Tutorial {
       'Toggle the "Velocity" parameter',
       fromEvent(velocityToggle, 'click'),
       velocityOverlay,
+      '',
+      () => toggleSwitch(velocityToggle),
     );
 
     velocityOverlay.remove();
 
-    // 7. Switch Angle    
-    const angleSwitcher = switchers[4] as HTMLElement;
-    const angleToggle = angleSwitcher.querySelector('div.ui-input-editor') as HTMLElement;
+    // 7. Switch Angle
+    const angleToggle = toggleOf('Angle');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const angleOverlay = buildToggleOverlay(angleToggle);
@@ -217,6 +226,8 @@ export class FittingTutorial extends Tutorial {
       'Toggle the "Angle" parameter',
       fromEvent(angleToggle, 'click'),
       angleOverlay,
+      '',
+      () => toggleSwitch(angleToggle),
     );
 
     angleOverlay.remove();
@@ -229,6 +240,7 @@ export class FittingTutorial extends Tutorial {
       numSource,
       distSwitcher,
       'Set the target value for <b>Max distance</b>.',
+      () => Tutorial.setInputValue(distSwitcher, '10'),
     );
 
     // 9. Run
@@ -240,6 +252,7 @@ export class FittingTutorial extends Tutorial {
       runIcnRoot,
       `Click the <b>Run</b> icon on the top panel to launch fitting <b>Velocity</b> and <b>Angle</b>.
       Customize optimizer's settings in the <b>Using</b> block.`,
+      () => runIcnRoot.click(),
     );
 
     // 10. Explore
@@ -273,7 +286,7 @@ export class FittingTutorial extends Tutorial {
       }),
     });
 
-    await this.action('Explore results', fromEvent(btnToClick, 'click'));
+    await this.action('Explore results', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     const ballFlightTable = await grok.dapi.files.readCsv('System:AppData/Tutorials/ball-flight-trajectory.csv');
     ballFlightTable.name = 'Ball trajectory';
@@ -283,23 +296,23 @@ export class FittingTutorial extends Tutorial {
     this.title('Fit curve');
     this.describe('How to throw a ball so that it follows a given trajectory?\nYou may check the target in <b>Tables > Ball trajectory</b>.');
 
-    const maxDistRoot = fitFormRoot!.children[37] as HTMLElement;
-    const maxDistSwitcher = maxDistRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const maxDistSwitcher = toggleOf('Max distance');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const maxDistOverlay = buildToggleOverlay(maxDistSwitcher);
-    
+
     await this.action(
       'Disable "Max distance"',
       fromEvent(maxDistSwitcher, 'click'),
       maxDistOverlay,
+      '',
+      () => toggleSwitch(maxDistSwitcher),
     );
 
     maxDistOverlay.remove();
 
     // 12. Switch on Trajectory
-    const trajectoryRoot = fitFormRoot!.children[41] as HTMLElement;
-    const trajectorySwitcher = trajectoryRoot.querySelector('div.ui-input-editor') as HTMLElement;
+    const trajectorySwitcher = toggleOf('Trajectory');
 
     // Build 'fake' overlay to prevent wide hint for the case of narrow input form
     const trajectoryOverlay = buildToggleOverlay(trajectorySwitcher);
@@ -308,6 +321,8 @@ export class FittingTutorial extends Tutorial {
       'Toggle "Trajectory"',
       fromEvent(trajectorySwitcher, 'click'),
       trajectoryOverlay,
+      '',
+      () => toggleSwitch(trajectorySwitcher),
     );
 
     trajectoryOverlay.remove();
@@ -322,6 +337,8 @@ export class FittingTutorial extends Tutorial {
       'Set "Trajectory" to "Ball trajectory"',
       dfSource,
       tableInputRoot,
+      '',
+      () => Tutorial.setInputValue(tableChoiceRoot, 'Ball trajectory'),
     );
 
     // 14. Run
@@ -329,9 +346,11 @@ export class FittingTutorial extends Tutorial {
       'Click "Run"',
       fromEvent(runIcnRoot, 'click'),
       runIcnRoot,
+      '',
+      () => runIcnRoot.click(),
     );
 
-    await new Promise<void>((resolve) => {grid.onAfterDrawContent.subscribe((e) => resolve());});
+    await new Promise<void>((resolve) => {grid.onAfterDrawContent.subscribe(() => resolve());});
 
     // 15. Check trajectory
     const bestVelocity = grid.table.get('Velocity', 0) as number;
@@ -343,12 +362,12 @@ export class FittingTutorial extends Tutorial {
         description: '# The best fit 🎯\n\nTo make the ball follow the specified trajectory, use the following throw parameters:\n\n' +
           `* <b>Velocity</b> = ${bestVelocity.toFixed(2)} m/sec\n\n` + `* <b>Angle</b> = ${bestAngle.toFixed(2)} deg`,
         position: 'left',
-        elements: {major: grid.cell('[Height]', 0).element}
+        elements: {major: grid.cell('[Height]', 0).element},
       }],
       btnsText: {done: 'clear', next: '', prev: ''},
     });
 
-    await this.action('Explore the fitted trajectory', fromEvent(btnToClick, 'click'));
+    await this.action('Explore the fitted trajectory', fromEvent(btnToClick, 'click'), null, '', () => btnToClick.click());
 
     this.describe(`Apply ${ui.link('Parameter Optimization', LINK.FITTING).outerHTML} to both ${name} and
     ${ui.link('Diff Studio', LINK.DIF_STUDIO).outerHTML} models.`);

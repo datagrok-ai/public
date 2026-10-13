@@ -56,7 +56,7 @@ export function newHitDesignCampaignAccordeon(template: HitDesignTemplate, pepti
         {name: field.name, type: CampaignFieldTypes[field.type as keyof typeof CampaignFieldTypes],
           nullable: !field.required, ...(field.semtype ? {semType: field.semtype} : {})}));
   const campaignPropsObject: {[key: string]: any} = {};
-  const campaignNameInput = ui.input.string('Campaing Name', {tooltipText: 'New campaign name. If empty, campaign code will be used.'});
+  const campaignNameInput = ui.input.string('Campaign Name', {tooltipText: 'New campaign name. If empty, campaign code will be used.'});
   const campaignPropsForm = ui.input.form(campaignPropsObject, campaignProps);
   campaignPropsForm.prepend(campaignNameInput.root);
   campaignPropsForm.classList.remove('ui-form');

@@ -4,6 +4,9 @@ Feature: Similarity search
   row: the row itself first, then as many neighbours as the limit allows; another current row is
   another query.
 
+  Not translated: an empty current row (GROK-16111) is claimed with the other search viewers in
+  analyze/empty-current-row; nothing else of the md is left out.
+
   Background:
     Given user is logged in
     And user opens filter_FASTA dataset
@@ -11,7 +14,8 @@ Feature: Similarity search
     Then "fasta" column should have semantic type "Macromolecule"
 
   Scenario: The command docks the viewer with a full neighbour list
-    When user picks "Bio > Search > Similarity Search" from the top menu
+    When user makes row 1 current
+    And user picks "Bio > Search > Similarity Search" from the top menu
     Then the top menu command should have completed
     And "Sequence Similarity Search" viewer should be visible
     And "Sequence Similarity Search" viewer should be bound to table "filter_FASTA"

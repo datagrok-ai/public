@@ -2,7 +2,8 @@
 Feature: Pivot table — the aggregation it publishes and the parameters it remembers
   What the pivot computes, checked against an independent groupBy of the same table rather than
   against its own look: the cross tab on the grid, the table ADD publishes into the workspace (whose
-  key column keeps the type of the column it came from — GROK-16074), an identifier column that makes
+  key column keeps the type and the semantic type of the column it came from — GROK-16074; demog-1000
+  has no semantic types, so DIS_POP is given "Text" first), an identifier column that makes
   one group per row (GROK-16201), and the configurations the command bar's history saves, offers
   again and drops once a column they name is gone. One journey on demog-1000: DIS_POP has 6
   categories and USUBJID 1000, ADD publishes "demog-1000 aggregation", and avg(WEIGHT) by RACE reads
@@ -39,13 +40,17 @@ Feature: Pivot table — the aggregation it publishes and the parameters it reme
   Scenario: The published key column keeps the type of the column it groups
     When user sets "Pivot Column Names" property of pivot table viewer to ""
     Then the "aggregated columns" reading of pivot table viewer should be 2
+    When user sets the semantic type of "DIS_POP" column to "Text"
+    Then "DIS_POP" column should have semantic type "Text"
     When user clicks on the "add to workspace" area of pivot table viewer
     Then the "demog-1000 aggregation" view should be current
     And "DIS_POP" column should have type "string"
+    And "DIS_POP" column should have semantic type "Text"
     And "avg(AGE)" column should have type "double"
     And the table should have 6 rows
     When user closes the current view
     And user switches to the "demog-1000" table view
+    And user sets the semantic type of "DIS_POP" column to ""
     Then the aggregated values of pivot table viewer should match "avg(AGE)" grouped by "DIS_POP"
     And no errors should have been logged
 

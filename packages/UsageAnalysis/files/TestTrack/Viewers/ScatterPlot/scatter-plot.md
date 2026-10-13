@@ -87,12 +87,14 @@ selector-visibility toggles, which have a readable computed-visibility signal.
 ### Scenario 1: Axis histograms
 
 Steps:
-1. Measure the plot's data canvas rendering — the baseline.
+1. Measure the plot's data canvas rendering — the baseline (from a repaint, not the
+   plot's first paint: a marker color seen for the first time is drawn directly, then
+   stamped from the marker sprite cache on every later repaint).
 2. Open the viewer settings and, in the **Axes** section, turn
    **Show X Histogram** on; verify the rendering changed.
 3. Turn **Show Y Histogram** on; verify the rendering changed again.
 4. Set **Histogram Bins** to 20; verify the rendering changed again.
-5. Revert: turn both histograms off and restore **Histogram Bins**; verify the
+5. Revert: restore **Histogram Bins**, then turn both histograms off (the Bins row greys out once both are off); verify the
    rendering moved back toward the baseline.
 
 Expected:
@@ -238,9 +240,9 @@ Expected:
   attribute, so the entries are checked by name
   (`div-Reset-View`, `div-Lasso-Tool`, `div-Tools`, `div-Properties...`).
 - Scenario 6: the connecting-line rows live in the **Data** category, not in
-  Lines, and their column comboboxes carry a double-dash role token —
-  `[name="prop-lines-order"]` embeds `div-column-combobox-lines--order` and
-  `[name="prop-lines-by"]` embeds `div-column-combobox-lines--by`. The greyed
+  Lines, and their column comboboxes carry a single-dash role token —
+  `[name="prop-lines-order"]` embeds `div-column-combobox-lines-order` and
+  `[name="prop-lines-by"]` embeds `div-column-combobox-lines-by`. The greyed
   state of the Lines By row is the same inline `opacity: 0.5` regime the rest of
   the property grid uses. Pointing Lines By at the color column is what makes
   the check discriminating: it isolates the change of the split key from the

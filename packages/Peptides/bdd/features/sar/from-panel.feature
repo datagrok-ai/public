@@ -3,6 +3,12 @@ Feature: Launch and configure SAR from the Peptides pane
   Launch SAR creates the analysis and clustering viewers. Changing clustering settings keeps
   the sequence viewers usable, including selection and the activity-distribution panel.
 
+  Launches set the MCL similarity threshold to 93 (the default 70 takes minutes on this fixture;
+  sar/default-launch.feature runs the defaults). The manual case's Analyze Peptides dialog does not
+  appear here: Launch SAR in the pane starts the analysis directly.
+
+  Not translated, and why: nothing of the manual cases is left out beyond that dialog.
+
   Background:
     Given user is logged in
     And the Peptides package is initialized
@@ -28,6 +34,7 @@ Feature: Launch and configure SAR from the Peptides pane
     And the table should have a column "Cluster (MCL)"
     And the "clusters column" reading of Logo Summary Table viewer should be "Cluster (MCL)"
     And the "members total" reading of Logo Summary Table viewer should be 647
+    And the "completed threshold" reading of MCL viewer should be 93
     And Sequence Variability Map viewer should be painted
     And Most Potent Residues viewer should be painted
     And no errors should have been logged
@@ -85,7 +92,7 @@ Feature: Launch and configure SAR from the Peptides pane
     Then only rows where "2" is "A" should be selected
     And 299 rows should be selected
     And the "selected monomer-positions" reading of Sequence Variability Map viewer should be "2:A"
-    And "Mutation Cliffs pairs" pane in context panel should be present
+    And "Mutation Cliffs pairs" pane in context panel should be visible
     And Distribution pane in context panel should be visible
     When user expands Distribution pane in context panel
     Then Distribution pane in context panel should contain text "Mean difference"

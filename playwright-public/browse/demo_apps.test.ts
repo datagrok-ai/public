@@ -156,6 +156,17 @@ async function openDemo(page: Page, demo: Demo): Promise<void> {
   await leaf.waitFor({ state: 'attached', timeout: 20_000 });
   await leaf.scrollIntoViewIfNeeded();
   await leaf.waitFor({ state: 'visible', timeout: 20_000 });
+  // On a cold stand a sibling category expands after the leaf is already visible and pushes it
+  // down (140 px on Test-Playwright 442), so the click landed on another row. Click only once the
+  // leaf has held its position for a second.
+  let lastY = Number.NaN;
+  let stableReads = 0;
+  await expect.poll(async () => {
+    const y = (await leaf.boundingBox())?.y ?? Number.NaN;
+    stableReads = y === lastY ? stableReads + 1 : 0;
+    lastY = y;
+    return stableReads;
+  }, { timeout: 20_000, intervals: [250] }).toBeGreaterThanOrEqual(4);
   await leaf.click();
 }
 

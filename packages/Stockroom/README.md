@@ -2,7 +2,7 @@
 
 Stockroom is a chemical stockroom — reagents, containers, locations, orders, disposals — built on the
 GHS classification (UNECE's hazard classes, pictograms, H-statements and P-statements). It is the
-**zero-code reference app** for [entity-mapped domain schemas](../../help/develop/how-to/db/domain-schemas.md):
+**zero-code reference app** for [entity-mapped domain schemas](https://datagrok.ai/help/develop/how-to/db/domain-schemas):
 everything is declared in `databases/stockroom/schema.json`, the data is seeded by SQL scripts next to
 it, and the app is three lines:
 

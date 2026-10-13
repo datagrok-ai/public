@@ -10,12 +10,17 @@ import {getTime} from '../utils';
 
 export class FunctionsView extends UaView {
   functionsExecTime: HTMLElement = ui.panel();
+  private execTimeGrid?: DG.Grid;
 
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Functions';
     this.functionsExecTime.style.display = 'none';
     this.rout = '/Usage';
+  }
+
+  async exportFiles(): Promise<DG.FileInfo[]> {
+    return [...await super.exportFiles(), ...UaView.csvFiles({'execution-time': this.execTimeGrid?.dataFrame})];
   }
 
   async initViewers(path?: string): Promise<void> {
@@ -89,7 +94,7 @@ export class FunctionsView extends UaView {
       },
     });
 
-    const grid = DG.Viewer.grid(DG.DataFrame.create(0));
+    const grid = this.execTimeGrid = DG.Viewer.grid(DG.DataFrame.create(0));
     grid.root.style.maxWidth = '100%';
     grid.root.style.minWidth = '100%';
     const typeAhead = ui.typeAhead('Function name', {

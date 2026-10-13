@@ -4,13 +4,26 @@
  */
 
 import {AGG, AggregationType} from "../const";
-import {toDart} from "../wrappers";
+import {toDart, toJs} from "../wrappers";
+import type {ColumnId} from "./types";
 import type {Column} from "./column";
 import type {BitSet} from "./bit-set";
 import type {DataFrame} from "./data-frame";
 import {IDartApi} from "../api/grok_api.g";
 
 const api: IDartApi = (typeof window !== 'undefined' ? window : global.window) as any;
+
+/** How {@link Stats.cumSum} and {@link Stats.movingAvg} walk the column. */
+export interface WindowOptions {
+  /** Columns to walk the rows along instead of the natural row order. Rows that compare equal keep their order. */
+  orderBy?: ColumnId[];
+  /** Sort direction for each of {@link orderBy}; all ascending when omitted. */
+  ascending?: boolean[];
+  /** Columns whose groups are accumulated separately. */
+  by?: ColumnId[];
+  /** An explicit visit order (row indexes), such as `grid.getRowOrder()`. Takes precedence over {@link orderBy}. */
+  order?: Int32Array | number[];
+}
 
 /** Represents basic descriptive statistics calculated for a {@link Column}.
  *  See samples: {@link https://public.datagrok.ai/js/samples/data-frame/stats} */
@@ -116,6 +129,27 @@ export class Stats {
 
   /** Spearman correlation between this column and another column. */
   spearmanCorr(otherColumn: Column): number { return api.grok_Stats_SpearmanCorr(this.dart, otherColumn.dart); }
+
+  /** Running total of the column, as a new column. An empty value stays empty and is skipped. Rows outside of the
+   * mask these stats were created with (see {@link fromColumn}) stay empty and are not accumulated.
+   * @example
+   * df.col('amount')!.stats.cumSum({orderBy: ['date'], by: ['region']});
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/stats-window-functions} */
+  cumSum(options?: WindowOptions): Column {
+    return toJs(api.grok_Stats_CumSum(this.dart, options?.orderBy?.map(toDart) ?? null, options?.ascending ?? null,
+      options?.by?.map(toDart) ?? null, options?.order ?? null));
+  }
+
+  /** Average over a trailing window of `window` rows, the current one included, as a new column. Empty values are
+   * ignored. The result is empty until the window holds `minPeriods` values (one by default).
+   * @example
+   * df.col('price')!.stats.movingAvg(7, {orderBy: ['date'], minPeriods: 7});
+   * @see {@link https://public.datagrok.ai/js/samples/data-frame/stats-window-functions} */
+  movingAvg(window: number, options?: WindowOptions & {minPeriods?: number}): Column {
+    return toJs(api.grok_Stats_MovingAvg(this.dart, window, options?.minPeriods ?? null,
+      options?.orderBy?.map(toDart) ?? null, options?.ascending ?? null, options?.by?.map(toDart) ?? null,
+      options?.order ?? null));
+  }
 
   /** Returns distributions of [valueColumn] for each category in [catColumn]. */
   static histogramsByCategories(valueColumn: Column, catColumn: Column): Int32Array[] {

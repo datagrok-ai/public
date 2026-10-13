@@ -186,15 +186,15 @@ export const INLINE_PREVIEW_DEFAULT_SIZE = 300;
 export const INLINE_HOSTED_DATA_KEY = 'ffInlineHosted';
 
 /** Whether the node can show an in-node preview: it produces a viewer, a widget,
- *  or graphics (a manual viewer node, or a function declaring such an output —
- *  e.g. Chem's Gasteiger Partial Charges script). */
+ *  a view, or graphics (a manual viewer node, or a function declaring such an
+ *  output — e.g. Chem's Gasteiger Partial Charges script). */
 export function supportsInlinePreview(node: FlowNode): boolean {
   if (node.properties['viewerType'] != null) return true;
   for (const [key, out] of Object.entries(
     node.outputs as Record<string, {socket?: TypedSocket} | undefined>)) {
     if (isExecKey(key) || key.endsWith('__pt')) continue;
     const t = out?.socket?.dgType;
-    if (t === 'viewer' || t === 'widget' || t === 'graphics') return true;
+    if (t === 'viewer' || t === 'widget' || t === 'view' || t === 'graphics') return true;
   }
   return false;
 }

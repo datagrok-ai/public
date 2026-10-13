@@ -37,22 +37,26 @@ publish the WebLogo glyphs it draws in the native grid's headers as hit areas.
 
 | Feature | Main checks |
 |---|---|
-| `panel/peptides-pane` | Renderer/metadata, real activity preview values, WebLogo selection |
-| `sar/from-panel` | Pane launch, clustering settings, invariant map and distribution grouping |
-| `sar/from-top-menu` | Dialog defaults, clustering settings, repeated optional-viewer lifecycle |
-| `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; dependent panes |
-| `sar/tooltips` | Cell statistics, highlight cleanup, cluster statistics and selection |
-| `sar/mutation-cliffs` | Independent pair counts, cell repaint, position chart, full export contents |
-| `sar/similarity-threshold` | Fresh analyses at thresholds 10, 50, 75 and 90 |
-| `sar/export` | Every invariant-map cell, every mutation pair/activity/delta, both source IDs |
-| `sar/manual-alignment` | Apply, adjacent/end positions, Reset, selection against edited data |
-| `sar/project-round-trip` | Non-default scaling/data/layout persistence and restored interactions |
-| `entry/demo-dashboard` | Registered dashboard function, transformed activities and rendered viewers |
-| `entry/landing` | Three demo buttons, their exact datasets/notations and side-panel state |
+| `panel/peptides-pane` | Renderer/metadata, real activity preview values, WebLogo selection, Clusters vs Generate clusters, Manual Alignment without an analysis |
+| `sar/from-panel` | Pane launch, completed MCL threshold, clustering settings, invariant map and distribution grouping, cliff glyphs |
+| `sar/from-top-menu` | Dialog defaults, dock layout, clustering settings and their effect on the clusters, settings-dialog state, repeated optional-viewer lifecycle, Dendrogram on and off |
+| `sar/weblogo-selection` | Exact source-row masks for click, Shift and Control/Command; Distribution and Selection panes after each |
+| `sar/tooltips` | Cell statistics, cliff glyphs, highlight cleanup, cluster statistics and selection |
+| `sar/mutation-cliffs` | A cliff cell drawn and a cliff-free cell left blank, the position chart drawn and its no-cliffs message, the cluster summary on the MCL clusters |
+| `sar/sequence-space` | Sequence space added, removed and re-added from the settings dialog: viewer, embedding and cluster columns; its parameters pane: the inputs a distance needs, a new distance embedding again |
+| `sar/similarity-threshold` | A fresh analysis at threshold 90 on all 647 (GROK-19145) and header selection after it |
+| `sar/export` | Both viewers' invariant-map export, the mutation-cliff export dialog with and without the ID column |
+| `sar/manual-alignment` | Apply, adjacent/end positions, recomputed statistics, Reset, selection and panes against edited data |
+| `sar/project-round-trip` | Non-default scaling/data/layout/selection persistence and restored interactions and panes |
+| `sar/default-launch` | The dialog defaults (inflation 1.4, no scaling; the threshold raised from 70 to 90) run once end to end |
+| `entry/demo-dashboard` | Registered dashboard function, transformed activities, WebLogo headers and rendered viewers |
+| `entry/landing` | Exactly three demo buttons, their exact datasets/notations and side-panel state |
 
 The source fixture is `System:DemoFiles/bio/peptides.csv`: 647 rows, 17 separator positions,
-22 non-gap monomers and 6253 unique single-mutation row pairs. Export oracles derive expectations
-from the original sequence strings and activities, independently of the viewer's caches.
+22 non-gap monomers and 6253 unique single-mutation row pairs. What the exports, the mutation cliffs
+and the MCL thresholds compute is checked against the source sequences and activities by the
+package tests (`src/tests/viewers.ts` 'Viewers: Export' and 'Viewers: Mutation Cliffs',
+`src/tests/model.ts` 'Model: MCL clusters').
 
 Journeys share their Background and run scenarios in order. Each scenario checks its own console
 and balloon errors because the harness clears those between scenarios. `peptides-sar-ready`
@@ -63,21 +67,25 @@ repaint comparison.
 ## Boundaries and review
 
 The original `playwright/` specs and `public/playwright-public/Peptides/` descriptions remain for
-comparison. `HANDOFF.md` records the original survey and decisions; `docs/` contains the survey
-and translation notes. Project persistence uses the public project API; it does not cover the
-ribbon Save dialog. Dashboard invocation uses the registered function; gallery-card navigation
-is separate. Dendrogram activation, per-cluster WebLogo glyph interaction, and Sequence Space
-activation remain outside this translation's agreed scope.
+comparison; `docs/` contains the original survey, decisions and translation notes. Each feature's
+description states what it leaves out and why. Project persistence uses the public project API;
+it does not cover the ribbon Save dialog. Dashboard invocation uses the registered function;
+gallery-card navigation is the Browse suite's. Per-cluster WebLogo glyph interaction is not
+exposed as hit areas (the Logo Summary Table reports whole cells only). Sequence space activation was added on
+2026-09-22 to reproduce and verify a fix for the settings dialog (`sar/sequence-space`,
+GROK-20965); the sequence space parameters pane itself is not covered.
 
 ## Run record
 
-Every launch sets the MCL similarity threshold to 93 (the demo uses 94): MCL dominates the run
-time and the default 70 spends minutes on this fixture to produce one cluster, while 93 clusters it
-in seconds. The from-panel journey re-clusters at 90 and back at 93; the threshold outline runs
-90, 93 and 96.
+The launches set the MCL similarity threshold to 93 (the demo uses 94): MCL dominates the run time
+and the default 70 spends a long time on this fixture, while 93 clusters it in seconds. The
+exceptions: `sar/default-launch` keeps the dialog's other defaults at threshold 90, `sar/tooltips`
+launches at 94 on the first 100 peptides, the from-panel journey re-clusters at 90 and back at 93,
+and `sar/similarity-threshold` runs 90 on all 647.
 
-2026-09-15, macOS, stand `http://localhost:8889` (core and public at the working-tree state of
-this translation): 15 tests (13 features; the threshold outline expands to 3) green serially
-(53 s) and on four workers; before the threshold change the same suite took 3.6 min serially and
-was green twice serially, twice on four workers and once headed. The `Widget: status providers`
-and `Viewer: rendering` ApiTests categories pass on the same stand.
+Known failures, each with its ticket above the scenario: the settings reopen with Dendrogram
+unchecked while the tree is shown, and unchecking Dendrogram leaves the tree (both GROK-20640).
+
+2026-09-22, dev.datagrok.ai (core master, Peptides and EDA published from this checkout as debug
+builds): 19 tests (13 features; the threshold outline expands to 6) green three times in a row on
+three workers, 1.9–2.1 min each. The JSON reports show each known failure failing at its own step.

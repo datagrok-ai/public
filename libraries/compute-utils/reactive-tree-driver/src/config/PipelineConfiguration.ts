@@ -1,7 +1,11 @@
+import type {CheckOptions, CheckSeverity} from './checks';
 import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
+import type {RulesLogic} from 'json-logic-js';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
-import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {
+  AnnotationLinkKind, DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult,
+} from '../data/common-types';
 import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
 import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
@@ -46,12 +50,48 @@ export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionCont
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 export type ReturnHandler = HandlerBase<{ controller: IRuntimeReturnController }, void>;
 
+export type StepStatus = 'next' | 'next warn' | 'next error' |
+  'pending' | 'pending executed' |
+  'running' |
+  'succeeded' | 'succeeded info' | 'succeeded warn' | 'succeeded inconsistent' |
+  'failed';
+
+export interface ExportSummaryRollup {
+  steps: number,
+  notLoaded: number,
+  failed: number,
+  outdated: number,
+  withErrors: number,
+  withWarnings: number,
+  inconsistent: number,
+}
+
+export interface ExportSummaryItem {
+  kind: 'step' | 'workflow',
+  /** Folders in the exported zip */
+  path: string[],
+  name: string,
+  title?: string,
+  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
+  fileName?: string,
+  /** The status the tree shows; absent for workflows and for steps that are not loaded */
+  status?: StepStatus,
+  runError?: string,
+  errors: string[],
+  warnings: string[],
+  notifications: string[],
+  inconsistentInputs: string[],
+  /** Workflows only: counts over all steps below */
+  rollup?: ExportSummaryRollup,
+}
+
 export interface ExportCbInput {
   fc: DG.FuncCall,
   wb: ExcelJS.Workbook,
   archive: Zippable,
   path: string[],
   fileName: string,
+  status?: StepStatus,
   isOutputOutdated?: boolean,
   runError?: string,
   validation?: Record<string, ValidationResult>,
@@ -61,7 +101,9 @@ export interface ExportCbInput {
 }
 
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string]>;
+  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string, ExportSummaryItem[]]>;
+  getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
+  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
   runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
@@ -82,6 +124,9 @@ export type PipelineLinkConfigurationBase<P> = {
   dataFrameMutations?: boolean | string[];
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
+  params?: Record<string, any>;
+  /** Set by config processing on links generated from function annotations. */
+  annotation?: [P] extends [LinkSpecString] ? never : AnnotationLinkKind;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -141,6 +186,107 @@ export type PipelinePipelineValidatorConfiguration<P> = PipelineLinkConfiguratio
 
 export type PipelineLinkConfiguration<P> = PipelineHandlerConfiguration<P> | PipelineValidatorConfiguration<P> | PipelineMetaConfiguration<P> | PipelineInitConfiguration<P> | PipelineReturnConfiguration<P> | PipelineSelectorConfiguration<P> | PipelinePipelineValidatorConfiguration<P>;
 
+// rule links (expanded into meta/validator/data links at config processing)
+
+type RuleOps =
+  | {literal: any}
+  | {columns: RuleExpr | [RuleExpr] | [RuleExpr, string]}
+  | {columnsMissing: [RuleExpr, RuleExpr]}
+  | {columnIs: [RuleExpr, string]}
+  | {nulls: RuleExpr}
+  | {column: [RuleExpr, string]}
+  | {row: [RuleExpr, string, RuleExpr]}
+  | {regex: [RuleExpr, string] | [RuleExpr, string, string]}
+  | {script: string}
+  | {scriptVerdict: string}
+  | {len: RuleExpr};
+
+/** JSON Logic expression, or formula text such as `'gt(m, 0)'`. */
+export type RuleLogic = RulesLogic<RuleOps>;
+/** JSON Logic expression or a plain literal; in value fields a string starting with `=` is a formula. */
+export type RuleExpr = RuleLogic | RuleExpr[];
+export type RuleTargets = string | string[];
+
+/** An effect's own condition, combined with the rule's `when`. */
+type RuleEffectWhen = {when?: RuleLogic};
+
+export type RuleMetaEffect = RuleEffectWhen & (
+  | {effect: 'hide' | 'show', targets: RuleTargets}
+  | {effect: 'items', targets: RuleTargets, items: RuleExpr}
+  | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
+
+export type RuleValidatorEffect = RuleEffectWhen & (
+  | {effect: 'error' | 'warning' | 'notification', targets: RuleTargets, message: RuleExpr}
+  /** Writes a source's verdicts: `isError` items as errors, the rest as warnings. */
+  | {effect: 'verdicts', targets: RuleTargets, source: string});
+
+export type RuleDataEffect = RuleEffectWhen & (
+  | {effect: 'set', targets: RuleTargets, value: RuleExpr, restriction?: RestrictionType}
+  | {effect: 'clear', targets: RuleTargets, restriction?: RestrictionType}
+  /** Writes each key of the `values` object to the target alias of the same name;
+   *  keys without a target are ignored, targets without a key are left as they are.
+   *  Without `targets` every `to` alias is a target. */
+  | {effect: 'assign', targets?: RuleTargets, values: RuleExpr, restriction?: RestrictionType, ignoreCase?: boolean});
+
+export type RuleEffect = RuleMetaEffect | RuleValidatorEffect | RuleDataEffect;
+
+/** Values resolved before a rule evaluates. `validators` runs the named functions
+ *  on the io behind `input`; without `names` it runs the io's own annotation validators
+ *  through the platform, using the `(call)` input that expansion adds as `call`.
+ *  `js` calls `fn` with the values of the `args` input aliases on every run of the
+ *  rule; a returned promise is awaited. */
+export type RuleSource =
+  {validators: {input: string, names?: string[], call?: string}} |
+  /** The annotation `choices` of the io behind `input`, evaluated by the platform (1.28+) through the step's
+   *  FuncCall: `{items, values, inList, row}`, `row` being the `propagateChoice` lookup row of the current value. */
+  {choices: {input: string, call?: string}} |
+  {js: {args: string[], fn: (...values: any[]) => any}} |
+  /** Calls the platform function `name`; `args` maps its parameters to expressions over the inputs. */
+  {func: {name: string, args?: Record<string, RuleExpr>}} |
+  /** Runs `sql` on the connection; `args` binds the query's `@name` parameters. */
+  {query: {connection: string, sql: string, args?: Record<string, RuleExpr>}} |
+  /** Loads a table from a file share path or a URL, once per link. */
+  {file: string} |
+  /** A table given in the config: a dataframe, or CSV text parsed with optional import options, once per link. */
+  {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
+
+export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+
+export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
+  type: 'rule';
+  when?: RuleLogic;
+  /** Source objects, or source calls such as `'file("System:AppData/Pkg/presets.csv")'`. */
+  sources?: Record<string, RuleSource | string>;
+  /** Effect objects, or effect calls such as `'set(t, m, restriction: "restricted")'`. */
+  effects: (RuleEffect | string)[];
+  debounce?: number;
+  runOnInit?: boolean;
+  handler?: undefined;
+  actions?: undefined;
+  params?: undefined;
+};
+
+/** Annotation-style checks on one io, expanded into validator links at config processing. */
+export type PipelineCheckConfiguration<P> = {
+  id: ItemId;
+  type: 'check';
+  /** LQL query of the checked io, without an alias. */
+  io: P;
+  /** The annotation options to check; `table` is an LQL query of the table io, without an alias. */
+  check: CheckOptions;
+  /** Inputs a GrokScript expression reads, as variable name to io query; `value` is the checked io. */
+  vars?: Record<string, P>;
+  when?: RuleLogic;
+  message?: RuleExpr;
+  severity?: CheckSeverity;
+  not?: P;
+  base?: P;
+  nodePriority?: number;
+  debounce?: number;
+};
+
+export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
+
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
  *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
 export type ActionInfoBase = {
@@ -185,6 +331,9 @@ const actionPositions = ['buttons', 'menu', 'globalmenu', 'none'] as const;
 export type ActionPositions = typeof actionPositions[number];
 
 type LinkOf<S> = [S] extends [never] ? LinkSpecString : LinkIOParsed[];
+type LinksOf<S> = [S] extends [never] ?
+  PipelineLinkConfigurationInput<LinkSpecString>[] :
+  PipelineLinkConfiguration<LinkIOParsed[]>[];
 type RefOf<S> = [S] extends [never] ? PipelineRefInitial : PipelineSelfRef;
 type StatesOf<S> = [S] extends [never] ? Array<ItemId | StateItem> : StateItem[];
 
@@ -194,7 +343,7 @@ export type PipelineStepConfiguration<S> = {
   type?: 'step',
   nqName: NqName;
   friendlyName?: string;
-  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  links?: LinksOf<S>;
   actions?: (DataActionConfiguraion<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   states?: StatesOf<S>;
   tags?: string[];
@@ -218,7 +367,7 @@ export type PipelineConfigurationBase<S> = {
   version?: string;
   friendlyName?: string;
   description?: string;
-  links?: PipelineLinkConfiguration<LinkOf<S>>[];
+  links?: LinksOf<S>;
   actions?: (DataActionConfiguraion<LinkOf<S>> | PipelineMutationConfiguration<LinkOf<S>> | FuncCallActionConfiguration<LinkOf<S>>)[];
   onInit?: PipelineInitConfiguration<LinkOf<S>>;
   onReturn?: PipelineReturnConfiguration<LinkOf<S>>;
@@ -228,7 +377,7 @@ export type PipelineConfigurationBase<S> = {
   customExports?: CustomExport[];
   disableHistory?: boolean;
   disableDefaultExport?: boolean;
-  approversGroup?: string; // not used rn
+  compactView?: boolean;
 };
 
 export type NestedItemContext = {

@@ -84,8 +84,8 @@ export class FuncCallNode implements IStoreProvider {
       takeUntil(this.closed$),
     ).subscribe(this.consistencyInfo$);
 
-    this.instancesWrapper.validations$.pipe(
-      map((validations) => this.convertValidations(validations)),
+    combineLatest([this.instancesWrapper.validations$, this.instancesWrapper.hiddenIOs$]).pipe(
+      map(([validations, hidden]) => this.convertValidations(validations, hidden)),
       takeUntil(this.closed$),
     ).subscribe(this.validationInfo$);
 
@@ -140,7 +140,7 @@ export class FuncCallNode implements IStoreProvider {
       this.uuid = state.uuid;
   }
 
-  initState(initialConfig: StepFunCallInitialConfig) {
+  initState(initialConfig: Omit<StepFunCallInitialConfig, 'id'>) {
     const initialRestrictions: Record<string, RestrictionState> = {};
     for (const [k, restrictionType] of Object.entries(initialConfig.inputRestrictions ?? {})) {
       const initalVal = (initialConfig.initialValues ?? {})[k];
@@ -217,10 +217,11 @@ export class FuncCallNode implements IStoreProvider {
 
   private convertValidations(
     validationsIn: Record<string, Record<string, ValidationResult | undefined>>,
+    hidden: Set<string>,
   ) {
     const validationArrays = Object.values(validationsIn).reduce((acc, val) => {
       for (const [k, v] of Object.entries(val)) {
-        if (v) {
+        if (v && !hidden.has(k)) {
           if (acc[k])
             acc[k].push(v);
           else
@@ -277,7 +278,8 @@ export class FuncCallNode implements IStoreProvider {
     else {
       const {assignedValue, type} = restriction;
       const currentVal = this.instancesWrapper.getState(inputName);
-      const inconsistent = !customDeepEqual(currentVal, assignedValue);
+      const io = this.config.io?.find((d) => d.id === inputName);
+      const inconsistent = !customDeepEqual(currentVal, assignedValue, io?.tolerance, io?.type);
       return {
         restriction: type,
         inconsistent,
@@ -310,6 +312,7 @@ export class PipelineNodeBase implements IStoreProvider {
   private store: MemoryStore;
   public nodeDescription = new NodeMetaDescription(descriptionStates, false);
   public pipelineValidations$ = new BehaviorSubject<Record<string, ValidationResult | undefined>>({});
+  public skipOnInit = false;
 
   constructor(
     public readonly config: PipelineConfigurationProcessed,
@@ -324,6 +327,12 @@ export class PipelineNodeBase implements IStoreProvider {
       throw new Error(`Wrong pipeline node state ${JSON.stringify(state)}`);
     if (state.uuid)
       this.uuid = state.uuid;
+  }
+
+  initState(initialConfig: {initialValues?: Record<string, any>, skipOnInit?: boolean}) {
+    for (const [k, val] of Object.entries(initialConfig.initialValues ?? {}))
+      this.store.setState(k, val);
+    this.skipOnInit = !!initialConfig.skipOnInit;
   }
 
   getStateStore() {
@@ -365,10 +374,10 @@ export class PipelineNodeBase implements IStoreProvider {
     const res = {
       ...state,
       nqName: this.config.nqName,
-      approversGroup: this.config.approversGroup,
       disableHistory: !!this.config.disableHistory,
       customExports: this.config.customExports,
       forceNavigate: !!this.config.forceNavigate,
+      compactView: !!this.config.compactView,
     };
     return res;
   }

@@ -164,7 +164,7 @@ export class DiffStudioHub {
         }
       }
 
-      this.root.append(ui.h1('Recent'), this.buildCardsContainer(cards));
+      this.root.append(ui.h1('Recent'), this.buildCardsContainer(cards, 'Recent'));
     } catch (e) {
       // silently skip if loading fails
     }
@@ -185,7 +185,7 @@ export class DiffStudioHub {
       return card;
     });
 
-    this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards));
+    this.root.append(ui.h1('Templates'), this.buildCardsContainer(cards, 'Templates'));
   }
 
   /** Build the "Library" section (built-in use cases + custom entries) */
@@ -206,7 +206,7 @@ export class DiffStudioHub {
     const externalCards = await this.buildExternalModelCards();
     cards.push(...externalCards);
 
-    this.root.append(ui.h1('Library'), this.buildCardsContainer(cards));
+    this.root.append(ui.h1('Library'), this.buildCardsContainer(cards, 'Library'));
   }
 
   /** Build cards for custom Library models listed in `external-models.json` */
@@ -366,9 +366,10 @@ export class DiffStudioHub {
   } // buildModelCard
 
   /** Wrap a list of cards into a grid container */
-  private buildCardsContainer(cards: HTMLElement[]): HTMLElement {
+  private buildCardsContainer(cards: HTMLElement[], section: string): HTMLElement {
     const container = ui.div(cards);
     container.classList.add('diff-studio-hub-grid');
+    container.setAttribute('name', `section-${section}`);
     return container;
   }
 

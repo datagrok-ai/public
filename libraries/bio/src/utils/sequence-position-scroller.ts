@@ -10,7 +10,9 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
+import {Subscription} from 'rxjs';
 import {ISeqHandler} from './macromolecule/seq-handler';
+import {TAGS as bioTAGS} from './macromolecule/consts';
 import {HelmType} from '../helm/types';
 import {HelmTypes} from '../helm/consts';
 import {buildCompositionTable} from './composition-table';
@@ -106,6 +108,16 @@ interface TrackVisibilityConfig {
   [trackId: string]: boolean;
 }
 
+// What the last paint of a header showed, x relative to the header
+interface PaintedHeader {
+  x: number;
+  y: number;
+  tracks: string[];
+  webLogo: {y: number, height: number} | null;
+  positions: {name: string, x: number, width: number}[];
+  labels: {name: string, x: number}[];
+}
+
 /**
  * Base class for all MSA header tracks
  */
@@ -118,6 +130,7 @@ export abstract class MSAHeaderTrack {
   protected title: string = '';
   protected tooltipEnabled: boolean = false;
   protected tooltipContent: ((position: number, monomer: string | null, data: Map<string, number>) => HTMLElement) | null = null;
+  protected getPositionName: (posIdx: number) => string = (posIdx) => `${posIdx + 1}`;
 
   constructor(height: number = LAYOUT_CONSTANTS.DEFAULT_TRACK_HEIGHT,
     minHeight: number = LAYOUT_CONSTANTS.MIN_TRACK_HEIGHT,
@@ -145,6 +158,11 @@ export abstract class MSAHeaderTrack {
 
   public setTooltipContentGenerator(contentGenerator: (position: number, monomer: string | null, data: Map<string, number>) => HTMLElement): void {
     this.tooltipContent = contentGenerator;
+  }
+
+  /** Sets how the track names a position (0-based index), e.g. '111A' of a numbering scheme */
+  public setPositionNameGetter(getter: (posIdx: number) => string): void {
+    this.getPositionName = getter;
   }
 
   public getTooltipContent(position: number, monomer: string | null): HTMLElement | null {
@@ -271,7 +289,7 @@ export class WebLogoTrack extends MSAHeaderTrack {
   private createTooltipContent(position: number, monomer: string | null, data: Map<string, number>): HTMLElement {
     const tooltipRows: HTMLElement[] = [];
 
-    tooltipRows.push(ui.divText(`Position: ${position + 1}`, {
+    tooltipRows.push(ui.divText(`Position: ${this.getPositionName(position)}`, {
       style: {fontWeight: 'bold', marginBottom: '6px', fontSize: '13px'}
     }));
 
@@ -596,6 +614,7 @@ const LAYOUT_CONSTANTS = {
   DEFAULT_TRACK_HEIGHT: 45,
   MIN_TRACK_HEIGHT: 35,
   ANNOTATION_TRACK_HEIGHT: 20,
+  POSITION_LABEL_GAP: 4,
 } as const;
 
 // STRICT HEIGHT THRESHOLDS - All pixel-perfect and deterministic
@@ -646,6 +665,16 @@ export class MSAScrollingHeader {
   private trackButtons: Array<{id: string, label: string, x: number, y: number, width: number, height: number}> = [];
   private userSelectedTracks: TrackVisibilityConfig | null = null;
 
+  private positionNames: string[] = [];
+  private positionNamesSource: string | null = null;
+  private positionNamesNumbered: boolean = true;
+  private painted: PaintedHeader | null = null;
+
+  private readonly grid: DG.Grid;
+  private readonly statusName: string;
+  private readonly keyDownListener = (e: KeyboardEvent) => this.handleKeyDown(e);
+  private readonly overlayDrawSub: Subscription;
+
   constructor(options: MSAHeaderOptions, private gridColumn: DG.GridColumn) {
     this.config = {
       x: options.x || 0,
@@ -668,6 +697,13 @@ export class MSAScrollingHeader {
     this.eventElement = ui.div();
     this.eventElement.style.position = 'absolute';
     this.config.canvas.parentElement?.appendChild(this.eventElement);
+    this.grid = gridColumn.grid;
+    // the grid paints only the headers on screen and draw() shows the element again, so a scrolled-away
+    // header does not leave its element over other columns
+    this.overlayDrawSub = this.grid.onBeforeDrawOverlay.subscribe(() => this.eventElement.style.display = 'none');
+    this.statusName = `msa-header ${gridColumn.name}`;
+    // older platforms have no status providers
+    this.grid.addStatusProvider?.(this.statusName, () => this.getStatus());
 
     this.state = {isDragging: false, dragStartX: 0, dragMode: 'none', dragStartWindowPosition: 1, dragOccurred: false};
     this.setupEventListeners();
@@ -938,6 +974,9 @@ export class MSAScrollingHeader {
   }
 
   private redraw(): void {
+    // the header scrolled away since the redraw was requested
+    if (this.eventElement.style.display === 'none')
+      return;
     this.draw(
       this.config.x, this.config.y, this.config.width, this.config.height,
       this.config.currentPosition, this.config.windowStartPosition,
@@ -951,6 +990,64 @@ export class MSAScrollingHeader {
     this.seqColumn = seqColumn;
     this.seqHandler = seqHandler;
     this.onSelectionCallback = callback || null;
+  }
+
+  /** Name of the position (0-based index) from the column's position labels or names, such as '111A' of a
+   * numbering scheme kept by an extracted region; the 1-based index when the column has none */
+  public getPositionName(posIdx: number): string {
+    return this.positionNames[posIdx] || `${posIdx + 1}`;
+  }
+
+  private updatePositionNames(): void {
+    const namesTag = this.seqColumn?.getTag(bioTAGS.positionNames) ?? '';
+    const labelsTag = this.seqColumn?.getTag(bioTAGS.positionLabels) ?? '';
+    const source = `${namesTag}\n${labelsTag}`;
+    if (source === this.positionNamesSource)
+      return;
+    this.positionNamesSource = source;
+    const split = (tag: string) => tag ? tag.split(',').map((p) => p.trim()) : [];
+    const names = split(namesTag);
+    const labels = split(labelsTag);
+    this.positionNames = Array.from({length: Math.max(names.length, labels.length)}, (_, i) => labels[i] || names[i]);
+    this.positionNamesNumbered = this.positionNames.length === 0 || this.positionNames.some((n) => /\d/.test(n));
+  }
+
+  /** Readings `header tracks of <column>` and `header positions of <column>` (the ruler's names) and a
+   * `position <name> of <column> header` hit area over each position's WebLogo stack, as last painted */
+  private getStatus(): Partial<Pick<DG.IWidgetStatus, 'hitAreas' | 'values'>> {
+    if (!this.painted || !this.seqColumn || this.eventElement.style.display === 'none')
+      return {};
+    const {x, y, tracks, webLogo, positions, labels} = this.painted;
+    // a scrolled column passes under the frozen ones
+    let left = 0;
+    const frozenColumns = this.grid.props.frozenColumns ?? 0;
+    if (this.gridColumn.idx >= frozenColumns) {
+      for (let i = 0; i < frozenColumns; i++) {
+        const frozen = this.grid.columns.byIndex(i);
+        left += frozen?.visible ? frozen.width : 0;
+      }
+    }
+    const right = this.grid.canvas.clientWidth;
+    const col = this.seqColumn.name;
+    const hitAreas: DG.IWidgetStatus['hitAreas'] = {};
+    if (webLogo) {
+      for (const p of positions) {
+        if (x + p.x >= left && x + p.x + p.width <= right)
+          hitAreas[`position ${p.name} of ${col} header`] = {x: x + p.x, y: y + webLogo.y, width: p.width, height: webLogo.height};
+      }
+    }
+    const shownLabels = labels.filter((l) => x + l.x >= left && x + l.x <= right).map((l) => l.name);
+    return {hitAreas, values: {[`header tracks of ${col}`]: tracks.join(', '), [`header positions of ${col}`]: shownLabels.join(', ')}};
+  }
+
+  /** The ruler names the first position and the round ones: '10', 'N-20', but not the insertion '110A' */
+  private isLabeledPosition(posIdx: number): boolean {
+    if (posIdx === 0)
+      return true;
+    if (!this.positionNamesNumbered)
+      return (posIdx + 1) % 10 === 0;
+    const number = /^\D*(\d+)$/.exec(this.getPositionName(posIdx));
+    return !!number && Number(number[1]) % 10 === 0;
   }
 
   public setupTooltipHandling(): void {
@@ -1065,10 +1162,7 @@ export class MSAScrollingHeader {
   private handleTooltipMouseLeave(): void {
     this.hideTooltip();
     this.clearHoverStates();
-    window.requestAnimationFrame(() => this.draw(
-      this.config.x, this.config.y, this.config.width, this.config.height,
-      this.config.currentPosition, this.config.windowStartPosition, {preventDefault: () => {}}, this.seqColumn?.name
-    ));
+    window.requestAnimationFrame(() => this.redraw());
   }
 
   private hideTooltip(): void {
@@ -1090,6 +1184,9 @@ export class MSAScrollingHeader {
       return;
     }
 
+    this.updatePositionNames();
+    const painted: PaintedHeader = {x, y, tracks: [], webLogo: null, positions: [], labels: []};
+    this.painted = painted;
     this.ctx!.save();
     this.ctx!.clearRect(x, y, w, h);
     this.ctx!.translate(x, y);
@@ -1117,12 +1214,18 @@ export class MSAScrollingHeader {
     });
 
     let currentY = tracksEndY;
-    for (const {track} of visibleTracks) {
+    for (const {id, track} of visibleTracks) {
       const trackHeight = track.getHeight();
       const trackStartY = currentY - trackHeight;
 
       track.draw(0, trackStartY, w, trackHeight, this.config.windowStartPosition,
         this.config.positionWidth, this.config.totalPositions, this.config.currentPosition);
+      // a track without data for the window hides itself while drawing
+      if (track.isVisible()) {
+        painted.tracks.unshift(track.getTitle());
+        if (id === 'weblogo')
+          painted.webLogo = {y: trackStartY, height: trackHeight};
+      }
 
       visibleTrackPositions.unshift({y: trackStartY, height: trackHeight});
       currentY = trackStartY - LAYOUT_CONSTANTS.TRACK_GAP;
@@ -1179,6 +1282,21 @@ export class MSAScrollingHeader {
 
     this.drawSlider(x, sliderTop, width);
 
+    this.ctx.font = FONTS.POSITION_LABELS;
+    const labelHalfWidth = (position: number) => this.ctx!.measureText(this.getPositionName(position - 1)).width / 2;
+    // a name wider than its cell stays inside the header at the edges
+    const labelCenterX = (position: number, halfWidth: number) =>
+      Math.min(Math.max(x + (position - windowStart + 0.5) * positionWidth, x + halfWidth), x + width - halfWidth);
+    const labelGap = LAYOUT_CONSTANTS.POSITION_LABEL_GAP;
+    // the current position's label wins over the ones it would overlap
+    const currentVisible = currentPosition >= windowStart && currentPosition < windowStart + visiblePositionsN &&
+      currentPosition <= totalPositions;
+    const currentHalfWidth = currentVisible ? labelHalfWidth(currentPosition) : 0;
+    const currentLabel = currentVisible ?
+      {centerX: labelCenterX(currentPosition, currentHalfWidth), halfWidth: currentHalfWidth} : null;
+    let lastLabelRight = -Infinity;
+    const painted = this.painted!;
+
     for (let i = 0; i < visiblePositionsN; i++) {
       const position = windowStart + i;
       if (position > totalPositions) break;
@@ -1186,6 +1304,8 @@ export class MSAScrollingHeader {
       const posX = x + (i * positionWidth);
       const cellWidth = positionWidth;
       const cellCenterX = posX + cellWidth / 2;
+      const name = this.getPositionName(position - 1);
+      painted.positions.push({name, x: posX, width: cellWidth});
 
       if (this.config.cellBackground) {
         this.ctx.fillStyle = i % 2 === 0 ? 'rgba(248, 248, 248, 0.3)' : 'rgba(242, 242, 242, 0.2)';
@@ -1204,14 +1324,21 @@ export class MSAScrollingHeader {
       this.ctx.arc(cellCenterX, posIndexTop + 5, 1, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Draw position number
-      if (position === currentPosition || ((position === 1 || position % 10 === 0) &&
-          Math.abs(position - currentPosition) > 1)) {
-        this.ctx.fillStyle = COLORS.TITLE_TEXT;
-        this.ctx.font = FONTS.POSITION_LABELS;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(position.toString(), cellCenterX, posIndexTop + 15);
+      // Draw position name
+      const isCurrent = position === currentPosition;
+      if (isCurrent || (Math.abs(position - currentPosition) > 1 && this.isLabeledPosition(position - 1))) {
+        const halfWidth = labelHalfWidth(position);
+        const labelX = labelCenterX(position, halfWidth);
+        if (isCurrent || (labelX - halfWidth > lastLabelRight + labelGap && (!currentLabel ||
+            Math.abs(labelX - currentLabel.centerX) > halfWidth + currentLabel.halfWidth + labelGap))) {
+          this.ctx.fillStyle = COLORS.TITLE_TEXT;
+          this.ctx.font = FONTS.POSITION_LABELS;
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillText(name, labelX, posIndexTop + 15);
+          lastLabelRight = labelX + halfWidth;
+          painted.labels.push({name, x: labelX});
+        }
       }
 
       // Highlight current selected position
@@ -1325,7 +1452,7 @@ export class MSAScrollingHeader {
     this.eventElement.addEventListener('click', this.handleClick.bind(this));
     this.eventElement.addEventListener('wheel', this.handleMouseWheel.bind(this));
 
-    window.addEventListener('keydown', this.handleKeyDown.bind(this));
+    window.addEventListener('keydown', this.keyDownListener);
   }
 
   private handleSelectionClick(e: MouseEvent): void {
@@ -1431,6 +1558,7 @@ export class MSAScrollingHeader {
 
   public addTrack(id: string, track: MSAHeaderTrack): void {
     if (this.ctx) track.init(this.ctx);
+    track.setPositionNameGetter((posIdx) => this.getPositionName(posIdx));
     this.tracks.set(id, track);
   }
 
@@ -1448,13 +1576,7 @@ export class MSAScrollingHeader {
   }
 
   public get isValid() {
-    const gc = this.gridColumn;
-    const g = gc?.grid;
-    const minScroll = g?.horzScroll?.min || 0;
-    const maxScroll = g?.horzScroll?.max || 1e7;
-    return !!this.canvas && !!this.ctx &&
-           this.config.height >= HEIGHT_THRESHOLDS.WITH_TITLE() &&
-           g && (between(gc.left ?? 0, minScroll, maxScroll) || between(gc.right ?? Infinity, minScroll, maxScroll)); // check that the column is actually visible
+    return !!this.canvas && !!this.ctx && this.config.height >= HEIGHT_THRESHOLDS.WITH_TITLE();
   }
 
   private handleMouseDown(e: MouseEvent): void {
@@ -1527,8 +1649,10 @@ export class MSAScrollingHeader {
   }
 
   public detach(): void {
+    this.overlayDrawSub.unsubscribe();
+    this.grid.removeStatusProvider?.(this.statusName);
     this.eventElement.remove(); // all event listeners are removed along with the element
-    window.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    window.removeEventListener('keydown', this.keyDownListener);
   }
 
   private handleKeyDown(e: KeyboardEvent): void {
@@ -1676,8 +1800,4 @@ export class MSAScrollingHeader {
       WITH_BOTH: HEIGHT_THRESHOLDS.WITH_BOTH()
     };
   }
-}
-
-function between(value: number, min: number, max: number): boolean {
-  return value >= min && value <= max;
 }

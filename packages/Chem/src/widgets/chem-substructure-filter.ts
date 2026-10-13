@@ -10,11 +10,13 @@ import * as DG from 'datagrok-api/dg';
 import * as grok from 'datagrok-api/grok';
 import {FILTER_TYPES, chemSubstructureSearchLibrary} from '../chem-searches';
 import {initRdKitService} from '../utils/chem-common-rdkit';
-import {Subject, Subscription} from 'rxjs';
+import {SubstructureSearchEngine, getSubstructureSearchEngine} from '../crux/crux-searches';
+import {Subject, Subscription, timer} from 'rxjs';
 import {filter} from 'rxjs/operators';
 import wu from 'wu';
 import {TaskBarProgressIndicator, chem} from 'datagrok-api/dg';
 import {_convertMolNotation} from '../utils/convert-notation-utils';
+import {querySmarts} from '../utils/mol-creation_rdkit';
 import {translateQueryAliasesV2000} from '../utils/query-alias-translator';
 import {_package, PackageFunctions} from '../package';
 import {AVAILABLE_FPS, CHEM_APPLY_FILTER_SYNC, FILTER_SCAFFOLD_TAG, MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT,
@@ -24,7 +26,6 @@ import BitArray from '@datagrok-libraries/utils/src/bit-array';
 import {IColoredScaffold} from '../rendering/rdkit-cell-renderer';
 import {Fingerprint} from '../utils/chem-common';
 import $ from 'cash-dom';
-import {awaitCheck} from '@datagrok-libraries/utils/src/test';
 
 const FILTER_SYNC_EVENT = 'chem-substructure-filter';
 const FILTER_ENABLED_SYNC_EVENT = 'chem-filter-enabled-sync';
@@ -90,6 +91,7 @@ export class SubstructureFilter extends DG.Filter {
   currentMolecule: string = '';
   modifiedRows = new Set<number>(); // edited row indexes (received from chem-searches via event), awaiting re-check
   initListeners = false;
+  laidOut = false;
   searchType: SubstructureSearchType = SubstructureSearchType.CONTAINS;
   similarityCutOff = 0.8;
   fp: Fingerprint = Fingerprint.Morgan;
@@ -111,6 +113,8 @@ export class SubstructureFilter extends DG.Filter {
   searchNotCompleted = false;
   recalculateFilter = false;
   _peerFilterDisabled = false;
+  private peersDisabled = false;
+  statusPanel: DG.Widget | null = null;
 
   get calculating(): boolean {return this.loader.style.display == 'initial';}
   set calculating(value: boolean) {this.loader.style.display = value ? 'initial' : 'none';}
@@ -121,6 +125,11 @@ export class SubstructureFilter extends DG.Filter {
     // while the root is still attached. TODO: replace with a reliable user-vs-teardown signal.
     if (!document.body.contains(this.root))
       return;
+    this.peersDisabled = !active;
+    this.fireEnabledSync(active);
+  }
+
+  private fireEnabledSync(active: boolean): void {
     grok.events.fireCustomEvent(FILTER_ENABLED_SYNC_EVENT, {
       colName: this.columnName,
       tableName: this.tableName,
@@ -147,11 +156,18 @@ export class SubstructureFilter extends DG.Filter {
     return DG.chem.isMolBlock(molecule) ? chem.Sketcher.isEmptyMolfile(molecule) : false;
   }
 
+  /**
+   * The SMARTS that names a query in the filter (its summary, its searches' keys): the query the search builds, as RDKit
+   * writes it. Two drawings share it only when the search reads them as one query. RDKit's sanitized reading, the name
+   * until 2026-10, read an aromatic bond outside an aromatic ring single, so toluene with its methyl bond marked aromatic
+   * was named as toluene, and the filter took its search for one already done (crux-sketch spike query-roundtrip).
+   */
   moleculeToSmarts(molecule: string): string {
-    return DG.chem.isMolBlock(molecule) ?
-      _convertMolNotation(molecule, DG.chem.Notation.MolBlock,
-        DG.chem.Notation.Smarts, PackageFunctions.getRdKitModule()) :
-      molecule;
+    if (!DG.chem.isMolBlock(molecule))
+      return molecule;
+    const rdkit = PackageFunctions.getRdKitModule();
+    return querySmarts(molecule, rdkit) ??
+      _convertMolNotation(molecule, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts, rdkit);
   }
 
   get isFiltering(): boolean {
@@ -170,7 +186,9 @@ export class SubstructureFilter extends DG.Filter {
 
   constructor() {
     super();
-    initRdKitService(); // No await
+    // crux runs Contains / Not contains without the RDKit workers; they start with the first search that needs them
+    if (getSubstructureSearchEngine() !== SubstructureSearchEngine.Crux)
+      initRdKitService(); // No await
     this.filterId = chemFilterid++;
     this.root = ui.divV([]);
     this.calculating = false;
@@ -233,22 +251,21 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   attach(dataFrame: DG.DataFrame): void {
+    this.laidOut = false;
     if (dataFrame.rowCount > MAX_SUBSTRUCTURE_SEARCH_ROW_COUNT) {
       ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+        this.sketcher.createSketcher(); // built now, so that it is there to hide
         this.sketcher.root.children[0]?.classList.add('chem-hide-filter');
         this.sketcher.root.append(this.errorDiv);
         return;
       });
     };
     //this fix is required for Marvin JS sync between filter panel and hamburger menu
-    ui.tools.waitForElementInDom(this.sketcher.root).then(async () => {
-      let inplaceSketcher = !this.root.closest('.d4-filter');
-      try {
-        if (!inplaceSketcher)
-          await awaitCheck(() => this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL, '', 1500);
-      } catch (e) {
-        inplaceSketcher = true;
-      }
+    ui.tools.waitForElementInDom(this.sketcher.root).then(() => {
+      // The sketcher's DOM, built now if its timer has not built it yet: in the page, the host knows its mode (external
+      // in a filter panel, inplace elsewhere); built earlier, it keeps the mode it was built in
+      this.sketcher.createSketcher();
+      const inplaceSketcher = this.sketcher._mode === DG.chem.SKETCHER_MODE.INPLACE;
       if (inplaceSketcher) {
         this.refresh();
         this.root.append(this.sketcher.root);
@@ -257,9 +274,11 @@ export class SubstructureFilter extends DG.Filter {
         this.root.append(this.sketcher.filterOptions);
       } else
         this.updateFilterUiOnSketcherChanged(this.currentMolecule);
+      this.laidOut = true;
     });
     super.attach(dataFrame);
     this.resolveColumn();
+    ui.tools.waitForElementInDom(this.root).then(() => this.reportToPanel());
     this.columnName ??= this.column?.name ?? '';
     this.tableName = dataFrame.name ?? '';
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
@@ -354,8 +373,11 @@ export class SubstructureFilter extends DG.Filter {
       _package.logger.debug(`********pre-calculating fp, filter: ${this.filterId}`);
       this.column!.temp[PRE_CALCULATED_FP] = this.filterId;
       this.currentSearches.add('');
+      // Precalculating fingerprints in case they were not precalculated before. Its end is also announced
+      // by the terminate event, which comes before applyState subscribes when the column is small: then
+      // the entry stayed and the progress of every later search was never closed.
       chemSubstructureSearchLibrary(this.column!, '', '', FILTER_TYPES.substructure, false, false)
-        .then((_) => { }); // Precalculating fingerprints in case they were not precalculated before
+        .then((_) => this.finishSearch(''));
     }
 
     const onChangedEvent: any = this.sketcher.onChanged;
@@ -399,6 +421,11 @@ export class SubstructureFilter extends DG.Filter {
   }
 
   detach() {
+    // Remove All deactivates a card before it removes it: a card that is gone must not keep its peers from filtering
+    if (this.peersDisabled) {
+      this.peersDisabled = false;
+      this.fireEnabledSync(true);
+    }
     //in case detaching active filter -> send sync event to other filters and reset active filter id
     if (this.column!.temp[CHEM_APPLY_FILTER_SYNC] && this.column!.temp[CHEM_APPLY_FILTER_SYNC].filterId === this.filterId) {
       this.column!.temp[CHEM_APPLY_FILTER_SYNC] = {filterId: -1};
@@ -411,13 +438,49 @@ export class SubstructureFilter extends DG.Filter {
     };
     //terminating search (in case the search was active at the moment of detach)
     _package.logger.debug(`************finish search in detach ${this.filterId}`);
-    this.terminatePreviousSearch();
+    // every search this filter started, not just the first: one left running keeps its progress in the task bar
+    for (const query of Array.from(this.currentSearches))
+      grok.events.fireCustomEvent(this.terminateEventName, query);
     const smarts = this.moleculeToSmarts(this.currentMolecule);
     this.finishSearch(getSearchQueryAndType(smarts, this.searchType, this.fp, this.similarityCutOff));
+    this.currentSearches.clear();
+    this.calculating = false;
+    this.progressBar?.close();
+    this.progressBar = null;
+    this.batchResultObservable?.unsubscribe();
     if (this.column?.temp[FILTER_SCAFFOLD_TAG])
       this.column.temp[FILTER_SCAFFOLD_TAG] = null;
+    this.statusPanel?.removeStatusProvider(`chem-filter-${this.filterId}`);
+    this.statusPanel = null;
     super.detach(); //super.detach() leads to automatic call of requestFilter -> applyFilter
     this.onSketcherChangedSubs?.forEach((it) => it.unsubscribe());
+  }
+
+  /** Reports what the card holds to the filter panel it sits in, keyed by its column. */
+  reportToPanel(): void {
+    const host = this.root.closest('[name="viewer-Filters"]');
+    const panel = host ? DG.Widget.find(host) : null;
+    if (panel == null)
+      return;
+    this.statusPanel = panel;
+    panel.addStatusProvider(`chem-filter-${this.filterId}`, () => {
+      const mol = this.currentMolecule;
+      const structure = this.isEmptyMolecule(mol) ? '' : !DG.chem.isMolBlock(mol) ? mol :
+        _convertMolNotation(mol, DG.chem.Notation.MolBlock, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+      const col = this.columnName;
+      return {values: {
+        [`structure of ${col}`]: structure,
+        // the very string the card filters by (a molblock, a SMILES or a SMARTS, as the sketcher gave it)
+        [`molecule of ${col}`]: this.isEmptyMolecule(mol) ? '' : mol,
+        [`search type of ${col}`]: this.searchType,
+        [`fingerprint of ${col}`]: this.fp,
+        [`similarity cutoff of ${col}`]: this.similarityCutOff,
+        [`searching of ${col}`]: this.calculating || this.currentSearches.size > 0,
+        // the cards below move until this one has settled its sketcher mode and drawn the thumbnail (empty meanwhile)
+        [`drawing of ${col}`]: !this.laidOut ||
+          (this.sketcher._mode === DG.chem.SKETCHER_MODE.EXTERNAL && this.sketcher.extSketcherDiv.childElementCount === 0),
+      }};
+    });
   }
 
   setFilterScaffoldTagAndFireSync(align?: boolean) {
@@ -558,7 +621,6 @@ export class SubstructureFilter extends DG.Filter {
       this.fpInput.value = state.fp;
     }
 
-    const that = this;
     /* columnIsFilteringByStructure variable is required to handle the following:
     there are cloned views, and column is filtered by some structure. And then we apply layout with empty substructure
     for this column. So in spite molblock is empty, we need to reset filter for this column, so need to run
@@ -568,7 +630,10 @@ export class SubstructureFilter extends DG.Filter {
       (JSON.parse(this.column?.temp[FILTER_SCAFFOLD_TAG]) as IColoredScaffold[])[0].molecule : '';
     if (state.molBlock || (columnIsFilteringByStructure && columnIsFilteringByStructure !== state.molBlock)) {
       _package.logger.debug(`******in applyState, calling sketcher change for filter: ${this.filterId}`);
-      setTimeout(function() {that._onSketchChanged();}, 1000);
+      // cancelled when the filter is detached (this.subs): a filter detached within the second (its panel closed,
+      // another layout applied) used to search anyway and take the column over from the filter that replaced it,
+      // which then took the search for done and left the table unfiltered
+      this.subs.push(timer(1000).subscribe(() => this._onSketchChanged()));
     }
   }
   /**
@@ -644,6 +709,12 @@ export class SubstructureFilter extends DG.Filter {
           this.bitset = DG.BitSet.fromBytes(bitArray.buffer.buffer, this.column!.length);
           this.dataFrame?.rows.requestFilter();
           this.progressBar?.update(progress, `${progress?.toFixed(2)}% of search completed`);
+          // the search reports its end as 100%: the task bar entry goes then, even for a filter that is
+          // never finished or detached (the popup's filter a column header opened)
+          if (progress >= 100) {
+            this.progressBar?.close();
+            this.progressBar = null;
+          }
         });
       } catch {
         this.finishSearch(getSearchQueryAndType(newSmarts, this.searchType, this.fp, this.similarityCutOff));

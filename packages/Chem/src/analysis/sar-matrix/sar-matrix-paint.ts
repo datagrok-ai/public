@@ -97,8 +97,18 @@ export class MatrixPainter {
     const captionBandH = caption ? 14 : 0;
     const depH = Math.max(1, b.height - posBandH - captionBandH);
     const depW = Math.min(b.width, HEADER_W * 2);
-    drawDepiction(g, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH,
-      column.substSmiles, null, HEADER_ARGB);
+    if (column.substSmiles && state.axisIsChemical) {
+      drawDepiction(g, b.x + (b.width - depW) / 2, b.y + posBandH, depW, depH,
+        column.substSmiles, null, HEADER_ARGB);
+    } else {
+      // Names are written out: the renderer would draw them as a failure cross.
+      const label = column.substSmiles || (state.axisIsChemical ? 'H' : '(none)');
+      g.fillStyle = column.substSmiles || state.axisIsChemical ? grey6 : grey5;
+      g.font = `600 13px ${GRID_FONT}`;
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText(label, b.x + b.width / 2, b.y + posBandH + depH / 2, b.width - 6);
+    }
 
     if (caption) {
       g.fillStyle = grey5;
@@ -132,6 +142,18 @@ export class MatrixPainter {
     const matrix = paneRow.matrix;
     const ri = paneRow.rowIndex;
     const cell = matrix.cells[ri][paneRow.colIdxs[colIndex]];
+    // Struck through rather than white, which would read as a combination not made yet.
+    if (cell.kind === 'impossible') {
+      g.fillStyle = cssColor(this.host.root, '--grey-1', '#f2f2f5');
+      g.fillRect(b.x, b.y, b.width, b.height);
+      g.lineWidth = 1;
+      g.strokeStyle = cssColor(this.host.root, '--grey-3', '#d4d4d8');
+      g.beginPath();
+      g.moveTo(b.x + 0.5, b.y + b.height - 0.5);
+      g.lineTo(b.x + b.width - 0.5, b.y + 0.5);
+      g.stroke();
+      return;
+    }
     // A cell below the threshold is blanked, not removed, so the grid stays a readable table.
     if (cell.kind === 'empty' || cell.value === null || !this.host.cellVisible(matrix, ri, paneRow.colIdxs[colIndex])) {
       g.fillStyle = cssColor(this.host.root, '--white', '#ffffff');

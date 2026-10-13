@@ -58,7 +58,10 @@ export class VirtualGrid<T> extends Control {
         this._activate(Number(cell.dataset.index));
     });
 
-    const resize = new ResizeObserver(() => this._measure());
+    const resize = new ResizeObserver(() => {
+      this._measure();
+      this._renderVisible();
+    });
     resize.observe(this.root);
     this.own(() => resize.disconnect());
     this._measure();
@@ -164,6 +167,10 @@ export class VirtualGrid<T> extends Control {
   }
 
   private _renderVisible(): void {
+    // a grid with no width yet (built before it is attached) lays out one column; the first measure
+    // re-flows that and hands its cells to other items, so nothing is rendered until then
+    if (this.root.clientWidth === 0)
+      return;
     const {cellHeight} = this._options;
     const cols = this.columns.peek();
     const count = this._items.length;

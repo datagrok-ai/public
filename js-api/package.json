@@ -1,90 +1,90 @@
 {
   "name": "datagrok-api",
-  "repository": {
+  "repository":   {
     "type": "git",
     "url": "https://github.com/datagrok-ai/public.git"
   },
-  "version": "1.27.11",
+  "version": "1.27.12",
   "description": "",
   "main": "./datagrok.js",
   "types": "./dist/datagrok.d.ts",
-  "exports": {
-    ".": {
+  "exports":   {
+    ".":     {
       "types": "./dist/datagrok.d.ts",
       "default": "./datagrok.js"
     },
     "./package.json": "./package.json",
     "./css/*": "./css/*",
-    "./src/dataframe": {
+    "./src/dataframe":     {
       "types": "./dist/src/dataframe/index.d.ts",
       "default": "./dist/src/dataframe/index.js"
     },
-    "./src/entities": {
+    "./src/entities":     {
       "types": "./dist/src/entities/index.d.ts",
       "default": "./dist/src/entities/index.js"
     },
-    "./src/u2core": {
+    "./src/u2core":     {
       "types": "./dist/src/u2core/index.d.ts",
       "default": "./dist/src/u2core/index.js"
     },
-    "./src/widgets": {
+    "./src/widgets":     {
       "types": "./dist/src/widgets/index.d.ts",
       "default": "./dist/src/widgets/index.js"
     },
-    "./*.js": {
+    "./*.js":     {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
     },
-    "./*": {
+    "./*":     {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
     },
-    "./datagrok": {
+    "./datagrok":     {
       "types": "./dist/datagrok.d.ts",
       "default": "./datagrok.js"
     },
-    "./datagrok.js": {
+    "./datagrok.js":     {
       "types": "./dist/datagrok.d.ts",
       "default": "./datagrok.js"
     },
-    "./grok": {
+    "./grok":     {
       "types": "./dist/grok.d.ts",
       "default": "./dist/grok.js"
     },
-    "./grok.js": {
+    "./grok.js":     {
       "types": "./dist/grok.d.ts",
       "default": "./dist/grok.js"
     },
-    "./ui": {
+    "./ui":     {
       "types": "./dist/ui.d.ts",
       "default": "./dist/ui.js"
     },
-    "./ui.js": {
+    "./ui.js":     {
       "types": "./dist/ui.d.ts",
       "default": "./dist/ui.js"
     },
-    "./dg": {
+    "./dg":     {
       "types": "./dist/dg.d.ts",
       "default": "./dist/dg.js"
     },
-    "./dg.js": {
+    "./dg.js":     {
       "types": "./dist/dg.d.ts",
       "default": "./dist/dg.js"
     },
-    "./node-api": {
+    "./node-api":     {
       "types": "./dist/node-api.d.ts",
       "default": "./dist/node-api.js"
     },
-    "./node-api.js": {
+    "./node-api.js":     {
       "types": "./dist/node-api.d.ts",
       "default": "./dist/node-api.js"
     },
-    "./u2core": {
+    "./u2core":     {
       "types": "./dist/src/u2core/index.d.ts",
       "default": "./dist/src/u2core/index.js"
     }
   },
-  "dependencies": {
+  "dependencies":   {
     "@datagrok-libraries/chem-meta": "workspace:^",
     "@types/wu": "catalog:",
     "cash-dom": "catalog:",
@@ -95,12 +95,12 @@
     "ws": "^8.18.2",
     "wu": "catalog:"
   },
-  "devDependencies": {
+  "devDependencies":   {
     "bufferutil": "^4.0.9",
     "tui-jsdoc-template": "^1.2.2",
     "utf-8-validate": "^6.0.5"
   },
-  "scripts": {
+  "scripts":   {
     "build": "grok tsc -p tsconfig.json && grok build --skip-check && node scripts/smoke-bundle.cjs",
     "build-docker": "grok tsc -p tsconfig.json && grok build --skip-check --only=browser && node scripts/smoke-bundle.cjs",
     "build-node": "grok build --skip-check --only=node",

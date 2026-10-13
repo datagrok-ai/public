@@ -1,5 +1,86 @@
 # sci-comp changelog
 
+## 0.11.0 (2026-09-22 — GROK-20960)
+
+Non-Compartmental Analysis — two bug fixes in `computeNca` that **change computed
+values on affected profiles**. Every one of the 27 committed reference profiles is
+byte-identical (pinned by a jest snapshot committed before either fix); the fixes
+move only the regimes named below. A MINOR bump on purpose: under the `0.x` caret
+rule a consumer takes these numbers only by widening its range.
+
+* **Route-aware IV-bolus dose-time gate.** An IV-bolus profile whose `t = 0` row is
+  BLQ-flagged or non-positive / non-finite (a pre-dose sample encoded as `0`) was
+  taken as a measured dose-time value and integrated from `(0, 0)`. It is now
+  treated as ABSENT: the row is removed and `(0, c0)` from the PKNCA c0 chain
+  takes its slot, so the profile gives the same parameters as one with no
+  pre-dose row. **This changes AUClast / AUCinf / AUMC / CL / Vz / Vss / MRT on
+  every IV-bolus profile with such a row** (indometh subject 1 + `(0, 0)`:
+  AUClast 1.7194 → 2.0099, the no-row value). A positive measured `t = 0` value is
+  used as-is; extravascular and IV-infusion profiles are unchanged. PKNCA's own
+  `c0` ignores a substituted dose-time BLQ the same way (measured, fixture
+  `c0_pknca`).
+* **BLQ substitutions now reach the integrator and the λz filter.** `applyBlqStrategy`
+  wrote the substituted values, but `computeNca` integrated and fitted λz on the
+  effective BLQ mask, so every rule was numerically `exclude` and a declared
+  `set-zero` / `set-half-lloq` was a no-op. AUC/AUMC now integrate the value the rule
+  wrote (`set-zero` → 0, `set-half-lloq` → LLOQ/2), and positive substitutes are
+  λz-eligible (the fit's own `conc ≤ 0` guard still keeps zeros out). Cmax/Tmax and
+  Tlag are observed quantities and keep reading the BLQ mask. **This changes AUC /
+  AUMC / λz-derived values on every profile with an EMBEDDED or dose-time BLQ under
+  `set-zero` / `set-half-lloq`, and on every profile with trailing BLQ under
+  `set-half-lloq`** (fixture P1: AUClast `exclude` 15.8010 → `set-zero` 13.4729).
+  Trailing `set-zero` substitutes are still trimmed (BUG-05), so trailing-BLQ-only
+  profiles under `set-zero` are unchanged. `missing` ≡ `exclude` on every parameter.
+  An extravascular profile whose t=0 sample is a substituted BLQ no longer gets a
+  second `(0, 0)` prepended. Per-rule contract on the `BlqRule` TSDoc.
+* New fixture `06_blq_rules` (5 subjects × 5 rule blocks, each a real PKNCA 0.12.1
+  `conc.blq` run) — the first reference assertion for nca-studio's shipped default.
+  FOUR cells are documented divergences from PKNCA, asserted as such (PKNCA `drop`
+  leaves AUC NA without a t=0 datum; PKNCA reports λz fits below our adj-R² floor —
+  its `pk.calc.half.life` never consults `min.hl.r.squared`; PKNCA extrapolates AUCinf
+  from `clast.obs` while integrating `auclast` through LLOQ/2 substitutes; and a
+  substitute can enter an accepted fit undetected by adj-R², which we warn about).
+  See `__tests__/REGEN.md`.
+* New warning `LAMBDAZ_SUBSTITUTED_BLQ` (severity `warning`): the accepted λz
+  window contains one or more BLQ points whose value was SUBSTITUTED rather than
+  measured, so the terminal slope — and everything derived from it — rests partly
+  on unmeasured concentrations. Adjusted R² provably cannot detect this (a
+  substitute sitting near the trend line scores well *because* it is near the
+  line: fixture P4 reaches adj-R² 0.9995 that way and the substitute also becomes
+  the terminal anchor of the AUCinf tail), so the condition is reported rather
+  than inferred. Only reachable since this release made substitutes λz-eligible.
+  It fires on EITHER harm independently: a substitute inside the fitted window
+  (the slope rests on it) **or** a substituted `cLast` (the extrapolated tail
+  rests on it). The two coincide under `auto-best-fit` but not under
+  `manual-points`, where force-excluding the terminal substitute from the fit
+  leaves it anchoring AUCinf — keying the check on fit membership alone would
+  have silenced the warning exactly when an analyst acted on it.
+* `nca.augmentProfile(inputs, blq)` — pipeline Steps 1–3 (BLQ → observed Cmax →
+  dose-time augmentation) as one exported, stateless kernel returning the
+  augmented arrays, the effective BLQ mask, the drop set, `sourceIndex`
+  (augmented ↔ input index map; `-1` = synthetic point) and the c0 estimate.
+  `computeNca` now calls it; consumers that need the engine's augmented index
+  space (manual λz point selection) should too — a positional mirror cannot
+  track the replace case.
+* `provenance.c0?: C0Provenance | null` — `{value, method, replacedDoseTimeRow,
+  pctAucBackExtrap}`; `null` for non-IV-bolus routes and on `'failed'`.
+  `pctAucBackExtrap` is the back-extrapolated share of AUCinf (Phoenix
+  `AUC_%Back_Ext`), diagnostic only — on the indometh corpus it is 16–28 %.
+  **Compile-time impact: none** — the field is OPTIONAL, so code that constructs a
+  `ProfileProvenance` keeps compiling. `C0Method` moved to `types.ts` (still
+  exported from the namespace).
+* `nca.estimateC0Detailed` — `estimateC0` plus the chain method that answered;
+  `insertC0` now returns `method` too. `estimateC0` is unchanged.
+* New warning `C0_FALLBACK` (severity `warning`) when c0 fell back to `c1` /
+  `cmin` / `set0` — the log-slope was not estimable. The union stays open.
+* IV-bolus AUC convention documented (`__tests__/REGEN.md`): sci-comp integrates
+  from the back-extrapolated c0 (WinNonlin); stock PKNCA does not (raw-profile
+  `auclast` NA; 1.719365 with an observed `(0, 0)` row). Pre-existing behaviour,
+  now stated.
+* Fixtures: `02_indometh.json` gains provenance `c0_pknca` (PKNCA's own `c0`,
+  equal to the committed `c0_extrapolated` to ≥ 10 digits on 6/6 subjects) and
+  `pct_auc_back_extrap`; no previously committed value changed.
+
 ## 0.10.0 (2026-08-11)
 
 Non-Compartmental Analysis — terminal-phase span ratio (PKNCA `span.ratio`):

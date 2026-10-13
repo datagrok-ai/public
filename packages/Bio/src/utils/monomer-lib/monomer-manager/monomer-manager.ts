@@ -210,6 +210,8 @@ export class MonomerManager implements IMonomerManager {
         this.adjustTable();
         if (scrollToRowSymbol != undefined) {
           setTimeout(() => {
+            if (this.tv?.dataFrame !== df)
+              return;
             const col = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!;
             const scrollToRow = col.toList().indexOf(scrollToRowSymbol);
             if (scrollToRow === -1) return;

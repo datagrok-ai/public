@@ -16,6 +16,7 @@ browser or a logged-in session.
 |-------------------------------------------------------------|--------------------------------------------------------|
 | Create / update a user                                      | `grok s users save --json user.json`                   |
 | Block / unblock a user                                      | `grok s users block <login>` / `users unblock <login>` |
+| Invite a user, get a login link                             | `grok s users invite [<email>] [--prefix <P>]`         |
 | Create / update a group                                     | `grok s groups save --json group.json`                 |
 | Add or remove users in a group                              | `grok s groups add-members <group> <user>...`          |
 | List members of a group                                     | `grok s groups list-members <group>`                   |
@@ -58,7 +59,7 @@ servers:
 
 - `grok login <server>` is the way to add a server: it registers a keypair and writes the
   entry for you. The private key stays in `~/.grok/keys/<alias>.json`.
-  See [keypair authentication](../help/govern/access-control/keypair-authentication.md).
+  See [keypair authentication](https://datagrok.ai/help/govern/access-control/keypair-authentication).
 - `grok config add --alias <name> --server <url> [--key <developer-key>]` writes an entry by
   hand. The developer key is deprecated; omit it when the server is reached with a keypair.
 - Add `--default` to make it the active server.
@@ -165,7 +166,16 @@ personal groups.
 ```bash
 grok s users block   alice.mendel        # accept login, UUID, or namespace:name
 grok s users unblock alice.mendel
+grok s users invite  alice@corp.com      # prints a login link; no email is sent
+grok s users invite                      # same, for an account with no email
+grok s users invite  --prefix ALEX-      # code starts with ALEX- (letters, digits, - and _, up to 32)
+grok s users invite  alice@corp.com --send-email   # mail the invitation instead
 ```
+
+`users invite` creates the user in state `new` and prints `<server>?inviteCode=<code>`. The
+link logs straight in as that user, every time, for a year. Inviting the same email again
+prints a new link, and the earlier ones keep working. An account that has already been used
+cannot be sent a link.
 
 Both commands resolve the argument to a full user record first, so the server receives
 the entire object (matching the Python client's `grok.users.block(user)`). Blocking
@@ -540,7 +550,7 @@ Actions the server accepts: `create | get | delete` for `users`, `groups`, `conn
 `functions`, `queries`, `scripts` (`get | delete` for `reports`), `functions.run`
 (`{name, params}`), and `files.list | get | put | delete`. For `files.put`, add
 `"source": "<local-path>"` and the CLI base64-encodes the file into `content` before sending.
-`users.delete` removes the entity record only (see "List / count / get / delete").
+`users.delete` is refused, as is `DELETE /entities/{id}` on a user or its personal group: users are blocked, never deleted (see "List / count / get / delete").
 
 ## Scripting pattern
 
@@ -623,8 +633,11 @@ entities shared with that account, and the target's own users never get their co
 
 ```bash
 grok s pull --since 10y --type project,connection,query,script,group,layout   --out ./bundle --host dev --admin
-grok s push ./bundle --host prod --admin --on-conflict skip
+grok s push ./bundle --host prod --admin --on-conflict adopt
 ```
+
+`adopt` keeps one copy of what both instances already have, such as shared groups and spaces;
+`skip` would leave them alone and fail everything in the bundle that points at them.
 
 **Move a whole instance one space at a time.** Placement is exclusive on the server — one project
 holding an entity takes it from every other — so a single bundle carrying every space has its
@@ -912,6 +925,9 @@ only ever read from.
   URL, the key, and basic connectivity, and returns per-module status if the server is
   reachable. Fall back to `grok s raw GET /users/current` to isolate auth issues. A `--host`
   URL that is not the API base fails at login with the reason (`should end with /api`).
-- Cross-instance sync (1.28 servers): `grok s sync pairs list`, `sync setups list --pair <id>`,
-  `sync setup get <id>`, `sync run <id>`; on 1.27 the routes do not exist and the commands
-  answer "not found".
+- Cross-instance sync (1.28 servers): `grok s sync pairs list` (`/sync/pairs`),
+  `sync setups list --pair <id>`, `sync setup get <id>` and `sync setup runs <id>`
+  (`/entity_sync_funcs`; a setup is an `EntitySyncFunc`, each run a `FuncCall` whose
+  `options.syncResult` holds the per-item outcome). The server has no run route: runs start
+  from the setup's **Run** button or its schedule. On 1.27 the routes do not exist and the
+  commands answer "not found".

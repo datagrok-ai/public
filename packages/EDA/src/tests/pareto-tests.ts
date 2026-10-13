@@ -6,12 +6,13 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {_package} from '../package-test';
 
-import {category, expect, test} from '@datagrok-libraries/test/src/test';
+import {awaitCheck, category, expect, test} from '@datagrok-libraries/test/src/test';
 
 import {getParetoMask} from '../pareto-optimization/pareto-computations';
-import {OPT_TYPE, NumericArray} from '../pareto-optimization/defs';
+import {OPT_TYPE, NumericArray, COL_NAME} from '../pareto-optimization/defs';
 
 const TIMEOUT = 5000;
+const CHECK_TIMEOUT = 2000;
 
 // Test dataset sizes
 const ROWS_COUNT = 1000000;
@@ -247,5 +248,37 @@ category('Pareto optimization', () => {
     const optimalCount = mask!.filter((x) => x).length;
     expect(optimalCount > 0, true, 'At least some identical points should be optimal');
     expect(error === null, true, error?.message ?? '');
+  }, {timeout: TIMEOUT});
+
+  test('Viewer: objectives set while the view is closing', async () => {
+    const df = grok.data.demo.demog(100);
+    const colNames = df.columns.names();
+    const tv = grok.shell.addTableView(df);
+    const viewer = tv.addViewer('Pareto front');
+    await awaitCheck(() => df.col(COL_NAME.OPT) !== null, 'Pareto optimality column is not added', CHECK_TIMEOUT);
+
+    let removalsCount = 0;
+    let isDetached = false;
+    const subs = [
+      df.onColumnsRemoved.subscribe(() => {
+        ++removalsCount;
+        viewer.setOptions({
+          minimizeColumnNames: ['age'],
+          maximizeColumnNames: ['weight'],
+        });
+      }),
+      viewer.onDetached.subscribe(() => isDetached = true),
+    ];
+
+    try {
+      tv.close();
+      await awaitCheck(() => isDetached, 'Pareto front viewer is not detached', CHECK_TIMEOUT);
+      viewer.setOptions({maximizeColumnNames: ['height']});
+    } finally {
+      subs.forEach((sub) => sub.unsubscribe());
+    }
+
+    expect(removalsCount > 0, true, 'Pareto columns are not removed on detach');
+    expect(df.columns.names().join(','), colNames.join(','), 'Pareto columns are left in the table');
   }, {timeout: TIMEOUT});
 });

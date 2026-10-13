@@ -121,14 +121,12 @@ Feature: Forms viewer mouse interactions and row binding
     Then the "cards" reading of forms viewer should be 7
     And no errors should have been logged
 
-  @known-failure
   Scenario: Show Current Row off leaves the record cards where they were
     Turning Show Current Row off makes the mouse-over card the leading one, and with nothing
-    hovered that card is built for row -1 — a stack of empty divs, zero pixels tall. The virtual
-    view measures its first item to size its rows, gets nothing, and lays out no card at all: the
-    five selected rows lose their cards too. Hovering any row brings them all back, which is what
-    makes the cause plain. The claim below is what the viewer should do. It is last because it
-    leaves the viewer blank.
+    hovered that card is built for row -1. Until 2026-09-21 it was a stack of empty divs, zero
+    pixels tall; the virtual view sizes its layout by its first item, so it laid out no card at
+    all and the five selected rows lost theirs too. `forms-viewer.ts` now gives a card for no row
+    the size of a real card. It stays last because it leaves Show Current Row off.
     Given user moves the pointer away from grid
     Then the "mouse-over record" reading of forms viewer should be ""
     And the "cards" reading of forms viewer should be 7

@@ -338,7 +338,7 @@ export function runControlComparisons(): void {
     value: factor,
     tooltipText: 'Categorical column defining the groups',
     onValueChanged: (col) => {factor = col; rebuildControlChoices(); updateRunButtonState();},
-    filter: (col: DG.Column) => factorColNames.includes(col.name),
+    filter: (col: DG.Column) => FACTOR_TYPES.includes(col.type),
     nullable: false,
   });
 
@@ -358,11 +358,13 @@ export function runControlComparisons(): void {
   });
 
   function rebuildControlChoices(): void {
-    const labels = groupLabels(factor);
+    // an ID-like column has no control to pick, and a native drop-down of thousands of values flashes black when opened
+    const labels = isFactorAllUnique(factor) ? [] : groupLabels(factor);
     (controlInput as any).items = labels;
     if (!labels.includes(control))
       control = labels[0];
-    controlInput.value = control;
+    if (control != null)
+      controlInput.value = control;
   }
 
   // --- Feature ---
@@ -371,7 +373,7 @@ export function runControlComparisons(): void {
     value: feature,
     tooltipText: 'Numeric column to compare across the groups',
     onValueChanged: (col) => {feature = col; updateRunButtonState();},
-    filter: (col: DG.Column) => featureColNames.includes(col.name),
+    filter: (col: DG.Column) => FEATURE_TYPES.includes(col.type),
     nullable: false,
   });
 
@@ -398,9 +400,12 @@ export function runControlComparisons(): void {
   dlg.addButton('Run', () => {
     dlg.close();
     try {
-      const report = controlComparisons(factor!, feature! as NumCol, codeOf(factor!, control),
-        binCount(factor!), {method: currentMethod, alpha: significance});
-      addVisualization(df, factor!, feature!, report, fullReportInput.value!);
+      const mask = df.filter.anyFalse ? df.filter : undefined;
+      const factorCol = factor!.clone(mask);
+      const featureCol = feature!.clone(mask);
+      const report = controlComparisons(factorCol, featureCol as NumCol, codeOf(factorCol, control),
+        binCount(factorCol), {method: currentMethod, alpha: significance});
+      addVisualization(df, factorCol, featureCol, report, fullReportInput.value!);
     } catch (error) {
       if (error instanceof Error) {
         grok.shell.warning(getWarning(error.message));

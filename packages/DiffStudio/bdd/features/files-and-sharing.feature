@@ -7,8 +7,9 @@ Feature: A model file previewed from Browse
   page, so it loads the address again from scratch instead — which is what pasting the link does,
   minus the second tab.
 
-  Step is set the way the case sets it, by dragging its slider: the track spans 0.01 to 0.1 in steps
-  of 0.0009, so the drag lands within a step of the value asked for rather than on it exactly.
+  The PK model of 2026-09-17 (GROK-20866) gives Interval the slider (4 to 24 hours, a step of 1) and
+  makes Step a plain number, so the slider is dragged on Interval, as the case drags whichever input
+  has one, and Step is typed; the address is claimed by the Step it carries.
 
   Background:
     Given user is logged in
@@ -28,10 +29,10 @@ Feature: A model file previewed from Browse
     And Multiaxis tab should be absent
     And Facet tab should be absent
 
-  Scenario: The slider sets Step, as a reader would set it
+  Scenario: The slider sets Interval, as a reader would set it
     When user takes a snapshot of line chart viewer
-    And user drags the slider of step input to 0.1
-    Then step input should have a value between 0.09 and 0.1
+    And user drags the slider of Interval input to 8
+    Then Interval input should have value "8"
     And line chart viewer should have repainted
 
   Scenario: The clicker counts Count up to four
@@ -48,7 +49,7 @@ Feature: A model file previewed from Browse
     Then step input should have value "0.1"
 
   Scenario: The address carries the inputs, and loading it again brings them back
-    Then the page address should contain "step"
+    Then the page address should contain "Step=0.1"
     When user opens the model at the page address
-    Then step input should have value "0.10"
+    Then step input should have value "0.1"
     And no errors should have been logged

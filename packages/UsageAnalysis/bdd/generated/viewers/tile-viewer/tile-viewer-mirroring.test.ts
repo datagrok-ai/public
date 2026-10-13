@@ -7,12 +7,18 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [viewers.tile-viewer]
 --- */
 import {test} from '@playwright/test';
-import '../../../bindings/spaces.js';
+import '../../../bindings/biostructure.js';
+import '../../../bindings/connections.js';
+import '../../../bindings/file-formats.js';
+import '../../../bindings/flow.js';
+import '../../../bindings/grid.js';
+import '../../../bindings/queries.js';
 import '../../../bindings/trellis-plot.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {addTileViewer} from '../../../bindings/tile-viewer.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {shouldBe} from '@datagrok-libraries/bdd/bindings/common/steps';

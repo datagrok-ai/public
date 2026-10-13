@@ -2,6 +2,27 @@
 
 ## v.next
 
+* RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
+* TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
+* TreeWizard: Removing a step or workflow from the tree asks for confirmation
+* Replaced hardcoded colours with the platform design tokens
+* TreeWizard: The selected step shows its actions without hovering, and tree icons are labelled for assistive tools
+* TreeWizard: Each step status has its own icon, so statuses no longer differ only by colour
+* RFV: Added the Feedback menu (Report a bug, Request a feature) to the standalone view
+* Inspector: Links tab shows each link as written, empty aliases, targets dropped by `$linked` and action visibility, and no longer mixes up the spec of links that share an id across steps; Config tab shows the config as written with resolved step io; links generated from annotations are shown in the Links and Log tabs only with the Annotation links toggle, and missing-value checks are never shown
+* TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
+* TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
+* TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them
+* TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share, history and export on the step ribbon, history always available)
+* RFV: Default Excel export includes validation and consistency
+* Run compare: Fixed a fuzzy-named value taking a run's slot from an exact match declared after it
+* RFV: Graphics outputs (R/Python plots) render as images in their own panel instead of base64 text, and export to Excel
+* TreeWizard: Fixed validation advice actions running without their `additionalParams`
+* TreeWizard: The failed step tooltip shows the run error
+
+## 1.6.0 (2026-09-23)
+
+* TreeWizard: Fixed saving a step to history overwriting the previously saved run (a loaded or re-saved step now gets a new id; saved runs are immutable)
 * Ribbon panels and menus migrated to the injected per-view service from webcomponents-vue; removed view prop drilling, busy-guarded ribbon actions use the built-in disabled API
 * TreeWizard: Fixed the subtree save icon saving the currently selected step instead of the clicked one
 * TreeWizard: Stopped re-creating the pipeline FuncCall on every re-render (help panel churn and repeated context help fetches)

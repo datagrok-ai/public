@@ -12,6 +12,8 @@ import './tests/col-panel-tests';
 import './tests/cell-panel-tests';
 
 import './tests/substructure-search-tests';
+import './tests/crux-substructure-search-tests';
+import './tests/crux-sketcher-tests';
 import './tests/rendering-tests';
 import './tests/rendering-scatter-plot-tooltip-tests';
 import './tests/sketcher-tests';
@@ -23,7 +25,9 @@ import './tests/screening-tools';
 import './tests/pharmacophore-features-tests';
 
 import './tests/save-as-sdf-tests';
+import './tests/save-as-csv-tests';
 import './tests/substructure-filter-tests';
+import './tests/query-roundtrip-tests';
 
 import './tests/mol2-importer-tests';
 import './tests/chemical-table-parsing';
@@ -42,6 +46,8 @@ import './tests/synthon-search-tests';
 import './tests/atom-index-mapper-tests';
 import './tests/atom-picker-tests';
 import './tests/reaction-enumeration-tests';
+import './tests/reaction-rendering-tests';
+import './tests/reactions-tests';
 // import './tests/atom-picker-3d-hover-tests';
 import './tests/atom-picker-escape-tests';
 import './tests/renderer-hover-tests';

@@ -3,9 +3,8 @@ Feature: Heat map colouring
   The two switches that decide how a heat map's cells are filled, read off the pixels of one
   column's band rather than off the whole canvas — so "recoloured" is a claim about the column
   whose scale changed, not about a repaint somewhere on screen.
-  Both scenarios make the same claim about the same band, which is what makes the pair worth
-  having: Global Color Scaling moves it (measured 48828 pixels differ), Heatmap Colors does not
-  move it at all (measured 0).
+  Global Color Scaling recolours the band (its pixels change); Heatmap Colors off takes the fill
+  away, so the band is left with less ink than it had.
 
   Background:
     Given user is logged in
@@ -28,14 +27,12 @@ Feature: Heat map colouring
     And the "column AGE" area of heat map viewer should have repainted
     And no errors should have been logged
 
-  @known-failure
   Scenario: Heatmap Colors off stops filling the cells with colour (GROK-20619)
-    # The dense heat-map path (row height <= 5) calls `getGridCellAutoColor` directly, bypassing
-    # the `heatmapColors` check in the normal cell renderer. The property write lands but the
-    # AGE column's band remains identical: 0 pixels differ. Global Color Scaling above provides
-    # a positive repaint check on the same band. The old spec also carried GROK-20619.
-    # Left last: a known failure aborts before its restore step.
+    # Fixed 2026-09-21 in grid_core.dart: the dense heat-map path coloured every uncoded column
+    # directly, bypassing the `heatmapColors` gate of the cell renderer; it now shares that gate.
+    # Global Color Scaling above provides a positive repaint check on the same band.
     Then the "heatmap colors" reading of heat map viewer should be "true"
     When user sets "heatmapColors" property of heat map viewer to "false"
     Then the "heatmap colors" reading of heat map viewer should be "false"
-    And the "column AGE" area of heat map viewer should have repainted
+    And the "column AGE" area of heat map viewer should have less ink than before
+    And no errors should have been logged

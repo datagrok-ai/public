@@ -23,8 +23,11 @@ RUN groupadd -g 2001 grok && \
     useradd -m -d /home/broker -g broker -u 1002 broker && \
     chmod 0700 /home/broker && \
     git clone --depth 1 --filter=blob:none --sparse https://github.com/datagrok-ai/public.git /workspace && \
-    git -C /workspace sparse-checkout set --no-cone '/*' '!/docusaurus/' '!/help/uploads/' \
+    git -C /workspace sparse-checkout set --no-cone '/*' '!/docusaurus/' \
       '!*.gif' '!*.png' '!*.PNG' '!*.jpg' '!*.jpeg' '!*.bmp' '!*.mp4' '!*.jar' && \
+    git clone --depth 1 --filter=blob:none --sparse https://github.com/datagrok-ai/help.git /workspace/help && \
+    git -C /workspace/help sparse-checkout set --no-cone '/*' '!/uploads/' \
+      '!*.gif' '!*.png' '!*.PNG' '!*.jpg' '!*.jpeg' '!*.bmp' '!*.mp4' && \
     mkdir -p /users && \
     chown -R grok:grok ${HOME_DIR} /workspace /users
 

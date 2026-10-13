@@ -2,11 +2,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 import * as echarts from 'echarts';
-import {unsubscribeAll} from '../../utils/utils';
+import {RenderSignals, echartsFramePending, unsubscribeAll} from '../../utils/utils';
 
 export class EChartViewer extends DG.JsViewer {
   private _chart: echarts.ECharts | null = null;
   option: any;
+  /** Held by the base's own subscriptions too, for the viewers that report them. */
+  protected signals = new RenderSignals(() => this.frameOwed());
 
   top?: string;
   bottom?: string;
@@ -30,7 +32,14 @@ export class EChartViewer extends DG.JsViewer {
     } finally {
       console.warn = warn;
     }
-    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => this.chart.resize()));
+    this.subs.push(ui.onSizeChanged(chartDiv).subscribe((_) => {
+      this.chart.resize();
+      this.signals.settle();
+    }));
+  }
+
+  protected frameOwed(): boolean {
+    return echartsFramePending(this._chart);
   }
 
   get chart(): echarts.ECharts {
@@ -67,13 +76,18 @@ export class EChartViewer extends DG.JsViewer {
   }
 
   addSelectionOrDataSubs() {
-    this.subs.push(DG.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
-    this.subs.push(DG.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.selection.onChanged, 50).subscribe((_) => this.render()));
+    this.subs.push(this.signals.debounce(this.dataFrame.onDataChanged, 50).subscribe((_) => this.render()));
   }
 
   protected resubscribe(add: () => void): void {
     unsubscribeAll(this.subs);
     add();
+  }
+
+  detach(): void {
+    this.signals.reset();
+    super.detach();
   }
 
   prepareOption() {}

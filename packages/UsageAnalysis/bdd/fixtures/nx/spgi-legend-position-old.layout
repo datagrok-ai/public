@@ -1,0 +1,2404 @@
+{
+  "#type": "ViewLayout",
+  "viewStateMap": {
+    "containerType": "horizontal",
+    "state": {
+      "width": 1541,
+      "height": 775
+    },
+    "children": [
+      {
+        "containerType": "panel",
+        "state": {
+          "width": 68,
+          "height": 775,
+          "element": {
+            "id": "fa49f5d0-9b00-11ef-ded2-070b5047fca3",
+            "type": "Filters",
+            "look": {
+              "#type": "FiltersLook",
+              "filters": [
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "Structure",
+                  "active": true,
+                  "columnName": "Structure",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "Core",
+                  "active": true,
+                  "columnName": "Core",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "R1",
+                  "active": true,
+                  "columnName": "R1",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "R2",
+                  "active": true,
+                  "columnName": "R2",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "R3",
+                  "active": true,
+                  "columnName": "R3",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "R100",
+                  "active": true,
+                  "columnName": "R100",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "Chem:substructureFilter",
+                  "column": "R101",
+                  "active": true,
+                  "columnName": "R101",
+                  "molBlock": "",
+                  "searchType": "Contains",
+                  "simCutOff": 0.8,
+                  "fp": "Morgan",
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Has Unlabeled R-Groups",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "TK6 MNT",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "CYP 3A Induction (PXR Reporter Gene Assay) % max Unit",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "pH6.8 HT Solubility Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "PAMPA Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "LE-MDCK Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "RLM CLint Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "HLM CLint Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "hERG Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "BSEP Classification",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Stereo Category",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Primary Series Name",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "AMES",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Primary Scaffold Name",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Series",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "categorical",
+                  "column": "Scaffold Names",
+                  "active": true,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "CAST Idea ID",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Chemical Space X",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Chemical Space Y",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Average Mass",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "TPSA",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Num Rotatable Bonds",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Num Heavy Atoms",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "NIBR logP",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "NIBR logD",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Idea ID",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "CASTExportID",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Competition assay",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Competition assay Date",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Cellular assay 1",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Cellular assay 1 Date",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Whole blood assay 1",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Whole blood assay 1 Date",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Whole blood assay 2",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Whole blood assay 2 Date",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                },
+                {
+                  "type": "histogram",
+                  "column": "Cellular assay 2",
+                  "active": true,
+                  "filterOutMissingValues": false,
+                  "showMissingValuesOnly": false,
+                  "showHistogram": true,
+                  "showSlider": true,
+                  "showMinMax": false,
+                  "boolInput": null
+                }
+              ]
+            },
+            "title": "Filters"
+          }
+        },
+        "children": []
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 433,
+          "height": 775
+        },
+        "children": [
+          {
+            "containerType": "fill",
+            "state": {
+              "width": 433,
+              "height": 384,
+              "documentManager": true
+            },
+            "children": [
+              {
+                "containerType": "panel",
+                "state": {
+                  "width": 433,
+                  "height": 384,
+                  "element": {
+                    "id": "fa4b0740-9b00-11ef-9372-0dc061ac860e",
+                    "type": "Grid",
+                    "look": {
+                      "#type": "GridLook",
+                      "showAddNewRowIcon": true,
+                      "addNewRowOnLastRowEdit": true,
+                      "rowHeight": 100,
+                      "topLevelDefaultMenu": true,
+                      "allowColumnMenu": true,
+                      "columns": [
+                        {
+                          "width": 44,
+                          "backgroundColor": 4294440951,
+                          "customName": "",
+                          "cellType": "row header",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 98,
+                          "columnName": "Id",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "Structure",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 102,
+                          "columnName": "CAST Idea ID",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 142,
+                          "columnName": "Last Published Date",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 74,
+                          "columnName": "Chemist",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 106,
+                          "columnName": "Lab Notebook",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 120,
+                          "columnName": "Stereo Category",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 195,
+                          "columnName": "Series",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 324,
+                          "columnName": "Scaffold Names",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 149,
+                          "columnName": "Primary Series Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 212,
+                          "columnName": "Primary Scaffold Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 168,
+                          "columnName": "Has Unlabeled R-Groups",
+                          "cellType": "bool",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "Core",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "R1",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "R2",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "R3",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "R100",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 200,
+                          "columnName": "R101",
+                          "cellType": "Molecule",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 131,
+                          "columnName": "Chemical Space X",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 130,
+                          "columnName": "Chemical Space Y",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 171,
+                          "columnName": "HT Solubility pH6.8 [mM]",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 66,
+                          "columnName": "FaSSIF",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 108,
+                          "columnName": "Average Mass",
+                          "cellType": "number",
+                          "format": "0.0000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 104,
+                          "columnName": "TPSA",
+                          "cellType": "number",
+                          "format": "0.00000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 152,
+                          "columnName": "Num Rotatable Bonds",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 133,
+                          "columnName": "Num Heavy Atoms",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 100,
+                          "columnName": "NIBR logP",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 196,
+                          "columnName": "Abs(Direct LogP - NIBR logP)",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 100,
+                          "columnName": "NIBR logD",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 196,
+                          "columnName": "Abs(Direct LogD - NIBR logD)",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 221,
+                          "columnName": "pH6.8 HT Solubility Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 151,
+                          "columnName": "PAMPA Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 193,
+                          "columnName": "LE-MDCK Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 169,
+                          "columnName": "RLM CLint Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 170,
+                          "columnName": "HLM CLint Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 140,
+                          "columnName": "hERG Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 140,
+                          "columnName": "BSEP Classification",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 97,
+                          "columnName": "Board Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 105,
+                          "columnName": "Idea Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 91,
+                          "columnName": "Idea Status",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 93,
+                          "columnName": "Idea Author",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 110,
+                          "columnName": "Idea Comment",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 81,
+                          "columnName": "Idea Tags",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 99,
+                          "columnName": "Idea Created",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 119,
+                          "columnName": "Idea Last Active",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 75,
+                          "columnName": "Board ID",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 82,
+                          "columnName": "Idea ID",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 109,
+                          "columnName": "CASTExportID",
+                          "cellType": "number",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 105,
+                          "columnName": "name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 250,
+                          "columnName": "Small Molecule Concept Preferred Key",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 134,
+                          "columnName": "Competition assay",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 164,
+                          "columnName": "Competition assay Date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 187,
+                          "columnName": "Competition assay Curve ID",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 121,
+                          "columnName": "Cellular assay 1",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 148,
+                          "columnName": "Cellular assay 1 Date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 170,
+                          "columnName": "Cellular assay 1 Curve ID",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 145,
+                          "columnName": "Whole blood assay 1",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 175,
+                          "columnName": "Whole blood assay 1 Date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 198,
+                          "columnName": "Whole blood assay 1 Curve ID",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 145,
+                          "columnName": "Whole blood assay 2",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 175,
+                          "columnName": "Whole blood assay 2 Date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 198,
+                          "columnName": "Whole blood assay 2 Curve ID",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 121,
+                          "columnName": "Cellular assay 2",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 148,
+                          "columnName": "Cellular assay 2 Date",
+                          "cellType": "number",
+                          "format": "M/d/yyyy",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 170,
+                          "columnName": "Cellular assay 2 Curve ID",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 109,
+                          "columnName": "AMES",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 80,
+                          "columnName": "TK6 MNT",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 71,
+                          "columnName": "Species",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 144,
+                          "columnName": "Strain",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 148,
+                          "columnName": "Study Type",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 101,
+                          "columnName": "Route Admin",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 56,
+                          "columnName": "Dose",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 166,
+                          "columnName": "Sampling Time Qualifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 113,
+                          "columnName": "Sampling Time",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 87,
+                          "columnName": "N Qualifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 41,
+                          "columnName": "N",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 400,
+                          "columnName": "HPLC Trend Analysis %HSA Binding (HSA_BINDING) - %HSA CHI IAM Qualifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 400,
+                          "columnName": "HPLC Trend Analysis %HSA Binding (HSA_BINDING) - %HSA CHI IAM",
+                          "cellType": "number",
+                          "format": "0.00000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 332,
+                          "columnName": "CYP 3A Induction (PXR Reporter Gene Assay) % max",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 359,
+                          "columnName": "CYP 3A Induction (PXR Reporter Gene Assay) % max Unit",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 376,
+                          "columnName": "CYP 3A Induction (PXR Reporter Gene Assay) Fold  Qualifier",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 320,
+                          "columnName": "CYP 3A Induction (PXR Reporter Gene Assay) Fold",
+                          "cellType": "number",
+                          "format": "0.000000000",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 138,
+                          "columnName": "Sample Name",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 142,
+                          "columnName": "First Synthesis Date",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 121,
+                          "columnName": "First Reg Date",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 99,
+                          "columnName": "Chemist 521",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 160,
+                          "columnName": "Lab Notebook Id",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "width": 130,
+                          "columnName": "Compound Status",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~Structure.Pattern",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        },
+                        {
+                          "visible": false,
+                          "width": 0,
+                          "columnName": "~Structure.canonicalSmiles",
+                          "headerCellStyle": {
+                            "textWrap": "words"
+                          }
+                        }
+                      ]
+                    },
+                    "title": "SPGI_v2",
+                    "default": true
+                  }
+                },
+                "children": []
+              }
+            ]
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 433,
+              "height": 390,
+              "element": {
+                "id": "fa4b7c70-9b00-11ef-c5fa-d590db8660b3",
+                "type": "Pie chart",
+                "look": {
+                  "#type": "PieChartLook",
+                  "categoryColumnName": "Stereo Category",
+                  "categoryFunction": "",
+                  "segmentAngleColumnName": "CAST Idea ID"
+                },
+                "title": "Pie chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 513,
+          "height": 775
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 513,
+              "height": 384,
+              "element": {
+                "id": "fa4bca90-9b00-11ef-f285-dbac2af62981",
+                "type": "Scatter plot",
+                "look": {
+                  "#type": "ScatterPlotLook",
+                  "xColumnName": "CAST Idea ID",
+                  "yColumnName": "Chemical Space Y",
+                  "colorColumnName": "Stereo Category",
+                  "markerMinSize": 3,
+                  "markerMaxSize": 20,
+                  "viewport": ""
+                },
+                "title": "Scatter plot"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 513,
+              "height": 390,
+              "element": {
+                "id": "fa4bf1a0-9b00-11ef-d0c4-2b6d593833ae",
+                "type": "Bar chart",
+                "look": {
+                  "#type": "BarChartLook",
+                  "valueColumnName": "CAST Idea ID",
+                  "valueAggrType": "count",
+                  "barSortType": "by value",
+                  "barSortOrder": "desc",
+                  "splitColumnName": "Stereo Category",
+                  "stackColumnName": "Primary Series Name"
+                },
+                "title": "Bar chart"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "containerType": "vertical",
+        "state": {
+          "width": 524,
+          "height": 775
+        },
+        "children": [
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 524,
+              "height": 384,
+              "element": {
+                "id": "fa4c3fc0-9b00-11ef-ca57-4f6b067af67b",
+                "type": "Line chart",
+                "look": {
+                  "#type": "LineChartLook",
+                  "splitColumnNames": [
+                    "Stereo Category"
+                  ],
+                  "overviewColumnName": "CAST Idea ID",
+                  "yAggrTypes": [
+                    "avg"
+                  ],
+                  "xColumnName": "Competition assay Date",
+                  "yColumnNames": [
+                    "NIBR logD"
+                  ],
+                  "chartTypes": [
+                    "Line Chart"
+                  ]
+                },
+                "title": "Line chart"
+              }
+            },
+            "children": []
+          },
+          {
+            "containerType": "panel",
+            "state": {
+              "width": 524,
+              "height": 390,
+              "element": {
+                "id": "fa4c66d0-9b00-11ef-8832-33b0e62910eb",
+                "type": "Box plot",
+                "look": {
+                  "#type": "BoxPlotLook",
+                  "categoryColumnNames": [
+                    "Stereo Category"
+                  ],
+                  "valueColumnName": "Chemical Space X",
+                  "markerColorColumnName": "Primary Series Name"
+                },
+                "title": "Box plot"
+              }
+            },
+            "children": []
+          }
+        ]
+      }
+    ],
+    "floating": [],
+    "tableId": "6056a4f0-9b00-11ef-985a-7b926be9e704",
+    "tableName": "SPGI_v2"
+  },
+  "columns": [
+    {
+      "name": "R3",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7b9a03b0-9b00-11ef-aaa3-4b8f98e817d9",
+      "friendlyName": "R3",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa4cdc00-9b00-11ef-ada2-3f144de4c1d1"
+        },
+        {
+          "tag": "quality",
+          "id": "fa4cdc00-9b00-11ef-f215-f1df1960dbe3"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4cdc00-9b00-11ef-827f-4529fb205a5e"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa4d0310-9b00-11ef-c43d-27d89083bef7"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4d0310-9b00-11ef-a1ba-9d59f69675d9"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "17",
+        "cell.renderer": "Molecule",
+        ".id": "7b9a03b0-9b00-11ef-aaa3-4b8f98e817d9"
+      }
+    },
+    {
+      "name": "R101",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7b9a9ff0-9b00-11ef-d407-cba1caa850b0",
+      "friendlyName": "R101",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa4d0310-9b00-11ef-8147-d5b292552787"
+        },
+        {
+          "tag": "quality",
+          "id": "fa4d5130-9b00-11ef-e1e5-b3a224997b52"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4d5130-9b00-11ef-ac01-5903fde5919c"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa4d7840-9b00-11ef-efd0-b750d07612b1"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4d7840-9b00-11ef-d3de-03f44b52798d"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "17",
+        "cell.renderer": "Molecule",
+        ".id": "7b9a9ff0-9b00-11ef-d407-cba1caa850b0"
+      }
+    },
+    {
+      "name": "NIBR logP",
+      "type": "double",
+      "id": "7b9aee10-9b00-11ef-d14c-cb2d69880175",
+      "friendlyName": "NIB R log P",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4d7840-9b00-11ef-ec6f-6dd3d6c64954"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4d7840-9b00-11ef-85f4-b93ee629a0b8"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4d9f50-9b00-11ef-eb60-e5cf7ff236ca"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4d9f50-9b00-11ef-c771-0bb67c377b28"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "1",
+        ".id": "7b9aee10-9b00-11ef-d14c-cb2d69880175"
+      }
+    },
+    {
+      "name": "Chemical Space Y",
+      "type": "double",
+      "id": "7b9b3c30-9b00-11ef-fd7b-c76fb03a0c05",
+      "friendlyName": "Chemical Space Y",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4d9f50-9b00-11ef-faca-41db8efd86e4"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4dc660-9b00-11ef-f5e4-57bce499cca0"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4dc660-9b00-11ef-d924-6148715edaff"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4dc660-9b00-11ef-d9af-2fc402897026"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "2",
+        ".id": "7b9b3c30-9b00-11ef-fd7b-c76fb03a0c05"
+      }
+    },
+    {
+      "name": "Average Mass",
+      "type": "double",
+      "id": "7b9bb160-9b00-11ef-d149-0141b10b21a1",
+      "friendlyName": "Average Mass",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4dc660-9b00-11ef-f87b-f10df8c5d22d"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4ded70-9b00-11ef-b901-814833d6ae16"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4ded70-9b00-11ef-a677-df4b7846d386"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4ded70-9b00-11ef-dab9-f3c2a61310bc"
+        }
+      ],
+      "metaParams": {
+        "format": "0.0000000",
+        ".source-precision": "7",
+        ".semantic-detection-duration": "2",
+        ".id": "7b9bb160-9b00-11ef-d149-0141b10b21a1"
+      }
+    },
+    {
+      "name": "PAMPA Classification",
+      "type": "string",
+      "id": "7b9bd870-9b00-11ef-c91b-37e944458441",
+      "friendlyName": "PAMP A Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4ded70-9b00-11ef-8406-2febd1b1e700"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e1480-9b00-11ef-a25e-7968b8f5c348"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "7b9bd870-9b00-11ef-c91b-37e944458441"
+      }
+    },
+    {
+      "name": "Whole blood assay 2 Date",
+      "type": "datetime",
+      "id": "7b9bff80-9b00-11ef-bc10-0bcdc9f331aa",
+      "friendlyName": "Whole blood assay 2 Date",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4e1480-9b00-11ef-93b4-4b1194c2c833"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e1480-9b00-11ef-e21c-c7c4c9fa072a"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e1480-9b00-11ef-be9b-3d63401ce9f2"
+        }
+      ],
+      "metaParams": {
+        "format": "M/d/yyyy",
+        ".semantic-detection-duration": "0",
+        ".id": "7b9bff80-9b00-11ef-bc10-0bcdc9f331aa"
+      }
+    },
+    {
+      "name": "BSEP Classification",
+      "type": "string",
+      "id": "7b9c74b0-9b00-11ef-9c41-4d32bc482b62",
+      "friendlyName": "BSE P Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e1480-9b00-11ef-e414-737905906ece"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e3b90-9b00-11ef-c49e-a149ff8110f8"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9c74b0-9b00-11ef-9c41-4d32bc482b62"
+      }
+    },
+    {
+      "name": "Cellular assay 1 Date",
+      "type": "datetime",
+      "id": "7b9c9bc0-9b00-11ef-d37a-417efc966096",
+      "friendlyName": "Cellular assay 1 Date",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4e3b90-9b00-11ef-f2e0-0d10346413f1"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e3b90-9b00-11ef-cfdb-5f196717d79d"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e3b90-9b00-11ef-f12c-d59a9de4542f"
+        }
+      ],
+      "metaParams": {
+        "format": "M/d/yyyy",
+        ".semantic-detection-duration": "1",
+        ".id": "7b9c9bc0-9b00-11ef-d37a-417efc966096"
+      }
+    },
+    {
+      "name": "Idea ID",
+      "type": "int",
+      "id": "7b9cc2d0-9b00-11ef-eec2-93839e93926c",
+      "friendlyName": "Idea ID",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e62a0-9b00-11ef-dd62-7bd8e6b22ef7"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e62a0-9b00-11ef-93ac-eb72477dedd7"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9cc2d0-9b00-11ef-eec2-93839e93926c"
+      }
+    },
+    {
+      "name": "Scaffold Names",
+      "type": "string",
+      "id": "7b9d10f0-9b00-11ef-8fe7-991654cd1063",
+      "friendlyName": "Scaffold Names",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e62a0-9b00-11ef-9389-133619aa26bb"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e62a0-9b00-11ef-8ccd-013b5532c0ff"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "6",
+        ".id": "7b9d10f0-9b00-11ef-8fe7-991654cd1063"
+      }
+    },
+    {
+      "name": "pH6.8 HT Solubility Classification",
+      "type": "string",
+      "id": "7b9d3800-9b00-11ef-b6c5-dd6c9b11d8aa",
+      "friendlyName": "P H6.8 H T Solubility Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e62a0-9b00-11ef-aefa-dbceff15eb5a"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e89b0-9b00-11ef-c58e-3186dffcc572"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9d3800-9b00-11ef-b6c5-dd6c9b11d8aa"
+      }
+    },
+    {
+      "name": "CAST Idea ID",
+      "type": "int",
+      "id": "7b9d8620-9b00-11ef-ce0e-0b9284d8ee4e",
+      "friendlyName": "CAS T Idea ID",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e89b0-9b00-11ef-ecf3-0d082626f5e4"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4e89b0-9b00-11ef-ecec-77693c431c8e"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9d8620-9b00-11ef-ce0e-0b9284d8ee4e"
+      }
+    },
+    {
+      "name": "Whole blood assay 1 Date",
+      "type": "datetime",
+      "id": "7b9dad30-9b00-11ef-d413-63d8953c4c87",
+      "friendlyName": "Whole blood assay 1 Date",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4e89b0-9b00-11ef-82f2-91317a4d5da0"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4e89b0-9b00-11ef-d7f5-793926c032b7"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4eb0c0-9b00-11ef-cc0c-dd52ea2ca6d8"
+        }
+      ],
+      "metaParams": {
+        "format": "M/d/yyyy",
+        ".semantic-detection-duration": "1",
+        ".id": "7b9dad30-9b00-11ef-d413-63d8953c4c87"
+      }
+    },
+    {
+      "name": "Core",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7b9e2260-9b00-11ef-b775-3107d137a5e8",
+      "friendlyName": "Core",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa4eb0c0-9b00-11ef-a08a-99fa2fcd07fc"
+        },
+        {
+          "tag": "quality",
+          "id": "fa4eb0c0-9b00-11ef-ea4f-b1c9e3c49339"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4eb0c0-9b00-11ef-d28e-5fef809833e6"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa4eb0c0-9b00-11ef-95a8-3972ceb3102b"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4eb0c0-9b00-11ef-ac40-114425ae604a"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "100",
+        "cell.renderer": "Molecule",
+        ".id": "7b9e2260-9b00-11ef-b775-3107d137a5e8"
+      }
+    },
+    {
+      "name": "R2",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7b9e7080-9b00-11ef-d877-3379a5769248",
+      "friendlyName": "R2",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa4ed7d0-9b00-11ef-e560-79929447deff"
+        },
+        {
+          "tag": "quality",
+          "id": "fa4ed7d0-9b00-11ef-b705-1de79a397a98"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4ed7d0-9b00-11ef-e667-07053c5d782d"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa4ed7d0-9b00-11ef-f052-7929efbed654"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4ed7d0-9b00-11ef-e738-7f4429569e8b"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "22",
+        "cell.renderer": "Molecule",
+        ".id": "7b9e7080-9b00-11ef-d877-3379a5769248"
+      }
+    },
+    {
+      "name": "Structure",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7b9ebea0-9b00-11ef-aac6-6be03b948e3c",
+      "friendlyName": "Structure",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa4efee0-9b00-11ef-ef5d-ff450765b758"
+        },
+        {
+          "tag": "quality",
+          "id": "fa4efee0-9b00-11ef-f641-157b2ca1e04c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4efee0-9b00-11ef-87da-754a2f56c596"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa4efee0-9b00-11ef-ea55-33fed95e4aa5"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4efee0-9b00-11ef-a4b9-e9e7a11ec819"
+        }
+      ],
+      "metaParams": {
+        "units": "molblock",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "1",
+        "cell.renderer": "Molecule",
+        ".id": "7b9ebea0-9b00-11ef-aac6-6be03b948e3c"
+      }
+    },
+    {
+      "name": "Whole blood assay 1",
+      "type": "qnum",
+      "id": "7b9f33d0-9b00-11ef-9169-d54ef56f167c",
+      "friendlyName": "Whole blood assay 1",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4efee0-9b00-11ef-bdd1-619dbf690f2d"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4f25f0-9b00-11ef-c964-398aeb4fad8e"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f25f0-9b00-11ef-fcf2-31bfbf5fb6da"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f25f0-9b00-11ef-c146-57d76b2cc139"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "1",
+        ".id": "7b9f33d0-9b00-11ef-9169-d54ef56f167c"
+      }
+    },
+    {
+      "name": "HLM CLint Classification",
+      "type": "string",
+      "id": "7b9f5ae0-9b00-11ef-98a5-9bc1719bd615",
+      "friendlyName": "HL M C Lint Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f25f0-9b00-11ef-f1b9-9d83bab21b42"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f25f0-9b00-11ef-8ab4-3316353e5ec0"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9f5ae0-9b00-11ef-98a5-9bc1719bd615"
+      }
+    },
+    {
+      "name": "RLM CLint Classification",
+      "type": "string",
+      "id": "7b9f81f0-9b00-11ef-d9ca-dd7b074ebbf8",
+      "friendlyName": "RL M C Lint Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f4d00-9b00-11ef-aeeb-79b19448294e"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f4d00-9b00-11ef-eab3-adc70579484b"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "7b9f81f0-9b00-11ef-d9ca-dd7b074ebbf8"
+      }
+    },
+    {
+      "name": "Num Heavy Atoms",
+      "type": "int",
+      "id": "7b9fa900-9b00-11ef-f25a-b7dcd1ea2513",
+      "friendlyName": "Num Heavy Atoms",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f4d00-9b00-11ef-d37a-1129ca039afe"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f4d00-9b00-11ef-b508-b9c57d12f19d"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7b9fa900-9b00-11ef-f25a-b7dcd1ea2513"
+      }
+    },
+    {
+      "name": "hERG Classification",
+      "type": "string",
+      "id": "7b9fd010-9b00-11ef-d93a-07276118f5bd",
+      "friendlyName": "H ER G Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f7410-9b00-11ef-8188-f3c4d0a6c48e"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f7410-9b00-11ef-dab2-9b18d05f29af"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "7b9fd010-9b00-11ef-d93a-07276118f5bd"
+      }
+    },
+    {
+      "name": "Chemical Space X",
+      "type": "double",
+      "id": "7b9ff720-9b00-11ef-86ad-f5bd9ee69888",
+      "friendlyName": "Chemical Space X",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4f7410-9b00-11ef-b0f2-0f9339129404"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4f7410-9b00-11ef-be1a-51d427999843"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f7410-9b00-11ef-e85f-d3ed911fdeee"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f9b20-9b00-11ef-fe57-edd7fc3abfb3"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "10",
+        ".id": "7b9ff720-9b00-11ef-86ad-f5bd9ee69888"
+      }
+    },
+    {
+      "name": "Primary Scaffold Name",
+      "type": "string",
+      "id": "7ba01e30-9b00-11ef-855f-ad99153421e4",
+      "friendlyName": "Primary Scaffold Name",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4f9b20-9b00-11ef-b3d0-d16a15e14615"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4f9b20-9b00-11ef-8936-97b35b63e20e"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "6",
+        ".id": "7ba01e30-9b00-11ef-855f-ad99153421e4"
+      }
+    },
+    {
+      "name": "Cellular assay 1",
+      "type": "qnum",
+      "id": "7ba09360-9b00-11ef-c4d8-61ce74356aa7",
+      "friendlyName": "Cellular assay 1",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4f9b20-9b00-11ef-c70b-597144324b8d"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4f9b20-9b00-11ef-a4d0-45ba460181d9"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4fc230-9b00-11ef-bdf9-61f302fd28a1"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4fc230-9b00-11ef-d8fb-cb317ee93d07"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "1",
+        ".id": "7ba09360-9b00-11ef-c4d8-61ce74356aa7"
+      }
+    },
+    {
+      "name": "Primary Series Name",
+      "type": "string",
+      "id": "7ba0ba70-9b00-11ef-bb1a-cf05be07e565",
+      "friendlyName": "Primary Series Name",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4fc230-9b00-11ef-daec-bdf6d1013862"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4fc230-9b00-11ef-8bd4-a7c8efbde18c"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba0ba70-9b00-11ef-bb1a-cf05be07e565"
+      }
+    },
+    {
+      "name": "TPSA",
+      "type": "double",
+      "id": "7ba10890-9b00-11ef-8036-bb284da2c39a",
+      "friendlyName": "TPSA",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4fc230-9b00-11ef-da53-dbe929c3721b"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa4fc230-9b00-11ef-f249-59c2f870e724"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4fe940-9b00-11ef-d57f-0bda12119b52"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4fe940-9b00-11ef-fcb0-bd4d0226548d"
+        }
+      ],
+      "metaParams": {
+        "format": "0.00000000",
+        ".source-precision": "8",
+        ".semantic-detection-duration": "1",
+        ".id": "7ba10890-9b00-11ef-8036-bb284da2c39a"
+      }
+    },
+    {
+      "name": "Stereo Category",
+      "type": "string",
+      "id": "7ba10890-9b00-11ef-b4ca-c546a65b5d2c",
+      "friendlyName": "Stereo Category",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa4fe940-9b00-11ef-fe8d-af2435982ffb"
+        },
+        {
+          "tag": ".id",
+          "id": "fa4fe940-9b00-11ef-dbcd-bdb4748bf16a"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "7ba10890-9b00-11ef-b4ca-c546a65b5d2c"
+      }
+    },
+    {
+      "name": "Cellular assay 2",
+      "type": "qnum",
+      "id": "7ba156b0-9b00-11ef-e042-19499fc1d317",
+      "friendlyName": "Cellular assay 2",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa4fe940-9b00-11ef-d3f2-91475854dbf1"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa501050-9b00-11ef-a305-b12254d31dbf"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa501050-9b00-11ef-a8e8-e12758f2a210"
+        },
+        {
+          "tag": ".id",
+          "id": "fa501050-9b00-11ef-a77d-73852b74eed9"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "0",
+        ".id": "7ba156b0-9b00-11ef-e042-19499fc1d317"
+      }
+    },
+    {
+      "name": "CYP 3A Induction (PXR Reporter Gene Assay) % max Unit",
+      "type": "string",
+      "id": "7ba1a4d0-9b00-11ef-db78-a7429a4caade",
+      "friendlyName": "CY P 3 A Induction ( PX R Reporter Gene Assay) % max Unit",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa501050-9b00-11ef-94c3-63bb3e72a55e"
+        },
+        {
+          "tag": ".id",
+          "id": "fa505e70-9b00-11ef-e2e4-9d71ba836e1d"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba1a4d0-9b00-11ef-db78-a7429a4caade"
+      }
+    },
+    {
+      "name": "Competition assay Date",
+      "type": "datetime",
+      "id": "7ba1cbe0-9b00-11ef-b59b-5d1242e73ef8",
+      "friendlyName": "Competition assay Date",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa505e70-9b00-11ef-e94c-4b4ddedb1d6c"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa505e70-9b00-11ef-e94f-f94d4346a1c1"
+        },
+        {
+          "tag": ".id",
+          "id": "fa505e70-9b00-11ef-8c86-8f21bacc2fb5"
+        }
+      ],
+      "metaParams": {
+        "format": "M/d/yyyy",
+        ".semantic-detection-duration": "2",
+        ".id": "7ba1cbe0-9b00-11ef-b59b-5d1242e73ef8"
+      }
+    },
+    {
+      "name": "Num Rotatable Bonds",
+      "type": "int",
+      "id": "7ba1f2f0-9b00-11ef-8b51-1fd4358fedd5",
+      "friendlyName": "Num Rotatable Bonds",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa505e70-9b00-11ef-cd36-c5368aa63bbe"
+        },
+        {
+          "tag": ".id",
+          "id": "fa508580-9b00-11ef-ea23-15b29bc1e59f"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba1f2f0-9b00-11ef-8b51-1fd4358fedd5"
+      }
+    },
+    {
+      "name": "TK6 MNT",
+      "type": "string",
+      "id": "7ba21a00-9b00-11ef-80b5-d338f67a51f1",
+      "friendlyName": "TK6 MNT",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa508580-9b00-11ef-b8ed-095e17134147"
+        },
+        {
+          "tag": ".id",
+          "id": "fa508580-9b00-11ef-ff55-89914f6c7718"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba21a00-9b00-11ef-80b5-d338f67a51f1"
+      }
+    },
+    {
+      "name": "Series",
+      "type": "string",
+      "id": "7ba24110-9b00-11ef-e5c3-c119ebf2378a",
+      "friendlyName": "Series",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa508580-9b00-11ef-8c89-c3cf90c9cf7d"
+        },
+        {
+          "tag": ".id",
+          "id": "fa508580-9b00-11ef-e68d-993bd9182fc6"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba24110-9b00-11ef-e5c3-c119ebf2378a"
+      }
+    },
+    {
+      "name": "LE-MDCK Classification",
+      "type": "string",
+      "id": "7ba26820-9b00-11ef-d107-9397ca9c3e94",
+      "friendlyName": "L E- MDC K Classification",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50ac90-9b00-11ef-e22f-2397ce5e02a6"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50ac90-9b00-11ef-d074-85ee787a4722"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba26820-9b00-11ef-d107-9397ca9c3e94"
+      }
+    },
+    {
+      "name": "AMES",
+      "type": "string",
+      "id": "7ba28f30-9b00-11ef-f6bc-cb8b2d754a27",
+      "friendlyName": "AMES",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50ac90-9b00-11ef-9ae3-af7dac8f2556"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50ac90-9b00-11ef-c77b-b98600675a05"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba28f30-9b00-11ef-f6bc-cb8b2d754a27"
+      }
+    },
+    {
+      "name": "NIBR logD",
+      "type": "double",
+      "id": "7ba2dd50-9b00-11ef-dadb-2f77c580bfa7",
+      "friendlyName": "NIB R log D",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa50ac90-9b00-11ef-e4bd-03f805b8f9eb"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa50ac90-9b00-11ef-fdc2-95a606c72ede"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50d3a0-9b00-11ef-bc0a-a9ecfad99fba"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50d3a0-9b00-11ef-b690-93d6d5c4b1df"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "1",
+        ".id": "7ba2dd50-9b00-11ef-dadb-2f77c580bfa7"
+      }
+    },
+    {
+      "name": "Whole blood assay 2",
+      "type": "qnum",
+      "id": "7ba32b70-9b00-11ef-c391-d5eb7c30458d",
+      "friendlyName": "Whole blood assay 2",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa50d3a0-9b00-11ef-d211-5ff48b9c4cbb"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa50d3a0-9b00-11ef-9b04-3987fac59846"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50d3a0-9b00-11ef-9970-99712779cdf3"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50d3a0-9b00-11ef-a6f9-59423f398ec1"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "1",
+        ".id": "7ba32b70-9b00-11ef-c391-d5eb7c30458d"
+      }
+    },
+    {
+      "name": "Competition assay",
+      "type": "qnum",
+      "id": "7ba35280-9b00-11ef-e981-53562f14811a",
+      "friendlyName": "Competition assay",
+      "entityTags": [
+        {
+          "tag": "format",
+          "id": "fa50fab0-9b00-11ef-8360-f7963df57f83"
+        },
+        {
+          "tag": ".source-precision",
+          "id": "fa50fab0-9b00-11ef-d5dc-c1ddbb55ef84"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50fab0-9b00-11ef-c501-391a5876d217"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50fab0-9b00-11ef-cab5-3f389e040208"
+        }
+      ],
+      "metaParams": {
+        "format": "0.000000000",
+        ".source-precision": "9",
+        ".semantic-detection-duration": "2",
+        ".id": "7ba35280-9b00-11ef-e981-53562f14811a"
+      }
+    },
+    {
+      "name": "Has Unlabeled R-Groups",
+      "type": "bool",
+      "id": "7ba37990-9b00-11ef-ddd8-b3aa7e174661",
+      "friendlyName": "Has Unlabeled R- Groups",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa50fab0-9b00-11ef-bcbf-0dd25f4346bf"
+        },
+        {
+          "tag": ".id",
+          "id": "fa50fab0-9b00-11ef-fe63-bf876f1f82bd"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "2",
+        ".id": "7ba37990-9b00-11ef-ddd8-b3aa7e174661"
+      }
+    },
+    {
+      "name": "R1",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7ba3a0a0-9b00-11ef-8c1f-e90b782d2a79",
+      "friendlyName": "R1",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa5121c0-9b00-11ef-e8cd-f190b7cfb92c"
+        },
+        {
+          "tag": "quality",
+          "id": "fa5121c0-9b00-11ef-fce7-7dafbb9fcd3b"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa5121c0-9b00-11ef-c576-1761fc9cce48"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa5121c0-9b00-11ef-9333-4f6f4eed90ec"
+        },
+        {
+          "tag": ".id",
+          "id": "fa5121c0-9b00-11ef-f92f-01150cb1911e"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "16",
+        "cell.renderer": "Molecule",
+        ".id": "7ba3a0a0-9b00-11ef-8c1f-e90b782d2a79"
+      }
+    },
+    {
+      "name": "R100",
+      "type": "string",
+      "semType": "Molecule",
+      "id": "7ba3eec0-9b00-11ef-f178-23fdfb526fa9",
+      "friendlyName": "R100",
+      "entityTags": [
+        {
+          "tag": "units",
+          "id": "fa5121c0-9b00-11ef-f410-b9c42b7b48b1"
+        },
+        {
+          "tag": "quality",
+          "id": "fa5148d0-9b00-11ef-e61e-174e5f654f18"
+        },
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa5148d0-9b00-11ef-c44a-c16a68c9c53f"
+        },
+        {
+          "tag": "cell.renderer",
+          "id": "fa5148d0-9b00-11ef-92fe-5db73dffee7c"
+        },
+        {
+          "tag": ".id",
+          "id": "fa5148d0-9b00-11ef-d2ba-2b1dce75d8bd"
+        }
+      ],
+      "metaParams": {
+        "units": "smiles",
+        "quality": "Molecule",
+        ".semantic-detection-duration": "16",
+        "cell.renderer": "Molecule",
+        ".id": "7ba3eec0-9b00-11ef-f178-23fdfb526fa9"
+      }
+    },
+    {
+      "name": "CASTExportID",
+      "type": "int",
+      "id": "7ba415d0-9b00-11ef-ae4e-01d201dec6de",
+      "friendlyName": "CAST Export ID",
+      "entityTags": [
+        {
+          "tag": ".semantic-detection-duration",
+          "id": "fa5148d0-9b00-11ef-a93a-31146965c932"
+        },
+        {
+          "tag": ".id",
+          "id": "fa5148d0-9b00-11ef-80f3-67dd9d7ffe80"
+        }
+      ],
+      "metaParams": {
+        ".semantic-detection-duration": "1",
+        ".id": "7ba415d0-9b00-11ef-ae4e-01d201dec6de"
+      }
+    }
+  ],
+  "name": "SPGIV2",
+  "friendlyName": "SPGI_v2",
+  "author": {
+    "id": "1a6a14d0-0720-11eb-d33f-056947441f82"
+  },
+  "createdOn": "2024-12-19T09:31:08.587Z"
+}

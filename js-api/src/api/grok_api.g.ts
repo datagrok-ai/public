@@ -52,6 +52,7 @@ export interface IDartApi {
   grok_UserSettings_Get(name: String, isPrivate: Bool): any;
   grok_UserSettings_GetValue(name: String, key: String, isPrivate: Bool): any;
   grok_UserSettings_Delete(name: String, key: String, isPrivate: Bool): any;
+  grok_UserSettings_Flush(): Promise<any>;
   grok_DockView(addToWorkspace: Bool): any;
   grok_DockView_InitDock(v: any): any;
   grok_DockView_HandleResize(v: any): any;
@@ -705,7 +706,7 @@ export interface IDartApi {
   grok_CodeEditor_Set_Value(editor: any, x: String): any;
   grok_CodeEditor_OnValueChanged(editor: any): any;
   grok_InputForm_ForInputs(inputs: any): any;
-  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool, skipTableAutoFill: Bool): Promise<any>;
+  grok_InputForm_ForFuncCallAsync(fc: any, twoWayBinding: Bool, skipDefaultInit: Bool, skipTableAutoFill: Bool, skipLogic: Bool): Promise<any>;
   grok_InputForm_Get_Root(form: any): any;
   grok_InputForm_GetInput(form: any, propertyName: String): any;
   grok_InputForm_GetInputs(form: any): any;
@@ -1147,6 +1148,7 @@ export interface IDartApi {
   grok_Stream_Listen(stream: any, onData: any): any;
   grok_Object_ToString(o: any): any;
   grok_Dapi_Entities(): any;
+  grok_Dapi_EntityTypes(): any;
   grok_Dapi_Queries(): any;
   grok_Dapi_Functions(): any;
   grok_Dapi_Function_Calls(): any;
@@ -1399,7 +1401,11 @@ export interface IDartApi {
   grok_DataFrame_FireValuesChanged(t: any): any;
   grok_DataFrame_ChangeColumnsType(t: any, columns: any, newType: String, format: String): any;
   grok_DataFrame_Append(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): any;
+  grok_DataFrame_AppendAsync(t1: any, t2: any, inPlace: Bool, columnsToAppend: any): Promise<any>;
   grok_DataFrame_Append_Merge(parent: any, t: any): any;
+  grok_DataFrame_AppendMergeAsync(parent: any, t: any): Promise<any>;
+  grok_DataFrame_RecalculateFormulaColumns(t: any): Promise<any>;
+  grok_AppendTables(tables: any): Promise<any>;
   grok_DataFrame_Get_Temp(t: any): any;
   grok_DataFrame_Get_Tags(t: any): any;
   grok_DataFrame_GetSortedOrder(t: any, sortByColumnIds: any, sortOrders: any, mask: any): any;
@@ -1448,7 +1454,7 @@ export interface IDartApi {
   grok_ColumnList_Insert(cols: any, col: any, index: Num, notify: Bool): any;
   grok_ColumnList_AddNew(cols: any, name: String, type: String): any;
   grok_Column_InitQnumFromColumns(qnum: any, qualifier: any, value: any): any;
-  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool): Promise<any>;
+  grok_ColumnList_AddNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool, subscribeOnChanges: Bool, errorBehavior: any): Promise<any>;
   grok_ColumnList_GetNewCalculated(cols: any, name: String, expression: String, type: String, treatAsString: Bool): Promise<any>;
   grok_ColumnList_AddNewVirtual(cols: any, name: String, getValue: any, setValue: any, type: String): any;
   grok_ColumnList_Remove(cols: any, name: String, notify: Bool): any;
@@ -1551,6 +1557,8 @@ export interface IDartApi {
   grok_Stats_Get_Q3(s: any): any;
   grok_Stats_Corr(s: any, other: any): any;
   grok_Stats_SpearmanCorr(s: any, other: any): any;
+  grok_Stats_CumSum(s: any, orderBy: any, ascending: any, by: any, order: any): any;
+  grok_Stats_MovingAvg(s: any, window: Num, minPeriods: Num, orderBy: any, ascending: any, by: any, order: any): any;
   grok_Stats_HistogramsByCategories(valueColumn: any, catColumn: any): any;
   grok_RowList_RemoveAt(rows: any, idx: Num, count?: Num, notify?: Bool): any;
   grok_RowList_RemoveWhere(rows: any, check: any): any;
@@ -2122,9 +2130,6 @@ export interface IDartApi {
   grok_FuncOptions_Create(): any;
   grok_FuncParamOptions_Create(): any;
 
-  // Generated from ../d4/lib/src/common/common.api.g.dart
-  grok_UsageType_Create(): any;
-
   // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
   grok_ViewerEvent_Create(): any;
   grok_ViewerEvent_Get_viewer(x: any): any;
@@ -2191,22 +2196,9 @@ export interface IDartApi {
   grok_GridCellStyle_Set_choices(x: any, v: any): any;
   grok_renderMultipleHistograms(g: any, bounds: any, histograms: any, categoryColumn: any, colors: any, tension: Num, normalize: Bool, markerSize: Num, fill: Bool, minBin: Num, maxBin: Num, localMaximum: Bool, highlightedHistogram: Num): any;
 
-  // Generated from ../d4/lib/src/viewer_base/viewer_base.api.g.dart
-  grok_ViewerEvent_Create(): any;
-  grok_ViewerEvent_Get_viewer(x: any): any;
-  grok_ViewerEvent_Set_viewer(x: any, v: any): any;
-  grok_ViewerEvent_Get_type(x: any): any;
-  grok_ViewerEvent_Set_type(x: any, v: String): any;
-  grok_ViewerEvent_Get_eventFlag(x: any): any;
-  grok_ViewerEvent_Set_eventFlag(x: any, v: Bool): any;
-  grok_ViewerEvent_Get_filters(x: any): any;
-  grok_ViewerEvent_Set_filters(x: any, v: any): any;
-  grok_ViewerEvent_Get_row(x: any): any;
-  grok_ViewerEvent_Set_row(x: any, v: Num): any;
-  grok_ViewerEvent_Get_mouseEvent(x: any): any;
-  grok_ViewerEvent_Set_mouseEvent(x: any, v: any): any;
-  grok_ViewerEvent_Get_bitset(x: any): any;
-
   // Generated from ../d4/lib/src/widgets/widgets.api.g.dart
   grok_InputType_Create(): any;
+
+  // Generated from ../d4/lib/src/common/common.api.g.dart
+  grok_UsageType_Create(): any;
 }

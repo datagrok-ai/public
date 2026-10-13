@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {beforeEach, test} from 'node:test';
 import {contextFirst, describeNoun, NounError, parseNoun} from '../src/nouns.js';
-import {context, element, kind, resetRegistry} from '../src/registry.js';
+import {context, dataset, element, kind, lookupDataset, resetRegistry} from '../src/registry.js';
 
 beforeEach(() => {
   resetRegistry();
@@ -127,4 +127,11 @@ test('names are unique: a platform name cannot be registered again, not even on 
   assert.throws(() => context('toolbox', {selector: '.x'}), /already registered/);
   workbench.element('results', {selector: '.r'});
   assert.throws(() => workbench.element('results', {selector: '.r2'}), /already registered/);
+});
+
+test('dataset names are unique whatever their case: a package cannot shadow the library\'s', () => {
+  dataset('spgi', {path: 'System:AppData/Chem/tests/spgi-100.csv', aliases: ['spgi-100']});
+  assert.throws(() => dataset('SPGI', {path: 'System:DemoFiles/chem/SPGI.csv'}), /dataset "spgi" is already registered/);
+  assert.throws(() => dataset('other', {path: 'x.csv', aliases: ['SPGI-100']}), /dataset "spgi-100" is already registered/);
+  assert.equal(lookupDataset('Spgi')?.path, 'System:AppData/Chem/tests/spgi-100.csv');
 });

@@ -69,7 +69,7 @@ const readLegend = (page: Page): Promise<Legend> => page.evaluate(() => {
     extra: items.filter((i) => i.classList.contains('d4-legend-item-extra')).length,
     labels: items.map(txt),
     colorLabels: colorItems.map(txt),
-    glyphLabels: items.filter((i) => i.querySelector('i[name="legend-icon-color-picker"]')).map(txt),
+    glyphLabels: items.filter((i) => i.querySelector('i[name="legend-item-marker"]')).map(txt),
     current: items.filter((i) => i.classList.contains('d4-legend-item-current')).map(txt),
     dimmed: items.filter((i) => parseFloat(getComputedStyle(i).opacity) < 0.9).map(txt),
   };
@@ -104,6 +104,14 @@ const sameInk = (a: Ink, b: Ink) =>
 async function settledInk(page: Page): Promise<Ink> {
   await sp.parkPointer(page);
   return v.pollStable(() => readInk(page), sameInk, 5000, 100);
+}
+
+// A marker color seen for the first time is drawn directly and stamped from the sprite cache on
+// every later repaint (Marker.draw), a few hundred pixels apart; a baseline is taken from a repaint.
+async function repaintedInk(page: Page): Promise<Ink> {
+  await page.evaluate(() => grok.shell.tv.viewers.find((x: any) => x.type === 'Scatter plot').invalidateCanvas());
+  await v.waitForViewerRendered(page, sp.SP_TYPE, 1500);
+  return settledInk(page);
 }
 
 async function settledInkAfterChange(page: Page, from: Ink): Promise<Ink> {
@@ -401,7 +409,7 @@ test('Scatter Plot — Legend Lifecycle, Filter Interplay', async ({page}: {page
         await sp.pickOnViewer(page, 'color', EMPTY_PROBE_COLUMN);
         expect((await settledLegend(page)).colorLabels).toContain(NO_VALUE_LABEL);
 
-        const baseline = await settledInk(page);
+        const baseline = await repaintedInk(page);
         expect(baseline.saturated).toBeGreaterThan(0);
 
         await clickLegendEntry(page, NO_VALUE_LABEL);

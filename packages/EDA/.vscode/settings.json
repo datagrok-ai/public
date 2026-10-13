@@ -1,4 +1,5 @@
 {
+  "search.followSymlinks": false,
   "files.associations": {
     "dense": "cpp"
   },

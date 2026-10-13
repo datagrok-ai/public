@@ -49,6 +49,8 @@ Feature: Box plot group comparison
     And "Control Group" property of box plot viewer should be "Caucasian"
     And box plot viewer should have a "p value of Asian" area
     And box plot viewer should have a "control band" area
+    When user sets "Control Band Color" property of box plot viewer to "#00AA00"
+    Then the "control band" area of box plot viewer should contain the color "#00AA00"
     When user picks "Add Control Comparisons Table" from the context menu of the "group comparison" area of box plot viewer
     Then table "Control Comparisons: AGE by RACE vs Caucasian" should be open
     And table "Control Comparisons: AGE by RACE vs Caucasian" should have 3 rows
@@ -56,7 +58,7 @@ Feature: Box plot group comparison
     And table "Control Comparisons: AGE by RACE vs Caucasian" should have no missing values in "p (adj)" column
     When user switches to the "demog-1000" table view
     And user clicks on the "p value of Asian" area of box plot viewer
-    Then Results section in context panel should be present
+    Then Results section in context panel should be visible
     And Statistics section in context panel should contain text "Asian"
 
   Scenario: Two-way ANOVA

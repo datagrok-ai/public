@@ -12,6 +12,7 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {openDemoPage} from '../../../bindings/demo.js';
 import {clickOn, fillIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
@@ -33,7 +34,7 @@ test.describe("Forms", () => {
     const page = await session.page(browser);
     await session.step(6, "Given user opens the \"Form\" demo page", () => openDemoPage(page, "Form"));
     enter(page, "U2 Demo");
-    await session.step(17, "When user fills in:", () => fillIn(page, [["\"First name\" input","Grace"],["\"Last name\" input","Hopper"],["Age input","85"],["Role input","Admin"],["Subscribe checkbox","no"]]));
+    await session.step(17, "When user fills in:", () => fillIn(page, [["\"First name\" input","Grace"],["\"Last name\" input","Hopper"],["Age input","85"],["Role input","Admin"],["Subscribe checkbox","no"]]), [["\"First name\" input","Grace"],["\"Last name\" input","Hopper"],["Age input","85"],["Role input","Admin"],["Subscribe checkbox","no"]]);
     await session.step(23, "Then Age input should have value \"85\"", () => shouldHaveValue(page, el("Age input"), "85"));
     await session.step(24, "And Role input should have value \"Admin\"", () => shouldHaveValue(page, el("Role input"), "Admin"));
     await session.step(25, "And Subscribe checkbox should be unchecked", () => shouldBe(page, el("Subscribe checkbox"), "unchecked"));

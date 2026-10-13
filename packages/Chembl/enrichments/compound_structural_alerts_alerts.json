@@ -7,7 +7,7 @@
   "fields": [
     "public.compound_structural_alerts.alert_id",
     "public.structural_alerts.alert_name",
-    "public.structural_alerts.set_name",
+    "public.structural_alert_sets.set_name",
     "public.structural_alerts.smarts"
   ],
   "joins": [
@@ -17,6 +17,13 @@
       "joinType": "left",
       "leftTableKeys": ["alert_id"],
       "rightTableKeys": ["alert_id"]
+    },
+    {
+      "leftTableName": "public.structural_alerts",
+      "rightTableName": "public.structural_alert_sets",
+      "joinType": "left",
+      "leftTableKeys": ["alert_set_id"],
+      "rightTableKeys": ["alert_set_id"]
     }
   ]
 }

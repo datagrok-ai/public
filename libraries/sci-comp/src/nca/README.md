@@ -8,7 +8,7 @@ Operates on plain `Float64Array` / `Uint8Array` inputs.
 | **Parameters** | Cmax, Tmax, AUClast, AUCinf, %AUCextrap, λz, t½, CL (or CL/F), Vz (or Vz/F), AUMClast, AUMCinf, MRT, Vss (IV only), Tlag (extravascular only), %AUMCextrap |
 | **Routes**     | IV bolus (with `c0` back-extrapolation), IV infusion (with the `T_inf/2` MRT correction), extravascular (PO/SC/IM treated uniformly) |
 | **AUC / AUMC methods** | linear, log-linear, linear-up/log-down — each as both naive Float64 and Neumaier-compensated summation |
-| **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`) |
+| **BLQ rules**  | `set-zero`, `set-half-lloq`, `exclude`, `missing` — per-phase configurable (`preFirstMeasurable`, `embedded`, `afterLast`, `consecutiveAfterLast`). Substituted values reach AUC/AUMC and the λz filter; Cmax and Tlag read the BLQ mask under every rule — the per-rule table is on the `BlqRule` TSDoc |
 | **λz**         | auto best-fit (subset search; PKNCA/WinNonlin flat-tolerance tie-break — most points within `adjRSquaredFactor` of the global-max adjusted R²) + manual point selection |
 | **Sparse sampling** | composite AUClast with a Holder standard error, Nedelman-Jia df and Student-t CI; stratified bootstrap with a BCa interval for the nonlinear parameters |
 
@@ -59,10 +59,29 @@ const result = nca.computeNca(inputs, rules);
 //                aumcLast, aumcInf, mrt, vss, tlag, pctExtrapAumc}
 // result.provenance.lambdaZ      → LambdaZResult: pointsUsed, R², tStart, tEnd, intercept, spanRatio
 // result.provenance.blqApplied   → which points were modified by BLQ rules
+// result.provenance.c0           → IV bolus: {value, method, replacedDoseTimeRow, pctAucBackExtrap}
 // result.provenance.warnings     → AUC_EXTRAP_HIGH / AUMC_EXTRAP_HIGH / LAMBDAZ_FEW_POINTS /
-//                                  LAMBDAZ_LOW_SPAN / BLQ_HIGH_FRACTION
+//                                  LAMBDAZ_LOW_SPAN / BLQ_HIGH_FRACTION / C0_FALLBACK
 // result.status                  → 'ok' | 'partial' | 'failed'
 ```
+
+### IV-bolus AUC convention
+
+An IV-bolus profile integrates **from the back-extrapolated c0** — the Phoenix WinNonlin
+convention. `augmentProfile` inserts `(0, c0)` when there is no dose-time sample, and
+REPLACES a dose-time row that is BLQ-flagged or non-positive (a pre-dose sample encoded
+as `0`) by `(0, c0)`, so the same subject gives the same AUC whether or not a pre-dose
+sample was drawn. A positive measured dose-time value is used as-is. c0 comes from the
+PKNCA chain `c0 → logslope → c1 → cmin → set0`; `provenance.c0` records which step
+answered, whether a row was replaced, and `pctAucBackExtrap` — the share of AUC₀–∞ in
+the unmeasured dose-time → first-sample segment (Phoenix `AUC_%Back_Ext`; 16–28 % on the
+indometh corpus). `C0_FALLBACK` warns when the log-slope was not estimable.
+
+**Stock PKNCA does not integrate from c0**: its raw-profile `auclast` is NA without a
+t=0 datum and it integrates from an observed `(0, 0)` when one is present (measured,
+`__tests__/REGEN.md`). The reference fixtures therefore feed PKNCA the augmented profile:
+they validate the integration, not the choice of convention. The convention is a
+documented design decision.
 
 ### Terminal-phase span ratio
 
@@ -139,7 +158,9 @@ want the composite profile without the interval.
 Every kernel behind `computeNca` and `sparseAuc` is also exported individually — pure
 functions, each tested in isolation — for finer-grained control or a custom pipeline:
 BLQ (`applyBlqStrategy`), peak (`findCmax`), back-extrapolation (`estimateC0`,
-`insertC0`), terminal slope (`lambdaZBestFit`, `lambdaZManual`), integration (`auc*`,
+`estimateC0Detailed`, `insertC0`), the augmentation kernel (`augmentProfile` — pipeline
+Steps 1–3, with the augmented ↔ input `sourceIndex` for callers that map λz points back to
+their own rows), terminal slope (`lambdaZBestFit`, `lambdaZManual`), integration (`auc*`,
 `aumc*`, `neumaierSum`), derived parameters (`halfLifeFromLambdaZ`, `clearance`,
 `volumeTerminal`, `pctExtrapolated`, `meanResidenceTime`, `volumeSteadyState`,
 `pctExtrapolatedAumc`, `tlag`) and seeding (`mulberry32`, `deriveWorkerSeeds`).

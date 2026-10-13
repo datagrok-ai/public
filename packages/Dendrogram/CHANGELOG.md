@@ -2,6 +2,14 @@
 
 ## v.next
 
+* Dendrogram viewer: Fixed a tree with nodes that have no branch length (most newick strings leave it off the root) drawing nothing and taking no hover or click
+* Tests: Added centroid and median linkage tests over merges that invert (GROK-19595): the wasm cluster matrix keeps merge order and every leaf, and hierarchical clustering attaches a full tree; they replace the BDD centroid scenario
+* Fixed a layout's restored tree clustering another open table with the same name, or reopening a table whose view had closed: the saved grid script now clusters its own grid's table, only while that grid's view is open
+* GROK-19595: Fixed centroid linkage attaching no tree: the clustering wasm sorted the centroid merges by height while their cluster references kept the merge order (in `@datagrok-libraries/math`)
+* Automation: The tree injected next to a grid reports `tree leaves`, `tree height`, `tree current node`, `tree mouse over node`, `tree selected leaves`, `tree zoom`, `tree top row`, `cut threshold` and its `tree`, `leaf`, `node` and `cut line` areas through the grid's status
+* Automation: Dendrogram viewer reports the tree it draws (`getWidgetStatus`, `isRenderPending`, `onRendered`)
+* Automation: Named the Phylocanvas GL viewer in the .nwk file preview
+* Added BDD features for hierarchical clustering, Assign Clusters, the tree under a filter and a sort, the newick file preview and handler; in review every clustering run waits for the task bar's "Creating dendrogram" entry to finish (a 120 s budget under four workers) before its tree is read
 * GROK-20828: Answer a missing DataFrame in hierarchical clustering with the no-table warning instead of dereferencing it
 * GROK-20807: Open a table view for an unattached DataFrame in hierarchicalClusteringUI
 

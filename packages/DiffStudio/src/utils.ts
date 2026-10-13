@@ -55,14 +55,17 @@ export function sanitizeModelFileName(name: string): string {
   return cleaned.length > 0 ? cleaned : 'model';
 }
 
-/** Return unused IVP-file name */
+/** Return unused IVP-file name. Compared ignoring case: a file storage that ignores it (a local one on
+ *  Windows) would otherwise take "PK-PD.ivp" for a new file and overwrite the library's "pk-pd.ivp". */
 export function unusedFileName(name: string, files: string[]): string {
-  if (!files.includes(`${name}.${MISC.MODEL_FILE_EXT}`))
+  const taken = new Set(files.map((f) => f.toLowerCase()));
+  const isTaken = (candidate: string) => taken.has(`${candidate}.${MISC.MODEL_FILE_EXT}`.toLowerCase());
+  if (!isTaken(name))
     return name;
 
   let num = 1;
 
-  while (files.includes(`${name}(${num}).${MISC.MODEL_FILE_EXT}`))
+  while (isTaken(`${name}(${num})`))
     ++num;
 
   return `${name}(${num})`;
@@ -760,13 +763,10 @@ export function removeTitle(node: DG.DockNode) {
   }, UI_TIME.TITLE_REMOVING);
 }
 
-/** Remove titlebar of dock node*/
+/** Remove titlebar of dock node: at once, since the dock creates it with the node, and removing it later
+ * moved the docked inputs up under the pointer half a second after they had shown */
 export function removeTitleBar(node: DG.DockNode) {
-  setTimeout(() => {
-    const head = node.container.containerElement.querySelector('div[class="panel-titlebar disable-selection"]');
-    if (head)
-      head.remove();
-  }, UI_TIME.TITLE_REMOVING);
+  node.container.containerElement.querySelector('div[class="panel-titlebar disable-selection"]')?.remove();
 }
 
 /** No models message */

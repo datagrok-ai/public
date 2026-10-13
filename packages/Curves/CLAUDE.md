@@ -74,7 +74,8 @@ The Curves package supports **multiple curve data formats** through a dynamic co
 - `FitConstants.TAG_FIT_CHART_FORMAT` = `'.fitChartFormat'` — legacy tag for format identification
 - `FitConstants.TAG_FIT` = `'.%fit'` — dataframe/column tag holding that level's options. The `.%`
   prefix is what makes the platform serialize it into a layout; `TAG_FIT_LEGACY` (`'.fit'`) is read
-  and migrated once, then removed
+  as a fallback and removed the next time that level is written. Reading never writes a tag: platforms
+  up to 1.27.x fail to save a layout whose table carries a dataframe `.%` tag
 
 ### Supported Formats
 
@@ -145,7 +146,8 @@ A leaf module, so the renderer and the statistics do not import each other throu
   so re-parsing a cell retires the fits made from it without any invalidation code
 
 - `getOrCreateParsedChartData(cell)` — cached parse with the precedence above applied
-- `getColumnChartOptions` / `getDataFrameChartOptions` — read a level's options, migrating `.fit` onto `.%fit`
+- `getColumnChartOptions` / `getDataFrameChartOptions` — read a level's options (`.%fit`, then `.fit`, then defaults)
+- `storeChartOptions` — the only writer of a level's tag; drops the legacy `.fit` copy
 - `mergeProperties` (gap filling) and the explicit overrides that outrank a series' own value
 - `mergeSeries`, `substituteZeroes`, `sanitizeCellValue`
 

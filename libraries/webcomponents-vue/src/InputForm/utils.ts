@@ -59,7 +59,7 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
   icon.isScalar = DG.TYPES_SCALAR.has(t.property.type);
   icon.isDataFrame = t.property.type === DG.TYPE.DATA_FRAME;
   icon.addEventListener('consistency-reset', () => emit('consistencyReset', ioName));
-  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail));
+  icon.addEventListener('action-request', (ev: any) => emit('actionRequested', ev.detail, ev.additionalParams));
   icon.addEventListener('show-dataframe-diff', (ev: any) => showDFDiff(t.value, ev.detail));
 
   const wrapper = ui.element('i') as HTMLElement;
@@ -75,11 +75,12 @@ export const injectInputBaseStatus = (emit: Function, ioName: string, t: DG.Inpu
 
     icon.validationStatus = status;
 
-    $(t.input).removeClass('d4-invalid d4-partially-invalid');
+    const marked = $([t.input, t.captionLabel]);
+    marked.removeClass('d4-invalid d4-partially-invalid');
     if (validation?.errors && validation.errors.length)
-      $(t.input).addClass('d4-invalid');
+      marked.addClass('d4-invalid');
     else if (validation?.warnings && validation.warnings.length)
-      $(t.input).addClass('d4-partially-invalid');
+      marked.addClass('d4-partially-invalid');
   }
 
   (t as any).setStatus = setStatus;

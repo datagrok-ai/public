@@ -3,9 +3,10 @@ Feature: Trellis plot global scale, axes and range sliders
   Global Scale puts every cell on one pair of axes: the trellis then draws the axis strips its inner
   viewer only asks for under global scale, owns a range slider per cell plus the shared one, and
   every flip of the setting redraws every cell. The axes obey Always, Never and Auto; Show Range
-  Sliders gates the sliders without taking the strip away; "Reset Inner Range Sliders" is offered
-  only while a slider exists, and it puts the cells back exactly where the shared slider took them
-  from. Last, the wheel over a cell zooms nothing until the inner viewer's own Allow Zoom says so.
+  Sliders gates the sliders without taking the strip away; "Reset View" is offered
+  with or without the sliders, and it puts the cells back exactly where the shared slider took them
+  from. Last, the wheel over a cell zooms nothing until the inner viewer's own Allow Zoom says so, and
+  zooms nothing in a bar chart or a box plot cell, which have no such setting (GROK-14587).
   One journey on demog-1000 with SEX by RACE and a scatter plot inside.
 
   Not translated here: "nothing repaints while the viewer is idle" — the trellis paints no canvas
@@ -72,23 +73,23 @@ Feature: Trellis plot global scale, axes and range sliders
     And the "y axis sliders" reading of trellis plot viewer should be 5
     And no errors should have been logged
 
-  Scenario: Reset Inner Range Sliders is offered only while a slider exists
+  Scenario: Reset View is offered with or without the inner sliders
     When user right-clicks on the "view" area of trellis plot viewer
     Then "Properties..." menu item in context menu should be visible
-    And "Reset Inner Range Sliders" menu item in context menu should be visible
+    And "Reset View" menu item in context menu should be visible
     When user closes the context menu
     And user sets properties of trellis plot viewer:
       | Show X Axes | Never |
       | Show Y Axes | Never |
     And user right-clicks on the "view" area of trellis plot viewer
     Then "Properties..." menu item in context menu should be visible
-    And "Reset Inner Range Sliders" menu item in context menu should be absent
+    And "Reset View" menu item in context menu should be visible
     When user closes the context menu
     And user sets properties of trellis plot viewer:
       | Show X Axes | Always |
       | Show Y Axes | Always |
     And user right-clicks on the "view" area of trellis plot viewer
-    Then "Reset Inner Range Sliders" menu item in context menu should be visible
+    Then "Reset View" menu item in context menu should be visible
     When user closes the context menu
     Then no errors should have been logged
 
@@ -101,7 +102,7 @@ Feature: Trellis plot global scale, axes and range sliders
     And user drags the "x range slider max handle" area of trellis plot viewer by 60 pixels to the left
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
     And the "cell signature M | Asian" reading of trellis plot viewer should not be as remembered
-    When user picks "Reset Inner Range Sliders" from the context menu of the "view" area of trellis plot viewer
+    When user picks "Reset View" from the context menu of the "view" area of trellis plot viewer
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And the "cell signature M | Asian" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
@@ -121,13 +122,22 @@ Feature: Trellis plot global scale, axes and range sliders
     Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
     And no errors should have been logged
 
-  Scenario: The wheel leaves a bar chart cell alone too
-    When user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
+  Scenario: The wheel leaves a bar chart cell and a box plot cell alone too
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user sets "Viewer Type" property of trellis plot viewer to "Bar chart"
     Then the "inner viewer type" reading of trellis plot viewer should be "Bar chart"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
     And the "distinct cell signatures" reading of trellis plot viewer should be at least 2
     When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
     And user scrolls the mouse wheel down over the "cell body F | Caucasian" area of trellis plot viewer
-    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be as remembered
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be the same as before
+    When user sets "Viewer Type" property of trellis plot viewer to "Box plot"
+    Then the "inner viewer type" reading of trellis plot viewer should be "Box plot"
+    And the "cell signature F | Caucasian" reading of trellis plot viewer should not be as remembered
+    And the "distinct cell signatures" reading of trellis plot viewer should be at least 2
+    When user remembers the "cell signature F | Caucasian" reading of trellis plot viewer
+    And user scrolls the mouse wheel down over the "cell body F | Caucasian" area of trellis plot viewer
+    Then the "cell signature F | Caucasian" reading of trellis plot viewer should be the same as before
     When user sets "Viewer Type" property of trellis plot viewer to "Scatter plot"
     Then the "inner viewer type" reading of trellis plot viewer should be "Scatter plot"
     And no errors should have been logged

@@ -163,11 +163,15 @@ export function rGroupAnalysis(col: DG.Column): void {
     ]))
     .onOK(async () => {
       try {
+        const smarts = await sketcher.getSmarts();
+        if (!smarts) {
+          grok.shell.error('No core was provided');
+          return;
+        }
         if (replaceLatest.value) {
           removeLatestAnalysis(col);
           await DG.delay(50);
         }
-        const smarts = await sketcher.getSmarts();
         const funcCall = await DG.Func.find({name: 'rGroupDecomposition'})[0].prepare({
           df: col.dataFrame,
           molColName: columnInput.value!,

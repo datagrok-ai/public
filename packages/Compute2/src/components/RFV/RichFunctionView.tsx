@@ -32,6 +32,7 @@ import {useObservable} from '@vueuse/rxjs';
 import {_package} from '../../package-instance';
 import {applyDefaultGridFloatFormat, canUseResults, disposeViewers, getViewers, pinView as pinViewHelper, STICKY_BAR_BACKGROUND} from '../../utils';
 import {canSaveProject, saveCallToProject, DfExportEntry} from '../../project-export';
+import {getShareAction} from '../../sharing/sharing';
 
 
 interface ScalarsState {
@@ -91,6 +92,12 @@ interface DataFrameState {
   config: Record<string, any>,
 }
 
+interface GraphicsState {
+  name: string,
+  image: Vue.ShallowRef<string | null>,
+  type: 'graphics',
+}
+
 interface DockSpawnConfigItem {
   'dock-spawn-dock-type'?: 'left' | 'right' | 'up' | 'down',
   'dock-spawn-dock-to'?: string,
@@ -107,11 +114,11 @@ interface ExportItem {
   handler: (arg?: any) => void,
 }
 
-type TabContent = Map<string, ScalarsState | DataFrameState>;
+type TabContent = Map<string, ScalarsState | DataFrameState | GraphicsState>;
 
 interface RenderStateItem {
   tabLabel: string;
-  tabContent: ScalarsState | DataFrameState;
+  tabContent: ScalarsState | DataFrameState | GraphicsState;
   isInput: boolean;
 }
 
@@ -126,9 +133,12 @@ const isEmptyScalar = (v: any) =>
 const isEmptyDataFrame = (df: any) =>
   !df || (df instanceof DG.DataFrame && df.rowCount === 0);
 
+const isEmptyGraphics = (v: any) => v == null || v === '';
+
+const isHiddenOutput = (prop: DG.Property) => JSON.parse(prop.options.hidden || 'false');
+
 const getScalarContent = (funcCall: DG.FuncCall, prop: DG.Property) => {
-  const isHidden = JSON.parse(prop.options.hidden || 'false');
-  if (isHidden)
+  if (isHiddenOutput(prop))
     return;
   const scalarValue = funcCall.outputs[prop.name];
   let formattedScalarValue = scalarValue;
@@ -162,45 +172,51 @@ const tabToProperties = (fc: DG.FuncCall) => {
   const tabsToProps = getEmptyTabToProperties();
   const hideEmpty = !Utils.getFeature(Utils.getFeatures(fc.func), 'show-empty-outputs', false);
 
-  const processDf = (dfProp: DG.Property, isOutput: boolean) => {
-    let dfViewers = Utils.getPropViewers(dfProp).config;
+  // Dataframes (one panel per viewer annotation) and graphics (a single image panel)
+  const processVisual = (prop: DG.Property, isOutput: boolean) => {
+    const isGraphics = prop.propertyType === DG.TYPE.GRAPHICS;
+    let viewers = isGraphics ? [{}] : Utils.getPropViewers(prop).config;
     // Outputs without a viewer annotation (e.g. queries) get a plain grid by default
-    const isDefaultGrid = dfViewers.length === 0 && isOutput;
+    const isDefaultGrid = !isGraphics && viewers.length === 0 && isOutput;
     if (isDefaultGrid)
-      dfViewers = [{type: DG.VIEWER.GRID}];
-    if (dfViewers.length === 0) return;
-    if (hideEmpty && isOutput && isEmptyDataFrame(fc.outputs[dfProp.name])) return;
+      viewers = [{type: DG.VIEWER.GRID}];
+    if (viewers.length === 0) return;
+    const isEmpty = isGraphics ? isEmptyGraphics : isEmptyDataFrame;
+    if (hideEmpty && isOutput && isEmpty(fc.outputs[prop.name])) return;
 
-    dfViewers.forEach((dfViewer) => {
-      const dfBlockTitle = dfViewer.title ?? dfProp.options['caption'] ?? dfProp.name ?? ' ';
-      const dfNameWithViewer = isDefaultGrid ? `${dfBlockTitle}` : `${dfBlockTitle} / ${dfViewer['type']}`;
+    viewers.forEach((viewer) => {
+      const blockTitle = viewer.title ?? prop.options['caption'] ?? prop.name ?? ' ';
+      const nameWithViewer = (isGraphics || isDefaultGrid) ? `${blockTitle}` : `${blockTitle} / ${viewer['type']}`;
 
-      const tabLabel = dfProp.category === 'Misc' ?
-        dfNameWithViewer: `${dfProp.category}: ${dfNameWithViewer}`;
+      const tabLabel = prop.category === 'Misc' ?
+        nameWithViewer: `${prop.category}: ${nameWithViewer}`;
 
-      const name = dfProp.name;
+      const name = prop.name;
       const source = isOutput ? fc.outputParams : fc.inputParams;
       const changes$ = source[name].onChanged.pipe(
         startWith(null),
         map(() => source[name].value ? Vue.markRaw(source[name].value) : null),
       );
-      const df = useObservable(changes$);
-      const config = stabilizeViewerConfig(dfViewer);
+      const value = useObservable(changes$);
+      const content: DataFrameState | GraphicsState = isGraphics ?
+        {type: 'graphics', name, image: value} :
+        {type: 'dataframe', name, df: value, config: stabilizeViewerConfig(viewer)};
       if (isOutput)
-        tabsToProps.outputs.set(tabLabel, {type: 'dataframe', name, df, config});
+        tabsToProps.outputs.set(tabLabel, content);
       else
-        tabsToProps.inputs.set(tabLabel, {type: 'dataframe', name, df, config});
+        tabsToProps.inputs.set(tabLabel, content);
     });
     return;
   };
 
   [...fc.inputParams.values()].forEach(({ property }) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) processDf(property, false);
+    if (property.propertyType === DG.TYPE.DATA_FRAME) processVisual(property, false);
   });
 
   [...fc.outputParams.values()].forEach(({property}) => {
-    if (property.propertyType === DG.TYPE.DATA_FRAME) {
-      processDf(property, true);
+    if (property.propertyType === DG.TYPE.DATA_FRAME || property.propertyType === DG.TYPE.GRAPHICS) {
+      if (!isHiddenOutput(property))
+        processVisual(property, true);
       return;
     }
     const category = property.category === 'Misc' ? 'Output': property.category;
@@ -260,24 +276,11 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: false,
     },
-    historyEnabled: {
-      type: Boolean,
-      default: false,
-    },
-    // per-step history mode: adds a save-to-history icon (emits `saveToHistory`) and limits the
-    // history panel to runs explicitly saved for this step
-    stepHistory: {
-      type: Boolean,
-      default: false,
-    },
-    // adds a share icon (emits `publishRun`); hosts gate it on the sharingMethod package setting
-    showPublish: {
-      type: Boolean,
-      default: false,
-    },
-    publishTooltip: {
-      type: String,
-      default: 'Share run',
+    // run history and the save icon: 'function' lists the function's runs, 'step' only runs saved
+    // for this step (emits `saveToHistory`), 'workflow' the provider's saved runs (row emits
+    // `historyRunChosen`). The share icon follows the sharingMethod setting whenever history is on.
+    history: {
+      type: Object as Vue.PropType<{mode: 'function' | 'step' | 'workflow', func?: DG.Func, version?: string}>,
     },
     showRunButton: {
       type: Boolean,
@@ -294,6 +297,11 @@ export const RichFunctionView = Vue.defineComponent({
       type: Boolean,
       default: true,
     },
+    // the host (the workflow driver) owns values, choices, validation, visibility and enabled state
+    skipLogic: {
+      type: Boolean,
+      default: false,
+    },
     viewersHook: {
       type: Function as Vue.PropType<ViewersHook>,
     },
@@ -301,13 +309,18 @@ export const RichFunctionView = Vue.defineComponent({
     urlExportHandler: {
       type: Function as Vue.PropType<() => void>,
     },
+    hideDefaultExport: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     'update:funcCall': (_call: DG.FuncCall) => true,
+    'historyRunChosen': (_call: DG.FuncCall) => true,
     'saveToHistory': (_call: DG.FuncCall) => true,
     'publishRun': (_call: DG.FuncCall) => true,
     'runClicked': () => true,
-    'actionRequested': (_actionUuid: string) => true,
+    'actionRequested': (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
     'consistencyReset': (_ioName: string) => true,
     'formValidationChanged': (_isValid: boolean) => true,
     'formInputChanged': (_a: DG.EventData<DG.InputArgs>) => true,
@@ -357,6 +370,10 @@ export const RichFunctionView = Vue.defineComponent({
 
     const isFittingActive = Vue.ref(false);
     const uiBlocked = Vue.computed(() => props.isBlocked || isFittingActive.value);
+
+    const historyMode = Vue.computed(() => props.history?.mode);
+    const isWorkflowHistory = Vue.computed(() => historyMode.value === 'workflow');
+    const shareAction = getShareAction();
 
     const formHidden = Vue.ref(false);
     const inputsHidden = Vue.ref(false);
@@ -521,7 +538,7 @@ export const RichFunctionView = Vue.defineComponent({
 
     const exports = Vue.computed(() => {
       const activeExports: ExportItem[] = [];
-      if (isReportEnabled.value) {
+      if (isReportEnabled.value && !props.hideDefaultExport) {
         const name = 'Default Excel';
         const handler = async () => {
           try {
@@ -531,6 +548,8 @@ export const RichFunctionView = Vue.defineComponent({
               currentCall.value.func,
               currentCall.value,
               viewers,
+              validationState.value,
+              consistencyState.value,
             ).finally(() => disposeViewers(viewers));
             DG.Utils.download(`${currentCall.value.func.nqName} - ${Utils.getStartedOrNull(currentCall.value) ?? 'Not completed'}.xlsx`, blob);
           } catch (e: any) {
@@ -704,7 +723,7 @@ export const RichFunctionView = Vue.defineComponent({
         check: !helpHidden.value,
         onClick: () => helpHidden.value = !helpHidden.value,
       },
-      ...(props.historyEnabled || props.stepHistory ? [{
+      ...(props.history ? [{
         text: 'Show history',
         icon: 'history',
         check: !historyHidden.value,
@@ -728,17 +747,17 @@ export const RichFunctionView = Vue.defineComponent({
         tooltip: 'Run sensitivity analysis',
         onClick: runSA,
       }] : []),
-      ...((props.historyEnabled || (props.stepHistory && exportsVisible.value)) && !uiBlocked.value ? [{
-        icon: props.stepHistory ? 'cloud-upload-alt' : 'save',
+      ...(props.history && (historyMode.value !== 'step' || exportsVisible.value) && !uiBlocked.value ? [{
+        icon: historyMode.value === 'step' ? 'cloud-upload-alt' : 'save',
         tooltip: 'Save run to history',
         onClick: () => emit('saveToHistory', currentCall.value),
       }] : []),
-      ...(props.showPublish && !uiBlocked.value ? [{
+      ...(props.history && shareAction && !uiBlocked.value ? [{
         icon: 'share-alt',
-        tooltip: props.publishTooltip,
+        tooltip: shareAction.tooltip,
         onClick: () => emit('publishRun', currentCall.value),
       }] : []),
-      ...(props.historyEnabled || props.stepHistory ? [{
+      ...(props.history ? [{
         icon: 'history',
         tooltip: 'Open history panel',
         active: !historyHidden.value,
@@ -766,15 +785,19 @@ export const RichFunctionView = Vue.defineComponent({
           key={currentUuid.value}
           ref={dockSpawnRef}
         >
-          { !historyHidden.value && (props.historyEnabled || props.stepHistory) &&
+          { !historyHidden.value && props.history &&
             <History
               key="__HISTORY__"
-              func={currentCall.value.func}
-              savedOnly={props.stepHistory}
-              onRunChosen={(chosenCall) => emit('update:funcCall', chosenCall)}
-              allowCompare={true}
-              forceHideInputs={false}
-              showIsComplete={true}
+              func={props.history.func ?? currentCall.value.func}
+              version={props.history.version}
+              allowOtherVersions={isWorkflowHistory.value}
+              savedOnly={historyMode.value === 'step'}
+              onRunChosen={(chosenCall) => isWorkflowHistory.value ?
+                emit('historyRunChosen', chosenCall) :
+                emit('update:funcCall', chosenCall)}
+              allowCompare={!isWorkflowHistory.value}
+              forceHideInputs={isWorkflowHistory.value}
+              showIsComplete={!isWorkflowHistory.value}
               dock-spawn-dock-type='right'
               dock-spawn-dock-ratio={0.2}
               dock-spawn-title='History'
@@ -812,13 +835,14 @@ export const RichFunctionView = Vue.defineComponent({
                     callMeta={callMeta.value}
                     validationStates={validationState.value}
                     consistencyStates={consistencyState.value}
-                    onActionRequested={(actionUuid) => emit('actionRequested', actionUuid)}
+                    onActionRequested={(actionUuid, additionalParams) => emit('actionRequested', actionUuid, additionalParams)}
                     onConsistencyReset={(ioName) => emit('consistencyReset', ioName)}
                     onFormReplaced={(ev) => emit('formReplaced', ev)}
                     onInputChanged={(ev) => emit('formInputChanged', ev)}
                     onValidationChanged={onValidationChanged}
                     skipInit={props.skipInit}
                     skipTableAutoFill={true}
+                    skipLogic={props.skipLogic}
                     isReadonly={isReadonly.value}
                   /> }
                 <div class='flex sticky bottom-0' style={{'z-index': 1000, 'background-color': STICKY_BAR_BACKGROUND}}>
@@ -846,8 +870,7 @@ export const RichFunctionView = Vue.defineComponent({
             tabsData.value
               .map(({tabLabel, tabContent, isInput}) => {
                 const tabConfig = dockSpawnConfig.value[tabLabel] ?? {};
-                if (tabContent?.type === 'dataframe') {
-                  const options = tabContent.config;
+                if (tabContent?.type === 'dataframe' || tabContent?.type === 'graphics') {
                   return <div
                     class='flex flex-col pl-2 h-full w-full'
                     dock-spawn-title={tabLabel}
@@ -855,20 +878,25 @@ export const RichFunctionView = Vue.defineComponent({
                     key={tabLabel}
                     {...tabConfig}
                   >
-                    {
+                    { tabContent.type === 'graphics' ?
+                      (tabContent.image.value &&
+                        <img
+                          class={['rfv2-graphics', Utils.isSvgGraphics(tabContent.image.value) && 'rfv2-graphics-svg']}
+                          src={Utils.graphicsDataUrl(tabContent.image.value)}
+                        />) :
                       <Viewer
-                        type={options['type'] as string}
-                        options={options}
+                        type={tabContent.config['type'] as string}
+                        options={tabContent.config}
                         dataFrame={tabContent.df.value}
                         class='w-full'
                         onViewerChanged={(v) => {
                           if (v) liveViewers.set(tabLabel, v);
                           else liveViewers.delete(tabLabel);
-                          setViewerRef(v, tabContent.name, options['type'] as string);
-                          applyDefaultGridFloatFormat(v, options['type'] as string);
+                          setViewerRef(v, tabContent.name, tabContent.config['type'] as string);
+                          applyDefaultGridFloatFormat(v, tabContent.config['type'] as string);
                         }}
                         onViewerDataFrameChanged={(v) =>
-                          applyDefaultGridFloatFormat(v, options['type'] as string)}
+                          applyDefaultGridFloatFormat(v, tabContent.config['type'] as string)}
                       />
                     }
                   </div>;
@@ -904,7 +932,7 @@ export const RichFunctionView = Vue.defineComponent({
               ref={helpRef}
             > { Vue.withDirectives(
                 <MarkDown
-                  markdown={helpContent.value ?? 'Help file is not avaliable'}
+                  markdown={helpContent.value ?? 'Help file is not available'}
                 />, [[ifOverlapping, helpLoading.value]])
               }
             </div>: null

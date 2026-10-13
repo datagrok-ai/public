@@ -180,9 +180,9 @@ Expected:
   `[name="prop-x"]` row opens `[name="dialog-Select-columns..."]` only on a
   REAL click (synthetic clicks are swallowed or hit the shell view-selector).
   The per-column checkboxes are canvas-drawn — toggling needs a REAL
-  coordinate click on the checkbox cell near the grid's right edge
-  (`page.mouse.click`, row height ~28 CSS px under a ~24 px header;
-  re-measure the geometry at spec time). The label-All / label-None buttons
+  coordinate click on the drawn checkbox itself — only the checkbox, not the
+  whole cell, toggles, so aim at the centre of `grid.cell('x', i).bounds`
+  (grid from `DG.Widget.find`), never at hard-coded offsets. The label-All / label-None buttons
   and OK / CANCEL are DOM and synthetic-clickable; All / None ignore the
   active search filter; toggles live-apply before OK.
 - WARNING: NEVER leave the selection empty. Clicking None with an empty

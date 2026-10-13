@@ -61,6 +61,10 @@ export class DendrogramColorCodingTreeStyler extends DendrogramTreeStyler {
 
   protected _rowByNameDict: { [nodeName: string]: number };
 
+  get colorColumnName(): string { return this._colorCol.name; }
+
+  get colorAggrType(): string { return this._colorAggrType; }
+
   constructor(name: string, lineWidth: number, nodeSize: number, showGrid: boolean,
     nodeCol: DG.Column, colorCol: DG.Column, colorAggrType: string,
     strokeColor: string, fillColor: string,

@@ -47,7 +47,9 @@ async function trellisMenuLabels(page: Page): Promise<string[]> {
     const root = document.querySelector('[name="viewer-Trellis-plot"]') as HTMLElement;
     const grid = (root.querySelector('.d4-trellis-plot-charts-grid') as HTMLElement) ?? root;
     const gr = grid.getBoundingClientRect();
+    // top-level items only: the inner scatter plot nests its own "Reset View" under Tools
     const items = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
+      .filter((e) => !e.parentElement?.parentElement?.closest('.d4-menu-item'))
       .map((e) => (e as HTMLElement).innerText.trim());
     grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
       clientX: gr.left + 4, clientY: gr.top + 4}));
@@ -263,7 +265,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
 
   await softStep('Scenario 1 Step 7', async () => {
     const labels = await trellisMenuLabels(page);
-    expect(labels).toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 9', async () => {
@@ -277,7 +279,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     const labels = await trellisMenuLabels(page);
 
     expect(labels).toContain('Properties...');
-    expect(labels).not.toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 10', async () => {
@@ -288,7 +290,7 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
     });
     await v.waitForViewerRendered(page, 'Trellis plot', 900);
     const labels = await trellisMenuLabels(page);
-    expect(labels).toContain('Reset Inner Range Sliders');
+    expect(labels).toContain('Reset View');
   });
 
   await softStep('Scenario 1 Step 11', async () => {
@@ -359,12 +361,15 @@ test('Trellis plot: global scale, inner axes, range slider reset', async ({page}
       grid.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true,
         clientX: gr.left + 4, clientY: gr.top + 4}));
       const find = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'))
-        .find((e) => (e as HTMLElement).innerText.trim() === 'Reset Inner Range Sliders');
+        .find((e) => (e as HTMLElement).innerText.trim() === 'Reset View' &&
+          !e.parentElement?.parentElement?.closest('.d4-menu-item'));
       const target = await (window as any).__poll(find, (e: Element | undefined) => !!e, 800, 40);
       (target?.closest('.d4-menu-item') as HTMLElement | null)?.click();
     });
     const after = await v.pollValue(() => cellHashes(page, probes),
-      (h) => h[0] === baseline[0] && h[1] === baseline[1], 2000, 50);
+      // the reset repaints both cells from the range-slider handler, and cell 2 has been seen
+      // landing after the old 2 s window on a loaded agent
+      (h) => h[0] === baseline[0] && h[1] === baseline[1], 8000, 100);
     console.log(`[Scenario 2 Step 5] baseline=${JSON.stringify(baseline)} narrowed=${JSON.stringify(narrowed)} ` +
       `after=${JSON.stringify(after)}`);
     expect(after.every((h) => h !== null)).toBe(true);

@@ -17,7 +17,7 @@ manual_only_reason: |
 
   Live MCP recon on dev.datagrok.ai 2026-08-19 confirms it: opening
   System:DemoFiles/chem/smiles.csv (1000 rows, molecule column canonical_smiles),
-  Chem > Calculate > Descriptors..., selecting MolWt, and clicking OK SUCCEEDED in
+  Chem > Calculate > Descriptors (RDKit)..., selecting MolWt, and clicking OK SUCCEEDED in
   ~4.5s — MolWt column appended, column count 20 -> 25, NO error balloon. So on dev
   the error-notification and "column count unchanged" observables of Step 4 are not
   producible in a spec (the call succeeds instead of failing).
@@ -25,7 +25,7 @@ manual_only_reason: |
   Manual execution: run in an environment where the chem-chem container is stopped
   or absent (stop it via the Datagrok Docker management panel, or use a stand where
   it was never provisioned). Then open System:DemoFiles/chem/smiles.csv and go to
-  Chem > Calculate > Descriptors... The failure surfaces at dialog OPEN, not at OK:
+  Chem > Calculate > Descriptors (RDKit)... The failure surfaces at dialog OPEN, not at OK:
   the descriptor tree is fetched from the container while the dialog builds, so with
   the container down the dialog opens with the message "Could not load descriptors.
   The Chem service may be unavailable." where the tree should be, and the OK button
@@ -70,7 +70,7 @@ Steps:
 2. With `System:DemoFiles/chem/smiles.csv` open, note the table's current column count
    (the grid's column headers, or the table's tooltip in **Tables**). Write it down —
    the last step compares against it.
-3. Navigate to **Chem > Calculate > Descriptors...** in the top menu. The Descriptors
+3. Navigate to **Chem > Calculate > Descriptors (RDKit)...** in the top menu. The Descriptors
    dialog still opens: the **Table** and **Molecules** inputs are present and populated.
 4. Look at the area where the descriptor tree normally is, and start counting from the
    moment the dialog opened. Within 60 seconds it must show the text **"Could not load

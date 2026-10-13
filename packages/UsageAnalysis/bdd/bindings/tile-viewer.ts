@@ -12,9 +12,9 @@
    its viewer menu, its list readings and its description placement were every card viewer's and
    are in the library now (`bindings/tiers/viewers/widgets.ts`) — the forms viewer joins them by
    reporting the same `fields` and `<COL> of row <r>` readings. */
-import {expect, Locator, Page} from '@playwright/test';
+import {Locator, Page} from '@playwright/test';
 import {Given, Then, When, element} from '@datagrok-libraries/bdd';
-import {ElementRef, el, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 /* The Dart name of the viewer is `viewer-Tile-Viewer`, which the generic `viewer` kind would only
    reach through the phrase "tile viewer viewer"; the designer is a view of its own, portaled out
@@ -26,6 +26,8 @@ element('tile viewer', {selector: '[name="viewer-Tile-Viewer"]', parts: {
   'menu icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="icon-font-icon-menu"]`,
   'close icon': `${PANEL}//*[contains(@class, "panel-titlebar")]//*[@name="Close" or @name="icon-font-icon-close"]`,
   description: '.d4-viewer-description',
+  'lane header': '.d4-tile-viewer-lane-header',
+  'card field': 'input',
 }});
 element('form designer', {selector: '.grok-view-sketch'});
 

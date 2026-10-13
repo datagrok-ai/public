@@ -18,6 +18,14 @@ export const FUNC_TESTS: {[f: string]: {[test: string]: any}} = {
   Abs: {
     'Abs(${height})': 162,
   },
+  Table: {'Table().rowCount': 10},
+  Column: {'Column("age").length': 10},
+  Value: {'Value("age", 0)': 61},
+  RowCount: {'RowCount()': 10},
+  CumSum: {'CumSum(${age})': 61, 'CumSum(${age}, by=${sex})': 61, 'CumSum(${age}, orderBy=${subj}, descending=true)': 556},
+  MovingAvg: {'MovingAvg(${age}, 1)': 61, 'MovingAvg(${age}, 1, minPeriods=1)': 61},
+  IndexOf: {'IndexOf(${subj}, ${subj})': 0},
+  Lookup: {'Lookup("demog", "subj", ${subj}, "age")': 61},
 };
 
 export const FUNC_VALIDATION: { [f: string]: string } = {

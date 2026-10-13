@@ -1,5 +1,5 @@
 import * as DG from 'datagrok-api/dg';
-// import * as grok from 'datagrok-api/grok';
+import * as grok from 'datagrok-api/grok';
 
 import {category, expect, expectArray, test, expectTable, expectFloat} from '@datagrok-libraries/test/src/test';
 
@@ -14,6 +14,21 @@ const createDf2 = (): DG.DataFrame => {
   const df = DG.DataFrame.create(4);
   df.columns.add(DG.Column.fromStrings('countries', ['USA', 'Canada', 'France', 'Mexico']));
   df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([1, 4, 2, 3])));
+  return df;
+};
+
+const createDfTail = (): DG.DataFrame => {
+  const df = DG.DataFrame.create(2);
+  df.columns.add(DG.Column.fromStrings('countries', ['France', 'Mexico']));
+  df.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([2, 3])));
+  return df;
+};
+
+// doubled[0] no longer matches its formula, so recalculating the original rows would show up
+const createDfWithFormula = async (): Promise<DG.DataFrame> => {
+  const df = createDf();
+  await df.columns.addNewCalculated('doubled', '${population} * 2');
+  df.col('doubled')!.set(0, 100);
   return df;
 };
 
@@ -32,6 +47,39 @@ category('DataFrame: Methods', () => {
     df2.columns.add(DG.Column.fromInt32Array('population', Int32Array.from([2, 3])));
     df1.append(df2, true);
     expectTable(df1, createDf2());
+  });
+
+  test('appendAsync', async () => {
+    const df1 = await createDfWithFormula();
+    await df1.appendAsync(createDfTail(), true);
+    expectArray(df1.col('doubled')!.toList(), [100, 8, 4, 6]);
+  });
+
+  test('appendAsync: new table', async () => {
+    const df1 = await createDfWithFormula();
+    const appended = await df1.appendAsync(createDfTail());
+    expectArray(appended.col('doubled')!.toList(), [100, 8, 4, 6]);
+    expect(df1.rowCount, 2);
+  });
+
+  test('appendMergeAsync', async () => {
+    const df1 = await createDfWithFormula();
+    await df1.appendMergeAsync(createDfTail());
+    expectArray(df1.col('doubled')!.toList(), [100, 8, 4, 6]);
+  });
+
+  test('recalculateFormulaColumns', async () => {
+    const df1 = await createDfWithFormula();
+    df1.append(createDfTail(), true);
+    await df1.recalculateFormulaColumns();
+    expectArray(df1.col('doubled')!.toList(), [2, 8, 4, 6]);
+  });
+
+  test('appendTables', async () => {
+    const df1 = createDf();
+    await df1.columns.addNewCalculated('doubled', '${population} * 2');
+    const appended = await grok.data.appendTables([df1, createDfTail()]);
+    expectArray(appended.col('doubled')!.toList(), [2, 8, 4, 6]);
   });
 
   test('cell', async () => {

@@ -7,8 +7,9 @@ import type {CobraModelData, CobraReaction, CobraMetabolite, CobraGene, Reaction
 import {MetabolicGraphView} from './view';
 import type {MetabolicAIContext} from './view';
 import {WorkerCobraSolver} from './cobra';
-import {sampleFluxAveragesWasm, samplesToDataFrame, loadCampaigns, saveAnalysisState,
-  analysisExists, readAnalysis, loadStateProxy, getCurrentAnalysis} from './utils';
+import {sampleFluxesWasm, samplesToDataFrame, loadCampaigns, saveAnalysisState,
+  analysisExists, readAnalysis, loadStateProxy, getCurrentAnalysis, aggregatedFluxLabel} from './utils';
+import type {FluxAggregation} from './utils';
 import {clearTimeCourseSlider, isTimeCourseActive, applyStepDistribution, runTimeCourseSampling} from './timeCourse';
 import type {TimeCourseSamplingParams} from './timeCourse';
 
@@ -382,10 +383,11 @@ export async function sampleReactionFluxes(view: DG.ViewBase, samples?: number, 
   if (paramError)
     return {success: false, error: paramError};
   clearTimeCourseSlider();
-  const res = await sampleFluxAveragesWasm(model, bins ?? 20, nSamples, thinning ?? 10);
+  const aggregation: FluxAggregation = 'Mean';
+  const res = await sampleFluxesWasm(model, bins ?? 20, nSamples, thinning ?? 10, aggregation);
   if (!res)
     return {success: false, error: 'Invalid reaction bounds in the model — check reaction lower and upper bounds'};
-  builder.set_reaction_data(res.reactionData, 'Sampling Histogram');
+  builder.set_reaction_data(res.reactionData, `Sampling, ${aggregatedFluxLabel(aggregation)}`);
   applyStepDistribution(builder, res.distribution);
   if (addDataFrame && res.results) {
     const table = samplesToDataFrame(model, res.results, nSamples);
@@ -444,7 +446,7 @@ export async function runTimeCourse(view: DG.ViewBase, startBounds: BoundsMap, e
     return {success: false, error: paramError};
 
   const params: TimeCourseSamplingParams = {
-    samples: nSamples, thinning: 10, bins: 20,
+    samples: nSamples, thinning: 10, bins: 20, aggregation: 'Mean',
     addDf: false, runInPython: false, usePythonFBA: false,
   };
   const res = await runTimeCourseSampling(model, builder, start, end, n, params);

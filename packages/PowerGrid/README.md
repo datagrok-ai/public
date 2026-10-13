@@ -14,7 +14,7 @@ To add a sparkline column, open `Add | Summary Columns | ...` from the grid's po
 
 To customize a sparkline column, click on its header and expand the `Renderer` pane in the context panel.
 
-![Sparklines and settings](../../help/develop/how-to/custom-cell-renderers-sparklines-and-settings.gif "Sparklines and settings")
+![Sparklines and settings](https://raw.githubusercontent.com/datagrok-ai/help/master/develop/how-to/grid/custom-cell-renderers-sparklines-and-settings.gif "Sparklines and settings")
 
 ## Images
 
@@ -27,7 +27,7 @@ code:  ```dataFrame.columns.addNewBytes('my image')```.
 
 To add an image, double-click on the cell and choose the file. Supported extensions are `.jpg`, `.png`, and `.jpeg`.
 
-![adding image](../../help/develop/how-to/grid/binary-cell-renderer.gif "adding image")
+![adding image](https://raw.githubusercontent.com/datagrok-ai/help/master/develop/how-to/grid/binary-cell-renderer.gif "adding image")
 
 ### Linked images
 
@@ -74,7 +74,7 @@ The viewer also works together with the grid:
 * To sort, double-click column name, or change the "Sort by" property.
 * "Use Grid Sort" property controls whether forms follow grid sorted order.
 
-![Forms viewer](../../help/visualize/viewers/img/forms.gif)
+![Forms viewer](https://raw.githubusercontent.com/datagrok-ai/help/master/visualize/viewers/img/forms.gif)
 
 See also:
 

@@ -1,7 +1,5 @@
-/* ---
-sub_features_covered: [bio.actions.copy-as, bio.editors.get-region, bio.editors.split-to-monomers, bio.panels.composition-analysis, bio.panels.monomer-info]
---- */
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, stepErrors} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 test.use(specTestOptions);
@@ -177,7 +175,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     expect(result.bilnOk,
       `BILN joiner MUST produce a non-empty string; err=${result.errBiln}`).toBe(true);
   });
-  // Scenario 2 — Composition analysis + Monomer info panels on the cell-level Context Pane.
+
   await softStep('Scenario 2 Step 1: single-click a Macromolecule cell so it becomes the current cell', async () => {
     await page.evaluate(() => {
       const g = (window as any).grok;
@@ -235,7 +233,6 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       'Composition analysis pane MUST render a monomer-composition table with per-monomer count bars').toBeGreaterThan(0);
   });
   await softStep('Scenario 2 Step 4: Monomer info panel surfaces non-empty details for a Monomer-semType selection', async () => {
-    // monomerInfoPanel is registered semType:'Monomer' (package.ts#L412); drive a Monomer current object to exercise it.
     const result: {found: boolean; rowCount: number; symbol: string | null} = await page.evaluate(async () => {
       const g = (window as any).grok;
       const DG = (window as any).DG;
@@ -250,7 +247,6 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
         if (!ss.isGap(i)) { symbol = ss.getCanonical(i); break; }
       if (!symbol) return {found: false, rowCount: 0, symbol: null};
       g.shell.o = DG.SemanticValue.fromValueType(symbol, 'Monomer');
-      // The Monomer info panel (semType Monomer) may not surface on this Context Pane — assert content only if present.
       const deadline = Date.now() + 8_000;
       let found = false; let rowCount = 0;
       while (Date.now() < deadline) {
@@ -283,7 +279,9 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     });
     expect(balloonError, 'no error balloon must be emitted by either Context Pane panel').toBe(0);
   });
-  // Scenario 3 — Get Region editor. Menu label "Extract Region..."; dialog name [name="dialog-Get-Sequence-Region"].
+  // Scenario 3 — Get Region editor. Menu label "Extract Region..."; the menu runs the
+  // `Get Sequence Region` func through Bio:GetRegionEditor, so the dialog is named after
+  // that func, not after the getRegion API.
   await softStep('Scenario 3 Step 1-2: click Bio > Calculate > Extract Region — GetRegionEditor dialog opens', async () => {
     await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
     await page.locator('[name="div-Bio---Calculate"]').waitFor({state: 'attached', timeout: 10_000});
@@ -315,7 +313,7 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
     expect(balloonError,
       'Cancel must close GetRegionEditor with no error balloon').toBe(0);
   });
-  // Scenario 4 — Split to Monomers editor.
+
   await softStep('Scenario 4 Step 1: click Bio > Transform > Split to Monomers — SplitToMonomersEditor dialog opens', async () => {
     await page.evaluate(() => (document.querySelector('[name="div-Bio"]') as HTMLElement).click());
     await page.locator('[name="div-Bio---Transform"]').waitFor({state: 'attached', timeout: 10_000});

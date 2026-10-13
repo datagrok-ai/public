@@ -36,6 +36,8 @@ Malformed
   0  0  0  0  0  0            999 V3000
 M  END`;
 
+const cxWithoutCoordsJSON = JSON.stringify({CX_ALL_BUT_COORDS: true});
+
 /**
  * Convert between the following notations: SMILES, SMARTS, Molfile V2000 and Molfile V3000
  *
@@ -85,8 +87,8 @@ export function _convertMolNotation(
         result = mol.get_v3Kmolblock();
       if (targetNotation === MolNotation.Smarts)
         result = mol.get_smarts(); // @ts-ignore
-      if (targetNotation === MolNotation.CxSmiles)
-        result = mol.get_cxsmiles(); // @ts-ignore
+      if (targetNotation === MolNotation.CxSmiles) // @ts-ignore temporary until chem-meta update
+        result = mol.get_cxsmiles(cxWithoutCoordsJSON); // @ts-ignore
       if (targetNotation === MolNotation.CxSmarts)
         result = mol.get_cxsmarts();
       // if (targetNotation === MolNotation.Inchi)

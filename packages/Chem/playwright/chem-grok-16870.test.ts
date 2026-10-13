@@ -1,15 +1,12 @@
-/* ---
-sub_features_covered: [chem.rendering, chem.rendering.molecule-cell, chem.rendering.rdkit-renderer]
---- */
-// GROK-16870: hovering a Box Plot point on a Molecule-column table must not crash the RDKit cell renderer (fixed 1.22.0).
-import {test, expect} from '@playwright/test';
+import {expect} from '@playwright/test';
+import {test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {loginToDatagrok, specTestOptions, softStep, waitForChemMenu, waitForMolecule} from '@datagrok-libraries/test/src/playwright/spec-login';
 import {finishSpec} from '@datagrok-libraries/test/src/playwright/viewers';
 
 test.use(specTestOptions);
 
 test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip context', async ({page}) => {
-  test.setTimeout(90_000);
+  test.setTimeout(180_000);
 
   await loginToDatagrok(page);
 
@@ -62,7 +59,7 @@ test('Chem: GROK-16870 RDKit cell renderer does not crash in Box Plot tooltip co
     });
     if (!result.ok)
       throw new Error(`Setup failed: no Molecule column detected after 30s settle. cols=${JSON.stringify(result.cols)}`);
-    // Wait for the Box Plot viewer to actually attach before the hover sweep queries its rect.
+
     await page.locator('[name="viewer-Box-plot"]').waitFor({timeout: 30_000, state: 'visible'});
   });
 

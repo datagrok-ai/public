@@ -3,10 +3,21 @@
 ## v.next
 
 * GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
+* GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
+
+## 6.7.8 (2026-10-13)
+
+* Fixed `grok api` (and every command other than `grok s`) exiting with code 1 and its usage text in 6.7.7: the new `--send-email` flag reached every command as `send-email: false`, which `grok api` rejected as an unknown option
+
+## 6.7.7 (2026-10-09)
+
+* GROK-21156: `grok s users invite [<email>] [--prefix <P>] [--send-email]`: invites a user and prints a link that logs them in (no email sent; the email may be omitted); `--prefix` starts the code with `<P>`; `--send-email` mails the invitation instead
+* `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
+* `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
+* `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe
 * GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts
 * GROK-20753: `grok api --ui` emits typed u2 handles instead of the retired `@datagrok-libraries/domain-ui` sugar: `src/generated/db-ui.ts` is now `get<Schema>Db(): Promise<<Schema>Db>` → `{schema, data: <schema>Db, tables: {<plural>: DomainTable<Row>, ...}}`, every table opened in parallel behind one await and cached per page (presence-persisted as before). `grok add app --domain <schema>.<table>` scaffolds the u2 zero-code tier the way the Stockroom package is built: a three-line `//tags: app` function over `domains.table(...).app()`, `src/app.spec.json` (the same app as a designer-editable `dg-ui/1` spec), a one-table starter `databases/<schema>/schema.json` when the package declares none, the `@datagrok-libraries/u2` workspace dependency and an `rspack.config.js` carrying the `u2core` external (everything else — the css loaders, the tsconfig — comes from `@datagrok/build-config`)
 * GROK-20298: `grok s domains access <schema.table>` replaces `capabilities` — the server's `{can, fields, ...}` access shape
-* GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
 
 ## 6.7.5 (2026-09-17)
 
