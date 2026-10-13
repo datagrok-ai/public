@@ -881,7 +881,8 @@ export const RunComparison = Vue.defineComponent({
                   }
                   return;
                 }
-                selectedTargetKey.value = target.key;
+                // clicking the selected value again clears the selection
+                selectedTargetKey.value = selectedTargetKey.value === target.key ? '' : target.key;
                 return;
               }
               const next = multiKeys.value.includes(target.key) ?
@@ -914,11 +915,12 @@ export const RunComparison = Vue.defineComponent({
               onMousedown={(e: MouseEvent) => { if (e.shiftKey) e.preventDefault(); }}
             >
             { target.kind === 'column' ?
-              <IconFA
-                name={isExpanded ? 'chevron-down' : 'chevron-right'}
-                tooltip='Show matched items'
+              <span
+                class='c2-comparison-expand'
                 onClick={(e: Event) => {e.stopPropagation(); toggleExpanded(target.key);}}
-              /> :
+              >
+                <IconFA name={isExpanded ? 'chevron-down' : 'chevron-right'} tooltip='Show matched items'/>
+              </span> :
               <span></span> }
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
