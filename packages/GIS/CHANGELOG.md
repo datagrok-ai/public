@@ -1,6 +1,6 @@
 # GIS changelog
 
-## v.next
+## 1.3.3 (2026-10-13)
 
 * GROK-18101: Map: Fixed `Cannot read properties of undefined (reading 'length')` on row selection when the table has no latitude/longitude columns
 * Map: Fixed `isRenderPending` never clearing under Render Type = heatmap - the hidden WebGL marker layer keeps `renderer.ready === false` and OpenLayers never renders it again, so every settle waited out its cap
