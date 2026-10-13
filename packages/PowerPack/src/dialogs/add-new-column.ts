@@ -778,7 +778,7 @@ export class AddNewColumnDialog {
           return false;
         //check for column autocompletion
         if (typeof apply === 'string' && (apply.startsWith('{') ||
-          apply.endsWith('}') || apply.startsWith('[') || apply.endsWith(']')))
+          apply.endsWith('}') || apply.startsWith('[') || apply.endsWith(']') || apply.endsWith('.')))
           return true;
         //in case this is not a column name - we have either package or function
         this.packageAutocomplete = typeof apply === 'string' && apply.slice(-1) === ':';
@@ -1139,11 +1139,29 @@ export class AddNewColumnDialog {
     return {quotesSelection, columnSelections, columnNames, isSingleCol, unmatchedBracketsSelections};
   }
 
+  /** An open table other than the one the formula is for. */
+  otherTable(name: string): DG.DataFrame | null {
+    const table = grok.shell.tableByName(name);
+    return table && table.name !== this.sourceDf!.name ? table : null;
+  }
+
+  /** The column of another open table that `${table.column}` names; the formula reads it through the link between the
+   *  tables. */
+  linkedColumn(name: string): DG.Column | null {
+    for (let i = name.indexOf('.'); i > 0; i = name.indexOf('.', i + 1)) {
+      const column = this.otherTable(name.slice(0, i))?.col(name.slice(i + 1));
+      if (column)
+        return column;
+    }
+    return null;
+  }
+
   validateFormula(formula: string, columnNames: string[], isSingleCol: boolean): string {
     const unmatchedCols: string[] = [];
     for (const colName of columnNames) {
       const unescapedMatch = grok.functions.handleOuterBracketsInColName(colName, false);
-      if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()) && !unmatchedCols.includes(colName))
+      if (!this.columnNamesLowerCase.includes(unescapedMatch.toLowerCase()) && !this.linkedColumn(unescapedMatch) &&
+        !unmatchedCols.includes(colName))
         unmatchedCols.push(colName);
     }
     if (unmatchedCols.length) {
@@ -1235,8 +1253,9 @@ export class AddNewColumnDialog {
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
         if (input?.func && input.func.name === COLUMN_FUNCTION_NAME) {
-          actualInputType = this.sourceDf!.col(input.inputs['field'])!.type;
-          actualSemType = this.sourceDf!.col(input.inputs['field'])!.semType;
+          const column = this.sourceDf!.col(input.inputs['field']) ?? this.linkedColumn(input.inputs['field']);
+          actualInputType = column!.type;
+          actualSemType = column!.semType;
         }
         //handling 'row' function
         //TODO: Handle other similar functions
@@ -1467,6 +1486,21 @@ export class AddNewColumnDialog {
       inputs.findIndex((it, i) => i !== ctx.argIndex && AddNewColumnDialog.argumentKind(it) === 'table');
     const tableName = tableArgIdx !== -1 ? (ctx.args[tableArgIdx] ?? '').replace(/^["']|["']$/g, '') : '';
     return (tableName ? grok.shell.tableByName(tableName) : null) ?? this.sourceDf!;
+  }
+
+  /** The columns of the table named in a `${table.` being typed. */
+  linkedColumnCompletions(context: CompletionContext): CompletionResult | null {
+    const typed = context.matchBefore(/\$\{[^{}$]*\.[^{}.$]*/);
+    const dot = typed ? typed.text.lastIndexOf('.') : -1;
+    const table = typed ? this.otherTable(typed.text.slice(2, dot)) : null;
+    if (!table)
+      return null;
+    const closed = context.state.doc.toString()[context.pos] === '}';
+    return {
+      from: typed!.from + dot + 1,
+      options: table.columns.names().map((name: string) => ({label: name, type: 'variable',
+        apply: `${grok.functions.handleOuterBracketsInColName(name, true)}${closed ? '' : '}'}`})),
+    };
   }
 
   argumentCompletions(context: CompletionContext): CompletionResult | null {
@@ -2084,7 +2118,7 @@ export class AddNewColumnDialog {
     coreFunctionsNames: string[], packageFunctionsNames: {[key: string]: string[]},
     packageFunctionsParams: {[key: string]: FuncInfo}, coreFunctionsParams: {[key: string]: FuncInfo}) {
     return (context: CompletionContext) => {
-      const argumentResult = this.argumentCompletions(context);
+      const argumentResult = this.argumentCompletions(context) ?? this.linkedColumnCompletions(context);
       if (argumentResult)
         return argumentResult;
       const word = context.matchBefore(/[\w|:|$|${|$\[|'|"]*/);
@@ -2144,6 +2178,14 @@ export class AddNewColumnDialog {
               `${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}` :
             closingBracket ? `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}` :
               `${openingSym}${grok.functions.handleOuterBracketsInColName(name, true)}${closingSym}`}));
+        // ${table.column} reads a column of a linked table; picking a table offers its columns next
+        if (word.text[dollarIdx + 1] !== '[') {
+          const afterBrace = openingSym === '{' && openingBracketIdx !== -1;
+          for (const table of grok.shell.tables.filter((t) => t.name !== this.sourceDf!.name)) {
+            options.push({label: `${table.name}.`, type: 'variable', detail: 'table', section: 'tables',
+              apply: `${afterBrace ? '' : '{'}${table.name}.`});
+          }
+        }
         index = word!.from + (openingBracketIdx === -1 ? word.text.lastIndexOf('$') + 1 : openingBracketIdx + 1);
         filter = !word.text.endsWith('$') && !word.text.endsWith(openingSym);
       } else {
