@@ -5,6 +5,7 @@ import './tests/calculate';
 import './tests/menu-tests-chem-space';
 import './tests/menu-tests-cliffs';
 import './tests/menu-tests-similarity-diversity';
+import './tests/similarity-diversity-row-source-tests';
 import './tests/menu-tests-rgroups';
 import './tests/menu-tests-script-based';
 

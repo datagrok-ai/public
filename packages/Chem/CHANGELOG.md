@@ -2,6 +2,8 @@
 
 ## v.next
 
+* Similarity Search: Fixed Row Source being ignored: Filtered, Selected and FilteredSelected searched every row. The cards come from the rows of the row source and follow the filter or the selection only in the modes that read them; Select all similar selects within the row source (`similarity/diversity: row source` tests)
+* Similarity Search, Diversity Search: Row Source defaults to Filtered
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Similarity Search, Diversity Search, R-Groups Analysis, Scaffold Tree, MPO Score, Chemical Properties and the Transformation and Two-Component reactions are disabled until the current table has a molecule column, and Activity Cliffs, Chemical Space, Matched Molecular Pairs, SAR Matrix and Deprotect unless the current view is such a table, instead of failing or warning
 * Deprotect: Fixed the default Fmoc fragment taking the protected amine's nitrogen with the group (Fmoc-Gly came out as acetic acid, Fmoc-Pro unchanged): its attachment point is now the nitrogen itself, which keeps its hydrogens
 * Substructure filter: Fixed a structure card that stopped filtering after Remove All on another view's panel of the same table: the removed card, deactivated first, kept its peers disabled (Use as filter in that view let every row through)
