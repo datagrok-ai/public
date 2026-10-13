@@ -37,7 +37,7 @@ const captureNullErrors = async (action: () => void): Promise<string[]> => {
   return errors;
 };
 
-category('RunComparison: viewer look swap pins', () => {
+category('Viewers: frame swap contract', () => {
   test('split deselect: frame swap then split-free options is clean', async () => {
     const view = grok.shell.newView('swap-pin-deselect');
     try {

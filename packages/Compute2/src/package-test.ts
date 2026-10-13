@@ -15,7 +15,7 @@ import './test/run-comparison-selection';
 import './test/run-comparison-builders';
 import './test/run-comparison-target-selection';
 import './test/run-comparison-chart-spec';
-import './test/viewer-look-swap-probe';
+import './test/viewer-frame-swap-contract';
 import './test/graphics-output';
 import './test/dock-layout';
 import './test/validation-actions';
