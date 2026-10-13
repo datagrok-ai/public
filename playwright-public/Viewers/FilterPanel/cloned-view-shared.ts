@@ -16,7 +16,7 @@ export async function installViewResolver(page: Page): Promise<void> {
     };
     (window as any).__cards = (vn: string): HTMLElement[] => {
       const root = (window as any).__tv(vn).root as HTMLElement;
-      return Array.from(root.querySelectorAll('[name="viewer-Filters"] .d4-filter')) as HTMLElement[];
+      return Array.from(root.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')) as HTMLElement[];
     };
     (window as any).__card = (vn: string, caption: string): HTMLElement => {
       const hits = (window as any).__cards(vn).filter((x: HTMLElement) =>
