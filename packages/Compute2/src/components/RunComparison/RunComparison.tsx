@@ -289,6 +289,9 @@ export const RunComparison = Vue.defineComponent({
         if (keptKeys.length === 0)
           multiMode.value = false;
       }
+      // a vanished anchor moves to a still-charted value, so the chart does not go blank
+      if (multiMode.value && !keys.has(selectedTargetKey.value) && keptKeys.length > 0)
+        selectedTargetKey.value = keptKeys[0];
     });
 
     const indexFilter = Vue.ref('');
@@ -324,16 +327,17 @@ export const RunComparison = Vue.defineComponent({
     });
 
     // in multi mode: suggestions plus everything already selected — a selected target
-    // that became conflicting must stay visible so it can be unchecked
+    // that became conflicting must stay visible so it can be unchecked. A charted value
+    // stays listed even when equal, so what is on the chart can always be deselected
     const filteredTargets = Vue.computed(() => {
+      const charted = (target: ComparisonTarget) => multiMode.value ?
+        multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
       const listed: ComparisonTarget[] = multiMode.value ?
         targets.value.filter((target) =>
-          multiKeys.value.includes(target.key) ||
-            compatibleTargets.value.some((item) => item.key === target.key)) :
+          charted(target) || compatibleTargets.value.some((item) => item.key === target.key)) :
         targets.value;
       return listed.filter((target) =>
-        (!equalTargetKeys.value.has(target.key) ||
-          (multiMode.value && multiKeys.value.includes(target.key))) &&
+        (!equalTargetKeys.value.has(target.key) || charted(target)) &&
         matchesFilter(targetFilter.value, `${target.displayName} ${contexts.value.get(target.key) ?? ''}`));
     });
 
