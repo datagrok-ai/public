@@ -577,14 +577,6 @@ export const RunComparison = Vue.defineComponent({
               value={mergeSameFuncs.value}
               onUpdate:value={(val) => mergeSameFuncs.value = val}
             />
-            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-              <span class='c2-comparison-link' onClick={editMappings}>
-                <IconFA name='exchange-alt' tooltip='Names that mean the same value, and unit conversion factors'/>
-                <span>Mappings...</span>
-              </span>
-              { mappingCount.value > 0 &&
-                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{mappingCount.value}</span> }
-            </div>
           </div>
         </div>
         <div style={{color: 'var(--grey-4)', paddingBottom: '4px'}}>
@@ -725,6 +717,14 @@ export const RunComparison = Vue.defineComponent({
                 onUpdate:value={onMultiModeChanged}
               />
             }
+            <div style={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+              <span class='c2-comparison-link' onClick={editMappings}>
+                <IconFA name='exchange-alt' tooltip='Names that mean the same value, and unit conversion factors'/>
+                <span>Mappings...</span>
+              </span>
+              { mappingCount.value > 0 &&
+                <span style={{fontSize: '11px', color: 'var(--grey-4)'}}>{mappingCount.value}</span> }
+            </div>
           </div>
         </div>
         { targets.value.length === 0 &&

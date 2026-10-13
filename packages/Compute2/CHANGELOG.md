@@ -7,7 +7,6 @@
 * Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
 * Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
 * Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
-* Run compare: Index columns convert through unit mappings too (`1 h = 60 min`), and the Mappings link moved to the Index columns header
 * Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection
 * Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built
 * Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours

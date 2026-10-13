@@ -667,7 +667,7 @@ category('RunComparison: equal values in mapped units', () => {
     expect(isTargetEqualAcrossRuns(target, () => undefined), true);
   });
 
-  test('converted columns compare equal in the target units, index included', async () => {
+  test('converted columns compare equal in the target units, indexes compare raw', async () => {
     const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'h', factor: 60, to: 'min'}]);
     const profile = (units: string, timeUnits: string) =>
       ({path: 'profile', columns: [{name: 'Time', units: timeUnits}, {name: 'Biomass', units}]});
@@ -676,9 +676,11 @@ category('RunComparison: equal values in mapped units', () => {
     const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
     const data: Record<string, Record<string, unknown[]>> = {
       a: {Time: [0, 1], Biomass: [0.1, 2]},
-      b: {Time: [0, 60], Biomass: [100, 2000]},
+      b: {Time: [0, 1], Biomass: [100, 2000]},
     };
     expect(isTargetEqualAcrossRuns(target, (entryId, _path, column) => data[entryId][column]), true);
+    data.b.Time = [0, 60];
+    expect(isTargetEqualAcrossRuns(target, (entryId, _path, column) => data[entryId][column]), false);
   });
 });
 

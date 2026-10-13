@@ -7,6 +7,7 @@ import {
   TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit, targetAxisMode} from './selection';
+import {normalizeUnits} from './matching';
 
 // appends (2), (3)... while the name is taken; "claim" — mutates the set,
 // registering the result so successive calls stay collision-free
@@ -162,6 +163,14 @@ function getSplitName(participating: ParticipatingRun[]): string | undefined {
   return rawName === RUN_COLUMN ? `${rawName} (split)` : rawName;
 }
 
+// index units every participating run agrees on (up to spelling), in the first run's spelling
+function sharedIndexUnits(participating: ParticipatingRun[]): string | undefined {
+  const units = participating.map(({entry, binding}) => entry.nodes.tables
+    .find((table) => table.path === binding.tablePath)?.columns
+    .find((col) => col.name === binding.indexColumnName)?.units);
+  return units[0] && units.every((item) => normalizeUnits(item) === normalizeUnits(units[0])) ? units[0] : undefined;
+}
+
 const makeIndexColumn = (name: string, list: any[], axis: IndexAxis) => {
   if (axis.kind === 'key')
     return DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, list);
@@ -249,10 +258,11 @@ export function buildColumnComparison(
       [run, elapsed.map((value) => value == null ? null : value / TIME_UNIT_MS[displayUnit!])]));
   }
 
-  // the axis is labeled with its unit (the display unit on the elapsed axis, the first run's
+  // the axis is labeled with its unit (the display unit on the elapsed axis, the runs' shared
   // index units on a float axis); keep it clear of the other column labels
   let indexColumnName = participating[0].binding.indexColumnName;
-  const axisUnits = axis.kind === 'elapsed' ? displayUnit : axis.kind === 'float' ? targets[0].indexUnits : undefined;
+  const axisUnits = axis.kind === 'elapsed' ? displayUnit :
+    axis.kind === 'float' ? sharedIndexUnits(participating) : undefined;
   if (axisUnits) {
     const taken = new Set([RUN_COLUMN, ...splitColumnName ? [splitColumnName] : [],
       ...targets.map((target) => labels.get(target.key)!)]);
@@ -266,10 +276,7 @@ export function buildColumnComparison(
   for (const run of participating) {
     const {entry, binding} = run;
     const df = entry.dataFrames.get(binding.tablePath)!;
-    // the elapsed axis converts through the time units picker instead of unit mappings
-    const index = elapsedByRun?.get(run) ?? (axis.kind === 'float' ?
-      df.getCol(binding.indexColumnName).toList().map((v) => toTargetUnits(v, binding.indexFactor)) :
-      df.getCol(binding.indexColumnName).toList());
+    const index = elapsedByRun?.get(run) ?? df.getCol(binding.indexColumnName).toList();
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {

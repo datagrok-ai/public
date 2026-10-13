@@ -677,7 +677,7 @@ category('RunComparison: unit conversion dataframes', () => {
     expectArray(result.chartDf.getCol('q').toList(), [1, 1]);
   });
 
-  test('column values and a mapped index convert into the first run\'s units', async () => {
+  test('column values convert into the first run\'s units, the index stays raw', async () => {
     const entries = [
       tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [0.5, 1], 'g/L')]),
       tableEntry('r2', [col('Time', [0, 30], 'min'), col('x', [250, 750], 'mg/L')]),
@@ -685,23 +685,10 @@ category('RunComparison: unit conversion dataframes', () => {
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
       undefined, undefined, undefined, convert);
     const result = buildColumnComparison([target], entries)!;
-    expect(result.indexColumnName, 'Time (h)');
+    expect(result.indexColumnName, 'Time');
     expect(result.valueColumnName, 'x (g/L)');
-    expectArray(result.chartDf.getCol('Time (h)').toList(), [0, 1, 0, 0.5]);
+    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 30]);
     expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [0.5, 1, 0.25, 0.75]);
-  });
-
-  test('the elapsed axis converts through the time units picker, not the index mapping', async () => {
-    const entries = [
-      tableEntry('r1', [col('Time', [0, 1], 'h'), col('v', [1, 2])]),
-      tableEntry('r2', [col('Time', [0, 30], 'min'), col('v', [3, 4])]),
-    ];
-    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
-      undefined, undefined, undefined, convert);
-    const modes = new Map(entries.map((e, i) => [e.id, new Map([[e.nodes.tables[0].path,
-      {mode: 'timeseries' as const, units: (['h', 'min'] as const)[i]}]])]));
-    const result = buildColumnComparison([target], entries, modes)!;
-    expectArray(result.chartDf.getCol(result.indexColumnName).toList(), [0, 1, 0, 0.5]);
   });
 
   test('the melted scatter converts values', async () => {
@@ -745,7 +732,7 @@ category('RunComparison: units in column names', () => {
     expect(buildScalarComparison(matchScalarTargets(plain.map((e) => e.nodes))[0], plain).valueColumnName, 'x');
   });
 
-  test('value columns and a float index carry the first run\'s units; a key index does not', async () => {
+  test('value columns and a float index carry their units; a key index does not', async () => {
     const entries = [
       tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('y', [3, 4])]),
       tableEntry('r2', [col('Time', [0, 1], 'h'), col('x', [5, 6], 'g/L'), col('y', [7, 8])]),
@@ -755,6 +742,17 @@ category('RunComparison: units in column names', () => {
     expect(result.indexColumnName, 'Time (h)');
     expectArray(result.valueColumnNames, ['x (g/L)', 'y']);
     expectArray(result.chartDf.columns.names(), ['Time (h)', RUN_COLUMN, 'x (g/L)', 'y']);
+  });
+
+  test('a float index carries units only when every run agrees on them', async () => {
+    const build = (units: string[]) => {
+      const entries = units.map((u, i) => tableEntry(`r${i}`, [col('Time', [0, 1], u), col('x', [1, 2])]));
+      const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+      return buildColumnComparison([target], entries)!.indexColumnName;
+    };
+    expect(build(['h', 'hours']), 'Time (h)');
+    expect(build(['h', 'min']), 'Time');
+    expect(build(['h', '']), 'Time');
   });
 
   test('a units label never collides with another column', async () => {

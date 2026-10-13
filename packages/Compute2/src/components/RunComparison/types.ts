@@ -80,9 +80,8 @@ export interface ColumnBinding {
   units?: string;
   indexColumnName: string;
   splitColumnName?: string;
-  // multipliers into the target's value and index units, set when a unit mapping converts them
+  // multiplier into the target's units, set when a unit mapping converts this binding
   factor?: number;
-  indexFactor?: number;
 }
 
 // 1 `from` = `factor` `to`; applies both ways
@@ -123,8 +122,6 @@ export interface ColumnCandidate {
 
 export interface ColumnTarget extends TargetBase {
   kind: 'column';
-  // index units of the first run; converted indexes are expressed in them
-  indexUnits?: string;
   candidates: ColumnCandidate[];
   // enabled candidates' bindings; what statuses, signatures and builders consume
   bindings: ColumnBinding[];
