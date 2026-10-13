@@ -109,6 +109,8 @@ The `addPinnedColumn()` function is exposed as a package function.
   Tags column marking only flagged rows, and the Tags and Bar renderers filling only their own shapes (GROK-20888);
   the Color renderer drawing each legend item's own category (#4233)
 - `forms-tests.ts` — the Forms viewer's fields, Sort By and pinned row through a layout and a project
+- `binary-image-tests.ts` — the byte-column detector (image signatures, the shared detectors test data) and the Binary
+  Image renderer: drawing within the paint, drawing into a canvas nobody repaints, a project round trip, the bounded cache
 - `utils.ts` — the layout and project round trips the two above share (they delete what they save)
 
 ## Key Patterns

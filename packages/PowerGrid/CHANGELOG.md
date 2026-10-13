@@ -2,6 +2,9 @@
 
 ## v.next
 
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Decodes each image once and draws it in the same paint, instead of decoding every visible image again after each repaint
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Byte columns that are not images (PDFs, hashes) are no longer shown as empty image cells
+* [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Double-click previews the image, with Replace... to load another one, and no longer opens a text editor showing the byte count
 * [public#4233](https://github.com/datagrok-ai/public/issues/4233): Fixed the Color, Tags and Multi Choice renderers drawing the first row's value for every item in viewer legends and pie chart labels
 * Scatter plot: Fixed "Failed to autostart: viewers is not iterable" logged at startup when a non-table view (a script, a Diff Studio model) was open
 * Tests: Added package tests for the summary columns and the Forms viewer through a layout and a project, and for the Tags renderer marking only flagged rows without painting the grid over (GROK-20888); the bdd features keep the UI gestures
