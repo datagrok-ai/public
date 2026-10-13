@@ -25,6 +25,9 @@ import {
   targetContexts,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
+import {
+  TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, pruneOverrides,
+} from './target-selection';
 import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {
   buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
@@ -66,7 +69,10 @@ export const RunComparison = Vue.defineComponent({
     const splitSelection = Vue.ref<Record<string, Record<string, string>>>({});
     // entryId -> tablePath -> axis-mode pick; stale picks are ignored, not deleted
     const axisModeSelection = Vue.ref<AxisModeSelection>({});
-    const selectedTargetKey = Vue.ref('');
+    const targetSelection = Vue.shallowRef<TargetSelection>(EMPTY_TARGET_SELECTION);
+    const selectedTargetKey = Vue.computed(() => targetSelection.value.selectedKey);
+    const multiMode = Vue.computed(() => targetSelection.value.multiMode);
+    const multiKeys = Vue.computed(() => targetSelection.value.multiKeys);
     const candidateOverrides = Vue.ref<CandidateOverrides>({});
     const expandedTargetKeys = Vue.ref<Record<string, boolean>>({});
 
@@ -261,37 +267,10 @@ export const RunComparison = Vue.defineComponent({
       };
     };
 
-    // drop overrides that no longer resolve (entry removed, index changed, cluster reshaped);
-    // removed entries are not consumed by matching, so the rewrite converges in one cycle
+    // removed entries are not consumed by matching, so the override rewrite converges in one cycle
     Vue.watch(targets, (list) => {
-      const validIds = new Map(list
-        .filter((target): target is ColumnTarget => target.kind === 'column')
-        .map((target) => [target.key,
-          new Set(target.candidates.map((candidate) => candidateId(candidate.binding)))]));
-      let changed = false;
-      const next: CandidateOverrides = {};
-      for (const [key, ids] of Object.entries(candidateOverrides.value)) {
-        const valid = validIds.get(key);
-        const kept = valid ? Object.entries(ids).filter(([id]) => valid.has(id)) : [];
-        if (kept.length !== Object.keys(ids).length)
-          changed = true;
-        if (kept.length > 0)
-          next[key] = Object.fromEntries(kept);
-      }
-      if (changed)
-        candidateOverrides.value = next;
-      // drop multi-value selections whose target vanished (structural change);
-      // merely-conflicting targets keep their keys so reverting an edit restores them
-      const keys = new Set(list.map((target) => target.key));
-      const keptKeys = multiKeys.value.filter((key) => keys.has(key));
-      if (keptKeys.length !== multiKeys.value.length) {
-        multiKeys.value = keptKeys;
-        if (keptKeys.length === 0)
-          multiMode.value = false;
-      }
-      // a vanished anchor moves to a still-charted value, so the chart does not go blank
-      if (multiMode.value && !keys.has(selectedTargetKey.value) && keptKeys.length > 0)
-        selectedTargetKey.value = keptKeys[0];
+      candidateOverrides.value = pruneOverrides(candidateOverrides.value, list);
+      targetSelection.value = reconcileTargets(targetSelection.value, new Set(list.map((target) => target.key)));
     });
 
     const indexFilter = Vue.ref('');
@@ -330,8 +309,7 @@ export const RunComparison = Vue.defineComponent({
     // that became conflicting must stay visible so it can be unchecked. A charted value
     // stays listed even when equal, so what is on the chart can always be deselected
     const filteredTargets = Vue.computed(() => {
-      const charted = (target: ComparisonTarget) => multiMode.value ?
-        multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
+      const charted = (target: ComparisonTarget) => isCharted(targetSelection.value, target.key);
       const listed: ComparisonTarget[] = multiMode.value ?
         targets.value.filter((target) =>
           charted(target) || compatibleTargets.value.some((item) => item.key === target.key)) :
@@ -343,9 +321,6 @@ export const RunComparison = Vue.defineComponent({
 
     const selectedTarget = Vue.computed(() =>
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
-
-    const multiMode = Vue.ref(false);
-    const multiKeys = Vue.ref<string[]>([]);
 
     const scalarChartType = Vue.ref<'radar' | 'pcplot'>('radar');
     const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
@@ -494,16 +469,14 @@ export const RunComparison = Vue.defineComponent({
     };
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
-    // echoes back through the toggle — a no-op update must not clobber multiKeys
-    const setMultiMode = (val: boolean) => {
-      if (val === multiMode.value)
-        return;
-      if (val)
-        multiKeys.value = selectedTargetKey.value ? [selectedTargetKey.value] : [];
-      else if (multiKeys.value.length > 0)
-        selectedTargetKey.value = multiKeys.value[0];
-      multiMode.value = val;
+    // echoes back through the toggle — the no-op transition keeps multiKeys intact
+    const onMultiModeChanged = (on: boolean) => {
+      targetSelection.value = setMultiMode(targetSelection.value, on);
     };
+
+    const compatibleKeys = (anchorKey: string) => compatibleTargetsFor(
+      targets.value.find((target) => target.key === anchorKey) ?? null, targets.value, indexColumnType,
+    ).map((target) => target.key);
 
     // non-default axis modes only; tables whose index moved off a time type drop out
     const resolvedAxisModes = Vue.computed(() => resolveAxisModes(
@@ -844,7 +817,7 @@ export const RunComparison = Vue.defineComponent({
                 caption='Multiple values'
                 tooltip='Chart several values together; Shift+click on a row does the same'
                 value={multiMode.value}
-                onUpdate:value={setMultiMode}
+                onUpdate:value={onMultiModeChanged}
               />
             }
           </div>
@@ -864,45 +837,9 @@ export const RunComparison = Vue.defineComponent({
             gridTemplateColumns: 'max-content max-content fit-content(400px) max-content max-content max-content 1fr',
           }}>
           { filteredTargets.value.map((target) => {
-            const isSelected = multiMode.value ?
-              multiKeys.value.includes(target.key) : target.key === selectedTargetKey.value;
+            const isSelected = isCharted(targetSelection.value, target.key);
             const onRowClick = (e: MouseEvent) => {
-              if (!multiMode.value) {
-                // grid-like shift+click: select and enter multi-value mode when applicable.
-                // Compatible with the current selection -> keep it and add the clicked one;
-                // otherwise the clicked target becomes the selection (and the anchor).
-                if (e.shiftKey) {
-                  if (selectedTargetKey.value &&
-                    compatibleTargets.value.some((item) => item.key === target.key)) {
-                    multiKeys.value = [...new Set([selectedTargetKey.value, target.key])];
-                    multiMode.value = true;
-                    return;
-                  }
-                  selectedTargetKey.value = target.key;
-                  if (compatibleTargetsFor(target, targets.value, indexColumnType).length > 1) {
-                    multiKeys.value = [target.key];
-                    multiMode.value = true;
-                  }
-                  return;
-                }
-                // clicking the selected value again clears the selection
-                selectedTargetKey.value = selectedTargetKey.value === target.key ? '' : target.key;
-                return;
-              }
-              const next = multiKeys.value.includes(target.key) ?
-                multiKeys.value.filter((key) => key !== target.key) : [...multiKeys.value, target.key];
-              multiKeys.value = next;
-              // unchecking the last value exits the mode (matching the initial
-              // no-selection state, where the toggle is not even shown) and keeps
-              // that value selected, so the chart stays put
-              if (next.length === 0) {
-                selectedTargetKey.value = target.key;
-                multiMode.value = false;
-              } else if (selectedTargetKey.value != null && !next.includes(selectedTargetKey.value)) {
-                // unchecking the anchor moves it to a still-charted target, so the
-                // status chips and gap badges match what the chart shows
-                selectedTargetKey.value = next[0];
-              }
+              targetSelection.value = clickTarget(targetSelection.value, target.key, e.shiftKey, compatibleKeys);
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const context = contexts.value.get(target.key);

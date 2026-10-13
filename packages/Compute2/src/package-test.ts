@@ -13,6 +13,7 @@ import './test/run-comparison-extraction';
 import './test/run-comparison-matching';
 import './test/run-comparison-selection';
 import './test/run-comparison-builders';
+import './test/run-comparison-target-selection';
 import './test/viewer-look-swap-probe';
 import './test/graphics-output';
 import './test/dock-layout';
