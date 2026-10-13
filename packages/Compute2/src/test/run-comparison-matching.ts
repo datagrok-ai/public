@@ -653,4 +653,17 @@ category('RunComparison: unit mappings', () => {
     expectFloat(target.bindings.find((b) => b.entryId === 'b')!.factor!, 0.001);
     expect(target.candidates.find((c) => c.binding.entryId === 'b')!.unitsWarn, false);
   });
+
+  test('a mapped index gets its factor into the seed index units; unmapped index units are left alone', async () => {
+    const convert = buildUnitConverter([{from: 'h', factor: 60, to: 'min'}]);
+    const table = (timeUnits: string) => ({path: 't', columns: [{name: 'time', units: timeUnits}, {name: 'x'}]});
+    const entries = [makeEntry('a', [], [table('h')]), makeEntry('b', [], [table('min')]),
+      makeEntry('c', [], [table('s')])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}, c: {t: 'time'}});
+    const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
+    expect(target.bindings.length, 3);
+    expectFloat(target.bindings.find((b) => b.entryId === 'b')!.indexFactor!, 1 / 60);
+    expect(target.bindings.find((b) => b.entryId === 'a')!.indexFactor == null, true);
+    expect(target.bindings.find((b) => b.entryId === 'c')!.indexFactor == null, true);
+  });
 });

@@ -638,7 +638,9 @@ category('RunComparison: unit conversion dataframes', () => {
     e.nodes.scalars.push({path: 'q', name: 'q', valueType: 'double', value: 1});
     return e;
   };
-  const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'bar', factor: 100, to: 'kPa'}]);
+  const convert = buildUnitConverter([
+    {from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'bar', factor: 100, to: 'kPa'}, {from: 'h', factor: 60, to: 'min'},
+  ]);
 
   test('a scalar converts into the first run\'s units', async () => {
     const entries = [scalar('a', 2, 'g/L'), scalar('b', 3000, 'mg/L')];
@@ -656,16 +658,29 @@ category('RunComparison: unit conversion dataframes', () => {
     expectArray(result.chartDf.getCol('q').toList(), [1, 1]);
   });
 
-  test('column values convert, the index does not', async () => {
+  test('column values and a mapped index convert into the first run\'s units', async () => {
     const entries = [
       tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [0.5, 1], 'g/L')]),
-      tableEntry('r2', [col('Time', [0, 2], 'min'), col('x', [250, 750], 'mg/L')]),
+      tableEntry('r2', [col('Time', [0, 30], 'min'), col('x', [250, 750], 'mg/L')]),
     ];
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
       undefined, undefined, undefined, convert);
     const result = buildColumnComparison(target, entries)!;
-    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 2]);
+    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 0.5]);
     expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [0.5, 1, 0.25, 0.75]);
+  });
+
+  test('the elapsed axis converts through the time units picker, not the index mapping', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('v', [1, 2])]),
+      tableEntry('r2', [col('Time', [0, 30], 'min'), col('v', [3, 4])]),
+    ];
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
+      undefined, undefined, undefined, convert);
+    const modes = new Map(entries.map((e, i) => [e.id, new Map([[e.nodes.tables[0].path,
+      {mode: 'timeseries' as const, units: (['h', 'min'] as const)[i]}]])]));
+    const result = buildColumnComparison(target, entries, modes)!;
+    expectArray(result.chartDf.getCol(result.indexColumnName).toList(), [0, 1, 0, 0.5]);
   });
 
   test('the melted scatter converts values', async () => {

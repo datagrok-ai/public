@@ -159,6 +159,7 @@ interface ClusterItem<P> {
   // used only to break ties between equally-confident candidates (e.g. table name for columns)
   secondaryName?: string;
   indexColumnName?: string;
+  indexUnits?: string;
   raw?: boolean;
   payload: P;
 }
@@ -330,6 +331,7 @@ export function matchColumnTargets(
           units: column.units,
           secondaryName: table.friendlyPath ?? table.name,
           indexColumnName,
+          indexUnits: table.columns.find((col) => col.name === indexColumnName)?.units,
           raw: entry.sourceKind === 'raw',
           payload: {
             entryId: entry.entryId,
@@ -358,6 +360,7 @@ export function matchColumnTargets(
       if (units === 'mismatch')
         continue;
       const factor = conversionFactor(item.units, seed.units, convert);
+      const indexFactor = conversionFactor(item.indexUnits, seed.indexUnits, convert);
       if (seed.indexColumnName && item.indexColumnName &&
         !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
         continue;
@@ -365,7 +368,11 @@ export function matchColumnTargets(
       // raw items join every cluster whose name they share (up to normalization) — but a
       // fuzzy guess is not confident enough to become the run's pick by default
       candidates.push({
-        binding: factor == null ? item.payload : {...item.payload, factor},
+        binding: {
+          ...item.payload,
+          ...factor != null ? {factor} : {},
+          ...indexFactor != null ? {indexFactor} : {},
+        },
         confidence,
         unitsWarn: units === 'warn',
         auto,

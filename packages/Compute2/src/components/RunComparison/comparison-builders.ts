@@ -281,7 +281,10 @@ export function buildMultiColumnComparison(
   for (const run of participating) {
     const {entry, binding} = run;
     const df = entry.dataFrames.get(binding.tablePath)!;
-    const index = elapsedByRun?.get(run) ?? df.getCol(binding.indexColumnName).toList();
+    // the elapsed axis converts through the time units picker instead of unit mappings
+    const index = elapsedByRun?.get(run) ?? (axis.kind === 'float' ?
+      df.getCol(binding.indexColumnName).toList().map((v) => toTargetUnits(v, binding.indexFactor)) :
+      df.getCol(binding.indexColumnName).toList());
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {

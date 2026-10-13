@@ -78,8 +78,9 @@ export interface ColumnBinding {
   units?: string;
   indexColumnName: string;
   splitColumnName?: string;
-  // multiplier into the target's units, set when a unit mapping converts this binding
+  // multipliers into the target's value and index units, set when a unit mapping converts them
   factor?: number;
+  indexFactor?: number;
 }
 
 // 1 `from` = `factor` `to`; applies both ways

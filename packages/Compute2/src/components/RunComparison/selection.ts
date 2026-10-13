@@ -164,7 +164,7 @@ export function isTargetEqualAcrossRuns(
   };
   const series = target.bindings.map((b) => ({
     value: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.columnName), b.factor),
-    index: getColumnValues(b.entryId, b.tablePath, b.indexColumnName),
+    index: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.indexColumnName), b.indexFactor),
     split: b.splitColumnName ? getColumnValues(b.entryId, b.tablePath, b.splitColumnName) : null,
   }));
   const [first, ...rest] = series;

@@ -665,15 +665,16 @@ category('RunComparison: equal values in mapped units', () => {
     expect(isTargetEqualAcrossRuns(target, () => undefined), true);
   });
 
-  test('converted columns compare equal in the target units', async () => {
-    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
-    const profile = (units: string) => ({path: 'profile', columns: [{name: 'Time'}, {name: 'Biomass', units}]});
-    const entries = [makeEntry('a', [], [profile('g/L')]), makeEntry('b', [], [profile('mg/L')])];
+  test('converted columns compare equal in the target units, index included', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}, {from: 'h', factor: 60, to: 'min'}]);
+    const profile = (units: string, timeUnits: string) =>
+      ({path: 'profile', columns: [{name: 'Time', units: timeUnits}, {name: 'Biomass', units}]});
+    const entries = [makeEntry('a', [], [profile('g/L', 'h')]), makeEntry('b', [], [profile('mg/L', 'min')])];
     const indexes = indexMap({a: {profile: 'Time'}, b: {profile: 'Time'}});
     const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
     const data: Record<string, Record<string, unknown[]>> = {
       a: {Time: [0, 1], Biomass: [0.1, 2]},
-      b: {Time: [0, 1], Biomass: [100, 2000]},
+      b: {Time: [0, 60], Biomass: [100, 2000]},
     };
     expect(isTargetEqualAcrossRuns(target, (entryId, _path, column) => data[entryId][column]), true);
   });
