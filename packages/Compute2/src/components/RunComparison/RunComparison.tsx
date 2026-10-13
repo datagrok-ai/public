@@ -8,6 +8,7 @@ import {
   IconFA, Viewer, ResizeHandle, ToggleInput, ifOverlapping, wheelGuard,
 } from '@datagrok-libraries/webcomponents-vue';
 import {historyUtils} from '@datagrok-libraries/compute-utils';
+import {getRunTitle} from '@datagrok-libraries/compute-utils/shared-utils/utils';
 import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/src/model-handler';
 
 import {History} from '../History/History';
@@ -165,14 +166,22 @@ export const RunComparison = Vue.defineComponent({
         return;
       isAddingRuns.value = true;
       try {
-        for (const call of historySelection.value) {
-          if (entries.value.some((entry) => entry.id === call.id))
-            continue;
-          const fullCall = await historyUtils.loadRun(call.id);
-          addEntry(await entryFromFuncCall(fullCall));
-        }
-      } catch (e: any) {
-        grok.shell.error(e);
+        const calls = historySelection.value.filter((call) => !entriesById.value.has(call.id));
+        const results = await Promise.allSettled(calls.map(async (call) =>
+          entryFromFuncCall(await historyUtils.loadRun(call.id))));
+        const failedRuns: string[] = [];
+        results.forEach((result, i) => {
+          if (result.status === 'rejected') {
+            console.error(`Run comparison: failed to load run ${calls[i].id}`, result.reason);
+            failedRuns.push(getRunTitle(calls[i]));
+            return;
+          }
+          addEntry(result.value);
+          if (result.value.failedSteps)
+            grok.shell.warning(`${result.value.name}: could not load ${result.value.failedSteps.join(', ')}`);
+        });
+        if (failedRuns.length > 0)
+          grok.shell.error(`Could not load ${failedRuns.join(', ')}`);
       } finally {
         isAddingRuns.value = false;
       }

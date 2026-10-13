@@ -161,6 +161,7 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   const scalars: ScalarNodeInfo[] = [];
   const tables: TableNodeInfo[] = [];
   const dataFrames = new Map<string, DG.DataFrame>();
+  const failedSteps: string[] = [];
   const addNodes = (nodes: CallNodes) => {
     scalars.push(...nodes.scalars);
     tables.push(...nodes.tables);
@@ -177,14 +178,16 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
       // legacy or malformed serialized configs degrade to an entry with no steps
       console.warn('Run comparison: failed to parse workflow config', e);
     }
-    for (const step of steps) {
-      try {
-        const stepCall = await historyUtils.loadRun(step.funcCallId);
-        addNodes(extractCallNodes(stepCall, step.path, step.friendlyPath));
-      } catch (e) {
-        console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
+    const results = await Promise.allSettled(steps.map(async (step) =>
+      extractCallNodes(await historyUtils.loadRun(step.funcCallId), step.path, step.friendlyPath)));
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        console.warn(`Run comparison: failed to load step run ${steps[i].funcCallId}`, result.reason);
+        failedSteps.push(steps[i].friendlyPath);
+        return;
       }
-    }
+      addNodes(result.value);
+    });
   } else {
     addNodes(extractCallNodes(call, '', ''));
   }
@@ -198,6 +201,7 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
     modelName,
     nodes: {entryId: call.id, entryName: name, sourceKind, scalars, tables},
     dataFrames,
+    ...failedSteps.length > 0 ? {failedSteps} : {},
   };
 }
 

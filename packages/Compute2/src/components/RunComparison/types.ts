@@ -56,6 +56,8 @@ export interface ComparisonEntry {
   modelName: string;
   nodes: ComparisonEntryNodes;
   dataFrames: Map<string, DG.DataFrame>;
+  // friendly paths of workflow steps that could not be loaded
+  failedSteps?: string[];
 }
 
 export interface ScalarBinding {

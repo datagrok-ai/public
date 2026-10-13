@@ -3,8 +3,10 @@ import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/
 import type {
   PipelineSerializedState,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {serialize} from '@datagrok-libraries/utils/src/json-serialization';
+import {CONFIG_PATH} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/funccall-utils';
 import {
-  parseComparisonDefaults, entryFromDataFrame, collectWorkflowSteps,
+  parseComparisonDefaults, entryFromDataFrame, collectWorkflowSteps, entryFromFuncCall,
 } from '../components/RunComparison/entry-extraction';
 
 category('RunComparison: annotation defaults', () => {
@@ -85,5 +87,22 @@ category('RunComparison: workflow steps', () => {
     expectArray(steps.map((s) => s.friendlyPath),
       ['Configuration', 'Daily cultivation · Day 1', 'Daily cultivation · Day 2', 'Daily cultivation · Other']);
     expectArray(steps.map((s) => s.funcCallId), ['c', 'd1', 'd2', 'o']);
+  });
+});
+
+category('RunComparison: workflow step failures', () => {
+  test('steps that cannot be loaded are reported, not thrown', async () => {
+    const call = DG.Script.create(
+      '//name: rcStepFailureProbe\n//language: javascript\n//output: int x\nx = 1;').prepare();
+    const missing = (configId: string, friendlyName: string) =>
+      ({type: 'funccall', configId, friendlyName, funcCallId: `${configId}-run-that-does-not-exist`});
+    call.options[CONFIG_PATH] = serialize({
+      type: 'static', configId: 'wf', friendlyName: 'Workflow',
+      steps: [missing('config', 'Configuration'), missing('result', 'Result')],
+    });
+    const entry = await entryFromFuncCall(call);
+    expect(entry.sourceKind, 'workflow');
+    expectArray(entry.failedSteps ?? [], ['Configuration', 'Result']);
+    expect(entry.nodes.tables.length + entry.nodes.scalars.length, 0);
   });
 });
