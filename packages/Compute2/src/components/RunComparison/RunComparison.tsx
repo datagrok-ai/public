@@ -29,10 +29,8 @@ import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, pruneOverrides,
 } from './target-selection';
 import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
-import {
-  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
-} from './comparison-builders';
-import {Comparison, ScalarChartType, chartSpec} from './chart-spec';
+import {buildComparison} from './comparison-builders';
+import {ScalarChartType, chartSpec} from './chart-spec';
 import './RunComparison.css';
 
 // chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
@@ -506,38 +504,13 @@ export const RunComparison = Vue.defineComponent({
     const gaps = Vue.computed(() => multiMode.value && selectedTarget.value ?
       selectionGaps(selectedTargets(selectedTarget.value)) : new Map<string, string[]>());
 
-    const comparison = Vue.computed<Comparison | null>(() => {
-      const target = selectedTarget.value;
-      if (!target || entries.value.length < 2)
+    const comparison = Vue.computed(() => {
+      const anchor = selectedTarget.value;
+      if (!anchor)
         return null;
-      if (target.kind === 'scalar') {
-        if (multiMode.value) {
-          const selected = selectedTargets(target);
-          if (selected.length === 0)
-            return null;
-          if (selected.length > 1) {
-            const result = buildMultiScalarComparison(selected, entries.value);
-            return result ? Vue.markRaw({kind: 'multi-scalar' as const, target, ...result}) : null;
-          }
-          const result = buildScalarComparison(selected[0], entries.value);
-          return Vue.markRaw({kind: 'scalar' as const, target: selected[0], ...result});
-        }
-        const result = buildScalarComparison(target, entries.value);
-        return Vue.markRaw({kind: 'scalar' as const, target, ...result});
-      }
-      if (multiMode.value) {
-        const selected = selectedTargets(target);
-        if (selected.length === 0)
-          return null;
-        if (selected.length > 1) {
-          const result = buildMultiColumnComparison(selected, entries.value, resolvedAxisModes.value);
-          return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
-        }
-        const result = buildColumnComparison(selected[0], entries.value, resolvedAxisModes.value);
-        return result ? Vue.markRaw({kind: 'column' as const, target: selected[0], ...result}) : null;
-      }
-      const result = buildColumnComparison(target, entries.value, resolvedAxisModes.value);
-      return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
+      const result = buildComparison(
+        multiMode.value ? selectedTargets(anchor) : [anchor], entries.value, resolvedAxisModes.value);
+      return result ? Vue.markRaw(result) : null;
     });
 
     const currentChartSpec = Vue.computed(() =>

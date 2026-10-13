@@ -1,15 +1,8 @@
 // Which viewer charts a comparison result, with its options and minimum height; no rendering.
 
 import * as DG from 'datagrok-api/dg';
-import {ScalarTarget, ColumnTarget, RUN_COLUMN} from './types';
-import {
-  ScalarComparisonResult, MultiScalarComparisonResult, ColumnComparisonResult, MultiColumnComparisonResult,
-} from './comparison-builders';
-
-export type Comparison =
-  | {kind: 'scalar', target: ScalarTarget} & ScalarComparisonResult
-  | {kind: 'multi-scalar', target: ScalarTarget} & MultiScalarComparisonResult
-  | {kind: 'column', target: ColumnTarget} & (ColumnComparisonResult | MultiColumnComparisonResult);
+import {RUN_COLUMN} from './types';
+import {Comparison} from './comparison-builders';
 
 export type ScalarChartType = 'radar' | 'pcplot';
 
@@ -63,11 +56,11 @@ export function chartSpec(
     }, 250);
   }
 
-  const valueColumnNames = 'valueColumnNames' in comparison ? comparison.valueColumnNames : null;
+  const {valueColumnNames} = comparison;
   if (comparison.isKeyIndex) {
     // multi-value suggestions need a line-chartable index, but the index may switch to a
     // string column after selection
-    if (valueColumnNames) {
+    if (valueColumnNames.length > 1) {
       return hint('Multiple values cannot chart over a categorical index — pick a numeric or datetime ' +
         'index, or select a single value');
     }
@@ -95,11 +88,10 @@ export function chartSpec(
     }, 300);
   }
 
-  const yColumnNames = valueColumnNames ?? [comparison.valueColumnName];
   return viewer(DG.VIEWER.LINE_CHART, {
     xColumnName: comparison.indexColumnName,
-    yColumnNames,
+    yColumnNames: valueColumnNames,
     splitColumnNames: comparison.splitColumnName ? [RUN_COLUMN, comparison.splitColumnName] : [RUN_COLUMN],
     multiAxis: false,
-  }, 250 * Math.max(1, yColumnNames.length));
+  }, 250 * Math.max(1, valueColumnNames.length));
 }

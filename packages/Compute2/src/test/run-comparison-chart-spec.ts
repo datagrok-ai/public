@@ -1,25 +1,27 @@
 import * as DG from 'datagrok-api/dg';
 import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/test/src/test';
-import {chartSpec, ChartSpec, Comparison} from '../components/RunComparison/chart-spec';
-import {ColumnTarget, ScalarTarget} from '../components/RunComparison/types';
+import {chartSpec, ChartSpec} from '../components/RunComparison/chart-spec';
+import {Comparison} from '../components/RunComparison/comparison-builders';
 
 // the spec reads only the row count of the frame
 const frame = (rowCount = 3) => DG.DataFrame.create(rowCount);
 
 const scalar = (rowCount = 3): Comparison =>
-  ({kind: 'scalar', target: {} as ScalarTarget, chartDf: frame(rowCount), valueColumnName: 'X (g/L)'});
+  ({kind: 'scalar', chartDf: frame(rowCount), valueColumnName: 'X (g/L)'});
 
 const multiScalar = (valueColumnNames: string[]): Comparison =>
-  ({kind: 'multi-scalar', target: {} as ScalarTarget, chartDf: frame(), valueColumnNames});
+  ({kind: 'multi-scalar', chartDf: frame(), valueColumnNames});
 
 const column = (fields: {
   valueColumnNames?: string[], splitColumnName?: string, isKeyIndex?: boolean, isScatter?: boolean,
   melted?: {seriesColumnName: string, valueColumnName: string},
-} = {}): Comparison => ({
-  kind: 'column', target: {} as ColumnTarget, chartDf: frame(),
-  valueColumnName: fields.valueColumnNames?.[0] ?? 'Y', indexColumnName: 'Time (h)',
-  isKeyIndex: false, isScatter: false, ...fields,
-} as Comparison);
+} = {}): Comparison => {
+  const valueColumnNames = fields.valueColumnNames ?? ['Y'];
+  return {
+    kind: 'column', chartDf: frame(), valueColumnName: valueColumnNames[0], indexColumnName: 'Time (h)',
+    isKeyIndex: false, isScatter: false, ...fields, valueColumnNames,
+  };
+};
 
 const viewerSpec = (spec: ChartSpec) => {
   if (spec.kind !== 'viewer')

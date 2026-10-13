@@ -3,7 +3,7 @@
 
 import * as DG from 'datagrok-api/dg';
 import {
-  ComparisonEntry, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
+  ComparisonEntry, ComparisonTarget, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
   TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit} from './selection';
@@ -92,8 +92,10 @@ export function buildMultiScalarComparison(
 
 export interface ColumnComparisonResult {
   chartDf: DG.DataFrame;
-  // chart y column of a single-target result: the display name deduped against the
-  // run/index/split columns (multi-value results chart valueColumnNames instead)
+  // chart y columns, one per target: display names deduped against the run/index/split
+  // columns; more than one marks a multi-value result; absent from the melted frame
+  valueColumnNames: string[];
+  // the first of valueColumnNames, charted by single-value results
   valueColumnName: string;
   indexColumnName: string;
   // display name of the inner split column, when set on any participating table
@@ -105,11 +107,6 @@ export interface ColumnComparisonResult {
   melted?: {seriesColumnName: string, valueColumnName: string};
   // display unit of the elapsed axis; set only when the target charted in time-series mode
   timeSeriesUnit?: TimeUnit;
-}
-
-export interface MultiColumnComparisonResult extends ColumnComparisonResult {
-  // chart y-columns, one per selected target; not present in the melted frame
-  valueColumnNames: string[];
 }
 
 
@@ -204,32 +201,14 @@ function indexMsValues(
 }
 
 /**
- * Concatenates raw rows of all participating runs into one long dataframe;
- * no row matching, the chart splits by run (and by the inner split column, if set).
+ * Concatenates raw rows of all participating runs into one long dataframe, one value column
+ * per target; no row matching, the chart splits by run (and by the inner split column, if set).
  */
 export function buildColumnComparison(
-  target: ColumnTarget,
-  entries: ComparisonEntry[],
-  axisModes?: AxisConfigMap,
-): ColumnComparisonResult | null {
-  const multi = buildMultiColumnComparison([target], entries, axisModes);
-  if (!multi)
-    return null;
-  // the presence of valueColumnNames is what marks a multi-value result downstream
-  const {valueColumnNames: _valueColumnNames, ...single} = multi;
-  single.chartDf.name = `Comparison: ${target.displayName}`;
-  return single;
-}
-
-/**
- * Same as buildColumnComparison for several targets sharing the bindings signature:
- * one value column per target over the shared concatenated rows.
- */
-export function buildMultiColumnComparison(
   targets: ColumnTarget[],
   entries: ComparisonEntry[],
   axisModes?: AxisConfigMap,
-): MultiColumnComparisonResult | null {
+): ColumnComparisonResult | null {
   const participating = getParticipating(targets, entries);
   if (participating.length < 2)
     return null;
@@ -351,11 +330,36 @@ export function buildMultiColumnComparison(
         DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, toFloatValues(longValues.get(label)!))),
     ]);
   }
-  chartDf.name = 'Comparison: multiple values';
+  chartDf.name = targets.length === 1 ? `Comparison: ${targets[0].displayName}` : 'Comparison: multiple values';
   return {
     chartDf, indexColumnName, splitColumnName, isKeyIndex, isScatter, valueColumnNames,
     valueColumnName: valueColumnNames[0],
     ...melted ? {melted} : {},
     ...displayUnit ? {timeSeriesUnit: displayUnit} : {},
   };
+}
+
+export type Comparison =
+  | {kind: 'scalar'} & ScalarComparisonResult
+  | {kind: 'multi-scalar'} & MultiScalarComparisonResult
+  | {kind: 'column'} & ColumnComparisonResult;
+
+/** Chart data for the selected targets (anchor first); targets of the anchor's kind only. */
+export function buildComparison(
+  selected: ComparisonTarget[],
+  entries: ComparisonEntry[],
+  axisModes?: AxisConfigMap,
+): Comparison | null {
+  if (selected.length === 0 || entries.length < 2)
+    return null;
+  const scalars = selected.filter((target): target is ScalarTarget => target.kind === 'scalar');
+  if (selected[0].kind === 'scalar') {
+    if (scalars.length === 1)
+      return {kind: 'scalar', ...buildScalarComparison(scalars[0], entries)};
+    const result = buildMultiScalarComparison(scalars, entries);
+    return result && {kind: 'multi-scalar', ...result};
+  }
+  const columns = selected.filter((target): target is ColumnTarget => target.kind === 'column');
+  const result = buildColumnComparison(columns, entries, axisModes);
+  return result && {kind: 'column', ...result};
 }
