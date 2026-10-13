@@ -497,11 +497,16 @@ grok s o logger history --limit 5                           # log-settings-chang
 grok s o logs capture alice --for 2h --reason "ticket 123" # logger set of saveHttpRequests on an expiring entry; 30m by default
 grok s o logs capture                                       # the active captures; logs capture stop alice removes one
 grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
+grok s o errors top --since 24h --source server           # ranked by distinct users: system errors (scheduler, probes) need --source
+grok s o errors get error-incident:<key>                    # each occurrence of a problem's error: time, user, function, session
+grok s o errors get <signature> --since 1d                  # or of a signature from errors top --by signature
 grok s o timeline --session <id>                            # its events and requests of the last 15 min
 grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
 grok s o logs cloud --since 2h --filter ERROR                # CloudWatch, the instance's own group; --group, --from/--to
 grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket); --since filters the returned page only
 grok s o logs archive read <key>                             # one archived object decoded to events
+grok s o logs container                                      # docker containers and their status
+grok s o logs container scripting-python_1 --since 1h --grep 'Kernel (started|shutdown)'   # one container's log lines
 ```
 
 Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,
@@ -509,7 +514,7 @@ Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud
 `userGroupSettings` entry with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); on an entry
 that already expires later it keeps that time. `capture stop` removes only an expiring entry that holds nothing but the
 capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
-`timeline --session <id>`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
+`timeline --session <id>`. `logs container` reads the container's latest `--limit` lines (20000) and only then cuts `--since`/`--from`/`--to` (UTC, matched across the container's own offset) and `--grep`, so a window older than those lines comes back empty: raise `--limit`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
 the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
