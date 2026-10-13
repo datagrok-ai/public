@@ -1,5 +1,9 @@
 # Datagrok-tools changelog
 
+## 6.7.8 (2026-10-13)
+
+* Fixed `grok api` (and every command other than `grok s`) exiting with code 1 and its usage text in 6.7.7: the new `--send-email` flag reached every command as `send-email: false`, which `grok api` rejected as an unknown option
+
 ## 6.7.7 (2026-10-09)
 
 * GROK-21156: `grok s users invite [<email>] [--prefix <P>] [--send-email]`: invites a user and prints a link that logs them in (no email sent; the email may be omitted); `--prefix` starts the code with `<P>`; `--send-email` mails the invitation instead
