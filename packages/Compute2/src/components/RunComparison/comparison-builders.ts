@@ -110,12 +110,17 @@ interface ParticipatingRun {
   binding: ColumnTarget['bindings'][number];
 }
 
-// enabled bindings only; matching guarantees at most one per run
-function getParticipating(target: ColumnTarget, entries: ComparisonEntry[]): ParticipatingRun[] {
-  return entries
-    .map((entry) => ({entry, binding: target.bindings.find((b) =>
-      b.entryId === entry.id && entry.dataFrames.has(b.tablePath))}))
-    .filter((item) => !!item.binding) as ParticipatingRun[];
+// every run any target charts; its rows come from the first target (in selection order)
+// with a pick there — enabled bindings only, matching guarantees at most one per run
+function getParticipating(targets: ColumnTarget[], entries: ComparisonEntry[]): ParticipatingRun[] {
+  return entries.flatMap((entry) => {
+    for (const target of targets) {
+      const binding = target.bindings.find((b) => b.entryId === entry.id && entry.dataFrames.has(b.tablePath));
+      if (binding)
+        return [{entry, binding}];
+    }
+    return [];
+  });
 }
 
 type IndexAxis =
@@ -217,7 +222,7 @@ export function buildMultiColumnComparison(
   entries: ComparisonEntry[],
   axisModes?: AxisConfigMap,
 ): MultiColumnComparisonResult | null {
-  const participating = getParticipating(targets[0], entries);
+  const participating = getParticipating(targets, entries);
   if (participating.length < 2)
     return null;
   const splitColumnName = getSplitName(participating);

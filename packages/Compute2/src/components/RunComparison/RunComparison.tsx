@@ -12,13 +12,13 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 
 import {History} from '../History/History';
 import {
-  ComparisonTarget, ScalarTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
+  ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
   ComparisonEntry, EntrySourceKind, NameMapping, RUN_COLUMN, candidateId,
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
 import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matching';
 import {
-  getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
+  getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
   targetContexts,
 } from './selection';
@@ -475,17 +475,26 @@ export const RunComparison = Vue.defineComponent({
       resolvedAxisModes.value,
     ));
 
+    // the multi-value selection in chart order: the anchor first, then list order
+    const selectedTargets = <T extends ComparisonTarget>(anchor: T): T[] => {
+      const selected = targets.value.filter((item): item is T =>
+        item.kind === anchor.kind && multiKeys.value.includes(item.key));
+      const anchorIndex = selected.findIndex((item) => item.key === anchor.key);
+      if (anchorIndex > 0)
+        selected.unshift(...selected.splice(anchorIndex, 1));
+      return selected;
+    };
+
+    const gaps = Vue.computed(() => multiMode.value && selectedTarget.value ?
+      selectionGaps(selectedTargets(selectedTarget.value)) : new Map<string, string[]>());
+
     const comparison = Vue.computed(() => {
       const target = selectedTarget.value;
       if (!target || entries.value.length < 2)
         return null;
       if (target.kind === 'scalar') {
         if (multiMode.value) {
-          const selected = targets.value.filter((item): item is ScalarTarget =>
-            item.kind === 'scalar' && multiKeys.value.includes(item.key));
-          const anchorIndex = selected.findIndex((item) => item.key === target.key);
-          if (anchorIndex > 0)
-            selected.unshift(...selected.splice(anchorIndex, 1));
+          const selected = selectedTargets(target);
           if (selected.length === 0)
             return null;
           if (selected.length > 1) {
@@ -499,11 +508,7 @@ export const RunComparison = Vue.defineComponent({
         return Vue.markRaw({kind: 'scalar' as const, target, ...result});
       }
       if (multiMode.value) {
-        const selected = targets.value.filter((item): item is ColumnTarget =>
-          item.kind === 'column' && multiKeys.value.includes(item.key));
-        const anchorIndex = selected.findIndex((item) => item.key === target.key);
-        if (anchorIndex > 0)
-          selected.unshift(...selected.splice(anchorIndex, 1));
+        const selected = selectedTargets(target);
         if (selected.length === 0)
           return null;
         if (selected.length > 1) {
@@ -845,12 +850,8 @@ export const RunComparison = Vue.defineComponent({
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
             const context = contexts.value.get(target.key);
-            const anchor = selectedTarget.value;
-            const overlap = multiMode.value && anchor && target.kind === anchor.kind &&
-              target.key !== anchor.key ?
-              multiValueOverlap(anchor, target) : null;
-            const gapRuns = overlap ? [...overlap.missing, ...overlap.conflicting]
-              .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id) : [];
+            const gapRuns = (gaps.value.get(target.key) ?? [])
+              .map((id) => entries.value.find((entry) => entry.id === id)?.name ?? id);
             const row = <div
               key={target.key}
               class={isSelected ? 'c2-comparison-row c2-comparison-row-selected' : 'c2-comparison-row'}
@@ -884,9 +885,9 @@ export const RunComparison = Vue.defineComponent({
             { gapRuns.length > 0 ?
               <span
                 class='c2-comparison-badge c2-badge-partial'
-                title={anchor!.kind === 'scalar' ?
-                  `Missing value on: ${gapRuns.join(', ')}` :
-                  `Shown as gaps (no shared rows with ${anchor!.displayName}): ${gapRuns.join(', ')}`}
+                title={target.kind === 'scalar' ?
+                  `No value on: ${gapRuns.join(', ')}` :
+                  `Shown as gaps (no data in the charted rows): ${gapRuns.join(', ')}`}
               >partial</span> :
               <span></span> }
           </div>;

@@ -4,6 +4,7 @@ import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
+  selectionGaps,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -625,5 +626,30 @@ category('RunComparison: step contexts', () => {
     expectArray(targets.filter((t) => t.displayName === 'Final biomass').map((t) => contexts.get(t.key)!),
       ['Daily cultivation · Day 1', 'Daily cultivation · Day 2']);
     expect(contexts.has(targets.find((t) => t.displayName === 'Volume')!.key), false);
+  });
+});
+
+category('RunComparison: selection gaps', () => {
+  test('a scalar missing a charted run is a gap in either selection order', async () => {
+    const scalars = matchScalarTargets([
+      makeEntry('a', [{name: 'p'}, {name: 'q'}]), makeEntry('b', [{name: 'p'}, {name: 'q'}]),
+      makeEntry('c', [{name: 'q'}]),
+    ]);
+    const p = scalars.find((t) => t.displayName === 'p')!;
+    const q = scalars.find((t) => t.displayName === 'q')!;
+    expectArray(selectionGaps([p, q]).get(p.key)!, ['c']);
+    expectArray(selectionGaps([q, p]).get(p.key)!, ['c']);
+    expect(selectionGaps([p, q]).get(q.key)!.length, 0);
+  });
+
+  test('a column missing a charted run is a gap in either selection order', async () => {
+    const table = (columns: string[]) => ({path: 't', columns: [{name: 'time'}, ...columns.map((name) => ({name}))]});
+    const entries = [makeEntry('a', [], [table(['x', 'y'])]), makeEntry('b', [], [table(['x', 'y'])]),
+      makeEntry('c', [], [table(['y'])])];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}, c: {t: 'time'}}));
+    const x = targets.find((t) => t.displayName === 'x')!;
+    const y = targets.find((t) => t.displayName === 'y')!;
+    expectArray(selectionGaps([x, y]).get(x.key)!, ['c']);
+    expectArray(selectionGaps([y, x]).get(x.key)!, ['c']);
   });
 });

@@ -590,3 +590,30 @@ category('RunComparison: independent points dataframes', () => {
     expect(result.chartDf.getCol('species').toList().join(','), 's1,s2,s1,s2,s1,s2,s1,s2');
   });
 });
+
+category('RunComparison: union of runs', () => {
+  const col = (name: string, values: (number | null)[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const numbers = (values: any[]) => Array.from(values, (v) => v == null || isNaN(v) ? null : v);
+
+  test('runs any selected column has are charted, whichever is selected first', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2]), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [5, 6]), col('y', [7, 8])]),
+      tableEntry('r3', [col('Time', [0, 1]), col('y', [9, 10])]),
+    ];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const x = targets.find((t) => t.displayName === 'x')!;
+    const y = targets.find((t) => t.displayName === 'y')!;
+    for (const order of [[x, y], [y, x]]) {
+      const result = buildMultiColumnComparison(order, entries)!;
+      expectArray([...new Set(result.chartDf.getCol(RUN_COLUMN).toList())], ['r1', 'r2', 'r3']);
+      expectArray(numbers(result.chartDf.getCol('x').toList()), [1, 2, 5, 6, null, null]);
+    }
+  });
+});

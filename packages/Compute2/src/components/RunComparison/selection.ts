@@ -81,6 +81,33 @@ export function compatibleTargetsFor(
   });
 }
 
+// entryId -> table of each pick; scalars have no table
+const pickTables = (target: ComparisonTarget): [string, string | undefined][] =>
+  target.kind === 'column' ?
+    target.bindings.map((b) => [b.entryId, b.tablePath]) : target.bindings.map((b) => [b.entryId, undefined]);
+
+/**
+ * Per selected target, the charted runs it has no data for: runs any selected target charts
+ * (union), minus its own picks. A column pick from another table than the run's row source
+ * (the first selected target with a pick there, as the builder does) counts as a gap too.
+ */
+export function selectionGaps(selected: ComparisonTarget[]): Map<string, string[]> {
+  const rowSource = new Map<string, string | undefined>();
+  for (const target of selected) {
+    for (const [entryId, tablePath] of pickTables(target)) {
+      if (!rowSource.has(entryId))
+        rowSource.set(entryId, tablePath);
+    }
+  }
+  return new Map(selected.map((target) => {
+    const own = new Map(pickTables(target));
+    const gaps = [...rowSource]
+      .filter(([entryId, tablePath]) => !own.has(entryId) || own.get(entryId) !== tablePath)
+      .map(([entryId]) => entryId);
+    return [target.key, gaps];
+  }));
+}
+
 export type ColumnValuesGetter =
   (entryId: string, tablePath: string, columnName: string) => ArrayLike<unknown> | undefined;
 
