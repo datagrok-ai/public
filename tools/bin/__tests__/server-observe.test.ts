@@ -161,6 +161,26 @@ describe('logs capture', () => {
     expect(Date.parse(saved.p1.expiresAt) - Date.now()).toBeGreaterThan(119 * 60000);
   });
 
+  it('waits out a save refused while the previous one is applied', async () => {
+    vi.useFakeTimers();
+    try {
+      let posts = 0;
+      const answer = loggerSettings({});
+      const done = observe('logs', 'capture', ['alice'], {}, (method, path) => {
+        if (method === 'POST' && posts++ === 0)
+          throw Object.assign(new Error('wait'), {apiError: {error: 'wait', errorCode: 429}});
+        return answer(method, path);
+      });
+      await vi.advanceTimersByTimeAsync(5000);
+      const {calls, saved} = await done;
+      expect(calls.filter((c) => c.method === 'POST').length).toBe(2);
+      expect(saved.p1.saveHttpRequests).toBe(true);
+    }
+    finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('falls back to a group and defaults to 30 minutes', async () => {
     const {saved} = await run('Chemists', [], {reason: 'ticket 1'}, {});
     expect(saved.g1.reason).toBe('ticket 1');

@@ -126,7 +126,19 @@ export async function handleObserve(dapi: NodeDapi, command: string | undefined,
     const r = await dapi.raw('GET', `/admin/plugins/${key}/settings`);
     return (typeof r === 'string' ? JSON.parse(r) : r)?.settings ?? {};
   };
-  const saveSettings = (key: string, body: any) => dapi.raw('POST', `/admin/plugins/${key}/settings`, body);
+  // A save within 5 s of the previous one is refused (429) until that one is applied.
+  const saveSettings = async (key: string, body: any): Promise<any> => {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await dapi.raw('POST', `/admin/plugins/${key}/settings`, body);
+      }
+      catch (e: any) {
+        if (attempt >= 2 || e?.apiError?.errorCode !== 429)
+          throw e;
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    }
+  };
   const saveLogger = (body: any) => saveSettings('logger', body);
 
   switch (`${command} ${verb}`) {

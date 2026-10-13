@@ -176,7 +176,7 @@ export class NodeApiClient {
     }
 
     const ct = res.headers.get('content-type') ?? '';
-    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(), res.headers);
   }
 
   get(path: string): Promise<any> { return this.request('GET', path); }
@@ -203,7 +203,7 @@ export class NodeApiClient {
     if (!res.ok)
       await throwHttpError(res);
     const ct = res.headers.get('content-type') ?? '';
-    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text());
+    return throwIfApiError(ct.includes('application/json') ? await res.json() : await res.text(), res.headers);
   }
 
   /** POST a JSON body and read the response as raw bytes (d42 query results). */
@@ -257,11 +257,13 @@ async function throwHttpError(res: Response): Promise<never> {
  * a JSON string when the handler returned text. Every response passes through here so a
  * missing entity, a rejected save or an unknown function throws instead of printing as data.
  */
-export function throwIfApiError<T>(payload: T): T {
+/** A user error answers HTTP 200 with the ApiError in the body and its status in the `api-error-code` header. */
+export function throwIfApiError<T>(payload: T, headers?: Headers): T {
   const parsed: any = typeof payload === 'string' ? tryParseJson(payload) : payload;
   if (parsed?.['#type'] === 'ApiError') {
+    const code = headers?.get('api-error-code');
     const err: NodeApiError = {error: parsed.message ?? 'Request failed', source: 'Server',
-      errorCode: parsed.errorCode, stackTrace: parsed.stackTrace, body: parsed};
+      errorCode: parsed.errorCode ?? (code ? Number(code) : undefined), stackTrace: parsed.stackTrace, body: parsed};
     throw Object.assign(new Error(err.error), {apiError: err});
   }
   return payload;
