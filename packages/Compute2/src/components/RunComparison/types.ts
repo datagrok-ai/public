@@ -97,6 +97,8 @@ export const toTargetUnits = <T, >(value: T, factor?: number): T | number =>
 export interface TargetBase {
   key: string;
   displayName: string;
+  // units of the first run; converted bindings are expressed in them
+  units?: string;
   confidence: MatchConfidence;
   unitsWarning: boolean;
   coverage: number;

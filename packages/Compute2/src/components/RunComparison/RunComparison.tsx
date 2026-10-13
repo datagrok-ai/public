@@ -512,7 +512,7 @@ export const RunComparison = Vue.defineComponent({
       entries.value.map((entry) => entry.nodes),
       selectedTarget.value,
       indexColumnsMap.value,
-      resolvedAxisModes.value,
+      {axisModes: resolvedAxisModes.value, aliases: aliasGroups.value, convert: unitConverter.value},
     ));
 
     // the multi-value selection in chart order: the anchor first, then list order
@@ -979,7 +979,7 @@ export const RunComparison = Vue.defineComponent({
           if (!entry)
             return null;
           if (!status.matched)
-            return {entry, text: status.reason, warning: false};
+            return {entry, text: status.units ? `${status.reason} (${status.units})` : status.reason, warning: false};
           if (status.warning)
             return {entry, text: status.warning, warning: true};
           return null;

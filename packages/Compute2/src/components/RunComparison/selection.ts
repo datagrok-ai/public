@@ -7,7 +7,10 @@ import {
   TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
-import {normalizeName, nameSimilarity, normalizeUnits, FUZZY_NAME_THRESHOLD} from './matching';
+import {
+  normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
+  FUZZY_NAME_THRESHOLD,
+} from './matching';
 
 /** Substring match on the displayed text, with fuzzy per-token fallback for typos. */
 export function matchesFilter(query: string, text: string): boolean {
@@ -412,14 +415,37 @@ export function computeIndexRows(
 export type ExclusionReason =
   | 'no similar data'
   | 'index not set'
-  | 'disabled';
+  | 'disabled'
+  | 'units differ';
 
 export interface EntryStatus {
   entryId: string;
   matched: boolean;
   reason?: ExclusionReason;
+  // the run's units when they differ from the target's
+  units?: string;
   // the run still charts — its table just lacks the axis-mode settings on a partial target
   warning?: 'relative timeseries not set' | 'independent points not set';
+}
+
+export interface StatusOptions {
+  axisModes?: AxisConfigMap;
+  aliases?: Map<string, number>;
+  convert?: UnitConverter;
+}
+
+// the run's value of the target's name (exact, normalized or mapped; never fuzzy) in units
+// that neither match nor convert — the hint that a unit mapping would let it join
+function differingUnits(
+  entry: ComparisonEntryNodes, target: ComparisonTarget, indexColumns: Map<string, Map<string, string>>,
+  {aliases, convert}: StatusOptions,
+): string | undefined {
+  const candidates = target.kind === 'scalar' ? entry.scalars :
+    entry.tables.filter((table) => indexColumns.get(entry.entryId)?.get(table.path)).flatMap((table) => table.columns);
+  return candidates.find((item) => {
+    const confidence = nameMatchConfidence(target.displayName, item.name, aliases);
+    return confidence && confidence !== 'fuzzy' && unitsCompatibility(target.units, item.units, convert) === 'mismatch';
+  })?.units;
 }
 
 /** Per-entry participation status for a selected target. */
@@ -427,8 +453,9 @@ export function getEntryStatuses(
   entries: ComparisonEntryNodes[],
   target: ComparisonTarget | null,
   indexColumns: Map<string, Map<string, string>>,
-  axisModes?: AxisConfigMap,
+  options: StatusOptions = {},
 ): EntryStatus[] {
+  const {axisModes} = options;
   const modeOf = (mode: 'timeseries' | 'points') =>
     target?.kind === 'column' && axisModes ? targetAxisMode(target, axisModes, mode) : 'none';
   const partialMode = modeOf('timeseries') === 'partial' ? 'timeseries' :
@@ -453,6 +480,9 @@ export function getEntryStatuses(
       entry.tables.length > 0 &&
       entry.tables.every((table) => !indexColumns.get(entry.entryId)?.get(table.path)))
       return {entryId: entry.entryId, matched: false, reason: 'index not set'};
+    const units = differingUnits(entry, target, indexColumns, options);
+    if (units)
+      return {entryId: entry.entryId, matched: false, reason: 'units differ', units};
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
 }

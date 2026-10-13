@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
 * Run compare: Index columns convert through unit mappings too (`1 h = 60 min`), and the Mappings link moved to the Index columns header
 * Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection
 * Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built

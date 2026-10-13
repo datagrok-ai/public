@@ -1,5 +1,7 @@
 import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
-import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
+import {
+  matchScalarTargets, matchColumnTargets, buildUnitConverter, buildAliasGroups,
+} from '../components/RunComparison/matching';
 import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
@@ -604,15 +606,15 @@ category('RunComparison: axis mode selection', () => {
     const entries = [makeEntry('a', [], [withTable]), makeEntry('b', [], [withTable])];
     const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
     const [tgt] = matchColumnTargets(entries, indexes);
-    const partial = getEntryStatuses(entries, tgt, indexes, config({a: {t: {units: 's'}}}));
+    const partial = getEntryStatuses(entries, tgt, indexes, {axisModes: config({a: {t: {units: 's'}}})});
     expect(partial.find((s) => s.entryId === 'a')!.warning === undefined, true);
     expect(partial.find((s) => s.entryId === 'b')!.warning, 'relative timeseries not set');
-    const partialScatter = getEntryStatuses(entries, tgt, indexes, config({a: {t: {mode: 'points'}}}));
+    const partialScatter = getEntryStatuses(entries, tgt, indexes, {axisModes: config({a: {t: {mode: 'points'}}})});
     expect(partialScatter.find((s) => s.entryId === 'b')!.warning, 'independent points not set');
     const full = getEntryStatuses(entries, tgt, indexes,
-      config({a: {t: {units: 's'}}, b: {t: {units: 's'}}}));
+      {axisModes: config({a: {t: {units: 's'}}, b: {t: {units: 's'}}})});
     expect(full.every((s) => s.warning === undefined), true);
-    const none = getEntryStatuses(entries, tgt, indexes, config({}));
+    const none = getEntryStatuses(entries, tgt, indexes, {axisModes: config({})});
     expect(none.every((s) => s.warning === undefined), true);
   });
 });
@@ -677,5 +679,51 @@ category('RunComparison: equal values in mapped units', () => {
       b: {Time: [0, 60], Biomass: [100, 2000]},
     };
     expect(isTargetEqualAcrossRuns(target, (entryId, _path, column) => data[entryId][column]), true);
+  });
+});
+
+category('RunComparison: units differ status', () => {
+  const profile = (column: string, units: string) =>
+    ({path: 'profile', columns: [{name: 'Time'}, {name: column, units}]});
+  const status = (statuses: ReturnType<typeof getEntryStatuses>, entryId: string) =>
+    statuses.find((s) => s.entryId === entryId)!;
+
+  test('a scalar in other units reports units differ with its units', async () => {
+    const entries = [
+      makeEntry('a', [{name: 'P', units: 'bar'}]), makeEntry('b', [{name: 'P', units: 'bar'}]),
+      makeEntry('c', [{name: 'P', units: 'kPa'}]), makeEntry('d', [{name: 'Q', units: 'kPa'}]),
+    ];
+    const [target] = matchScalarTargets(entries);
+    const statuses = getEntryStatuses(entries, target, indexMap({}));
+    expect(status(statuses, 'c').reason, 'units differ');
+    expect(status(statuses, 'c').units, 'kPa');
+    expect(status(statuses, 'd').reason, 'no similar data');
+  });
+
+  test('a column in other units reports units differ, unless its index is not set', async () => {
+    const entries = [
+      makeEntry('a', [], [profile('Biomass', 'g/L')]), makeEntry('b', [], [profile('Biomass', 'g/L')]),
+      makeEntry('c', [], [profile('Biomass', 'mg/L')]), makeEntry('d', [], [profile('Biomass', 'mg/L')]),
+    ];
+    const indexes = indexMap({a: {profile: 'Time'}, b: {profile: 'Time'}, c: {profile: 'Time'}});
+    const [target] = matchColumnTargets(entries, indexes);
+    const statuses = getEntryStatuses(entries, target, indexes);
+    expect(status(statuses, 'c').reason, 'units differ');
+    expect(status(statuses, 'c').units, 'mg/L');
+    expect(status(statuses, 'd').reason, 'index not set');
+  });
+
+  test('units differ honors name mappings and disappears once the units are mapped', async () => {
+    const entries = [
+      makeEntry('a', [{name: 'P', units: 'bar'}]), makeEntry('b', [{name: 'P', units: 'bar'}]),
+      makeEntry('c', [{name: 'pressure', units: 'kPa'}]),
+    ];
+    const aliases = buildAliasGroups([{from: 'P', to: 'pressure'}]);
+    const [target] = matchScalarTargets(entries, aliases);
+    expect(status(getEntryStatuses(entries, target, indexMap({})), 'c').reason, 'no similar data');
+    expect(status(getEntryStatuses(entries, target, indexMap({}), {aliases}), 'c').reason, 'units differ');
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}]);
+    const [joined] = matchScalarTargets(entries, aliases, convert);
+    expect(status(getEntryStatuses(entries, joined, indexMap({}), {aliases, convert}), 'c').matched, true);
   });
 });

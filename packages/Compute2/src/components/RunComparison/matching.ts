@@ -285,6 +285,7 @@ export function matchScalarTargets(
       kind: 'scalar' as const,
       key: `scalar:${normalizeName(cluster.canonicalName)}`,
       displayName: cluster.canonicalName,
+      units: cluster.items[0].units,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
       bindings: cluster.items.map((item) => {
@@ -390,6 +391,7 @@ export function matchColumnTargets(
       kind: 'column' as const,
       key: `column:${normalizeName(cluster.canonicalName)}:${normalizeName(cluster.canonicalSecondary ?? '')}`,
       displayName: cluster.canonicalName,
+      units: cluster.items[0].units,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
       candidates,
