@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem and Bio | Analyze | Hierarchical Clustering are disabled until the current table has a molecule or macromolecule column, and ML | Cluster | Hierarchical Clustering unless the current view is a table view, instead of warning
 * Dendrogram viewer: Fixed a tree with nodes that have no branch length (most newick strings leave it off the root) drawing nothing and taking no hover or click
 * Tests: Added centroid and median linkage tests over merges that invert (GROK-19595): the wasm cluster matrix keeps merge order and every leaf, and hierarchical clustering attaches a full tree; they replace the BDD centroid scenario
 * Fixed a layout's restored tree clustering another open table with the same name, or reopening a table whose view had closed: the saved grid script now clusters its own grid's table, only while that grid's view is open

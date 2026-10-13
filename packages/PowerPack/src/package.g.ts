@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 
 //name: compareColumns
 //top-menu: Data | Compare Columns...
+//meta.requiresTable: true
 export function _compareColumns() : void {
   PackageFunctions._compareColumns();
 }

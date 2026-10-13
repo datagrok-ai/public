@@ -215,6 +215,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Text Clustering...',
+    'requiresSemType': 'Text',
     'name': 'Compute Text Embeddings',
     'description': 'Compute text embeddings using UMAP',
   })
@@ -467,6 +468,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Sentence Similarity Search',
+    'requiresSemType': 'Text',
     name: 'sentenceSearch',
     outputs: [{type: 'viewer', name: 'result'}],
   })

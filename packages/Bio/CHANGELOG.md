@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Similarity Search, Diversity Search, Composition, Convert Sequence Notation, Compare sequences, MSA, Apply Numbering Scheme, Manage Annotations, Scan Liabilities and Subsequence Search are disabled until the current table has a macromolecule column, and Activity Cliffs, Sequence Space and Extract Region unless the current view is such a table, instead of failing or warning
 * Manage Monomers: Fixed an error logged when the monomer table reloads within half a second of a save (the scroll to the saved monomer ran on the replaced table)
 * WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)
 * Apply Numbering Scheme: Applies results row by row without keeping every row's parsed map and cells, and writes per-row annotations with one change event (100,000 rows crashed the tab); the same single event for Scan Liabilities

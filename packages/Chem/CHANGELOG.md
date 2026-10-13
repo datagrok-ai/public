@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Similarity Search, Diversity Search, R-Groups Analysis, Scaffold Tree, MPO Score, Chemical Properties and the Transformation and Two-Component reactions are disabled until the current table has a molecule column, and Activity Cliffs, Chemical Space, Matched Molecular Pairs, SAR Matrix and Deprotect unless the current view is such a table, instead of failing or warning
 * Deprotect: Fixed the default Fmoc fragment taking the protected amine's nitrogen with the group (Fmoc-Gly came out as acetic acid, Fmoc-Pro unchanged): its attachment point is now the nitrogen itself, which keeps its hydrogens
 * Substructure filter: Fixed a structure card that stopped filtering after Remove All on another view's panel of the same table: the removed card, deactivated first, kept its peers disabled (Use as filter in that view let every row through)
 * Cluster MCS: A one-molecule cluster's MCS is the molecule itself with its hydrogens: read as a query, its NH hydrogens were dropped (a urazole came out as the triazolinedione)

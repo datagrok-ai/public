@@ -139,6 +139,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'compareColumns',
     'top-menu': 'Data | Compare Columns...',
+    'requiresTable': true,
   })
   static _compareColumns(): void {
     compareColumns();

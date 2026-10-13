@@ -322,6 +322,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'meta': {},
     'top-menu': 'Bio | Analyze | Hierarchical Clustering...',
+    'requiresSemType': 'Macromolecule',
     'name': 'Hierarchical Clustering (Sequences)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })
@@ -332,6 +333,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Hierarchical Clustering...',
+    'requiresSemType': 'Molecule',
     'name': 'Hierarchical Clustering (Molecules)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })
@@ -342,6 +344,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'ML | Cluster | Hierarchical Clustering...',
+    'requiresTableView': true,
     'name': 'Hierarchical Clustering (All)',
     'description': 'Calculates hierarchical clustering on features and injects tree to grid'
     })

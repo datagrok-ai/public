@@ -585,6 +585,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'Similarity Search',
     'top-menu': 'Chem | Search | Similarity Search...',
+    'requiresSemType': 'Molecule',
   })
   static similaritySearchTopMenu(): void {
     (grok.shell.v as DG.TableView).addViewer('Chem Similarity Search');
@@ -601,6 +602,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Search | Diversity Search...',
+    'requiresSemType': 'Molecule',
     'name': 'Diversity Search',
   })
   static diversitySearchTopMenu(): void {
@@ -966,6 +968,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Chemical Space...',
+    'requiresTableView': true,
     'name': 'Chem Space',
     'description': 'Maps the dataset to 2D plot based on similarity',
     'editor': 'Chem:ChemSpaceEditor',
@@ -1233,6 +1236,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'R-Groups Analysis',
     'top-menu': 'Chem | Analyze | R-Groups Analysis...',
+    'requiresSemType': 'Molecule',
   })
   static rGroupsAnalysisMenu(): void {
     const col = grok.shell.t.columns.bySemType(DG.SEMTYPE.MOLECULE);
@@ -1298,6 +1302,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Activity Cliffs...',
+    'requiresTableView': true,
     'name': 'Activity Cliffs',
     'description': 'Detects pairs of molecules with similar structure and significant difference in any given property',
     'editor': 'Chem:ActivityCliffsEditor',
@@ -2512,6 +2517,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Analyze | Scaffold Tree',
+    'requiresSemType': 'Molecule',
     'name': 'addScaffoldTree',
     'description': 'Generates a hierarchical tree based on the scaffolds presented in dataset',
   })
@@ -2545,6 +2551,7 @@ export class PackageFunctions {
     'description': 'Finds pairs of molecules differing by a single fragment and relates the change to activity.',
     'editor': 'Chem:MMPEditor',
     'top-menu': 'Chem | Analyze | Matched Molecular Pairs...',
+    'requiresTableView': true,
   })
   static async mmpAnalysis(
     table: DG.DataFrame,
@@ -2632,6 +2639,7 @@ export class PackageFunctions {
     'name': 'SAR Matrix',
     'description': 'Groups related compound series into potency-colored matrices and predicts virtual analogs.',
     'top-menu': 'Chem | Analyze | SAR Matrix...',
+    'requiresTableView': true,
     'editor': 'Chem:SarMatrixEditor',
   })
   static async sarMatrixAnalysis(
@@ -3110,6 +3118,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Chem | Transform | Reactions | Deprotect...',
+    'requiresTableView': true,
     'name': 'Deprotect',
     'description': 'Removes drawn protecting groups / fragments from molecules',
     'editor': 'Chem:DeprotectEditor',
@@ -3152,6 +3161,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     'name': 'mpo',
     'top-menu': 'Chem | Calculate | MPO Score...',
+    'requiresSemType': 'Molecule',
     'description': 'Calculates the MPO score for the column of molecules',
   })
   static async _mpo(): Promise<void> {
@@ -3334,6 +3344,7 @@ export class PackageFunctions {
     'name': 'Chemical Properties',
     'description': 'Dynamically discovers and executes tagged biochemical calculators',
     'top-menu': 'Chem | Calculate | Chemical Properties...',
+    'requiresSemType': 'Molecule',
   })
   static async biochemPropsWidget(): Promise<void> {
     await biochemicalPropertiesDialog();
@@ -3459,6 +3470,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Transformation...',
+    requiresSemType: 'Molecule',
     name: 'Run Reaction',
     description: 'Runs reaction based on the reaction SMARTS and list of reactants',
   })
@@ -3513,6 +3525,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     topMenu: 'Chem | Transform | Reactions | Two-Component Reaction...',
+    requiresSemType: 'Molecule',
     name: 'Two-Component Reaction',
     description: 'Runs a reaction between molecules from two columns',
   })
