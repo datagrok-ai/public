@@ -23,7 +23,7 @@ import {
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
-  targetContexts,
+  targetContexts, EntryStatus,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {
@@ -38,6 +38,11 @@ import './RunComparison.css';
 // chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
 const sourceBadge = (kind: EntrySourceKind) =>
   <span class={`c2-comparison-badge c2-badge-${kind}`}>{kind}</span>;
+
+const WARNING_MODES: Record<NonNullable<EntryStatus['warning']>, string> = {
+  'relative timeseries not set': 'relative timeseries',
+  'independent points not set': 'independent points',
+};
 
 const confidenceBadge = (confidence: MatchConfidence) =>
   <span class={`c2-comparison-badge c2-confidence-${confidence}`}>{confidence}</span>;
@@ -826,22 +831,21 @@ export const RunComparison = Vue.defineComponent({
           if (!entry)
             return null;
           if (!status.matched)
-            return {entry, text: status.units ? `${status.reason} (${status.units})` : status.reason, warning: false};
+            return {entry, text: status.units ? `${status.reason} (${status.units})` : status.reason};
           if (status.warning)
-            return {entry, text: status.warning, warning: true};
+            return {entry, text: status.warning, warningMode: WARNING_MODES[status.warning]};
           return null;
         })
         .filter((item) => item != null);
       if (chips.length === 0)
         return null;
       return <div style={{display: 'flex', gap: '6px', flexWrap: 'wrap', padding: '4px 0px'}}>
-        { chips.map(({entry, text, warning}) =>
+        { chips.map(({entry, text, warningMode}) =>
           <span
             key={entry.id}
-            class={`c2-comparison-status ${warning ? 'c2-status-warning' : 'c2-status-error'}`}
-            title={warning ?
-              `The value charts as a plain series until every participating table has the ` +
-              `${text === 'independent points not set' ? 'independent points' : 'relative timeseries'} mode set` :
+            class={`c2-comparison-status ${warningMode ? 'c2-status-warning' : 'c2-status-error'}`}
+            title={warningMode ?
+              `The value charts as a plain series until every participating table has the ${warningMode} mode set` :
               entry.name}>
             {entry.name}: {text}
           </span>,
