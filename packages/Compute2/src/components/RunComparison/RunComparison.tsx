@@ -727,7 +727,8 @@ export const RunComparison = Vue.defineComponent({
           </div> }
         <div class='c2-comparison-rows c2-comparison-table'
           style={{
-            gridTemplateColumns: 'max-content max-content fit-content(400px) max-content max-content max-content 1fr',
+            gridTemplateColumns:
+              'max-content max-content fit-content(400px) max-content max-content max-content max-content 1fr',
           }}>
           { filteredTargets.value.map((target) => {
             const isSelected = isCharted(targetSelection.value, target.key);
