@@ -35,12 +35,18 @@ import {
   DOMAIN_SYSTEM_COLUMNS,
   DomainAggregateRow,
   DomainAggregateSpec,
+  DomainApplied,
+  DomainApplyBody,
+  DomainApplyPlan,
   DomainAuditEntry,
   DomainBatchOptions,
   DomainBatchReport,
   DomainBatchValidation,
   DomainDatetimeColumns,
   DomainDeleteReport,
+  DomainCreateSchemaOptions,
+  DomainDraft,
+  DomainDraftRequest,
   DomainError,
   DomainFacetKind,
   DomainFacetResultOf,
@@ -55,11 +61,16 @@ import {
   DomainQueryBuilder,
   DomainQuerySpec,
   DomainReadScope,
+  DomainRegisteredManifest,
   DomainRestoreResult,
   DomainRestrictError,
   DomainRowInsert,
   DomainAccess,
   DomainSavedFilterInfo,
+  DomainSchemaAccess,
+  DomainSchemaCreated,
+  DomainSchemaDryRun,
+  DomainSchemaValidation,
   DomainTableClientOptions,
   DomainTableInfo,
   DomainTableVersion,
@@ -956,6 +967,8 @@ export class ViewsDataSource extends HttpDataSource<ViewInfo> {
   }
 }
 
+/** Permissions API: checking, granting and revoking permissions on entities, and checking the
+ * global ones (`grok.dapi.permissions`). */
 export class PermissionsDataSource {
   constructor() {
   };
@@ -976,17 +989,25 @@ export class PermissionsDataSource {
     return api.grok_Dapi_Check_Permissions(e.dart, permission);
   }
 
+  /** Checks if the current user holds a global permission — one granted on no entity, such as
+   * `DG.Permission.CREATE_DOMAIN_SCHEMA`. Asks the server every time: a grant since login
+   * counts, and an impersonated call answers for the impersonated user. */
+  checkGlobal(permission: string): Promise<boolean> {
+    return api.grok_Dapi_Check_Global_Permission(permission);
+  }
+
   /** Grants permission on entity to the group
    * @param edit - allow to edit entity */
-  grant(e: Entity, g: Group, edit: boolean): Promise<any> {
+  grant(e: Entity, g: Group, edit: boolean): Promise<void> {
     return api.grok_Dapi_Set_Permission(e.dart, g.dart, edit);
   }
 
   /** Revokes the group's permission on the entity. */
-  revoke(e: Entity, g: Group): Promise<any>;
+  revoke(e: Entity, g: Group): Promise<void>;
   /** @deprecated Use `revoke(entity, group)`, matching {@link grant}. Removed in 1.30. */
-  revoke(g: Group, e: Entity): Promise<any>;
-  revoke(a: Entity | Group, b: Group | Entity): Promise<any> {
+  revoke(g: Group, e: Entity): Promise<void>;
+  /** @hidden */
+  revoke(a: Entity | Group, b: Group | Entity): Promise<void> {
     // Both orders reach here; when both arguments are groups the legacy (group, entity) reading wins.
     const [e, g] = b instanceof Group && !(a instanceof Group) ? [a, b] : [b, a];
     return api.grok_Dapi_Delete_Permission(e.dart, g.dart);
@@ -1298,11 +1319,39 @@ export class DomainsDataSource {
     return domainCall(api.grok_Dapi_Domains_Transaction(this.dart, schema, ops));
   }
 
-  /** Creates an empty user-managed domain schema (physical PG schema 'usr_<name>');
-   * requires the CreateDomainSchema privilege. Add tables via schema(name).apply(). */
-  createSchema(name: string, options?: {friendlyName?: string; description?: string}): Promise<{[key: string]: any}> {
+  /** Drafts a manifest over an external database the caller may introspect and query
+   * (requires CreateDomainSchema, and GetSchema + Query on the connection): the manifest as
+   * a starting point — remote names kept, the primary key as the business key, one-column
+   * foreign keys onto drafted tables as refs — with the inventory of what the warehouse has
+   * and why a table or column stayed out ({@link DomainDraft}). Nothing is registered; hand
+   * the (edited) manifest to {@link createSchema}. A malformed remote identifier rejects with a
+   * {@link DomainManifestValidationError} addressed by path (`'schema'`, `'tables[i]'`); no
+   * right on the connection with a {@link DomainForbiddenError} naming what is missing;
+   * an unreachable warehouse with a DomainError code `'external-unreachable'` (503). */
+  draft(body: DomainDraftRequest): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftSchema(this.dart, body));
+  }
+
+  /** Creates a user-managed domain schema; requires the CreateDomainSchema privilege. Without
+   * `manifest` the schema is empty and platform-stored ('usr_<name>'; add tables via
+   * schema(name).apply()). With one (`storage.kind: 'external'` — a {@link draft}, edited) it is
+   * an external binding ('ext_<name>'): the manifest is validated live against the warehouse
+   * before anything is registered, and the answer carries the binding's verdict. `dryRun: true`
+   * runs every check and registers nothing — `{status: 'ok', issues: []}`, or exactly the
+   * refusal the create would give: a {@link DomainManifestValidationError} whose `errors` are
+   * addressed by manifest path, a DomainError code `'schema-name-taken'` / `'invalid-storage'`
+   * / `'external-unreachable'`. A literal `true` / `false` / omitted `dryRun` types the answer
+   * precisely; a boolean variable answers the union. */
+  createSchema(name: string, options: DomainCreateSchemaOptions & {dryRun: true}): Promise<DomainSchemaDryRun>;
+  /** The create itself: the schema registered, with its binding's verdict where it is external. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions & {dryRun?: false}): Promise<DomainSchemaCreated>;
+  /** `dryRun` decided at run time: the dry-run verdict or the created schema. */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated>;
+  /** @hidden */
+  createSchema(name: string, options?: DomainCreateSchemaOptions): Promise<DomainSchemaDryRun | DomainSchemaCreated> {
     return domainCall(api.grok_Dapi_Domains_CreateSchema(this.dart, name,
-      options?.friendlyName ?? null, options?.description ?? null));
+      options?.friendlyName ?? null, options?.description ?? null,
+      {manifest: options?.manifest ?? null, dryRun: options?.dryRun ?? false}));
   }
 
   /** Lifecycle handle for a registered domain schema (mirrors table()). */
@@ -1368,7 +1417,9 @@ export class DomainRegistryClient {
 /**
  * Lifecycle handle for one registered domain schema (see {@link DomainsDataSource.schema}):
  * manifest export, partial applies with dry-run change plans, whole-schema audit, and full
- * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish). */
+ * purge. Mutations apply to user-managed schemas only (package schemas deploy on publish).
+ * A name the registry does not have (never registered, or deleted since) rejects every call
+ * with a {@link DomainNotFoundError}. */
 export class DomainSchemaClient {
   dart: any;
 
@@ -1376,19 +1427,65 @@ export class DomainSchemaClient {
     this.dart = dart;
   }
 
-  /** Full manifest reconstructed from the registry (feeds editors; doubles as export). */
-  manifest(): Promise<{[key: string]: any}> {
+  /** Full manifest reconstructed from the registry (feeds editors; doubles as export), with the
+   * `version` and `incarnation` an {@link apply} sends back ({@link DomainRegisteredManifest}). */
+  manifest(): Promise<DomainRegisteredManifest> {
     return domainCall(api.grok_Dapi_Domains_GetManifest(this.dart, this.name));
   }
 
-  /** Applies a partial manifest; dryRun returns the change plan. Named tables replace
-   * their current definition wholesale — everything omitted comes from the registry.
-   * Destructive plans require confirmDestructive; stale ifVersion → DomainVersionConflictError;
-   * a destructive plan without confirmation → DomainError code 'destructive-confirmation-required'
-   * (the plan rides in error.body.plan).
+  /** The lossless access snapshot of the schema for its editor ({@link DomainSchemaAccess}): per
+   * table its direct grants and its core schema's, per relational column whether it is restricted
+   * and to whom, plus the `version` and `incarnation` the snapshot was read at — all from one
+   * transaction, so the tokens and the ACLs they stand for agree. What the caller may not Share
+   * reads `null` (unknown), never empty. Requires View or Edit on the schema. The deltas an edit
+   * derives from it travel in {@link apply} as {@link DomainApplyBody.access}. */
+  access(): Promise<DomainSchemaAccess> {
+    return domainCall(api.grok_Dapi_Domains_SchemaAccess(this.dart, this.name));
+  }
+
+  /** The live catalog of this EXTERNAL binding, shaped like {@link DomainsDataSource.draft}'s
+   * answer ({@link DomainDraft}) over the binding's own connection and remote schema — what an
+   * editor compares the registered manifest with (tables and columns to add, drift on what is
+   * registered); `options.tables` narrows it to those remote tables. Needs Edit on the schema plus
+   * GetSchema and Query on the connection — no CreateDomainSchema: an editor need not be able to
+   * create. A platform-stored schema has no catalog to draft ({@link DomainUnsupportedError}). */
+  draft(options?: {tables?: string[]}): Promise<DomainDraft> {
+    return domainCall(api.grok_Dapi_Domains_DraftFor(this.dart, this.name, options?.tables ?? null));
+  }
+
+  /** Re-validates an external schema's binding against its warehouse and records the
+   * outcome ({@link DomainSchemaValidation}: `status` `'ok'` or the issues by manifest path).
+   * Requires Edit on the schema; a platform-stored schema is a {@link DomainUnsupportedError}. */
+  validate(): Promise<DomainSchemaValidation> {
+    return domainCall(api.grok_Dapi_Domains_ValidateSchema(this.dart, this.name));
+  }
+
+  /** Applies a partial manifest ({@link DomainApplyBody}); `dryRun` answers the change plan
+   * ({@link DomainApplyPlan}) and moves nothing. Named tables replace their current definition
+   * wholesale — everything omitted comes from the registry. A destructive plan requires
+   * `confirmDestructive` (else DomainError code 'destructive-confirmation-required', the plan
+   * riding in `error.body.plan`); a stale `ifVersion`, or an `ifIncarnation` from another life of
+   * the name, rejects with a {@link DomainVersionConflictError}. A literal `true` / `false` /
+   * omitted `dryRun` types the answer precisely; a boolean variable answers the union.
    *
-   * On a USER-managed schema this requires Edit and `ifVersion` tracks the schema's apply
-   * counter. On a PACKAGE-managed schema it is the user-extension path: it requires
+   * On a USER-managed schema this requires Edit and `ifVersion` is REQUIRED: the `version` of
+   * the manifest the edit was made against (missing → DomainError code 'version-required'); it is
+   * checked again under the server's deploy lock, so of two concurrent applies exactly one commits.
+   * Such an apply may also change the schema's `friendlyName` and `description`, and — on an
+   * external binding — `storage.writable`; any other storage key must repeat the registered value
+   * ('storage-immutable'; the kind cannot flip, 'storage-conversion'). Access changes travel in
+   * the same apply ({@link DomainAccessDelta}) and are executed in the same transaction, after the
+   * manifest change: the answer's `access` reports each op's effect. A dry run on a binding runs
+   * the privilege proof and the live validation the commit runs, and answers with the same
+   * refusals; its plan is `registrationOnly` (no row counts). A user-schema plan carries `lost`
+   * ({@link DomainApplyLost}, counts): per dropped table its direct grants, core-schema grants,
+   * restricted columns with their grants, promoted rows with their grants and saved filters — all
+   * purged with it; per dropped column its restriction and the saved filters naming it (kept as
+   * they are) — and `metadata`, the `{from, to}` of a renamed schema. Dropping a table requires
+   * Delete on that table, dropping its columns Edit on it ('forbidden', naming the tables).
+   * Bootstrap grants go only to what an apply creates — a retained table keeps its ACL, so a
+   * custom permission newly declared on one is granted to nobody until someone with Share grants
+   * it. On a PACKAGE-managed schema it is the user-extension path: it requires
    * 'Extend' on the schema entity, `ifVersion` tracks `ext_version` (the plan echoes it as
    * `extVersion`) while the plugin's own version stays frozen, and the writable surface is
    * limited to objects you own — your own tables through `tables` (needs the schema's
@@ -1402,10 +1499,14 @@ export class DomainSchemaClient {
    * API surface — reads, writes, filters, and the audit trail — keeps using the logical name,
    * with the exception of raw PostgreSQL error text that quotes an identifier verbatim
    * (a constraint violation naming `fk_<table>_x_<column>`, say). */
-  apply(body: {tables?: object; extend?: {[table: string]: {columns: {[column: string]: object}}};
-               propertySchemas?: object; dropTables?: string[];
-               ifVersion?: string; confirmDestructive?: boolean},
-        options?: {dryRun?: boolean}): Promise<{[key: string]: any}> {
+  apply(body: DomainApplyBody, options: {dryRun: true}): Promise<DomainApplyPlan>;
+  /** The apply itself: the plan with `applied: true` and the access effects as resolved under the lock;
+   * an apply that changes nothing writes nothing and answers `applied: false`, `noop: true`. */
+  apply(body: DomainApplyBody, options?: {dryRun?: false}): Promise<DomainApplied>;
+  /** `dryRun` decided at run time: the plan, or the applied answer. */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied>;
+  /** @hidden */
+  apply(body: DomainApplyBody, options?: {dryRun?: boolean}): Promise<DomainApplyPlan | DomainApplied> {
     return domainCall(api.grok_Dapi_Domains_ApplySchema(this.dart, this.name, body, options?.dryRun ?? false));
   }
 
@@ -1414,9 +1515,12 @@ export class DomainSchemaClient {
     return domainCall(api.grok_Dapi_Domains_SchemaAudit(this.dart, this.name, options?.limit ?? null));
   }
 
-  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions. */
-  delete(): Promise<void> {
-    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name));
+  /** Fully purges a user-managed schema: data, audit partition, registry, entities, permissions.
+   * Requires Delete on the schema. `ifIncarnation` (the `incarnation` of {@link manifest} or
+   * {@link access}) pins the delete to the schema the caller reviewed: a name deleted and
+   * re-created since rejects with a {@link DomainVersionConflictError} and the new schema is kept. */
+  delete(options?: {ifIncarnation?: string}): Promise<void> {
+    return domainCall(api.grok_Dapi_Domains_DeleteSchema(this.dart, this.name, options?.ifIncarnation ?? null));
   }
 
   /** Direct permission rows on this schema's registry entity (schema-level operation
@@ -1637,6 +1741,14 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * optimistic concurrency — the update fails with a {@link DomainVersionConflictError} if the
    * row has changed since. Resolves to `{id, version}` (version increments on every update).
    *
+   * `options.expected` is the guard for EXTERNAL tables (`support.concurrency === 'expected'`):
+   * the values of some columns as last read, AND-ed to the row's key. A mismatch rejects with a
+   * {@link DomainVersionConflictError} whose `body.expected` / `body.current` name what moved;
+   * `{}` guards nothing. `version` is for platform-stored tables and `expected` for external
+   * ones — the two never cross storages ({@link DomainValidationError}); a column the warehouse
+   * cannot guard (float, datetime, null or empty text, a key) rejects with a
+   * {@link DomainUnsupportedError} whose `op` is `'expected'`.
+   *
    * `values` may also carry declared many-to-many relations as lists of target row ids, with
    * **SET-REPLACE semantics over the links you can SEE**: the list becomes the visible link
    * set, `[]` clears it, and an ABSENT relation key leaves the relation untouched. Links whose
@@ -1646,8 +1758,8 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
    * version, so `options.version` covers the links too. `grok api`-generated clients name the
    * relations in their `<Table>Update` type and pass it as the client's fifth generic;
    * untyped callers keep `Partial<TRow>`. */
-  update(id: string, values: TUpdate, options?: {version?: number}): Promise<DomainUpdateResult> {
-    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options?.version));
+  update(id: string, values: TUpdate, options?: {version?: number; expected?: Partial<TRow>}): Promise<DomainUpdateResult> {
+    return domainCall(api.grok_Dapi_Domains_Patch(this.dart, this.schema, this.table, id, values, options));
   }
 
   /** Judges the same payload and writes NOTHING (see {@link DomainBatchOptions.validateOnly}):

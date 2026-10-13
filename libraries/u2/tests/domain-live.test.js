@@ -261,6 +261,8 @@ async function platformTable(support = {}, can = {}) {
     access: async () => ({can: {view: true, ...can}, fields: {}, support: {
       systemColumns: ['id', 'version', 'created_on', 'updated_on', 'author_id'], writes: true,
       deleted: true, restore: true, audit: true, ancestors: false, probe: true, version: true, watch: true,
+      updateWhere: true, captions: true, transaction: true, concurrency: 'version', filters: 'full',
+      batch: {upsert: true, partial: true, validate: true, skipDuplicates: true},
       ...support}}),
     version: async () => ({seq: ++calls.version, at: '2026-09-16T10:05:13Z'}),
     aggregate: async (spec) => (calls.aggregate.push(spec), [{count: 3, last: '2026-09-16T10:00:00Z'}]),

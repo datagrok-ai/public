@@ -21,6 +21,9 @@ export interface DomainTableInfoLike {
    * breadcrumb root read before falling back to the plural name. */
   friendlyName?: string;
   businessKey: string[];
+  /** How an app spells a row in a URL: the business-key values, or the canonical row id as one
+   * opaque segment (a key whose values may carry any delimiter). */
+  rowAddress: 'id' | 'businessKey';
   /** What a query `search` runs over: the `searchable` columns, else the name column. */
   searchableColumns: string[];
   /** The grammar constraints of the schema (`{expr}` entries; SQL `check`s stay server-side). */
@@ -106,6 +109,22 @@ export interface DomainSupportLike {
   /** The backend can tell a client that rows changed without being asked. The memory backend has
    * no subscriptions and says so. */
   watch: boolean;
+  /** Gates {@link DomainTableLike.updateWhere}. */
+  updateWhere: boolean;
+  /** A query's `captions` project `~caption_<column>` with the rows; false where a source resolves
+   * ref captions per row instead. */
+  captions: boolean;
+  /** {@link DomainTableLike.transaction} lands on this table — the whole write path of a source. */
+  transaction: boolean;
+  /** How an update is guarded against a concurrent edit: by the row `version`, by the `expected`
+   * old values of the changed columns, or not at all. */
+  concurrency: 'version' | 'expected' | 'none';
+  /** The filter grammar the backend answers: `'basic'` has no `under`, no regex, no `!like`, no
+   * datetime `!=` and no bool null test. */
+  filters: 'full' | 'basic';
+  /** What {@link DomainTableLike.batch} does beyond a plain insert; `validate` gates
+   * {@link DomainTableLike.validate}. */
+  batch: {upsert: boolean, partial: boolean, validate: boolean, skipDuplicates: boolean};
 }
 
 /** What one poll of a live source learns: how many rows match the query and when the newest of
@@ -132,6 +151,9 @@ export interface DomainTransactionOpLike {
   values?: Record<string, unknown>;
   id?: string;
   expectedVersion?: number;
+  /** The old-value guard of an update where `support.concurrency` is `'expected'`: the columns'
+   * values as last read; never together with `expectedVersion`. */
+  expected?: Record<string, unknown>;
 }
 
 export interface DomainTransactionResultLike {
@@ -156,12 +178,16 @@ export interface DomainBatchOptionsLike {
 }
 
 /** What a bulk upload answers (js-api `DomainBatchReport`): the counts, one line per row, and
- * `error` where the upload failed but a per-row report survived it. */
+ * `error` where the upload failed but a per-row report survived it. A storage that cannot tell
+ * an insert from an update answers an upsert as `merged` (per row `status: 'merged'`). */
+/** The totals are absent on a warehouse refusal (a constraint the connector reports), which
+ * carries `error` and the failing rows alone. */
 export interface DomainBatchReportLike {
-  inserted: number;
-  updated: number;
-  skipped: number;
-  errorCount: number;
+  inserted?: number;
+  updated?: number;
+  merged?: number;
+  skipped?: number;
+  errorCount?: number;
   rows: {index: number, id: string | null, status: string, existingId?: string,
     errors?: {column?: string, code?: string, message: string}[]}[];
   error?: string;

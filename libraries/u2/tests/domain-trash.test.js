@@ -265,6 +265,7 @@ source('a deleted source over a backend that cannot restore is refused by name',
     table: async (address) => {
       const t = await memory.table(address);
       return {address: t.address, properties: t.properties, info: t.info, access: () => t.access(),
+        support: {...t.support, restore: false},
         query: (spec) => t.query(spec), count: (f, s, d) => t.count(f, s, d),
         transaction: (ops) => t.transaction(ops), frame: (spec) => t.frame(spec)};
     },

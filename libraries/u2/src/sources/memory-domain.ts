@@ -294,6 +294,12 @@ export class MemoryDomainBackend implements DomainBackend {
           throw new DomainBackendError('version-conflict',
             `Operation ${index}: row "${id}" is at version ${rows[at].version}, expected ${op.expectedVersion}`);
         }
+        const moved = Object.keys(op.expected ?? {})
+          .filter((c) => rows[at][c] !== resolve(op.expected![c], index));
+        if (moved.length > 0) {
+          throw new DomainBackendError('version-conflict',
+            `Operation ${index}: row "${id}" changed since it was read: ${moved.join(', ')}`);
+        }
         const row = table.stamp({...rows[at], ...values}, (rows[at].version as number) + 1);
         table.check(row, index);
         entry(op.op, id!, {...rows[at]}, {...row});
@@ -383,7 +389,7 @@ export class MemoryTable implements DomainTableLike {
     const searchable = columns.filter(([, c]) => c.searchable === true).map(([n]) => n);
     const permissions = Array.isArray(json.permissions) ? json.permissions : Object.keys(json.permissions ?? {});
     this.info = {
-      nameColumn: named ?? null, businessKey: json.businessKey ?? [],
+      nameColumn: named ?? null, businessKey: json.businessKey ?? [], rowAddress: 'businessKey',
       singularName: singular, pluralName: json.pluralName ?? json.friendlyName ?? `${singular}s`,
       searchableColumns: searchable.length > 0 ? searchable : named === undefined ? [] : [named],
       constraints: Object.entries(json.constraints ?? {}).filter(([, c]) => typeof c.expr === 'string')
@@ -398,7 +404,9 @@ export class MemoryTable implements DomainTableLike {
     // point — a control gates on what the backend says, not on which backend it is
     this.support = {systemColumns: SYSTEM.map(([column]) => column), writes: true, deleted: true,
       restore: true, audit: true, ancestors: this.info.hierarchy === true, probe: true, version: true,
-      watch: false};
+      watch: false, updateWhere: true, captions: true, transaction: true, concurrency: 'version', filters: 'full',
+      // what `_plan` honours: the upsert merge needs a business key to match on
+      batch: {upsert: this.info.businessKey.length > 0, partial: true, validate: true, skipDuplicates: true}};
     if (this.support.ancestors)
       this.ancestors = (id) => this._ancestors(id);
     this.rows = rows.map((row) => this.stamp({...row}, 1));

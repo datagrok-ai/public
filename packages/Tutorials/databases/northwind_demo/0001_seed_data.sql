@@ -2,13 +2,13 @@
 -- GENERATED from data/demo/northwind/Northwind.sl3 in the core repo; do not edit by hand.
 -- Row ids are md5-derived from natural keys; applied once via package_db_ups.
 
-INSERT INTO northwind.regions (id, name) VALUES
+INSERT INTO northwind_demo.regions (id, name) VALUES
   ('1ce6933a-a21b-6119-d22f-ff8fc8b5a86a', 'Eastern'),
   ('56d156b8-bdef-dc8a-6e55-2dd51d1b14c6', 'Western'),
   ('b119910b-01ef-d220-530c-196b762463f1', 'Northern'),
   ('b1b25554-da97-b8bc-8d6e-86b58c4f6b34', 'Southern');
 
-INSERT INTO northwind.territories (id, code, name, region_id) VALUES
+INSERT INTO northwind_demo.territories (id, code, name, region_id) VALUES
   ('7c2de608-98b3-3381-4935-c0d8ab4e9feb', '01581', 'Westboro', '1ce6933a-a21b-6119-d22f-ff8fc8b5a86a'),
   ('c1b773f3-4dbb-c954-0707-b851287f22fe', '01730', 'Bedford', '1ce6933a-a21b-6119-d22f-ff8fc8b5a86a'),
   ('f0f1ee6c-52c8-b31b-100a-95ade7f367eb', '01833', 'Georgetow', '1ce6933a-a21b-6119-d22f-ff8fc8b5a86a'),
@@ -60,12 +60,12 @@ INSERT INTO northwind.territories (id, code, name, region_id) VALUES
   ('6b8c5c8d-1424-2641-1f7d-e8ac12e5bfbd', '95054', 'Santa Clara', '56d156b8-bdef-dc8a-6e55-2dd51d1b14c6'),
   ('06e7ba6c-06a6-930d-ff14-63d90c584a42', '95060', 'Santa Cruz', '56d156b8-bdef-dc8a-6e55-2dd51d1b14c6');
 
-INSERT INTO northwind.territories (id, code, name, region_id) VALUES
+INSERT INTO northwind_demo.territories (id, code, name, region_id) VALUES
   ('ff9db416-942d-d257-5120-010aa484e529', '98004', 'Bellevue', '56d156b8-bdef-dc8a-6e55-2dd51d1b14c6'),
   ('7e0067b1-4e3c-ffcc-e5fd-00966119f8df', '98052', 'Redmond', '56d156b8-bdef-dc8a-6e55-2dd51d1b14c6'),
   ('578113f8-f5f0-4ee2-a0d3-cfa5f39c13a5', '98104', 'Seattle', '56d156b8-bdef-dc8a-6e55-2dd51d1b14c6');
 
-INSERT INTO northwind.categories (id, name, description) VALUES
+INSERT INTO northwind_demo.categories (id, name, description) VALUES
   ('80e57d60-3d8e-c677-e8af-d54362837276', 'Beverages', 'b''Soft drinks, coffees, teas, beers, and ales\x00'''),
   ('6073df7b-2de6-4d2d-4e1d-848592fc01d5', 'Condiments', 'b''Sweet and savory sauces, relishes, spreads, and seasonings\x00'''),
   ('db9dac7b-95e5-0fa5-40f6-8e2d70dc5046', 'Confections', 'b''Desserts, candies, and sweet breads\x00'''),
@@ -75,7 +75,7 @@ INSERT INTO northwind.categories (id, name, description) VALUES
   ('00471bac-3ce3-e0fb-5391-57bd398cf644', 'Produce', 'b''Dried fruit and bean curd\x00'''),
   ('c3dabf96-e7e4-d323-167a-bbe953c5501c', 'Seafood', 'b''Seaweed and fish\x00''');
 
-INSERT INTO northwind.suppliers (id, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax, home_page) VALUES
+INSERT INTO northwind_demo.suppliers (id, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax, home_page) VALUES
   ('8445ee42-b8d0-c790-bc9a-30eefb2c2a5c', 'Exotic Liquids', 'Charlotte Cooper', 'Purchasing Manager', '49 Gilbert St.', 'London', NULL, 'EC1 4SD', 'UK', '(171) 555-2222', NULL, NULL),
   ('389ff131-9e7e-5fa0-4404-0983b3686469', 'New Orleans Cajun Delights', 'Shelley Burke', 'Order Administrator', 'P.O. Box 78934', 'New Orleans', 'LA', '70117', 'USA', '(100) 555-4822', NULL, 'b''#CAJUN.HTM#\x00'''),
   ('116d2c09-9a5b-6f6a-cada-cce178bfc1ff', 'Grandma Kelly''s Homestead', 'Regina Murphy', 'Sales Representative', '707 Oxford Rd.', 'Ann Arbor', 'MI', '48104', 'USA', '(313) 555-5735', '(313) 555-3349', NULL),
@@ -106,12 +106,12 @@ INSERT INTO northwind.suppliers (id, company_name, contact_name, contact_title, 
   ('07ee4525-aa51-453c-a65f-f6684a4816f3', 'Gai pâturage', 'Eliane Noz', 'Sales Representative', 'Bat. B 3, rue des Alpes', 'Annecy', NULL, '74000', 'France', '38.76.98.06', '38.76.98.58', NULL),
   ('0c8296cf-e67e-d84d-df38-0fb5cb26183f', 'Forêts d''érables', 'Chantal Goulet', 'Accounting Manager', '148 rue Chasseur', 'Ste-Hyacinthe', 'Québec', 'J2S 7S8', 'Canada', '(514) 555-2955', '(514) 555-2921', NULL);
 
-INSERT INTO northwind.shippers (id, company_name, phone) VALUES
+INSERT INTO northwind_demo.shippers (id, company_name, phone) VALUES
   ('db69429b-1585-5417-38f1-37b35db2b5c4', 'Speedy Express', '(503) 555-9831'),
   ('de5bec67-5d61-ac91-26d0-8a38f79e15d8', 'United Package', '(503) 555-3199'),
   ('d6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 'Federal Shipping', '(503) 555-9931');
 
-INSERT INTO northwind.customers (id, code, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax) VALUES
+INSERT INTO northwind_demo.customers (id, code, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax) VALUES
   ('829d15d0-9006-3e30-1dff-8a6af86fae22', 'ALFKI', 'Alfreds Futterkiste', 'Maria Anders', 'Sales Representative', 'Obere Str. 57', 'Berlin', NULL, '12209', 'Germany', '030-0074321', '030-0076545'),
   ('93e4b333-98b1-b660-9475-430128fff1dc', 'ANATR', 'Ana Trujillo Emparedados y helados', 'Ana Trujillo', 'Owner', 'Avda. de la Constitución 2222', 'México D.F.', NULL, '05021', 'Mexico', '(5) 555-4729', '(5) 555-3745'),
   ('c6bfeb07-7b2c-855d-c2d6-a1bcef21d094', 'ANTON', 'Antonio Moreno Taquería', 'Antonio Moreno', 'Owner', 'Mataderos  2312', 'México D.F.', NULL, '05023', 'Mexico', '(5) 555-3932', NULL),
@@ -163,7 +163,7 @@ INSERT INTO northwind.customers (id, code, company_name, contact_name, contact_t
   ('af137132-ab5a-71f0-1692-807a84d48d93', 'MAGAA', 'Magazzini Alimentari Riuniti', 'Giovanni Rovelli', 'Marketing Manager', 'Via Ludovico il Moro 22', 'Bergamo', NULL, '24100', 'Italy', '035-640230', '035-640231'),
   ('a4d3dada-16cd-5baa-a564-6bc02c6a8093', 'MAISD', 'Maison Dewey', 'Catherine Dewey', 'Sales Agent', 'Rue Joseph-Bens 532', 'Bruxelles', NULL, 'B-1180', 'Belgium', '(02) 201 24 67', '(02) 201 24 68');
 
-INSERT INTO northwind.customers (id, code, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax) VALUES
+INSERT INTO northwind_demo.customers (id, code, company_name, contact_name, contact_title, address, city, region, postal_code, country, phone, fax) VALUES
   ('46908837-0c08-946f-10eb-724a69de9ac9', 'MEREP', 'Mère Paillarde', 'Jean Fresnière', 'Marketing Assistant', '43 rue St. Laurent', 'Montréal', 'Québec', 'H1J 1C3', 'Canada', '(514) 555-8054', '(514) 555-8055'),
   ('7d9037e1-d0a9-8892-865b-39e61d96a181', 'MORGK', 'Morgenstern Gesundkost', 'Alexander Feuer', 'Marketing Assistant', 'Heerstr. 22', 'Leipzig', NULL, '04179', 'Germany', '0342-023176', NULL),
   ('cf1883d2-c868-5633-c6f9-6d4b3faca8c1', 'NORTS', 'North/South', 'Simon Crowther', 'Sales Associate', 'South House 300 Queensbridge', 'London', NULL, 'SW7 1RZ', 'UK', '(171) 555-7733', '(171) 555-2530'),
@@ -206,7 +206,7 @@ INSERT INTO northwind.customers (id, code, company_name, contact_name, contact_t
   ('bd6486ea-cd8e-4c1f-90ca-ec5f0fb06020', 'WILMK', 'Wilman Kala', 'Matti Karttunen', 'Owner/Marketing Assistant', 'Keskuskatu 45', 'Helsinki', NULL, '21240', 'Finland', '90-224 8858', '90-224 8858'),
   ('9eac7596-d26e-1925-1bc0-3df5014ae29d', 'WOLZA', 'Wolski  Zajazd', 'Zbyszek Piestrzeniewicz', 'Owner', 'ul. Filtrowa 68', 'Warszawa', NULL, '01-012', 'Poland', '(26) 642-7012', '(26) 642-7012');
 
-INSERT INTO northwind.employees (id, last_name, first_name, title, title_of_courtesy, birth_date, hire_date, address, city, region, postal_code, country, home_phone, extension, notes) VALUES
+INSERT INTO northwind_demo.employees (id, last_name, first_name, title, title_of_courtesy, birth_date, hire_date, address, city, region, postal_code, country, home_phone, extension, notes) VALUES
   ('8f12b367-7b69-5b52-b6c8-ff85d34dd857', 'Davolio', 'Nancy', 'Sales Representative', 'Ms.', '1948-12-08 00:00:00', '1992-05-01 00:00:00', '507 - 20th Ave. E.
 Apt. 2A', 'Seattle', 'WA', '98122', 'USA', '(206) 555-9857', '5467', 'b''Education includes a BA in psychology from Colorado State University in 1970.  She also completed "The Art of the Cold Call."  Nancy is a member of Toastmasters International.\x00'''),
   ('3a23bb3e-f611-57c1-09c8-f514b5523bf5', 'Fuller', 'Andrew', 'Vice President, Sales', 'Dr.', '1952-02-19 00:00:00', '1992-08-14 00:00:00', '908 W. Capital Way', 'Tacoma', 'WA', '98401', 'USA', '(206) 555-9482', '3457', 'b''Andrew received his BTS commercial in 1974 and a Ph.D. in international marketing from the University of Dallas in 1981.  He is fluent in French and Italian and reads German.  He joined the company as a sales representative, was promoted to sales manager in January 1992 and to vice president of sales in March 1993.  Andrew is a member of the Sales Management Roundtable, the Seattle Chamber of Commerce, and the Pacific Rim Importers Association.\x00'''),
@@ -220,16 +220,16 @@ Winchester Way', 'London', NULL, 'RG1 9SP', 'UK', '(71) 555-5598', '465', 'b''Ro
   ('289fc413-4cf3-1365-accb-eb051f957a29', 'Callahan', 'Laura', 'Inside Sales Coordinator', 'Ms.', '1958-01-09 00:00:00', '1994-03-05 00:00:00', '4726 - 11th Ave. N.E.', 'Seattle', 'WA', '98105', 'USA', '(206) 555-1189', '2344', 'b''Laura received a BA in psychology from the University of Washington.  She has also completed a course in business French.  She reads and writes French.\x00'''),
   ('496ae9a7-c6f7-2c2e-4bb7-d3275950691a', 'Dodsworth', 'Anne', 'Sales Representative', 'Ms.', '1966-01-27 00:00:00', '1994-11-15 00:00:00', '7 Houndstooth Rd.', 'London', NULL, 'WG2 7LT', 'UK', '(71) 555-4444', '452', 'b''Anne has a BA degree in English from St. Lawrence College.  She is fluent in French and German.\x00''');
 
-UPDATE northwind.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '8f12b367-7b69-5b52-b6c8-ff85d34dd857';
-UPDATE northwind.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '05be9e86-b365-3bb4-37d2-6f0254dfed14';
-UPDATE northwind.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '2595ce3e-1be2-579c-9d50-89539a049217';
-UPDATE northwind.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '4c5d1af2-8084-8b64-b3d3-24b8421941bc';
-UPDATE northwind.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '4f5edd0c-6a4c-53eb-6fae-355c544bd397';
-UPDATE northwind.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '3e306251-81c3-4dfd-f6d0-44ee33df99c7';
-UPDATE northwind.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '289fc413-4cf3-1365-accb-eb051f957a29';
-UPDATE northwind.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '496ae9a7-c6f7-2c2e-4bb7-d3275950691a';
+UPDATE northwind_demo.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '8f12b367-7b69-5b52-b6c8-ff85d34dd857';
+UPDATE northwind_demo.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '05be9e86-b365-3bb4-37d2-6f0254dfed14';
+UPDATE northwind_demo.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '2595ce3e-1be2-579c-9d50-89539a049217';
+UPDATE northwind_demo.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '4c5d1af2-8084-8b64-b3d3-24b8421941bc';
+UPDATE northwind_demo.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '4f5edd0c-6a4c-53eb-6fae-355c544bd397';
+UPDATE northwind_demo.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '3e306251-81c3-4dfd-f6d0-44ee33df99c7';
+UPDATE northwind_demo.employees SET reports_to = '3a23bb3e-f611-57c1-09c8-f514b5523bf5' WHERE id = '289fc413-4cf3-1365-accb-eb051f957a29';
+UPDATE northwind_demo.employees SET reports_to = '4c5d1af2-8084-8b64-b3d3-24b8421941bc' WHERE id = '496ae9a7-c6f7-2c2e-4bb7-d3275950691a';
 
-INSERT INTO northwind.products (id, name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, units_on_order, reorder_level, discontinued) VALUES
+INSERT INTO northwind_demo.products (id, name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, units_on_order, reorder_level, discontinued) VALUES
   ('aba93f9b-dcd7-ef45-6646-9d84d3991395', 'Chai', '8445ee42-b8d0-c790-bc9a-30eefb2c2a5c', '80e57d60-3d8e-c677-e8af-d54362837276', '10 boxes x 20 bags', 18.0, 39, 0, 10, false),
   ('768b5a1f-3982-acf9-ac8d-d57670a697c8', 'Chang', '8445ee42-b8d0-c790-bc9a-30eefb2c2a5c', '80e57d60-3d8e-c677-e8af-d54362837276', '24 - 12 oz bottles', 19.0, 17, 40, 25, false),
   ('27e85487-8bb4-d498-8227-27f1566923db', 'Aniseed Syrup', '8445ee42-b8d0-c790-bc9a-30eefb2c2a5c', '6073df7b-2de6-4d2d-4e1d-848592fc01d5', '12 - 550 ml bottles', 10.0, 13, 70, 25, false),
@@ -281,7 +281,7 @@ INSERT INTO northwind.products (id, name, supplier_id, category_id, quantity_per
   ('efacad1b-e869-2aa0-5dd4-6aa257bb384e', 'Maxilaku', 'da586e54-1807-9996-590b-25458bde3667', 'db9dac7b-95e5-0fa5-40f6-8e2d70dc5046', '24 - 50 g pkgs.', 20.0, 10, 60, 15, false),
   ('081991a7-9cc3-86c4-338e-196489fbf929', 'Valkoinen suklaa', 'da586e54-1807-9996-590b-25458bde3667', 'db9dac7b-95e5-0fa5-40f6-8e2d70dc5046', '12 - 100 g bars', 16.25, 65, 0, 30, false);
 
-INSERT INTO northwind.products (id, name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, units_on_order, reorder_level, discontinued) VALUES
+INSERT INTO northwind_demo.products (id, name, supplier_id, category_id, quantity_per_unit, unit_price, units_in_stock, units_on_order, reorder_level, discontinued) VALUES
   ('909de8f7-0e47-0543-85d2-d28388757644', 'Manjimup Dried Apples', '1e8806bb-40dc-c69f-ceaf-846b283d28c1', '00471bac-3ce3-e0fb-5391-57bd398cf644', '50 - 300 g pkgs.', 53.0, 20, 0, 10, false),
   ('d99562dd-1834-48c6-5e9e-2c6f93ee6d53', 'Filo Mix', '1e8806bb-40dc-c69f-ceaf-846b283d28c1', '06849330-8157-6ec4-5a9e-9be52f56b9f4', '16 - 2 kg boxes', 7.0, 38, 0, 25, false),
   ('9cb99912-0238-75b9-481b-775ce90f8dd9', 'Perth Pasties', '1e8806bb-40dc-c69f-ceaf-846b283d28c1', 'a9a5ef2a-47f5-fdf0-4795-8c852ea69995', '48 pieces', 32.8, 0, 0, 0, true),
@@ -310,7 +310,7 @@ INSERT INTO northwind.products (id, name, supplier_id, category_id, quantity_per
   ('a51e4590-2236-b079-524d-97ab53a43129', 'Lakkalikööri', 'da586e54-1807-9996-590b-25458bde3667', '80e57d60-3d8e-c677-e8af-d54362837276', '500 ml', 18.0, 57, 0, 20, false),
   ('56e0ec66-b0d3-1fae-555f-bfd2c05b5f28', 'Original Frankfurter grüne Soße', '28e22f8e-142c-b4fe-bebe-04b55b88bde5', '6073df7b-2de6-4d2d-4e1d-848592fc01d5', '12 boxes', 13.0, 32, 0, 15, false);
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('3d987486-6c42-f5aa-5e6b-1cf43585c3b6', 10248, '5ba268c3-7b13-ad5d-0b51-b7c272743e47', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1996-07-04 00:00:00', '1996-08-01 00:00:00', '1996-07-16 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 32.38, 'Vins et alcools Chevalier', '59 rue de l''Abbaye', 'Reims', NULL, '51100', 'France'),
   ('5767650b-07ef-2d13-9307-7ed4a4981733', 10249, '83d20734-c317-e190-9f70-3cf243e5a437', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1996-07-05 00:00:00', '1996-08-16 00:00:00', '1996-07-10 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 11.61, 'Toms Spezialitäten', 'Luisenstr. 48', 'Münster', NULL, '44087', 'Germany'),
   ('c97e9e2d-5db3-31bf-a217-583276c263a1', 10250, '8ec69c0a-0491-9688-1997-8421bf6073ad', '2595ce3e-1be2-579c-9d50-89539a049217', '1996-07-08 00:00:00', '1996-08-05 00:00:00', '1996-07-12 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 65.83, 'Hanari Carnes', 'Rua do Paço, 67', 'Rio de Janeiro', 'RJ', '05454-876', 'Brazil'),
@@ -362,7 +362,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('4914e4df-e9bd-f07e-2170-51bb5de0d35d', 10296, '224fd337-8cf7-5c15-798a-251733d996a1', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1996-09-03 00:00:00', '1996-10-01 00:00:00', '1996-09-11 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 0.12, 'LILA-Supermercado', 'Carrera 52 con Ave. Bolívar #65-98 Llano Largo', 'Barquisimeto', 'Lara', '3508', 'Venezuela'),
   ('9be968a2-9f07-c9d9-4148-12332e36709a', 10297, 'e81aff77-dd2e-25c4-2e2e-aee377fa47a2', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1996-09-04 00:00:00', '1996-10-16 00:00:00', '1996-09-10 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 5.74, 'Blondel père et fils', '24, place Kléber', 'Strasbourg', NULL, '67000', 'France');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('8f0a8672-8852-578f-d69f-498c15645017', 10298, '4b3c1799-a2bd-7f26-0668-975d5e17ab41', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1996-09-05 00:00:00', '1996-10-03 00:00:00', '1996-09-11 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 168.22, 'Hungry Owl All-Night Grocers', '8 Johnstown Road', 'Cork', 'Co. Cork', NULL, 'Ireland'),
   ('86a7908d-e6b5-c511-198b-4f7d7d69a70e', 10299, 'cad67ee1-2488-0c45-9225-e089538267ef', '2595ce3e-1be2-579c-9d50-89539a049217', '1996-09-06 00:00:00', '1996-10-04 00:00:00', '1996-09-13 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 29.76, 'Ricardo Adocicados', 'Av. Copacabana, 267', 'Rio de Janeiro', 'RJ', '02389-890', 'Brazil'),
   ('0a9eea57-26fb-74df-0b43-b272e66f89c5', 10300, 'af137132-ab5a-71f0-1692-807a84d48d93', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1996-09-09 00:00:00', '1996-10-07 00:00:00', '1996-09-18 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 17.68, 'Magazzini Alimentari Riuniti', 'Via Ludovico il Moro 22', 'Bergamo', NULL, '24100', 'Italy'),
@@ -414,7 +414,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('96373301-c9cc-0253-bf5c-dd50284f476b', 10346, '60517a03-10ae-5571-0788-be685e9f597c', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1996-11-05 00:00:00', '1996-12-17 00:00:00', '1996-11-08 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 142.08, 'Rattlesnake Canyon Grocery', '2817 Milton Dr.', 'Albuquerque', 'NM', '87110', 'USA'),
   ('1703415c-d0a1-c2a2-8074-fa96bf115552', 10347, '53f97692-c597-b069-f8ec-b0c04370a6b9', '2595ce3e-1be2-579c-9d50-89539a049217', '1996-11-06 00:00:00', '1996-12-04 00:00:00', '1996-11-08 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 3.1, 'Familia Arquibaldo', 'Rua Orós, 92', 'Sao Paulo', 'SP', '05442-030', 'Brazil');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('92265a5b-9cd8-94cb-e6d6-51052c3a10a1', 10348, 'a572fb98-2bbc-9dbb-d1fd-2da66cf16ff3', '2595ce3e-1be2-579c-9d50-89539a049217', '1996-11-07 00:00:00', '1996-12-05 00:00:00', '1996-11-15 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 0.78, 'Die Wandernde Kuh', 'Adenauerallee 900', 'Stuttgart', NULL, '70563', 'Germany'),
   ('c6e58f73-3b61-31ae-b458-507de35036b8', 10349, '3d380644-b70a-1171-581f-3edcdaf7255a', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1996-11-08 00:00:00', '1996-12-06 00:00:00', '1996-11-15 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 8.63, 'Split Rail Beer & Ale', 'P.O. Box 555', 'Lander', 'WY', '82520', 'USA'),
   ('d22265d9-3367-4995-7845-e8222d122ffd', 10350, 'eeb2286b-b346-7475-7edb-462bb760bcd7', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1996-11-11 00:00:00', '1996-12-09 00:00:00', '1996-12-03 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 64.19, 'La maison d''Asie', '1 rue Alsace-Lorraine', 'Toulouse', NULL, '31000', 'France'),
@@ -466,7 +466,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('36a53985-b936-05d3-cf03-79da25e1dae2', 10396, 'e0a9f714-e776-20a2-cfc8-bdcafb25b805', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1996-12-27 00:00:00', '1997-01-10 00:00:00', '1997-01-06 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 135.35, 'Frankenversand', 'Berliner Platz 43', 'München', NULL, '80805', 'Germany'),
   ('e1a822ad-cc2a-e31b-ee23-43c672e09855', 10397, 'f9ae85a0-297c-a220-badf-c919476818c7', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1996-12-27 00:00:00', '1997-01-24 00:00:00', '1997-01-02 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 60.26, 'Princesa Isabel Vinhos', 'Estrada da saúde n. 58', 'Lisboa', NULL, '1756', 'Portugal');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('93dfe748-1069-e062-bef9-95e01d82918d', 10398, '7ff5c8da-4e0f-5231-a2e2-872073fbbd16', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1996-12-30 00:00:00', '1997-01-27 00:00:00', '1997-01-09 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 89.16, 'Save-a-lot Markets', '187 Suffolk Ln.', 'Boise', 'ID', '83720', 'USA'),
   ('b0411d9f-fae0-2b5d-37ce-03d716b64722', 10399, '1be10791-4c8f-220b-51c5-c1117c675ad6', '289fc413-4cf3-1365-accb-eb051f957a29', '1996-12-31 00:00:00', '1997-01-14 00:00:00', '1997-01-08 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 27.36, 'Vaffeljernet', 'Smagsloget 45', 'Århus', NULL, '8200', 'Denmark'),
   ('606d3566-5d30-d2fa-8424-fb9356f81888', 10400, '6d08fa8b-3e99-e46f-99f3-e445b54f80a6', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1997-01-01 00:00:00', '1997-01-29 00:00:00', '1997-01-16 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 83.93, 'Eastern Connection', '35 King George', 'London', NULL, 'WX3 6FW', 'UK'),
@@ -518,7 +518,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('41c45e85-3503-aae6-47cb-25c1020fc989', 10446, '83d20734-c317-e190-9f70-3cf243e5a437', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1997-02-14 00:00:00', '1997-03-14 00:00:00', '1997-02-19 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 14.68, 'Toms Spezialitäten', 'Luisenstr. 48', 'Münster', NULL, '44087', 'Germany'),
   ('a7aaf94c-e779-bc33-54a9-55e7892bab8c', 10447, 'cad67ee1-2488-0c45-9225-e089538267ef', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-02-14 00:00:00', '1997-03-14 00:00:00', '1997-03-07 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 68.66, 'Ricardo Adocicados', 'Av. Copacabana, 267', 'Rio de Janeiro', 'RJ', '02389-890', 'Brazil');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('c26e2ef3-9717-d3f2-aa58-8b93ec91df84', 10448, 'cd892691-c465-41e1-11ba-39d0449e2f66', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-02-17 00:00:00', '1997-03-17 00:00:00', '1997-02-24 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 38.82, 'Rancho grande', 'Av. del Libertador 900', 'Buenos Aires', NULL, '1010', 'Argentina'),
   ('6fe50b29-1539-b192-257f-ae76c3050f3c', 10449, 'e81aff77-dd2e-25c4-2e2e-aee377fa47a2', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-02-18 00:00:00', '1997-03-18 00:00:00', '1997-02-27 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 53.3, 'Blondel père et fils', '24, place Kléber', 'Strasbourg', NULL, '67000', 'France'),
   ('11da73de-81af-0f00-f46d-b35c8f8a27f5', 10450, 'e3d58329-1a27-da57-3604-31bcdb6eb609', '289fc413-4cf3-1365-accb-eb051f957a29', '1997-02-19 00:00:00', '1997-03-19 00:00:00', '1997-03-11 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 7.23, 'Victuailles en stock', '2, rue du Commerce', 'Lyon', NULL, '69004', 'France'),
@@ -570,7 +570,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('fa65eee1-a96a-7950-aece-05bea497a663', 10496, '1bb882fd-f358-8f62-05de-8298fbbddb8a', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1997-04-04 00:00:00', '1997-05-02 00:00:00', '1997-04-07 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 46.77, 'Tradiçao Hipermercados', 'Av. Inês de Castro, 414', 'Sao Paulo', 'SP', '05634-030', 'Brazil'),
   ('224e1e2a-7c35-1e78-e7ea-0723fbd41983', 10497, '11c5ec1e-a02b-7d51-cc17-b0a2b96dee6d', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1997-04-04 00:00:00', '1997-05-02 00:00:00', '1997-04-07 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 36.21, 'Lehmanns Marktstand', 'Magazinweg 7', 'Frankfurt a.M.', NULL, '60528', 'Germany');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('963ee080-d3ca-8f2b-fdb7-161816535524', 10498, '057006c9-d8fa-9369-1a1b-6883073886e8', '289fc413-4cf3-1365-accb-eb051f957a29', '1997-04-07 00:00:00', '1997-05-05 00:00:00', '1997-04-11 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 29.75, 'HILARION-Abastos', 'Carrera 22 con Ave. Carlos Soublette #8-35', 'San Cristóbal', 'Táchira', '5022', 'Venezuela'),
   ('63fdb3c8-ae0b-eecb-19ad-3293e2199c8d', 10499, '224fd337-8cf7-5c15-798a-251733d996a1', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-04-08 00:00:00', '1997-05-06 00:00:00', '1997-04-16 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 102.02, 'LILA-Supermercado', 'Carrera 52 con Ave. Bolívar #65-98 Llano Largo', 'Barquisimeto', 'Lara', '3508', 'Venezuela'),
   ('8bf8ceb2-4329-10cf-7b86-e80583b684f3', 10500, 'eeb2286b-b346-7475-7edb-462bb760bcd7', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1997-04-09 00:00:00', '1997-05-07 00:00:00', '1997-04-17 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 42.68, 'La maison d''Asie', '1 rue Alsace-Lorraine', 'Toulouse', NULL, '31000', 'France'),
@@ -622,7 +622,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('47ece3a1-1992-b550-d7d1-3e47bd170b40', 10546, 'e3d58329-1a27-da57-3604-31bcdb6eb609', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1997-05-23 00:00:00', '1997-06-20 00:00:00', '1997-05-27 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 194.72, 'Victuailles en stock', '2, rue du Commerce', 'Lyon', NULL, '69004', 'France'),
   ('189ac6d8-36f2-023c-9d96-111b3b9e6f57', 10547, '9441d947-1272-115a-6bb1-6baaf98d0701', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-05-23 00:00:00', '1997-06-20 00:00:00', '1997-06-02 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 178.43, 'Seven Seas Imports', '90 Wadhurst Rd.', 'London', NULL, 'OX15 4NB', 'UK');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('b2a68f25-3bf1-fa32-42f5-b4d2d8e37ad6', 10548, '83d20734-c317-e190-9f70-3cf243e5a437', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-05-26 00:00:00', '1997-06-23 00:00:00', '1997-06-02 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 1.43, 'Toms Spezialitäten', 'Luisenstr. 48', 'Münster', NULL, '44087', 'Germany'),
   ('8097a6a8-5585-ef80-24f0-732f52525984', 10549, 'ecfc73eb-2e39-af2a-1c98-ee6cc1cd1cb7', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1997-05-27 00:00:00', '1997-06-10 00:00:00', '1997-05-30 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 171.24, 'QUICK-Stop', 'Taucherstraße 10', 'Cunewalde', NULL, '01307', 'Germany'),
   ('5eb46234-b214-1aae-1791-6527a090c3b2', 10550, '87b695d3-9936-ac24-c941-a1581bab3a0b', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1997-05-28 00:00:00', '1997-06-25 00:00:00', '1997-06-06 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 4.32, 'Godos Cocina Típica', 'C/ Romero, 33', 'Sevilla', NULL, '41101', 'Spain'),
@@ -674,7 +674,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('abefcd2e-da0b-0a27-999b-bcea9faaea82', 10596, '541acd57-264c-7ac1-d1c6-94cf972052e3', '289fc413-4cf3-1365-accb-eb051f957a29', '1997-07-11 00:00:00', '1997-08-08 00:00:00', '1997-08-12 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 16.34, 'White Clover Markets', '1029 - 12th Ave. S.', 'Seattle', 'WA', '98124', 'USA'),
   ('48a9be67-7441-da7b-f62e-e4e848d630c2', 10597, '438ae46f-6544-5b1d-dd85-44e5f51ea2b9', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1997-07-11 00:00:00', '1997-08-08 00:00:00', '1997-07-18 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 35.12, 'Piccolo und mehr', 'Geislweg 14', 'Salzburg', NULL, '5020', 'Austria');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('1c951022-cd7c-d4c8-c829-75f9af75dc50', 10598, '60517a03-10ae-5571-0788-be685e9f597c', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1997-07-14 00:00:00', '1997-08-11 00:00:00', '1997-07-18 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 44.42, 'Rattlesnake Canyon Grocery', '2817 Milton Dr.', 'Albuquerque', 'NM', '87110', 'USA'),
   ('cdf4025f-e458-ca85-e9ad-a70af3178b3a', 10599, 'c7db1d7d-2c00-4139-fbdc-620ed72c1a5e', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1997-07-15 00:00:00', '1997-08-26 00:00:00', '1997-07-21 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 29.98, 'B''s Beverages', 'Fauntleroy Circus', 'London', NULL, 'EC2 5NT', 'UK'),
   ('2ddcec02-6386-e058-b6ff-6d9c61f6750d', 10600, '68b3f740-2f3b-56cd-74f1-571071326240', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-07-16 00:00:00', '1997-08-13 00:00:00', '1997-07-21 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 45.13, 'Hungry Coyote Import Store', 'City Center Plaza 516 Main St.', 'Elgin', 'OR', '97827', 'USA'),
@@ -726,7 +726,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('04dad33c-49de-ca8c-12b4-f0e887c150e7', 10646, '4b3c1799-a2bd-7f26-0668-975d5e17ab41', '496ae9a7-c6f7-2c2e-4bb7-d3275950691a', '1997-08-27 00:00:00', '1997-10-08 00:00:00', '1997-09-03 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 142.33, 'Hungry Owl All-Night Grocers', '8 Johnstown Road', 'Cork', 'Co. Cork', NULL, 'Ireland'),
   ('d09234b1-a1c7-8d05-5e1a-fdc28f1e14e5', 10647, '75b4f1a9-f55e-33a4-48b6-b6b445c6d466', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-08-27 00:00:00', '1997-09-10 00:00:00', '1997-09-03 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 45.54, 'Que Delícia', 'Rua da Panificadora, 12', 'Rio de Janeiro', 'RJ', '02389-673', 'Brazil');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('6f8bbd53-f499-a6ef-9cae-37a927ebf920', 10648, 'cad67ee1-2488-0c45-9225-e089538267ef', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1997-08-28 00:00:00', '1997-10-09 00:00:00', '1997-09-09 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 14.25, 'Ricardo Adocicados', 'Av. Copacabana, 267', 'Rio de Janeiro', 'RJ', '02389-890', 'Brazil'),
   ('d386012e-2c71-53e6-f385-9019f94fffad', 10649, 'a4d3dada-16cd-5baa-a564-6bc02c6a8093', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1997-08-28 00:00:00', '1997-09-25 00:00:00', '1997-08-29 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 6.2, 'Maison Dewey', 'Rue Joseph-Bens 532', 'Bruxelles', NULL, 'B-1180', 'Belgium'),
   ('f402de10-aac3-1a8a-e6e2-77e8db2474e4', 10650, '53f97692-c597-b069-f8ec-b0c04370a6b9', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1997-08-29 00:00:00', '1997-09-26 00:00:00', '1997-09-03 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 176.81, 'Familia Arquibaldo', 'Rua Orós, 92', 'Sao Paulo', 'SP', '05442-030', 'Brazil'),
@@ -778,7 +778,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('779e6de9-c0a2-ffd4-b4d6-0410a7f6b01c', 10696, '541acd57-264c-7ac1-d1c6-94cf972052e3', '289fc413-4cf3-1365-accb-eb051f957a29', '1997-10-08 00:00:00', '1997-11-19 00:00:00', '1997-10-14 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 102.55, 'White Clover Markets', '1029 - 12th Ave. S.', 'Seattle', 'WA', '98124', 'USA'),
   ('90d8a6e7-5f4b-0666-b730-eb5b4062c4ed', 10697, '0bc43117-dab1-3213-45de-3203c0d2ede1', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-10-08 00:00:00', '1997-11-05 00:00:00', '1997-10-14 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 45.52, 'LINO-Delicateses', 'Ave. 5 de Mayo Porlamar', 'I. de Margarita', 'Nueva Esparta', '4980', 'Venezuela');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('1459d9a8-204b-7c1b-3cf0-d790e2bd81ab', 10698, 'ac0c543b-131d-6c58-9ce9-968c7d48cbf0', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-10-09 00:00:00', '1997-11-06 00:00:00', '1997-10-17 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 272.47, 'Ernst Handel', 'Kirchgasse 6', 'Graz', NULL, '8010', 'Austria'),
   ('e24b0e14-2748-2430-6b2f-620973b3b2d0', 10699, '7d9037e1-d0a9-8892-865b-39e61d96a181', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-10-09 00:00:00', '1997-11-06 00:00:00', '1997-10-13 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 0.58, 'Morgenstern Gesundkost', 'Heerstr. 22', 'Leipzig', NULL, '04179', 'Germany'),
   ('870cad39-7fb0-fb93-c6bc-8ec1fa053223', 10700, '7ff5c8da-4e0f-5231-a2e2-872073fbbd16', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-10-10 00:00:00', '1997-11-07 00:00:00', '1997-10-16 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 65.1, 'Save-a-lot Markets', '187 Suffolk Ln.', 'Boise', 'ID', '83720', 'USA'),
@@ -830,7 +830,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('1ef51f73-eab4-9f59-43ae-1d9cdfbb0dbf', 10746, '54d3ee1e-2cea-f2c0-350e-67caafcd956b', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1997-11-19 00:00:00', '1997-12-17 00:00:00', '1997-11-21 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 31.43, 'Chop-suey Chinese', 'Hauptstr. 31', 'Bern', NULL, '3012', 'Switzerland'),
   ('8094a4ba-e3db-0e68-823d-d364a610708c', 10747, '438ae46f-6544-5b1d-dd85-44e5f51ea2b9', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1997-11-19 00:00:00', '1997-12-17 00:00:00', '1997-11-26 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 117.33, 'Piccolo und mehr', 'Geislweg 14', 'Salzburg', NULL, '5020', 'Austria');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('1407397d-c5d8-1335-9b36-6cf17d77bb92', 10748, '7ff5c8da-4e0f-5231-a2e2-872073fbbd16', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-11-20 00:00:00', '1997-12-18 00:00:00', '1997-11-28 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 232.55, 'Save-a-lot Markets', '187 Suffolk Ln.', 'Boise', 'ID', '83720', 'USA'),
   ('f52a3d48-184f-da4e-34ce-7e9c001e0bbb', 10749, 'd23ee323-4d17-a13c-6f12-1c40e4a2632c', '2595ce3e-1be2-579c-9d50-89539a049217', '1997-11-20 00:00:00', '1997-12-18 00:00:00', '1997-12-19 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 61.53, 'Island Trading', 'Garden House Crowther Way', 'Cowes', 'Isle of Wight', 'PO31 7PJ', 'UK'),
   ('871e9f22-8cd8-4231-1911-a5d98839a387', 10750, 'ed35ffe9-705d-d98e-d10a-0b44c1cec60c', '496ae9a7-c6f7-2c2e-4bb7-d3275950691a', '1997-11-21 00:00:00', '1997-12-19 00:00:00', '1997-11-24 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 79.3, 'Wartian Herkku', 'Torikatu 38', 'Oulu', NULL, '90110', 'Finland'),
@@ -882,7 +882,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('7965c9ce-1ef7-aff0-efe1-4259cdfd843d', 10796, '057006c9-d8fa-9369-1a1b-6883073886e8', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1997-12-25 00:00:00', '1998-01-22 00:00:00', '1998-01-14 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 26.52, 'HILARION-Abastos', 'Carrera 22 con Ave. Carlos Soublette #8-35', 'San Cristóbal', 'Táchira', '5022', 'Venezuela'),
   ('3023ee3e-8ada-5ab6-9c67-5e9151b06d7c', 10797, '7463244c-50f3-ac21-d397-c4ffd215deb2', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1997-12-25 00:00:00', '1998-01-22 00:00:00', '1998-01-05 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 33.35, 'Drachenblut Delikatessen', 'Walserweg 21', 'Aachen', NULL, '52066', 'Germany');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('3fc6036c-ba55-b599-49f2-191f5ef7ca7c', 10798, 'd23ee323-4d17-a13c-6f12-1c40e4a2632c', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1997-12-26 00:00:00', '1998-01-23 00:00:00', '1998-01-05 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 2.33, 'Island Trading', 'Garden House Crowther Way', 'Cowes', 'Isle of Wight', 'PO31 7PJ', 'UK'),
   ('75c6e01c-77d2-8171-15c1-06d07f816f37', 10799, '0e46d2d3-f018-afcd-645a-c75d9f3f06c8', '496ae9a7-c6f7-2c2e-4bb7-d3275950691a', '1997-12-26 00:00:00', '1998-02-06 00:00:00', '1998-01-05 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 30.76, 'Königlich Essen', 'Maubelstr. 90', 'Brandenburg', NULL, '14776', 'Germany'),
   ('0250d15d-c939-8be6-898d-f04b15d7c3ba', 10800, '9441d947-1272-115a-6bb1-6baaf98d0701', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1997-12-26 00:00:00', '1998-01-23 00:00:00', '1998-01-05 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 137.44, 'Seven Seas Imports', '90 Wadhurst Rd.', 'London', NULL, 'OX15 4NB', 'UK'),
@@ -934,7 +934,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('3d69bd7a-85c7-2892-faa4-c9dc98e01698', 10846, '82131094-6f49-b163-6edb-17c0ae3a699b', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1998-01-22 00:00:00', '1998-03-05 00:00:00', '1998-01-23 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 56.46, 'Suprêmes délices', 'Boulevard Tirou, 255', 'Charleroi', NULL, 'B-6000', 'Belgium'),
   ('a77534f4-8328-d396-5815-04a14f92812a', 10847, '7ff5c8da-4e0f-5231-a2e2-872073fbbd16', '2595ce3e-1be2-579c-9d50-89539a049217', '1998-01-22 00:00:00', '1998-02-05 00:00:00', '1998-02-10 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 487.57, 'Save-a-lot Markets', '187 Suffolk Ln.', 'Boise', 'ID', '83720', 'USA');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('5e0b554e-35d8-9346-f157-ce6efa754e31', 10848, '79ef72a1-d18d-e791-c168-e0962b835b17', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1998-01-23 00:00:00', '1998-02-20 00:00:00', '1998-01-29 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 38.24, 'Consolidated Holdings', 'Berkeley Gardens 12  Brewery', 'London', NULL, 'WX1 6LT', 'UK'),
   ('277036b5-1b5b-84d4-e484-b12e435e0a25', 10849, '0e46d2d3-f018-afcd-645a-c75d9f3f06c8', '496ae9a7-c6f7-2c2e-4bb7-d3275950691a', '1998-01-23 00:00:00', '1998-02-20 00:00:00', '1998-01-30 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 0.56, 'Königlich Essen', 'Maubelstr. 90', 'Brandenburg', NULL, '14776', 'Germany'),
   ('960211e8-13b5-3b38-b7bb-3e797c9d09f7', 10850, 'e3d58329-1a27-da57-3604-31bcdb6eb609', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1998-01-23 00:00:00', '1998-03-06 00:00:00', '1998-01-30 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 49.19, 'Victuailles en stock', '2, rue du Commerce', 'Lyon', NULL, '69004', 'France'),
@@ -986,7 +986,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('fa5b6daf-4405-3b59-4e8a-cb40b9b2a86a', 10896, 'a4d3dada-16cd-5baa-a564-6bc02c6a8093', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1998-02-19 00:00:00', '1998-03-19 00:00:00', '1998-02-27 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 32.45, 'Maison Dewey', 'Rue Joseph-Bens 532', 'Bruxelles', NULL, 'B-1180', 'Belgium'),
   ('c188d530-17aa-cdbc-251b-043fad278a62', 10897, '4b3c1799-a2bd-7f26-0668-975d5e17ab41', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1998-02-19 00:00:00', '1998-03-19 00:00:00', '1998-02-25 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 603.54, 'Hungry Owl All-Night Grocers', '8 Johnstown Road', 'Cork', 'Co. Cork', NULL, 'Ireland');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('6c3ba63a-62de-14c3-36cb-2f8598aba49e', 10898, 'da0d697e-e068-d4f2-9d70-d9446c3238f3', '2595ce3e-1be2-579c-9d50-89539a049217', '1998-02-20 00:00:00', '1998-03-20 00:00:00', '1998-03-06 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 1.27, 'Océano Atlántico Ltda.', 'Ing. Gustavo Moncada 8585 Piso 20-A', 'Buenos Aires', NULL, '1010', 'Argentina'),
   ('4ef962db-b2a1-e988-a900-2f5bce2bceb5', 10899, '224fd337-8cf7-5c15-798a-251733d996a1', '4c5d1af2-8084-8b64-b3d3-24b8421941bc', '1998-02-20 00:00:00', '1998-03-20 00:00:00', '1998-02-26 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 1.21, 'LILA-Supermercado', 'Carrera 52 con Ave. Bolívar #65-98 Llano Largo', 'Barquisimeto', 'Lara', '3508', 'Venezuela'),
   ('e139961b-3e27-33b8-ce90-8425e3c2d88d', 10900, 'cd2432c0-42dc-74a3-8560-4eec3dbcccb6', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1998-02-20 00:00:00', '1998-03-20 00:00:00', '1998-03-04 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 1.66, 'Wellington Importadora', 'Rua do Mercado, 12', 'Resende', 'SP', '08737-363', 'Brazil'),
@@ -1038,7 +1038,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('5b3882f3-9f18-c1cc-67e6-ec81346f2d8b', 10946, '1be10791-4c8f-220b-51c5-c1117c675ad6', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1998-03-12 00:00:00', '1998-04-09 00:00:00', '1998-03-19 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 27.2, 'Vaffeljernet', 'Smagsloget 45', 'Århus', NULL, '8200', 'Denmark'),
   ('0a23f307-616d-9d1c-dfe2-923ca934d348', 10947, 'c7db1d7d-2c00-4139-fbdc-620ed72c1a5e', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1998-03-13 00:00:00', '1998-04-10 00:00:00', '1998-03-16 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 3.26, 'B''s Beverages', 'Fauntleroy Circus', 'London', NULL, 'EC2 5NT', 'UK');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('c0ba0eaa-bd79-6903-3985-ebfa5eca2208', 10948, '87b695d3-9936-ac24-c941-a1581bab3a0b', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1998-03-13 00:00:00', '1998-04-10 00:00:00', '1998-03-19 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 23.39, 'Godos Cocina Típica', 'C/ Romero, 33', 'Sevilla', NULL, '41101', 'Spain'),
   ('9790dd4d-f9f0-67bc-f820-d5a79ebaae66', 10949, '55b0bcbd-e3a8-a0d7-9e30-562a01e2f205', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1998-03-13 00:00:00', '1998-04-10 00:00:00', '1998-03-17 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 74.44, 'Bottom-Dollar Markets', '23 Tsawassen Blvd.', 'Tsawassen', 'BC', 'T2F 8M4', 'Canada'),
   ('6816f260-2b28-123c-c8f0-e88297dabca1', 10950, 'af137132-ab5a-71f0-1692-807a84d48d93', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1998-03-16 00:00:00', '1998-04-13 00:00:00', '1998-03-23 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 2.5, 'Magazzini Alimentari Riuniti', 'Via Ludovico il Moro 22', 'Bergamo', NULL, '24100', 'Italy'),
@@ -1090,7 +1090,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('5da031d1-41d4-08a5-a4a7-1301a15d1772', 10996, 'ecfc73eb-2e39-af2a-1c98-ee6cc1cd1cb7', '2595ce3e-1be2-579c-9d50-89539a049217', '1998-04-02 00:00:00', '1998-04-30 00:00:00', '1998-04-10 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 1.12, 'QUICK-Stop', 'Taucherstraße 10', 'Cunewalde', NULL, '01307', 'Germany'),
   ('08f640dc-9e59-6fc5-8ee0-8ec5c12f2c15', 10997, '224fd337-8cf7-5c15-798a-251733d996a1', '289fc413-4cf3-1365-accb-eb051f957a29', '1998-04-03 00:00:00', '1998-05-15 00:00:00', '1998-04-13 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 73.91, 'LILA-Supermercado', 'Carrera 52 con Ave. Bolívar #65-98 Llano Largo', 'Barquisimeto', 'Lara', '3508', 'Venezuela');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('a5610b6e-024e-51fb-53f0-afd34d2b136c', 10998, '9eac7596-d26e-1925-1bc0-3df5014ae29d', '289fc413-4cf3-1365-accb-eb051f957a29', '1998-04-03 00:00:00', '1998-04-17 00:00:00', '1998-04-17 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 20.31, 'Wolski Zajazd', 'ul. Filtrowa 68', 'Warszawa', NULL, '01-012', 'Poland'),
   ('fb775c04-15a3-5350-ffc1-6c224dcd2ed6', 10999, 'f8c6eb4f-6a5f-a747-7e3e-84b209e7acf8', '4f5edd0c-6a4c-53eb-6fae-355c544bd397', '1998-04-03 00:00:00', '1998-05-01 00:00:00', '1998-04-10 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 96.35, 'Ottilies Käseladen', 'Mehrheimerstr. 369', 'Köln', NULL, '50739', 'Germany'),
   ('5773cd0d-9c21-58af-6ae7-ca6883a18035', 11000, '60517a03-10ae-5571-0788-be685e9f597c', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '1998-04-06 00:00:00', '1998-05-04 00:00:00', '1998-04-14 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 55.12, 'Rattlesnake Canyon Grocery', '2817 Milton Dr.', 'Albuquerque', 'NM', '87110', 'USA'),
@@ -1142,7 +1142,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('6ccd6b10-8d1e-65fd-d30e-5744346b7952', 11046, 'a572fb98-2bbc-9dbb-d1fd-2da66cf16ff3', '289fc413-4cf3-1365-accb-eb051f957a29', '1998-04-23 00:00:00', '1998-05-21 00:00:00', '1998-04-24 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 71.64, 'Die Wandernde Kuh', 'Adenauerallee 900', 'Stuttgart', NULL, '70563', 'Germany'),
   ('2a783241-125a-42d4-8036-2a32207a68e8', 11047, '6d08fa8b-3e99-e46f-99f3-e445b54f80a6', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1998-04-24 00:00:00', '1998-05-22 00:00:00', '1998-05-01 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 46.62, 'Eastern Connection', '35 King George', 'London', NULL, 'WX3 6FW', 'UK');
 
-INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
+INSERT INTO northwind_demo.orders (id, order_number, customer_id, employee_id, order_date, required_date, shipped_date, ship_via, freight, ship_name, ship_address, ship_city, ship_region, ship_postal_code, ship_country) VALUES
   ('49338527-ad60-4788-4360-5db673e2544b', 11048, '55b0bcbd-e3a8-a0d7-9e30-562a01e2f205', '3e306251-81c3-4dfd-f6d0-44ee33df99c7', '1998-04-24 00:00:00', '1998-05-22 00:00:00', '1998-04-30 00:00:00', 'd6a076aa-5d9e-4a7d-83e6-9322f17ed0bf', 24.12, 'Bottom-Dollar Markets', '23 Tsawassen Blvd.', 'Tsawassen', 'BC', 'T2F 8M4', 'Canada'),
   ('bc2dfead-8784-19e0-5800-6944658046f4', 11049, '04c13e3b-b4df-6844-dbf9-aee2d3da0c0c', '05be9e86-b365-3bb4-37d2-6f0254dfed14', '1998-04-24 00:00:00', '1998-05-22 00:00:00', '1998-05-04 00:00:00', 'db69429b-1585-5417-38f1-37b35db2b5c4', 8.34, 'Gourmet Lanchonetes', 'Av. Brasil, 442', 'Campinas', 'SP', '04876-786', 'Brazil'),
   ('aeb07c8a-96a6-4984-d87a-be4585d4e175', 11050, '3f8f0b41-e6f4-b701-ac5f-3e25539633e7', '289fc413-4cf3-1365-accb-eb051f957a29', '1998-04-27 00:00:00', '1998-05-25 00:00:00', '1998-05-05 00:00:00', 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 59.41, 'Folk och fä HB', 'Åkergatan 24', 'Bräcke', NULL, 'S-844 67', 'Sweden'),
@@ -1174,7 +1174,7 @@ INSERT INTO northwind.orders (id, order_number, customer_id, employee_id, order_
   ('ca5662ca-9126-1311-767c-d410851ac151', 11076, 'c2f3bf83-dcd9-5f08-2904-241734434c5b', '2595ce3e-1be2-579c-9d50-89539a049217', '1998-05-06 00:00:00', '1998-06-03 00:00:00', NULL, 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 38.28, 'Bon app''', '12, rue des Bouchers', 'Marseille', NULL, '13008', 'France'),
   ('5e6f580d-2c45-9376-db30-6194a360f5d4', 11077, '60517a03-10ae-5571-0788-be685e9f597c', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '1998-05-06 00:00:00', '1998-06-03 00:00:00', NULL, 'de5bec67-5d61-ac91-26d0-8a38f79e15d8', 8.53, 'Rattlesnake Canyon Grocery', '2817 Milton Dr.', 'Albuquerque', 'NM', '87110', 'USA');
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('4da744b8-88e9-16f0-ebc4-e4ba6a33ea92', '3d987486-6c42-f5aa-5e6b-1cf43585c3b6', '7d74d364-982c-0752-7717-bb35d2d05fc0', 14.0, 12, 0.0),
   ('3906dd07-4b0d-60c6-afe0-0bb6ec0de0c1', '3d987486-6c42-f5aa-5e6b-1cf43585c3b6', '802e7b51-3ed1-8220-6fa4-1c2ae1123e2d', 9.8, 10, 0.0),
   ('644655f9-afa5-b7a2-07f1-ff3a5532a3a4', '3d987486-6c42-f5aa-5e6b-1cf43585c3b6', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 5, 0.0),
@@ -1226,7 +1226,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('6d07d408-be7f-bd95-e68c-6b970dc0df4b', 'de82c950-0125-d155-7d66-2ddae6bae0ed', '069a4d31-1444-c3cc-f5f6-5051d67e4170', 7.7, 25, 0.15),
   ('536ed815-ceb3-ffb9-9c5c-e5866289156d', '80873177-b193-6406-6176-a337cb63ed30', 'e4b3d7b3-2acf-c7b7-bf1a-57bdfdf30d76', 31.2, 30, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('9c286c67-e2d4-0132-558f-c2e260243ebd', '80873177-b193-6406-6176-a337cb63ed30', '77f52dd3-27e7-7f88-95ce-7d687ad94e55', 12.0, 20, 0.0),
   ('ecfa001a-4149-8c4d-c28c-f305fb3bae2a', '6f6f7446-94a8-39ec-2910-b6071e99690e', 'a86dd615-9f1e-a4e8-8bef-43758ecf1c8a', 30.4, 12, 0.05),
   ('7520eb35-1bc7-2955-4eae-d31d68d55980', 'bd4b7fc3-d93b-813a-b25a-1b38b8da7b2a', 'f7546a3b-375a-d3a5-3ed2-05fb72d8e6de', 14.7, 50, 0.0),
@@ -1278,7 +1278,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('6aa290a7-26b3-ae74-6961-0b8511966401', '93782e69-e28c-e98b-d3bf-5fabbc5f0045', '5e5a4e3e-12c3-60ce-3784-68f58d9acb3d', 11.2, 5, 0.25),
   ('5d705f3b-a9d4-7f72-fb71-e5eb1f54b400', '779abd5f-7617-9178-391a-0f621b02fed1', 'aba93f9b-dcd7-ef45-6646-9d84d3991395', 14.4, 45, 0.2);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('3e6896d0-0c25-d139-03cf-10a6ddb0bcb6', '779abd5f-7617-9178-391a-0f621b02fed1', 'f7546a3b-375a-d3a5-3ed2-05fb72d8e6de', 14.7, 40, 0.2),
   ('0236ec2d-b14c-8155-a850-014aabdfa347', '779abd5f-7617-9178-391a-0f621b02fed1', '9cb99912-0238-75b9-481b-775ce90f8dd9', 26.2, 36, 0.2),
   ('cd98f621-a317-9332-7ccd-1074fabab5b9', 'e3e2f0c6-8356-2b73-8a18-c38018ce8514', '5b676eb2-6e86-a9f8-0d3b-c6d903bd628c', 14.4, 100, 0.0),
@@ -1330,7 +1330,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('7f2184c8-6197-0b67-f023-442944c1cf79', '8c6d87e6-8c86-af93-1db8-b504040c62b2', '99bf2a20-0ead-84be-c050-a93b51749d88', 16.8, 30, 0.1),
   ('5a1ff2c5-9aa4-8ceb-fbe1-925499a7df4f', '8c6d87e6-8c86-af93-1db8-b504040c62b2', '5941e2de-7c0b-caef-b522-5bec78e54273', 10.0, 15, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('1734e2fe-c532-aa14-3d43-2a1fcfed1955', '80be2257-87a0-a4cb-17a7-719b66eef6c5', 'efacad1b-e869-2aa0-5dd4-6aa257bb384e', 16.0, 30, 0.0),
   ('dfc7d7bf-b6a8-a892-a7a4-12469bfc554e', '80be2257-87a0-a4cb-17a7-719b66eef6c5', '4870e324-3324-ea96-d9d7-ab94aef80c22', 44.0, 10, 0.0),
   ('a147f5fa-7852-dcd4-ee49-703fbb5a65e1', '80be2257-87a0-a4cb-17a7-719b66eef6c5', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 17.2, 2, 0.0),
@@ -1382,7 +1382,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('3dc04177-3a16-93c2-4be8-db5668ea6e97', '35c37ae4-1ace-2f00-688f-7513f8ac1d22', '4028f728-47d5-7378-f73f-fd08a0449677', 9.6, 30, 0.0),
   ('7cd36ad2-b942-8fa2-d5ab-de51f1e424ad', '35c37ae4-1ace-2f00-688f-7513f8ac1d22', '4870e324-3324-ea96-d9d7-ab94aef80c22', 44.0, 40, 0.15);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('a00e1809-e36e-7a0e-2a6e-e07817e634e2', '35c37ae4-1ace-2f00-688f-7513f8ac1d22', 'ea852ae8-d089-159d-a697-e81825a641f5', 35.1, 80, 0.15),
   ('bfc7188a-f778-86d1-e779-8e5f89714e6c', '50259be0-b390-ffa8-2cf9-a23b3d45e9c9', '811426f2-c5f8-edfc-2778-4a1a472a38f6', 20.0, 6, 0.0),
   ('bc8fa21d-3c8c-6e51-1152-dc8e2ff79210', '50259be0-b390-ffa8-2cf9-a23b3d45e9c9', '16851d0b-5b18-e3f8-2451-bf64bb584fe7', 4.8, 12, 0.0),
@@ -1434,7 +1434,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('d4c29798-0aee-2717-a66d-baa018c36b5e', 'd82be75f-fb83-15b7-b011-463219d56a5a', 'd6ed2a56-55a1-9e1d-0503-8b015f87aaa3', 36.8, 40, 0.05),
   ('cbcfb0b0-43e4-aa47-0132-d8888c21b94e', 'edf511f7-a328-bd8e-e1a4-6efc8f6f02af', 'e3c06652-a01d-d238-770e-c7e6473e570a', 2.0, 8, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('55e0ae88-8634-4aaa-f48c-023081d9171d', 'edf511f7-a328-bd8e-e1a4-6efc8f6f02af', '4870e324-3324-ea96-d9d7-ab94aef80c22', 44.0, 9, 0.15),
   ('22d7949e-5b42-4b09-5d41-3775b4ee99e1', 'e05b3ab8-39e1-c377-b998-140e7e887fca', '768b5a1f-3982-acf9-ac8d-d57670a697c8', 15.2, 24, 0.2),
   ('f1f08610-6f43-61a5-add4-608ca000594f', 'e05b3ab8-39e1-c377-b998-140e7e887fca', '107d80e1-c8f1-7f68-1413-600ca630b786', 10.0, 56, 0.2),
@@ -1486,7 +1486,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('a99560d5-d79d-f8af-1448-19bdc32c6e18', 'b7882e45-c1dc-7e93-1e5c-94815059758d', '7f69ac53-7f60-26ff-e43b-6b47f9205ff0', 36.4, 30, 0.0),
   ('523fb724-161e-3781-f7fc-226d4bab57a8', 'b7882e45-c1dc-7e93-1e5c-94815059758d', 'addff57b-245e-e149-f7c4-f15f55c8693d', 99.0, 35, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('27702f7f-c05b-8647-a067-e904b7189276', 'b7882e45-c1dc-7e93-1e5c-94815059758d', 'afc0e137-a160-9276-66ef-93f1bda0d883', 210.8, 10, 0.0),
   ('42b57e30-826b-5f3e-2697-b58a8f8e76da', 'b7882e45-c1dc-7e93-1e5c-94815059758d', 'efacad1b-e869-2aa0-5dd4-6aa257bb384e', 16.0, 35, 0.0),
   ('30728e83-d34e-dee4-5e8c-a91696e3cca6', 'b7882e45-c1dc-7e93-1e5c-94815059758d', '6ad99522-5f80-d597-9c99-dbb85b67c071', 5.9, 28, 0.0),
@@ -1538,7 +1538,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('2b53c28e-7753-09f5-3037-58ac84e7686b', '2b361598-3341-7923-b509-56060a60387b', '9cb99912-0238-75b9-481b-775ce90f8dd9', 26.2, 20, 0.1),
   ('89dc1544-ff0d-1eaa-087f-aa3016311266', '2b361598-3341-7923-b509-56060a60387b', '6377d05d-316a-7206-0427-766b4370bdd1', 27.2, 6, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('b7527013-09de-91eb-1e0a-66ddf5f3f7e1', '2b361598-3341-7923-b509-56060a60387b', '77f52dd3-27e7-7f88-95ce-7d687ad94e55', 12.0, 30, 0.0),
   ('0d770001-7ae3-ef8f-2824-f8c00118c669', '55aee9c1-0a16-45b8-511d-f3ad256fc650', 'ceb167da-090e-5b40-d38a-00a78f92da57', 8.0, 14, 0.0),
   ('868477f9-f429-f33a-ba62-161e6900bccb', '7c5d1f90-480d-18d2-1400-3325016b167b', '9c0cd062-8b12-3965-2ad9-af9ea4745f0f', 17.0, 32, 0.0),
@@ -1590,7 +1590,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('491f1553-95fd-ddf7-557a-c16d66bdd781', 'e1a822ad-cc2a-e31b-ee23-43c672e09855', '909de8f7-0e47-0543-85d2-d28388757644', 42.4, 18, 0.15),
   ('8f084dfd-f7f8-19a7-2c65-911ce8abb131', '93dfe748-1069-e062-bef9-95e01d82918d', '5b676eb2-6e86-a9f8-0d3b-c6d903bd628c', 14.4, 30, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('8fb72031-df59-75f5-32d9-78a9ea09a45d', '93dfe748-1069-e062-bef9-95e01d82918d', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 19.2, 120, 0.1),
   ('50ae8452-2132-6110-6f1a-ba806f955264', 'b0411d9f-fae0-2b5d-37ce-03d716b64722', '5941e2de-7c0b-caef-b522-5bec78e54273', 10.0, 60, 0.0),
   ('d90f299a-6f52-bdc2-21a4-88fe5ba50ed9', 'b0411d9f-fae0-2b5d-37ce-03d716b64722', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 17.2, 30, 0.0),
@@ -1642,7 +1642,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('606b3b8c-087e-9727-7100-ed776b5b326e', '474d6e00-7b1a-c1b0-4785-73df2b0b0c44', '57a066fe-c877-2484-8786-2554277397ec', 15.6, 20, 0.0),
   ('a78f1f79-e15a-1b5a-c8b1-c0cc4b41f5f6', '7a55440a-3b2d-2c5d-6aec-7a0db69e93db', 'afc0e137-a160-9276-66ef-93f1bda0d883', 210.8, 50, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('103c1ec9-136f-a847-ebf3-fee105a9936a', '7a55440a-3b2d-2c5d-6aec-7a0db69e93db', '4028f728-47d5-7378-f73f-fd08a0449677', 9.6, 2, 0.25),
   ('c268cbc2-5900-147e-2448-5ebc86658502', '7a55440a-3b2d-2c5d-6aec-7a0db69e93db', '5941e2de-7c0b-caef-b522-5bec78e54273', 10.0, 36, 0.25),
   ('43b913a8-9442-d579-3a1f-6a553d249c2b', '7a55440a-3b2d-2c5d-6aec-7a0db69e93db', '56e0ec66-b0d3-1fae-555f-bfd2c05b5f28', 10.4, 35, 0.0),
@@ -1694,7 +1694,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('f59d35a0-22ce-0067-5b36-b7adbb5941f8', '9891084c-586c-bd72-fb1e-391ebaaf24ea', '55efbec1-8c19-acd3-2858-a6407af8dbb4', 26.6, 30, 0.1),
   ('1aa9f9cf-58ba-875e-836d-65c4ee9244e0', '9891084c-586c-bd72-fb1e-391ebaaf24ea', '5d52f507-8f31-4482-648b-a4cd04d56ece', 6.2, 24, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('150e635b-e34f-7982-bd00-5b2fc96458f5', '68c50e71-5c04-445d-b28f-ae0d5c7697c8', '9cb99912-0238-75b9-481b-775ce90f8dd9', 26.2, 15, 0.0),
   ('a004bf63-de6e-3b80-7b24-0e2add0065b8', 'a0bf210e-2867-97b3-7806-bf45b61f27f1', 'e39229d9-8558-bd7a-351c-96cedb8ed6dd', 7.3, 15, 0.2),
   ('cdfced2b-3bef-2216-6c56-23c851ba5683', 'a0bf210e-2867-97b3-7806-bf45b61f27f1', 'cfd3ea23-07ea-30c9-f3d4-f2244e3c0f6c', 11.2, 20, 0.2),
@@ -1746,7 +1746,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('90b84ff9-132c-905d-009d-9d74d4d81918', 'a38be0ad-8d71-fecf-fe94-630db4badceb', '4028f728-47d5-7378-f73f-fd08a0449677', 9.6, 10, 0.2),
   ('ba22d2f0-ec6c-1311-b047-59d57ce0ed46', 'b15f4fc8-36e5-7f27-58fd-2cfa678beaaa', '29ea45c1-480a-a022-7f2e-c8d02fd243fa', 14.4, 20, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('27b93dbc-1c01-84a3-faf7-404d4412d8e9', 'b15f4fc8-36e5-7f27-58fd-2cfa678beaaa', '9cb99912-0238-75b9-481b-775ce90f8dd9', 26.2, 50, 0.0),
   ('226019ca-3a35-8e8a-9748-81ddbfc90db2', 'b15f4fc8-36e5-7f27-58fd-2cfa678beaaa', 'db4df9d3-7fc0-440c-367d-e199a101faa5', 22.8, 25, 0.0),
   ('69b37ddd-35fa-693d-e525-5bc4c061f0fe', 'b15f4fc8-36e5-7f27-58fd-2cfa678beaaa', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 17.2, 30, 0.0),
@@ -1798,7 +1798,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('ba64b327-f4ba-cfcf-384a-52c7d62b193f', 'ed939887-8de1-11c9-f418-3620e4f6f8ee', 'e3c06652-a01d-d238-770e-c7e6473e570a', 2.0, 12, 0.0),
   ('b299f7bc-3522-36e8-e302-cf05c5e56dac', 'ed939887-8de1-11c9-f418-3620e4f6f8ee', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 17.2, 12, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('af5555bd-bfc2-e1d0-f05d-736e7d128930', 'f09f75a6-452c-7958-e423-6ffa0e541744', 'd5a58549-e251-d0c0-4f70-37140ef44217', 18.6, 12, 0.0),
   ('7dc18c10-af43-dc45-03f2-cb9067ab2ac0', 'f09f75a6-452c-7958-e423-6ffa0e541744', '7f69ac53-7f60-26ff-e43b-6b47f9205ff0', 36.4, 18, 0.0),
   ('61bbaf8e-f563-7715-f9d3-ac9e2008091e', 'f09f75a6-452c-7958-e423-6ffa0e541744', 'f7546a3b-375a-d3a5-3ed2-05fb72d8e6de', 14.7, 21, 0.0),
@@ -1850,7 +1850,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('7925aeb9-6c2c-5d86-89d1-b8456b61b13e', 'a220ff13-b2ed-3169-e39d-7b81c92e90fa', '99bf2a20-0ead-84be-c050-a93b51749d88', 16.8, 15, 0.1),
   ('997f768d-7959-131d-714f-03915600a50a', 'a220ff13-b2ed-3169-e39d-7b81c92e90fa', 'f7bb966a-f410-cc8a-c892-99bf94bc2f40', 13.6, 10, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('7ca644d7-d994-f7b2-f5eb-cb78d7ff0cd8', 'a220ff13-b2ed-3169-e39d-7b81c92e90fa', '0ec7f8a0-9b6c-afed-4a66-1c841ec90596', 28.8, 10, 0.1),
   ('0dcdc238-b601-bc5b-3d9b-446f4f7fc6cc', '2f7f8dfb-0d45-fee5-7a05-e41232cc8108', '0e109866-ac56-8dec-db56-eadac85285d2', 30.4, 30, 0.0),
   ('086da4c0-98e5-cee3-18b1-01c98a754659', '05940d86-5c61-a585-7740-ef46e9d70be9', 'dff4ee47-86ce-dc0a-e3a6-a45cb807475b', 7.2, 10, 0.0),
@@ -1902,7 +1902,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('d80bad67-36b8-8c75-98eb-06a807c690ae', '6dc010fe-a860-210c-aeb8-2e4975b32ca6', '0e109866-ac56-8dec-db56-eadac85285d2', 38.0, 70, 0.0),
   ('f475722d-4420-7e5f-065e-78d0de68fe9b', '6dc010fe-a860-210c-aeb8-2e4975b32ca6', '99bf2a20-0ead-84be-c050-a93b51749d88', 21.05, 39, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('6fc362da-502f-8aa8-cb03-985c46e37f20', '6dc010fe-a860-210c-aeb8-2e4975b32ca6', '5d52f507-8f31-4482-648b-a4cd04d56ece', 7.75, 50, 0.0),
   ('b332afd0-b111-b110-aa83-1c1107a89696', '7a37b42c-38a5-1d37-d49d-7e5de57ce5ea', '7075d0b8-0710-bea9-32ab-9b87fc9ffe60', 97.0, 16, 0.15),
   ('afd837d6-36ec-08e3-a611-b2cd1534fc7d', '7a37b42c-38a5-1d37-d49d-7e5de57ce5ea', '0344dbdc-682b-405e-3fa5-d5feab4b86a9', 17.45, 50, 0.0),
@@ -1954,7 +1954,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('b6c4edf8-d821-b150-3eb4-4647c7886810', 'ef52ff7d-a5df-620c-6aec-78c0ec78d721', 'e4b3d7b3-2acf-c7b7-bf1a-57bdfdf30d76', 39.0, 40, 0.0),
   ('57e40f38-02cb-a310-c63c-9f12e13dc668', 'ef52ff7d-a5df-620c-6aec-78c0ec78d721', 'd6ed2a56-55a1-9e1d-0503-8b015f87aaa3', 46.0, 25, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('49938800-08dd-ec4d-6904-5b48cb185d6b', 'ef52ff7d-a5df-620c-6aec-78c0ec78d721', 'db4df9d3-7fc0-440c-367d-e199a101faa5', 28.5, 20, 0.0),
   ('897d5a6d-ba29-87c9-8630-649c6a01951c', 'ef52ff7d-a5df-620c-6aec-78c0ec78d721', 'a51e4590-2236-b079-524d-97ab53a43129', 18.0, 50, 0.0),
   ('c6d745cd-640e-83de-af52-a926cf57c265', '3a457ffd-66ff-9be1-4df4-44309c525c94', '4870e324-3324-ea96-d9d7-ab94aef80c22', 55.0, 2, 0.0),
@@ -2006,7 +2006,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('b5171cc2-7686-d3ec-1491-f37b19c1e75d', '189ac6d8-36f2-023c-9d96-111b3b9e6f57', '7b8c4fa2-8082-12a9-28b7-76ab306ffef2', 32.0, 24, 0.15),
   ('e36ad09b-6a62-d5bb-cb32-f03c4b6638df', '189ac6d8-36f2-023c-9d96-111b3b9e6f57', 'c822c512-0962-0e5c-75eb-070ebfde9f4b', 19.0, 60, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('6e6b5a8d-3a9b-fcff-34e7-6ff4aecf340a', 'b2a68f25-3bf1-fa32-42f5-b4d2d8e37ad6', 'cfd3ea23-07ea-30c9-f3d4-f2244e3c0f6c', 14.0, 10, 0.25),
   ('4c79b04f-9fbc-14f8-0d64-634e531e3999', 'b2a68f25-3bf1-fa32-42f5-b4d2d8e37ad6', '069a4d31-1444-c3cc-f5f6-5051d67e4170', 9.65, 14, 0.0),
   ('b0bdcc8b-40a0-038c-f3fc-d1bd0456bf81', '8097a6a8-5585-ef80-24f0-732f52525984', '107d80e1-c8f1-7f68-1413-600ca630b786', 12.5, 55, 0.15),
@@ -2058,7 +2058,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('9141cfd9-682f-2606-452d-8e017957a69d', '427a9c6f-035f-9ad5-aa23-befdbe7f8feb', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 24.0, 25, 0.05),
   ('00debea0-83c1-7e92-2723-098881ba4627', '7c3bb85f-f135-ffdc-8a0d-6ca7d1daef29', '180492c7-4e6b-63c0-bc2e-1fbe8fe36358', 4.5, 25, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('7e19ec25-fa2f-ffba-1286-3fd6b2741e70', '7c3bb85f-f135-ffdc-8a0d-6ca7d1daef29', '55efbec1-8c19-acd3-2858-a6407af8dbb4', 33.25, 18, 0.1),
   ('ff7cdc8e-f352-1a62-9851-6a2874793577', 'fbaed39b-738d-5c36-f475-2ba627ed65a6', '7d74d364-982c-0752-7717-bb35d2d05fc0', 21.0, 35, 0.15),
   ('51572f20-26a0-a7fe-79e3-bc89c654ce53', 'fbaed39b-738d-5c36-f475-2ba627ed65a6', 'ec8473df-e874-84c2-91d5-ceb8cad8ade2', 62.5, 18, 0.15),
@@ -2110,7 +2110,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('f916e1fb-432b-fa53-69e0-ffa3975ea4e3', 'd349fd11-cac5-c511-5015-aecb5c96689d', '107d80e1-c8f1-7f68-1413-600ca630b786', 12.5, 50, 0.05),
   ('2ef2cda7-cfdc-677b-783a-7618dab790f2', 'da7c6377-0da5-6cdc-0333-a07fb3f5cb1c', 'd050aba0-b73d-d148-95fc-abc8335ef0a2', 9.5, 15, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('1f6001a1-4153-eaa1-55bd-7a6cbe54a364', 'bb0cf347-875c-b60d-fa36-81695391aabe', 'd99562dd-1834-48c6-5e9e-2c6f93ee6d53', 7.0, 4, 0.15),
   ('2e263dd0-7244-4d14-341d-9634742ccd1f', 'c49a44c6-2396-1280-12c0-036954c131f3', 'd4746678-e2a1-2c3b-457c-d5972df495a1', 31.23, 6, 0.0),
   ('edf997c6-c267-aaa9-2f39-9c1c16d2d7e1', 'c49a44c6-2396-1280-12c0-036954c131f3', '5b676eb2-6e86-a9f8-0d3b-c6d903bd628c', 18.0, 20, 0.0),
@@ -2162,7 +2162,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('84b1e70c-5bf9-11fc-5b76-660dceeb3245', '56da9566-f856-7928-d4cb-5873f5f1e8dc', 'e4b3d7b3-2acf-c7b7-bf1a-57bdfdf30d76', 39.0, 100, 0.0),
   ('0cff2807-b61c-977a-3be4-5d681a35f039', '56da9566-f856-7928-d4cb-5873f5f1e8dc', 'e3c06652-a01d-d238-770e-c7e6473e570a', 2.5, 14, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('74fb4df4-dd03-4111-04ad-da4d3d1da699', '56da9566-f856-7928-d4cb-5873f5f1e8dc', 'f7546a3b-375a-d3a5-3ed2-05fb72d8e6de', 18.4, 42, 0.0),
   ('34d14ce8-ccb9-2fc7-d0c0-4e0cc0552915', '56da9566-f856-7928-d4cb-5873f5f1e8dc', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 12, 0.0),
   ('8b70bc6e-b725-067e-e58a-1197b70bce38', '438feb23-614a-29b8-00e7-ad18b5a2480e', '0e109866-ac56-8dec-db56-eadac85285d2', 38.0, 28, 0.0),
@@ -2214,7 +2214,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('0fc20cff-b674-5ed2-5547-80268026fee6', '27173fe9-a5d5-e0a5-e029-b731885f57b3', '802e7b51-3ed1-8220-6fa4-1c2ae1123e2d', 14.0, 5, 0.0),
   ('97ace7c5-4ab0-3722-f183-544ec434cccf', '27173fe9-a5d5-e0a5-e029-b731885f57b3', '6377d05d-316a-7206-0427-766b4370bdd1', 34.0, 10, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('a90ffa89-00b3-33ad-91cc-a95630df3e07', '00f6bed2-63d1-4891-3ef1-995c47a6189c', '9cb99912-0238-75b9-481b-775ce90f8dd9', 32.8, 12, 0.0),
   ('b1927e71-a36b-673a-5d44-762e4558d8c4', '00f6bed2-63d1-4891-3ef1-995c47a6189c', '6377d05d-316a-7206-0427-766b4370bdd1', 34.0, 20, 0.0),
   ('82abc974-884a-b0a9-2888-cd2139158da5', '00f6bed2-63d1-4891-3ef1-995c47a6189c', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 21.5, 20, 0.0),
@@ -2266,7 +2266,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('ad32dff6-f758-13eb-1abc-d2f84bcfec78', '04dad33c-49de-ca8c-12b4-f0e887c150e7', '6ce5ecce-6ee3-8288-679a-4d93f00b8c4f', 31.0, 18, 0.25),
   ('08d51546-af55-2b0f-71a7-bbb223708ffe', '04dad33c-49de-ca8c-12b4-f0e887c150e7', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 21.5, 30, 0.25);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('134297fb-2bef-218f-b303-fd719d0c3a05', '04dad33c-49de-ca8c-12b4-f0e887c150e7', '56e0ec66-b0d3-1fae-555f-bfd2c05b5f28', 13.0, 35, 0.25),
   ('d80fd5ca-870b-f86a-9303-8219dba9b000', 'd09234b1-a1c7-8d05-5e1a-fdc28f1e14e5', 'e39229d9-8558-bd7a-351c-96cedb8ed6dd', 9.2, 30, 0.0),
   ('97d24b38-9bae-1528-1776-51df4a704797', 'd09234b1-a1c7-8d05-5e1a-fdc28f1e14e5', '29ea45c1-480a-a022-7f2e-c8d02fd243fa', 18.0, 20, 0.0),
@@ -2318,7 +2318,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('4e730756-2758-1223-0a09-ed7a74075739', '05cf32eb-6c62-41ad-4210-124f7608b198', 'a51e4590-2236-b079-524d-97ab53a43129', 18.0, 10, 0.0),
   ('26d17551-4cd0-38cf-5ce8-bf16f888c805', 'e6c75a8a-1470-cfbd-92f4-2aaf21115d2d', 'addff57b-245e-e149-f7c4-f15f55c8693d', 123.79, 36, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('733f7e2b-dca9-715e-c992-e352aaf04dc5', 'e6c75a8a-1470-cfbd-92f4-2aaf21115d2d', '99bf2a20-0ead-84be-c050-a93b51749d88', 21.05, 10, 0.0),
   ('202a6eee-089e-5aa2-5091-e407056b8803', '6ed19909-509c-d2df-b179-a428a0cadae8', '0ec7f8a0-9b6c-afed-4a66-1c841ec90596', 36.0, 45, 0.2),
   ('a057f892-94d4-0f9b-4bea-c0a765e07572', '6ed19909-509c-d2df-b179-a428a0cadae8', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 21.5, 14, 0.2),
@@ -2370,7 +2370,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('a8584f40-b8c2-0618-c84e-501262240c0b', '82facab0-faac-f56f-f27e-2c6b716cf2b4', '069a4d31-1444-c3cc-f5f6-5051d67e4170', 9.65, 4, 0.0),
   ('54f2e623-1328-fbb3-1671-8e1626c885be', '82facab0-faac-f56f-f27e-2c6b716cf2b4', 'd050aba0-b73d-d148-95fc-abc8335ef0a2', 9.5, 15, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('c793c4cd-86db-22da-58c8-71bb1d54da4c', '3ff941fd-4914-ed06-42d0-5339b22717a0', 'e4b3d7b3-2acf-c7b7-bf1a-57bdfdf30d76', 39.0, 30, 0.2),
   ('f30c29f4-c002-253f-f0be-19396b6ad832', '3ff941fd-4914-ed06-42d0-5339b22717a0', 'd4746678-e2a1-2c3b-457c-d5972df495a1', 31.23, 15, 0.0),
   ('a691c09c-211b-1e17-2ad1-8e5b098c6bcc', '35eacf76-2a69-2809-eda7-ef23974acb61', '7075d0b8-0710-bea9-32ab-9b87fc9ffe60', 97.0, 50, 0.25),
@@ -2422,7 +2422,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('359b9b12-c1cc-526c-c7d4-fe1f4421a5d1', 'd8bd9b50-6e6f-e7c0-ae88-66755c401985', '768b5a1f-3982-acf9-ac8d-d57670a697c8', 19.0, 5, 0.0),
   ('83691995-9e2f-c910-aeca-b48c02b2b0e8', 'd8bd9b50-6e6f-e7c0-ae88-66755c401985', '4870e324-3324-ea96-d9d7-ab94aef80c22', 55.0, 35, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('7d78757a-887d-5964-4f67-9fc7501c2e15', 'd8bd9b50-6e6f-e7c0-ae88-66755c401985', '163cb838-46d3-897b-95c6-ee0c6cd6b3df', 15.0, 35, 0.0),
   ('81368c2d-b4a0-f020-a1f3-8622503e956b', 'a0d64e57-ef19-c31f-c60c-1ec7913163e2', 'ba13474c-2afc-4720-78be-826519718a53', 22.0, 6, 0.0),
   ('1cdf9213-2a52-1f16-84df-eaa98dac20ba', 'a0d64e57-ef19-c31f-c60c-1ec7913163e2', '180492c7-4e6b-63c0-bc2e-1fbe8fe36358', 4.5, 35, 0.0),
@@ -2474,7 +2474,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('1db3fed4-5353-f412-8135-395f351a444d', '5294bbad-e405-2d51-731a-9f281b08b3fe', '5b676eb2-6e86-a9f8-0d3b-c6d903bd628c', 18.0, 21, 0.0),
   ('a1bb70f8-9c58-58f4-b620-ced54a68cc8d', '5294bbad-e405-2d51-731a-9f281b08b3fe', 'cfb888ab-2ce3-56de-2a36-2b7d877ef8bf', 21.5, 8, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('c0472ce6-327a-06c5-a6a8-d6ea4031a9fd', 'a3356f63-0052-afa3-564d-f77846bf958a', 'c3a95c80-71a6-ce65-9e22-067660c13da1', 19.45, 50, 0.05),
   ('f9ea48cf-116f-fd53-2545-0bcafa8553d8', 'c906728c-bdcb-af41-3c0f-3bcd04b22209', '768b5a1f-3982-acf9-ac8d-d57670a697c8', 19.0, 3, 0.0),
   ('d8740369-a3e6-fcbd-4c13-9755e1f0a4d2', 'c906728c-bdcb-af41-3c0f-3bcd04b22209', '107d80e1-c8f1-7f68-1413-600ca630b786', 12.5, 50, 0.0),
@@ -2526,7 +2526,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('3c6cb074-464f-749f-5d3a-270ca9c917ca', '2a12d0ed-86a8-c3a9-4e00-688154b75b3a', '768b5a1f-3982-acf9-ac8d-d57670a697c8', 19.0, 15, 0.2),
   ('f36a99c7-fdaf-bb12-30f8-0d5a4985b555', '04f7fecc-186d-e811-b3c3-2ce3e435f46d', '27e85487-8bb4-d498-8227-27f1566923db', 10.0, 20, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('2443d2cb-4418-81ce-8ab5-bd225c580c38', '04f7fecc-186d-e811-b3c3-2ce3e435f46d', '6377d05d-316a-7206-0427-766b4370bdd1', 34.0, 50, 0.0),
   ('7af001ed-2f4f-221b-963a-10cab15b01c6', '04f7fecc-186d-e811-b3c3-2ce3e435f46d', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 35, 0.0),
   ('82d8627b-ebfb-2e08-13b9-5f31ca3b1363', '7fdb6964-4cdf-a146-e933-8affeab26fd1', '4028f728-47d5-7378-f73f-fd08a0449677', 12.0, 28, 0.05),
@@ -2578,7 +2578,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('d807b3b1-ceaa-4bac-3c9d-dd576ce87e3e', '69d01fd1-5f25-2b79-b33d-eee1e96c08de', '77f52dd3-27e7-7f88-95ce-7d687ad94e55', 15.0, 40, 0.0),
   ('1a8e1227-506b-ef2a-be51-a14e405750cd', '8ec0db4d-2c40-b286-7368-40cd211a10bd', '7b8c4fa2-8082-12a9-28b7-76ab306ffef2', 32.0, 10, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('1bc3e10b-7e1b-6e9f-db37-88e7332f94e0', '8e491ac6-094d-88c8-28cb-912192b0a27c', 'cac4ad8c-f21e-3838-5339-25a67807fe0e', 14.0, 12, 0.25),
   ('01a102d7-e51b-9464-a10f-a9a2cd7f567f', '8e491ac6-094d-88c8-28cb-912192b0a27c', 'b3ac93a2-da19-8c01-ba28-189edca73297', 43.9, 40, 0.0),
   ('f9db4405-316b-7e87-11c4-52e8ac7ecd4a', '8e491ac6-094d-88c8-28cb-912192b0a27c', 'd6ed2a56-55a1-9e1d-0503-8b015f87aaa3', 46.0, 30, 0.25),
@@ -2630,7 +2630,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('d195fe28-bc2d-d48f-56b2-cdc18f7b8975', '1119ce78-50b3-ca57-0e56-89d4820e5af3', '6ad99522-5f80-d597-9c99-dbb85b67c071', 7.45, 3, 0.2),
   ('a236dc94-0d27-9ad0-3589-80a8b69b74c1', '1119ce78-50b3-ca57-0e56-89d4820e5af3', '0e109866-ac56-8dec-db56-eadac85285d2', 38.0, 20, 0.2);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('8a2b85c2-783d-ae94-a58e-be0fd2e79da8', '1119ce78-50b3-ca57-0e56-89d4820e5af3', 'ceb167da-090e-5b40-d38a-00a78f92da57', 10.0, 35, 0.0),
   ('b7c5173a-dae0-bf7a-e89a-1bf7111b7dea', '35ce8f37-040a-4ad1-e657-a195048ac3c2', '107d80e1-c8f1-7f68-1413-600ca630b786', 12.5, 1, 0.0),
   ('c12000d9-9d09-d5a0-ae48-1c71955d143c', '51150c88-0161-5d60-504b-229c35e294ae', '107d80e1-c8f1-7f68-1413-600ca630b786', 12.5, 10, 0.0),
@@ -2682,7 +2682,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('53779164-3eee-4d28-6ff1-f44855df4e26', '42ed8e10-57fb-5904-d6db-f8197379ce0c', '2652b2c5-ebaf-14e1-1aa9-8f60ff42b248', 25.89, 25, 0.25),
   ('06aef6dd-b749-68cb-0dc6-cf0d7f6918e9', '42ed8e10-57fb-5904-d6db-f8197379ce0c', '909de8f7-0e47-0543-85d2-d28388757644', 53.0, 30, 0.25);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('3e1197eb-1c06-665d-d739-aaa0de2443af', '42ed8e10-57fb-5904-d6db-f8197379ce0c', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 24.0, 60, 0.25),
   ('b7755457-944d-5b84-63e6-b3b423c6ca3f', '42ed8e10-57fb-5904-d6db-f8197379ce0c', '52af2b45-896b-da96-b35a-eb0727e7d530', 49.3, 5, 0.25),
   ('95dd9b58-42af-eb93-b9f3-eacf4a2d5bec', 'c9c4eca9-e6e4-b7b8-6827-8bc3df04f591', 'e39229d9-8558-bd7a-351c-96cedb8ed6dd', 9.2, 24, 0.05),
@@ -2734,7 +2734,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('9f5977e5-eb8b-041d-ed02-d6f9b1fff0b6', 'e2806b0d-458d-ee6a-1836-cf93e1637c9a', '7d74d364-982c-0752-7717-bb35d2d05fc0', 21.0, 20, 0.1),
   ('cc3a92b9-57c4-9405-eb22-c7313c189d9b', 'e2806b0d-458d-ee6a-1836-cf93e1637c9a', '57a066fe-c877-2484-8786-2554277397ec', 19.5, 15, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('42f55e57-e0f7-9b4e-5a0f-074d00fb1acf', 'e2806b0d-458d-ee6a-1836-cf93e1637c9a', '4870e324-3324-ea96-d9d7-ab94aef80c22', 55.0, 40, 0.1),
   ('7163c828-e10a-a492-a020-2cbf21df484e', 'e2806b0d-458d-ee6a-1836-cf93e1637c9a', '56e0ec66-b0d3-1fae-555f-bfd2c05b5f28', 13.0, 15, 0.1),
   ('40597a85-1332-4250-3df8-fd4872d31bbc', '3d2f1471-9d7c-53de-a4ef-180828f3ed01', '069a4d31-1444-c3cc-f5f6-5051d67e4170', 9.65, 12, 0.0),
@@ -2786,7 +2786,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('3c160563-4e8c-ea26-582e-b7713d6d1c9b', 'bdca831b-2ca5-f077-7a9c-3b40e616d08a', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 15, 0.1),
   ('6f7beaec-89e6-5369-3bcf-0c5e876fe1aa', '74e5acfb-b447-caec-1018-9d0340704b29', 'cac4ad8c-f21e-3838-5339-25a67807fe0e', 14.0, 6, 0.2);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('a5038669-452f-589e-082e-5104fa297769', '74e5acfb-b447-caec-1018-9d0340704b29', '29ea45c1-480a-a022-7f2e-c8d02fd243fa', 18.0, 10, 0.2),
   ('647fb620-9f63-9112-d74e-15211ca242b5', '2670719a-942a-36ca-75d3-e7c52abeea0d', '6ce5ecce-6ee3-8288-679a-4d93f00b8c4f', 31.0, 16, 0.0),
   ('331336c6-1d95-9d15-fd23-3cda066b126f', '2670719a-942a-36ca-75d3-e7c52abeea0d', '0e109866-ac56-8dec-db56-eadac85285d2', 38.0, 30, 0.0),
@@ -2838,7 +2838,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('9961f912-9e6f-80ba-306e-800925d5ff84', '68c2025b-f789-045b-8038-7a8a6cca989d', '27e85487-8bb4-d498-8227-27f1566923db', 10.0, 30, 0.0),
   ('f8617889-b0b1-3a90-d96b-9d0d4cf6d66c', '68c2025b-f789-045b-8038-7a8a6cca989d', 'd4746678-e2a1-2c3b-457c-d5972df495a1', 31.23, 35, 0.25);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('70635451-4c4a-1882-6319-8f165c172660', '68c2025b-f789-045b-8038-7a8a6cca989d', 'addff57b-245e-e149-f7c4-f15f55c8693d', 123.79, 10, 0.25),
   ('30905e4f-08e9-04c5-8180-cd45cb3bc493', '405a93be-b1c9-1c03-fdb4-a839721236ba', '526b4b89-accd-6d52-58cf-c27ed611aa9d', 30.0, 5, 0.0),
   ('806da584-c5e0-448b-5709-25dcfe134027', '405a93be-b1c9-1c03-fdb4-a839721236ba', 'b3ac93a2-da19-8c01-ba28-189edca73297', 43.9, 10, 0.0),
@@ -2890,7 +2890,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('c89c48ac-38d5-eac6-f9c3-ae66bb8d95ec', 'b4f9e0c7-405a-e1f5-257c-eb63eac01521', '4028f728-47d5-7378-f73f-fd08a0449677', 12.0, 21, 0.0),
   ('e60a7d04-7613-6f61-0c43-32f055ddbedc', 'b4f9e0c7-405a-e1f5-257c-eb63eac01521', '55efbec1-8c19-acd3-2858-a6407af8dbb4', 33.25, 20, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('ac641986-3509-6682-5f97-8849f08363c1', 'a6fdd77c-f801-3135-0c55-2e9f380b5392', '0344dbdc-682b-405e-3fa5-d5feab4b86a9', 17.45, 30, 0.25),
   ('b6079886-c510-4620-6ad1-7dc91809f365', 'a6fdd77c-f801-3135-0c55-2e9f380b5392', 'ec8473df-e874-84c2-91d5-ceb8cad8ade2', 62.5, 25, 0.0),
   ('a5589d22-d7d1-95b0-df44-f2599bd657d9', 'a76a2521-ef5b-1ede-01cd-dc474619f074', 'cd4c5d81-ee0c-78a8-29b2-a930b2c2b44c', 81.0, 20, 0.05),
@@ -2942,7 +2942,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('e8d1c574-f913-ee42-a5f7-206c199dd80a', 'c188d530-17aa-cdbc-251b-043fad278a62', 'addff57b-245e-e149-f7c4-f15f55c8693d', 123.79, 80, 0.0),
   ('4f5c1742-87dc-3933-a43c-02d17d072ce7', 'c188d530-17aa-cdbc-251b-043fad278a62', '2652b2c5-ebaf-14e1-1aa9-8f60ff42b248', 25.89, 36, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('91bff601-3247-77cf-93c9-48eb2aaa44d2', '6c3ba63a-62de-14c3-36cb-2f8598aba49e', '16851d0b-5b18-e3f8-2451-bf64bb584fe7', 6.0, 5, 0.0),
   ('16a9a6ee-af24-37ce-dd43-f0c2386a4a13', '4ef962db-b2a1-e988-a900-2f5bce2bceb5', '29ea45c1-480a-a022-7f2e-c8d02fd243fa', 18.0, 8, 0.15),
   ('bff1b49d-ecf0-fcfd-aabc-92021705e22e', 'e139961b-3e27-33b8-ce90-8425e3c2d88d', '77f52dd3-27e7-7f88-95ce-7d687ad94e55', 15.0, 3, 0.25),
@@ -2994,7 +2994,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('1dce4356-56d7-c73f-3756-da5b79876964', 'b370cdc2-0b6d-1382-d618-5d8299e5b8b4', 'e4b3d7b3-2acf-c7b7-bf1a-57bdfdf30d76', 39.0, 15, 0.0),
   ('a264e840-33a0-4ba2-466e-6afbc2b9b03e', 'b370cdc2-0b6d-1382-d618-5d8299e5b8b4', '180492c7-4e6b-63c0-bc2e-1fbe8fe36358', 4.5, 35, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('238082e6-4b12-acbc-e688-413d45ae5f23', '17647ad9-5642-4372-33ed-2142abeccbbd', '802e7b51-3ed1-8220-6fa4-1c2ae1123e2d', 14.0, 10, 0.2),
   ('c97b4b61-22e4-092b-e8c4-5a597ccdc744', '17647ad9-5642-4372-33ed-2142abeccbbd', 'd6ed2a56-55a1-9e1d-0503-8b015f87aaa3', 46.0, 10, 0.2),
   ('98d85b8a-2499-558d-0162-d1cff440ccdc', '17647ad9-5642-4372-33ed-2142abeccbbd', '5e5a4e3e-12c3-60ce-3784-68f58d9acb3d', 14.0, 24, 0.2),
@@ -3046,7 +3046,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('2a320e59-2457-7e5c-b0fa-6382b0793f5d', 'fd098056-556f-42ba-ba5f-eb6512ab89d4', '52af2b45-896b-da96-b35a-eb0727e7d530', 49.3, 30, 0.25),
   ('dcc269bc-064b-e537-d01d-d6a1ca6be46d', 'fd098056-556f-42ba-ba5f-eb6512ab89d4', '5941e2de-7c0b-caef-b522-5bec78e54273', 12.5, 80, 0.25);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('7b92fad2-dae7-dc24-dcca-1097a5e0fac3', 'fd098056-556f-42ba-ba5f-eb6512ab89d4', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 50, 0.0),
   ('3963d0d8-30c2-1302-cc25-4905fb0cfb54', 'd65bb8f1-045d-7346-e1f8-40ad2721c9a0', 'efacad1b-e869-2aa0-5dd4-6aa257bb384e', 20.0, 28, 0.0),
   ('056c3507-a6f1-e0ae-76d2-684bb9f25388', '5f4c619b-c388-1602-6acd-12076d5cea13', '16851d0b-5b18-e3f8-2451-bf64bb584fe7', 6.0, 15, 0.0),
@@ -3098,7 +3098,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('14421052-471c-e614-f852-0443750468e7', '41373521-4a82-9da3-99b8-e638414d3264', '526b4b89-accd-6d52-58cf-c27ed611aa9d', 30.0, 45, 0.0),
   ('1adf8386-f14f-cef7-7218-05790b31658b', '41373521-4a82-9da3-99b8-e638414d3264', '16851d0b-5b18-e3f8-2451-bf64bb584fe7', 6.0, 77, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('3dfd5c79-051e-efea-d4e1-b6355e056158', '41373521-4a82-9da3-99b8-e638414d3264', '9cb99912-0238-75b9-481b-775ce90f8dd9', 32.8, 20, 0.0),
   ('7d3549d6-aa87-f8cb-dc91-4ffd30b28b22', '41373521-4a82-9da3-99b8-e638414d3264', '0ec7f8a0-9b6c-afed-4a66-1c841ec90596', 36.0, 9, 0.0),
   ('596dbd4f-dcb8-f2a2-bc6e-fed339ca4dca', '41373521-4a82-9da3-99b8-e638414d3264', 'a51e4590-2236-b079-524d-97ab53a43129', 18.0, 44, 0.0),
@@ -3150,7 +3150,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('73b89a5a-b079-3cd3-8eb6-a8900b1e8059', 'db8f18d1-4a1f-3683-b339-9bd183c30436', '0344dbdc-682b-405e-3fa5-d5feab4b86a9', 17.45, 55, 0.0),
   ('46f0eb1d-66a3-8505-7dc2-a5f2f5f93fb1', 'db8f18d1-4a1f-3683-b339-9bd183c30436', '180492c7-4e6b-63c0-bc2e-1fbe8fe36358', 4.5, 20, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('fde222f5-4dc3-0228-a9f4-8e07606520ae', 'db8f18d1-4a1f-3683-b339-9bd183c30436', 'c822c512-0962-0e5c-75eb-070ebfde9f4b', 19.0, 40, 0.0),
   ('1a9bf694-e134-d938-9b0d-011eefca0b05', 'ac402bd4-009a-6430-a36f-3d710a0c16d4', '0344dbdc-682b-405e-3fa5-d5feab4b86a9', 17.45, 36, 0.1),
   ('42f29083-b9ea-091b-2f4a-32e8348897d7', 'ac402bd4-009a-6430-a36f-3d710a0c16d4', 'ec8473df-e874-84c2-91d5-ceb8cad8ade2', 62.5, 8, 0.1),
@@ -3202,7 +3202,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('d669095d-e7e0-66be-b0e0-4304c9bcc29e', '6b65a0be-7af4-a5bb-ed54-10ba1f19b3ef', '5b676eb2-6e86-a9f8-0d3b-c6d903bd628c', 18.0, 15, 0.15),
   ('157dba8e-1a8f-6b0b-bb3b-658d9669ba2c', '6b65a0be-7af4-a5bb-ed54-10ba1f19b3ef', '802e7b51-3ed1-8220-6fa4-1c2ae1123e2d', 14.0, 24, 0.15);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('15e568e7-a067-521f-7b27-465254bcdcb2', '6b65a0be-7af4-a5bb-ed54-10ba1f19b3ef', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 24.0, 40, 0.0),
   ('e9eca43a-f2c9-fcb2-d49c-d846bcdeaf6e', '89c6b6fc-e8cb-f80b-3aaa-aecbfebc15d2', 'aba93f9b-dcd7-ef45-6646-9d84d3991395', 18.0, 4, 0.0),
   ('5439850a-6952-94c0-ffc6-adc1e1ae614e', '89c6b6fc-e8cb-f80b-3aaa-aecbfebc15d2', 'f7546a3b-375a-d3a5-3ed2-05fb72d8e6de', 18.4, 10, 0.0),
@@ -3254,7 +3254,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('0d206fb4-b040-6c73-9b84-565e427b7ce2', 'c4f46881-2433-a69f-dc00-aa8fa88fcb42', 'ed36a8e2-738b-a5ef-a099-838829668a8c', 34.8, 35, 0.0),
   ('9cdb5a13-4a50-90aa-959f-750f693857f7', '9f802b84-945c-224f-7a58-72987779e434', 'e39229d9-8558-bd7a-351c-96cedb8ed6dd', 9.2, 35, 0.0);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('26a7026f-b210-7dad-71ab-f8dcf64079c3', '9f802b84-945c-224f-7a58-72987779e434', '0ec7f8a0-9b6c-afed-4a66-1c841ec90596', 36.0, 30, 0.0),
   ('f007b2e9-7247-9eec-ce8b-971e2fd5736c', '3e2c15a0-891b-f08a-6886-83b39088c923', '526b4b89-accd-6d52-58cf-c27ed611aa9d', 30.0, 4, 0.0),
   ('56c89d31-1cd3-64dc-aa2d-582f2f2d55a9', '3e2c15a0-891b-f08a-6886-83b39088c923', 'd6ed2a56-55a1-9e1d-0503-8b015f87aaa3', 46.0, 30, 0.0),
@@ -3306,7 +3306,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('9ae0ca0d-8764-3661-0707-19efaa9bed4c', 'd51c2034-0253-655b-cf0d-b2c1684be358', '67de05bb-e2f8-a856-d499-0c6429cc47b8', 10.0, 20, 0.0),
   ('2b379dd5-360c-15dd-97cf-d4ae9bd0e7bf', '24541321-e356-71f0-a24d-c0a9bc2fa77d', '768b5a1f-3982-acf9-ac8d-d57670a697c8', 19.0, 30, 0.2);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('2896afe8-e929-6e53-692c-06ccd63e0fab', '24541321-e356-71f0-a24d-c0a9bc2fa77d', 'ea852ae8-d089-159d-a697-e81825a641f5', 43.9, 30, 0.0),
   ('087d1c62-e56f-4515-0a80-73f9ab504882', '5defd4e5-71f0-5318-15eb-5f8eebe31ebc', 'c3a95c80-71a6-ce65-9e22-067660c13da1', 19.45, 15, 0.0),
   ('bb705f07-dca3-1677-0e02-dbb67fa56663', '5defd4e5-71f0-5318-15eb-5f8eebe31ebc', 'db4df9d3-7fc0-440c-367d-e199a101faa5', 28.5, 4, 0.0),
@@ -3358,7 +3358,7 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('636c931d-becb-df0d-7cbf-e7b3e4f0a4b6', 'de508247-9201-5c88-ae5b-bdb803194fee', '9cb99912-0238-75b9-481b-775ce90f8dd9', 32.8, 25, 0.1),
   ('fb8770b0-40d1-94b5-e65b-837f9107a38d', 'de508247-9201-5c88-ae5b-bdb803194fee', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 24.0, 4, 0.1);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('d064e3f3-3fb4-0d2f-ab65-fa07c0481451', 'de508247-9201-5c88-ae5b-bdb803194fee', '5941e2de-7c0b-caef-b522-5bec78e54273', 12.5, 55, 0.0),
   ('e69da684-a2ce-758c-0e5f-cc5335ca8990', '70f82beb-3007-3b0c-b32a-ae88f4ccfe42', '2652b2c5-ebaf-14e1-1aa9-8f60ff42b248', 25.89, 4, 0.25),
   ('9e3bbfd6-fb47-9e1c-1f5e-67221442f7aa', '70f82beb-3007-3b0c-b32a-ae88f4ccfe42', '6ad99522-5f80-d597-9c99-dbb85b67c071', 7.45, 20, 0.25),
@@ -3410,14 +3410,14 @@ INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quant
   ('cac4c80d-9a7f-e6d3-da79-ce9df26538b6', '5e6f580d-2c45-9376-db30-6194a360f5d4', 'b9c333ae-44d6-037b-ae4f-8b02ec420d7b', 24.0, 2, 0.0),
   ('701b24be-d8ae-0f6c-2f40-154ab9ab67fb', '5e6f580d-2c45-9376-db30-6194a360f5d4', '6377d05d-316a-7206-0427-766b4370bdd1', 34.0, 2, 0.06);
 
-INSERT INTO northwind.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
+INSERT INTO northwind_demo.order_details (id, order_id, product_id, unit_price, quantity, discount) VALUES
   ('adc063ee-85d6-c921-fdb8-e8e8f680be29', '5e6f580d-2c45-9376-db30-6194a360f5d4', '55efbec1-8c19-acd3-2858-a6407af8dbb4', 33.25, 2, 0.03),
   ('c4f1c0ae-db31-c6ec-8cbf-8f1839353d1b', '5e6f580d-2c45-9376-db30-6194a360f5d4', 'f7bb966a-f410-cc8a-c892-99bf94bc2f40', 17.0, 1, 0.0),
   ('64672fab-b677-d8b9-b17b-10f81029620c', '5e6f580d-2c45-9376-db30-6194a360f5d4', '163cb838-46d3-897b-95c6-ee0c6cd6b3df', 15.0, 2, 0.01),
   ('53692d9c-09ae-1ebb-a0fe-ea1a03228734', '5e6f580d-2c45-9376-db30-6194a360f5d4', '5d52f507-8f31-4482-648b-a4cd04d56ece', 7.75, 4, 0.0),
   ('380fb333-5460-d0ce-2e09-056eb95797c3', '5e6f580d-2c45-9376-db30-6194a360f5d4', '56e0ec66-b0d3-1fae-555f-bfd2c05b5f28', 13.0, 2, 0.0);
 
-INSERT INTO northwind.employee_territories (id, employee_id, territory_id) VALUES
+INSERT INTO northwind_demo.employee_territories (id, employee_id, territory_id) VALUES
   ('aed6d97f-0598-0fbd-4fa5-047529c5a286', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', '42b662f8-266e-8730-a7d4-b1c54c065f62'),
   ('d5ae8786-e5bb-faa7-3765-5bd0d271b0cf', '8f12b367-7b69-5b52-b6c8-ff85d34dd857', 'ab21c78a-b155-bd76-c96f-4800bb504740'),
   ('ed9774c8-cd3f-de87-3bbe-f80254b53883', '3a23bb3e-f611-57c1-09c8-f514b5523bf5', '7c2de608-98b3-3381-4935-c0d8ab4e9feb'),

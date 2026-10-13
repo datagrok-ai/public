@@ -120,6 +120,26 @@ scoped('a row the caller may not edit renders as text; a draft is written under 
   draft.dispose();
 });
 
+scoped('an immutable field is text on a saved row and an input on a draft', async () => {
+  backends.domain = backend({access: {can: CAN, fields: {title: 'editable', number: 'immutable'}}});
+  const {table, src} = await issues();
+  src.currentRow.value = src.rows.byKey('i1');
+  const form = domains.form(src);
+  await flush();
+  assert.deepEqual(form.form.getWidgetStatus().inputs.map((f) => [f.name, f.access]),
+    [['number', 'readonly'], ['title', 'editable']], 'a saved row: the key was typed once');
+  form.dispose();
+  src.dispose();
+  const draft = table.draft({title: 'New'});
+  await flush();
+  const create = domains.form(draft);
+  await flush();
+  assert.deepEqual(create.form.getWidgetStatus().inputs.map((f) => [f.name, f.access]),
+    [['number', 'editable'], ['title', 'editable']], 'a draft: the key is an input');
+  create.dispose();
+  draft.dispose();
+});
+
 scoped('an edit writes through the source; discard restores the field', async () => {
   const {src} = await issues();
   src.currentRow.value = src.rows.byKey('i1');

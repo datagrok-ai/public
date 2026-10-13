@@ -19,8 +19,15 @@ export interface DialogShowOptions {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+/** Where an Enter is the control's own — a button, a link, a box, a select, a textarea, a chip, or
+ * anything playing one of those — never the dialog's default action. */
+const ENTER_OWNERS = 'button, a, input[type="checkbox"], input[type="radio"], select, textarea, .u2-chip, ' +
+  '[role="button"], [role="checkbox"], [role="option"]';
+
 export class Dialog extends Control {
   private static _seq = 0;
+  /** The open dialogs, the last one on top. */
+  private static readonly _shown: Dialog[] = [];
 
   readonly isOpen: ReadonlySignal<boolean>;
 
@@ -33,9 +40,11 @@ export class Dialog extends Control {
   private _cancel: HTMLButtonElement | undefined;
   private _onOK: (() => unknown) | undefined;
   private _onCancel: (() => void) | undefined;
+  private _closeGuard: (() => boolean) | undefined;
   private _scope: Scope | undefined;
   private _restore: HTMLElement | undefined;
   private _drag: {dx: number, dy: number} | undefined;
+  private _modal = false;
 
   constructor(title: string, options?: {name?: string}) {
     super();
@@ -111,6 +120,13 @@ export class Dialog extends Control {
     return this._ok;
   }
 
+  /** Vetoes every close — ✕, Esc and the buttons — while `fn` answers false: work in flight the
+   * dialog must outlive. */
+  closeGuard(fn: () => boolean): Dialog {
+    this._closeGuard = fn;
+    return this;
+  }
+
   onCancel(fn: () => void): Dialog {
     this._onCancel = fn;
     if (!this._cancel) {
@@ -133,6 +149,7 @@ export class Dialog extends Control {
       this.root.style.width = `${options.width}px`;
     if (options.height !== undefined)
       this.root.style.height = `${options.height}px`;
+    this._modal = options.modal === true;
     if (options.modal) {
       this._backdrop.style.zIndex = String(backdropLayer);
       this.root.setAttribute('aria-modal', 'true');
@@ -141,9 +158,11 @@ export class Dialog extends Control {
       this.root.removeAttribute('aria-modal');
 
     Overlay.host.append(this.root);
+    Dialog._shown.push(this);
     this._open.value = true;
     this._place(options.x, options.y);
     this._listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent), scope);
+    this._listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent), scope);
     const first = Dialog._focusable(this._content)[0];
     (first ?? this._ok ?? this.root).focus();
     return this;
@@ -158,6 +177,7 @@ export class Dialog extends Control {
     scope.dispose();
     this._backdrop.remove();
     this.root.remove();
+    Dialog._shown.splice(Dialog._shown.indexOf(this), 1);
     this._open.value = false;
     const restore = this._restore;
     this._restore = undefined;
@@ -175,7 +195,7 @@ export class Dialog extends Control {
   }
 
   private _finish(fn: (() => unknown) | undefined): void {
-    if (fn?.() === false)
+    if (this._closeGuard?.() === false || fn?.() === false)
       return;
     this.close();
   }
@@ -211,13 +231,35 @@ export class Dialog extends Control {
     if (e.key === 'Escape') {
       e.preventDefault();
       this._finish(this._onCancel);
-    } else if (e.key === 'Enter' && this._ok && target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
+    } else if (this._ok && Dialog.entersDefault(e)) {
       e.preventDefault();
       if (this._ok.disabled)
         return;
       this._finish(this._onOK);
     } else if (e.key === 'Tab')
       this._trapTab(e);
+  }
+
+  /** Escape reaches the modal dialog on top even once focus fell out of it — a control that
+   * rebuilt its DOM under the focused element lands the keyboard on the body. Nothing above
+   * it may be open: a u2 popup in the overlay host, or a platform dialog opened later. */
+  private _onDocumentKeyDown(e: KeyboardEvent): void {
+    const target = e.target;
+    const lost = target === document.body || target === document.documentElement || target === document;
+    if (e.key !== 'Escape' || e.defaultPrevented || !this._modal || !lost || Dialog._shown[Dialog._shown.length - 1] !== this)
+      return;
+    const host = Overlay.host;
+    if (host.children[host.children.length - 1] !== this.root)
+      return;
+    const mounted = [...document.body.children];
+    const level = (el: Element): number => {
+      let top = el;
+      while (top.parentElement !== null && top.parentElement !== document.body)
+        top = top.parentElement;
+      return mounted.indexOf(top);
+    };
+    if (![...document.querySelectorAll('.d4-dialog')].some((d) => level(d) > level(host)))
+      this._onKeyDown(e);
   }
 
   private _trapTab(e: KeyboardEvent): void {
@@ -237,6 +279,15 @@ export class Dialog extends Control {
   private _listen(target: EventTarget, type: string, handler: (e: Event) => void, scope?: Scope): void {
     target.addEventListener(type, handler);
     (scope ?? this.scope).own(() => target.removeEventListener(type, handler));
+  }
+
+  /** Whether an Enter means the dialog's default action: an unhandled one from a plain text input
+   * or the dialog body, not one on or inside a control that acts on Enter itself. */
+  static entersDefault(e: KeyboardEvent): boolean {
+    if (e.key !== 'Enter' || e.defaultPrevented)
+      return false;
+    const target = e.target;
+    return !(target instanceof Element) || target.closest(ENTER_OWNERS) === null;
   }
 
   private static _focusable(el: HTMLElement): HTMLElement[] {

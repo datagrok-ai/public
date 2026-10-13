@@ -86,6 +86,31 @@ describe('applyBody', () => {
       .toEqual({tables: {issue: {}}, dropTables: ['old'], confirmDestructive: true, ifVersion: '3'});
     expect(applyBody({tables: {}}, {})).toEqual({tables: {}});
   });
+
+  it('takes the token from the manifest version unless --if-version says otherwise', () => {
+    expect(applyBody({version: '4', tables: {}}, {})).toEqual({tables: {}, ifVersion: '4'});
+    expect(applyBody({version: '4', tables: {}}, {'if-version': 'current'})).toEqual({tables: {}, ifVersion: 'current'});
+  });
+
+  it('sends the manifest incarnation with the version, and the access section', () => {
+    const manifest = {version: '4', incarnation: '2026-09-26T10:00:00.000Z', tables: {},
+      access: {grant: [{table: 't', group: 'G', permission: 'View'}]}};
+    expect(applyBody(manifest, {})).toEqual({tables: {}, ifVersion: '4', ifIncarnation: '2026-09-26T10:00:00.000Z',
+      access: {grant: [{table: 't', group: 'G', permission: 'View'}]}});
+    expect(applyBody(manifest, {'if-version': 7})).toEqual({tables: {}, ifVersion: '7', ifIncarnation: '2026-09-26T10:00:00.000Z',
+      access: {grant: [{table: 't', group: 'G', permission: 'View'}]}});
+    expect(applyBody({version: '4', tables: {}}, {})).not.toHaveProperty('ifIncarnation');
+  });
+
+  it('forwards friendlyName, description and storage for a user-managed schema only', () => {
+    const manifest = {name: 'inv', version: '2', friendlyName: 'Inventory', description: 'Lab stock',
+      storage: {kind: 'external', connection: 'Me:Db', schema: 'public', writable: true}, tables: {item: {}}};
+    expect(applyBody(manifest, {}, {userManaged: true})).toEqual({tables: {item: {}}, ifVersion: '2',
+      friendlyName: 'Inventory', description: 'Lab stock',
+      storage: {kind: 'external', connection: 'Me:Db', schema: 'public', writable: true}});
+    expect(applyBody(manifest, {}, {userManaged: false})).toEqual({tables: {item: {}}, ifVersion: '2'});
+    expect(applyBody(manifest, {})).toEqual({tables: {item: {}}, ifVersion: '2'});
+  });
 });
 
 describe('table rows', () => {

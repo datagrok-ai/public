@@ -1,7 +1,8 @@
 /* Multi-step wizard. Panels are hidden, never detached, so a step's state survives navigation;
    lazy content is built once under the step's own scope. In dialog mode the wizard's own footer
    carries the buttons — the Dialog's button row stays empty — and any close that is not a finish
-   reports a cancel, which covers CANCEL, the ✕ and Esc in one place. */
+   reports a cancel, which covers CANCEL, the ✕ and Esc in one place; while a step's commit, an
+   action or the finish runs, none of them closes and the rail does not move. */
 import {signal, computed, untracked, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
@@ -18,14 +19,39 @@ export interface WizardStep {
   canProceed?: ReadonlySignal<boolean> | ReadonlySignal<string | null> | (() => boolean | string | null);
   /** A step reached only once the work is done — a report over what was written. There is
    * nothing to go back to and nothing to cancel, so only the closing button stands, reading
-   * CLOSE. */
+   * CLOSE; a plain Enter does not press it. */
   done?: boolean;
+  /** What the closing button reads on the last step (FINISH by default). */
+  finishText?: string;
+  /** What NEXT reads on this step (NEXT by default) — CREATE on a step whose commit registers; a
+   * signal where the wording follows the state (SAVE, then REOPEN once a save's outcome is unknown). */
+  nextText?: string | ReadonlySignal<string>;
+  /** Work NEXT runs before leaving this step: the wizard waits on it and nothing closes meanwhile;
+   * `false` keeps the step (a commit the server refused). */
+  commit?: () => void | boolean | Promise<void | boolean>;
+  /** Buttons of this step's own, before NEXT in the footer — a check the user runs before
+   * finishing. While one runs, the footer waits. */
+  actions?: WizardAction[];
   onActivate?: (step: WizardStep) => void;
+}
+
+export interface WizardAction {
+  text: string;
+  run: () => void | Promise<void>;
+  /** Follows the signal; enabled otherwise. */
+  enabled?: ReadonlySignal<boolean>;
+  /** Follows the signal; shown on its step otherwise. */
+  visible?: ReadonlySignal<boolean>;
 }
 
 export interface WizardOptions {
   steps: WizardStep[];
-  onFinish?: () => void;
+  /** The step to open on (the first by default); the ones before it count as visited — the host
+   * pre-filled them — so BACK and the rail reach them. */
+  start?: string;
+  /** Answering `false` keeps the wizard open — a finish the server refused; the footer waits
+   * on a promise. */
+  onFinish?: () => void | boolean | Promise<void | boolean>;
   onCancel?: () => void;
 }
 
@@ -35,6 +61,7 @@ interface Step {
   circle: HTMLElement;
   panel: HTMLElement;
   scope: Scope;
+  actions: HTMLButtonElement[];
   builder?: () => HTMLElement;
 }
 
@@ -43,6 +70,8 @@ let wizardCount = 0;
 export class Wizard extends Control {
   readonly currentStep: ReadonlySignal<string>;
   readonly completed: ReadonlySignal<boolean>;
+  /** The footer's status line, left of the gate's reason — the host writes what it is doing. */
+  readonly status = document.createElement('span');
 
   private readonly _idPrefix = `u2-wizard-${++wizardCount}`;
   private readonly _steps: Step[] = [];
@@ -58,6 +87,9 @@ export class Wizard extends Control {
   private readonly _index = signal(0);
   private readonly _completed = signal(false);
   private readonly _recheck = signal(0);
+  private readonly _busy = signal(false);
+  /** The last step whose commit went through: what it registered stands, so nothing goes back to it. */
+  private _committed = -1;
   private readonly _blockReason: ReadonlySignal<string | null>;
   private _dialog: Dialog | undefined;
 
@@ -68,7 +100,7 @@ export class Wizard extends Control {
     this.completed = this._completed;
     this._blockReason = computed(() => {
       this._recheck.value;
-      return Wizard._gate(this._steps[this._index.value].options.canProceed);
+      return this._busy.value ? '' : Wizard._gate(this._steps[this._index.value].options.canProceed);
     });
 
     this.root.classList.add('u2-wizard');
@@ -77,10 +109,14 @@ export class Wizard extends Control {
     this._content.className = 'u2-wizard-content';
     this._footer.className = 'u2-wizard-buttons';
     this._reason.className = 'u2-wizard-reason';
+    this.status.className = 'u2-wizard-status';
+    const left = document.createElement('span');
+    left.className = 'u2-wizard-left';
+    left.append(this.status, this._reason);
 
     this._back = this._button('BACK', () => this.back());
     this._next = this._button('NEXT', () => this.next(), true);
-    this._footer.append(this._reason, this._back, this._next);
+    this._footer.append(left, this._back, this._next);
     this.root.append(this._rail, this._content, this._footer);
 
     this._listen(this._rail, 'click', (e) => this._onRailClick(e));
@@ -89,8 +125,15 @@ export class Wizard extends Control {
 
     for (const step of options.steps)
       this._addStep(step);
+    const start = options.start === undefined ? 0 : options.steps.findIndex((s) => s.id === options.start);
+    if (start < 0)
+      throw new Error(`Wizard: no step "${options.start}" to start on`);
+    for (const step of options.steps.slice(0, start))
+      this._visited.add(step.id);
+    this._index.value = start;
 
     this.effect(() => this._applyStep());
+    this.effect(() => this._applyNextText());
     this.effect(() => this._applyGate());
   }
 
@@ -99,24 +142,40 @@ export class Wizard extends Control {
     if (this._blockReason.peek() !== null)
       return;
     const index = this._index.peek();
-    if (index < this._steps.length - 1)
-      this._index.value = index + 1;
-    else
+    if (index === this._steps.length - 1) {
       this._finish();
+      return;
+    }
+    const commit = this._steps[index].options.commit;
+    const advance = (ok: unknown): void => {
+      if (ok === false || this.scope.isDisposed || this._index.peek() !== index)
+        return;
+      if (commit)
+        this._committed = index;
+      this._index.value = index + 1;
+    };
+    if (commit)
+      void this._run(commit()).then(advance);
+    else
+      advance(undefined);
   }
 
   back(): void {
     const index = this._index.peek();
-    if (index > 0)
+    if (index - 1 > this._committed && !this._busy.peek())
       this._index.value = index - 1;
   }
 
+  /** Back to a visited step after the last committed one; forward to a visited one only through the
+   * gate of every step on the way and past no committing step, or to the next one through {@link next}.
+   * Nothing moves while the wizard is busy. */
   goTo(id: string): void {
     const target = this._steps.findIndex((s) => s.options.id === id);
     const index = this._index.peek();
-    if (target < 0 || target === index)
+    if (target < 0 || target === index || target <= this._committed || this._busy.peek())
       return;
-    if (this._visited.has(id))
+    if (this._visited.has(id) && (target < index ||
+        this._steps.slice(index, target).every((s) => !s.options.commit && Wizard._gate(s.options.canProceed) === null)))
       this._index.value = target;
     else if (target === index + 1)
       this.next();
@@ -125,17 +184,26 @@ export class Wizard extends Control {
   /** Shows the wizard as a modal dialog; repeated calls reopen the same one. */
   openInDialog(title: string, options: {width?: number, height?: number} = {}): Dialog {
     if (!this._dialog) {
-      const dialog = this.runInScope(() => Dialog.create(title).add(this));
+      const dialog = this.runInScope(() => Dialog.create(title).add(this).closeGuard(() => !this._busy.peek()));
       this._dialog = dialog;
-      this._cancel = this._button('CANCEL', () => dialog.close());
+      this._cancel = this._button('CANCEL', () => {
+        if (!this._busy.peek())
+          dialog.close();
+      });
       this._footer.insertBefore(this._cancel, this._back);
       let open = false;
+      // ✕ and Esc on a done step are the CLOSE button; anywhere else they are a cancel
       this.effect(() => {
         const closed = open && !dialog.isOpen.value;
         open = dialog.isOpen.value;
-        const onCancel = this._options.onCancel;
-        if (closed && onCancel && !this._completed.peek())
-          untracked(() => onCancel());
+        if (!closed || this._completed.peek())
+          return;
+        untracked(() => {
+          if (this._steps[this._index.peek()].options.done === true)
+            this._finish();
+          else
+            this._options.onCancel?.();
+        });
       });
     }
     return this._dialog.show({modal: true, width: options.width, height: options.height});
@@ -170,7 +238,24 @@ export class Wizard extends Control {
     const lazy = typeof step.content === 'function' ? step.content : undefined;
     if (!lazy)
       panel.append(step.content as HTMLElement);
-    this._steps.push({options: step, marker, circle, panel, scope, builder: lazy});
+    const stepIndex = this._steps.length;
+    const actions = (step.actions ?? []).map((action) => {
+      const b = this._button(action.text, () => this._run(action.run()));
+      this.effect(() => b.style.display =
+        this._index.value === stepIndex && action.visible?.value !== false ? '' : 'none');
+      this._footer.insertBefore(b, this._next);
+      return b;
+    });
+    this._steps.push({options: step, marker, circle, panel, scope, actions, builder: lazy});
+  }
+
+  /** The footer waits on a pending action or finish: NEXT and the actions are disabled and the
+   * gate says nothing until it settles. */
+  private _run<T>(result: T | Promise<T>): Promise<T> {
+    if (!(result instanceof Promise))
+      return Promise.resolve(result);
+    this._busy.value = true;
+    return result.finally(() => this._busy.value = false);
   }
 
   private _applyStep(): void {
@@ -186,7 +271,7 @@ export class Wizard extends Control {
       const done = visited && i < index;
       step.marker.classList.toggle('u2-wizard-step-current', on);
       step.marker.classList.toggle('u2-wizard-step-done', done);
-      step.marker.setAttribute('aria-disabled', String(!on && !visited));
+      step.marker.setAttribute('aria-disabled', String(!on && (!visited || i <= this._committed)));
       step.marker.tabIndex = on ? 0 : -1;
       step.circle.textContent = done ? '✓' : String(i + 1);
       step.panel.style.display = on ? '' : 'none';
@@ -196,10 +281,14 @@ export class Wizard extends Control {
         step.marker.removeAttribute('aria-current');
     }
     const done = current.options.done === true;
+    // NEXT reads CLOSE now, so a second Enter must not land on it; focus stays inside the dialog (Esc,
+    // the Tab trap) — Chrome drops a button disabled while its commit ran onto the body
+    const active = document.activeElement;
+    if (done && (active === this._next || active === null || active === document.body))
+      current.marker.focus();
     this._back.style.display = index === 0 || done ? 'none' : '';
     if (this._cancel !== undefined)
       this._cancel.style.display = done ? 'none' : '';
-    this._next.textContent = index < this._steps.length - 1 ? 'NEXT' : done ? 'CLOSE' : 'FINISH';
 
     const builder = current.builder;
     if (builder) {
@@ -211,16 +300,38 @@ export class Wizard extends Control {
       untracked(() => onActivate(current.options));
   }
 
+  private _applyNextText(): void {
+    const index = this._index.value;
+    const current = this._steps[index].options;
+    const next = typeof current.nextText === 'string' ? current.nextText : current.nextText?.value;
+    this._next.textContent = index < this._steps.length - 1 ? next ?? 'NEXT' : current.done === true ? 'CLOSE' :
+      current.finishText ?? 'FINISH';
+  }
+
   private _applyGate(): void {
     const reason = this._blockReason.value;
+    const busy = this._busy.value;
+    const current = this._steps[this._index.value];
     this._next.disabled = reason !== null;
+    this._back.disabled = busy;
+    if (this._cancel !== undefined)
+      this._cancel.disabled = busy;
+    this.root.classList.toggle('u2-wizard-busy', busy);
+    this._rail.setAttribute('aria-busy', String(busy));
+    current.actions.forEach((b, i) => b.disabled = busy || current.options.actions![i].enabled?.value === false);
     this._reason.textContent = reason ?? '';
   }
 
   private _finish(): void {
+    const result = this._options.onFinish?.();
+    if (result instanceof Promise)
+      void this._run(result).then((ok) => { if (ok !== false) this._complete(); });
+    else if (result !== false)
+      this._complete();
+  }
+
+  private _complete(): void {
     this._completed.value = true;
-    if (this._options.onFinish)
-      this._options.onFinish();
     if (this._dialog)
       this._dialog.close();
   }
@@ -264,11 +375,12 @@ export class Wizard extends Control {
   private _onContentKeyDown(e: KeyboardEvent): void {
     if (e.key !== 'Enter' || e.defaultPrevented)
       return;
-    const last = this._index.peek() === this._steps.length - 1;
+    const current = this._steps[this._index.peek()];
+    const last = current === this._steps[this._steps.length - 1];
     if (e.ctrlKey || e.metaKey) {
       if (!last)
         return;
-    } else if (e.target instanceof HTMLTextAreaElement)
+    } else if (!Dialog.entersDefault(e) || current.options.done === true)
       return;
     e.preventDefault();
     this.next();

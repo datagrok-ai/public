@@ -1,5 +1,10 @@
 # Datagrok-tools changelog
 
+## v.next
+
+* GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
+* GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
+
 ## 6.7.8 (2026-10-13)
 
 * Fixed `grok api` (and every command other than `grok s`) exiting with code 1 and its usage text in 6.7.7: the new `--send-email` flag reached every command as `send-email: false`, which `grok api` rejected as an unknown option

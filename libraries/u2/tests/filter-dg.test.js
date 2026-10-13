@@ -113,13 +113,14 @@ smoke('forDataFrame: refresh re-reads the columns — a semantic type detected a
 
 // --- forDomainTable ---
 
-function domainsDouble() {
+function domainsDouble(filters = 'full') {
   const calls = {rowProperties: [], facets: []};
   const tables = {
     'plates.plate': [
       new Property('name', TYPE.STRING, {friendlyName: 'Name', nullable: false,
         get: (r) => r.name, set: (r, v) => r.name = v}),
       new Property('project_id', TYPE.STRING, {friendlyName: 'Project', semType: 'Core.projects'}),
+      new Property('volume', TYPE.FLOAT),
     ],
     'Core.projects': [new Property('name', TYPE.STRING), new Property('created_on', TYPE.DATE_TIME)],
   };
@@ -131,12 +132,14 @@ function domainsDouble() {
       },
     },
     table: (address) => ({
+      access: async () => ({support: {filters}}),
       facets: async (spec) => {
         calls.facets.push([address, spec]);
         const column = spec.facets[0].column;
+        // an external ('basic') facet answers no unfiltered total
         return {facets: {v: {categories: column === 'project_id' ?
           [{value: 'p1', display: 'Alpha', total: 3, filtered: 1}] :
-          [{value: 'Ann', total: 2, filtered: 2}]}}};
+          [{value: 'Ann', total: filters === 'basic' ? null : 2, filtered: 2}]}}};
       },
     }),
   };
@@ -174,6 +177,22 @@ smoke('forDomainTable: values go through the categories facet, refs come back as
   const names = await schema.values(propOf(schema, 'name'), '', abort);
   assert.deepEqual(names, [{value: 'Ann', label: 'Ann', count: 2}]);
 });
+
+smoke('forDomainTable: a basic backend is asked for values on strings and refs only; a null total carries no count',
+  async () => {
+    const calls = domainsDouble('basic');
+    const schema = await FilterSchemas.forDomainTable('plates.plate');
+
+    assert.deepEqual(await schema.values(propOf(schema, 'volume'), '1', abort), []);
+    assert.deepEqual(calls.facets, [], 'a float column issues no facets call');
+
+    const names = await schema.values(propOf(schema, 'name'), 'an', abort);
+    assert.equal(calls.facets.length, 1);
+    assert.deepEqual(names, [{value: 'Ann', label: 'Ann'}], 'no count key at all, never a null one');
+    const refs = await schema.values(propOf(schema, 'project_id'), '', abort);
+    assert.equal(calls.facets.length, 2, 'a ref column is still asked');
+    assert.equal(refs[0].count, 3);
+  });
 
 smoke('forDomainTable: resolveRef loads the target table', async () => {
   const calls = domainsDouble();

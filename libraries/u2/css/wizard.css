@@ -43,7 +43,8 @@
   background: var(--dg-border);
 }
 
-.u2-wizard-step:focus-visible {
+/* the ring goes on the circle: the step element also carries the connector line before it */
+.u2-wizard-step:focus-visible .u2-wizard-marker {
   outline: var(--dg-focus-ring);
   outline-offset: var(--dg-space-xs);
 }
@@ -74,6 +75,11 @@
   cursor: pointer;
 }
 
+/* a committed step stays behind: what it registered cannot be undone from the rail */
+.u2-wizard-step-done[aria-disabled='true'] {
+  cursor: default;
+}
+
 .u2-wizard-step-done .u2-wizard-marker {
   color: var(--dg-white);
   background: var(--dg-success);
@@ -89,6 +95,11 @@
   color: var(--dg-white);
   background: var(--dg-accent);
   border-color: var(--dg-accent);
+}
+
+.u2-wizard-busy .u2-wizard-steps {
+  pointer-events: none;
+  color: var(--dg-text-color-disabled);
 }
 
 .u2-wizard-content {
@@ -107,12 +118,29 @@
   padding: 0 var(--dg-space-l) var(--dg-space-l);
 }
 
-.u2-wizard-reason {
+/* the host's status line and the gate's reason share the footer's left side */
+.u2-wizard-left {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-m);
+  min-width: 0;
   margin-right: auto;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
 }
 
-.u2-wizard-reason:empty {
+.u2-wizard-status {
+  display: flex;
+  align-items: center;
+  gap: var(--dg-space-s);
+  min-width: 0;
+}
+
+.u2-wizard-status-error {
+  color: var(--dg-error);
+}
+
+.u2-wizard-reason:empty,
+.u2-wizard-status:empty {
   display: none;
 }
