@@ -1,4 +1,4 @@
-import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
+import {category, test, expect, expectArray, expectObject} from '@datagrok-libraries/test/src/test';
 import {
   matchScalarTargets, matchColumnTargets, buildUnitConverter, buildAliasGroups,
 } from '../components/RunComparison/matching';
@@ -6,9 +6,9 @@ import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
-  selectionGaps,
+  selectionGaps, withAnnotatedDefaults, PickerSelections,
 } from '../components/RunComparison/selection';
-import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit} from '../components/RunComparison/types';
+import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit, TableNodeInfo} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
 category('RunComparison: entry statuses', () => {
@@ -59,6 +59,23 @@ category('RunComparison: entry statuses', () => {
     const statusB = getEntryStatuses(entries, target, indexes).find((s) => s.entryId === 'b')!;
     expect(statusB.matched, false);
     expect(statusB.reason, 'disabled');
+  });
+
+  test('a column target on an entry without tables reports no similar data', async () => {
+    const table = {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]};
+    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table]), makeEntry('c', [{name: 'x'}])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    const [target] = matchColumnTargets(entries, indexes);
+    expect(getEntryStatuses(entries, target, indexes).find((s) => s.entryId === 'c')!.reason, 'no similar data');
+  });
+
+  test('a disabled run reports disabled even when another table has the value in other units', async () => {
+    const table = (units: string) => ({path: units, columns: [{name: 'time', type: 'int'}, {name: 'height', units}]});
+    const entries = [makeEntry('a', [], [table('m')]), makeEntry('b', [], [table('m'), table('ft')])];
+    const indexes = indexMap({a: {m: 'time'}, b: {m: 'time', ft: 'time'}});
+    const [base] = matchColumnTargets(entries, indexes);
+    const [target] = matchColumnTargets(entries, indexes, undefined, {[base.key]: {'b|m|height': false}});
+    expect(getEntryStatuses(entries, target, indexes).find((s) => s.entryId === 'b')!.reason, 'disabled');
   });
 
   test('scalar target unmatched entry reports no-similar-data', async () => {
@@ -259,6 +276,20 @@ category('RunComparison: index rows', () => {
     expect(rows[0].coverage!.count, 2);
     expect(rows[0].members.length, 2);
     expect(rows[0].candidates.some((c) => c.name === 'extra'), false);
+  });
+
+  test('merged rows of tables at different paths use the table name and count runs', async () => {
+    const tables = [
+      {path: 'days/day[1]/df', name: 'Profile', nqName: 'Pkg:Day', columns},
+      {path: 'days/day[2]/df', name: 'Profile', nqName: 'Pkg:Day', columns},
+    ];
+    const entries = [makeEntry('a', [], tables), makeEntry('b', [], tables.slice(0, 1))];
+    const rows = computeIndexRows(entries, {}, {}, true, {});
+    expect(rows.length, 1);
+    expect(rows[0].label, 'Profile');
+    expect(rows[0].members.length, 3);
+    expect(rows[0].coverage!.count, 2);
+    expect(rows[0].coverage!.total, 2);
   });
 
   test('tables without nqName never merge', async () => {
@@ -727,5 +758,51 @@ category('RunComparison: units differ status', () => {
     const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}]);
     const [joined] = matchScalarTargets(entries, aliases, convert);
     expect(status(getEntryStatuses(entries, joined, indexMap({}), {aliases, convert}), 'c').matched, true);
+  });
+});
+
+category('RunComparison: annotated defaults', () => {
+  const annotated = (defaults: Partial<TableNodeInfo>) => {
+    const entry = makeEntry('a', [], [{path: 't', columns: [
+      {name: 'time', type: 'double'}, {name: 'species', type: 'string'}, {name: 'value'},
+    ]}]);
+    Object.assign(entry.tables[0], defaults);
+    return entry;
+  };
+  const empty = (): PickerSelections => ({index: {}, split: {}, axis: {}});
+
+  test('empty pickers take the annotated index, split, mode and units', async () => {
+    const next = withAnnotatedDefaults(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
+      defaultAxisMode: 'timeseries', defaultTimeUnits: 'h'}), empty());
+    expect(next.index.a.t, 'time');
+    expect(next.split.a.t, 'species');
+    expectObject(next.axis.a.t, {mode: 'timeseries', units: 'h'});
+  });
+
+  test('the user\'s picks win', async () => {
+    const selections: PickerSelections = {
+      index: {a: {t: 'value'}}, split: {a: {t: 'value'}}, axis: {a: {t: {mode: 'points'}}},
+    };
+    const next = withAnnotatedDefaults(annotated({defaultIndexColumn: 'time', defaultSplitColumn: 'species',
+      defaultAxisMode: 'timeseries'}), selections);
+    expect(next.index === selections.index && next.split === selections.split && next.axis === selections.axis, true);
+  });
+
+  test('defaults that are not valid picks are ignored', async () => {
+    const missing = withAnnotatedDefaults(
+      annotated({defaultIndexColumn: 'nope', defaultSplitColumn: 'nope'}), empty());
+    expect(missing.index.a === undefined && missing.split.a === undefined, true);
+    const splitIsIndex = withAnnotatedDefaults(
+      annotated({defaultIndexColumn: 'species', defaultSplitColumn: 'species'}), empty());
+    expect(splitIsIndex.index.a.t, 'species');
+    expect(splitIsIndex.split.a === undefined, true);
+    const numericSplit = withAnnotatedDefaults(annotated({defaultSplitColumn: 'value'}), empty());
+    expect(numericSplit.split.a === undefined, true);
+  });
+
+  test('units are stored for the relative timeseries mode only', async () => {
+    const next = withAnnotatedDefaults(annotated({defaultAxisMode: 'points', defaultTimeUnits: 'h'}), empty());
+    expect(next.axis.a.t.mode, 'points');
+    expect(next.axis.a.t.units === undefined, true);
   });
 });

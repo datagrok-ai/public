@@ -251,6 +251,41 @@ export function pickAutoUnit(maxElapsedMs: number): TimeUnit {
 export const isSplitCandidate = (column: ColumnInfo, indexColumnName: string) =>
   column.type === 'string' && column.name !== indexColumnName;
 
+export interface PickerSelections {
+  index: Record<string, Record<string, string>>;
+  split: Record<string, Record<string, string>>;
+  axis: AxisModeSelection;
+}
+
+/**
+ * Pickers pre-filled from the tables' {comparison: {...}} annotations wherever the user has
+ * no pick yet; unchanged selections are returned as the same objects.
+ */
+export function withAnnotatedDefaults(entry: ComparisonEntryNodes, selections: PickerSelections): PickerSelections {
+  let {index, split, axis} = selections;
+  const set = <T, >(selection: Record<string, Record<string, T>>, tablePath: string, value: T) =>
+    ({...selection, [entry.entryId]: {...selection[entry.entryId], [tablePath]: value}});
+  for (const table of entry.tables) {
+    const indexDefault = table.defaultIndexColumn;
+    if (indexDefault && !index[entry.entryId]?.[table.path] && table.columns.some((col) => col.name === indexDefault))
+      index = set(index, table.path, indexDefault);
+    const splitColumn = table.columns.find((col) => col.name === table.defaultSplitColumn);
+    if (splitColumn && !split[entry.entryId]?.[table.path] &&
+      isSplitCandidate(splitColumn, index[entry.entryId]?.[table.path] ?? ''))
+      split = set(split, table.path, splitColumn.name);
+    const modeDefault = table.defaultAxisMode;
+    if (modeDefault && !axis[entry.entryId]?.[table.path]) {
+      // units matter only on the elapsed axis; storing them elsewhere would let a
+      // unit the user never saw outrank the column-meta prefill later
+      axis = set(axis, table.path, {
+        mode: modeDefault,
+        ...modeDefault === 'timeseries' && table.defaultTimeUnits ? {units: table.defaultTimeUnits} : {},
+      });
+    }
+  }
+  return {index, split, axis};
+}
+
 export function selectionToMap(
   selection: Record<string, Record<string, string>>,
   isValid: (entryId: string, tablePath: string, columnName: string) => boolean,

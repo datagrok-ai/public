@@ -106,3 +106,70 @@ category('RunComparison: workflow step failures', () => {
     expect(entry.nodes.tables.length + entry.nodes.scalars.length, 0);
   });
 });
+
+category('RunComparison: workflow step paths', () => {
+  test('nested pipelines join ids and names, unnamed steps fall back to their id', async () => {
+    const state = {
+      type: 'static', configId: 'wf', friendlyName: 'Workflow', steps: [
+        {type: 'static', configId: 'stage', friendlyName: 'Stage', steps: [
+          {type: 'static', configId: 'inner', steps: [
+            {type: 'funccall', configId: 'calc', friendlyName: 'Calc', funcCallId: 'x'},
+          ]},
+          {type: 'funccall', configId: 'pending', friendlyName: 'Pending'},
+        ]},
+      ],
+    } as unknown as PipelineSerializedState;
+    const steps = collectWorkflowSteps(state);
+    expectArray(steps.map((s) => s.path), ['wf/stage/inner/calc']);
+    expectArray(steps.map((s) => s.friendlyPath), ['Stage · inner · Calc']);
+  });
+
+  test('a root that is a single step uses its own id and name', async () => {
+    const solo = {type: 'funccall', configId: 'solo', funcCallId: 's'} as unknown as PipelineSerializedState;
+    const [step] = collectWorkflowSteps(solo);
+    expect(step.path, 'solo');
+    expect(step.friendlyPath, 'solo');
+    expect(step.funcCallId, 's');
+  });
+});
+
+category('RunComparison: function run extraction', () => {
+  const probeCall = () => DG.Script.create([
+    '//name: rcExtractionProbe',
+    '//language: javascript',
+    '//input: double a {caption: Data}',
+    '//input: double x',
+    '//input: string label',
+    '//output: double b {caption: Data}',
+    '//output: dataframe result',
+    '//output: dataframe empty',
+  ].join('\n')).prepare({a: 1, x: 2, label: 'l'});
+
+  test('scalars and tables come from inputs and outputs, shared captions get the property name', async () => {
+    const call = probeCall();
+    call.inputs['x'] = NaN;
+    call.outputs['b'] = 3;
+    const df = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'time', [0, 1])]);
+    call.outputs['result'] = df;
+    const entry = await entryFromFuncCall(call);
+    expect(entry.sourceKind, 'function');
+    const scalars = new Map(entry.nodes.scalars.map((s) => [s.path, s]));
+    expectArray([...scalars.keys()], ['a', 'x', 'b']);
+    expect(scalars.get('a')!.name, 'Data (a)');
+    expect(scalars.get('b')!.name, 'Data (b)');
+    expect(scalars.get('a')!.value, 1);
+    expect(scalars.get('x')!.value === null, true);
+    expect(scalars.get('b')!.value, 3);
+    expectArray(entry.nodes.tables.map((t) => t.path), ['result']);
+    expect(entry.dataFrames.get('result')!.dart === df.dart, true);
+  });
+
+  test('a malformed workflow config degrades to an entry without steps', async () => {
+    const call = probeCall();
+    call.options[CONFIG_PATH] = '{not json';
+    const entry = await entryFromFuncCall(call);
+    expect(entry.sourceKind, 'workflow');
+    expect(entry.nodes.scalars.length + entry.nodes.tables.length, 0);
+    expect(entry.failedSteps === undefined, true);
+  });
+});

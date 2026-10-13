@@ -74,6 +74,35 @@ category('RunComparison: comparison dataframes', () => {
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
   });
 
+  test('a missing scalar value charts as an empty cell', async () => {
+    const entries = [scalarEntry('a', 'r1', 1), scalarEntry('b', 'r2', 2)];
+    entries[1].nodes.scalars[0].value = null;
+    const [target] = matchScalarTargets(entries.map((e) => e.nodes));
+    const {chartDf, valueColumnName} = buildScalarComparison(target, entries);
+    const values = chartDf.getCol(valueColumnName);
+    expect(values.get(0), 1);
+    expect(values.isNone(1), true);
+  });
+
+  test('bigint value columns chart as floats', async () => {
+    const makeDf = (name: string, values: bigint[]) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'time', [0, 1]),
+        DG.Column.fromBigInt64Array('count', new BigInt64Array(values)),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [entryFromDataFrame(makeDf('r1', [BigInt(1), BigInt(2)])),
+      entryFromDataFrame(makeDf('r2', [BigInt(3), BigInt(4)]))];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'time']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const result = buildColumnComparison([target], entries)!;
+    const values = result.chartDf.getCol(result.valueColumnName);
+    expect(values.type, DG.COLUMN_TYPE.FLOAT);
+    expectArray(values.toList(), [1, 2, 3, 4]);
+  });
+
   test('missing key index cells stay missing', async () => {
     const makeDf = (name: string, keys: (string | number | null)[], type: DG.ColumnType) => {
       const df = DG.DataFrame.fromColumns([

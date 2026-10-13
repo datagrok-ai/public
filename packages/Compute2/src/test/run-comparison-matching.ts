@@ -1,5 +1,5 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
-import {isNumericType} from '../components/RunComparison/types';
+import {isNumericType, candidateId} from '../components/RunComparison/types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, normalizeUnits,
   matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, isValidUnitMapping,
@@ -165,6 +165,26 @@ category('RunComparison: column matching', () => {
     expect(new Set(targets.map((t) => t.key)).size, 2);
   });
 
+  test('an override on a de-duplicated key reaches only that target', async () => {
+    const columns = [{name: 'time', type: 'int'}, {name: 'height'}];
+    const tables = [
+      {path: 'step1/df', name: 'Results', columns},
+      {path: 'step2/df', name: 'Results', columns},
+    ];
+    const entries = [makeEntry('a', [], tables), makeEntry('b', [], tables)];
+    const index = indexMap({
+      a: {'step1/df': 'time', 'step2/df': 'time'},
+      b: {'step1/df': 'time', 'step2/df': 'time'},
+    });
+    const [first, second] = matchColumnTargets(entries, index);
+    const toggled = candidateId(second.bindings.find((b) => b.entryId === 'b')!);
+    const [firstAfter, secondAfter] = matchColumnTargets(entries, index, undefined, {[second.key]: {[toggled]: false}});
+    expect(secondAfter.key, second.key);
+    expect(secondAfter.coverage, 1);
+    expect(firstAfter.coverage, 2);
+    expectArray(firstAfter.bindings.map(candidateId), first.bindings.map(candidateId));
+  });
+
   test('split column is excluded from candidates and carried into bindings', async () => {
     const table = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
@@ -268,6 +288,12 @@ category('RunComparison: name mappings', () => {
   test('pairs merge transitively', async () => {
     const aliases = buildAliasGroups([{from: 'AX', to: 'BX'}, {from: 'BX', to: 'CX'}]);
     expect(nameMatchConfidence('AX', 'CX', aliases), 'normalized');
+  });
+
+  test('a pair across two existing groups merges them', async () => {
+    const aliases = buildAliasGroups([{from: 'AX', to: 'BX'}, {from: 'CX', to: 'DX'}, {from: 'BX', to: 'CX'}]);
+    expect(nameMatchConfidence('AX', 'DX', aliases), 'normalized');
+    expect(nameMatchConfidence('AX', 'EX', aliases) === null, true);
   });
 
   test('mappings have no fuzzy reach', async () => {

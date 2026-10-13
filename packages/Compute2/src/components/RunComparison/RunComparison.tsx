@@ -23,7 +23,7 @@ import {
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
-  targetContexts, EntryStatus,
+  targetContexts, EntryStatus, withAnnotatedDefaults,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {
@@ -125,28 +125,11 @@ export const RunComparison = Vue.defineComponent({
     // pre-fill pickers from {comparisonIndex}/{comparisonSplit} output annotations;
     // stored (user) selections always win
     const applyAnnotatedDefaults = (entry: ComparisonEntry) => {
-      for (const table of entry.nodes.tables) {
-        const member = [{entryId: entry.id, tablePath: table.path}];
-        const indexDefault = table.defaultIndexColumn;
-        if (indexDefault && !indexSelection.value[entry.id]?.[table.path] &&
-          table.columns.some((col) => col.name === indexDefault))
-          setIndexColumn(member, indexDefault);
-        const splitDefault = table.defaultSplitColumn;
-        const splitColumn = table.columns.find((col) => col.name === splitDefault);
-        if (splitDefault && !splitSelection.value[entry.id]?.[table.path] &&
-          splitColumn && isSplitCandidate(splitColumn, indexSelection.value[entry.id]?.[table.path] ?? ''))
-          setSplitColumn(member, splitDefault);
-        const modeDefault = table.defaultAxisMode;
-        if (modeDefault && !axisModeSelection.value[entry.id]?.[table.path]) {
-          setAxisMode(member, {
-            mode: modeDefault,
-            // units matter only on the elapsed axis; storing them elsewhere would let a
-            // unit the user never saw outrank the column-meta prefill later
-            ...modeDefault === 'timeseries' && table.defaultTimeUnits ?
-              {units: table.defaultTimeUnits} : {},
-          });
-        }
-      }
+      const next = withAnnotatedDefaults(entry.nodes,
+        {index: indexSelection.value, split: splitSelection.value, axis: axisModeSelection.value});
+      indexSelection.value = next.index;
+      splitSelection.value = next.split;
+      axisModeSelection.value = next.axis;
     };
 
     const addEntry = (entry: ComparisonEntry) => {
