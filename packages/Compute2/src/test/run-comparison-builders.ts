@@ -74,6 +74,26 @@ category('RunComparison: comparison dataframes', () => {
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
   });
 
+  test('missing key index cells stay missing', async () => {
+    const makeDf = (name: string, keys: (string | number | null)[], type: DG.ColumnType) => {
+      const df = DG.DataFrame.fromColumns([
+        DG.Column.fromList(type, 'key', keys),
+        DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'value', [10, 20]),
+      ]);
+      df.name = name;
+      return df;
+    };
+    const entries = [
+      entryFromDataFrame(makeDf('r1', ['a', null], DG.COLUMN_TYPE.STRING)),
+      entryFromDataFrame(makeDf('r2', [1, null], DG.COLUMN_TYPE.INT)),
+    ];
+    const indexes = new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'key']])]));
+    const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
+    const key = buildColumnComparison([target], entries)!.chartDf.getCol('key');
+    expectArray(key.categories.filter((c) => c !== ''), ['1', 'a']);
+    expect(key.isNone(1) && key.isNone(3), true);
+  });
+
   test('returns null when fewer than two runs participate', async () => {
     const makeDf = (name: string) => {
       const df = DG.DataFrame.fromColumns([

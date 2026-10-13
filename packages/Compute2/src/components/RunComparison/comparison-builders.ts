@@ -273,7 +273,7 @@ export function buildColumnComparison(
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {
-      longIndex.push(isKeyIndex ? `${index[i]}` : index[i]);
+      longIndex.push(isKeyIndex && index[i] != null ? `${index[i]}` : index[i]);
       longRuns.push(entry.name);
       if (splitColumnName)
         longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
