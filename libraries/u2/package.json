@@ -82,6 +82,10 @@
       "types": "./dist/src/dg/domain/index.d.ts",
       "default": "./dist/src/dg/domain/index.js"
     },
+    "./src/dg/domain/authoring": {
+      "types": "./dist/src/dg/domain/authoring/index.d.ts",
+      "default": "./dist/src/dg/domain/authoring/index.js"
+    },
     "./*.js": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"

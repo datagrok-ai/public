@@ -1,0 +1,55 @@
+/* Chips input skin (src/components/inputs/chips-input.ts): pressable chips in a wrapping row, the
+   pressed ones filled with the accent. Tokens only; css/tokens.css must be loaded alongside. */
+.u2-input-editor.u2-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--dg-space-s);
+  min-height: var(--dg-control-height);
+  align-items: center;
+}
+
+.u2-chip {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  height: var(--dg-inline-control-height);
+  padding: 0 var(--dg-space-m);
+  font-family: var(--dg-font-family);
+  font-size: var(--dg-font-size-small);
+  line-height: 1;
+  color: var(--dg-text-color);
+  white-space: nowrap;
+  background: var(--dg-bg-secondary);
+  border: var(--dg-border-width) solid var(--dg-border);
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.u2-chip:hover {
+  background: var(--dg-hover);
+}
+
+.u2-chip:focus-visible {
+  outline: var(--dg-focus-ring);
+  outline-offset: 1px;
+}
+
+.u2-chip-on {
+  color: var(--dg-white);
+  background: var(--dg-accent);
+  border-color: var(--dg-accent);
+}
+
+.u2-chip-on:hover {
+  background: var(--dg-accent);
+}
+
+.u2-chip:disabled {
+  color: var(--dg-text-color-disabled);
+  cursor: default;
+}
+
+.u2-chips-empty {
+  color: var(--dg-text-color-light);
+  font-size: var(--dg-font-size-small);
+}

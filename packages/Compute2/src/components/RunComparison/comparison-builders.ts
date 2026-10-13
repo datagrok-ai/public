@@ -4,7 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {
   ComparisonEntry, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
-  TimeUnit, TIME_UNIT_MS, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
 import {resolveDisplayUnit, pickAutoUnit} from './selection';
 
@@ -34,24 +34,30 @@ export function buildScalarComparison(
 ): ScalarComparisonResult {
   const ordered = entries.filter((entry) => target.bindings.some((b) => b.entryId === entry.id));
   const bindings = ordered.map((entry) => target.bindings.find((b) => b.entryId === entry.id)!);
-  const valueColumnName = claimUniqueName(target.displayName, new Set([RUN_COLUMN, 'Path']));
+  const valueColumnName = claimUniqueName(withUnits(target.displayName, target.units), new Set([RUN_COLUMN, 'Path']));
 
   // fromList with an explicit string type: fromStrings infers the type from values,
   // so numeric-looking run names would produce a numeric column and break chart legends
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, ordered.map((entry) => entry.name)),
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, 'Path', bindings.map((b) => b.friendlyPath ?? b.path)),
-    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName, toFloatValues(bindings.map((b) => b.value))),
+    DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, valueColumnName,
+      toFloatValues(bindings.map((b) => toTargetUnits(b.value, b.factor)))),
   ]);
   chartDf.name = `Comparison: ${target.displayName}`;
   return {chartDf, valueColumnName};
 }
 
-function dedupeLabels(targets: {key: string, displayName: string}[], reserved: string[] = []): Map<string, string> {
+// units go into the column name, so they survive any export (metadata stays in Datagrok)
+const withUnits = (name: string, units?: string) => units ? `${name} (${units})` : name;
+
+function dedupeLabels(
+  targets: {key: string, displayName: string, units?: string}[], reserved: string[] = [],
+): Map<string, string> {
   const taken = new Set(reserved);
   const labels = new Map<string, string>();
   for (const target of targets)
-    labels.set(target.key, claimUniqueName(target.displayName, taken));
+    labels.set(target.key, claimUniqueName(withUnits(target.displayName, target.units), taken));
   return labels;
 }
 
@@ -75,8 +81,10 @@ export function buildMultiScalarComparison(
   const chartDf = DG.DataFrame.fromColumns([
     DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, participating.map((entry) => entry.name)),
     ...targets.map((target) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, labels.get(target.key)!,
-      toFloatValues(participating.map((entry) =>
-        target.bindings.find((b) => b.entryId === entry.id)?.value ?? null)))),
+      toFloatValues(participating.map((entry) => {
+        const binding = target.bindings.find((b) => b.entryId === entry.id);
+        return binding ? toTargetUnits(binding.value, binding.factor) : null;
+      })))),
   ]);
   chartDf.name = 'Comparison: multiple values';
   return {chartDf, valueColumnNames};
@@ -110,12 +118,17 @@ interface ParticipatingRun {
   binding: ColumnTarget['bindings'][number];
 }
 
-// enabled bindings only; matching guarantees at most one per run
-function getParticipating(target: ColumnTarget, entries: ComparisonEntry[]): ParticipatingRun[] {
-  return entries
-    .map((entry) => ({entry, binding: target.bindings.find((b) =>
-      b.entryId === entry.id && entry.dataFrames.has(b.tablePath))}))
-    .filter((item) => !!item.binding) as ParticipatingRun[];
+// every run any target charts; its rows come from the first target (in selection order)
+// with a pick there — enabled bindings only, matching guarantees at most one per run
+function getParticipating(targets: ColumnTarget[], entries: ComparisonEntry[]): ParticipatingRun[] {
+  return entries.flatMap((entry) => {
+    for (const target of targets) {
+      const binding = target.bindings.find((b) => b.entryId === entry.id && entry.dataFrames.has(b.tablePath));
+      if (binding)
+        return [{entry, binding}];
+    }
+    return [];
+  });
 }
 
 type IndexAxis =
@@ -217,7 +230,7 @@ export function buildMultiColumnComparison(
   entries: ComparisonEntry[],
   axisModes?: AxisConfigMap,
 ): MultiColumnComparisonResult | null {
-  const participating = getParticipating(targets[0], entries);
+  const participating = getParticipating(targets, entries);
   if (participating.length < 2)
     return null;
   const splitColumnName = getSplitName(participating);
@@ -258,12 +271,14 @@ export function buildMultiColumnComparison(
       [run, elapsed.map((value) => value == null ? null : value / TIME_UNIT_MS[displayUnit!])]));
   }
 
-  // the elapsed axis is labeled with its unit; keep it clear of the other column labels
+  // the axis is labeled with its unit (the display unit on the elapsed axis, the first run's
+  // index units on a float axis); keep it clear of the other column labels
   let indexColumnName = participating[0].binding.indexColumnName;
-  if (axis.kind === 'elapsed') {
+  const axisUnits = axis.kind === 'elapsed' ? displayUnit : axis.kind === 'float' ? targets[0].indexUnits : undefined;
+  if (axisUnits) {
     const taken = new Set([RUN_COLUMN, ...splitColumnName ? [splitColumnName] : [],
       ...targets.map((target) => labels.get(target.key)!)]);
-    indexColumnName = claimUniqueName(`${indexColumnName} (${displayUnit})`, taken);
+    indexColumnName = claimUniqueName(`${indexColumnName} (${axisUnits})`, taken);
   }
 
   const longIndex: any[] = [];
@@ -273,7 +288,10 @@ export function buildMultiColumnComparison(
   for (const run of participating) {
     const {entry, binding} = run;
     const df = entry.dataFrames.get(binding.tablePath)!;
-    const index = elapsedByRun?.get(run) ?? df.getCol(binding.indexColumnName).toList();
+    // the elapsed axis converts through the time units picker instead of unit mappings
+    const index = elapsedByRun?.get(run) ?? (axis.kind === 'float' ?
+      df.getCol(binding.indexColumnName).toList().map((v) => toTargetUnits(v, binding.indexFactor)) :
+      df.getCol(binding.indexColumnName).toList());
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {
@@ -286,7 +304,9 @@ export function buildMultiColumnComparison(
     for (const target of targets) {
       const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
       const usable = targetBinding != null && targetBinding.tablePath === binding.tablePath;
-      const values = usable ? df.getCol(targetBinding.columnName).toList() : index.map(() => null);
+      const values = usable ?
+        df.getCol(targetBinding.columnName).toList().map((v) => toTargetUnits(v, targetBinding.factor)) :
+        index.map(() => null);
       longValues.get(labels.get(target.key)!)!.push(...values);
     }
   }

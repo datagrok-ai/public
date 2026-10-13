@@ -2,6 +2,12 @@
 
 ## v.next
 
+* GROK-20298: Added the `U2: domain editing` test category — the PowerPack `editDomainBinding` dialog over a throwaway binding from the Northwind draft: a no-op gated, a candidate table + a column restriction + a grant reviewed, validated and saved in one apply (the snapshot shows it), and a binding moved meanwhile reloaded on SAVE with the conflict report
+* GROK-20298: `U2: domain conformance` sends the required `ifVersion` on its fixture apply
+* GROK-20298: `U2: domain authoring` follows the dialog opening on Design with the proposed identifier
+* GROK-20298: Added the `U2: domain authoring` test category — the PowerPack `createDomainBinding` dialog over the Northwind connection: NEXT › a name › NEXT › VALIDATE › CREATE registers a throwaway schema, opens the u2 app over its `orders`, and deletes it afterwards
+* GROK-20298: Added the `Northwind Orders` app (the zero-code u2 app over the external `northwind` binding) and the `U2: domain external` test category
+* GROK-20298: Added the `U2: domain external write` test category — the app over the writable `extwlive` binding: a new row typed with its key, a guarded edit, the conflict dialog (Overwrite and Reload) when a column moved behind the app, a delete, and an upsert import counting merged rows
 * Tests: Dropped the BDD features that tested the bdd library's own phrase resolution, which its unit tests cover
 * GROK-20298: `U2: domain trash` covers the staged restore — Restore is a pending change until Save (Discard takes it back, and nothing is written meanwhile), and a landed batch carries the row out of the trash; `U2: domain import` asserts the preview's verdicts are the server's dry run and its counts are the commit's
 * GROK-20753: Added the `U2: domain conformance` test category — the u2 backend conformance scenarios run against the platform backend over a throwaway hierarchy schema, the same file the headless suite runs over the memory backend

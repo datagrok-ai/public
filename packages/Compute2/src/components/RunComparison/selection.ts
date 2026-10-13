@@ -4,10 +4,13 @@
 
 import {
   ColumnInfo, ComparisonEntryNodes, ComparisonTarget, ColumnTarget, isNumericType,
-  TimeUnit, TIME_UNIT_MS, AxisMode, AxisModeSelection, AxisConfigMap,
+  TimeUnit, TIME_UNIT_MS, TIME_UNITS, AxisMode, AxisModeSelection, AxisConfigMap, toTargetUnits,
   isTimeIndexType, isIndexCandidateType,
 } from './types';
-import {normalizeName, nameSimilarity, FUZZY_NAME_THRESHOLD} from './matching';
+import {
+  normalizeName, nameSimilarity, nameMatchConfidence, normalizeUnits, unitsCompatibility, UnitConverter,
+  FUZZY_NAME_THRESHOLD,
+} from './matching';
 
 /** Substring match on the displayed text, with fuzzy per-token fallback for typos. */
 export function matchesFilter(query: string, text: string): boolean {
@@ -81,6 +84,33 @@ export function compatibleTargetsFor(
   });
 }
 
+// entryId -> table of each pick; scalars have no table
+const pickTables = (target: ComparisonTarget): [string, string | undefined][] =>
+  target.kind === 'column' ?
+    target.bindings.map((b) => [b.entryId, b.tablePath]) : target.bindings.map((b) => [b.entryId, undefined]);
+
+/**
+ * Per selected target, the charted runs it has no data for: runs any selected target charts
+ * (union), minus its own picks. A column pick from another table than the run's row source
+ * (the first selected target with a pick there, as the builder does) counts as a gap too.
+ */
+export function selectionGaps(selected: ComparisonTarget[]): Map<string, string[]> {
+  const rowSource = new Map<string, string | undefined>();
+  for (const target of selected) {
+    for (const [entryId, tablePath] of pickTables(target)) {
+      if (!rowSource.has(entryId))
+        rowSource.set(entryId, tablePath);
+    }
+  }
+  return new Map(selected.map((target) => {
+    const own = new Map(pickTables(target));
+    const gaps = [...rowSource]
+      .filter(([entryId, tablePath]) => !own.has(entryId) || own.get(entryId) !== tablePath)
+      .map(([entryId]) => entryId);
+    return [target.key, gaps];
+  }));
+}
+
 export type ColumnValuesGetter =
   (entryId: string, tablePath: string, columnName: string) => ArrayLike<unknown> | undefined;
 
@@ -100,6 +130,9 @@ const sameValue = (x: unknown, y: unknown) => {
 
 const exactValue = (x: unknown, y: unknown) => x === y || (x !== x && y !== y);
 
+const toTargetValues = (values: ArrayLike<unknown> | undefined, factor?: number) =>
+  values == null || factor == null ? values : Array.from(values, (value) => toTargetUnits(value, factor));
+
 /**
  * True when every bound run carries the same data for the target: scalar values or
  * element-wise value/index/split columns, with numbers compared to within
@@ -114,8 +147,10 @@ export function isTargetEqualAcrossRuns(
 ): boolean {
   if (target.bindings.length < 2)
     return false;
-  if (target.kind === 'scalar')
-    return target.bindings.every((b) => sameValue(b.value, target.bindings[0].value));
+  if (target.kind === 'scalar') {
+    const first = toTargetUnits(target.bindings[0].value, target.bindings[0].factor);
+    return target.bindings.every((b) => sameValue(toTargetUnits(b.value, b.factor), first));
+  }
   const indexCompare = getColumnType != null && target.bindings.every((b) =>
     getColumnType(b.entryId, b.tablePath, b.indexColumnName) === 'datetime') ? exactValue : sameValue;
   const sameValues = (
@@ -131,8 +166,8 @@ export function isTargetEqualAcrossRuns(
     return true;
   };
   const series = target.bindings.map((b) => ({
-    value: getColumnValues(b.entryId, b.tablePath, b.columnName),
-    index: getColumnValues(b.entryId, b.tablePath, b.indexColumnName),
+    value: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.columnName), b.factor),
+    index: toTargetValues(getColumnValues(b.entryId, b.tablePath, b.indexColumnName), b.indexFactor),
     split: b.splitColumnName ? getColumnValues(b.entryId, b.tablePath, b.splitColumnName) : null,
   }));
   const [first, ...rest] = series;
@@ -143,17 +178,10 @@ export function isTargetEqualAcrossRuns(
     (s.split === first.split || sameValues(s.split, first.split)));
 }
 
-const UNIT_ALIASES: Record<string, TimeUnit> = {
-  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
-  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
-  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
-  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
-  d: 'days', day: 'days', days: 'days',
-};
-
 // bare 'm' is deliberately not recognized — ambiguous with meters
 export function parseTimeUnit(units?: string): TimeUnit | undefined {
-  return units ? UNIT_ALIASES[units.trim().toLowerCase()] : undefined;
+  const unit = normalizeUnits(units);
+  return TIME_UNITS.find((item) => item === unit);
 }
 
 /**
@@ -387,14 +415,37 @@ export function computeIndexRows(
 export type ExclusionReason =
   | 'no similar data'
   | 'index not set'
-  | 'disabled';
+  | 'disabled'
+  | 'units differ';
 
 export interface EntryStatus {
   entryId: string;
   matched: boolean;
   reason?: ExclusionReason;
+  // the run's units when they differ from the target's
+  units?: string;
   // the run still charts — its table just lacks the axis-mode settings on a partial target
   warning?: 'relative timeseries not set' | 'independent points not set';
+}
+
+export interface StatusOptions {
+  axisModes?: AxisConfigMap;
+  aliases?: Map<string, number>;
+  convert?: UnitConverter;
+}
+
+// the run's value of the target's name (exact, normalized or mapped; never fuzzy) in units
+// that neither match nor convert — the hint that a unit mapping would let it join
+function differingUnits(
+  entry: ComparisonEntryNodes, target: ComparisonTarget, indexColumns: Map<string, Map<string, string>>,
+  {aliases, convert}: StatusOptions,
+): string | undefined {
+  const candidates = target.kind === 'scalar' ? entry.scalars :
+    entry.tables.filter((table) => indexColumns.get(entry.entryId)?.get(table.path)).flatMap((table) => table.columns);
+  return candidates.find((item) => {
+    const confidence = nameMatchConfidence(target.displayName, item.name, aliases);
+    return confidence && confidence !== 'fuzzy' && unitsCompatibility(target.units, item.units, convert) === 'mismatch';
+  })?.units;
 }
 
 /** Per-entry participation status for a selected target. */
@@ -402,8 +453,9 @@ export function getEntryStatuses(
   entries: ComparisonEntryNodes[],
   target: ComparisonTarget | null,
   indexColumns: Map<string, Map<string, string>>,
-  axisModes?: AxisConfigMap,
+  options: StatusOptions = {},
 ): EntryStatus[] {
+  const {axisModes} = options;
   const modeOf = (mode: 'timeseries' | 'points') =>
     target?.kind === 'column' && axisModes ? targetAxisMode(target, axisModes, mode) : 'none';
   const partialMode = modeOf('timeseries') === 'partial' ? 'timeseries' :
@@ -428,6 +480,37 @@ export function getEntryStatuses(
       entry.tables.length > 0 &&
       entry.tables.every((table) => !indexColumns.get(entry.entryId)?.get(table.path)))
       return {entryId: entry.entryId, matched: false, reason: 'index not set'};
+    const units = differingUnits(entry, target, indexColumns, options);
+    if (units)
+      return {entryId: entry.entryId, matched: false, reason: 'units differ', units};
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
 }
+
+/**
+ * Step context for targets sharing a display name (repeated workflow steps, same-named
+ * tables): the seed's step path for scalars, its table path for columns.
+ */
+export function targetContexts(targets: ComparisonTarget[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const target of targets)
+    counts.set(target.displayName, (counts.get(target.displayName) ?? 0) + 1);
+  const contexts = new Map<string, string>();
+  for (const target of targets) {
+    if (counts.get(target.displayName)! < 2)
+      continue;
+    let context: string | undefined;
+    if (target.kind === 'column') {
+      const seed = target.candidates.find((candidate) => candidate.auto)?.binding;
+      context = seed?.tableFriendlyPath ?? seed?.tableName;
+    } else {
+      const seed = target.bindings[0];
+      context = seed?.friendlyPath?.replace(new RegExp(` · ${escapeRegExp(seed.name)}$`), '');
+    }
+    if (context && context !== target.displayName)
+      contexts.set(target.key, context);
+  }
+  return contexts;
+}
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

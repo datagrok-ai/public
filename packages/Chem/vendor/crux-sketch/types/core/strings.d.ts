@@ -100,6 +100,18 @@ export declare const STRINGS: {
     readonly templateLibrary: 'Template Library';
     readonly functionalGroups: 'Functional Groups';
     readonly saltsAndSolvents: 'Salts and Solvents';
+    /**
+     * Spike ui-polish-oct12 (row 3): a search looks in every tab; under the tab's panel, the region holding the other tabs'
+     * matches, and the status when the tab shown has none ("found on Salts and Solvents (1)", each tab as `groupCount`).
+     */
+    readonly foundOnOtherTabs: 'Found on the other tabs';
+    /**
+     * Spike ui-polish-oct12 (row 5): a crossed double bond (E/Z unknown) is drawn centred, so a side chosen for it is kept for
+     * when its E/Z is set, as the status line says; Bond Properties shows it a double bond, saying its E/Z is unknown.
+     */
+    readonly crossedPositionKept: 'Kept for when its E/Z is set: a crossed double bond is drawn centred';
+    readonly bondEzUnknown: 'E/Z unknown: drawn crossed';
+    readonly noItemsHereFoundOn: 'No items on this tab; found on {tabs}';
     /** The lookup (L6, ABBR-005, ABBR-007; Ketcher's words) and Choose Nickname (L5, ABBR-004; ChemDraw's). */
     readonly abbreviationLookup: 'Abbreviation lookup';
     readonly chooseNickname: 'Choose Nickname';
@@ -155,6 +167,22 @@ export declare const STRINGS: {
     readonly addHydrogensQueryMode: 'Not in query mode: each hydrogen drawn would become part of the query';
     /** Straighten (spike layout-tools, L5, L9): RDKit's straightenDepiction, in the selection's and the canvas's menus (P1: no button, no key). */
     readonly straighten: 'Straighten';
+    /**
+     * Align ▸ and Distribute ▸ in the selection's menu (spike later-quick-2, XFORM-030): their items, and why each is disabled
+     * with too few structures selected.
+     */
+    readonly align: 'Align';
+    readonly alignLeft: 'Left';
+    readonly alignCentre: 'Centre';
+    readonly alignRight: 'Right';
+    readonly alignTop: 'Top';
+    readonly alignMiddle: 'Middle';
+    readonly alignBottom: 'Bottom';
+    readonly alignNeedsTwo: 'Select two structures or more to align them';
+    readonly distribute: 'Distribute';
+    readonly distributeHorizontally: 'Horizontally';
+    readonly distributeVertically: 'Vertically';
+    readonly distributeNeedsThree: 'Select three structures or more to distribute them';
     /** Cut, Copy and Paste (spike clipboard, C3, A11Y-002). */
     readonly cut: 'Cut';
     readonly copy: 'Copy';
@@ -207,6 +235,16 @@ export declare const STRINGS: {
     readonly problemLabel: "Crux Sketch can't interpret this label";
     /** A stereocentre nothing specifies in a structure drawn with stereo bonds (spike stereo, S13; CHECK-007). */
     readonly problemStereo: 'Unspecified stereocentre';
+    /**
+     * The enhanced-stereo checks (spike stereo-commands; CHECK-008, CHECK-010's stereo part), each a `stereo` problem: a
+     * wedge or hashed wedge whose narrow end RDKit perceives as no stereocentre; one between two stereocentres; marks at one
+     * centre that give it no configuration (RDKit ignores contradicting wedges) or a wavy bond with a wedge; a centre in an
+     * AND or OR group with no configuration.
+     */
+    readonly problemStereoNoCentre: "This stereo bond's narrow end is not a stereocentre";
+    readonly problemStereoBetween: 'Stereo bond between two stereocentres';
+    readonly problemStereoConflict: 'Conflicting stereo bonds at this stereocentre';
+    readonly problemStereoGroup: 'This stereocentre is in an AND or OR group but has no configuration';
     /** An abbreviation with more bonds than attachments (spike abbreviations, A2, K1; P-row, provisional), which RDKit draws whole. */
     readonly problemAbbreviation: 'Too many bonds to this abbreviation';
     /**
@@ -214,12 +252,16 @@ export declare const STRINGS: {
      * meant to be bonded or merged.
      */
     readonly problemContact: 'This atom is very close to another atom or bond';
+    /** A linear atom (CHECK-009; spike later-quick; ChemDraw's warning). */
+    readonly problemLinear: 'This unlabeled atom lies between two identical bonds in a straight line';
     /**
      * The formula and mass readout (spike charges-checks, K12; INFO-001 to INFO-009, UI-030): its name and its toggle's,
      * the caption over a selection's values, the masses' labels, what it says of a query (ChemDraw's), and the note beside
      * the masses when R labels or attachment points count in the formula but not in the masses (INFO-006).
      */
     readonly infoPanel: 'Formula and mass';
+    /** The canvas's and the selection's Copy formula and masses (INFO-014; spike later-quick): the readout's text. */
+    readonly infoCopy: 'Copy formula and masses';
     readonly infoSelection: 'Selection';
     readonly infoWeight: 'MW';
     readonly infoWeightName: 'Molecular weight';
@@ -476,6 +518,28 @@ export declare const STRINGS: {
     readonly stereoUnspecifiedItem: 'Unspecified';
     readonly setRorSFirst: 'Set R or S first';
     /**
+     * Spike stereo-commands (the GCRS review, 2026-10-11): Remove Stereo and Recompute Wedges in the canvas's and the
+     * selection's menus, why each is greyed out (UI-009), and what each says it did.
+     */
+    readonly removeStereo: 'Remove Stereo';
+    readonly recomputeWedges: 'Recompute Wedges';
+    readonly noStereoToRemove: 'No stereo to remove';
+    readonly noWedgesToPlace: 'No stereocentre or axis to place wedges for';
+    readonly stereoRemoved: 'Stereo removed from {what}';
+    readonly wedgesPlaced: 'Wedges placed again for {what}';
+    readonly centreCount: {
+        readonly one: '{count} stereocentre';
+        readonly other: '{count} stereocentres';
+    };
+    readonly axisCount: {
+        readonly one: '{count} atropisomer axis';
+        readonly other: '{count} atropisomer axes';
+    };
+    readonly stereoBondCount: {
+        readonly one: '{count} stereo bond';
+        readonly other: '{count} stereo bonds';
+    };
+    /**
      * Spike atropisomers (R2, the product owner's report of 2026-10-07): an atropisomer axis bond's menu group, P and M (CIP
      * labels, as R and S are), and the status line's word when the engine gives no wedge for a label (JDQ443's second axis).
      */
@@ -678,6 +742,16 @@ export declare const STRINGS: {
     readonly optionsMenu: 'Settings and help';
     readonly settingsItem: 'Settings…';
     readonly keysItem: 'Keyboard shortcuts…';
+    /**
+     * The About box (spike later-quick-2, UI-027): the gear's item, its title, its facts, and the notices the package ships.
+     * The package has no documentation URL, so there is no Help item.
+     */
+    readonly aboutItem: 'About Crux Sketch…';
+    readonly aboutTitle: 'About Crux Sketch';
+    readonly aboutVersion: 'Version';
+    readonly aboutEngine: 'crux-core revision';
+    readonly aboutEngineLoading: 'Loading…';
+    readonly aboutNotices: 'Crux Sketch reuses parts of Ketcher (Apache-2.0), and its engine ports parts of RDKit (BSD-3-Clause) and InChI. Their notices ship with the package: NOTICE, and a NOTICE file beside each engine module.';
     /** The gear's check item that switches query mode (spike reports-oct5, R3), and what is said when a user switches it. */
     readonly queryModeItem: 'Query mode';
     readonly queryModeOn: 'Query mode on';
@@ -692,7 +766,13 @@ export declare const STRINGS: {
     readonly settingStereoLabels: 'Show R, S, E, Z, P and M labels';
     readonly settingStereoFlag: 'Show the stereo flag';
     readonly settingUnspecified: 'Draw unspecified double bonds crossed';
-    readonly settingMethyl: 'Label terminal carbons CH₃';
+    /** Which carbons are labelled (spike later-quick-2, ATOM-025): none, terminal carbons (CH\u2083), or every carbon. */
+    readonly settingMethyl: 'Carbon labels';
+    readonly carbonLabelsNone: 'None';
+    readonly carbonLabelsTerminal: 'Terminal carbons (CH₃)';
+    readonly carbonLabelsAll: 'Every carbon';
+    /** Spike stereo-commands (the GCRS review's FR-GUI-06): each atom numbered from 1, as the molfile numbers it. */
+    readonly settingAtomNumbers: 'Number the atoms';
     readonly settingKeymap: 'Keys';
     readonly keymapChemDraw: 'ChemDraw';
     readonly keymapKetcher: 'Ketcher';
@@ -710,6 +790,12 @@ export declare const STRINGS: {
     readonly sheetOverBond: 'Over a bond';
     readonly sheetSelection: 'With a selection';
     readonly sheetInTurn: '{tools}, in turn';
+    /**
+     * A tool key that cycles through its group, in a tooltip (spike later-quick-2, KEY-035; Ketcher's 1 and t): on the group's
+     * first tool, which the key chooses from any other, and on each later one.
+     */
+    readonly cycleFirst: '{key}, again for the next';
+    readonly cycleLater: '{key} in turn';
     readonly sheetFuse: 'Fuse {ring}';
     readonly sheetNudge: 'Move the selection {n} pt';
     readonly sheetRotate: 'Rotate the selection {n}°';
@@ -748,6 +834,10 @@ export declare const STRINGS: {
     readonly sproutCyclopropane: 'A cyclopropane';
     readonly sproutCyclobutane: 'A cyclobutane';
     readonly sproutAlkyne: 'An alkyne';
+    /** Spike later-quick (KEY-010, KEY-013): Shift+Z, Shift+M and k over an atom. */
+    readonly sproutAzide: 'An azide (N₃)';
+    readonly sproutMgBr: 'MgBr';
+    readonly sproutSulfonyl: 'A sulfonyl group (SO₂)';
     /** Small boxes (K8): a bar's scroll buttons. */
     readonly scrollBack: 'Scroll back';
     readonly scrollForward: 'Scroll forward';
@@ -824,13 +914,26 @@ export declare const STRINGS: {
     readonly dropQueryOnly: 'Dropping {format} files needs query mode';
     /** A query element the host turned off (API-028). */
     readonly queryElementOff: '{name}: turned off in this sketcher';
+    /** The Add Chain dialog (CHAIN-009; spike later-quick): a chain tool's click without a drag. */
+    readonly addChain: 'Add Chain';
+    readonly addChainLength: 'Number of carbons';
+    readonly addChainInvalid: 'Type a whole number from 1 to 50';
+    /** The Rotate dialog (XFORM-017; spike later-quick). */
+    readonly rotateDialog: 'Rotate';
+    readonly rotateAngle: 'Angle in degrees';
+    readonly rotateInvalid: 'Type an angle from 0 to 360 degrees';
+    readonly rotateDirection: 'Direction';
+    readonly clockwise: 'Clockwise';
+    readonly counterClockwise: 'Counter-clockwise';
+    /** A tool or an action while the sketcher is view-only (API-029; spike later-quick). */
+    readonly viewOnlyOff: '{name}: off while the sketcher is view-only';
     /** The shortcuts sheet's row for x over an atom (KEY-008, P7). */
     readonly sheetGenericX: 'The generic atom X (query mode)';
 };
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
+type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -944,11 +1047,18 @@ export declare function fill(template: string, params?: Params): string;
 /** The pseudo-locale, built in: English accented, about 40% longer, bracketed (K5). */
 export declare const PSEUDO_LOCALE = "en-XA";
 /**
- * English text as the pseudo-locale writes it (I18N-003): its letters accented, `{placeholders}` kept as they are, about
- * 40% longer with tildes, in brackets: "Single bond" is "[Šîñĝļé ƀöñð~~~~]". Text with no letter outside its
- * placeholders ("{n}%", "{name} ({key})") is left as it is: it says nothing a translation would change.
+ * English text as the pseudo-locale writes it (I18N-003): its letters accented, `{placeholders}` and notations (SMILES,
+ * MOL V3000: I18N-006) kept as they are, about 40% longer with tildes, in brackets: "Single bond" is "[Šîñĝļé ƀöñð~~~~]",
+ * "{counts}. SMILES: {smiles}" is "[{counts}. SMILES: {smiles}~~]". Text with no letter outside its placeholders ("{n}%",
+ * "{name} ({key})") is left as it is: it says nothing a translation would change.
  */
 export declare function pseudo(text: string): string;
+/**
+ * In the pseudo-locale, the ellipsis a message with no words of its own puts right after a value in brackets goes inside
+ * them, before the tildes, as part of the value's label (spike ui-polish-oct12, row 10: `opensDialog`, "{title}…", wrote
+ * "[Éñĥáñçéð Šţéŕéöçĥéɱîšţŕý~~]…" where "Settings…" writes "[Šéţţîñĝš…~~~~]"). A sentence's full stop stays where it is.
+ */
+export declare const tuckPunctuation: (text: string) => string;
 /**
  * The locale a host asked for, as `Intl` writes it (`de-ch` is `de-CH`); English for anything `Intl` cannot read, and for
  * nothing given. The pseudo-locale is its own.

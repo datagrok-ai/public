@@ -44,10 +44,10 @@ export type SketchErrorCode = 'loading' | 'unavailable';
  * What a warning is about (spike charges-checks, K11): an atom with a valence RDKit's sanitization rejects (`valence`),
  * aromatic bonds with no Kekulé structure (`aromaticity`), a label kept as an alias, which nothing interprets (`label`),
  * a stereocentre nothing specifies in a structure drawn with stereo bonds (`stereo`, spike stereo, S13), an atom on or very
- * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), or something a getter's format cannot hold
- * (`format`).
+ * close to another atom or a bond (`contact`, spike v1-display, CHECK-006), an unlabelled atom between two identical bonds
+ * at 180° (`linear`, spike later-quick, CHECK-009), or something a getter's format cannot hold (`format`).
  */
-export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'format';
+export type SketchWarningKind = 'valence' | 'aromaticity' | 'label' | 'abbreviation' | 'stereo' | 'contact' | 'linear' | 'format';
 /**
  * The loss table's rows (spike formats, F2, F11): what a format cannot hold, as a `format` warning's `code` names it.
  * `v3000` is no loss but a notice: under `molV2000`, that the molfile getter (and `value` after an edit) writes V3000, and
@@ -134,19 +134,46 @@ export interface RenderDetail {
  * edit, a write, a view change or a resize), once per drawing, as `renderCount` counts them, with the drawing on the page
  * when it comes. What the canvas marks on a drawing it shows (a tool's preview, the hover, the selection) is no render. A
  * host that waits for the sketcher to settle waits on it and on `isPending` (Datagrok's settles do), never on a timeout.
+ * `selection` (API-017; spike later-quick): what the user has selected changed, with what `selection` reads now (the
+ * atoms and bonds by index, ascending): once per change, when a click, a drag's release, a key or an edit changes it,
+ * never per pointer move, and not for an edit that leaves it as it was. `notice` (API-047; spike later-quick): the status
+ * line says a refusal or a notice to the user (`SketchNotice`), once each time it says one; never for a drag's preview or a
+ * hover.
  */
 export interface SketcherEvents {
     change: ChangeDetail;
     error: SketchError;
     settings: SketcherSettings;
     render: RenderDetail;
+    selection: SketchSelection;
+    notice: SketchNotice;
 }
-/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings` or `render`. */
+/**
+ * What the status line says to the user, told to the host as the `notice` event (API-047; spike later-quick; Ketcher's
+ * `errorHandler`): a `'refusal'` of what the user did (a bond with no room, a key that cannot act there) or a `'notice'`
+ * (a paste that held no structure, a clipboard the browser keeps from the sketcher, what a read left out), its `message`
+ * as the status line says it, in the sketcher's locale. It is not the `error` event, which is the host's own call refused
+ * (a malformed value, the engine failing).
+ */
+export interface SketchNotice {
+    readonly kind: 'refusal' | 'notice';
+    readonly message: string;
+}
+/** An event's name, as `on()` and `off()` take it: `change`, `error`, `settings`, `render`, `selection` or `notice`. */
 export type SketcherEventType = keyof SketcherEvents;
 /** A listener of the event `T`, called with that event's detail (`SketcherEvents[T]`). */
 export type SketcherListener<T extends SketcherEventType> = (detail: SketcherEvents[T]) => void;
 /** A format `setValue` can force; any other text is detected from its shape. */
 export type SketcherFormat = 'smiles' | 'cxsmiles' | 'smarts' | 'molV2000' | 'molV3000' | 'inchi' | 'cdxml';
+/** What `png()` takes (spike later-quick-2, API-023, IO-033). */
+export interface PngOptions {
+    /**
+     * The scale of the drawing's natural size (the `svg` getter's `width` and `height`, CSS px): 1 by default, one pixel
+     * per CSS px (96 dpi); 3.125 gives 300 dpi, 4 gives 384. A finite number above 0, else `png()` rejects with a
+     * RangeError. The PNG's longer side is held to 16,384 px, the scale lowered to fit.
+     */
+    readonly scale?: number;
+}
 /** How `setValue` reads its text, and where it shows the molecule. */
 export interface SetValueOptions {
     /** Read the text as this format instead of detecting it (e.g. SMARTS that is also SMILES). */
@@ -273,11 +300,19 @@ export type StereoDisplay = 'shown' | 'hidden';
  */
 export type UnspecifiedDoubleBonds = 'crossed' | 'plain';
 /**
- * Whether terminal carbons are labelled CH₃ (spike settings-touch, K6, P10; UI-021's hydrogen labels): `'hidden'` (the
- * default, ChemDraw's and the ACS look's) or `'shown'`, moldraw2d's `explicitMethyl`. Hydrogens on heteroatoms are always
- * written (H23).
+ * Which carbons are labelled (spike settings-touch, K6, P10; UI-021's hydrogen labels; ATOM-025): `'hidden'` (the default,
+ * ChemDraw's and the ACS look's), `'shown'`, terminal carbons labelled CH₃ (moldraw2d's `explicitMethyl`), or `'all'`
+ * (spike later-quick-2), every carbon labelled with its hydrogens (C, CH, CH₂, CH₃; ChemDraw's "Show Carbons: All").
+ * Hydrogens on heteroatoms are always written (H23).
  */
-export type MethylLabels = 'shown' | 'hidden';
+export type MethylLabels = 'shown' | 'hidden' | 'all';
+/**
+ * Whether every atom is numbered on the canvas (spike stereo-commands; the GCRS review's FR-GUI-06): `'hidden'` (the
+ * default) or `'shown'`, each atom's number counted from 1 as the molfile counts it, small, beside its atom where RDKit
+ * places an atom note (moldraw2d's `addAtomIndices`, from `atomIndexBase` 1). A setting alone (`settings.atomNumbers`); the
+ * API's SVG (`svg`) draws them while it is on.
+ */
+export type AtomNumbers = 'shown' | 'hidden';
 /**
  * How large the toolbars' controls are (spike bar-fit, B1; UI-005): `'auto'` (the default) follows the sketcher's own box,
  * compact (28 px buttons, 20 px icons, a little less padding) under 720 px wide or 600 px tall, such as Datagrok's sketcher
@@ -327,7 +362,7 @@ export interface CreateSketcherOptions {
     locale?: string;
     /** Translations of the sketcher's messages, partial: what they leave out is English (I18N-002). The handle's `strings` changes them later. */
     strings?: SketcherStrings;
-    /** Terminal carbons labelled CH₃: `'hidden'` (the default) or `'shown'` (spike settings-touch, K6). The handle's `methylLabels` changes it later. */
+    /** Terminal carbons labelled CH₃: `'hidden'` (the default) or `'shown'` (spike settings-touch, K6); every carbon, `'all'` (ATOM-025). The handle's `methylLabels` changes it later. */
     methylLabels?: MethylLabels;
     /**
      * The host's keys over the keymap's profile (spike settings-touch, K7, KEY-004, P11): `{ "Ctrl+L": "layout", "t": null }`,
@@ -360,6 +395,10 @@ export interface CreateSketcherOptions {
      * `persist-settings` attribute of `<crux-sketch>` sets it too (`"false"` turns it off); the handle's changes it later.
      */
     persistSettings?: boolean;
+    /**
+     * View-only mode (API-029; spike later-quick): `false` (the default) or `true`. The handle's `viewOnly` switches it later.
+     */
+    viewOnly?: boolean;
     /**
      * The query elements the host turns off (API-028; spike query-edit): generic symbols (`'A'`, `'AH'`, `'Q'`, `'QH'`,
      * `'X'`, `'XH'`, `'M'`, `'MH'`, `'*'`), `'list'`, `'not-list'` and the query bonds (`'any'`, `'single-or-double'`,
@@ -472,6 +511,16 @@ export interface SketcherApi {
      */
     readonly svg: string;
     /**
+     * The drawing as a PNG (API-023, IO-033; spike later-quick-2): the `svg` getter's drawing rasterised in the browser, on
+     * a canvas never put in the page, at `scale` times its natural size (1 by default: one pixel per CSS px; 3.125 for 300
+     * dpi), its vectors drawn at that size. The PNG says its resolution (`pHYs`, 96 × scale dpi), so that a document places
+     * it at the drawing's natural size; its background is the canvas's, white. Resolves `null` for an empty drawing (as
+     * `svg` is `""`); rejects with the `svg` getter's error when the engine cannot draw it, and with a RangeError for a
+     * scale that is not a finite number above 0. A read: it draws nothing on the canvas and emits nothing. After
+     * `destroy()`, the last drawing's.
+     */
+    png(options?: PngOptions): Promise<Blob | null>;
+    /**
      * The drawing as CDXML (spike cdxml, X4; API-008, IO-020): ChemDraw's ACS Document 1996 style, its colour and font tables,
      * y down at 14.4 pt per bond (IO-018), labels written as ChemDraw writes them, enhanced stereo, R labels as generic
      * nicknames, the wedges as drawn; ChemDraw opens it as the same structures. Synchronous and current at every moment, written
@@ -525,6 +574,16 @@ export interface SketcherApi {
      * sketcher.
      */
     setValue(text: string, options?: SetValueOptions): void;
+    /**
+     * Adds the molecule `text` holds to the drawing without replacing it (API-025; spike later-quick; Ketcher's
+     * `addFragment`): read as `options.format` when it is given, else detected from its shape, as `value` reads it, and placed
+     * as a paste is placed: scaled to the drawing's bond length, the middle of its box at the centre of the view, moved right
+     * and down until it is clear of every structure. One edit, one undo step, one change event with `{ source: 'api' }`;
+     * the selection and the view stay as they are. A text that holds no structure (or a reaction) changes nothing, sets
+     * `lastError` and emits `error`, never throwing (API-013); CDXML and InChI wait for their module, as `value` does; before
+     * the sketcher is ready it waits until it is. Throws on a destroyed sketcher.
+     */
+    addMolecule(text: string, options?: Pick<SetValueOptions, 'format'>): void;
     /** The last refused write's error, until the next accepted write clears it to `null`. */
     readonly lastError: SketchError | null;
     /**
@@ -534,7 +593,8 @@ export interface SketcherApi {
      * (`'aromaticity'`), a label kept as an alias (`'label'`), a stereocentre nothing specifies in a structure drawn with
      * a wedge, a hashed wedge or a wavy bond (`'stereo'`, "Unspecified stereocentre"; spike stereo, S13), and atoms on or
      * very close to other atoms or bonds (`'contact'`, the atoms of a pair together, an atom on a bond alone; spike
-     * v1-display, CHECK-006), each with the status line's words and every atom concerned. Then the losses (`'format'`),
+     * v1-display, CHECK-006), and an unlabelled atom between two identical bonds at 180° (`'linear'`; spike later-quick,
+     * CHECK-009), each with the status line's words and every atom concerned. Then the losses (`'format'`),
      * one per format and loss: a combined R label (R1,R2), which SMILES, CXSMILES and SMARTS write with its lowest number,
      * and attachment points, which SMARTS does not write. Under `smiles`, what the `smiles` getter's text loses (decision `smiles-cx`): it writes CXSMILES
      * for attachment points, so they warn under `smarts` alone; `plainSmiles` has no entries, since it loses something
@@ -589,6 +649,19 @@ export interface SketcherApi {
     analysisPanel: AnalysisPanel;
     /** Whether the drawing is empty (API-019), as it is after a clear, a write of `""` and the last atom erased. A read. */
     readonly isEmpty: boolean;
+    /**
+     * Whether the drawing is as it was when the host last marked it saved with `markSaved()` (API-045; spike later-quick;
+     * ChemDraw JS's `isSaved`): until then, the drawing the sketcher started with (the initial value, or none). Any change
+     * to another drawing (a user's edit, a host's write, an undo or a redo) makes it false, and undo or redo back to the
+     * drawing marked saved makes it true again; a write starts a new history, so nothing before it counts as saved again.
+     * A read, which emits nothing; after `destroy()`, what it said then.
+     */
+    readonly isSaved: boolean;
+    /**
+     * Marks the drawing shown now as saved (API-045; ChemDraw JS's `markAsSaved`): `isSaved` is true until the drawing
+     * changes. No edit: no change event, no undo step. Nothing after `destroy()`.
+     */
+    markSaved(): void;
     /**
      * Whether the drawing has a query feature (spike query, Q14; API-020): a generic atom, an atom list or NOT list, a query
      * property, a custom query, a query bond or a bond topology; a plain `*` is none. Synchronous and current at every moment;
@@ -717,9 +790,10 @@ export interface SketcherApi {
      */
     strings: SketcherStrings;
     /**
-     * Terminal carbons labelled CH₃ (spike settings-touch, K6, P10): `'hidden'` (the default) or `'shown'`. It reads back the
-     * value in force, as `atomColours` does: `'shown'` only when set to that keyword. Setting it redraws at once, and is no
-     * edit: no change event, no undo step, and no getter changes.
+     * Terminal carbons labelled CH₃ (spike settings-touch, K6, P10): `'hidden'` (the default) or `'shown'`; or every carbon
+     * labelled with its hydrogens, `'all'` (spike later-quick-2, ATOM-025). It reads back the value in force, as `atomColours`
+     * does: `'shown'` or `'all'` only when set to that keyword. Setting it redraws at once, and is no edit: no change event,
+     * no undo step, and no getter changes.
      */
     methylLabels: MethylLabels;
     /**
@@ -738,6 +812,15 @@ export interface SketcherApi {
      */
     persistSettings: boolean;
     /**
+     * View-only mode (API-029; spike later-quick): `false` (the default) or `true`, switched at any time. While it is on, the
+     * user selects (by mouse, keyboard and touch), copies, zooms and pans, and edits nothing: the tools but the selection tools
+     * and the editing actions are disabled, saying so, a selection tool is chosen (the one chosen before comes back when it
+     * ends), editing keys are left to the page, and there is no context menu, rotation handle, floating action, long-press
+     * menu, paste, cut or drop. The host's own calls (`value`, `setValue`, `addMolecule`, `undo()`) still act. Switching it
+     * is no edit: no change event, no undo step. With `toolbar: {}` it is a viewer: the structure alone (API-030).
+     */
+    viewOnly: boolean;
+    /**
      * The host's keys (spike settings-touch, K7, KEY-004, P11): each key, as written ("Ctrl+L", "Shift+T", "t", "F2";
      * Ctrl means Ctrl or Cmd), bound to a built-in action (`layout`, `undo`, `keys.open`, `tool.erase`,
      * `tool.ring.cyclohexane`, `element.N`, `bond.double`, `atom.properties` …) or to `null`, which turns the key off so that
@@ -747,8 +830,9 @@ export interface SketcherApi {
     keys: HostKeys;
     /**
      * The settings (spike settings-touch, K6, P9; UI-021, UI-022): `atomColours`, `warningMarks`, `analysisPanel`,
-     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels` and `keymap`, read and written whole: what a
-     * written object leaves out takes its default. Each is its own option as well. A user's change emits `settings` with
+     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers` and `keymap`, read and written
+     * whole: what a written object leaves out takes its default. Each is its own option as well, but `atomNumbers` (spike
+     * stereo-commands), a setting alone. A user's change emits `settings` with
      * them, for a host to store; and, unless `persistSettings` is off, the sketcher keeps the user's changes in the page's
      * localStorage and shares them with the page's other sketchers (spike reports-oct5, R5), where a host's own value wins.
      * No edit: no change event, no undo step, no getter changes.

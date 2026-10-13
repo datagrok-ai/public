@@ -619,6 +619,11 @@ export class DataConnection extends Entity {
     return api.grok_DataConnection_Get_DataSource(this.dart);
   }
 
+  /** Whether the connection is a database: false for file shares (`S3`, `Files`, ...) and secret stores. */
+  get isDatabase(): boolean {
+    return api.grok_DataConnection_Get_IsDatabase(this.dart);
+  }
+
   /** Collection of parameters: server, database, endpoint, etc. */
   // get parameters(): DataConnectionParams { return api.grok_DataConnection_Parameters(this.dart); }
 

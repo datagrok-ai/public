@@ -1,0 +1,68 @@
+{
+  "manifest": {
+    "name": "northwind",
+    "version": "1.0.0",
+    "storage": {"kind": "external", "connection": "NorthwindBinding:PostgresNorthwind", "schema": "public"},
+    "tables": {
+      "orders": {
+        "businessKey": ["orderid"],
+        "friendlyName": "Orders",
+        "columns": {
+          "orderid": {"type": "int", "required": true},
+          "customerid": {"type": "string"},
+          "employeeid": {"type": "int"},
+          "orderdate": {"type": "datetime"},
+          "requireddate": {"type": "datetime"},
+          "shippeddate": {"type": "datetime"},
+          "shipvia": {"type": "int"},
+          "freight": {"type": "float"},
+          "shipname": {"type": "string", "isName": true, "searchable": true},
+          "shipaddress": {"type": "string"},
+          "shipcity": {"type": "string"},
+          "shipcountry": {"type": "string"}
+        },
+        "filters": [{"column": "shipcountry"}]
+      },
+      "order_details": {
+        "businessKey": ["orderid", "productid"],
+        "friendlyName": "Order lines",
+        "singularName": "order line",
+        "pluralName": "order lines",
+        "columns": {
+          "orderid": {"type": "ref", "ref": "orders", "required": true},
+          "productid": {"type": "int", "required": true},
+          "unitprice": {"type": "float"},
+          "quantity": {"type": "int"},
+          "discount": {"type": "float"}
+        }
+      }
+    }
+  },
+  "inventory": {
+    "tables": [
+      {"remote": "orders", "logical": "orders", "bindable": true, "key": ["orderid"]},
+      {"remote": "order_details", "logical": "order_details", "bindable": true, "key": ["orderid", "productid"]},
+      {"remote": "order_summary", "bindable": false, "key": [], "code": "external-table-view",
+        "message": "order_summary is a view; only tables can be bound"},
+      {"remote": "audit_log", "bindable": false, "key": [], "code": "external-key-missing",
+        "message": "audit_log has no primary key; rows need a key to be addressed"}
+    ],
+    "columns": [
+      {"table": "orders", "remote": "tracking_number", "dbType": "bigint", "code": "external-column-type",
+        "message": "bigint is not supported: lossy through the platform"}
+    ],
+    "relations": [
+      {"table": "orders", "column": "customerid", "targetTable": "customers", "targetColumn": "customerid",
+        "status": "plain", "code": "external-ref-target", "message": "customers is not in the draft"},
+      {"table": "orders", "column": "employeeid", "targetTable": "employees", "targetColumn": "employeeid",
+        "status": "plain", "code": "external-ref-target", "message": "employees is not in the draft"},
+      {"table": "orders", "column": "shipvia", "targetTable": "shippers", "targetColumn": "shipperid",
+        "status": "plain", "code": "external-ref-target", "message": "shippers is not in the draft"},
+      {"table": "order_details", "column": "orderid", "targetTable": "orders", "targetColumn": "orderid",
+        "status": "ref"},
+      {"table": "order_details", "column": "productid", "targetTable": "products", "targetColumn": "productid",
+        "status": "plain", "code": "external-ref-target", "message": "products is not in the draft"}
+    ]
+  },
+  "diagnostics": []
+}

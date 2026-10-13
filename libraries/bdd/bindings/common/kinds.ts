@@ -335,7 +335,10 @@ kind('viewer', {
     'legend splitter': '[name="legend-splitter"]',
     'legend inner splitter': '[name="legend-inner-splitter"]',
     'legend close chevron': '[name="icon-hide-corner-legend"]',
-    'legend markers selector': '[name="legend-markers-selector"]',
+    // the legend's one column selector, named after the property it is bound to, as every on-viewer selector
+    'legend markers selector': '[name="legend"] [name^="div-column-combobox-"]',
+    // the date map (year, quarter, …) the markers selector shows beside a datetime column
+    'legend markers map': '[name="legend"] select[name^="input-aggr-selector-"]',
   },
 });
 // an entry of a viewer's legend: "R_ONE" legend item in legend of scatter plot viewer; selected while
@@ -356,7 +359,7 @@ kind('filter card', {
   dartNames: ['filter-card-{q}'],
   parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
-    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input.d4-search-input'},
 });
 // the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
 const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};

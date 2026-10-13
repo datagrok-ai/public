@@ -33,7 +33,7 @@ ui_coverage_delegated_to: null
 produced_from: atlas-driven
 original_path: public/packages/UsageAnalysis/files/TestTrack/Projects/projects-ui-smoke.md
 migration_date: 2026-05-04
-related_bugs: []
+related_bugs: [GROK-20845]
 ---
 
 # Projects — UI smoke
@@ -76,6 +76,7 @@ project with `demog.csv`.
    - **Verify:** the `uiSmoke` tile is shown.
 
 5. **Share.**
+   - **Verify:** right-clicking the `uiSmoke` tile shows a menu with **Share...** and **Delete Project** (GROK-20845).
    - Right-click the `uiSmoke` tile and choose **Share...**.
    - Type the recipient into **User, group, or email**.
    - Pick the recipient from the suggestion list.

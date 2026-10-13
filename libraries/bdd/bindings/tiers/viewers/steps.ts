@@ -185,12 +185,13 @@ export const hoverArea = When('user hovers over the {string} area of {widget}', 
    reports now, in its own order; the step remembers which it took, so a later step can act on it. */
 const firstAreaTaken = new WeakMap<Page, string>();
 
+const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
 /* "free" skips an area whose box another kind of area overlaps: a label drawn over a line takes the
    pointer, so hovering that line raises the label's tooltip instead. */
 async function firstAreaOf(page: Page, target: ElementRef, kind: string, free = false): Promise<string> {
   let name: string | undefined;
-  const overlaps = (a: {x: number; y: number; width: number; height: number}, b: typeof a) =>
-    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
   // the names are read off a finished frame, as every other area step reads its area
   await v.settle(page, target);
   await expect.poll(async () => {
@@ -644,6 +645,36 @@ export const legendInCorner = Then('the legend of {widget} should be in a corner
 
 export const legendMiniIcon = Then('the legend of {widget} should be collapsed to the mini icon', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'mini icon'),
   {description: 'the mode the legend publishes: folded into the small legend icon (a viewer too small under Visibility Auto, or a corner legend closed by its chevron); hovering the icon shows it in the tooltip'});
+
+export const legendInTooltip = Then('the legend of {widget} should be shown in the tooltip', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'tooltip'),
+  {description: 'the mode the legend publishes: re-parented into the tooltip the mini icon opens on hover; its items are then reached as "\\"X\\" legend item in tooltip"'});
+
+export const legendClearOfArea = Then('the legend of {widget} should not cover the {string} area', async (page: Page, target: ElementRef, area: string) => {
+  const legend = (await v.viewerLocator(page, target)).locator('[name="legend"]').filter({visible: true}).first();
+  let last = '';
+  await expect.poll(async () => {
+    let a;
+    try {
+      a = await v.hitArea(page, target, area);
+    }
+    catch (e) {
+      last = (e as Error).message;
+      return false;
+    }
+    const b = await legend.boundingBox();
+    if (!b) {
+      last = 'the legend is not shown';
+      return false;
+    }
+    const covers = overlaps(a, b);
+    const box = (r: {x: number; y: number; width: number; height: number}) =>
+      `${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}x${Math.round(r.height)}`;
+    last = covers ? `the legend (${box(b)}) covers the "${area}" area (${box(a)})` : '';
+    return !covers;
+  }, {message: `the legend of ${target.phrase} clear of its "${area}" area`}).toBe(true).catch(() => {
+    throw new Error(`the legend of ${target.phrase} is not clear of its "${area}" area: ${last}`);
+  });
+}, {description: 'the legend\'s box, wherever it is placed, shares no pixel with the hit area — a corner legend never lands on what the viewer draws there (the regression equation)'});
 
 export const legendPlacedNowhere = Then('the legend of {widget} should be placed nowhere', (page: Page, target: ElementRef) => v.expectLegendMode(page, target, 'hidden'),
   {description: 'the mode the legend publishes: no place at all — Visibility Never, nothing to list, or a viewer too small even for the mini icon; unlike "legend of … should be hidden" it reads the decision, not the DOM'});

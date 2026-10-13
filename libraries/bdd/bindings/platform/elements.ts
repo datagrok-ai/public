@@ -10,6 +10,10 @@ element('toolbox', {selector: '.d4-toolbox[caption]', aliases: ['toolbox pane'],
   parts: {'viewers section': '[name="div-section--Viewers"]'}});
 element('toolbox tab', {selector: '[name="Toolbox"]', aliases: ['toolbox sidebar tab']});
 element('browse tab', {selector: '[name="Browse"]'});
+element('favorites sidebar tab', {selector: '[name="sidebar"] [name="Favorites"]',
+  description: 'the star of the sidebar: it docks the Favorites panel, and closes it while it is shown'});
+element('favorites panel', {selector: '.grok-favorites-pane',
+  description: 'the docked panel the sidebar\'s Favorites opens: the account\'s favorites as a tree, Browse\'s nodes, and a drop target that adds what is dropped on it'});
 element('browse toolbar', {selector: '.grok-browse-icons',
   description: 'the Browse header actions, outside the panel body and its tree'});
 element('browse panel', {selector: '.grok-view-browse, .layout-browse', aliases: ['browse view'],
@@ -52,6 +56,10 @@ element('code editor', {selector: '.cm-editor, .CodeMirror', aliases: ['source e
     'in the packages (.cm-editor), version 5 in the script view of the shell (.CodeMirror)'});
 element('share access selector', {selector: '[name="div-share-selector"]',
   description: 'the access level of the Share dialog: a Dart privilege selector showing the current level as text, a popup behind its triangle'});
+element('privilege tree', {selector: '.grok-privilege-selector-tree', aliases: ['access level list'],
+  description: 'the popup of an access selector, portaled outside its dialog: one tree node per level ("Full access", "View and use", …)'});
+element('share message', {selector: '.grok-permissions-message textarea',
+  description: 'the message box of a Share dialog, shown once a user is picked: a bare textarea no input kind reaches'});
 element('model preview', {selector: '.d4-pm-view-preview',
   description: 'the Train Model preview; ready only after training, predictions, charts and history are complete'});
 element('grid overlay', {selector: '[name="viewer-Grid"] canvas[name="overlay"]',

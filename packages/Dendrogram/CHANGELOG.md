@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Dendrogram viewer: Fixed a tree with nodes that have no branch length (most newick strings leave it off the root) drawing nothing and taking no hover or click
 * Tests: Added centroid and median linkage tests over merges that invert (GROK-19595): the wasm cluster matrix keeps merge order and every leaf, and hierarchical clustering attaches a full tree; they replace the BDD centroid scenario
 * Fixed a layout's restored tree clustering another open table with the same name, or reopening a table whose view had closed: the saved grid script now clusters its own grid's table, only while that grid's view is open
 * GROK-19595: Fixed centroid linkage attaching no tree: the clustering wasm sorted the centroid merges by height while their cluster references kept the merge order (in `@datagrok-libraries/math`)

@@ -340,6 +340,10 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   packageDir: string): string | null {
   const decls: string[] = [];
   const systemColumnNames = new Set(domainSystemColumns.map(([name]) => name));
+  // An external table's rows carry `id` (the encoded business key) and nothing else
+  // system-side; nothing is expanded and nothing is written (external-bindings §3).
+  const external = manifest.storage?.kind === 'external';
+  const systemColumns = external ? domainSystemColumns.filter(([name]) => name === 'id') : domainSystemColumns;
   const tableNames = Object.keys(manifest.tables);
   // Keyed by table name; a qualified ref target ('Core.queries', 'grit.issue') lands here
   // under its qualified key so the expand map can list its columns — it gets no accessor.
@@ -515,7 +519,7 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     const relations = tableRelations[tableName];
 
     const rowLines = [`/** Row of \`${manifest.name}.${tableName}\`. */`, `export interface ${typeName}Row {`];
-    for (const [name, tsType] of domainSystemColumns)
+    for (const [name, tsType] of systemColumns)
       rowLines.push(`  ${name}: ${tsType};`);
     for (const c of columns)
       rowLines.push(`  ${c.name}${c.required || c.autoNumber ? '' : '?'}: ${c.tsType};`);
@@ -547,13 +551,13 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     }
 
     decls.push(formatColumnUnion(`${typeName}Column`,
-      [...domainSystemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
+      [...systemColumns.map(([name]) => name), ...columns.map((c) => c.name)]));
 
     // Expand map: MUST stay a `type` alias — object-type literals carry the implicit
     // index signature the `TExpand extends {[key: string]: {}}` constraint needs
     // (an interface would fail it).
     const expandEntries: string[] = [];
-    for (const c of columns) {
+    for (const c of external ? [] : columns) {
       if (c.ref == null)
         continue;
       const fields = tableColumns[c.ref].map((tc) =>
@@ -565,9 +569,9 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
     // The link shape stays INLINE (structurally DG.DomainRelationLink): generated
     // files must compile against the datagrok-api the package depends on, which may
     // predate that interface.
-    for (const r of relations)
+    for (const r of external ? [] : relations)
       expandEntries.push(`  '${r.name}': {${r.name}?: {id: string; name: string}[]};`);
-    for (const childName of tableNames) {
+    for (const childName of external ? [] : tableNames) {
       const fks = tableColumns[childName].filter((c) => c.ref === tableName);
       if (fks.length === 0)
         continue;
@@ -584,13 +588,14 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
          `(consumed by query()/builder). */`,
          `export type ${typeName}Expand = {`, ...expandEntries, '};'].join(sep));
 
-    txArms.push(
-      `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
-        `onDuplicate?: 'error'} |`,
-      `  {op: 'update'; table: '${tableName}'; id: string; ` +
-        `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
-        `expectedVersion?: number} |`,
-      `  {op: 'delete'; table: '${tableName}'; id: string} |`);
+    if (!external)
+      txArms.push(
+        `  {op: 'insert'; table: '${tableName}'; ref?: string; values: DG.DomainTxValues<${typeName}Insert>; ` +
+          `onDuplicate?: 'error'} |`,
+        `  {op: 'update'; table: '${tableName}'; id: string; ` +
+          `values: DG.DomainTxValues<${relations.length > 0 ? `${typeName}Update` : `Partial<${typeName}Row>`}>; ` +
+          `expectedVersion?: number} |`,
+        `  {op: 'delete'; table: '${tableName}'; id: string} |`);
 
     // No datetime config: the client resolves datetime columns from the domain
     // registry itself (the Dayjs typing in <Table>Row stays true for every client).
@@ -605,18 +610,22 @@ function generateDomainSchemaCode(manifest: any, manifestPath: string, emittedTy
   }
 
   const schemaType = utils.snakeToCamelCase(manifest.name);
-  const lastArm = txArms.pop()!;
-  txArms.push(lastArm.replace(/ \|$/, ';'));
-  decls.push([`export type ${schemaType}TransactionOp =`, ...txArms].join(sep));
+  const transaction: string[] = [];
+  if (!external) {
+    const lastArm = txArms.pop()!;
+    txArms.push(lastArm.replace(/ \|$/, ';'));
+    decls.push([`export type ${schemaType}TransactionOp =`, ...txArms].join(sep));
+    transaction.push(
+      `  transaction<T extends ${schemaType}TransactionOp[]>(ops: [...T]):`,
+      `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`,
+      `    return grok.dapi.domains.transaction('${manifest.name}', ops) as`,
+      `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;`,
+      '  },');
+  }
 
   decls.push([`/** Typed clients for the \`${manifest.name}\` domain schema tables ` +
     `(lazy — no import-time side effects). */`,
-    `export const ${utils.snakeToCamelCase(manifest.name, false)}Db = {`, ...clients,
-    `  transaction<T extends ${schemaType}TransactionOp[]>(ops: [...T]):`,
-    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}> {`,
-    `    return grok.dapi.domains.transaction('${manifest.name}', ops) as`,
-    `      Promise<{[K in keyof T]: DG.DomainOpResultFor<T[K]>}>;`,
-    '  },',
+    `export const ${utils.snakeToCamelCase(manifest.name, false)}Db = {`, ...clients, ...transaction,
     '};'].join(sep));
   return decls.join(sep.repeat(2)) + sep;
 }

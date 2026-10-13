@@ -19,6 +19,9 @@ import type {DomainChildrenMode} from './children.js';
 import {DomainSearch} from './search.js';
 import {DomainFilters} from './filters.js';
 import type {DomainFiltersMode} from './filters.js';
+import {ManifestEditor} from './authoring/manifest-editor.js';
+import type {DraftEnvelope} from './authoring/manifest-model.js';
+import type {EditorContext} from './authoring/editor-context.js';
 
 type Props = Record<string, unknown>;
 
@@ -37,6 +40,31 @@ function list(x: unknown): string[] | undefined {
   return Array.isArray(x) ? x.map(String) :
     typeof x === 'string' && x !== '' ? x.split(',').map((s) => s.trim()) : undefined;
 }
+
+/** The draft envelope a `draft` prop carries: the object, or a signal holding it. */
+function draftProp(x: unknown, tag: string): DraftEnvelope {
+  const value = x instanceof Signal ? x.peek() : x;
+  if (typeof value === 'object' && value !== null && 'manifest' in value)
+    return value as DraftEnvelope;
+  throw new Error(`${tag}: bind "draft" to a draft envelope ({manifest, inventory, diagnostics})`);
+}
+
+function editorContext(props: Props): EditorContext {
+  return {mode: (props.mode as EditorContext['mode'] | undefined) ?? 'create',
+    storage: (props.storage as EditorContext['storage'] | undefined) ?? 'external'};
+}
+
+const DRAFT = {name: 'draft', type: 'object', bindable: true,
+  description: 'The draft envelope the server answered — `{manifest, inventory, diagnostics}`.'};
+const CONTEXT_PROPS = [
+  {name: 'mode', type: 'string', choices: ['create', 'view'],
+    description: 'What may be changed: `create` edits, `view` shows every field as text.'},
+  {name: 'storage', type: 'string', choices: ['external'],
+    description: 'The manifest storage the field offer follows; `external` is the one built.'},
+];
+const EXAMPLE_DRAFT = {manifest: {name: 'sales', storage: {kind: 'external', connection: 'Demo:Northwind',
+  schema: 'public'}, tables: {orders: {businessKey: ['orderid'], columns: {orderid: {type: 'int', required: true},
+  shipname: {type: 'string', isName: true}}}}}};
 
 const METAS: ComponentMeta[] = [
   {
@@ -251,6 +279,31 @@ const METAS: ComponentMeta[] = [
     ],
     defaults: {mode: 'query'},
     example: {tag: 'u2-domain-filters', bind: {source: '$.issues.source'}},
+  },
+  {
+    tag: 'u2-manifest-editor',
+    category: 'Inputs',
+    appearance: false,
+    create: (props: Props) => new ManifestEditor(draftProp(props.draft, 'u2-manifest-editor'), {
+      context: editorContext(props), groups: list(props.groups), friendlyName: props.friendlyName as string | undefined,
+    }),
+    description: 'The manifest editor of binding authoring: a tree of the schema, its tables and their ' +
+      'columns (a checkbox includes each, badges say key / → target / name, an unbindable one stays greyed ' +
+      'with its reason) beside a context panel that edits the selected node — names, writable, the name and ' +
+      'searchable columns, required, the relationships and the access to apply after Create.',
+    usage: 'Bind `draft` to what `grok.dapi.domains.draft()` answered. The editor is platform-free: read ' +
+      '`plan()` for the create envelope and the grants, set `diagnostics` from the dry run and the rows that ' +
+      'own them light up. `mode: view` shows a registered manifest read-only.',
+    props: [
+      DRAFT,
+      ...CONTEXT_PROPS,
+      {name: 'groups', type: 'string_list', description: 'The groups and users the access pickers offer.'},
+      {name: 'friendlyName', type: 'string', description: 'The schema\'s friendly name, carried beside the manifest.'},
+      {name: 'selected', type: 'object', bindable: true,
+        description: 'The selected node — `{kind: schema | table | column, table?, column?}`; read-only.'},
+    ],
+    defaults: {mode: 'create', storage: 'external'},
+    example: {tag: 'u2-manifest-editor', props: {draft: EXAMPLE_DRAFT, groups: ['Sales', 'Developers']}},
   },
 ];
 

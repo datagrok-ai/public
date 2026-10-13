@@ -19,6 +19,7 @@ import {backend} from './domain-fixtures.mjs';
 register('./dg-stub.mjs', import.meta.url);
 const {domains} = await import('../src/dg/domain/index.js');
 const {DomainApp} = await import('../src/dg/domain/app.js');
+const {DgDomainTable} = await import('../src/dg/domain/backend.js');
 const grok = await import('datagrok-api/grok');
 
 function scoped(name, body) {
@@ -812,7 +813,7 @@ scoped('support ⇒ absent: a table that declares no writes and no soft delete o
   // table CANNOT do these things at all, so nothing offers them
   const memory = backend();
   const issue = memory.tableSync('grit.issue');
-  issue.support = {...issue.support, writes: false, deleted: false, restore: false};
+  issue.support = {...issue.support, writes: false, updateWhere: false, deleted: false, restore: false};
   for (const member of ['updateWhere', 'batch', 'restore'])
     Object.defineProperty(issue, member, {value: undefined, configurable: true});
   backends.domain = memory;
@@ -1286,9 +1287,174 @@ scoped('live by default (R-b): an app polls unless it is told not to', async () 
 
 scoped('defaults (R-d): every draft the app opens starts with the values the view preset', async () => {
   const {app: a} = await app({defaults: {project_id: 'p1'}});
-  assert.equal(await a.goTo('entity', DomainApp.NEW), true);
+  assert.equal(await a.create(), true);
   await flush();
   assert.equal(a.entitySource.value.currentRow.value.project_id, 'p1');
   assert.equal(a.form.value.input('project_id').value.value, 'p1');
+  a.dispose();
+});
+
+scoped('rowAddress "id": the segment is the row id as given — a comma, a hyphen, an encoded datetime — never split',
+  async () => {
+    // an externally bound table's id is its key values (`10248,11`), which may carry any delimiter:
+    // the business-key split would turn `a-b,c` into two wrong predicates
+    const ids = [['10248,11', 'Lines'], ['a-b,c', 'Hyphen'], ['2026-09-18T07:08:09.123Z', 'Stamp']];
+    const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+      issue: ids.map(([id, title], at) => ({id, project_id: 'p1', number: at + 1, title}))}});
+    memory.tableSync('grit.issue').info.rowAddress = 'id';
+    backends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = domains.app({table, base: '/domains/grit/issue', children: false});
+    document.body.append(a.root);
+    await flush();
+    for (const [id, title] of ids) {
+      assert.equal(a.keyOf(a.listSource.rows.byKey(id)), id, `${id}: the id, not the key values`);
+      const segment = encodeURIComponent(id);
+      assert.equal(await a.open(`/domains/grit/issue/${segment}`), true);
+      await flush();
+      assert.equal(a.entity.value, id);
+      assert.equal(a.form.value.input('title').value.value, title, `${id}: opened by id = <segment>`);
+      assert.equal(a.path.value, `/domains/grit/issue/${segment}`, `${id}: the path settles on the same segment`);
+    }
+    assert.equal(encodeURIComponent(ids[2][0]), '2026-09-18T07%3A08%3A09.123Z', 'the datetime key as the URL spells it');
+    a.dispose();
+  });
+
+scoped('a key equal to a route word, a dot segment, the draft sentinel or led by ~ is escaped in the path and read back; /new stays the draft',
+  async () => {
+    const ids = [['version', 'Version'], ['..', 'Dots'], ['~x', 'Tilde'], ['new', 'New'], ['a%2Fb', 'Slash']];
+    const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+      issue: ids.map(([id, title], at) => ({id, project_id: 'p1', number: at + 1, title}))}});
+    memory.tableSync('grit.issue').info.rowAddress = 'id';
+    backends.domain = memory;
+    const table = await domains.table('grit.issue');
+    const a = domains.app({table, base: '/domains/grit/issue', children: false});
+    document.body.append(a.root);
+    await flush();
+    const segments = {version: '~version', '..': '~..', '~x': '~~x', new: '~new', 'a%2Fb': 'a%252Fb'};
+    for (const [id, title] of ids) {
+      assert.equal(a.keyOf(a.listSource.rows.byKey(id)), id, `${id}: keyOf is the raw id`);
+      assert.equal(await a.open(`/domains/grit/issue/${segments[id]}`), true);
+      await flush();
+      assert.equal(a.entity.value, id, `${id}: the segment reads back as the id`);
+      assert.equal(a.entitySource.value.isDraft, false, `${id}: a row, not the draft`);
+      assert.equal(a.form.value.input('title').value.value, title, `${id}: opened by the escaped segment`);
+      assert.equal(a.path.value, `/domains/grit/issue/${segments[id]}`, `${id}: the path is written escaped`);
+    }
+    assert.equal(await a.open('/domains/grit/issue/new'), true);
+    await flush();
+    assert.equal(a.entity.value, DomainApp.NEW);
+    assert.equal(a.entitySource.value.isDraft, true, 'the raw sentinel is the draft');
+    assert.equal(a.path.value, '/domains/grit/issue/new', 'and is spelled as is');
+    assert.equal(await a.goTo('list'), true);
+    assert.equal(await a.goTo('entity', 'version'), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/issue/~version', 'a move by id is written escaped too');
+    assert.equal(await a.goTo('entity', 'new'), true);
+    await flush();
+    assert.equal(a.entitySource.value.isDraft, false, 'goTo by id is never the create page');
+    assert.equal(a.form.value.input('title').value.value, 'New', 'the row keyed "new", from the list or find-or-activate');
+    assert.equal(a.path.value, '/domains/grit/issue/~new');
+    a.dispose();
+  });
+
+scoped('?entity= is escaped and read back the same way; ?entity=new stays the draft', async () => {
+  const memory = backend({rows: {project: [{id: 'p1', key: 'GRIT', name: 'Grit'}],
+    issue: [{id: 'version', project_id: 'p1', number: 1, title: 'Version'}]}});
+  memory.tableSync('grit.issue').info.rowAddress = 'id';
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, children: false});
+  document.body.append(a.root);
+  await flush();
+  assert.equal(await a.open(`${BASE}?entity=~version`), true);
+  await flush();
+  assert.equal(a.entity.value, 'version');
+  assert.equal(a.form.value.input('title').value.value, 'Version');
+  assert.equal(a.path.value, `${BASE}?entity=~version`);
+  assert.equal(await a.open(`${BASE}?entity=new`), true);
+  await flush();
+  assert.equal(a.entity.value, DomainApp.NEW);
+  assert.equal(a.entitySource.value.isDraft, true);
+  assert.equal(a.path.value, `${BASE}?entity=new`);
+  a.dispose();
+});
+
+scoped('a draft saved under a key that is reserved or led by ~ is addressed escaped from then on', async () => {
+  backends.domain = backend();
+  const a = domains.app({table: await domains.table('grit.project'), base: '/domains/grit/project', children: false});
+  document.body.append(a.root);
+  await flush();
+  for (const [key, segment] of [['new', '~new'], ['~x', '~~x']]) {
+    assert.equal(await a.create(), true);
+    await flush();
+    assert.equal(a.path.value, '/domains/grit/project/new', 'the draft is spelled as is');
+    a.form.value.input('key').value.value = key;
+    a.form.value.input('name').value.value = `Row ${key}`;
+    await flush();
+    assert.equal(await a.session.save(), true);
+    await flush();
+    assert.equal(a.path.value, `/domains/grit/project/${segment}`, `${key}: once saved, the page is the row's and its key is spelled like any other`);
+    assert.equal(await a.goTo('list'), true);
+  }
+  a.dispose();
+});
+
+scoped('support ⇒ absent: Bulk edit goes with updateWhere, the History pane with audit', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, updateWhere: false, audit: false};
+  for (const member of ['updateWhere', 'audit'])
+    Object.defineProperty(issue, member, {value: undefined, configurable: true});
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
+  document.body.append(a.root);
+  await flush();
+  assert.deepEqual(a.menuActions().map((x) => x.name), ['Import…', 'Trash'], 'no Bulk edit without updateWhere');
+  await a.goTo('entity', 'i1');
+  await flush();
+  assert.deepEqual([...a.panes.children].map((el) => el.dataset.u2), ['domain-children'],
+    'no History pane at all without audit — not one that says the table keeps none');
+  a.dispose();
+});
+
+scoped('support ⇒ absent: a table `transaction` does not land on offers no New, Import, Delete or Trash', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, transaction: false};
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
+  document.body.append(a.root);
+  const ribbon = a.ribbon().main;
+  await flush();
+  assert.equal(a.listSource.readOnly.value, true);
+  assert.equal(ribbon[0].root.hidden, true, 'no New');
+  assert.equal(a.menuActions().some((x) => x.name === 'Import…'), false, 'no Import');
+  assert.deepEqual(allowedActions(a.menuActions(), {access: a.listSource.access.value}), [],
+    'Bulk edit and Trash need edit and delete, which the read-only bound denies');
+  assert.equal(ribbon[3].root.hidden, true, 'and the ⋯ button with them');
+  assert.equal(a.list.actionsFor(a.listSource.rows.byKey('i1')).some((x) => x.name === 'Delete'), false, 'no Delete');
+  a.dispose();
+});
+
+scoped('the read-only bound reaches the frame writer: a row\'s own ~can_edit lifts nothing without `transaction`', async () => {
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, transaction: false};
+  issue.rows[0]['~can_edit'] = true;
+  backends.domain = memory;
+  const a = domains.app({table: await domains.table('grit.issue'), base: BASE, pageSize: 10});
+  document.body.append(a.root);
+  await flush();
+  const row = a.listSource.rows.byKey('i1');
+  assert.equal(row['~can_edit'], true, 'the frame carries the row grant');
+  assert.equal(a.listSource.access.value.row(row).field('title'), 'readonly',
+    'what the grid reads a cell by: the bound holds against the row grant');
+  // the access the dg backend hands `DomainFrameEditor.attach`, whose `canEdit` reads `~can_edit`
+  // itself: every field closed, so `writableColumns` is empty and no cell is editable
+  const bound = DgDomainTable.narrowed({can: {view: true, insert: true, edit: true, delete: true, share: true},
+    fields: {title: 'editable', number: 'immutable', done: 'readonly'}}, undefined, false);
+  assert.deepEqual(bound.fields, {title: 'readonly', number: 'readonly', done: 'readonly'});
+  assert.deepEqual([bound.can.edit, bound.can.insert, bound.can.delete, bound.can.view], [false, false, false, true]);
+  assert.deepEqual(Object.keys(bound.fields).filter((c) => bound.fields[c] !== 'readonly'), [], 'nothing writable');
   a.dispose();
 });

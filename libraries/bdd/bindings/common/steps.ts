@@ -23,6 +23,12 @@ export const clickOnHolding = When('user clicks (on ){element} holding {key}', (
 export const doubleClickOn = When('user double-clicks (on ){element}', (page: Page, target: ElementRef) => g.dblclick(page, target), {tier: 'ui'});
 export const rightClickOn = When('user right-clicks (on ){element}', (page: Page, target: ElementRef) => g.rightclick(page, target), {tier: 'ui'});
 export const hoverOver = When('user hovers (over ){element}', (page: Page, target: ElementRef) => g.hover(page, target), {tier: 'ui'});
+export const pointerOver = When('user moves the pointer over {element}', async (page: Page, target: ElementRef) => {
+  const box = await (await locate(page, target)).filter({visible: true}).first().boundingBox();
+  if (!box)
+    throw new Error(`${target.phrase} has no box to move the pointer over`);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {steps: 2});
+}, {tier: 'ui', description: 'the pointer moved to the middle of the element and nothing waited for after it — for a layer the first move takes away, where a hover would wait for the element to see the pointer enter'});
 export const focusOn = When('user focuses (on ){element}', (page: Page, target: ElementRef) => g.focus(page, target), {tier: 'ui'});
 export const typeInto = When('user types {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text), {tier: 'ui'});
 export const enterInto = When('user enters {string} in(to) {element}', (page: Page, text: string, target: ElementRef) => g.typeInto(page, target, text, true),

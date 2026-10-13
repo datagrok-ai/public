@@ -269,3 +269,48 @@ scoped('over a real hierarchy: a two-word location narrows to it, and Enter does
   filters.dispose();
   src.dispose();
 });
+
+scoped('a `basic` backend is offered no under, regex, !like, fuzzy or between, no datetime != and no bool null test', async () => {
+  const offersOf = (filters, src) => (name) => {
+    const prop = src.schema.properties.find((p) => p.name === name);
+    return filters.input.value.options.schema.operators(prop, Filters.operators.for(prop)).map((o) => o.id);
+  };
+  const memory = backend();
+  const issue = memory.tableSync('grit.issue');
+  issue.support = {...issue.support, filters: 'basic'};
+  backends.domain = memory;
+  const src = (await domains.table('grit.issue')).source({pageSize: 10});
+  await flush();
+  const filters = domains.filters(src);
+  await flush();
+  const offers = offersOf(filters, src);
+  const title = offers('title');
+  for (const id of ['matches', '!matches', '!like', 'fuzzy'])
+    assert.equal(title.includes(id), false, `${id} is not offered on a string`);
+  for (const id of ['=', '!=', 'like', 'starts', 'is null'])
+    assert.equal(title.includes(id), true, `${id} stays`);
+  assert.equal(offers('due').includes('!='), false, 'no datetime !=');
+  assert.equal(offers('due').includes('<'), true, 'the datetime comparisons stay');
+  for (const name of ['due', 'number', 'weight'])
+    assert.equal(offers(name).includes('between'), false, `no between on ${name}: its payload is a nested group`);
+  assert.equal(offers('number').includes('>='), true, 'a flat >= stays, and pairs of them still merge');
+  for (const id of ['is null', 'is not null'])
+    assert.equal(offers('done').includes(id), false, `no bool ${id}`);
+  assert.equal(offers('done').includes('='), true);
+  assert.equal(offers('number').includes('is null'), true, 'an int keeps its null test');
+  filters.dispose();
+  src.dispose();
+
+  // `under` goes even where the hierarchy it would walk exists
+  const stock = hierarchyBackend();
+  const location = stock.tableSync('stock.location');
+  location.support = {...location.support, filters: 'basic'};
+  backends.domain = stock;
+  const tree = (await domains.table('stock.location')).source({pageSize: 10});
+  await flush();
+  const treeFilters = domains.filters(tree);
+  await flush();
+  assert.equal(offersOf(treeFilters, tree)('parent_id').includes('under'), false, 'no under on a basic backend');
+  treeFilters.dispose();
+  tree.dispose();
+});

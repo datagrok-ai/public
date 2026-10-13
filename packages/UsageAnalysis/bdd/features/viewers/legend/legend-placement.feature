@@ -3,7 +3,10 @@ Feature: Where a legend sits, how big it is and when it folds away
   The placement every viewer's legend shares, walked on seven viewers at once: the splitter between
   a docked legend and the plot resizes it; Visibility Always picked from the legend's own menu keeps
   it, and Position Auto moves it to the side the viewer's shape leaves room on; Visibility Auto folds
-  it into the mini icon on a small viewer and puts it away on a tiny one; the four corner positions
+  it into the mini icon on a small viewer and puts it away on a tiny one, and the icon shows it in
+  its tooltip, where a hovered category lights up its rows in the other viewers (the pie chart's
+  mouse-over wedge) and a clicked one filters the plot, the selection still there when the tooltip
+  is opened again; the four corner positions
   lay it over the plot, and the corner legend's chevron folds it into the mini icon, whose click
   opens it again; and the settings come back from a saved layout and a saved project.
   One journey on demog-1000 with RACE as the legend column of all seven viewers, set up as in the
@@ -213,6 +216,38 @@ Feature: Where a legend sits, how big it is and when it folds away
       | bar chart    |
       | trellis plot |
 
+  Scenario: The mini icon shows the legend in its tooltip, and a category hovered there lights up its rows
+    When user sets properties of scatter plot viewer:
+      | Legend Position   | Right |
+      | Legend Visibility | Auto  |
+    And user resizes scatter plot viewer to 220 by 220
+    Then the legend of scatter plot viewer should be collapsed to the mini icon
+    When user hovers over mini legend icon of scatter plot viewer
+    Then the legend of scatter plot viewer should be shown in the tooltip
+    And the legend of scatter plot viewer should list 4 items
+    When user hovers over "Black" legend item in tooltip
+    Then pie chart viewer should have a "mouse over Black" area
+    And pie chart viewer should not have a "mouse over Asian" area
+    When user clicks on "Black" legend item in tooltip
+    Then scatter plot viewer should show 25 rows
+    And "Black" legend item in tooltip should be selected
+    And the legend of scatter plot viewer should list 4 items
+    When user moves the pointer away from scatter plot viewer
+    Then pie chart viewer should not have a "mouse over Black" area
+    And the legend of scatter plot viewer should be collapsed to the mini icon
+    When user hovers over mini legend icon of scatter plot viewer
+    Then the legend of scatter plot viewer should be shown in the tooltip
+    And "Black" legend item in tooltip should be selected
+    And "Asian" legend item in tooltip should be visible
+    When user clicks on "Black" legend item in tooltip
+    Then scatter plot viewer should show 872 rows
+    When user moves the pointer away from scatter plot viewer
+    Then the legend of scatter plot viewer should be collapsed to the mini icon
+    When user restores the size of scatter plot viewer
+    And user sets "Legend Visibility" property of scatter plot viewer to "Always"
+    Then the legend of scatter plot viewer should be docked
+    And no errors should have been logged
+
   Scenario Outline: The <viewer> legend takes each corner, and its chevron folds it into the mini icon
     When user sets "Legend Position" property of <viewer> viewer to "LeftTop"
     Then the legend of <viewer> viewer should be in a corner
@@ -229,6 +264,7 @@ Feature: Where a legend sits, how big it is and when it folds away
     When user hovers over legend of <viewer> viewer
     And user clicks on legend close chevron of <viewer> viewer
     Then the legend of <viewer> viewer should be collapsed to the mini icon
+    And the legend of <viewer> viewer should be in the "rightBottom" slot
     And mini legend icon of <viewer> viewer should be visible
     And legend of <viewer> viewer should be hidden
     When user clicks on mini legend icon of <viewer> viewer

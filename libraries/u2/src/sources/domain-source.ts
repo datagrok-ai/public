@@ -61,7 +61,8 @@ export interface DomainSourceOptions {
   withAccess?: boolean;
   /** Ref columns whose target names ride with the rows (`~caption_<col>`), so a list, a grid and a
    * form show names without a lookup per id. By default every ref column into another domain table
-   * that this caller may see; `[]` turns it off. */
+   * that this caller may see; `[]` turns it off. Over a backend that does not project them
+   * (`support.captions` false) none are asked for, and a form resolves each per row instead. */
   captions?: string[];
   /** What every draft starts with — a parent's id on a child table. */
   defaults?: Record<string, unknown>;
@@ -77,7 +78,7 @@ export interface DomainSourceOptions {
 
 const NO_ENV: ComponentEnv = {designTime: false, subBinds: {}, resolve: () => null};
 const NO_INFO: DomainTableInfoLike = {nameColumn: null, singularName: '', pluralName: '', businessKey: [],
-  searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
+  rowAddress: 'businessKey', searchableColumns: [], constraints: [], refFilters: {}, permissions: [], childTables: []};
 const REF_ADDRESS = /^\w+\.\w+$/;
 /** A draft id as a VALUE of the string query — quoted, which is the only form the grammar takes
  * one in; `~new:` anywhere else is ordinary text. */
@@ -116,7 +117,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   /** The rows the source holds are no longer the server's: a live probe saw the collection move
    * while this session had changes of its own to protect. Cleared by the next load. */
   readonly stale: ReadonlySignal<boolean>;
-  /** A source over deleted rows: nothing in it may be edited or inserted, and `save` refuses. */
+  /** A source over deleted rows, or over a table `transaction` does not land on
+   * (`support.transaction` false — the whole write path): nothing in it may be edited, inserted
+   * or deleted, and `save` refuses. The one place every control's write affordance follows. */
   readonly readOnly: ReadonlySignal<boolean>;
   readonly df: ReadonlySignal<DataFrameLike | undefined>;
   readonly rows: RowsLike<RowView<TRow>>;
@@ -159,6 +162,8 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
   private readonly _access = signal(Access.readOnly);
   private readonly _selection = signal<readonly RowView<TRow>[]>([]);
   private readonly _isStale = signal(false);
+  /** Whether the table's backend writes at all (`support.transaction`), once the table is known. */
+  private readonly _writable = signal(true);
   private readonly _errorStep: ReadonlySignal<string>;
   /** The `source` step: the resolver walks to a signal, so the source hands itself over in one. */
   private readonly _self = signal<DomainSource<TRow>>(this);
@@ -208,14 +213,16 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     this.live = signal(options.live ?? false);
     this.stale = this._isStale;
     this._liveMs = options.liveMs ?? DomainSource.liveMs;
-    this.readOnly = computed(() => this.deleted.value !== 'exclude');
+    this.readOnly = computed(() => this.deleted.value !== 'exclude' || !this._writable.value);
     this._backend = requireBackend(this, backends.domain, 'domain tables');
     this.df = this._df;
     this.error = this._error;
     this.problemRow = this._problemRow;
-    // the upper bound of a trash source, over whatever the server answered for the table
+    // the upper bound of a trash source (which keeps the Delete grant: Restore rides it), or of a
+    // table nothing can be written to, over whatever the server answered for the table
     this.access = computed(() => this.readOnly.value ?
-      this._access.value.narrow({edit: false, insert: false}) : this._access.value);
+      this._access.value.narrow({edit: false, insert: false, ...(this._writable.value ? {} : {delete: false})}) :
+      this._access.value);
     this.selection = this._selection;
     this.edit = this._edit;
     this.state = this._state;
@@ -333,7 +340,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * after the source is ready. */
   newRow(values: RowValues<TRow> = {}, options?: {pristine?: boolean}): RowView<TRow> {
     if (this.readOnly.peek())
-      throw new DomainBackendError('forbidden', `${this.table}: deleted rows are read-only until they are restored`);
+      throw new DomainBackendError('forbidden', `${this.table}: ${this._readOnlyReason}`);
     const edit = this._edit.peek();
     if (edit === undefined)
       throw new Error(`${this.table}: the table is not loaded yet`);
@@ -501,7 +508,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * and the app's rules over it hold. */
   check(): string | null {
     if (this.readOnly.peek() && this.pending().some((r) => r[Rows.STATE] !== 'restored'))
-      return this._refuse('deleted rows are read-only until they are restored');
+      return this._refuse(this._readOnlyReason);
     const edit = this._edit.peek();
     if (edit === undefined)
       return null;
@@ -716,10 +723,17 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
     return problem;
   }
 
+  /** Why nothing may be written through this source while {@link readOnly} holds. */
+  private get _readOnlyReason(): string {
+    return this._writable.peek() ? 'deleted rows are read-only until they are restored' :
+      'the table does not accept writes';
+  }
+
   private _adopt(table: DomainTableLike): void {
     if (this._table === table)
       return;
     this._table = table;
+    this._writable.value = table.support.transaction;
     this._schema = {
       properties: table.properties.map((p): FilterProperty => {
         const prop: FilterProperty = {...p, name: p.name!};
@@ -879,8 +893,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
 
   /** The ref columns worth a caption: a domain-table reference (`semType` is `<schema>.<table>`) the
    * caller may see. `User`/`Group` refs are NOT domain tables — the server refuses a caption for one
-   * — and a column the caller's access hides would fail the whole query with the same refusal. */
+   * — and a column the caller's access hides would fail the whole query with the same refusal. None
+   * over a backend that does not project them (`support.captions`): a form resolves each per row. */
   private _captions(): string[] {
+    if (this._table?.support.captions !== true)
+      return [];
     const listed = this._captionOption;
     const access = this._access.peek();
     const refs = this._schema.properties.filter((p) => REF_ADDRESS.test(p.semType ?? '') &&

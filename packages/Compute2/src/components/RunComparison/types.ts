@@ -65,6 +65,8 @@ export interface ScalarBinding {
   friendlyPath?: string;
   units?: string;
   value: number | null;
+  // multiplier into the target's units, set when a unit mapping converts this binding
+  factor?: number;
 }
 
 export interface ColumnBinding {
@@ -76,11 +78,27 @@ export interface ColumnBinding {
   units?: string;
   indexColumnName: string;
   splitColumnName?: string;
+  // multipliers into the target's value and index units, set when a unit mapping converts them
+  factor?: number;
+  indexFactor?: number;
 }
+
+// 1 `from` = `factor` `to`; applies both ways
+export interface UnitMapping {
+  from: string;
+  factor: number;
+  to: string;
+}
+
+// a value in a binding's own units, in its target's units
+export const toTargetUnits = <T, >(value: T, factor?: number): T | number =>
+  factor == null || (typeof value !== 'number' && typeof value !== 'bigint') ? value : Number(value) * factor;
 
 export interface TargetBase {
   key: string;
   displayName: string;
+  // units of the first run; converted bindings are expressed in them
+  units?: string;
   confidence: MatchConfidence;
   unitsWarning: boolean;
   coverage: number;
@@ -103,6 +121,8 @@ export interface ColumnCandidate {
 
 export interface ColumnTarget extends TargetBase {
   kind: 'column';
+  // index units of the first run; converted indexes are expressed in them
+  indexUnits?: string;
   candidates: ColumnCandidate[];
   // enabled candidates' bindings; what statuses, signatures and builders consume
   bindings: ColumnBinding[];
@@ -134,6 +154,15 @@ export const TIME_UNITS: TimeUnit[] = ['ms', 's', 'min', 'h', 'days'];
 
 export const TIME_UNIT_MS: Record<TimeUnit, number> =
   {ms: 1, s: 1000, min: 60_000, h: 3_600_000, days: 86_400_000};
+
+// lowercase spellings of time units; bare 'm' is deliberately absent — ambiguous with meters
+export const TIME_UNIT_ALIASES = new Map<string, TimeUnit>(Object.entries({
+  ms: 'ms', millis: 'ms', millisecond: 'ms', milliseconds: 'ms',
+  s: 's', sec: 's', secs: 's', second: 's', seconds: 's',
+  min: 'min', mins: 'min', minute: 'min', minutes: 'min',
+  h: 'h', hr: 'h', hrs: 'h', hour: 'h', hours: 'h',
+  d: 'days', day: 'days', days: 'days',
+}) as [string, TimeUnit][]);
 
 // row semantics of a table: 'series' (default — an indexed series, charts as lines),
 // 'timeseries' (a series on a run-relative elapsed-time axis), 'points' (independent

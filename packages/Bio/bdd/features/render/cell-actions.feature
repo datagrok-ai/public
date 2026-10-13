@@ -6,9 +6,11 @@ Feature: Sequence cell actions and panels
   panel, and a cell of a Monomer column the monomer itself. The Copy group comes from Bio's
   autostart, which the platform runs a few seconds after boot, so a fresh page waits for it.
 
-  Not translated: the md's "Get Region" cell action — the product calls it Extract Region and its
-  dialog is claimed in transform/convert; the Split to Monomers function editor — its OK path is
-  claimed in render/renderers.
+  Not translated here: the md's "Get Region" cell action — the product calls it Extract Region, and
+  its editor (the dialog with the sequence column and the region) is claimed through to its OK in
+  render/msa-header; the Split to Monomers function editor — its OK path is claimed in
+  render/renderers; the Annotations group of an annotated column's cell (Extract <region> as
+  Column) — in render/msa-header.
 
   Background:
     Given user is logged in

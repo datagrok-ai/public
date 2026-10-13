@@ -4,8 +4,8 @@ Feature: The substructure filter card and its search types
   substructure card on the molecule columns. Removing them with their close icons leaves no
   substructure card; Add Filter | Substructure Filter... with every column checked in its picker
   puts them back. Pyridine drawn on the Structure card keeps 17 rows and the header counter reads 1.
-  The card offers seven search types: Not contains splits the table into the other 83 rows, and
-  Contains again keeps the same 17 rows. What each search type keeps is tested in Chem
+  The card offers seven search types: Not contains keeps exactly the other 83 rows, the ones without
+  pyridine, so the two search types partition the table, and Contains again keeps the same 17 rows. What each search type keeps is tested in Chem
   src/tests/substructure-search-tests.ts ('substructure search: search types', 'substructure search: stereo agnostic').
 
   Background:
@@ -66,8 +66,10 @@ Feature: The substructure filter card and its search types
     Then the "Structure" filter card should offer search types "Contains, Included in, Exact, Stereo agnostic, Similar, Not contains, Not included in"
     When user picks search type "Not contains" in the "Structure" filter card
     Then 83 rows should pass the filter
+    And the filter should pass exactly the molecules of "Structure" column not containing "c1ccncc1"
     And the "search type of Structure" reading of filter panel should be "Not contains"
     When user picks search type "Contains" in the "Structure" filter card
     Then 17 rows should pass the filter
+    And the filter should pass exactly the molecules of "Structure" column containing "c1ccncc1"
     And the "search type of Structure" reading of filter panel should be "Contains"
     And no errors should have been logged

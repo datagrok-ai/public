@@ -1,8 +1,13 @@
 """Renders a guide manifest (`steps.json` + the PNGs a `BDD_GUIDE` run wrote) into guide.mp4,
 step-NN.png (the annotated picture of every step), steps.md, audit.png + audit.json, and with --gif
-also guide.gif and guide-thumb.png. Pillow does the drawing, ffmpeg the encoding (FFMPEG env,
+also guide.gif (made from the lossless frames), guide-thumb.png (the result) and guide-sheet.png
+(twelve frames of the GIF, for review). Pillow does the drawing, ffmpeg the encoding (FFMPEG env,
 PATH, the imageio-ffmpeg package, or Playwright's own build, which can only write WebM). The video
-and the stills are 1600×1000 with the caption strip: the page is filmed at 1080p and downsampled.
+and the stills are at most 1600×1000 with the caption strip: a 1080p page is downsampled, a small
+window is filmed at twice its density (the manifest's `scale`).
+
+--help makes a help-page GIF: no title card, caption strip or dimming, no zoom, the set-up (the
+Given steps) left out, a pause before the first action and a longer one on the result.
 
 The pointer goes where the page says it went, and never skips: every frame's pointer continues
 from the frame before, so an action starts where the one before it ended — a skip is an error,
@@ -10,8 +15,9 @@ not a frame. A press is marked where it landed, under the pointer's tip: a yello
 left button, a green one for the right. audit.png shows every press as the video shows it, and
 audit.json how far the mark's centre and the pointer's tip are from the press.
 
-    py tool/guide-render.py <scenario dir> [--gif] [--fps 30] [--hold 1.4] [--travel 0.7]
-        [--zoom 1.8] [--zoom-time 0.8] [--ffmpeg <path>] [--quiet]
+    py tool/guide-render.py <scenario dir> [--gif] [--help] [--fps 30] [--hold 1.4] [--travel 0.7]
+        [--zoom 1.8] [--zoom-time 0.8] [--gif-fps 12] [--colors 256] [--gif-width <px>] [--end-hold <s>]
+        [--ffmpeg <path>] [--quiet]
     py tool/guide-render.py --selftest <dir>      renders a synthetic guide there, and checks its audit
 """
 import glob
@@ -38,6 +44,7 @@ VIDEO_W, VIDEO_H = 1600, 1000   # the video and the stills, caption strip includ
 PULSE_S = 0.5   # how long a press ripples
 MAX_STEP_PX = 70   # the farthest the pointer moves between two frames, in pixels of a 1080p page: a longer way takes more frames
 AUDIT_TOLERANCE_PX = 2   # how far, in video pixels, a press mark's centre or the pointer's tip may sit from the press
+BEAT_S = 0.15   # how long a picture taken in the middle of a step (typing, a wheel notch) is shown
 
 
 def find_ffmpeg(explicit):
@@ -111,44 +118,51 @@ def is_small(box):
 
 
 class Renderer:
-    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8):
+    def __init__(self, folder, fps, hold, travel, zoom, zoom_time=0.8, help=False):
         self.folder = folder
         self.fps = fps
+        self.help = help
         self.hold = hold
         self.travel = travel
-        self.zoom = zoom
+        self.zoom = 1.0 if help else zoom
         self.zoom_time = zoom_time
         with open(os.path.join(folder, 'steps.json'), encoding='utf-8') as f:
             self.manifest = json.load(f)
-        # a guide framed to a part of the page (a sketcher's dialog: `frameTo` in guide.ts) shows that
-        # part alone: every picture is cut to it, and every point and box is moved into it
+        # the page records CSS pixels; the pictures have `scale` times as many. A guide framed to a part
+        # of the page (a sketcher's dialog: `frameTo` in guide.ts) shows that part alone: every picture is
+        # cut to it, and every point and box is moved into it
+        scale = self.manifest.get('scale') or 1
         self.frame_box = self.manifest.get('frame')
         if self.frame_box:
-            fx, fy = self.frame_box['x'], self.frame_box['y']
-            for step in self.manifest['steps']:
-                for box in [step.get('target')] + [leg.get('target') for leg in step.get('legs', [])]:
-                    if box:
-                        box['x'] -= fx
-                        box['y'] -= fy
-                for leg in step.get('legs', []):
-                    for p in leg.get('pointer', []):
-                        p['x'] -= fx
-                        p['y'] -= fy
-                        if p.get('box'):
-                            p['box']['x'] -= fx
-                            p['box']['y'] -= fy
-        self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup']
+            self.frame_box = {k: round(v * scale) for k, v in self.frame_box.items()}
+        fx, fy = (self.frame_box['x'], self.frame_box['y']) if self.frame_box else (0, 0)
+
+        def place(box):
+            box.update(x=box['x'] * scale - fx, y=box['y'] * scale - fy, width=box['width'] * scale, height=box['height'] * scale)
+        for step in self.manifest['steps']:
+            for box in [step.get('target')] + [leg.get('target') for leg in step.get('legs', [])]:
+                if box:
+                    place(box)
+            for leg in step.get('legs', []):
+                for p in leg.get('pointer', []):
+                    p['x'] = p['x'] * scale - fx
+                    p['y'] = p['y'] * scale - fy
+                    if p.get('box'):
+                        place(p['box'])
+        self.scale = scale
+        self.steps = [s for s in self.manifest['steps'] if s['kind'] != 'setup' and not (help and self.is_given(s))]
         first = self._image(self.steps[0]['before'] if self.steps else self.manifest['steps'][0]['before'])
         self.w, self.h = first.width & ~1, first.height & ~1
-        self.s = self.h / 1080
+        # marks and the pointer keep their size on the page: twice the pixels where the page has twice the density
+        self.s = max(self.h / 1080, scale)
         self.big = load_font(max(20, self.h // 18))
-        self.cursor = cursor_sprite(max(1.0, self.h / 700))
+        self.cursor = cursor_sprite(max(1.0, self.h / 700, 1.2 * scale))
         # the caption sits above the page: nothing of the page is covered, and a player's timeline
         # lands on the bottom edge. The page keeps the pixels it was filmed at (every box, pointer
         # and zoom is in them); the strip is as tall as makes page plus strip the video's aspect
         # (120 px over a 1080p page), and the composed frame is downsampled to the video size —
         # never upsampled, so a small capture stays as it is
-        self.bar_h = max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
+        self.bar_h = 0 if help else max(int(self.h * 0.085), round(self.w * VIDEO_H / VIDEO_W) - self.h) & ~1
         self.out_h = self.h + self.bar_h
         scale = min(1.0, VIDEO_W / self.w, VIDEO_H / self.out_h)
         self.video = (int(self.w * scale) & ~1, int(self.out_h * scale) & ~1)
@@ -158,6 +172,14 @@ class Renderer:
         self.drawn = None
         self.frame_no = 0
         self.presses = []
+
+    def is_given(self, step):
+        """A set-up step: a Given, or an And or But after one."""
+        kind = step['keyword']
+        for s in self.manifest['steps'][:self.manifest['steps'].index(step) + 1]:
+            if s['keyword'] not in ('And', 'But', '*'):
+                kind = s['keyword']
+        return kind == 'Given'
 
     def _image(self, name):
         img = Image.open(os.path.join(self.folder, name)).convert('RGB')
@@ -169,7 +191,9 @@ class Renderer:
         return img
 
     def spotlight(self, img, box, color=ACCENT):
-        """The frame with everything but the box dimmed and the box outlined."""
+        """The frame with everything but the box dimmed and the box outlined — none in a help GIF."""
+        if self.help:
+            return img
         pad = 6
         x0, y0 = max(0, box['x'] - pad), max(0, box['y'] - pad)
         x1, y1 = min(self.w, box['x'] + box['width'] + pad), min(self.h, box['y'] + box['height'] + pad)
@@ -183,6 +207,8 @@ class Renderer:
         return out.convert('RGB')
 
     def caption_layer(self, step, index, total):
+        if self.bar_h == 0:
+            return None
         layer = Image.new('RGBA', (self.w, self.bar_h), BAR)
         d = ImageDraw.Draw(layer)
         pad = self.bar_h // 3
@@ -377,7 +403,7 @@ class Renderer:
             yield image
 
     def drag_frames(self, lit, target, path, button, caption):
-        """The pointer along a drag, the button held: each picture taken on the way fades in as the
+        """The pointer along a drag, the button held: each picture taken on the way is cut in as the
         pointer reaches it, so what the drag draws grows under the pointer. Returns the last one."""
         keys = [p for p in path if p.get('shot')]
         if not path[-1].get('shot'):
@@ -393,8 +419,7 @@ class Renderer:
             for i in range(n):
                 t = ease((i + 1) / n)
                 pos = (start[0] + (dest[0] - start[0]) * t, start[1] + (dest[1] - start[1]) * t)
-                mix = max(0.0, (t - 0.6) / 0.4) if drawn is not None else 0.0
-                yield self.frame(Image.blend(lit, drawn, mix) if mix > 0 else lit, pos, held=button, caption=caption)
+                yield self.frame(drawn if drawn is not None and i == n - 1 else lit, pos, held=button, caption=caption)
             if drawn is not None:
                 lit = drawn
         yield from self.hold_frames(0.5, lit, self.cur, caption=caption)
@@ -438,6 +463,14 @@ class Renderer:
             while i < len(events):
                 e = events[i]
                 at = (e['x'], e['y'])
+                # a picture taken while the step went on (text typed so far, a wheel notch): cut in, the pointer still
+                if e['type'] == 'still':
+                    shot = self._image(e['shot'])
+                    lit = self.spotlight(shot, target) if target else shot
+                    lit_up = True
+                    yield from self.hold_frames(BEAT_S, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
+                    i += 1
+                    continue
                 if e['type'] == 'up' or (e['type'] == 'move' and e.get('held')):
                     i += 1
                     continue
@@ -477,24 +510,28 @@ class Renderer:
         # the picture of the step for steps.md: the last stop lit, and where the pointer acted on it
         (still if still is not None else self.compose(lit, self.cur, caption=caption)).save(still_path)
         yield from self.hold_frames(0.3, lit, self.cur, zoom=zoom, anchor=zoom_at, caption=caption)
-        # the page after the step: the light moves over to it, zooming out
+        # the page after the step: zooming out over the step's picture, then cut to the page after it,
+        # whose light fades — a cross-fade of two pictures of a changed page shows both at once
+        if zoom > 1:
+            yield from self.zoom_frames(lit, zoom_at, zoom, 1.0, caption)
         lit_after = self.spotlight(after, target) if target else after
-        n = int((self.zoom_time if zoom > 1 else 0.35) * fps)
+        n = int(0.35 * fps) if lit_after is not after else 0
         for i in range(n):
-            t = ease((i + 1) / n)
-            z = zoom + (1 - zoom) * t
-            base = Image.blend(lit, lit_after, min(1.0, t * 2)) if t < 0.5 else Image.blend(lit_after, after, (t - 0.5) * 2)
-            yield self.frame(base, self.cur, zoom=z, anchor=zoom_at, caption=caption)
+            yield self.frame(Image.blend(lit_after, after, ease((i + 1) / n)), self.cur, caption=caption)
         yield from self.hold_frames(self.hold, after, self.cur, caption=caption)
 
-    def frames(self):
+    def frames(self, end_hold):
         if not self.steps:
             return
-        yield from self.title_frames(self._image(self.steps[0]['before']))
+        first = self._image(self.steps[0]['before'])
+        if self.help:
+            yield from self.hold_frames(1.0, first, self.cur)
+        else:
+            yield from self.title_frames(first)
         total = len(self.steps)
         for i, step in enumerate(self.steps, 1):
             yield from self.step_frames(step, i, total)
-        yield from self.hold_frames(0.8, self._image(self.steps[-1]['after']), self.cur)
+        yield from self.hold_frames(end_hold, self._image(self.steps[-1]['after']), self.cur)
 
     def write_markdown(self):
         lines = [f"# {self.manifest['scenario']}", '']
@@ -577,18 +614,26 @@ class Renderer:
                font=font, fill=(160, 0, 0) if verdict else (90, 90, 90))
         return tile
 
-    def encode(self, ffmpeg, gif):
+    def encode(self, ffmpeg, gif, gif_fps=12, colors=256, gif_width=None, end_hold=0.8):
         h264 = has_encoder(ffmpeg, 'libx264')
         video = os.path.join(self.folder, 'guide.mp4' if h264 else 'guide.webm')
         codec = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'] \
             if h264 else ['-c:v', 'libvpx', '-b:v', '2M', '-pix_fmt', 'yuv420p']
         cmd = [ffmpeg, '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', f'{self.video[0]}x{self.video[1]}',
                '-r', str(self.fps), '-i', '-', *codec, video]
+        # the GIF is made from the frames themselves, at its own rate, not from the compressed video
+        frames_dir = os.path.join(self.folder, 'gif-frames')
+        if gif:
+            shutil.rmtree(frames_dir, ignore_errors=True)
+            os.makedirs(frames_dir)
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-        count = 0
+        count = kept = 0
         try:
-            for frame in self.frames():
+            for frame in self.frames(end_hold):
                 proc.stdin.write(frame.tobytes())
+                if gif and count * gif_fps // self.fps >= kept:
+                    frame.save(os.path.join(frames_dir, f'{kept:05d}.png'), compress_level=1)
+                    kept += 1
                 count += 1
         finally:
             proc.stdin.close()
@@ -598,21 +643,38 @@ class Renderer:
         outputs = [video]
         if gif and self.steps:
             out = os.path.join(self.folder, 'guide.gif')
-            # a docs GIF: ten frames a second at 880 px, no dithering (which defeats GIF's run-length
-            # compression on flat UI colors) — a seven-step guide lands around a megabyte
-            width = min(880, self.video[0]) & ~1
-            scale = f'fps=10,scale={width}:-2:flags=lanczos'
+            width = min(gif_width or self.video[0], self.video[0]) & ~1
+            frames = ['-framerate', str(gif_fps), '-i', os.path.join(frames_dir, '%05d.png')]
+            scale = f'scale={width}:-2:flags=lanczos'
             palette = os.path.join(self.folder, 'palette.png')
-            subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-i', video, '-vf',
-                            f'{scale},palettegen=max_colors=96:stats_mode=diff', palette], check=True)
+            # no dithering: it defeats GIF's run-length compression on flat UI colours
+            subprocess.run([ffmpeg, '-y', '-loglevel', 'error', *frames, '-vf',
+                            f'{scale},palettegen=max_colors={colors}:stats_mode=diff', palette], check=True)
             with_press_colours(palette)
-            subprocess.run([ffmpeg, '-y', '-loglevel', 'error', '-i', video, '-i', palette, '-lavfi',
+            subprocess.run([ffmpeg, '-y', '-loglevel', 'error', *frames, '-i', palette, '-lavfi',
                             f'[0:v]{scale}[v];[v][1:v]paletteuse=dither=none:diff_mode=rectangle', out], check=True)
             os.remove(palette)
+            # the thumbnail is the result, without the strip, at the GIF's size
+            result = self._image(self.steps[-1]['after'])
             thumb = os.path.join(self.folder, 'guide-thumb.png')
-            shutil.copyfile(os.path.join(self.folder, 'step-01.png'), thumb)
-            outputs += [out, thumb]
+            result.resize((width, round(result.height * width / result.width)), Image.LANCZOS).save(thumb)
+            sheet = os.path.join(self.folder, 'guide-sheet.png')
+            self.contact_sheet(frames_dir, kept, sheet)
+            shutil.rmtree(frames_dir, ignore_errors=True)
+            self.gif = {'path': out, 'width': width, 'frames': kept, 'seconds': round(kept / gif_fps, 1),
+                        'kb': round(os.path.getsize(out) / 1024)}
+            outputs += [out, thumb, sheet]
         return outputs, count
+
+    def contact_sheet(self, frames_dir, count, path, n=12, cols=4, tile_w=400):
+        """Twelve frames of the GIF, evenly spaced, for a review at a glance."""
+        picks = sorted({round(i * (count - 1) / (n - 1)) for i in range(n)}) if count > 1 else [0]
+        tiles = [Image.open(os.path.join(frames_dir, f'{i:05d}.png')).convert('RGB') for i in picks]
+        tile_h = round(tiles[0].height * tile_w / tiles[0].width)
+        sheet = Image.new('RGB', (cols * tile_w, math.ceil(len(tiles) / cols) * tile_h), (255, 255, 255))
+        for k, tile in enumerate(tiles):
+            sheet.paste(tile.resize((tile_w, tile_h), Image.LANCZOS), ((k % cols) * tile_w, (k // cols) * tile_h))
+        sheet.save(path)
 
 
 def with_press_colours(path):
@@ -707,8 +769,14 @@ def main(argv):
 
     gif = flag('--gif')
     quiet = flag('--quiet')
+    help = flag('--help')
     fps = int(opt('--fps', 30))
-    hold = float(opt('--hold', 1.4))
+    hold = float(opt('--hold', 0.9 if help else 1.4))
+    gif_fps = int(opt('--gif-fps', 12))
+    colors = int(opt('--colors', 256))
+    gif_width = opt('--gif-width')
+    gif_width = int(gif_width) if gif_width else None if help else 880
+    end_hold = float(opt('--end-hold', 2.0 if help else 0.8))
     travel = float(opt('--travel', 0.7))
     zoom = float(opt('--zoom', 1.8))
     zoom_time = float(opt('--zoom-time', 0.8))
@@ -724,9 +792,9 @@ def main(argv):
     if not ffmpeg:
         print('guide-render: no ffmpeg — py -m pip install imageio-ffmpeg, or set FFMPEG', file=sys.stderr)
         return 3
-    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time)
+    renderer = Renderer(args[0], fps, hold, travel, zoom, zoom_time, help)
     renderer.write_markdown()
-    outputs, count = renderer.encode(ffmpeg, gif)
+    outputs, count = renderer.encode(ffmpeg, gif, gif_fps, colors, gif_width, end_hold)
     report = renderer.write_audit()
     # a press marked or pointed at away from where it landed is a rendering error; one outside the
     # element its stop lit is the recording's (the step lit one element and clicked another)
@@ -740,7 +808,14 @@ def main(argv):
     for p in off + astray:
         print(f"guide-render: step {p['step']} \"{p['caption']}\": {p['button']} press at ({p['x']:.0f}, {p['y']:.0f}) "
               f"on {p['on']}: mark {p['mark_off']} px, tip {p['tip_off']} px, on the lit element: {p['inside']}", file=sys.stderr)
-    return 4 if off and test_dir else 0
+    gif_info = getattr(renderer, 'gif', None)
+    if gif_info and not quiet:
+        print(f"gif: {gif_info['width']} px wide, {gif_info['frames']} frames, {gif_info['seconds']} s, {gif_info['kb']} KB")
+    # a GIF for a help page shows a small window at twice its density; fewer pixels would be upscaled by the page
+    soft = help and renderer.scale < 2
+    if soft:
+        print(f'guide-render: the pictures are {renderer.scale}x the window, not 2x: the help GIF would be soft', file=sys.stderr)
+    return 4 if off or soft else 0
 
 
 if __name__ == '__main__':

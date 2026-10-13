@@ -9,6 +9,7 @@ sub_features_covered: [views.queries]
 import {test} from '@playwright/test';
 import '../../bindings/biostructure.js';
 import '../../bindings/connections.js';
+import '../../bindings/file-formats.js';
 import '../../bindings/flow.js';
 import '../../bindings/grid.js';
 import '../../bindings/tile-viewer.js';

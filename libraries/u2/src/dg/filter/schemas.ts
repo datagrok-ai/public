@@ -98,7 +98,8 @@ export class FilterSchemas {
   }
 
   /** The registry's row properties of `'<schema>.<table>'`; a ref column's semType is its
-   * target address. Values come from the table's `categories` facet under the typed text. */
+   * target address. Values come from the table's `categories` facet under the typed text — on a
+   * `'basic'` backend (`support.filters`) for string and ref columns only, the ones it searches. */
   static async forDomainTable(address: string): Promise<FilterSchema> {
     const registry = grok.dapi.domains.registry;
     const properties = (await registry.rowProperties(address)).map((p) => {
@@ -110,12 +111,17 @@ export class FilterSchemas {
     return {
       properties,
       values: async (prop, query) => {
-        const {facets} = await grok.dapi.domains.table(address).facets({facets: [{
+        const table = grok.dapi.domains.table(address);
+        const kind = Filters.kindOf(prop);
+        if (kind !== Filters.KIND.STRING && kind !== Filters.KIND.REF &&
+            (await table.access()).support.filters === 'basic')
+          return [];
+        const {facets} = await table.facets({facets: [{
           id: 'v', kind: 'categories', column: prop.name, search: query, limit: VALUES_LIMIT}]});
         return facets.v.categories.map((c): FilterValueItem => ({
           value: prop.ref ? ref(prop.ref, c.value, c.display) : c.value,
           label: c.display ?? String(c.value),
-          count: c.total,
+          ...(typeof c.total === 'number' ? {count: c.total} : {}),
         }));
       },
       resolveRef: (prop) => FilterSchemas.forDomainTable(prop.ref!),

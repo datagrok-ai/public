@@ -2,6 +2,16 @@
 
 ## v.next
 
+* Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
+* Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
+* Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
+* Run compare: Index columns convert through unit mappings too (`1 h = 60 min`), and the Mappings link moved to the Index columns header
+* Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection
+* Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built
+* Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours
+* Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
+* Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
+* Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step
 * RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
 * TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation

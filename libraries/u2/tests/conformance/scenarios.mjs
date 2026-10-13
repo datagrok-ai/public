@@ -54,11 +54,39 @@ export const scenarios = [
       const support = table.support;
       t.ok(support !== undefined, 'the backend declares what it can do');
       for (const [member, flag] of [['restore', 'restore'], ['ancestors', 'ancestors'],
-        ['updateWhere', 'writes'], ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']]) {
+        ['updateWhere', 'updateWhere'], ['batch', 'writes'], ['probe', 'probe'], ['audit', 'audit']]) {
         t.equal(table[member] !== undefined, support[flag] === true,
           `${member} is installed exactly when support.${flag} says so`);
       }
+      t.equal(table.validate !== undefined, support.batch.validate === true,
+        'validate is installed exactly when support.batch.validate says so');
       t.ok(support.systemColumns.includes('id'), 'the projection always carries the id');
+    },
+  },
+  {
+    name: 'support: the storage switches are declared with their value types, never guessed',
+    requires: [],
+    seed: [],
+    async run(table, ids, t) {
+      const support = table.support;
+      for (const flag of ['updateWhere', 'captions', 'transaction'])
+        t.equal(typeof support[flag], 'boolean', `support.${flag} is a boolean`);
+      t.ok(['version', 'expected', 'none'].includes(support.concurrency),
+        `support.concurrency is one of the three guards: ${support.concurrency}`);
+      t.ok(['full', 'basic'].includes(support.filters), `support.filters is a grammar profile: ${support.filters}`);
+      t.deepEqual(Object.keys(support.batch).sort(), ['partial', 'skipDuplicates', 'upsert', 'validate'],
+        'support.batch names its four options');
+      for (const option of Object.values(support.batch))
+        t.equal(typeof option, 'boolean', 'every batch option is a boolean');
+    },
+  },
+  {
+    name: 'info: how a row is spelled in a URL is declared, never guessed',
+    requires: [],
+    seed: [],
+    async run(table, ids, t) {
+      t.equal(['id', 'businessKey'].includes(table.info.rowAddress), true,
+        `info.rowAddress says how a row is spelled in a URL: ${table.info.rowAddress}`);
     },
   },
   {
