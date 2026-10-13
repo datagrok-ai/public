@@ -70,10 +70,8 @@ export function compatibleTargetsFor(
     return [];
   if (anchor.kind === 'scalar')
     return targets.filter((target) => target.kind === 'scalar');
-  const lineIndexed = anchor.bindings.every((b) => {
-    const type = getColumnType(b.entryId, b.tablePath, b.indexColumnName);
-    return type != null && (isNumericType(type) || type === 'datetime');
-  });
+  const lineIndexed = anchor.bindings.every((b) =>
+    isTimeIndexType(getColumnType(b.entryId, b.tablePath, b.indexColumnName)));
   if (!lineIndexed)
     return [];
   return targets.filter((target): target is ColumnTarget => {
@@ -212,9 +210,9 @@ export function resolveAxisModes(
   return map;
 }
 
-/** Require-all gate: a target charts in the given mode only when every bound table is configured. */
+/** Require-all gate: bindings chart in the given mode only when every bound table is configured. */
 export function targetAxisMode(
-  target: ColumnTarget,
+  target: {bindings: {entryId: string, tablePath: string}[]},
   axisModes: AxisConfigMap,
   mode: 'timeseries' | 'points',
 ): 'full' | 'partial' | 'none' {

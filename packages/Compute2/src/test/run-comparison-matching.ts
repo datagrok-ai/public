@@ -306,6 +306,20 @@ category('RunComparison: name mappings', () => {
 });
 
 category('RunComparison: candidates', () => {
+  test('candidates pass the same gate as clustering', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'm'}]}]),
+      makeEntry('b', [], [
+        {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'm'}]},
+        {path: 'u', columns: [{name: 'step', type: 'int'}, {name: 'height', units: 'm'}]},
+        {path: 'v', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'ft'}]},
+      ]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time', u: 'step', v: 'time'}}));
+    expect(targets.length, 1);
+    expectArray(targets[0].candidates.map((c) => `${c.binding.entryId}/${c.binding.tablePath}`), ['a/t', 'b/t']);
+  });
+
   test('other compatible columns attach as disabled candidates', async () => {
     const entries = [
       makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),

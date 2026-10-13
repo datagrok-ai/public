@@ -3,10 +3,10 @@
 
 import * as DG from 'datagrok-api/dg';
 import {
-  ComparisonEntry, ComparisonTarget, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType,
+  ComparisonEntry, ComparisonTarget, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType, isTimeIndexType,
   TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
-import {resolveDisplayUnit, pickAutoUnit} from './selection';
+import {resolveDisplayUnit, pickAutoUnit, targetAxisMode} from './selection';
 
 // appends (2), (3)... while the name is taken; "claim" — mutates the set,
 // registering the result so successive calls stay collision-free
@@ -128,6 +128,9 @@ function getParticipating(targets: ColumnTarget[], entries: ComparisonEntry[]): 
   });
 }
 
+const allInMode = (participating: ParticipatingRun[], axisModes: AxisConfigMap, mode: 'timeseries' | 'points') =>
+  targetAxisMode({bindings: participating.map(({binding}) => binding)}, axisModes, mode) === 'full';
+
 type IndexAxis =
   | {kind: 'key' | 'datetime' | 'float'}
   | {kind: 'elapsed', unit: TimeUnit | 'auto'};
@@ -139,10 +142,8 @@ function getIndexAxis(participating: ParticipatingRun[], axisModes?: AxisConfigM
   const indexTypes = participating.map(({entry, binding}) =>
     entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
   const isDatetimeOnly = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
-  const timeChartable = indexTypes.every((type) =>
-    type != null && (isNumericType(type) || type === DG.TYPE.DATE_TIME));
-  const configured = axisModes != null && participating.every(({binding}) =>
-    axisModes.get(binding.entryId)?.get(binding.tablePath)?.mode === 'timeseries');
+  const timeChartable = indexTypes.every(isTimeIndexType);
+  const configured = axisModes != null && allInMode(participating, axisModes, 'timeseries');
   if (configured && timeChartable) {
     return {
       kind: 'elapsed',
@@ -177,6 +178,16 @@ const makeIndexColumn = (name: string, list: any[], axis: IndexAxis) => {
   return DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, toFloatValues(list));
 };
 
+/** Column values as primitives: nulls for missing cells, datetimes as epoch ms. */
+export function columnPrimitives(col: DG.Column): unknown[] {
+  const values = new Array(col.length);
+  for (let i = 0; i < col.length; i++) {
+    const value = col.isNone(i) ? null : col.get(i);
+    values[i] = value instanceof Object ? value.valueOf() : value;
+  }
+  return values;
+}
+
 // per-run index values in milliseconds: datetime via epoch ms, numeric scaled by its
 // declared units; nulls preserved
 function indexMsValues(
@@ -184,20 +195,10 @@ function indexMsValues(
   configs: AxisConfigMap,
 ): (number | null)[] {
   const col = entry.dataFrames.get(binding.tablePath)!.getCol(binding.indexColumnName);
-  const isDatetime = col.type === DG.TYPE.DATE_TIME;
   const units = configs.get(binding.entryId)?.get(binding.tablePath)?.units;
-  const scale = TIME_UNIT_MS[units ?? 's'];
-  const values: (number | null)[] = new Array(col.length);
-  for (let i = 0; i < col.length; i++) {
-    if (col.isNone(i)) {
-      values[i] = null;
-      continue;
-    }
-    const value = col.get(i);
-    // Number(): bigint columns return BigInt values, which cannot mix with number arithmetic
-    values[i] = isDatetime ? (value as {valueOf(): number}).valueOf() : Number(value) * scale;
-  }
-  return values;
+  const scale = col.type === DG.TYPE.DATE_TIME ? 1 : TIME_UNIT_MS[units ?? 's'];
+  // Number(): bigint values cannot mix with number arithmetic
+  return columnPrimitives(col).map((value) => value == null ? null : Number(value) * scale);
 }
 
 /**
@@ -223,9 +224,7 @@ export function buildColumnComparison(
   const isKeyIndex = axis.kind === 'key';
   // same require-all shape as the elapsed axis; a mixed numeric/datetime index falls
   // back to the key axis above, which a scatterplot cannot chart
-  const isScatter = axisModes != null && !isKeyIndex &&
-    participating.every(({binding}) =>
-      axisModes.get(binding.entryId)?.get(binding.tablePath)?.mode === 'points');
+  const isScatter = axisModes != null && !isKeyIndex && allInMode(participating, axisModes, 'points');
 
   // elapsed axis: convert every run's index to ms, subtract its own start,
   // and express the result in one shared display unit

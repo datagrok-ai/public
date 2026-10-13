@@ -7,7 +7,7 @@ import {
 import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
 import {
-  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildComparison,
+  buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildComparison, columnPrimitives,
 } from '../components/RunComparison/comparison-builders';
 
 // Regression: run/index columns must be created with an enforced string type.
@@ -825,5 +825,23 @@ category('RunComparison: comparison dispatch', () => {
     if (result.kind !== 'column')
       throw new Error(`expected column, got ${result.kind}`);
     expectArray(result.valueColumnNames, ['x']);
+  });
+});
+
+category('RunComparison: column primitives', () => {
+  test('missing cells are null, datetimes epoch ms, bigints and strings as is', async () => {
+    const day = dayjs('2026-01-02T03:04:05Z');
+    const floats = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'f', [1.5, null]);
+    const dates = DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'd', [day, null]);
+    const bigints = DG.Column.fromBigInt64Array('b', new BigInt64Array([BigInt(7)]));
+    const strings = DG.Column.fromList(DG.COLUMN_TYPE.STRING, 's', ['x', '']);
+    const [f, d, b, s] = [floats, dates, bigints, strings].map(columnPrimitives);
+    expect(f[0], 1.5);
+    expect(f[1] === null, true);
+    expect(d[0], day.valueOf());
+    expect(d[1] === null, true);
+    expect(b[0] === BigInt(7), true);
+    expect(s[0], 'x');
+    expect(s[1] === null, true);
   });
 });

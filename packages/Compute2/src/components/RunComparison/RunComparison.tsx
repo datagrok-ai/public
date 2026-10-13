@@ -14,7 +14,7 @@ import {History} from '../History/History';
 import {
   ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
   ComparisonEntry, EntrySourceKind, NameMapping, UnitMapping, candidateId,
-  AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
+  AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType, isNumericType,
 } from './types';
 import {
   matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter,
@@ -29,7 +29,7 @@ import {
   TargetSelection, EMPTY_TARGET_SELECTION, isCharted, clickTarget, setMultiMode, reconcileTargets, pruneOverrides,
 } from './target-selection';
 import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
-import {buildComparison} from './comparison-builders';
+import {buildComparison, columnPrimitives} from './comparison-builders';
 import {showMappingsDialog} from './mappings-dialog';
 import {ScalarChartType, chartSpec} from './chart-spec';
 import './RunComparison.css';
@@ -275,17 +275,9 @@ export const RunComparison = Vue.defineComponent({
     const indexFilter = Vue.ref('');
     const targetFilter = Vue.ref('');
 
-    // dayjs and other value objects collapse to primitives so cross-run compares work
     const columnValues = (entryId: string, tablePath: string, columnName: string) => {
       const col = entriesById.value.get(entryId)?.dataFrames.get(tablePath)?.col(columnName);
-      if (!col)
-        return undefined;
-      const values = new Array(col.length);
-      for (let i = 0; i < col.length; i++) {
-        const value = col.isNone(i) ? null : col.get(i);
-        values[i] = value instanceof Object ? value.valueOf() : value;
-      }
-      return values;
+      return col ? columnPrimitives(col) : undefined;
     };
 
     const equalTargetKeys = Vue.computed(() => {
@@ -467,8 +459,7 @@ export const RunComparison = Vue.defineComponent({
 
     const suggestedIndex = (columns: {name: string, type: string}[]) =>
       columns.find((col) => col.type === DG.COLUMN_TYPE.DATE_TIME)?.name ??
-      columns.find((col) => col.type === DG.COLUMN_TYPE.FLOAT || col.type === DG.COLUMN_TYPE.INT ||
-        col.type === DG.COLUMN_TYPE.BIG_INT)?.name;
+      columns.find((col) => isNumericType(col.type))?.name;
 
     const renderColumnSelect = (
       current: string,

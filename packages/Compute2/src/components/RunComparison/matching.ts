@@ -177,6 +177,22 @@ interface Cluster<P> {
   entryIds: Set<string>;
 }
 
+function seedMatch<P>(
+  cluster: Cluster<P>, item: ClusterItem<P>, aliases?: Map<string, number>, convert?: UnitConverter,
+): {confidence: MatchConfidence, units: UnitsCompatibility} | null {
+  const seed = cluster.items[0];
+  const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
+  if (!confidence)
+    return null;
+  const units = unitsCompatibility(seed.units, item.units, convert);
+  if (units === 'mismatch')
+    return null;
+  if (seed.indexColumnName && item.indexColumnName &&
+    !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
+    return null;
+  return {confidence, units};
+}
+
 function bestCluster<P>(
   clusters: Cluster<P>[], item: ClusterItem<P>, allowFuzzy: boolean, aliases?: Map<string, number>,
   convert?: UnitConverter,
@@ -185,14 +201,8 @@ function bestCluster<P>(
   for (const cluster of clusters) {
     if (cluster.entryIds.has(item.entryId))
       continue;
-    const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
+    const confidence = seedMatch(cluster, item, aliases, convert)?.confidence;
     if (!confidence || (confidence === 'fuzzy' && !allowFuzzy))
-      continue;
-    if (unitsCompatibility(cluster.items[0].units, item.units, convert) === 'mismatch')
-      continue;
-    const seedIndex = cluster.items[0].indexColumnName;
-    if (seedIndex && item.indexColumnName &&
-      !nameMatchConfidence(seedIndex, item.indexColumnName, aliases))
       continue;
     const score = nameSimilarity(cluster.canonicalName, item.name) +
       (cluster.canonicalSecondary && item.secondaryName ?
@@ -358,17 +368,12 @@ export function matchColumnTargets(
     const seed = cluster.items[0];
     const candidates: ColumnCandidate[] = [];
     for (const item of items) {
-      const confidence = nameMatchConfidence(cluster.canonicalName, item.name, aliases);
-      if (!confidence)
+      const match = seedMatch(cluster, item, aliases, convert);
+      if (!match)
         continue;
-      const units = unitsCompatibility(seed.units, item.units, convert);
-      if (units === 'mismatch')
-        continue;
+      const {confidence, units} = match;
       const factor = conversionFactor(item.units, seed.units, convert);
       const indexFactor = conversionFactor(item.indexUnits, seed.indexUnits, convert);
-      if (seed.indexColumnName && item.indexColumnName &&
-        !nameMatchConfidence(seed.indexColumnName, item.indexColumnName, aliases))
-        continue;
       const auto = members.has(item);
       // raw items join every cluster whose name they share (up to normalization) — but a
       // fuzzy guess is not confident enough to become the run's pick by default
