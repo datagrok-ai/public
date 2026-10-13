@@ -13,7 +13,7 @@ import {getModelFilter} from '@datagrok-libraries/compute-utils/model-catalog/sr
 import {History} from '../History/History';
 import {
   ComparisonTarget, ColumnTarget, ColumnCandidate, CandidateOverrides, MatchConfidence,
-  ComparisonEntry, EntrySourceKind, NameMapping, UnitMapping, RUN_COLUMN, candidateId,
+  ComparisonEntry, EntrySourceKind, NameMapping, UnitMapping, candidateId,
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
 import {
@@ -32,6 +32,7 @@ import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../p
 import {
   buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildMultiColumnComparison,
 } from './comparison-builders';
+import {Comparison, ScalarChartType, chartSpec} from './chart-spec';
 import './RunComparison.css';
 
 // chip styling lives in RunComparison.css (c2-comparison-badge + these modifiers)
@@ -322,7 +323,7 @@ export const RunComparison = Vue.defineComponent({
     const selectedTarget = Vue.computed(() =>
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
 
-    const scalarChartType = Vue.ref<'radar' | 'pcplot'>('radar');
+    const scalarChartType = Vue.ref<ScalarChartType>('radar');
     const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
       .some((f) => f.friendlyName === 'Radar');
 
@@ -505,7 +506,7 @@ export const RunComparison = Vue.defineComponent({
     const gaps = Vue.computed(() => multiMode.value && selectedTarget.value ?
       selectionGaps(selectedTargets(selectedTarget.value)) : new Map<string, string[]>());
 
-    const comparison = Vue.computed(() => {
+    const comparison = Vue.computed<Comparison | null>(() => {
       const target = selectedTarget.value;
       if (!target || entries.value.length < 2)
         return null;
@@ -539,13 +540,8 @@ export const RunComparison = Vue.defineComponent({
       return result ? Vue.markRaw({kind: 'column' as const, target, ...result}) : null;
     });
 
-    // a 2-axis radar degenerates to a line; force the PC plot (a slopegraph) until a 3rd value is added
-    const radarEligible = Vue.computed(() => {
-      const current = comparison.value;
-      return radarAvailable && current?.kind === 'multi-scalar' && current.valueColumnNames.length >= 3;
-    });
-    const effectiveScalarChartType = Vue.computed(() =>
-      radarEligible.value ? scalarChartType.value : 'pcplot');
+    const currentChartSpec = Vue.computed(() =>
+      chartSpec(comparison.value, selectedTarget.value != null, scalarChartType.value, radarAvailable));
 
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
@@ -945,126 +941,19 @@ export const RunComparison = Vue.defineComponent({
     };
 
     const renderComparison = () => {
-      const currentComparison = comparison.value;
-      if (!selectedTarget.value)
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>Select what to compare above</div>;
-      if (!currentComparison || currentComparison.chartDf.rowCount === 0) {
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
-          Nothing to show: no data points across the selected runs
-        </div>;
-      }
-      // multi-value needs a line-chartable index (suggestions are gated on it), but an index
-      // switched to a string column after selection would land the frame on a line chart
-      if (currentComparison.kind === 'column' && currentComparison.isKeyIndex &&
-        'valueColumnNames' in currentComparison) {
-        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>
-          Multiple values cannot chart over a categorical index — pick a numeric or datetime
-          index, or select a single value
-        </div>;
-      }
-      const chartMinHeight = currentComparison.kind === 'multi-scalar' ? 300 :
-        currentComparison.kind === 'column' && currentComparison.isScatter ? 300 :
-          'valueColumnNames' in currentComparison ?
-            250 * Math.max(1, (currentComparison.valueColumnNames as string[]).length) : 250;
-      const effectiveChartHeight = Math.max(chartMinHeight, chartHeight.value);
-      const chartStyle = {width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'};
-      let chart;
-      if (currentComparison.kind === 'multi-scalar') {
-        chart = effectiveScalarChartType.value === 'radar' ?
-          <Viewer
-            type='Radar'
-            dataFrame={currentComparison.chartDf}
-            style={chartStyle}
-            onViewerChanged={onChartViewerChanged}
-            options={{
-              valuesColumnNames: currentComparison.valueColumnNames,
-              colorColumnName: RUN_COLUMN,
-              showCurrentRow: false,
-            }}
-          /> :
-          <Viewer
-            type={DG.VIEWER.PC_PLOT}
-            dataFrame={currentComparison.chartDf}
-            style={chartStyle}
-            onViewerChanged={onChartViewerChanged}
-            options={{
-              columnNames: currentComparison.valueColumnNames,
-              colorColumnName: RUN_COLUMN,
-            }}
-          />;
-      } else if (currentComparison.kind === 'scalar') {
-        chart = <Viewer
-          type={DG.VIEWER.BAR_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            valueColumnName: currentComparison.valueColumnName,
-            valueAggrType: 'avg',
-            splitColumnName: RUN_COLUMN,
-          }}
-        />;
-      } else if (currentComparison.isKeyIndex) {
-        chart = <Viewer
-          type={DG.VIEWER.BAR_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            valueColumnName: currentComparison.valueColumnName,
-            valueAggrType: 'avg',
-            splitColumnName: currentComparison.indexColumnName,
-            stackColumnName: RUN_COLUMN,
-          }}
-        />;
-      } else if (currentComparison.isScatter) {
-        // color: value name (multi-value melt) > split > Run; run identity moves to
-        // marker shapes whenever color is taken
-        const melted = currentComparison.melted;
-        const splitColumnName = currentComparison.splitColumnName;
-        chart = <Viewer
-          type={DG.VIEWER.SCATTER_PLOT}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={ melted ? {
-            xColumnName: currentComparison.indexColumnName,
-            yColumnName: melted.valueColumnName,
-            colorColumnName: melted.seriesColumnName,
-            markersColumnName: RUN_COLUMN,
-          } : {
-            xColumnName: currentComparison.indexColumnName,
-            yColumnName: currentComparison.valueColumnName,
-            colorColumnName: splitColumnName ?? RUN_COLUMN,
-            ...splitColumnName ? {markersColumnName: RUN_COLUMN} : {},
-          }}
-        />;
-      } else {
-        const yColumnNames = 'valueColumnNames' in currentComparison ?
-          currentComparison.valueColumnNames as string[] : [currentComparison.valueColumnName];
-        chart = <Viewer
-          type={DG.VIEWER.LINE_CHART}
-          dataFrame={currentComparison.chartDf}
-          style={chartStyle}
-          onViewerChanged={onChartViewerChanged}
-          options={{
-            xColumnName: currentComparison.indexColumnName,
-            yColumnNames,
-            splitColumnNames: currentComparison.splitColumnName ?
-              [RUN_COLUMN, currentComparison.splitColumnName] : [RUN_COLUMN],
-            multiAxis: false,
-          }}
-        />;
-      }
+      const spec = currentChartSpec.value;
+      if (spec.kind === 'hint')
+        return <div style={{color: 'var(--grey-4)', padding: '8px 0px'}}>{spec.text}</div>;
+      const effectiveChartHeight = Math.max(spec.minHeight, chartHeight.value);
       return <div style={{display: 'flex', flexDirection: 'column', flex: '1', minHeight: '0px'}}>
         <ResizeHandle
           axis='y'
           size={effectiveChartHeight}
-          min={chartMinHeight}
+          min={spec.minHeight}
           reverse={true}
           onUpdate:size={(size) => chartHeight.value = size}
         />
-        { currentComparison.kind === 'multi-scalar' && radarEligible.value &&
+        { spec.scalarChartSwitch &&
           <div style={{display: 'flex', gap: '4px', padding: '2px 0px', flexShrink: '0'}}>
             { ([['radar', 'Radar'], ['pcplot', 'PC Plot']] as const).map(([value, label]) =>
               <span
@@ -1073,14 +962,22 @@ export const RunComparison = Vue.defineComponent({
                 style={{
                   cursor: 'pointer', fontSize: '11px', borderRadius: '3px', padding: '1px 8px',
                   border: '1px solid var(--grey-2)',
-                  background: effectiveScalarChartType.value === value ?
-                    'var(--blue-1)' : 'transparent',
-                  color: effectiveScalarChartType.value === value ? 'var(--white)' : 'var(--grey-5)',
+                  background: scalarChartType.value === value ? 'var(--blue-1)' : 'transparent',
+                  color: scalarChartType.value === value ? 'var(--white)' : 'var(--grey-5)',
                 }}
               >{label}</span>,
             )}
           </div> }
-        { Vue.withDirectives(chart, [[wheelGuard]]) }
+        { Vue.withDirectives(
+          <Viewer
+            type={spec.type}
+            dataFrame={comparison.value!.chartDf}
+            style={{width: '100%', height: `${effectiveChartHeight}px`, flexShrink: '0'}}
+            onViewerChanged={onChartViewerChanged}
+            options={spec.options}
+          />,
+          [[wheelGuard]],
+        ) }
       </div>;
     };
 
