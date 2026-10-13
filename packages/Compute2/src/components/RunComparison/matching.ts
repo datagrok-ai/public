@@ -392,6 +392,7 @@ export function matchColumnTargets(
       key: `column:${normalizeName(cluster.canonicalName)}:${normalizeName(cluster.canonicalSecondary ?? '')}`,
       displayName: cluster.canonicalName,
       units: cluster.items[0].units,
+      indexUnits: cluster.items[0].indexUnits,
       confidence: cluster.confidence,
       unitsWarning: cluster.unitsWarning,
       candidates,

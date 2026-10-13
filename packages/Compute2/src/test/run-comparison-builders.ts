@@ -654,7 +654,7 @@ category('RunComparison: unit conversion dataframes', () => {
     const entries = [scalar('a', 1, 'bar'), scalar('b', 50, 'kPa')];
     const targets = matchScalarTargets(entries.map((e) => e.nodes), undefined, convert);
     const result = buildMultiScalarComparison(targets, entries)!;
-    expectArray(result.chartDf.getCol('p').toList(), [1, 0.5]);
+    expectArray(result.chartDf.getCol('p (bar)').toList(), [1, 0.5]);
     expectArray(result.chartDf.getCol('q').toList(), [1, 1]);
   });
 
@@ -666,7 +666,9 @@ category('RunComparison: unit conversion dataframes', () => {
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries),
       undefined, undefined, undefined, convert);
     const result = buildColumnComparison(target, entries)!;
-    expectArray(result.chartDf.getCol('Time').toList(), [0, 1, 0, 0.5]);
+    expect(result.indexColumnName, 'Time (h)');
+    expect(result.valueColumnName, 'x (g/L)');
+    expectArray(result.chartDf.getCol('Time (h)').toList(), [0, 1, 0, 0.5]);
     expectArray(result.chartDf.getCol(result.valueColumnName).toList(), [0.5, 1, 0.25, 0.75]);
   });
 
@@ -695,6 +697,54 @@ category('RunComparison: unit conversion dataframes', () => {
     const melted = result.melted!;
     const values = result.chartDf.getCol(melted.valueColumnName).toList();
     const series = result.chartDf.getCol(melted.seriesColumnName).toList();
-    expectArray(values.filter((_, i) => series[i] === 'x'), [1, 2, 1, 2]);
+    expectArray(values.filter((_, i) => series[i] === 'x (bar)'), [1, 2, 1, 2]);
+  });
+});
+
+category('RunComparison: units in column names', () => {
+  const col = (name: string, values: number[], units?: string) => {
+    const column = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+    if (units)
+      column.meta.units = units;
+    return column;
+  };
+  const tableEntry = (name: string, columns: DG.Column[]) => {
+    const df = DG.DataFrame.fromColumns(columns);
+    df.name = name;
+    return entryFromDataFrame(df);
+  };
+  const indexesFor = (entries: ComparisonEntry[]) =>
+    new Map(entries.map((e) => [e.id, new Map([[e.nodes.tables[0].path, 'Time']])]));
+
+  test('a scalar column carries its units, a unitless one stays plain', async () => {
+    const entries = [scalarsEntry('a', 'a', []), scalarsEntry('b', 'b', [])];
+    for (const e of entries)
+      e.nodes.scalars.push({path: 'p', name: 'p', valueType: 'double', units: 'bar', value: 1});
+    const [target] = matchScalarTargets(entries.map((e) => e.nodes));
+    expect(buildScalarComparison(target, entries).valueColumnName, 'p (bar)');
+    const plain = [scalarEntry('a', 'a', 1), scalarEntry('b', 'b', 2)];
+    expect(buildScalarComparison(matchScalarTargets(plain.map((e) => e.nodes))[0], plain).valueColumnName, 'x');
+  });
+
+  test('value columns and a float index carry the first run\'s units; a key index does not', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('y', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1], 'h'), col('x', [5, 6], 'g/L'), col('y', [7, 8])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+    const result = buildMultiColumnComparison(targets, entries)!;
+    expect(result.indexColumnName, 'Time (h)');
+    expectArray(result.valueColumnNames, ['x (g/L)', 'y']);
+    expectArray(result.chartDf.columns.names(), ['Time (h)', RUN_COLUMN, 'x (g/L)', 'y']);
+  });
+
+  test('a units label never collides with another column', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('x (g/L)', [3, 4])]),
+      tableEntry('r2', [col('Time', [0, 1], 'h'), col('x', [5, 6], 'g/L'), col('x (g/L)', [7, 8])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries));
+    const result = buildMultiColumnComparison(targets, entries)!;
+    expect(new Set(result.valueColumnNames).size, 2);
   });
 });

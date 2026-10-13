@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
 * Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
 * Run compare: Index columns convert through unit mappings too (`1 h = 60 min`), and the Mappings link moved to the Index columns header
 * Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection

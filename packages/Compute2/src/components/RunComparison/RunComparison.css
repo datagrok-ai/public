@@ -69,10 +69,19 @@
 .c2-status-error { background-color: var(--red-1); color: var(--red-4); }
 .c2-status-warning { background-color: var(--orange-1); color: var(--orange-3); }
 
-/* step or table of a value whose name repeats */
-.c2-comparison-context {
+/* step or table of a value whose name repeats; units of the first run */
+.c2-comparison-context,
+.c2-comparison-units {
     color: var(--grey-4);
+}
+
+.c2-comparison-context {
     padding-left: 6px;
+}
+
+.c2-comparison-units {
+    white-space: nowrap;
+    font-size: 11px;
 }
 
 .c2-comparison-link {

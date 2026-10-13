@@ -121,6 +121,8 @@ export interface ColumnCandidate {
 
 export interface ColumnTarget extends TargetBase {
   kind: 'column';
+  // index units of the first run; converted indexes are expressed in them
+  indexUnits?: string;
   candidates: ColumnCandidate[];
   // enabled candidates' bindings; what statuses, signatures and builders consume
   bindings: ColumnBinding[];
