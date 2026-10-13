@@ -122,16 +122,20 @@ export function normalizeUnits(units?: string): string {
   return alias ?? compact;
 }
 
+/** Both units set and different after spelling normalization, with a finite positive factor. */
+export function isValidUnitMapping({from, factor, to}: UnitMapping): boolean {
+  const [a, b] = [normalizeUnits(from), normalizeUnits(to)];
+  return !!a && !!b && a !== b && Number.isFinite(factor) && factor > 0;
+}
+
 /**
  * Converter over user unit mappings: each pair works in both directions, pairs never chain,
- * incomplete and non-positive factors are ignored.
+ * invalid mappings are ignored.
  */
 export function buildUnitConverter(mappings: UnitMapping[]): UnitConverter {
   const factors = new Map<string, number>();
-  for (const {from, factor, to} of mappings) {
+  for (const {from, factor, to} of mappings.filter(isValidUnitMapping)) {
     const [a, b] = [normalizeUnits(from), normalizeUnits(to)];
-    if (!a || !b || a === b || !Number.isFinite(factor) || factor <= 0)
-      continue;
     factors.set(`${a}\u0000${b}`, factor);
     factors.set(`${b}\u0000${a}`, 1 / factor);
   }

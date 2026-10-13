@@ -2,7 +2,8 @@ import {category, test, expect, expectFloat, expectArray} from '@datagrok-librar
 import {isNumericType} from '../components/RunComparison/types';
 import {
   normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, normalizeUnits,
-  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, FUZZY_NAME_THRESHOLD,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, isValidUnitMapping,
+  FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
@@ -622,6 +623,14 @@ category('RunComparison: unit mappings', () => {
     expect(convert('m', 'cm'), null);
     expect(convert('m', 'mm'), null);
     expect(convert('g/l', 'g/L'), null);
+  });
+
+  test('valid unit mappings need two different units and a finite positive factor', async () => {
+    expect(isValidUnitMapping({from: 'mg/L', factor: 0.001, to: 'g/L'}), true);
+    expect(isValidUnitMapping({from: 'mg/L', factor: 1000, to: ''}), false);
+    expect(isValidUnitMapping({from: 'h', factor: 2, to: 'hours'}), false);
+    for (const factor of [0, -1, NaN, Infinity])
+      expect(isValidUnitMapping({from: 'mg/L', factor, to: 'g/L'}), false);
   });
 
   test('unitsCompatibility reports convertible units', async () => {

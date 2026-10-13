@@ -17,7 +17,7 @@ import {
   AxisModeSelection, AxisModeConfig, AxisMode, TimeUnit, TIME_UNITS, isIndexCandidateType,
 } from './types';
 import {
-  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, normalizeUnits,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter,
 } from './matching';
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
@@ -30,6 +30,7 @@ import {
 } from './target-selection';
 import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
 import {buildComparison} from './comparison-builders';
+import {showMappingsDialog} from './mappings-dialog';
 import {ScalarChartType, chartSpec} from './chart-spec';
 import './RunComparison.css';
 
@@ -397,73 +398,10 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    const editMappings = () => {
-      const nameRows: {from: DG.InputBase<string>, to: DG.InputBase<string>}[] = [];
-      const unitRows: {
-        from: DG.InputBase<string>, factor: DG.InputBase<number | null>, to: DG.InputBase<string>,
-      }[] = [];
-      const nameList = ui.divV([], 'c2-mapping-list');
-      const unitList = ui.divV([], 'c2-mapping-list');
-      const removable = <T, >(rows: T[], row: T, rowDiv: HTMLElement) => ui.icons.delete(() => {
-        rows.splice(rows.indexOf(row), 1);
-        rowDiv.remove();
-      }, 'Remove mapping');
-      const addNameRow = (from = '', to = '') => {
-        const row = {from: ui.input.string('', {value: from}), to: ui.input.string('', {value: to})};
-        (row.from.input as HTMLInputElement).placeholder = 'name';
-        (row.to.input as HTMLInputElement).placeholder = 'same as';
-        nameRows.push(row);
-        const rowDiv = ui.divH([row.from.root, row.to.root], 'c2-mapping-row');
-        rowDiv.append(removable(nameRows, row, rowDiv));
-        nameList.append(rowDiv);
-      };
-      const addUnitRow = (from = '', factor?: number, to = '') => {
-        const row = {
-          from: ui.input.string('', {value: from}),
-          factor: ui.input.float('', {value: factor}),
-          to: ui.input.string('', {value: to}),
-        };
-        (row.from.input as HTMLInputElement).placeholder = 'units';
-        (row.factor.input as HTMLInputElement).placeholder = 'factor';
-        (row.to.input as HTMLInputElement).placeholder = 'units';
-        row.from.root.classList.add('c2-mapping-unit');
-        row.factor.root.classList.add('c2-mapping-factor');
-        row.to.root.classList.add('c2-mapping-unit');
-        unitRows.push(row);
-        const rowDiv = ui.divH([ui.divText('1'), row.from.root, ui.divText('='), row.factor.root, row.to.root],
-          'c2-mapping-row');
-        rowDiv.append(removable(unitRows, row, rowDiv));
-        unitList.append(rowDiv);
-      };
-      for (const {from, to} of nameMappings.value)
-        addNameRow(from, to);
-      for (const {from, factor, to} of unitMappings.value)
-        addUnitRow(from, factor, to);
-      if (nameRows.length === 0)
-        addNameRow();
-      if (unitRows.length === 0)
-        addUnitRow();
-      const section = (title: string, hint: string, list: HTMLElement, onAdd: () => void) => ui.divV([
-        ui.divH([ui.divText(title, 'c2-mapping-title'), ui.divText(hint, 'c2-mapping-hint')], 'c2-mapping-header'),
-        list,
-        ui.button('Add', onAdd),
-      ], 'c2-mapping-section');
-      ui.dialog('Mappings')
-        .add(section('Names', 'Mapped names match as the same value, ignoring case and separators.',
-          nameList, () => addNameRow()))
-        .add(section('Units', 'Values in one unit are multiplied into the other; works both ways.',
-          unitList, () => addUnitRow()))
-        .onOK(() => {
-          nameMappings.value = nameRows
-            .map((row) => ({from: row.from.value.trim(), to: row.to.value.trim()}))
-            .filter((row) => row.from && row.to);
-          unitMappings.value = unitRows
-            .map((row) => ({from: row.from.value.trim(), factor: row.factor.value ?? NaN, to: row.to.value.trim()}))
-            .filter((row) => row.from && row.to && normalizeUnits(row.from) !== normalizeUnits(row.to) &&
-              Number.isFinite(row.factor) && row.factor > 0);
-        })
-        .show({center: true, width: 520});
-    };
+    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, (names, units) => {
+      nameMappings.value = names;
+      unitMappings.value = units;
+    });
 
     // DG inputs fire onChanged on programmatic sets too, so rendering a new mode value
     // echoes back through the toggle — the no-op transition keeps multiKeys intact
