@@ -530,3 +530,29 @@ category('RunComparison: cluster pairing', () => {
     expect(targets[0].coverage, 3);
   });
 });
+
+category('RunComparison: repeated steps', () => {
+  const day = (n: number, value: number) =>
+    ({name: 'Final biomass', friendlyPath: `Daily cultivation · Day ${n} · Final biomass`, value});
+
+  test('repeated step values pair by step, whatever their order', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [day(1, 1), day(2, 2), day(3, 3)]),
+      makeEntry('b', [day(3, 30), day(1, 10), day(2, 20)]),
+    ]);
+    expect(targets.length, 3);
+    for (const target of targets) {
+      const [a, b] = target.bindings;
+      expect(b.value, a.value! * 10);
+    }
+  });
+
+  test('a single function run pairs with the first repeated step', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [day(1, 1), day(2, 2)]),
+      makeEntry('f', [{name: 'Final biomass', friendlyPath: 'Final biomass', value: 5}]),
+    ]);
+    const withF = targets.find((t) => t.bindings.some((b) => b.entryId === 'f'))!;
+    expect(withF.bindings.find((b) => b.entryId === 'a')!.value, 1);
+  });
+});

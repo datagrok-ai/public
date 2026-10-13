@@ -68,3 +68,9 @@
 
 .c2-status-error { background-color: var(--red-1); color: var(--red-4); }
 .c2-status-warning { background-color: var(--orange-1); color: var(--orange-3); }
+
+/* step or table of a value whose name repeats */
+.c2-comparison-context {
+    color: var(--grey-4);
+    padding-left: 6px;
+}

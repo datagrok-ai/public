@@ -20,6 +20,7 @@ import {matchScalarTargets, matchColumnTargets, buildAliasGroups} from './matchi
 import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor, multiValueOverlap,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
+  targetContexts,
 } from './selection';
 import {entryFromFuncCall, entryFromDataFrame} from './entry-extraction';
 import {canSaveProject, captureTableLayout, showProjectSaveDialog} from '../../project-export';
@@ -227,6 +228,8 @@ export const RunComparison = Vue.defineComponent({
         a.displayName.localeCompare(b.displayName));
     });
 
+    const contexts = Vue.computed(() => targetContexts(targets.value));
+
     // radio semantics: checking an item makes it the run's pick and unchecks the
     // run's current one; unchecking excludes the run from the target
     const setCandidateEnabled = (target: ColumnTarget, candidate: ColumnCandidate, enabled: boolean) => {
@@ -326,7 +329,7 @@ export const RunComparison = Vue.defineComponent({
       return listed.filter((target) =>
         (!equalTargetKeys.value.has(target.key) ||
           (multiMode.value && multiKeys.value.includes(target.key))) &&
-        matchesFilter(targetFilter.value, target.displayName));
+        matchesFilter(targetFilter.value, `${target.displayName} ${contexts.value.get(target.key) ?? ''}`));
     });
 
     const selectedTarget = Vue.computed(() =>
@@ -841,6 +844,7 @@ export const RunComparison = Vue.defineComponent({
               }
             };
             const isExpanded = target.kind === 'column' && !!expandedTargetKeys.value[target.key];
+            const context = contexts.value.get(target.key);
             const anchor = selectedTarget.value;
             const overlap = multiMode.value && anchor && target.kind === anchor.kind &&
               target.key !== anchor.key ?
@@ -866,8 +870,9 @@ export const RunComparison = Vue.defineComponent({
               <span></span> }
             <IconFA name={target.kind === 'scalar' ? 'hashtag' : 'table'} tooltip={target.kind}/>
             <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-              title={target.displayName}>
+              title={context ? `${target.displayName} · ${context}` : target.displayName}>
               {target.displayName}
+              { context && <span class='c2-comparison-context'>{context}</span> }
             </span>
             { target.unitsWarning ?
               <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :

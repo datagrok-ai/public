@@ -1,6 +1,11 @@
 import * as DG from 'datagrok-api/dg';
-import {category, test, expect} from '@datagrok-libraries/test/src/test';
-import {parseComparisonDefaults, entryFromDataFrame} from '../components/RunComparison/entry-extraction';
+import {category, test, expect, expectArray} from '@datagrok-libraries/test/src/test';
+import type {
+  PipelineSerializedState,
+} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
+import {
+  parseComparisonDefaults, entryFromDataFrame, collectWorkflowSteps,
+} from '../components/RunComparison/entry-extraction';
 
 category('RunComparison: annotation defaults', () => {
   test('parses the comparison JSON annotation', async () => {
@@ -58,5 +63,27 @@ category('RunComparison: raw table entries', () => {
   test('the same table maps to the same id', async () => {
     const df = makeDf();
     expect(entryFromDataFrame(df).id, entryFromDataFrame(df).id);
+  });
+});
+
+category('RunComparison: workflow steps', () => {
+  const step = (configId: string, friendlyName: string, funcCallId: string) =>
+    ({type: 'funccall', configId, friendlyName, funcCallId});
+  // only the fields the step walk reads
+  const state = {
+    type: 'static', configId: 'wf', friendlyName: 'Workflow', steps: [
+      step('config', 'Configuration', 'c'),
+      {type: 'dynamic', configId: 'days', friendlyName: 'Daily cultivation', steps: [
+        step('day', 'Day', 'd1'), step('day', 'Day', 'd2'), step('other', 'Other', 'o'),
+      ]},
+    ],
+  } as unknown as PipelineSerializedState;
+
+  test('repeated steps get positional paths and labels', async () => {
+    const steps = collectWorkflowSteps(state);
+    expectArray(steps.map((s) => s.path), ['wf/config', 'wf/days/day[1]', 'wf/days/day[2]', 'wf/days/other']);
+    expectArray(steps.map((s) => s.friendlyPath),
+      ['Configuration', 'Daily cultivation · Day 1', 'Daily cultivation · Day 2', 'Daily cultivation · Other']);
+    expectArray(steps.map((s) => s.funcCallId), ['c', 'd1', 'd2', 'o']);
   });
 });

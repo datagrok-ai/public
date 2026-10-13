@@ -3,7 +3,7 @@ import {matchScalarTargets, matchColumnTargets} from '../components/RunCompariso
 import {
   getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
-  parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit,
+  parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -611,5 +611,19 @@ category('RunComparison: axis mode selection', () => {
     expect(full.every((s) => s.warning === undefined), true);
     const none = getEntryStatuses(entries, tgt, indexes, config({}));
     expect(none.every((s) => s.warning === undefined), true);
+  });
+});
+
+category('RunComparison: step contexts', () => {
+  test('repeated names get their step as context, unique names none', async () => {
+    const day = (n: number) =>
+      ({name: 'Final biomass', friendlyPath: `Daily cultivation · Day ${n} · Final biomass`});
+    const targets = matchScalarTargets([
+      makeEntry('a', [day(1), day(2), {name: 'Volume'}]), makeEntry('b', [day(1), day(2), {name: 'Volume'}]),
+    ]);
+    const contexts = targetContexts(targets);
+    expectArray(targets.filter((t) => t.displayName === 'Final biomass').map((t) => contexts.get(t.key)!),
+      ['Daily cultivation · Day 1', 'Daily cultivation · Day 2']);
+    expect(contexts.has(targets.find((t) => t.displayName === 'Volume')!.key), false);
   });
 });

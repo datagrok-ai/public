@@ -218,6 +218,8 @@ export function matchScalarTargets(
         entryId: entry.entryId,
         name: scalar.name,
         units: scalar.units,
+        // pairs repeated workflow steps by position (Day 2 with Day 2)
+        secondaryName: scalar.friendlyPath,
         payload: {
           entryId: entry.entryId,
           path: scalar.path,
@@ -275,7 +277,7 @@ export function matchColumnTargets(
           entryId: entry.entryId,
           name: column.name,
           units: column.units,
-          secondaryName: table.name,
+          secondaryName: table.friendlyPath ?? table.name,
           indexColumnName,
           raw: entry.sourceKind === 'raw',
           payload: {

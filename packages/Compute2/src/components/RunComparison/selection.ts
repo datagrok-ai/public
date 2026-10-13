@@ -431,3 +431,31 @@ export function getEntryStatuses(
     return {entryId: entry.entryId, matched: false, reason: 'no similar data'};
   });
 }
+
+/**
+ * Step context for targets sharing a display name (repeated workflow steps, same-named
+ * tables): the seed's step path for scalars, its table path for columns.
+ */
+export function targetContexts(targets: ComparisonTarget[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const target of targets)
+    counts.set(target.displayName, (counts.get(target.displayName) ?? 0) + 1);
+  const contexts = new Map<string, string>();
+  for (const target of targets) {
+    if (counts.get(target.displayName)! < 2)
+      continue;
+    let context: string | undefined;
+    if (target.kind === 'column') {
+      const seed = target.candidates.find((candidate) => candidate.auto)?.binding;
+      context = seed?.tableFriendlyPath ?? seed?.tableName;
+    } else {
+      const seed = target.bindings[0];
+      context = seed?.friendlyPath?.replace(new RegExp(` · ${escapeRegExp(seed.name)}$`), '');
+    }
+    if (context && context !== target.displayName)
+      contexts.set(target.key, context);
+  }
+  return contexts;
+}
+
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
