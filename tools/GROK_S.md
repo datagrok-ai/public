@@ -36,6 +36,7 @@ browser or a logged-in session.
 | See what fields an entity type has                          | `grok s describe connections`                          |
 | Hit any undocumented endpoint                               | `grok s raw GET /users/current` / `raw POST <path> --data '{...}'` |
 | Check server + per-module health                            | `grok s healthcheck [--module <name>]`                 |
+| Problems, alerts, problem rules, logger settings, errors, cloud logs | `grok s observe problems list --alert-status open` (alias `grok s o`) |
 | Bulk operations in one round-trip                           | `grok s batch <entity> <verb> --json items.json`       |
 | Move entities dev to prod (bundle, or instance to instance) | `grok s pull ... --out ./bundle` / `grok s migrate ... --from dev --to prod` |
 | Browse / query / edit domain-table rows                    | `grok s domains query grit.issue --filter 'status = "open"'` / `domains insert` / `domains upload` |
@@ -477,6 +478,39 @@ that reports no services (a dev stack) prints `(no services reported)`; `--modul
 module the server does not report exits 1. Requires a valid dev key (standard `grok s` auth).
 For an anonymous liveness probe — load balancer, k8s readiness — hit `/admin/health` directly;
 it's on the server's unauthenticated allowlist.
+
+## Problems, logging and errors (`grok s observe`, alias `grok s o`)
+
+Thin commands over the server's routes; `grok s observe` with no command prints every verb and option.
+
+```bash
+grok s o problems list --alert-status open                 # the open alerts; --status, --state, --kind, --since 7d
+grok s o problems get 'health:Jupyter@<server>'            # by id or kind:key; history <id> for its records
+grok s o problems status connection:<connection id> --data '{"status": "muted", "reason": "maintenance", "until": "2026-10-04T06:00:00Z"}'
+grok s o problems ack 'health:Jupyter@<server>' --reason x  # resolve <id> --reason ... closes the alert
+grok s o rules get > rules.json                             # Settings > Alerts problem rules; rules put --json rules.json
+grok s o rules test                                         # evaluates the saved rules once, now
+grok s o logger get exportSettings                          # the logger settings, or one path of them
+grok s o logger set --user alice --set debugFlags='["db"]' --for 30m --reason "ticket 123"   # an expiring entry, from All users
+grok s o logger set --user alice --remove                  # delete that entry
+grok s o logger history --limit 5                           # log-settings-changed audit records with their diff
+grok s o logs capture alice --for 2h --reason "ticket 123" # logger set of saveHttpRequests on an expiring entry; 30m by default
+grok s o logs capture                                       # the active captures; logs capture stop alice removes one
+grok s o errors top --since 7d --by signature --limit 20    # GET /admin/metrics errors
+grok s o timeline --session <id>                            # its events and requests of the last 15 min
+grok s o timeline --session <id> --from 2026-10-09T10:00     # 10 min from then; --to sets the end, at most 2 h later
+grok s o logs cloud --since 2h --filter ERROR                # CloudWatch, the instance's own group; --group, --from/--to
+grok s o logs archive list --prefix cw/ --since 1d           # keys in the log archive (WORM bucket); --since filters the returned page only
+grok s o logs archive read <key>                             # one archived object decoded to events
+```
+
+Problems need `ManageAlerts`, errors, another session's timeline and `logs cloud`/`logs archive` `ViewTelemetry`,
+`rules test` both, logger and rules changes and `logs capture` `EditPluginsSettings`. `capture` is an expiring
+`userGroupSettings` entry with `saveHttpRequests` on (seeded from the All Users entry, with `usage` saved); on an entry
+that already expires later it keeps that time. `capture stop` removes only an expiring entry that holds nothing but the
+capture; for any other entry use `logger set --user <login> --remove`. Read what it recorded with
+`timeline --session <id>`. `logs archive list --since` filters only the page the server returned (`--limit`), so narrow
+the listing with `--prefix` first. `logs` read with the server's AWS role, or with `--connection <id>`. In durations `m` means minutes (in `grok s pull --since` it means months).
 
 ## Describing an entity type
 

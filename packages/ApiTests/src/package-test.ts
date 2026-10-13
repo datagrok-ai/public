@@ -29,6 +29,8 @@ import './dapi/fetch';
 import './dapi/groups';
 import './dapi/dapi';
 import './dapi/cloud-logs';
+import './dapi/log-timeline';
+import './dapi/problems';
 import './dapi/domains';
 import './dapi/domains-batch';
 import './dapi/domain-errors';
