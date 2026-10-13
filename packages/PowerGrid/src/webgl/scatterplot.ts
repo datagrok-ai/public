@@ -6,7 +6,7 @@ import * as DG from 'datagrok-api/dg';
 import {ScatterLook} from '../scatterplot-look';
 import {Frame, largestMarker, RowList} from '../scatterplot-data';
 import {Renderers, ScatterRenderer} from '../scatterplot-renderer';
-import {DOT_FRAGMENT, DOT_VERTEX, PICK_FRAGMENT, PICK_VERTEX, SHAPE_FRAGMENT, SHAPE_VERTEX} from './shaders';
+import {ANY_KIND, DOT_FRAGMENT, DOT_VERTEX, PICK_FRAGMENT, PICK_VERTEX, SHAPE_VERTEX, shapeFragment} from './shaders';
 
 /** Browsers keep about 16 WebGL contexts a page and drop the oldest past that; leave room for other viewers. */
 const MAX_RENDERERS = 8;
@@ -108,7 +108,8 @@ function colorBytes(argb: number): [number, number, number, number] {
 class ScatterPlotGL extends ScatterRenderer {
   private readonly gl: WebGL2RenderingContext;
   private readonly dotProgram: Program;
-  private readonly shapeProgram: Program;
+  /** By the marker kind they fix, or `ANY_KIND`; compiled on first use. */
+  private readonly shapePrograms = new Map<number, Program>();
   private readonly pickProgram: Program;
   private readonly vao: WebGLVertexArrayObject;
   private readonly buffers: Record<'x' | 'y' | 'colors' | 'sizes' | 'types' | 'selection', WebGLBuffer>;
@@ -122,7 +123,6 @@ class ScatterPlotGL extends ScatterRenderer {
       throw new Error('Scatter plot: no WebGL 2 context');
     this.gl = gl;
     this.dotProgram = new Program(gl, DOT_VERTEX, DOT_FRAGMENT);
-    this.shapeProgram = new Program(gl, SHAPE_VERTEX, SHAPE_FRAGMENT);
     this.pickProgram = new Program(gl, PICK_VERTEX, PICK_FRAGMENT);
     this.vao = gl.createVertexArray()!;
     const buffer = () => gl.createBuffer()!;
@@ -190,7 +190,7 @@ class ScatterPlotGL extends ScatterRenderer {
     else {
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      const program = this.use(this.shapeProgram, frame);
+      const program = this.use(this.shapeProgram(frame.rowTypes ? ANY_KIND : frame.markerType), frame);
       gl.uniform1i(program.uniform('u_markerCache'), +frame.markerCache);
       gl.uniform1f(program.uniform('u_border'), frame.border);
       gl.uniform1f(program.uniform('u_alpha'), frame.opacity);
@@ -231,6 +231,13 @@ class ScatterPlotGL extends ScatterRenderer {
     gl.bindVertexArray(null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return (pixel[0] | (pixel[1] << 8) | (pixel[2] << 16) | (pixel[3] << 24)) - 1;
+  }
+
+  private shapeProgram(kind: number): Program {
+    let program = this.shapePrograms.get(kind);
+    if (!program)
+      this.shapePrograms.set(kind, program = new Program(this.gl, SHAPE_VERTEX, shapeFragment(kind)));
+    return program;
   }
 
   /** Points the attributes at the per-row buffers, or sets the one value every row shares. */

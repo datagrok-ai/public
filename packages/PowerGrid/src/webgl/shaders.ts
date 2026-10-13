@@ -83,10 +83,16 @@ void main() {
   gl_Position = inViewBox(p) ? clip(center * u_dpr) : CULLED;
 }`;
 
-export const SHAPE_FRAGMENT = `#version 300 es
+/** The kind of a shape program whose rows have markers of any kind. */
+export const ANY_KIND = -1;
+
+/** The shapes' fragment shader, fixing the marker kind of every row, or for rows of [ANY_KIND]: fixing it compiles out
+ * the other shapes, which makes the shader several times faster than one choosing among all of them per pixel. */
+export const shapeFragment = (kind: number) => `#version 300 es
 precision highp float;
 precision highp int;
 ${MARKER_TYPES}
+const int MARKER_KIND = ${kind};
 uniform vec2 u_size;
 uniform float u_dpr;
 uniform float u_border;
@@ -97,6 +103,8 @@ flat in float v_size;
 flat in int v_type;
 flat in vec2 v_dot;
 out vec4 o;
+
+int markerKind() { return MARKER_KIND == ${ANY_KIND} ? v_type : MARKER_KIND; }
 
 // The shapes below are measured in CSS pixels, y down, from the marker center; negative is inside.
 const float NONE = 1e6;
@@ -155,17 +163,18 @@ float outline(int type, vec2 p, float s) {
 vec2 marker(vec2 p) {
   float s = v_size;
   float h = s * 0.5;
-  if (v_type == DOT)
+  int kind = markerKind();
+  if (kind == DOT)
     return vec2(box(p - v_dot - 0.5, vec2(0.5)), NONE);
-  if (v_type == OUTLIER)
+  if (kind == OUTLIER)
     return vec2(armsX(p, s * 0.4, 0.5), NONE);
   float w = u_border * 0.5;
-  if (v_type == CROSS_BORDER || v_type == CROSS_X_BORDER) {
-    bool x = v_type == CROSS_X_BORDER;
+  if (kind == CROSS_BORDER || kind == CROSS_X_BORDER) {
+    bool x = kind == CROSS_X_BORDER;
     return vec2(x ? armsX(p, h, 1.5) : arms(p, h, 1.5), w == 0.0 ? NONE : x ? armsX(p, h, w) : arms(p, h, w));
   }
-  float d = outline(v_type, p, s);
-  return vec2(isStroked(v_type) ? abs(d) - 1.5 : d, w == 0.0 ? NONE : abs(d) - w);
+  float d = outline(kind, p, s);
+  return vec2(isStroked(kind) ? abs(d) - 1.5 : d, w == 0.0 ? NONE : abs(d) - w);
 }
 
 /** Pixel coverage at signed distances [d], ramping over a pixel, or over a quarter pixel's share of it. */
@@ -173,7 +182,8 @@ vec2 coverage(vec2 d, float ramps) { return clamp(0.5 - d * u_dpr * ramps, 0.0, 
 
 void main() {
   vec2 p = (vec2(gl_FragCoord.x, u_size.y - gl_FragCoord.y) - v_center) / u_dpr;
-  if (v_type == GRADIENT) {
+  int kind = markerKind();
+  if (kind == GRADIENT) {
     // a canvas gradient fades to transparent black interpolating unpremultiplied colors, which darkens it
     float g = max(1.0 - length(p) / (v_size * 0.5), 0.0);
     o = vec4(v_color * g, 1.0) * (g * u_alpha);
@@ -186,7 +196,7 @@ void main() {
     // The canvas anti-aliases rectangles and straight strokes by the distance to the edge, one ramp per pixel, and
     // curves and paths closer to the covered area, which four samples a pixel approximate near the edges.
     vec2 c;
-    bool area = v_type == CIRCLE || v_type == CIRCLE_BORDER || v_type == STAR || v_type == CROSS_BORDER;
+    bool area = kind == CIRCLE || kind == CIRCLE_BORDER || kind == STAR || kind == CROSS_BORDER;
     if (area && min(abs(d.x), abs(d.y)) * u_dpr < 0.86) {
       float q = 0.25 / u_dpr;
       c = (coverage(marker(p + vec2(-q, -q)), 2.0) + coverage(marker(p + vec2(q, -q)), 2.0) +

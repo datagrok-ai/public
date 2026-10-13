@@ -77,7 +77,10 @@ Both backends draw the same thing, the CPU renderers' output:
   identity: versions start over on every new object.
 - DOT markers match the pixel-buffer dot renderer pixel for pixel; other shapes are signed distances in the fragment
   shader, anti-aliased per shape family as the canvas does it (`webgl/shaders.ts`, ported line by line to WGSL in
-  `webgpu/shaders.ts` — change both together).
+  `webgpu/shaders.ts` — change both together). When the rows share one marker kind (no Markers column), the shapes
+  are drawn by a program or pipeline compiled for that kind (`MARKER_KIND`), lazily, one per kind: the other shapes
+  compile out, and the shader that picks a shape per pixel is up to 40× slower (circles; 2–10× for most shapes) on 2M
+  rows in view. Both produce the same pixels.
 
 - **WebGL** (`webgl/scatterplot.ts`): rows are point sprites from vertex buffers addressed by row index. The hit
   test draws the filtered rows into a 1×1 target placed under the mouse; its viewport reaches past the canvas by the
