@@ -1,4 +1,4 @@
-import type { AnalysisPanel, AtomColours, KeymapProfile, MethylLabels, StereoDisplay, UnspecifiedDoubleBonds, WarningMarks } from './types.js';
+import type { AnalysisPanel, AtomColours, AtomNumbers, KeymapProfile, MethylLabels, StereoDisplay, UnspecifiedDoubleBonds, WarningMarks } from './types.js';
 /** The settings, whole: what `settings` reads and writes and what the `settings` event carries. */
 export interface SketcherSettings {
     readonly atomColours: AtomColours;
@@ -8,6 +8,8 @@ export interface SketcherSettings {
     readonly stereoFlag: StereoDisplay;
     readonly unspecifiedDoubleBonds: UnspecifiedDoubleBonds;
     readonly methylLabels: MethylLabels;
+    /** Each atom numbered from 1 on the canvas and in the API's SVG (spike stereo-commands): `'hidden'` (the default) or `'shown'`. */
+    readonly atomNumbers: AtomNumbers;
     readonly keymap: KeymapProfile;
 }
 /** The defaults: each option's own (Reset puts them back). */

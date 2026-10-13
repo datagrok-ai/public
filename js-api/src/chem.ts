@@ -143,6 +143,9 @@ export namespace chem {
   }
 
 
+  /** A molecule string and the notation it is in, as {@link SketcherBase.explicitMol} holds one. */
+  type NotatedMolecule = NonNullable<SketcherBase['explicitMol']>;
+
   /** Molecule sketcher with pluggable implementations (OpenChemLib, Ketcher, Marvin, ...), inplace or as a
    * thumbnail that opens the sketcher in a dialog. Read the molecule with {@link getSmiles}, {@link getMolFile}
    * or {@link getSmarts}, set it with {@link setMolecule}, listen on {@link onChanged}.
@@ -713,14 +716,30 @@ export namespace chem {
       // a switch begins: sketcherReady() waits for the implementation it brings
       const switchId = ++this._switches;
       this._readySketcher = null;
-      const getMolecule = async () => {
-        //in case explicit molecule has been set into sketcher and hasn't been changed - return as is
-        if (this.sketcher?.explicitMol)
-          return this.sketcher?.explicitMol.value;
-        return this._smiles === null ? this._molfile === null ? this._smarts === null ? this.getMolFile() :
-          await this.getSmarts() : this.getMolFile() : this.getSmiles();
+      // The molecule the implementation this switch brings is to show, in its notation. While the implementation shows
+      // the caller's string as it was set (its explicitMol), that string. Once the user has drawn on it, its drawing, which
+      // the value last set no longer describes: as SMARTS when that value was a query given as SMARTS, else as a molblock,
+      // which holds whatever was drawn (a query's atom lists, its coordinates) where SMILES holds no query (a query drawn
+      // over a SMILES typed in the field came back empty, or without its query). Else, none initialized, the value stored.
+      const getMolecule = async (): Promise<NotatedMolecule | null> => {
+        const shown = this.sketcher?.explicitMol;
+        if (shown)
+          return {notation: shown.notation, value: shown.value};
+        const molblock = this.molFileUnits === Notation.MolBlock ? 'molblock' : 'molblockV3000';
+        if (this.sketcher?.isInitialized) {
+          return this._smarts !== null ? {notation: 'smarts', value: (await this.getSmarts()) ?? ''} :
+            {notation: molblock, value: this.getMolFile()};
+        }
+        return this._molfile !== null ? {notation: molblock, value: this._molfile} :
+          this._smarts !== null ? {notation: 'smarts', value: this._smarts} :
+          this._smiles !== null ? {notation: 'smiles', value: this._smiles} : null;
       };
       getMolecule().then(async (molecule) => {
+        // What the implementation shows is the host's molecule from here on, stored in its notation (unless a value was set
+        // meanwhile): an implementation that reads the host's molecule as it initializes (Ketcher) reads the drawing, not
+        // the value last set, which the drawing replaced
+        if (molecule !== null && this._valuesSet === valuesSet)
+          this._storeNotated(molecule);
         this._sketcherTypeChanged = true; //variable to check if refresh should be called on filter
         this._setSketcherSize(); //set default size to show update indicator
         ui.setUpdateIndicator(this.host, true);
@@ -764,13 +783,12 @@ export namespace chem {
               grok.shell.o = SemanticValue.fromValueType(molFile, SEMTYPE.MOLECULE, UNITS.Molecule.MOLBLOCK);
           }
         });
-        // a value set while the implementation initialized was only stored, and is newer than the one taken above
-        if (this._valuesSet !== valuesSet)
+        // a value set while the implementation initialized was only stored, and is newer than the one taken above, which
+        // is set otherwise, as stored: with the setter of its notation, not guessed from the string; an empty one is not
+        // loaded: the implementation starts empty, and Ketcher takes strokes before it is ready, which loading it would wipe
+        if (this._valuesSet !== valuesSet ||
+          (molecule !== null && molecule.value && !Sketcher.isEmptyMolfile(molecule.value)))
           this._setStoredMolecule();
-        // an empty one is not loaded: the implementation starts empty, and Ketcher takes strokes before it is ready,
-        // which loading it would wipe
-        else if (molecule && !Sketcher.isEmptyMolfile(molecule))
-          this.setMolecule(molecule!, this._smarts !== null);
         // Ready: initialized, listened to, showing the host's molecule. Announced here, synchronously, so a subscriber
         // acts before any user input; unless a later switch has begun, whose implementation will be announced instead.
         if (switchId === this._switches && this.sketcher === sketcher) {
@@ -787,6 +805,16 @@ export namespace chem {
         this.setSmarts(this._smarts);
       else if (this._smiles !== null)
         this.setSmiles(this._smiles);
+    }
+
+    /** Stores a molecule as the host's, in its notation, as its setter stores it, without setting it on the
+     * implementation or validating it again. */
+    private _storeNotated({notation, value}: NotatedMolecule): void {
+      this._smiles = notation === 'smiles' ? value : null;
+      this._smarts = notation === 'smarts' ? value : null;
+      this._molfile = notation === 'molblock' || notation === 'molblockV3000' ? value : null;
+      if (this._molfile !== null)
+        this.molFileUnits = value && value.includes('V3000') ? Notation.V3KMolBlock : Notation.MolBlock;
     }
 
     private _setSketcherSize() {

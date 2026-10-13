@@ -464,6 +464,64 @@ async function eachFeature(features: [string, (at: {stage: string}) => Promise<s
   return problems;
 }
 
+// ---------------------------------------------------------------- a query drawn on a SMILES pasted in the field
+
+/* The product owner's report of 2026-10-13, on smiles.csv: the card's sketcher opened, toluene pasted in its field, the
+ * para carbon made the list [N,O] in the sketcher, OK: 24 rows pass. Opened again from the card, the sketcher was empty,
+ * with a warning that SMARTS cannot be converted to SMILES. The host carried the drawing over to the sketcher it opens in
+ * the notation of the value it was last given, the SMILES pasted, which holds no query: Crux writes none (the warning,
+ * and nothing drawn), OpenChemLib none either (nothing drawn, no warning), Ketcher wrote the list as its first element.
+ * The features above are drawn in the sketcher alone, so the host was given no SMILES there. */
+const PASTED = 'Cc1ccccc1';
+const PASTED_LIST_SMARTS = '[#6]-[#6]1:[#6]:[#6]:[#7,#8]:[#6]:[#6]:1';
+const PASTED_LIST_ROWS = 24;
+/** The toluene pasted, its para carbon the list [N,O] (an MDL atom list), as a molfile. */
+const PASTED_LIST_MOLFILE = ['', '  pasted-list', '', '  7  7  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.2990   -2.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000   -3.0000    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.2990   -2.2500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  1  0', '  2  3  4  0', '  3  4  4  0', '  4  5  4  0', '  5  6  4  0', '  6  7  4  0', '  7  2  4  0',
+  'M  ALS   5  2 F N   O   ', 'M  END', ''].join('\n');
+
+/** The user's paste of `smiles` in the field of the card's sketcher: the host takes it (its paste handler). */
+function pasteInField(filter: SubstructureFilter, smiles: string): void {
+  const data = new DataTransfer();
+  data.setData('text/plain', smiles);
+  filter.sketcher.molInput.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true}));
+}
+
+/** The para carbon of the toluene pasted made the list [N,O] in the sketcher, by the sketcher's own means: Crux's label
+ * editor; Ketcher's and OpenChemLib's editors given the drawing with the list, as their own (a load of theirs, not the
+ * host's), the way the round trips above give Ketcher its tools' structures. */
+const PASTED_LIST_DRAWS: {[type: string]: (filter: SubstructureFilter) => Promise<void>} = {
+  Crux: async (filter) => {
+    const el = cruxOf(filter);
+    await awaitCheck(() => el.positions.atoms.length === 7 && !el.isPending, 'Crux does not show the toluene pasted', 10000);
+    await cruxSteps(el, [['label', 4, '[N,O]']]);
+  },
+  Ketcher: async (filter) => {
+    const impl = filter.sketcher.sketcher as any;
+    await within(impl._loading ?? Promise.resolve(), 'Ketcher did not load the toluene pasted');
+    await ketcherExported(impl, 3000);
+    const before = impl._exportId;
+    await within(impl._sketcher.setMolecule(PASTED_LIST_MOLFILE), 'Ketcher did not load the list', 15000);
+    await ketcherExported(impl, 3000, before);
+  },
+  OpenChemLib: async (filter) => {
+    (filter.sketcher.sketcher as any)._sketcher.setMolFile(PASTED_LIST_MOLFILE);
+  },
+};
+
+/** The balloons the platform shows about a notation (SMILES, SMARTS) it could not write. */
+function notationBalloons(): string {
+  return Array.from(document.querySelectorAll('.d4-balloon'))
+    .map((b) => b.textContent?.trim() ?? '').filter((s) => /smarts|smiles|convert/i.test(s)).join('; ');
+}
+
 category('query round trip', () => {
   let sketcherType: string;
 
@@ -497,5 +555,41 @@ category('query round trip', () => {
         roundTrip(file, column, 'Ketcher', 'Crux', name, ketcherDraws(atoms, bonds), intended, at)]));
       expect(problems.length, 0, problems.join('\n'));
     }, {timeout: 1200000});
+  }
+
+  for (const type of ['Crux', 'Ketcher', 'OpenChemLib']) {
+    test(`smiles.csv: a list drawn on a SMILES pasted in the field comes back reopened, with no warning: ${type}`,
+      async () => {
+        const {df, filter} = await openTable('smiles.csv', 'canonical_smiles');
+        const want = matches(df.col('canonical_smiles')!, PASTED_LIST_SMARTS);
+        expect(want.length, PASTED_LIST_ROWS, `the rows ${PASTED_LIST_SMARTS} matches`);
+        try {
+          await openDialog(filter, type);
+          pasteInField(filter, PASTED);
+          await settle(filter);
+          expect(filter.sketcher._smiles, PASTED, 'the SMILES the host was given');
+          await PASTED_LIST_DRAWS[type](filter);
+          await settle(filter);
+          const drawn = await heldQuery(filter);
+          pressDialogButton(filter, 'OK');
+          await settle(filter);
+          expect(JSON.stringify(rows(df.filter)), JSON.stringify(want), 'the rows passing after OK');
+          DG.Balloon.closeAll();
+          await openDialog(filter, type);
+          const reopened = await heldQuery(filter);
+          expect(notationBalloons(), '', 'the warnings shown as the sketcher reopened');
+          expect(reopened.search, drawn.search, 'the query of the sketcher reopened, as the search reads it');
+          if (type === 'Crux')
+            expect(reopened.smarts, drawn.smarts, 'Crux\'s own SMARTS of the sketcher reopened');
+          await settle(filter);
+          expect(JSON.stringify(rows(df.filter)), JSON.stringify(want), 'the rows passing after the reopening');
+          pressDialogButton(filter, 'CANCEL');
+        } finally {
+          for (const d of (DG.Dialog as any).getOpenDialogs?.() ?? [])
+            d.close();
+          DG.Balloon.closeAll();
+          grok.shell.closeAll();
+        }
+      }, {timeout: 180000});
   }
 });
