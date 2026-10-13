@@ -61,6 +61,9 @@ function printUsage(command) {
 const command = argv['_'][0];
 if (command !== 'test' && command !== 'stresstest')
   delete argv.dartium;
+// A declared boolean is always present (false); commands that count their options (grok api) reject it.
+if (argv['send-email'] === false)
+  delete argv['send-email'];
 if (command in commands) {
   try {
     if (argv['help']) {
