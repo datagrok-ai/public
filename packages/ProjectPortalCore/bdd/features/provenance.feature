@@ -11,6 +11,7 @@ Feature: Provenance
     Given a scratch project "BDD-PROV" at stage "TV" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on provenance project card
+    And user clicks on open program button
     And user clicks on assay criterion met button
     And user checks evidence snapshot checkbox
     And user enters "Assay validated" into rationale input

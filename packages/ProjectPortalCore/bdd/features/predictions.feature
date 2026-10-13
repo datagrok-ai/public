@@ -12,6 +12,7 @@ Feature: Predictions
     Given the example solubility model has not scored "EXS-KIN1" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user clicks on LO step
     And user clicks on score solubility estimate button
     Then score result should contain text "stored 11 solubility_um"

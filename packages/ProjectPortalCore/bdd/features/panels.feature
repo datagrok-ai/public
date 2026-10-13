@@ -13,6 +13,7 @@ Feature: Program-page panels per persona
     And the example design sets are loaded
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user selects "Biologist" in persona input
     Then panels note should contain text "Panels for Biologist, from EX-SMD"
     And dmta heading should be visible

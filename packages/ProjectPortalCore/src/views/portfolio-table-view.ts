@@ -10,6 +10,8 @@ import {button} from '@datagrok-libraries/u2';
 // a cycle with portal-view, safe: neither uses the other at load
 import {portalAppView, PortalView} from './portal-view';
 import {installStyles} from './styles';
+import {openProgramPage} from './my-programs-widget';
+import {programAddress} from '../model/pinning';
 
 export const APP_ROOT = '/apps/ProjectPortalCore';
 export const APP_PATH = `${APP_ROOT}/Portal`;
@@ -35,10 +37,13 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
   return el;
 };
 
-/** Opens the clicked program's page, the board's own, in the context panel. */
+/** The current row's program at a glance in the context panel, as a board card shows it; its Open
+ * program opens the program's page in the Project Portal. */
 function programPanel(tv: DG.TableView, t: PortfolioTables): void {
   installStyles();
   const portal = new PortalView();
+  portal.openElsewhere = (code, p) => void openProgramPage({portfolioCode: code, programId: p.id,
+    address: programAddress(code, p.code)}).catch((e) => grok.shell.error(e?.message ?? String(e)));
   let loaded: Promise<void> | null = null;
   const df = t.programs;
   const show = async (row: number) => {
@@ -48,7 +53,7 @@ function programPanel(tv: DG.TableView, t: PortfolioTables): void {
     const code = df.get(COL.portfolio, row) as string;
     loaded ??= portal.load(code);
     await loaded;
-    await portal.showProgram(code, id);
+    await portal.previewProgram(code, id);
   };
   tv.subs.push(df.onCurrentRowChanged.subscribe(() => void show(df.currentRowIdx).catch((e) =>
     grok.shell.error(e?.message ?? String(e)))));

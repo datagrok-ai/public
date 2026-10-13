@@ -10,6 +10,7 @@ Feature: Gate decisions follow the portfolio
   Scenario: A registry-owned gate cannot be advanced here
     When user clicks on biologics development portfolio
     And user clicks on EXB-201 card
+    And user clicks on open program button
     Then stage track should be visible
     And advance button should be disabled
     And gate reasons should contain text "The registry owns this portfolio's stages"
@@ -18,18 +19,22 @@ Feature: Gate decisions follow the portfolio
     Given a scratch project "BDD-SCRATCH" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on scratch project card
+    And user clicks on open program button
     Then advance button should contain text "Target Validation"
     When user clicks on advance button
-    Then scratch project card in target validation column should be visible
+    Then program header should contain text "Target Validation"
     And transition history should contain text "advance"
     And advance button should be disabled
     And gate reasons should contain text "required criteria of Hit Finding"
     When user clicks on assay criterion met button
     Then advance button should be enabled
+    When user clicks on board link
+    Then scratch project card in target validation column should be visible
 
   Scenario: Data conditions are evaluated from the program's data
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user clicks on H2L step
     Then gate heading should contain text "Hit-to-Lead"
     And readiness score should contain text "2 of 2 required"

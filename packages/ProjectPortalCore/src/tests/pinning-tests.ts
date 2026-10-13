@@ -222,9 +222,9 @@ category('Portal: pinned programs', () => {
     const view: DG.View = await grok.functions.call('ProjectPortalCore:ProjectPortalApp', {path: 'EX-SMD/EXS-KIN1'});
     try {
       expect(view.path.endsWith('/Portal/EX-SMD/EXS-KIN1'), true, view.path);
-      // the program page is in the context panel, not the view
-      const page = grok.shell.o as HTMLElement;
-      expect(page?.querySelector?.('[data-u2-name="program-title"]')?.textContent, kin.name);
+      // the program page is the view's main area, in place of the board
+      const page = view.root.querySelector('[data-u2-name="program-page"]') as HTMLElement | null;
+      expect(page?.style.display !== 'none' && page?.querySelector('[data-u2-name="program-title"]')?.textContent, kin.name);
     } finally {
       view.close();
     }

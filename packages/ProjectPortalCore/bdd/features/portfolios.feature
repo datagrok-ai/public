@@ -33,6 +33,7 @@ Feature: Several portfolios on one instance
     And the board should show the stages "TI, LG, LO, DA, CN"
     And EXB-101 card in lead generation column should be visible
     When user clicks on EXB-101 card
+    And user clicks on open program button
     Then program detail should contain text "Registry stage: 3"
 
   Scenario: A portfolio has its own address, and a program opens its workspace
@@ -44,23 +45,27 @@ Feature: Several portfolios on one instance
     When user clicks on portfolios link
     And user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user clicks on open workspace button
     Then the open view should be the space "EXS-KIN1"
 
   Scenario: A program shows the work units its portfolio uses
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then work units should contain text "Campaigns (2)"
     And KIN-A series should contain text "validated"
     When user clicks on portfolios link
     And user clicks on biologics development portfolio
     And user clicks on EXB-201 card
+    And user clicks on open program button
     Then work units should contain text "Process stages (4)"
     And TOX-201 study should contain text "completed"
 
   Scenario: A project lists its compounds by role, never as folders
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then compound roles should contain text "6 lead"
     And EXC-3001 compound should contain text "tool"
 

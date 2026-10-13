@@ -14,6 +14,7 @@ Feature: Documents over files
     And a file "process-description-v1.md" in the folder of the scratch project "BDD-DOCS" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch docs project card
+    And user clicks on open program button
     Then process description document card should contain text "no document yet"
     When user clicks on link process description document button
     Then link document dialog should be visible

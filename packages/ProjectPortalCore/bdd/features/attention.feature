@@ -12,6 +12,7 @@ Feature: Compounds needing attention
   Scenario: The compounds of a discovery project that need attention, and one opened
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then needs attention heading should contain text "Needs attention (4)"
     And hERG not measured count should contain text "4 Potent, hERG not measured"
     And lead without solubility count should contain text "1 Lead without solubility"

@@ -13,6 +13,7 @@ Feature: Data package manifest
     And a run of the example model saved to the scratch project "BDD-PKG" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch package project card
+    And user clicks on open program button
     And user clicks on data package button
     Then data package dialog should be visible
     And data package summary should contain text "1 run"

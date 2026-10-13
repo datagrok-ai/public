@@ -11,6 +11,7 @@ Feature: Program roles
     Given "admin" has no role on "EXS-KIN1" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then program roles should contain text "None"
     When user enters "admin" into role principal input
     And user selects "Contributor" in program role input

@@ -1,6 +1,7 @@
-/** The Project Portal app: portfolios on the left, the selected portfolio's own stage model as
- * a board in the middle, the selected program's gate on the right. Every portfolio draws its
- * columns from its own stages, so three portfolios show three different boards. */
+/** The Project Portal app: the landing page (find a program, the portfolios), a portfolio's own
+ * stage model as a board, and a program's page. Every portfolio draws its columns from its own
+ * stages, so three portfolios show three different boards. A click on a board card shows the
+ * program's summary in the context panel; opening the program puts its page in the main area. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {badge, button, Card, Control, divV, divH, Scope, signal, span} from '@datagrok-libraries/u2';
@@ -132,8 +133,12 @@ export class PortalView {
    * card per portfolio. A portfolio's page lists no other portfolio; the Browse tree switches. */
   private readonly portfolioList = named(divV([], 'pp-portfolios'), 'portfolio-list');
   private readonly board = named(divV([], 'pp-board'), 'stage-board');
-  /** The program page: shown in the platform's context panel, or docked by whoever hosts it. */
+  /** The program page, in the main area in place of the board; the context panel stays free for
+   * what is selected on it (a run, a document, a compound). */
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
+  private readonly page = named(divV([this.detail], 'pp-program-page'), 'program-page');
+  /** A board card's program at a glance, in the context panel, with Open program. */
+  private readonly summary = named(divV([], 'pp-summary'), 'program-summary');
   /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
   private readonly searchInput = text('program-search-input', undefined, {search: true,
     placeholder: 'Find a program: code, name, alias',
@@ -226,9 +231,12 @@ export class PortalView {
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
   /** Whether the user is one of the open portfolio's approvers (admins are): the keeper's buttons. */
   keeper = false;
+  /** Where Open program goes for a portal that is not on screen (the portfolio table's): the app's page. */
+  openElsewhere: ((portfolioCode: string, program: ProgramRow) => void) | null = null;
 
   constructor() {
-    this.root.append(this.portfolioList, this.board);
+    this.root.append(this.portfolioList, this.board, this.page);
+    this.page.style.display = 'none';
     this.searchInput.root.classList.add('pp-grow');
     let timer: any = null;
     this.searchInput.effect(() => {
@@ -247,7 +255,7 @@ export class PortalView {
     });
   }
 
-  /** The program page, which opening a program puts in the context panel. */
+  /** The program page, which opening a program puts in the main area. */
   get detailRoot(): HTMLElement {
     return this.detail;
   }
@@ -262,6 +270,13 @@ export class PortalView {
     if (this.portfolio?.code !== portfolioCode)
       await this.openPortfolio(portfolioCode);
     await this.openProgram(programId);
+  }
+
+  /** Shows [programId] of [portfolioCode] at a glance in the context panel, switching portfolios first when needed. */
+  async previewProgram(portfolioCode: string, programId: string): Promise<void> {
+    if (this.portfolio?.code !== portfolioCode)
+      await this.openPortfolio(portfolioCode);
+    await this.selectProgram(programId);
   }
 
   async load(portfolioCode?: string): Promise<void> {
@@ -296,6 +311,7 @@ export class PortalView {
     this.keeper = false;
     this.portfolioList.style.display = '';
     this.board.style.display = 'none';
+    this.page.style.display = 'none';
     this.applyBoardButtons();
     this.path.value = APP_PATH;
     this.renderRecent();
@@ -368,6 +384,7 @@ export class PortalView {
     this.applyBoardButtons();
     this.path.value = `${APP_PATH}/${p.code}`;
     this.portfolioList.style.display = 'none';
+    this.page.style.display = 'none';
     this.board.style.display = '';
     const [stages, programs, pins] = await Promise.all([
       stagesOf(p.stage_model_id),
@@ -462,7 +479,7 @@ export class PortalView {
   }
 
   private card(x: ProgramRow): HTMLElement {
-    const card = new Card({title: x.name, onClick: () => void this.openProgram(x.id).catch(this.failed), children: [
+    const card = new Card({title: x.name, onClick: () => void this.selectProgram(x.id).catch(this.failed), children: [
       divH([
         badge(x.status ?? 'active', {variant: statusVariant[x.status ?? 'active'] ?? 'default'}),
         ...(x.modality ? [span(x.modality, 'pp-muted')] : []),
@@ -473,18 +490,18 @@ export class PortalView {
     // the open program is marked here, not with u2's selected state: that one only comes with selectable,
     // where a click toggles it
     card.root.classList.add('pp-card');
+    card.root.title = `${x.code}: click for a summary, double-click to open`;
+    card.root.addEventListener('dblclick', () => void this.openProgram(x.id).catch(this.failed));
     if (x.id === this.selected)
       card.root.classList.add('pp-selected');
     return named(card.root, `program-${slug(x.code)}`);
   }
 
   async openProgram(id: string, viewedStage: string | null = null): Promise<void> {
-    const opened = id !== this.selected;
-    // the program page lives in the platform's context panel: an open (or a click on the program
-    // after the panel moved on to something else) puts it there
-    if (opened || !this.detail.isConnected)
-      this.showDetail();
+    // a program selected on the board is not open yet: its page is drawn afresh
+    const opened = id !== this.selected || this.page.style.display === 'none';
     if (opened) {
+      this.showPage();
       this.data = undefined;
       this.news = undefined;
     }
@@ -492,11 +509,9 @@ export class PortalView {
       this.picked = {programId: id, off: new Set(), links: []};
     this.selected = id;
     this.viewedStage = viewedStage;
-    for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
-      el.classList.remove('pp-selected');
     const program = this.programs.find((x) => x.id === id);
+    this.markSelected(program ?? null);
     if (program) {
-      this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
       // .../Portal/<portfolio>/<program>: the program's page can be linked
       if (this.portfolio) {
         this.path.value = `${APP_PATH}/${this.portfolio.code}/${program.code}`;
@@ -679,10 +694,97 @@ export class PortalView {
     this.redraw?.();
   }
 
-  /** Puts the program page in the platform's context panel, opening the panel if it is closed. */
-  private showDetail(): void {
+  /** Puts the program page in the main area in place of the board. The board's summary leaves the
+   * context panel: the page says all it said. */
+  private showPage(): void {
+    this.portfolioList.style.display = 'none';
+    this.board.style.display = 'none';
+    this.page.style.display = '';
+    this.page.scrollTop = 0;
+    if (grok.shell.o === this.summary)
+      grok.shell.o = null;
+  }
+
+  /** Back from a program's page to its portfolio's board, the program still marked there. */
+  showBoard(): void {
+    if (!this.portfolio)
+      return;
+    this.redraw = null;
+    this.clearDetailScope(true);
+    this.page.style.display = 'none';
+    // mode and persona may have changed on the page: the board's header shows them again
+    this.renderBoard();
+    this.board.style.display = '';
+    this.path.value = `${APP_PATH}/${this.portfolio.code}`;
+    const program = this.programs.find((x) => x.id === this.selected);
+    if (program)
+      void this.selectProgram(program.id).catch(this.failed);
+  }
+
+  /** Marks [program]'s card on the board, and only it. */
+  private markSelected(program: ProgramRow | null): void {
+    for (const el of Array.from(this.board.querySelectorAll('.pp-card')))
+      el.classList.remove('pp-selected');
+    if (program)
+      this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
+  }
+
+  /** A click on a board card: the program at a glance in the context panel, with Open program.
+   * The board stays; a double-click or Open program opens the page. */
+  async selectProgram(id: string): Promise<void> {
+    const program = this.programs.find((x) => x.id === id);
+    if (!program || !this.portfolio)
+      return;
+    this.selected = id;
+    this.markSelected(program);
+    const noun = (this.portfolio.program_noun ?? 'program').toLowerCase();
+    const stage = this.stages.find((s) => s.id === program.stage_id) ?? null;
+    const portfolioCode = this.portfolio.code;
+    const open = named(button(`Open ${noun}`, () => this.openElsewhere ? this.openElsewhere(portfolioCode, program) :
+      void this.openProgram(id).catch(this.failed), {primary: true}), 'open-program-button');
+    open.title = `This ${noun}'s page: gate, documents, runs, discussion and the rest`;
+    const facts = named(divV([], 'pp-summary-facts'), 'program-summary-facts');
+    const pinned = pinOf(this.pins, {programId: program.id, spaceId: program.space_id});
+    this.summary.replaceChildren(
+      divH([portalIcon('program', 'Program'), named(span(program.name, 'pp-title'), 'summary-title')], 'pp-icon-line'),
+      divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
+        ...(pinned ? [span('pinned', 'pp-pinned-mark')] : [])], 'pp-card-meta'),
+      span(`${this.portfolio.name} · ${program.code}`, 'pp-muted'),
+      span(stage ? `Stage: ${stage.code} · ${stage.name}` : 'Not placed in the model yet'),
+      ...(program.modality ? [span(program.modality, 'pp-muted')] : []),
+      facts,
+      divH([open], 'pp-actions'),
+    );
     grok.shell.windows.showContextPanel = true;
-    grok.shell.o = this.detail;
+    grok.shell.o = this.summary;
+    // the gate's readiness, read after the summary shows: the board does not wait for it
+    const ctx = await programContext(id).catch(() => null);
+    if (!ctx || this.selected !== id || !this.summary.isConnected)
+      return;
+    const next = nextStage(ctx.stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
+    const r = ctx.readiness;
+    facts.replaceChildren(
+      ...(next ? [span(`Next gate: ${next.name}`)] : [span('No further stage', 'pp-muted')]),
+      ...(r ? [divH([span(r.empty ? 'No required criteria' : `${r.requiredMet} of ${r.requiredTotal} required met or waived`),
+        badge(readinessLabel(r), {variant: r.score === null ? 'default' : r.score === 1 ? 'success' :
+          r.score === 0 ? 'error' : 'warning'})], 'pp-readiness')] : []),
+    );
+  }
+
+  /** Reads the open portfolio's programs and pins again and redraws its board, wherever the user is:
+   * after a decision on a program's page, the page stays. */
+  private async refreshBoard(): Promise<void> {
+    const p = this.portfolio;
+    if (!p)
+      return;
+    const [programs, pins] = await Promise.all([
+      portalDb.programs.query({filter: `portfolio_id = ${filterValue(p.id)}`, limit: ROW_LIMIT}),
+      myPins().catch(() => this.pins),
+    ]);
+    if (this.portfolio !== p)
+      return;
+    [this.programs, this.pins] = [programs, pins];
+    this.renderBoard();
   }
 
   /** Simple mode leaves the advanced buttons (sync history, export, all portfolios) off the ribbon;
@@ -795,7 +897,7 @@ export class PortalView {
         const ev = done.evidence;
         grok.shell.info(`${program.name}: ${d} recorded${ev?.written ? ` with ${ev.written} piece(s) of evidence` : ''}` +
           `${ev?.errors.length ? `\n${ev.errors.join('\n')}` : ''}${done.workspace ? `\n${done.workspace}` : ''}`);
-        await this.openPortfolio(this.portfolio!.code);
+        await this.refreshBoard();
         await this.openProgram(program.id);
       } catch (e: any) {
         grok.shell.error(e?.message ?? String(e));
@@ -983,15 +1085,29 @@ export class PortalView {
     layout.shown.forEach((x, i) => {
       if (i === firstBehind && more)
         body.push(divH([more], 'pp-actions'));
-      body.push(...panels[x]());
+      // a panel is kept whole: the page flows its panels into columns where it is wide enough
+      const els = panels[x]();
+      if (els.length)
+        body.push(named(divV(els, 'pp-panel'), `section-${slug(x)}`));
     });
     if (more && firstBehind < 0)
       body.push(divH([more], 'pp-actions'));
 
+    // back to the board, and from there to the choice of portfolio
+    const crumbs = named(divH([
+      ...(this.severalPortfolios ? [linkTo('Portfolios ›', 'portfolios-link', () => this.showLanding(),
+        {title: 'Back to the choice of portfolio'})] : []),
+      linkTo(`${ctx.portfolio.name} ›`, 'board-link', () => this.showBoard(), {title: `Back to the ${ctx.portfolio.name} board`}),
+    ], 'pp-crumbs'), 'program-crumbs');
     this.detail.replaceChildren(
-      divH([portalIcon('program', 'Program'), named(span(program.name, 'pp-title'), 'program-title')], 'pp-icon-line'),
-      divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
-        span(`${ctx.portfolio.name} · ${program.code}`, 'pp-muted')]),
+      crumbs,
+      named(divH([
+        divH([portalIcon('program', 'Program'), named(span(program.name, 'pp-title'), 'program-title')], 'pp-icon-line'),
+        badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
+        span([...(program.name !== program.code ? [program.code] : []), current?.name ?? 'Unstaged'].join(' · '), 'pp-muted'),
+        // the persona composes this page: it is chosen here as on the board
+        this.preferences(),
+      ], 'pp-page-header'), 'program-header'),
       named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx),
         named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button'),
         this.askSmeButton(ctx),
@@ -1000,7 +1116,7 @@ export class PortalView {
       ...(newsLine ? [newsLine] : []),
       ...(layout.composed ? [named(span(`Panels for ${PERSONA_LABELS[this.persona!.persona]}, from ${ctx.portfolio.code}`, 'pp-muted'),
         'panels-composed')] : []),
-      ...body,
+      named(divV(body, 'pp-page-body'), 'program-body'),
     );
   }
 
@@ -1382,7 +1498,7 @@ export class PortalView {
     const closed = rows.filter((r) => r.status !== 'pending').slice(0, 3);
     const done = async (line: string) => {
       this.approvalLine.set(program.id, line);
-      await this.openPortfolio(this.portfolio!.code);
+      await this.refreshBoard();
       await this.openProgram(program.id, this.viewedStage);
     };
     const item = (r: ApprovalRow, name: string) => requestItem(r, {names: this.approvals.names, name, onDone: done,

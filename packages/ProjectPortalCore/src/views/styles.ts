@@ -68,6 +68,15 @@ const CSS = `
 .pp-history-row, .pp-lineage { font-size: 12px; }
 /* a long gate panel scrolls; its rows must not shrink (the rationale box collapsed to a line) */
 .pp-detail > * { flex-shrink: 0; }
+/* the program page: the main area, in place of the board; its panels flow into columns when it is wide */
+.pp-program-page { flex: 1 1 0; min-width: 0; overflow-y: auto; }
+.pp-program-page .pp-detail { padding: 4px 12px 24px; }
+.pp-crumbs { gap: 4px; font-size: 12px; }
+.pp-page-header { gap: 8px; align-items: center; flex-wrap: wrap; }
+.pp-program-page .pp-page-body { display: block; columns: 2 480px; column-gap: 32px; }
+.pp-panel { break-inside: avoid; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.pp-summary { gap: 6px; padding: 8px; }
+.pp-summary-facts { gap: 4px; }
 .pp-runs { gap: 4px; }
 .pp-run { gap: 1px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
 .pp-run-meta { gap: 4px; align-items: center; flex-wrap: wrap; }

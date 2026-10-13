@@ -11,6 +11,7 @@ Feature: Simple and advanced mode, quick actions per persona
     Given the user's portal mode and persona are not set
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user selects "Chemist" in persona input
     Then quick actions heading should contain text "Chemist"
     And quick actions should contain text "Open SAR table"

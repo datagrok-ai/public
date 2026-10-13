@@ -12,6 +12,7 @@ Feature: Follow a program and hear about new data
     Given the user does not follow "EXS-KIN1" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then follow button should contain text "Follow"
     When user clicks on follow button
     Then follow button should contain text "Unfollow"

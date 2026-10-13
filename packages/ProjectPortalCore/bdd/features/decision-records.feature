@@ -11,6 +11,7 @@ Feature: Decisions with evidence where the registry owns the stage
     Given a scratch project "BDD-REC" at stage "D2" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch record project card
+    And user clicks on open program button
     Then record decision button should contain text "Record decision for"
     And record note should contain text "the stage is set by the registry"
     And advance button should be disabled
@@ -19,7 +20,8 @@ Feature: Decisions with evidence where the registry owns the stage
     And user clicks on record decision button
     Then transition history should contain text "Hold at the gate to"
     And transition history should contain text "decision recorded; stage set by registry"
-    And scratch record project card in gate D2 column should be visible
+    When user clicks on board link
+    Then scratch record project card in gate D2 column should be visible
     When user clicks on decisions button
     And user enters "comparability" into decision text input
     Then decision results should contain text "BDD-REC"

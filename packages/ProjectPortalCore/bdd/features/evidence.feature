@@ -11,6 +11,7 @@ Feature: Decisions with evidence
     Given a scratch project "BDD-EVIDENCE" at stage "TV" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on evidence project card
+    And user clicks on open program button
     And user clicks on assay criterion met button
     Then decision evidence should contain text "Readiness of Hit Finding: 1 criterion"
     When user enters "https://example.org/reviews/hf-gate" into evidence link input
@@ -26,6 +27,7 @@ Feature: Decisions with evidence
     And the workspace of the scratch project "BDD-EVIDENCE" in the "EX-SMD" portfolio is built
     When user clicks on small molecule discovery portfolio
     And user clicks on evidence project card
+    And user clicks on open program button
     And user clicks on assay criterion met button
     And user checks evidence snapshot checkbox
     And user enters "Assay validated" into rationale input

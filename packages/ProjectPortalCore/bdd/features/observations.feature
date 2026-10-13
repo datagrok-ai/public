@@ -12,6 +12,7 @@ Feature: Observations
     Given a scratch project "BDD-OBS" at stage "TV" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on scratch observation project card
+    And user clicks on open program button
     And user clicks on add observation button
     Then observation dialog should be visible
     When user enters "Selectivity is the risk" into observation title input

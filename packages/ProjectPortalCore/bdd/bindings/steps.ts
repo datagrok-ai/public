@@ -61,7 +61,7 @@ export const sidePanelsHidden = Given('the side panels are hidden', async (page:
     const w = grok.shell.windows;
     const was = {browse: w.showBrowse, context: w.showContextPanel, help: w.showHelp};
     w.showBrowse = false;
-    // the context panel stays: a program's page opens there
+    // the context panel stays: a board card's summary shows there
     w.showHelp = false;
     // a dev stand announces its debug-mode packages; not part of the story
     document.querySelectorAll('.d4-balloon').forEach((b) => b.remove());

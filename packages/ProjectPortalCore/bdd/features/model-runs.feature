@@ -13,6 +13,7 @@ Feature: Saved runs on the program page, and the model card
     And a run of the example model saved to the scratch project "BDD-RUNS" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch runs project card
+    And user clicks on open program button
     Then saved runs should contain text "Fed-batch titer (example) · BDD-RUNS"
     And saved runs should contain text "Production bioreactor"
     When user clicks on example model link
@@ -34,6 +35,7 @@ Feature: Saved runs on the program page, and the model card
     Then save run dialog should not be visible
     When user clicks on biologics development portfolio
     And user clicks on scratch save project card
+    And user clicks on open program button
     Then saved runs should contain text "Fed-batch titer (example) · BDD-SAVE"
     And saved runs should contain text "characterization"
 
@@ -43,6 +45,7 @@ Feature: Saved runs on the program page, and the model card
     And a run of the example model at feed rate 4 titled "Feed 4" saved to the scratch project "BDD-PICK" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch pick project card
+    And user clicks on open program button
     Then process description run should contain text "No run selected · 2 candidates"
     When user clicks on choose process description run button
     Then choose run dialog should be visible

@@ -11,10 +11,12 @@ Feature: Add a program to favorites and find it in the Workspace and on Home
     Given the user has not pinned "EXS-KIN1" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then pin button should contain text "Add to favorites"
     When user clicks on pin button
     Then pin button should contain text "Remove from favorites"
-    And EXS-KIN1 pinned mark should be visible
+    When user clicks on board link
+    Then EXS-KIN1 pinned mark should be visible
     When user opens Home
     Then my programs widget should contain text "EXS-KIN1"
     And EXS-KIN1 tile should contain text "Example Small Molecule Discovery"
@@ -23,4 +25,5 @@ Feature: Add a program to favorites and find it in the Workspace and on Home
     And pin button should contain text "Remove from favorites"
     When user clicks on pin button
     Then pin button should contain text "Add to favorites"
-    And EXS-KIN1 pinned mark should not be visible
+    When user clicks on board link
+    Then EXS-KIN1 pinned mark should not be visible

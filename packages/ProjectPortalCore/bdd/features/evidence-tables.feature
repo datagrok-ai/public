@@ -15,6 +15,7 @@ Feature: Evidence tables generated into documents
     And a run of the example model at feed rate 4 titled "Feed 4" saved to the scratch project "BDD-ET" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch evidence project card
+    And user clicks on open program button
     And user clicks on choose process description run button
     Then choose run dialog should be visible
     When user selects "Feed 4" in selected run input
@@ -32,6 +33,7 @@ Feature: Evidence tables generated into documents
     And a run of the example model at feed rate 4 titled "Feed 4" saved to the scratch project "BDD-ET2" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch stale evidence project card
+    And user clicks on open program button
     And user clicks on choose process description run button
     And user selects "Feed 4" in selected run input
     And user enters "Higher titer at the same temperature" into selection rationale input

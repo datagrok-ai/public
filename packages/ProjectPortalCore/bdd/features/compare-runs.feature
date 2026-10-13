@@ -13,6 +13,7 @@ Feature: Compare a criterion's runs in Compute2
     And a run of the example model at feed rate 4 titled "Feed 4" saved to the scratch project "BDD-CMP" in the "EX-BIOC" portfolio
     When user clicks on biologics development portfolio
     And user clicks on scratch compare project card
+    And user clicks on open program button
     And user clicks on compare process description runs button
     Then compare runs dialog should be visible
     And compare runs summary should contain text "2 runs of 1 model"

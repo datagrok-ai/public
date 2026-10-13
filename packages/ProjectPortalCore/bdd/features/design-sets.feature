@@ -12,6 +12,7 @@ Feature: Design sets and selection sets
     Given the example design sets are loaded
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then design sets should contain text "KIN-A para-substituents"
     And design sets should contain text "6 proposed · 4 chosen for synthesis · best KIN-A-D01"
     And selection sets should contain text "K1 screen: indazole hits"

@@ -13,6 +13,7 @@ Feature: Discussion and Ask SME
     And the discussion of the scratch project "BDD-DISC" in the "EX-SMD" portfolio is removed at the end
     When user clicks on small molecule discovery portfolio
     And user clicks on scratch discussion project card
+    And user clicks on open program button
     And user enters "Is the K1 panel enough for the gate?" into discussion input
     And user clicks on discussion post button
     Then discussion heading should contain text "Discussion (1)"

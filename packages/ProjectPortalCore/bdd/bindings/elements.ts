@@ -7,7 +7,8 @@ const u2 = (name: string) => `[data-u2-name="${name}"]`;
 export const app = context('Project Portal app', {selector: u2('Project Portal'), aliases: ['portal']});
 
 app.element('portfolio list', {selector: u2('portfolio-list')});
-app.element('portfolios link', {selector: u2('portfolios-link')});
+// the board and the program page each have one; the one on show
+app.element('portfolios link', {selector: `${u2('portfolios-link')}:visible`});
 app.element('small molecule discovery portfolio', {selector: u2('portfolio-ex-smd'), aliases: ['EX-SMD portfolio']});
 app.element('biologics discovery portfolio', {selector: u2('portfolio-ex-biod'), aliases: ['EX-BIOD portfolio']});
 app.element('biologics development portfolio', {selector: u2('portfolio-ex-bioc'), aliases: ['EX-BIOC portfolio']});
@@ -28,6 +29,11 @@ app.element('scratch project card', {selector: u2('program-bdd-scratch')});
 app.element('KINASE-X card', {selector: u2('program-kinase-x')});
 
 app.element('program detail', {selector: u2('program-detail')});
+app.element('program page', {selector: u2('program-page')});
+app.element('program header', {selector: u2('program-header')});
+app.element('board link', {selector: u2('board-link')});
+app.element('program summary', {selector: u2('program-summary')});
+app.element('open program button', {selector: u2('open-program-button')});
 app.element('stage track', {selector: u2('stage-track')});
 app.element('gate criteria', {selector: u2('gate-criteria')});
 app.element('gate reasons', {selector: u2('gate-reasons')});
@@ -115,8 +121,9 @@ app.element('follow button', {selector: u2('follow-button')});
 app.element('what\'s new', {selector: u2('whats-new')});
 app.element('KIN-A follow link', {selector: u2('follow-series-kin-a')});
 
-app.element('mode input', {selector: u2('mode-input')});
-app.element('persona input', {selector: u2('persona-input')});
+// on the board header and the program page's: the one on show
+app.element('mode input', {selector: `${u2('mode-input')}:visible`});
+app.element('persona input', {selector: `${u2('persona-input')}:visible`});
 app.element('quick actions', {selector: u2('quick-actions')});
 app.element('quick actions heading', {selector: u2('quick-actions-heading')});
 app.element('more button', {selector: u2('more-button')});

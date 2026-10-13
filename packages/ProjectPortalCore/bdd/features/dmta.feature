@@ -12,6 +12,7 @@ Feature: DMTA status
     Given the example design sets are loaded
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     Then dmta heading should contain text "DMTA (18)"
     And dmta cycles should contain text "KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested"
     And dmta cycles should contain text "cycle 14 days (median of 3)"

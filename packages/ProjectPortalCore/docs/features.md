@@ -53,7 +53,8 @@ recorded met, observations and a follow.
 - **Browse.** Under Apps › Project Portal, a node per portfolio the user can see, by name. A click opens that portfolio: in the portal on screen, else in a new preview of the app.
 - **One portfolio** opens straight away. **Several** open on the landing page: the search box, Recent, and a card per portfolio with its program count and stage model.
 - **A portfolio's page** shows that portfolio only. With several, **Portfolios ›** in its header goes back to the landing page; Browse switches directly.
-- **The program page** opens in the platform's context panel (opening it if closed), from the board, a search hit, Recent and the portfolio table alike.
+- **The program page** takes the main area in place of the board, with the portfolio (and, with several, **Portfolios ›**) above it to go back. A search hit, Recent, a My programs tile, a favorite opened from the Workspace and an address open it straight away: the user already knows which program they want. The panels flow into two columns when the view is wide enough. The context panel stays free for what is clicked on the page (a run, a document, a model card).
+- **On the board** a card is for choosing: a click marks it and shows the program at a glance in the context panel (status, stage, modality, next gate and its readiness) with **Open program** (the portfolio's noun: *Open project*). A double-click opens the page directly.
 
 ## Finding a program
 
@@ -132,7 +133,7 @@ one table, at `/apps/ProjectPortalCore/Portal/table`; there, the portfolio colum
 - **Fast to read.** The data is read in a fixed number of batched queries. Only the program dataset is read per program, a few at a time, because its SQL selects by `@program`.
 - **Filters and viewers.** The view opens with the filter panel, programs by stage and modality, days in stage, the readiness matrix (programs × the criteria of their next stage, state as color) and compounds by role.
   - The matrix and the compound roles are tables of their own, linked to the programs by id, so the filters drive every viewer.
-- **Clicking a row** opens the program's page beside the grid, the same page the board shows.
+- **Clicking a row** shows the program at a glance in the context panel, as a board card does; its **Open program** opens the program's page in the Project Portal.
 - `portfolioTable(portfolio)` returns the same programs table to scripts.
 
 ## Model runs

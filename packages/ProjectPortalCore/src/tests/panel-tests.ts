@@ -84,6 +84,37 @@ category('Portal: persona panels', () => {
   });
 });
 
+category('Portal: the board chooses, the program page works', () => {
+  test('a card shows the program at a glance; opening it swaps the board for its page, and back', async () => {
+    await loadAllPortfolios(_package);
+    const smd = await portfolioByCode('EX-SMD');
+    const kin1 = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(smd.id)} and code = "EXS-KIN1"`,
+      limit: ROW_LIMIT}))[0];
+    const v = new PortalView();
+    await v.load('EX-SMD');
+    const q = (name: string) => v.root.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
+    const shown = (name: string) => q(name)!.style.display !== 'none';
+    const opened: string[] = [];
+    v.openElsewhere = (code, p) => opened.push(`${code}/${p.code}`);
+    await v.previewProgram('EX-SMD', kin1.id);
+    const summary = grok.shell.o as HTMLElement;
+    expect(summary?.dataset?.u2Name, 'program-summary', 'the summary is in the context panel');
+    expect(shown('stage-board') && !shown('program-page'), true, 'the board stays');
+    expect(q('program-exs-kin1')!.classList.contains('pp-selected'), true);
+    summary.querySelector<HTMLElement>('[data-u2-name="open-program-button"]')!.click();
+    expect(opened.join(), 'EX-SMD/EXS-KIN1', 'a portal not on screen hands Open program on');
+    v.openElsewhere = null;
+    await v.showProgram('EX-SMD', kin1.id);
+    expect(!shown('stage-board') && shown('program-page'), true, 'the page takes the board\'s place');
+    expect(v.path.value.endsWith('/EX-SMD/EXS-KIN1'), true);
+    expect(!!q('gate-heading') && !!q('board-link'), true);
+    q('board-link')!.click();
+    expect(shown('stage-board') && !shown('program-page'), true, 'back to the board');
+    expect(v.path.value.endsWith('/EX-SMD'), true);
+    expect(!q('gate-heading'), true, 'the page is taken down with its scope');
+  });
+});
+
 category('Portal: which portfolio the app opens on', () => {
   test('the one portfolio opens straight away; several leave the choice to the landing page', async () => {
     expect(startingPortfolio(['EX-SMD']), 'EX-SMD');

@@ -12,6 +12,7 @@ Feature: Activity feed
     Given a scratch project "BDD-FEED" at stage "TV" in the "EX-SMD" portfolio
     When user clicks on small molecule discovery portfolio
     And user clicks on feed project card
+    And user clicks on open program button
     And user clicks on follow button
     And user clicks on assay criterion met button
     And user clicks on advance button

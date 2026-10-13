@@ -11,6 +11,7 @@ Feature: Approval of gate decisions
     Given a scratch project "BDD-APPROVAL" at stage "TI" in the "EX-BIOD" portfolio
     When user clicks on biologics discovery portfolio
     And user clicks on approval project card
+    And user clicks on open program button
     Then approval setting should contain text "Needs 1 approver besides the proposer: advance, terminate"
     When user clicks on binding criterion met button
     Then advance button should contain text "Propose advance to Lead Generation"

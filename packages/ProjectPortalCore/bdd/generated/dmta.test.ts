@@ -24,10 +24,11 @@ test.describe("DMTA status", () => {
     await session.step(12, "Given the example design sets are loaded", () => exampleDesignSets(page));
     await session.step(13, "When user clicks on small molecule discovery portfolio", () => clickOn(page, el("small molecule discovery portfolio")));
     await session.step(14, "And user clicks on EXS-KIN1 card", () => clickOn(page, el("EXS-KIN1 card")));
-    await session.step(15, "Then dmta heading should contain text \"DMTA (18)\"", () => shouldContainText(page, el("dmta heading"), "DMTA (18)"));
-    await session.step(16, "And dmta cycles should contain text \"KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested\"", () => shouldContainText(page, el("dmta cycles"), "KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested"));
-    await session.step(17, "And dmta cycles should contain text \"cycle 14 days (median of 3)\"", () => shouldContainText(page, el("dmta cycles"), "cycle 14 days (median of 3)"));
-    await session.step(18, "When user clicks on open dmta status button", () => clickOn(page, el("open dmta status button")));
-    await session.step(19, "Then the open table should have 18 rows and a name starting with \"EXS-KIN1 DMTA status\"", () => openTableStarting(page, 18, "EXS-KIN1 DMTA status"));
+    await session.step(15, "And user clicks on open program button", () => clickOn(page, el("open program button")));
+    await session.step(16, "Then dmta heading should contain text \"DMTA (18)\"", () => shouldContainText(page, el("dmta heading"), "DMTA (18)"));
+    await session.step(17, "And dmta cycles should contain text \"KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested\"", () => shouldContainText(page, el("dmta cycles"), "KIN-A: 14 compounds · 9 designed, 6 requested, 8 made, 3 tested"));
+    await session.step(18, "And dmta cycles should contain text \"cycle 14 days (median of 3)\"", () => shouldContainText(page, el("dmta cycles"), "cycle 14 days (median of 3)"));
+    await session.step(19, "When user clicks on open dmta status button", () => clickOn(page, el("open dmta status button")));
+    await session.step(20, "Then the open table should have 18 rows and a name starting with \"EXS-KIN1 DMTA status\"", () => openTableStarting(page, 18, "EXS-KIN1 DMTA status"));
   });
 });

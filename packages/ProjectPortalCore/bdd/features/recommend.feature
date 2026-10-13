@@ -12,6 +12,7 @@ Feature: Suggested models and missing assays
   Scenario: What Lead Optimization still needs, and a model that stands in for it
     When user clicks on small molecule discovery portfolio
     And user clicks on EXS-KIN1 card
+    And user clicks on open program button
     And user clicks on LO step
     Then missing assays heading should contain text "Missing assays for Lead Optimization (3)"
     And missing solubility should contain text "solubility_um on 1 row (EXC-1006)"
