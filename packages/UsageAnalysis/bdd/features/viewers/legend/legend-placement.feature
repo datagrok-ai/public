@@ -16,7 +16,9 @@ Feature: Where a legend sits, how big it is and when it folds away
   until it is restored. The slots Position Auto picks are the ones the platform's placement policy
   gives each viewer: the five viewers walked there dock the legend on top of a tall narrow box, and
   on a wide flat one the scatter plot, the histogram and the bar chart lay it in a free corner
-  while the line chart and the trellis plot dock it on the right.
+  while the line chart and the trellis plot dock it on the right. The bar chart's bars may grow to
+  150 px: at the default 50 the two bars form a band too thin for the legend's corner beside the
+  shorter one, which a legend's font height alone then decides.
   The pie chart and the box plot draw their categories themselves, and under Visibility Auto they
   put away a legend that repeats them, so they are left out of the Visibility Auto scenarios (the
   legend's menu cannot be opened on a legend that is not shown); they keep Always from the
@@ -54,6 +56,7 @@ Feature: Where a legend sits, how big it is and when it folds away
     And user adds a bar chart viewer with:
       | splitColumnName   | SEX    |
       | stackColumnName   | RACE   |
+      | maxBarHeight      | 150    |
       | Legend Visibility | Always |
       | Legend Position   | Right  |
     And user adds a pie chart viewer with:
