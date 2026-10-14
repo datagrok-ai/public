@@ -71,13 +71,14 @@ column's text flag set, so a later Linear comes back on the text. There is also 
 (`the text of X column should not be color-coded`): Apply to = background removes the `.color-coding-text`
 tag, and the layout scenario cannot claim the flag gone before the layout brings it back.
 
-## 4. Questions for a hand walk (not claimed)
+## 4. Answered: no Cancel in the editors
 
-1. **The manual case's Cancel in "Edit color scheme".** `color-coding-ui.md` step 10 expects Cancel
-   to revert the scheme; the dialog has only OK (`cancelText: ''`, `color_coding.dart`) and every
-   change applies at once. Intended, and the md is stale?
-2. **GROK-8444 (Cancel in the conditional editor reverts).** The editor has only CLOSE, and its edits
-   apply at once — the same question.
+"Edit color scheme" has only OK (`cancelText: ''`, `color_coding.dart`) and the conditional editor only
+CLOSE; every change applies at once. Olesia Pavlenko, 14 Oct 2026: this is the intended behaviour, and
+`color-coding-ui.md` step 10 (Cancel reverts the scheme) and GROK-8444 (Cancel in the conditional editor
+reverts) describe a dialog that no longer exists, so the TestTrack case is stale. The features claim the
+current behaviour instead: a removed stop repaints the column before OK
+(`color-coding-editor-linear.feature`).
 
 ## 5. Dropped by rule
 
