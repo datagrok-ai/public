@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter, map } from 'rxjs/operators';
+import { filter, map, mergeMap, takeUntil } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { fromEvent, interval, merge } from 'rxjs';
+import { from, fromEvent, interval, merge, Observable } from 'rxjs';
 import $ from 'cash-dom';
 import { elementClick } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -60,13 +60,23 @@ export class ViewersTutorial extends Tutorial {
     await this.action('Open the viewer gallery again', elementClick(() => addViewerIcon), addViewerIcon, sunburstInfo);
 
     const searchInput = document.querySelector('.vg-controls input.ui-input-editor') as HTMLInputElement;
-    await this.action('Type "Sunburst" in the search box',
+    const sunburstAdded = grok.events.onViewerAdded
+      .pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst'));
+    const gallerySearch = (dlg: DG.Dialog) => dlg.root.querySelector<HTMLElement>('.vg-controls input.ui-input-editor');
+    const typeHintSub = merge(from(DG.Dialog.getOpenDialogs()), grok.events.onDialogShown).pipe(
+      filter((dlg: DG.Dialog) => gallerySearch(dlg) != null),
+      mergeMap((dlg: DG.Dialog) => new Observable(() => {
+        const hint = ui.hints.addHint(gallerySearch(dlg)!, ui.markdown('Type **Sunburst** here'), 'bottom');
+        return () => hint.remove();
+      }).pipe(takeUntil(dlg.onClose)))).subscribe();
+    await this.action('Type "Sunburst" in the search box', merge(
       fromEvent(searchInput, 'input').pipe(filter(() => searchInput.value.toLowerCase().includes('sunburst'))),
-      searchInput);
+      sunburstAdded), searchInput);
+    typeHintSub.unsubscribe();
 
     const sunburstViewerElement = this.getViewerCard('Sunburst');
-    await this.action('Select the Sunburst viewer',
-      grok.events.onViewerAdded.pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst')),
+    const hasSunburst = Array.from(grok.shell.tv.viewers).some((v: DG.Viewer) => v.type === 'Sunburst');
+    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded,
       sunburstViewerElement);
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
