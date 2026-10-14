@@ -66,8 +66,8 @@ the two `div-…` colour inputs.
 reads `isTextColorCoded`), and `color of cell <r> of <c>` is the renderer's back colour, which is the
 coded colour in text mode too. So nothing checks that the renderer paints the letters and leaves the
 cell's background alone (public#2784). Needed: a `text color of cell <r> of <c>` reading from the
-`TextCellRenderer`'s text/back colour split. Also for a hand walk: `Color Coding > Off` leaves the
-column's text flag set, so a later Linear comes back on the text. There is also no negative step
+`TextCellRenderer`'s text/back colour split. `Color Coding > Off` leaves the column's text flag set,
+so a later Linear comes back on the text: intended (Olesia Pavlenko, 14 Oct 2026). There is also no negative step
 (`the text of X column should not be color-coded`): Apply to = background removes the `.color-coding-text`
 tag, and the layout scenario cannot claim the flag gone before the layout brings it back.
 
