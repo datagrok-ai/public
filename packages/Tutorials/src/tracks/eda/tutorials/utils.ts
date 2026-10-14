@@ -1,5 +1,5 @@
 import {fromEvent, Observable, timer} from 'rxjs';
-import {filter, map, switchMap, take, timeout} from 'rxjs/operators';
+import {distinctUntilChanged, filter, map, switchMap, take, timeout} from 'rxjs/operators';
 
 /**
  * Emits (and completes) when the element returned by `get` is clicked.
@@ -12,8 +12,9 @@ export function elementClick(get: () => HTMLElement | null, timeoutMs = 30000): 
   return timer(0, 100).pipe(
     map(() => get()),
     filter((el): el is HTMLElement => el != null),
-    take(1),
     timeout(timeoutMs),
-    switchMap((el) => fromEvent(el, 'click').pipe(take(1))),
+    distinctUntilChanged(),
+    switchMap((el) => fromEvent(el, 'click', {capture: true})),
+    take(1),
   );
 }

@@ -1,9 +1,9 @@
 import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import { filter, map, mergeMap, takeUntil } from 'rxjs/operators';
+import { distinctUntilChanged, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
 import { Tutorial } from '@datagrok-libraries/tutorials/src/tutorial';
-import { from, fromEvent, interval, merge, Observable } from 'rxjs';
+import { from, fromEvent, interval, merge, Observable, Subscription } from 'rxjs';
 import $ from 'cash-dom';
 import { elementClick } from './utils';
 import { getPlatform, Platform, platformKeyMap } from '../../shortcuts';
@@ -40,24 +40,29 @@ export class ViewersTutorial extends Tutorial {
 
     this.title('Selection and current records');
 
-    const ribbonPanels = grok.shell.v.getRibbonPanels();
-    const addViewerIcon = ribbonPanels[1][1];
-    await this.action(
-      'Click the Add viewer icon to open the gallery',
-      elementClick(() => addViewerIcon), addViewerIcon);
+    const addViewerIcon = (): HTMLElement | null => grok.shell.v.getRibbonPanels().flat()
+      .find((item) => item.querySelector('.svg-add-viewer') != null) ?? null;
+    let stepHint = this.followHint(addViewerIcon);
+    await this.action('Click the Add viewer icon to open the gallery', elementClick(addViewerIcon));
+    stepHint.unsubscribe();
 
     const getChartsTag = (): HTMLElement | null => Array.from(document.querySelectorAll('.vg-tags .ui-div div')).find(div => {
       const span = div.querySelector('span');
       return span && span.textContent === 'Charts';
     }) as HTMLElement ?? null;
-    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag), getChartsTag());
+    stepHint = this.followHint(getChartsTag);
+    await this.action('Click the "Charts" tag to filter the viewers', elementClick(getChartsTag));
+    stepHint.unsubscribe();
 
-    await this.action('Select the Radar viewer',
-      elementClick(() => this.getViewerCard('Radar')), this.getViewerCard('Radar'));
+    stepHint = this.followHint(() => this.getViewerCard('Radar'));
+    await this.action('Select the Radar viewer', elementClick(() => this.getViewerCard('Radar')));
+    stepHint.unsubscribe();
 
     const sunburstInfo = 'This time, find a viewer by searching instead of using tags. ' +
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
-    await this.action('Open the viewer gallery again', elementClick(() => addViewerIcon), addViewerIcon, sunburstInfo);
+    stepHint = this.followHint(addViewerIcon);
+    await this.action('Open the viewer gallery again', elementClick(addViewerIcon), null, sunburstInfo);
+    stepHint.unsubscribe();
 
     const sunburstAdded = grok.events.onViewerAdded
       .pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst'));
@@ -80,10 +85,10 @@ export class ViewersTutorial extends Tutorial {
       sunburstAdded));
     typeHintSub.unsubscribe();
 
-    const sunburstViewerElement = this.getViewerCard('Sunburst');
     const hasSunburst = Array.from(grok.shell.tv.viewers).some((v: DG.Viewer) => v.type === 'Sunburst');
-    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded,
-      sunburstViewerElement);
+    stepHint = this.followHint(() => this.getViewerCard('Sunburst'));
+    await this.action('Select the Sunburst viewer', hasSunburst ? Promise.resolve() : sunburstAdded);
+    stepHint.unsubscribe();
 
     const sp = await this.openPlot('scatter plot', (x) => x.type === DG.VIEWER.SCATTER_PLOT);
     const hist = await this.openPlot('histogram', (x) => x.type === DG.VIEWER.HISTOGRAM);
@@ -150,6 +155,14 @@ export class ViewersTutorial extends Tutorial {
       '<b>Apply Data Settings</b>. Note that style settings can be applied even to ' +
       'viewers that have different source of data.';
     await this.contextMenuAction('Apply the style to the new viewer', 'Apply', null, styleApplyInfo);
+  }
+
+  private followHint(get: () => HTMLElement | null): Subscription {
+    return interval(100).pipe(map(get), distinctUntilChanged(), switchMap((el) => new Observable(() => {
+      if (el != null)
+        ui.hints.addHintIndicator(el, false);
+      return () => el != null && ui.hints.remove(el);
+    }))).subscribe();
   }
 
   private getViewerCard(name: string): HTMLElement | null {
