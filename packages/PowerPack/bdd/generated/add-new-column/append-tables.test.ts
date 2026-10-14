@@ -26,7 +26,7 @@ import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Append Tables keeps the formula of a calculated column and computes it for the appended rows", () => {
   const session = feature(test, "features/add-new-column/append-tables.feature", import.meta.url);
-  test("Append Tables keeps the formula of a calculated column and computes it for the appended rows", {tag: ["@journey", "@realizes:powerpack.dialogs.add-new-column", "@known-failure:47"]}, async ({browser}) => {
+  test("Append Tables keeps the formula of a calculated column and computes it for the appended rows", {tag: ["@journey", "@realizes:powerpack.dialogs.add-new-column", "@known-failure:49"]}, async ({browser}) => {
     const page = await session.page(browser);
     const run = journey(test, 2, page);
     await session.step(14, "Given user is logged in", () => loggedIn(page));
@@ -53,9 +53,11 @@ test.describe("Append Tables keeps the formula of a calculated column and comput
     await run.scenario("OK with no table checked logs no error", async () => {
       await session.step(44, "When user picks \"Data > Append Tables...\" from the top menu", () => pickFromTopMenu(page, "Data > Append Tables..."));
       await session.step(45, "Then \"Append Tables\" dialog should be visible", () => shouldBe(page, el("\"Append Tables\" dialog"), "visible"));
-      await session.step(46, "When user clicks on OK button in \"Append Tables\" dialog", () => clickOn(page, el("OK button in \"Append Tables\" dialog")));
-      await session.step(47, "Then no errors should have been logged", () => noErrors(page));
-    }, {knownFailure: true, line: 47});
+      await session.step(46, "And \"first\" checkbox in \"Append Tables\" dialog should be unchecked", () => shouldBe(page, el("\"first\" checkbox in \"Append Tables\" dialog"), "unchecked"));
+      await session.step(47, "And \"second\" checkbox in \"Append Tables\" dialog should be unchecked", () => shouldBe(page, el("\"second\" checkbox in \"Append Tables\" dialog"), "unchecked"));
+      await session.step(48, "When user clicks on OK button in \"Append Tables\" dialog", () => clickOn(page, el("OK button in \"Append Tables\" dialog")));
+      await session.step(49, "Then no errors should have been logged", () => noErrors(page));
+    }, {knownFailure: true, line: 49});
     run.finish();
   });
 });

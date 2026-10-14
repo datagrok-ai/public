@@ -9,13 +9,12 @@ Feature: Edit Column Formula: a calculated column renamed and given a new formul
   calculated columns; the Formula pane's own Apply is formula-refreshing.feature.
 
   The first scenario picks dbl by its header; the later ones make the column current through the
-  platform's API, since the context panel drops a click made while it is frozen after a dialog or
-  an edit (GROK-21024, kept by design; there is no signal for its end) and the pick is not their
-  subject. The dialogs that only look are cancelled, and the one that changes the column comes last.
-  The Edit
-  in dialog button is in the pane before the pane's editor is, and a click on it then opens nothing,
-  so the pane's formula is claimed first. The preview naming the column under edit "<name> (2)"
-  (public#4293) is in MISSING.md.
+  platform's API, since the context panel drops a click made while it is frozen after a dialog or an
+  edit (GROK-21024, kept by design; there is no signal for its end) and the pick is not their
+  subject. The dialogs that only look are cancelled, and the one that changes the column comes last
+  of the dialogs. The Edit in dialog button is in the pane before the pane's editor is, and a click
+  on it then opens nothing, so the pane's formula is claimed first. The preview naming the column
+  under edit "<name> (2)" (public#4293) is in MISSING.md.
 
   Background:
     Given user is logged in

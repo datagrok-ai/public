@@ -7,10 +7,10 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
   arithmetic (CumSum(...) * 2, public#4253) is a valid formula and adds its column. A name the table
   already has is kept apart: the dialog says which name the column will get, and OK adds it under
   that name. Plain text makes the formula a text template ("${s} + ${s}" gives "a + a", where auto
-  would compute the expression); a plain
-  text or string type over a formula that computes a number is refused as a type mismatch, which is
-  a question in MISSING.md, not a claim here. Translated from help/transform/add-new-column.md (Validation, the type picker) and the
-  QA round of 13 Oct 2026 on calculated columns.
+  would compute the expression); a plain text or string type over a formula that computes a number
+  is refused as a type mismatch (public#4295), which is in MISSING.md, not a claim here. Translated
+  from help/transform/add-new-column.md (Validation, the type picker) and the QA round of 13 Oct
+  2026 on calculated columns.
 
   Not translated: what each formula computes on every row, and the cases of the validator, are the
   PowerPack package tests "Add new column: validation" and ApiTests "DataFrame: Calculated columns";
@@ -37,13 +37,13 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
 
   Scenario: A type picked by hand is the type of the added column
     When user clears formula editor
-    And user types "half" into column name input
+    And user types "dbl" into column name input
     And user types "${x} * 2" into formula editor
     And user selects "double" in column type input
     And user clicks on OK button in "Add New Column" dialog
     Then "Add New Column" dialog should be hidden
-    And "half" column should have type "double"
-    And the value of "half" column in row 3 should be "8"
+    And "dbl" column should have type "double"
+    And the value of "dbl" column in row 3 should be "8"
     And no errors should have been logged
 
   Scenario: A picked type the formula cannot give is named, and OK is disabled
@@ -54,8 +54,7 @@ Feature: Add New Column: the result type, a formula the dialog refuses, and a na
     Then formula error should contain text "doesn't match with current column type (int)"
     And OK button in "Add New Column" dialog should be disabled
     When user selects "string" in column type input
-    Then formula error should have text ""
-    And OK button in "Add New Column" dialog should be enabled
+    Then OK button in "Add New Column" dialog should be enabled
     When user clicks on CANCEL button in "Add New Column" dialog
     Then "Add New Column" dialog should be hidden
     And no errors should have been logged

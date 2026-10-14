@@ -39,9 +39,11 @@ Feature: Append Tables keeps the formula of a calculated column and computes it 
     And no errors should have been logged
 
   # core#784: OK with no table checked fails with a NullError
-  @known-failure:47
+  @known-failure:49
   Scenario: OK with no table checked logs no error
     When user picks "Data > Append Tables..." from the top menu
     Then "Append Tables" dialog should be visible
+    And "first" checkbox in "Append Tables" dialog should be unchecked
+    And "second" checkbox in "Append Tables" dialog should be unchecked
     When user clicks on OK button in "Append Tables" dialog
     Then no errors should have been logged

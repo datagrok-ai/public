@@ -130,9 +130,20 @@ whole **Tables** multi-choice host (`.ui-input-tables-multi-choice`), whose item
 "second". `user checks` then sets the first checkbox of the first match — the host's `first` — so
 `second` was never checked, and `should be checked` passed on the same host. The append ran over one
 table. `append-tables.feature` uses the `checkbox` kind, which matches only the item. A fix in the
-input kind: a host does not match by a label that belongs to an input nested inside it.
+input kind: a host does not match by a label that belongs to an input nested inside it. Not filed as
+an issue — for the library's owner to take or file.
 
-## 3a. Signals and steps the review of 14 Oct asked for
+## 3b. An existing feature that fails on the local stand (not touched)
+
+`formula-refreshing.feature:127` (the Data sync round trip): after the project is reopened from
+Browse > Dashboards, `user clicks on the "header Weight3" area of grid` leaves the reopened Project
+current, and `the context panel should show "Weight3"` fails — 3 of 3 runs, alone too. With the
+project opened through the API, a header click right after the open does reach the panel, so the
+gallery open is the difference (the project seems to become current after the click). The feature is
+not ours and is left as it is; `the "Weight3" column is the current object` before the pane claims
+would make it pass, if the pick is not its subject.
+
+## 4. Signals and steps
 
 - **The dialog's validation has no "done" signal.** The type-mismatch and missing-column errors are
   written after the preview computes (1000 ms debounce, then `updateError`), so "no error under the
@@ -147,10 +158,16 @@ input kind: a host does not match by a label that belongs to an input nested ins
   to `no errors should have been logged`, so any other error on that path would count as the known
   one. Needed: `an error containing {string} should have been logged`, to pin it to
   `NullError: method not found: 'fold$2' on null`.
+- **A script fixture named for a formula escapes the sweep of a killed run.** `script-in-formula.feature`
+  names its script `BddDouble{time}`, since the formula calls it as an identifier; the stale-fixture
+  sweep recognises only a `-<13 digits>` suffix (`RUN_SUFFIX`, `src/runtime/server.ts`), so a run killed
+  before its feature end leaves the script behind (`power-search-results.feature`'s `BddPowerSearch{time}`
+  has the same gap). Needed: a suffix form the sweep knows that is valid in an identifier, e.g. `_<ms>`.
 
-## 4. Questions for a hand walk (not claimed)
+## 5. Questions for a hand walk (not claimed)
 
-1. **Plain text or string over a formula that computes a number is refused.** `${x} + 1` with Type
+1. **Plain text or string over a formula that computes a number is refused** — confirmed by hand,
+   filed as [public#4295](https://github.com/datagrok-ai/public/issues/4295). `${x} + 1` with Type
    "plain text" (a text template: `Hello ${s}` gives "Hello a") or "string" shows "Result column
    type (int) doesn't match with current column type (string). Change column type or modify
    formula." and disables OK (`VALIDATION_TYPES_MAPPING` has no string entry), while a formula
@@ -163,7 +180,7 @@ input kind: a host does not match by a label that belongs to an input nested ins
    its header once and then through `the "<col>" column is the current object`; a signal for the end
    of the freeze would let the later scenarios click as a person does.
 
-## 5. Dropped by rule
+## 6. Dropped by rule
 
 - What each formula computes on every row, the validator's cases, the error messages: PowerPack
   package tests "Add new column" and ApiTests "DataFrame: Calculated columns".
