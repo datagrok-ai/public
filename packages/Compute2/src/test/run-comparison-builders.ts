@@ -6,6 +6,7 @@ import {
 } from '../components/RunComparison/types';
 import {matchScalarTargets, matchColumnTargets, buildUnitConverter} from '../components/RunComparison/matching';
 import {entryFromDataFrame} from '../components/RunComparison/entry-extraction';
+import {makeEntry} from './run-comparison-fixtures';
 import {
   buildScalarComparison, buildMultiScalarComparison, buildColumnComparison, buildComparison, columnPrimitives,
 } from '../components/RunComparison/comparison-builders';
@@ -223,6 +224,16 @@ category('RunComparison: multi-scalar dataframes', () => {
     expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20');
   });
 
+  test('repeated step values are labeled with their step', async () => {
+    const day = (n: number, value: number) =>
+      ({name: 'Final biomass', friendlyPath: `Daily cultivation · Day ${n} · Final biomass`, value});
+    const entries = ['r1', 'r2'].map((id, i) =>
+      ({...scalarsEntry(id, id, []), nodes: makeEntry(id, [day(1, i), day(2, 10 + i)])}));
+    const result = buildMultiScalarComparison(scalarTargetsFor(entries), entries)!;
+    expectArray(result.valueColumnNames,
+      ['Daily cultivation · Day 1 · Final biomass', 'Daily cultivation · Day 2 · Final biomass']);
+  });
+
   test('returns null when fewer than two runs participate', async () => {
     const entries = [
       scalarsEntry('a', 'r1', [{name: 'x', value: 10}, {name: 'y', value: 1}]),
@@ -418,8 +429,8 @@ category('RunComparison: multi and split dataframes', () => {
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time'));
     const twin: ColumnTarget = {...(target as ColumnTarget), key: 'column:x:twin'};
     const result = buildColumnComparison([target as ColumnTarget, twin], entries)!;
-    expect(result.valueColumnNames.join('|'), 'x|x (2)');
-    expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20,30,40');
+    expect(result.valueColumnNames.join('|'), 'r1 · x|r1 · x (2)');
+    expect(result.chartDf.getCol('r1 · x (2)').toList().join(','), '10,20,30,40');
   });
 });
 
@@ -443,15 +454,17 @@ category('RunComparison: cross-step dataframes', () => {
     {path: 'sim', friendlyPath: friendly ? 'Sim · df' : undefined,
       cols: [intCol('time', [100, 160, 220]), floatCol('b', [i, i + 1, i + 2])]},
   ]));
+  const withCandidates = (bindings: ColumnTarget['bindings']) => ({bindings, candidates: bindings.map((binding) =>
+    ({binding, confidence: 'exact' as const, unitsWarn: false, auto: true, enabled: true}))});
   const target = (
     key: string, entries: ComparisonEntry[], tablePath: string, columnName: string, splitColumnName?: string,
   ): ColumnTarget => ({
     kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
-    coverage: entries.length, total: entries.length, candidates: [],
-    bindings: entries.map((entry) => ({
+    coverage: entries.length, total: entries.length,
+    ...withCandidates(entries.map((entry) => ({
       entryId: entry.id, tablePath, tableName: tablePath, columnName, indexColumnName: 'time', splitColumnName,
       tableFriendlyPath: entry.nodes.tables.find((table) => table.path === tablePath)!.friendlyPath,
-    })),
+    }))),
   });
   const allTables = (entries: ComparisonEntry[], config: {mode: 'timeseries' | 'points', units?: TimeUnit}) =>
     new Map(entries.map((e) => [e.id, new Map(e.nodes.tables.map((t) => [t.path, config]))]));
@@ -465,6 +478,14 @@ category('RunComparison: cross-step dataframes', () => {
     expect(result.stepColumnName, 'Step');
     expect(result.chartDf.getCol('Step').toList().slice(0, 5).join('|'),
       'Feed · df|Feed · df|Sim · df|Sim · df|Sim · df');
+  });
+
+  test('same-named columns from two steps are labeled with their step', async () => {
+    const entries = twoStepRuns(true);
+    const result = buildColumnComparison([
+      target('x', entries, 'feed', 'a'), {...target('x', entries, 'sim', 'b'), key: 'x:sim'},
+    ], entries)!;
+    expectArray(result.valueColumnNames, ['Feed · df · x', 'Sim · df · x']);
   });
 
   test('a value or split named Step pushes the step column aside', async () => {

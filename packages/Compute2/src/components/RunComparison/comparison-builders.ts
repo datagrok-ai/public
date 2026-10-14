@@ -6,7 +6,7 @@ import {
   ComparisonEntry, ComparisonTarget, ScalarTarget, ColumnTarget, RUN_COLUMN, isNumericType, isTimeIndexType,
   TimeUnit, TIME_UNIT_MS, AxisConfigMap, toTargetUnits,
 } from './types';
-import {resolveDisplayUnit, pickAutoUnit, targetAxisMode} from './selection';
+import {resolveDisplayUnit, pickAutoUnit, targetAxisMode, targetContexts} from './selection';
 import {normalizeUnits} from './matching';
 
 // appends (2), (3)... while the name is taken; "claim" — mutates the set,
@@ -52,13 +52,16 @@ export function buildScalarComparison(
 // units go into the column name, so they survive any export (metadata stays in Datagrok)
 const withUnits = (name: string, units?: string) => units ? `${name} (${units})` : name;
 
-function dedupeLabels(
-  targets: {key: string, displayName: string, units?: string}[], reserved: string[] = [],
-): Map<string, string> {
+// names repeated in the selection get their step, as in the compare list
+function dedupeLabels(targets: ComparisonTarget[], reserved: string[] = []): Map<string, string> {
+  const contexts = targetContexts(targets);
   const taken = new Set(reserved);
   const labels = new Map<string, string>();
-  for (const target of targets)
-    labels.set(target.key, claimUniqueName(withUnits(target.displayName, target.units), taken));
+  for (const target of targets) {
+    const context = contexts.get(target.key);
+    const name = context ? `${context} · ${target.displayName}` : target.displayName;
+    labels.set(target.key, claimUniqueName(withUnits(name, target.units), taken));
+  }
   return labels;
 }
 
