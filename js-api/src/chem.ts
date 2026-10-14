@@ -702,11 +702,16 @@ export namespace chem {
       this.calculating = false;
       this.sketcherType = currentSketcherType;
 
+      // A column that fills its parent: the input row takes its own height, the host what is left, and the
+      // invalid-molecule warning, drawn over the sketcher, none (css/styles.css, .chem-inplace-sketcher). It replaces a
+      // height of 90%, a fudge for the input row: in a box sized from outside (a resized dialog, a dialog shown with a
+      // size) it left a margin under the sketcher, a tenth of the box less the row, and at 100% the row pushed the
+      // sketcher's bottom under the footer.
       this.inplaceSketcherDiv = ui.div([
         molInputDiv,
         this.loader,
         this.host,
-        this.invalidMoleculeWarning], {style: {height: '90%'}});
+        this.invalidMoleculeWarning], 'chem-inplace-sketcher');
 
       return this.inplaceSketcherDiv;
     }
