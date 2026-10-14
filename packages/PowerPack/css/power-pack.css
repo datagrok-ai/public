@@ -1843,3 +1843,9 @@ body.dartium .power-pack-widgets-host.ui-div {
 .pp-manage-fav-row-clickable {
     cursor: pointer;
 }
+
+/* a package handler's card for a selected item: a card-sized preview, not a full view */
+.pp-workspace-preview-card {
+    padding: 8px 12px;
+    max-width: 420px;
+}

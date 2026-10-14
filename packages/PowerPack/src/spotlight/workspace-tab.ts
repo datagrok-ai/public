@@ -753,7 +753,22 @@ export class WorkspaceTab {
     showWorkspacePreview(ui.divText(text, 'pp-workspace-preview-text'), fc.func.friendlyName);
   }
 
+  /** An entity of no kind above: a package that registered a handler for it (a domain record, say)
+   * previews it with the handler's card, as the platform shows a selected item; otherwise a hint. */
   private renderEntityDetails(entity: DG.Entity): void {
+    const handler = DG.ObjectHandler.forEntity(entity);
+    if (handler && !(handler instanceof DG.EntityMetaDartProxy)) {
+      try {
+        const card = handler.renderCard(entity);
+        if (card instanceof HTMLElement) {
+          showWorkspacePreview(ui.div([card], 'pp-workspace-preview-card'), entity.friendlyName, () => this.open(entity));
+          return;
+        }
+      }
+      catch (e) {
+        console.error('Workspace card preview failed', e);
+      }
+    }
     const hint = ui.divText(
       'Use "Open" to work with this item.',
       'pp-workspace-editor-hint',
