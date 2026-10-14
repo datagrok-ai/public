@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tests: Added BDD features for the color coding editor: the linear, conditional and categorical editors, Edit scheme, Bin..., Pick Up / Apply Coloring from the header menu, text coloring through Extract and a layout, with MISSING.md for what the steps cannot reach
 * GROK-20884: Removed the Update events and Reports migration queries: they ran as the read-only System:Datagrok and always failed
 * GROK-20884: Errors: Top errors and Top source come from the server's error metrics, by stack signature; a row's context panel shows its error incident and alert to users with Manage Alerts
 * GROK-20884: Errors: Top errors and Top source say they need View Telemetry instead of failing; the Alert pane finds the incident of an error without a stack trace and says when it needs Manage Alerts; a Top errors bar of errors without a stack trace filters to them. Removed the unused TopErrors and TopErrorSources queries
