@@ -1,6 +1,8 @@
 import type { SketcherSettings } from './settings.js';
 import type { SketcherStrings } from './strings.js';
 export type { SketcherSettings } from './settings.js';
+import type { ReadoutItem } from './readout-items.js';
+export type { ReadoutItem } from './readout-items.js';
 export type { Message, PluralForms, SketcherStrings } from './strings.js';
 /**
  * `molecule` (the default) or `query` (API-021; spike query, Q2): query mode offers the means to draw query features (the
@@ -121,6 +123,42 @@ export type WarningMarks = 'shown' | 'hidden';
  */
 export type AnalysisPanel = 'shown' | 'collapsed' | 'hidden';
 /**
+ * The stereochemistry panel (spike stereo-panel): `'closed'`, the default (its top-bar button and the canvas menu's
+ * "Stereochemistry panel" open it), `'open'`, or `'hidden'` (no button, no menu item, never shown). Any other value is
+ * `'closed'`, and reads back so.
+ */
+export type StereoPanel = 'closed' | 'open' | 'hidden';
+/** An enhanced-stereo group as `stereo` names it (spike stereo-panel): its type and its number (0 for ABS). */
+export interface SketchStereoGroup {
+    readonly type: 'abs' | 'and' | 'or';
+    readonly id: number;
+}
+/**
+ * A stereo element as the stereochemistry panel lists it (spike stereo-panel): a stereocentre (`centre`, its atom), a stereo
+ * double bond (`double-bond`) or an atropisomer axis (`axis`), each a bond with its two atoms; its CIP label (`R`, `S`,
+ * `r`, `s`, `E`, `Z`, `P`, `M`) or null; its status (`specified`, `unspecified`, or `unknown` for a wavy or crossed bond);
+ * its enhanced-stereo group, or null.
+ */
+export interface SketchStereoElement {
+    readonly kind: 'centre' | 'double-bond' | 'axis';
+    readonly atoms: readonly number[];
+    readonly bond: number | null;
+    readonly label: string | null;
+    readonly status: 'specified' | 'unspecified' | 'unknown';
+    readonly group: SketchStereoGroup | null;
+}
+/**
+ * The drawing's stereo as the stereochemistry panel reads it (spike stereo-panel): its elements in the panel's order
+ * (centres by atom, double bonds by bond, axes by bond); how many stereoisomers its annotation stands for (RDKit's
+ * `GetStereoisomerCount`: unspecified elements counted, each AND or OR group two; `Infinity` past 1023 of them), or null
+ * where the engine cannot say (a query); and the flag the drawing shows (`absolute`, `racemic`, `relative`), or null.
+ */
+export interface SketchStereo {
+    readonly elements: readonly SketchStereoElement[];
+    readonly count: number | null;
+    readonly flag: 'absolute' | 'racemic' | 'relative' | null;
+}
+/**
  * What a `render` listener receives (API-061; spike datagrok-platform, R5): the canvas's render count once this drawing is
  * shown, as `renderCount` then reads it.
  */
@@ -192,10 +230,14 @@ export interface SetValueOptions {
  * opens the periodic table; `zoom.in`, `zoom.out`, `zoom.reset` (100%) and `zoom.fit` (fit to view)
  * change the view (spike view); `layout` lays the whole drawing out afresh and fits the view to it, and
  * `clean` (Clean Up) lays it out afresh where it is, turned onto 15° (spike layout); `cut`, `copy` and `paste`
- * go through the system clipboard, as Ctrl+X, Ctrl+C and Ctrl+V do (spike clipboard). `structure.enhanced-stereo` opens
- * the Enhanced Stereochemistry dialog for the selected stereocentres, or every one with nothing selected (spike stereo).
+ * go through the system clipboard, as Ctrl+X, Ctrl+C and Ctrl+V do (spike clipboard). `structure.stereo-panel` opens and
+ * closes the stereochemistry panel, shown pressed while it is open (spike stereo-panel); `structure.enhanced-stereo`, which
+ * opened the Enhanced Stereochemistry dialog before the panel retired it, is kept as its alias.
+ * `structure.aromatize` and `structure.dearomatize` (spike canonical-arom, BOND-022) make the ring systems wholly among the
+ * selected atoms, or every one with nothing selected, aromatic or Kekulé, as Alt+A and Ctrl+Alt+A do; neither is in the
+ * default toolbar, and each is unavailable with nothing to change.
  */
-export type ToolbarAction = 'clear' | 'undo' | 'redo' | 'element.table' | 'zoom.in' | 'zoom.out' | 'zoom.reset' | 'zoom.fit' | 'layout' | 'clean' | 'cut' | 'copy' | 'paste' | 'structure.enhanced-stereo' | 'keys' | 'settings';
+export type ToolbarAction = 'clear' | 'undo' | 'redo' | 'element.table' | 'zoom.in' | 'zoom.out' | 'zoom.reset' | 'zoom.fit' | 'layout' | 'clean' | 'cut' | 'copy' | 'paste' | 'structure.enhanced-stereo' | 'structure.stereo-panel' | 'structure.aromatize' | 'structure.dearomatize' | 'keys' | 'settings';
 /** A readout a toolbar can hold: it shows a state and takes no input. `zoom.level` shows the zoom as a percentage (spike view). */
 export type ToolbarReadout = 'zoom.level';
 /**
@@ -349,8 +391,21 @@ export interface CreateSketcherOptions {
     warningMarks?: WarningMarks;
     /** The formula and mass readout: `'shown'` (the default), `'collapsed'` or `'hidden'`. The handle's `analysisPanel` changes it later. */
     analysisPanel?: AnalysisPanel;
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id (`'formula'`, `'molecular-weight'`,
+     * `'exact-mass'`, the default; `'smiles'`, `'cxsmiles'`, `'smarts'`, `'inchikey'`; `'atoms'`, `'heavy-atoms'`, `'bonds'`,
+     * `'rings'`, `'fragments'`, `'stereocentres'`, `'charge'`; `'clogp'`, `'tpsa'`, `'hbd'`, `'hba'`, `'rotatable-bonds'`,
+     * `'lipinski-violations'`, `'qed'`; `'under-pointer'`, `'drawing'`). A setting, the host's value winning over the user's
+     * kept one. The handle's `readoutItems` changes it later.
+     */
+    readoutItems?: readonly ReadoutItem[];
     /** The CIP labels: `'hidden'` (the default) or `'shown'` (spike stereo, S10). The handle's `stereoLabels` changes it later. */
     stereoLabels?: StereoDisplay;
+    /**
+     * The stereochemistry panel: `'closed'` (the default), `'open'` or `'hidden'` (spike stereo-panel). The handle's
+     * `stereoPanel` changes it later.
+     */
+    stereoPanel?: StereoPanel;
     /** The stereo flag: `'shown'` (the default) or `'hidden'` (spike stereo, S8). The handle's `stereoFlag` changes it later. */
     stereoFlag?: StereoDisplay;
     /** A value's unspecified double bonds: `'crossed'` (the default) or `'plain'` (spike stereo, P2). The handle's `unspecifiedDoubleBonds` changes it later. */
@@ -459,11 +514,11 @@ export type SketcherTool = Exclude<ToolbarTool, ToolbarAction | ToolbarReadout |
 /**
  * What `createSketcher` resolves to; `<crux-sketch>` has the same members.
  *
- * The format getters (`smiles`, `molfile`, `molV3000`, `cxsmiles`, `smarts`, `cdxml`) and `plainSmiles` (and `value`
- * once the user has edited) are `""` for an empty drawing; `smiles`, `plainSmiles` and `cxsmiles` also for a drawing with
- * a query feature SMILES cannot hold (spike query, Q12; QUERY-019), a `format` warning with `code: 'query'` under `smiles`
- * and `cxsmiles` saying why; `inchi` and `inchiKey` also for a drawing InChI cannot hold (spike inchi, N6), which `warnings`
- * says why. If the engine cannot write a drawing that has atoms in a format, reading that getter throws a `SketchError`
+ * The format getters (`smiles`, `molfile`, `molV3000`, `cxsmiles`, `smarts`, `cdxml`), `plainSmiles`, `canonicalSmiles`
+ * and `canonicalCxsmiles` (and `value` once the user has edited) are `""` for an empty drawing; `smiles`, `plainSmiles`,
+ * `cxsmiles` and the canonical two also for a drawing with a query feature SMILES cannot hold (spike query, Q12;
+ * QUERY-019), a `format` warning with `code: 'query'` under `smiles` and `cxsmiles` saying why; `inchi` and `inchiKey`
+ * also for a drawing InChI cannot hold (spike inchi, N6), which `warnings` says why. If the engine cannot write a drawing that has atoms in a format, reading that getter throws a `SketchError`
  * (`{ format, message }`), never an `Error`, and throws it again until the drawing changes; `cdxml`, `inchi` and `inchiKey`
  * throw one with a `code` while their module loads or after it failed to (`loading`, `unavailable`).
  */
@@ -475,6 +530,11 @@ export interface SketcherApi {
      * getter's text, character for character; otherwise it is plain SMILES, as `plainSmiles` is. R labels of one
      * number (`[*:n]`), radicals, isotopes, charges, atom maps and stereo are held by plain SMILES. RDKit, and so
      * Datagrok, reads either. `""` for an empty drawing. Chosen once per drawing state.
+     *
+     * It writes what Datagrok's RDKit.js writes for the drawing (H18; the product owner, 2026-10-13): stereo groups as
+     * drawn, so a lone ABS group (`|a:1|`) and a meso molecule's AND group (`&1`) are kept, and two drawings that mean the
+     * same may give two texts. To compare or register molecules (deduplication, a registration key), read
+     * `canonicalSmiles` instead, which gives one text per meaning.
      *
      * Query features (spike query, Q12; QUERY-019): generic atoms alone (A, Q, X, M and their H variants) are written as
      * CXSMILES labels; any other query feature (an atom list, a query property, a custom query, a query bond) has no
@@ -492,8 +552,35 @@ export interface SketcherApi {
     readonly molfile: string;
     /** MOL V3000; `""` for an empty drawing. */
     readonly molV3000: string;
-    /** Canonical CXSMILES; `""` for an empty drawing, and for a query feature other than generics (spike query, Q12), as `smiles`. */
+    /**
+     * Canonical CXSMILES, as Datagrok's RDKit.js writes it (`get_cxsmiles`): stereo groups as drawn, so a lone ABS group and a
+     * meso molecule's AND group are kept; with `cxsmilesCoordinates`, the coordinates and wedges too. `""` for an empty
+     * drawing, and for a query feature other than generics (spike query, Q12), as `smiles`. To compare or register
+     * molecules, read `canonicalCxsmiles` instead.
+     */
     readonly cxsmiles: string;
+    /**
+     * The `smiles` getter's text in RDKit's canonical form for enhanced stereo (spike canonical-arom, API-064): one text per
+     * meaning, for deduplication and registration. Drawings that mean the same give the same text: an AND or OR group's
+     * wedges all flipped, a symmetric molecule's drawing turned over, the groups numbered otherwise, ABS centres listed as a
+     * group or not. RDKit's `CanonicalizeStereoGroups` (the pinned RDKit; crux-core `sketch-canonical-fixes`): a lone ABS
+     * group and the one group of a meso or achiral molecule mean nothing and are not written; an ABS group is written beside
+     * AND and OR groups. Plain SMILES, or CXSMILES where plain SMILES would lose something, as `smiles` chooses; the same
+     * text as `smiles` for a drawing without stereo groups. RDKit.js reads it as the same molecule; Datagrok's RDKit.js
+     * cannot write it (it has no `CanonicalizeStereoGroups`), so a host that compares it with texts RDKit.js wrote compares
+     * different forms. `""` for an empty drawing and for a query feature other than generics, as `smiles` is, and what it
+     * loses `warnings` names under `smiles` and `cxsmiles`. Written once per drawing state, on its first read.
+     *
+     * Which to read: `smiles` and `cxsmiles` to show, store or hand the drawing on as the user drew it (what RDKit.js writes);
+     * `canonicalSmiles` and `canonicalCxsmiles` to compare two drawings or to look a molecule up.
+     */
+    readonly canonicalSmiles: string;
+    /**
+     * The `cxsmiles` getter's text in RDKit's canonical form for enhanced stereo (API-064): `CanonicalizeStereoGroups`, as
+     * `canonicalSmiles`, always CXSMILES, never with coordinates or wedges, whatever `cxsmilesCoordinates` says. One text
+     * per meaning; `""` as `cxsmiles` is.
+     */
+    readonly canonicalCxsmiles: string;
     /**
      * SMARTS, as RDKit's MolToSmarts writes the same query (spike query, Q10; QUERY-017): each query feature as RDKit writes
      * it, drawn hydrogens merged into their heavy atoms where the drawing has a query feature (P10, QUERY-022); a drawing
@@ -647,6 +734,28 @@ export interface SketcherApi {
      * or `'hidden'`. The toggle changes it too. It reads back the value in force as `atomColours` does; no edit.
      */
     analysisPanel: AnalysisPanel;
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id, in the readout's order (`'formula'`,
+     * `'molecular-weight'` and `'exact-mass'` by default). Each item shows when it applies: the selection's value when there
+     * is one, else the drawing's; a query's SMARTS in place of its formula and masses; the pointer's items while the pointer
+     * is over an atom or a bond, or a bond is drawn. Written as a list or a text of ids apart by spaces or commas, ids it does
+     * not know left out; the readout's menu and the Settings dialog change it too, and the `readout-items` attribute. A
+     * setting (`settings.readoutItems`): kept and shared as the others are, the host's value winning. No edit.
+     */
+    readoutItems: readonly ReadoutItem[];
+    /**
+     * The stereochemistry panel (spike stereo-panel): `'closed'` (the default), `'open'` or `'hidden'` (no button, no menu
+     * item). Its button in the top bar and the canvas menu's "Stereochemistry panel" open and close it too, a user's setting
+     * kept as the others are. It reads back the value in force; opening and closing it is a look: no edit, no event.
+     */
+    stereoPanel: StereoPanel;
+    /**
+     * The drawing's stereo as the stereochemistry panel lists it (spike stereo-panel): each stereocentre, stereo double bond
+     * and atropisomer axis with its label, status and group, the stereoisomers its annotation stands for, and the flag.
+     * Synchronous and current at every moment, whether or not the panel shows; read once per molecule, a read that emits
+     * nothing. Empty before the sketcher is ready and for a query.
+     */
+    readonly stereo: SketchStereo;
     /** Whether the drawing is empty (API-019), as it is after a clear, a write of `""` and the last atom erased. A read. */
     readonly isEmpty: boolean;
     /**
@@ -830,9 +939,9 @@ export interface SketcherApi {
     keys: HostKeys;
     /**
      * The settings (spike settings-touch, K6, P9; UI-021, UI-022): `atomColours`, `warningMarks`, `analysisPanel`,
-     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers` and `keymap`, read and written
-     * whole: what a written object leaves out takes its default. Each is its own option as well, but `atomNumbers` (spike
-     * stereo-commands), a setting alone. A user's change emits `settings` with
+     * `stereoLabels`, `stereoFlag`, `unspecifiedDoubleBonds`, `methylLabels`, `atomNumbers`, `keymap`, `readoutItems` and
+     * `stereoPanel` (spike stereo-panel), read and written whole: what a written object leaves out takes its default. Each is
+     * its own option as well, but `atomNumbers` (spike stereo-commands), a setting alone. A user's change emits `settings` with
      * them, for a host to store; and, unless `persistSettings` is off, the sketcher keeps the user's changes in the page's
      * localStorage and shares them with the page's other sketchers (spike reports-oct5, R5), where a host's own value wins.
      * No edit: no change event, no undo step, no getter changes.

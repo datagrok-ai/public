@@ -1,6 +1,7 @@
 import { type SketcherSettings } from '../core/settings.js';
 import { type SketcherStrings } from '../core/strings.js';
-import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
+import { type ReadoutItem } from '../core/readout-items.js';
+import type { HostKeys, DrawnPositions, RenderDetail, SketcherLayout, SketcherTool, SketchSelection, SketchNotice, AnalysisPanel, AtomColours, ChangeDetail, KeymapProfile, MethylLabels, Density, SetValueOptions, PngOptions, SketcherFormat, SketchAnalysis, SketchError, SketchWarning, WarningMarks, SketcherApi, SketcherEventType, SketcherListener, SketcherMode, StereoDisplay, StereoPanel, SketchStereo, ToolbarConfig, UnspecifiedDoubleBonds } from '../core/types.js';
 export declare const TAG = "crux-sketch";
 /**
  * The events of `<crux-sketch>`: an element's, with `change` and `error` as CustomEvents whose
@@ -100,6 +101,10 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     get molfile(): string;
     get molV3000(): string;
     get cxsmiles(): string;
+    /** RDKit's `CanonicalizeStereoGroups` form of `smiles` (spike canonical-arom, API-064): the core's. */
+    get canonicalSmiles(): string;
+    /** RDKit's `CanonicalizeStereoGroups` form of `cxsmiles`, never with coordinates (API-064): the core's. */
+    get canonicalCxsmiles(): string;
     get smarts(): string;
     /** The drawing as SVG (spike copy-as, P5; API-022, IO-032): the core's, its ids new with each read. */
     get svg(): string;
@@ -221,6 +226,28 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
      */
     get analysisPanel(): AnalysisPanel;
     set analysisPanel(value: AnalysisPanel);
+    /**
+     * What the readout shows (spike readout-config; INFO-016): the items checked, by id, in the readout's order, the
+     * formula and the two masses by default. Written as a list or a text of ids apart by spaces or commas, ids it does not
+     * know left out; the readout's menu, the Settings dialog and the `readout-items` attribute set it too. A setting, the
+     * host's value winning over a kept one (R5). No edit: no change event, no undo step.
+     */
+    get readoutItems(): readonly ReadoutItem[];
+    set readoutItems(value: readonly ReadoutItem[]);
+    /**
+     * The stereochemistry panel (spike stereo-panel; the product owner's ruling 2): `'closed'` (the default), `'open'` or
+     * `'hidden'`, which takes its button and its menu item away and never shows it. Its button and the canvas menu's item set
+     * it too, the user's setting, kept as the others are; and so does the `stereo-panel` attribute. It reads back the value
+     * in force, by HTML's rule for enumerated attributes. A look: no edit, no event.
+     */
+    get stereoPanel(): StereoPanel;
+    set stereoPanel(value: StereoPanel);
+    /**
+     * The drawing's stereo as the panel lists it (spike stereo-panel): its elements, the stereoisomers its annotation stands
+     * for and its flag; read once per state of the molecule. Empty before the canvas shows a drawing and for a query; after
+     * destroy(), what it read last.
+     */
+    get stereo(): SketchStereo;
     /**
      * View-only mode (API-029; spike later-quick): `false`, the default, or `true`, switched at any time. While it is on, the
      * user selects (by mouse, keyboard and touch), copies, zooms and pans, and edits nothing: the tools but the selection

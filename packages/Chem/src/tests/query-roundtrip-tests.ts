@@ -20,7 +20,7 @@ import {SubstructureFilter} from '../widgets/chem-substructure-filter';
 // RDKit's own generics (QueryOps), the meanings Crux's generics have
 const RD_M = '[!#0&!#2&!#5&!#6&!#7&!#8&!#9&!#10&!#14&!#15&!#16&!#17&!#18&!#33&!#34&!#35&!#36&!#52&!#53&!#54&!#85&!#86&!#1]';
 
-type CruxStep = ['tool', string, 'atom' | 'bond', number] | ['menu', 'atom' | 'bond', number, ...string[]] |
+export type CruxStep = ['tool', string, 'atom' | 'bond', number] | ['menu', 'atom' | 'bond', number, ...string[]] |
   ['label', number, string] | ['atomCustom', number, string] | ['bondCustom', number, string];
 /** [the feature, the molecule drawn first, the steps that add the feature, its intended SMARTS] */
 type CruxFeature = [string, string, CruxStep[], string];
@@ -111,16 +111,16 @@ const KETCHER: KetFeature[] = [
     '[#6;$([#6]=[#8])]-[#8]'],
 ];
 
-const ketOf = (atoms: any[], bonds: any[]) =>
+export const ketOf = (atoms: any[], bonds: any[]) =>
   JSON.stringify({root: {nodes: [{$ref: 'mol0'}]}, mol0: {type: 'molecule', atoms, bonds}});
 
-const DATASETS: [string, string, string][] = [
+export const DATASETS: [string, string, string][] = [
   ['mol1K', 'mol1K.csv', 'molecule'],
   ['SPGI', 'tests/spgi-100.csv', 'Structure'],
   ['smiles.csv', 'smiles.csv', 'canonical_smiles'],
 ];
 
-interface CruxElement extends HTMLElement {
+export interface CruxElement extends HTMLElement {
   readonly molfile: string;
   readonly smarts: string;
   readonly isPending: boolean;
@@ -130,8 +130,19 @@ interface CruxElement extends HTMLElement {
 
 let rdkit: any;
 
+/** Chem's own RDKit module, initialized once: what the helpers below match and read with (the categories of
+ * query-roundtrip-more-tests.ts run without this one's `before`). */
+export async function useRdKit(): Promise<any> {
+  if (!chemCommonRdKit.moduleInitialized) {
+    chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
+    await chemCommonRdKit.initRdKitModuleLocal();
+  }
+  rdkit = chemCommonRdKit.getRdKitModule();
+  return rdkit;
+}
+
 /** The row indices of `col` RDKit matches with `smarts`. */
-function matches(col: DG.Column, smarts: string): number[] {
+export function matches(col: DG.Column, smarts: string): number[] {
   const q = rdkit.get_qmol(smarts);
   const out: number[] = [];
   try {
@@ -157,7 +168,7 @@ function matches(col: DG.Column, smarts: string): number[] {
   return out;
 }
 
-function rows(bits: DG.BitSet): number[] {
+export function rows(bits: DG.BitSet): number[] {
   const out: number[] = [];
   for (let i = bits.findNext(-1, true); i !== -1; i = bits.findNext(i, true))
     out.push(i);
@@ -165,7 +176,7 @@ function rows(bits: DG.BitSet): number[] {
 }
 
 /** What the search makes of a molecule string: the SMARTS of its query (getQueryMolSafe). */
-function searchReads(molecule: string): string {
+export function searchReads(molecule: string): string {
   const q = getQueryMolSafe(molecule, '', rdkit);
   try {
     return q?.get_smarts() ?? '';
@@ -175,16 +186,16 @@ function searchReads(molecule: string): string {
 }
 
 /** `promise`, or an error saying `what` after 30 s: a step that never ends fails its feature, not the whole test. */
-function within<T>(promise: Promise<T>, what: string | (() => string), ms = 30000): Promise<T> {
+export function within<T>(promise: Promise<T>, what: string | (() => string), ms = 30000): Promise<T> {
   return Promise.race([promise, delay(ms).then((): T => {
     throw new Error(typeof what === 'string' ? what : what());
   })]);
 }
 
-const tables = new Map<string, DG.DataFrame>();
+export const tables = new Map<string, DG.DataFrame>();
 
 /** A table view of `file` (read once, a clone each time), its filter panel holding the substructure card of `column` alone. */
-async function openTable(file: string, column: string): Promise<{df: DG.DataFrame, filter: SubstructureFilter}> {
+export async function openTable(file: string, column: string): Promise<{df: DG.DataFrame, filter: SubstructureFilter}> {
   grok.shell.closeAll();
   if (!tables.has(file)) {
     const read = await grok.dapi.files.readCsv(`System:AppData/Chem/${file}`);
@@ -207,7 +218,7 @@ async function openTable(file: string, column: string): Promise<{df: DG.DataFram
 }
 
 /** Opens the card's sketcher dialog with `type` the session's sketcher, as a click on its thumbnail or Sketch link does. */
-async function openDialog(filter: SubstructureFilter, type: string): Promise<DG.chem.SketcherBase> {
+export async function openDialog(filter: SubstructureFilter, type: string): Promise<DG.chem.SketcherBase> {
   grok.chem.currentSketcherType = type;
   const s = filter.sketcher;
   (s.extSketcherDiv.querySelector('canvas, .sketch-link') as HTMLElement ?? s.extSketcherDiv).click();
@@ -216,17 +227,17 @@ async function openDialog(filter: SubstructureFilter, type: string): Promise<DG.
   return impl;
 }
 
-function dialogOf(filter: SubstructureFilter): HTMLElement {
+export function dialogOf(filter: SubstructureFilter): HTMLElement {
   return Array.from(document.querySelectorAll<HTMLElement>('.d4-dialog')).find((d) => d.contains(filter.sketcher.host))!;
 }
 
-function pressDialogButton(filter: SubstructureFilter, name: 'OK' | 'CANCEL'): void {
+export function pressDialogButton(filter: SubstructureFilter, name: 'OK' | 'CANCEL'): void {
   const button = Array.from(dialogOf(filter).querySelectorAll<HTMLElement>('button, .ui-btn'))
     .find((b) => b.textContent!.trim().toUpperCase() === name);
   button!.click();
 }
 
-async function settle(filter: SubstructureFilter): Promise<void> {
+export async function settle(filter: SubstructureFilter): Promise<void> {
   await delay(50);
   await awaitCheck(() => !filter.calculating && filter.currentSearches.size === 0,
     `the search did not end (searches ${filter.currentSearches.size}, calculating ${filter.calculating})`, 20000);
@@ -234,18 +245,18 @@ async function settle(filter: SubstructureFilter): Promise<void> {
 
 // ---------------------------------------------------------------- Crux, by its own controls
 
-function cruxOf(filter: SubstructureFilter): CruxElement {
+export function cruxOf(filter: SubstructureFilter): CruxElement {
   return filter.sketcher.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
 }
 
-function shadow(el: CruxElement, testid: string): HTMLElement {
+export function shadow(el: CruxElement, testid: string): HTMLElement {
   const found = el.shadowRoot!.querySelector<HTMLElement>(`[data-testid="${testid}"]`);
   if (!found)
     throw new Error(`Crux shows no ${testid}`);
   return found;
 }
 
-function pointAt(el: CruxElement, kind: 'atom' | 'bond', i: number): {clientX: number, clientY: number} {
+export function pointAt(el: CruxElement, kind: 'atom' | 'bond', i: number): {clientX: number, clientY: number} {
   const p = (kind === 'atom' ? el.positions.atoms : el.positions.bonds)[i];
   if (!p)
     throw new Error(`Crux draws no ${kind} ${i}`);
@@ -254,7 +265,7 @@ function pointAt(el: CruxElement, kind: 'atom' | 'bond', i: number): {clientX: n
 }
 
 /** A user's click (left) on the canvas at a point, as the pointer's events reach it. */
-function click(el: CruxElement, at: {clientX: number, clientY: number}): void {
+export function click(el: CruxElement, at: {clientX: number, clientY: number}): void {
   const canvas = shadow(el, 'canvas');
   const init = (buttons: number): PointerEventInit => ({bubbles: true, cancelable: true, composed: true, ...at,
     pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 0, buttons});
@@ -263,7 +274,7 @@ function click(el: CruxElement, at: {clientX: number, clientY: number}): void {
 }
 
 /** A user's right-click on the canvas at a point: the canvas's own menu opens there. */
-function rightClick(el: CruxElement, at: {clientX: number, clientY: number}): void {
+export function rightClick(el: CruxElement, at: {clientX: number, clientY: number}): void {
   const canvas = shadow(el, 'canvas');
   const init = (buttons: number): PointerEventInit => ({bubbles: true, cancelable: true, composed: true, ...at,
     pointerId: 1, pointerType: 'mouse', isPrimary: true, button: 2, buttons});
@@ -272,7 +283,7 @@ function rightClick(el: CruxElement, at: {clientX: number, clientY: number}): vo
   canvas.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, composed: true, ...at, button: 2}));
 }
 
-async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<void> {
+export async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<void> {
   for (const step of steps) {
     if (step[0] === 'tool') {
       shadow(el, `toolbar.${step[1]}`).click();
@@ -314,14 +325,14 @@ async function cruxSteps(el: CruxElement, steps: CruxStep[]): Promise<void> {
 /** Ketcher's adapter has exported what Ketcher shows: each molecule the host loaded has answered with its change event
  * (`since` given: a change exported after it), and the export's Indigo notations are in; or `ms` passed, the fixed wait
  * this used to be. */
-async function ketcherExported(impl: any, ms: number, since?: number): Promise<void> {
+export async function ketcherExported(impl: any, ms: number, since?: number): Promise<void> {
   await awaitCheck(() => impl.importedMoleculesCounter === 0 && impl._molV3000 !== null &&
     (since === undefined || impl._exportId > since), '', ms).catch(() => {});
 }
 
 /** The query the dialog's sketcher itself holds, not the host's getters (which give back the string the host set until the
  * user's next edit): its own molblock, as the search reads it, and its own SMARTS. */
-async function heldQuery(filter: SubstructureFilter): Promise<{search: string, smarts: string}> {
+export async function heldQuery(filter: SubstructureFilter): Promise<{search: string, smarts: string}> {
   const impl: any = filter.sketcher.sketcher;
   if (impl.root.querySelector('crux-sketch')) {
     const el = cruxOf(filter);
@@ -488,7 +499,7 @@ const PASTED_LIST_MOLFILE = ['', '  pasted-list', '', '  7  7  0  0  0  0  0  0 
   'M  ALS   5  2 F N   O   ', 'M  END', ''].join('\n');
 
 /** The user's paste of `smiles` in the field of the card's sketcher: the host takes it (its paste handler). */
-function pasteInField(filter: SubstructureFilter, smiles: string): void {
+export function pasteInField(filter: SubstructureFilter, smiles: string): void {
   const data = new DataTransfer();
   data.setData('text/plain', smiles);
   filter.sketcher.molInput.dispatchEvent(new ClipboardEvent('paste', {clipboardData: data, bubbles: true, cancelable: true}));
@@ -517,7 +528,7 @@ const PASTED_LIST_DRAWS: {[type: string]: (filter: SubstructureFilter) => Promis
 };
 
 /** The balloons the platform shows about a notation (SMILES, SMARTS) it could not write. */
-function notationBalloons(): string {
+export function notationBalloons(): string {
   return Array.from(document.querySelectorAll('.d4-balloon'))
     .map((b) => b.textContent?.trim() ?? '').filter((s) => /smarts|smiles|convert/i.test(s)).join('; ');
 }
@@ -526,11 +537,7 @@ category('query round trip', () => {
   let sketcherType: string;
 
   before(async () => {
-    if (!chemCommonRdKit.moduleInitialized) {
-      chemCommonRdKit.setRdKitWebRoot(_package.webRoot);
-      await chemCommonRdKit.initRdKitModuleLocal();
-    }
-    rdkit = chemCommonRdKit.getRdKitModule();
+    await useRdKit();
     sketcherType = grok.chem.currentSketcherType;
   });
 

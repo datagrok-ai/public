@@ -190,6 +190,9 @@ export class ChemSimilarityViewer extends ChemSearchBaseViewer {
             progressBar = DG.TaskBarProgressIndicator.create(`Similarity search running...`);
             const res = await chemSimilarityBitset(moleculeColumn, this.targetMolecule,
               this.distanceMetric as BitArrayMetrics, this.cutoff, this.fingerprint as Fingerprint);
+            // closed while the search ran (its table detached, as a test closing its view does): nothing to show
+            if (!this.dataFrame)
+              return;
             if (!res) {
               this.closeWithError(`Malformed molecule cannot be used for similarity search`, progressBar);
               return;

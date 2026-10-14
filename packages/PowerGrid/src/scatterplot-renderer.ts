@@ -2,6 +2,7 @@
  * viewer's canvas and its overlay, the plot's data, and a lifetime tied to the viewer. */
 import * as DG from 'datagrok-api/dg';
 import {Frame, RowList, ScatterData, ScatterSink} from './scatterplot-data';
+import {scatterDebug} from './scatterplot-debug';
 
 /** The renderers of one backend, one per viewer canvas. */
 export class Renderers<R extends ScatterRenderer> {
@@ -37,6 +38,9 @@ export class Renderers<R extends ScatterRenderer> {
 export abstract class ScatterRenderer implements ScatterSink {
   readonly canvas: HTMLCanvasElement;
   protected readonly data: ScatterData;
+  /** The backend and the GPU it draws on, for the debug log. */
+  protected abstract readonly engine: string;
+  private readonly created = performance.now();
   private detachSub: {unsubscribe(): void} | null = null;
   private disposed = false;
   private layoutKey = '';
@@ -55,6 +59,7 @@ export abstract class ScatterRenderer implements ScatterSink {
     this.sc.canvas.parentElement!.insertBefore(this.canvas, this.sc.overlay);
     this.renderers.add(this.sc, this);
     this.detachSub = this.sc.onDetached.subscribe(() => this.dispose());
+    scatterDebug.engineSetUp(this.sc, this.engine, this.created);
   }
 
   /** Releases the backend's resources and the canvas, and with [redraw] has the plot drawn again without them. */
@@ -65,14 +70,28 @@ export abstract class ScatterRenderer implements ScatterSink {
     this.renderers.delete(this.sc, this);
     this.data.dispose();
     this.detachSub?.unsubscribe();
+    scatterDebug.forget(this.sc.canvas);
     this.release();
     this.canvas.remove();
     if (redraw)
       this.sc.invalidateCanvas();
   }
 
+  render(sc: DG.ScatterPlotViewer): void {
+    const debug = scatterDebug.on;
+    const start = debug ? performance.now() : 0;
+    const frame = this.data.update(sc);
+    const updated = debug ? performance.now() : 0;
+    this.layout(frame);
+    this.drawFrame(frame);
+    if (debug)
+      scatterDebug.frame(sc, frame, this.engine, start, updated, this.gpuDone());
+  }
+
   protected abstract release(): void;
-  abstract render(sc: DG.ScatterPlotViewer): void;
+  protected abstract drawFrame(frame: Frame): void;
+  /** Settles once the GPU has finished the work submitted so far; the debug log times frames by it. */
+  protected abstract gpuDone(): Promise<void>;
   abstract setPositions(axis: 'x' | 'y', values: Float32Array): void;
   abstract setRowValues(kind: 'colors' | 'sizes' | 'types', values: Uint32Array | Float32Array): void;
   abstract setSelection(bits: Int32Array): void;

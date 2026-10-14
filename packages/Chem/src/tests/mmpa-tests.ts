@@ -3,7 +3,9 @@ import * as grok from 'datagrok-api/grok';
 // import * as ui from 'datagrok-api/ui';
 
 import {awaitCheck, before, category, expect, test} from '@datagrok-libraries/test/src/test';
-import {createTableView} from './utils';
+import {createTableView, readDataframe} from './utils';
+import {getMmpFrags, getMmpRules} from '../analysis/molecular-matched-pairs/mmp-analysis/mmpa-fragments';
+import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import * as chemCommonRdKit from '../utils/chem-common-rdkit';
 import {_package} from '../package-test';
 import {MatchedMolecularPairsViewer} from '../analysis/molecular-matched-pairs/mmp-viewer/mmp-viewer';
@@ -305,6 +307,25 @@ category('mmpa', () => {
     };
     expect(isExpected(), true, 'Incorrect data in \'Prediction\' column');
   });
+
+  // The math library's pair search on the GPU (webGPUMMP), twice in one page and against the CPU, on molecules whose last
+  // two make a pair (2026-10-14): with 10 x 10 workgroups Intel's Windows driver ran no invocations 96-99 of any workgroup
+  // once the pipeline was created a second time in a page, so the second search found nothing and dispatched forever;
+  // and the GPU never compared the last two molecules.
+  test('gpuPairsAsCpuTwice', async () => {
+    if (!await getGPUDevice())
+      return; // no GPU in this browser: the search runs on the CPU only
+    const df = await readDataframe('demo_files/matched_molecular_pairs.csv');
+    const molecules = df.col('smiles')!.toList() as string[];
+    molecules.push(molecules[molecules.length - 1]); // the last two molecules the same: a pair
+    const [frags] = await getMmpFrags(molecules);
+    const [, cpuCases] = await getMmpRules(frags, 0.4, false);
+    for (const run of [1, 2]) {
+      const [, gpuCases, onGpu] = await getMmpRules(frags, 0.4, true);
+      expect(onGpu, true, `run ${run} fell back to the CPU`);
+      expect(gpuCases, cpuCases, `run ${run}: ${gpuCases} cases on the GPU, ${cpuCases} on the CPU`);
+    }
+  }, {timeout: 60000});
 });
 
 
