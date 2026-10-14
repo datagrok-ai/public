@@ -1,10 +1,11 @@
 import {getGPUDevice} from '../getGPUDevice';
 import {computeMembershipStrengthsWGSL} from './wgsl/membership-strengths.wgsl';
+import {WORKGROUP_DIM} from '../workgroup';
 
 export async function computeMembershipStrengths(
   knnDistances: number[][] | Float32Array[], sigmas: number[] | Float32Array, rhos: number[] | Float32Array
 ) {
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const numOfEntries = knnDistances.length;
   const requiredWorkgroups = Math.ceil(numOfEntries / threadsPerWorkgroup);
