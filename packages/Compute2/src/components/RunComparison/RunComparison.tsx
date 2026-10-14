@@ -293,7 +293,7 @@ export const RunComparison = Vue.defineComponent({
     });
 
     // in multi mode: suggestions plus everything already selected — a selected target
-    // that became conflicting must stay visible so it can be unchecked. A charted value
+    // that became incompatible must stay visible so it can be unchecked. A charted value
     // stays listed even when equal, so what is on the chart can always be deselected
     const filteredTargets = Vue.computed(() => {
       const charted = (target: ComparisonTarget) => isCharted(targetSelection.value, target.key);
@@ -774,9 +774,7 @@ export const RunComparison = Vue.defineComponent({
             { gapRuns.length > 0 ?
               <span
                 class='c2-comparison-badge c2-badge-partial'
-                title={target.kind === 'scalar' ?
-                  `No value on: ${gapRuns.join(', ')}` :
-                  `Shown as gaps (no data in the charted rows): ${gapRuns.join(', ')}`}
+                title={`No value on: ${gapRuns.join(', ')}`}
               >partial</span> :
               <span></span> }
           </div>;

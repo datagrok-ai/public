@@ -59,10 +59,13 @@ export function chartSpec(
   const {valueColumnNames} = comparison;
   if (comparison.isKeyIndex) {
     // multi-value suggestions need a line-chartable index, but the index may switch to a
-    // string column after selection
+    // string column after selection, and datetime mixed with numeric charts only as elapsed time
     if (valueColumnNames.length > 1) {
-      return hint('Multiple values cannot chart over a categorical index — pick a numeric or datetime ' +
-        'index, or select a single value');
+      return hint(comparison.mixedTimeIndex ?
+        'Datetime and numeric indexes chart together only in the relative timeseries mode — set it ' +
+          'on every table, or select a single value' :
+        'Multiple values cannot chart over a categorical index — pick a numeric or datetime ' +
+          'index, or select a single value');
     }
     return viewer(DG.VIEWER.BAR_CHART, {
       valueColumnName: comparison.valueColumnName,
@@ -91,7 +94,8 @@ export function chartSpec(
   return viewer(DG.VIEWER.LINE_CHART, {
     xColumnName: comparison.indexColumnName,
     yColumnNames: valueColumnNames,
-    splitColumnNames: comparison.splitColumnName ? [RUN_COLUMN, comparison.splitColumnName] : [RUN_COLUMN],
+    splitColumnNames: [RUN_COLUMN, comparison.stepColumnName, comparison.splitColumnName]
+      .filter((name): name is string => !!name),
     multiAxis: false,
   }, 250 * Math.max(1, valueColumnNames.length));
 }

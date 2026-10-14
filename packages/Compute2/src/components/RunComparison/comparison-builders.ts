@@ -101,7 +101,11 @@ export interface ColumnComparisonResult {
   indexColumnName: string;
   // display name of the inner split column, when set on any participating table
   splitColumnName?: string;
+  // set when a run charts picks from several tables
+  stepColumnName?: string;
   isKeyIndex: boolean;
+  // the key index comes from mixing datetime and numeric indexes, which only the elapsed axis can chart
+  mixedTimeIndex?: boolean;
   // every participating table is in independent-points mode — chart rows as points, not lines
   isScatter: boolean;
   // multi-value scatter melts values into one column keyed by target name
@@ -111,61 +115,63 @@ export interface ColumnComparisonResult {
 }
 
 
-interface ParticipatingRun {
+interface RowBlock {
   entry: ComparisonEntry;
   binding: ColumnTarget['bindings'][number];
 }
 
-// every run any target charts; its rows come from the first target (in selection order)
-// with a pick there — enabled bindings only, matching guarantees at most one per run
-function getParticipating(targets: ColumnTarget[], entries: ComparisonEntry[]): ParticipatingRun[] {
+// one block of rows per (run, table) any target picks from, in selection order; enabled
+// bindings only, matching guarantees at most one per target and run
+function getBlocks(targets: ColumnTarget[], entries: ComparisonEntry[]): RowBlock[] {
   return entries.flatMap((entry) => {
+    const blocks = new Map<string, RowBlock>();
     for (const target of targets) {
       const binding = target.bindings.find((b) => b.entryId === entry.id && entry.dataFrames.has(b.tablePath));
-      if (binding)
-        return [{entry, binding}];
+      if (binding && !blocks.has(binding.tablePath))
+        blocks.set(binding.tablePath, {entry, binding});
     }
-    return [];
+    return [...blocks.values()];
   });
 }
 
-const allInMode = (participating: ParticipatingRun[], axisModes: AxisConfigMap, mode: 'timeseries' | 'points') =>
-  targetAxisMode({bindings: participating.map(({binding}) => binding)}, axisModes, mode) === 'full';
+const allInMode = (blocks: RowBlock[], axisModes: AxisConfigMap, mode: 'timeseries' | 'points') =>
+  targetAxisMode({bindings: blocks.map(({binding}) => binding)}, axisModes, mode) === 'full';
 
 type IndexAxis =
-  | {kind: 'key' | 'datetime' | 'float'}
+  | {kind: 'datetime' | 'float'}
+  | {kind: 'key', mixedTime: boolean}
   | {kind: 'elapsed', unit: TimeUnit | 'auto'};
 
-// time-series mode requires every participating table to be configured (require-all) and
+// time-series mode requires every charted table to be configured (require-all) and
 // every index column to actually be numeric or datetime; otherwise the axis follows
 // the index column types
-function getIndexAxis(participating: ParticipatingRun[], axisModes?: AxisConfigMap): IndexAxis {
-  const indexTypes = participating.map(({entry, binding}) =>
+function getIndexAxis(blocks: RowBlock[], axisModes?: AxisConfigMap): IndexAxis {
+  const indexTypes = blocks.map(({entry, binding}) =>
     entry.dataFrames.get(binding.tablePath)?.getCol(binding.indexColumnName).type);
   const isDatetimeOnly = indexTypes.every((type) => type === DG.TYPE.DATE_TIME);
   const timeChartable = indexTypes.every(isTimeIndexType);
-  const configured = axisModes != null && allInMode(participating, axisModes, 'timeseries');
+  const configured = axisModes != null && allInMode(blocks, axisModes, 'timeseries');
   if (configured && timeChartable) {
     return {
       kind: 'elapsed',
-      unit: resolveDisplayUnit(participating.map(({binding}) => binding), axisModes!),
+      unit: resolveDisplayUnit(blocks.map(({binding}) => binding), axisModes!),
     };
   }
   if (isDatetimeOnly)
     return {kind: 'datetime'};
   if (indexTypes.some((type) => type != null && !isNumericType(type)))
-    return {kind: 'key'};
+    return {kind: 'key', mixedTime: timeChartable};
   return {kind: 'float'};
 }
 
-function getSplitName(participating: ParticipatingRun[]): string | undefined {
-  const rawName = participating.map(({binding}) => binding.splitColumnName).find((name) => !!name);
+function getSplitName(blocks: RowBlock[]): string | undefined {
+  const rawName = blocks.map(({binding}) => binding.splitColumnName).find((name) => !!name);
   return rawName === RUN_COLUMN ? `${rawName} (split)` : rawName;
 }
 
-// index units every participating run agrees on (up to spelling), in the first run's spelling
-function sharedIndexUnits(participating: ParticipatingRun[]): string | undefined {
-  const units = participating.map(({entry, binding}) => entry.nodes.tables
+// index units every charted table agrees on (up to spelling), in the first one's spelling
+function sharedIndexUnits(blocks: RowBlock[]): string | undefined {
+  const units = blocks.map(({entry, binding}) => entry.nodes.tables
     .find((table) => table.path === binding.tablePath)?.columns
     .find((col) => col.name === binding.indexColumnName)?.units);
   return units[0] && units.every((item) => normalizeUnits(item) === normalizeUnits(units[0])) ? units[0] : undefined;
@@ -197,10 +203,10 @@ export function columnPrimitives(col: DG.Column): unknown[] {
   return values;
 }
 
-// per-run index values in milliseconds: datetime via epoch ms, numeric scaled by its
+// per-table index values in milliseconds: datetime via epoch ms, numeric scaled by its
 // declared units; nulls preserved
 function indexMsValues(
-  {entry, binding}: ParticipatingRun,
+  {entry, binding}: RowBlock,
   configs: AxisConfigMap,
 ): (number | null)[] {
   const col = entry.dataFrames.get(binding.tablePath)!.getCol(binding.indexColumnName);
@@ -211,38 +217,38 @@ function indexMsValues(
 }
 
 /**
- * Concatenates raw rows of all participating runs into one long dataframe, one value column
- * per target; no row matching, the chart splits by run (and by the inner split column, if set).
+ * Concatenates raw rows of all (run, table) blocks into one long dataframe, one value column
+ * per target; no row matching, the chart splits by run, by step when a run charts several
+ * tables, and by the inner split column, if set.
  */
 export function buildColumnComparison(
   targets: ColumnTarget[],
   entries: ComparisonEntry[],
   axisModes?: AxisConfigMap,
 ): ColumnComparisonResult | null {
-  const participating = getParticipating(targets, entries);
-  if (participating.length < 2)
+  const blocks = getBlocks(targets, entries);
+  const runCount = new Set(blocks.map(({entry}) => entry)).size;
+  if (runCount < 2)
     return null;
-  const splitColumnName = getSplitName(participating);
-  // value labels must not shadow the built-in run/index/split columns
-  const labels = dedupeLabels(targets, [
-    RUN_COLUMN,
-    participating[0].binding.indexColumnName,
-    ...splitColumnName ? [splitColumnName] : [],
-  ]);
-  const axis = getIndexAxis(participating, axisModes);
+  const splitColumnName = getSplitName(blocks);
+  const builtIn = [RUN_COLUMN, blocks[0].binding.indexColumnName, ...splitColumnName ? [splitColumnName] : []];
+  const stepColumnName = blocks.length > runCount ? claimUniqueName('Step', new Set(builtIn)) : undefined;
+  // value labels must not shadow the built-in run/index/split/step columns
+  const labels = dedupeLabels(targets, [...builtIn, ...stepColumnName ? [stepColumnName] : []]);
+  const axis = getIndexAxis(blocks, axisModes);
   const isKeyIndex = axis.kind === 'key';
   // same require-all shape as the elapsed axis; a mixed numeric/datetime index falls
   // back to the key axis above, which a scatterplot cannot chart
-  const isScatter = axisModes != null && !isKeyIndex && allInMode(participating, axisModes, 'points');
+  const isScatter = axisModes != null && !isKeyIndex && allInMode(blocks, axisModes, 'points');
 
-  // elapsed axis: convert every run's index to ms, subtract its own start,
+  // elapsed axis: convert every block's index to ms, subtract its own start,
   // and express the result in one shared display unit
   let displayUnit: TimeUnit | undefined;
-  let elapsedByRun: Map<ParticipatingRun, (number | null)[]> | undefined;
+  let elapsedByBlock: Map<RowBlock, (number | null)[]> | undefined;
   if (axis.kind === 'elapsed') {
-    const msByRun = participating.map((run) => ({run, ms: indexMsValues(run, axisModes!)}));
+    const msByBlock = blocks.map((block) => ({block, ms: indexMsValues(block, axisModes!)}));
     let maxElapsedMs = 0;
-    const shifted = msByRun.map(({run, ms}) => {
+    const shifted = msByBlock.map(({block, ms}) => {
       // per-table start: min of non-null values (rows may be unsorted); all-null -> 0
       const t0 = ms.reduce<number | null>((acc, value) =>
         value == null ? acc : (acc == null ? value : Math.min(acc, value)), null) ?? 0;
@@ -251,41 +257,45 @@ export function buildColumnComparison(
         if (value != null)
           maxElapsedMs = Math.max(maxElapsedMs, value);
       }
-      return {run, elapsed};
+      return {block, elapsed};
     });
     displayUnit = axis.unit === 'auto' ? pickAutoUnit(maxElapsedMs) : axis.unit;
-    elapsedByRun = new Map(shifted.map(({run, elapsed}) =>
-      [run, elapsed.map((value) => value == null ? null : value / TIME_UNIT_MS[displayUnit!])]));
+    elapsedByBlock = new Map(shifted.map(({block, elapsed}) =>
+      [block, elapsed.map((value) => value == null ? null : value / TIME_UNIT_MS[displayUnit!])]));
   }
 
   // the axis is labeled with its unit (the display unit on the elapsed axis, the runs' shared
   // index units on a float axis); keep it clear of the other column labels
-  let indexColumnName = participating[0].binding.indexColumnName;
+  let indexColumnName = blocks[0].binding.indexColumnName;
   const axisUnits = axis.kind === 'elapsed' ? displayUnit :
-    axis.kind === 'float' ? sharedIndexUnits(participating) : undefined;
+    axis.kind === 'float' ? sharedIndexUnits(blocks) : undefined;
   if (axisUnits) {
     const taken = new Set([RUN_COLUMN, ...splitColumnName ? [splitColumnName] : [],
-      ...targets.map((target) => labels.get(target.key)!)]);
+      ...stepColumnName ? [stepColumnName] : [], ...targets.map((target) => labels.get(target.key)!)]);
     indexColumnName = claimUniqueName(`${indexColumnName} (${axisUnits})`, taken);
   }
 
   const longIndex: any[] = [];
   const longSplits: string[] = [];
   const longRuns: string[] = [];
+  const longSteps: string[] = [];
   const longValues = new Map<string, (number | null)[]>(targets.map((target) => [labels.get(target.key)!, []]));
-  for (const run of participating) {
-    const {entry, binding} = run;
+  for (const block of blocks) {
+    const {entry, binding} = block;
     const df = entry.dataFrames.get(binding.tablePath)!;
-    const index = elapsedByRun?.get(run) ?? df.getCol(binding.indexColumnName).toList();
+    const step = binding.tableFriendlyPath ?? binding.tablePath;
+    const index = elapsedByBlock?.get(block) ?? df.getCol(binding.indexColumnName).toList();
     const splits = binding.splitColumnName ?
       df.col(binding.splitColumnName)?.toList() : undefined;
     for (let i = 0; i < index.length; i++) {
       longIndex.push(isKeyIndex && index[i] != null ? `${index[i]}` : index[i]);
       longRuns.push(entry.name);
+      if (stepColumnName)
+        longSteps.push(step);
       if (splitColumnName)
         longSplits.push(splits?.[i] == null ? '' : `${splits[i]}`);
     }
-    // a pick from another table cannot share this block's rows — padded like a missing one
+    // a pick from another table charts in that table's block — padded here like a missing one
     for (const target of targets) {
       const targetBinding = target.bindings.find((b) => b.entryId === entry.id);
       const usable = targetBinding != null && targetBinding.tablePath === binding.tablePath;
@@ -303,16 +313,19 @@ export function buildColumnComparison(
   let melted: {seriesColumnName: string, valueColumnName: string} | undefined;
   let chartDf: DG.DataFrame;
   if (isScatter && targets.length > 1) {
-    const taken = new Set([indexColumnName, RUN_COLUMN, ...splitColumnName ? [splitColumnName] : []]);
+    const taken = new Set([indexColumnName, RUN_COLUMN, ...splitColumnName ? [splitColumnName] : [],
+      ...stepColumnName ? [stepColumnName] : []]);
     melted = {seriesColumnName: claimUniqueName('Data', taken), valueColumnName: claimUniqueName('Value', taken)};
     const meltedIndex: any[] = [];
     const meltedSplits: string[] = [];
     const meltedRuns: string[] = [];
+    const meltedSteps: string[] = [];
     const meltedSeries: string[] = [];
     const meltedValues: (number | null)[] = [];
     for (const label of valueColumnNames) {
       meltedIndex.push(...longIndex);
       meltedRuns.push(...longRuns);
+      meltedSteps.push(...longSteps);
       if (splitColumnName)
         meltedSplits.push(...longSplits);
       for (const value of longValues.get(label)!) {
@@ -324,6 +337,7 @@ export function buildColumnComparison(
       makeIndexColumn(indexColumnName, meltedIndex, axis),
       ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, meltedSplits)] : [],
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, meltedRuns),
+      ...stepColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, stepColumnName, meltedSteps)] : [],
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, melted.seriesColumnName, meltedSeries),
       DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, melted.valueColumnName, toFloatValues(meltedValues)),
     ]);
@@ -332,14 +346,16 @@ export function buildColumnComparison(
       makeIndexColumn(indexColumnName, longIndex, axis),
       ...splitColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, splitColumnName, longSplits)] : [],
       DG.Column.fromList(DG.COLUMN_TYPE.STRING, RUN_COLUMN, longRuns),
+      ...stepColumnName ? [DG.Column.fromList(DG.COLUMN_TYPE.STRING, stepColumnName, longSteps)] : [],
       ...valueColumnNames.map((label) =>
         DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, label, toFloatValues(longValues.get(label)!))),
     ]);
   }
   chartDf.name = targets.length === 1 ? `Comparison: ${targets[0].displayName}` : 'Comparison: multiple values';
   return {
-    chartDf, indexColumnName, splitColumnName, isKeyIndex, isScatter, valueColumnNames,
+    chartDf, indexColumnName, splitColumnName, stepColumnName, isKeyIndex, isScatter, valueColumnNames,
     valueColumnName: valueColumnNames[0],
+    ...axis.kind === 'key' && axis.mixedTime ? {mixedTimeIndex: true} : {},
     ...melted ? {melted} : {},
     ...displayUnit ? {timeSeriesUnit: displayUnit} : {},
   };

@@ -13,7 +13,8 @@ const multiScalar = (valueColumnNames: string[]): Comparison =>
   ({kind: 'multi-scalar', chartDf: frame(), valueColumnNames});
 
 const column = (fields: {
-  valueColumnNames?: string[], splitColumnName?: string, isKeyIndex?: boolean, isScatter?: boolean,
+  valueColumnNames?: string[], splitColumnName?: string, stepColumnName?: string,
+  isKeyIndex?: boolean, mixedTimeIndex?: boolean, isScatter?: boolean,
   melted?: {seriesColumnName: string, valueColumnName: string},
 } = {}): Comparison => {
   const valueColumnNames = fields.valueColumnNames ?? ['Y'];
@@ -45,6 +46,12 @@ category('RunComparison: chart spec hints', () => {
   test('multiple values over a key index ask for another index', async () => {
     const text = hintText(chartSpec(column({isKeyIndex: true, valueColumnNames: ['Y', 'Z']}), true, 'radar', true));
     expect(text?.startsWith('Multiple values cannot chart over a categorical index'), true);
+  });
+
+  test('multiple values over mixed datetime and numeric indexes ask for relative timeseries', async () => {
+    const text = hintText(chartSpec(column({isKeyIndex: true, mixedTimeIndex: true, valueColumnNames: ['Y', 'Z']}),
+      true, 'radar', true));
+    expect(text?.startsWith('Datetime and numeric indexes chart together only in the relative timeseries mode'), true);
   });
 });
 
@@ -111,6 +118,13 @@ category('RunComparison: chart spec columns', () => {
   test('a split column adds an inner line split', async () => {
     const spec = viewerSpec(chartSpec(column({splitColumnName: 'Reactor'}), true, 'radar', true));
     expectArray(spec.options.splitColumnNames, ['Run', 'Reactor']);
+  });
+
+  test('a step column splits lines between run and split', async () => {
+    const spec = viewerSpec(chartSpec(column({
+      valueColumnNames: ['Y', 'Z'], stepColumnName: 'Step', splitColumnName: 'Reactor',
+    }), true, 'radar', true));
+    expectArray(spec.options.splitColumnNames, ['Run', 'Step', 'Reactor']);
   });
 
   test('multiple values share one line chart, taller per value', async () => {

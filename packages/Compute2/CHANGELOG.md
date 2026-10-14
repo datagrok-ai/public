@@ -13,6 +13,7 @@
 * Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
 * Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
 * Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step
+* Run compare: Several dataframe columns from different workflow steps chart together, like scalars; each step of a run is its own line
 * RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
 * TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
 * TreeWizard: Removing a step or workflow from the tree asks for confirmation

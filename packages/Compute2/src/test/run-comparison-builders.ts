@@ -70,6 +70,7 @@ category('RunComparison: comparison dataframes', () => {
     const [target] = matchColumnTargets(entries.map((e) => e.nodes), indexes);
     const result = buildColumnComparison([target], entries)!;
     expect(result.isKeyIndex, true);
+    expect(result.mixedTimeIndex === undefined, true);
     expect(result.chartDf.getCol('key').type, DG.COLUMN_TYPE.STRING);
     expect(result.chartDf.getCol(RUN_COLUMN).type, DG.COLUMN_TYPE.STRING);
   });
@@ -334,7 +335,7 @@ category('RunComparison: multi and split dataframes', () => {
     expect(mixedResult.chartDf.getCol('ts').type, DG.COLUMN_TYPE.STRING);
   });
 
-  test('cross-table pick pads that run with nulls', async () => {
+  test('cross-table picks chart as separate steps', async () => {
     const r1 = entryFromDataFrame(makeDf('r1', [
       intCol('time', [1, 2]), floatCol('a', [10, 20]), floatCol('b', [1, 2]),
     ]));
@@ -370,11 +371,31 @@ category('RunComparison: multi and split dataframes', () => {
     const anchor = targetFor('a', [bindingFor(r1.id, r1Table, 'a'), bindingFor('r2', 'p1', 'a')]);
     const co = targetFor('b', [bindingFor(r1.id, r1Table, 'b'), bindingFor('r2', 'p2', 'b')]);
     const result = buildColumnComparison([anchor, co], entries)!;
-    expect(result.chartDf.rowCount, 5);
-    expect(result.chartDf.getCol('a').toList().join(','), '10,20,30,40,50');
-    const bValues = result.chartDf.getCol('b').toList();
+    const df = result.chartDf;
+    const isNull = (v: any) => v == null || isNaN(v);
+    expect(result.stepColumnName, 'Step');
+    expect(df.rowCount, 7);
+    expect(df.getCol(RUN_COLUMN).toList().join(','), 'r1,r1,r2,r2,r2,r2,r2');
+    expect(df.getCol('Step').toList().join(','), `${r1Table},${r1Table},p1,p1,p1,p2,p2`);
+    const aValues = df.getCol('a').toList();
+    expect(aValues.slice(0, 5).join(','), '10,20,30,40,50');
+    expect(aValues.slice(5).every(isNull), true);
+    const bValues = df.getCol('b').toList();
     expect(bValues.slice(0, 2).join(','), '1,2');
-    expect(bValues.slice(2).every((v: any) => v == null || isNaN(v)), true);
+    expect(bValues.slice(2, 5).every(isNull), true);
+    expect(bValues.slice(5).join(','), '7,8');
+  });
+
+  test('same-table picks add no step column', async () => {
+    const entries = [
+      entryFromDataFrame(makeDf('r1', [intCol('time', [1, 2]), floatCol('a', [10, 20]), floatCol('b', [1, 2])])),
+      entryFromDataFrame(makeDf('r2', [intCol('time', [1, 2]), floatCol('a', [30, 40]), floatCol('b', [3, 4])])),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries, 'time')) as ColumnTarget[];
+    const result = buildColumnComparison(targets, entries)!;
+    expect(result.stepColumnName === undefined, true);
+    expect(result.chartDf.rowCount, 4);
+    expect(result.chartDf.col('Step') == null, true);
   });
 
   test('disabled candidates are excluded from the chart', async () => {
@@ -399,6 +420,110 @@ category('RunComparison: multi and split dataframes', () => {
     const result = buildColumnComparison([target as ColumnTarget, twin], entries)!;
     expect(result.valueColumnNames.join('|'), 'x|x (2)');
     expect(result.chartDf.getCol('x (2)').toList().join(','), '10,20,30,40');
+  });
+});
+
+category('RunComparison: cross-step dataframes', () => {
+  const floatCol = (name: string, values: number[]) => DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, name, values);
+  const intCol = (name: string, values: number[]) => DG.Column.fromList(DG.COLUMN_TYPE.INT, name, values);
+  const strCol = (name: string, values: string[]) => DG.Column.fromList(DG.COLUMN_TYPE.STRING, name, values);
+  type StepSpec = {path: string, friendlyPath?: string, cols: DG.Column[]};
+  const stepsEntry = (id: string, steps: StepSpec[]): ComparisonEntry => ({
+    id, name: id, sourceKind: 'workflow', modelName: '',
+    nodes: {entryId: id, entryName: id, scalars: [], tables: steps.map(({path, friendlyPath, cols}) => ({
+      path, name: path, friendlyPath, rowCount: cols[0].length,
+      columns: cols.map((col) => ({name: col.name, type: col.type})),
+    }))},
+    dataFrames: new Map(steps.map(({path, cols}) => [path, DG.DataFrame.fromColumns(cols)])),
+  });
+  // per run: a feed step with `a` at t = 10, 20 and a sim step with `b` at t = 100, 160, 220
+  const twoStepRuns = (friendly = false, feedExtra: DG.Column[] = []) => ['r1', 'r2'].map((id, i) => stepsEntry(id, [
+    {path: 'feed', friendlyPath: friendly ? 'Feed · df' : undefined,
+      cols: [intCol('time', [10, 20]), floatCol('a', [i, i + 1]), ...feedExtra.map((col) => col.clone())]},
+    {path: 'sim', friendlyPath: friendly ? 'Sim · df' : undefined,
+      cols: [intCol('time', [100, 160, 220]), floatCol('b', [i, i + 1, i + 2])]},
+  ]));
+  const target = (
+    key: string, entries: ComparisonEntry[], tablePath: string, columnName: string, splitColumnName?: string,
+  ): ColumnTarget => ({
+    kind: 'column', key, displayName: key, confidence: 'exact', unitsWarning: false,
+    coverage: entries.length, total: entries.length, candidates: [],
+    bindings: entries.map((entry) => ({
+      entryId: entry.id, tablePath, tableName: tablePath, columnName, indexColumnName: 'time', splitColumnName,
+      tableFriendlyPath: entry.nodes.tables.find((table) => table.path === tablePath)!.friendlyPath,
+    })),
+  });
+  const allTables = (entries: ComparisonEntry[], config: {mode: 'timeseries' | 'points', units?: TimeUnit}) =>
+    new Map(entries.map((e) => [e.id, new Map(e.nodes.tables.map((t) => [t.path, config]))]));
+
+  test('cross-step columns build a column comparison labeled by friendly path', async () => {
+    const entries = twoStepRuns(true);
+    const result = buildComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')], entries)!;
+    expect(result.kind, 'column');
+    if (result.kind !== 'column')
+      return;
+    expect(result.stepColumnName, 'Step');
+    expect(result.chartDf.getCol('Step').toList().slice(0, 5).join('|'),
+      'Feed · df|Feed · df|Sim · df|Sim · df|Sim · df');
+  });
+
+  test('a value or split named Step pushes the step column aside', async () => {
+    const entries = twoStepRuns();
+    const byValue = buildColumnComparison([target('Step', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries)!;
+    expect(byValue.stepColumnName, 'Step');
+    expectArray(byValue.valueColumnNames, ['Step (2)', 'b']);
+
+    const splitEntries = twoStepRuns(false, [strCol('Step', ['x', 'y'])]);
+    const bySplit = buildColumnComparison([
+      target('a', splitEntries, 'feed', 'a', 'Step'), target('b', splitEntries, 'sim', 'b'),
+    ], splitEntries)!;
+    expect(bySplit.splitColumnName, 'Step');
+    expect(bySplit.stepColumnName, 'Step (2)');
+    expect(bySplit.chartDf.getCol('Step (2)').toList().slice(0, 3).join(','), 'feed,feed,sim');
+  });
+
+  test('each step starts at zero on the elapsed axis', async () => {
+    const entries = twoStepRuns();
+    const result = buildColumnComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries, allTables(entries, {mode: 'timeseries', units: 's'}))!;
+    expect(result.indexColumnName, 'time (s)');
+    expect(result.chartDf.getCol('time (s)').toList().slice(0, 5).join(','), '0,10,0,60,120');
+  });
+
+  test('melted scatter carries the step column', async () => {
+    const entries = twoStepRuns();
+    const result = buildColumnComparison([target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')],
+      entries, allTables(entries, {mode: 'points'}))!;
+    expect(result.melted != null, true);
+    expect(result.chartDf.rowCount, 20);
+    expect(result.chartDf.getCol('Step').toList().slice(0, 5).join(','), 'feed,feed,sim,sim,sim');
+  });
+
+  test('datetime and numeric step indexes chart as keys and flag the mix', async () => {
+    const entries = ['r1', 'r2'].map((id) => stepsEntry(id, [
+      {path: 'feed', cols: [DG.Column.fromList(DG.COLUMN_TYPE.DATE_TIME, 'time',
+        [dayjs('2026-01-01'), dayjs('2026-01-02')]), floatCol('a', [1, 2])]},
+      {path: 'sim', cols: [intCol('time', [0, 1]), floatCol('b', [3, 4])]},
+    ]));
+    const targets = [target('a', entries, 'feed', 'a'), target('b', entries, 'sim', 'b')];
+    const result = buildColumnComparison(targets, entries)!;
+    expect(result.isKeyIndex, true);
+    expect(result.mixedTimeIndex, true);
+    const elapsed = buildColumnComparison(targets, entries, allTables(entries, {mode: 'timeseries', units: 's'}))!;
+    expect(elapsed.isKeyIndex, false);
+    expect(elapsed.mixedTimeIndex === undefined, true);
+  });
+
+  test('a run without an anchor pick charts its steps in selection order', async () => {
+    const entries = twoStepRuns();
+    const anchor = target('a', entries.slice(0, 1), 'feed', 'a');
+    const result = buildColumnComparison([
+      anchor, target('b', entries, 'sim', 'b'), target('c', entries, 'feed', 'a'),
+    ], entries)!;
+    const steps = result.chartDf.getCol('Step').toList();
+    expect(steps.slice(0, 5).join(','), 'feed,feed,sim,sim,sim');
+    expect(steps.slice(5).join(','), 'sim,sim,sim,feed,feed');
   });
 });
 

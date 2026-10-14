@@ -3,7 +3,7 @@ import {
   matchScalarTargets, matchColumnTargets, buildUnitConverter, buildAliasGroups,
 } from '../components/RunComparison/matching';
 import {
-  getEntryStatuses, matchesFilter, multiValueOverlap, compatibleTargetsFor,
+  getEntryStatuses, matchesFilter, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
   selectionGaps, withAnnotatedDefaults, PickerSelections,
@@ -107,36 +107,20 @@ category('RunComparison: filters and compatibility', () => {
     candidates: [], bindings,
   });
 
-  test('multiValueOverlap counts aligned, missing, and conflicting runs', async () => {
-    const anchor = columnTarget('anchor', [bind('a', 't'), bind('b', 't'), bind('c', 't2')]);
-    const other = columnTarget('other', [bind('a', 't'), bind('c', 't3')]);
-    const overlap = multiValueOverlap(anchor, other);
-    expect(overlap.aligned, 1);
-    expectArray(overlap.missing, ['b']);
-    expectArray(overlap.conflicting, ['c']);
-  });
-
-  test('zero aligned runs are not suggested', async () => {
+  test('columns without shared runs are suggested like scalars', async () => {
     const anchor = columnTarget('anchor', [bind('a', 't')]);
     const other = columnTarget('other', [bind('b', 't')]);
-    expect(compatibleTargetsFor(anchor, [anchor, other], () => 'int').length, 1);
+    expect(compatibleTargetsFor(anchor, [anchor, other], () => 'int').length, 2);
   });
 
-  test('unchecking a run keeps the co-target suggested', async () => {
-    const table = {path: 't', columns: [
-      {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'},
-    ]};
-    const entries = [makeEntry('a', [], [table]), makeEntry('b', [], [table])];
-    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
-    const [height] = matchColumnTargets(entries, indexes);
-    const edited = matchColumnTargets(entries, indexes, undefined,
-      {[height.key]: {'b|t|height': false}});
-    const anchor = edited.find((t) => t.displayName === 'height')!;
-    expect(anchor.bindings.length, 1);
-    expect(compatibleTargetsFor(anchor, edited, () => 'int').length, 2);
+  test('a column with a non-line-chartable index is not suggested', async () => {
+    const anchor = columnTarget('anchor', [bind('a', 't'), bind('b', 't')]);
+    const other = columnTarget('other', [bind('a', 't'), bind('b', 'keyed')]);
+    const getType = (_entryId: string, tablePath: string) => tablePath === 'keyed' ? 'string' : 'int';
+    expectArray(compatibleTargetsFor(anchor, [anchor, other], getType).map((t) => t.key), ['anchor']);
   });
 
-  test('cross-table pick becomes conflicting and leaves suggestions', async () => {
+  test('cross-table pick stays suggested', async () => {
     const full = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'},
     ]};
@@ -150,11 +134,11 @@ category('RunComparison: filters and compatibility', () => {
     const anchor = edited.find((t) => t.displayName === 'height')!;
     const velocity = edited.find((t) => t.displayName === 'velocity')!;
     expect(anchor.bindings.find((b) => b.entryId === 'b')!.tablePath, 'u');
-    expectArray(multiValueOverlap(anchor, velocity).conflicting, ['b']);
-    expect(compatibleTargetsFor(anchor, edited, () => 'int').length, 1);
+    expect(velocity.bindings.find((b) => b.entryId === 'b')!.tablePath, 't');
+    expect(compatibleTargetsFor(anchor, edited, () => 'int').length, 2);
   });
 
-  test('compatibleTargetsFor groups aligned same-table targets', async () => {
+  test('a column anchor suggests every line-indexed column', async () => {
     const table = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'velocity'}, {name: 'other'},
     ]};
@@ -175,22 +159,6 @@ category('RunComparison: filters and compatibility', () => {
     const targets = matchColumnTargets(entries, indexes);
     expect(compatibleTargetsFor(targets[0], targets, () => 'string').length, 0);
     expect(compatibleTargetsFor(targets[0], targets, () => 'datetime').length, 2);
-  });
-
-  test('enabling a sibling swaps the pick and keeps multi-value available', async () => {
-    const entries = [
-      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height'}]}]),
-      makeEntry('b', [], [{path: 't', columns: [
-        {name: 'time', type: 'int'}, {name: 'height'}, {name: 'heights'},
-      ]}]),
-    ];
-    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
-    const [base] = matchColumnTargets(entries, indexes);
-    const [anchor] = matchColumnTargets(entries, indexes, undefined,
-      {[base.key]: {'b|t|heights': true}});
-    expect(anchor.bindings.length, 2);
-    expect(anchor.bindings.find((b) => b.entryId === 'b')!.columnName, 'heights');
-    expect(compatibleTargetsFor(anchor, [anchor], () => 'int').length, 1);
   });
 
   test('raw fuzzy siblings do not block multi-value mode', async () => {
@@ -238,21 +206,6 @@ category('RunComparison: filters and compatibility', () => {
     const compatible = compatibleTargetsFor(anchor, targets, () => 'int');
     expect(compatible.length, 2);
     expect(compatible.every((t) => t.kind === 'column'), true);
-  });
-
-  test('multiValueOverlap on scalars is missing-only, never conflicting', async () => {
-    const entries = [
-      makeEntry('a', [{name: 'x'}, {name: 'y'}]),
-      makeEntry('b', [{name: 'x'}]),
-      makeEntry('c', [{name: 'x'}, {name: 'y'}]),
-    ];
-    const targets = matchScalarTargets(entries);
-    const anchor = targets.find((t) => t.displayName === 'x')!;
-    const other = targets.find((t) => t.displayName === 'y')!;
-    const overlap = multiValueOverlap(anchor, other);
-    expect(overlap.aligned, 2);
-    expectArray(overlap.missing, ['b']);
-    expectArray(overlap.conflicting, []);
   });
 
   test('isSplitCandidate requires a string column that is not the index', async () => {
@@ -686,6 +639,20 @@ category('RunComparison: selection gaps', () => {
     const y = targets.find((t) => t.displayName === 'y')!;
     expectArray(selectionGaps([x, y]).get(x.key)!, ['c']);
     expectArray(selectionGaps([y, x]).get(x.key)!, ['c']);
+  });
+
+  test('a column picked from another table than the co-target is not a gap', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time'}, {name: 'x'}, {name: 'y'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [{name: 'time'}, {name: 'x'}]},
+        {path: 'u', columns: [{name: 'time'}, {name: 'y'}]}]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time', u: 'time'}}));
+    const x = targets.find((t) => t.displayName === 'x')!;
+    const y = targets.find((t) => t.displayName === 'y')!;
+    expect(y.bindings.find((b) => b.entryId === 'b')!.tablePath, 'u');
+    expect(selectionGaps([x, y]).get(y.key)!.length, 0);
+    expect(selectionGaps([y, x]).get(x.key)!.length, 0);
   });
 });
 

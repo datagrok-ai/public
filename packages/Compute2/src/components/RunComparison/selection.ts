@@ -21,45 +21,13 @@ export function matchesFilter(query: string, text: string): boolean {
   return t.includes(q) || t.split(' ').some((token) => nameSimilarity(token, q) >= FUZZY_NAME_THRESHOLD);
 }
 
-export interface MultiValueOverlap {
-  // anchor runs the other target charts from the same table
-  aligned: number;
-  // anchor runs (entryIds) the other target has no pick for
-  missing: string[];
-  // anchor runs picked from a different table
-  conflicting: string[];
-}
-
-interface OverlapTarget {
-  bindings: {entryId: string, tablePath?: string}[];
-}
-
-// per anchor run: the other target's pick either shares the table (rows can be shared),
-// is absent (padded), or points elsewhere (padded, flagged); index/split agreement is
-// automatic for same-table picks since pickers are per (run, table); scalar bindings
-// have no tablePath, so they are aligned or missing, never conflicting
-export function multiValueOverlap(anchor: OverlapTarget, other: OverlapTarget): MultiValueOverlap {
-  const otherByRun = new Map(other.bindings.map((b) => [b.entryId, b]));
-  const result: MultiValueOverlap = {aligned: 0, missing: [], conflicting: []};
-  for (const binding of anchor.bindings) {
-    const otherBinding = otherByRun.get(binding.entryId);
-    if (!otherBinding)
-      result.missing.push(binding.entryId);
-    else if (otherBinding.tablePath !== binding.tablePath)
-      result.conflicting.push(binding.entryId);
-    else
-      result.aligned++;
-  }
-  return result;
-}
-
 /**
- * Suggestion predicate for multi-value mode. Scalar anchors: every scalar target is
- * compatible (all scalars are numeric by construction), never mixed with columns.
- * Column anchors: column targets that chart at least one of the anchor's runs from the
- * same table and conflict on none, provided the anchor's index is line-chartable
- * (numeric or datetime) everywhere. Validity of an already selected combination is
- * enforced by builder padding, not here — selected targets are never ejected.
+ * Suggestion predicate for multi-value mode: targets of the anchor's kind, never mixed.
+ * Every scalar is compatible (all scalars are numeric by construction); column targets
+ * when both the anchor's and their own index are line-chartable (numeric or datetime)
+ * everywhere — picks from different tables of a run chart as separate steps. Validity of
+ * an already selected combination is enforced by builder padding, not here — selected
+ * targets are never ejected.
  */
 export function compatibleTargetsFor(
   anchor: ComparisonTarget | null,
@@ -70,42 +38,23 @@ export function compatibleTargetsFor(
     return [];
   if (anchor.kind === 'scalar')
     return targets.filter((target) => target.kind === 'scalar');
-  const lineIndexed = anchor.bindings.every((b) =>
+  const lineIndexed = (target: ColumnTarget) => target.bindings.every((b) =>
     isTimeIndexType(getColumnType(b.entryId, b.tablePath, b.indexColumnName)));
-  if (!lineIndexed)
+  if (!lineIndexed(anchor))
     return [];
-  return targets.filter((target): target is ColumnTarget => {
-    if (target.kind !== 'column')
-      return false;
-    const overlap = multiValueOverlap(anchor, target);
-    return overlap.conflicting.length === 0 && overlap.aligned >= 1;
-  });
+  return targets.filter((target) => target.kind === 'column' && lineIndexed(target));
 }
-
-// entryId -> table of each pick; scalars have no table
-const pickTables = (target: ComparisonTarget): [string, string | undefined][] =>
-  target.kind === 'column' ?
-    target.bindings.map((b) => [b.entryId, b.tablePath]) : target.bindings.map((b) => [b.entryId, undefined]);
 
 /**
  * Per selected target, the charted runs it has no data for: runs any selected target charts
- * (union), minus its own picks. A column pick from another table than the run's row source
- * (the first selected target with a pick there, as the builder does) counts as a gap too.
+ * (union), minus its own picks.
  */
 export function selectionGaps(selected: ComparisonTarget[]): Map<string, string[]> {
-  const rowSource = new Map<string, string | undefined>();
-  for (const target of selected) {
-    for (const [entryId, tablePath] of pickTables(target)) {
-      if (!rowSource.has(entryId))
-        rowSource.set(entryId, tablePath);
-    }
-  }
+  const charted = new Set(selected.flatMap((target) =>
+    (target.bindings as {entryId: string}[]).map((b) => b.entryId)));
   return new Map(selected.map((target) => {
-    const own = new Map(pickTables(target));
-    const gaps = [...rowSource]
-      .filter(([entryId, tablePath]) => !own.has(entryId) || own.get(entryId) !== tablePath)
-      .map(([entryId]) => entryId);
-    return [target.key, gaps];
+    const own = new Set((target.bindings as {entryId: string}[]).map((b) => b.entryId));
+    return [target.key, [...charted].filter((entryId) => !own.has(entryId))];
   }));
 }
 
