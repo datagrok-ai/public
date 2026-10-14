@@ -14,13 +14,13 @@ const multiScalar = (valueColumnNames: string[]): Comparison =>
 
 const column = (fields: {
   valueColumnNames?: string[], splitColumnName?: string, stepColumnName?: string,
-  isKeyIndex?: boolean, mixedTimeIndex?: boolean, isScatter?: boolean,
+  isKeyIndex?: boolean, mixedTimeIndex?: boolean, isScatter?: boolean, sameUnits?: boolean,
   melted?: {seriesColumnName: string, valueColumnName: string},
 } = {}): Comparison => {
   const valueColumnNames = fields.valueColumnNames ?? ['Y'];
   return {
     kind: 'column', chartDf: frame(), valueColumnName: valueColumnNames[0], indexColumnName: 'Time (h)',
-    isKeyIndex: false, isScatter: false, ...fields, valueColumnNames,
+    isKeyIndex: false, isScatter: false, sameUnits: false, ...fields, valueColumnNames,
   };
 };
 
@@ -132,6 +132,28 @@ category('RunComparison: chart spec columns', () => {
     expect(spec.type, DG.VIEWER.LINE_CHART);
     expectArray(spec.options.yColumnNames, ['Y', 'Z', 'W']);
     expect(spec.minHeight, 750);
+    expect(spec.options.yGlobalScale, false);
+    expect(spec.sharedScaleSwitch, false);
+  });
+
+  test('values in the same units share one panel and y axis until switched off', async () => {
+    const same = column({valueColumnNames: ['Y', 'Z'], sameUnits: true});
+    const shared = viewerSpec(chartSpec(same, true, 'radar', true));
+    expect(shared.options.yGlobalScale, true);
+    expect(shared.options.multiAxis, true);
+    expect(shared.minHeight, 250);
+    expect(shared.sharedScaleSwitch, true);
+    const independent = viewerSpec(chartSpec(same, true, 'radar', true, false));
+    expect(independent.options.yGlobalScale, false);
+    expect(independent.options.multiAxis, false);
+    expect(independent.minHeight, 500);
+    expect(independent.sharedScaleSwitch, true);
+  });
+
+  test('a single value has no shared scale switch', async () => {
+    const spec = viewerSpec(chartSpec(column({sameUnits: true}), true, 'radar', true));
+    expect(spec.options.yGlobalScale, false);
+    expect(spec.sharedScaleSwitch, false);
   });
 
   test('independent points color by run', async () => {

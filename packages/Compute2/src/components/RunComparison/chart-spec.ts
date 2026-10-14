@@ -15,18 +15,22 @@ export type ChartSpec =
     minHeight: number,
     // radar vs PC plot switch above a multi-scalar chart
     scalarChartSwitch: boolean,
+    // shared vs independent y scale switch above a multi-value line chart
+    sharedScaleSwitch: boolean,
   };
 
 const hint = (text: string): ChartSpec => ({kind: 'hint', text});
 
-const viewer = (type: string, options: Record<string, any>, minHeight: number, scalarChartSwitch = false): ChartSpec =>
-  ({kind: 'viewer', type, options, minHeight, scalarChartSwitch});
+const viewer = (
+  type: string, options: Record<string, any>, minHeight: number, scalarChartSwitch = false, sharedScaleSwitch = false,
+): ChartSpec => ({kind: 'viewer', type, options, minHeight, scalarChartSwitch, sharedScaleSwitch});
 
 export function chartSpec(
   comparison: Comparison | null,
   hasSelection: boolean,
   scalarChartType: ScalarChartType,
   radarAvailable: boolean,
+  sharedScale = true,
 ): ChartSpec {
   if (!hasSelection)
     return hint('Select what to compare above');
@@ -91,11 +95,14 @@ export function chartSpec(
     }, 300);
   }
 
+  const shareable = valueColumnNames.length > 1 && comparison.sameUnits;
+  const shared = shareable && sharedScale;
   return viewer(DG.VIEWER.LINE_CHART, {
     xColumnName: comparison.indexColumnName,
     yColumnNames: valueColumnNames,
     splitColumnNames: [RUN_COLUMN, comparison.stepColumnName, comparison.splitColumnName]
       .filter((name): name is string => !!name),
-    multiAxis: false,
-  }, 250 * Math.max(1, valueColumnNames.length));
+    multiAxis: shared,
+    yGlobalScale: shared,
+  }, shared ? 250 : 250 * Math.max(1, valueColumnNames.length), false, shareable);
 }

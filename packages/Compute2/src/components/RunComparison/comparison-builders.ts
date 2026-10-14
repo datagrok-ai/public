@@ -109,6 +109,8 @@ export interface ColumnComparisonResult {
   isKeyIndex: boolean;
   // the key index comes from mixing datetime and numeric indexes, which only the elapsed axis can chart
   mixedTimeIndex?: boolean;
+  // every target has the same explicit units, so the values can share one y scale
+  sameUnits: boolean;
   // every participating table is in independent-points mode — chart rows as points, not lines
   isScatter: boolean;
   // multi-value scatter melts values into one column keyed by target name
@@ -357,6 +359,8 @@ export function buildColumnComparison(
   chartDf.name = targets.length === 1 ? `Comparison: ${targets[0].displayName}` : 'Comparison: multiple values';
   return {
     chartDf, indexColumnName, splitColumnName, stepColumnName, isKeyIndex, isScatter, valueColumnNames,
+    sameUnits: targets.every((target) =>
+      !!target.units && normalizeUnits(target.units) === normalizeUnits(targets[0].units)),
     valueColumnName: valueColumnNames[0],
     ...axis.kind === 'key' && axis.mixedTime ? {mixedTimeIndex: true} : {},
     ...melted ? {melted} : {},

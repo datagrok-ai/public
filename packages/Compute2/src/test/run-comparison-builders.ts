@@ -907,6 +907,21 @@ category('RunComparison: units in column names', () => {
     expect(buildScalarComparison(matchScalarTargets(plain.map((e) => e.nodes))[0], plain).valueColumnName, 'x');
   });
 
+  test('values share units only when every one has the same explicit units', async () => {
+    const entries = [
+      tableEntry('r1', [col('Time', [0, 1]), col('x', [1, 2], 'g/L'), col('y', [3, 4], 'g/l'),
+        col('z', [5, 6], 'mg/L'), col('u', [7, 8]), col('v', [9, 10])]),
+      tableEntry('r2', [col('Time', [0, 1]), col('x', [1, 2], 'g/L'), col('y', [3, 4], 'g/l'),
+        col('z', [5, 6], 'mg/L'), col('u', [7, 8]), col('v', [9, 10])]),
+    ];
+    const targets = matchColumnTargets(entries.map((e) => e.nodes), indexesFor(entries)) as ColumnTarget[];
+    const pick = (...names: string[]) => names.map((name) => targets.find((t) => t.displayName === name)!);
+    expect(buildColumnComparison(pick('x', 'y'), entries)!.sameUnits, true);
+    expect(buildColumnComparison(pick('x', 'z'), entries)!.sameUnits, false);
+    expect(buildColumnComparison(pick('x', 'u'), entries)!.sameUnits, false);
+    expect(buildColumnComparison(pick('u', 'v'), entries)!.sameUnits, false);
+  });
+
   test('value columns and a float index carry their units; a key index does not', async () => {
     const entries = [
       tableEntry('r1', [col('Time', [0, 1], 'h'), col('x', [1, 2], 'g/L'), col('y', [3, 4])]),

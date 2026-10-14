@@ -123,14 +123,14 @@ Everything re-derives from `entries` + the selections:
   | scalar target | bar chart, split by `Run` |
   | multiple scalar targets | radar (default, Charts package `Radar` viewer — axes = targets, one polygon per run) or PC plot, via a small switch above the chart; PC plot is the silent fallback when Charts isn't deployed |
   | column target, key (string) index | bar chart, split by index, stacked by `Run` |
-  | column target, numeric/datetime index | line chart: x = index, y = value column(s), split by `Run` (+ `Step` when present, + inner split column), `multiAxis: false` |
+  | column target, numeric/datetime index | line chart: x = index, y = value column(s), split by `Run` (+ `Step` when present, + inner split column), `multiAxis: false`; several values with the same explicit units (`sameUnits`, unitless never matches) chart in one panel (`multiAxis` + `yGlobalScale`) while the **Shared y axis** switch is on, stacked panels when it is off |
   | column target, relative timeseries (all tables configured) | same line chart over the converted `<index> (<unit>)` elapsed axis — no dedicated chart branch |
   | column target, independent points (all tables configured) | scatterplot: x = index pick, y = value, color = split ?? `Run` (runs move to marker shapes when split takes color); multi-value melts all values into one y column colored by target name, markers = `Run`, split unencoded |
   | multi-value column selection, key index | no chart — a hint to pick a numeric/datetime index (multi-value suggestions are gated on a line-chartable index, but an index switched to a string column after selection would otherwise land the multi frame on a line chart); when the key axis comes from mixing datetime and numeric indexes (`mixedTimeIndex`), the hint asks for the relative timeseries mode instead |
 
   Single-value charts read their y column from the result's `valueColumnName` (the deduped label), not from `target.displayName`.
 
-  Column multi-value mode scales the minimum chart height by the number of value columns (`250px` per value); multi-scalar uses a flat minimum (one chart, not stacked series).
+  Column multi-value mode scales the minimum chart height by the number of stacked value panels (`250px` per value, a flat `250px` for the shared panel); multi-scalar uses a flat minimum (one chart, not stacked series).
 - **Export** (`exportComparison`): `snapshotData` clones `chartDf` and captures the chart with its current options (`chartViewer.getOptions()`), so user tweaks to the chart carry over. The dialog offers OPEN IN WORKSPACE (`snapshotView` — adds a table view of the snapshot to the workspace) and SAVE & SHARE (`saveAndShare` — a serialized layout captured via `captureTableLayout` and handed with the table to the platform project-save dialog, which handles upload, layout linking, and sharing). The save-dialog plumbing (`canSaveProject`, `showProjectSaveDialog`, `captureTableLayout`) is shared with the RFV project export in `src/project-export.ts`; when the platform has no save-dialog API, the dialog degrades to OPEN IN WORKSPACE only.
 
 ## Entry points and tests

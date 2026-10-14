@@ -310,6 +310,7 @@ export const RunComparison = Vue.defineComponent({
       targets.value.find((target) => target.key === selectedTargetKey.value) ?? null);
 
     const scalarChartType = Vue.ref<ScalarChartType>('radar');
+    const sharedScale = Vue.ref(true);
     const radarAvailable = DG.Func.find({meta: {role: DG.FUNC_TYPES.VIEWER}})
       .some((f) => f.friendlyName === 'Radar');
 
@@ -439,7 +440,8 @@ export const RunComparison = Vue.defineComponent({
     });
 
     const currentChartSpec = Vue.computed(() =>
-      chartSpec(comparison.value, selectedTarget.value != null, scalarChartType.value, radarAvailable));
+      chartSpec(comparison.value, selectedTarget.value != null, scalarChartType.value, radarAvailable,
+        sharedScale.value));
 
     // tables that could participate in column comparison and need an index choice;
     // with merging on, same-function outputs (by nqName) collapse into one row
@@ -862,6 +864,14 @@ export const RunComparison = Vue.defineComponent({
                 }}
               >{label}</span>,
             )}
+          </div> }
+        { spec.sharedScaleSwitch &&
+          <div style={{padding: '2px 0px', flexShrink: '0'}}>
+            <ToggleInput
+              caption='Shared y axis'
+              value={sharedScale.value}
+              onUpdate:value={(val) => sharedScale.value = val}
+            />
           </div> }
         { Vue.withDirectives(
           <Viewer
