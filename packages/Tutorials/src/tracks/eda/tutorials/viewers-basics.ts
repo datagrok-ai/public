@@ -59,19 +59,25 @@ export class ViewersTutorial extends Tutorial {
       '<b>Sunburst</b> shows hierarchical data as nested rings.';
     await this.action('Open the viewer gallery again', elementClick(() => addViewerIcon), addViewerIcon, sunburstInfo);
 
-    const searchInput = document.querySelector('.vg-controls input.ui-input-editor') as HTMLInputElement;
     const sunburstAdded = grok.events.onViewerAdded
       .pipe(filter((d: DG.EventData) => d.args.viewer.type === 'Sunburst'));
     const gallerySearch = (dlg: DG.Dialog) => dlg.root.querySelector<HTMLElement>('.vg-controls input.ui-input-editor');
     const typeHintSub = merge(from(DG.Dialog.getOpenDialogs()), grok.events.onDialogShown).pipe(
       filter((dlg: DG.Dialog) => gallerySearch(dlg) != null),
       mergeMap((dlg: DG.Dialog) => new Observable(() => {
-        const hint = ui.hints.addHint(gallerySearch(dlg)!, ui.markdown('Type **Sunburst** here'), 'bottom');
-        return () => hint.remove();
+        const input = gallerySearch(dlg)!;
+        ui.hints.addHintIndicator(input, false);
+        const hint = ui.hints.addHint(input, ui.markdown('Type **Sunburst** here'), 'bottom');
+        return () => {
+          ui.hints.remove(input);
+          hint.remove();
+        };
       }).pipe(takeUntil(dlg.onClose)))).subscribe();
     await this.action('Type "Sunburst" in the search box', merge(
-      fromEvent(searchInput, 'input').pipe(filter(() => searchInput.value.toLowerCase().includes('sunburst'))),
-      sunburstAdded), searchInput);
+      fromEvent<InputEvent>(document, 'input').pipe(filter((e) =>
+        (e.target as HTMLElement)?.matches('.vg-controls input.ui-input-editor') &&
+        (e.target as HTMLInputElement).value.toLowerCase().includes('sunburst'))),
+      sunburstAdded));
     typeHintSub.unsubscribe();
 
     const sunburstViewerElement = this.getViewerCard('Sunburst');
