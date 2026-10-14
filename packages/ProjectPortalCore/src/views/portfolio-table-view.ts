@@ -8,10 +8,9 @@ import * as DG from 'datagrok-api/dg';
 import {COL, PortfolioTables, portfolioTables} from '../portfolio-table';
 import {button} from '@datagrok-libraries/u2';
 // a cycle with portal-view, safe: neither uses the other at load
-import {portalAppView, PortalView} from './portal-view';
+import {portalAppView} from './portal-view';
 import {installStyles} from './styles';
-import {openProgramPage} from './my-programs-widget';
-import {programAddress} from '../model/pinning';
+import {showProgramInPanel} from './program-panel';
 
 export const APP_ROOT = '/apps/ProjectPortalCore';
 export const APP_PATH = `${APP_ROOT}/Portal`;
@@ -37,26 +36,15 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
   return el;
 };
 
-/** The current row's program at a glance in the context panel, as a board card shows it; its Open
- * program opens the program's page in the Project Portal. */
+/** The current row's program in the context panel: its card, and Open program for its page. */
 function programPanel(tv: DG.TableView, t: PortfolioTables): void {
   installStyles();
-  const portal = new PortalView();
-  portal.openElsewhere = (code, p) => void openProgramPage({portfolioCode: code, programId: p.id,
-    address: programAddress(code, p.code)}).catch((e) => grok.shell.error(e?.message ?? String(e)));
-  let loaded: Promise<void> | null = null;
   const df = t.programs;
-  const show = async (row: number) => {
-    if (row < 0)
-      return;
-    const id = df.get(COL.id, row) as string;
-    const code = df.get(COL.portfolio, row) as string;
-    loaded ??= portal.load(code);
-    await loaded;
-    await portal.previewProgram(code, id);
-  };
-  tv.subs.push(df.onCurrentRowChanged.subscribe(() => void show(df.currentRowIdx).catch((e) =>
-    grok.shell.error(e?.message ?? String(e)))));
+  tv.subs.push(df.onCurrentRowChanged.subscribe(() => {
+    const row = df.currentRowIdx;
+    if (row >= 0)
+      void showProgramInPanel(df.get(COL.id, row) as string).catch((e) => grok.shell.error(e?.message ?? String(e)));
+  }));
 }
 
 /** The default layout over [t]: grid, filters, and the four viewers. */

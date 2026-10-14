@@ -536,3 +536,8 @@ export const discussionRemoved = Given('the discussion of the scratch project {s
       await removeDiscussion(page, code, portfolio);
     }, true);
   }, {tier: 'api', description: 'deletes the platform chats on the program\'s workspace folder, now and at the end of the feature'});
+
+export const openTile = When('user double-clicks on the {string} tile', async (page: Page, code: string) => {
+  const name = code.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  await page.locator(`[data-u2-name="pinned-tile-${name}"]`).first().dblclick({timeout: 60000});
+}, {tier: 'ui', description: 'a My programs tile on Home, by the program\'s code: a double-click opens its page'});

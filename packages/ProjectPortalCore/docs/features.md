@@ -53,8 +53,10 @@ recorded met, observations and a follow.
 - **Browse.** Under Apps › Project Portal, a node per portfolio the user can see, by name. A click opens that portfolio: in the portal on screen, else in a new preview of the app.
 - **One portfolio** opens straight away. **Several** open on the landing page: the search box, Recent, and a card per portfolio with its program count and stage model.
 - **A portfolio's page** shows that portfolio only. With several, **Portfolios ›** in its header goes back to the landing page; Browse switches directly.
-- **The program page** takes the main area in place of the board, with the portfolio (and, with several, **Portfolios ›**) above it to go back. A search hit, Recent, a My programs tile, a favorite opened from the Workspace and an address open it straight away: the user already knows which program they want. The panels flow into two columns when the view is wide enough. The context panel stays free for what is clicked on the page (a run, a document, a model card).
-- **On the board** a card is for choosing: a click marks it and shows the program at a glance in the context panel (status, stage, modality, next gate and its readiness) with **Open program** (the portfolio's noun: *Open project*). A double-click opens the page directly.
+- **The program page** takes the main area in place of the board, with the portfolio (and, with several, **Portfolios ›**) above it to go back. A search hit, Recent, a My programs tile, a favorite opened from the Workspace and an address open it straight away: the user already knows which program they want. The panels flow into two columns when the view is wide enough. The program's actions are not under its title: opening the page puts the program in the context panel (below), which then shows whatever is clicked on the page (a run, a document, a model card).
+- **On the board** a card is for choosing: a click marks it and puts the program in the context panel, with **Open program** (the portfolio's noun: *Open project*). A double-click opens the page directly.
+- **The program in the context panel.** Wherever a program is clicked (a board card, a table row, a My programs tile, a favorite in the Workspace) or opened, the context panel shows its record: the program's card (the My programs tile: portfolio, stage and track, status, next gate and readiness, attention, new data), a star to add or remove it from the user's favorites (the platform's favorites), **Open program** unless its page is on screen, and *Actions*: **Show on board**, **Follow** / **Unfollow**, **Open workspace** (or **Build its folder** for an approver), **Add to <the portfolio's viewers'> favorites** for an approver, **Provenance**, **Ask SME…**, **Data package**. A change made there redraws the page when it shows the program.
+- **Right-click.** A program's record, wherever the platform lists it (the Workspace and Favorites on Home, Browse), has **Open** and **Show on board** in its context menu, beside the platform's *Add To Favorites* and *Group favorites*.
 
 ## Finding a program
 
@@ -133,7 +135,7 @@ one table, at `/apps/ProjectPortalCore/Portal/table`; there, the portfolio colum
 - **Fast to read.** The data is read in a fixed number of batched queries. Only the program dataset is read per program, a few at a time, because its SQL selects by `@program`.
 - **Filters and viewers.** The view opens with the filter panel, programs by stage and modality, days in stage, the readiness matrix (programs × the criteria of their next stage, state as color) and compounds by role.
   - The matrix and the compound roles are tables of their own, linked to the programs by id, so the filters drive every viewer.
-- **Clicking a row** shows the program at a glance in the context panel, as a board card does; its **Open program** opens the program's page in the Project Portal.
+- **Clicking a row** puts the program in the context panel, as a board card does; its **Open program** opens the program's page in the Project Portal.
 - `portfolioTable(portfolio)` returns the same programs table to scripts.
 
 ## Model runs
@@ -298,20 +300,22 @@ A favorite added or removed anywhere (the program page, the star, the Workspace)
 the favorite was the program's workspace folder; such a favorite still counts, and removing the program removes it
 too.
 
-- **Program page.** **Add to favorites** / **Remove from favorites** beside Follow, in the app and from the portfolio
-  table. No workspace folder is needed. Only a program whose record the platform does not find cannot be added; the
+- **The star.** **Add to favorites** / **Remove from favorites** on the program's card in the context panel, wherever
+  the program is clicked or opened. No workspace folder is needed. Only a program whose record the platform does not find cannot be added; the
   button says why. An approver also gets **Add to <the portfolio's viewers'> favorites** (a group favorite) and, when
   the folder is missing, **Build its folder** (this program's folders only). A viewer can add a program to their own
   favorites.
-- **Workspace.** The favorite is listed by the program's name, with a flask icon. Open (or a double
-  click) in the Workspace opens the program's page in the Project Portal; the context panel shows the program and
-  its portfolio with **Open in the Project Portal**. This works once the package is loaded, which the My programs
-  widget on Home does. Without it, the Workspace shows the bare record in the context panel.
+- **Workspace.** The favorite is listed by the program's name, with a flask icon. Selecting it previews its card
+  (Power Pack shows the card of an item whose package registered a handler for it; needs a Power Pack after 1.8.3);
+  Open, a double click or **Open** on its context menu opens the program's page in the Project Portal. This works
+  once the package is loaded, which the My programs widget on Home does. Without it, the Workspace shows the bare
+  record.
 - **Board and table.** A pinned program's card says *pinned*; the portfolio table has a `pinned` column.
 - **Home.** The **My programs** widget: a tile per pinned program the user can see, across portfolios. A tile shows
   code and name, portfolio, stage and its place on the track, status, the next gate's readiness (or *ready*), the
   attention count and *new data* when a followed program has news the user has not seen. A group's pin is marked
-  *for <group>*. A click opens the program's page. With nothing pinned, the widget says how to pin.
+  *for <group>*. A click selects the tile and puts the program in the context panel; a double-click opens its page.
+  With nothing pinned, the widget says how to pin.
 - **How it is read.** One call for the user's favorites, one for their groups' (`getFavoritesForGroups`), the
   programs by id (and by `space_id` for an old folder favorite), then the portfolio table's facts for those programs only, so readiness and attention are
   the table's (`readinessFor`). A program row the user cannot see gives no tile.

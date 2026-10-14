@@ -75,8 +75,15 @@ const CSS = `
 .pp-page-header { gap: 8px; align-items: center; flex-wrap: wrap; }
 .pp-program-page .pp-page-body { display: block; columns: 2 480px; column-gap: 32px; }
 .pp-panel { break-inside: avoid; display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-.pp-summary { gap: 6px; padding: 8px; }
-.pp-summary-facts { gap: 4px; }
+/* a program in the context panel: its card, its favorite star, its actions */
+.pp-program-panel { gap: 8px; padding: 6px 8px; }
+.pp-program-panel .pp-tile { cursor: default; }
+.pp-program-panel .pp-tile:hover { background: var(--u2-surface, #fff); }
+.pp-card-title.pp-grow { flex: 1 1 auto; }
+.pp-star { gap: 4px; align-items: center; cursor: pointer; font-size: 11px; color: var(--u2-text-muted, #888); white-space: nowrap; }
+.pp-star:hover, .pp-star-on { color: var(--u2-warning, #f0a020); }
+.pp-star-off { cursor: default; opacity: .5; }
+.pp-panel-actions { gap: 4px; align-items: flex-start; }
 .pp-runs { gap: 4px; }
 .pp-run { gap: 1px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--u2-border, #eee); }
 .pp-run-meta { gap: 4px; align-items: center; flex-wrap: wrap; }

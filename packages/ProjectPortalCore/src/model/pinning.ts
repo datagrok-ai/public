@@ -137,12 +137,16 @@ export function unseenNews(follows: TileInput['follows']): string | null {
 
 /** The tiles of the pinned programs, by portfolio name and then code. A program no favorite holds
  * (neither its record nor its folder) gets no tile, so the tiles follow the favorites exactly. */
-export function assembleTiles(inputs: TileInput[], pins: Map<string, PinHolders>): ProgramTile[] {
+export function assembleTiles(inputs: TileInput[], pins: Map<string, PinHolders>,
+  opts: {unpinned?: boolean} = {}): ProgramTile[] {
   const tiles: ProgramTile[] = [];
   for (const x of inputs) {
-    const held = pinOf(pins, x);
-    if (!held || (!held.mine && !held.groups.length))
+    const found = pinOf(pins, x);
+    const pinned = !!found && (found.mine || found.groups.length > 0);
+    // a program's card shows wherever the program does; My programs keeps the pinned ones
+    if (!pinned && !opts.unpinned)
       continue;
+    const held = found ?? {mine: false, groups: []};
     const at = x.stage ? x.stages.findIndex((s) => s.code === x.stage) : -1;
     const r = x.readiness;
     tiles.push({

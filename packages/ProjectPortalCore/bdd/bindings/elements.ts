@@ -32,7 +32,7 @@ app.element('program detail', {selector: u2('program-detail')});
 app.element('program page', {selector: u2('program-page')});
 app.element('program header', {selector: u2('program-header')});
 app.element('board link', {selector: u2('board-link')});
-app.element('program summary', {selector: u2('program-summary')});
+app.element('program panel', {selector: u2('program-panel')});
 app.element('open program button', {selector: u2('open-program-button')});
 app.element('stage track', {selector: u2('stage-track')});
 app.element('gate criteria', {selector: u2('gate-criteria')});

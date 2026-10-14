@@ -5,6 +5,7 @@ import {loadAllPortfolios, portfolioByCode} from '../portal';
 import {MORE_SECTIONS, PAGE_PANELS, panelLayout, PersonaConfig, validatePersonas} from '../model/personas';
 import {savedMode, saveMode, savedPersona, savePersona} from '../personas';
 import {possessive, PortalView, startingPortfolio} from '../views/portal-view';
+import {programPanel} from '../views/program-panel';
 import {loadExampleDesignSets} from '../design-sets';
 import {filterValue, ROW_LIMIT} from '../rows';
 import {_package} from '../package-test';
@@ -84,8 +85,8 @@ category('Portal: persona panels', () => {
   });
 });
 
-category('Portal: the board chooses, the program page works', () => {
-  test('a card shows the program at a glance; opening it swaps the board for its page, and back', async () => {
+category('Portal: the board chooses, the program page works, the context panel acts', () => {
+  test('a card puts the program in the context panel; opening it swaps the board for its page, and back', async () => {
     await loadAllPortfolios(_package);
     const smd = await portfolioByCode('EX-SMD');
     const kin1 = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(smd.id)} and code = "EXS-KIN1"`,
@@ -94,24 +95,35 @@ category('Portal: the board chooses, the program page works', () => {
     await v.load('EX-SMD');
     const q = (name: string) => v.root.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
     const shown = (name: string) => q(name)!.style.display !== 'none';
-    const opened: string[] = [];
-    v.openElsewhere = (code, p) => opened.push(`${code}/${p.code}`);
     await v.previewProgram('EX-SMD', kin1.id);
-    const summary = grok.shell.o as HTMLElement;
-    expect(summary?.dataset?.u2Name, 'program-summary', 'the summary is in the context panel');
+    const o = grok.shell.o;
+    expect(o?.id ?? o?.dataset?.u2Name, o?.id ? kin1.id : 'program-panel', 'the program\'s record (or its panel) is in the context panel');
     expect(shown('stage-board') && !shown('program-page'), true, 'the board stays');
     expect(q('program-exs-kin1')!.classList.contains('pp-selected'), true);
-    summary.querySelector<HTMLElement>('[data-u2-name="open-program-button"]')!.click();
-    expect(opened.join(), 'EX-SMD/EXS-KIN1', 'a portal not on screen hands Open program on');
-    v.openElsewhere = null;
     await v.showProgram('EX-SMD', kin1.id);
     expect(!shown('stage-board') && shown('program-page'), true, 'the page takes the board\'s place');
     expect(v.path.value.endsWith('/EX-SMD/EXS-KIN1'), true);
     expect(!!q('gate-heading') && !!q('board-link'), true);
+    expect(!q('program-actions'), true, 'the program\'s actions are in the context panel, not under its title');
     q('board-link')!.click();
     expect(shown('stage-board') && !shown('program-page'), true, 'back to the board');
     expect(v.path.value.endsWith('/EX-SMD'), true);
     expect(!q('gate-heading'), true, 'the page is taken down with its scope');
+  });
+
+  test('the program panel: its card, the favorite star, Open and the actions', async () => {
+    await loadAllPortfolios(_package);
+    const smd = await portfolioByCode('EX-SMD');
+    const kin1 = (await portalDb.programs.query({filter: `portfolio_id = ${filterValue(smd.id)} and code = "EXS-KIN1"`,
+      limit: ROW_LIMIT}))[0];
+    const panel = programPanel(kin1.id);
+    const q = (name: string) => panel.querySelector(`[data-u2-name="${name}"]`) as HTMLElement | null;
+    for (let i = 0; i < 100 && !q('program-actions'); i++)
+      await new Promise((r) => setTimeout(r, 100));
+    expect(!!q('program-panel-card') && !!q('pin-button') && !!q('open-program-button'), true);
+    expect(/to favorites|from favorites/.test(q('pin-button')!.textContent ?? ''), true);
+    for (const name of ['follow-button', 'program-provenance-button', 'ask-sme-button', 'program-data-package-button'])
+      expect(!!q(name), true, name);
   });
 });
 

@@ -58,7 +58,6 @@ import {evidenceChangesOf, evidenceTableOf, generatedOf, generateEvidenceTableFo
 import {describeChanges, EvidenceChange} from '../model/evidence-tables';
 import {programAccess} from '../program-roles';
 import {openProvenanceDialog} from './provenance-dialog';
-import {openDataPackageDialog} from './data-package-dialog';
 import {openCompareRunsDialog} from './compare-runs-dialog';
 import {observationsOf} from '../observations';
 import {checkObservationAccess, ObservationView, subjectLabel} from '../model/observations';
@@ -79,9 +78,8 @@ import {decideOrPropose, requestsOf, submitDocument, userNames} from '../approva
 import {approvalOf, describeApproval, needsApproval, reviewsOf} from '../model/approvals';
 import {openWaitingDialog, requestItem} from './approvals-dialog';
 import {openWorkspaceDialog} from './workspace-dialog';
-import {myPins, pinnableRecord, setPinned} from '../pinning';
+import {myPins} from '../pinning';
 import {PinHolders, pinOf} from '../model/pinning';
-import {buildPortfolioWorkspace, summarizeWorkspace} from '../workspace';
 import {newestFirstBy} from '../model/time';
 import {filterValue, ROW_LIMIT} from '../rows';
 import {findablePrograms, recentPrograms, rememberProgram} from '../find';
@@ -98,6 +96,7 @@ import {
 import {openAskSmeDialog, openDiscussDialog} from './discussion-dialog';
 import {area, check, choice, choiceValue, composer, labelled, linkTo, table, text} from './u2-controls';
 import {programAddress} from '../model/pinning';
+import {showProgramInPanel} from './program-panel';
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -137,8 +136,6 @@ export class PortalView {
    * what is selected on it (a run, a document, a compound). */
   private readonly detail = named(divV([], 'pp-detail'), 'program-detail');
   private readonly page = named(divV([this.detail], 'pp-program-page'), 'program-page');
-  /** A board card's program at a glance, in the context panel, with Open program. */
-  private readonly summary = named(divV([], 'pp-summary'), 'program-summary');
   /** Find a program across portfolios, and the ones opened last: the top of the landing column. */
   private readonly searchInput = text('program-search-input', undefined, {search: true,
     placeholder: 'Find a program: code, name, alias',
@@ -221,18 +218,12 @@ export class PortalView {
   /** The pins in the user's Workspace, by entity id (program records, and folders pinned before
    * 0.3.0): read with the board and on each program open. */
   private pins = new Map<string, PinHolders>();
-  /** Why the open program cannot be added to favorites; null when it can. */
-  private pinReason: string | null = null;
-  /** The open portfolio's viewers group, which an approver may pin a program for. */
-  private viewersGroup: DG.Group | null = null;
   /** The open portfolio's data access notice, for its approvers and admins; null when all is well. */
   private accessNoticeEl: HTMLElement | null = null;
   /** Ribbon buttons Simple mode hides; the app view hands them over. */
   readonly boardButtons = new Map<BoardButton, HTMLElement>();
   /** Whether the user is one of the open portfolio's approvers (admins are): the keeper's buttons. */
   keeper = false;
-  /** Where Open program goes for a portal that is not on screen (the portfolio table's): the app's page. */
-  openElsewhere: ((portfolioCode: string, program: ProgramRow) => void) | null = null;
 
   constructor() {
     this.root.append(this.portfolioList, this.board, this.page);
@@ -394,7 +385,6 @@ export class PortalView {
     if (this.portfolio !== p)
       return;
     [this.stages, this.programs, this.pins] = [stages, programs, pins];
-    this.viewersGroup = null;
     this.accessNoticeEl = null;
     this.renderBoard();
     void this.checkDataAccess(p);
@@ -502,6 +492,7 @@ export class PortalView {
     const opened = id !== this.selected || this.page.style.display === 'none';
     if (opened) {
       this.showPage();
+      void showProgramInPanel(id).catch(this.failed);
       this.data = undefined;
       this.news = undefined;
     }
@@ -561,9 +552,6 @@ export class PortalView {
     const roles = {rows: await namedRolesOf(id).catch(() => []), manage: await isApprover(ctx.portfolio).catch(() => false)};
     // pinned or not is the platform's favorite, which the Workspace may have changed since
     const pins = await myPins().catch(() => this.pins);
-    const pinReason = (await pinnableRecord(ctx.program).catch(() => ({reason: null}))).reason;
-    const viewersGroup = roles.manage && ctx.portfolio.viewers && this.viewersGroup?.id !== ctx.portfolio.viewers ?
-      await grok.dapi.groups.find(ctx.portfolio.viewers).catch(() => null) : this.viewersGroup;
     const snapshots = await snapshotsOf(id).catch(() => [] as ProgramSnapshotRow[]);
     // documents: the cards of the current and next gate's document criteria, and the rest
     const docRows = await documentsOf(id).catch(() => [] as DocumentRow[]);
@@ -627,8 +615,6 @@ export class PortalView {
     this.follows = follows;
     this.roles = roles;
     this.pins = pins;
-    this.pinReason = pinReason;
-    this.viewersGroup = viewersGroup;
     this.predictions = predictions;
     if (this.feed.programId !== id)
       this.feed = {programId: id, entries: [], names: new Map(), kind: '', series: '', page: 0, compounds: new Map()};
@@ -701,8 +687,26 @@ export class PortalView {
     this.board.style.display = 'none';
     this.page.style.display = '';
     this.page.scrollTop = 0;
-    if (grok.shell.o === this.summary)
-      grok.shell.o = null;
+  }
+
+  /** Whether [programId]'s page is on screen here. */
+  showsPage(programId: string): boolean {
+    return this.selected === programId && this.page.style.display !== 'none' && this.root.isConnected;
+  }
+
+  /** Whether [portfolioCode]'s board is on screen here. */
+  showsBoard(portfolioCode: string): boolean {
+    return this.portfolio?.code === portfolioCode && this.board.style.display !== 'none' && this.root.isConnected;
+  }
+
+  /** Reads [programId]'s page again when it is on screen, and its board card: after a change made from
+   * the context panel (a follow, a favorite, its folder). */
+  async refreshProgram(programId: string): Promise<void> {
+    if (!this.portfolio || !this.programs.some((x) => x.id === programId))
+      return;
+    await this.refreshBoard();
+    if (this.showsPage(programId))
+      await this.openProgram(programId, this.viewedStage);
   }
 
   /** Back from a program's page to its portfolio's board, the program still marked there. */
@@ -729,7 +733,7 @@ export class PortalView {
       this.board.querySelector(`[data-u2-name="program-${slug(program.code)}"]`)?.classList.add('pp-selected');
   }
 
-  /** A click on a board card: the program at a glance in the context panel, with Open program.
+  /** A click on a board card: the program's record in the context panel, its card and Open program.
    * The board stays; a double-click or Open program opens the page. */
   async selectProgram(id: string): Promise<void> {
     const program = this.programs.find((x) => x.id === id);
@@ -737,38 +741,7 @@ export class PortalView {
       return;
     this.selected = id;
     this.markSelected(program);
-    const noun = (this.portfolio.program_noun ?? 'program').toLowerCase();
-    const stage = this.stages.find((s) => s.id === program.stage_id) ?? null;
-    const portfolioCode = this.portfolio.code;
-    const open = named(button(`Open ${noun}`, () => this.openElsewhere ? this.openElsewhere(portfolioCode, program) :
-      void this.openProgram(id).catch(this.failed), {primary: true}), 'open-program-button');
-    open.title = `This ${noun}'s page: gate, documents, runs, discussion and the rest`;
-    const facts = named(divV([], 'pp-summary-facts'), 'program-summary-facts');
-    const pinned = pinOf(this.pins, {programId: program.id, spaceId: program.space_id});
-    this.summary.replaceChildren(
-      divH([portalIcon('program', 'Program'), named(span(program.name, 'pp-title'), 'summary-title')], 'pp-icon-line'),
-      divH([badge(program.status ?? 'active', {variant: statusVariant[program.status ?? 'active'] ?? 'default'}),
-        ...(pinned ? [span('pinned', 'pp-pinned-mark')] : [])], 'pp-card-meta'),
-      span(`${this.portfolio.name} · ${program.code}`, 'pp-muted'),
-      span(stage ? `Stage: ${stage.code} · ${stage.name}` : 'Not placed in the model yet'),
-      ...(program.modality ? [span(program.modality, 'pp-muted')] : []),
-      facts,
-      divH([open], 'pp-actions'),
-    );
-    grok.shell.windows.showContextPanel = true;
-    grok.shell.o = this.summary;
-    // the gate's readiness, read after the summary shows: the board does not wait for it
-    const ctx = await programContext(id).catch(() => null);
-    if (!ctx || this.selected !== id || !this.summary.isConnected)
-      return;
-    const next = nextStage(ctx.stages.map((s) => ({...s, isTerminal: s.is_terminal})), program.stage_id ?? null);
-    const r = ctx.readiness;
-    facts.replaceChildren(
-      ...(next ? [span(`Next gate: ${next.name}`)] : [span('No further stage', 'pp-muted')]),
-      ...(r ? [divH([span(r.empty ? 'No required criteria' : `${r.requiredMet} of ${r.requiredTotal} required met or waived`),
-        badge(readinessLabel(r), {variant: r.score === null ? 'default' : r.score === 1 ? 'success' :
-          r.score === 0 ? 'error' : 'warning'})], 'pp-readiness')] : []),
-    );
+    await showProgramInPanel(id);
   }
 
   /** Reads the open portfolio's programs and pins again and redraws its board, wherever the user is:
@@ -972,10 +945,6 @@ export class PortalView {
     for (const s of successors)
       lineage.push(named(span(`Continued as ${s.code} in another portfolio`, 'pp-lineage'), 'lineage-successor'));
 
-    const workspace = spaceLive ?
-      named(button('Open workspace', () => void this.openWorkspace(program.space_id!).catch(this.failed)), 'open-workspace-button') :
-      named(span(program.space_id ? 'The workspace folder is gone: rebuild it with buildWorkspace' :
-        'No workspace yet: build it with buildWorkspace', 'pp-muted'), 'no-workspace');
 
     // the program's governed data, one button per dataset the portfolio declares
     const data = datasetsOf(ctx.portfolio).map((d) => {
@@ -989,10 +958,6 @@ export class PortalView {
     });
 
     const followed = this.follows.some((f) => !f.work_unit_code);
-    const followButton = named(button(followed ? 'Unfollow' : 'Follow', () => void this.toggleFollow(ctx, null).catch(this.failed)),
-      'follow-button');
-    followButton.title = followed ? 'Stop being notified of new data in this program' :
-      'Be notified, in the platform\'s notifications, when new results land in this program\'s data';
     const newsLine = news ? named(divV(news.lines.length ?
       [span(`What's new since your last visit${news.since ? ` (${news.since.slice(0, 16).replace('T', ' ')} UTC)` : ''}`, 'pp-muted'),
         ...news.lines.map((l) => span(l))] :
@@ -1108,11 +1073,6 @@ export class PortalView {
         // the persona composes this page: it is chosen here as on the board
         this.preferences(),
       ], 'pp-page-header'), 'program-header'),
-      named(divH([workspace, ...this.buildFolder(ctx, spaceLive), followButton, ...this.pinButtons(ctx),
-        named(button('Provenance', () => this.provenance('program', program.id)), 'program-provenance-button'),
-        this.askSmeButton(ctx),
-        this.dataPackageButton(program.id)],
-      'pp-actions'), 'program-actions'),
       ...(newsLine ? [newsLine] : []),
       ...(layout.composed ? [named(span(`Panels for ${PERSONA_LABELS[this.persona!.persona]}, from ${ctx.portfolio.code}`, 'pp-muted'),
         'panels-composed')] : []),
@@ -1687,14 +1647,6 @@ export class PortalView {
     ], 'pp-evidence-picker'), 'decision-evidence');
   }
 
-  /** The program's data package manifest (F-43): criteria, documents, evidence tables, runs, data. */
-  private dataPackageButton(programId: string): HTMLElement {
-    const b = named(button('Data package', () => void openDataPackageDialog(programId).catch(this.failed)),
-      'program-data-package-button');
-    b.title = 'What the program\'s gate case rests on, one line each, with status and source; exports to CSV';
-    return b;
-  }
-
   /** Opens the provenance of a portal object; a program node in it opens on this page. */
   provenance(kind: string, id: string): void {
     void openProvenanceDialog(kind, id, {openProgram: async (programId) => {
@@ -1889,14 +1841,6 @@ export class PortalView {
     return [discuss, ask];
   }
 
-  /** Ask SME on the program's header. */
-  private askSmeButton(ctx: ProgramContext): HTMLElement {
-    const b = named(button('Ask SME…', () => openAskSmeDialog({portfolio: ctx.portfolio, program: ctx.program,
-      context: this.smeContext(ctx, null), onAsked: () => this.openProgram(ctx.program.id, this.viewedStage)})), 'ask-sme-button');
-    b.title = 'Ask an expert about this program: the portfolio, stage, next gate and readiness go with the question';
-    return b;
-  }
-
   /** What a question carries: where the program stands, the item it is about, and its address. */
   private smeContext(ctx: ProgramContext, anchor: Anchor | null): SmeContext {
     const doc = anchor?.kind === 'document' ? this.pageDocs.get(anchor.id) : undefined;
@@ -2079,63 +2023,6 @@ export class PortalView {
     this.redraw?.();
     if (scroll)
       this.detail.querySelector('[data-u2-name="feed-heading"]')?.scrollIntoView({block: 'start'});
-  }
-
-  /** Add to favorites / Remove from favorites, and for an approver the same for the portfolio's
-   * viewers. A favorite is the platform's, on the program's record, so the program shows in the
-   * Workspace on Home. A program whose record the platform does not find cannot be added; the
-   * button says why. */
-  private pinButtons(ctx: ProgramContext): HTMLElement[] {
-    const held = pinOf(this.pins, {programId: ctx.program.id, spaceId: ctx.program.space_id});
-    const reason = this.pinReason;
-    const mine = !!held?.mine;
-    const pin = named(button(mine ? 'Remove from favorites' : 'Add to favorites',
-      () => void this.togglePin(ctx, !mine, null).catch(this.failed)), 'pin-button');
-    pin.disabled = !!reason && !mine;
-    pin.title = reason && !mine ? `Cannot add to favorites: ${reason}` :
-      mine ? 'Take it out of your favorites and your Workspace, and its tile off Home' :
-        'It goes in your favorites and your Workspace on Home, and its tile in My programs';
-    const g = this.viewersGroup;
-    if (!this.roles.manage || !g)
-      return [pin];
-    const gName = g.friendlyName || g.name;
-    const forGroup = !!held?.groups.includes(gName);
-    const groupPin = named(button(forGroup ? `Remove from ${possessive(gName)} favorites` : `Add to ${possessive(gName)} favorites`,
-      () => void this.togglePin(ctx, !forGroup, g).catch(this.failed)), 'pin-group-button');
-    groupPin.disabled = !!reason && !forGroup;
-    groupPin.title = reason && !forGroup ? `Cannot add to favorites: ${reason}` :
-      `${forGroup ? 'Take it out of' : 'Put it in'} the favorites and Workspace of everyone in ${gName}`;
-    return [pin, groupPin];
-  }
-
-  private async togglePin(ctx: ProgramContext, pinned: boolean, group: DG.Group | null): Promise<void> {
-    try {
-      grok.shell.info(await setPinned(ctx.portfolio, ctx.program, pinned, group));
-      this.pins = await myPins().catch(() => this.pins);
-      if (this.portfolio?.id === ctx.portfolio.id)
-        this.renderBoard();
-      await this.openProgram(ctx.program.id, this.viewedStage);
-    } catch (e: any) {
-      grok.shell.error(e?.message ?? String(e));
-    }
-  }
-
-  /** For an approver, when the program has no folder: builds this program's folders only. */
-  private buildFolder(ctx: ProgramContext, spaceLive: boolean): HTMLElement[] {
-    if (spaceLive || !this.roles.manage || !ctx.portfolio.workspace_root)
-      return [];
-    const b = named(button('Build its folder', async () => {
-      try {
-        grok.shell.info(summarizeWorkspace(await buildPortfolioWorkspace(ctx.portfolio.code, false, ctx.program.id)));
-        const fresh = await portalDb.programs.get(ctx.program.id);
-        this.programs = this.programs.map((x) => x.id === fresh.id ? fresh : x);
-        await this.openProgram(ctx.program.id, this.viewedStage);
-      } catch (e: any) {
-        grok.shell.error(e?.message ?? String(e));
-      }
-    }), 'build-folder-button');
-    b.title = 'Create this program\'s folder and its workstream folders in the portfolio\'s workspace';
-    return [b];
   }
 
   /** Opens the program with [code] in the open portfolio; false when it has none. */

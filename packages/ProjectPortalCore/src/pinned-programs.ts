@@ -5,7 +5,7 @@ import * as DG from 'datagrok-api/dg';
 import {portalDb, ProgramRow} from './generated/db';
 import {inBatches, portfolioFacts} from './portfolio-table';
 import {myPins} from './pinning';
-import {assembleTiles, describeTile, ProgramTile, TileInput} from './model/pinning';
+import {assembleTiles, describeTile, PinHolders, ProgramTile, TileInput} from './model/pinning';
 import {filterValue} from './rows';
 
 const LIMIT = 10000;
@@ -27,7 +27,21 @@ export async function pinnedTiles(): Promise<ProgramTile[]> {
     for (const p of await portalDb.programs.query({filter, limit: LIMIT}))
       byId.set(p.id, p);
   }
-  const programs = [...byId.values()];
+  return tilesOf([...byId.values()], pins);
+}
+
+/** The card of one program the user can see, pinned or not; null when they cannot read it. */
+export async function programTile(programId: string): Promise<ProgramTile | null> {
+  const program = await portalDb.programs.get(programId).catch(() => null);
+  if (!program)
+    return null;
+  const [tile] = await tilesOf([program], await myPins().catch(() => new Map()), {unpinned: true});
+  return tile ?? null;
+}
+
+/** The tiles of [programs]: stage, readiness and attention from the portfolio table's facts, read
+ * for those programs only; with [opts.unpinned] the programs not pinned too. */
+async function tilesOf(programs: ProgramRow[], pins: Map<string, PinHolders>, opts: {unpinned?: boolean} = {}): Promise<ProgramTile[]> {
   if (!programs.length)
     return [];
   const ids = programs.map((p) => p.id);
@@ -50,7 +64,7 @@ export async function pinnedTiles(): Promise<ProgramTile[]> {
     follows: follows.filter((x) => x.program_id === f.program.id && x.active !== false)
       .map((x) => ({newsOn: str(x.news_on), seenOn: str(x.seen_on), lastNews: x.last_news ?? null})),
   }));
-  return assembleTiles(inputs, pins);
+  return assembleTiles(inputs, pins, opts);
 }
 
 /** One row per pinned program: what its tile shows. */

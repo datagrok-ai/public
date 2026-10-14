@@ -1,16 +1,19 @@
 /** "My programs" on Home: a tile per pinned program the user can see, across portfolios. A tile
  * says where the program stands on its track, how ready it is for its next gate, what needs a
- * look and whether new data landed; a click opens its page in the Project Portal. The widget reads
+ * look and whether new data landed. A click puts the program in the context panel; a double-click opens
+ * its page in the Project Portal. The widget reads
  * again whenever Home comes back, so a pin made elsewhere shows without a reload. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {badge, divH, divV, span} from '@datagrok-libraries/u2';
-import type {BadgeVariant} from '@datagrok-libraries/u2';
+import {divV, span} from '@datagrok-libraries/u2';
 import {pinnedTiles} from '../pinned-programs';
-import {describeTile, NOTHING_PINNED, ProgramTile, tileTitle} from '../model/pinning';
+import {NOTHING_PINNED, ProgramTile} from '../model/pinning';
 import {installStyles} from './styles';
-import {portalIcon} from './icons';
-import {openPortal} from './portal-view';
+import {openProgramPage, programCard} from './program-card';
+import {showProgramInPanel} from './program-panel';
+
+/** Kept for callers from before the card had a module of its own. */
+export {openProgramPage};
 
 const named = <T extends HTMLElement>(el: T, name: string): T => {
   el.dataset.u2Name = name;
@@ -19,50 +22,18 @@ const named = <T extends HTMLElement>(el: T, name: string): T => {
 
 const slug = (s: string): string => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-const statusVariant: Record<string, BadgeVariant> = {
-  active: 'success', on_hold: 'warning', terminated: 'error', completed: 'accent',
-  transitioned: 'accent', missing_from_feed: 'error',
-};
-
-/** Opens the program's page: in a Project Portal view already open, else by its address. */
-export async function openProgramPage(t: Pick<ProgramTile, 'portfolioCode' | 'programId' | 'address'>): Promise<void> {
-  const open = openPortal();
-  if (open) {
-    grok.shell.v = open.view;
-    await open.portal.showProgram(t.portfolioCode, t.programId);
-    return;
-  }
-  grok.shell.route(t.address);
-}
-
-function tile(t: ProgramTile): HTMLElement {
-  // the track as segments: done, current, ahead
-  const track = divH(t.track.map((s) => {
-    const seg = span('', `pp-tile-seg pp-tile-seg-${s.state}`);
-    seg.title = s.code;
-    return seg;
-  }), 'pp-tile-track');
-  const readiness = t.readiness === null ? span(t.readinessLine, 'pp-muted') :
-    named(badge(t.ready ? 'ready' : `${Math.round(t.readiness * 100)}%`,
-      {variant: t.ready ? 'success' : t.readiness === 0 ? 'error' : 'warning'}), 'tile-readiness');
-  const el = named(divV([
-    divH([portalIcon('program'), span(tileTitle(t), 'pp-card-title'),
-      ...(t.pinnedFor.length && !t.pinnedByMe ? [badge(`for ${t.pinnedFor[0]}`, {variant: 'accent'})] : [])], 'pp-card-meta'),
-    span(t.portfolioName, 'pp-muted'),
-    span(`${t.stage}${t.steps ? ` · ${t.step || '–'} of ${t.steps}` : ''}`, 'pp-tile-stage'),
-    ...(t.steps ? [track] : []),
-    divH([
-      badge(t.status, {variant: statusVariant[t.status] ?? 'default'}),
-      ...(t.next ? [span(`→ ${t.next.split(' · ')[0]}`, 'pp-muted')] : []),
-      readiness,
-      ...(t.attention ? [named(badge(`${t.attention} need attention`, {variant: 'warning'}), 'tile-attention')] : []),
-      ...(t.newData ? [named(badge('new data', {variant: 'accent'}), 'tile-new-data')] : []),
-    ], 'pp-card-meta'),
-  ], 'pp-card pp-tile'), `pinned-tile-${slug(t.code)}`);
-  el.title = [describeTile(t), t.readinessLine, ...t.gaps.slice(0, 3).map((g) => `• ${g}`),
-    ...(t.newData ? [t.newData] : []), ...(t.pinnedFor.length ? [`Pinned for ${t.pinnedFor.join(', ')}`] : [])].join('\n');
-  // after the click is done with: Home takes the click as its own and would stay the current view
+/** A tile: the program's card. A click selects it and puts the program in the context panel, as the
+ * platform does with what is clicked; a double-click opens its page. */
+function tile(t: ProgramTile, select: (el: HTMLElement) => void): HTMLElement {
+  const el = programCard(t, `pinned-tile-${slug(t.code)}`);
+  el.title += '\nDouble-click to open its page';
+  // Home takes a click as its own: stopped here, and the page opened after it is done with
   el.onclick = (e) => {
+    e.stopPropagation();
+    select(el);
+    void showProgramInPanel(t.programId).catch((err) => grok.shell.error(err?.message ?? String(err)));
+  };
+  el.ondblclick = (e) => {
     e.stopPropagation();
     setTimeout(() => void openProgramPage(t).catch((err) => grok.shell.error(err?.message ?? String(err))), 50);
   };
@@ -93,7 +64,12 @@ export class MyProgramsWidget extends DG.Widget {
     this.loading = true;
     try {
       const tiles = await pinnedTiles();
-      this.body.replaceChildren(...(tiles.length ? tiles.map(tile) :
+      const select = (el: HTMLElement) => {
+        for (const x of Array.from(this.body.querySelectorAll('.pp-selected')))
+          x.classList.remove('pp-selected');
+        el.classList.add('pp-selected');
+      };
+      this.body.replaceChildren(...(tiles.length ? tiles.map((t) => tile(t, select)) :
         [named(span(NOTHING_PINNED, 'pp-muted'), 'no-pinned-programs')]));
     } catch (e: any) {
       this.body.replaceChildren(named(span(`Pinned programs could not be read: ${e?.message ?? e}`, 'pp-reason'), 'pinned-error'));

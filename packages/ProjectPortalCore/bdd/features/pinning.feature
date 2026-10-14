@@ -21,6 +21,9 @@ Feature: Add a program to favorites and find it in the Workspace and on Home
     Then my programs widget should contain text "EXS-KIN1"
     And EXS-KIN1 tile should contain text "Example Small Molecule Discovery"
     When user clicks on EXS-KIN1 tile
+    Then program panel should contain text "Example Small Molecule Discovery"
+    And pin button should contain text "Remove from favorites"
+    When user double-clicks on the "EXS-KIN1" tile
     Then the address should end with "/Portal/EX-SMD/EXS-KIN1"
     And pin button should contain text "Remove from favorites"
     When user clicks on pin button
