@@ -33,18 +33,13 @@ Feature: Line chart in Multi Axis mode filtered from its marker legend
     And user remembers the 'y axis min of "WEIGHT"' reading of line chart viewer
     And user remembers the 'y axis max of "WEIGHT"' reading of line chart viewer
 
-  Scenario: One marker clicked in the legend keeps a marker for every Y column
+  Scenario: One marker clicked in the legend keeps a marker for every Y column at the heights the unfiltered chart drew it
     When user clicks on "Q3" item in the legend of line chart viewer
     Then the "rows shown" reading of line chart viewer should be 259
     And the "x categories" reading of line chart viewer should be 1
     And the "lines" reading of line chart viewer should be 3
     And the "markers drawn" reading of line chart viewer should be 3
     And line chart viewer should report no error
-    And no errors should have been logged
-
-  Scenario: The points of the one quarter left stay at the heights the unfiltered chart drew them
-    When user clicks on "Q3" item in the legend of line chart viewer
-    Then the "markers drawn" reading of line chart viewer should be 3
     And the 'y axis min of "AGE"' reading of line chart viewer should be as remembered
     And the 'y axis max of "AGE"' reading of line chart viewer should be as remembered
     And the 'y axis min of "HEIGHT"' reading of line chart viewer should be as remembered
@@ -53,7 +48,7 @@ Feature: Line chart in Multi Axis mode filtered from its marker legend
     And the 'y axis max of "WEIGHT"' reading of line chart viewer should be as remembered
     And no errors should have been logged
 
-  @known-failure:65
+  @known-failure:60
   Scenario: Two markers clicked in the legend keep every Y column's line where it was
     When user clicks on "Q2" item in the legend of line chart viewer
     Then the "rows shown" reading of line chart viewer should be 254
