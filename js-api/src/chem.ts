@@ -446,7 +446,10 @@ export namespace chem {
       this.molInput.addEventListener('keydown', (e) => {
         if (e.key == 'Enter') {
           const newSmilesValue: string = (e?.target as HTMLTextAreaElement).value;
-          if (this.getSmiles() !== newSmilesValue)
+          // A text the sketcher shows as it was set changes nothing; any other is set. Compared with that string, not with
+          // the drawing's SMILES: a query has none, and reading it warned that SMARTS cannot be converted to SMILES each
+          // time a text was entered over a query drawn
+          if (this.sketcher?.explicitMol?.value !== newSmilesValue)
             this.setValue(newSmilesValue);
           e.stopImmediatePropagation();
         }
@@ -591,8 +594,10 @@ export namespace chem {
       this.extSketcherDiv.onclick = () => {
         if (!this.sketcherDialogOpened) {
           this.sketcherDialogOpened = true;
-          //in case explicit mol has been set and hasn't been changed - use it as saved molecule
-          let savedMolFile = this.sketcher?.explicitMol?.value ?? this.getMolFile();
+          // The molecule Cancel goes back to, in its notation: the caller's string while the implementation shows it as it
+          // was set (a SMARTS or a SMILES entered, which set as a molblock no implementation read: the sketcher reopened
+          // empty after a Cancel), else the molecule held, as stored or as drawn
+          const saved = this._heldNotated();
 
           const hostDlg = ui.dialog();
           hostDlg.add(this.createInplaceModeSketcher())
@@ -605,7 +610,7 @@ export namespace chem {
             })
             .onCancel(() => {
               closeDlg();
-              this.setMolFile(savedMolFile!);
+              this._setNotated(saved);
             })
             .show({ resizable: true });
           // deferred apply relies on the OK button, so the checkbox is only shown in the dialog
@@ -796,6 +801,32 @@ export namespace chem {
           this.onSketcherReady.next(sketcher);
         }
       });
+    }
+
+    /** The molecule the host holds, in its notation, unconverted: the caller's string while the implementation shows it
+     * as it was set; else, none initialized, the value stored (a SMARTS or a SMILES as it is); else the drawing, as a
+     * molblock (V3000 when the value last set was). */
+    private _heldNotated(): NotatedMolecule {
+      const shown = this.sketcher?.explicitMol;
+      if (shown)
+        return {notation: shown.notation, value: shown.value};
+      if (!this.sketcher?.isInitialized) {
+        if (this._smarts !== null)
+          return {notation: 'smarts', value: this._smarts};
+        if (this._smiles !== null)
+          return {notation: 'smiles', value: this._smiles};
+      }
+      return {notation: this.molFileUnits === Notation.MolBlock ? 'molblock' : 'molblockV3000', value: this.getMolFile()};
+    }
+
+    /** Sets a molecule with the setter of its notation. */
+    private _setNotated({notation, value}: NotatedMolecule): void {
+      if (notation === 'smarts')
+        this.setSmarts(value);
+      else if (notation === 'smiles')
+        this.setSmiles(value);
+      else
+        this.setMolFile(value);
     }
 
     private _setStoredMolecule(): void {
