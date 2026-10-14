@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {filter} from 'rxjs/operators';
-import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
 import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY,
@@ -85,6 +85,7 @@ export class DifferentialEquationsTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = LINKS.DIF_STUDIO;
+  prerequisites: TutorialPrerequisites = {packages: ['DiffStudio']};
 
   protected async _run() {
     this.header.textContent = this.name;
