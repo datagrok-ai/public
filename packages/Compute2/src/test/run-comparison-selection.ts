@@ -6,7 +6,7 @@ import {
   getEntryStatuses, matchesFilter, compatibleTargetsFor,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns,
   parseTimeUnit, resolveAxisModes, targetAxisMode, resolveDisplayUnit, pickAutoUnit, targetContexts,
-  selectionGaps, withAnnotatedDefaults, PickerSelections,
+  selectionGaps, withAnnotatedDefaults, PickerSelections, unmatchedItems,
 } from '../components/RunComparison/selection';
 import {ColumnBinding, ColumnTarget, AxisConfigMap, TimeUnit, TableNodeInfo} from '../components/RunComparison/types';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
@@ -614,6 +614,52 @@ category('RunComparison: step contexts', () => {
     expectArray(targets.filter((t) => t.displayName === 'Final biomass').map((t) => contexts.get(t.key)!),
       ['Daily cultivation · Day 1', 'Daily cultivation · Day 2']);
     expect(contexts.has(targets.find((t) => t.displayName === 'Volume')!.key), false);
+  });
+});
+
+category('RunComparison: unmatched items', () => {
+  const unmatched = (entries: ReturnType<typeof makeEntry>[], indexes = indexMap({})) => unmatchedItems(entries,
+    [...matchScalarTargets(entries), ...matchColumnTargets(entries, indexes)], indexes);
+
+  test('a scalar in only one run is unmatched', async () => {
+    const items = unmatched([makeEntry('a', [{name: 'x'}, {name: 'y'}]), makeEntry('b', [{name: 'x'}])]);
+    expect(items.length, 1);
+    expectObject(items[0], {name: 'y', runCount: 1});
+    expect(items[0].units === undefined, true);
+  });
+
+  test('a column in other units is unmatched with its units', async () => {
+    const table = (units: string) => ({path: 't', columns: [{name: 'time'}, {name: 'Biomass', units}]});
+    const items = unmatched(
+      [makeEntry('a', [], [table('g/L')]), makeEntry('b', [], [table('g/L')]), makeEntry('c', [], [table('mg/L')])],
+      indexMap({a: {t: 'time'}, b: {t: 'time'}, c: {t: 'time'}}));
+    expect(items.length, 1);
+    expectObject(items[0], {name: 'Biomass', units: 'mg/L', runCount: 1});
+  });
+
+  test('dropdown candidates are not unmatched', async () => {
+    const full = {path: 't', columns: [{name: 'time'}, {name: 'height'}]};
+    const extra = {path: 'u', columns: [{name: 'time'}, {name: 'height'}]};
+    const items = unmatched([makeEntry('a', [], [full]), makeEntry('b', [], [full, extra])],
+      indexMap({a: {t: 'time'}, b: {t: 'time', u: 'time'}}));
+    expect(items.length, 0);
+  });
+
+  test('tables without an index are left out', async () => {
+    const table = {path: 't', columns: [{name: 'time'}, {name: 'height'}]};
+    const items = unmatched([makeEntry('a', [], [table]), makeEntry('b', [], [table])], indexMap({a: {t: 'time'}}));
+    expect(items.length, 1);
+    expectObject(items[0], {name: 'height', runCount: 1});
+  });
+
+  test('one item per name and units, counting its runs', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time'}, {name: 'v', units: 'mL'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [{name: 'clock'}, {name: 'V', units: 'ml'}]}]),
+    ];
+    const items = unmatched(entries, indexMap({a: {t: 'time'}, b: {t: 'clock'}}));
+    expect(items.length, 1);
+    expectObject(items[0], {name: 'v', units: 'mL', runCount: 2});
   });
 });
 

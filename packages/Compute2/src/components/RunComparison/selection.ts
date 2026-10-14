@@ -496,3 +496,53 @@ export function targetContexts(targets: ComparisonTarget[]): Map<string, string>
 }
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+export interface UnmatchedItem {
+  name: string;
+  units?: string;
+  runCount: number;
+}
+
+/**
+ * Values matching considers (numeric scalars, numeric columns of indexed tables) that no
+ * compare row picks or lists as a candidate, one item per name and units.
+ */
+export function unmatchedItems(
+  entries: ComparisonEntryNodes[],
+  targets: ComparisonTarget[],
+  indexColumns: Map<string, Map<string, string>>,
+): UnmatchedItem[] {
+  const scalarId = (entryId: string, path: string) => `${entryId}|${path}`;
+  const columnId = (entryId: string, tablePath: string, columnName: string) =>
+    `${entryId}|${tablePath}|${columnName}`;
+  const present = new Set(targets.flatMap((target) => target.kind === 'scalar' ?
+    target.bindings.map((b) => scalarId(b.entryId, b.path)) :
+    target.candidates.map(({binding: b}) => columnId(b.entryId, b.tablePath, b.columnName))));
+  const items = new Map<string, {name: string, units?: string, runs: Set<string>}>();
+  const add = (entryId: string, id: string, name: string, units?: string) => {
+    if (present.has(id))
+      return;
+    const key = `${normalizeName(name)}|${normalizeUnits(units)}`;
+    const item = items.get(key) ?? {name, units, runs: new Set<string>()};
+    item.runs.add(entryId);
+    items.set(key, item);
+  };
+  for (const entry of entries) {
+    for (const scalar of entry.scalars) {
+      if (isNumericType(scalar.valueType))
+        add(entry.entryId, scalarId(entry.entryId, scalar.path), scalar.name, scalar.units);
+    }
+    for (const table of entry.tables) {
+      const indexColumnName = indexColumns.get(entry.entryId)?.get(table.path);
+      if (!indexColumnName)
+        continue;
+      for (const column of table.columns) {
+        if (column.name !== indexColumnName && isNumericType(column.type))
+          add(entry.entryId, columnId(entry.entryId, table.path, column.name), column.name, column.units);
+      }
+    }
+  }
+  return [...items.values()]
+    .map(({name, units, runs}) => ({name, units, runCount: runs.size}))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}

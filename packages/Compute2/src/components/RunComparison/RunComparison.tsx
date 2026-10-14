@@ -21,7 +21,7 @@ import {
   matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter,
 } from './matching';
 import {
-  getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps,
+  getEntryStatuses, matchesFilter, compatibleTargetsFor, selectionGaps, unmatchedItems,
   isSplitCandidate, selectionToMap, computeIndexRows, isTargetEqualAcrossRuns, resolveAxisModes,
   targetContexts, EntryStatus, withAnnotatedDefaults,
 } from './selection';
@@ -388,7 +388,9 @@ export const RunComparison = Vue.defineComponent({
       }
     };
 
-    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, (names, units) => {
+    const editMappings = () => showMappingsDialog(nameMappings.value, unitMappings.value, unmatchedItems(
+      entries.value.map((entry) => entry.nodes), targets.value, indexColumnsMap.value,
+    ), (names, units) => {
       nameMappings.value = names;
       unitMappings.value = units;
     });
