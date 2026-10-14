@@ -41,7 +41,8 @@ category('Viewer: rendering', () => {
     const sub = plot.onViewerRendered.subscribe(() => renders++);
     try {
       expect(plot.immediateRendering, false);
-      await awaitCheck(() => renders > 0, 'plot did not paint', 3000);
+      // the first render event comes before the viewer has settled; work still pending holds the next repaint
+      await awaitCheck(() => renders > 0 && !plot.isRenderPending, 'plot did not settle', 3000);
       plot.immediateRendering = true;
       expect(plot.immediateRendering, true);
       renders = 0;
