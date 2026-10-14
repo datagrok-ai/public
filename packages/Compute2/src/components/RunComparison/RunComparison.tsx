@@ -649,6 +649,8 @@ export const RunComparison = Vue.defineComponent({
         { confidenceBadge(candidate.confidence) }
         { candidate.unitsWarn &&
           <IconFA name='exclamation-triangle' tooltip='Units are missing on some items'/> }
+        { candidate.unitsAssumed &&
+          <IconFA name='info-circle' tooltip={`Raw data without units is taken to be in ${target.units}`}/> }
         { candidate.auto &&
           <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>(auto)</span> }
       </label>;
@@ -770,7 +772,9 @@ export const RunComparison = Vue.defineComponent({
             <span class='c2-comparison-units' title={target.units ? 'Units of the first run' : ''}>{target.units ?? ''}</span>
             { target.unitsWarning ?
               <IconFA name='exclamation-triangle' tooltip='Units are missing on some runs'/> :
-              <span></span> }
+              target.kind === 'column' && target.rawWithoutUnits ?
+                <IconFA name='info-circle' tooltip={`Raw data without units is taken to be in ${target.units}`}/> :
+                <span></span> }
             { confidenceBadge(target.confidence) }
             <span style={{fontSize: '11px', color: 'var(--grey-4)', flexShrink: '0'}}>
               {target.coverage}/{target.total}
