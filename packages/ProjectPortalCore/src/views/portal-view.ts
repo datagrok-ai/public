@@ -267,6 +267,8 @@ export class PortalView {
   async previewProgram(portfolioCode: string, programId: string): Promise<void> {
     if (this.portfolio?.code !== portfolioCode)
       await this.openPortfolio(portfolioCode);
+    else
+      this.toBoard();
     await this.selectProgram(programId);
   }
 
@@ -713,6 +715,16 @@ export class PortalView {
   showBoard(): void {
     if (!this.portfolio)
       return;
+    this.toBoard();
+    const program = this.programs.find((x) => x.id === this.selected);
+    if (program)
+      void this.selectProgram(program.id).catch(this.failed);
+  }
+
+  /** Takes the program page down, if it is up, and puts the open portfolio's board in its place. */
+  private toBoard(): void {
+    if (!this.portfolio || this.page.style.display === 'none')
+      return;
     this.redraw = null;
     this.clearDetailScope(true);
     this.page.style.display = 'none';
@@ -720,9 +732,6 @@ export class PortalView {
     this.renderBoard();
     this.board.style.display = '';
     this.path.value = `${APP_PATH}/${this.portfolio.code}`;
-    const program = this.programs.find((x) => x.id === this.selected);
-    if (program)
-      void this.selectProgram(program.id).catch(this.failed);
   }
 
   /** Marks [program]'s card on the board, and only it. */

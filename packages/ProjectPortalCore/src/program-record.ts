@@ -5,7 +5,7 @@
  * `portal.program:<portfolio id>|<code>`) that no platform meta claims; this handler gives it the
  * program's icon, its card (`renderCard`, the Workspace's preview), its panel in the context panel
  * (card, favorite star, actions), and Open, which opens the program's page. Its context menu gets
- * Open and Show on board. Registered when the package loads (`portalInit`). */
+ * Open and Show in portfolio. Registered when the package loads (`portalInit`). */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
@@ -85,7 +85,7 @@ async function addressOf(x: DG.Entity): Promise<{portfolioCode: string, programI
   return {portfolioCode: r.portfolio.code, programId: r.program.id, address: programAddress(r.portfolio.code, r.program.code)};
 }
 
-/** Registers the handler once per session, and Open and Show on board on a program record's context
+/** Registers the handler once per session, and Open and Show in portfolio on a program record's context
  * menu, wherever the platform shows it (the Workspace and Favorites on Home, Browse). */
 export function registerProgramRecordHandler(): void {
   if (registered)
@@ -100,6 +100,6 @@ export function registerProgramRecordHandler(): void {
       return;
     const menu: DG.Menu = e.args.menu;
     menu.item('Open', () => void addressOf(x).then(openProgramPage).catch(failed));
-    menu.item('Show on board', () => void addressOf(x).then(showOnBoard).catch(failed));
+    menu.item('Show in portfolio', () => void addressOf(x).then(showOnBoard).catch(failed));
   });
 }

@@ -97,8 +97,8 @@ async function fill(host: HTMLElement, programId: string): Promise<void> {
     linkTo(text, name, () => void Promise.resolve(run()).catch(failed), {title});
   const followed = follows.some((f) => !f.work_unit_code);
   const actions: HTMLElement[] = [
-    ...(onPage || shown?.showsBoard(portfolio.code) ? [] : [action('Show on board', 'show-on-board-link',
-      `Its place on the ${portfolio.name} board`, () => showOnBoard(address))]),
+    ...(onPage || shown?.showsBoard(portfolio.code) ? [] : [action('Show in portfolio', 'show-in-portfolio-link',
+      `Its place among the ${portfolio.name} programs, on the portfolio's board`, () => showOnBoard(address))]),
     action(followed ? 'Unfollow' : 'Follow', 'follow-button', followed ? 'Stop being notified of new data in this program' :
       'Be notified, in the platform\'s notifications, when new results land in this program\'s data', async () => {
       if (followed)

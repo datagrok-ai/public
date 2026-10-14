@@ -105,6 +105,10 @@ category('Portal: the board chooses, the program page works, the context panel a
     expect(v.path.value.endsWith('/EX-SMD/EXS-KIN1'), true);
     expect(!!q('gate-heading') && !!q('board-link'), true);
     expect(!q('program-actions'), true, 'the program\'s actions are in the context panel, not under its title');
+    await v.previewProgram('EX-SMD', kin1.id);
+    expect(shown('stage-board') && !shown('program-page'), true, 'Show in portfolio from the page: the board, not the page');
+    expect(v.path.value.endsWith('/EX-SMD'), true);
+    await v.showProgram('EX-SMD', kin1.id);
     q('board-link')!.click();
     expect(shown('stage-board') && !shown('program-page'), true, 'back to the board');
     expect(v.path.value.endsWith('/EX-SMD'), true);
