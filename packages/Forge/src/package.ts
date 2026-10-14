@@ -8,6 +8,7 @@ import {registerModelActions} from './ui/model-actions';
 import {ModelComparisonHandler} from './ui/model-comparison';
 import {ForgeModelHandler} from './ui/model-handler';
 import {isForgePrediction, predictedByPane} from './ui/prediction-column-panel';
+import {tableModelsPane} from './ui/table-models-panel';
 import {TrainView} from './ui/train-view';
 export * from './package.g';
 
@@ -81,4 +82,13 @@ export function isPredictionColumn(col: DG.Column): boolean {
 //condition: Forge:isPredictionColumn(col)
 export function predictedByPanel(col: DG.Column): DG.Widget {
   return new DG.Widget(predictedByPane(col));
+}
+
+//name: Forge models
+//description: The Forge models that fit the table, and training a new one
+//input: dataframe table
+//output: widget result
+//meta.role: panel
+export function tableModelsPanel(table: DG.DataFrame): DG.Widget {
+  return new DG.Widget(tableModelsPane(table));
 }

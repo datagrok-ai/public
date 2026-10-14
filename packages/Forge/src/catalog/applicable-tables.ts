@@ -12,6 +12,11 @@ export function applicableTables(row: FeatureRow, tables: DG.DataFrame[]): DG.Da
   return required === null ? [] : tables.filter((table) => isSuggested(required, table));
 }
 
+/** The [rows] whose models fit [table] ({@link applicableTables}), in their order. */
+export function modelsFor<T extends FeatureRow>(rows: T[], table: DG.DataFrame): T[] {
+  return rows.filter((row) => applicableTables(row, [table]).length > 0);
+}
+
 /** The names of every feature of the model and its {@link applicableTables}. */
 export function featureFit(row: FeatureRow, tables: DG.DataFrame[]): {names: string[]; tables: DG.DataFrame[]} {
   return {names: (featureSchemasOf(row.features) ?? []).map((f) => f.name), tables: applicableTables(row, tables)};

@@ -5,7 +5,8 @@ new data, and manage your models in one catalog.
 
 This version trains models with every installed method, retrains them as you change the inputs, saves them with or
 without their training data, lists them in the catalog with their details, performance and
-activity, compares them, and applies them to new data, from the menu, the model's context menu or from scripts.
+activity, compares them, and applies them to new data, from the menu, the model's context menu, the table's context
+panel or from scripts.
 
 ## Train a model
 
@@ -20,7 +21,8 @@ problem opens itself. The results are on the right; drag the splitter between th
   tooltip of **Target** says how many
 * **Features**: the columns to learn from. By default, all numerical columns except the target and except integer
   columns whose values are all different, such as row numbers and ids. Dates and very large whole numbers (bigint
-  columns) cannot be features; text and yes/no features need **One-hot encoding** (see "Preparation")
+  columns) cannot be features; text and yes/no features need **One-hot encoding** (see "Preparation"). A column
+  removed from the table leaves **Features** at once (and empties **Target** when it was the target)
 * **Method**: the machine learning method. The list holds the methods that can learn from the chosen target and
   features (a text target, for example, leaves out the regression methods). Until you choose one, Forge suggests a
   method as the built-in tool did: XGBoost for a classifier, PLS Regression for a regression with five or more
@@ -142,6 +144,22 @@ only the rows it changes (also row 3 when **Class balance** moves), at their sta
 re-cuts the scores of the last training, without retraining: **ROC Curve** stays as it is and only its mark moves,
 the panels of the labels change; a retrain redraws the curve in the same plot.
 
+Under the rows, the panel **Runs** (hover its title: `The trainings of this view, newest first; click one to set its
+inputs again.`) lists every training of this view that was not stopped by a change (completed, failed or
+cancelled), newest first, the newest one current: **#** (its number in this view), **Method**,
+**Target**, **Features** (how many; hover for the names), **Preparation** (`impute (4 neighbors, Euclidean)`,
+`one-hot`, `skip unique categories`, `probability (cutoff 0.5)`; empty when none), **Rows**, **Status** (`completed`,
+`failed` or `cancelled`; hover a failed one for the error, a cancelled one reads `Stopped from the task bar.`),
+**Seed**, and the validation value of every metric any run has (`Accuracy (validation)`; hover for `Train 0.912,
+validation 0.845`). Click a row to set its target, features, preparation, method and settings again when they differ
+from the form's. A click on a row whose inputs the form already has, while the results show that training, only makes
+it current; when only **Positive class cutoff** differs, the click sets the cutoff back and the results are re-cut
+without training; after a cancelled or failed training, a click on its row trains it again. The read-only grid moves
+nothing with the arrow keys. After a click that sets other inputs, the view
+then trains as after any change (a slow method waits for **Train**), and the new training becomes the first row. When
+the table no longer has a column of that run, a warning says `The table no longer has the columns of this run:
+<columns>.` and nothing changes. A **Table** change starts an empty list; the runs stay recorded.
+
 ### Preparation
 
 The **Preparation** group, between **Data** and **Method**, prepares the data before the method gets it. Each input is
@@ -202,7 +220,8 @@ catalog open in this browser tab shows the new model right away.
 
 ## Apply a model
 
-Open a table, then **ML | Forge | Apply...** (or use the play icon in the catalog). The **Apply predictive model**
+Open a table, then **ML | Forge | Apply...** (or use the play icon in the catalog or the run icon in the table's
+**Forge models** pane). The **Apply predictive model**
 dialog has:
 
 * **Table**: the table to add the prediction to
@@ -231,6 +250,19 @@ tooltip. **OK** closes the dialog and adds the column `<target> (predicted)` (`<
 the name is taken) to the table, tagged with the model's id (`forge.model`). A progress bar in the task bar shows the
 batches; cancel it there to stop before the next batch. A balloon names the new column and the number of skipped
 rows. Every application, completed, failed or cancelled, is recorded with the model.
+
+### Models for a table
+
+Show a table in the context panel (for example, click a cell or an empty area of its grid): the pane **Forge models** lists
+the models you can see whose features all have a close column in the table, newest first, as the built-in **Models**
+pane does. Each line has the small green run icon (**Run prediction**: the **Apply predictive model** dialog with that model and
+this table, showing the table after applying), the model's name as a link and the menu arrow. Hover the name for the
+model's summary (Created by, Created, Updated, Trained on, Last run, Tags, Inputs, Outputs, Method and, when an open
+table fits, Applicable to); click it to show the model in the context panel; right-click it, or click the arrow, for
+the model's menu (the platform's row commands with Forge's **Apply...** and **Download**); drag it onto a Space to
+link the model there. Under the list, the button **Train** (`Train a new model on this table.`) opens the **Predictive
+model** view on the table. When no model fits, the pane says `No model fits this table.` above **Train**. The pane
+reads the models each time it opens; nothing is uploaded for that.
 
 ## From scripts
 
@@ -308,10 +340,12 @@ Forms viewer next to the grid.
 
 In **Browse > Platform > Domains > forge > model**, the card view shows each model in five lines of one height: the
 name (with a table icon when an open table fits the model; hover it for `Applicable to <tables>`), what it predicts,
-by which features, the method and the creation date; a long line ends with `...`. Hover a card, or a model anywhere
-the platform shows it, for the full picture: the name in bold, `Predicts <target> from <N> features with <method> ·
+by which features, the method and the creation date; a long line ends with `...`. Hover a card, a model's **Name**
+in the catalog grid (its other cells keep the grid's own tooltips), or a model anywhere the platform shows it, for the
+full picture: the name in bold, `Predicts <target> from <N> features with <method> ·
 <task> · <rows> rows`, the features (a long list ends with `+N more`), and in grey `Created <date> by <author> · Data
-storage: <mode> · Tags: <tags>`.
+storage: <mode> · Tags: <tags>`. The view's filter panel offers **Method**, **Task**, **Data storage**, **Tags** and
+**Created**.
 
 A prediction column's context panel has a **Predicted by** pane with the card of the model that made it, with the same
 tooltip.
@@ -326,7 +360,14 @@ is recorded with the model. Every user trains, saves and deletes models of their
 Training runs are not shared with their model: each user sees only their own. On a Datagrok 1.28.0 server an
 administrator, too, sees only the models shared with them, not every user's (a platform issue).
 
-The built-in **ML | Models** tools keep working next to Forge. The two do not share models.
+To share a model through a Space, drag it onto the Space in **Browse**: its card (**Browse > Platform > Domains >
+forge > model**, card mode), its name in a table's **Forge models** pane, or its name in the title of its context
+panel. The platform asks to confirm and links the model to the Space; everyone with access to the Space can then see
+and apply it. Dropping it again links nothing twice. The platform has no **Add to** command for models yet.
+
+The built-in **ML | Models** tools keep working next to Forge. The two do not share models. **Browse > Platform >
+Predictive models** and the table's **Models** pane are the built-in tool's; Forge's are **Browse > Apps > Forge** and
+the pane **Forge models**.
 
 ## Methods
 

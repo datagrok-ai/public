@@ -67,6 +67,12 @@ export class ForgeApp extends DG.ViewBase {
     super();
     this.name = APP_NAME;
     this.box = true;
+    this.aiDescription = 'Forge: predictive modeling. Methods lists the installed machine learning methods with ' +
+      'their roles and settings. Models is the catalog of trained models: name, method, task, target, data storage, ' +
+      'training rows, tags and creation date; Applicable to keeps only the models whose features the chosen open ' +
+      'table has; a chosen model is shown in the context panel (details, performance, activity, sharing, history), ' +
+      'the play icon applies it to a table, the trash icon deletes it, Compare opens two or more selected models ' +
+      'side by side.';
 
     this.methodsGrid = readOnlyGrid(methodsFrame(engines), {headers: METHOD_HEADERS, cells: {
       'Method type': (row) => KIND_MEANINGS[engines[row].kind],
@@ -78,6 +84,12 @@ export class ForgeApp extends DG.ViewBase {
     this.grid = DG.Viewer.grid(models);
     // Inline: the platform's 400px width for a box in a panel (ui.css) gives way only to an element style.
     this.grid.root.style.width = '100%';
+    this.grid.onCellTooltip((cell, x, y) => {
+      const tooltip = this.modelTooltip(cell);
+      if (tooltip !== null)
+        ui.tooltip.show(tooltip, x, y);
+      return tooltip !== null;
+    });
     this.emptyHint = ui.divText('No models yet.');
     this.applyIcon = ui.iconFA('play', () => this.applyCurrentModel(), 'Apply model');
     this.deleteIcon = ui.icons.delete(() => this.deleteCurrentModel(), 'Delete model');
@@ -310,6 +322,14 @@ export class ForgeApp extends DG.ViewBase {
       addModelItems(menu, ForgeModelHandler.rowOf(this.modelValues(i)), this.applicableToInput.value);
     if (this.models.selection.trueCount >= 2)
       menu.item('Compare', () => void this.compareSelected());
+  }
+
+  /** The model's tooltip for a **Name** [cell]; null for any other cell, which keeps the grid's own tooltip. */
+  modelTooltip(cell: DG.GridCell): HTMLElement | null {
+    if (!cell.isTableCell || cell.tableColumn?.name !== 'name')
+      return null;
+    const i = cell.tableRowIndex;
+    return i === null || i < 0 ? null : forgeModelHandler.renderTooltip(ForgeModelHandler.rowOf(this.modelValues(i)));
   }
 
   /** The catalog row [i] as model values, its features and options as objects. */

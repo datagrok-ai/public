@@ -7,7 +7,7 @@ import {after, awaitCheck, before, category, delay, expect, expectArray, expectF
 import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
 import {updateModelInfo} from '../catalog/model-edit';
-import {APP_NAME, MENU_PATH, MODEL_TYPE} from '../constants';
+import {APP_NAME, MENU_PATH, MODEL_TYPE, PANEL_TABLE_MODELS} from '../constants';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
 import {forgeDb, ModelStorageMode} from '../generated/db';
@@ -29,6 +29,7 @@ import {MetricsTable} from '../ui/metrics-table';
 import {modelAccordion, refreshSharing} from '../ui/model-panes';
 import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
+import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
 import {CHECK_DELAY_MS, TrainView} from '../ui/train-view';
 import {columnsOf, expectNoFrames, expectReleased, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable,
@@ -756,6 +757,22 @@ category('UI', () => {
 });
 
 category('UI: Train', () => {
+  test('Target and Features follow a column removed from the table', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      iris.columns.remove('Petal.Width');
+      expectArray(view.featuresInput.value.map((c) => c.name), ['Sepal.Length', 'Sepal.Width', 'Petal.Length']);
+      await awaitTrained(view);
+      expect(view.lastTraining?.result.features.columns.length, 3);
+      iris.columns.remove('Species');
+      expect(view.targetInput.value === null, true, `Target stays ${view.targetInput.value?.name}`);
+      await awaitCheck(() => view.targetInput.validity !== null, 'An empty Target is not marked', WAIT_MS);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
   test('a training superseded while its task-bar progress is shown writes no run', async () => {
     const demog = grok.data.demo.demog(SLOW_ROWS);
     demog.name = `forge-test-demog-${Date.now()}`;
@@ -2310,6 +2327,58 @@ category('UI: Catalog', () => {
     }
   });
 
+  test('the accordion title\'s name is bound: the platform\'s name attribute and the model\'s tooltip', async () => {
+    const model = await forgeDb.models.get(sharedModel().id);
+    const accordion = modelAccordion(ForgeModelHandler.rowOf(model), model);
+    document.body.append(accordion.root);
+    try {
+      const name = titleName(accordion.root, model.name);
+      if (name === undefined)
+        throw new Error('The title has no name label');
+      expect(name.getAttribute('name')?.startsWith('label-'), true, `name="${name.getAttribute('name')}"`);
+      const tooltip = await enterTooltip(name);
+      expect(tooltip.includes('Predicts Species from 4 features with XGBoost'), true, tooltip);
+    } finally {
+      ui.tooltip.hide();
+      accordion.root.remove();
+    }
+  });
+
+  test('dragging the panel title\'s name starts the drag of the model row, also for a row without a file', async () => {
+    const manualId = await insertModelRow({name: `forge-test-model-${Date.now()}-manual`});
+    try {
+      for (const id of [sharedModel().id, manualId]) {
+        const model = await forgeDb.models.get(id);
+        grok.shell.setCurrentObject(ForgeModelHandler.rowOf({id: model.id, name: model.name}), false, true);
+        await awaitCheck(() => titleName(document, model.name) !== undefined,
+          'The context panel does not show the model', WAIT_MS);
+        const name = titleName(document, model.name);
+        if (name === undefined)
+          throw new Error('No name in the panel title');
+        expect(getComputedStyle(name).userSelect, 'none');
+        const before = new Set(Array.from(document.querySelectorAll('.d4-balloon')));
+        const r = name.getBoundingClientRect();
+        const at = (type: string, dx: number) => new MouseEvent(type, {bubbles: true, cancelable: true, button: 0,
+          buttons: 1, clientX: r.left + 2 + dx, clientY: r.top + 2});
+        name.dispatchEvent(at('mousedown', 0));
+        for (const dx of [3, 10, 20, 40])
+          document.dispatchEvent(at('mousemove', dx));
+        try {
+          expect(document.body.classList.contains(`d4-drag-${MODEL_TYPE}`), true, document.body.className);
+        } finally {
+          document.dispatchEvent(at('mouseup', 40));
+        }
+        await delay(300);
+        const errors = Array.from(document.querySelectorAll('.d4-balloon'))
+          .filter((b) => !before.has(b) && (b.textContent ?? '').includes('Error'));
+        expect(errors.length, 0, errors.map((b) => b.textContent).join(' | '));
+      }
+    } finally {
+      grok.shell.setCurrentObject(null, false, true);
+      await forgeDb.models.delete(manualId);
+    }
+  });
+
   test('the model accordion has the five panes and reads the model', async () => {
     const {id, iris} = sharedModel();
     const model = await forgeDb.models.get(id);
@@ -2524,4 +2593,408 @@ category('UI: Catalog', () => {
       actions.remove();
     }
   });
+});
+
+let paneModel: {id: string; name: string; iris: DG.DataFrame} | undefined;
+const paneFixture = () => savedFixture(paneModel);
+
+/** The line of the table pane [root] that names [modelName]. */
+function paneLine(root: HTMLElement, modelName: string): HTMLElement | undefined {
+  return Array.from(root.querySelectorAll<HTMLElement>('.forge-model-line'))
+    .find((line) => (line.textContent ?? '').includes(modelName));
+}
+
+/** The model name and the run icon of [modelName]'s line in the table pane [root]; fails without them. */
+function paneParts(root: HTMLElement, modelName: string): {link: HTMLElement; run: HTMLElement} {
+  const line = paneLine(root, modelName);
+  const link = line?.querySelector<HTMLElement>('.d4-link-label');
+  const run = runIconOf(line);
+  if (link === undefined || link === null || run === undefined || run === null)
+    throw new Error('No model name or run icon');
+  return {link, run};
+}
+
+/** The name label of an accordion title under [root] that reads [modelName]. */
+function titleName(root: ParentNode, modelName: string): HTMLElement | undefined {
+  return Array.from(root.querySelectorAll<HTMLElement>('.d4-accordion-title label'))
+    .find((label) => label.textContent === modelName);
+}
+
+const trainButtonOf = (root: HTMLElement) =>
+  Array.from(root.querySelectorAll<HTMLElement>('button')).find((b) => b.textContent?.trim() === 'Train');
+const runIconOf = (line: HTMLElement | undefined) => line?.querySelector<HTMLElement>('.grok-icon.svg-model-run');
+
+category('UI: Table panel', () => {
+  before(async () => {
+    const iris = await openIris();
+    const {id, name} = await saveIrisModel(iris);
+    paneModel = {id, name, iris};
+  });
+
+  after(async () => {
+    if (paneModel === undefined)
+      return;
+    if (isOpen(paneModel.iris))
+      grok.shell.closeTable(paneModel.iris);
+    await deleteModel(paneModel.id);
+  });
+
+  test('tableModelsPanel is a panel of a table', async () => {
+    const panel = DG.Func.find({package: 'Forge', name: 'tableModelsPanel'})[0];
+    expect(panel?.friendlyName, PANEL_TABLE_MODELS);
+    expect(panel?.options['role'], 'panel');
+    expect(panel?.options['condition'] === undefined, true, `A condition: ${panel?.options['condition']}`);
+    expectArray(panel?.inputs.map((p) => p.propertyType) ?? [], [DG.TYPE.DATA_FRAME]);
+  });
+
+  test('the pane lists the fitting models as the built-in pane does, then Train', async () => {
+    const {name, iris} = paneFixture();
+    const pane = tableModelsPane(iris);
+    await awaitCheck(() => paneLine(pane, name) !== undefined && trainButtonOf(pane) !== undefined,
+      `The pane does not list the model: ${pane.textContent}`, WAIT_MS);
+    const line = paneLine(pane, name);
+    expect(runIconOf(line)?.classList.contains('d4-entity-markup-icon'), true, 'The line has no run icon');
+    expect(line?.querySelector('.svg-model') === null, true, 'The line has a model icon');
+    expect(line?.querySelector('.d4-link-label')?.textContent, name);
+    expect(line?.lastElementChild?.classList.contains('grok-icon'), true, 'The line ends without the menu arrow');
+    expect(trainButtonOf(pane)?.classList.contains('ui-btn-raised'), true, 'Train is not a big button');
+    expect(pane.textContent?.includes('No model fits this table.'), false);
+
+    const xy = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'x', [1, 2]),
+      DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', [3, 4])]);
+    const empty = tableModelsPane(xy);
+    await awaitCheck(() => trainButtonOf(empty) !== undefined, 'No Train for a table no model fits', WAIT_MS);
+    expect(empty.querySelector('.forge-model-line') === null, true, `A model fits x, y: ${empty.textContent}`);
+    expect(empty.textContent?.includes('No model fits this table.'), true, empty.textContent ?? '');
+  });
+
+  test('the run icon opens Apply predictive model with the model and the table', async () => {
+    const {name, iris} = paneFixture();
+    const tableView = grok.shell.addTableView(iris);
+    const shown = new Set(DG.Dialog.getOpenDialogs().map((d) => d.root));
+    const opened = () => DG.Dialog.getOpenDialogs().find((d) => !shown.has(d.root));
+    try {
+      const pane = tableModelsPane(iris);
+      await awaitCheck(() => paneLine(pane, name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      runIconOf(paneLine(pane, name))?.click();
+      await awaitCheck(() => opened() !== undefined, 'The run icon opens no dialog', WAIT_MS);
+      const dialog = opened();
+      expect(dialog?.title, 'Apply predictive model');
+      expect(dialog?.input('Model').value, name);
+      expect(dialog?.input('Table').value?.name, iris.name);
+    } finally {
+      opened()?.close();
+      tableView.close();
+    }
+  });
+
+  test('in the page, the platform\'s row CSS applies: the run icon is 12 px and centred on the name', async () => {
+    const {name, iris} = paneFixture();
+    const pane = tableModelsPane(iris);
+    document.body.append(pane);
+    try {
+      await awaitCheck(() => paneLine(pane, name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      const {link, run} = paneParts(pane, name);
+      expect(run.offsetHeight, 12, 'The run icon is not the built-in pane\'s 12 px');
+      const middle = (e: Element) => {
+        const r = e.getBoundingClientRect();
+        return (r.top + r.bottom) / 2;
+      };
+      expect(Math.abs(middle(run) - middle(link)) <= 1, true,
+        `The run icon's centre ${middle(run)} is off the name's ${middle(link)}`);
+    } finally {
+      pane.remove();
+    }
+  });
+
+  test('the model name has the built-in tooltip and the model\'s menu', async () => {
+    const {name, iris} = paneFixture();
+    const pane = tableModelsPane(iris);
+    document.body.append(pane);
+    const labels = () => Array.from(document.querySelectorAll('.d4-menu-popup .d4-menu-item-label'),
+      (label) => label.textContent?.trim() ?? '');
+    try {
+      await awaitCheck(() => paneLine(pane, name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      const {link, run} = paneParts(pane, name);
+      expect(await enterTooltip(run), 'Run prediction');
+      ui.tooltip.hide();
+      const r = link.getBoundingClientRect();
+      link.dispatchEvent(new MouseEvent('mouseenter', {clientX: r.left + 2, clientY: r.top + 2}));
+      await awaitCheck(() => ['Created by', 'Trained on', 'Inputs', 'Outputs', 'Method', 'Sepal.Length']
+        .every((t) => (ui.tooltip.root.textContent ?? '').includes(t)),
+      `The tooltip is not the built-in one: ${ui.tooltip.root.textContent}`, WAIT_MS);
+      ui.tooltip.hide();
+
+      link.dispatchEvent(new MouseEvent('contextmenu', {bubbles: true, cancelable: true, clientX: r.left + 2,
+        clientY: r.top + 2}));
+      await awaitCheck(() => labels().includes('Apply...') && labels().includes('Download'),
+        `The name's menu lacks the model commands: ${labels()}`, WAIT_MS);
+    } finally {
+      ui.tooltip.hide();
+      for (const popup of Array.from(document.querySelectorAll('.d4-menu-popup')))
+        popup.remove();
+      pane.remove();
+    }
+  });
+
+  test('the panel function\'s pane shows the built-in tooltip on a name, with several tables open', async () => {
+    const {name, iris} = paneFixture();
+    const tables = [iris, await openDemog(), await openDemoTable('System:DemoFiles/winequality.csv', 'wine'),
+      await openDemoTable('System:DemoFiles/cars.csv', 'cars')];
+    const views = tables.map((t) => grok.shell.addTableView(t));
+    const widget: unknown = await DG.Func.find({package: 'Forge', name: 'tableModelsPanel'})[0].apply({table: iris});
+    if (!(widget instanceof DG.Widget))
+      throw new Error('The panel function gives no widget');
+    const pane = widget.root;
+    document.body.append(pane);
+    try {
+      await awaitCheck(() => paneLine(pane, name) !== undefined, 'The pane does not list the model', WAIT_MS);
+      const link = paneLine(pane, name)?.querySelector<HTMLElement>('.d4-link-label');
+      if (link === undefined || link === null)
+        throw new Error('No model name');
+      ui.tooltip.hide();
+      const r = link.getBoundingClientRect();
+      link.dispatchEvent(new MouseEvent('mouseenter', {clientX: r.left + 3, clientY: r.top + 3}));
+      await awaitCheck(() => ui.tooltip.isVisible && ['Created by', 'Trained on', 'Inputs', 'Method']
+        .every((t) => (ui.tooltip.root.textContent ?? '').includes(t)),
+      `No built-in tooltip on the name: ${ui.tooltip.root.textContent}`, WAIT_MS);
+    } finally {
+      ui.tooltip.hide();
+      pane.remove();
+      for (const view of views)
+        view.close();
+      for (const t of tables.slice(1))
+        grok.shell.closeTable(t);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Train opens the Train view on the table', async () => {
+    const {iris} = paneFixture();
+    const pane = tableModelsPane(iris);
+    await awaitCheck(() => trainButtonOf(pane) !== undefined, 'The pane has no Train', WAIT_MS);
+    const views = new Set(Array.from(grok.shell.views));
+    trainButtonOf(pane)?.click();
+    const trainView = () => Array.from(grok.shell.views).find((v) => v instanceof TrainView && !views.has(v));
+    await awaitCheck(() => trainView() !== undefined, 'Train opens no Train view', WAIT_MS);
+    const view = trainView();
+    if (!(view instanceof TrainView))
+      throw new Error('No Train view');
+    try {
+      expect(view.tableInput.value?.name, iris.name);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('the catalog has a description for the AI assistant', async () => {
+    const view = await ForgeApp.create();
+    try {
+      expect(view.aiDescription?.includes('Forge'), true, `aiDescription: ${view.aiDescription}`);
+    } finally {
+      view.close();
+    }
+  });
+});
+
+/** The **Runs** grid of [view]; fails without one. */
+function runsGrid(view: TrainView): DG.Grid {
+  const grid = view.runsPanel.grid;
+  if (grid === null)
+    throw new Error('No Runs grid');
+  return grid;
+}
+
+const runsColumn = (view: TrainView, name: string) => runsGrid(view).dataFrame.getCol(name).toList();
+
+/** Clicks the **#** cell of [row] in the Runs [grid], as the user does. */
+function clickRunsRow(grid: DG.Grid, row: number): void {
+  const cell = grid.cell('#', row).bounds;
+  const canvas = grid.overlay.getBoundingClientRect();
+  const at = {bubbles: true, cancelable: true, button: 0, clientX: canvas.left + cell.x + cell.width / 2,
+    clientY: canvas.top + cell.y + cell.height / 2};
+  for (const type of ['mousedown', 'mouseup', 'click'])
+    grid.overlay.dispatchEvent(new MouseEvent(type, at));
+}
+
+category('UI: Runs', () => {
+  test('every recorded training is a row, newest first and current; a restored run trains again', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      expect(view.runs.length, 1);
+      expect(isShown(view.runsPanel.root), true, 'The Runs panel is hidden');
+      const grid = runsGrid(view);
+      expect(grid.dataFrame.rowCount, 1);
+      expectArray([grid.dataFrame.get('#', 0), grid.dataFrame.get('Method', 0), grid.dataFrame.get('Status', 0)],
+        [1, 'XGBoost', 'completed']);
+      expect(typeof grid.dataFrame.get('Accuracy (validation)', 0), 'number');
+      expect(grid.dataFrame.currentRowIdx, 0);
+      expect(grid.props.showCurrentRowIndicator, true);
+      expect(gridTooltip(grid, grid.cell('Method', 0)).includes('iterations: 20'), true,
+        gridTooltip(grid, grid.cell('Method', 0)));
+      expect(gridTooltip(grid, grid.cell('Features', 0)), MEASUREMENTS.join('\n'));
+      expect(gridTooltip(grid, grid.cell('Accuracy (validation)', 0)).startsWith('Train '), true);
+
+      setHyperparameter(view, 'iterations', 30);
+      await awaitTrained(view);
+      expectArray(runsColumn(view, '#'), [2, 1]);
+      expect(runsGrid(view).dataFrame.currentRowIdx, 0);
+
+      view.restoreRun(view.runs[1]);
+      expect(view.hyperparameterInputs.get('iterations')?.value, 20);
+      await awaitTrained(view);
+      expect(view.runs.length, 3);
+      expectArray(runsColumn(view, '#'), [3, 2, 1]);
+      expect(view.hyperparameterInputs.get('iterations')?.value, 20);
+      expect(view.runs[0].hyperparameters['iterations'], 20);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a click on a row whose inputs differ sets them again and trains; otherwise and on a move nothing', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      setHyperparameter(view, 'iterations', 30);
+      await awaitTrained(view);
+      runsGrid(view).dataFrame.currentRowIdx = 1;
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.hyperparameterInputs.get('iterations')?.value === 30 && view.runs.length === 2, true,
+        'Moving the current row restored a run');
+
+      clickRunsRow(runsGrid(view), 1);
+      await awaitCheck(() => view.hyperparameterInputs.get('iterations')?.value === 20,
+        'A click on a row does not set its inputs', WAIT_MS);
+      await awaitTrained(view);
+      expectArray(runsColumn(view, '#'), [3, 2, 1]);
+      expect(runsGrid(view).dataFrame.currentRowIdx, 0);
+
+      clickRunsRow(runsGrid(view), 0);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(!view.isTraining && view.runs.length === 3, true, 'A click on a row with the form\'s inputs trained');
+
+      view.featuresInput.value = [];
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.runs.length, 3, 'An empty Features trained');
+      clickRunsRow(runsGrid(view), 0);
+      await awaitCheck(() => view.featuresInput.value.length === 4, 'A click does not set the features again', WAIT_MS);
+      await awaitTrained(view);
+      await awaitCheck(() => view.runs.length === 4, 'A click on a row with other inputs does not train', TIMEOUT);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a cancelled training is a cancelled row; a click on it trains again', async () => {
+    const demog = grok.data.demo.demog(SLOW_ROWS);
+    demog.name = `forge-test-demog-${Date.now()}`;
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    try {
+      trainSlowly(view, demog);
+      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar progress', TIMEOUT);
+      const entry = taskBarEntry('Training XGBoost model');
+      await delay(100);
+      cancelTaskBarEntry(entry);
+      await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
+      expect(view.runs[0]?.status, 'cancelled');
+      const grid = runsGrid(view);
+      expect(grid.dataFrame.get('Status', 0), 'cancelled');
+      expect(gridTooltip(grid, grid.cell('Status', 0)), 'Stopped from the task bar.');
+      clickRunsRow(grid, 0);
+      await awaitCheck(() => view.isTraining, 'A click on the cancelled run does not train', WAIT_MS);
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a click on the current run after a cutoff move restores the cutoff without training', async () => {
+    const iris = await twoSpeciesIris();
+    const view = await openTrainView(iris);
+    const {predictProbability, cutoff} = view.preparationInputs;
+    try {
+      predictProbability.value = true;
+      await awaitTrained(view);
+      const count = view.runs.length;
+      cutoff.value = 0.7;
+      await delay(CHECK_DELAY_MS * 3);
+      clickRunsRow(runsGrid(view), 0);
+      await delay(CHECK_DELAY_MS * 3);
+      expect(cutoff.value, view.runs[0].steps.cutoff);
+      expect(!view.isTraining && view.runs.length === count, true, 'The click trained');
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a run whose columns the table lost sets nothing', async () => {
+    const iris = await openIris();
+    const view = await openTrainView(iris);
+    try {
+      const first = view.runs[0];
+      iris.columns.remove('Petal.Width');
+      await delay(CHECK_DELAY_MS * 2);
+      await awaitCheck(() => !view.isTraining, 'The view keeps training', TIMEOUT);
+      const count = view.runs.length;
+      const features = view.featuresInput.value.map((c) => c.name);
+      view.restoreRun(first);
+      const balloon = await readUntil(() => balloonWith('The table no longer has the columns of this run'),
+        (b) => b !== null);
+      expect(balloon?.textContent?.includes('The table no longer has the columns of this run: Petal.Width.'), true,
+        balloon?.textContent ?? '');
+      await delay(CHECK_DELAY_MS * 3);
+      expect(view.isTraining, false, 'A run with a missing column trains');
+      expect(view.runs.length, count);
+      expectArray(view.featuresInput.value.map((c) => c.name), features);
+    } finally {
+      await closeTrainView(view, [iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a Table change empties Runs and hides it', async () => {
+    const iris = await openIris();
+    const demog = grok.shell.addTable(await openDemog());
+    const view = await openTrainView(iris);
+    try {
+      view.tableInput.value = demog;
+      expect(view.runs.length, 0);
+      expect(isShown(view.runsPanel.root), false, 'Runs stays shown after a Table change');
+      await awaitTrained(view);
+      expectArray(view.runs.map((run) => `${run.number} ${run.targetName}`), [`1 ${view.targetInput.value?.name}`]);
+    } finally {
+      await closeTrainView(view, [iris, demog]);
+      grok.shell.closeTable(demog);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('a restored run sets Missing values and One-hot encoding again', async () => {
+    const demog = await openDemog();
+    const view = await TrainView.create(demog);
+    grok.shell.addView(view);
+    const {oneHot} = view.preparationInputs;
+    const choice = view.missingValuesInputs.choice;
+    try {
+      view.targetInput.value = demog.getCol('AGE');
+      view.featuresInput.value = columnsOf(demog, ['HEIGHT', 'WEIGHT', 'SEX', 'RACE']);
+      await awaitCheck(() => isShown(oneHot.root) && oneHot.value, 'One-hot encoding is not checked', WAIT_MS);
+      choice.value = 'Impute';
+      await awaitTrained(view);
+      const imputed = view.runs[0];
+      expect(imputed.missingValues.mode, 'impute');
+      expect(imputed.steps.oneHot, true);
+      expect(runsGrid(view).dataFrame.get('Preparation', 0).startsWith('impute ('), true,
+        runsGrid(view).dataFrame.get('Preparation', 0));
+
+      choice.value = 'Skip rows';
+      oneHot.value = false;
+      view.restoreRun(imputed);
+      expect(choice.value, 'Impute');
+      expect(oneHot.value, true);
+      await awaitTrained(view);
+      expect(view.runs[0].missingValues.mode, 'impute');
+    } finally {
+      await closeTrainView(view, [demog]);
+    }
+  }, {timeout: TIMEOUT});
 });

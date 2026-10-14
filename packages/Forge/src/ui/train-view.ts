@@ -28,6 +28,7 @@ import {MissingValuesInputs} from './missing-values-inputs';
 import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
 import {ResultsPane} from './results-pane';
+import {RunInputs, RunsPanel, SessionRun} from './runs-panel';
 import {saveModelDialog, StorageChoice} from './save-model-dialog';
 
 const PREFERRED_ENGINE = 'XGBoost';
@@ -80,7 +81,11 @@ export class TrainView extends DG.ViewBase {
   private readonly resultsStatus = ui.div([], 'forge-results-status');
   /** The results: the **Performance** panel with the training loader in its header, the insights and the viewers. */
   readonly resultsPane = new ResultsPane(this.resultsStatus);
+  /** **Runs** under the results: the recorded trainings of this table in this view. */
+  readonly runsPanel = new RunsPanel((run) => this.restoreRun(run));
   lastTraining: Training | undefined;
+  /** The recorded trainings of the current table, newest first; a Table change starts a new list. */
+  runs: SessionRun[] = [];
   private readonly trainRow: HTMLDivElement;
   private readonly trainGate: ButtonGate;
   /** The complete methods discovered when the view opened, in discovery order. */
@@ -134,7 +139,7 @@ export class TrainView extends DG.ViewBase {
         this.recut();
     }));
     this.form = this.createForm(table);
-    const results = ui.panel([this.resultsPane.root], 'forge-train-results');
+    const results = ui.panel([this.resultsPane.root, this.runsPanel.root], 'forge-train-results');
     const left = ui.box(this.formPane);
     left.style.width = `${FORM_WIDTH}px`;
     this.root.appendChild(ui.splitH([left, ui.box(results)], {}, true));
@@ -149,6 +154,7 @@ export class TrainView extends DG.ViewBase {
     this.unsubscribeForm();
     this.unsubscribeMethod();
     this.resultsPane.clear();
+    this.runsPanel.update([]);
     super.detach();
   }
 
@@ -198,13 +204,19 @@ export class TrainView extends DG.ViewBase {
     return new TrainView(table, engines, engine);
   }
 
+  /** Opens the view on the current table, or "Open a table first." without one: the menu's boundary. */
   static async open(): Promise<void> {
+    const table = grok.shell.currentTable;
+    if (table === null)
+      grok.shell.warning('Open a table first.');
+    else
+      await TrainView.openFor(table);
+  }
+
+  /** Opens the view on [table]: the boundary of the menu and the table pane's **Train**. */
+  static async openFor(table: DG.DataFrame): Promise<void> {
     try {
-      const table = grok.shell.currentTable;
-      if (table === null)
-        grok.shell.warning('Open a table first.');
-      else
-        grok.shell.addView(await TrainView.create(table));
+      grok.shell.addView(await TrainView.create(table));
     } catch (e) {
       reportError(e);
     }
@@ -298,13 +310,17 @@ export class TrainView extends DG.ViewBase {
     this.interactivity.clear();
     ui.setDisplay(this.trainRow, false);
     this.formSubs = [...groups[0].expandOnError(dataInputs), ...groups[1].expandOnError(preparation.inputs),
-      ...groups[2].expandOnError([methodInput])];
+      ...groups[2].expandOnError([methodInput]),
+      // The platform's column inputs keep a removed column until their dialog is opened again.
+      table.onColumnsRemoved.subscribe(() => TrainView.dropRemovedColumns(table, targetInput, featuresInput))];
     ui.empty(this.formPane);
     // One form, so the labels of every group and the Train row line up.
     const formRoot = ui.form([]);
     formRoot.append(...groups.map((g) => g.root), this.trainRow);
     this.formPane.append(formRoot);
     this.lastTraining = undefined;
+    this.runs = [];
+    this.runsPanel.update(this.runs);
     this.resultsPane.clear();
     this.showHint(RESULTS_HINT);
     const form: TrainForm = {table, tableInput, target: targetInput, features: featuresInput, preparation,
@@ -519,6 +535,8 @@ export class TrainView extends DG.ViewBase {
     if (selection === null)
       return;
     const checkNumber = this.checkNumber;
+    // A Table change starts a new list: a training of the old table adds no row to it.
+    const runs = this.runs;
     const {engine, features, target} = selection;
     const table = this.form.table;
     const datasetName = table.name;
@@ -548,9 +566,14 @@ export class TrainView extends DG.ViewBase {
         run.record === undefined ? '' : recordTrainingRun({...run.record, status, metrics, error: message,
           duration_ms: Date.now() - (run.startedOn ?? Date.now())});
       const isCurrent = () => checkNumber === this.checkNumber;
+      const addRun = (status: TrainingRunStatus, outcome: {metrics?: MetricsRecord; error?: string}) => {
+        if (runs === this.runs)
+          this.addRun(selection, run.record, status, outcome);
+      };
       if (queued.outcome === 'completed') {
         const {result} = queued;
         const runId = await record('completed', result.metrics);
+        addRun('completed', {metrics: result.metrics});
         if (isCurrent() && run.fingerprint !== undefined && run.request !== undefined) {
           this.lastTraining = {result, request: run.request, runId, engine, table, columns: [...features, target],
             datasetName, fingerprint: run.fingerprint, isSaved: false};
@@ -560,11 +583,14 @@ export class TrainView extends DG.ViewBase {
         }
       } else if (queued.outcome === 'cancelled') {
         await record('cancelled');
+        addRun('cancelled', {});
         grok.shell.warning(CANCELLED);
         if (isCurrent())
           this.showHint(this.check?.isInteractive === false ? this.notInteractiveHint() : RESULTS_HINT);
       } else {
-        await record('failed', undefined, errorMessage(queued.error));
+        const error = errorMessage(queued.error);
+        await record('failed', undefined, error);
+        addRun('failed', {error});
         if (isCurrent()) {
           this.isTrained = true;
           this.showHint(RESULTS_HINT);
@@ -580,6 +606,46 @@ export class TrainView extends DG.ViewBase {
         ui.empty(this.resultsStatus);
       this.updateControls();
     }
+  }
+
+  /** Puts the training of [selection] whose outcome was recorded as [record] (undefined when nothing was) first in
+   * **Runs**, numbered after the runs before it. */
+  private addRun(selection: TrainingSelection, record: TrainingRunRecord | undefined, status: TrainingRunStatus,
+    outcome: {metrics?: MetricsRecord; error?: string}): void {
+    this.runs.unshift({number: this.runs.length + 1, status, ...TrainView.runInputsOf(selection),
+      rowCount: record?.row_count ?? 0, seed: selection.seed, ...outcome});
+    this.runsPanel.update(this.runs);
+  }
+
+  /** Sets the target, the features, the preparation, the method and its hyperparameters of [run] again; the view
+   * then checks and trains as after any change. A run whose columns the table no longer has sets nothing with a
+   * warning; a run whose inputs the form has and shows the completed result of sets nothing, or only its cutoff,
+   * which re-cuts that result. */
+  restoreRun(run: SessionRun): void {
+    const table = this.form.table;
+    const target = table.col(run.targetName);
+    const missing = [run.targetName, ...run.featureNames].filter((name) => table.col(name) === null);
+    if (target === null || missing.length > 0) {
+      grok.shell.warning(`The table no longer has the columns of this run: ${missing.join(', ')}.`);
+      return;
+    }
+    // Any change but the cutoff drops lastTraining: while it is there, it is the result of the form's inputs.
+    const current = this.selection(0);
+    if (this.lastTraining !== undefined && current !== null &&
+      TrainView.isSameInputs(run, TrainView.runInputsOf(current))) {
+      if (this.form.preparation.cutoff.value !== run.steps.cutoff)
+        this.form.preparation.cutoff.value = run.steps.cutoff;
+      return;
+    }
+    const engine = run.engine;
+    this.hyperparameterValues.set(engine.name, {...run.hyperparameters});
+    this.userChoice = engine.name;
+    this.engine = engine;
+    this.fillMethod(this.form);
+    this.form.target.value = target;
+    this.form.features.value = run.featureNames.map((name) => table.getCol(name));
+    this.form.preparation.restore(run.steps, run.missingValues);
+    this.requestCheck();
   }
 
   private notInteractiveHint(): string {
@@ -623,6 +689,32 @@ export class TrainView extends DG.ViewBase {
       prediction: trainPredictionOf(result), score: result.scores?.train, keptRows: request.keptRows,
       positiveClass: result.metrics.positiveClass, cutoff: result.options.binaryClassificationThreshold,
       blob: result.blob, summary}).catch((e) => reportError(e));
+  }
+
+  /** Empties **Target** and unchecks the **Features** that [table] no longer has; each change is checked as any. */
+  private static dropRemovedColumns(table: DG.DataFrame, target: DG.InputBase<DG.Column | null>,
+    features: DG.InputBase<DG.Column[]>): void {
+    const isGone = (c: DG.Column) => table.col(c.name) === null;
+    const chosen = target.value;
+    if (chosen !== null && isGone(chosen))
+      target.value = null;
+    const kept = features.value.filter((c) => !isGone(c));
+    if (kept.length < features.value.length)
+      features.value = kept;
+  }
+
+  /** The inputs of [selection] that a **Runs** row keeps and a restore sets again. */
+  private static runInputsOf(selection: TrainingSelection): RunInputs {
+    const {engine, target, features, hyperparameters, missingValues, steps} = selection;
+    return {engine, targetName: target.name, featureNames: features.map((c) => c.name), hyperparameters, missingValues,
+      steps};
+  }
+
+  /** Whether [a] and [b] train the same model: every input but the cutoff, which only re-cuts a result. */
+  private static isSameInputs(a: RunInputs, b: RunInputs): boolean {
+    const text = (x: RunInputs) => JSON.stringify([x.engine.name, x.targetName, x.featureNames, x.hyperparameters,
+      x.missingValues, {...x.steps, cutoff: undefined}]);
+    return text(a) === text(b);
   }
 
   private static valuesOf(inputs: ReadonlyMap<string, DG.InputBase>): Hyperparameters {

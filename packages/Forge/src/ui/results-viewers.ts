@@ -17,7 +17,7 @@ const MIN_PC_COLUMNS = 3;
 const MAX_PC_COLUMNS = 20;
 
 type PanelText = Exclude<PanelKey, 'predictedVsActual' | `visualize:${number}`> | 'regressionVsActual' |
-  'classifierVsActual' | 'visualize';
+  'classifierVsActual' | 'visualize' | 'runs';
 
 /** Each panel's title (`<name>` is the target's or the method's name) and what it shows, the title's tooltip. */
 export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]} = {
@@ -38,6 +38,7 @@ export const PANEL_TEXTS: {[key in PanelText]: [title: string, tooltip: string]}
   correlation: ['Features correlation', 'How strongly each pair of features moves together.'],
   classBalance: ['Class balance', 'How many rows each class has.'],
   visualize: ['<name>', 'The method\'s own view of the model.'],
+  runs: ['Runs', 'The trainings of this view, newest first; click one to set its inputs again.'],
 };
 const STATISTICS_HEADERS: {[column: string]: string} = {
   'Statistic': 'Summary statistic of the column.',

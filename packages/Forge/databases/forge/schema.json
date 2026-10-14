@@ -1,7 +1,7 @@
 {
   "$schema": "https://datagrok.ai/schemas/domain-schema.schema.json",
   "name": "forge",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "tables": {
     "model": {
       "securityMode": "row",
@@ -30,7 +30,7 @@
         "storage_mode": {"type": "string", "required": true, "choices": ["none", "reference", "copy"], "default": "none", "friendlyName": "Data storage", "description": "What the model keeps of its training data: none (a summary), reference (a link to the source), copy (an uploaded table)"},
         "dataset_name": {"type": "string", "friendlyName": "Table"},
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
-        "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, script, path?, id?, name?}; script is the creation script the platform recorded for the table, one call per line"},
+        "dataset_ref": {"type": "json", "friendlyName": "Data source", "description": "reference mode: {kind: file|query|script, script, path?, id?, name?}; script is the creation script the platform recorded for the table, one call per line, or an OpenFile call of the table's server file when the platform recorded only that"},
         "dataset_table_id": {"type": "string", "friendlyName": "Data copy", "description": "copy mode: id of the training table uploaded on Save (the feature and target columns), deleted with the model; no foreign key"},
         "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},
         "blob": {"type": "file", "friendlyName": "Model file", "description": "file://System:DomainFiles/forge/model/<uuid>/model.bin"},
@@ -41,6 +41,7 @@
         {"column": "engine_name", "label": "Method"},
         {"column": "task", "label": "Task"},
         {"column": "storage_mode", "label": "Data storage"},
+        {"column": "tags", "label": "Tags"},
         {"column": "created_on", "type": "range", "label": "Created"}
       ]
     },
@@ -49,7 +50,7 @@
       "promotion": "eager",
       "defaultRowVisibility": "none",
       "friendlyName": "Training runs",
-      "description": "One training attempt, saved as a model or not",
+      "description": "One completed, failed or cancelled training (a training superseded by a newer one is not recorded), saved as a model or not",
       "grants": {"All users": ["view", "edit"]},
       "columns": {
         "model_id": {"type": "ref", "ref": "model", "onDelete": "setnull", "friendlyName": "Model"},
@@ -58,15 +59,15 @@
         "engine_kind": {"type": "string", "required": true, "choices": ["function", "script"], "friendlyName": "Method type"},
         "task": {"type": "string", "required": true, "choices": ["regression", "classification"], "friendlyName": "Task"},
         "target_name": {"type": "string", "required": true, "friendlyName": "Target"},
-        "features": {"type": "json", "friendlyName": "Features"},
-        "options": {"type": "json", "friendlyName": "Preparation", "description": "Preparation of the training, as model.options; skippedColumns: [names] records the columns Skip unique categories left out (replayed by name); oneHotCategories: {<column>: [categories]} records the training categories of one-hot (replayed); binaryClassificationThreshold, positiveClass, negativeClass, targetType: Predict probability"},
-        "hyperparameters": {"type": "json", "friendlyName": "Hyperparameters"},
+        "features": {"type": "json", "friendlyName": "Features", "description": "{columns: [{name, type, semType?}]} in training order"},
+        "options": {"type": "json", "friendlyName": "Preparation", "description": "Preparation replay; keys compatible with the old models: preprocessingInfo, postprocessingInfo, positiveClass, negativeClass, binaryClassificationThreshold, targetType, allowNulls. missingValues: {mode, neighbors?, distance?, skippedRows}; the preprocessingInfo ids ignore-missing and impute-missing record the missing-value handling and are not replayed. skippedColumns: [names] records the columns Skip unique categories left out (replayed by name). oneHotCategories: {<column>: [categories]} records the training categories of one-hot (replayed); binaryClassificationThreshold, positiveClass, negativeClass, targetType: Predict probability"},
+        "hyperparameters": {"type": "json", "friendlyName": "Hyperparameters", "description": "{<train function input>: value}"},
         "seed": {"type": "int", "friendlyName": "Seed"},
-        "splitting": {"type": "json", "friendlyName": "Data split"},
+        "splitting": {"type": "json", "friendlyName": "Data split", "description": "{scheme: none|kfold|holdout, folds?, trainFraction?, isStratified?}"},
         "metrics": {"type": "json", "friendlyName": "Metrics", "description": "{train: {<metric id>: number}, validation: {<metric id>: number}, positiveClass?}; ids: mse, rmse, mae, r2, accuracy, f1, sensitivity, specificity, precision, npv, auc (Predict probability only)"},
         "dataset_name": {"type": "string", "friendlyName": "Table"},
         "row_count": {"type": "int", "min": 0, "friendlyName": "Training rows"},
-        "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary"},
+        "dataset_fingerprint": {"type": "json", "friendlyName": "Data summary", "description": "{rowCount, columnCount, hash, columns: [{name, type, missingCount, min?, max?, mean?, categories?}]}"},
         "status": {"type": "string", "required": true, "choices": ["completed", "failed", "cancelled"], "friendlyName": "Status"},
         "error": {"type": "string", "friendlyName": "Error"},
         "started_on": {"type": "datetime", "required": true, "friendlyName": "Started"},

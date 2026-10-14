@@ -65,4 +65,11 @@ export namespace funcs {
   export async function predictedByPanel(col: DG.Column ): Promise<any> {
     return await grok.functions.call('Forge:PredictedByPanel', { col });
   }
+
+  /**
+   * The Forge models that fit the table, and training a new one
+   */
+  export async function tableModelsPanel(table: DG.DataFrame ): Promise<any> {
+    return await grok.functions.call('Forge:TableModelsPanel', { table });
+  }
 }

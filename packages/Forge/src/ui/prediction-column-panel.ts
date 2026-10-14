@@ -2,11 +2,7 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {PREDICTION_TAG} from '../constants';
 import {forgeDb} from '../generated/db';
-import {ForgeModelHandler, forgeModelHandler} from './model-handler';
-
-// What the card, its rich tooltip and its commands (Download reads blob) read.
-const CARD_COLUMNS = ['name', 'features', 'options', 'target_name', 'engine_name', 'task', 'row_count', 'storage_mode',
-  'tags', 'blob'] as const;
+import {CARD_COLUMNS, ForgeModelHandler, forgeModelHandler} from './model-handler';
 
 export function isForgePrediction(col: DG.Column): boolean {
   return modelIdOf(col) !== '';

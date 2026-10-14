@@ -38,8 +38,49 @@ const SOURCE_TOOLTIPS: Record<ApplicationSource, string> = {
 };
 
 let sharingSub: rxjs.Subscription | undefined;
+/** The authors by user id, read once per session for the tooltips and Details; a failed read is tried again. */
+const USERS = new Map<string, Promise<DG.User>>();
 
 type Shares = {view?: DG.Group[]; edit?: DG.Group[]};
+type FactsRow = Pick<ModelRow, 'author_id' | 'created_on' | 'updated_on' | 'dataset_name' | 'row_count' | 'features' |
+  'options'>;
+
+/** What both the model's Details and the table pane's tooltip show: the author (a link), the creation and update
+ * times, the training table with its rows, the last run, the feature names and the open tables the model fits ('' for
+ * none). */
+export interface ModelFacts {
+  author: HTMLElement;
+  created: string;
+  updated: string;
+  table: string;
+  lastRun: HTMLElement;
+  features: string[];
+  applicableTo: string;
+}
+
+export function modelFacts(model: FactsRow, lastRun: () => Promise<ModelActivity['lastRun']>): ModelFacts {
+  const {names, tables} = featureFit(model, grok.shell.tables);
+  return {
+    author: ui.wait(async () => ui.render(await userOf(model.author_id))),
+    created: model.created_on.format(MINUTE_FORMAT),
+    updated: model.updated_on.format(MINUTE_FORMAT),
+    table: `${model.dataset_name ?? ''}${model.row_count === undefined ? '' : ` (${model.row_count} rows)`}`,
+    lastRun: ui.wait(async () => ui.divText(lastRunText(await lastRun()))),
+    features: names,
+    applicableTo: tables.map((t) => t.name).join(', '),
+  };
+}
+
+/** The user [id], read once per session; a failed read is not kept, so the next call tries again. */
+export function userOf(id: string): Promise<DG.User> {
+  let user = USERS.get(id);
+  if (user === undefined) {
+    user = grok.dapi.users.find(id);
+    USERS.set(id, user);
+    user.catch(() => USERS.delete(id));
+  }
+  return user;
+}
 
 /** The model icon of the built-in tool. */
 export function modelIcon(): HTMLElement {
@@ -53,7 +94,9 @@ export function modelAccordion(row: DG.DomainRow, model: ModelRow): DG.Accordion
   let activity: Promise<ModelActivity> | undefined;
   const activityOf = () => activity ??= modelActivity(model.id);
   const accordion = ui.accordion(MODEL_TYPE);
-  accordion.addTitle(ui.span([modelIcon(), ui.star(row.id), ui.label(model.name), ui.contextActions(row)]));
+  // Bound for the tooltip and the drag (onto a Space); the commands are the context actions'.
+  const name = ui.bind(row, ui.label(model.name, 'forge-model-name'), {contextMenu: false});
+  accordion.addTitle(ui.span([modelIcon(), ui.star(row.id), name, ui.contextActions(row)]));
   accordion.addPane('Details', () => detailsPane(model, activityOf), true);
   accordion.addPane('Performance', () => performancePane(model));
   accordion.addPane('Activity', () => activityPane(activityOf));
@@ -69,23 +112,22 @@ function detailsPane(model: ModelRow, activity: () => Promise<ModelActivity>): H
 }
 
 function fillDetails(host: HTMLElement, model: ModelRow, activity: () => Promise<ModelActivity>): void {
-  const {names: features, tables} = featureFit(model, grok.shell.tables);
-  const rows = model.row_count === undefined ? '' : ` (${model.row_count} rows)`;
+  const facts = modelFacts(model, async () => (await activity()).lastRun);
   const details: {[caption: string]: string | HTMLElement} = {
-    'Author': ui.wait(async () => ui.render(await grok.dapi.users.find(model.author_id))),
-    'Created': model.created_on.format(MINUTE_FORMAT),
-    'Updated': model.updated_on.format(MINUTE_FORMAT),
-    'Table': `${model.dataset_name ?? ''}${rows}`,
+    'Author': facts.author,
+    'Created': facts.created,
+    'Updated': facts.updated,
+    'Table': facts.table,
     ...storageDetails(model),
-    'Last run': ui.wait(async () => ui.divText(lastRunText((await activity()).lastRun))),
+    'Last run': facts.lastRun,
     'Applications': ui.wait(async () => ui.divText(`${(await activity()).count}`)),
-    'Features': features.join(', '),
+    'Features': facts.features.join(', '),
     'Target': model.target_name,
     'Method': model.engine_name,
     'Task': model.task,
   };
-  if (tables.length > 0)
-    details['Applicable to'] = tables.map((t) => t.name).join(', ');
+  if (facts.applicableTo !== '')
+    details['Applicable to'] = facts.applicableTo;
   ui.empty(host);
   host.append(...(model.description ? [ui.divText(model.description)] : []), ui.tableFromMap(details),
     ui.form([detailsTags(host, model, activity)]));

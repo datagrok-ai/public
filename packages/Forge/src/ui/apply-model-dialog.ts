@@ -19,7 +19,8 @@ import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
 import {reportError} from './report-error';
 
-const MAX_MODELS = 10000;
+/** The most model rows a list of models reads. */
+export const MAX_MODELS = 10000;
 const MAX_BATCH_SIZE = 100000;
 const ROWS_HEIGHT_SHARE = 0.4;
 const MIN_ROWS_HEIGHT = 160;

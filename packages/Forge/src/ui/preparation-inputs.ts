@@ -1,6 +1,6 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
-import {missingColumnsOf} from '../preparation/missing-values';
+import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
 import {DEFAULT_CUTOFF, hasUniqueCategories, PreparationSteps, twoClasses} from '../preparation/pipeline';
 import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
@@ -89,6 +89,19 @@ export class PreparationInputs {
     this.updateVisibility();
   }
 
+  /** Sets the inputs shown for the current selection to [steps] and [missingValues], as a user would; a hidden input
+   * keeps its default. Skip unique categories goes first, as it changes the One-hot default. */
+  restore(steps: PreparationSteps, missingValues: MissingValuesSettings): void {
+    this.missingValues.restore(missingValues);
+    for (const [input, value] of [[this.skipUniqueCategories, steps.skipUniqueCategories],
+      [this.oneHot, steps.oneHot], [this.predictProbability, steps.predictProbability]] as const) {
+      if (PreparationInputs.isShown(input))
+        input.value = value;
+    }
+    if (PreparationInputs.isShown(this.cutoff))
+      this.cutoff.value = steps.cutoff;
+  }
+
   private get hasText(): boolean {
     return this.features.some((c) => c.isCategorical);
   }
@@ -130,9 +143,13 @@ export class PreparationInputs {
 
   /** Shows or hides [input]; a hidden input gets [defaultValue] back. */
   private static show<T>(input: DG.InputBase<T>, isShown: boolean, defaultValue: T): void {
-    const wasShown = input.root.style.display !== 'none';
+    const wasShown = PreparationInputs.isShown(input);
     ui.setDisplay(input.root, isShown);
     if (wasShown && !isShown)
       input.value = defaultValue;
+  }
+
+  private static isShown(input: DG.InputBase): boolean {
+    return input.root.style.display !== 'none';
   }
 }

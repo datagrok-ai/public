@@ -42,6 +42,17 @@ category('Storage', () => {
     expect(Array.isArray(await forgeDb.applications.query({limit: 1})), true);
   });
 
+  test('a training run describes its options, features and data summary as a model does', async () => {
+    const descriptions = async (table: string) => new Map((await grok.dapi.domains.registry.rowProperties(table))
+      .map((p) => [p.name, p.description]));
+    const [model, run] = [await descriptions('forge.model'), await descriptions('forge.training_run')];
+    for (const column of ['options', 'features', 'hyperparameters', 'splitting', 'metrics', 'dataset_fingerprint']) {
+      expect(run.get(column), model.get(column), column);
+      expect((run.get(column) ?? '') !== '', true, `${column} has no description`);
+    }
+    expect(run.get('options')?.startsWith('Preparation replay; keys compatible with the old models'), true);
+  });
+
   test('model, run and application round trip', async () => {
     const [{id: modelId}] = await forgeDb.models.insert({
       ...XGBOOST_FIELDS,

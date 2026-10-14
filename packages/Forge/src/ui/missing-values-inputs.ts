@@ -62,6 +62,22 @@ export class MissingValuesInputs {
       {mode: 'impute', impute: {neighbors, distance}} : {mode: 'impute'};
   }
 
+  /** Sets the choice and, for Impute, its inputs to [settings], as a user would; nothing while the choice is hidden. */
+  restore(settings: MissingValuesSettings): void {
+    if (!this.hasGaps)
+      return;
+    const isImpute = settings.mode === 'impute' && this.imputeInputs.size > 0;
+    this.choice.value = isImpute ? IMPUTE : SKIP_ROWS;
+    const impute = settings.impute;
+    if (!isImpute || impute === undefined)
+      return;
+    for (const [name, value] of Object.entries(impute)) {
+      const input = this.imputeInputs.get(name);
+      if (input !== undefined)
+        input.value = value;
+    }
+  }
+
   private updateVisibility(): void {
     const isImputeShown = this.isImpute;
     ui.setDisplay(this.choice.root, this.hasGaps);

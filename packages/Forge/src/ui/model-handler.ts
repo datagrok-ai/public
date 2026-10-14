@@ -6,16 +6,17 @@ import {featureFit} from '../catalog/applicable-tables';
 import {MODEL_TYPE} from '../constants';
 import {forgeDb, ModelRow, ModelStorageMode} from '../generated/db';
 import {tagsOf} from '../storage/model-fields';
-import {modelAccordion, modelIcon} from './model-panes';
+import {modelAccordion, modelIcon, userOf} from './model-panes';
 import {richTooltip, shortList} from './rich-tooltip';
 import {STORAGE_CAPTIONS} from './save-model-dialog';
 import '../../css/forge.css';
 
+/** The `model` columns the markup, the card, their rich tooltip and the commands (Download reads blob) read. */
+export const CARD_COLUMNS = ['name', 'features', 'options', 'target_name', 'engine_name', 'task', 'row_count',
+  'storage_mode', 'tags', 'blob'] as const;
 const HANDLER_NAME = 'Forge model handler';
 const CARD_FEATURES = 5;
 const DATE_FORMAT = 'YYYY-MM-DD';
-/** The authors' logins by user id, read once per session for the tooltips; a failed read is tried again. */
-const LOGINS = new Map<string, Promise<string>>();
 type FeatureRow = Pick<ModelRow, 'features' | 'options'>;
 /** The feature lists and options of the models whose rows came without them, by id, read once per session; a failed
  * read is tried again. */
@@ -74,8 +75,11 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     const fill = (features: string[]) => {
       const count = typeof v.feature_count === 'number' ? v.feature_count : features.length;
       const from = count > 0 ? ` from ${ForgeModelHandler.featureCount(count)}` : '';
-      facts.textContent = [`Predicts ${v.target_name}${from} with ${v.engine_name}`, v.task,
-        ...(typeof v.row_count === 'number' ? [`${v.row_count} rows`] : [])].join(' · ');
+      // A row made by hand may lack any of these.
+      const method = v.engine_name ? ` with ${v.engine_name}` : '';
+      const predicts = v.target_name ? `Predicts ${v.target_name}${from}${method}` : '';
+      facts.textContent = [predicts, v.task ?? '', typeof v.row_count === 'number' ? `${v.row_count} rows` : '']
+        .filter((s) => s !== '').join(' · ');
       list.textContent = shortList(features);
       ui.setDisplay(list, features.length > 0);
     };
@@ -143,16 +147,11 @@ export class ForgeModelHandler extends DG.DomainObjectHandler {
     ].join(' · ');
     const authorId = row.authorId;
     const line = ui.divText(text(undefined), 'forge-tooltip-minor');
+    // A deleted author is not found: the line stays without a login.
     if (authorId) {
-      let login = LOGINS.get(authorId);
-      if (login === undefined) {
-        login = grok.dapi.users.find(authorId).then((user: DG.User) => user.login);
-        LOGINS.set(authorId, login);
-      }
-      // A deleted author is not found: the line stays without a login.
-      login.then((name) => {
-        line.textContent = text(name);
-      }, () => LOGINS.delete(authorId));
+      userOf(authorId).then((user) => {
+        line.textContent = text(user.login);
+      }, () => {});
     }
     return line;
   }

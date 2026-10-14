@@ -6,7 +6,7 @@ import {after, awaitCheck, before, category, expect, expectArray, expectExceptio
   from '@datagrok-libraries/test/src/test';
 import {applyAndRecord, ApplyRequest, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
 import {exactMapping} from '../apply/column-matching';
-import {applicableTables} from '../catalog/applicable-tables';
+import {applicableTables, modelsFor} from '../catalog/applicable-tables';
 import {compareFormFields, compareModels, CompareModelRow} from '../catalog/compare-models';
 import {modelActivity} from '../catalog/model-activity';
 import {updateModelInfo} from '../catalog/model-edit';
@@ -16,6 +16,7 @@ import {ForgeError} from '../forge-error';
 import {forgeDb} from '../generated/db';
 import {tagsOf} from '../storage/model-fields';
 import {deleteModel, modelsChanged} from '../storage/model-store';
+import {ForgeApp} from '../ui/forge-app';
 import {comparisonForms, hasFormsViewer, ModelComparison, NO_FORMS} from '../ui/model-comparison';
 import {ForgeModelHandler, forgeModelHandler} from '../ui/model-handler';
 import {isForgePrediction, predictedByPane} from '../ui/prediction-column-panel';
@@ -132,6 +133,14 @@ category('Catalog', () => {
     expect(applicableTables({}, [iris]).length, 0);
   });
 
+  test('modelsFor keeps the rows whose models fit the table, in their order', async () => {
+    const {iris} = shared();
+    const xy = {columns: [{name: 'x', type: DG.COLUMN_TYPE.FLOAT}, {name: 'y', type: DG.COLUMN_TYPE.FLOAT}]};
+    const rows = [{id: 'xy', features: xy}, {id: 'iris', ...IRIS_ROW}, {id: 'iris-2', ...IRIS_ROW}];
+    expectArray(modelsFor(rows, iris).map((row) => row.id), ['iris', 'iris-2']);
+    expect(modelsFor([], iris).length, 0);
+  });
+
   test('applicableTables does not require a feature that Skip unique categories left out', async () => {
     const features = {columns: [{name: 'x', type: DG.COLUMN_TYPE.FLOAT}, {name: 'y', type: DG.COLUMN_TYPE.FLOAT},
       {name: 'subject', type: DG.COLUMN_TYPE.STRING}]};
@@ -224,6 +233,33 @@ category('Catalog', () => {
       'The Applicable to icon does not follow the open tables');
     const again = forgeModelHandler.renderCard(row);
     await awaitCheck(() => again.children[2]?.textContent === `by ${names}`, 'A second card is not filled', WAIT_MS);
+  });
+
+  test('a catalog row\'s Name cell has the model\'s tooltip; other cells keep the grid\'s', async () => {
+    const {id} = shared();
+    const view = await ForgeApp.create();
+    grok.shell.addView(view);
+    try {
+      const grid = Array.from(view.root.querySelectorAll('.d4-grid'), (e) => DG.toJs(DG.Widget.find(e)))
+        .find((g): g is DG.Grid => g instanceof DG.Grid && g.dataFrame.col('id') !== null);
+      if (grid === undefined)
+        throw new Error('No catalog grid');
+      grid.sort(['name'], [false]);
+      const row = grid.tableRowToGrid(view.models.getCol('id').toList().indexOf(id));
+      const name = view.modelTooltip(grid.cell('name', row))?.textContent ?? '';
+      expect(name.includes('Predicts Species from 4 features with XGBoost'), true, `Name cell tooltip: ${name}`);
+      expect(view.modelTooltip(grid.cell('engine_name', row)) === null, true, 'Another cell has the model tooltip');
+    } finally {
+      view.close();
+    }
+  });
+
+  test('the tooltip and the card of a row with only an id and a name do not throw', async () => {
+    const row = ForgeModelHandler.rowOf({id: DG.Utils.uuid4(), name: 'forge-test-bare'});
+    const tooltip = forgeModelHandler.renderTooltip(row);
+    expect(tooltip.querySelector('.forge-tooltip-title')?.textContent, 'forge-test-bare');
+    expect((tooltip.textContent ?? '').includes('undefined'), false, tooltip.textContent ?? '');
+    expect(forgeModelHandler.renderCard(row).children.length, 5);
   });
 
   test('model cards have one height whatever the model holds; the tooltip cuts a long feature list', async () => {

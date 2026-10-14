@@ -130,7 +130,8 @@ div.ui-box > div.ui-div.forge-results-panel {
   background-color: transparent;
 }
 
-.forge-results-rows {
+.forge-results-rows,
+.forge-runs {
   margin-top: 12px;
 }
 
@@ -176,6 +177,22 @@ div.ui-div.forge-model-card {
 
 .forge-model-card-title > label {
   min-width: 0;
+}
+
+/* The built-in row (d4.css span.d4-entity-markup-row > div[data-wrapper=true]) stretches its items, which leaves the 12 px
+   run icon at the top of the name's line: centre it on the line. */
+span.d4-entity-markup-row > div.forge-model-line {
+  align-items: center;
+}
+
+.forge-model-train {
+  margin-top: 6px;
+}
+
+/* A model name is a drag source: a drag must not select its text (accordion.css gives a title label user-select: all). */
+.forge-model-name,
+.d4-accordion-title label.forge-model-name {
+  user-select: none;
 }
 
 .forge-tooltip {
