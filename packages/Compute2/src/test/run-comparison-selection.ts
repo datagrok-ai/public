@@ -652,6 +652,14 @@ category('RunComparison: unmatched items', () => {
     expectObject(items[0], {name: 'height', runCount: 1});
   });
 
+  test('values named like a compare row in the same units are left out', async () => {
+    const day = (n: number, units = 'g/L') =>
+      ({name: 'Final biomass', units, friendlyPath: `Daily cultivation · Day ${n} · Final biomass`});
+    const items = unmatched([makeEntry('a', [day(1), day(2), day(3, 'mg/L')]), makeEntry('b', [day(1)])]);
+    expect(items.length, 1);
+    expectObject(items[0], {name: 'Final biomass', units: 'mg/L', runCount: 1});
+  });
+
   test('one item per name and units, counting its runs', async () => {
     const entries = [
       makeEntry('a', [], [{path: 't', columns: [{name: 'time'}, {name: 'v', units: 'mL'}]}]),

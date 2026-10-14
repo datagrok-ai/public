@@ -505,7 +505,8 @@ export interface UnmatchedItem {
 
 /**
  * Values matching considers (numeric scalars, numeric columns of indexed tables) that no
- * compare row picks or lists as a candidate, one item per name and units.
+ * compare row picks or lists as a candidate, one item per name and units. Values named like
+ * a row in its units are left out: a mapping cannot place them (e.g. a step only one run has).
  */
 export function unmatchedItems(
   entries: ComparisonEntryNodes[],
@@ -518,11 +519,13 @@ export function unmatchedItems(
   const present = new Set(targets.flatMap((target) => target.kind === 'scalar' ?
     target.bindings.map((b) => scalarId(b.entryId, b.path)) :
     target.candidates.map(({binding: b}) => columnId(b.entryId, b.tablePath, b.columnName))));
+  const nameKey = (name: string, units?: string) => `${normalizeName(name)}|${normalizeUnits(units)}`;
+  const rowKeys = new Set(targets.map((target) => nameKey(target.displayName, target.units)));
   const items = new Map<string, {name: string, units?: string, runs: Set<string>}>();
   const add = (entryId: string, id: string, name: string, units?: string) => {
-    if (present.has(id))
+    const key = nameKey(name, units);
+    if (present.has(id) || rowKeys.has(key))
       return;
-    const key = `${normalizeName(name)}|${normalizeUnits(units)}`;
     const item = items.get(key) ?? {name, units, runs: new Set<string>()};
     item.runs.add(entryId);
     items.set(key, item);
