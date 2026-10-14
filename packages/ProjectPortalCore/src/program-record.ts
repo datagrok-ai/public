@@ -11,7 +11,8 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import {portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isProgramRecordName, programAddress, PROGRAM_RECORD} from './model/pinning';
-import {portalAppView} from './views/portal-view';
+import {openPortal, portalAppView} from './views/portal-view';
+import {pinnedByMeNow, refreshMyPins, setPinned} from './pinning';
 import {openProgramPage, programCard, showOnBoard} from './views/program-card';
 import {programPanel} from './views/program-panel';
 import {programTile} from './pinned-programs';
@@ -85,8 +86,11 @@ async function addressOf(x: DG.Entity): Promise<{portfolioCode: string, programI
   return {portfolioCode: r.portfolio.code, programId: r.program.id, address: programAddress(r.portfolio.code, r.program.code)};
 }
 
-/** Registers the handler once per session, and Open and Show in portfolio on a program record's context
- * menu, wherever the platform shows it (the Workspace and Favorites on Home, Browse). */
+/** Registers the handler once per session, and the program record's context menu wherever the platform
+ * shows it (the Workspace and Favorites on Home, Browse): Open and Show in portfolio first, then Add to /
+ * Remove from favorites in place of the platform's Add To Favorites (which does not know the record is a
+ * favorite already), then the platform's Create URL alias. The platform adds Group favorites (every group
+ * on the server) after this runs, so it stays last. */
 export function registerProgramRecordHandler(): void {
   if (registered)
     return;
@@ -99,7 +103,37 @@ export function registerProgramRecordHandler(): void {
     if (!handler.isApplicable(x))
       return;
     const menu: DG.Menu = e.args.menu;
+    // taken out, to come back below ours
+    const take = (text: string) => {
+      const item = menu.find(text);
+      if (item)
+        menu.remove(text);
+      return item;
+    };
+    const alias = take('Create URL alias...');
+    take('Add To Favorites');
+    take('Remove From Favorites');
     menu.item('Open', () => void addressOf(x).then(openProgramPage).catch(failed));
     menu.item('Show in portfolio', () => void addressOf(x).then(showOnBoard).catch(failed));
+    const pinned = pinnedByMeNow([x.id]);
+    if (pinned !== null) {
+      menu.item(pinned ? 'Remove from favorites' : 'Add to favorites', () => void (async () => {
+        const r = await programOfRecord(x);
+        if (!r)
+          throw new Error(`${x.friendlyName || x.name} is not readable in the Project Portal`);
+        grok.shell.info(await setPinned(r.portfolio, r.program, !pinned, null));
+        await openPortal()?.portal.refreshProgram(r.program.id);
+        // the program's panel, if it is the one on show, is drawn again with its star
+        if ((grok.shell.o as any)?.id === x.id) {
+          grok.shell.o = null;
+          grok.shell.o = x;
+        }
+      })().catch(failed));
+    }
+    if (alias)
+      menu.item('Create URL alias...', () => alias.click());
+    // for the next menu: a favorite changed elsewhere (the Workspace's own x) shows there
+    void refreshMyPins();
   });
+  void refreshMyPins();
 }

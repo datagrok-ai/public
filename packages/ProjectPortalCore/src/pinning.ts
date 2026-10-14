@@ -60,6 +60,31 @@ const idsOf = (program: ProgramRow): string[] => [program.id, ...(program.space_
  * made before 0.3.0, its folder. Adding twice, or removing what is not there, changes nothing. */
 export async function setPinned(portfolio: PortfolioRow, program: ProgramRow, pinned: boolean, group?: DG.Group | null):
   Promise<string> {
+  try {
+    return await changePin(portfolio, program, pinned, group);
+  } finally {
+    void refreshMyPins();
+  }
+}
+
+/** The ids the user's own favorites held when last read (a program's id, or a folder's): what a context
+ * menu, which is built at once, can go by. Read when the package loads, after each change made here and
+ * on each menu, for the next one. */
+let myPinIds: Set<string> | null = null;
+
+export async function refreshMyPins(): Promise<void> {
+  const favorites = await grok.dapi.entities.getFavorites(DG.User.current().group).catch(() => null);
+  if (favorites)
+    myPinIds = new Set(favorites.map((e) => e.id));
+}
+
+/** Whether the program (by its id or folder's) was in the user's own favorites when last read; null before the first read. */
+export function pinnedByMeNow(ids: string[]): boolean | null {
+  return myPinIds ? ids.some((id) => myPinIds!.has(id)) : null;
+}
+
+async function changePin(portfolio: PortfolioRow, program: ProgramRow, pinned: boolean, group?: DG.Group | null):
+  Promise<string> {
   if (group) {
     const refused = checkGroupPin({isApprover: await isApprover(portfolio)});
     if (refused.length)
