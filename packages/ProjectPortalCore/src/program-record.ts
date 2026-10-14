@@ -12,7 +12,7 @@ import * as ui from 'datagrok-api/ui';
 import {portalDb, PortfolioRow, ProgramRow} from './generated/db';
 import {isProgramRecordName, programAddress, PROGRAM_RECORD} from './model/pinning';
 import {openPortal, portalAppView} from './views/portal-view';
-import {pinnedByMeNow, refreshMyPins, setPinned} from './pinning';
+import {pinnedByMeNow, pinStateOf, refreshMyPins, setPinned} from './pinning';
 import {openProgramPage, programCard, showOnBoard} from './views/program-card';
 import {programPanel} from './views/program-panel';
 import {programTile} from './pinned-programs';
@@ -27,6 +27,10 @@ async function programOfRecord(x: DG.Entity): Promise<{program: ProgramRow, port
 }
 
 export class ProgramRecordHandler extends DG.ObjectHandler<DG.Entity> {
+  /** Power Pack leaves Group favorites (every group on the server) off the record's menu: the user's own
+   * favorite is on the menu, and an approver pins a program for the portfolio's viewers from its panel. */
+  readonly ownsFavorites = true;
+
   get type(): string {
     return `${PROGRAM_RECORD} record`;
   }
@@ -89,8 +93,8 @@ async function addressOf(x: DG.Entity): Promise<{portfolioCode: string, programI
 /** Registers the handler once per session, and the program record's context menu wherever the platform
  * shows it (the Workspace and Favorites on Home, Browse): Open and Show in portfolio first, then Add to /
  * Remove from favorites in place of the platform's Add To Favorites (which does not know the record is a
- * favorite already), then the platform's Create URL alias. The platform adds Group favorites (every group
- * on the server) after this runs, so it stays last. */
+ * favorite already), then the platform's Create URL alias. Power Pack's Group favorites is left off
+ * (`ownsFavorites`). */
 export function registerProgramRecordHandler(): void {
   if (registered)
     return;
@@ -115,25 +119,49 @@ export function registerProgramRecordHandler(): void {
     take('Remove From Favorites');
     menu.item('Open', () => void addressOf(x).then(openProgramPage).catch(failed));
     menu.item('Show in portfolio', () => void addressOf(x).then(showOnBoard).catch(failed));
-    const pinned = pinnedByMeNow([x.id]);
-    if (pinned !== null) {
-      menu.item(pinned ? 'Remove from favorites' : 'Add to favorites', () => void (async () => {
-        const r = await programOfRecord(x);
-        if (!r)
-          throw new Error(`${x.friendlyName || x.name} is not readable in the Project Portal`);
-        grok.shell.info(await setPinned(r.portfolio, r.program, !pinned, null));
-        await openPortal()?.portal.refreshProgram(r.program.id);
-        // the program's panel, if it is the one on show, is drawn again with its star
-        if ((grok.shell.o as any)?.id === x.id) {
-          grok.shell.o = null;
-          grok.shell.o = x;
-        }
-      })().catch(failed));
-    }
+    // favorites not read yet (the menu right after the platform starts): its state is read on the click
+    let known = pinnedByMeNow([x.id]);
+    const toggle = async () => {
+      const r = await programOfRecord(x);
+      if (!r)
+        throw new Error(`${x.friendlyName || x.name} is not readable in the Project Portal`);
+      const pinned = known ?? (await pinStateOf(r.program)).mine;
+      grok.shell.info(await setPinned(r.portfolio, r.program, !pinned, null));
+      await openPortal()?.portal.refreshProgram(r.program.id);
+      // the program's panel, if it is the one on show, is drawn again with its star
+      if ((grok.shell.o as any)?.id === x.id) {
+        grok.shell.o = null;
+        grok.shell.o = x;
+      }
+    };
+    const UNKNOWN = 'Add to or remove from favorites';
+    menu.item(known ? 'Remove from favorites' : known === false ? 'Add to favorites' : UNKNOWN,
+      () => void toggle().catch(failed));
+    const ALIAS = 'Create URL alias...';
     if (alias)
-      menu.item('Create URL alias...', () => alias.click());
+      menu.item(ALIAS, () => alias.click());
+    // favorites not read yet (the menu right after the platform starts): the item says which once read
+    if (known === null) {
+      void refreshMyPins().then(() => {
+        known = pinnedByMeNow([x.id]);
+        if (known === null)
+          return;
+        menu.remove(UNKNOWN);
+        if (alias)
+          menu.remove(ALIAS);
+        menu.item(known ? 'Remove from favorites' : 'Add to favorites', () => void toggle().catch(failed));
+        if (alias)
+          menu.item(ALIAS, () => alias.click());
+      });
+      return;
+    }
     // for the next menu: a favorite changed elsewhere (the Workspace's own x) shows there
     void refreshMyPins();
   });
-  void refreshMyPins();
+  // the package can load before the session is ready: read until it answers, a few times
+  const firstRead = (left: number): void => void refreshMyPins().then(() => {
+    if (pinnedByMeNow([]) === null && left > 0)
+      setTimeout(() => firstRead(left - 1), 3000);
+  });
+  firstRead(5);
 }
