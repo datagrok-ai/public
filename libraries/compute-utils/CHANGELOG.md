@@ -2,6 +2,7 @@
 
 ## v.next
 
+* RTD: Fixed validator actions going stale after adding or moving steps: `getValidationAction` returned a removed action and `isActionVisible` an outdated visibility until the validator was recreated; links now resolve actions when matched, and a changed action recreates and reruns them
 * RTD: Added `Driver.inspectLinks` and `Driver.inspectConfig` for debugging: resolved links and actions, including the links generated from annotations with their kind (`rule`, `check`, `required`), with the link, rule or check as written, their empty aliases, the targets `$linked` dropped and action visibility, and the config as written with resolved step io
 * RTD: Removed `Driver.currentConfig$`
 * RTD: Removed the unused `approversGroup` config key

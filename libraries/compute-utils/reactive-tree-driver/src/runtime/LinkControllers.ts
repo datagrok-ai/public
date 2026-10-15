@@ -4,7 +4,7 @@ import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutation
 import {GranularMutationOp, RestrictionType, StepHandle, ValidationResult} from '../data/common-types';
 import {StateTreeNode} from './StateTreeNodes';
 import {ScopeInfo} from './Link';
-import {MatchedIO, MatchedNodePaths} from './link-matching';
+import {ActionRef, MatchedIO, MatchedNodePaths} from './link-matching';
 import {PipelineInstanceConfig, PipelineInstanceConfigInput, PipelineOutline, normalizePipelineInstanceConfig} from '../config/PipelineInstance';
 import {NodePath} from '../data/BaseTree';
 
@@ -27,8 +27,7 @@ export interface ControllerBaseArgs {
 }
 
 export interface ValidatorControllerArgs extends ControllerBaseArgs {
-  actions: Record<string, Map<string, string>>;
-  actionsVisibility: ReadonlyMap<string, boolean>;
+  actions: ReadonlyMap<string, ReadonlyMap<string, ActionRef>>;
   baseNode?: TreeNode<StateTreeNode>;
 }
 
@@ -205,29 +204,23 @@ export class LinkController extends ControllerBase<[any, RestrictionType]> imple
 }
 
 export class ValidatorController extends ControllerBase<ValidationResult | undefined> implements IRuntimeValidatorController {
-  public actions: Record<string, Map<string, string>>;
-  public actionsVisibility: ReadonlyMap<string, boolean>;
+  public actions: ReadonlyMap<string, ReadonlyMap<string, ActionRef>>;
   public baseNode?: TreeNode<StateTreeNode>;
 
   constructor(args: ValidatorControllerArgs) {
     super(args);
     this.actions = args.actions;
-    this.actionsVisibility = args.actionsVisibility;
     this.baseNode = args.baseNode;
   }
 
   getValidationAction(name: string, actionId: string): string | undefined {
     this.checkIsClosed();
-    const actions = this.actions[name];
-    const actionUUID = actions?.get(actionId);
-    return actionUUID;
+    return this.actions.get(name)?.get(actionId)?.uuid;
   }
 
   isActionVisible(name: string, actionId: string): boolean {
     this.checkIsClosed();
-    const uuid = this.actions[name]?.get(actionId);
-    if (!uuid) return false;
-    return this.actionsVisibility.get(uuid) ?? true;
+    return this.actions.get(name)?.get(actionId)?.visible ?? false;
   }
 
   setValidation(name: string, validation?: ValidationResult | undefined) {

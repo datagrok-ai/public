@@ -1,4 +1,4 @@
-import {BaseTree, NodePath} from '../data/BaseTree';
+import {BaseTree, NodePath, TreeNode} from '../data/BaseTree';
 import {isFuncCallNode, StateTreeNode} from './StateTreeNodes';
 import {ActionSpec, LinkSpec, MatchInfo, matchNodeLink, isActionVisible} from './link-matching';
 import {AnnotationLinkKind} from '../data/common-types';
@@ -79,13 +79,13 @@ export class LinksState {
     const oldLinks = [...this.links.values()];
     const oldActions = [...this.actions.values()];
 
-    const [links, addedLinks] = this.updateLinks(state, oldLinks);
-    this.links = new Map(links.map((link) => [link.uuid, link] as const));
-
     const [actions, nodesActions, actionsVisibility] = this.updateActions(state, oldActions);
     this.actions = new Map(actions.map((link) => [link.uuid, link] as const));
     this.nodesActions = nodesActions;
     this.actionsVisibility = actionsVisibility;
+
+    const [links, addedLinks] = this.updateLinks(state, oldLinks);
+    this.links = new Map(links.map((link) => [link.uuid, link] as const));
 
     this.stepsDependencies = calculateStepsDependencies(state, links);
     this.ioDependencies = calculateIoDependencies(state, links, this.logger);
@@ -189,6 +189,7 @@ export class LinksState {
         .filter((x) => !!x)
         .flat();
       const links = matchedLinks.map((minfo) => {
+        this.resolveActions(node, minfo);
         const spec = minfo.spec;
         const debounce = (spec.type === 'validator' || spec.type === 'pipelineValidator')
           ? (spec.debounce ?? (this.batchLinks ? 0 : undefined))
@@ -199,6 +200,16 @@ export class LinksState {
       return [...acc, ...links];
     }, [] as Link[]);
     return links;
+  }
+
+  private resolveActions(node: TreeNode<StateTreeNode>, minfo: MatchInfo) {
+    for (const [name, paths] of Object.entries(minfo.actions)) {
+      const actions = paths.length ? this.nodesActions.get(node.getNode(paths[0].path).getItem().uuid) ?? [] : [];
+      minfo.actionsUUID.set(name, new Map(actions.map((action) => [
+        action.matchInfo.spec.id,
+        {uuid: action.uuid, visible: this.actionsVisibility.get(action.uuid) ?? true},
+      ])));
+    }
   }
 
   public createStateActions(state: BaseTree<StateTreeNode>) {

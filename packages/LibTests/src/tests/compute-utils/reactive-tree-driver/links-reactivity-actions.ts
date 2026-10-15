@@ -1523,4 +1523,120 @@ category('ComputeUtils: Driver links reactivity: actions', async () => {
       expectObservable(observed).toBe('- 250ms a', {a: {known: true, unknownName: false, unknownId: false}});
     });
   });
+
+  const settle = () => new Promise((resolve) => setTimeout(resolve, 100));
+
+  const daysConfig = (
+    initialDays: number, links: any[], daysActions: any[], rootActions: any[] = [],
+  ): PipelineConfiguration => ({
+    id: 'pipeline1',
+    type: 'static',
+    steps: [
+      {id: 'cooling', nqName: 'LibTests:TestAdd2'},
+      {
+        id: 'days',
+        type: 'parallel',
+        stepTypes: [{id: 'day', nqName: 'LibTests:TestAdd2'}],
+        initialSteps: Array.from({length: initialDays}, () => ({id: 'day'})),
+        actions: daysActions,
+      },
+    ],
+    links,
+    actions: rootActions,
+  });
+
+  const recordingValidator = (actions: string, last: {uuid?: string, visible?: boolean, runs: number}) => ({
+    id: 'check',
+    type: 'validator' as const,
+    debounce: 0,
+    from: 'in:cooling/a',
+    to: 'out:cooling/a',
+    actions,
+    handler({controller}: any) {
+      last.uuid = controller.getValidationAction('act', 'action1');
+      last.visible = controller.isActionVisible('act', 'action1');
+      last.runs++;
+    },
+  });
+
+  const daysAction = {
+    id: 'action1',
+    position: 'none' as const,
+    from: 'in:all(day)/a',
+    to: 'out:all(day)/b',
+    handler({controller}: any) {
+      controller.setAll('out', 1);
+    },
+  };
+
+  test('Validation action stays runnable after its action is recreated', async () => {
+    const last = {runs: 0} as {uuid?: string, visible?: boolean, runs: number};
+    const config = daysConfig(1, [recordingValidator('act:days', last)], [daysAction]);
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const cooling = tree.nodeTree.getNode([{idx: 0}]);
+    cooling.getItem().getStateStore().setState('a', 1);
+    await settle();
+    expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'before mutation'});
+
+    const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+    await tree.addSubTree(daysUuid, 'day', 1).toPromise();
+    await settle();
+    expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after mutation'});
+
+    cooling.getItem().getStateStore().setState('a', 2);
+    await settle();
+    expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after input change'});
+  });
+
+  test('Validation action is found once its action first matches', async () => {
+    const last = {runs: 0} as {uuid?: string, visible?: boolean, runs: number};
+    const config = daysConfig(0, [recordingValidator('act:days', last)], [daysAction]);
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const cooling = tree.nodeTree.getNode([{idx: 0}]);
+    cooling.getItem().getStateStore().setState('a', 1);
+    await settle();
+    expectDeepEqual(last.uuid === undefined, true, {prefix: 'no action before mutation'});
+
+    const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+    await tree.addSubTree(daysUuid, 'day', 0).toPromise();
+    await settle();
+    expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after mutation'});
+
+    cooling.getItem().getStateStore().setState('a', 2);
+    await settle();
+    expectDeepEqual(tree.linksState.actions.has(last.uuid!), true, {prefix: 'after input change'});
+  });
+
+  test('Validator isActionVisible follows visibility changes after mutation', async () => {
+    const last = {runs: 0} as {uuid?: string, visible?: boolean, runs: number};
+    const config = daysConfig(0, [recordingValidator('act', last)], [], [{
+      id: 'action1',
+      type: 'pipeline',
+      position: 'none',
+      from: [],
+      to: 'out:days',
+      showWhen: 'guard:days/first(day)',
+      handler() {},
+    }]);
+    const pconf = await getProcessedConfig(config);
+    const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: false});
+    await tree.init().toPromise();
+    const cooling = tree.nodeTree.getNode([{idx: 0}]);
+    cooling.getItem().getStateStore().setState('a', 1);
+    await settle();
+    expectDeepEqual(last.visible, false, {prefix: 'before mutation'});
+
+    const daysUuid = tree.nodeTree.getNode([{idx: 1}]).getItem().uuid;
+    await tree.addSubTree(daysUuid, 'day', 0).toPromise();
+    await settle();
+    expectDeepEqual(last.visible, true, {prefix: 'after mutation'});
+
+    cooling.getItem().getStateStore().setState('a', 2);
+    await settle();
+    expectDeepEqual(last.visible, true, {prefix: 'after input change'});
+  });
 });

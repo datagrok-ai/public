@@ -100,19 +100,9 @@ export class Link {
       state.getNode(([...this.prefix, ...this.matchInfo.basePath])) :
       undefined;
 
-    const actions: Record<string, Map<string, string>> = {};
-
-    if (linksState) {
-      for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
-        if (minfos.length > 1)
-          reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
-        const nodeActions = minfos.map((minfo) => {
-          const node = state.getNode([...this.prefix, ...minfo.path]);
-          const actions = linksState.nodesActions.get(node.getItem().uuid) ?? [];
-          return new Map(actions.map((action) => [action.matchInfo.spec.id, action.uuid]));
-        })[0];
-        actions[name] = nodeActions;
-      }
+    for (const [name, minfos] of Object.entries(this.matchInfo.actions)) {
+      if (minfos.length > 1)
+        reportError('warning', `link:${this.matchInfo.spec.id}`, `Multiple action nodes with the same name ${name}`, this.logger, [this.matchInfo.spec.id]);
     }
 
     inputsChanges$.pipe(
@@ -120,12 +110,10 @@ export class Link {
       takeUntil(this.destroyed$),
     ).subscribe(this.nextScheduled$);
 
-    const actionsVisibility = linksState?.actionsVisibility ?? new Map<string, boolean>();
-
     inputsChanges$.pipe(
       switchMap(
         ([scope, inputs], runIdx) =>
-          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state)).pipe(
+          defer(() => this.runHandler(inputs, inputSet, outputSet, callInputs, inputSlots, outputSlots, inputTemplates, outputTemplates, baseNode, scope, state)).pipe(
             map((controller) => this.setHandlerResults(controller, state)),
             catchError((error) => {
               // emit on errors as well, otherwise lastFinished$ never advances,
@@ -227,13 +215,11 @@ export class Link {
     outputSlots: Slot[],
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
-    actions: Record<string, Map<string, string>>,
-    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
   ) {
-    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, actions, actionsVisibility, baseNode, scope, state);
+    const controller = this.getControllerInstance(inputs, inputSet, outputSet, callInputs, inputTemplates, outputTemplates, baseNode, scope, state);
     if (this.logger) {
       this.logger.logLink('linkRunStarted', {
         prefix: this.prefix,
@@ -280,8 +266,6 @@ export class Link {
     callInputs: Set<string>,
     inputTemplates: TemplateInfo[],
     outputTemplates: TemplateInfo[],
-    actions: Record<string, Map<string, string>>,
-    actionsVisibility: ReadonlyMap<string, boolean>,
     baseNode?: TreeNode<StateTreeNode>,
     scope?: ScopeInfo,
     state?: BaseTree<StateTreeNode>,
@@ -296,7 +280,7 @@ export class Link {
     };
 
     if (this.isValidator)
-      return new ValidatorController({...baseArgs, actions, actionsVisibility, baseNode});
+      return new ValidatorController({...baseArgs, actions: this.matchInfo.actionsUUID, baseNode});
 
     if (this.isPipelineValidator) {
       const outline = this.resolveOutline(state);
