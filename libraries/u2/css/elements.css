@@ -54,10 +54,13 @@
   background: var(--dg-hover);
 }
 
+/* still hit by the pointer: its tooltip says why it is disabled, and a click on it lands nowhere
+   instead of falling through to what is under it. Spelled out, so it also wins over an older copy
+   of this sheet that a package built before it injected earlier */
 .u2-btn:disabled {
   color: var(--dg-text-color-disabled);
   cursor: default;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 /* `ui-btn-raised`: accent fill, regular weight, the platform's hover and press filters */

@@ -91,6 +91,25 @@ ui('TabStrip: tab headers are addressable items; the state names the current tab
   strip.dispose();
 });
 
+ui('TabStrip: setInvalid marks a tab whose content needs fixing, in the header and its item', () => {
+  const strip = new TabStrip({tabs: [
+    {id: 'main', label: 'Main', content: content('m')},
+    {id: 'rgroups', label: 'R-groups', content: content('r')},
+  ]});
+  document.body.append(strip.root);
+  const header = strip.root.querySelector('[data-u2-item="rgroups"]');
+  strip.setInvalid('rgroups', 'R2: pick a cap group');
+  assert.equal(header.getAttribute('aria-invalid'), 'true');
+  assert.equal(header.classList.contains('u2-tabs-invalid'), true);
+  assert.equal(header.title, 'R2: pick a cap group');
+  assert.deepEqual(state(strip.root).items.list.map((i) => [i.key, i.invalid ?? false]), [['main', false], ['rgroups', true]]);
+  strip.setInvalid('rgroups', null);
+  assert.equal(header.hasAttribute('aria-invalid'), false);
+  assert.equal(header.title, 'R-groups');
+  assert.equal(state(strip.root).items.list[1].invalid, undefined);
+  strip.dispose();
+});
+
 ui('TabStrip: the page is watched only while the overflow menu is open (P24)', () => tracked((listeners) => {
   const strip = new TabStrip({tabs: [{id: 'a', label: 'A', content: content('a')}]});
   document.body.append(strip.root);

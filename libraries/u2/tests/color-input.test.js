@@ -152,3 +152,23 @@ smoke('required: black by default, as the platform; an empty value is invalid, a
   fresh.dispose();
   empty.dispose();
 });
+
+smoke('a value set from outside clears the "not a color" a typed text left', async () => {
+  const input = mount(new ColorInput({label: 'Color'}));
+  type(input, 'notacolor');
+  assert.equal(input.validity.value, 'Not a color');
+  input.value.value = '#202020';
+  assert.equal(text(input).value, '#202020');
+  assert.equal(input.validity.value, null, 'the loaded color is the one shown, and it is one');
+  input.dispose();
+});
+
+smoke('reset: loading the same color again replaces unreadable text and its error', async () => {
+  const input = mount(new ColorInput({label: 'Color', value: '#202020'}));
+  type(input, 'notacolor');
+  assert.equal(input.validity.value, 'Not a color');
+  input.reset('#202020');
+  assert.equal(text(input).value, '#202020');
+  assert.equal(input.validity.value, null);
+  input.dispose();
+});

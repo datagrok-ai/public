@@ -2,6 +2,12 @@
 
 ## v.next
 
+* Manage Monomers: Rebuilt the monomer editor with u2: each R group is a choice of the 15 common cap groups (H, OH, Allyl, Br, Cl, Alkyne, Azide, I, F, NH2, Me, Ac, OMe, SH, Et) read from the library definition however it is written, with what the cap is beside it and its four fields behind a pencil; Save stays at the bottom and its tooltip says why it is disabled; dialogs offer CANCEL
+* Manage Monomers: Fixed the copilot's monomer details leaving out the cap SMILES of every library monomer
+* Manage Monomers: Fixed Fix All turning every nested meta value (monomer colors included) into text; it now says how many monomers it fixed
+* Manage Monomers: The editor fits narrow screens (captions go above inputs), and Save/Add follows the chosen polymer type
+* Manage Monomers: The CSV export's Capped Molecule, the monomer details and the natural-analog suggestion close each R group with its actual cap (OMe, Ac, Azide, ...), not its name in brackets, which was no molecule
+* Manage Monomers: Switching or creating a library clears the editor, a new library name gets its .json, meta values keep their types on save, the editor shows the colors the grid draws and writes them only when changed, and a closed editor panel comes back with Add or Edit
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): Menu: Similarity Search, Diversity Search, Composition, Convert Sequence Notation, Compare sequences, MSA, Apply Numbering Scheme, Manage Annotations, Scan Liabilities and Subsequence Search are disabled until the current table has a macromolecule column, and Activity Cliffs, Sequence Space and Extract Region unless the current view is such a table, instead of failing or warning
 * Manage Monomers: Fixed an error logged when the monomer table reloads within half a second of a save (the scroll to the saved monomer ran on the replaced table)
 * WebLogo: Counts each sequence once per render instead of once per position, and averages, sums, minima and maxima of the value column directly (100,000 sequences: 3.5 s to open and 11.5 s with a value column before)

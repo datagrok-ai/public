@@ -10,7 +10,7 @@ import {readFileSync, readdirSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {state} from 'datagrok-api/u2core';
 import {signal, Scope, Input, TextInput, TextArea, NumberInput, BoolInput, ChoiceInput, MultiChoiceInput,
-  RadioInput, SliderInput, QNumInput, Form, EMPTY, registry, registerAll, renderSpec, SpecContext} from '../src/index.js';
+  RadioInput, SliderInput, QNumInput, Form, EMPTY, registry, registerAll, renderSpec, SpecContext, each} from '../src/index.js';
 import {BigIntInput} from '../src/components/inputs/bigint-input.js';
 
 registerAll();
@@ -303,6 +303,66 @@ smoke('form: hidden and disabled invalid inputs do not fail it; validate() touch
   form.dispose();
   for (const x of [hidden, disabled, name])
     x.dispose();
+});
+
+smoke('form: an input built in a keyed row leaves the form with its row; remove() takes one out', async () => {
+  const form = mount(new Form({layout: 'normal'}));
+  const rows = document.createElement('div');
+  form.addElement(rows);
+  const keys = signal(['R1', 'R2']);
+  const owner = new Scope();
+  Scope.runWith(owner, () => each(rows, keys, (k) => k, (k) => {
+    const row = document.createElement('div');
+    form.add(new TextInput({label: k, name: k, required: true}), row);
+    return row;
+  }));
+  assert.deepEqual(form.inputs.map((i) => i.name), ['R1', 'R2']);
+  assert.equal(form.validity.peek(), EMPTY);
+  keys.value = ['R1'];
+  assert.deepEqual(form.inputs.map((i) => i.name), ['R1'], 'the dropped row took its input out');
+  form.inputs[0].value.value = 'H';
+  assert.equal(form.validity.peek(), null, 'the gone input no longer fails the form');
+  const extra = new TextInput({label: 'Extra', name: 'extra', required: true});
+  form.add(extra);
+  assert.equal(form.validity.peek(), EMPTY);
+  form.remove(extra);
+  assert.equal(extra.root.isConnected, false);
+  assert.deepEqual(form.inputs.map((i) => i.name), ['R1']);
+  assert.equal(form.validity.peek(), null);
+  owner.dispose();
+  assert.deepEqual(form.inputs, []);
+  extra.dispose();
+  form.dispose();
+});
+
+smoke('reset: a fresh start for another record — no waiting verdict, no unreadable text, no onChanged', async () => {
+  const changes = [];
+  const name = mount(new TextInput({label: 'Name', required: true, onChanged: (v) => changes.push(v)}));
+  name.touch();
+  assert.notEqual(name.root.querySelector('[data-u2-part="error"]').textContent, '', 'touched and empty: shown');
+  name.reset('');
+  assert.equal(name.root.querySelector('[data-u2-part="error"]').textContent, '', 'the new record has not been touched');
+  name.reset('Ada');
+  assert.equal(name.value.value, 'Ada');
+  assert.deepEqual(changes, [], 'a reset is no edit');
+  const id = mount(new NumberInput({label: 'ID', value: 0}));
+  const editor = id.root.querySelector('input');
+  editor.value = 'abc';
+  fire(editor, 'input');
+  assert.equal(id.validity.value, 'Not a number');
+  id.reset(0);
+  assert.equal(id.validity.value, null, 'the same value, its text read again');
+  assert.equal(editor.value, '0');
+  name.dispose();
+  id.dispose();
+});
+
+smoke('addOptions: a caller puts its own icon on an input\'s options rail', async () => {
+  const input = mount(new ChoiceInput({label: 'R1', items: ['H', 'OH']}));
+  const pencil = document.createElement('button');
+  input.addOptions(pencil);
+  assert.equal(pencil.parentElement, input.root.querySelector('[data-u2-part="options"]'));
+  input.dispose();
 });
 
 smoke('spec: readOnly and required are registry props every input tag takes', async () => {

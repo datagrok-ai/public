@@ -328,6 +328,61 @@ smoke('getButton finds OK by its caption, CANCEL, custom buttons and ✕; addBut
   dialog.dispose();
 });
 
+smoke('leaving an empty required field for CANCEL shows no verdict before the press lands', () => {
+  const name = new TextInput({label: 'Name', name: 'name', required: true});
+  const dialog = Dialog.create('New collection').add(new Form().add(name)).onOK(() => {});
+  dialog.show();
+  const cancel = dialog.getButton('CANCEL');
+  const error = () => name.root.querySelector('[data-u2-part="error"]').textContent;
+  fire(name.root.querySelector('input'), 'focusout', {relatedTarget: cancel});
+  assert.equal(error(), '', 'the line would move CANCEL from under the pointer');
+  fire(cancel, 'click');
+  assert.equal(dialog.isOpen.value, false, 'one click closes');
+
+  const other = new TextInput({label: 'Other', name: 'other', required: true});
+  document.body.append(other.root);
+  fire(other.root.querySelector('input'), 'focusout', {relatedTarget: document.body});
+  assert.notEqual(other.root.querySelector('[data-u2-part="error"]').textContent, '', 'left for anything else, it shows');
+  other.dispose();
+});
+
+smoke('closing the dialog on top gives focus to the one below when what held it is gone', () => {
+  const below = Dialog.create('Below').onOK(() => {});
+  below.show();
+  const top = Dialog.create('Top').onOK(() => {});
+  const opener = document.createElement('button');
+  document.body.append(opener);
+  opener.focus();
+  top.show();
+  opener.remove();
+  top.close();
+  assert.equal(document.activeElement, below.root, 'Escape still reaches the dialog below');
+
+  // opened from the page (a ribbon icon takes no focus): the opener reads as the body
+  document.activeElement?.blur?.();
+  const fromPage = Dialog.create('From the ribbon').onOK(() => {});
+  fromPage.show();
+  fromPage.close();
+  assert.equal(document.activeElement, below.root, 'not the page under both');
+  below.dispose();
+});
+
+smoke('CANCEL comes with the first action, as in a platform dialog, and closes as a cancel', () => {
+  const reasons = [];
+  const withOk = Dialog.create('Remove').onOK(() => {}, {text: 'Remove'}).onClose((r) => reasons.push(r));
+  assert.deepEqual(Array.from(withOk.root.querySelectorAll('button')).filter((b) => b.dataset.u2Part !== 'close')
+    .map((b) => b.textContent).filter((t) => t), ['CANCEL', 'Remove']);
+  withOk.show();
+  press(withOk, 'CANCEL');
+  assert.deepEqual(reasons, ['cancel']);
+  const withButton = Dialog.create('Exists').addButton('Merge', () => {});
+  assert.equal(withButton.getButton('Cancel').textContent, 'CANCEL');
+  const bare = Dialog.create('Note');
+  assert.equal(bare.getButton('Cancel'), undefined, 'a dialog without actions has no footer to cancel from');
+  withButton.dispose();
+  bare.dispose();
+});
+
 smoke('onClose hears why: ok, cancel (CANCEL, ✕, Escape) or code; a handler that disposes keeps its reason', () => {
   const reasons = [];
   const dialog = Dialog.create('Why', {keepAlive: true}).onOK(() => {}).onCancel(() => {})

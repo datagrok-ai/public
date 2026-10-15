@@ -72,7 +72,9 @@ export class Form extends Control {
         cancelAnimationFrame(this._frame);
       this._choices?.disconnect();
     });
-    if (this._layout === 'auto' && typeof ResizeObserver !== 'undefined') {
+    // any layout: a form built hidden (a collapsed section, a closed pencil) measures its labels at
+    // 0 px and must align again once it shows; the auto layout also re-picks its state on a resize
+    if (this._layout !== 'tall' && typeof ResizeObserver !== 'undefined') {
       const observer = new ResizeObserver(() => this._scheduleAlign());
       observer.observe(this.root);
       this.own(() => observer.disconnect());
@@ -97,10 +99,27 @@ export class Form extends Control {
       }
     }
     this._inputs.push(input);
+    // an input built in a row that goes away (an each() key, a rebuilt section) leaves with it
+    input.own(() => this.remove(input));
     (host ?? this._rows).append(input.root);
     const select = input.root.dataset.u2 === 'choice-input' ? input.root.querySelector('select') : null;
     if (select !== null && typeof MutationObserver !== 'undefined')
       (this._choices ??= new MutationObserver(() => this._scheduleAlign())).observe(select, {childList: true});
+    this._rebuildValidity();
+    this._scheduleAlign();
+    return this;
+  }
+
+  /** Takes `input` out of the form — its row, the label column, the validity and the Enter order.
+   * The input stays its builder's to dispose; a disposed input leaves on its own. */
+  remove(input: Input<any>): Form {
+    const at = this._inputs.indexOf(input);
+    if (at < 0)
+      return this;
+    this._inputs.splice(at, 1);
+    input.root.remove();
+    if (this.scope.isDisposed)
+      return this;
     this._rebuildValidity();
     this._scheduleAlign();
     return this;
@@ -119,12 +138,16 @@ export class Form extends Control {
     return this;
   }
 
-  addButtons(build: (row: HTMLElement) => void): Form {
+  /** The form's button row, under its rows: at the end by default, or (`align: 'editors'`) starting
+   * where the editors do, as `ui.buttonsInput` places the buttons of a platform form. */
+  addButtons(build: (row: HTMLElement) => void, options?: {align?: 'end' | 'editors'}): Form {
     if (!this._buttons) {
       this._buttons = document.createElement('div');
       this._buttons.className = 'u2-form-buttons';
       this.root.append(this._buttons);
     }
+    if (options?.align !== undefined)
+      this._buttons.classList.toggle('u2-form-buttons-editors', options.align === 'editors');
     build(this._buttons);
     return this;
   }

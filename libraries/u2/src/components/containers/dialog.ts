@@ -182,6 +182,7 @@ export class Dialog extends Control implements OverlayDialog {
   addButton(text: string, onClick: (e: MouseEvent, dialog: Dialog) => unknown, options?: {primary?: boolean}): this {
     const run = Dialog._owned(onClick);
     this._buttons.insertBefore(this._button(text, (e) => run(e, this), options?.primary), this._okBtn ?? null);
+    this._cancelButton();
     return this;
   }
 
@@ -233,11 +234,16 @@ export class Dialog extends Control implements OverlayDialog {
   /** CANCEL, ✕ and Escape; answering `false` keeps the dialog open. */
   onCancel(fn: () => void): this {
     this._onCancel = Dialog._owned(fn);
-    if (!this._cancelBtn) {
-      this._cancelBtn = this._button('CANCEL', () => this._dismiss());
-      this._buttons.prepend(this._cancelBtn);
-    }
+    this._cancelButton();
     return this;
+  }
+
+  /** CANCEL comes with the first action, as in every platform dialog (`dialog.dart` commandBar.onCancel). */
+  private _cancelButton(): void {
+    if (this._cancelBtn)
+      return;
+    this._cancelBtn = this._button('CANCEL', () => this._dismiss());
+    this._buttons.prepend(this._cancelBtn);
   }
 
   /** Runs on every close, with the reason. */
@@ -305,7 +311,12 @@ export class Dialog extends Control implements OverlayDialog {
     this._open.value = false;
     const restore = this._restore;
     this._restore = undefined;
-    if (restore && restore.isConnected)
+    // a dialog still open below takes focus unless what held it is inside that dialog: the page under
+    // it (a ribbon icon cannot take focus, so the opener reads as the body) would leave Escape nowhere
+    const below = Dialog._topmost();
+    if (below !== undefined && !(restore?.isConnected && below.contains(restore)))
+      below.focus();
+    else if (restore?.isConnected)
       restore.focus();
     const why = this._closing ?? reason;
     for (const fn of this._onClose) {
@@ -354,6 +365,7 @@ export class Dialog extends Control implements OverlayDialog {
     if (!this._okBtn) {
       const ok = this._okBtn = this._button(text ?? 'OK', () => this._accept());
       this._buttons.append(ok);
+      this._cancelButton();
       this.effect(() => {
         const allowed = this._okAllowed.value;
         if (!this._busy.peek())
@@ -579,6 +591,16 @@ export class Dialog extends Control implements OverlayDialog {
       e.preventDefault();
       els[0].focus();
     }
+  }
+
+  /** The open dialog on top of the others — where focus goes back when the one that held it is gone. */
+  private static _topmost(): HTMLElement | undefined {
+    let top: HTMLElement | undefined;
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('.u2-dialog'))) {
+      if (el.isConnected && (top === undefined || Number(el.style.zIndex || 0) >= Number(top.style.zIndex || 0)))
+        top = el;
+    }
+    return top;
   }
 
   /** Whether an Enter means the dialog's default action: an unhandled one from a plain text input

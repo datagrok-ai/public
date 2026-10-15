@@ -373,10 +373,45 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
       this.focusTarget.removeAttribute('aria-required');
     if (x && !this._touchWired) {
       this._touchWired = true;
-      for (const type of ['focusout', 'input', 'change'])
+      for (const type of ['input', 'change'])
         this.scope.listen(this.root, type, () => this.touch());
+      this.scope.listen(this.root, 'focusout', (e) => this._touchLeavingFor((e as FocusEvent).relatedTarget));
     }
   }
+
+  /** Left for a button, the verdict waits until that press is over: the line it adds would move the
+   * button out from under the pointer (a dialog's CANCEL under an empty required field took two
+   * clicks). The button's click or its blur, whichever comes first, shows it. */
+  private _touchLeavingFor(next: EventTarget | null): void {
+    const target = next instanceof Element ? next.closest('button') : null;
+    if (target === null) {
+      this.touch();
+      return;
+    }
+    const done = () => {
+      target.removeEventListener('click', done);
+      target.removeEventListener('blur', done);
+      this.touch();
+    };
+    target.addEventListener('click', done);
+    target.addEventListener('blur', done);
+  }
+
+  /** Puts `value` in as a fresh start — a form loading another record: no verdict waits on an earlier
+   * touch, and text the editor could not read (a "Not a number" left behind) is replaced, even where the
+   * value itself does not change. Not an edit: `onChanged` does not fire. */
+  reset(value: T): void {
+    this._touched.value = false;
+    if (!Object.is(value, this.value.peek())) {
+      this._followed = {value};
+      Input.system(() => this.value.value = value);
+    }
+    this.resetEditor();
+  }
+
+  /** Re-renders the editor from the value, dropping text it could not read; an editor that keeps such
+   * text overrides it. */
+  protected resetEditor(): void {}
 
   /** Shows the verdicts that wait for the user — a required field left empty. The input touches
    * itself when edited or left; {@link Form.validate} touches every input it counts. */
@@ -545,7 +580,7 @@ export abstract class Input<T, O extends InputOptions<T> = InputOptions<T>> exte
   /** Puts an icon, a swatch or any other side control on the options rail, as Dart's
    * `InputBase.addOptions` does. The rail materializes with its first child, so an input with
    * nothing to put there keeps the platform's bare `[label][editor]` row. */
-  protected addOptions(el: HTMLElement): void {
+  addOptions(el: HTMLElement): void {
     this._optionsRail.append(el);
     if (this._optionsRail.parentElement === null)
       this._inputBox.append(this._optionsRail);

@@ -316,10 +316,17 @@ ui('dispose disconnects the ResizeObserver', () => {
   f.dispose();
   assert.equal(observer.disconnected, true);
 
+  // a fixed caption-left layout observes too: built hidden, it aligns its labels once it shows
   const fixed = new Form({layout: 'normal'});
-  assert.equal(ResizeObserver.instances.some((o) => o.targets.includes(fixed.root)), false,
-    'a fixed layout attaches no observer');
+  const fixedObserver = ResizeObserver.instances.find((o) => o.targets.includes(fixed.root));
+  assert.notEqual(fixedObserver, undefined, 'a fixed caption-left layout observes its root');
   fixed.dispose();
+  assert.equal(fixedObserver.disconnected, true);
+
+  const tall = new Form({layout: 'tall'});
+  assert.equal(ResizeObserver.instances.some((o) => o.targets.includes(tall.root)), false,
+    'a tall form has no label column to align');
+  tall.dispose();
 });
 
 // the shim loads no stylesheets — the level-heading cascade is pinned at the source: the l3

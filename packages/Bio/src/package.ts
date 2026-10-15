@@ -1600,7 +1600,6 @@ export class PackageFunctions {
         const monomerManager = await MonomerManager.getInstance();
         const res = await monomerManager.getViewRoot(libName, true);
         res.parentCall = grok.functions.getCurrentCall();
-        monomerManager.resetCurrentRowFollowing();
       });
     });
   }

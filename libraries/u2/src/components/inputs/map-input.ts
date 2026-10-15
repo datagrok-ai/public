@@ -12,6 +12,8 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
   private declare _rows: [string, string][];
   private declare _body: HTMLElement;
   private declare _dup: Signal<boolean>;
+  /** A row with a value and no key: what was typed would be left out of the value without a word. */
+  private declare _keyless: Signal<boolean>;
 
   constructor(options: MapInputOptions = {}) {
     super(options, {});
@@ -26,6 +28,7 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
 
   protected createEditor(): HTMLElement {
     this._dup = signal(false);
+    this._keyless = signal(false);
     const body = document.createElement('div');
     this._body = body;
     body.className = 'u2-map';
@@ -39,8 +42,13 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     this.scope.listen(body, 'input', (e) => this._onInput(e.target as HTMLElement));
     this.scope.listen(body, 'click', (e) => this._onClick(e.target as HTMLElement));
     // registered here, before the base builds its validation effect, so the effect tracks `_dup`
-    this.addValidator(() => this._dup.value ? 'Duplicate keys are not allowed' : null);
+    this.addValidator(() => this._dup.value ? 'Duplicate keys are not allowed' :
+      this._keyless.value ? 'A value needs its key' : null);
     return body;
+  }
+
+  protected resetEditor(): void {
+    this._load(this.value.peek());
   }
 
   private _load(value: Record<string, string>): void {
@@ -127,7 +135,9 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
   private _commit(): void {
     const value = this._value();
     this._mark();
-    if (!MapInput._same(this.value.peek(), value))
+    // while a key repeats the rows stand for no map: the value keeps the last one they did, rather
+    // than one with the earlier row dropped
+    if (!this._dup.peek() && !MapInput._same(this.value.peek(), value))
       this.value.value = value;
   }
 
@@ -157,12 +167,15 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
         seen.add(key);
     }
     const dup = dups.size > 0;
+    const keyless = this._rows.map(([key, item]) => key === '' && item !== '');
     // _render reaches here from the value effect, which must not be restarted by a write of its own
     if (this._dup.peek() !== dup)
       this._dup.value = dup;
+    if (this._keyless.peek() !== keyless.includes(true))
+      this._keyless.value = keyless.includes(true);
     const cells = this._body.querySelectorAll('.u2-map-key');
     for (let i = 0; i < cells.length; i++)
-      cells[i].classList.toggle('u2-invalid', dups.has(this._rows[i][0]));
+      cells[i].classList.toggle('u2-invalid', dups.has(this._rows[i][0]) || keyless[i]);
   }
 
   private static _same(a: Record<string, string>, b: Record<string, string>): boolean {

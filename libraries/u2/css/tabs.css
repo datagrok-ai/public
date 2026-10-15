@@ -131,6 +131,22 @@
   visibility: visible;
 }
 
+.u2-tabs-tab.u2-tabs-invalid,
+.u2-tabs-tab.u2-tabs-invalid:hover {
+  color: var(--dg-error);
+}
+
+/* not by color alone: an invalid tab also carries a dot */
+.u2-tabs-tab.u2-tabs-invalid .u2-tabs-mark:not(.u2-tabs-dirty) {
+  display: inline-flex;
+}
+
+.u2-tabs-tab.u2-tabs-invalid .u2-tabs-mark:not(.u2-tabs-dirty)::before {
+  content: '●';
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-error);
+}
+
 .u2-tabs-tab:hover .u2-tabs-close.u2-tabs-dirty::before {
   content: '✕';
   font-size: var(--dg-font-size-xs);

@@ -2,6 +2,21 @@
 
 ## v.next
 
+* Form: Fixed a form built hidden (in a collapsed section, behind a toggle) keeping a misaligned label column once shown; every caption-left form now re-aligns when its size changes
+* Form: Added `remove(input)`; an input disposed with its row (an `each()` key, a rebuilt section) now leaves the form instead of still failing its validity
+* Inputs: `addOptions` is public, so a caller can put its own icon on an input's options rail, as with Dart's `InputBase.addOptions`
+* u2/dg: Added `host(control)` — a control placed in a docked panel or a pane is disposed when the platform closes it (`appView` uses it)
+* Form: `addButtons(build, {align: 'editors'})` starts the buttons where the editors do, as `ui.buttonsInput`; a primary button in a form takes the platform's form button color (blue-2) and padding
+* Buttons: A disabled button takes the pointer again (no `pointer-events: none`), so its tooltip can say why it is disabled and a click on it no longer falls through to what is under it
+* Inputs: Fixed CANCEL taking two clicks when an empty required field had focus — a field left for a button shows its verdict once that press is over, so the new error line no longer moves the button from under the pointer
+* MapInput: Fixed a repeated key dropping the earlier row from the value; the value keeps the last map the rows stood for until the key is fixed
+* ColorInput: Fixed a "Not a color" left by typed text staying after a valid color is set from outside
+* Dialog: Closing a dialog gives focus to the dialog still open below it (unless its opener sits inside that one), so Escape still reaches it
+* Inputs: Added `reset(value)` — a fresh start for another record: no verdict waiting on an earlier touch, the editor's unreadable text (a "Not a number", "Not a color", a half-typed map) replaced even when the value is the same, and no `onChanged`
+* MapInput: A row with a value but no key is flagged ("A value needs its key") instead of being left out of the value silently
+* TabStrip: An invalid tab also shows a dot, not only its red caption
+* Dialog: CANCEL comes with the first action (`onOK`, `addButton`), as in every platform dialog; before, it showed only with `onCancel`
+* TabStrip: Added `setInvalid(id, message)` — a red caption, `aria-invalid` and `invalid` in the tab's item while its content has an error, the message as the header's tooltip
 * Inputs: Fixed div-based editors (slider, list, column and columns pickers, comboboxes) staying short in a Form's normal state and in a Dialog body; they now grow as in `ui.form`, except the check and radio lists
 * Inputs: Fixed a u2 input bridged into a platform dialog (`asDartInput`) staying 143 px; it now fills the row like the platform's own editor
 * Form: Fixed radio and multi-choice collapsing to 0 px in a wide form

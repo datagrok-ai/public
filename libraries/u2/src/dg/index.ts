@@ -46,6 +46,7 @@ export {columnsInput, ColumnsInput, columnsMapInput, ColumnsMapInput, aggregated
 export type {ColumnsInputOptions, ColumnsMapInputOptions, ColumnKey, ColumnAggregation,
   AggregatedColumnsInputOptions} from './inputs/columns.js';
 export {appView} from './shell/app-view.js';
+export {host} from './shell/host.js';
 export type {AppViewOptions} from './shell/app-view.js';
 export {SpecNodeRef, SpecNodesRef, specTree, brokenCount, nodeLabel, idPath} from './designer/node-ref.js';
 export type {SpecTree} from './designer/node-ref.js';

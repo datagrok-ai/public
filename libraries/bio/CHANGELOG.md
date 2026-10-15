@@ -1,5 +1,10 @@
 # bio changelog
 
+## v.next
+
+* `monomer-ui.ts`: `INewMonomerForm` reads and sets the editor's fields by name (`getFields`, `setFields`, `MonomerFormFields`) instead of exposing its inputs
+* `monomer-library.ts`: `RGroup` declares the cap SMILES under both keys, `capGroupSMILES` (HELM's schema, the libraries) and `capGroupSmiles`, each optional, so code writes the schema's key without a cast
+
 ## 6.0.8
 
 * `viewers/web-logo.ts`: `WebLogoProfile`, `WEB_LOGO_PROFILE_ROLE` and the `profile` property: WebLogo draws a profile supplied by a package instead of the column's composition

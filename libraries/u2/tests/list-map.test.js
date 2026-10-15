@@ -175,6 +175,7 @@ smoke('MapInput: duplicate keys mark the cells and the input invalid', async () 
   assert.equal(keys(input)[1].classList.contains('u2-invalid'), true);
   assert.equal(input.root.querySelector('.u2-input-error').textContent,
     'Duplicate keys are not allowed');
+  assert.deepEqual(input.value.value, {a: '1', b: '2'}, 'no row is dropped from the value while a key repeats');
 
   type(keys(input)[1], 'c');
   assert.equal(input.validity.value, null);
@@ -237,4 +238,16 @@ test('MapInput shrinks into a narrow row: the captioned box grows from 0 to the 
   assert.match(box, /min-width: var\(--dg-form-min-editor-width\);/);
   assert.match(rule(".u2-input-root:not(.u2-input-inline)[data-u2='map-input'] .u2-map-value"), /width: 0;/);
   assert.match(rule('.u2-input-editor.u2-map {'), /min-width: 0;/);
+});
+
+smoke('MapInput: a value typed into a row with no key is flagged, not dropped silently', async () => {
+  const input = mount(new MapInput({label: 'Params', value: {a: '1'}}));
+  type(values(input)[0], '1');
+  type(keys(input)[0], '');
+  assert.equal(input.validity.value, 'A value needs its key');
+  assert.equal(keys(input)[0].classList.contains('u2-invalid'), true);
+  type(keys(input)[0], 'b');
+  assert.equal(input.validity.value, null);
+  assert.deepEqual(input.value.value, {b: '1'});
+  input.dispose();
 });

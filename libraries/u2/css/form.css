@@ -245,6 +245,28 @@
   margin-top: var(--dg-space-l);
 }
 
+/* ui.buttonsInput: the buttons start where the editors do */
+.u2-form-buttons.u2-form-buttons-editors {
+  justify-content: flex-start;
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
+}
+
+.u2-form-tall .u2-form-buttons.u2-form-buttons-editors {
+  padding-left: 0;
+}
+
+/* a raised button in a form is the platform's form button, blue-2 and 12px in
+   (grok.css .ui-form .ui-btn.ui-btn-raised) */
+.u2-form .u2-btn-primary:not(:disabled),
+.u2-form .u2-btn-primary:hover:not(:disabled),
+.u2-form .u2-btn-primary:active:not(:disabled) {
+  background: var(--dg-blue-2);
+}
+
+.u2-form .u2-btn-primary {
+  padding: 0 12px;
+}
+
 /* the async state riding a func-form field's input box: a spinner while its choices source or
    computed default evaluates, the message and Retry after a failure (the spinner itself is
    css/async.css's .u2-loader-spinner) */

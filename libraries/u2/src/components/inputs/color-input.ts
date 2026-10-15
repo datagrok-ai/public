@@ -56,8 +56,11 @@ export class ColorInput extends Input<string, ColorInputOptions> {
       const value = this.value.value;
       if (echo)
         echo = false;
-      else
+      else {
+        // a value set from outside replaces what was typed, its "not a color" included
         text.value = value;
+        this._bad.value = false;
+      }
       this._paint(value);
     });
     this.scope.listen(text, 'input', () => {
@@ -85,6 +88,12 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     // registered here, before the base builds its validation effect, so the effect tracks `_bad`
     this.addValidator(() => this._bad.value ? 'Not a color' : null);
     return text;
+  }
+
+  protected resetEditor(): void {
+    this._bad.value = false;
+    this._text.value = this.value.peek();
+    this._paint(this.value.peek());
   }
 
   private _paint(color: string): void {

@@ -39,6 +39,8 @@ interface Tab {
   panel: HTMLElement;
   mark: HTMLElement;
   built: boolean;
+  /** Why the tab's content needs attention, while it does ({@link TabStrip.setInvalid}). */
+  invalid?: string | null;
 }
 
 let stripCount = 0;
@@ -171,7 +173,7 @@ export class TabStrip extends Control {
     const list = this._tabs.peek().map((tab, index) => {
       const {id, label, tooltip} = tab.options;
       return {key: id, label: label || tooltip || id, index, selected: id === active, current: id === active,
-        rendered: true};
+        ...tab.invalid ? {invalid: true} : {}, rendered: true};
     });
     return {count: list.length, list, truncated: false};
   }
@@ -180,6 +182,21 @@ export class TabStrip extends Control {
     const tab = this._find(id);
     if (tab)
       tab.mark.classList.toggle('u2-tabs-dirty', dirty);
+  }
+
+  /** Marks a tab whose content has an error the user should go and fix (`message`, shown as the
+   * header's tooltip), or clears it with null: red caption, `aria-invalid`, `invalid` in its item. */
+  setInvalid(id: string, message: string | null): void {
+    const tab = this._find(id);
+    if (tab === undefined)
+      return;
+    tab.invalid = message;
+    tab.header.classList.toggle('u2-tabs-invalid', message !== null);
+    if (message === null)
+      tab.header.removeAttribute('aria-invalid');
+    else
+      tab.header.setAttribute('aria-invalid', 'true');
+    tab.header.title = message ?? tab.options.tooltip ?? tab.options.label;
   }
 
   private static _icon(source: string | HTMLElement): HTMLElement {
@@ -196,7 +213,7 @@ export class TabStrip extends Control {
       return;
     tab.options = {...tab.options, label};
     tab.header.querySelector('.u2-tabs-label')!.textContent = label;
-    if (tab.options.tooltip === undefined)
+    if (tab.options.tooltip === undefined && !tab.invalid)
       tab.header.title = label;
     this._tabs.value = [...this._tabs.peek()];
   }

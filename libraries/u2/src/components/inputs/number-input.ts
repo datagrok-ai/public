@@ -238,6 +238,12 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     this._set(this._outOfRange(current) === null ? this._clamp(rounded) : rounded);
   }
 
+  protected resetEditor(): void {
+    this._bad.value = false;
+    this._input.value = this._format(this.value.peek());
+    this._syncSlider();
+  }
+
   private _commit(): void {
     const parsed = this._parse(this._input.value);
     if (parsed !== undefined)
