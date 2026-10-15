@@ -1013,7 +1013,7 @@ importers:
         specifier: 'catalog:'
         version: 8.1.5
       datagrok-api:
-        specifier: ^1.27.0
+        specifier: workspace:^
         version: link:../../js-api
       dayjs:
         specifier: 'catalog:'
