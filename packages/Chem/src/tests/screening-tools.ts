@@ -55,6 +55,21 @@ category('screening tools', () => {
     tv.close();
   });
 
+  test('elementalAnalysis.smarts', async () => {
+    const df = await readDataframe('enumerations/ex_smarts.csv');
+    await grok.data.detectSemanticTypes(df);
+    const tv = grok.shell.addTableView(df);
+    try {
+      await PackageFunctions.elementalAnalysis(df, df.getCol('SMARTS'), false, false);
+      expectArray(df.columns.names(), ['SMARTS', 'H', 'C', 'N', 'O', 'S', 'Molecule Charge']);
+      expectArray(df.getCol('C').toList(), [0, 1, 0]);
+      expectArray(df.getCol('N').toList(), [1, 0, 0]);
+      expectArray(df.getCol('O').toList(), [2, 2, 0]);
+      expectArray(df.getCol('S').toList(), [0, 1, 0]);
+      expectArray(df.getCol('Molecule Charge').toList(), [0, 0, 0]);
+    } finally {tv.close();}
+  });
+
   test('elementalAnalysis.emptyValues', async () => {
     const df = await readDataframe('tests/sar-small_empty_vals.csv');
     await grok.data.detectSemanticTypes(df);
@@ -109,7 +124,7 @@ category('screening tools: benchmarks', () => {
     await awaitCheck(() => v.dataFrame.name === 'test', undefined, 1000);
     await grok.data.detectSemanticTypes(df);
     const col: DG.Column = df.getCol('molecule');
-    DG.timeAsync('Elemental Analysis', async () => {
+    await DG.timeAsync('Elemental Analysis', async () => {
       await PackageFunctions.elementalAnalysis(df, col, false, false);
     });
   });

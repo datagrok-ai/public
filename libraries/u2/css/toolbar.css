@@ -1,12 +1,19 @@
 /* Toolbar skin (see src/components/toolbar.ts). Tokens only — css/tokens.css must be loaded alongside. */
+/* The » logic measures the toolbar's own width, so it must never size to its items: in a flex row
+   it takes the free space (content-sized, it would shrink with every item it hides), in a column
+   it keeps its one-row height. */
 .u2-toolbar {
+  --u2-toolbar-height: calc(var(--dg-button-height) + 2 * var(--dg-space-xs));
   box-sizing: border-box;
   display: flex;
+  flex: 1 1 0;
   flex-wrap: nowrap;
   align-items: center;
   gap: var(--dg-space-xs);
   min-width: 0;
-  height: calc(var(--dg-button-height) + 2 * var(--dg-space-xs));
+  height: var(--u2-toolbar-height);
+  min-height: var(--u2-toolbar-height);
+  max-height: var(--u2-toolbar-height);
   padding: var(--dg-space-xs) var(--dg-space-s);
   overflow: hidden;
   font-family: var(--dg-font-family);
@@ -16,7 +23,8 @@
   background: var(--dg-bg);
 }
 
-.u2-toolbar-hidden {
+/* outranks .u2-toolbar-btn's display, which is declared later at the same weight */
+.u2-toolbar > .u2-toolbar-hidden {
   display: none;
 }
 

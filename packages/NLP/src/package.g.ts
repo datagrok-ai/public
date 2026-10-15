@@ -18,6 +18,7 @@ export async function initAWS() : Promise<void> {
 //name: Compute Text Embeddings
 //description: Compute text embeddings using UMAP
 //top-menu: ML | Text Clustering...
+//meta.requiresSemType: Text
 export function computeEmbds() : void {
   PackageFunctions.computeEmbds();
 }
@@ -84,6 +85,7 @@ export function sentenceSearchViewer() : any {
 //name: sentenceSearch
 //output: viewer result
 //top-menu: ML | Sentence Similarity Search
+//meta.requiresSemType: Text
 export function sentenceSearchTopMenu() {
   return PackageFunctions.sentenceSearchTopMenu();
 }

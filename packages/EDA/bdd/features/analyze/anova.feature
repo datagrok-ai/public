@@ -6,7 +6,8 @@ Feature: One-way ANOVA
 
   The case still names an Analysis and an F-test tab; the platform replaced them (GROK-20194) with
   the conclusion on the box plot's description and a docked table of the test, which is what this
-  feature reads. The p-value is the one demog gives, so a change in the computation fails here.
+  feature reads. The test's numbers are tested in EDA src/tests/anova-tests.ts ('ANOVA' Correctness,
+  'ANOVA: NIST StRD').
 
   Background:
     Given user is logged in
@@ -24,16 +25,10 @@ Feature: One-way ANOVA
     And box plot viewer should be visible
     And description of box plot viewer should be visible
     And description of box plot viewer should contain text "doesn't affect"
-    And description of box plot viewer should contain text "p = 0.176"
     And box plot viewer should be painted
     And table "ANOVA result" should be open
     And table "ANOVA result" should have 1 row
     And table "ANOVA result" should have columns "Conclusion, Source of variance, F, df₁, df₂, F-critical, p-value"
-    And table "ANOVA result" should have no missing values in "F" column
-    And table "ANOVA result" should have no missing values in "df₁" column
-    And table "ANOVA result" should have no missing values in "df₂" column
-    And table "ANOVA result" should have no missing values in "F-critical" column
-    And table "ANOVA result" should have no missing values in "p-value" column
     And second grid viewer should be bound to table "ANOVA result"
     And no error or warning balloon should have been shown
     And no errors should have been logged

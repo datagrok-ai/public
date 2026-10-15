@@ -1,6 +1,6 @@
 /* Fluent element factories (L3). Every text/child slot takes `T | ReadonlySignal<T>`; a signal
    is bound through the ambient Scope, so live values never outlive their owner. */
-import {Signal, ReadonlySignal} from './signals.js';
+import {Signal, ReadonlySignal, batch} from './signals.js';
 import {Scope} from './scope.js';
 import {Control} from './component.js';
 import {bindText} from './bind.js';
@@ -52,13 +52,25 @@ function fill<T extends HTMLElement>(el: T, children?: Child[]): T {
   return el;
 }
 
-/** Listeners on a factory-made element die with the element; owning them is still right when
- * someone is building inside a scope, so disposal is provably listener-free. */
-function listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-  el.addEventListener(type, handler);
-  const scope = Scope.ambient;
-  if (scope)
-    scope.own(() => el.removeEventListener(type, handler));
+/** Reports the throws of handlers on elements built with no owner. Never owns anything, so it
+ * is never counted. */
+const UNOWNED = new Scope(undefined, {label: 'unowned', lazy: true});
+
+/** A factory-made element's handler: owned by whoever is building (removed on its dispose), and
+ * like every u2 handler batched and contained — a throw is reported, never thrown at the browser. */
+function listen<E extends Event>(el: HTMLElement, type: string, handler: (e: E) => void): void {
+  const owner = Scope.ambient;
+  if (owner) {
+    owner.listen(el, type, handler as (e: Event) => void);
+    return;
+  }
+  el.addEventListener(type, (e) => {
+    try {
+      batch(() => handler(e as E));
+    } catch (error) {
+      UNOWNED.reportError(error);
+    }
+  });
 }
 
 export function div(children?: Child[], cls?: string): HTMLDivElement {
@@ -130,7 +142,9 @@ export function h3(text: Text): HTMLHeadingElement {
   return setText(element('h3'), text);
 }
 
-export function link(text: Text, onClickOrUrl: (() => void) | string): HTMLAnchorElement {
+/** `onClick` gets the click, or the Enter keydown that activated the link. */
+export function link(text: Text,
+  onClickOrUrl: ((e: MouseEvent | KeyboardEvent) => void) | string): HTMLAnchorElement {
   const el = setText(element('a', 'u2-link'), text);
   if (typeof onClickOrUrl === 'string') {
     el.classList.add('u2-link-external');
@@ -139,26 +153,27 @@ export function link(text: Text, onClickOrUrl: (() => void) | string): HTMLAncho
     return el;
   }
   el.tabIndex = 0;
-  listen(el, 'click', () => onClickOrUrl());
-  listen(el, 'keydown', (e) => {
-    if ((e as KeyboardEvent).key === 'Enter')
-      onClickOrUrl();
+  listen<MouseEvent>(el, 'click', (e) => onClickOrUrl(e));
+  listen<KeyboardEvent>(el, 'keydown', (e) => {
+    if (e.key === 'Enter')
+      onClickOrUrl(e);
   });
   return el;
 }
 
-export function button(text: Text | HTMLElement, onClick: () => void,
+export function button(text: Text | HTMLElement, onClick: (e: MouseEvent) => void,
   options?: {primary?: boolean}): HTMLButtonElement {
   const el = element('button', 'u2-btn', options?.primary ? 'u2-btn-primary' : undefined);
   el.type = 'button';
+  el.dataset.u2 = 'button';
   if (text instanceof HTMLElement)
     el.append(text);
   else
     setText(el, text);
-  listen(el, 'click', () => onClick());
+  listen<MouseEvent>(el, 'click', (e) => onClick(e));
   return el;
 }
 
-export function bigButton(text: Text, onClick: () => void): HTMLButtonElement {
+export function bigButton(text: Text, onClick: (e: MouseEvent) => void): HTMLButtonElement {
   return button(text, onClick, {primary: true});
 }

@@ -4,14 +4,19 @@ import * as DG from 'datagrok-api/dg';
 
 import {Subscription} from 'rxjs';
 import {
-  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale,
-  setDesirabilityScale, createDefaultCategorical, createDefaultNumerical, isNumerical,
+  PropertyDesirability, NumericalDesirability, CategoricalDesirability, DesirabilityMode, MpoScale, QualifierPolicy,
+  setDesirabilityScale, createDefaultCategorical, createDefaultNumerical, isNumerical, qualifierPolicy,
 } from '../mpo';
 import {MpoDesirabilityLineEditor} from '../editors/mpo-line-editor';
 import {MpoCategoricalEditor} from '../editors/mpo-categorical-editor';
 
 const DESIRABILITY_MODES: DesirabilityMode[] = [DesirabilityMode.Freeform, DesirabilityMode.Gaussian, DesirabilityMode.Sigmoid];
 const PROPERTY_TYPES = ['numerical', 'categorical'] as const;
+const QUALIFIER_POLICIES: Record<string, QualifierPolicy> = {
+  'Least favorable value': QualifierPolicy.Worst,
+  'Limit value': QualifierPolicy.Limit,
+  'Most favorable value': QualifierPolicy.Best,
+};
 
 type DesirabilityPatch = Partial<NumericalDesirability> | Partial<CategoricalDesirability>;
 
@@ -70,12 +75,33 @@ export class DesirabilityModeDialog {
     });
     choiceInput.setTooltip(
       'How to handle missing values:<br>' +
-      '• <b>Exclude row</b> — assign an MPO score of 0 to the row<br>' +
+      '• <b>Exclude row</b> — leave the row\'s MPO score empty<br>' +
       '• <b>Use default score</b> — use a fixed fallback desirability value<br>' +
       '• <b>Skip property</b> — calculate the score from the remaining properties',
     );
     scoreInput.setTooltip('Desirability score (0–1) to use as fallback.');
     return ui.form([choiceInput, scoreInput]);
+  }
+
+  private buildQualifierInput(prop: NumericalDesirability): HTMLElement {
+    const labels = Object.keys(QUALIFIER_POLICIES);
+    const input = ui.input.choice('Score as', {
+      items: labels,
+      value: labels.find((l) => QUALIFIER_POLICIES[l] === qualifierPolicy(prop)),
+      nullable: false,
+      onValueChanged: (v) => {
+        prop.qualifiers = QUALIFIER_POLICIES[v!];
+        this.onUpdate({qualifiers: prop.qualifiers});
+      },
+    });
+    input.setTooltip(
+      'How a value such as <b>&lt;30</b> is scored when the values it allows have different desirabilities:<br>' +
+      '• <b>Least favorable value</b> — the lowest desirability it allows<br>' +
+      '• <b>Limit value</b> — the desirability of 30, as if the value were exact<br>' +
+      '• <b>Most favorable value</b> — the highest desirability it allows<br>' +
+      'A value on a flat part of the curve has one desirability and scores the same with each option.',
+    );
+    return ui.form([input]);
   }
 
   show(): void {
@@ -287,6 +313,8 @@ export class DesirabilityModeDialog {
         contentPanel.prepend(ui.divH(headerItems, 'statistics-mpo-dialog-header-row'));
 
       contentPanel.append(sectionHeader('MISSING VALUES'), this.buildDefaultScoreInput(this.prop));
+      if (isNumerical(this.prop) && this.mappedCol?.type === DG.COLUMN_TYPE.QNUM)
+        contentPanel.append(sectionHeader('VALUES WITH < OR >'), this.buildQualifierInput(this.prop));
     };
 
     buildContent();

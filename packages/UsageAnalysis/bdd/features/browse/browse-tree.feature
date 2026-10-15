@@ -9,9 +9,11 @@ Feature: Working with the nodes of the Browse tree
   tree reports that no group is still fetching its children — the old spec allowed the expanded count
   to grow by one, which is the very defect.
 
-  Browse-Tree-02 step 5 (Enter or Space opens the selected item) is not claimed: in the tree an arrow
-  key already opens the file it moves to, and Enter on a selected item whose view was closed opens
-  nothing — a candidate finding, walked by hand before anything is claimed or filed. Browse-Tree-05 (the context menu of an
+  Browse-Tree-02 step 5 (Enter or Space opens the selected item): an arrow key already opens the
+  file it moves to as a Browse preview, so Enter is claimed doing what a double click does, keeping
+  that preview open through the next single click. It does not (a known failure, no ticket): the
+  tree turns Enter into its node-enter event and stops the key there (tree_view.dart), and the
+  Browse panel opens persistently only on a mouse double click on the tree (browse_panel.dart). Browse-Tree-05 (the context menu of an
   entity) is in browse-context-panel-and-menus.feature, on a connection and on a file — the dashboard
   the manual case names is not used. Browse-Tree-06 (drag and drop) is claimed in
   spaces-drag-and-drop.feature; Browse-Tree-07 (a node the user may not read) in
@@ -110,3 +112,14 @@ Feature: Working with the nodes of the Browse tree
     And the "demog" view should be current
     And grid should show 5850 rows
     And no errors should have been logged
+
+  @known-failure:125
+  Scenario: Enter keeps the previewed file open through the next single click
+    Given Files tree node inside browse tree is expanded
+    And Files---Demo tree node inside browse tree is expanded
+    When user clicks on Files---Demo---demog-1000.csv tree node inside browse tree
+    Then the "demog-1000" view should be current
+    When user presses Enter
+    And user clicks on Dashboards tree node inside browse tree
+    Then Projects view should be visible
+    And demog-1000 view should be present

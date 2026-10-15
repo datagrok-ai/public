@@ -15,7 +15,6 @@ import {
   NglPropsDefault,
   RepresentationType,
 } from '@datagrok-libraries/bio/src/viewers/ngl-gl-viewer';
-import {PromiseSyncer} from '@datagrok-libraries/bio/src/utils/syncer';
 import {testEvent} from '@datagrok-libraries/utils/src/test';
 import {errInfo} from '@datagrok-libraries/bio/src/utils/err-info';
 import {BiostructureData, BiostructureDataJson} from '@datagrok-libraries/bio/src/pdb/types';
@@ -23,6 +22,8 @@ import {ILogger} from '@datagrok-libraries/bio/src/utils/logger';
 
 import {awaitNgl} from './ngl-viewer-utils';
 import {TwinPviewer} from './twin-p-viewer';
+import {PendingSyncer} from './pending-syncer';
+import {ligandMapItems} from './ligand-map';
 
 import {_package} from '../package';
 
@@ -55,6 +56,10 @@ const defaults: NglProps = NglPropsDefault;
 export type LigandMapItem = { rowIdx: number, compIdx: number | null };
 
 export type LigandMap = { selected: LigandMapItem[], current: LigandMapItem | null, hovered: LigandMapItem | null };
+
+/** NGL runtime members the bio typings leave out. */
+type NglStage = ngl.Stage & { tasks: { count: number } };
+type NglComponent = ngl.Component & { reprList: { getType(): string }[] };
 
 /**
  * https://nglviewer.org/ngl/api/manual/example/snippets.html
@@ -117,7 +122,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     this.subs.push(ui.onSizeChanged(this.root).subscribe(this.rootOnSizeChanged.bind(this)));
 
     this.logger = _package.logger;
-    this.viewSyncer = new PromiseSyncer(this.logger);
+    this.viewSyncer = new PendingSyncer(this.logger, () => this._onRendered.next());
   }
 
   private static viewerCounter: number = -1;
@@ -233,7 +238,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   // -- View --
 
-  private viewSyncer: PromiseSyncer;
+  private viewSyncer: PendingSyncer;
   private setDataInProgress: boolean = false;
 
   private nglDiv?: HTMLDivElement;
@@ -454,11 +459,7 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
     if (!this.stage) throw new Error('The stage is not created'); // return; // There is not PDB data
     if (!this.ligandColumnName) return;
 
-    const allLigands: LigandMapItem[] = [
-      ...this.ligands.selected,
-      ...(this.ligands.current ? [this.ligands.current] : []),
-      ...(this.ligands.hovered ? [this.ligands.hovered] : []),
-    ];
+    const allLigands: LigandMapItem[] = ligandMapItems(this.ligands);
     const desc = <T>(a: T, b: T): number => (a > b ? -1 : 1);
     for (const compIdx of allLigands.map((l) => l.compIdx!).sort(desc)) {
       const comp = this.stage.compList[compIdx];
@@ -535,7 +536,29 @@ export class NglViewer extends DG.JsViewer implements INglViewer {
 
   private _onRendered: Subject<void> = new Subject<void>();
 
+  /** Fires on {@link invalidate} and whenever the queue of loads and ligand updates drains. */
   get onRendered(): Observable<void> { return this._onRendered; }
+
+  /** True while a change is on its way to the scene: a queued load or ligand update, or NGL still
+   * building a representation. */
+  override get isRenderPending(): boolean {
+    return this.viewSyncer.isPending || ((this.stage as NglStage | undefined)?.tasks.count ?? 0) > 0;
+  }
+
+  override getWidgetStatus(): DG.IWidgetStatus {
+    const base = super.getWidgetStatus();
+    const compList = this.stage?.compList ?? [];
+    const ligandRows = Array.from(new Set(ligandMapItems(this.ligands)
+      .filter((l) => l.compIdx !== null).map((l) => l.rowIdx + 1))).sort((a, b) => a - b);
+    const canvas = this.stage?.viewer.renderer.domElement;
+    return {...base, parts: canvas ? {...base.parts, canvas} : base.parts, values: {...base.values,
+      'structure loaded': compList[0]?.type === 'structure',
+      'ligands shown': ligandRows.length,
+      'ligand rows': ligandRows.join(', '),
+      'components': compList.length,
+      'representation': (compList[0] as NglComponent | undefined)?.reprList[0]?.getType() ?? '',
+    }};
+  }
 
   invalidate(caller?: string): void {
     this.viewSyncer.sync('invalidate(${caller ? ` <- ${caller} ` : \'\'})', async () => {

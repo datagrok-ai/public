@@ -125,10 +125,12 @@ type ErrorBehaviorParam = {valueOnError?: number | string | boolean, errorColNam
 type ErrorBehaviorSettings = {
   useValue: boolean,
   value: ErrorValue | null,
-  /** The column type [value] was entered for; a value of another type is not used. */
+  /** The column type [value] was entered for; a value of another type is not used. Unset for a value a call brought. */
   valueType?: string,
   errorColumn: boolean,
   errorColName: string,
+  /** The name is "<result column> errors" and follows the result column's name until one is typed in. */
+  errorColNameSuggested?: boolean,
 }
 
 type PreviewFailure = {failed: number, total: number, row: number, message: string};
@@ -183,6 +185,7 @@ export class AddNewColumnDialog {
   call: DG.FuncCall;
   edit: boolean = false;
   currentCalculatedColName = '';
+  currentErrorColName = '';
 
   inputName?: DG.InputBase;
   inputType?: DG.InputBase;
@@ -394,7 +397,7 @@ export class AddNewColumnDialog {
         this.autocompleteEnter = false;
       } else if (e.key === 'Escape') //do not close the dialog if press Ecs over the codeMirror
         e.stopPropagation();
-      else if (e.code === 'KeyA' && e.ctrlKey) {
+      else if (e.code === 'KeyA' && (e.ctrlKey || e.metaKey)) {
         e.stopPropagation();
         this.codeMirror?.dispatch({
           selection: {
@@ -543,12 +546,14 @@ export class AddNewColumnDialog {
       return;
     const col = this.edit ? this.sourceDf!.col(this.call.getParamValue('name')) : null;
     this.initialErrorBehavior = col?.getTag(DG.Tags.FormulaErrorBehavior) || null;
-    if (col && this.initialErrorBehavior) {
-      const saved: ErrorBehaviorParam = JSON.parse(this.initialErrorBehavior);
+    // an edit starts from the column's tag, an add from what the call it was opened with already carries
+    const saved: ErrorBehaviorParam | null = this.initialErrorBehavior ? JSON.parse(this.initialErrorBehavior) :
+      this.edit ? null : this.call.getParamValue('errorBehavior') ?? null;
+    if (saved) {
       const v = saved.valueOnError;
-      const value = v == null ? null : col.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
-        col.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
-      this.errorBehavior = {useValue: value != null, value, valueType: col.type,
+      const value = v == null ? null : col?.type === DG.COLUMN_TYPE.DATE_TIME ? dayjs(dayjs.utc(`${v}`).format(WALL_CLOCK_FORMAT)) :
+        col?.type === DG.COLUMN_TYPE.QNUM ? DG.Qnum.parse(`${v}`) : v;
+      this.errorBehavior = {useValue: value != null, value, valueType: col?.type,
         errorColumn: !!saved.errorColName, errorColName: saved.errorColName ?? ''};
     }
     this.errorBehaviorIcon = ui.iconFA('cog', () => this.showErrorBehaviorPopup());
@@ -567,7 +572,7 @@ export class AddNewColumnDialog {
   /** The value that failed rows get; null when they are left empty. */
   getErrorValue(): ErrorValue | null {
     const b = this.errorBehavior;
-    return b.useValue && b.value != null && b.valueType === this.getErrorValueType() ? b.value : null;
+    return b.useValue && b.value != null && (b.valueType == null || b.valueType === this.getErrorValueType()) ? b.value : null;
   }
 
   /** [getErrorValue] as a column stores it: the date input edits local time, and date columns keep the time as UTC. */
@@ -582,10 +587,16 @@ export class AddNewColumnDialog {
     return typeof value === 'number' && this.getErrorValueType() === DG.COLUMN_TYPE.QNUM ? DG.Qnum.toString(value) : `${value}`;
   }
 
+  /** The name typed in for the error column, or the one suggested from the result column's name. */
+  getErrorColName(): string {
+    const b = this.errorBehavior;
+    return b.errorColNameSuggested ? `${this.getResultColumnName().colName} errors` : b.errorColName;
+  }
+
   /** The `errorBehavior` parameter of AddNewColumn and EditColumnFormula; null when failed rows are just left empty. */
   getErrorBehaviorParam(): ErrorBehaviorParam | null {
     const value = this.getErrorColumnValue();
-    const errorColName = this.errorBehavior.errorColumn ? this.errorBehavior.errorColName.trim() : '';
+    const errorColName = this.errorBehavior.errorColumn ? this.getErrorColName().trim() : '';
     if (value == null && !errorColName)
       return null;
     const param: ErrorBehaviorParam = {};
@@ -628,14 +639,17 @@ export class AddNewColumnDialog {
     const value = this.createErrorValueInput(changed);
     const errorColumn = ui.input.bool('Error column', {value: b.errorColumn, onValueChanged: (v) => {
       b.errorColumn = v;
-      if (v && !b.errorColName)
-        name.value = b.errorColName = `${this.getResultColumnName().colName} errors`;
+      if (v && !b.errorColName) {
+        b.errorColNameSuggested = true;
+        name.value = this.getErrorColName();
+      }
       changed();
     }});
-    const name = ui.input.string('Column name', {value: b.errorColName, onValueChanged: (v) => {
-      if (v === b.errorColName)
+    const name = ui.input.string('Column name', {value: this.getErrorColName(), onValueChanged: (v) => {
+      if (v === this.getErrorColName())
         return;
       b.errorColName = v;
+      b.errorColNameSuggested = false;
       changed();
     }});
     value.root.style.display = b.useValue ? '' : 'none';
@@ -648,7 +662,7 @@ export class AddNewColumnDialog {
   createErrorValueInput(onChanged: () => void): DG.InputBase<ErrorValue | null> {
     const b = this.errorBehavior;
     const type = this.getErrorValueType();
-    if (b.valueType !== type)
+    if (b.valueType != null && b.valueType !== type)
       b.value = type === DG.COLUMN_TYPE.BOOL ? false : null;
     b.valueType = type;
     const onValueChanged = (v: ErrorValue | null) => {
@@ -1213,6 +1227,10 @@ export class AddNewColumnDialog {
           return e.message ?? e;
         }
       }
+      //a nested vector function is computed once per column, and the enclosing call gets its per-row values
+      if (actualInputType === DG.TYPE.COLUMN && property.propertyType !== DG.TYPE.COLUMN &&
+        input?.func?.options['vectorFunc'] === 'true')
+        actualInputType = DG.TYPE.DYNAMIC;
       //handling dynamic type in actual input
       if (actualInputType === DG.TYPE.DYNAMIC) {
         //extract type from column in case $COLUMN_NAME was passed to formula
@@ -1600,10 +1618,10 @@ export class AddNewColumnDialog {
     const layout =
         ui.div([
           ui.div([
-            ui.block([
-              ui.block([this.inputName!.root], {style: {width: '65%'}}),
-              ui.block([this.inputType!.root], {style: {width: '35%'}}),
-            ]),
+            ui.div([
+              ui.div([this.inputName!.root], 'add-new-column-name'),
+              ui.div([this.inputType!.root], 'add-new-column-type'),
+            ], 'add-new-column-name-row'),
             ui.block([this.codeMirrorDiv!, this.hintDiv, this.errorDiv]),
             ui.block([this.uiPreview], {style: flexStyle}),
           ], 'ui-addnewcolumn-expression-pane'),
@@ -1655,6 +1673,13 @@ export class AddNewColumnDialog {
         this.gridPreview!.invalidate();
         this.currentCalculatedColName = colName;
       }
+      const errorColName = this.getErrorBehaviorParam()?.errorColName;
+      const gridErrorCol = this.currentErrorColName ? this.gridPreview!.dataFrame.col(this.currentErrorColName) : null;
+      if (gridErrorCol && errorColName) {
+        gridErrorCol.name = errorColName;
+        this.gridPreview!.invalidate();
+        this.currentErrorColName = errorColName;
+      }
       return;
     }
 
@@ -1705,6 +1730,7 @@ export class AddNewColumnDialog {
     for (const colName of errorColName && errorColIds.length ? potentialColIds.concat(errorColName) : potentialColIds)
       this.gridPreview!.col(colName)!.backColor = this.newColumnBgColor;
     this.currentCalculatedColName = potentialColIds[0];
+    this.currentErrorColName = errorColName && errorColIds.length ? errorColName : '';
 
     for (const colName of potentialColIds.concat(errorColIds))
       this.previwDf!.columns.remove(colName);
@@ -1800,7 +1826,14 @@ export class AddNewColumnDialog {
   /** Runs the formula on the preview table. [errorColIds] gets the column of per-row messages, when one is asked for. */
   async getPreviewResults(colName: string, colType: string, expression: string, potentialColIds: string[],
     errorColIds: string[] = []): Promise<void> {
-    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto'};
+    // the preview table still holds the column being edited, next to which the result would be named "<name> (2)"
+    const edited = this.edit ? this.previwDf!.col(this.call.getParamValue('name')) : null;
+    if (edited)
+      this.previwDf!.columns.remove(edited.name);
+    const treatAsString = !this.widget && this.inputType ? this.getSelectedType()[1] :
+      this.call.getParamValue('treatAsString') ?? false;
+    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto',
+      treatAsString: treatAsString, subscribeOnChanges: false};
     const errorBehavior = this.errorBehaviorIcon ? this.getErrorBehaviorParam() : null;
     // The preview is of the type the formula returns; a value for another type the user picked applies on OK.
     if (errorBehavior?.valueOnError != null && this.resultColumnType != null && this.resultColumnType !== this.getErrorValueType())
@@ -1817,7 +1850,8 @@ export class AddNewColumnDialog {
       }
       potentialColIds[potentialColIds.length] = args.columns[0].name;
       const mappedTypes = VALIDATION_TYPES_MAPPING[colType] ?? [];
-      this.error = colType !== 'auto' &&
+      // any result converts to a string column
+      this.error = colType !== 'auto' && colType !== DG.COLUMN_TYPE.STRING &&
        args.columns[0].type !== colType && !mappedTypes.includes(args.columns[0].type) ?
         this.typeMismatchError(args.columns[0].type, colType) : '';
     });

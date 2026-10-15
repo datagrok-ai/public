@@ -9,12 +9,13 @@
    highlighted suggestion — an autocomplete-in-place that surprised people in the platform. */
 import {signal, computed, Signal, ReadonlySignal} from '../../core/signals.js';
 import {Input, InputOptions} from '../../core/input-base.js';
-import {Scope} from '../../core/scope.js';
 import {bindValue} from '../../core/bind.js';
+import {each} from '../../core/region.js';
 import {AsyncSource, AsyncFetch, AsyncState} from '../../core/async-source.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
 import {ObjectRenderer} from '../../core/object-renderer.js';
 import {tag} from '../display/badge.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TagsInputOptions<T> extends InputOptions<T[]> {
   /** Static suggestions, filtered by the typed text. */
@@ -42,24 +43,36 @@ export interface TagsInputOptions<T> extends InputOptions<T[]> {
 export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
   readonly isOpen: ReadonlySignal<boolean>;
 
-  // every field below is built by createEditor(), which the base constructor calls before
-  // subclass initializers would run — none of them may carry an inline initializer
-  private _chips!: HTMLElement;
-  private _input!: HTMLInputElement;
-  private _list!: SuggestionList<T>;
-  private _text!: Signal<string>;
-  private _view!: ReadonlySignal<AsyncState<T>>;
-  private _available!: ReadonlySignal<T[]>;
-  private _itemText!: (item: T) => string;
-  private _renderItem!: (item: T) => HTMLElement;
-  private _markup: ((item: T) => HTMLElement) | undefined;
-  private _source: AsyncSource<T> | undefined;
-  private _chipScope: Scope | undefined;
+  // built by createEditor(), which the base constructor calls before subclass initializers
+  private declare _chips: HTMLElement;
+  private declare _input: HTMLInputElement;
+  private declare _list: SuggestionList<T>;
+  private declare _text: Signal<string>;
+  private declare _view: ReadonlySignal<AsyncState<T>>;
+  private declare _available: ReadonlySignal<T[]>;
+  private declare _itemText: (item: T) => string;
+  private declare _renderItem: (item: T) => HTMLElement;
+  private declare _markup: ((item: T) => HTMLElement) | undefined;
+  private declare _source: AsyncSource<T> | undefined;
 
   constructor(options: TagsInputOptions<T> = {}) {
     super(options, []);
     this.isOpen = this._list.isOpen;
     this.root.dataset.u2 = 'tags-input';
+  }
+
+  /** Whether the suggestions are open and an async source loading. */
+  getState(): ReturnType<Input<T[]>['getState']> {
+    return {...super.getState(), open: this._list.isOpen.peek(),
+      ...this._source ? {busy: this._source.state.peek().kind === 'loading'} : {}};
+  }
+
+  /** The tags, keyed by their text. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    return Input.itemsState(this.value.peek().map((item, index) => {
+      const text = this._itemText(item);
+      return {key: text, label: text, index, rendered: true};
+    }), opts?.all);
   }
 
   protected createEditor(): HTMLElement {
@@ -85,6 +98,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
     editor.className = 'u2-tags';
     this._chips = document.createElement('div');
     this._chips.className = 'u2-tags-chips';
+    this._chips.setAttribute('role', 'list');
     const input = document.createElement('input');
     this._input = input;
     input.type = 'text';
@@ -104,6 +118,7 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
       text: this._text,
       minChars: this.options.minChars ?? 0,
       render: (item) => this._renderItem(item),
+      keyOf: (item) => this._itemText(item),
       onPick: (index) => {
         this._accept(index);
         input.focus();
@@ -113,17 +128,16 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
     });
 
     bindValue(this.scope, input, this._text);
-    this._listen(input, 'input', () => this._onInput());
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(input, 'blur', () => this._list.dismiss());
-    this._listen(editor, 'click', (e) => {
+    this.scope.listen(input, 'input', () => this._onInput());
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(input, 'blur', () => this._list.dismiss());
+    this.scope.listen(editor, 'click', (e) => {
       if (!(e.target as HTMLElement).closest('.u2-tag-remove'))
         input.focus();
     });
-    this.own(() => this._releaseChips());
 
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
-    this.effect(() => this._renderChips());
+    each(this._chips, this.value, (item) => this._itemText(item), (item) => this._chip(item));
     return editor;
   }
 
@@ -134,6 +148,12 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
       this._source = source;
       this._view = source.state;
       this.own(() => source.dispose());
+      this.effect(() => {
+        if (source.state.value.kind === 'loading')
+          this.root.setAttribute('aria-busy', 'true');
+        else
+          this.root.removeAttribute('aria-busy');
+      });
       return;
     }
     const items = this.options.items ?? [];
@@ -254,33 +274,16 @@ export class TagsInput<T> extends Input<T[], TagsInputOptions<T>> {
     }
   }
 
-  private _renderChips(): void {
-    const items = this.value.value;
-    this._releaseChips();
-    this._chips.textContent = '';
-    const scope = new Scope();
-    this._chipScope = scope;
-    this._chips.append(...Scope.runWith(scope, () => items.map((item) => this._chip(item))));
-  }
-
   private _chip(item: T): HTMLElement {
     const chip = tag(this._itemText(item),
       this._deletable(item) ? {onRemove: () => this.remove(item)} : undefined);
     chip.classList.add('u2-tags-chip');
-    const markup = this._markup;
-    if (markup)
-      (chip.querySelector('.u2-tag-text') as HTMLElement).replaceWith(markup(item));
+    chip.setAttribute('role', 'listitem');
+    const text = chip.querySelector('.u2-tag-text') as HTMLElement;
+    const label = this._markup ? this._markup(item) : text;
+    if (label !== text)
+      text.replaceWith(label);
+    label.dataset.u2Part = 'item-label';
     return chip;
-  }
-
-  private _releaseChips(): void {
-    if (this._chipScope)
-      this._chipScope.dispose();
-    this._chipScope = undefined;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

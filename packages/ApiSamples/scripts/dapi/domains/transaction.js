@@ -8,6 +8,8 @@ const [item, event, updated] = await grok.dapi.domains.transaction('apitests', [
   {op: 'insert', table: 'item', ref: 'i', values: {sku: key, name: 'Widget', quantity: 1}},
   {op: 'insert', table: 'item_event', values: {item_id: '$i', kind: 'created'}},
   {op: 'update', table: 'item', id: '$i', values: {quantity: 2}, expectedVersion: 1},
+  // on an EXTERNAL table (support.concurrency === 'expected') the guard is the changed columns' last-read values:
+  // {op: 'update', table: 'thing', id: '900001', values: {n: 2}, expected: {n: 1}} — see external-write.js
 ]);
 grok.shell.info(`item ${item.id}: event ${event.id}, version ${updated.version}`);
 

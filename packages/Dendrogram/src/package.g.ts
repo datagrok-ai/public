@@ -97,6 +97,7 @@ export async function previewNewick(file: DG.FileInfo) {
 //name: Hierarchical Clustering (Sequences)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 //top-menu: Bio | Analyze | Hierarchical Clustering...
+//meta.requiresSemType: Macromolecule
 export async function hierarchicalClusteringSequences() : Promise<void> {
   await PackageFunctions.hierarchicalClusteringSequences();
 }
@@ -104,6 +105,7 @@ export async function hierarchicalClusteringSequences() : Promise<void> {
 //name: Hierarchical Clustering (Molecules)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 //top-menu: Chem | Analyze | Hierarchical Clustering...
+//meta.requiresSemType: Molecule
 export async function hierarchicalClusteringMolecules() : Promise<void> {
   await PackageFunctions.hierarchicalClusteringMolecules();
 }
@@ -111,6 +113,7 @@ export async function hierarchicalClusteringMolecules() : Promise<void> {
 //name: Hierarchical Clustering (All)
 //description: Calculates hierarchical clustering on features and injects tree to grid
 //top-menu: ML | Cluster | Hierarchical Clustering...
+//meta.requiresTableView: true
 export async function hierarchicalClustering2() : Promise<void> {
   await PackageFunctions.hierarchicalClustering2();
 }

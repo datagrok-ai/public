@@ -142,8 +142,8 @@ asserted to open / dispatch):
     Markup, Copy URL). For each, verify the clipboard receives the
     expected payload (use `navigator.clipboard.readText()` after
     each click).
-15. **Right-click tile → Add to favorites (UI — covers
-    `pcmdAddToFavorites`).** Click **Add to favorites**. Verify
+15. **Right-click tile → Add To Favorites (UI — covers
+    `pcmdAddToFavorites`).** Click **Add To Favorites**. Verify
     the tile appears under `Browse` > `Favorites` after the click
     (or `grok.dapi.favorites` reflects the addition).
 

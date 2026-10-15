@@ -2,6 +2,7 @@ import * as DG from 'datagrok-api/dg';
 import {Observable, OperatorFunction, defer, from, merge, of} from 'rxjs';
 import {concatMap, distinctUntilChanged, filter, map, reduce, share, withLatestFrom, windowToggle} from 'rxjs/operators';
 import dayjs from 'dayjs';
+import {v4 as uuidv4} from 'uuid';
 import {deepEqual, createCustomEqual, TypeEqualityComparator} from 'fast-equals';
 import {HandlerBase} from './config/PipelineConfiguration';
 import {ValidationResult} from './data/common-types';
@@ -104,54 +105,106 @@ export function pathToUUID(
   return acc.uuids;
 }
 
+export function copyDataFrame(df: DG.DataFrame) {
+  const copy = df.clone();
+  copy.id = uuidv4();
+  return copy;
+}
+
 export function indexFromEnd<T>(arr: Readonly<T[]>, offset = 0): T | undefined {
   return arr[arr.length - offset - 1];
 }
 
-const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
-  if (a instanceof DG.DataFrame && b instanceof DG.DataFrame) {
-    if (a.rowCount !== b.rowCount || [...a.columns].length !== [...b.columns].length)
-      return false;
-    for (const columnA of a.columns) {
-      const columnB = b.columns.byName(columnA.name);
+/** A tolerance for every float column, or per lower-cased column name with `*` for the rest. */
+export type ToleranceSpec = number | Record<string, number>;
 
-      if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
-        return false;
+/** The `consistencyTolerance`/`consistencyRelTolerance` annotations of an io. */
+export type IOTolerance = {abs?: ToleranceSpec, rel?: ToleranceSpec};
 
-      for (let i = 0; i < a.rowCount; i++) {
-        const valueA = columnA.get(i);
-        const valueB = columnB.get(i);
-        if (!customDeepEqual(valueA, valueB))
-          return false;
-      }
-    }
-    return true;
-  }
+type Tolerance = {abs: number, rel: number};
 
-  if (dayjs.isDayjs(a) && dayjs.isDayjs(b))
-    return a.isSame(b);
+const DEFAULT_TOLERANCE: Tolerance = {abs: 0.0001, rel: 0};
+const EXACT: Tolerance = {abs: 0, rel: 0};
+const FLOAT_TYPES = new Set<string>([DG.TYPE.FLOAT, DG.TYPE.QNUM]);
+const INT_TYPES = new Set<string>([DG.TYPE.INT, DG.TYPE.BIG_INT]);
 
+function pickTolerance(spec: ToleranceSpec | undefined, column: string) {
+  return typeof spec === 'object' ? spec[column.toLowerCase()] ?? spec['*'] : spec;
+}
 
-  if (!deepEqual(a, b))
+// a relative tolerance wins over an absolute one set for the same value
+function resolveTolerance(tolerance: IOTolerance | undefined, column = ''): Tolerance {
+  const rel = pickTolerance(tolerance?.rel, column);
+  if (rel != null)
+    return {abs: 0, rel};
+  const abs = pickTolerance(tolerance?.abs, column);
+  return abs != null ? {abs, rel: 0} : DEFAULT_TOLERANCE;
+}
+
+function areDataFramesEqual(a: DG.DataFrame, b: DG.DataFrame, tolerance?: IOTolerance) {
+  if (a.rowCount !== b.rowCount || [...a.columns].length !== [...b.columns].length)
     return false;
+  for (const columnA of a.columns) {
+    const columnB = b.columns.byName(columnA.name);
 
+    if (columnB == null || columnA.type !== columnB.type || columnA.name !== columnB.name)
+      return false;
+
+    const equal = getDeepEqual(FLOAT_TYPES.has(columnA.type) ? resolveTolerance(tolerance, columnA.name) : EXACT);
+    for (let i = 0; i < a.rowCount; i++) {
+      if (!equal(columnA.get(i), columnB.get(i)))
+        return false;
+    }
+  }
   return true;
-};
+}
 
-const FLOAT_TOLERANCE = 0.0001;
+function makeDeepEqual({abs, rel}: Tolerance) {
+  const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
+    if (isNaN(a) && isNaN(b))
+      return true;
+    return a === b || Math.abs(a - b) < abs + rel * Math.abs(b);
+  };
 
-const areNumbersEqual: TypeEqualityComparator<number> = (a, b) => {
-  if (isNaN(a) && isNaN(b))
+  const areObjectsEqual: TypeEqualityComparator<Record<any, any>> = (a, b) => {
+    if (a instanceof DG.DataFrame && b instanceof DG.DataFrame)
+      return areDataFramesEqual(a, b);
+
+    if (dayjs.isDayjs(a) && dayjs.isDayjs(b))
+      return a.isSame(b);
+
+
+    if (!deepEqual(a, b))
+      return false;
+
     return true;
-  return Math.abs(a - b) < FLOAT_TOLERANCE;
+  };
+
+  const fastEqual = createCustomEqual({
+    createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
+  });
+
+  const equal = (a: any, b: any): boolean => (a == null && b == null) || fastEqual(a, b);
+  return equal;
+}
+
+const deepEquals = new Map<string, (a: any, b: any) => boolean>();
+
+function getDeepEqual(tolerance: Tolerance) {
+  const key = `${tolerance.abs}|${tolerance.rel}`;
+  let equal = deepEquals.get(key);
+  if (!equal) {
+    equal = makeDeepEqual(tolerance);
+    deepEquals.set(key, equal);
+  }
+  return equal;
+}
+
+export const customDeepEqual = (a: any, b: any, tolerance?: IOTolerance, type?: string) => {
+  if (a instanceof DG.DataFrame && b instanceof DG.DataFrame)
+    return areDataFramesEqual(a, b, tolerance);
+  return getDeepEqual(type && INT_TYPES.has(type) ? EXACT : resolveTolerance(tolerance))(a, b);
 };
-
-const customFastEqual = createCustomEqual({
-  createCustomConfig: () => ({areNumbersEqual, areObjectsEqual}),
-});
-
-// TODO: try using lib apis
-export const customDeepEqual = (a: any, b: any) => (a == null && b == null) || customFastEqual(a, b);
 
 /** Format a single path segment: `id[0]`, `id[2]`. */
 export function formatPathSegment(seg: {idx: number; id: string}): string {

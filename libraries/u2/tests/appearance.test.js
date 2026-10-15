@@ -231,7 +231,8 @@ spec('manifest: the shared block once at the top level, filtered out of every co
   reg.register({tag: 'u2-fake-viewer', appearance: false, description: 'Fake', props: [],
     create: () => new Control(), example: {tag: 'u2-fake-viewer'}});
   const metas = new Map(JSON.parse(JSON.stringify(reg.manifest())).components.map((c) => [c.tag, c]));
-  assert.deepEqual(metas.get('u2-fake-box').props, [own], 'the colliding own prop survives the filter');
+  assert.deepEqual(metas.get('u2-fake-box').props, [own, {name: 'visible', type: 'bool', description: 'false hides the node; true by default.'}],
+    'the colliding own prop survives the filter, beside the injected visible');
   assert.equal(metas.get('u2-fake-viewer').appearance, false, 'the opt-out is flagged');
 });
 

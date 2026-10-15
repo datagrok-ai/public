@@ -23,6 +23,20 @@
   background: var(--dg-hover);
 }
 
+/* a depiction (a structure, a thumbnail) is shown whole: the chip grows to it */
+.u2-chip:has(canvas, img) {
+  height: auto;
+  padding: var(--dg-space-xs);
+}
+
+/* the handler's markup is one span (icon + label): it gets the chip's own gap and centring */
+.u2-chip > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--dg-space-xs);
+  min-width: 0;
+}
+
 /* the card CONTENT is the platform handler's own markup with its own styling; the host only
    frames it */
 .u2-entity-card {

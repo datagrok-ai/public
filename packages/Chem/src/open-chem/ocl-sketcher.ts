@@ -2,6 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import {chem} from 'datagrok-api/grok';
 import * as OCL from 'openchemlib/full';
 import {PackageFunctions} from '../package';
+import {querySmarts} from '../utils/mol-creation_rdkit';
 import * as DG from 'datagrok-api/dg';
 
 let sketcherId = 0;
@@ -95,8 +96,12 @@ export class OpenChemLibSketcher extends grok.chem.SketcherBase {
     this._sketcher?.setMolFile(s);
   }
 
+  /** The query a substructure search makes of the molfile (read unsanitized), as SMARTS: RDKit's sanitized reading of a
+   * molecule would turn an aromatic bond outside an aromatic ring single (crux-sketch spike query-roundtrip). */
   async getSmarts(): Promise<string> {
-    return PackageFunctions.convertMolNotation(this.molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
+    const molFile = this.molFile;
+    return querySmarts(molFile, PackageFunctions.getRdKitModule()) ??
+      PackageFunctions.convertMolNotation(molFile, DG.chem.Notation.MolBlock, DG.chem.Notation.Smarts);
   }
 
   set smarts(s: string) {

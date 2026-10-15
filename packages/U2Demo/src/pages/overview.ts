@@ -33,6 +33,6 @@ export function overviewPage(ctx: DemoContext): HTMLElement {
     divV(areas.map((group) => divH([
       span(group.label, 'u2demo-overview-area'),
       span(group.children.map((leaf) => leaf.label).join(' · '), 'u2demo-dim'),
-    ], 'u2demo-row'))),
+    ], 'u2demo-overview-line'))),
   ], 'u2demo-page');
 }

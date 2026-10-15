@@ -34,17 +34,17 @@ export interface FileInputOptions extends InputOptions<DG.FileInfo | null> {
  * `file_input.dart:22` defaults `nullable` to false and so always demands a path. */
 export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
   // all assigned in createEditor, which the base constructor runs before field initializers
-  private _field!: HTMLInputElement;
-  private _text!: Signal<string>;
-  private _busy!: Signal<boolean>;
-  private _problem!: Signal<string | null>;
-  private _source!: AsyncSource<DG.FileInfo | null>;
+  private declare _field: HTMLInputElement;
+  private declare _text: Signal<string>;
+  private declare _busy: Signal<boolean>;
+  private declare _problem: Signal<string | null>;
+  private declare _source: AsyncSource<DG.FileInfo | null>;
   // bumped by everything that changes what the box holds; a check or a read whose turn has passed
   // is ignored rather than allowed to overwrite a newer answer
-  private _turn!: number;
-  private _queried!: number;
+  private declare _turn: number;
+  private declare _queried: number;
   // up while the input writes its own value, so `_show` knows the write is not a new subject
-  private _echo!: boolean;
+  private declare _echo: boolean;
 
   constructor(options: FileInputOptions = {}) {
     super(options, null);
@@ -62,12 +62,23 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     return path;
   }
 
+  /** Whether a pick or a typed path is still being checked. */
+  getState(): ReturnType<Input<DG.FileInfo | null>['getState']> {
+    return {...super.getState(), busy: this._busy.peek()};
+  }
+
   protected createEditor(): HTMLElement {
     this._turn = 0;
     this._queried = 0;
     this._echo = false;
     this._text = signal('');
     this._busy = signal(false);
+    this.effect(() => {
+      if (this._busy.value)
+        this.root.setAttribute('aria-busy', 'true');
+      else
+        this.root.removeAttribute('aria-busy');
+    });
     this._problem = signal<string | null>(null);
     this._source = new AsyncSource<DG.FileInfo | null>((path) => this._resolve(path), {debounceMs: 250});
     this.own(() => this._source.dispose());
@@ -81,7 +92,7 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     field.className = 'u2-file-path';
     field.placeholder = this.options.placeholder ?? '';
     this.effect(() => this._show(this.value.value));
-    this._listen(field, 'input', () => {
+    this.scope.listen(field, 'input', () => {
       this._queried = ++this._turn;
       this._text.value = field.value;
       this._source.query(field.value);
@@ -204,7 +215,7 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
     const picker = document.createElement('input');
     picker.type = 'file';
     picker.hidden = true;
-    this._listen(picker, 'change', () => {
+    this.scope.listen(picker, 'change', () => {
       const file = picker.files?.[0];
       if (file)
         this._accept(file);
@@ -240,11 +251,6 @@ export class FileInput extends Input<DG.FileInfo | null, FileInputOptions> {
       if (turn === this._turn)
         this._busy.value = false;
     }
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 

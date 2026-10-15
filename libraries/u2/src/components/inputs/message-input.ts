@@ -101,7 +101,7 @@ export class MessageInput extends Control {
         const trigger = iconButton(TRIGGER_ICONS[provider.trigger] ?? 'at',
           () => this.openMentions(provider), {tooltip: `Mention (${provider.trigger})`});
         // the default mousedown would blur the editor, and the session dies with the caret it needs
-        this._listen(trigger, 'mousedown', (e) => e.preventDefault());
+        this.scope.listen(trigger, 'mousedown', (e) => e.preventDefault());
         tools.append(trigger);
       }
       const send = button('Send', () => this.send(), {primary: true});
@@ -113,9 +113,9 @@ export class MessageInput extends Control {
       this.effect(() => send.disabled = this._empty.value);
     });
 
-    this._listen(editor, 'input', () => this._onInput());
-    this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(editor, 'blur', () => this._closeSession());
+    this.scope.listen(editor, 'input', () => this._onInput());
+    this.scope.listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(editor, 'blur', () => this._closeSession());
     this.own(() => this._closeSession());
 
     const initial = options.value ?? this._restoreDraft();
@@ -127,6 +127,17 @@ export class MessageInput extends Control {
 
   get value(): string {
     return MessageInput._serialize(this._editor).replace(/\n$/, '');
+  }
+
+  /** The markup as the value, the text as the user reads it, and whether mentions are open. */
+  getState(): ReturnType<Control['getState']> {
+    const placeholder = this._options.placeholder;
+    return {...super.getState(), value: this.value, text: Control.text(this._editor), open: this._open.peek(),
+      ...placeholder ? {placeholder} : {}};
+  }
+
+  protected accessibleLabel(): string | undefined {
+    return super.accessibleLabel() ?? Control.labelOf(this._editor) ?? (this._options.placeholder || undefined);
   }
 
   set value(markup: string) {
@@ -517,6 +528,11 @@ export class MessageInput extends Control {
           e.stopPropagation();
           this._closeSession();
           return;
+        // a word nothing matches is not a mention: the space ends it and is typed as plain text
+        case ' ':
+          if (session.items.peek().length === 0 && session.source.state.peek().kind !== 'loading')
+            this._closeSession();
+          return;
         case 'Enter':
           if (session.list.activeIndex.peek() >= 0) {
             e.preventDefault();
@@ -623,10 +639,5 @@ export class MessageInput extends Control {
     } catch {
       return undefined;
     }
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

@@ -88,6 +88,7 @@ export async function translateOligonucleotideSequence(sequence: string, sourceF
 //name: polyToolConvert
 //description: editor for Performing conversion of sequences in custom notation to molfiles
 //top-menu: Bio | PolyTool | Convert...
+//meta.requiresSemType: Macromolecule
 export async function polyToolConvertTopMenu() : Promise<void> {
   await PackageFunctions.polyToolConvertTopMenu();
 }
@@ -197,6 +198,8 @@ export async function enumerateSingleHelmSequenceWithNaturalAAs(helmSequence: st
 
 //name: Combine Sequences
 //top-menu: Bio | PolyTool | Combine Sequences...
+//meta.requiresTable: true
+//meta.requiresSemType: Macromolecule
 export async function getPolyToolCombineDialog() : Promise<void> {
   await PackageFunctions.getPolyToolCombineDialog();
 }

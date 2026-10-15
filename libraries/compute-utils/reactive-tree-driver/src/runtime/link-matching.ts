@@ -26,7 +26,6 @@ export type MatchInfo = {
   // needed to diff order beetween multiple steps of the same kind
   inputsUUID: Map<string, Array<string>>;
   outputsUUID: Map<string, Array<string>>;
-  isDefaultValidator?: boolean;
 }
 
 type NodeTraverseState = {

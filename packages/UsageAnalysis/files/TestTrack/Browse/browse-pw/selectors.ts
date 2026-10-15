@@ -62,7 +62,7 @@ export const contextMenuItem = (page: Page, text: string): Locator =>
   page.locator(CONTEXT_MENU_ITEM_LABEL, { hasText: new RegExp(`^${escapeRegExp(text)}$`) }).first();
 
 export const CONTEXT_MENU_BROWSE = 'Browse';
-export const CONTEXT_MENU_ADD_FAVORITES = 'Add to favorites';
+export const CONTEXT_MENU_ADD_FAVORITES = 'Add To Favorites';
 export const CONTEXT_MENU_SHARE = 'Share...';
 export const CONTEXT_MENU_RENAME = 'Rename...';
 export const CONTEXT_MENU_DELETE = 'Delete...';

@@ -3,7 +3,7 @@
 ## Overview
 
 PowerGrid is a Datagrok plugin that extends the platform's grid (spreadsheet) with custom cell renderers,
-sparkline summary columns, a forms viewer, pinned columns, and WebGPU-accelerated scatter plot rendering.
+sparkline summary columns, a forms viewer, pinned columns, and GPU (WebGPU or WebGL) scatter plot rendering.
 
 ## Architecture
 
@@ -56,11 +56,54 @@ via `renderSettings(gridColumn)`.
 graph (`Scene`, `Element`, `LabelElement`, `MarkerElement`, `GridCellElement`) for compositional layout. Auto-switches
 between 1 and 2 column layouts based on available width.
 
-### WebGPU (`src/webgpu/`)
+### GPU scatter plots (`src/scatterplot-*.ts`, `src/webgpu/`, `src/webgl/`)
 
-GPU-accelerated scatter plot rendering. `scWebGPURender()` and `scWebGPUPointHitTest()` are registered as platform
-functions called by the scatter plot viewer when WebGPU is available. `WebGPUCache` manages GPU buffers. Falls back
-gracefully when unavailable or on error (tracked via `gpuErrorCounter`).
+The core's scatter plot draws plots over 50K rows through four package functions — `isWebGPUAvailable`,
+`isWebGPURenderValid`, `_scWebGPURender`, `_scWebGPUPointHitTest` (named before WebGL existed). `scatterplot-gpu.ts`
+picks the backend: WebGPU when the autostart got a device, WebGL 2 otherwise (WebGPU blocked by a policy, older
+browsers), the core's CPU renderers when neither is there. A backend that fails once (an exception, a WebGPU
+validation error, a lost device) is not used again, and its plots are drawn with the next one.
+
+Both backends draw the same thing, the CPU renderers' output:
+- `scatterplot-look.ts` reads the viewer properties in one pass (`sc.props.x` builds wrappers for every property on
+  each access) and holds the rules both backends share (`whyOnCpu`: no jitter, no pack-and-zoom, no labels
+  next to markers, plain axis columns, not a matrix plot cell, which keeps the plot canvas without its overlay).
+  The core asks `isWebGPURenderValid` once a frame and twice on every mouse move, so the check reads only the
+  properties its rules use (`readCheckLook`); `plotCanvases` caches the plot's canvas and overlay, as `sc.canvas`
+  and `sc.overlay` build the viewer's whole info map on each access.
+- `scatterplot-data.ts` (`ScatterData`) turns a viewer into a `Frame` and the arrays that changed since the last
+  one, handed to the renderer's `ScatterSink`: positions as float32 offsets from an origin near the viewport (rebuilt
+  when a deep zoom drifts far from it), row colors/sizes/marker types (or one value for all rows), the selection
+  bits, and row lists per pass (filtered-out rows, filtered rows, selected rows on top). Filtering and selecting
+  rebuild row lists only; selected rows take the selection color from the selection, so a new selection re-reads
+  the core's row colors only when it deselects a row the core painted selected. Cache keys hold column and bitset
+  identity: versions start over on every new object.
+- DOT markers match the pixel-buffer dot renderer pixel for pixel; other shapes are signed distances in the fragment
+  shader, anti-aliased per shape family as the canvas does it (`webgl/shaders.ts`, ported line by line to WGSL in
+  `webgpu/shaders.ts` — change both together). When the rows share one marker kind (no Markers column), the shapes
+  are drawn by a program or pipeline compiled for that kind (`MARKER_KIND`), lazily, one per kind: the other shapes
+  compile out, and the shader that picks a shape per pixel is up to 40× slower (circles; 2–10× for most shapes) on 2M
+  rows in view. Both produce the same pixels.
+
+- Hit tests answer for the frame last drawn (`ScatterRenderer.frame`), which is what the mouse is over, without
+  reading the viewer again: the core hit-tests on every mouse move.
+- **WebGL** (`webgl/scatterplot.ts`): rows are point sprites from vertex buffers addressed by row index. The hit
+  test draws the filtered rows into a 1×1 target placed under the mouse; its viewport reaches past the canvas by the
+  largest hit radius. One context per viewer, released when the plot stops drawing with WebGL, on `onDetached` and on
+  context loss; past 8 live contexts new plots stay on the CPU (a page gets about 16). Software rasterizers are
+  refused: the canvas renderer is faster than they are.
+- **WebGPU** (`webgpu/scatterplot.ts`): rows from storage buffers, dots as points and shapes as instanced quads;
+  pipelines are compiled once per device, buffers are rewritten only when the data changes, and a frame is submitted
+  synchronously, in the same frame as the axes. The hit test is a compute shader over the filtered rows.
+
+**Debug log** (`scatterplot-debug.ts`), for finding what is slow on a given machine: in the browser console
+`localStorage.setItem('PowerGrid.scatterPlotDebug', '1')` (no reload; `removeItem` turns it off). Every second a plot
+is drawn it prints the engine and GPU, PowerGrid's JavaScript per frame (data, drawing) and per validity check, when
+the GPU finished the frames, hit tests, the lag from wheel/drag input to the view moving, and the main thread's long
+animation frames with the scripts behind them (the core's work shows as `login.dart.js`/`main.dart.js`). Rebuilds of
+per-row data, slow frames, the WebGPU device arriving, engine set-ups and why a plot stays on the CPU print at once.
+Long frames count only within 2 s of a plot's last report: the rest belong to something else on the page.
+The renderers report through `ScatterRenderer.render` (data update, `drawFrame`, `gpuDone`); keep new steps there.
 
 ### Pinned Columns
 
@@ -77,6 +120,15 @@ The `addPinnedColumn()` function is exposed as a package function.
 ### Tests (`src/tests/`)
 
 - `webgpu-tests.ts` — WebGPU rendering benchmarks
+- `scatterplot-gpu-tests.ts` — both GPU renderers against the CPU: dot pixels, row colors, row source, hit tests,
+  disposal; and the rules that leave plots to the CPU
+- `summary-columns-tests.ts` — the eight summary columns and their settings through a layout and a project; the
+  Tags column marking only flagged rows, and the Tags and Bar renderers filling only their own shapes (GROK-20888);
+  the Color renderer drawing each legend item's own category (#4233)
+- `forms-tests.ts` — the Forms viewer's fields, Sort By and pinned row through a layout and a project
+- `binary-image-tests.ts` — the byte-column detector (image signatures, the shared detectors test data) and the Binary
+  Image renderer: drawing within the paint, drawing into a canvas nobody repaints, a project round trip, the bounded cache
+- `utils.ts` — the layout and project round trips the two above share (they delete what they save)
 
 ## Key Patterns
 

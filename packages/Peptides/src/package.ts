@@ -126,6 +126,7 @@ export class PackageFunctions {
 
   @grok.decorators.func({
     'top-menu': 'Bio | Analyze | SAR...',
+    'requiresSemType': 'Macromolecule',
     'name': 'Bio Peptides',
     'outputs': [],
   })

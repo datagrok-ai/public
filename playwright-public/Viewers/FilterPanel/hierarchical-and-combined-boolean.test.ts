@@ -19,7 +19,7 @@ const datasetPath = 'System:DemoFiles/demog.csv';
 
 async function readTreeState(page: any): Promise<{captions: string[], trueCount: number}> {
   return await page.evaluate(() => {
-    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
     const captions: string[] = [];
     for (const node of card!.querySelectorAll('.d4-tree-view-node')) {
@@ -54,7 +54,7 @@ async function holdTrueCount(page: any, expected: number, why: string): Promise<
 
 async function typeTreeSearch(page: any, text: string): Promise<string> {
   return await page.evaluate((frag: string) => {
-    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
     const input = card?.querySelector('input.d4-search-input[placeholder="Search..."]') as HTMLInputElement;
     if (!input) throw new Error('hierarchical tree-search input not found');
@@ -164,7 +164,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     expect(before.captions).toContain('Asian');
 
     await page.evaluate(() => {
-      const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+      const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
         .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
       if (!card)
         throw new Error('no hierarchical filter card is painted in the Filter Panel — its caption is the only '
@@ -343,7 +343,7 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
     await applyHierarchyState(page, {colNames: ['RACE', 'SEX'], allEnabled: true});
     await expect.poll(() => hierCaption(page), {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe('RACE / SEX');
     const state = await page.evaluate(() => {
-      const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+      const card = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
         .find(c => c.querySelector('.d4-filter-column-name')?.textContent?.includes('/'));
       const caption = card!.querySelector('.d4-filter-column-name')!.textContent!.trim();
       const topCaptions: string[] = [];
@@ -456,10 +456,10 @@ test('Filter Panel — Hierarchical and Combined Boolean Filters', async ({page}
 
   await softStep('Step 19: Remove All then reopen — the combined boolean card is recreated on its own', async () => {
     await v.drivePanelMenuLeaf(page, 'Filters', null, 'Remove All');
-    await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter').count(),
+    await expect.poll(async () => page.locator('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').count(),
       {timeout: 10_000, intervals: [30, 60, 120, 250, 500, 1000]}).toBe(0);
     const emptied = await page.evaluate(() => ({
-      cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
+      cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length,
       boolCards: document.querySelectorAll('.d4-bool-combined-filter').length,
       trueCount: grok.shell.tv.dataFrame.filter.trueCount,
     }));

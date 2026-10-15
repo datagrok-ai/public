@@ -7,6 +7,7 @@ Feature: The Dart bridge
     Given user opens the "Bridge" demo page
     When user clicks on "Open a DG.Dialog with a u2 input" button
     Then dialog should be visible
+    And editor of Compound input in dialog should be at least 200 px wide
     And title of dialog should have text "u2 input, platform dialog"
     When user types "Caffeine" into Compound input in dialog
     Then value of "bridged value" readout should have text "Caffeine"

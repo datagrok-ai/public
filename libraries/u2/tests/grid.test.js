@@ -54,7 +54,8 @@ grid('columns follow the width; the visible window plus overscan is what gets re
   assert.equal(g.renderedCount, 70);
   assert.deepEqual(rendered(g).slice(0, 3), [0, 1, 2]);
   const last = cells(g).find((c) => c.dataset.index === '69');
-  assert.equal(last.style.left, '180px');
+  assert.equal(last.style.left, '90%');
+  assert.equal(last.style.width, '10%', 'cells share the row: no dead strip on the right');
   assert.equal(last.style.top, '120px');
   assert.equal(g.root.querySelector('.u2-grid-content').style.height, '2000px');
   g.dispose();
@@ -81,7 +82,8 @@ grid('a narrower width re-flows the same items into more rows', () => {
   fire(g.root, 'scroll');
   assert.equal(g.columns.value, 5);
   assert.equal(g.root.querySelector('.u2-grid-content').style.height, '4000px');
-  assert.equal(cells(g).find((c) => c.dataset.index === '7').style.left, '40px');
+  assert.equal(cells(g).find((c) => c.dataset.index === '7').style.left, '40%');
+  assert.equal(cells(g).find((c) => c.dataset.index === '7').style.width, '20%');
   g.dispose();
 });
 
@@ -151,5 +153,34 @@ grid('an empty grid renders nothing and ignores keys', () => {
   fire(g.root, 'keydown', {key: 'ArrowRight'});
   assert.equal(g.renderedCount, 0);
   assert.equal(g.selectedIndex.value, -1);
+  g.dispose();
+});
+
+grid('a grid with no size yet renders nothing; its first measure lays out the real columns', () => {
+  const g = new VirtualGrid({cellWidth: 20, cellHeight: 20, render: (n) => {
+    const s = document.createElement('span');
+    s.textContent = String(n);
+    return s;
+  }});
+  g.setItems(NUMBERS);
+  assert.equal(g.renderedCount, 0, 'no single-column cells to re-flow and hand to other items later');
+  document.body.append(g.root);
+  g.root.clientWidth = 200;
+  g.root.clientHeight = 100;
+  const observer = ResizeObserver.instances.find((o) => o.targets.includes(g.root));
+  observer.callback([]);
+  assert.equal(g.columns.value, 10);
+  assert.equal(g.renderedCount, 70);
+  assert.equal(cells(g).find((c) => c.dataset.index === '1').style.left, '10%');
+  g.dispose();
+});
+
+grid('a taller grid renders the rows that came into view', () => {
+  const g = make();
+  g.setItems(NUMBERS);
+  assert.equal(g.renderedCount, 70);
+  g.root.clientHeight = 200;
+  ResizeObserver.instances.find((o) => o.targets.includes(g.root)).callback([]);
+  assert.equal(g.renderedCount, 120, '10 visible rows + 2 overscan, 10 per row');
   g.dispose();
 });

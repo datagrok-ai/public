@@ -6,9 +6,9 @@ import * as ui from 'datagrok-api/ui';
 import {EChartViewer} from '../echart/echart-viewer';
 import {TreeUtils, TreeDataType} from '../../utils/tree-utils';
 import * as echarts from 'echarts';
-import {fromEvent, Observable, Subject} from 'rxjs';
+import {fromEvent, Observable} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
-import {ERROR_CLASS, LayoutSettler, MessageHandler} from '../../utils/utils';
+import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
 import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 
 /// https://echarts.apache.org/examples/en/editor.html?c=tree-basic
@@ -16,7 +16,6 @@ import {laidOutSegmentCount, sunburstStatus} from './sunburst-status';
 type onClickOptions = 'Select' | 'Filter';
 const CATEGORIES_NUMBER = 500;
 const MAXIMUM_COLUMN_NUMBER = 20;
-let sunburstId = 0;
 const rowSourceMap: Record<onClickOptions, string> = {
   Select: 'Filtered',
   Filter: 'All',
@@ -38,30 +37,26 @@ export class SunburstViewer extends EChartViewer {
   selectedOptions: string[] = ['Selected', 'SelectedOrCurrent', 'FilteredSelected'];
   inheritFromGrid: boolean;
   title: string;
-  sunburstVersion: number | null = null;
-  currentVersion: number | null = null;
   includeNulls: boolean;
   private moleculeRenderQueue: Promise<void> = Promise.resolve();
   private moleculeRenderErrorLogged: boolean = false;
   private latestRenderToken = 0;
-  private _renderPending = 0;
-  private _layoutPending = false;
-  private _layout = new LayoutSettler();
-  private _onRendered = new Subject<void>();
   viewerFilter: DG.BitSet | null = null;
 
   /** Fires after every render pass — what automation settles on together with [isRenderPending]. */
-  get onRendered(): Observable<void> {return this._onRendered;}
+  get onRendered(): Observable<void> {return this.signals.rendered;}
 
   /** Whether a queued render still owes a frame - including the frame echarts lays the sectors out
    * on, which is after `setOption` returns. A canvas on its own says nothing. */
-  get isRenderPending(): boolean {return this._renderPending > 0 || this._layoutPending;}
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  protected frameOwed(): boolean {
+    return this.renderError === null && (this.eligibleHierarchyNames ?? []).length > 0 &&
+      (this.root.querySelector('canvas') === null || laidOutSegmentCount(this.chart) === 0);
+  }
 
   /** The message the viewer put in place of the sunburst, `null` while it is drawn. */
-  get renderError(): string | null {
-    const message = this.root.querySelector(`.${ERROR_CLASS}`);
-    return message === null ? null : message.textContent;
-  }
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
 
   getWidgetStatus(): DG.IWidgetStatus {return sunburstStatus(this);}
   constructor() {
@@ -239,21 +234,6 @@ export class SunburstViewer extends EChartViewer {
         this.render();
     }));
     this.subs.push(this.dataFrame.onValuesChanged.subscribe((_) => this.render()));
-    this.subs.push(grok.events.onEvent('d4-current-viewer-changed').subscribe((args) => {
-      const {viewer} = args.args;
-      if (viewer instanceof SunburstViewer)
-        this.currentVersion = viewer.sunburstVersion;
-    }));
-    this.subs.push(grok.events.onEvent('d4-drag-drop').subscribe((args) => {
-      if (this.sunburstVersion != this.currentVersion) return;
-      const grid = (args.args.dragObject.grid as DG.Grid);
-      const gridOrder: Int32Array = new Int32Array(grid.getRowOrder().buffer);
-      const names = this.hierarchyColumnNames;
-      this.hierarchyColumnNames = Array.from(gridOrder)
-        .map((index) => grid.table.row(index).get('name'))
-        .filter((columnName) => names.includes(columnName!));
-      this.render();
-    }));
     this.subs.push(this.onContextMenu.subscribe(this.onContextMenuHandler.bind(this)));
     this.subs.push(this.dataFrame.onColumnsRemoved.subscribe((data) => {
       const columnNamesToRemove = data.columns.map((column: DG.Column) => column.name);
@@ -280,8 +260,6 @@ export class SunburstViewer extends EChartViewer {
       return;
 
     this.hierarchyColumnNames = categoricalColumns.slice(0, this.hierarchyLevel).map((col) => col.name);
-    this.sunburstVersion = sunburstId;
-    sunburstId++;
 
     this.addSubs();
     this.render();
@@ -411,27 +389,8 @@ export class SunburstViewer extends EChartViewer {
 
   render(orderedHierarchyNames?: string[]): void {
     const currentToken = ++this.latestRenderToken;
-
-    this._renderPending++;
-    const settle = () => {
-      if (--this._renderPending > 0)
-        return;
-      // `_render` ends at `setOption(..., lazyUpdate: true)`: the frame is owed until the sectors are laid out
-      this._layoutPending = true;
-      this._layout.settle(() => this.renderError === null && (this.eligibleHierarchyNames ?? []).length > 0 &&
-        (this.root.querySelector('canvas') === null || laidOutSegmentCount(this.chart) === 0), () => {
-        this._layoutPending = false;
-        this._onRendered.next();
-      });
-    };
-    this.renderQueue = this.renderQueue
-      .then(() => this._renderWithToken(currentToken, orderedHierarchyNames))
-      // settle on both outcomes, or one failed render leaves the viewer pending for good — and a
-      // rejected queue would skip every later render, so the failure is logged rather than rethrown
-      .then(settle, (e) => {
-        settle();
-        console.error(e);
-      });
+    this.renderQueue = this.signals.track(
+      this.renderQueue.then(() => this._renderWithToken(currentToken, orderedHierarchyNames)));
   }
 
   private async _renderWithToken(token: number, orderedHierarchyNames?: string[]) {
@@ -493,7 +452,6 @@ export class SunburstViewer extends EChartViewer {
   detach() {
     for (const sub of this.subs)
       sub.unsubscribe();
-    this._layout.cancel();
     super.detach();
   }
 }

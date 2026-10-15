@@ -311,7 +311,7 @@ export function runOneWayAnova(): void {
     value: factor,
     tooltipText: 'Column with factor values',
     onValueChanged: (col) => {factor = col; updateRunButtonState();},
-    filter: (col: DG.Column) => factorColNames.includes(col.name),
+    filter: (col: DG.Column) => FACTOR_TYPES.includes(col.type),
     nullable: false,
   });
 
@@ -331,7 +331,7 @@ export function runOneWayAnova(): void {
     value: feature,
     tooltipText: 'Column with feature values',
     onValueChanged: (col) => {feature = col; updateRunButtonState();},
-    filter: (col: DG.Column) => featureColNames.includes(col.name),
+    filter: (col: DG.Column) => FEATURE_TYPES.includes(col.type),
     nullable: false,
   });
 

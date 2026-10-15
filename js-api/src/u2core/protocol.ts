@@ -49,6 +49,109 @@ export interface IInputStatus {
   ref?: string;
 }
 
+/** JSON-safe projection of a value — what crosses `page.evaluate`. Dates become ISO strings,
+ * entities/objects with a `name` become that name, arrays map element-wise, plain objects key-wise,
+ * functions/elements become undefined, everything else `String(x)`. Produced by `Control.jsonValue`. */
+export type JsonValue = null | boolean | number | string | JsonValue[] | {[key: string]: JsonValue};
+
+/** What the user does to a control or an item — the bdd library's gesture verbs. */
+export type U2Gesture =
+  | 'type' | 'clear' | 'pick' | 'toggle' | 'press' | 'expand' | 'collapse' | 'select'
+  | 'open' | 'close' | 'drag' | 'resize' | 'hover' | 'scroll' | 'add' | 'remove' | 'rename';
+
+/** One addressable item of a collection-like control: a list/tree/table row, a chip, an option,
+ * a radio/checkbox item, a tab, a wizard step, a menu item, a breadcrumb. */
+export interface IItemState {
+  /** Stable identity, equal to the item element's `data-u2-item`. */
+  key: string;
+  /** The text the user reads on the item (trimmed, single-spaced). */
+  label: string;
+  /** Position among ALL items (not the rendered window), 0-based. */
+  index: number;
+  /** Selectable items: in the selection (`aria-selected`). */
+  selected?: boolean;
+  /** Radio / checkbox / checkable tree items (`aria-checked`). */
+  checked?: boolean | 'mixed';
+  /** Tree nodes (`aria-expanded`). */
+  expanded?: boolean;
+  /** Tree depth, 1-based (aria-level). */
+  level?: number;
+  /** The item cannot be picked (`aria-disabled`). */
+  disabled?: boolean;
+  /** The current tab / the current wizard step. */
+  current?: boolean;
+  /** Wizard step already passed. */
+  completed?: boolean;
+  /** Wizard step / row reporting an error. */
+  invalid?: boolean;
+  /** Whether a DOM element exists for it right now (false: off-screen in a virtual list). */
+  rendered: boolean;
+}
+
+/** The items of a collection-like control. */
+export interface IItemsState {
+  /** All items, not the rendered window. */
+  count: number;
+  /** The first {@link ITEMS_CAP} items; `truncated` says whether there are more. */
+  list: IItemState[];
+  /** More than {@link ITEMS_CAP} items, and `list` holds the first ones only. */
+  truncated: boolean;
+}
+
+/** The typed, JSON-safe state block every `Control` fills — what generic bdd steps read.
+ * Keys a kind does not have are absent (never null-filled). Read on demand, never cached. */
+export interface IControlState {
+  /** The `data-u2` value; for a platform `DG.Widget` without one, `widget.type` ('Scatter plot'). */
+  kind: string;
+  /** The registry tag when the control was built from a spec node or its kind maps to one. */
+  tag?: string;
+  /** Explicit identity — equal to `data-u2-name`. Never derived from a caption. */
+  name?: string;
+  /** The accessible name the user sees: label part, button text, dialog/section title. */
+  label?: string;
+  /** No `aria-disabled="true"` / `disabled` on the root. */
+  enabled: boolean;
+  /** Connected, not under a `hidden` element, and laid out. */
+  visible: boolean;
+  /** `document.activeElement` is the root or inside it (or inside a popup this control owns). */
+  focused: boolean;
+  /** Shown but not editable (`aria-readonly`). */
+  readOnly?: boolean;
+  /** Must have a value (`aria-required`). */
+  required?: boolean;
+  /** Inputs, forms, wizard steps: no validation message. */
+  valid?: boolean;
+  /** The validation / error-row message the user sees; null when none. */
+  error?: string | null;
+  /** Async work in flight (dialog OK, async view, source load, wizard step). */
+  busy?: boolean;
+  /** Raw value, JSON-projected (inputs; a range slider: `[lo, hi]`). */
+  value?: JsonValue;
+  /** The value as displayed (the editor's text, the chosen option's caption, a checkbox 'true'/'false'). */
+  text?: string;
+  /** The hint the empty editor shows. */
+  placeholder?: string;
+  /** Popup / dropdown / dialog open. */
+  open?: boolean;
+  /** Section / accordion pane / tree node / disclosure expanded. */
+  expanded?: boolean;
+  /** Checkbox / switch state. */
+  checked?: boolean | 'mixed';
+  /** Toggle button state (`aria-pressed`). */
+  pressed?: boolean;
+  /** For a selectable card / row-like control. */
+  selected?: boolean;
+  /** Collection-like controls: every item, rendered or not. */
+  items?: IItemsState;
+  /** Keys of the selected items (list, tree, table, multi-choice, chips, multi-select). */
+  selection?: string[];
+  /** Key of the current tab / wizard step / active breadcrumb. */
+  current?: string;
+  /** Free per-kind readings that do not deserve a typed key (a stat card's delta). Same contract as
+   * {@link IWidgetStatus.values}: number | string | boolean only. */
+  extra?: {[key: string]: number | string | boolean};
+}
+
 /** Runtime snapshot of a widget's structure, read by the automated testing system. */
 export interface IWidgetStatus {
   parts: {[name: string]: Element};
@@ -61,7 +164,13 @@ export interface IWidgetStatus {
   description: string | null;
   error: string | null;
   inputs?: IInputStatus[];
+  /** Filled by every u2 `Control` and by `DG.Widget` (DOM-derived). Optional only because the Dart
+   * status object does not carry it; every JS read path fills it. */
+  state?: IControlState;
 }
+
+/** Item cap of {@link IItemsState.list}. */
+export const ITEMS_CAP = 500;
 
 /** A property whose name is guaranteed — what descriptors and bind steps carry. */
 export interface NamedProperty extends IProperty {

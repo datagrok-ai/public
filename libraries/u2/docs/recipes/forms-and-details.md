@@ -14,9 +14,13 @@
 - Labels form one left column (the form aligns them); values are **left-aligned**, starting
   right after the label column — never centered, never pushed to mid-pane.
 - Long read-only values **wrap** (`tableFromMap` does this by default); inputs ellipsize.
-- Required comes from the model (`nullable: false`), not from a hand-added asterisk;
-  validation messages render under the input, and `form.validate()` focuses the first
-  offender.
+- Required comes from the model (`nullable: false`) or the input's `required` option, not from a
+  hand-added asterisk; an empty required input shows its error once edited, left or validated,
+  and `form.validate()` shows every error and focuses the first offender. Hidden and disabled
+  inputs never fail the form.
+- Every input takes the same contract options: `readOnly` (selectable, not editable), `required`,
+  `visible`, `enabled` — each a value or a signal, followed live — plus `focus()`, `fill` and
+  `onEnter` / `onEscape` handlers that keep the key from the form and the dialog.
 - Entity values render as chips (`chip(entity)`), not as text.
 
 ## The shape (metadata-driven, the preferred path)
@@ -35,6 +39,14 @@ form.addButtons((row) => row.append(button('Save', async () => {
 })));
 // inspection: form.properties, form.input('name').validity, .addValidator(...), .enabled
 ```
+
+## Multi-step flows
+
+`Wizard` for steps known up front. A step's `commit` and the wizard's `onFinish` get
+`{signal: AbortSignal}`: Esc or ✕ aborts the run in flight; a throw or a rejection keeps the step
+and shows the message in the footer. React to `wizard.on('step' | 'finish' | 'cancel', …)`; read
+`wizard.currentStep`, `busy` and `error`. In a spec the same events are `on` entries (see
+[specs](specs.md#events)).
 
 ## Anti-patterns
 
