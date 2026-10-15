@@ -472,6 +472,30 @@ category('Crux sketcher', () => {
     }
   });
 
+  // The product owner (2026-10-15): the context panel's Actions > Sketch on a molecule opened Crux empty from the third
+  // time on. Core's action sets the current molecule's value as SMILES, and once a sketcher has synced the current object
+  // (js-api's Sketcher.syncCurrentObject) that value is a molblock, which Ketcher and OpenChemLib read by its format.
+  // Crux reads a molblock given as SMILES as the molblock it is: set before it is ready, as core sets it, and after.
+  test('a molblock given as SMILES', async () => {
+    const molblock = (smiles: string) => DG.chem.convert(smiles, DG.chem.Notation.Smiles, DG.chem.Notation.MolBlock);
+    grok.chem.currentSketcherType = 'Crux';
+    const host = new DG.chem.Sketcher();
+    host.setSmiles(molblock(SMILES));
+    const dialog = ui.dialog().add(host).show();
+    try {
+      await host.sketcherReady();
+      await delay(SETTLE_MS);
+      const crux = () => host.sketcher!.root.querySelector<CruxElement>('crux-sketch')!;
+      expect(crux().isEmpty, false, 'Crux given a molblock as SMILES before it was ready');
+      expect(canonical(crux().molfile), canonical(SMILES), 'the drawing of a molblock given as SMILES');
+      host.setSmiles(molblock(STEREO_SMILES));
+      await delay(SETTLE_MS);
+      expect(canonical(crux().molfile), canonical(STEREO_SMILES), 'a molblock given as SMILES once Crux is ready');
+    } finally {
+      dialog.close();
+    }
+  });
+
   test('molV2000', async () => {
     const {v2000} = molblocks(SMILES);
     const s = await openCrux();
