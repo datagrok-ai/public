@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
+import {checkPackages, getElement, getView, describeElements, singleDescription, closeWindows, PAUSE, getLegendDiv, getBallFlightModelLegend} from './utils';
 import {runDescriber, Tour, DescriptionPage} from './ui-describer';
 import '../../../../css/ui-describer.css';
 
@@ -68,6 +68,8 @@ export class SensitivityAnalysisTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {packages: ['Compute2', 'DiffStudio']};
 
   protected async _run() {
+    if (!checkPackages(this))
+      return;
     this.header.textContent = this.name;
     this.describe('Sensitivity Analysis runs the computation multiple times with varying inputs, and analyzes the relationship between inputs and outputs.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);

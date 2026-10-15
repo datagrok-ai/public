@@ -1,6 +1,7 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
+import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
 
 // @ts-ignore
 import '../../../../css/tutorial.css';
@@ -267,4 +268,13 @@ export function buildToggleOverlay(toggle: HTMLElement): HTMLElement {
   toggle.appendChild(overlay);
 
   return overlay;
+}
+
+export function checkPackages(tutorial: Tutorial): boolean {
+  const missing = tutorial.prerequisites.packages!.filter((p) => DG.Func.find({package: p}).length === 0);
+  if (missing.length) {
+    grok.shell.error(`Please install package${missing.length === 1 ? '' : 's'} ${missing.join(', ')} to start the tutorial`);
+    tutorial.close();
+  }
+  return missing.length === 0;
 }

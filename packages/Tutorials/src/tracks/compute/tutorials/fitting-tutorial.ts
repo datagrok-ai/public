@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter, map} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
-import {getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay} from './utils';
+import {checkPackages, getElement, getView, closeWindows, describeElements, PAUSE, getBallFlightModelLegend, buildToggleOverlay} from './utils';
 import { runDescriber } from './ui-describer';
 
 /** Fitting results info */
@@ -50,6 +50,8 @@ export class FittingTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {packages: ['Compute2', 'DiffStudio']};
 
   protected async _run() {
+    if (!checkPackages(this))
+      return;
     this.header.textContent = this.name;
     this.describe('Parameter optimization solves an inverse problem: finding the input conditions that lead to a specified output of the model.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);

@@ -6,7 +6,7 @@ import * as ui from 'datagrok-api/ui';
 import {filter} from 'rxjs/operators';
 import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {interval, fromEvent} from 'rxjs';
-import {closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
+import {checkPackages, closeWindows, getElement, getViewWithElement, PAUSE, getTextWithSlider, simulateMouseEventsWithMove,
   DELAY,
   getLegendDiv,
   waitForElement} from './utils';
@@ -88,6 +88,8 @@ export class DifferentialEquationsTutorial extends Tutorial {
   prerequisites: TutorialPrerequisites = {packages: ['DiffStudio']};
 
   protected async _run() {
+    if (!checkPackages(this))
+      return;
     this.header.textContent = this.name;
     this.describe('Diff Studio lets you create models declaratively using a simple, intuitive syntax.');
     this.describe(ui.link('Learn more', this.helpUrl).outerHTML);
