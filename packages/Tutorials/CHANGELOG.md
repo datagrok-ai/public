@@ -4,6 +4,7 @@
 
 * Sticky Meta: Fixed the Annotate dataset step not completing
 * Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
+* Embedded Viewers: Fixed the Color step not completing
 
 ## 1.11.6 (2026-10-02)
 
