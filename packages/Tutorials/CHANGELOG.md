@@ -2,6 +2,8 @@
 
 ## v.next
 
+* [core#662](https://github.com/datagrok-ai/core/issues/662): Sticky Meta: Fixed an error when hovering the row header in the last tutorial step
+* [core#672](https://github.com/datagrok-ai/core/issues/672): Differential equations tutorial: Fixed the "This tutorial can't continue" failure when the Lotka-Volterra model opens slowly
 * Filters: Fixed the "Save the current filter as a column" step not completing when Filter to Column is run from the top menu or the context panel
 * Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
 * GROK-20298: The plugin-declared Northwind domain schema is `northwind_demo` (was `northwind`): the name `northwind` is the EXTERNAL binding of the same data (a domain schema over the Northwind connection), and two packages may not ship one schema name
