@@ -86,20 +86,24 @@ function pointViewport(screenBounds: DG.Rect, data: IFitChartData): Viewport {
   return new Viewport(getChartBounds(data), dataBox, data.chartOptions?.logX ?? false, data.chartOptions?.logY ?? false);
 }
 
+/** What the Context Panel shows for a curve cell: the cell itself, or why its curves cannot be shown. */
+export function contextValue(gridCell: DG.GridCell, data: IFitChartData = getOrCreateParsedChartData(gridCell.cell, false)): any {
+  for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
+    if (condition(data.series))
+      return ui.divText(message, {style: {color: 'red'}});
+  }
+  return gridCell;
+}
+
 export function handleClick(gridCell: DG.GridCell, e: MouseEvent): void {
   if (!gridCell.cell.value || !gridCell.cell.column)
     return;
 
   const data = getOrCreateParsedChartData(gridCell.cell, false);
-
-  for (const [message, condition] of Object.entries(FitConstants.CONDITION_MAP)) {
-    if (condition(data.series)) {
-      grok.shell.o = ui.divText(message, {style: {color: 'red'}});
-      return;
-    }
-  }
-
-  grok.shell.o = gridCell;
+  const value = contextValue(gridCell, data);
+  grok.shell.o = value;
+  if (value !== gridCell)
+    return;
 
   const screenBounds = inflateScreenBounds(gridCell.bounds);
   const viewport = pointViewport(screenBounds, data);

@@ -8,8 +8,9 @@ under `public/.claude/skills/`), and the summary-column scenarios of the TestTra
 `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid-appearance-summary-persist.md` (scenario 6
 and the summary columns of scenario 8) and `packages/UsageAnalysis/files/TestTrack/Viewers/Grid/grid.md`
 ("Removing a Summary Column by the Top-Panel Icon", "Summary Column Surviving a Removed Source
-Column"). Five Forms features, 30 scenarios, 25 s in one run on one worker (2026-09-09); the grid
-feature, 14 tests, runs on dev in about a minute and a half on two workers (2026-09-11).
+Column"). Five Forms features, 29 scenarios (the project round trip moved to `src/tests/forms-tests.ts`),
+25 s in one run on one worker (2026-09-09); the grid feature, 13 tests, runs on dev in about a minute and
+a half on two workers (2026-09-11).
 
 The subject is the **Forms viewer** — the PowerGrid viewer that shows several records side by side
 (`libraries/utils/src/viewers/forms-viewer.ts`, registered as `Forms` in `src/package.ts`). It is
@@ -20,9 +21,9 @@ not the core Form viewer, whose features live in `packages/UsageAnalysis/bdd/fea
 | `forms-core` | 9 | one card for the current row and one per selected row that passes the filter, in table order; the grid's sort mirrored onto the card order and the header's arrow; Sort By overriding it without touching the grid's own sort; Use Grid Sort off stopping the mirror (GROK-20380, fixed here); the sort cycle a double-click on any label advances; Pin Row moving a card into the pinned pane, Unpin Row bringing it back, and the warning a non-unique value earns |
 | `forms-interactions` | 10 | a click on a card makes its row current, a click on a field sets the current cell, a click on a header label sets the current column, Control toggles a row's selection, Shift selects every row up to the card's and Control+Shift clears them, hovering a card or a grid row fills the mouse-over card and leaving empties it, and each show toggle drops its card |
 | `forms-fields` | 6 | the Fields property picks the columns and their order, the header's remove icon drops one, a column renamed to a `~` name leaves the set, an empty set draws no card and says nothing, a column removed from the table takes its field with it, and a named number format reaches the float fields only |
-| `forms-persistence` | 2 | a non-default field set, the Sort By column and a row pinned by value survive a layout saved to the server and re-applied over a view whose Forms viewer was closed and a histogram added, and a project round-trip |
+| `forms-persistence` | 1 | a non-default field set, the Sort By column and a row pinned by value survive a layout saved to the server and re-applied over a view whose Forms viewer was closed and a histogram added (a layout and a project round trip are also in `src/tests/forms-tests.ts`) |
 | `forms-presentation` | 3 | a text column is an input field; a column's colour coding paints the field's background on the current card and on the selected rows' cards, Color Code gates it and removing the coloring clears it |
-| `grid/summary-columns` | 14 | every renderer item of the grid's Add > Summary Columns menu (Sparklines, Bar Chart, Pie Chart, VlaaiVis, Radar, Smart Form, Tags, Confidence Interval — the `bar` renderer is not offered) appends a column of that name drawn by that renderer; the top-panel remove icon removes a selected one (GROK-18256); a Tags column keeps drawing after its source column is removed and stops listing it (GROK-19942); a renamed source column stays in its summary column; all eight and their renderers come back from a layout and a project; a Tags column marks the rows whose source column carries the flag and leaves the other columns their own drawing (GROK-20888) |
+| `grid/summary-columns` | 13 | every renderer item of the grid's Add > Summary Columns menu (Sparklines, Bar Chart, Pie Chart, VlaaiVis, Radar, Smart Form, Tags, Confidence Interval — the `bar` renderer is not offered) appends a column of that name drawn by that renderer; the top-panel remove icon removes a selected one (GROK-18256); a Tags column keeps drawing after its source column is removed and stops listing it (GROK-19942); a renamed source column stays in its summary column; all eight and their renderers come back from a layout (their settings through a layout and a project, and what a Tags column draws — GROK-20888 — are in `src/tests/summary-columns-tests.ts`) |
 
 From a fresh checkout of `public`, against a local stand on `http://localhost:8888` with this
 package published:

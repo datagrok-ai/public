@@ -7,6 +7,7 @@ import {Input, InputOptions} from '../../core/input-base.js';
 import {bindValue} from '../../core/bind.js';
 import {AsyncSource, AsyncFetch} from '../../core/async-source.js';
 import {SuggestionList} from '../../core/suggestion-list.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface SuggestInputOptions extends InputOptions<string> {
   source: AsyncFetch<string>;
@@ -24,12 +25,12 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
   readonly isOpen: ReadonlySignal<boolean>;
 
   // built by createEditor(), which the base constructor calls before subclass initializers
-  private _list!: SuggestionList<string>;
-  private _source!: AsyncSource<string>;
-  private _items!: ReadonlySignal<string[]>;
+  private declare _list: SuggestionList<string>;
+  private declare _source: AsyncSource<string>;
+  private declare _items: ReadonlySignal<string[]>;
   /** The revert point of a closed-popup Escape: the value at focus, moved by every pick and
    * every non-keystroke write — an external write must never be clobbered by Escape. */
-  private _anchorValue!: string;
+  private declare _anchorValue: string;
   private _typing = false;
 
   constructor(options: SuggestInputOptions) {
@@ -37,6 +38,28 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
     this.isOpen = this._list.isOpen;
     this.root.classList.add('u2-suggest-input');
     this.root.dataset.u2 = 'suggest-input';
+  }
+
+  /** Whether the popup is open and the source loading. */
+  getState(): ReturnType<Input<string>['getState']> {
+    return {...super.getState(), open: this._list.isOpen.peek(), busy: this._source.state.peek().kind === 'loading'};
+  }
+
+  /** What the source answered last. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const open = this._list.isOpen.peek();
+    return Input.itemsState(this._items.peek().map((item, index) => ({key: item, label: item, index,
+      rendered: open})), opts?.all);
+  }
+
+  /** Opens the whole list (the source asked for the empty query) and resolves to the option's element. */
+  async revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    this._list.clearActive();
+    this._source.query('');
+    this._list.open();
+    for (let i = 0; i < 50 && this._source.state.peek().kind === 'loading'; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    return super.revealItem(keyOrLabel);
   }
 
   protected createEditor(): HTMLElement {
@@ -50,6 +73,12 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
     const source = new AsyncSource<string>(this.options.source, {debounceMs: this.options.debounceMs});
     this._source = source;
     this.own(() => source.dispose());
+    this.effect(() => {
+      if (source.state.value.kind === 'loading')
+        this.root.setAttribute('aria-busy', 'true');
+      else
+        this.root.removeAttribute('aria-busy');
+    });
     this._items = computed(() => {
       const state = source.state.value;
       return state.kind === 'ready' ? state.items : [];
@@ -74,20 +103,20 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
     });
 
     // registered before bindValue so the flag is up when its handler writes the value signal
-    this._listen(input, 'input', () => this._typing = true);
+    this.scope.listen(input, 'input', () => this._typing = true);
     bindValue(this.scope, input, this.value);
-    this._listen(input, 'focus', () => this._anchorValue = this.value.peek());
-    this._listen(input, 'input', () => this._onInput());
+    this.scope.listen(input, 'focus', () => this._anchorValue = this.value.peek());
+    this.scope.listen(input, 'input', () => this._onInput());
     this.effect(() => {
       const v = this.value.value;
       if (!this._typing)
         this._anchorValue = v;
     });
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(input, 'blur', () => this._list.dismiss());
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(input, 'blur', () => this._list.dismiss());
     if (this.options.openOnFocus) {
-      this._listen(input, 'focus', () => this._showAll());
-      this._listen(input, 'click', () => this._showAll());
+      this.scope.listen(input, 'focus', () => this._showAll());
+      this.scope.listen(input, 'click', () => this._showAll());
     }
     this.effect(() => input.setAttribute('aria-expanded', String(this._list.isOpen.value)));
     return input;
@@ -178,10 +207,5 @@ export class SuggestInput extends Input<string, SuggestInputOptions> {
         this._list.dismiss();
         break;
     }
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

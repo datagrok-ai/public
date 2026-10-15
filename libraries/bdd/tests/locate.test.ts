@@ -49,6 +49,7 @@ const PAGE = `
   </div>
 </div>
 <div class="ui-input-root ui-input-text" name="input-host-Caption"><label class="ui-input-label">Caption</label><input class="ui-input-editor" value="x"></div>
+<div class="bare-boxes"><input type="checkbox" aria-label="Show side chains"><input aria-label="Name" value="n"></div>
 <div data-u2="list" data-u2-name="results">
   <div class="u2-list-row" role="option">alpha</div>
   <div class="u2-list-row" role="option" aria-selected="true">beta</div>
@@ -98,6 +99,12 @@ scenario('a kind by its data-u2-name, and by its label', async () => {
   assert.equal(await count('org input'), 1);
   assert.equal(await count('organization text input'), 1);
   assert.equal(await count('"First name" input'), 1);
+});
+
+scenario('a bare box named by its aria-label is a checkbox, a bare field a text input', async () => {
+  assert.equal(await count('"Show side chains" checkbox'), 1);
+  assert.equal(await count('"Show side chains" text input'), 0);
+  assert.equal(await count('Name text input'), 1);
 });
 
 scenario('a part of an input, and a part of a dialog', async () => {
@@ -397,4 +404,12 @@ test('the translated stack trace of a logged error is not a second error', () =>
   assert.deepEqual(takeErrors(fake), []);
   log('Stack trace Zz9\n\tpackages/d4/src/y.dart 1:1');
   assert.equal(takeErrors(fake).length, 1);
+});
+
+scenario('a "name = value" status line is a readout by its label, and its value part is the value alone', async () => {
+  await page!.setContent('<div role="status"><label>search = </label><output>Kinase</output></div>');
+  assert.equal(await text('value of search readout'), 'Kinase');
+  const readout = await locate(page!, el('search readout'));
+  assert.equal(await readout.count(), 1);
+  assert.equal(await readout.evaluate((e) => e.getAttribute('role')), 'status');
 });

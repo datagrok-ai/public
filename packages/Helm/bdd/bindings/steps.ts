@@ -1,10 +1,9 @@
-/* The steps only Helm defines: its readiness, a click on an empty spot of the editor canvas, typing
-   into the editor's notation pane, and a sequence too long for the properties calculation. Everything
-   generic — grid areas, the context menu, the context panel, dialogs, typing — is the library's
-   (`grok-bdd list-steps`). */
+/* The steps only Helm defines: its readiness, a click on an empty spot of the editor canvas and a sequence
+   too long for the properties calculation. Everything generic — grid areas, the context menu, the context
+   panel, dialogs, typing — is the library's (`grok-bdd list-steps`). */
 import type {Page} from '@playwright/test';
 import {Given, When} from '@datagrok-libraries/bdd';
-import {ElementRef, expect, locate} from '@datagrok-libraries/bdd/runtime';
+import {locate} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -34,16 +33,6 @@ export const clickEmptyCanvas = When('user clicks on an empty spot of editor can
   }
   throw new Error(`editor canvas: no spot 40 px clear of the ${atoms.length} drawn monomers`);
 }, {tier: 'ui'});
-
-/** The editor app takes Control+A for its own select-all (every monomer), so the library's typing,
- * which selects the old text with that key, appends to the notation instead of replacing it: the
- * text is selected the way a drag over it would, then typed key by key. */
-export const replaceNotation = When('user replaces the text of {element} with {string}', async (page: Page, target: ElementRef, text: string) => {
-  const loc = await locate(page, target);
-  await loc.selectText();
-  await page.keyboard.type(text);
-  await expect(loc, `the text typed into ${target.phrase}`).toHaveText(text);
-}, {tier: 'ui', description: 'for a contenteditable whose app owns Control+A; the text is typed, not committed'});
 
 /** A peptide of N alanines: the properties calculation refuses a sequence over 1000 characters. */
 export const setLongPeptide = When('user sets {string} column in row {int} to a peptide of {int} alanines', async (page: Page, column: string, row: number, n: number) => {

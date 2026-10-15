@@ -85,7 +85,7 @@ export async function addCardViaPicker(page: Page, column: string): Promise<void
   // The caption lands before the card has finished growing, and a caller that measures a category
   // row off the fresh card would address a band the layout is about to move.
   await page.evaluate((col) => (window as any).__settledFor(() => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => ((c.querySelector('.d4-filter-column-name') as HTMLElement | null)?.textContent ?? '').trim() === col);
     const r = card?.getBoundingClientRect();
     return r ? `${Math.round(r.top)}|${Math.round(r.height)}` : '';

@@ -209,7 +209,7 @@ selector('changeTable closes the platform popup; the next open builds a fresh gr
 
 selector('reopening the popup leaves nothing behind', () => {
   const input = make();
-  const disposers = input.scope._disposers.length;
+  const disposers = input.scope._disposers?.size ?? 0;
   const live = Scope.liveCount;
   for (let i = 0; i < 10; i++) {
     open(input);
@@ -219,7 +219,7 @@ selector('reopening the popup leaves nothing behind', () => {
   assert.equal(FakeColumnGrid.calls.length, 10, 'a fresh grid per open');
   assert.ok(FakeColumnGrid.calls.every((cg) => cg.closed > 0), 'each one closed');
   assert.equal(Scope.liveCount, live, 'each open owns its own scope, and closing releases it');
-  assert.equal(input.scope._disposers.length, disposers, 'no per-open cleanup piles up on the input');
+  assert.equal(input.scope._disposers?.size ?? 0, disposers, 'no per-open cleanup piles up on the input');
   input.dispose();
 });
 

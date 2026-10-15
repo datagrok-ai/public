@@ -14,7 +14,17 @@ import {getDoseResponseSeries} from '../plate/analyses/drc/utils';
 import {FIT_FUNCTION_4PL_REGRESSION, IFitSeries} from '@datagrok-libraries/statistics/src/fit/fit-curve';
 
 
-export async function __createDummyPlateData() {
+export let demoPlatesSeeding: Promise<void> | undefined;
+
+export function __createDummyPlateData(): Promise<void> {
+  demoPlatesSeeding ??= seedDemoPlateData().catch((e) => {
+    demoPlatesSeeding = undefined;
+    throw e;
+  });
+  return demoPlatesSeeding;
+}
+
+async function seedDemoPlateData() {
   await initPlates();
   if (plateTypes.length === 0) {
     await grok.functions.call('Plates:SetupPltsSchema');

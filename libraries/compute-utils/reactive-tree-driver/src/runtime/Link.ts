@@ -6,7 +6,7 @@ import {descriptionOutputs, isFuncCallNode, StateTreeNode} from './StateTreeNode
 import {ActionSpec, MatchedIO, MatchedNodePaths, MatchInfo} from './link-matching';
 import {BehaviorSubject, combineLatest, defer, EMPTY, merge, Subject, of, asapScheduler} from 'rxjs';
 import {map, filter, takeUntil, withLatestFrom, switchMap, catchError, mapTo, finalize, debounceTime, distinctUntilChanged, take} from 'rxjs/operators';
-import {callHandler, indexFromEnd} from '../utils';
+import {callHandler, copyDataFrame, indexFromEnd} from '../utils';
 import {defaultLinkHandler, Slot} from './default-handler';
 import {ControllerCancelled, FuncallActionController, LinkController, MetaController, MutationController, NodeMetaController, PipelineValidatorController, RuntimeReturnController, ValidatorController} from './LinkControllers';
 import {TemplateInfo} from '../RuntimeControllers';
@@ -240,7 +240,7 @@ export class Link {
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     if (this.matchInfo.spec.handler) {
@@ -381,7 +381,7 @@ export class Link {
         id: this.matchInfo.spec.id,
         linkUUID: this.uuid,
         basePath: this.matchInfo.basePath,
-        isDefaultValidator: this.matchInfo.isDefaultValidator,
+        annotation: this.matchInfo.spec.annotation,
       });
     }
     const outputsEntries = Object.entries(this.matchInfo.outputs).map(([outputAlias, outputItems]) => {
@@ -420,6 +420,8 @@ export class Link {
             throw new Error(`Unable to set meta to a raw memory store ${node.getItem().uuid}`);
           store.setMeta(ioName, this.uuid, controller.outputs[outputAlias]);
         } else if (controller instanceof MutationController) {
+          if (node.getItem().isReadonly)
+            continue;
           const initConfig = controller.outputs[outputAlias];
           if (initConfig)
             this.lastPipelineMutations.push({path: nodePath, initConfig});
@@ -447,14 +449,12 @@ export class Link {
           if (data) {
             const [state, restriction] = data;
             const item = node.getItem();
-            const isDf = state instanceof DG.DataFrame;
-            const nextValue = isDf ? state.clone() : state;
-            if (isDf)
-              (nextValue as DG.DataFrame).id = uuidv4();
             if (isFuncCallNode(item) && !item.instancesWrapper.isOutputOutdated$.value)
-              item.instancesWrapper.setRestriction(ioName, nextValue, restriction);
+              item.instancesWrapper.setRestriction(ioName, state, restriction);
+            else if (isFuncCallNode(item) && item.instancesWrapper.isReadonly)
+              item.instancesWrapper.setState(ioName, state, restriction);
             else
-              node.getItem().getStateStore().setState(ioName, nextValue, restriction);
+              item.getStateStore().setState(ioName, state instanceof DG.DataFrame ? copyDataFrame(state) : state, restriction);
           }
           if (controller instanceof LinkController && controller.consistencyResets.has(outputAlias)) {
             const item = node.getItem();

@@ -9,7 +9,7 @@
   "description": "WebComponents runtime code",
   "dependencies": {
     "@datagrok-libraries/dock-spawn-dg": "workspace:^",
-    "@datagrok-libraries/test": "1.4.1",
+    "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",
     "@datagrok-libraries/webcomponents": "workspace:^",
     "cash-dom": "catalog:",

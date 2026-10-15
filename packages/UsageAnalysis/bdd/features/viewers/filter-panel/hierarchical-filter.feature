@@ -9,9 +9,9 @@ Feature: Hierarchical filter card
   journey on demog-1000: 553 rows are F, 480 of them Caucasian (73 F rows are not), and 285 of
   those have SEVERITY None (268 F rows are not F / Caucasian / None). A row's state is the glyph
   the tree draws over its checkbox, the only place the product keeps a partial state.
-  Not translated: choosing and reordering the levels in the card's column picker (a canvas list)
-  — the levels are set through the card's state with every node on, so that a reorder clears the
-  criterion is not claimed; what the tree then shows is read back.
+  The levels are first set through the card's state with every node on; the third level is then
+  ticked in the card's own column list (its tree icon), and the reorder is a drag of RACE's row above
+  SEX's there — a reorder clears the criterion (GROK-16528), as the manual case notes.
 
   Background:
     Given user is logged in
@@ -62,8 +62,14 @@ Feature: Hierarchical filter card
     And no rows where "SEX" is "M" should pass the filter
     And no errors should have been logged
 
-  Scenario: A third level narrows inside the leaf of the second
-    When user configures the hierarchical filter with columns "SEX, RACE, SEVERITY"
+  Scenario: A third level picked in the card's column list narrows inside the leaf of the second
+    When user hovers over "SEX / RACE" filter card
+    And user clicks on "Select columns" icon in "SEX / RACE" filter card
+    Then "Select columns..." dialog should be visible
+    And the "text of cell 1 of __name" reading of Grid viewer in "Select columns..." dialog should be "SEX"
+    And the "text of cell 2 of __name" reading of Grid viewer in "Select columns..." dialog should be "RACE"
+    When user toggles the "SEVERITY" column in the column list of "Select columns..." dialog
+    And user clicks on OK button in "Select columns..." dialog
     Then "SEX / RACE / SEVERITY" filter card should be visible
     And all rows should pass the filter
     When user expands the "F" row of the hierarchical filter card
@@ -92,8 +98,14 @@ Feature: Hierarchical filter card
     And the "F" row of the hierarchical filter card should be partially checked
     And no errors should have been logged
 
-  Scenario: Reordering the levels rebuilds the roots
-    When user configures the hierarchical filter with columns "RACE, SEX"
+  Scenario: Reordering the levels in the column list rebuilds the roots and clears the criterion
+    Then 268 rows should pass the filter
+    When user hovers over "SEX / RACE / SEVERITY" filter card
+    And user clicks on "Select columns" icon in "SEX / RACE / SEVERITY" filter card
+    Then "Select columns..." dialog should be visible
+    When user toggles the "SEVERITY" column in the column list of "Select columns..." dialog
+    And user drags the "cell 2 of __name" area of Grid viewer in "Select columns..." dialog to the "cell 1 of __name" area
+    And user clicks on OK button in "Select columns..." dialog
     Then "RACE / SEX" filter card should be visible
     And the hierarchical filter card should list the "Caucasian" row
     And the hierarchical filter card should not list the "F" row

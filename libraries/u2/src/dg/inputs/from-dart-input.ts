@@ -23,7 +23,7 @@ interface PlatformInputOptions<T> extends InputOptions<T> {
  * Dart-side validators (regex, func-param, script) reach `Form.validity` through {@link validity}.
  * The bridge never owns the wrapped input: `dispose()` severs the subscriptions and nothing else. */
 export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
-  private _messages!: Signal<string | null>;
+  private declare _messages: Signal<string | null>;
 
   constructor(dgInput: DartInputLike<T>, name?: string) {
     super({dgInput, name: name ?? dgInput.caption}, dgInput.value);
@@ -41,7 +41,7 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     this.own(() => changed.unsubscribe());
     this.effect(() => {
       const value = this.value.value;
-      if (!Object.is(value, dgInput.value))
+      if (!PlatformInput._same(value, dgInput.value))
         dgInput.value = value;
     });
 
@@ -84,6 +84,27 @@ export class PlatformInput<T> extends Input<T, PlatformInputOptions<T>> {
     };
     editor.addEventListener('keydown', onKeyDown);
     input.own(() => editor.removeEventListener('keydown', onKeyDown));
+  }
+
+  /** The platform getter answers a fresh wrapper, list, map or dayjs on every read, so the echo
+   * check compares what they hold: the dart handle, the time, the items. */
+  private static _same(a: unknown, b: unknown): boolean {
+    if (Object.is(a, b))
+      return true;
+    if (typeof a !== 'object' || typeof b !== 'object' || a === null || b === null)
+      return false;
+    if ('dart' in a || 'dart' in b)
+      return (a as {dart?: unknown}).dart === (b as {dart?: unknown}).dart;
+    const va = a.valueOf();
+    const vb = b.valueOf();
+    if (va !== a || vb !== b)
+      return Object.is(va, vb);
+    if (Array.isArray(a) || Array.isArray(b))
+      return Array.isArray(a) && Array.isArray(b) && a.length === b.length &&
+        a.every((item, i) => PlatformInput._same(item, b[i]));
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length &&
+      keys.every((k) => PlatformInput._same((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
   }
 
   private static _join(messages: string[] | null): string | null {

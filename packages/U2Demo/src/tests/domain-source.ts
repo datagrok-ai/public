@@ -7,8 +7,9 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Rows, Scope} from '@datagrok-libraries/u2';
-import type {DomainSource, IFieldStatus} from '@datagrok-libraries/u2';
-import {domains, DomainPick, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {IFieldStatus} from '@datagrok-libraries/u2';
+import type {DomainSource} from '@datagrok-libraries/ems';
+import {domains, DomainPick, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
 const TABLE = 'apitests.item';
 

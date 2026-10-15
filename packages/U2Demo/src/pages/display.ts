@@ -153,12 +153,13 @@ export function feedbackPage(): HTMLElement {
 export function tablesPage(): HTMLElement {
   const table = new BasicTable<{name: string, smiles: string}>({
     columns: [
-      {header: 'Name', render: (drug) => drug.name},
+      {header: 'Name', render: (drug) => drug.name, width: '110px'},
       {header: 'SMILES', render: (drug) => span(drug.smiles, 'u2demo-code')},
       {header: 'Atoms', render: (drug) => String(drug.smiles.length), align: 'right', width: '70px'},
     ],
     items: DRUGS,
     selectable: true,
+    fixedLayout: true,
   });
 
   const grid = new VirtualGrid<number>({
@@ -206,7 +207,9 @@ export function sectionsPage(): HTMLElement {
       {id: 'review', title: 'Review', content: () => divV([span(computed(() =>
         `Creating "${project.value.value}" for ${targets.value.value.join(', ') || 'no target'}.`))])},
     ],
-    onFinish: () => finished.value = 'finished',
+    onFinish: () => {
+      finished.value = 'finished';
+    },
   });
 
   return divV([

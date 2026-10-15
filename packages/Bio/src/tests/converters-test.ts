@@ -40,6 +40,9 @@ category('converters', () => {
     separatorUn = 'separatorUn',
     helmUn = 'helmUn',
 
+    separatorMsa = 'separatorMsa',
+    helmMsa = 'helmMsa',
+
     helmLoneDeoxyribose = 'helmLoneDeoxyribose',
     helmLoneRibose = 'helmLoneRibose',
     helmLonePhosphorus = 'helmLonePhosphorus',
@@ -110,6 +113,16 @@ Lys_Boc-hHis-Aca-Cys_SEt-T-dK-Thr_PO3H2-Aca-Tyr_PO3H2-Lys_Boc-hHis-Aca-Cys_SEt-T
 PEPTIDE1{meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D.meI.hHis.Aca.N.T.dE.Thr_PO3H2.Aca.D}$$$$
 PEPTIDE1{meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.meI.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2}$$$$
 PEPTIDE1{Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca.Tyr_PO3H2.Lys_Boc.hHis.Aca.Cys_SEt.T.dK.Thr_PO3H2.Aca}$$$$`,
+    /* eslint-disable max-len */
+    [Samples.separatorMsa]: `seq
+meI/hHis/Aca/N/T/dE/Thr_PO3H2/Aca/D-Tyr_Et/Tyr_ab-dehydroMe/dV/E/N/D-Orn/D-aThr//Phe_4Me
+Lys_Boc/hHis/Aca/Cys_SEt/T/dK/Thr_PO3H2/Aca/Tyr_PO3H2/D-Chg/dV/Thr_PO3H2/N/D-Orn/D-aThr//Phe_4Me
+meI/hHis/Aca/N/T/dK/Thr_PO3H2/Aca/D-Tyr_Et/meQ/dV/E/N/dV///Phe_4Me`,
+    [Samples.helmMsa]: `seq
+PEPTIDE1{[meI].[hHis].[Aca].N.T.[dE].[Thr_PO3H2].[Aca].[D-Tyr_Et].[Tyr_ab-dehydroMe].[dV].E.N.[D-Orn].[D-aThr].*.[Phe_4Me]}$$$$
+PEPTIDE1{[Lys_Boc].[hHis].[Aca].[Cys_SEt].T.[dK].[Thr_PO3H2].[Aca].[Tyr_PO3H2].[D-Chg].[dV].[Thr_PO3H2].N.[D-Orn].[D-aThr].*.[Phe_4Me]}$$$$
+PEPTIDE1{[meI].[hHis].[Aca].N.T.[dK].[Thr_PO3H2].[Aca].[D-Tyr_Et].[meQ].[dV].E.N.[dV].*.*.[Phe_4Me]}$$$$`,
+    /* eslint-enable max-len */
     [Samples.helmLoneDeoxyribose]: `seq
 RNA1{d(A).d(C).d(G).d(T).d(C).d(A).d(C).d(G).d(T).d(C)}$$$$
 RNA1{d(C).d(A).d(G).d(T).d(G).d(T)p.d(C).d(A).d(G).d(T).d(G).d(T)p}$$$$
@@ -244,6 +257,9 @@ RNA1{p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.r(U)p.r(U)p.r(C)p.r(A)p.r(A)p.r(C)p.p
   });
   test('testSeparatorGapsToHelm', async () => {
     await _testConvert(Samples.separatorGaps, converter(NOTATION.HELM), Samples.helmGaps);
+  });
+  test('testSeparatorMsaToHelm', async () => {
+    await _testConvert(Samples.separatorMsa, converter(NOTATION.HELM), Samples.helmMsa);
   });
   // TODO: testSeparatorUnToHelm
   // test('testSeparatorUnToHelm', async () => {

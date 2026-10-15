@@ -636,3 +636,10 @@ smoke('a pick that does not make a filter yet applies nothing, and still clears 
   assert.equal(q.value.peek(), applied, 'the tree in force is untouched');
   assert.deepEqual(q.problems.value, []);
 });
+
+smoke('required: an empty query is invalid; a committed condition makes it valid', () => {
+  const q = mount(new FilterQueryInput({schema: SCHEMA, required: true}));
+  assert.equal(q.getState().valid, false);
+  q.value.value = Filters.group('and', [Filters.cond('age', '>', 30)]);
+  assert.equal(q.getState().valid, true);
+});

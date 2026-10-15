@@ -7,12 +7,14 @@ generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to re
 sub_features_covered: [chem.int.project-save-reopen-chem-state]
 --- */
 import {test} from '@playwright/test';
+import '../../bindings/crux.js';
 import '../../bindings/datasets.js';
 import '../../bindings/elements.js';
 import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
+import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {filterPassesMatching} from '../../bindings/molecules.js';
 import {treeBuilt} from '../../bindings/scaffold-tree.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';

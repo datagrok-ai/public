@@ -23,7 +23,7 @@ beforeAll(async () => {
     dapi = new NodeDapi(await NodeApiClient.login(url, key));
     await dapi.domains.createSchema(SCHEMA, 'CLI test', 'grok s domains integration test');
     created = true;
-    await dapi.domains.applySchema(SCHEMA, {tables: {widget: {
+    await dapi.domains.applySchema(SCHEMA, {ifVersion: '1', tables: {widget: {
       businessKey: ['sku'],
       columns: {
         sku: {type: 'string', required: true, unique: true},

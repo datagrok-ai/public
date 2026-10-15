@@ -1,5 +1,6 @@
 import {autoUpdate, computePosition, flip, offset, size} from '@floating-ui/dom';
-import {Scope} from './scope.js';
+import {Scope, debug} from './scope.js';
+import {Control} from './component.js';
 
 /** Fired on the content element when the overlay closes for any reason (outside pointerdown,
  * Esc, anchor removal, scope disposal) — lets the owning control resync its own open state. */
@@ -12,18 +13,61 @@ export interface OverlayOptions {
   maxHeight?: number | string;
 }
 
-/** The single body-level layer host. One container for every u2 popup, so z-index and
- * dismissal are decided in one place instead of per control. */
+/** A dialog as the overlay stack sees it. */
+export interface OverlayDialog {
+  readonly root: HTMLElement;
+  /** A modal dialog on top also takes an Escape whose focus fell out onto the page. */
+  readonly modal: boolean;
+  /** The Escape meant for this dialog: cancels it, or aborts its pending OK. */
+  cancelByKey(): void;
+  close(): void;
+}
+
+interface Entry {
+  content: HTMLElement;
+  close: () => void;
+  anchor?: HTMLElement;
+  /** The owner's element keyboard focus lands on; it carries `aria-controls`/`aria-expanded`. */
+  focus?: HTMLElement;
+  dialog?: OverlayDialog;
+}
+
+const FOCUSABLE = 'input, textarea, select, button, [role="combobox"], [tabindex]:not([tabindex="-1"])';
+const POPUP_ROLES = ['listbox', 'menu', 'tree', 'grid', 'dialog'];
+/** Everything in the dialog band, the platform's dialogs included. */
+const DIALOGS = '.d4-dialog, .d4-dialog-center-wrapper, .u2-dialog, .u2-dialog-backdrop';
+/** `--dg-z-dialog`: where the dialog band starts, for u2 and the platform alike. */
+const DIALOG_Z = 3000;
+
+/** The `u2-<n>` id counter, shared with `Control.rootId` and every engine copy on the page. */
+const ids: {next: number} = (globalThis as Record<PropertyKey, any>)[Symbol.for('u2.ids')] ??= {next: 0};
+
+/** The one overlay stack: every open popup and dialog, the last one on top. Escape and outside
+ * clicks are decided here, by one listener set that exists only while something is open. Popups
+ * live in a body-level host above everything; dialogs live in the dialog band they share with
+ * the platform's `DG.Dialog`. */
 export class Overlay {
   private static _host: HTMLElement | undefined;
   private static _layer = 0;
+  private static readonly _stack: Entry[] = [];
+  private static _listeners: Scope | undefined;
 
-  /** Monotonic layer counter shared by everything in the host (popups, dialogs, their
-   * backdrops): whatever opened last paints on top, so a combobox inside a dialog is
-   * never occluded by it. Scoped to the u2 overlay host — the platform's own surfaces
-   * keep their banded z-orders. */
+  /** Monotonic layer counter of the host: whatever opened there last paints on top. */
   static nextLayer(): number {
     return ++Overlay._layer;
+  }
+
+  /** The z-index that puts a dialog above every dialog on the page, `DG.Dialog` included: one more
+   * than the highest in the band, and never under its floor. The platform raises its own dialogs
+   * above u2's the same way, so whichever was opened or clicked last is on top. */
+  static nextDialogZ(): number {
+    let top = DIALOG_Z - 1;
+    for (const el of document.querySelectorAll<HTMLElement>(DIALOGS)) {
+      const z = parseInt(el.style.zIndex, 10);
+      if (z > top)
+        top = z;
+    }
+    return top + 1;
   }
 
   static get host(): HTMLElement {
@@ -33,9 +77,9 @@ export class Overlay {
       el.style.cssText = 'position: fixed; left: 0; top: 0; width: 0; height: 0; z-index: var(--dg-z-overlay);';
       document.body.append(el);
       // an empty layer reads as a leftover in a DOM dump, and every surface that puts something
-      // here takes it away somewhere else — a popup's close, a dialog's, a balloon's timer. The
-      // host watching itself is the one teardown all of them share; the getter builds a fresh one
-      // the moment anything needs one again.
+      // here takes it away somewhere else — a popup's close, a balloon's timer. The host watching
+      // itself is the one teardown all of them share; the getter builds a fresh one the moment
+      // anything needs one again.
       new MutationObserver(() => {
         if (el.isConnected && el.childNodes.length === 0)
           el.remove();
@@ -51,7 +95,7 @@ export class Overlay {
   static show(anchor: HTMLElement, content: HTMLElement, scope: Scope,
     options: OverlayOptions = {}): () => void {
     // nothing to anchor to — and autoUpdate's first, synchronous update would close through
-    // `position()` before the stop it returns is held, leaving its frame loop running for good
+    // `position()` before the stop it returns is held, leaving its observers on for good
     if (!anchor.isConnected)
       return () => {};
     // The owner link: overlay content is portaled to the body host, so DOM ancestry cannot answer
@@ -62,6 +106,19 @@ export class Overlay {
       content.dataset.u2Owner = owner.dataset.u2Name;
     else
       delete content.dataset.u2Owner;
+    const ownerControl = Control.forElement(anchor);
+    if (ownerControl !== undefined)
+      content.dataset.u2OwnerId = ownerControl.rootId;
+    else
+      delete content.dataset.u2OwnerId;
+    content.id ||= `u2-${++ids.next}-popup`;
+    content.dataset.u2Part = 'popup';
+    const focus = Overlay._focusTarget(anchor);
+    const controls = focus.getAttribute('aria-controls');
+    focus.setAttribute('aria-controls', content.id);
+    focus.setAttribute('aria-expanded', 'true');
+    if (!focus.hasAttribute('aria-haspopup'))
+      focus.setAttribute('aria-haspopup', POPUP_ROLES.find((r) => content.getAttribute('role') === r) ?? 'true');
     // Fixed strategy: viewport coordinates, independent of offsetParent chains — the app's
     // dock/view containers are positioned ancestors that break absolute-strategy math.
     content.style.position = 'fixed';
@@ -72,34 +129,22 @@ export class Overlay {
 
     let closed = false;
     let stopAutoUpdate: () => void = () => {};
-
-    const onPointerDown = (e: Event) => {
-      const target = e.target as Node;
-      if (!content.contains(target) && !anchor.contains(target))
-        close();
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape')
-        close();
-    };
-    // autoUpdate reacts to scroll/resize but not to detach; dock_spawn reparents constantly.
-    const detachObserver = new MutationObserver(() => {
-      if (!anchor.isConnected)
-        close();
-    });
-
     const close = () => {
       if (closed)
         return;
       closed = true;
       stopAutoUpdate();
-      detachObserver.disconnect();
-      document.removeEventListener('pointerdown', onPointerDown, true);
-      document.removeEventListener('keydown', onKeyDown);
+      Overlay._remove(entry);
+      focus.setAttribute('aria-expanded', 'false');
+      if (controls === null)
+        focus.removeAttribute('aria-controls');
+      else
+        focus.setAttribute('aria-controls', controls);
       content.remove();
       scope.disown(close);
       content.dispatchEvent(new CustomEvent(OVERLAY_CLOSE_EVENT));
     };
+    const entry: Entry = {content, close, anchor, focus};
 
     const position = () => {
       if (!anchor.isConnected) {
@@ -129,13 +174,142 @@ export class Overlay {
       });
     };
 
-    detachObserver.observe(document.body, {childList: true, subtree: true});
-    document.addEventListener('pointerdown', onPointerDown, true);
-    document.addEventListener('keydown', onKeyDown);
-    // animationFrame: dock_spawn moves/reparents anchors outside scroll/resize (pane
-    // activation, docking) — the default observers miss pure element moves.
-    stopAutoUpdate = autoUpdate(anchor, content, position, {animationFrame: true});
+    Overlay._push(entry);
+    // event-driven: scroll, resize, element resize and layout shift of the anchor — no frame loop
+    stopAutoUpdate = autoUpdate(anchor, content, position);
     scope.own(close);
     return close;
+  }
+
+  /** Puts a shown dialog on the stack; answers its removal. */
+  static pushDialog(dialog: OverlayDialog): () => void {
+    const entry: Entry = {content: dialog.root, close: () => dialog.close(), dialog};
+    Overlay._push(entry);
+    return () => Overlay._remove(entry);
+  }
+
+  /** Moves a stacked dialog above the other dialogs (the popups open above them stay on top):
+   * the dialog the user brought forward is the one Escape reaches. */
+  static raiseDialog(dialog: OverlayDialog): void {
+    const stack = Overlay._stack;
+    const i = stack.findIndex((e) => e.dialog === dialog);
+    if (i < 0)
+      return;
+    const [entry] = stack.splice(i, 1);
+    let j = stack.length - 1;
+    while (j >= 0 && stack[j].dialog === undefined)
+      j--;
+    stack.splice(j + 1, 0, entry);
+  }
+
+  /** Whether a dialog of the platform (`.d4-dialog`) paints above `el`. */
+  static platformDialogAbove(el: HTMLElement): boolean {
+    const z = parseInt(el.style.zIndex, 10) || 0;
+    return [...document.querySelectorAll<HTMLElement>('.d4-dialog')]
+      .some((d) => (parseInt(d.style.zIndex, 10) || 0) > z);
+  }
+
+  private static _push(entry: Entry): void {
+    Overlay._stack.push(entry);
+    if (Overlay._listeners !== undefined)
+      return;
+    const scope = Overlay._listeners = new Scope(undefined, {label: 'overlay'});
+    debug.markSingleton(scope);
+    // capture: a popup owns its Escape before the control under it or the dialog around it sees one
+    scope.listen(document, 'keydown', (e) => Scope.runWith(undefined, () => Overlay._onKeyDown(e as KeyboardEvent)),
+      {capture: true});
+    scope.listen(document, 'pointerdown', (e) => Scope.runWith(undefined, () => Overlay._onPointerDown(e)),
+      {capture: true});
+    // a window resize reflows the page under an anchored popup and strands it where its anchor was
+    scope.listen(window, 'resize', () => Scope.runWith(undefined, () => Overlay._closePopups()));
+    // autoUpdate reacts to scroll/resize/layout shift, not to detach; dock_spawn reparents constantly
+    const observer = new MutationObserver(() => Overlay._sweep());
+    observer.observe(document.body, {childList: true, subtree: true});
+    scope.own(() => observer.disconnect());
+  }
+
+  private static _remove(entry: Entry): void {
+    const stack = Overlay._stack;
+    const i = stack.indexOf(entry);
+    if (i < 0)
+      return;
+    stack.splice(i, 1);
+    const listeners = Overlay._listeners;
+    if (stack.length === 0 && listeners !== undefined) {
+      Overlay._listeners = undefined;
+      listeners.dispose();
+    }
+  }
+
+  /** Escape goes to the top entry. A popup closes and the event stops there, so the control and
+   * the dialog under it never see it. A dialog takes it from its own root (so a control inside can
+   * claim it first); here only when the focus fell out onto the page and nothing is above it. */
+  private static _onKeyDown(e: KeyboardEvent): void {
+    if (e.key !== 'Escape' || e.defaultPrevented)
+      return;
+    const top = Overlay._stack[Overlay._stack.length - 1];
+    if (top === undefined)
+      return;
+    const target = e.target instanceof Node ? e.target : null;
+    const lost = Overlay._focusLost(target);
+    if (top.dialog === undefined) {
+      const own = target !== null && (top.content.contains(target) || top.anchor!.contains(target));
+      // a platform dialog holding the focus keeps its Escape
+      if (!own && !lost && target instanceof Element && target.closest('.d4-dialog') !== null)
+        return;
+      e.preventDefault();
+      e.stopPropagation();
+      // focus inside the popup would fall to the page with it: it goes back to the owner
+      const active = document.activeElement;
+      const refocus = active !== null && top.content.contains(active);
+      top.close();
+      if (refocus && top.focus!.isConnected)
+        top.focus!.focus();
+      return;
+    }
+    if (lost && top.dialog.modal && !Overlay.platformDialogAbove(top.dialog.root)) {
+      e.preventDefault();
+      e.stopPropagation();
+      top.dialog.cancelByKey();
+    }
+  }
+
+  /** Closes the popups above the entry the press landed in; dialogs never close on an outside press. */
+  private static _onPointerDown(e: Event): void {
+    const target = e.target as Node;
+    for (const entry of [...Overlay._stack].reverse()) {
+      if (entry.content.contains(target) || entry.anchor?.contains(target))
+        return;
+      if (entry.dialog === undefined)
+        entry.close();
+    }
+  }
+
+  private static _closePopups(): void {
+    for (const entry of [...Overlay._stack].reverse()) {
+      if (entry.dialog === undefined)
+        entry.close();
+    }
+  }
+
+  /** Closes what lost its place in the document: a popup whose anchor (or itself) was removed, a
+   * dialog whose root was. */
+  private static _sweep(): void {
+    for (const entry of [...Overlay._stack]) {
+      if (!entry.content.isConnected || (entry.anchor !== undefined && !entry.anchor.isConnected))
+        entry.close();
+    }
+  }
+
+  private static _focusLost(node: Node | Element | null): boolean {
+    return node === null || node === document.body || node === document.documentElement || node === document;
+  }
+
+  /** The anchor, or the element in it that announces the popup or takes the focus. */
+  private static _focusTarget(anchor: HTMLElement): HTMLElement {
+    if (anchor.hasAttribute('aria-haspopup') || anchor.matches(FOCUSABLE))
+      return anchor;
+    return anchor.querySelector<HTMLElement>('[aria-haspopup]') ?? anchor.querySelector<HTMLElement>(FOCUSABLE) ??
+      anchor;
   }
 }

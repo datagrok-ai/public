@@ -111,7 +111,7 @@ test('Filters — Cloned View Synchronization: saved layout restores per-card st
           view.loadLayout(s);
           await applied;
           const root = view.root as HTMLElement;
-          await w.__poll(() => root.querySelector('[name="viewer-Filters"] .d4-filter') != null,
+          await w.__poll(() => root.querySelector('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)') != null,
             (there: boolean) => there, 5000, 50);
           const panelOpen = root.querySelector('[name="viewer-Filters"]') != null;
           const cards = w.__cards(vn) as HTMLElement[];

@@ -46,6 +46,7 @@ Feature: Basic inputs
     And user unchecks Kinase checkbox in Targets input
     Then Protease checkbox in Targets input should be checked
     And Kinase checkbox in Targets input should be unchecked
+    And editor of Targets input should be at least 150 px wide
 
   Scenario: Validation shows on the input and aggregates into a readout
     Then error of Code input should have text "Value is required"

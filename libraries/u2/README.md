@@ -10,9 +10,8 @@ Architecture (see the design docs in the core repo, `core/docs/features/ui2/`):
 - **L2 spec & registry** — JSON-serializable UI, machine-readable component manifest.
 - **L3 delivery** — fluent `u2.*` API, custom-element tags, generated framework wrappers.
 
-L0–L2 are **platform-free**: no `datagrok-api` imports (enforced by eslint). All platform
-integration — `DG.Widget` lifecycle, `InputBase` conformance, Property/semType-driven
-inputs — lives in the `@datagrok-libraries/u2/dg` entry point.
+L0–L2 are **platform-free**: their only `datagrok-api` import is `datagrok-api/u2core`, the shared
+signal core. Platform integration lives in `src/dg`. Enforced by `tests/boundaries.test.js`.
 
 `vendor/` holds frozen copies of permissively-licensed upstream code; see
 [vendor/LICENSES.md](vendor/LICENSES.md).
@@ -35,10 +34,12 @@ src/dg/            the platform layer — the only code that imports datagrok-ap
   inputs/          platform-bound inputs (file, files, user, molecule, meta, rsa, column and table pickers) and the two Dart bridges
   forms/           object-form, property-editor, the Editors registry
   entities/        entity chips/cards, column rendering, dapi-backed sources
-  shell/           app-view, widget-host, platformContext, the sources' backends
+  shell/           app-view, widget-host, platformContext, the sources' backends, collection-selection, view-sync
   designer/        the visual designer
 css/               one sheet per component, flat — imported by path from packages
 ```
+
+Domain tables (EMS) are in [`@datagrok-libraries/ems`](../ems/README.md).
 
 The root `src/index.ts` is the single public surface; import from it (or from `src/dg/index.ts`),
 never from a component's file path.
@@ -53,7 +54,7 @@ npm install @datagrok-libraries/u2
 
 `datagrok-api >= 1.27.10` is a peer dependency (it carries `datagrok-api/u2core`, the signal
 core both share). Three entry points, imported by path — the package ships compiled ESM (`.js` +
-`.d.ts`) next to the sources, and one sheet per component under `css/`:
+`.d.ts`) under `dist/`, and one sheet per component under `css/`:
 
 ```ts
 import * as u2 from '@datagrok-libraries/u2';                 // platform-free core (L0–L2)
@@ -61,9 +62,10 @@ import {ObjectForm} from '@datagrok-libraries/u2/src/dg/index.js';   // platform
 import '@datagrok-libraries/u2/css/inputs.css';               // the sheets you use
 ```
 
-Publishing: `npm publish` runs `prepublishOnly` (the build) and ships what `.npmignore` leaves —
-`src/**/*.js` + `.d.ts`, `css/`, `manifest.json`, `docs/`; never `tests/`, `e2e/`, `gallery/`,
-`scripts/` or the `.ts` sources. CI (`.github/workflows/libraries.yaml`) publishes every version
+Publishing: `npm publish` runs `prepublishOnly` (the build) and ships the `files` allow-list in
+`package.json` — `dist/src` (`.js` + `.d.ts`, no source maps), `css/`, `vendor/`, `docs/`,
+`manifest.json` and the four test-kit modules exported as `@datagrok-libraries/u2/tests/*`; never
+the rest of `tests/`, `e2e/`, `gallery/`, `scripts/` or the `.ts` sources. CI (`.github/workflows/libraries.yaml`) publishes every version
 bump from `master`; the **first** version of the package is published by hand and then enrolled
 for trusted publishing — see `.github/NPM_TRUSTED_PUBLISHING.md` "Enrolling a new package"
 (`npm publish --access public`, then `npm trust github @datagrok-libraries/u2 --repo

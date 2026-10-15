@@ -5,7 +5,6 @@ import {expect, Page} from '@playwright/test';
 import {localTest as test} from '@datagrok-libraries/test/src/playwright/shared-page';
 import {openDatagrok, specTestOptions, softStep} from '@datagrok-libraries/test/src/playwright/spec-login';
 import * as v from '@datagrok-libraries/test/src/playwright/viewers';
-import {knownOpenBug} from '@datagrok-libraries/test/src/playwright/known-open-bug';
 
 test.use(specTestOptions);
 
@@ -132,9 +131,8 @@ test('Heat map', async ({page}) => {
   await softStep('Row Height is not offered in heatmap mode', async () => {
     await category(page, 'misc', 'is-heatmap');
 
-    await knownOpenBug('GROK-20619', async () => {
-      expect(await page.locator('.property-grid tr[name="prop-row-height"]').count()).toBe(0);
-    });
+    expect(await page.locator('.property-grid tr[name="prop-row-height"]').count(),
+      'GROK-20619: Row Height is grid-only and must not be offered in heatmap mode').toBe(0);
   });
 
   await softStep('Clicking a cell makes its row current', async () => {

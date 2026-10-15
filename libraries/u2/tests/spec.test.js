@@ -91,7 +91,9 @@ spec('registry: rejects duplicates and manifests the metadata minus create', () 
   assert.equal(manifest.components.length, 1);
   const meta = manifest.components[0];
   assert.equal('create' in meta, false);
-  assert.deepEqual(meta, FAKE_INPUT);
+  assert.deepEqual(meta, {...FAKE_INPUT, props: [...FAKE_INPUT.props,
+    {name: 'visible', type: 'bool', description: 'false hides the node; true by default.'}]},
+  'every visual tag gains the live visible prop');
   assert.equal(reg.get('u2-fake-input').create instanceof Function, true);
   assert.equal(reg.get('u2-nope'), undefined);
 });
@@ -347,6 +349,53 @@ spec('dump: the document as it is — a Run-mode edit never folds in, a bound pr
   assert.deepEqual(restored.dump(), dumped, 'and the restored tree dumps the same again');
   instance.dispose();
   restored.dispose();
+});
+
+spec('dump: nested prop values are copies — mutating the dump leaves the live document alone (P70)', () => {
+  const reg = new Registry();
+  reg.register({
+    tag: 'u2-fake-nested',
+    description: 'Fake control with nested props',
+    props: [{name: 'items', type: 'string_list'}, {name: 'grid', type: 'object'}],
+    create: () => new TextInput({}),
+  });
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-fake-nested', props: {items: ['a', 'b'], grid: {access: [{principal: 'All', can: {view: true}}]}}},
+  };
+  const instance = renderSpec(source, new SpecContext(), reg);
+  const dumped = instance.dump();
+  dumped.root.props.items.push('c');
+  dumped.root.props.grid.access[0].can.view = false;
+  assert.deepEqual(source.root.props, {items: ['a', 'b'], grid: {access: [{principal: 'All', can: {view: true}}]}});
+  assert.deepEqual(instance.dump(), source, 'the next dump reads the untouched document');
+  instance.dispose();
+});
+
+spec('dump: only plain objects and arrays are copied — a date, a function, a bigint or a cycle comes back as it is', () => {
+  const reg = new Registry();
+  reg.register({tag: 'u2-fake-any', description: 'Fake control taking anything', props: [],
+    create: () => new TextInput({})});
+  const when = new Date(Date.UTC(2026, 9, 15));
+  const format = (v) => `${v}`;
+  const ring = {name: 'ring'};
+  ring.self = ring;
+  const source = {
+    $schema: 'dg-ui/1',
+    root: {tag: 'u2-fake-any', props: {when, format, big: 10n, gone: undefined, ring, rows: [{at: when}]}},
+  };
+  let instance;
+  captureWarnings(() => instance = renderSpec(source, new SpecContext(), reg));
+  const props = instance.dump().root.props;
+  assert.equal(props.when, when);
+  assert.equal(props.format, format);
+  assert.equal(props.big, 10n);
+  assert.equal('gone' in props, true);
+  assert.notEqual(props.ring, ring);
+  assert.equal(props.ring.self, props.ring, 'the cycle is kept, in the copy');
+  assert.notEqual(props.rows, source.root.props.rows);
+  assert.equal(props.rows[0].at, when);
+  instance.dispose();
 });
 
 spec('names: round-trip through dump, and a duplicate warns on the node that repeats it', () => {

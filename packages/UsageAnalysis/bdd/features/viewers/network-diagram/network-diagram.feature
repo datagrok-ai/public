@@ -19,6 +19,9 @@ Feature: Network diagram graph shape, node columns, filtering and chrome
   drawn"; the repaint is kept here next to the two claims that do mean something, and no more is
   read into it. An `arrow heads` count, or arrow geometry among the hit areas, is what would turn
   this into a real claim.
+  Node 1 Color colors the first column's nodes by an aggregate of the column it names (the count
+  of SEX by default, 553 against 447), so F and M part ways while the second column's nodes keep
+  one color; Node 1 Size grows the larger node; Edge Color repaints the edges.
   Fixture: demog-1000 with Node 1 = SEX and Node 2 = CONTROL picked automatically — 4 nodes
   (F, M, false, true) and 4 edges, one per distinct pair.
 
@@ -111,6 +114,24 @@ Feature: Network diagram graph shape, node columns, filtering and chrome
       | showArrows      | none |
     Then the "arrows" reading of network diagram viewer should be "none"
     And the "nodes" reading of network diagram viewer should be 4
+    And no errors should have been logged
+
+  Scenario: Node 1 Color and Size code the first column's nodes, and Edge Color recolors the edges
+    Then the "node \"F\"" and "node \"M\"" areas of network diagram viewer should be painted in the same colors
+    When user sets "node1ColorColumnName" property of network diagram viewer to "SEX"
+    Then the "node \"F\"" and "node \"M\"" areas of network diagram viewer should be painted in different colors
+    And the "node \"false\"" and "node \"true\"" areas of network diagram viewer should be painted in the same colors
+    When user sets "node1SizeColumnName" property of network diagram viewer to "AGE"
+    Then the "node \"F\"" area of network diagram viewer should be wider than before
+    And the "nodes" reading of network diagram viewer should be 4
+    When user sets "edgeColorColumnName" property of network diagram viewer to "AGE"
+    Then network diagram viewer should have repainted
+    And the "edges" reading of network diagram viewer should be 4
+    When user sets properties of network diagram viewer:
+      | node1ColorColumnName |  |
+      | node1SizeColumnName  |  |
+      | edgeColorColumnName  |  |
+    Then the "node \"F\"" and "node \"M\"" areas of network diagram viewer should be painted in the same colors
     And no errors should have been logged
 
   Scenario: The title bar closes the network diagram

@@ -16,6 +16,13 @@ const MAX_SEGMENT_SIZE = 50000;
  * column indexes are dropped past this many rows.
  */
 const MAX_INDEXED_ROWS = 3000000;
+/**
+ * At most this many crux workers. Each holds a crux WebAssembly instance, and a page has room for only so many
+ * WebAssembly memories, ~120 in Chrome (shared by its workers): sized by `hardwareConcurrency` alone, crux's pool and
+ * RDKit's (`RdKitService`) filled it on a 32-thread machine, and past ~64 threads they would not both start. Past
+ * this many, the searches gain little.
+ */
+const MAX_WORKERS = 16;
 
 class CruxWorkerClient extends WorkerMessageBusClient {
   constructor() {
@@ -89,7 +96,16 @@ export class CruxService {
     await initCrux({module_or_path: module});
     service.validator = new CollectionBuilder(true).finish();
     service.module = module;
-    await service.startWorkers();
+    try {
+      await service.startWorkers();
+    } catch (e) {
+      // The workers that did start are let go: the next search creates the service again, and each failed attempt
+      // used to leave a pool running (hundreds of workers once the page had no room for another WebAssembly memory)
+      for (const worker of service.workers)
+        worker.terminate();
+      service.validator?.free();
+      throw e;
+    }
     grok.events.onTableRemoved.subscribe((e) => {
       for (const col of e.args.dataFrame.columns) {
         const index = service.indexes.get(col.temp[CRUX_INDEX_TAG]);
@@ -101,7 +117,7 @@ export class CruxService {
   }
 
   private startWorkers(): Promise<unknown> {
-    const workerCount = Math.max(1, navigator.hardwareConcurrency - 2);
+    const workerCount = Math.max(1, Math.min(navigator.hardwareConcurrency - 2, MAX_WORKERS));
     this.workers = Array.from({length: workerCount}, () => new CruxWorkerClient());
     return Promise.all(this.workers.map((w) => w.moduleInit(this.module!)));
   }
@@ -121,6 +137,11 @@ export class CruxService {
     this.indexes.clear();
     // a failed worker init is logged by the worker client
     this.startWorkers().catch(() => {});
+  }
+
+  /** The workers indexing and searching: `hardwareConcurrency - 2`, at most {@link MAX_WORKERS}. */
+  get workerCount(): number {
+    return this.workers.length;
   }
 
   isValidSmarts(smarts: string): boolean {
