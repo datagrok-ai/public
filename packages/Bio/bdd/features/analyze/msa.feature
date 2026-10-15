@@ -4,10 +4,14 @@ Feature: Multiple sequence alignment with kalign
   offers the sequence and cluster columns and the kalign penalties behind a toggle, and the
   result is an aligned column — every sequence padded to one width within its cluster. A HELM
   column switches the dialog to the non-canonical engines (PepSeA) and their own parameters.
+  Where another package registers an engine that also aligns canonical sequences (HMM's profile
+  alignment), the dialog shows an Engine input on Kalign as well, so the kalign mode is claimed by
+  its version line being shown, which the engine mode hides.
 
-  Not translated, and why: running PepSeA itself (and the container's lifecycle) needs the PepSeA
-  Docker container deployed and started on the stand, which the suite cannot assume; the HELM scenario
-  stops at the dialog, which needs no container. The MSA header's WebLogo (msa.md step 8) is
+  Not translated, and why: running PepSeA itself (and the container's lifecycle) runs a Docker
+  container, which stays out of BDD (the lead's rule); the HELM scenario stops at the dialog and its
+  Cancel, which contact no container (the dialog builds its PepSeA inputs from the function's
+  parameters). The MSA header's WebLogo (msa.md step 8) is
   claimed in render/msa-header, on the antibody chains.
 
   Background:
@@ -22,8 +26,7 @@ Feature: Multiple sequence alignment with kalign
     Then MSA dialog should be visible
     And editor of Sequence input in MSA dialog should have text "fasta"
     And Clusters input in MSA dialog should be visible
-    And Engine input in MSA dialog should be hidden
-    And MSA dialog should contain text "Kalign version"
+    And MSA dialog should show the text "Kalign version"
     And "Selected Rows Only" checkbox in MSA dialog should be unchecked
 
   Scenario: Alignment parameters toggles the kalign penalties

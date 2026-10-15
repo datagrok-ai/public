@@ -60,6 +60,30 @@ export const notFavorite = Given('{string} is not in favorites', async (page: Pa
   await removeFavorite(page, name);
 }, {tier: 'api', description: 'the entity is taken out of the account\'s favorites now; at feature end the favorites are as the feature found them, the list read back'});
 
+const FAVORITE_SOURCES: Record<string, string> = {script: 'scripts', query: 'queries', connection: 'connections',
+  project: 'projects'};
+
+export const inFavorites = Given('the {word} {string} is in favorites', async (page: Page, kind: string, name: string) => {
+  const source = FAVORITE_SOURCES[kind];
+  if (!source)
+    throw new Error(`no favorites fixture for a ${kind}; one of: ${Object.keys(FAVORITE_SOURCES).join(', ')}`);
+  const state = await page.evaluate(async ([s, n]) => {
+    const entity = await grok.dapi[s].filter(`friendlyName = ${JSON.stringify(n)} or name = ${JSON.stringify(n)}`).first();
+    if (!entity)
+      return 'missing';
+    if ((await grok.dapi.entities.getFavorites()).some((f: any) => f.id === entity.id))
+      return 'had';
+    await DG.Favorites.add(entity);
+    return 'added';
+  }, [source, name] as [string, string]);
+  if (state === 'missing')
+    throw new Error(`no ${source} entity named "${name}" on the server`);
+  if (state === 'added')
+    atFeatureEnd(page, () => removeFavorite(page, name));
+  await expect.poll(() => favoriteNames(page).then((names) => names.includes(name)),
+    {message: `"${name}" among the account's favorites`, timeout: pollMs(30000)}).toBe(true);
+}, {tier: 'api', description: 'the fixture of that kind (script, query, connection, project) starred for the signed-in account, read back; out of its favorites again at feature end unless it was starred before'});
+
 export const favoriteOnServer = Then('{string} should be in favorites on the server', async (page: Page, name: string) => {
   await expect.poll(() => favoriteNames(page).then((names) => names.includes(name)),
     {message: `"${name}" among the account's favorites on the server`, timeout: pollMs(30000)}).toBe(true);

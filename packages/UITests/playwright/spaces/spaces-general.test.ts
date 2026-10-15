@@ -521,14 +521,14 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
 // ===========================================================================
 
 test('6. Favorites: add and remove space from favorites', async ({ page }) => {
-  // Add to favorites → appears; remove → gone
+  // Add To Favorites → appears; remove → gone
   const FAV = 'PW-Gen-Fav-8';
   try {
     await openSpacesView(page);
     await uiCreateRootSpace(page, FAV);
 
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Add to favorites');
+    await clickMenuItem(page, 'Add To Favorites');
 
     // Verify in browse tree Favorites section
     await page.evaluate(() => {

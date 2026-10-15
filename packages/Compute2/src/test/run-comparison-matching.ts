@@ -1,8 +1,9 @@
 import {category, test, expect, expectFloat, expectArray} from '@datagrok-libraries/test/src/test';
-import {isNumericType} from '../components/RunComparison/types';
+import {isNumericType, candidateId} from '../components/RunComparison/types';
 import {
-  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility,
-  matchScalarTargets, matchColumnTargets, buildAliasGroups, FUZZY_NAME_THRESHOLD,
+  normalizeName, nameSimilarity, nameMatchConfidence, unitsCompatibility, normalizeUnits,
+  matchScalarTargets, matchColumnTargets, buildAliasGroups, buildUnitConverter, isValidUnitMapping,
+  FUZZY_NAME_THRESHOLD,
 } from '../components/RunComparison/matching';
 import {makeEntry, indexMap} from './run-comparison-fixtures';
 
@@ -30,7 +31,8 @@ category('RunComparison: names and units', () => {
   });
 
   test('unitsCompatibility match, warn, mismatch', async () => {
-    expect(unitsCompatibility('mg', 'MG'), 'match');
+    expect(unitsCompatibility('mg', ' mg '), 'match');
+    expect(unitsCompatibility('mg', 'Mg'), 'mismatch');
     expect(unitsCompatibility(undefined, undefined), 'match');
     expect(unitsCompatibility('mg', undefined), 'warn');
     expect(unitsCompatibility('mg', 'g'), 'mismatch');
@@ -163,6 +165,26 @@ category('RunComparison: column matching', () => {
     expect(new Set(targets.map((t) => t.key)).size, 2);
   });
 
+  test('an override on a de-duplicated key reaches only that target', async () => {
+    const columns = [{name: 'time', type: 'int'}, {name: 'height'}];
+    const tables = [
+      {path: 'step1/df', name: 'Results', columns},
+      {path: 'step2/df', name: 'Results', columns},
+    ];
+    const entries = [makeEntry('a', [], tables), makeEntry('b', [], tables)];
+    const index = indexMap({
+      a: {'step1/df': 'time', 'step2/df': 'time'},
+      b: {'step1/df': 'time', 'step2/df': 'time'},
+    });
+    const [first, second] = matchColumnTargets(entries, index);
+    const toggled = candidateId(second.bindings.find((b) => b.entryId === 'b')!);
+    const [firstAfter, secondAfter] = matchColumnTargets(entries, index, undefined, {[second.key]: {[toggled]: false}});
+    expect(secondAfter.key, second.key);
+    expect(secondAfter.coverage, 1);
+    expect(firstAfter.coverage, 2);
+    expectArray(firstAfter.bindings.map(candidateId), first.bindings.map(candidateId));
+  });
+
   test('split column is excluded from candidates and carried into bindings', async () => {
     const table = {path: 't', columns: [
       {name: 'time', type: 'int'}, {name: 'height'}, {name: 'species', type: 'string'},
@@ -268,6 +290,12 @@ category('RunComparison: name mappings', () => {
     expect(nameMatchConfidence('AX', 'CX', aliases), 'normalized');
   });
 
+  test('a pair across two existing groups merges them', async () => {
+    const aliases = buildAliasGroups([{from: 'AX', to: 'BX'}, {from: 'CX', to: 'DX'}, {from: 'BX', to: 'CX'}]);
+    expect(nameMatchConfidence('AX', 'DX', aliases), 'normalized');
+    expect(nameMatchConfidence('AX', 'EX', aliases) === null, true);
+  });
+
   test('mappings have no fuzzy reach', async () => {
     const aliases = buildAliasGroups([{from: 'pressure', to: 'P'}]);
     expect(nameMatchConfidence('pressures', 'P', aliases), null);
@@ -304,6 +332,20 @@ category('RunComparison: name mappings', () => {
 });
 
 category('RunComparison: candidates', () => {
+  test('candidates pass the same gate as clustering', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'm'}]}]),
+      makeEntry('b', [], [
+        {path: 't', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'm'}]},
+        {path: 'u', columns: [{name: 'step', type: 'int'}, {name: 'height', units: 'm'}]},
+        {path: 'v', columns: [{name: 'time', type: 'int'}, {name: 'height', units: 'ft'}]},
+      ]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time', u: 'step', v: 'time'}}));
+    expect(targets.length, 1);
+    expectArray(targets[0].candidates.map((c) => `${c.binding.entryId}/${c.binding.tablePath}`), ['a/t', 'b/t']);
+  });
+
   test('other compatible columns attach as disabled candidates', async () => {
     const entries = [
       makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),
@@ -487,5 +529,177 @@ category('RunComparison: cluster pairing', () => {
     expect(targets[0].displayName, 'temperature');
     expect(targets[0].confidence, 'exact');
     expectArray(targets[0].bindings.map((b) => b.value), [2, 3]);
+  });
+
+  test('earlier fuzzy sibling does not block an exact scalar match', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperature', value: 1}]),
+      makeEntry('b', [{name: 'temperatures', value: 2}, {name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'exact');
+    expectArray(targets[0].bindings.map((b) => b.value), [1, 3]);
+  });
+
+  test('earlier fuzzy sibling does not block an exact column match', async () => {
+    const entries = [
+      makeEntry('a', [], [{path: 't', columns: [{name: 'time', type: 'int'}, {name: 'temperature'}]}]),
+      makeEntry('b', [], [{path: 't', columns: [
+        {name: 'time', type: 'int'}, {name: 'temperatures'}, {name: 'temperature'},
+      ]}]),
+    ];
+    const targets = matchColumnTargets(entries, indexMap({a: {t: 'time'}, b: {t: 'time'}}));
+    expect(targets.length, 1);
+    const [target] = targets;
+    expect(target.displayName, 'temperature');
+    expect(target.confidence, 'exact');
+    expectArray(target.bindings.map((b) => `${b.entryId}|${b.columnName}`), ['a|temperature', 'b|temperature']);
+    const fuzzy = target.candidates.find((c) => c.binding.columnName === 'temperatures')!;
+    expect(fuzzy.auto, false);
+    expect(fuzzy.enabled, false);
+  });
+
+  test('unmatched item still joins a fuzzy cluster', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [{name: 'temperatures', value: 1}]),
+      makeEntry('b', [{name: 'temperature', value: 2}]),
+      makeEntry('c', [{name: 'temperature', value: 3}]),
+    ]);
+    expect(targets.length, 1);
+    expect(targets[0].displayName, 'temperature');
+    expect(targets[0].confidence, 'fuzzy');
+    expect(targets[0].coverage, 3);
+  });
+});
+
+category('RunComparison: repeated steps', () => {
+  const day = (n: number, value: number) =>
+    ({name: 'Final biomass', friendlyPath: `Daily cultivation · Day ${n} · Final biomass`, value});
+
+  test('repeated step values pair by step, whatever their order', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [day(1, 1), day(2, 2), day(3, 3)]),
+      makeEntry('b', [day(3, 30), day(1, 10), day(2, 20)]),
+    ]);
+    expect(targets.length, 3);
+    for (const target of targets) {
+      const [a, b] = target.bindings;
+      expect(b.value, a.value! * 10);
+    }
+  });
+
+  test('a single function run pairs with the first repeated step', async () => {
+    const targets = matchScalarTargets([
+      makeEntry('a', [day(1, 1), day(2, 2)]),
+      makeEntry('f', [{name: 'Final biomass', friendlyPath: 'Final biomass', value: 5}]),
+    ]);
+    const withF = targets.find((t) => t.bindings.some((b) => b.entryId === 'f'))!;
+    expect(withF.bindings.find((b) => b.entryId === 'a')!.value, 1);
+  });
+});
+
+category('RunComparison: unit spelling', () => {
+  test('case matters: prefixes and symbols differ by case', async () => {
+    expect(unitsCompatibility('MPa', 'mPa'), 'mismatch');
+    expect(unitsCompatibility('mS', 'ms'), 'mismatch');
+    expect(unitsCompatibility('S', 's'), 'mismatch');
+  });
+
+  test('spacing, trailing period, micro sign, and superscripts fold', async () => {
+    expect(normalizeUnits(' g / L '), 'g/L');
+    expect(normalizeUnits('µg/mL'), normalizeUnits('μg/mL'));
+    expect(normalizeUnits('µg/mL'), 'ug/mL');
+    expect(normalizeUnits('m²'), 'm2');
+    expect(normalizeUnits('m⁻³'), 'm-3');
+    expect(normalizeUnits('J/C.'), 'J/C');
+  });
+
+  test('liters fold to L, with or without a prefix, but not inside other symbols', async () => {
+    expect(normalizeUnits('g/l'), 'g/L');
+    expect(normalizeUnits('ml'), 'mL');
+    expect(normalizeUnits('cl'), 'cL');
+    expect(normalizeUnits('l/min'), 'L/min');
+    expect(normalizeUnits('uL/L'), 'uL/L');
+    expect(normalizeUnits('umol/dl'), 'umol/dL');
+    expect(normalizeUnits('Ml'), 'Ml');
+    expect(normalizeUnits('mmol'), 'mmol');
+    expect(normalizeUnits('kcal'), 'kcal');
+    expect(normalizeUnits('lb'), 'lb');
+  });
+
+  test('time aliases fold to one unit, short symbols keep their case', async () => {
+    expect(normalizeUnits('sec.'), 's');
+    expect(normalizeUnits('Hours'), 'h');
+    expect(normalizeUnits('MIN'), 'min');
+    expect(normalizeUnits('min'), 'min');
+    expect(normalizeUnits('d'), 'days');
+    expect(normalizeUnits('D'), 'D');
+    expect(normalizeUnits('H'), 'H');
+    expect(normalizeUnits('constructor'), 'constructor');
+    expect(unitsCompatibility('seconds', 's'), 'match');
+    expect(unitsCompatibility('m', 'min'), 'mismatch');
+  });
+});
+
+category('RunComparison: unit mappings', () => {
+  const pressure = (units: string, value: number) => [{name: 'P', units, value}];
+
+  test('converter works both ways, through spelling rules, and does not chain', async () => {
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}, {from: 'kPa', factor: 1000, to: 'Pa'}]);
+    expectFloat(convert('bar', 'kPa')!, 100);
+    expectFloat(convert('kPa', 'bar')!, 0.01);
+    expectFloat(convert(' k Pa', 'Pa')!, 1000);
+    expect(convert('bar', 'Pa'), null);
+    expect(convert('bar', 'psi'), null);
+    expect(convert('bar', undefined), null);
+  });
+
+  test('converter skips incomplete, same-unit and non-positive mappings', async () => {
+    const convert = buildUnitConverter([
+      {from: 'm', factor: 0, to: 'cm'}, {from: 'm', factor: NaN, to: 'mm'}, {from: '', factor: 2, to: 'x'},
+      {from: 'g/l', factor: 5, to: 'g/L'},
+    ]);
+    expect(convert('m', 'cm'), null);
+    expect(convert('m', 'mm'), null);
+    expect(convert('g/l', 'g/L'), null);
+  });
+
+  test('valid unit mappings need two different units and a finite positive factor', async () => {
+    expect(isValidUnitMapping({from: 'mg/L', factor: 0.001, to: 'g/L'}), true);
+    expect(isValidUnitMapping({from: 'mg/L', factor: 1000, to: ''}), false);
+    expect(isValidUnitMapping({from: 'h', factor: 2, to: 'hours'}), false);
+    for (const factor of [0, -1, NaN, Infinity])
+      expect(isValidUnitMapping({from: 'mg/L', factor, to: 'g/L'}), false);
+  });
+
+  test('unitsCompatibility reports convertible units', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
+    expect(unitsCompatibility('mg/L', 'g/L', convert), 'convert');
+    expect(unitsCompatibility('mg/L', 'g/L'), 'mismatch');
+    expect(unitsCompatibility('g/L', 'g/l', convert), 'match');
+  });
+
+  test('a mapped scalar joins the target with the factor into the first run\'s units', async () => {
+    const convert = buildUnitConverter([{from: 'bar', factor: 100, to: 'kPa'}]);
+    expect(matchScalarTargets([makeEntry('a', pressure('bar', 1)), makeEntry('b', pressure('kPa', 100))]).length, 0);
+    const targets = matchScalarTargets([
+      makeEntry('a', pressure('bar', 1)), makeEntry('b', pressure('kPa', 100)),
+    ], undefined, convert);
+    expect(targets.length, 1);
+    expectFloat(targets[0].bindings.find((b) => b.entryId === 'b')!.factor!, 0.01);
+    expect(targets[0].bindings.find((b) => b.entryId === 'a')!.factor == null, true);
+  });
+
+  test('a mapped column is a candidate with the factor into the seed units', async () => {
+    const convert = buildUnitConverter([{from: 'g/L', factor: 1000, to: 'mg/L'}]);
+    const table = (units: string) => ({path: 't', columns: [{name: 'time'}, {name: 'biomass', units}]});
+    const entries = [makeEntry('a', [], [table('g/L')]), makeEntry('b', [], [table('mg/L')])];
+    const indexes = indexMap({a: {t: 'time'}, b: {t: 'time'}});
+    expect(matchColumnTargets(entries, indexes).length, 0);
+    const [target] = matchColumnTargets(entries, indexes, undefined, undefined, undefined, convert);
+    expect(target.bindings.length, 2);
+    expectFloat(target.bindings.find((b) => b.entryId === 'b')!.factor!, 0.001);
+    expect(target.candidates.find((c) => c.binding.entryId === 'b')!.unitsWarn, false);
   });
 });

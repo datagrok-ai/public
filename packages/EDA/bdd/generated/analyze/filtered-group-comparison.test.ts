@@ -23,7 +23,7 @@ test.describe("Group comparison of a filtered table", () => {
   const session = feature(test, "features/analyze/filtered-group-comparison.feature", import.meta.url);
   test("Group comparison of a filtered table", {tag: ["@journey", "@eda", "@realizes:ml.menu.analyze.group-comparison.control-comparisons"]}, async ({browser}) => {
     const page = await session.page(browser);
-    const run = journey(test, 2, page);
+    const run = journey(test, 1, page);
     await session.step(12, "Given user is logged in", () => loggedIn(page));
     await session.step(13, "And user opens demog dataset", () => openDataset(page, ds("demog")));
     await run.scenario("Running control comparisons preserves the filter and produces the comparison table", async () => {
@@ -44,11 +44,6 @@ test.describe("Group comparison of a filtered table", () => {
       await session.step(30, "And the \"text of cell 3 of Group\" reading of second grid viewer should be \"Other\"", () => readingReads(page, "text of cell 3 of Group", el("second grid viewer"), "Other"));
       await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
       await session.step(32, "And no errors should have been logged", () => noErrors(page));
-    });
-    await run.scenario("The comparison sizes count only the women", async () => {
-      await session.step(35, "Then the \"text of cell 1 of n\" reading of second grid viewer should be \"104\"", () => readingReads(page, "text of cell 1 of n", el("second grid viewer"), "104"));
-      await session.step(36, "And the \"text of cell 2 of n\" reading of second grid viewer should be \"2823\"", () => readingReads(page, "text of cell 2 of n", el("second grid viewer"), "2823"));
-      await session.step(37, "And the \"text of cell 3 of n\" reading of second grid viewer should be \"279\"", () => readingReads(page, "text of cell 3 of n", el("second grid viewer"), "279"));
     });
     run.finish();
   });

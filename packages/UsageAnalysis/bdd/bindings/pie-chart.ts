@@ -6,9 +6,9 @@
 
    Its category selector was the scatter plot's X selector under another name, and is in the
    library now (`bindings/tiers/viewers/widgets.ts`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 interface Slice {
   name: string;

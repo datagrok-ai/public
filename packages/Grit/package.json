@@ -8,6 +8,7 @@
   },
   "description": "Grit (GRok Issue Tracker) — reference app for entity-mapped domain schemas: projects, issues, comments, labels",
   "dependencies": {
+    "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

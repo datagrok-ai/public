@@ -7,8 +7,12 @@ Feature: Dataframe pickers
     Given user is logged in
     And user opens demog dataset
     And user opens the "Dataframes" demo page
+    Then editor of Column input should be left-aligned with editor of "Open table" input
+    And editor of Columns input should be as wide as editor of Column input
+    And editor of Aggregations input should be as wide as editor of Columns input
     When user selects "demog" in "Open table" input
     Then value of table readout should have text "demog"
+    And editor of Columns input should be at least 100 px wide
     When user selects "age" in "Demog column" input
     Then value of "demog column" readout should have text "age"
     When user types "hei" into Column input
@@ -17,9 +21,11 @@ Feature: Dataframe pickers
     When user checks demog checkbox in Tables input
     Then value of tables readout should have text "demog"
     When user clicks on editor of Columns input
-    And user clicks on All link
+    Then OK button should not be clipped
+    When user clicks on All link
     And user clicks on OK button
     Then value of columns readout should contain text "age, sex"
     When user selects "age" in x input in Mapping input
     And user selects "height" in y input in Mapping input
     Then value of mapping readout should contain text "\"x\":\"age\""
+    And label of x input in Mapping input should be at most 20 px wide

@@ -21,9 +21,9 @@ Feature: The Browse panel and the icons of its toolbar
   open — as is the preview that was current before the refresh (browse.md 6). A folder open inside
   that section comes back collapsed (the GROK-16261 shape); that half waits for a filed ticket.
 
-  Browse-Nav-03 (the search box of the header) is not claimed: the PowerPack box carries no name —
-  its only handle is a placeholder with quotes in it ("Search everywhere. Try "aspirin" or "7JZK"")
-  that an element phrase cannot quote — and a search reports no end and no empty state.
+  Browse-Nav-03 (the Home icon brings back the Home page with its search box) and the global search
+  (Browse-Search-01..03) are PowerPack's: search/power-search-results.feature there, where the box
+  has its name.
 
   Background:
     Given user is logged in
@@ -100,6 +100,14 @@ Feature: The Browse panel and the icons of its toolbar
 
   Scenario: Refresh brings in a script saved on the server meanwhile
     Given no script named "BDD-Browse-Script-{run}" is on the server
+    # My stuff lists a Scripts bucket only while the account owns a script (project_meta.dart): one of its own
+    # makes the bucket exist on any stand, and a Refresh brings it in
+    And a script "BDD-Browse-Anchor-{run}" is on the server:
+      """
+      //language: javascript
+      let y = 1;
+      """
+    When user refreshes the browse tree
     And My stuff tree node inside browse tree is expanded
     # a bucket loads its children when it opens: open before the script exists, it can learn of it only by Refresh
     And user expands the "Scripts" bucket of My stuff

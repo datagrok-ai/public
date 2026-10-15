@@ -28,7 +28,7 @@ manual_only_reason: |
 automation_candidate: true|false   # must be consistent with manual_only_reason:
                                    # a perceptual-judgment reason implies false.
                                    # Omit the field rather than contradict it.
-related_bugs: []             # - id: GROK-NNNNN / status: <state>
+related_bugs: []             # - id: public#NNNN (or core#NNN) / status: <state>
 blocked_by: []               # ticket id ONLY while the scenario is unrunnable
 ---
 

@@ -1,7 +1,8 @@
 /* F5 — multi-selection on the virtualized list and its tree projection: Ctrl toggles, Shift
    ranges from the anchor (the last plain click), the contextmenu keeps a set it lands in, and
-   every single-select path — plain click, keyboard, setItems, a programmatic lead write —
-   collapses the set to the lead alone, so single-select consumers never see a ghost. */
+   every single-select path — plain click, keyboard, a programmatic lead write — collapses the set
+   to the lead alone, so single-select consumers never see a ghost; setItems keeps the selected keys
+   that are still there (keyed-rows.test.js). */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -110,7 +111,7 @@ scoped('Shift-click ranges from the last plain click, replacing the set', () => 
   l.dispose();
 });
 
-scoped('keyboard, programmatic lead writes and setItems collapse to the lead alone', () => {
+scoped('keyboard and programmatic lead writes collapse to the lead alone; setItems keeps the keys still there', () => {
   const l = list({keyOf: (item) => item});
   click(l, 2);
   click(l, 5, {ctrlKey: true});
@@ -128,7 +129,7 @@ scoped('keyboard, programmatic lead writes and setItems collapse to the lead alo
   assert.deepEqual(selected(l), [1, 4]);
   l.setItems(['item4', 'other', 'another']);
   assert.equal(l.selectedIndex.value, 0, 'the key preserved the lead across setItems');
-  assert.deepEqual(selected(l), [0], 'and the lead alone');
+  assert.deepEqual(selected(l), [0], 'item1 left with its row; item4 stays selected');
   l.dispose();
 });
 

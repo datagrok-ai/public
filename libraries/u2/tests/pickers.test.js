@@ -488,10 +488,10 @@ picker('tableInput: a rejecting picker dialog is reported at the boundary, not u
 
 picker('TableInput.actions: ten re-sets leave the input scope flat', () => {
   const input = tableInput('Table');
-  const disposers = input.scope._disposers.length;
+  const disposers = input.scope._disposers?.size ?? 0;
   for (let i = 0; i < 10; i++)
     input.actions = [{id: 'mine', icon: 'star', tooltip: 'Mine', run: () => {}}];
-  assert.equal(input.scope._disposers.length, disposers,
+  assert.equal(input.scope._disposers?.size ?? 0, disposers,
     'no per-render cleanup piles up on the input');
   assert.equal(railIcons(input).length, 1);
   input.dispose();

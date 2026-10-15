@@ -254,6 +254,40 @@ async function _getSearchProviders(): Promise<void> {
   }
 }
 
+export type SearchSuggestion = {text: string, value?: string, priority?: number,
+  onValueEnter?: (s: string, view?: DG.ViewBase) => void};
+
+/** What the menu under the search box suggests for the text: the search providers' suggestions, the
+ * object handlers' identifier patterns and the table queries' search patterns. The menu orders them by priority. */
+export async function searchSuggestions(si: string): Promise<SearchSuggestion[]> {
+  _searchProvidersPromise ??= _getSearchProviders();
+  await _searchProvidersPromise;
+  const suggestions: SearchSuggestion[] = [];
+  searchProviders.forEach((sp) => {
+    if (!sp['home'])
+      return;
+    const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
+    homeSearchProviders.forEach((pp) => {
+      for (const sug of pp.getSuggestions?.(si) ?? [])
+        suggestions.push({text: sug.suggestionText, value: sug.suggestionValue, priority: sug.priority, onValueEnter: pp.onValueEnter});
+    });
+  });
+  // handle automatic suggestions based on objecthandlers or dynamic queries
+  DG.ObjectHandler.list()
+    .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(si.toLowerCase()))
+    .forEach((h) => {
+      const e = h.regexpExample!;
+      const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
+      suggestions.push({text: `${e.regexpMarkup} ${eg}`, value: e.nonVariablePart, priority: 0}); // 0 order to make sure it is at the top
+    });
+  tableQueriesSearchFunctions.forEach((f) => {
+    const pattern: string = f.options['searchPattern'] ?? '';
+    if (pattern.toLowerCase().includes(si.toLowerCase()))
+      suggestions.push({text: removeTrailingQuotes(pattern), value: removeTrailingQuotes(pattern), priority: 1});
+  });
+  return suggestions;
+}
+
 let _suggestionsMenu: DG.Menu | null = null;
 let _ctrlSpaceSubscribed = false;
 async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInput: HTMLInputElement, track: Track): Promise<void> {
@@ -282,47 +316,20 @@ async function searchProvidersSearch(s: string, host: HTMLDivElement, searchInpu
   };
 
   // separate handler for suggestions
-  const processSuggestions = () => {
-    const si = searchInput.value?.trim() ?? '';
+  const processSuggestions = async () => {
+    const suggestions = await searchSuggestions(searchInput.value?.trim() ?? '');
     _suggestionsMenu?.hide();
     _suggestionsMenu = null;
     _suggestionsMenu = DG.Menu.popup();
     showSuggestions = false;
-    searchProviders.forEach((sp) => {
-      if (!sp['home'])
-        return;
-      const homeSearchProviders = Array.isArray(sp.home) ? sp.home : [sp.home];
-      homeSearchProviders.forEach((pp) => {
-      // first handle the suggestions
-        if (pp.getSuggestions) {
-          const suggestions = pp.getSuggestions(si);
-          if (suggestions && suggestions.length > 0) {
-            suggestions.forEach((sug) => {
-              addSuggestion(sug.suggestionText, sug.suggestionValue, sug.priority, pp.onValueEnter);
-            });
-          }
-        }
-      });
-    });
-    // handle automatic suggestions based on objecthandlers or dynamic queries
-    DG.ObjectHandler.list()
-      .filter((h) => h.regexpExample && h.regexpExample.nonVariablePart?.toLowerCase().includes(si.toLowerCase()))
-      .forEach((h) => {
-        const e = h.regexpExample!;
-        const eg = !e.example || e.example == e.regexpMarkup ? '' : `(e.g. ${e.example})`;
-        addSuggestion(`${e.regexpMarkup} ${eg}`, e.nonVariablePart, 0); // 0 order to make sure it is at the top
-      });
-    tableQueriesSearchFunctions.forEach((f) => {
-      const pattern: string = f.options['searchPattern'] ?? '';
-      if (pattern.toLowerCase().includes(si.toLowerCase()))
-        addSuggestion(removeTrailingQuotes(pattern), removeTrailingQuotes(pattern), 1);
-    });
+    for (const sug of suggestions)
+      addSuggestion(sug.text, sug.value, sug.priority, sug.onValueEnter);
     if (showSuggestions) {
       _suggestionsMenu.show({element: searchInput.parentElement!, x: searchInput.offsetLeft,
         y: searchInput.offsetTop + searchInput.offsetHeight});
     }
   };
-  processSuggestions();
+  await processSuggestions();
   if (!_ctrlSpaceSubscribed) {
     _ctrlSpaceSubscribed = true;
     searchInput.addEventListener('keydown', (event) => {

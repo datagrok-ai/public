@@ -18,12 +18,17 @@ const GRID_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'P
 /** A Font Awesome icon name, picked from a searchable grid in an anchored popup. A pick commits
  * and closes; Esc, an outside click or the anchor leaving the DOM close without a write. */
 export class IconInput extends Input<string, IconInputOptions> {
-  private _control!: HTMLElement;
-  private _popup?: Scope;
+  private declare _control: HTMLElement;
+  private declare _popup?: Scope;
 
   constructor(options: IconInputOptions = {}) {
     super(options, '');
     this.root.dataset.u2 = 'icon-input';
+  }
+
+  /** Whether the icon grid is open. */
+  getState(): ReturnType<Input<string>['getState']> {
+    return {...super.getState(), open: this._popup !== undefined};
   }
 
   protected createEditor(): HTMLElement {
@@ -38,12 +43,13 @@ export class IconInput extends Input<string, IconInputOptions> {
       preview.replaceChildren(...(value ? [icon(value)] : []));
       name.textContent = value || '—';
     });
-    control.addEventListener('click', () => this._toggle());
-    control.addEventListener('keydown', (e) => {
-      const clear = (e.key === 'Backspace' || e.key === 'Delete') && this.nullable;
+    this.scope.listen(control, 'click', () => this._toggle());
+    this.scope.listen(control, 'keydown', (e) => {
+      const key = (e as KeyboardEvent).key;
+      const clear = (key === 'Backspace' || key === 'Delete') && this.nullable;
       if (clear)
         this.value.value = '';
-      else if (e.key === 'Enter' || e.key === ' ')
+      else if (key === 'Enter' || key === ' ')
         this._toggle();
       else
         return;
@@ -70,11 +76,11 @@ export class IconInput extends Input<string, IconInputOptions> {
         grid.setItems(q ? names.filter((n) => n.includes(q)) : names);
       });
       const popup = divV([search, grid], 'u2-icon-input-popup');
-      popup.addEventListener('keydown', (e) => {
-        if (GRID_KEYS.has(e.key) && !grid.root.contains(e.target as Node))
-          grid.onKeyDown(e);
+      scope.listen(popup, 'keydown', (e) => {
+        if (GRID_KEYS.has((e as KeyboardEvent).key) && !grid.root.contains(e.target as Node))
+          grid.onKeyDown(e as KeyboardEvent);
       });
-      popup.addEventListener(OVERLAY_CLOSE_EVENT, () => this._close());
+      scope.listen(popup, OVERLAY_CLOSE_EVENT, () => this._close());
       Overlay.show(this._control, popup, scope);
       this._control.setAttribute('aria-expanded', 'true');
       search.root.querySelector<HTMLElement>('input')?.focus();

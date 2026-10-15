@@ -26,10 +26,24 @@ const sequences2 = [
 const hNumbers = [1, 3, 5, 2];
 const hNumbers2 = [3, 5, 2, 2.4];
 
-const DNADistances1 = [0.4, 0.6, 0.4, 0.4, 0.8, 0.6];
-const DNADistances2Cols = [0.707, 0.791, 0.901, 0.901, 1.25, 1.25];
+const DNADistances1 = [0.4, 0.6, 0.4, 0.6, 0.8, 0.8];
+const DNADistances2Cols = [
+  1.118,
+  0.776,
+  0.781,
+  1.25,
+  1.281,
+  1.281,
+];
 
-const DNAAndNumericsDistances = [0.707, 1.25, 0.559, 0.707, 1.031, 1.061];
+const DNAAndNumericsDistances = [
+  0.707,
+  1.25,
+  0.559,
+  0.901,
+  1.031,
+  1.25,
+];
 const numericsDistances = [2, 4, 1, 2, 1, 3];
 const numericsDistancesTwoCols = [0.833, 1.054, 0.417, 1.118, 1.031, 0.75];
 

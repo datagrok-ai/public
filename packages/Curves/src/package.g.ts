@@ -70,6 +70,7 @@ export async function dataToCurves(df: DG.DataFrame, concentrationCol: DG.Column
 
 //output: dynamic result
 //top-menu: Data | Curves | Data to Curves
+//meta.requiresTableView: true
 export async function dataToCurvesTopMenu() {
   return await PackageFunctions.dataToCurvesTopMenu();
 }

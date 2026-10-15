@@ -11,7 +11,11 @@ Feature: Matrix plot — the cells, the plots inside them and the rows they keep
   an inequality of two numbers and "Density to Scatter and back returns to the same picture" is an
   equality, where the old spec could only demand `|delta| > 500` and `|back - dens| < 40`.
   The cells are also addressed by name rather than by `querySelectorAll(...)[1]`, which is what made
-  the old wheel-zoom scenario's "the neighbour did not move" a claim about index 2.
+  the old wheel-zoom scenario's "the neighbour did not move" a claim about index 2. Back Color is
+  claimed on what the cells' scatter plots paint, not on the property read back, which is all the
+  old spec could do while GROK-20439 kept it off the canvas (a histogram cell paints no background of
+  its own, and a density cell fills its plot box with the scheme's first color, so the scatter plot
+  is the cell that shows it).
 
   Background:
     Given user is logged in
@@ -59,6 +63,19 @@ Feature: Matrix plot — the cells, the plots inside them and the rows they keep
     And the "blank cells" reading of matrix plot viewer should be 0
     When user sets "cellPlotType" property of matrix plot viewer to "Density plot"
     Then the "cell signature HEIGHT x AGE" reading of matrix plot viewer should be as remembered
+    And no errors should have been logged
+
+  Scenario: Back Color paints the background of the scatter plots in the cells
+    When user sets "cellPlotType" property of matrix plot viewer to "Scatter plot"
+    Then the "cell body HEIGHT x AGE" area of matrix plot viewer should not contain the color "#FF00FF"
+    When user sets "backColor" property of matrix plot viewer to "#FF00FF"
+    Then the "back color" reading of matrix plot viewer should be "#ff00ff"
+    And the "cell body HEIGHT x AGE" area of matrix plot viewer should contain the color "#FF00FF"
+    And the "cell body WEIGHT x STARTED" area of matrix plot viewer should contain the color "#FF00FF"
+    When user sets properties of matrix plot viewer:
+      | backColor    | #FFFFFF      |
+      | cellPlotType | Density plot |
+    Then the "cell body HEIGHT x AGE" area of matrix plot viewer should not contain the color "#FF00FF"
     And no errors should have been logged
 
   Scenario: Each cell keeps its own rows, so a blank in either column drops the row from that cell only

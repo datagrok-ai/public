@@ -9,7 +9,8 @@ import {Locator, Page} from '@playwright/test';
 import {expect, pollMs} from './patience.js';
 import type {ElementRef} from './args.js';
 import {typeVerified, withKeys} from './gestures.js';
-import {locate} from './locate.js';
+import * as guide from './guide.js';
+import {locate, reachable} from './locate.js';
 import {Balloon, Box, evaluate, installViewerRuntime, Reading} from './viewer-runtime.js';
 
 export * from './viewer-runtime.js';
@@ -29,6 +30,12 @@ export async function onViewer<R>(page: Page, target: ElementRef, fn: (el: Eleme
   await installViewerRuntime(page);
   const loc = await viewerLocator(page, target);
   return loc.evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
+}
+
+/** `onViewer` on the match a pointer can reach (`reachable`); of several, the first, as `onViewer` takes. */
+export async function onReachable<R>(page: Page, target: ElementRef, fn: (el: Element, arg: any) => R | Promise<R>, arg?: unknown): Promise<R> {
+  await installViewerRuntime(page);
+  return (await reachable(page, target)).first().evaluate(fn as (el: SVGElement | HTMLElement, arg: unknown) => R, arg);
 }
 
 export function centerOf(box: Box): {x: number; y: number} {
@@ -56,7 +63,11 @@ async function awaitArea(page: Page, target: ElementRef, name: string, negate: b
 export async function hitArea(page: Page, target: ElementRef, name: string, beforeChange = false): Promise<Box> {
   if (beforeChange)
     await onViewer(page, target, (el) => (window as any).__bdd.settle(el, 300), undefined).catch(() => undefined);
-  return (await awaitArea(page, target, name, false, beforeChange))!;
+  const box = (await awaitArea(page, target, name, false, beforeChange))!;
+  // a gesture follows: a guide lights the area it aims at, not the viewer round it
+  if (beforeChange)
+    guide.locatedArea(page, box);
+  return box;
 }
 
 export async function expectHasArea(page: Page, target: ElementRef, name: string, negate = false): Promise<void> {
@@ -173,8 +184,13 @@ export async function expectReading(page: Page, target: ElementRef, name: string
       return last.now === value;
     if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
-    if (compare === 'differ' || compare === 'same')
-      return (last.now !== last.before) === (compare === 'differ');
+    if (compare === 'differ' || compare === 'same') {
+      // numbers that went through a world-to-screen round trip differ in the last digits
+      const same = typeof last.now === 'number' && typeof last.before === 'number' ?
+        Math.abs(last.now - last.before) <= 1e-9 * Math.max(1, Math.abs(last.now), Math.abs(last.before)) :
+        last.now === last.before;
+      return same !== (compare === 'differ');
+    }
     if (typeof last.now !== 'number' || typeof last.before !== 'number')
       return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;
@@ -206,7 +222,7 @@ export async function rememberReading(page: Page, target: ElementRef, name: stri
     const r = await readingOf(page, target, name);
     last = r instanceof MissingReading ? String(r) : '';
     return last === '';
-  }, {timeout: pollMs(5000)}).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
+  }).toBe(true).catch((e) => { throw last ? new Error(last) : e; });
   return onViewer(page, target, (el, n) => { (window as any).__bdd.rememberValue(el, n); }, name);
 }
 

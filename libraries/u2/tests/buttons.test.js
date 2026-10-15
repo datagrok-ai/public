@@ -5,9 +5,11 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
-import {signal, Scope, Control} from '../src/index.js';
+import {signal, Scope, Control, SpecContext, renderSpec, registerAll} from '../src/index.js';
 import {iconButton, buttonWithIcon, dropDownButton} from '../src/components/actions/buttons.js';
 import {ButtonGroup} from '../src/components/actions/button-group.js';
+
+registerAll();
 
 function ui(name, body) {
   test(name, async () => {
@@ -401,4 +403,18 @@ ui('dropDownButton: disposing the owner closes the menu and releases the listene
   assert.equal(menuPanel(), null, 'both listeners died with the owner');
   assert.deepEqual(fired, []);
   await flush();
+});
+
+ui('a control whose root is a button is named by its own text, as the spec-built u2-button is', () => {
+  const instance = renderSpec({$schema: 'dg-ui/1', root: {tag: 'u2-button', name: 'save', props: {text: 'Save'}}},
+    new SpecContext());
+  const control = Control.forElement(instance.root.querySelector('button'));
+  assert.equal(control.getState().label, 'Save');
+  const div = document.createElement('div');
+  div.setAttribute('role', 'button');
+  div.textContent = ' Open  file ';
+  const custom = new Control(div);
+  assert.equal(custom.getState().label, 'Open file');
+  custom.dispose();
+  instance.dispose();
 });

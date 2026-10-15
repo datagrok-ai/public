@@ -24,7 +24,7 @@ import {ScatterPlotCellRenderer} from './sparklines/scatter-plot';
 import {names, SparklineType, sparklineTypes, SummarySettingsBase} from './sparklines/shared';
 import {FormsViewer} from '@datagrok-libraries/utils/src/viewers/forms-viewer';
 import {FormCellRenderer} from './forms/forms';
-import {scWebGPUPointHitTest, scWebGPURender} from './webgpu/scatterplot';
+import {gpuPointHitTest, gpuRender, isGpuAvailable, isGpuRenderValid, setGPUDevice} from './scatterplot-gpu';
 import {getGPUDevice} from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
 import {TagsCellRenderer, TAGS_CELL_TYPE} from './cell-types/tags-cell-renderer';
 import {ConfidenceIntervalCellRenderer} from './cell-types/confidence-interval-cell-renderer';
@@ -32,9 +32,6 @@ import {StarsCellRenderer} from './cell-types/stars-cell-renderer';
 // import {isValidColor} from './cell-types/color-cell-renderer';
 export * from './package.g';
 export const _package = new DG.Package();
-
-let gpuDevice: GPUDevice | null = null;
-let gpuErrorCounter = 0;
 
 export class PackageFunctions {
   @grok.decorators.func({
@@ -399,8 +396,15 @@ export class PackageFunctions {
       if (view.grid)
         attachSummaryColumnHandlers(view.grid);
 
-    if (navigator.gpu)
-      gpuDevice = await getGPUDevice();
+    const requested = performance.now();
+    setGPUDevice(navigator.gpu ? await getGPUDevice() : null, requested);
+    // scatter plots drawn on the CPU before this autostart landed switch to the GPU
+    for (const view of grok.shell.tableViews) {
+      for (const viewer of view.viewers ?? []) {
+        if (viewer.type == DG.VIEWER.SCATTER_PLOT)
+          (viewer as DG.ScatterPlotViewer).invalidateCanvas();
+      }
+    }
   }
 
 
@@ -457,11 +461,7 @@ export class PackageFunctions {
   static async _scWebGPURender(
     sc: DG.ScatterPlotViewer,
     show: boolean) {
-    try {
-      await scWebGPURender(sc, show);
-    } catch (error) {
-      gpuErrorCounter++;
-    }
+    await gpuRender(sc, show);
   }
 
 
@@ -471,29 +471,19 @@ export class PackageFunctions {
   static async _scWebGPUPointHitTest(
     sc: DG.ScatterPlotViewer,
     pt: DG.Point) {
-    let result = -1;
-    try {
-      result = await scWebGPUPointHitTest(sc, pt);
-    } catch (error) {
-      gpuErrorCounter++;
-      throw error;
-    }
-
-    return result;
+    return await gpuPointHitTest(sc, pt);
   }
 
 
   @grok.decorators.func()
   static isWebGPUAvailable() : boolean {
-    return gpuDevice != null && !gpuErrorCounter;
+    return isGpuAvailable();
   }
 
 
   @grok.decorators.func()
   static isWebGPURenderValid(sc: DG.ScatterPlotViewer) : boolean {
-    return sc.props.zoomAndFilter != 'pack and zoom by filter' &&
-      !sc.props.markersColumnName &&// different markers not yet supported YET
-      (sc.props.jitterSize ?? 0) == 0 && (sc.props.jitterSizeY ?? 0) == 0; // jittering not supported yet
+    return isGpuRenderValid(sc);
   }
 }
 export {_ImageCellRenderer};
