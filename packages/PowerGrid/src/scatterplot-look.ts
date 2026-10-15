@@ -13,6 +13,13 @@ const LOOK_PROPERTIES = [
 type LookProperty = (typeof LOOK_PROPERTIES)[number];
 export type ScatterLook = Record<LookProperty, any>;
 
+/** Marker names in the order of the core's `Marker.types`: `getMarkerTypes()` answers indexes into this list. */
+export const MARKER_TYPES = [
+  'circle', 'circle border', 'square', 'square border', 'cross border', 'cross x border', 'outlier',
+  'diamond', 'diamond border', 'triangle top', 'triangle right', 'triangle bottom', 'triangle left',
+  'triangle top border', 'triangle right border', 'triangle bottom border', 'triangle left border',
+  'star', 'dot', 'gradient'];
+
 type Getter = [name: string, get: ((look: unknown) => any) | undefined];
 const getters = new WeakMap<object, Getter[]>();
 
@@ -41,18 +48,25 @@ export function isDotRenderer(look: ScatterLook): boolean {
   return look.markerType == DG.MARKER_TYPE.DOT && !look.markersColumnName;
 }
 
-/** Whether the GPU renderers draw the plot as the core would; other plots are left to the core's CPU renderers. */
-export function isGpuRenderable(sc: DG.ScatterPlotViewer, look: ScatterLook): boolean {
+/** Why the GPU renderers cannot draw the plot as the core would, or null when they can; the plots they cannot draw
+ * are left to the core's CPU renderers. */
+export function whyOnCpu(sc: DG.ScatterPlotViewer, look: ScatterLook): string | null {
   const df = sc.dataFrame;
-  const isAxis = (name: string, map: string) => {
+  const axisProblem = (name: string, map: string) => {
     const col = df.col(name);
     // a datetime axis by a time unit plots a derived column the dataframe does not hold
-    return col != null && AXIS_TYPES.has(col.type) && !(col.type == DG.COLUMN_TYPE.DATE_TIME && map);
+    return col == null ? `no column ${name}` : !AXIS_TYPES.has(col.type) ? `a ${col.type} axis` :
+      col.type == DG.COLUMN_TYPE.DATE_TIME && map ? `a datetime axis by ${map}` : null;
   };
   // the GPU canvas goes between the plot's canvas and its overlay; a matrix plot cell keeps the canvas only
-  return sc.canvas.isConnected && sc.overlay?.parentElement === sc.canvas.parentElement &&
-    look.zoomAndFilter != 'pack and zoom by filter' && !look.jitterSize && !look.jitterSizeY &&
-    isAxis(look.xColumnName, look.xMap) && isAxis(look.yColumnName, look.yMap) &&
-    // the canvas renderer draws labels next to the markers, the dot renderer draws none
-    (isDotRenderer(look) || !look.labelColumnNames?.length || look.displayLabels == 'Never');
+  if (!sc.canvas.isConnected || sc.overlay?.parentElement !== sc.canvas.parentElement)
+    return 'not a plot of its own (a matrix plot cell, or detached)';
+  if (look.zoomAndFilter == 'pack and zoom by filter')
+    return 'pack and zoom by filter';
+  if (look.jitterSize || look.jitterSizeY)
+    return 'jitter';
+  // the canvas renderer draws labels next to the markers, the dot renderer draws none
+  if (!isDotRenderer(look) && look.labelColumnNames?.length && look.displayLabels != 'Never')
+    return 'labels next to the markers';
+  return axisProblem(look.xColumnName, look.xMap) ?? axisProblem(look.yColumnName, look.yMap);
 }

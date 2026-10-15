@@ -103,3 +103,7 @@ read-only drilldown fields, reload a target tab's viewer with a derived filter, 
 
 `setUrlParam` / `updatePath` keep `view.path` as `/<tab><rout>?<params>` (lowercased). On load, `init()`
 parses the first path segment to pick the starting tab (default `Overview`) and applies incoming filter params.
+
+Incoming URL parameters reach the app only as `usageAnalysisApp(...)` function parameters
+(`package.ts`). Reading `window.location` inside a tab is useless: the platform rewrites the URL
+before the tab inits. A new deep-link parameter must be added as an app parameter and passed down.

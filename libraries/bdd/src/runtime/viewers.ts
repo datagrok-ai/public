@@ -184,8 +184,13 @@ export async function expectReading(page: Page, target: ElementRef, name: string
       return last.now === value;
     if (last.before === undefined || last.before === null)
       return `no "${name}" reading at the snapshot`;
-    if (compare === 'differ' || compare === 'same')
-      return (last.now !== last.before) === (compare === 'differ');
+    if (compare === 'differ' || compare === 'same') {
+      // numbers that went through a world-to-screen round trip differ in the last digits
+      const same = typeof last.now === 'number' && typeof last.before === 'number' ?
+        Math.abs(last.now - last.before) <= 1e-9 * Math.max(1, Math.abs(last.now), Math.abs(last.before)) :
+        last.now === last.before;
+      return same !== (compare === 'differ');
+    }
     if (typeof last.now !== 'number' || typeof last.before !== 'number')
       return `"${name}" is not a number`;
     return compare === 'lower' ? last.now < last.before : last.now > last.before;

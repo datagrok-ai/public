@@ -1881,7 +1881,7 @@ export class DomainTableClient<TRow = any, TInsert = DomainRowInsert<TRow>,
       data instanceof DataFrame ? data.dart : data, format, options));
   }
 
-  /** Soft-deletes a row (engine-enforced cascade/restrict/setnull for declared relations;
+  /** Deletes a row — softly unless the table declares `softDelete: false` (engine-enforced cascade/restrict/setnull for declared relations;
    * a restrict reference rejects with a {@link DomainRestrictError}). */
   delete(id: string): Promise<void> {
     return domainCall(api.grok_Dapi_Domains_Delete(this.dart, this.schema, this.table, id));

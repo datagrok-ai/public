@@ -137,6 +137,18 @@ grok s connections test --json conn.json              # test before saving
 
 See `public/packages/Chembl/connections/` for connection JSON examples.
 
+Connection tags over REST: the entity JSON carries `entityTags`
+(`[{id, tag, owner: {id: <All users group id>}}]`, no `#type` on the owner), not `tags`.
+`grok s connections save --json` without `entityTags` **clears** the tags (saveTags deletes rows
+not in the list); `POST /entities/save_tags {id, entityTags}` sets them. Filter with
+`whereTag([...])` (`?tags=x`); `whereSmart('tag = "x"')` returns nothing for connections over REST.
+A `Web` connection's parameters must be wrapped (`{"url": {"value": "https://..."}}`); a bare
+string makes the test route answer 400 "Invalid argument(s): value".
+
+A connection saved over REST goes through `Project.add(uniqueName: true)` and can come back
+renamed `<name>_1` for a package's connection — see `core/docs/PROJECTS_AND_PACKAGES.MD`
+"Package connections on a stand".
+
 ## Group membership
 
 `grok s groups add-members` is idempotent — it resolves each member (by login, name,
@@ -161,6 +173,12 @@ Names resolve by substring, an exact `name`/`friendlyName` match wins. When a na
 ambiguous the command prints every matching group and exits non-zero — pass a UUID to
 disambiguate, or add `--user` (accepted by all four membership verbs) to restrict lookup to
 personal groups.
+
+> **Trap:** `grok s groups add-members <group> <users...>` without `--admin` sets `isAdmin=false`
+> on members that are already group admins (reported as `updated`, not `noop`). Before a bulk add
+> run `grok s groups list-members <group> --admin` and exclude those users, or re-add them with
+> `--admin`. Pass the group UUID — `list-members Administrators` by name has returned
+> "(no results)" while the id worked.
 
 ## User administration
 

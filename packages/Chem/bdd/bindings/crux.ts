@@ -303,7 +303,7 @@ const CRUX_CONTROLS: [string, string, string][] = [
   ['crux atropisomer M item', 'menu.context.atrop.m', 'M, in an atropisomer axis bond\'s context menu'],
   ['crux E item', 'menu.context.ez.e', 'E, in a stereo double bond\'s context menu'],
   ['crux Z item', 'menu.context.ez.z', 'Z, in a stereo double bond\'s context menu'],
-  ['crux enhanced stereo item', 'menu.context.enhanced-stereo', 'Enhanced Stereochemistry…, in the context menu of a stereocentre or the selection'],
+  ['crux enhanced stereo item', 'menu.context.enhanced-stereo', 'Enhanced Stereochemistry…, in the context menu of a stereocentre or the selection: opens the stereochemistry panel with those centres selected'],
   ['crux topology item', 'menu.context.topology', 'Topology, in a bond\'s context menu (query mode): opens its submenu'],
   ['crux ring topology item', 'menu.context.topology.ring', 'Ring, in the Topology submenu'],
   ['crux chain topology item', 'menu.context.topology.chain', 'Chain, in the Topology submenu'],
@@ -315,10 +315,11 @@ const CRUX_CONTROLS: [string, string, string][] = [
   ['crux isotope field', 'dialog.atom-properties.isotope', 'Isotope, in Atom Properties'],
   ['crux radical list', 'dialog.atom-properties.radical', 'Radical, in Atom Properties: none, a monovalent or a divalent radical'],
   ['crux Atom Properties Apply button', 'dialog.atom-properties.apply', 'Apply of Atom Properties'],
-  ['crux enhanced stereo dialog', 'dialog.enhanced-stereo', 'Crux\'s Enhanced Stereochemistry dialog'],
-  ['crux AND button', 'dialog.enhanced-stereo.type.and', 'AND, in Enhanced Stereochemistry'],
-  ['crux OR button', 'dialog.enhanced-stereo.type.or', 'OR, in Enhanced Stereochemistry'],
-  ['crux enhanced stereo Apply button', 'dialog.enhanced-stereo.apply', 'Apply of Enhanced Stereochemistry'],
+  // the stereochemistry panel (crux-sketch stereo-panel, 2026-10-14: it retired the Enhanced Stereochemistry dialog)
+  ['crux stereo panel', 'panel.stereo', 'Crux\'s stereochemistry panel: a row per stereocentre, double bond and axis'],
+  ['crux group chip of atom 1', 'panel.stereo.row.atom.1.group', 'the group chip of atom 1\'s row in the stereochemistry panel: opens the group menu'],
+  ['crux New AND group item', 'menu.stereo-group.and.new', 'New AND group, in a stereochemistry panel row\'s group menu: the selected centres go into a new &n'],
+  ['crux New OR group item', 'menu.stereo-group.or.new', 'New OR group, in a stereochemistry panel row\'s group menu: the selected centres go into a new orn'],
 ];
 for (const [name, id, description] of CRUX_CONTROLS)
   element(name, {selector: `${CRUX} [data-testid="${id}"]`, description});

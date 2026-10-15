@@ -66,7 +66,7 @@ validation error, a lost device) is not used again, and its plots are drawn with
 
 Both backends draw the same thing, the CPU renderers' output:
 - `scatterplot-look.ts` reads the viewer properties in one pass (`sc.props.x` builds wrappers for every property on
-  each access) and holds the rules both backends share (`isGpuRenderable`: no jitter, no pack-and-zoom, no labels
+  each access) and holds the rules both backends share (`whyOnCpu`: no jitter, no pack-and-zoom, no labels
   next to markers, plain axis columns, not a matrix plot cell, which keeps the plot canvas without its overlay).
 - `scatterplot-data.ts` (`ScatterData`) turns a viewer into a `Frame` and the arrays that changed since the last
   one, handed to the renderer's `ScatterSink`: positions as float32 offsets from an origin near the viewport (rebuilt
@@ -90,6 +90,14 @@ Both backends draw the same thing, the CPU renderers' output:
 - **WebGPU** (`webgpu/scatterplot.ts`): rows from storage buffers, dots as points and shapes as instanced quads;
   pipelines are compiled once per device, buffers are rewritten only when the data changes, and a frame is submitted
   synchronously, in the same frame as the axes. The hit test is a compute shader over the filtered rows.
+
+**Debug log** (`scatterplot-debug.ts`), for finding what is slow on a given machine: in the browser console
+`localStorage.setItem('PowerGrid.scatterPlotDebug', '1')` (no reload; `removeItem` turns it off). Every second a plot
+is drawn it prints the engine and GPU, PowerGrid's JavaScript per frame (data, drawing) and per validity check, when
+the GPU finished the frames, hit tests, the lag from wheel/drag input to the view moving, and the main thread's long
+animation frames with the scripts behind them (the core's work shows as `login.dart.js`/`main.dart.js`). Rebuilds of
+per-row data, slow frames, the WebGPU device arriving, engine set-ups and why a plot stays on the CPU print at once.
+The renderers report through `ScatterRenderer.render` (data update, `drawFrame`, `gpuDone`); keep new steps there.
 
 ### Pinned Columns
 

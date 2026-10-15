@@ -69,6 +69,12 @@ function shapePipeline(device: GPUDevice, p: Pipelines, kind: number): GPURender
 
 const renderers = new Renderers<ScatterPlotGPU>();
 
+/** The GPU behind [device], as far as the browser tells. */
+export function adapterName(device: GPUDevice): string {
+  const info = device.adapterInfo as GPUAdapterInfo | undefined;
+  return [info?.vendor, info?.architecture, info?.description].filter((x) => x).join(' ') || 'an unnamed GPU';
+}
+
 /** Draws [sc] with [device], or releases its renderer when not [show]; answers the canvas drawn on. */
 export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean,
   device: GPUDevice | null): HTMLCanvasElement | null {
@@ -95,6 +101,7 @@ export function disposeWebGPURenderers(): void {
 
 
 class ScatterPlotGPU extends ScatterRenderer {
+  protected readonly engine: string;
   private readonly context: GPUCanvasContext;
   private readonly pipelines: Pipelines;
   private readonly storage = {} as Record<Storage, GPUBuffer>;
@@ -115,6 +122,7 @@ class ScatterPlotGPU extends ScatterRenderer {
     const uniform = () => this.buffer(FRAME_BYTES, GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST);
     this.uniforms = {filteredOut: uniform(), filtered: uniform(), selected: uniform(), pick: uniform()};
     this.result = this.buffer(4, GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_SRC | GPUBufferUsage.COPY_DST);
+    this.engine = `WebGPU on ${adapterName(device)}`;
     this.attach();
   }
 
@@ -140,9 +148,7 @@ class ScatterPlotGPU extends ScatterRenderer {
     this.write(list, rows);
   }
 
-  render(sc: DG.ScatterPlotViewer): void {
-    const frame = this.data.update(sc);
-    this.layout(frame);
+  protected drawFrame(frame: Frame): void {
     for (const list of PASSES)
       this.device.queue.writeBuffer(this.uniforms[list], 0, this.frameUniforms(frame, list));
     const groups = this.groups();
@@ -163,6 +169,10 @@ class ScatterPlotGPU extends ScatterRenderer {
     }
     pass.end();
     this.device.queue.submit([encoder.finish()]);
+  }
+
+  protected gpuDone(): Promise<void> {
+    return this.device.queue.onSubmittedWorkDone();
   }
 
   async hitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> {

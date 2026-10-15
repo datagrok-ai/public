@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 
 import {filter, map} from 'rxjs/operators';
-import {Tutorial} from '@datagrok-libraries/tutorials/src/tutorial';
+import {Tutorial, TutorialPrerequisites} from '@datagrok-libraries/tutorials/src/tutorial';
 import {fromEvent} from 'rxjs';
 import {getElement, getView, closeWindows, PAUSE, getBallFlightModelLegend, buildToggleOverlay, inputRootByCaption,
   toggleSwitch} from './utils';
@@ -48,6 +48,7 @@ export class FittingTutorial extends Tutorial {
 
   demoTable: string = '';
   helpUrl: string = LINK.FITTING;
+  prerequisites: TutorialPrerequisites = {packages: ['Compute2', 'DiffStudio']};
 
   protected async _run() {
     this.header.textContent = this.name;
@@ -100,7 +101,7 @@ export class FittingTutorial extends Tutorial {
     name = name.replace('-', ' ');
 
     if (modelCatalogIcn === null) {
-      grok.shell.warning(`${name} not found: install the Compute package`);
+      grok.shell.warning(`${name} not found: install the Compute2 package`);
       return;
     }
 

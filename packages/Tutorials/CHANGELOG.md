@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
 * GROK-20298: The plugin-declared Northwind domain schema is `northwind_demo` (was `northwind`): the name `northwind` is the EXTERNAL binding of the same data (a domain schema over the Northwind connection), and two packages may not ship one schema name
 * Activity Cliffs: Fixed the OK step's text, which had become 'Click "OK"' with the step-skipping change; it is "Click OK" again, as in the other Chem tutorials
 * Tests: Data Aggregation and Multivariate Analysis wait for the package autostarts before their top-menu pick

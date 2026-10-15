@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Scatter plot: Added an opt-in debug log of the GPU renderers (`localStorage.setItem('PowerGrid.scatterPlotDebug', '1')`): the engine and GPU in use, time per frame by step, GPU completion, hit tests, input-to-view lag, the main thread's long frames by script, and why a plot stays on the CPU
 * Scatter plot: Made the GPU renderers draw marker shapes up to 40× faster when most rows are in view (2M circles: about 200 ms a frame down to 7 ms), so zooming and panning a large plot from its overview stays at the display's frame rate on WebGPU and WebGL; the markers look exactly as before
 * [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Decodes each image once and draws it in the same paint, instead of decoding every visible image again after each repaint
 * [public#438](https://github.com/datagrok-ai/public/issues/438): Binary Image: Byte columns that are not images (PDFs, hashes) are no longer shown as empty image cells

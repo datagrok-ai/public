@@ -269,6 +269,52 @@ export declare const STRINGS: {
     readonly infoQuery: 'Formula cannot be computed for queries';
     readonly infoRNotCounted: 'R not counted';
     /**
+     * The configurable readout (spike readout-config; INFO-016 to INFO-022, INFO-013): its groups' names (the first is
+     * `infoPanel`), its items' names and labels (the notations are their formats' names, never translated), what the pointer's
+     * items say, its menu's items, what the status line says of a copy, and the `…` button that opens the items folded.
+     */
+    readonly readoutNotations: 'Notations';
+    readonly readoutCounts: 'Counts';
+    readonly readoutProperties: 'Properties';
+    readonly readoutPointer: 'Pointer';
+    readonly readoutFormula: 'Formula';
+    readonly readoutAtoms: 'Atoms';
+    readonly readoutHeavyAtoms: 'Heavy atoms';
+    readonly readoutBonds: 'Bonds';
+    readonly readoutRings: 'Rings';
+    readonly readoutFragments: 'Fragments';
+    readonly readoutStereocentres: 'Stereocentres';
+    readonly readoutCharge: 'Charge';
+    readonly readoutClogp: 'cLogP';
+    readonly readoutTpsa: 'TPSA';
+    readonly readoutHbd: 'HBD';
+    readonly readoutHbdName: 'H-bond donors';
+    readonly readoutHba: 'HBA';
+    readonly readoutHbaName: 'H-bond acceptors';
+    readonly readoutRotatable: 'Rotatable bonds';
+    readonly readoutLipinski: 'Lipinski violations';
+    readonly readoutQed: 'QED';
+    readonly readoutUnderPointer: 'Atom or bond under the pointer';
+    readonly readoutDrawing: 'Bond drawn or atoms moved';
+    /** Stereocentres with some unspecified: "2 (1 unspecified)". */
+    readonly readoutUnspecified: '{count} ({unspecified} unspecified)';
+    /** The atom under the pointer: its number from 1, its element, its charge and its hydrogens; then its valence, where the engine gives it. */
+    readonly readoutAtom: 'Atom {n}: {element}, charge {charge}, {h} H';
+    readonly readoutAtomValence: '{atom}, valence {valence}';
+    /** The bond under the pointer: its number from 1, its type and its length in the drawing's coordinates. */
+    readonly readoutBond: 'Bond {n}: {type}, {length} Å';
+    /** While a bond is drawn, and while atoms are moved (INFO-013): the length or the distance, and the direction. */
+    readonly readoutDrawn: 'Bond {length} Å, {angle}°';
+    readonly readoutMoved: 'Moved {length} Å, {angle}°';
+    readonly readoutMenu: 'Readout';
+    readonly readoutCopyAll: 'Copy all';
+    readonly readoutCopyItem: 'Copy {item}';
+    readonly readoutCopied: 'Copied {item}';
+    readonly readoutCopiedAll: 'Copied the readout';
+    readonly readoutMore: 'More values';
+    /** The Settings dialog's section of the readout's items. */
+    readonly readoutItemsHeading: 'Readout shows';
+    /**
      * A flip or a 180° rotation of a part attached to the rest of its structure by more than one bond (spike rotate-flip,
      * R4): refused, as F3 says a refusal.
      */
@@ -540,6 +586,32 @@ export declare const STRINGS: {
         readonly other: '{count} stereo bonds';
     };
     /**
+     * Spike canonical-arom (BOND-022): Aromatize and Dearomatize in the canvas's and the selection's menus and as toolbar
+     * buttons, why each is greyed out (UI-009), what each says it did, and why the engine refused a ring system.
+     */
+    readonly aromatize: 'Aromatize';
+    readonly dearomatize: 'Dearomatize';
+    readonly structureMenu: 'Structure';
+    readonly structureNothing: 'Nothing to add, remove, aromatize or dearomatize';
+    readonly noRingsToAromatize: 'Nothing to aromatize';
+    readonly noRingsToDearomatize: 'No aromatic ring to dearomatize';
+    readonly noKekuleStructure: 'no Kekulé structure';
+    readonly aromatized: 'Aromatized {what}';
+    readonly dearomatized: 'Dearomatized {what}';
+    readonly cantAromatize: "Can't aromatize: {why}";
+    readonly cantDearomatize: "Can't dearomatize: {why}";
+    readonly cantAromatizeSome: "can't aromatize {what}: {why}";
+    readonly cantDearomatizeSome: "can't dearomatize {what}: {why}";
+    readonly doneAndRefused: '{done}; {refused}';
+    readonly ringCount: {
+        readonly one: '{count} ring';
+        readonly other: '{count} rings';
+    };
+    readonly ringSystemCount: {
+        readonly one: '{count} ring system';
+        readonly other: '{count} ring systems';
+    };
+    /**
      * Spike atropisomers (R2, the product owner's report of 2026-10-07): an atropisomer axis bond's menu group, P and M (CIP
      * labels, as R and S are), and the status line's word when the engine gives no wedge for a label (JDQ443's second axis).
      */
@@ -547,6 +619,59 @@ export declare const STRINGS: {
     readonly atropP: 'P';
     readonly atropM: 'M';
     readonly noAxisConfig: 'No {config} configuration for this axis';
+    /**
+     * Spike stereo-panel (docs/research/stereo-panel/design.md, "Wording"; sentence case): the stereochemistry panel, its
+     * button and canvas menu item, its rows' kinds and names, its group chip and menu, its summary, its empty states and its
+     * foot's commands. The groups' names (abs, &1, or1) are notations, never translated.
+     */
+    readonly stereoPanel: 'Stereochemistry panel';
+    readonly stereoPanelTip: 'Stereochemistry panel: every stereocentre, double bond and axis';
+    readonly closeStereoPanel: 'Close the stereochemistry panel';
+    readonly stereoList: 'Stereo elements';
+    readonly stereoCentreWord: 'stereocentre';
+    readonly stereoDoubleWord: 'double bond';
+    readonly stereoAxisWord: 'atropisomer axis';
+    readonly atomNumber: 'Atom {number}';
+    readonly bondNumber: 'Bond {number}';
+    readonly stereoConfigOf: '{name}: configuration';
+    readonly stereoGroupChip: 'Group: {group}';
+    readonly stereoGroupSaid: 'group {group}';
+    readonly stereoGroupNone: 'none';
+    readonly readAsAbsolute: 'read as absolute';
+    readonly axesNotGrouped: "Axes can't be grouped yet";
+    readonly stereoGroupOf: 'Group of {name}';
+    readonly stereoGroupOfSelected: 'Group of the {count} selected';
+    readonly groupSizeCentres: {
+        readonly one: '{count} centre';
+        readonly other: '{count} centres';
+    };
+    readonly groupSizeElements: {
+        readonly one: '{count} element';
+        readonly other: '{count} elements';
+    };
+    readonly newAndGroup: 'New AND group ({name})';
+    readonly newOrGroup: 'New OR group ({name})';
+    readonly selectAllOfGroup: 'Select all of {group}';
+    readonly selectAllUngrouped: 'Select all ungrouped';
+    readonly stereoElements: {
+        readonly one: '{count} stereo element';
+        readonly other: '{count} stereo elements';
+    };
+    readonly unspecifiedCount: '{count} unspecified';
+    readonly standsFor: {
+        readonly one: 'Stands for {count} stereoisomer';
+        readonly other: 'Stands for {count} stereoisomers';
+    };
+    readonly standsForRacemate: 'Stands for 2 stereoisomers: a racemate';
+    readonly standsForOneOf: 'Stands for one of 2 stereoisomers';
+    readonly standsForMany: 'Stands for more stereoisomers than can be counted';
+    readonly flagSaid: 'Flag: {flag}';
+    readonly noStereoElements: 'No stereocentres, stereo double bonds or atropisomer axes.';
+    readonly noStereoForQueries: 'Stereo is not listed for queries';
+    readonly removeStereoButton: 'Remove stereo';
+    readonly recomputeWedgesButton: 'Recompute wedges';
+    readonly removeStereoTip: 'Make the selected centres and axes unspecified (all, with nothing selected)';
+    readonly recomputeWedgesTip: 'Place the wedges anew from the configuration (the selected, or all with nothing selected)';
     /**
      * Spike abbreviations (docs/decisions/abbreviations.md, A5 to A8; I18N-006: the abbreviations' names are notations, never
      * translated, and are passed into these as they are): a contracted abbreviation's menu, named "Abbreviation", and its
@@ -569,18 +694,8 @@ export declare const STRINGS: {
     readonly sheetAbbreviation: 'Abbreviation {label}';
     /** A centre the engine cannot give that configuration (a cage's): "No R configuration for this C". */
     readonly noCentreConfig: 'No {config} configuration for this {symbol}';
-    readonly stereoType: 'Group';
     readonly stereoAbs: 'Absolute (abs)';
-    readonly stereoAnd: 'AND';
-    readonly stereoOr: 'OR';
     readonly stereoNone: 'None';
-    readonly andGroup: 'AND group';
-    readonly orGroup: 'OR group';
-    readonly newGroup: 'New ({name})';
-    readonly stereoTargets: {
-        readonly one: '{count} stereocentre';
-        readonly other: '{count} stereocentres';
-    };
     readonly flagAbsolute: 'Absolute';
     readonly flagRacemic: 'Racemic';
     readonly flagRelative: 'Relative';
@@ -933,7 +1048,7 @@ export declare const STRINGS: {
 /** A message's name. */
 export type StringKey = keyof typeof STRINGS;
 /** The messages with placeholders or plural forms: read through the catalog's functions, never as text. */
-type FormattedKey = 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'newGroup' | 'stereoTargets' | 'zoomTo' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
+type FormattedKey = 'readoutUnspecified' | 'readoutAtom' | 'readoutAtomValence' | 'readoutBond' | 'readoutDrawn' | 'readoutMoved' | 'readoutCopyItem' | 'readoutCopied' | 'groupCount' | 'percent' | 'zoomButton' | 'withHotkey' | 'notAvailableYet' | 'noRoomBond' | 'noRoomRing' | 'noRoomChain' | 'noRoomTemplate' | 'noRoomMerge' | 'thisAtom' | 'noRoomForRadical' | 'problemValence' | 'chargeLimitUp' | 'chargeLimitDown' | 'tooClose' | 'cannotFlip' | 'cannotTurn' | 'noFreeAttachment' | 'pasteNotYet' | 'clipboardBlocked' | 'copyAsBlocked' | 'copiedLost' | 'copiedV3000' | 'copiedV3000Lost' | 'copiedV3000Needed' | 'copiedNone' | 'lossAlias' | 'lossRLabelNumbers' | 'lossAttachmentPoints' | 'lossStereoGroups' | 'lossChiralFlag' | 'lossQuery' | 'lossSgroup' | 'lossHydrogenBond' | 'lossZeroOrder' | 'lossAtomMaps' | 'lossStereo' | 'lossRLabel' | 'lossDummy' | 'lossDative' | 'lossOther' | 'pasteNotAs' | 'pasteNotAsMol' | 'pasteSpecialHint' | 'notReadAs' | 'notReadAsMol' | 'dropNothing' | 'dropNotYet' | 'pasteNoText' | 'readPasted' | 'readDropped' | 'readWritten' | 'readLeftOut' | 'readAlso' | 'leftStructure' | 'leftText' | 'leftGraphic' | 'leftArrow' | 'leftPicture' | 'leftBracket' | 'keptAliases' | 'lostRecords' | 'lostSdData' | 'lostRgroupDefinitions' | 'lostCoordinates3d' | 'lostSgroup' | 'lostQuery' | 'lostCxSection' | 'lostMolfile' | 'lostOther' | 'degrees' | 'radicalElectrons' | 'notAnElement' | 'notValid' | 'detailsNumber' | 'detailsMass' | 'opensDialog' | 'atomCount' | 'bondCount' | 'both' | 'description' | 'withFormula' | 'hotAtom' | 'hotBond' | 'selected' | 'added' | 'deleted' | 'pasted' | 'bondNow' | 'bondsNow' | 'atomNow' | 'atomsNow' | 'changed' | 'moved' | 'rotated' | 'flipped' | 'joined' | 'undone' | 'redone' | 'newDrawing' | 'noCentreConfig' | 'noAxisConfig' | 'atomNumber' | 'bondNumber' | 'stereoConfigOf' | 'stereoGroupChip' | 'stereoGroupSaid' | 'stereoGroupOf' | 'stereoGroupOfSelected' | 'groupSizeCentres' | 'groupSizeElements' | 'newAndGroup' | 'newOrGroup' | 'selectAllOfGroup' | 'stereoElements' | 'unspecifiedCount' | 'standsFor' | 'flagSaid' | 'stereoRemoved' | 'wedgesPlaced' | 'centreCount' | 'axisCount' | 'stereoBondCount' | 'aromatized' | 'dearomatized' | 'cantAromatize' | 'cantDearomatize' | 'cantAromatizeSome' | 'cantDearomatizeSome' | 'doneAndRefused' | 'ringCount' | 'ringSystemCount' | 'cleanedAtoms' | 'switchedOn' | 'switchedOff' | 'toolThen' | 'toolChosen' | 'zoomTo' | 'sheetInTurn' | 'cycleFirst' | 'cycleLater' | 'sheetFuse' | 'sheetNudge' | 'sheetRotate' | 'sheetCopyAs' | 'sheetPasteAs' | 'dissolveQuestion' | 'sheetAbbreviation' | 'sgroupNameTooLong' | 'sgroupFieldNameTooLong' | 'sgroupValueTooLong' | 'sgroupCountRange' | 'sgroupLabelTooLong' | 'sgroupContextMismatch' | 'sgroupTipData' | 'sgroupTipSru' | 'sgroupTipMul' | 'sgroupTipSup' | 'sgroupTipOther' | 'queryAtomList' | 'queryAtomNotList' | 'queryAtomGeneric' | 'queryOrMore' | 'queryTipField' | 'smartsNotRead' | 'queryModeOnly' | 'pasteQueryOnly' | 'dropQueryOnly' | 'queryElementOff' | 'viewOnlyOff' | 'noItemsHereFoundOn' | 'notApplied' | 'chargeSaidPlus' | 'chargeSaidMinus' | 'zoomRange';
 /** The messages read as plain text. */
 export type PlainKey = Exclude<StringKey, FormattedKey>;
 /** What a refused gesture was for, as a refusal says it (F3). */
@@ -1014,8 +1129,6 @@ export type Catalog = {
     /** Enhanced stereo groups' names, &1 and or1: notations, never translated (spike stereo). */
     andName(n: number): string;
     orName(n: number): string;
-    newGroup(name: string): string;
-    stereoTargets(n: number): string;
     /** The prompt before an edit inside expanded abbreviations (spike abbreviations, P5): "Remove abbreviation OMe?". */
     dissolveQuestion(labels: readonly string[]): string;
     /** The S-Group Properties dialog's checks and refusals (spike sgroups, G4), with their limits and the context's name. */

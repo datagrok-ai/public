@@ -18,11 +18,66 @@ export function isFragment(molString: string) {
     return !!molString.match(/\[.?:|\*.?\]/g);
 }
 
+/** A CXSMILES extension (` |...|` after the SMILES): its atom labels hold `$` ($Q_e$) and its stereo groups `&` (&1:2),
+ * which are no SMARTS. */
+const CX_EXTENSION = /\s+\|[^|]*\|\s*$/;
+
+/** A molecule string without its CXSMILES extension, if it has one. */
+export function withoutCxExtension(molString: string): string {
+  return molString.replace(CX_EXTENSION, '');
+}
+
+/** Whether a molecule string is a query: a query molblock, or a string with SMARTS syntax (a `[#n]` atom, a recursive
+ * `$()`, the logical `&`, `;`, `,` and `!`, the any bond `~`) outside a CXSMILES extension. */
 export function _isSmarts(molString: string): boolean {
   if (isMolBlock(molString))
     return MolfileHandler.getInstance(molString).isQuery();
   else
-    return !!molString.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    return !!withoutCxExtension(molString).match(/\[.?#\d|\$|&|;|,|!.?]|~/g);
+}
+
+/** The element symbols RDKit's SMILES reader takes in a bracket atom (H to Og), and the aromatic ones. */
+const SMILES_ELEMENT = 'H|He|Li|Be|B|C|N|O|F|Ne|Na|Mg|Al|Si|P|S|Cl|Ar|K|Ca|Sc|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Ga|Ge|As|Se|' +
+  'Br|Kr|Rb|Sr|Y|Zr|Nb|Mo|Tc|Ru|Rh|Pd|Ag|Cd|In|Sn|Sb|Te|I|Xe|Cs|Ba|La|Ce|Pr|Nd|Pm|Sm|Eu|Gd|Tb|Dy|Ho|Er|Tm|Yb|Lu|Hf|Ta|' +
+  'W|Re|Os|Ir|Pt|Au|Hg|Tl|Pb|Bi|Po|At|Rn|Fr|Ra|Ac|Th|Pa|U|Np|Pu|Am|Cm|Bk|Cf|Es|Fm|Md|No|Lr|Rf|Db|Sg|Bh|Hs|Mt|Ds|Rg|' +
+  'Cn|Nh|Fl|Mc|Lv|Ts|Og|as|se|si|te|[bcnops*]';
+
+/** A string of SMILES tokens alone: atoms of the organic subset and `*`; bracket atoms in SMILES' order (isotope, an
+ * element, `@` or `@@`, H count, charge, class); a bond or a dative bond not followed by another (two in a row, `=\` or
+ * `-/`, are SMARTS' conjunction); ring closures, branches and dots. */
+const SMILES_SYNTAX = new RegExp(`^(?:\\[\\d{0,3}(?:${SMILES_ELEMENT})@{0,2}(?:H\\d{0,2})?(?:[+-]\\d{0,2}|\\+\\+|--)?(?::\\d+)?\\]` +
+  '|Cl|Br|[BCNOPSFIbcnops*]|(?:->|<-|[-=#:/\\\\])(?![-=#:/\\\\<])|[.()]|%\\(\\d+\\)|%\\d\\d|\\d)*$');
+
+/** Whether a string is written in SMILES syntax alone: no SMARTS primitive or operator, no CXSMILES extension, no name.
+ * RDKit reads such a string as a molecule or not at all, never as a query only; a SMARTS that no syntax tells from SMILES
+ * holds a token outside it ([NX3], [R], A, a, the ring bond @, an H count after a charge). */
+export function isSmilesSyntax(s: string): boolean {
+  return SMILES_SYNTAX.test(s);
+}
+
+/** Whether RDKit reads `s` as a query and not as a molecule, even unsanitized: a SMARTS of primitives alone, which no
+ * syntax tells from SMILES (Daylight's [NX3][CX3]=[OX1], [R], A-A, C@C). */
+export function readsAsQueryOnly(s: string, rdKitModule: RDModule): boolean {
+  if (!s || isMolBlock(s) || (!hasNewLines(s) && s.length > MAX_SMILES_LENGTH))
+    return false;
+  let mol: RDMol | null = null;
+  try {
+    mol = rdKitModule.get_mol(s, JSON.stringify({sanitize: false}));
+  } catch {
+    mol = null;
+  }
+  if (mol !== null) {
+    mol.delete();
+    return false;
+  }
+  let query: RDMol | null = null;
+  try {
+    query = rdKitModule.get_qmol(s);
+  } catch {
+    query = null;
+  }
+  query?.delete();
+  return query !== null;
 }
 
 export function hasRadicals(mol: RDMol): boolean {
@@ -68,6 +123,41 @@ export function getMolSafe(molString: string, details: object = {}, rdKitModule:
 }
 
 
+/** Whether an atom of a molblock carries an H count query, as RDKit's readers take one: a V2000 atom line's hhh field
+ * (columns 43-45), a V3000 atom's HCOUNT (0 or blank: none). */
+function hasHCountQuery(molBlock: string): boolean {
+  const lines = molBlock.split(/\r?\n/);
+  const counts = lines[3] ?? '';
+  if (counts.includes('V3000')) {
+    let inAtoms = false;
+    for (let i = 4; i < lines.length; i++) {
+      let line = lines[i];
+      if (!line.startsWith('M  V30 '))
+        continue;
+      while (line.endsWith('-') && i + 1 < lines.length && lines[i + 1].startsWith('M  V30 '))
+        line = line.slice(0, -1) + lines[++i].slice(7);
+      const body = line.slice(7).trim();
+      if (body === 'BEGIN ATOM')
+        inAtoms = true;
+      else if (body === 'END ATOM')
+        return false;
+      else if (inAtoms) {
+        const hCount = body.match(/(?:^|\s)HCOUNT=(-?\d+)/);
+        if (hCount && parseInt(hCount[1]) !== 0)
+          return true;
+      }
+    }
+    return false;
+  }
+  const atomCount = parseInt(counts.substring(0, 3));
+  for (let i = 4; i < 4 + (atomCount || 0) && i < lines.length; i++) {
+    const hhh = lines[i].length >= 45 ? lines[i].substring(42, 45).trim() : '';
+    if (hhh !== '' && parseInt(hhh) !== 0)
+      return true;
+  }
+  return false;
+}
+
 export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: string,
   rdKitModule: RDModule): RDMol | null {
   if (queryMolString && !hasNewLines(queryMolString) && queryMolString.length > MAX_SMILES_LENGTH)
@@ -76,11 +166,23 @@ export function getQueryMolSafe(queryMolString: string, queryMolBlockFailover: s
 
   if (isMolBlock(queryMolString)) {
     // a query molblock is read as a query, unsanitized, V2000 or V3000: sanitizing changes what it asks for (an aromatic bond
-    // outside an aromatic ring read single, crux-sketch spike query-roundtrip); one with explicit H is read with its H
-    // merged into their atoms, which only the molecule reader does
+    // outside an aromatic ring read single, crux-sketch spike query-roundtrip; an atom whose valence the molblock fixes read as
+    // a radical, so that it matched radicals alone; a pentavalent N drawn read charge-separated). One with an H count query on
+    // an atom (MDL's hhh, V3000's HCOUNT, which Crux and Ketcher write) is read sanitized but not kekulized, unless RDKit cannot
+    // sanitize it: read unsanitized, its Kekulé ring stayed Kekulé, so that it matched no aromatic ring. One with explicit H is
+    // read with its H merged into their atoms, which only the molecule reader does.
     if (queryMolString.includes(' H '))
       queryMol = getMolSafe(queryMolString, {mergeQueryHs: true}, rdKitModule).mol;
     else {
+      if (hasHCountQuery(queryMolString)) {
+        try {
+          queryMol = rdKitModule.get_mol(queryMolString, JSON.stringify({kekulize: false}));
+        } catch (e) {
+          queryMol = null;
+        }
+        if (queryMol !== null)
+          return queryMol;
+      }
       try {
         queryMol = rdKitModule.get_qmol(queryMolString);
       } catch (e) {

@@ -53,10 +53,11 @@ import {ScaffoldTreeViewer} from './widgets/scaffold-tree';
 import {ScaffoldTreeFilter} from './widgets/scaffold-tree-filter';
 import {Fingerprint, hasNewLines} from './utils/chem-common';
 import * as chemCommonRdKit from './utils/chem-common-rdkit';
-import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe} from './utils/mol-creation_rdkit';
+import {IMolContext, getMolSafe, isFragment, _isSmarts, getQueryMolSafe, readsAsQueryOnly, isSmilesSyntax,
+  withoutCxExtension} from './utils/mol-creation_rdkit';
 import {checkMoleculeValid, checkMolEqualSmiles, _rdKitModule} from './utils/chem-common-rdkit';
 import {_convertMolNotation, convertNotationForColumn} from './utils/convert-notation-utils';
-import {molToMolblock} from './utils/convert-notation-utils';
+import {molToMolblock, asSmiles} from './utils/convert-notation-utils';
 import {getAtomsColumn, checkPackage} from './utils/elemental-analysis-utils';
 import {getSdfString, saveAsSdfDialog} from './utils/sdf-utils';
 import {getSimilaritiesMarix} from './utils/similarity-utils';
@@ -2252,8 +2253,7 @@ export class PackageFunctions {
   })
   static copyAsSmiles(
     @grok.decorators.param({options: {semType: 'Molecule'}}) value: DG.SemanticValue): void {
-    const smiles = !DG.chem.isMolBlock(value.value) && !_isSmarts(value.value) ? value.value :
-      _convertMolNotation(value.value, DG.chem.Notation.Unknown, DG.chem.Notation.Smiles, PackageFunctions.getRdKitModule());
+    const smiles = asSmiles(value.value, PackageFunctions.getRdKitModule());
     navigator.clipboard.writeText(smiles);
     grok.shell.info('Smiles copied to clipboard');
   }
@@ -2370,9 +2370,17 @@ export class PackageFunctions {
     return false;
   }
 
+  /** Whether a molecule string is SMARTS (the platform's sketcher sets it as SMARTS, `DG.chem.Sketcher.setMolecule`): no
+   * molblock; SMARTS syntax outside a CXSMILES extension (a CXSMILES with atom labels or an AND group is a molecule), or a
+   * text RDKit reads as a query and not as a molecule (Daylight's [NX3][CX3]=[OX1]: set as SMILES, no sketcher could show
+   * it, and the query entered came back empty). RDKit is asked only about a text outside SMILES syntax: every string a
+   * sketcher is set with comes here, and a SMILES, read by RDKit each time, cost a parse for an answer its syntax gives. */
   @grok.decorators.func()
   static isSmarts(s: string): boolean {
-    return !s.match(/M  END|V2000|V3000/g) && !!s.match(/\[.?#\d|\$|&|;|,|!.?]/g);
+    if (/M  END|V2000|V3000/.test(s))
+      return false;
+    return _isSmarts(s) ||
+      (!isSmilesSyntax(withoutCxExtension(s)) && _rdKitModule != null && readsAsQueryOnly(s, _rdKitModule));
   }
 
   @grok.decorators.func()
