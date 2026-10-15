@@ -86,13 +86,16 @@ export function evaluateModelDialog(model: ModelRow, loaded: LoadedModel, tables
  * with the **Evaluation** column next to them. The view holds the evaluated table; nothing is added to it. */
 export class EvaluationView extends DG.ViewBase {
   readonly resultsPane = new ResultsPane();
+  /** The results; `aria-busy` until they are shown, for automation. */
+  private readonly results = ui.panel([this.resultsPane.root], 'forge-train-results');
   private isClosed = false;
 
   private constructor(model: ModelRow) {
     super();
     this.name = `Evaluation: ${model.name}`;
     this.box = true;
-    this.root.appendChild(ui.box(ui.panel([this.resultsPane.root], 'forge-train-results')));
+    this.results.setAttribute('aria-busy', 'true');
+    this.root.appendChild(ui.box(this.results));
   }
 
   getIcon(): HTMLElement {
@@ -133,6 +136,7 @@ export class EvaluationView extends DG.ViewBase {
       view.close();
     } finally {
       progress.close();
+      view.results.setAttribute('aria-busy', 'false');
     }
     return view;
   }

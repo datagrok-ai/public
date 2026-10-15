@@ -1,0 +1,156 @@
+/* eslint-disable max-len */
+/* eslint-disable comma-spacing */
+/* eslint-disable quotes */
+/* ---
+generated: features/train/train-winequality.feature
+generator: @datagrok-libraries/bdd — do not edit; run `grok-bdd compile` to regenerate
+--- */
+import {test} from '@playwright/test';
+import '../../bindings/elements.js';
+import '@datagrok-libraries/bdd/bindings/common/kinds';
+import '@datagrok-libraries/bdd/bindings/common/parameter-types';
+import '@datagrok-libraries/bdd/bindings/platform/datasets';
+import '@datagrok-libraries/bdd/bindings/platform/elements';
+import {mouseOverRowIsHovered, noMouseOverRow} from '../../bindings/columns.js';
+import {modelShouldHave, noModelsNamed, noRunsOf, rememberRunCount, runCountAsRemembered, runCountOneMore, shownIsNewestRun, shownSeedIsModels} from '../../bindings/server.js';
+import {changeDuringTraining, countTaskBarEntries, newTrainingShown, newTrainingShownWithin, noBalloonAtAll, openDemoFile, panelSizesKept, readingHigher, rememberPanelSizes, rememberShownTraining, taskBarEntryCount} from '../../bindings/train.js';
+import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
+import {clickOn, enterInto, hoverOver, selectIn, shouldBe, shouldContainText, shouldHaveText, shouldHaveValue, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {pickFromTopMenu} from '@datagrok-libraries/bdd/bindings/platform/commands';
+import {dialogCloses, switchTableView, switchView, viewIsCurrent} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {hoverArea, infoBalloonText, noBalloons, noErrors, readingBetween, readingIs, readingReads} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {toggleInColumnList} from '@datagrok-libraries/bdd/bindings/tiers/viewers/widgets';
+import {el, feature, journey} from '@datagrok-libraries/bdd/runtime';
+
+test.describe("Training a regressor of wine quality in the Train view", () => {
+  const session = feature(test, "features/train/train-winequality.feature", import.meta.url);
+  test("Training a regressor of wine quality in the Train view", {tag: ["@journey", "@serial"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    const run = journey(test, 4, page);
+    await session.step(25, "Given user is logged in", () => loggedIn(page));
+    await session.step(26, "And no Forge models named \"forge-test-quality-{time}\" are on the server", () => noModelsNamed(page, session.text("forge-test-quality-{time}")));
+    await session.step(27, "And no Forge training runs of the table \"forge-test-wine-{time}\" are on the server", () => noRunsOf(page, session.text("forge-test-wine-{time}")));
+    await session.step(28, "And user opens the demo file \"winequality.csv\" as \"forge-test-wine-{time}\"", () => openDemoFile(page, "winequality.csv", session.text("forge-test-wine-{time}")));
+    await session.step(29, "And user remembers the shown training", () => rememberShownTraining(page));
+    await session.step(30, "When user picks \"ML > Forge > Train...\" from the top menu", () => pickFromTopMenu(page, "ML > Forge > Train..."));
+    await session.step(31, "Then the \"Predictive model\" view should be current", () => viewIsCurrent(page, "Predictive model"));
+    await session.step(32, "And a new training's result should be shown", () => newTrainingShown(page));
+    await run.scenario("A classifier of type first, then a regressor of quality; the conflict of Target and Features is shown on Features (2.4, 5.12)", async () => {
+      await session.step(35, "Then the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","XGBoost"],["task","classification"],["target_name","type"],["row_count","6497"]]), [["status","completed"],["engine_name","XGBoost"],["task","classification"],["target_name","type"],["row_count","6497"]]);
+      await session.step(41, "And editor of Table input should have text \"forge-test-wine-{time}\"", () => shouldHaveText(page, el("editor of Table input"), session.text("forge-test-wine-{time}")));
+      await session.step(42, "And editor of Target input should have text \"type\"", () => shouldHaveText(page, el("editor of Target input"), "type"));
+      await session.step(43, "And editor of Features input should contain text \"(12)\"", () => shouldContainText(page, el("editor of Features input"), "(12)"));
+      await session.step(44, "And Method input should have value \"XGBoost\"", () => shouldHaveValue(page, el("Method input"), "XGBoost"));
+      await session.step(45, "And \"Predict probability\" input should be visible", () => shouldBe(page, el("\"Predict probability\" input"), "visible"));
+      await session.step(46, "And Save button should be enabled", () => shouldBe(page, el("Save button"), "enabled"));
+      await session.step(47, "And \"Predicted type vs Actual\" results panel should be visible", () => shouldBe(page, el("\"Predicted type vs Actual\" results panel"), "visible"));
+      await session.step(48, "And \"Performance\" results panel should be visible", () => shouldBe(page, el("\"Performance\" results panel"), "visible"));
+      await session.step(49, "And \"Confusions\" results panel should be visible", () => shouldBe(page, el("\"Confusions\" results panel"), "visible"));
+      await session.step(50, "And \"Features\" results panel should be visible", () => shouldBe(page, el("\"Features\" results panel"), "visible"));
+      await session.step(51, "And \"Features correlation\" results panel should be visible", () => shouldBe(page, el("\"Features correlation\" results panel"), "visible"));
+      await session.step(52, "And \"Class balance\" results panel should be visible", () => shouldBe(page, el("\"Class balance\" results panel"), "visible"));
+      await session.step(53, "And \"ROC Curve\" results panel should be absent", () => shouldBe(page, el("\"ROC Curve\" results panel"), "absent"));
+      await session.step(54, "And \"Residuals\" results panel should be absent", () => shouldBe(page, el("\"Residuals\" results panel"), "absent"));
+      await session.step(55, "And the \"bars\" reading of bar chart viewer in \"Class balance\" results panel should be 2", () => readingIs(page, "bars", el("bar chart viewer in \"Class balance\" results panel"), 2));
+      await session.step(56, "And \"Insights & Tips\" results panel should contain text \"The classes are unbalanced.\"", () => shouldContainText(page, el("\"Insights & Tips\" results panel"), "The classes are unbalanced."));
+      await session.step(57, "When user remembers the training run count of the table \"forge-test-wine-{time}\"", () => rememberRunCount(page, session.text("forge-test-wine-{time}")));
+      await session.step(58, "And user selects \"quality\" in Target input", () => selectIn(page, "quality", el("Target input")));
+      await session.step(59, "Then editor of Features input should be invalid", () => shouldBe(page, el("editor of Features input"), "invalid"));
+      await session.step(60, "And editor of Features input should contain text \"(12)\"", () => shouldContainText(page, el("editor of Features input"), "(12)"));
+      await session.step(61, "And results area should be invalid", () => shouldBe(page, el("results area"), "invalid"));
+      await session.step(62, "And \"Performance\" results panel should contain text \"Choose the target and the features; the model trains as you change them.\"", () => shouldContainText(page, el("\"Performance\" results panel"), "Choose the target and the features; the model trains as you change them."));
+      await session.step(63, "And Train button should be hidden", () => shouldBe(page, el("Train button"), "hidden"));
+      await session.step(64, "And Save button should be disabled", () => shouldBe(page, el("Save button"), "disabled"));
+      await session.step(65, "And the training run count of the table \"forge-test-wine-{time}\" should be as remembered", () => runCountAsRemembered(page, session.text("forge-test-wine-{time}")));
+      await session.step(66, "When user hovers over label of Features input", () => hoverOver(page, el("label of Features input")));
+      await session.step(67, "Then tooltip should contain text \"The target 'quality' is also a feature. Uncheck it in Features.\"", () => shouldContainText(page, el("tooltip"), "The target 'quality' is also a feature. Uncheck it in Features."));
+      await session.step(68, "And no balloon of any colour should have been shown", () => noBalloonAtAll(page));
+      await session.step(69, "When user clicks on editor of Features input", () => clickOn(page, el("editor of Features input")));
+      await session.step(70, "And user types \"quality\" into column search in \"Select columns...\" dialog", () => typeInto(page, "quality", el("column search in \"Select columns...\" dialog")));
+      await session.step(71, "And user toggles the \"quality\" column in the column list of \"Select columns...\" dialog", () => toggleInColumnList(page, "quality", el("\"Select columns...\" dialog")));
+      await session.step(72, "And user clicks on OK button in \"Select columns...\" dialog", () => clickOn(page, el("OK button in \"Select columns...\" dialog")));
+      await session.step(73, "Then a new training's result should be shown", () => newTrainingShown(page));
+      await session.step(74, "And editor of Features input should be valid", () => shouldBe(page, el("editor of Features input"), "valid"));
+      await session.step(75, "And Method input should have value \"PLS Regression\"", () => shouldHaveValue(page, el("Method input"), "PLS Regression"));
+      await session.step(76, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","PLS Regression"],["task","regression"],["target_name","quality"]]), [["status","completed"],["engine_name","PLS Regression"],["task","regression"],["target_name","quality"]]);
+      await session.step(81, "Given user counts the task bar entries", () => countTaskBarEntries(page));
+      await session.step(82, "When user selects \"XGBoost\" in Method input", () => selectIn(page, "XGBoost", el("Method input")));
+      await session.step(83, "Then a new training's result should be shown", () => newTrainingShown(page));
+      await session.step(84, "And the task bar should have shown 1 entry \"Fold 1 of 5\"", () => taskBarEntryCount(page, 1, "Fold 1 of 5"));
+      await session.step(85, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","XGBoost"],["task","regression"]]), [["status","completed"],["engine_name","XGBoost"],["task","regression"]]);
+      await session.step(89, "And the \"text of cell 1 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"MSE\"", () => readingReads(page, "text of cell 1 of Metric", el("grid viewer in \"Performance\" results panel"), "MSE"));
+      await session.step(90, "And the \"text of cell 2 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"RMSE\"", () => readingReads(page, "text of cell 2 of Metric", el("grid viewer in \"Performance\" results panel"), "RMSE"));
+      await session.step(91, "And the \"text of cell 3 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"MAE\"", () => readingReads(page, "text of cell 3 of Metric", el("grid viewer in \"Performance\" results panel"), "MAE"));
+      await session.step(92, "And the \"text of cell 4 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"R2\"", () => readingReads(page, "text of cell 4 of Metric", el("grid viewer in \"Performance\" results panel"), "R2"));
+      await session.step(93, "And the \"text of cell 4 of Validation\" reading of grid viewer in \"Performance\" results panel should be between 0.3 and 0.7", () => readingBetween(page, "text of cell 4 of Validation", el("grid viewer in \"Performance\" results panel"), 0.3, 0.7));
+      await session.step(94, "And the \"text of cell 4 of Train\" reading of grid viewer in \"Performance\" results panel should be higher than the \"text of cell 4 of Validation\" reading of grid viewer in \"Performance\" results panel", () => readingHigher(page, "text of cell 4 of Train", el("grid viewer in \"Performance\" results panel"), "text of cell 4 of Validation", el("grid viewer in \"Performance\" results panel")));
+      await session.step(95, "And the \"text of cell 2 of Validation\" reading of grid viewer in \"Performance\" results panel should be between 0.6 and 0.8", () => readingBetween(page, "text of cell 2 of Validation", el("grid viewer in \"Performance\" results panel"), 0.6, 0.8));
+      await session.step(96, "And \"Performance\" results panel should contain text \"Validation: 5-fold cross-validation on 6497 rows\"", () => shouldContainText(page, el("\"Performance\" results panel"), "Validation: 5-fold cross-validation on 6497 rows"));
+      await session.step(97, "And \"Performance\" results panel should contain text \"Seed: \"", () => shouldContainText(page, el("\"Performance\" results panel"), "Seed: "));
+      await session.step(98, "When user clicks on Save button", () => clickOn(page, el("Save button")));
+      await session.step(99, "Then Name input in \"Save model\" dialog should have value \"Predict quality by fixed.acidity, volatile.acidit...\"", () => shouldHaveValue(page, el("Name input in \"Save model\" dialog"), "Predict quality by fixed.acidity, volatile.acidit..."));
+      await session.step(100, "When user selects \"None\" in \"Data storage\" input in \"Save model\" dialog", () => selectIn(page, "None", el("\"Data storage\" input in \"Save model\" dialog")));
+      await session.step(101, "And user enters \"forge-test-quality-{time}\" into Name input in \"Save model\" dialog", () => enterInto(page, session.text("forge-test-quality-{time}"), el("Name input in \"Save model\" dialog")));
+      await session.step(102, "And user clicks on OK button in \"Save model\" dialog", () => clickOn(page, el("OK button in \"Save model\" dialog")));
+      await session.step(103, "Then the \"Save model\" dialog should close", () => dialogCloses(page, "Save model"));
+      await session.step(104, "And an info balloon containing 'Model \"forge-test-quality-{time}\" saved.' should have been shown", () => infoBalloonText(page, session.text("Model \"forge-test-quality-{time}\" saved.")));
+      await session.step(105, "And Save button should be disabled", () => shouldBe(page, el("Save button"), "disabled"));
+      await session.step(106, "And the Forge model \"forge-test-quality-{time}\" on the server should have:", () => modelShouldHave(page, session.text("forge-test-quality-{time}"), [["task","regression"],["target_name","quality"],["engine_name","XGBoost"],["row_count","6497"],["storage_mode","none"]]), [["task","regression"],["target_name","quality"],["engine_name","XGBoost"],["row_count","6497"],["storage_mode","none"]]);
+      await session.step(112, "And the shown seed should be the seed of the Forge model \"forge-test-quality-{time}\" on the server", () => shownSeedIsModels(page, session.text("forge-test-quality-{time}")));
+      await session.step(113, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(114, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("Every regression method trains on the 6497 rows (5.2)", async () => {
+      await session.step(117, "When user selects \"Linear Regression\" in Method input", () => selectIn(page, "Linear Regression", el("Method input")));
+      await session.step(118, "Then a new training's result should be shown", () => newTrainingShown(page));
+      await session.step(119, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","Linear Regression"],["row_count","6497"]]), [["status","completed"],["engine_name","Linear Regression"],["row_count","6497"]]);
+      await session.step(123, "And the \"text of cell 4 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"R2\"", () => readingReads(page, "text of cell 4 of Metric", el("grid viewer in \"Performance\" results panel"), "R2"));
+      await session.step(124, "When user selects \"SVM\" in Method input", () => selectIn(page, "SVM", el("Method input")));
+      await session.step(125, "Then a new training's result should be shown within 180 seconds", () => newTrainingShownWithin(page, 180));
+      await session.step(126, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","SVM"],["row_count","6497"]]), [["status","completed"],["engine_name","SVM"],["row_count","6497"]]);
+      await session.step(130, "And the \"text of cell 4 of Metric\" reading of grid viewer in \"Performance\" results panel should be \"R2\"", () => readingReads(page, "text of cell 4 of Metric", el("grid viewer in \"Performance\" results panel"), "R2"));
+      await session.step(131, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(132, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A change during a training supersedes it, and only the last one is recorded (5.3)", async () => {
+      await session.step(135, "Given user counts the task bar entries", () => countTaskBarEntries(page));
+      await session.step(136, "When user remembers the training run count of the table \"forge-test-wine-{time}\"", () => rememberRunCount(page, session.text("forge-test-wine-{time}")));
+      await session.step(137, "And user sets \"Penalty\" input to \"2\" and then to \"3\" while the training runs", () => changeDuringTraining(page, "Penalty", "2", "3"));
+      await session.step(138, "Then a new training's result should be shown within 180 seconds", () => newTrainingShownWithin(page, 180));
+      await session.step(139, "And Penalty input should have value \"3\"", () => shouldHaveValue(page, el("Penalty input"), "3"));
+      await session.step(140, "And the task bar should have shown 2 entries \"Training SVM model\"", () => taskBarEntryCount(page, 2, "Training SVM model"));
+      await session.step(141, "And the training run count of the table \"forge-test-wine-{time}\" should be one more than remembered", () => runCountOneMore(page, session.text("forge-test-wine-{time}")));
+      await session.step(142, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","SVM"],["hyperparameters.cost","3"]]), [["status","completed"],["engine_name","SVM"],["hyperparameters.cost","3"]]);
+      await session.step(146, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(147, "And no errors should have been logged", () => noErrors(page));
+    });
+    await run.scenario("A regressor's results in rows of panels; a hovered point is the table's row (5.12)", async () => {
+      await session.step(150, "When user selects \"PLS Regression\" in Method input", () => selectIn(page, "PLS Regression", el("Method input")));
+      await session.step(151, "Then a new training's result should be shown", () => newTrainingShown(page));
+      await session.step(152, "And the shown training should be the newest training run of the table \"forge-test-wine-{time}\", with:", () => shownIsNewestRun(page, session.text("forge-test-wine-{time}"), [["status","completed"],["engine_name","PLS Regression"]]), [["status","completed"],["engine_name","PLS Regression"]]);
+      await session.step(155, "And \"Predicted quality vs Actual\" results panel should be visible", () => shouldBe(page, el("\"Predicted quality vs Actual\" results panel"), "visible"));
+      await session.step(156, "And \"Residuals\" results panel should be visible", () => shouldBe(page, el("\"Residuals\" results panel"), "visible"));
+      await session.step(157, "And \"Distributions of predicted and actual quality\" results panel should be visible", () => shouldBe(page, el("\"Distributions of predicted and actual quality\" results panel"), "visible"));
+      await session.step(158, "And \"Statistics\" results panel should be visible", () => shouldBe(page, el("\"Statistics\" results panel"), "visible"));
+      await session.step(159, "And \"Features\" results panel should be visible", () => shouldBe(page, el("\"Features\" results panel"), "visible"));
+      await session.step(160, "And \"Features correlation\" results panel should be visible", () => shouldBe(page, el("\"Features correlation\" results panel"), "visible"));
+      await session.step(161, "And \"PLS Regression\" results panel should be visible", () => shouldBe(page, el("\"PLS Regression\" results panel"), "visible"));
+      await session.step(162, "And \"Class balance\" results panel should be absent", () => shouldBe(page, el("\"Class balance\" results panel"), "absent"));
+      await session.step(163, "And \"Confusions\" results panel should be absent", () => shouldBe(page, el("\"Confusions\" results panel"), "absent"));
+      await session.step(164, "And the \"rows shown\" reading of scatter plot viewer in \"Predicted quality vs Actual\" results panel should be 6497", () => readingIs(page, "rows shown", el("scatter plot viewer in \"Predicted quality vs Actual\" results panel"), 6497));
+      await session.step(165, "And the \"rows\" reading of grid viewer in \"Statistics\" results panel should be 11", () => readingIs(page, "rows", el("grid viewer in \"Statistics\" results panel"), 11));
+      await session.step(166, "And the \"axes\" reading of pc plot viewer in \"Features\" results panel should be 13", () => readingIs(page, "axes", el("pc plot viewer in \"Features\" results panel"), 13));
+      await session.step(167, "And the table \"forge-test-wine-{time}\" should have no mouse-over row", () => noMouseOverRow(page, session.text("forge-test-wine-{time}")));
+      await session.step(168, "When user hovers over the \"marker of row 5\" area of scatter plot viewer in \"Predicted quality vs Actual\" results panel", () => hoverArea(page, "marker of row 5", el("scatter plot viewer in \"Predicted quality vs Actual\" results panel")));
+      await session.step(169, "Then the mouse-over row of the table \"forge-test-wine-{time}\" should be the \"hovered row\" reading of scatter plot viewer in \"Predicted quality vs Actual\" results panel", () => mouseOverRowIsHovered(page, session.text("forge-test-wine-{time}"), "hovered row", el("scatter plot viewer in \"Predicted quality vs Actual\" results panel")));
+      await session.step(170, "When user remembers the sizes of the results panels", () => rememberPanelSizes(page));
+      await session.step(171, "And user switches to the \"forge-test-wine-{time}\" table view", () => switchTableView(page, session.text("forge-test-wine-{time}")));
+      await session.step(172, "And user switches to the \"Predictive model\" view", () => switchView(page, "Predictive model"));
+      await session.step(173, "Then the results panels should keep their remembered sizes", () => panelSizesKept(page));
+      await session.step(174, "And \"Residuals\" results panel should be visible", () => shouldBe(page, el("\"Residuals\" results panel"), "visible"));
+      await session.step(175, "And no error or warning balloon should have been shown", () => noBalloons(page));
+      await session.step(176, "And no errors should have been logged", () => noErrors(page));
+    });
+    run.finish();
+  });
+});

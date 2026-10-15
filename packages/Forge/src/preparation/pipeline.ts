@@ -9,6 +9,17 @@ export interface PreparationSteps { oneHot: boolean; skipUniqueCategories: boole
 export interface PreparedFeatures { columns: DG.Column[]; target: DG.Column; options: PreparationOptions }
 
 export const DEFAULT_CUTOFF = 0.5;
+/** The defaults a training starts with, in the Train view and in `Forge:trainModel`. */
+export const DEFAULT_STEPS = {skipUniqueCategories: true, predictProbability: false, missingValues: 'skip'} as const;
+const CUTOFF_PROBLEM = 'Enter a number from 0 to 1.';
+
+/** Why [value] cannot be the positive class cutoff; null for a number from 0 to 1. */
+export function cutoffProblem(value: number | null): string | null {
+  return value !== null && value >= 0 && value <= 1 ? null : CUTOFF_PROBLEM;
+}
+/** One-hot encoding is on by default while every text or yes/no feature it would encode has at most this many
+ * categories. */
+const ONE_HOT_MAX_CATEGORIES = 20;
 const RECORDED_ONLY = [IGNORE_MISSING, IMPUTE_MISSING];
 const COLUMN_TYPES: string[] = Object.values(DG.COLUMN_TYPE);
 
@@ -75,6 +86,13 @@ export function twoClasses(target: DG.Column): [string, string] | null {
     return null;
   const classes = target.categories.filter((c) => c !== '');
   return classes.length === 2 ? [classes[0], classes[1]] : null;
+}
+
+/** One-hot encoding's default for [features]: on while a feature is text or yes/no and every such feature it would
+ * encode (the all-unique ones aside while [skipUniqueCategories]) has at most [ONE_HOT_MAX_CATEGORIES] categories. */
+export function defaultOneHot(features: DG.Column[], skipUniqueCategories: boolean): boolean {
+  const encoded = features.filter((c) => c.isCategorical && !(skipUniqueCategories && hasUniqueCategories(c)));
+  return features.some((c) => c.isCategorical) && encoded.every((c) => c.categories.length <= ONE_HOT_MAX_CATEGORIES);
 }
 
 /** A text or yes/no column whose values are all different, such as an id: Skip unique categories leaves it out. */

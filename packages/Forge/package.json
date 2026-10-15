@@ -16,11 +16,17 @@
     "name": "Viktor Makarichev",
     "email": "vmakarichev@datagrok.ai"
   },
+  "devDependencies": {
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "catalog:"
+  },
   "scripts": {
     "build": "grok api && grok build",
     "typecheck": "grok tsc --noEmit -p tsconfig.json",
     "lint": "eslint --ext .ts,.tsx src --ignore-pattern src/generated/",
-    "test": "grok test"
+    "test": "grok test",
+    "test:bdd": "grok-bdd run"
   },
   "canEdit": [
     "Administrators"

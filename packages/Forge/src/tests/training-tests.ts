@@ -1,8 +1,8 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
+import {awaitCheck, category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
-import {defaultHyperparameters, Engine} from '../engines/engine';
+import {defaultHyperparameters, Engine, hyperparametersOf} from '../engines/engine';
 import {applicableEngines} from '../engines/applicable-engines';
 import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
@@ -12,15 +12,17 @@ import {kFold} from '../training/k-fold';
 import {aucOf, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {prepareFeatures, replayPreprocessing} from '../preparation/pipeline';
-import {PreparationOptions} from '../preparation/preparation-options';
+import {isRecord, PreparationOptions, stringsOf} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {dataInsights, metricInsights, resultInsights} from '../training/insights';
+import {runTrainModel, TrainModelInput} from '../training/train-api';
 import {checkSelection, prepareTraining, recutResult, TrainingProblems, TrainingRequest, TrainingResult,
-  TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
+  TrainingSelection, trainingEngines, trainModel, trainPredictionOf} from '../training/train-model';
 import {QueuedTraining, TrainingQueue} from '../training/training-queue';
-import {columnNamed, columnsOf, engineByName, expectMetrics, expectNoFrames, expectReleased, framesSharing, IMPUTE,
-  inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS, ONE_HOT_STEPS, openIris,
-  PREDICT_PROBABILITY, requestOf, selectionOf, SKIP_UNIQUE_STEPS, twoSpeciesIris, valuesOf} from './test-data';
+import {cancelTaskBarEntry, columnNamed, columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectMetrics,
+  expectNoFrames, expectReleased, framesSharing, IMPUTE, inDiscoveryOrder, IRIS, MEASUREMENTS, names, NO_OPTIONS,
+  ONE_HOT_STEPS, openDemoTable, openIris, PREDICT_PROBABILITY, requestOf, runsOf, selectionOf, SKIP_UNIQUE_STEPS,
+  taskBarEntry, twoSpeciesIris, valuesOf} from './test-data';
 
 const TIMEOUT = 60000;
 const ENGINE_TIMEOUT = 120000;
@@ -790,4 +792,165 @@ category('Training', () => {
       expectArray(gaps, []);
     }, {timeout: ENGINE_TIMEOUT});
   }
+});
+
+/** `forge-test-api-<time>` from the demo file [path] (no creation script). */
+const apiTable = (path: string = IRIS) => openDemoTable(path, 'api');
+
+// Forge:trainModel: the API training, its checks, its run records and its registration.
+category('Training', () => {
+  test('runTrainModel with a target only trains as the view would and records an api run', async () => {
+    const iris = await apiTable();
+    try {
+      const result = await runTrainModel({table: iris, target: 'Species', showProgress: false});
+      expect(result.method, 'XGBoost');
+      expect(result.task, 'classification');
+      expectArray(result.features, MEASUREMENTS);
+      expect(result.rowCount, 150);
+      expect(result.skippedRows, 0);
+      expect(typeof result.metrics.validation.accuracy, 'number');
+      expect(result.modelId === null && result.name === null, true, JSON.stringify(result));
+      const runs = await runsOf([iris]);
+      expectArray(runs.map((r) => `${r.id} ${r.status} ${r.source} ${r.model_id ?? ''}`),
+        [`${result.runId} completed api `]);
+      expect(runs[0].seed, result.seed);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('runTrainModel: a regression with the given features, method and settings', async () => {
+    const iris = await apiTable();
+    try {
+      const result = await runTrainModel({table: iris, target: 'Petal.Length', features: ['Sepal.Length',
+        'Sepal.Width'], method: 'Linear Regression', hyperparameters: {iterations: 50}, showProgress: false});
+      expect(result.task, 'regression');
+      expect(result.method, 'Linear Regression');
+      expect(typeof result.metrics.validation.r2, 'number');
+      const [run] = await runsOf([iris]);
+      expect(run.hyperparameters?.iterations, 50);
+      expectArray(run.features?.columns?.map((c: {name: string}) => c.name) ?? [], ['Sepal.Length', 'Sepal.Width']);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('runTrainModel: Predict probability on two classes measures AUC-ROC', async () => {
+    const iris = await twoSpeciesIris();
+    try {
+      const result = await runTrainModel({table: iris, target: 'Species', options: {predictProbability: true,
+        cutoff: 0.4, seed: 7}, showProgress: false});
+      expect(typeof result.metrics.validation.auc, 'number');
+      expect(result.seed, 7);
+      const [run] = await runsOf([iris]);
+      expectArray(run.options?.postprocessingInfo ?? [], ['binary-classification']);
+      expect(run.options?.binaryClassificationThreshold, 0.4);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('runTrainModel: Impute skips only the rows without a target', async () => {
+    const demog = await apiTable('System:DemoFiles/demog.csv');
+    const weightGaps = demog.getCol('WEIGHT').stats.missingValueCount;
+    try {
+      expect(weightGaps > 0 && demog.getCol('HEIGHT').stats.missingValueCount > 0, true, 'demog has no gaps');
+      const result = await runTrainModel({table: demog, target: 'WEIGHT', features: ['AGE', 'HEIGHT'],
+        options: {missingValues: 'impute', neighbors: 3}, showProgress: false});
+      expect(result.skippedRows, weightGaps);
+      const [run] = await runsOf([demog]);
+      const {mode, neighbors, distance, skippedRows} = run.options?.missingValues ?? {};
+      expect(`${mode} ${neighbors} ${distance} ${skippedRows}`, `impute 3 Euclidean ${weightGaps}`);
+    } finally {
+      await deleteRunsOf([demog]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('runTrainModel refuses a wrong input in one sentence and records nothing', async () => {
+    const iris = await apiTable();
+    const {engines} = trainingEngines();
+    const xgboostSettings = hyperparametersOf(engineByName(engines, 'XGBoost')).map((p) => p.name).join(', ');
+    const refusals: [Partial<TrainModelInput>, string][] = [
+      [{target: 'Specie'}, 'The table has no column \'Specie\'.'],
+      [{features: ['Sepal.Length', 'a', 'b']}, 'The table has no columns \'a\', \'b\'.'],
+      [{method: 'Boost'}, `No method 'Boost' is installed. The methods are: ${engines.map((e) => e.name).join(', ')}.`],
+      [{method: 'XGBoost', hyperparameters: {speed: 1}},
+        `The method XGBoost has no setting 'speed'. Its settings are: ${xgboostSettings}.`],
+      [{method: 'Softmax', hyperparameters: {rate: 'fast'}}, 'The setting \'rate\' of Softmax needs a number.'],
+      [{hyperparameters: {iterations: 500}}, 'The setting \'iterations\' of XGBoost must be at most 100.'],
+      [{options: {cutof: 0.5}}, 'Unknown option \'cutof\'. The options are: missingValues, neighbors, distance, ' +
+        'oneHot, skipUniqueCategories, predictProbability, cutoff, seed, folds.'],
+      [{options: {predictProbability: true}}, 'Predict probability needs a target with exactly two classes.'],
+      [{name: 'forge-test-api-ref', storage: 'reference'}, 'The table has no known source, so the model cannot ' +
+        'keep a reference to it. Use storage none or copy.'],
+      [{name: '  '}, 'Enter a name for the model.'],
+      [{features: []}, 'Choose at least one feature.'],
+    ];
+    try {
+      const wrong: string[] = [];
+      for (const [input, message] of refusals) {
+        const error = await runTrainModel({table: iris, target: 'Species', showProgress: false, ...input})
+          .then(() => null, (e: unknown) => e);
+        if (!(error instanceof ForgeError) || error.message !== message)
+          wrong.push(`${JSON.stringify(input)}: ${String(error)}`);
+      }
+      expectArray(wrong, []);
+      expect((await runsOf([iris])).length, 0, 'A refused training was recorded');
+    } finally {
+      await deleteModelsNamed('forge-test-api-ref');
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('runTrainModel: a cancel in the task bar records a cancelled run', async () => {
+    const demog = grok.data.demo.demog(100000);
+    demog.name = `forge-test-api-${Date.now()}`;
+    try {
+      const training = runTrainModel({table: demog, target: 'sex', features: ['age', 'height', 'weight'],
+        method: 'XGBoost', hyperparameters: {iterations: 100, maxDepth: 20}});
+      const outcome = training.then(() => null, (e: unknown) => e);
+      await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar entry', 10000);
+      cancelTaskBarEntry(taskBarEntry('Training XGBoost model'));
+      const error = await outcome;
+      expect(error instanceof ForgeError && error.message === 'Training was cancelled.', true, String(error));
+      const runs = await runsOf([demog]);
+      expectArray(runs.map((r) => `${r.status} ${r.source}`), ['cancelled api']);
+    } finally {
+      await deleteRunsOf([demog]);
+    }
+  }, {timeout: ENGINE_TIMEOUT});
+
+  test('Forge:trainModel through grok.functions.call', async () => {
+    const iris = await apiTable();
+    try {
+      const plain: unknown = await grok.functions.call('Forge:trainModel', {table: iris, target: 'Species'});
+      expect(isRecord(plain), true, `The result is ${String(plain)}`);
+      const result = isRecord(plain) ? plain : {};
+      expect(result.method, 'XGBoost');
+      expect(result.modelId === null, true, JSON.stringify(result));
+      expectArray(stringsOf(result.features), MEASUREMENTS);
+      const metrics = isRecord(result.metrics) && isRecord(result.metrics.validation) ? result.metrics.validation : {};
+      expect(typeof metrics.accuracy, 'number');
+
+      const given: unknown = await grok.functions.call('Forge:trainModel', {table: iris, target: 'Petal.Length',
+        features: ['Sepal.Length', 'Sepal.Width'], method: 'Linear Regression', hyperparameters: {iterations: 50},
+        options: {seed: 11}, showProgress: false});
+      expect(isRecord(given) && given.seed === 11 && given.task === 'regression', true, JSON.stringify(given));
+      expectArray(stringsOf(isRecord(given) ? given.features : null), ['Sepal.Length', 'Sepal.Width']);
+      const runs = await runsOf([iris]);
+      expect(runs.find((r) => r.seed === 11)?.hyperparameters?.iterations, 50);
+      expect(runs.every((r) => r.source === 'api'), true);
+    } finally {
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: TIMEOUT});
+
+  test('Forge:trainModel is registered with its inputs and output', async () => {
+    const func = DG.Func.find({package: 'Forge', name: 'trainModel'})[0];
+    expectArray(func.inputs.map((p) => `${p.name}: ${p.propertyType}`), ['table: dataframe', 'target: string',
+      'features: list', 'method: string', 'hyperparameters: map', 'options: map', 'name: string',
+      'description: string', 'tags: string', 'storage: string', 'showProgress: bool']);
+    expectArray(func.inputs.find((p) => p.name === 'storage')?.choices ?? [], ['none', 'reference', 'copy']);
+    expectArray(func.outputs.map((p) => `${p.name}: ${p.propertyType}`), ['result: object']);
+  });
 });

@@ -3,18 +3,16 @@ import * as DG from 'datagrok-api/dg';
 import {ModelInfo, updateModelInfo} from '../catalog/model-edit';
 import {ModelRow, ModelStorageMode} from '../generated/db';
 import {DatasetRef, datasetRefCaption} from '../storage/dataset-ref';
+import {NO_NAME, StorageChoice} from '../storage/model-fields';
 import {ButtonGate} from './button-gate';
 import {reportError} from './report-error';
 import {tagsInput, tagsOfInput} from './tags-input';
 
-const NO_NAME = 'Enter a name for the model.';
 export const STORAGE_CAPTIONS: Record<ModelStorageMode, string> = {reference: 'Reference', none: 'None', copy: 'Copy'};
 
 /** What the Save dialog offers to keep of the training data: [ref] the table's origin, when the platform recorded one;
  * [rowCount] the rows a copy uploads. */
 export interface StorageOffer { ref: DatasetRef | null; rowCount: number }
-/** The **Data storage** the user chose; `reference` carries the offered origin. */
-export type StorageChoice = {mode: 'none' | 'copy'} | {mode: 'reference'; ref: DatasetRef};
 
 /** **Save model**: [modelInfoDialog] and, with [storage], **Data storage**; OK calls [onSave] with the chosen storage
  * (`none` without [storage]). */

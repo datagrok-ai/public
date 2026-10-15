@@ -6,7 +6,7 @@ new data, and manage your models in one catalog.
 This version trains models with every installed method, retrains them as you change the inputs, saves them with or
 without their training data, lists them in the catalog with their details, performance and
 activity, compares them, and applies them to new data, from the menu, the model's context menu, the table's context
-panel or from scripts.
+panel or from scripts, which can also train and delete models.
 
 ## Train a model
 
@@ -19,8 +19,8 @@ problem opens itself. The results are on the right; drag the splitter between th
 * **Target**: the column to predict, the last column by default. A numerical target makes a regression model;
   a text or boolean target makes a classifier. Rows without a target value are left out of the training; the
   tooltip of **Target** says how many
-* **Features**: the columns to learn from. By default, all numerical columns except the target and except integer
-  columns whose values are all different, such as row numbers and ids. Dates and very large whole numbers (bigint
+* **Features**: the columns to learn from. By default, all numerical columns except the target, bigint columns and
+  integer columns without empty cells whose values are all different, such as row numbers and ids. Dates and very large whole numbers (bigint
   columns) cannot be features; text and yes/no features need **One-hot encoding** (see "Preparation"). A column
   removed from the table leaves **Features** at once (and empties **Target** when it was the target)
 * **Method**: the machine learning method. The list holds the methods that can learn from the chosen target and
@@ -266,6 +266,71 @@ reads the models each time it opens; nothing is uploaded for that.
 
 ## From scripts
 
+Three functions train, apply and delete models without the UI, from the console (the `~` key), a script or another
+package. They open no dialog: a mistake fails the call with one sentence that says what to fix.
+
+### Train
+
+```javascript
+// Train and measure, without saving: the result holds the metrics, result.modelId is null
+await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Species'});
+
+// Train and save, with an uploaded copy of the training columns
+await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Species', name: 'Iris species',
+  storage: 'copy'});
+
+// Choose the features, the method and its settings
+await grok.functions.call('Forge:trainModel', {table: grok.shell.t, target: 'Petal.Length',
+  features: ['Sepal.Length', 'Sepal.Width'], method: 'Linear Regression', hyperparameters: {iterations: 50}});
+```
+
+`Forge:trainModel` trains as the **Predictive model** view does, with its defaults and 5-fold cross-validation:
+
+* `table`, `target` (a column name): a numerical target makes a regression model, a text or boolean one a classifier
+* `features`: column names; by default every numerical column except the target, bigint columns and integer columns
+  without empty cells whose values are all different (row numbers, ids)
+* `method`: `XGBoost`, `Linear Regression`, `PLS Regression`, `Softmax`, `SVM` (the installed methods); by default the
+  method the view suggests for the data
+* `hyperparameters`: the method's settings by name; settings not named keep their defaults
+* `options`: the preparation, each key optional:
+
+  | Key | Default | Meaning |
+  |---|---|---|
+  | `missingValues` | `skip` | `skip` leaves out the rows with empty cells; `impute` fills the features' empty cells (rows without a target are always left out) |
+  | `neighbors`, `distance` | the EDA imputer's (`4`, `Euclidean`) | the settings of `impute` |
+  | `oneHot` | on when every text or yes/no feature has at most 20 categories (while `skipUniqueCategories` is on, features whose values are all different do not count) | One-hot encoding of text and yes/no features |
+  | `skipUniqueCategories` | `true` | leaves out text features whose values are all different |
+  | `predictProbability` | `false` | for a target with exactly two classes: trains on the probability of the first class |
+  | `cutoff` | `0.5` | the probability from which a row is predicted as the first class |
+  | `seed` | random | the seed of the cross-validation split, a whole number from 0 to 2147483647 |
+  | `folds` | `5` | the number of cross-validation parts, at least 2 |
+
+* `name`: saves the model under this name; without a name the model is trained and measured but not saved.
+  `description` and `tags` (comma-separated) go with it
+* `storage` (`none` by default): what the saved model keeps of its training data, as in "Data storage": `none`,
+  `reference` (the table must come from a file, a query or a script) or `copy` (uploads the feature and target
+  columns). Nothing is uploaded unless you ask for `copy`
+* `showProgress` (`true` by default): the task-bar progress `Training <method> model`; cancel it there to stop the
+  training, which fails the call with `Training was cancelled.`
+
+The result: `modelId` (null when not saved), `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount` (the
+rows trained on), `skippedRows`, `seed` and `metrics` (`train`, `validation` and, for two classes, `positiveClass`).
+Nothing is added to the table. Every training that runs is recorded as a training run with the source `api`, saved or
+not, cancelled and failed ones too; a call refused for its inputs, or whose data preparation fails, records nothing. The errors a call gets, for example:
+
+* `The table has no column 'Specie'.`, `The table has no columns 'a', 'b'.`
+* `No method 'Boost' is installed. The methods are: <methods>.`
+* `The method XGBoost has no setting 'speed'. Its settings are: <settings>.`, `The setting 'rate' of Softmax needs a
+  number.`, `The setting 'iterations' of XGBoost must be at most 100.`
+* `Unknown option 'cutof'. The options are: missingValues, neighbors, distance, oneHot, skipUniqueCategories,
+  predictProbability, cutoff, seed, folds.`
+* `Predict probability needs a target with exactly two classes.`
+* `Enter a name for the model.`, `The table has no known source, so the model cannot keep a reference to it. Use
+  storage none or copy.`
+* any problem the view shows for the selection, such as `Choose at least one feature.`
+
+### Apply
+
 ```javascript
 await grok.functions.call('Forge:applyModel',
   {model: 'Iris species', table: grok.shell.t, columnNamesMap: {}, showProgress: true});
@@ -274,6 +339,16 @@ await grok.functions.call('Forge:applyModel',
 `model` is a model id or a name that only one model you can see has. Features are matched to columns of the same name
 (ignoring case); `columnNamesMap` maps the others (`{'Sepal.Length': 'sepal length'}`). A feature without a column, or
 a column of the wrong kind, fails the call with a message and no dialog. Rows with missing values get no prediction.
+
+### Delete
+
+```javascript
+await grok.functions.call('Forge:deleteModel', {model: 'Iris species'});
+```
+
+`Forge:deleteModel` deletes the model as the catalog's trash icon does, with its model file, its uploaded copy and its
+applications, and returns its id; its training runs stay, without the model. `model` is an id or a unique name, as
+for `applyModel`: `No Forge model 'X' is available to you.`, `Several models are named 'X'. Use the model id.`
 
 ## Model catalog
 

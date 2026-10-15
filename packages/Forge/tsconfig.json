@@ -1,4 +1,5 @@
 {
   "extends": "@datagrok/build-config/tsconfig.base.json",
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["bdd"]
 }

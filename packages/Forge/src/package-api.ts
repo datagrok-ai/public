@@ -53,6 +53,33 @@ export namespace funcs {
   }
 
   /**
+   * Trains a predictive model on a table with 5-fold cross-validation by default, records the training run and, when a name is given, saves the model to the Forge catalog. Returns the metrics and the saved model's id
+   * @param {DG.DataFrame} table - The table to learn from
+   * @param {string} target - Name of the column to predict. A numerical column gives a regression model, a text or boolean column a classifier
+   * @param {any} features - Names of the columns to learn from. By default every numerical column except the target and id-like whole-number columns
+   * @param {string} method - The method as Forge names it (XGBoost, Linear Regression, PLS Regression, Softmax, SVM). By default the method Forge suggests for the data
+   * @param {any} hyperparameters - The method's settings by name, for example iterations: 50. Settings not named keep the method's defaults
+   * @param {any} options - Data preparation. missingValues: skip (default) or impute, with neighbors and distance for impute. oneHot (default on when every text feature has at most 20 categories), skipUniqueCategories (default true), predictProbability (default false, two-class targets only), cutoff (default 0.5), seed (default random), folds (default 5)
+   * @param {string} name - Saves the model under this name. Without a name the model is trained and measured but not saved
+   * @param {string} description - Description of the saved model
+   * @param {string} tags - Comma-separated tags of the saved model
+   * @param {string} storage - What the saved model keeps of its training data. none keeps a summary, reference a link to the table's source (the table must have one), copy uploads the feature and target columns to the server
+   *   choices: ["none", "reference", "copy"]
+   * @param {boolean} showProgress - Shows a cancellable progress in the task bar
+   */
+  export async function trainModel(table: DG.DataFrame , target: string , features?: any , method?: string , hyperparameters?: any , options?: any , name?: string , description?: string , tags?: string , storage?: string , showProgress?: boolean ): Promise<any> {
+    return await grok.functions.call('Forge:TrainModel', { table, target, features, method, hyperparameters, options, name, description, tags, storage, showProgress });
+  }
+
+  /**
+   * Deletes a Forge model with its model file, its uploaded training copy and its application records. The model's training runs keep their history without the model
+   * @param {string} model - Model id, or a name that only one model you can see has
+   */
+  export async function deleteModel(model: string ): Promise<string> {
+    return await grok.functions.call('Forge:DeleteModel', { model });
+  }
+
+  /**
    * Whether the column holds the predictions of a Forge model
    */
   export async function isPredictionColumn(col: DG.Column ): Promise<boolean> {

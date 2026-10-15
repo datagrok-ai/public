@@ -19,6 +19,8 @@ export type TrainingRunTask = 'regression' | 'classification';
 
 export type TrainingRunStatus = 'completed' | 'failed' | 'cancelled';
 
+export type TrainingRunSource = 'ui' | 'api';
+
 export type ApplicationSource = 'ui' | 'api';
 
 export type ApplicationStatus = 'completed' | 'failed' | 'cancelled';
@@ -121,6 +123,7 @@ export interface TrainingRunRow {
   row_count?: number;
   dataset_fingerprint?: {[key: string]: any};
   status: TrainingRunStatus;
+  source: TrainingRunSource;
   error?: string;
   started_on: Dayjs;
   duration_ms?: number;
@@ -144,6 +147,7 @@ export interface TrainingRunInsert {
   row_count?: number;
   dataset_fingerprint?: {[key: string]: any};
   status: TrainingRunStatus;
+  source: TrainingRunSource;
   error?: string;
   started_on: Dayjs | string;
   duration_ms?: number;
@@ -152,7 +156,7 @@ export interface TrainingRunInsert {
 export type TrainingRunColumn = 'id' | 'version' | 'created_on' | 'updated_on' | 'author_id' | 'model_id' |
   'engine_name' | 'engine_namespace' | 'engine_kind' | 'task' | 'target_name' | 'features' | 'options' |
   'hyperparameters' | 'seed' | 'splitting' | 'metrics' | 'dataset_name' | 'row_count' | 'dataset_fingerprint' |
-  'status' | 'error' | 'started_on' | 'duration_ms';
+  'status' | 'source' | 'error' | 'started_on' | 'duration_ms';
 
 /** Expand keys of `forge.training_run` → fields each adds to the row (consumed by query()/builder). */
 export type TrainingRunExpand = {

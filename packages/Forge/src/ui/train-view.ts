@@ -2,23 +2,20 @@ import * as grok from 'datagrok-api/grok';
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import * as rxjs from 'rxjs';
-import {randomInt} from '@datagrok-libraries/utils/src/random';
 import {ModelInfo} from '../catalog/model-edit';
-import {defaultHyperparameters, Engine, Hyperparameters, hyperparametersOf, isComplete} from '../engines/engine';
-import {EngineRegistry} from '../engines/engine-registry';
-import {errorMessage, ForgeError} from '../forge-error';
+import {defaultHyperparameters, Engine, Hyperparameters, hyperparametersOf} from '../engines/engine';
+import {errorMessage} from '../forge-error';
 import {TrainingRunStatus} from '../generated/db';
 import {_package} from '../package';
 import {DatasetFingerprint, datasetFingerprint} from '../storage/dataset-fingerprint';
-import {deleteTrainingCopy, uploadTrainingCopy} from '../storage/dataset-copy';
 import {datasetRefOf} from '../storage/dataset-ref';
-import {ModelStorage, modelFieldsOf, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
-import {saveModel} from '../storage/model-store';
-import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
+import {StorageChoice, TrainingRunRecord, trainingRunOf} from '../storage/model-fields';
+import {saveTrainedModel} from '../storage/model-store';
+import {recordTrainingRun} from '../storage/training-run-store';
 import {defaultFeatures} from '../training/default-features';
-import {checkSelection, failedCheck, hasDataProblems, MetricsRecord, prepareTraining, recutResult, retrainsLive,
-  SelectionCheck, TrainingRequest, TrainingResult, TrainingSelection, trainModel, trainPredictionOf}
-  from '../training/train-model';
+import {checkSelection, failedCheck, FOLDS, hasDataProblems, MetricsRecord, prepareTraining, problemMessages,
+  randomSeed, recutResult, retrainsLive, SelectionCheck, trainingEngines, TrainingRequest, TrainingResult,
+  TrainingSelection, trainModel, trainPredictionOf} from '../training/train-model';
 import {TrainingQueue} from '../training/training-queue';
 import {openApplyDialog} from './apply-model-dialog';
 import {ButtonGate} from './button-gate';
@@ -29,10 +26,8 @@ import {PreparationInputs} from './preparation-inputs';
 import {reportError} from './report-error';
 import {ResultsPane} from './results-pane';
 import {RunInputs, RunsPanel, SessionRun} from './runs-panel';
-import {saveModelDialog, StorageChoice} from './save-model-dialog';
+import {saveModelDialog} from './save-model-dialog';
 
-const PREFERRED_ENGINE = 'XGBoost';
-const FOLDS = 5;
 /** The built-in tool's delay after the last change before the preview is trained again. */
 export const CHECK_DELAY_MS = 200;
 const NAME_FEATURES_LENGTH = 30;
@@ -46,6 +41,8 @@ const TRAINED = 'The model is trained on this selection. Change an input to trai
 const CANCELLED = 'Training was cancelled.';
 const NO_TARGET = 'Choose a target.';
 const TARGET_TOOLTIP = 'The column the model learns to predict.';
+/** The id of the `training_run` row whose result the results show; absent while they show a hint. */
+export const SHOWN_RUN = 'data-forge-run-id';
 
 interface TrainForm {
   table: DG.DataFrame;
@@ -86,6 +83,7 @@ export class TrainView extends DG.ViewBase {
   lastTraining: Training | undefined;
   /** The recorded trainings of the current table, newest first; a Table change starts a new list. */
   runs: SessionRun[] = [];
+  private readonly results: HTMLDivElement;
   private readonly trainRow: HTMLDivElement;
   private readonly trainGate: ButtonGate;
   /** The complete methods discovered when the view opened, in discovery order. */
@@ -116,6 +114,9 @@ export class TrainView extends DG.ViewBase {
   private activeTrainings = 0;
   /** A training of the current selection completed or failed; any change clears it. */
   private isTrained = false;
+  private isFailed = false;
+  /** Results being shown: `ResultsPane.show` calls not settled yet. */
+  private showing = 0;
   private isSettingMethod = false;
 
   private constructor(table: DG.DataFrame, engines: Engine[], engine: Engine) {
@@ -131,6 +132,7 @@ export class TrainView extends DG.ViewBase {
     this.saveButton = ui.bigButton('Save', () => this.save());
     this.setRibbonPanels([[this.saveButton]]);
     this.formPane = ui.panel([], 'forge-train-form');
+    this.results = ui.panel([this.resultsPane.root, this.runsPanel.root], 'forge-train-results');
     this.subs.push(DG.debounce(this.changes, CHECK_DELAY_MS).subscribe(() => {
       if (this.isCheckRequested || (this.lastTraining === undefined && !this.isTraining && !this.isTrained)) {
         this.isCheckRequested = false;
@@ -139,10 +141,9 @@ export class TrainView extends DG.ViewBase {
         this.recut();
     }));
     this.form = this.createForm(table);
-    const results = ui.panel([this.resultsPane.root, this.runsPanel.root], 'forge-train-results');
     const left = ui.box(this.formPane);
     left.style.width = `${FORM_WIDTH}px`;
-    this.root.appendChild(ui.splitH([left, ui.box(results)], {}, true));
+    this.root.appendChild(ui.splitH([left, ui.box(this.results)], {}, true));
   }
 
   getIcon(): HTMLElement {
@@ -197,10 +198,7 @@ export class TrainView extends DG.ViewBase {
   }
 
   static async create(table: DG.DataFrame): Promise<TrainView> {
-    const engines = EngineRegistry.discover().filter(isComplete);
-    const engine = engines.find((e) => e.name === PREFERRED_ENGINE) ?? engines[0];
-    if (engine === undefined)
-      throw new ForgeError('No machine learning method is installed. Install the EDA package.');
+    const {engines, engine} = trainingEngines();
     return new TrainView(table, engines, engine);
   }
 
@@ -243,25 +241,16 @@ export class TrainView extends DG.ViewBase {
       return;
     training.isSaved = true;
     this.updateControls();
-    const {result, runId, datasetName, fingerprint, engine, table} = training;
-    let tableId: string | null = null;
+    const {result, runId, datasetName, fingerprint, engine, table, columns} = training;
     let id: string;
     try {
-      let storage: ModelStorage = choice.mode === 'reference' ? choice : {mode: 'none'};
-      if (choice.mode === 'copy') {
-        tableId = await uploadTrainingCopy(training.columns, name);
-        storage = {mode: 'copy', tableId};
-      }
-      id = await saveModel(modelFieldsOf({name, description, tags, engine, datasetName, result, fingerprint, storage}),
-        result.blob);
+      id = await saveTrainedModel({name, description, tags, engine, datasetName, result, fingerprint, columns, runId,
+        storage: choice});
     } catch (e) {
       training.isSaved = false;
       this.updateControls();
-      if (tableId !== null)
-        await deleteTrainingCopy(tableId).catch((cleanup) => _package.logger.error(errorMessage(cleanup)));
       throw e;
     }
-    await linkTrainingRun(runId, id);
     grok.shell.info(ui.divV([ui.divText(`Model "${name}" saved.`), ui.divH([
       ui.link('Apply...', () => void openApplyDialog(table, {modelId: id, preferredTable: table})),
       ui.link('Show in the catalog', () => void ForgeApp.open()),
@@ -396,6 +385,7 @@ export class TrainView extends DG.ViewBase {
     this.queue.supersede();
     this.lastTraining = undefined;
     this.isTrained = false;
+    this.isFailed = false;
     this.updateControls();
     this.changes.next();
   }
@@ -526,12 +516,26 @@ export class TrainView extends DG.ViewBase {
     const training = this.lastTraining;
     ui.setDisabled(this.saveButton, this.isTraining || training === undefined || training.isSaved ||
       this.form.preparation.cutoffProblem !== null);
+    this.publishState(this.problem());
+  }
+
+  /** The results' readiness for automation (ARCHITECTURE.md, "Automation surface"). */
+  private publishState(problem: string | null): void {
+    TrainView.setAttribute(this.results, 'aria-busy', String(this.check === undefined || this.isTraining ||
+      this.showing > 0));
+    TrainView.setAttribute(this.results, 'aria-invalid', String(this.check !== undefined && (problem !== null ||
+      this.isFailed)));
+  }
+
+  private static setAttribute(element: Element, name: string, value: string): void {
+    if (element.getAttribute(name) !== value)
+      element.setAttribute(name, value);
   }
 
   /** Trains the current selection through the queue (a newer training supersedes it) with a task-bar progress; records
    * a completed, failed or cancelled run (a superseded one is not recorded) and shows the result. */
   private async startTraining(isLive: boolean): Promise<void> {
-    const selection = this.selection(randomInt(2 ** 31));
+    const selection = this.selection(randomSeed());
     if (selection === null)
       return;
     const checkNumber = this.checkNumber;
@@ -554,7 +558,7 @@ export class TrainView extends DG.ViewBase {
         run.request = request;
         run.fingerprint = datasetFingerprint(request.features, request.target);
         run.record = trainingRunOf({request, datasetName, fingerprint: run.fingerprint, status: 'completed',
-          startedOn: new Date(run.startedOn).toISOString(), durationMs: 0});
+          source: 'ui', startedOn: new Date(run.startedOn).toISOString(), durationMs: 0});
         return await trainModel(request, loop);
       }, () => {
         run.progress = DG.TaskBarProgressIndicator.create(`Training ${engine.name} model`, {cancelable: true});
@@ -585,14 +589,17 @@ export class TrainView extends DG.ViewBase {
         await record('cancelled');
         addRun('cancelled', {});
         grok.shell.warning(CANCELLED);
-        if (isCurrent())
+        if (isCurrent()) {
+          this.isFailed = true;
           this.showHint(this.check?.isInteractive === false ? this.notInteractiveHint() : RESULTS_HINT);
+        }
       } else {
         const error = errorMessage(queued.error);
         await record('failed', undefined, error);
         addRun('failed', {error});
         if (isCurrent()) {
           this.isTrained = true;
+          this.isFailed = true;
           this.showHint(RESULTS_HINT);
         }
         reportError(queued.error, isLive);
@@ -655,6 +662,7 @@ export class TrainView extends DG.ViewBase {
 
   private showHint(text: string): void {
     this.resultsPane.showHint(text);
+    this.results.removeAttribute(SHOWN_RUN);
   }
 
   /** The loader next to the Performance header; the previous results stay for a live training. */
@@ -662,7 +670,7 @@ export class TrainView extends DG.ViewBase {
     ui.empty(this.resultsStatus);
     this.resultsStatus.append(ui.loader());
     if (!isLive)
-      this.resultsPane.showHint('');
+      this.showHint('');
   }
 
   /** Shows the last training cut at the current **Positive class cutoff**, without retraining; Save writes it so. */
@@ -682,13 +690,19 @@ export class TrainView extends DG.ViewBase {
 
   /** Shows [training] in **Results**: its metrics (in the grid it already holds while the metric rows stay), the
    * insights and the viewers over the rows it was trained on. */
-  private showResults({result, request, engine, table}: Training): void {
+  private showResults({result, request, engine, table, runId}: Training): void {
     const summary = {metrics: result.metrics, rowCount: result.rowCount, folds: FOLDS, seed: result.seed,
       skippedRows: result.options.missingValues?.skippedRows ?? 0};
+    this.results.setAttribute(SHOWN_RUN, runId);
+    this.showing++;
+    this.publishState(this.problem());
     this.resultsPane.show({engine, table, columns: request.prepared.columns, target: request.target,
       prediction: trainPredictionOf(result), score: result.scores?.train, keptRows: request.keptRows,
       positiveClass: result.metrics.positiveClass, cutoff: result.options.binaryClassificationThreshold,
-      blob: result.blob, summary}).catch((e) => reportError(e));
+      blob: result.blob, summary}).catch((e) => reportError(e)).finally(() => {
+      this.showing--;
+      this.publishState(this.problem());
+    });
   }
 
   /** Empties **Target** and unchecks the **Features** that [table] no longer has; each change is checked as any. */
@@ -744,8 +758,7 @@ export class TrainView extends DG.ViewBase {
 
   /** The check's own problems: the data and the method, not the settings the user can fix in an input. */
   private static dataProblems({problems}: SelectionCheck): string[] {
-    const {target, features, missingValues, method} = problems;
-    return [...target, ...features, ...missingValues, ...method];
+    return problemMessages(problems);
   }
 
   private static messageOf(messages: string[] | undefined): string | null {

@@ -5,7 +5,7 @@ export type EngineRole = typeof ENGINE_ROLES[number];
 export type EngineKind = 'function' | 'script';
 export type Hyperparameters = {[name: string]: number | string | boolean};
 const TRAIN_DATA_INPUTS = ['df', 'predictColumn'] as const;
-const NUMBER_TYPES: string[] = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.NUM, DG.TYPE.QNUM];
+export const NUMBER_TYPES: string[] = [DG.TYPE.INT, DG.TYPE.BIG_INT, DG.TYPE.FLOAT, DG.TYPE.NUM, DG.TYPE.QNUM];
 /** Methods that run on the server although their functions do not say so (`meta.mlserver`) yet. */
 export const SERVER_ENGINES = ['Chemprop'];
 

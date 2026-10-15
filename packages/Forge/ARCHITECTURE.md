@@ -14,9 +14,9 @@ an EMS schema owned by Forge, and the UI on top.
   identifiers (`ML | Forge` menu, app, schema) and never touches the old tool's.
 - **Training data never leaves the browser without consent.** Only the `copy` storage mode, chosen in the Save
   dialog, uploads it; `none` keeps a fingerprint of the data and `reference` a link to its source.
-- **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows; a model row
-  appears only on Save. A training superseded by a newer one (`TrainingQueue`) is not an attempt the user finished
-  and is not recorded.
+- **Every training attempt is recorded.** Completed, failed and cancelled runs are `training_run` rows, from the Train
+  view (`source: ui`) and from `Forge:trainModel` (`source: api`, saved or not); a model row appears only on Save. A
+  training superseded by a newer one (`TrainingQueue`) is not an attempt the user finished and is not recorded.
 - **Every application is recorded.** Completed, failed and cancelled applications are `application` rows; a mapping
   the model cannot use is refused before any work and not recorded.
 - **Application records inherit the model's security.** A record is visible to whoever can see its model. It can be
@@ -55,8 +55,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
            │                                  ├─> grok.dapi.files  (System:DomainFiles/forge/model)
            │                                  └─> grok.dapi.tables (training data copies)
            ├─> ui/apply-model-dialog.ts ──> apply/, engines/, preparation/, generated/db.ts (model query)
-           ├─> apply/ (runApplyModel) ──> preparation/, engines/, storage/ (blob path), generated/db.ts,
-           │                              grok.dapi.files (blob read)
+           ├─> apply/ (runApplyModel) ──> preparation/, engines/, storage/ (findModelRow, blob path),
+           │                              generated/db.ts, grok.dapi.files (blob read)
+           ├─> training/train-api.ts (runTrainModel) ──> training/, preparation/, engines/,
+           │                                             storage/ (saveTrainedModel, the run record)
+           ├─> storage/model-store.ts (runDeleteModel: findModelRow, then deleteModelRow)
            ├─> ui/model-handler.ts ──> ui/rich-tooltip.ts (the tooltip), generated/db.ts (features read once),
            │                       apply/ (featureSchemasOf), catalog/ (featureFit),
            │                       storage/model-fields.ts (tagsOf), ui/save-model-dialog.ts (STORAGE_CAPTIONS)
@@ -83,10 +86,11 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 
 - `package.ts` holds the annotated functions only: the app `forgeApp` (shown as "Forge", `Browse > Apps`),
   `forgeModels` (`ML | Forge | Models`), `forgeTrain` (`ML | Forge | Train...`), `forgeApply` (`ML | Forge |
-  Apply...`), the API function `applyModel`, the autostart `_initForge` (registers the model handler with the model
-  commands, and the comparison handler), `isPredictionColumn`, the column panel **Predicted by** (function
-  `predictedByPanel`) and the table panel **Forge models** (function `tableModelsPanel`). They delegate to `ForgeApp`,
-  `TrainView`, `openApplyDialog`, `runApplyModel`, `ForgeModelHandler.registerOnce`, `registerModelActions`,
+  Apply...`), the API functions `applyModel`, `trainModel` and `deleteModel`, the autostart `_initForge` (registers
+  the model handler with the model commands, and the comparison handler), `isPredictionColumn`, the column panel
+  **Predicted by** (function `predictedByPanel`) and the table panel **Forge models** (function `tableModelsPanel`).
+  They delegate to `ForgeApp`, `TrainView`, `openApplyDialog`, `runApplyModel`, `runTrainModel`, `runDeleteModel`,
+  `ForgeModelHandler.registerOnce`, `registerModelActions`,
   `ModelComparisonHandler.registerOnce`, `isForgePrediction`, `predictedByPane` and `tableModelsPane`. `_initForge` reads the registered handlers' names once
   (`DG.ObjectHandler.list()`) and both `registerOnce` calls skip a handler already there, so a second `_initForge` (or
   the test bundle) registers nothing twice; the model commands are registered only with a newly registered handler.
@@ -159,9 +163,10 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   columns, the `datasetName` and `fingerprint` taken at training time, and `isSaved`; any change drops it at once.
   **Save** is disabled until a training result exists, while a training runs, and once that result is saved: OK in
   `ui/save-model-dialog.ts` (Name, prefilled, Description, Tags and **Data storage**, see "Saving") calls
-  `saveModelAs(info, choice)`, which marks the training saved before it writes, so one training becomes at most one
-  model; a failed write enables **Save** again and deletes a copy it uploaded (a failure of that delete is logged, the
-  write's error is shown). **Name** is not nullable and its validator refuses a blank name ("Enter
+  `saveModelAs(info, choice)`, which marks the training saved before it writes (`saveTrainedModel`, see "Saving"), so
+  one training becomes at most one model; a failed write enables **Save** again and shows the write's error. A
+  failure of the run's link comes after the row is written, so it also enables **Save** again and a second Save
+  makes a second model of the same training. **Name** is not nullable and its validator refuses a blank name ("Enter
   a name for the model."), so OK is disabled with that tooltip and the dialog's own validation blocks Enter too. The
   same form (`modelInfoDialog`; `saveModelDialog` adds the storage block to it) is **Edit model**. After a save the balloon `Model "<name>"
   saved.` has the links **Apply...** (`openApplyDialog` on the training table, the new model preset) and **Show in the
@@ -186,7 +191,7 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   caption and an optional summary (red with `forge-group-invalid`), in Diff Studio's style; the chevron sits in a
   fixed-width box (`forge-group-chevron`), so captions line up whether a group is open or folded.
   `expandOnError(inputs)` opens the group when one of its inputs is validated with an error; the state is not
-  remembered.
+  remembered. The header carries `aria-expanded` and the summary `aria-invalid` (see "Automation surface").
 - Table, Target, Features and Method carry short Forge tooltips (`tooltipText`, the caption's tooltip). Hyperparameter
   inputs come from `ui.input.forProperty`, whose caption tooltip is the `train` input's own `description`. For an
   invalid input the platform shows the tooltip text with the validator messages in red below it.
@@ -199,7 +204,8 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
 - **Preparation** (`ui/preparation-inputs.ts`, `PreparationInputs`, Train view only) owns its `CollapsibleGroup`:
   **Missing values** (the `MissingValuesInputs` above), **One-hot encoding** (shown while a checked feature
   is text or yes/no; checked when it appears if every such feature, the all-unique ones aside while Skip unique
-  categories is checked, has at most `ONE_HOT_MAX_CATEGORIES` (20) categories, else unchecked: a deviation from the
+  categories is checked, has at most `ONE_HOT_MAX_CATEGORIES` (20) categories (`defaultOneHot` in
+  `preparation/pipeline.ts`, also `Forge:trainModel`'s default), else unchecked: a deviation from the
   built-in tool, which always starts unchecked; it follows that default until the user toggles it, `isOneHotChosen`,
   and hiding resets it), **Skip unique categories** (checked; shown while a checked feature has `hasUniqueCategories`),
   **Predict probability** (unchecked; shown while `twoClasses(target)` is not null, its tooltip naming the positive
@@ -214,8 +220,9 @@ package.ts ──> ui/forge-app.ts ───> engines/                     (DG.F
   caller.
 - Logic folders (`engines/`, `preparation/`, `training/`, `metrics/`, `storage/`, `apply/`, `catalog/`) work without
   the DOM, throw instead of catching, and never import `ui/`. The same logic serves the UI, API functions and tests. The
-  catches in them are `applyAndRecord`, which records a failed or cancelled application and rethrows, and
-  `TrainingQueue`, whose answer is the outcome with the error in it. `catalog/` (see
+  catches in them are `applyAndRecord` and `runTrainModel`, which record a failed or cancelled application or training
+  and rethrow, `saveTrainedModel`, which deletes the copy of a failed save and rethrows, and `TrainingQueue`, whose
+  answer is the outcome with the error in it. `catalog/` (see
   "Catalog logic") builds on `apply/`, `storage/`, `metrics/` and `training/`.
 
 ## Training pipeline
@@ -359,9 +366,9 @@ with a `QueuedTraining`, a union on `outcome`: `completed` with `result`; `super
 `cancelled` (the indicator was cancelled) or `failed`, each with `error`. A superseded training is not recorded; the
 other outcomes are the run statuses below.
 
-**Run records.** `TrainView` writes the `training_run` row right after the queue settles: `completed` with the
-metrics, `cancelled` (the yellow `Training was cancelled.`), `failed` with the error message; a `superseded` training
-writes nothing, and neither does a failure before the data was prepared (too few rows left). `model_id` is set by
+**Run records.** `TrainView` writes the `training_run` row (`source: ui`) right after the queue settles: `completed`
+with the metrics, `cancelled` (the yellow `Training was cancelled.`), `failed` with the error message; a `superseded`
+training writes nothing, and neither does a failure before the data was prepared (too few rows left). `model_id` is set by
 `linkTrainingRun` when the model is saved; deleting the model keeps the run (`setnull`).
 
 **Runs.** Each settled training that is not superseded also becomes a `SessionRun` (`ui/runs-panel.ts`) put first in
@@ -744,9 +751,17 @@ table is held by the view only; no column is added and no application is recorde
 other value (a file picked in the generic row editor elsewhere, an empty segment, `..`, no blob) leaves the files
 alone. It also deletes the uploaded copy of a `copy` model (`deleteTrainingCopy` of `dataset_table_id`, see "Storage
 modes"); both deletes are tried whatever the other does, the first failure is thrown after the row is gone, and
-`modelsChanged` fires anyway. In the UI, the ribbon
-**Save** asks for Name, Description, Tags and **Data storage**, then calls `saveModel` and `linkTrainingRun`; the
-catalog's delete and **Delete model** call `deleteModel`. Both storage functions fire `modelsChanged`.
+`modelsChanged` fires anyway. `saveTrainedModel(model)` is the save of a training, shared by the ribbon **Save** and
+`Forge:trainModel`: `copy` uploads the user's feature and target columns first (`uploadTrainingCopy`) and, when the
+save then fails, deletes the copy (`deleteTrainingCopy`; its own failure is dropped) before rethrowing the save's
+error; `reference` stores the origin it is given; then `saveModel` and `linkTrainingRun`. Nothing is uploaded
+without `copy`. A `linkTrainingRun` failure is thrown after the row is written and keeps the model (and its copy): the
+view's **Save** is enabled again, so a second Save makes a second model, and `Forge:trainModel` throws with the model
+saved and returns no `modelId`. `findModelRow(idOrName, columns)` resolves a model for the API functions: the visible model with that
+id (a uuid) or that name, read in one query of at most two rows ("No Forge model 'X' is available to you." /
+"Several models are named 'X'. Use the model id."). In the UI, the ribbon **Save** asks for Name, Description, Tags
+and **Data storage**, then calls `saveTrainedModel`; the catalog's delete and **Delete model** call `deleteModel`.
+Both storage functions fire `modelsChanged`.
 
 **Data storage in the Save dialog** (`StorageOffer` of `saveModelDialog`): a radio (`forge-inline-radio`, tooltip `What
 the model keeps of its training data.`) of `Reference` (only when `datasetRefOf(table)` gives a reference; then the
@@ -755,9 +770,7 @@ default), `None` (the default otherwise) and `Copy`, with one `forge-note` line 
 data is saved.` / `The training columns (<N> rows) will be uploaded to the server.` (N: the table's rows); there are no warnings
 about a model file with training rows or a method that runs on the server (a platform setting is planned).
 OK passes the choice (`StorageChoice`; `reference` carries the reference the dialog offered, so `datasetRefOf` runs
-once per Save) to `saveModelAs(info, choice)`: `copy` uploads the user's feature and target columns first
-(`uploadTrainingCopy`) and, when `saveModel` then fails, deletes the copy (`deleteTrainingCopy`; its own failure is
-logged) before rethrowing the save's error.
+once per Save) to `saveModelAs(info, choice)`, which saves through `saveTrainedModel` (above).
 
 `model-fields.ts` builds the row payloads: `modelFieldsOf` (the storage mode and its `dataset_ref` or
 `dataset_table_id` from a `ModelStorage`, `has_training_rows` from the method (`hasTrainingRows`), feature and row
@@ -773,9 +786,9 @@ columns as text). It depends on the column order.
 
 ## Application pipeline
 
-`apply/apply-model.ts`. `loadModel(idOrName)` reads, in one query, the `APPLY_COLUMNS` of the model with that id, or
-of the one visible model with that name ("No Forge model 'X' is available to you." / "Several models are named 'X'.
-Use the model id."). `loadedModelOf(row, engines)` then refuses, in this order, a row without a blob ("has no model
+`apply/apply-model.ts`. `loadModel(idOrName)` reads, in one query (`findModelRow`, see "Saving"), the
+`APPLY_COLUMNS` of the model with that id, or of the one visible model with that name ("No Forge model 'X' is
+available to you." / "Several models are named 'X'. Use the model id."). `loadedModelOf(row, engines)` then refuses, in this order, a row without a blob ("has no model
 file"), a blob outside Forge's own `forge/model/<uuid>/` layout (`ownBlob` in `storage/model-store.ts`), a row
 without a `{name, type}` feature list, and an engine that is not discovered or incomplete ("The method 'X' is not
 installed. Install the <package> package."). The result (`LoadedModel`) holds the row, the engine, the features a
@@ -925,6 +938,49 @@ a dialog: `runApplyModel` resolves the model by id or name, maps the features by
 ("The table has no column 'a' the model needs. Map it in columnNamesMap." / "The table has no columns 'a', 'b' the
 model needs. Map them in columnNamesMap."). Rows with missing values are skipped; batches of 10000 rows; with
 `showProgress` a cancellable task-bar indicator "Predicting <target>". The application is recorded with `source: api`.
+
+## `Forge:trainModel`
+
+`trainModel(table, target, features?, method?, hyperparameters?, options?, name?, description?, tags?, storage =
+'none', showProgress = true) -> object`, for scripts, other packages and fixtures, is the Train view's pipeline
+without the view (`runTrainModel` in `training/train-api.ts`; the view and the function share, from
+`training/train-model.ts`, `trainingEngines`, `FOLDS`, `randomSeed`, `problemMessages`, `checkSelection`,
+`prepareTraining` and `trainModel`, and `defaultFeatures`, `DEFAULT_STEPS`, `defaultOneHot`, `cutoffProblem`, `NO_NAME`
+and `saveTrainedModel`):
+
+1. The target and the features by name ("The table has no column 'x'." / "The table has no columns 'a', 'b'."); without
+   `features`, `defaultFeatures`.
+2. The method by name among the complete methods ("No method 'x' is installed. The methods are: ..."); without one,
+   the check starts with XGBoost (`PREFERRED_ENGINE` in `train-model.ts`) and takes the method it suggests (`best`), as the view does.
+3. `options`, narrowed key by key (`OPTION_NAMES`; an unknown key is refused with the list) to the view's defaults:
+   `missingValues` `skip` (`impute` with `neighbors` and `distance` checked against `Eda:knnImpute`'s inputs, its
+   defaults otherwise), `oneHot` `defaultOneHot`, `skipUniqueCategories` `true`, `predictProbability` `false` (refused
+   on a target without exactly two classes), `cutoff` `DEFAULT_CUTOFF` (with Predict probability, 0..1 or the view's
+   `Enter a number from 0 to 1.`), `seed` random, `folds` 5.
+4. The save, checked before any work: a blank name ("Enter a name for the model."), an unknown storage, `reference`
+   without `datasetRefOf(table)`.
+5. `checkSelection`; every problem goes into one `ForgeError`, target and features first.
+6. The hyperparameters: `defaultHyperparameters` overlaid with the given ones, each checked against its `train`
+   input (an unknown name with the list of settings; the kind, a whole number for an int, `min`/`max`, `choices`).
+7. With `showProgress`, the task-bar indicator `Training <Method> model` (cancellable) is the `LoopProgress` of
+   `trainModel`; `prepareTraining`, then `trainModel`.
+8. The `training_run` row (`source: api`): `completed` with the metrics; `cancelled` or `failed` (with the error)
+   before the error is rethrown. A refused input or a failed preparation records nothing.
+9. With a name, `saveTrainedModel` with the user's feature and target columns, which links the run; nothing is
+   uploaded without `storage: copy`. When the link fails after the row is written, the error is thrown with the model
+   saved, so the caller gets no `modelId` for it (the model is found by its name).
+
+It returns `TrainModelResult` (`modelId` or null, `runId`, `name`, `method`, `task`, `target`, `features`, `rowCount`,
+`skippedRows`, `seed`, `metrics`) and adds nothing to the table. Errors are rethrown unchanged (`trainAndSave` records
+a failed or cancelled run first): `ForgeError` texts reach the caller as they are.
+
+## `Forge:deleteModel`
+
+`deleteModel(model) -> id` (`runDeleteModel` in `storage/model-store.ts`): `findModelRow` resolves the id or the
+unique name with the row's `blob` and `dataset_table_id` (one read), then `deleteModelRow` deletes that row as the
+catalog's delete does (`deleteModel(id)` reads the row itself first): the row, its own blob folder, its uploaded copy; the
+application rows go with the row (`onDelete: cascade`), the training runs keep their rows without the model
+(`setnull`). The server's refusal of a row the caller may not delete passes through unchanged.
 
 ## Catalog logic
 
@@ -1133,7 +1189,8 @@ decision). Training and saving are separate steps, and
 every completed, failed or cancelled attempt is recorded. The training table is uploaded only when the user chooses
 **Copy** (the built-in tool uploaded it on every save); otherwise a model keeps a fingerprint of it, and a
 **Reference** to its source when the platform recorded one. The DONE link of the task bar became the **Apply...** link
-of the balloon after Save. Rows with a missing
+of the balloon after Save. Scripts train, save and delete models with `Forge:trainModel` and `Forge:deleteModel`
+(the built-in tool trained on the server and offered no JS function for it). Rows with a missing
 target are skipped instead of blocking training, and dates and bigint columns are refused as features and targets.
 Missing values are a **Missing values** choice (Skip rows / Impute) with the imputation settings inline, instead of
 two checkboxes and EDA's own dialog, and the target is never imputed.
@@ -1181,9 +1238,47 @@ the platform's drag (see Sharing). Forge's Browse node is **Apps > Forge**; **Br
 and its **MLFlow** node stay the built-in tool's until the switchover. The Domains view of `model` can be filtered by
 **Tags** (the built-in catalog's tags filter); its **Author** filter has no counterpart.
 
+## Automation surface
+
+The views publish their state in the DOM, so a test waits on what a view says instead of on a timer:
+
+- The Train view's results (`.forge-train-results`, `TrainView.publishState`, run by every `updateControls` and when a
+  `ResultsPane.show` settles): `aria-busy="true"` while a check is pending (`check` undefined), a training is queued,
+  running or being recorded (`isTraining`) or results are being shown (`showing`, the `ResultsPane.show` calls not
+  settled); `aria-invalid="true"` once checked while the selection has a problem (`problem()`, an invalid setting
+  included) or its last training ended `failed` or `cancelled` (`isFailed`, cleared by any change but the cutoff). Ready is
+  `aria-busy="false"` without `aria-invalid="true"`; a slow method waiting for **Train** is ready.
+- On the same element, `data-forge-run-id` (`SHOWN_RUN`) is the id of the `training_run` row whose result the results
+  show. `showResults` sets it when a completed training of the current selection is shown, and a cutoff-only re-cut
+  sets the same id again. `showHint` removes it: before the first training, for a selection problem or an invalid
+  setting, for a method waiting for **Train**, after a failed or a cancelled training, when a **Train** click starts
+  one, and on a Table change. A training that runs while a result is shown (a live retrain) leaves the old id until
+  its own result is shown, and a superseded training leaves it as it is: it records no run and shows nothing. A new
+  training is thus a ready view with an id other than the one before; a "Ready" alone is not one (a method waiting
+  for **Train** is ready, and the metrics grid is updated in place).
+- The Evaluation view's results (`.forge-train-results` of `EvaluationView`): `aria-busy="true"` from `open` until the
+  results are shown or the evaluation ends; a failure or a cancel closes the view, so it has no `aria-invalid`. It has
+  no `data-forge-run-id`: an evaluation records no `training_run` (`training/evaluation.ts`), and the view
+  shows the one result it opened for.
+- `CollapsibleGroup`: `aria-expanded` on `.forge-group-header` follows `setExpanded`; `aria-invalid` on
+  `.forge-group-summary` follows `setSummary` (the Apply dialog's red `N of M matched`).
+- Every table of data is the platform's grid, whose widget status publishes the hit areas `cell <row> of <column>`,
+  `header <column>` and `row header <row>` (table rows counted from 1) and the readings `rows`, `rows shown`, `columns
+  shown`, `current row`, `current column` and `text of cell <row> of <column>`.
+
+The user flows are Gherkin features on `@datagrok-libraries/bdd` in `bdd/` (`bdd/README.md`), run by Playwright
+against a stand. Forge's vocabulary is in `bdd/bindings/`: the kinds `group` and `results panel` over the classes
+above, the demo-file opener (`OpenServerFile` unprocessed, so the table keeps its creation script), and the server
+claims, which run the `grok s` CLI from Node as the page's user (a guard compares the two logins). A feature names its
+data `forge-test-<purpose>-{time}` and sweeps it at its start and end: its models through `Forge:deleteModel` in the
+page (with their folders and copies), its tables' training runs through `grok s domains delete`, each read back gone
+by the exact names and ids it deleted. A step that claims a training waits for a new `data-forge-run-id` and asks the
+server whether that id is the table's newest run, with the method and the settings the step chose; a claim that
+nothing trained reads once the view is settled (`aria-busy` not true).
+
 ## EMS schema `forge`
 
-Manifest: `databases/forge/schema.json`, version `0.1.13`. `grok publish` deploys it; a debug publish applies
+Manifest: `databases/forge/schema.json`, version `0.1.14`. `grok publish` deploys it; a debug publish applies
 destructive changes without migration scripts, except a `promotion` change on a row table, which is always refused
 (`[promotion-change]`). To change it, publish a manifest with only a placeholder table, then the real one, bumping
 `version` both times; the first publish drops the tables with their data and their rows' entities and permissions,
@@ -1194,7 +1289,7 @@ system columns `id`, `version`, `created_on`, `updated_on` and `author_id`; who 
 | Table | Security | Why |
 |---|---|---|
 | `model` | `row`, `promotion: eager`, `defaultRowVisibility: none`, grants `All users: view, edit` | A model is private until shared, like the old models. Eager promotion makes every inserted model a platform entity at once, with View, Edit, Delete and Share for its author's personal group: under visibility `none` a user sees only rows he holds a grant on (administrators see all by design; the 1.28.0 stand does not apply that, see Sharing), so without it a user would not see his own models. Sharing, favorites and comments work on every model. The table Edit grant lets any user insert models; with visibility `none` it reveals no foreign rows |
-| `training_run` | `row`, eager promotion, `defaultRowVisibility: none`, same grants | The trainer's experiment history, including failed and cancelled runs, visible to the trainer for the same reason. `model_id` is optional with `onDelete: setnull`, so the history outlives the model |
+| `training_run` | `row`, eager promotion, `defaultRowVisibility: none`, same grants | The trainer's experiment history, including failed and cancelled runs, visible to the trainer for the same reason. `model_id` is optional with `onDelete: setnull`, so the history outlives the model. `source` (0.1.14) is `ui` (the Train view, the default for the rows recorded before it) or `api` (`Forge:trainModel`); inserts pass it explicitly |
 | `application` | `master`, `delegate: model_id`, `audit: false`, no grants | Secured by the model (see Key decisions). Master tables refuse grants. No audit: high-churn records. `onDelete: cascade` from the model. `status` is `completed`, `failed` or `cancelled`; `skipped_rows` counts the rows left without a prediction because of missing values. Inserts pass `source` and `status` explicitly |
 
 Deletes are soft: a deleted row stays with `is_deleted` and disappears from queries and counts. Current EMS limitation:

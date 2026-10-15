@@ -31,10 +31,12 @@ import {PanelKey, resultsLayout} from '../ui/results-layout';
 import {saveModelDialog} from '../ui/save-model-dialog';
 import {tableModelsPane} from '../ui/table-models-panel';
 import {tagsOfInput} from '../ui/tags-input';
-import {CHECK_DELAY_MS, TrainView} from '../ui/train-view';
-import {columnsOf, expectNoFrames, expectReleased, framesSharing, insertModelRow, IRIS, MEASUREMENTS, openDemoTable,
-  openIris, openIrisFromFile, savedFixture, saveIrisModel, saveSkipUniqueModel, saveTestModel, twoSpeciesIris,
-  unbalancedIris, valuesOf, XGBOOST_FIELDS} from './test-data';
+import {CHECK_DELAY_MS, SHOWN_RUN, TrainView} from '../ui/train-view';
+import {balloonWith, cancelTaskBarEntry, columnsOf, deleteRunsOf, expectNoFrames, expectReleased, framesSharing,
+  insertModelRow, IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, readUntil, runsOf, savedFixture,
+  saveIrisModel,
+  saveSkipUniqueModel, saveTestModel, taskBarEntry, twoSpeciesIris, unbalancedIris, valuesOf, XGBOOST_FIELDS}
+  from './test-data';
 
 const WAIT_MS = 5000;
 const TIMEOUT = 60000;
@@ -56,21 +58,11 @@ async function awaitTrained(view: TrainView): Promise<void> {
   await awaitCheck(() => view.lastTraining !== undefined && !view.isTraining, 'The view does not train', TIMEOUT);
 }
 
-const runsOf = async (tables: DG.DataFrame[]) =>
-  await forgeDb.trainingRuns.query().where('dataset_name', '=', tables.map((t) => t.name));
-
 /** Closes [view], waits until no training of it is left, then deletes the runs of [tables]. */
 async function closeTrainView(view: TrainView, tables: DG.DataFrame[]): Promise<void> {
   view.close();
   await awaitCheck(() => !view.isTraining, 'A training outlives the view', TIMEOUT);
-  for (const run of await runsOf(tables))
-    await forgeDb.trainingRuns.delete(run.id);
-}
-
-/** The open balloon that contains [text], or null. */
-function balloonWith(text: string): HTMLElement | null {
-  return Array.from(document.querySelectorAll<HTMLElement>('.d4-balloon'))
-    .find((b) => (b.textContent ?? '').includes(text)) ?? null;
+  await deleteRunsOf(tables);
 }
 
 const isDisabled = (button: HTMLElement) => button.classList.contains('d4-disabled');
@@ -117,18 +109,6 @@ async function enterTooltip(element: HTMLElement): Promise<string> {
   return text;
 }
 
-/** The task-bar entry whose text includes [text], or undefined. */
-const taskBarEntry = (text: string) => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
-  .find((e) => (e.textContent ?? '').includes(text));
-
-/** Clicks the cancel icon of the task-bar [entry], as the user does. */
-function cancelTaskBarEntry(entry: Element | undefined): void {
-  const cancel = entry?.querySelector('.fa-times');
-  if (!(cancel instanceof HTMLElement) || !cancel.isConnected)
-    throw new Error('No task-bar entry to cancel');
-  cancel.click();
-}
-
 /** XGBoost still retrains live on this many demog rows with three features, but each fit takes a while. */
 const SLOW_ROWS = 100000;
 
@@ -148,6 +128,13 @@ function saveDialogOf(view: TrainView): DG.Dialog | undefined {
 }
 
 const resultsText = (view: TrainView) => view.root.querySelector('.forge-train-results')?.textContent ?? '';
+
+/** The readiness attributes of the results of [view]: `<aria-busy>/<aria-invalid>`. */
+const resultsState = (view: DG.ViewBase, results = view.root.querySelector('.forge-train-results')) =>
+  `${results?.getAttribute('aria-busy')}/${results?.getAttribute('aria-invalid')}`;
+/** The run whose result the results of [view] show (`SHOWN_RUN`), or null. */
+const shownRun = (view: DG.ViewBase) =>
+  view.root.querySelector('.forge-train-results')?.getAttribute(SHOWN_RUN) ?? null;
 
 /** The value of the hyperparameter input [name] of [view] becomes [value]. */
 function setHyperparameter(view: TrainView, name: string, value: number): void {
@@ -185,16 +172,6 @@ function expectOptionsInRow(input: DG.InputBase): void {
   const options = Array.from(input.root.querySelectorAll<HTMLElement>('.ui-radio-button'));
   expect(options.length === 2 && options.every((o) => o.offsetHeight > 0 && o.offsetTop === options[0].offsetTop),
     true, `Option positions ${options.map((o) => o.offsetTop).join(', ')}`);
-}
-
-/** Reads [read] every 100 ms until [done] holds of what it read or WAIT_MS pass; the last reading. */
-async function readUntil<T>(read: () => Promise<T> | T, done: (value: T) => boolean): Promise<T> {
-  let value = await read();
-  for (let i = 0; i < WAIT_MS / 100 && !done(value); i++) {
-    await delay(100);
-    value = await read();
-  }
-  return value;
 }
 
 /** Waits until [dialog] is closed, [table] has the Species prediction and the application of [modelId] is recorded. */
@@ -499,13 +476,14 @@ category('UI', () => {
       trainSlowly(view, demog);
       for (let i = 0; i < TIMEOUT / 10 && !view.isTraining; i++)
         await delay(10);
-      expect(view.isTraining && view.methodInput.value === 'XGBoost', true, 'XGBoost does not train by itself');
+      expect(`${view.isTraining} ${view.methodInput.value} ${resultsState(view)}`, 'true XGBoost true/false');
       await awaitCheck(() => taskBarEntry('Training XGBoost model') !== undefined, 'No task-bar progress', TIMEOUT);
       // The entry's text becomes the fold progress after the first fit.
       const entry = taskBarEntry('Training XGBoost model');
       await delay(100);
       cancelTaskBarEntry(entry);
       await awaitCheck(() => !view.isTraining, 'The cancelled training does not end', TIMEOUT);
+      expect(resultsState(view), 'false/true');
       const recorded = await runsOf([demog]);
       expectArray(recorded.map((r) => `${r.status} ${r.engine_name}`), ['cancelled XGBoost']);
       expect(view.lastTraining === undefined && isDisabled(view.saveButton), true, 'A cancelled training is saveable');
@@ -514,7 +492,7 @@ category('UI', () => {
       const hint = `SVM takes a while on ${SLOW_ROWS} rows, so it does not retrain on every change. Click Train.`;
       await awaitCheck(() => (view.root.textContent ?? '').includes(hint), 'No hint for a slow method', WAIT_MS);
       await delay(500);
-      expect(view.isTraining, false, `SVM trains by itself on ${SLOW_ROWS} rows`);
+      expect(`${view.isTraining} ${resultsState(view)}`, 'false false/false', 'SVM trains by itself');
       expect(isTrainShown(view) && !isDisabled(view.trainButton), true, 'Train is not offered for a slow method');
       expect((await runsOf([demog])).length, 1, 'A slow method recorded a run');
 
@@ -790,6 +768,7 @@ category('UI: Train', () => {
       const recorded = await runsOf([demog]);
       expectArray(recorded.map((r) => `${r.status} ${r.engine_name} ${r.hyperparameters?.maxDepth}`),
         ['completed XGBoost 2']);
+      expect(shownRun(view), recorded[0].id, 'The results show another run than the one recorded');
     } finally {
       await closeTrainView(view, [demog]);
     }
@@ -799,10 +778,12 @@ category('UI: Train', () => {
     const iris = await openIris();
     const view = await openTrainView(iris);
     try {
+      await awaitCheck(() => resultsState(view) === 'false/false', 'The results are not ready', WAIT_MS);
       setHyperparameter(view, 'iterations', 500);
       await awaitCheck(() => view.hyperparameterInputs.get('iterations')?.validity !== null,
         'Iterations is not marked', WAIT_MS);
       await delay(CHECK_DELAY_MS * 2);
+      expect(resultsState(view), 'false/true');
       expect(!isTrainShown(view) && isDisabled(view.trainButton), true, 'Train is shown for XGBoost, which retrains');
       expect(resultsText(view).includes('Fix the settings.'), true, 'The Results hint is not Fix the settings.');
       await view.train();
@@ -1586,6 +1567,7 @@ category('UI: Results', () => {
           iris, iris.getCol('Species'), exactMapping(loaded.features, iris)));
         view = opened;
         expect(view.name, `Evaluation: ${model.name}`);
+        expect(resultsState(view), 'false/null');
         const metrics = gridWith(view.resultsPane.root, 'Metric').dataFrame;
         expectArray(metrics.columns.names(), ['Metric', 'Train', 'Validation', 'Evaluation']);
         for (let i = 0; i < metrics.rowCount; i++)
@@ -1814,6 +1796,7 @@ category('UI: Apply dialog', () => {
       const columns = groupOf(dialog.root, 'Columns');
       expect(columns.summary.textContent, '4 of 4 matched');
       expect(columns.summary.classList.contains('forge-group-invalid'), false, 'The summary is red');
+      expect(columns.summary.getAttribute('aria-invalid'), 'false');
       expect(isShown(columns.body), false, 'Columns is expanded with every feature matched');
       expect(columns.body.contains(dialog.input('Sepal.Length').root), true, 'The rows are not under Columns');
       const moreOptions = groupOf(dialog.root, 'More options');
@@ -1825,7 +1808,9 @@ category('UI: Apply dialog', () => {
         'A column used twice is not marked', WAIT_MS);
       expect(columns.summary.textContent, '3 of 4 matched');
       expect(columns.summary.classList.contains('forge-group-invalid'), true, 'The summary is not red');
+      expect(columns.summary.getAttribute('aria-invalid'), 'true');
       expect(isShown(columns.body), true, 'Columns stays collapsed with a problem');
+      expect(columns.summary.parentElement?.getAttribute('aria-expanded'), 'true');
       expect(isShown(moreOptions.body), false, 'More options opened');
       expectAlignedCaptions(dialog.root, ['Columns', 'More options']);
     } finally {
@@ -2835,8 +2820,11 @@ category('UI: Runs', () => {
       expect(gridTooltip(grid, grid.cell('Features', 0)), MEASUREMENTS.join('\n'));
       expect(gridTooltip(grid, grid.cell('Accuracy (validation)', 0)).startsWith('Train '), true);
 
+      const firstShown = shownRun(view);
+      expect(firstShown !== null && firstShown === view.lastTraining?.runId, true, `Shown run ${firstShown}`);
       setHyperparameter(view, 'iterations', 30);
       await awaitTrained(view);
+      expect(shownRun(view) !== firstShown && shownRun(view) === view.lastTraining?.runId, true, 'The shown run');
       expectArray(runsColumn(view, '#'), [2, 1]);
       expect(runsGrid(view).dataFrame.currentRowIdx, 0);
 
@@ -2916,13 +2904,14 @@ category('UI: Runs', () => {
     try {
       predictProbability.value = true;
       await awaitTrained(view);
-      const count = view.runs.length;
+      const [count, shown] = [view.runs.length, shownRun(view)];
       cutoff.value = 0.7;
       await delay(CHECK_DELAY_MS * 3);
+      expect(shown !== null && shownRun(view) === shown, true, `A re-cut shows ${shownRun(view)}, not ${shown}`);
       clickRunsRow(runsGrid(view), 0);
       await delay(CHECK_DELAY_MS * 3);
       expect(cutoff.value, view.runs[0].steps.cutoff);
-      expect(!view.isTraining && view.runs.length === count, true, 'The click trained');
+      expect(!view.isTraining && view.runs.length === count && shownRun(view) === shown, true, 'The click trained');
     } finally {
       await closeTrainView(view, [iris]);
     }

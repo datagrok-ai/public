@@ -2,6 +2,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {category, expect, expectArray, expectExceptionAsync, expectFloat, test}
   from '@datagrok-libraries/test/src/test';
+import {applyAndRecord, DEFAULT_BATCH_SIZE, loadModel} from '../apply/apply-model';
+import {exactMapping} from '../apply/column-matching';
 import {defaultHyperparameters} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
 import {ForgeError} from '../forge-error';
@@ -10,11 +12,14 @@ import {deleteTrainingCopy, trainingCopyName, uploadTrainingCopy} from '../stora
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {datasetRefOf, openDatasetRef, storedDatasetRef} from '../storage/dataset-ref';
 import {ModelStorage, modelFieldsOf, normalizedTags, tagsOf, tagsText, trainingRunOf} from '../storage/model-fields';
-import {BLOB_ROOT, deleteModel, saveModel} from '../storage/model-store';
+import {BLOB_ROOT, deleteModel, modelsChanged, ownBlob, runDeleteModel, saveModel, saveTrainedModel}
+  from '../storage/model-store';
 import {linkTrainingRun, recordTrainingRun} from '../storage/training-run-store';
-import {prepareTraining, trainModel} from '../training/train-model';
-import {columnsOf, engineByName, expectReleased, framesSharing, IRIS, MEASUREMENTS, openIris, openIrisFromFile,
-  requestOf, selectionOf, XGBOOST_FIELDS} from './test-data';
+import {runTrainModel} from '../training/train-api';
+import {FeaturesSchema, prepareTraining, TrainingResult, trainModel} from '../training/train-model';
+import {columnsOf, deleteModelsNamed, deleteRunsOf, engineByName, expectReleased, framesSharing, insertModelRow,
+  IRIS, MEASUREMENTS, openDemoTable, openIris, openIrisFromFile, requestOf, selectionOf, XGBOOST_FIELDS}
+  from './test-data';
 
 const IRIS_COLUMNS = [...MEASUREMENTS, 'Species'];
 
@@ -78,6 +83,7 @@ category('Storage', () => {
         task: 'classification',
         target_name: 'species',
         status: 'completed',
+        source: 'ui',
         started_on: new Date().toISOString(),
       });
       await forgeDb.applications.insert({model_id: modelId, row_count: 150, source: 'api', status: 'completed'});
@@ -324,7 +330,7 @@ category('Storage', () => {
     const y = DG.Column.fromList(DG.COLUMN_TYPE.FLOAT, 'y', values.map((v) => v * 2));
     const request = await requestOf(DG.DataFrame.fromColumns([x]), y);
     const runId = await recordTrainingRun(trainingRunOf({request, datasetName: `forge-test-run-${stamp}`,
-      fingerprint: datasetFingerprint(request.features, y), status: 'completed',
+      fingerprint: datasetFingerprint(request.features, y), status: 'completed', source: 'ui',
       startedOn: new Date().toISOString(), durationMs: 0}));
     let modelId: string | undefined;
     try {
@@ -345,5 +351,176 @@ category('Storage', () => {
           await forgeDb.models.delete(modelId);
       }
     }
+  });
+});
+
+/** The uploaded training copies of the model named [modelName]. */
+async function trainingCopiesOf(modelName: string): Promise<DG.TableInfo[]> {
+  const tables: DG.TableInfo[] = await grok.dapi.tables.filter(modelName).list();
+  return tables.filter((t) => t.friendlyName === trainingCopyName(modelName));
+}
+
+const modelCount = (id: string) => forgeDb.models.query().where('id', '=', id).count();
+
+// Saving through Forge:trainModel and saveTrainedModel, Forge:deleteModel, schema 0.1.14.
+category('Storage', () => {
+  test('the schema is 0.1.14 and a training run records its source', async () => {
+    const manifest = await grok.dapi.domains.schema('forge').manifest();
+    expect(manifest.version, '0.1.14');
+    const source = (await grok.dapi.domains.registry.rowProperties('forge.training_run'))
+      .find((p) => p.name === 'source');
+    expect(source?.description, 'Where the training was started: the Train view or Forge:trainModel');
+    expectArray(source?.choices ?? [], ['ui', 'api']);
+  });
+
+  test('models and training runs are promoted eagerly', async () => {
+    const {tables} = await grok.dapi.domains.schema('forge').manifest();
+    expect(tables?.model?.promotion, 'eager');
+    expect(tables?.training_run?.promotion, 'eager');
+  });
+
+  test('Forge:trainModel with a name saves the model without data and links the run', async () => {
+    const iris = await openDemoTable(IRIS, 'api');
+    const name = `forge-test-api-${Date.now()}`;
+    let changes = 0;
+    const sub = modelsChanged.subscribe(() => changes++);
+    let modelId: string | null = null;
+    try {
+      const result = await runTrainModel({table: iris, target: 'Species', name: ` ${name} `, description: 'API',
+        tags: 'a, b,a', showProgress: false});
+      modelId = result.modelId;
+      expect(result.name, name);
+      expect(changes, 1);
+      const model = await forgeDb.models.get(modelId ?? '');
+      expect(model.name, name);
+      expect(model.storage_mode, 'none');
+      expect(model.description, 'API');
+      expect(model.tags, 'a, b');
+      expect(model.row_count, 150);
+      expect(model.dataset_name, iris.name);
+      expect(model.dataset_table_id == null && model.dataset_ref == null, true, 'Data was stored');
+      expect((await forgeDb.trainingRuns.get(result.runId)).model_id, modelId);
+      expect((await trainingCopiesOf(name)).length, 0);
+    } finally {
+      sub.unsubscribe();
+      await deleteModelsNamed(name);
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: 60000});
+
+  test('Forge:trainModel with storage copy uploads the training columns; Forge:deleteModel deletes them', async () => {
+    const iris = await openDemoTable(IRIS, 'api');
+    const name = `forge-test-api-copy-${Date.now()}`;
+    let modelId: string | null = null;
+    try {
+      modelId = (await runTrainModel({table: iris, target: 'Species', name, storage: 'copy', showProgress: false}))
+        .modelId;
+      const model = await forgeDb.models.get(modelId ?? '');
+      expect(model.storage_mode, 'copy');
+      const tableId = model.dataset_table_id ?? '';
+      expectArray((await trainingCopiesOf(name)).map((t) => t.id), [tableId]);
+      expectArray((await grok.dapi.tables.getTable(tableId)).columns.names(), IRIS_COLUMNS);
+      expect(await runDeleteModel(name), modelId);
+      expect((await trainingCopiesOf(name)).length, 0, 'The copy outlived its model');
+    } finally {
+      await deleteModelsNamed(name);
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: 60000});
+
+  test('Forge:trainModel with storage reference keeps the table\'s origin', async () => {
+    const iris = await openIrisFromFile();
+    iris.name = `forge-test-api-${Date.now()}`;
+    let modelId: string | null = null;
+    try {
+      modelId = (await runTrainModel({table: iris, target: 'Species', name: iris.name, storage: 'reference',
+        showProgress: false})).modelId;
+      const model = await forgeDb.models.get(modelId ?? '');
+      expect(model.storage_mode, 'reference');
+      expect(storedDatasetRef(model.dataset_ref)?.path, IRIS);
+      expect(model.dataset_table_id == null, true, 'dataset_table_id is set');
+    } finally {
+      grok.shell.closeTable(iris);
+      await deleteModelsNamed(iris.name);
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: 60000});
+
+  test('saveTrainedModel deletes the uploaded copy when the save fails', async () => {
+    const iris = await openIris();
+    const request = await requestOf(columnsOf(iris, MEASUREMENTS), iris.getCol('Species'));
+    const result = await trainModel(request);
+    const name = `forge-test-api-failed-${Date.now()}`;
+    // A result without a feature list fails the row's fields after the upload, before any model file is written.
+    const broken: TrainingResult = {...result, features: {} as FeaturesSchema};
+    try {
+      await expectExceptionAsync(() => saveTrainedModel({name, description: '', tags: [], engine: request.engine,
+        datasetName: iris.name, result: broken, fingerprint: datasetFingerprint(request.features, request.target),
+        columns: columnsOf(iris, IRIS_COLUMNS), runId: '', storage: {mode: 'copy'}}).then(() => {}));
+      expect((await trainingCopiesOf(name)).length, 0, 'The copy outlived the failed save');
+      expect(await forgeDb.models.query().where('name', '=', name).count(), 0);
+    } finally {
+      await deleteModelsNamed(name);
+    }
+  }, {timeout: 60000});
+
+  test('Forge:deleteModel by id and by name: the row, the file and the applications go, the run stays', async () => {
+    const iris = await openDemoTable(IRIS, 'api');
+    const names = ['id', 'name'].map((by) => `forge-test-api-delete-${by}-${Date.now()}`);
+    try {
+      for (const [i, by] of ['id', 'name'].entries()) {
+        const name = names[i];
+        const {modelId, runId} = await runTrainModel({table: iris, target: 'Species', name, showProgress: false});
+        if (modelId === null)
+          throw new Error('The model was not saved');
+        const model = await loadModel(modelId);
+        const table = iris.clone();
+        await applyAndRecord({model, table, mapping: exactMapping(model.features, table),
+          batchSize: DEFAULT_BATCH_SIZE, missingValues: {mode: 'skip'}}, 'api');
+        const applications = () => forgeDb.applications.query().where('model_id', '=', modelId).count();
+        expect(await applications(), 1);
+        const folder = ownBlob((await forgeDb.models.get(modelId)).blob)?.folder ?? '';
+        expect(await grok.dapi.files.exists(folder), true, folder);
+        expect(await runDeleteModel(by === 'id' ? modelId : name), modelId);
+        expect(await modelCount(modelId), 0, `The model is left (by ${by})`);
+        expect(await grok.dapi.files.exists(folder), false, `${folder} is left`);
+        expect(await applications(), 0);
+        expect((await forgeDb.trainingRuns.get(runId)).model_id == null, true, 'The run keeps the model');
+      }
+    } finally {
+      await Promise.all(names.map(deleteModelsNamed));
+      await deleteRunsOf([iris]);
+    }
+  }, {timeout: 90000});
+
+  test('Forge:deleteModel refuses a missing model and a name several models have', async () => {
+    const stamp = Date.now();
+    const name = `forge-test-api-dup-${stamp}`;
+    const missing = `forge-test-api-none-${stamp}`;
+    const ids = [await insertModelRow({name}), await insertModelRow({name})];
+    try {
+      await expectExceptionAsync(() => runDeleteModel(name).then(() => {}),
+        (e) => e instanceof ForgeError && e.message === `Several models are named '${name}'. Use the model id.`);
+      await expectExceptionAsync(() => runDeleteModel(missing).then(() => {}),
+        (e) => e instanceof ForgeError && e.message === `No Forge model '${missing}' is available to you.`);
+      expect(await forgeDb.models.query().where('name', '=', name).count(), 2);
+    } finally {
+      for (const id of ids)
+        await forgeDb.models.delete(id);
+    }
+  });
+
+  test('Forge:deleteModel through grok.functions.call, and its registration', async () => {
+    const name = `forge-test-api-call-${Date.now()}`;
+    const id = await insertModelRow({name});
+    try {
+      expect(await grok.functions.call('Forge:deleteModel', {model: name}), id);
+      expect(await modelCount(id), 0);
+    } finally {
+      await deleteModelsNamed(name);
+    }
+    const func = DG.Func.find({package: 'Forge', name: 'deleteModel'})[0];
+    expectArray(func.inputs.map((p) => `${p.name}: ${p.propertyType}`), ['model: string']);
+    expectArray(func.outputs.map((p) => `${p.name}: ${p.propertyType}`), ['id: string']);
   });
 });

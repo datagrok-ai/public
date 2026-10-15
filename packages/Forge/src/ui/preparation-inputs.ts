@@ -1,14 +1,10 @@
 import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 import {missingColumnsOf, MissingValuesSettings} from '../preparation/missing-values';
-import {DEFAULT_CUTOFF, hasUniqueCategories, PreparationSteps, twoClasses} from '../preparation/pipeline';
+import {cutoffProblem, DEFAULT_CUTOFF, DEFAULT_STEPS, defaultOneHot, hasUniqueCategories, PreparationSteps,
+  twoClasses} from '../preparation/pipeline';
 import {CollapsibleGroup} from './collapsible-group';
 import {MissingValuesInputs} from './missing-values-inputs';
-
-/** One-hot encoding is checked by default while every text or yes/no feature it would encode has at most this many
- * categories. */
-const ONE_HOT_MAX_CATEGORIES = 20;
-const CUTOFF_PROBLEM = 'Enter a number from 0 to 1.';
 
 /** The **Preparation** group of the Train view: Missing values, One-hot encoding, Skip unique categories, Predict
  * probability and its Positive class cutoff, each shown only while it applies to the selection; the group is hidden
@@ -42,10 +38,11 @@ export class PreparationInputs {
       this.updateVisibility();
       onChanged();
     };
-    this.skipUniqueCategories = ui.input.bool('Skip unique categories', {value: true,
+    this.skipUniqueCategories = ui.input.bool('Skip unique categories', {value: DEFAULT_STEPS.skipUniqueCategories,
       tooltipText: 'Leaves out text features whose values are all different, such as ids.',
       onValueChanged: onStepChanged});
-    this.predictProbability = ui.input.bool('Predict probability', {value: false, onValueChanged: onStepChanged});
+    this.predictProbability = ui.input.bool('Predict probability', {value: DEFAULT_STEPS.predictProbability,
+      onValueChanged: onStepChanged});
     this.cutoff = ui.input.float('Positive class cutoff', {value: DEFAULT_CUTOFF, min: 0, max: 1, step: 0.01,
       showSlider: true, nullable: false, onValueChanged: onCutoffChanged});
     this.cutoff.addValidator(() => this.cutoffProblem);
@@ -65,8 +62,7 @@ export class PreparationInputs {
 
   /** Why the cutoff cannot be used; null while it is a number from 0 to 1. */
   get cutoffProblem(): string | null {
-    const value = this.cutoff.value;
-    return value !== null && value >= 0 && value <= 1 ? null : CUTOFF_PROBLEM;
+    return cutoffProblem(this.cutoff.value);
   }
 
   /** The steps as chosen; a hidden input's step is off. */
@@ -123,9 +119,8 @@ export class PreparationInputs {
     ui.setDisplay(this.group.root, isApplicable);
   }
 
-  /** Shows One-hot encoding while a feature is text or yes/no, checked when every text feature the model would get has
-   * at most [ONE_HOT_MAX_CATEGORIES] categories; it follows that until the user toggles it, and is unchecked while
-   * hidden. */
+  /** Shows One-hot encoding while a feature is text or yes/no, checked by its {@link defaultOneHot}; it follows that
+   * until the user toggles it, and is unchecked while hidden. */
   private updateOneHot(): void {
     if (!this.hasText) {
       this.oneHotDefault = false;
@@ -134,9 +129,7 @@ export class PreparationInputs {
       return;
     }
     ui.setDisplay(this.oneHot.root, true);
-    const kept = this.features.filter((c) => c.isCategorical &&
-      !(this.skipUniqueCategories.value && hasUniqueCategories(c)));
-    this.oneHotDefault = kept.every((c) => c.categories.length <= ONE_HOT_MAX_CATEGORIES);
+    this.oneHotDefault = defaultOneHot(this.features, this.skipUniqueCategories.value);
     if (!this.isOneHotChosen)
       this.oneHot.value = this.oneHotDefault;
   }

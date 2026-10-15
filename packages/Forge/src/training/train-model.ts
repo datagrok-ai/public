@@ -1,7 +1,9 @@
 import * as DG from 'datagrok-api/dg';
+import {randomInt} from '@datagrok-libraries/utils/src/random';
 import {applicableEngines, EngineFailure} from '../engines/applicable-engines';
 import {selectBestEngine} from '../engines/best-engine';
-import {Engine, Hyperparameters} from '../engines/engine';
+import {Engine, Hyperparameters, isComplete} from '../engines/engine';
+import {EngineRegistry} from '../engines/engine-registry';
 import {apply, isInteractive, LoopProgress, train, yieldToEventLoop} from '../engines/engine-calls';
 import {ForgeError} from '../forge-error';
 import {ModelTask} from '../generated/db';
@@ -98,6 +100,10 @@ export interface SelectionCheck {
   insights: Insight[];
 }
 
+/** The method a training starts with when it is installed; the check then suggests one for the data. */
+const PREFERRED_ENGINE = 'XGBoost';
+export const FOLDS = 5;
+export const MAX_SEED = 2 ** 31 - 1;
 const NUMERICAL = DG.COLUMN_TYPE_FILTER.NUMERICAL_NO_DATE_TIME;
 const NO_METHOD = 'No method can learn from this selection. Check the features and the target.';
 const NO_FEATURE_LEFT = 'Skip unique categories leaves no feature. Check more features.';
@@ -151,6 +157,25 @@ function noProblems(): TrainingProblems {
 /** A target or features rule fails: no method is asked. */
 export function hasDataProblems(problems: TrainingProblems): boolean {
   return problems.target.length > 0 || problems.features.length > 0;
+}
+
+/** Every message of [problems]: the target, the features, the missing values, the method. */
+export function problemMessages({target, features, missingValues, method}: TrainingProblems): string[] {
+  return [...target, ...features, ...missingValues, ...method];
+}
+
+/** The complete methods in discovery order, and the one a training starts with. */
+export function trainingEngines(): {engines: Engine[]; engine: Engine} {
+  const engines = EngineRegistry.discover().filter(isComplete);
+  const engine = engines.find((e) => e.name === PREFERRED_ENGINE) ?? engines[0];
+  if (engine === undefined)
+    throw new ForgeError('No machine learning method is installed. Install the EDA package.');
+  return {engines, engine};
+}
+
+/** A seed for a training that is given none. */
+export function randomSeed(): number {
+  return randomInt(MAX_SEED + 1);
 }
 
 /** Live retraining is on for [engine] and it says it is interactive on this data. */

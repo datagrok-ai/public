@@ -1,16 +1,16 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
+import {delay, expect, expectArray, expectFloat} from '@datagrok-libraries/test/src/test';
 import {defaultHyperparameters, Engine} from '../engines/engine';
 import {EngineRegistry} from '../engines/engine-registry';
-import {forgeDb, ModelInsert} from '../generated/db';
+import {forgeDb, ModelInsert, TrainingRunRow} from '../generated/db';
 import {METRIC_IDS, MetricValues} from '../metrics/metrics';
 import {MissingValuesSettings} from '../preparation/missing-values';
 import {DEFAULT_CUTOFF, PreparationSteps} from '../preparation/pipeline';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {datasetFingerprint} from '../storage/dataset-fingerprint';
 import {ModelFields, modelFieldsOf} from '../storage/model-fields';
-import {saveModel} from '../storage/model-store';
+import {deleteModel, saveModel} from '../storage/model-store';
 import {prepareTraining, TrainingRequest, TrainingResult, TrainingSelection, trainModel}
   from '../training/train-model';
 
@@ -36,6 +36,49 @@ export function engineByName(engines: Engine[], name: string): Engine {
 /** [names] among the [discovered] engines, in discovery order. */
 export function inDiscoveryOrder(discovered: Engine[], names: string[]): string[] {
   return discovered.map((e) => e.name).filter((name) => names.includes(name));
+}
+
+/** The open balloon that contains [text], or null. */
+export function balloonWith(text: string): HTMLElement | null {
+  return Array.from(document.querySelectorAll<HTMLElement>('.d4-balloon'))
+    .find((b) => (b.textContent ?? '').includes(text)) ?? null;
+}
+
+/** Reads [read] every 100 ms until [done] holds of what it read or 5 s pass; the last reading. */
+export async function readUntil<T>(read: () => Promise<T> | T, done: (value: T) => boolean): Promise<T> {
+  let value = await read();
+  for (let i = 0; i < 50 && !done(value); i++) {
+    await delay(100);
+    value = await read();
+  }
+  return value;
+}
+
+/** The task-bar entry whose text includes [text], or undefined. */
+export const taskBarEntry = (text: string) => Array.from(document.querySelectorAll('.d4-task-bar-entry'))
+  .find((e) => (e.textContent ?? '').includes(text));
+
+/** Clicks the cancel icon of the task-bar [entry], as the user does. */
+export function cancelTaskBarEntry(entry: Element | undefined): void {
+  const cancel = entry?.querySelector('.fa-times');
+  if (!(cancel instanceof HTMLElement) || !cancel.isConnected)
+    throw new Error('No task-bar entry to cancel');
+  cancel.click();
+}
+
+/** The training runs recorded for [tables] (frames or their names). */
+export async function runsOf(tables: (DG.DataFrame | string)[]): Promise<TrainingRunRow[]> {
+  return await forgeDb.trainingRuns.query().where('dataset_name', '=',
+    tables.map((t) => typeof t === 'string' ? t : t.name));
+}
+
+export async function deleteRunsOf(tables: (DG.DataFrame | string)[]): Promise<void> {
+  await Promise.all((await runsOf(tables)).map((run) => forgeDb.trainingRuns.delete(run.id)));
+}
+
+/** Deletes every model named [name] (a test's `finally` after a save that should not have happened). */
+export async function deleteModelsNamed(name: string): Promise<void> {
+  await Promise.all((await forgeDb.models.query().where('name', '=', name)).map((model) => deleteModel(model.id)));
 }
 
 /** A model row without a model file: an XGBoost classifier of Species, no data stored, unless [fields] differ. */

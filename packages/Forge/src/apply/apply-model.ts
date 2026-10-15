@@ -5,12 +5,12 @@ import {Engine, isComplete} from '../engines/engine';
 import {apply, LoopProgress, yieldToEventLoop} from '../engines/engine-calls';
 import {EngineRegistry} from '../engines/engine-registry';
 import {errorMessage, ForgeError} from '../forge-error';
-import {ApplicationInsert, ApplicationSource, forgeDb, ModelRow} from '../generated/db';
+import {ApplicationInsert, ApplicationSource, ModelRow} from '../generated/db';
 import {MissingValuesSettings, prepareMissingValues} from '../preparation/missing-values';
 import {isRecord, PreparationOptions, preparationOptionsOf, stringsOf} from '../preparation/preparation-options';
 import {replayPostprocessing, replayPreprocessing} from '../preparation/pipeline';
 import {rowCopy} from '../preparation/row-copy';
-import {ownBlob, UUID} from '../storage/model-store';
+import {findModelRow, ownBlob} from '../storage/model-store';
 import {ColumnSchema, TargetSchema} from '../training/train-model';
 import {recordApplication} from './application-store';
 import {ColumnMapping, exactMapping, MappingProblem, mappingProblems} from './column-matching';
@@ -59,19 +59,9 @@ export interface RowPredictions {
   blob: Uint8Array;
 }
 
-const MODEL_ID = new RegExp(`^${UUID}$`, 'i');
-
 /** The model with the id or the unique name [idOrName], ready to apply. */
 export async function loadModel(idOrName: string): Promise<LoadedModel> {
-  const rows: ApplyModelRow[] = await forgeDb.models.query()
-    .where(MODEL_ID.test(idOrName) ? 'id' : 'name', '=', idOrName)
-    .select(...APPLY_COLUMNS)
-    .top(2);
-  if (rows.length === 0)
-    throw new ForgeError(`No Forge model '${idOrName}' is available to you.`);
-  if (rows.length > 1)
-    throw new ForgeError(`Several models are named '${idOrName}'. Use the model id.`);
-  return loadedModelOf(rows[0], EngineRegistry.discover());
+  return loadedModelOf(await findModelRow(idOrName, APPLY_COLUMNS), EngineRegistry.discover());
 }
 
 /** {@link loadModel} for a row already read, with the engines already discovered. */

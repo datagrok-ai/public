@@ -1,5 +1,5 @@
 import {Engine, hasTrainingRows} from '../engines/engine';
-import {ModelInsert, TrainingRunInsert, TrainingRunStatus} from '../generated/db';
+import {ModelInsert, TrainingRunInsert, TrainingRunSource, TrainingRunStatus} from '../generated/db';
 import {PreparationOptions} from '../preparation/preparation-options';
 import {FeaturesSchema, MetricsRecord, Splitting, TargetSchema, TrainingRequest, TrainingResult, trainingSetupOf}
   from '../training/train-model';
@@ -7,6 +7,9 @@ import {DatasetFingerprint} from './dataset-fingerprint';
 import {DatasetRef} from './dataset-ref';
 
 type JsonColumn = 'target' | 'features' | 'options' | 'metrics' | 'splitting' | 'dataset_fingerprint' | 'dataset_ref';
+
+/** Why a blank model name is refused, in the Save and Edit dialogs and in `Forge:trainModel`. */
+export const NO_NAME = 'Enter a name for the model.';
 
 export type ModelFields = Omit<ModelInsert, JsonColumn> & {
   target: TargetSchema;
@@ -20,6 +23,8 @@ export type ModelFields = Omit<ModelInsert, JsonColumn> & {
 
 /** What a model keeps of its training data: only the fingerprint, a link to the source, or an uploaded copy. */
 export type ModelStorage = {mode: 'none'} | {mode: 'reference'; ref: DatasetRef} | {mode: 'copy'; tableId: string};
+/** The **Data storage** chosen for a save; `reference` carries the table's origin, `copy` is uploaded on save. */
+export type StorageChoice = {mode: 'none' | 'copy'} | {mode: 'reference'; ref: DatasetRef};
 
 export type TrainingRunRecord = Omit<TrainingRunInsert, JsonColumn> & {
   features: FeaturesSchema;
@@ -58,8 +63,8 @@ export function modelFieldsOf(input: {name: string; description: string; tags: s
 }
 
 export function trainingRunOf(input: {request: TrainingRequest; datasetName: string; fingerprint: DatasetFingerprint;
-  status: TrainingRunStatus; startedOn: string; durationMs: number; metrics?: MetricsRecord;
-  error?: string}): TrainingRunRecord {
+  status: TrainingRunStatus; source: TrainingRunSource; startedOn: string; durationMs: number;
+  metrics?: MetricsRecord; error?: string}): TrainingRunRecord {
   const {request} = input;
   const setup = trainingSetupOf(request);
   return {
@@ -76,6 +81,7 @@ export function trainingRunOf(input: {request: TrainingRequest; datasetName: str
     row_count: request.target.length,
     dataset_fingerprint: input.fingerprint,
     status: input.status,
+    source: input.source,
     error: input.error,
     started_on: input.startedOn,
     duration_ms: input.durationMs,

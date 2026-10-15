@@ -2218,6 +2218,16 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 6.6.7
+    devDependencies:
+      '@datagrok-libraries/bdd':
+        specifier: workspace:^
+        version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.62.1
+        version: 1.63.0
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.2
 
   packages/GIS:
     dependencies:
