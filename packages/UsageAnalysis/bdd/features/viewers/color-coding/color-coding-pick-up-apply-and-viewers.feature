@@ -2,11 +2,12 @@
 Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring kept by the viewers around it
   On demog-1000. The header menu's Apply Coloring is disabled until a coloring has been picked up;
   Pick Up Coloring on RACE, coloured with colours of its own, and Apply Coloring on a copy of it give
-  the copy those colours, not the default palette. A heat map added to the view leaves the grid's colour coding as it was (public#3043).
-  Categorical colours set on the grid column are the colours a scatter plot's legend paints its
-  categories in (public#1929). Translated from the closed tickets public#3043, public#1929,
-  GROK-17058 and the help's "Pick Up / Apply Coloring"; `color-coding.feature` copies a coloring by
-  its tags, this feature does it through the menu a person uses.
+  the copy those colours, not the default palette. A heat map added to the view leaves the grid's
+  coloring as it was (public#3043). Categorical colours set on the grid column are the colours a
+  scatter plot's legend paints its categories in (public#1929). Translated from the closed tickets
+  public#3043, public#1929, GROK-17058 and the help's "Pick Up / Apply Coloring";
+  `color-coding.feature` copies a coloring by its tags, this feature does it through the menu a
+  person uses.
 
   Not translated: the legend's own picker, its Cancel and a second pick (github-3132) are
   `legend/legend-across-viewers.feature`; a conditional coloring's legend is
@@ -69,6 +70,7 @@ Feature: Pick Up / Apply Coloring from the header menu, and a column's coloring 
     When user picks "Color Coding > Off" from the context menu of the "header AGE" area of grid
     And user picks "Color Coding > Off" from the context menu of the "header SEX" area of grid
     Then "AGE" column should have no color coding
+    And "SEX" column should have no color coding
     And no errors should have been logged
 
   Scenario: The categorical colours set on the grid column are the scatter plot legend's
