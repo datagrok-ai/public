@@ -2,6 +2,7 @@
 
 ## v.next
 
+* GROK-21087: Read rows without a backing item as empty and create the item on edit
 * GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
 
 ## 1.10.3 (WIP)
