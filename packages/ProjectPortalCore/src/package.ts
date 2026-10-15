@@ -72,10 +72,8 @@ import {pinnedFrame, pinnedTiles} from './pinned-programs';
 import {MyProgramsWidget} from './views/my-programs-widget';
 export * from './package.g';
 
-// the skins of everything the u2 domain stack renders
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
-import '@datagrok-libraries/u2/css/message-input.css';
-import '@datagrok-libraries/u2/css/card.css';
+// every skin u2 ships, tokens first (the domain stack's bundle moved to @datagrok-libraries/ems)
+import '@datagrok-libraries/u2/css/all.css';
 import {newestFirstBy} from './model/time';
 import {seedExamples as seedExampleHistory} from './examples';
 import {askSme as askExpert, discussionFrame, discussionOf, postToProgram, resolveAnchor, smeContextOf} from './discussion';
