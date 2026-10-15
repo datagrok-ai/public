@@ -50,17 +50,17 @@ test('Bio cell-context actions + Context Pane info panels + custom editors', asy
       ['Bio:monomerInfoPanel'],
       ['Bio:addCopyMenu'],
     ];
-    const findAny = (names: string[]): boolean => {
+    const findAny = async (names: string[]): Promise<boolean> => {
       for (const n of names) {
         try {
-          if ((grok as any).functions.find && (grok as any).functions.find(n)) return true;
+          if (await (grok as any).functions.find(n)) return true;
         } catch {  }
       }
       return false;
     };
     const deadline = Date.now() + 15_000;
     while (Date.now() < deadline) {
-      if (candidates.every(findAny)) return;
+      if ((await Promise.all(candidates.map(findAny))).every(Boolean)) return;
       await new Promise((r) => setTimeout(r, 300));
     }
     await new Promise((r) => setTimeout(r, 1500));
