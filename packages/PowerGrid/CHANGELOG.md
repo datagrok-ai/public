@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#644](https://github.com/datagrok-ai/core/issues/644): Skip rendering the Forms viewer while it has no table
 * [core#656](https://github.com/datagrok-ai/core/issues/656): Migrate legacy pie chart subsectors without functionType when reading settings
 * Scatter plot: Made hovering a GPU-drawn plot cheaper: the check the core runs on every mouse move reads only what it needs and no longer rebuilds the viewer's info map, and hit tests answer for the frame on screen without re-reading the plot (about 40% less PowerGrid time per mouse move)
 * Scatter plot: Added an opt-in debug log of the GPU renderers (`localStorage.setItem('PowerGrid.scatterPlotDebug', '1')`): the engine and GPU in use, time per frame by step, GPU completion, hit tests, input-to-view lag, the main thread's long frames by script, and why a plot stays on the CPU
