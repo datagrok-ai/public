@@ -22,6 +22,7 @@ import './tests/oligo-renderer-tests';
 import './tests/oligo-linkers-tests';
 import './tests/oligo-cell-editor-tests';
 import './tests/pattern-bulk-translate-tests';
+import './tests/package-init-tests';
 
 import {OligoToolkitTestPackage} from './tests/utils';
 
