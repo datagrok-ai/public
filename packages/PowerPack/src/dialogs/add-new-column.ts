@@ -1850,7 +1850,8 @@ export class AddNewColumnDialog {
       }
       potentialColIds[potentialColIds.length] = args.columns[0].name;
       const mappedTypes = VALIDATION_TYPES_MAPPING[colType] ?? [];
-      this.error = colType !== 'auto' &&
+      // any result converts to a string column
+      this.error = colType !== 'auto' && colType !== DG.COLUMN_TYPE.STRING &&
        args.columns[0].type !== colType && !mappedTypes.includes(args.columns[0].type) ?
         this.typeMismatchError(args.columns[0].type, colType) : '';
     });
