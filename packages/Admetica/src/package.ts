@@ -104,6 +104,7 @@ export class PackageFunctions {
     'friendlyName': 'Admetica',
     'description': 'Predicts ADMET properties and appends result columns.',
     'top-menu': 'Chem | Admetica | Calculate...',
+    'requiresTableView': true,
     'editor': 'Admetica:AdmeticaEditor',
   })
   static async admeticaMenu(

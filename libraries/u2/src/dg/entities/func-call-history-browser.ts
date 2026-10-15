@@ -143,13 +143,13 @@ export class FuncCallHistoryBrowser extends Control {
       this.fireEvent('change', call);
     });
 
-    this._listen(this._list.root, 'dblclick', (e) => {
+    this.scope.listen(this._list.root, 'dblclick', (e) => {
       const target = e.target as Element | null;
       const row = target?.closest('.u2-list-row') as HTMLElement | null;
       if (row)
         this._activate(this._pager.items.peek()[Number(row.dataset.index)]);
     });
-    this._listen(this._list.root, 'keydown', (e) => {
+    this.scope.listen(this._list.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key === 'Enter')
         this._activate(this.selected.peek() ?? undefined);
     });
@@ -255,11 +255,6 @@ export class FuncCallHistoryBrowser extends Control {
     if (custom)
       return custom(call, row);
     return div([this._renderer.listItem(call)], 'u2-fch-row');
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }
 

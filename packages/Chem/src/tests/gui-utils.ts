@@ -63,18 +63,6 @@ export function setDialogInputValue(dialogTitle:string, inputName:string,
     returnDialog(dialogTitle)!.input(inputName).value = value;
 }
 
-export async function uploadProject(projectName:string, tableInfo:DG.TableInfo,
-  view:DG.TableView, df:DG.DataFrame):Promise<void> {
-  const project = DG.Project.create();
-  project.name = projectName;
-  project.addChild(tableInfo);
-  project.addChild(view.saveLayout());
-  await grok.dapi.layouts.save(view.saveLayout());
-  await grok.dapi.tables.uploadDataFrame(df);
-  await grok.dapi.tables.save(tableInfo);
-  await grok.dapi.projects.save(project);
-}
-
 export function findViewer(viewerName:string, view:DG.TableView):DG.Viewer | undefined {
   let viewer:DG.Viewer;
   for (let i:number = 0; i < Array.from(view.viewers).length; i++) {

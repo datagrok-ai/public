@@ -223,6 +223,7 @@ export function getRegion(sequence: DG.Column<any>, start?: string, end?: string
 //input: string end { optional: true; description: Region end position name }
 //input: string name { optional: true; description: Region column name }
 //top-menu: Bio | Calculate | Extract Region...
+//meta.requiresTableView: true
 //editor: Bio:GetRegionEditor
 export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column, start?: string, end?: string, name?: string) : Promise<void> {
   await PackageFunctions.getRegionTopMenu(table, sequence, start, end, name);
@@ -231,6 +232,7 @@ export async function getRegionTopMenu(table: DG.DataFrame, sequence: DG.Column,
 //name: Apply Numbering Scheme
 //description: Assigns antibody numbering (IMGT/Kabat/Chothia/AHo)
 //top-menu: Bio | Annotate | Apply Numbering Scheme...
+//meta.requiresSemType: Macromolecule
 export function applyNumberingScheme() : void {
   PackageFunctions.applyNumberingScheme();
 }
@@ -238,6 +240,7 @@ export function applyNumberingScheme() : void {
 //name: Scan Liabilities
 //description: Scans macromolecule sequences for deamidation, oxidation, and other liabilities
 //top-menu: Bio | Annotate | Scan Liabilities...
+//meta.requiresSemType: Macromolecule
 export function scanLiabilities() : void {
   PackageFunctions.scanLiabilities();
 }
@@ -245,6 +248,7 @@ export function scanLiabilities() : void {
 //name: Manage Annotations
 //description: View and manage sequence annotations on macromolecule columns
 //top-menu: Bio | Annotate | Manage Annotations...
+//meta.requiresSemType: Macromolecule
 export function manageAnnotations() : void {
   PackageFunctions.manageAnnotations();
 }
@@ -270,6 +274,8 @@ export function sequenceColumnInput(name: string, options: any) : any {
 //input: object options { optional: true }
 //input: bool demo { optional: true }
 //top-menu: Bio | Analyze | Activity Cliffs...
+//meta.requiresTableView: true
+//meta.requiresSemType: Macromolecule
 //editor: Bio:SeqActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column<any>, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, demo?: boolean) : Promise<any> {
   return await PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, demo);
@@ -335,6 +341,7 @@ export async function helmPreprocessingFunction(col: DG.Column<any>, _metric: an
 //input: bool isDemo { optional: true }
 //output: viewer result
 //top-menu: Bio | Analyze | Sequence Space...
+//meta.requiresTableView: true
 //editor: Bio:SequenceSpaceEditor
 export async function sequenceSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, preprocessingFunction?: any, options?: any, clusterEmbeddings?: boolean, isDemo?: boolean) : Promise<any> {
   return await PackageFunctions.sequenceSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, preprocessingFunction, options, clusterEmbeddings, isDemo);
@@ -424,6 +431,7 @@ export async function sequence3dStructureWidget(sequence: DG.SemanticValue) : Pr
 //meta.domain: bio
 //meta.role: panel
 //top-menu: Bio | Analyze | MSA...
+//meta.requiresSemType: Macromolecule
 export function multipleSequenceAlignmentDialog() : void {
   PackageFunctions.multipleSequenceAlignmentDialog();
 }
@@ -465,6 +473,7 @@ export async function immunumAntibodyNumbering(df: DG.DataFrame, seqCol: DG.Colu
 //name: Compare Sequences
 //description: Builds a MacromoleculeDifference column from two sequence columns (seq1#seq2)
 //top-menu: Bio | Analyze | Compare sequences...
+//meta.requiresSemType: Macromolecule
 export function compareSequences() : void {
   PackageFunctions.compareSequences();
 }
@@ -474,6 +483,7 @@ export function compareSequences() : void {
 //output: viewer result
 //meta.icon: files/icons/composition-analysis.svg
 //top-menu: Bio | Analyze | Composition
+//meta.requiresSemType: Macromolecule
 export async function compositionAnalysis() {
   return await PackageFunctions.compositionAnalysis();
 }
@@ -499,6 +509,7 @@ export function importBam(fileContent: string) : any {
 }
 
 //top-menu: Bio | Transform | Convert Sequence Notation...
+//meta.requiresSemType: Macromolecule
 export function convertDialog() : void {
   PackageFunctions.convertDialog();
 }
@@ -643,6 +654,7 @@ export function similaritySearchViewer() : any {
 //description: Finds similar sequences
 //output: viewer result
 //top-menu: Bio | Search | Similarity Search
+//meta.requiresSemType: Macromolecule
 export function similaritySearchTopMenu() {
   return PackageFunctions.similaritySearchTopMenu();
 }
@@ -660,6 +672,7 @@ export function diversitySearchViewer() : any {
 //description: Finds the most diverse sequences
 //output: viewer result
 //top-menu: Bio | Search | Diversity Search
+//meta.requiresSemType: Macromolecule
 export function diversitySearchTopMenu() {
   return PackageFunctions.diversitySearchTopMenu();
 }
@@ -673,7 +686,7 @@ export function searchSubsequenceEditor(call: DG.FuncCall) : void {
 }
 
 //name: Subsequence Search
-//input: column macromolecules 
+//input: column macromolecules { semType: Macromolecule }
 //top-menu: Bio | Search | Subsequence Search ...
 //editor: Bio:SearchSubsequenceEditor
 export function SubsequenceSearchTopMenu(macromolecules: DG.Column) : void {

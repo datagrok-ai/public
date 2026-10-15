@@ -15,6 +15,7 @@ import {filesPage, dataframesPage, entitiesPage, spacesPage, moleculesPage, brid
   from './pages/platform';
 import {msaWorkbenchPage} from './pages/msa-workbench';
 import {filtersPage} from './pages/filters';
+import {catalogPage} from './pages/catalog';
 import {SRC_ROOT} from './const';
 
 export interface SourceRef {
@@ -188,6 +189,11 @@ export const DEMO_TREE: DemoGroup[] = [
       description: 'A small app the behavioral tests in libraries/bdd drive: toolbar, form, dialog, tabs, list',
       build: () => msaWorkbenchPage(),
       source: {file: `${SRC_ROOT}/pages/msa-workbench.ts`, symbol: 'msaWorkbenchPage'}},
+    {id: 'catalog', label: 'Catalog',
+      description: 'Every registered u2 component in each state it can be put in, generated from the registry — ' +
+        'the BDD suite walks it',
+      build: () => catalogPage(),
+      source: {file: `${SRC_ROOT}/pages/catalog.ts`, symbol: 'catalogPage'}},
   ]),
 ];
 
@@ -201,10 +207,21 @@ export function leafById(id: string): DemoLeaf | undefined {
 }
 
 /** Resolves the tail of `/apps/U2demo/U2Demo/...` — leaf ids are globally unique, so the last
- * segment decides: `/forms/funcs` and `/funcs` both land on Functions. */
+ * segment decides, by id and then by label: `/forms/funcs`, `/funcs` and `/Functions` all land on
+ * Functions, `/Sections%20%26%20wizard` on Sections & wizard. */
 export function leafForPath(path: string | undefined): DemoLeaf | undefined {
   const segments = (path ?? '').split('?')[0].split('/').filter((s) => s !== '');
-  return segments.length === 0 ? undefined : leafById(segments[segments.length - 1]);
+  if (segments.length === 0)
+    return undefined;
+  let last = segments[segments.length - 1];
+  try {
+    last = decodeURIComponent(last);
+  }
+  catch {
+    // a stray % in a typed URL keeps the segment as it is
+  }
+  const label = last.trim().toLowerCase();
+  return leafById(last) ?? DEMO_TREE.flatMap((g) => g.children).find((l) => l.label.toLowerCase() === label);
 }
 
 export function pathOf(leaf: DemoLeaf): string {

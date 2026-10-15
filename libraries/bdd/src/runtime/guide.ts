@@ -13,11 +13,12 @@ export interface GuideBox {
   height: number;
 }
 
-/** What the pointer did, in the page's CSS pixels — the screenshots' pixels. */
+/** What the pointer did, in the page's CSS pixels (the screenshots' pixels times the manifest's `scale`). */
 export interface GuidePointer {
   /** `move`: where the pointer came to rest, or with `held` a point of a drag; `down` and `up`: a
-   * button pressed or released there. */
-  type: 'move' | 'down' | 'up';
+   * button pressed or released there; `still`: a picture of the page while the step went on (text
+   * being typed, a wheel notch), the pointer where it was. */
+  type: 'move' | 'down' | 'up' | 'still';
   x: number;
   y: number;
   button?: 'left' | 'middle' | 'right';
@@ -34,6 +35,8 @@ export interface GuidePointer {
 export type GuideStepKind = 'action' | 'check' | 'setup';
 
 const DRAG_SHOTS = 8;
+/** At most this many pictures of one typing or one wheel turn. */
+const BEATS = 6;
 
 /** A stop of a step: the page as the pointer set off for it, the element lit there, and what the
  * pointer did at it. A step has one stop, or one per stop of a path it walked (a menu's group, each
@@ -69,6 +72,10 @@ export interface GuideManifest {
   description: string;
   tags: string[];
   viewport: {width: number; height: number} | null;
+  /** Screenshot pixels per CSS pixel: a small window is filmed at twice its density. */
+  scale: number;
+  /** The part of the page the video shows (`frameTo`): every picture is cut to it. */
+  frame?: GuideBox;
   steps: GuideStep[];
 }
 
@@ -84,8 +91,11 @@ interface Recording {
   /** What the pointer did since the last stop. */
   pending: GuidePointer[];
   dragShots: number;
+  beats: number;
   silent: boolean;
-  open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; started: number; before: string};
+  /** The step aimed at a hit area (`locatedArea`): finer than the viewer a later read of it locates. */
+  area?: boolean;
+  open?: {index: number; line: number; keyword: string; text: string; table?: string[][]; caption?: string; started: number; before: string};
 }
 
 const recordings = new WeakMap<Page, Recording>();
@@ -93,6 +103,11 @@ const attached = new WeakSet<Page>();
 
 export function guideDir(): string | undefined {
   return process.env.BDD_GUIDE || undefined;
+}
+
+/** A help-page GIF (`grok-bdd guide --help-mode`): the bare shell, no captions, no set-up. */
+export function helpMode(): boolean {
+  return !!guideDir() && !!process.env.BDD_GUIDE_HELP;
 }
 
 /** A guide films the full shell — the menus, view tabs and panels as a person has them; a test
@@ -279,12 +294,70 @@ async function drain(page: Page): Promise<GuidePointer[]> {
   }).catch(() => []);
 }
 
+/** A picture of the page in the middle of the step — the text typed so far, the list after a wheel
+ * notch — shown where the pointer is when it was taken. */
+async function beat(page: Page, r: Recording): Promise<void> {
+  r.pending.push(...await drain(page));
+  await page.evaluate(() => new Promise<void>((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve())))).catch(() => undefined);
+  const last = [...r.pending, ...r.legs.flatMap((l) => l.pointer)].reverse().find((p) => p.type !== 'still');
+  r.pending.push({type: 'still', x: last?.x ?? 0, y: last?.y ?? 0,
+    shot: await shot(page, r.dir, `${String(r.open!.index).padStart(2, '0')}-beat${++r.beats}.png`)});
+}
+
+/** The text in a few pieces, a picture after each: typing shows as it goes, not all at once. */
+function pieces(text: string): string[] {
+  const size = Math.max(1, Math.ceil(text.length / BEATS));
+  const out: string[] = [];
+  for (let i = 0; i < text.length; i += size)
+    out.push(text.slice(i, i + size));
+  return out;
+}
+
+/** A locator's typing goes past `page.keyboard`: its `fill` and `pressSequentially` are wrapped once
+ * for every page, and do what they did whenever the page is not being filmed. */
+let locatorWrapped = false;
+function wrapLocatorTyping(loc: Locator): void {
+  if (locatorWrapped)
+    return;
+  locatorWrapped = true;
+  const proto = Object.getPrototypeOf(loc);
+  const fill = proto.fill;
+  const pressSequentially = proto.pressSequentially;
+  const filming = (l: Locator): Recording | undefined => {
+    const r = recordings.get(l.page());
+    return r?.open && !r.silent ? r : undefined;
+  };
+  proto.fill = async function(this: Locator, value: string, options?: unknown) {
+    const r = filming(this);
+    if (!r || !value)
+      return fill.call(this, value, options);
+    let typed = '';
+    for (const piece of pieces(value)) {
+      typed += piece;
+      await fill.call(this, typed, options);
+      await beat(this.page(), r);
+    }
+  };
+  proto.pressSequentially = async function(this: Locator, text: string, options?: unknown) {
+    const r = filming(this);
+    if (!r)
+      return pressSequentially.call(this, text, options);
+    for (const piece of pieces(text)) {
+      await pressSequentially.call(this, piece, options);
+      await beat(this.page(), r);
+    }
+  };
+}
+
 /** The pointer is followed in the page, whatever runtime path drives it (a gesture, a menu walk, a
- * viewer hit area, a locator's own click). The page's `mouse` is wrapped only to picture drags. */
+ * viewer hit area, a locator's own click). The page's `mouse` is wrapped to picture drags and wheel
+ * notches, and the typing to picture the text as it goes in. */
 export async function attach(page: Page): Promise<void> {
   if (!guideDir() || attached.has(page))
     return;
   attached.add(page);
+  wrapLocatorTyping(page.locator('body'));
   await page.addInitScript(capturePointer);
   await page.evaluate(capturePointer).catch(() => undefined);
   const rec = (): Recording | undefined => recordings.get(page);
@@ -302,7 +375,7 @@ export async function attach(page: Page): Promise<void> {
     r.pending.push(...await drain(page));
     const last = [...r.pending].reverse().find((p) => p.type !== 'up');
     const from = last ?? {x, y};
-    const legs = Math.min(3, Math.max(1, Math.round(Math.hypot(x - from.x, y - from.y) / 120)));
+    const legs = Math.min(DRAG_SHOTS - r.dragShots, Math.max(2, Math.round(Math.hypot(x - from.x, y - from.y) / 60)));
     for (let i = 1; i <= legs; i++) {
       const at = {x: from.x + (x - from.x) * i / legs, y: from.y + (y - from.y) * i / legs};
       await move(at.x, at.y, {steps: 4});
@@ -314,6 +387,17 @@ export async function attach(page: Page): Promise<void> {
         reached.shot = name;
       else
         r.pending.push({type: 'move', x: at.x, y: at.y, held: true, shot: name});
+    }
+  };
+  const wheel = mouse.wheel.bind(mouse);
+  mouse.wheel = async (dx: number, dy: number) => {
+    const r = rec();
+    const notches = Math.min(BEATS, Math.round(Math.max(Math.abs(dx), Math.abs(dy)) / 100));
+    if (!r?.open || r.silent || notches < 2)
+      return wheel(dx, dy);
+    for (let i = 0; i < notches; i++) {
+      await wheel(dx / notches, dy / notches);
+      await beat(page, r);
     }
   };
   mouse.down = async (options?: unknown) => {
@@ -332,11 +416,21 @@ export async function attach(page: Page): Promise<void> {
     rec()?.keys.push(key);
     return press(key, options);
   };
+  // a native select finds an option by the keys typed within a second: only a text field is pictured as it fills
+  const intoText = (): Promise<boolean> => page.evaluate(() => {
+    const e = document.activeElement as HTMLElement | null;
+    return !!e && (e.tagName === 'INPUT' || e.tagName === 'TEXTAREA' || e.isContentEditable);
+  }).catch(() => false);
   keyboard.type = async (text: string, options?: unknown) => {
     const r = rec();
     if (r)
       r.typed += text;
-    return type(text, options);
+    if (!r?.open || r.silent || !await intoText())
+      return type(text, options);
+    for (const piece of pieces(text)) {
+      await type(piece, options);
+      await beat(page, r);
+    }
   };
   keyboard.insertText = async (text: string) => {
     const r = rec();
@@ -351,10 +445,38 @@ export async function attach(page: Page): Promise<void> {
  * end (a menu item that the click closed is read by then, an element that appears later is not). */
 export async function located(page: Page, loc: Locator): Promise<void> {
   const r = recordings.get(page);
-  if (!r || !r.open)
+  // an area the step aims at stays lit: the viewer located after it (a settle) is its scope
+  if (!r || !r.open || r.area)
     return;
   r.located = loc;
   r.target = await loc.first().boundingBox({timeout: 200}).catch(() => null);
+}
+
+/** The step acts on a place inside the element it located — a hit area of a viewer or a widget (an
+ * atom of a sketcher, a grid cell): that place is lit, not the element round it, and a small one is
+ * zoomed into as an icon is. */
+export function locatedArea(page: Page, box: GuideBox): void {
+  const r = recordings.get(page);
+  if (!r || !r.open)
+    return;
+  r.located = undefined;
+  r.target = box;
+  r.area = true;
+}
+
+/** The video shows this part of the page only (a sketcher's dialog, for a guide about the sketcher):
+ * set by a set-up step, it holds for the scenario, and every picture is cut to it — the box grown by
+ * `margin` and kept on the page. */
+export function frameTo(page: Page, box: GuideBox, margin = 16): void {
+  const r = recordings.get(page);
+  if (!r || !r.open)
+    return;
+  const view = page.viewportSize() ?? {width: Infinity, height: Infinity};
+  const x = Math.max(0, Math.floor(box.x - margin));
+  const y = Math.max(0, Math.floor(box.y - margin));
+  const right = Math.min(view.width, Math.ceil(box.x + box.width + margin));
+  const bottom = Math.min(view.height, Math.ceil(box.y + box.height + margin));
+  r.manifest.frame = {x, y, width: (right - x) & ~1, height: (bottom - y) & ~1};
 }
 
 /** A stop on the path the step walks: the page as it is now (a menu opened by the stop before)
@@ -418,8 +540,9 @@ function recordingFor(page: Page, info: TestInfo): Recording {
   mkdirSync(dir, {recursive: true});
   const viewport = page.viewportSize();
   const manifest: GuideManifest =
-    {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport, steps: []};
-  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, silent: false};
+    {feature: featureName, scenario: scenarioName, description: '', tags: info.tags, viewport,
+      scale: info.project.use.deviceScaleFactor ?? 1, steps: []};
+  r = {dir, manifest, lastType: 'Given', keys: [], typed: '', legs: [], pending: [], dragShots: 0, beats: 0, silent: false};
   recordings.set(page, r);
   return r;
 }
@@ -431,7 +554,8 @@ async function shot(page: Page, dir: string, name: string): Promise<string> {
 
 /** Opens a step: the page as it is before the step, for the picture the pointer moves over. A step
  * before the page exists (the login) is recorded without pictures. */
-export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string, table?: string[][]): Promise<void> {
+export async function begin(page: Page | undefined, info: TestInfo, line: number, title: string, table?: string[][],
+  caption?: string): Promise<void> {
   if (!guideDir() || !page || page.isClosed())
     return;
   const r = recordingFor(page, info);
@@ -447,8 +571,10 @@ export async function begin(page: Page | undefined, info: TestInfo, line: number
   r.legs = [];
   r.pending = [];
   r.dragShots = 0;
+  r.beats = 0;
   r.silent = false;
-  r.open = {index, line, keyword, text, table, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
+  r.area = false;
+  r.open = {index, line, keyword, text, table, caption, started: Date.now(), before: await shot(page, r.dir, `${stem}-before.png`)};
 }
 
 /** Closes the step: waits for the platform to settle, takes the "after" picture, resolves the
@@ -484,12 +610,12 @@ export async function end(page: Page | undefined): Promise<void> {
   const acted = !!target || r.legs.some((l) => l.pointer.length > 0) || r.keys.length > 0 || r.typed.length > 0;
   // every step a reader would take is in the guide, a table opened through the API included (the
   // page after it is the point); left out are the login, a step that changed nothing on the page,
-  // and a check or a wait a person has no use for
-  const hidden = r.silent || ((type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
+  // and a check or a wait a person has no use for — unless the feature gave it a caption to show
+  const hidden = r.silent || (!open.caption && (type === 'Then' || type === 'Given') && hiddenInGuide(open.text));
   const kind: GuideStepKind = hidden ? 'setup' : type === 'Then' ? 'check' :
     acted || !sameFile(r.dir, open.before, after) ? 'action' : 'setup';
   r.manifest.steps.push({index: open.index, line: open.line, keyword: open.keyword, text: open.text,
-    caption: captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
+    caption: open.caption ?? captionOf(open.text, kind, open.table), kind, before: open.before, after, target, legs: r.legs,
     keys: r.keys, typed: r.typed, ms: Date.now() - open.started});
   writeFileSync(join(r.dir, 'steps.json'), JSON.stringify(r.manifest, null, 2));
 }

@@ -21,7 +21,9 @@ Feature: The panel's criterion composes with the viewers
   and Show Filters are set as properties and read back, not picked from their context menus; the
   histogram lets go by a double-click on its slider (dev restores the full range that way, which the
   md says it does not) and the PC plot by Reset View; the GROK-16713 redraw is the panel's canvases
-  changing across the command after they held still across the moment before it.
+  changing across the command after they held still across the moment before it; Invert itself
+  redraws the card a frame later (Caucasian loses its selected share), so that moment starts once
+  the card has redrawn.
 
   Tagged serial: the "should not have repainted" claims of this journey read the panel while another
   feature's page is working the same stand; it passes alone and failed twice in a full viewers run.
@@ -134,6 +136,7 @@ Feature: The panel's criterion composes with the viewers
     When user picks "Select > Invert" from the top menu
     Then 89 rows should be selected
     And 896 rows should pass the filter
+    And filter panel should have repainted
     When user takes a snapshot of filter panel
     Then filter panel should not have repainted
     When user picks "Select > Selection to Filter" from the top menu

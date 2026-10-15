@@ -69,7 +69,7 @@ test('Filters — Save and re-apply named filter state', async ({page}) => {
       const pt = await categoryRowPoint(page, 'RACE', 'Asian');
       expect(pt, 'the RACE card never painted a body tall enough to carry the Asian row').not.toBeNull();
       const clickResult = await page.evaluate(async ({x, y}) => {
-        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
+        const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'));
         const race = cards.find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === 'RACE');
         const overlay = race?.querySelector('[name="overlay"]') as HTMLElement | null;
         if (!overlay) return {before: -1, after: -1};

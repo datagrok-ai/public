@@ -1,7 +1,10 @@
 /* u2 virtualized grid (see src/components/collections/grid.ts). Cells are absolutely positioned
    inside a spacer sized to the row count; their size comes from an inline style set by JS. */
+/* No sideways scroll: cells still placed for the old column count would raise a scrollbar that the
+   re-flow removes, resizing the grid inside its own ResizeObserver callback (a loop error). */
 .u2-grid {
   position: relative;
+  overflow-x: hidden;
   overflow-y: auto;
   border: var(--dg-border-width) solid var(--dg-border);
   background: var(--dg-bg);
@@ -11,7 +14,7 @@
   outline: none;
 }
 
-.u2-grid:focus {
+.u2-grid:focus-visible {
   outline: var(--dg-focus-ring);
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
 }

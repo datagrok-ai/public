@@ -5,6 +5,7 @@ import * as DG from "datagrok-api/dg";
 import {UaView} from "./ua";
 import {UaToolbox} from "../ua-toolbox";
 import {UaFilterableQueryViewer} from "../viewers/ua-filterable-query-viewer";
+import {UaFilter} from "../filter";
 import {loadUsers, setupUserIconRenderer} from "../utils";
 import {funcs} from "../package-api";
 
@@ -36,9 +37,22 @@ function createCountBarChart(t: DG.DataFrame, splitColumnName: string, title: st
 }
 
 export class ErrorsView extends UaView {
+  private metrics?: {filter: UaFilter, errors: Promise<DG.ServerMetrics['errors']>};
+
   constructor(uaToolbox?: UaToolbox) {
     super(uaToolbox);
     this.name = 'Errors';
+  }
+
+  /** The errors of `/admin/metrics` for the applied filter's date, by signature, fetched once for both charts. */
+  errorMetrics(): Promise<DG.ServerMetrics['errors']> {
+    const filter = this.uaToolbox.filterStream.value;
+    if (this.metrics?.filter !== filter)
+      this.metrics = {filter, errors: grok.dapi.admin.getMetrics({date: filter.date, limit: 15, errorsBy: 'signature'})
+        .then((m) => m.errors, (e) => {
+          throw e?.status === 403 ? new Error('Needs View Telemetry') : e;
+        })};
+    return this.metrics.errors;
   }
 
   async initViewers(path?: string): Promise<void> {
@@ -75,6 +89,7 @@ export class ErrorsView extends UaView {
 
         viewer.col('id')!.visible = false;
         viewer.col('error_stack_trace_hash')!.visible = false;
+        viewer.col('incident_key')!.visible = false;
 
         viewer.onCellPrepare((gc) => {
           if (gc.gridColumn.name === 'event_time') {
@@ -92,18 +107,24 @@ export class ErrorsView extends UaView {
       {
         filterSubscription: this.uaToolbox.filterStream,
         name: 'Top Errors',
-        queryName: 'TopErrors',
+        getDataFrame: async () => {
+          const top = (await this.errorMetrics()).top;
+          return DG.DataFrame.fromColumns([
+            DG.Column.fromStrings('error', top.map((e) => e.message)),
+            DG.Column.fromStrings('signature', top.map((e) => e.signature ?? '')),
+            DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', top.map((e) => e.count)),
+          ]);
+        },
         createViewer: (t: DG.DataFrame) => {
           const viewer = createCountBarChart(t, 'error', 'Top errors', ERROR_BAR_COLOR);
 
           viewer.onEvent('d4-bar-chart-on-category-clicked').subscribe(async (args) => {
             const df: DG.DataFrame | undefined = errorViewer.viewer?.dataFrame;
-            if (df) {
-              df.filter.handleClick((i) => {
-                const column = df.getCol('error_message');
-                return column.get(i) == args.args.options.categories[0];
-              }, new MouseEvent(''));
-            }
+            const error = args.args.options.categories[0];
+            const signatures = new Set([...Array(t.rowCount).keys()].filter((i) => t.get('error', i) === error)
+              .map((i) => t.get('signature', i)));
+            if (df)
+              df.filter.handleClick((i) => signatures.has(df.get('error_stack_trace_hash', i) ?? ''), new MouseEvent(''));
           });
           return viewer;
         }
@@ -114,7 +135,13 @@ export class ErrorsView extends UaView {
       {
         filterSubscription: this.uaToolbox.filterStream,
         name: 'Top Source',
-        queryName: 'TopErrorSources',
+        getDataFrame: async () => {
+          const bySource = (await this.errorMetrics()).bySource;
+          return DG.DataFrame.fromColumns([
+            DG.Column.fromStrings('error_source', Object.keys(bySource)),
+            DG.Column.fromList(DG.COLUMN_TYPE.INT, 'count', Object.values(bySource)),
+          ]);
+        },
         createViewer: (t: DG.DataFrame) =>
           createCountBarChart(t, 'error_source', 'Top source', SOURCE_BAR_COLOR),
       }
@@ -193,6 +220,23 @@ export class ErrorsView extends UaView {
       div.classList.add('ua-errors-reports');
       const map = {'Reports': div, 'Same errors': results[1]};
       return ui.tableFromMap(map);
+    }));
+
+    accordion.addPane('Alert', () => ui.wait(async () => {
+      const key: string = table.getCol('incident_key').get(rowIdx) ?? '';
+      let p: DG.Problem | null = null;
+      try {
+        p = key ? await grok.dapi.admin.getProblem(`error-incident:${key}`) : null;
+      }
+      catch (e: any) {
+        if (e?.status === 403)
+          return ui.divText('Needs Manage Alerts');
+        throw e;
+      }
+      if (p === null)
+        return ui.divText('No error incident');
+      return ui.tableFromMap({'Problem': p.status, 'Alert': p.alertStatus ?? 'none', 'Summary': p.summary,
+        'Alerted': p.alertedAt, 'Last seen': p.lastSeen});
     }));
     grok.shell.o = properties;
   }

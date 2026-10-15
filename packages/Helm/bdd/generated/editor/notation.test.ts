@@ -12,9 +12,9 @@ import '@datagrok-libraries/bdd/bindings/common/kinds';
 import '@datagrok-libraries/bdd/bindings/common/parameter-types';
 import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
-import {helmInitialized, replaceNotation} from '../../bindings/steps.js';
+import {helmInitialized} from '../../bindings/steps.js';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
-import {clickOn, pressKeyIn, shouldBe, shouldContainText, shouldHaveText, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {clickOn, pressKeyIn, replaceTextOf, shouldBe, shouldContainText, shouldHaveText, visibleCount} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnUnits, valueInRow} from '@datagrok-libraries/bdd/bindings/platform/columns';
 import {openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
 import {areaColors, doubleClickArea, noBalloons, noErrors} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
@@ -35,14 +35,14 @@ test.describe("Editing a sequence in the HELM editor", () => {
       await session.step(24, "When user clicks on HELM tab", () => clickOn(page, el("HELM tab")));
       await session.step(25, "Then notation pane should have text \"PEPTIDE1{A.C}$$$$V2.0\"", () => shouldHaveText(page, el("notation pane"), "PEPTIDE1{A.C}$$$$V2.0"));
       await session.step(26, "And notation error should have text \"\"", () => shouldHaveText(page, el("notation error"), ""));
-      await session.step(27, "When user replaces the text of notation pane with \"PEPTIDE1{A.ZZZ\"", () => replaceNotation(page, el("notation pane"), "PEPTIDE1{A.ZZZ"));
+      await session.step(27, "When user replaces the text of notation pane with \"PEPTIDE1{A.ZZZ\"", () => replaceTextOf(page, el("notation pane"), "PEPTIDE1{A.ZZZ"));
       await session.step(28, "And user presses Enter in notation pane", () => pressKeyIn(page, "Enter", el("notation pane")));
       await session.step(29, "Then notation error should contain text \"Expected '}' to close polymer 'PEPTIDE1'\"", () => shouldContainText(page, el("notation error"), "Expected '}' to close polymer 'PEPTIDE1'"));
       await session.step(30, "And there should be 2 visible drawn monomers", () => visibleCount(page, 2, el("drawn monomers")));
       await session.step(31, "And no error or warning balloon should have been shown", () => noBalloons(page));
     });
     await run.scenario("A valid notation clears the error and redraws, without touching the cell", async () => {
-      await session.step(34, "When user replaces the text of notation pane with \"PEPTIDE1{A.C.G}$$$$V2.0\"", () => replaceNotation(page, el("notation pane"), "PEPTIDE1{A.C.G}$$$$V2.0"));
+      await session.step(34, "When user replaces the text of notation pane with \"PEPTIDE1{A.C.G}$$$$V2.0\"", () => replaceTextOf(page, el("notation pane"), "PEPTIDE1{A.C.G}$$$$V2.0"));
       await session.step(35, "And user presses Enter in notation pane", () => pressKeyIn(page, "Enter", el("notation pane")));
       await session.step(36, "Then notation error should have text \"\"", () => shouldHaveText(page, el("notation error"), ""));
       await session.step(37, "And there should be 3 visible drawn monomers", () => visibleCount(page, 3, el("drawn monomers")));
@@ -86,7 +86,7 @@ test.describe("Editing a sequence in the HELM editor", () => {
       await session.step(75, "Then HELM editor should be visible", () => shouldBe(page, el("HELM editor"), "visible"));
       await session.step(76, "And there should be 10 visible drawn monomers", () => visibleCount(page, 10, el("drawn monomers")));
       await session.step(77, "When user clicks on HELM tab", () => clickOn(page, el("HELM tab")));
-      await session.step(78, "And user replaces the text of notation pane with \"PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0\"", () => replaceNotation(page, el("notation pane"), "PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0"));
+      await session.step(78, "And user replaces the text of notation pane with \"PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0\"", () => replaceTextOf(page, el("notation pane"), "PEPTIDE1{A.C.D.E.F.G.H.I.K}$$$$V2.0"));
       await session.step(79, "And user presses Enter in notation pane", () => pressKeyIn(page, "Enter", el("notation pane")));
       await session.step(80, "Then there should be 9 visible drawn monomers", () => visibleCount(page, 9, el("drawn monomers")));
       await session.step(81, "And the value of \"HELM\" column in row 2 should be \"PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$\"", () => valueInRow(page, "HELM", 2, "PEPTIDE1{A.C.D.E.F.G.H.I.K.L}$$$$"));

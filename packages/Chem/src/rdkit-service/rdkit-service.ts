@@ -31,6 +31,13 @@ export type SubstructureSearchBatchResult = {
   fpCreated: boolean
 };
 
+/**
+ * At most this many RDKit workers. Each holds an RDKit WebAssembly instance, and a page has room for only so many
+ * WebAssembly memories (~120 in Chrome); sized by `hardwareConcurrency` alone, the pool would fill a page by itself on a
+ * machine with many threads, as crux's search pool did (`crux-service.ts`, the same cap).
+ */
+const MAX_WORKERS = 16;
+
 export class RdKitService {
   workerCount: number;
   _initWaiters?: Promise<any>[];
@@ -43,7 +50,7 @@ export class RdKitService {
 
   constructor() {
     const cpuLogicalCores = window.navigator.hardwareConcurrency;
-    this.workerCount = Math.max(1, cpuLogicalCores - 2);
+    this.workerCount = Math.max(1, Math.min(cpuLogicalCores - 2, MAX_WORKERS));
     this.moleculesSegmentsLengths = new Uint32Array(this.workerCount);
   }
 
@@ -693,13 +700,15 @@ export class RdKitService {
       }, 45000, 'MCS calculation'); // stuck for more than 45s => restart the worker, '' for the cluster
     if (rawSmarts)
       return res;
-    return res.map((it) => {
+    const rdkit = PackageFunctions.getRdKitModule();
+    return res.map((it, i) => {
       if (!it)
         return '';
       try {
-        const qm = getQueryMolSafe(it, '', PackageFunctions.getRdKitModule());
-        const smiles = qm?.get_smiles();
-        qm?.delete();
+        // a one-molecule cluster is its own MCS: read as a query, its implicit hydrogens would be lost
+        const mol = clusteredMolecules[i].length === 1 ? getMolSafe(it, {}, rdkit).mol : getQueryMolSafe(it, '', rdkit);
+        const smiles = mol?.get_smiles();
+        mol?.delete();
         return smiles ?? '';
       } catch (_) {}
       return '';

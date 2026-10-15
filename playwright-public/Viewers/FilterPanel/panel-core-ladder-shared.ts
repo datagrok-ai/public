@@ -18,14 +18,14 @@ export async function cardCaptions(page: Page): Promise<string[]> {
 
 export async function visibleCardCaptions(page: Page): Promise<string[]> {
   return page.evaluate(() =>
-    Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .filter((card) => (card as HTMLElement).offsetParent !== null)
       .map((card) => card.querySelector('.d4-filter-column-name')?.textContent?.trim() ?? ''));
 }
 
 export async function checkboxCensus(page: Page): Promise<{cards: number; boxes: number; checked: number}> {
   return page.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'));
+    const cards = Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'));
     const boxes = cards
       .map((c) => c.querySelector('input[type="checkbox"].ui-input-editor') as HTMLInputElement | null)
       .filter((cb) => cb !== null) as HTMLInputElement[];
@@ -54,7 +54,7 @@ export async function waitForPanelSettled(page: Page,
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const ready = await page.evaluate((cap) => (window as any).__poll(() =>
     !!document.querySelector('[name="viewer-Filters"]') &&
-      document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length > 0 &&
+      document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length > 0 &&
       (grok.shell.tv?.dataFrame?.rowCount ?? 0) > 0, (ok: boolean) => ok, cap, 50), timeoutMs);
   if (!ready) throw new Error(`waitForPanelSettled: the panel never painted within ${timeoutMs}ms`);
   const count = () => page.evaluate(() => grok.shell.tv?.dataFrame?.filter?.trueCount ?? -1);
@@ -157,11 +157,11 @@ export async function categoryRowPoint(page: Page, column: string, category: str
     const cats: string[] = grok.shell.tv.dataFrame.col(column).categories;
     const idx = cats.indexOf(category);
     if (idx < 0) return null;
-    const overlayOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const overlayOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column)
       ?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null | undefined;
     const needed = top + pitch * (idx + 1);
-    const canvasOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter'))
+    const canvasOf = () => Array.from(document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)'))
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === column)
       ?.querySelector('[name="filter-grid"] canvas[name="canvas"]') as HTMLCanvasElement | null | undefined;
     // the row exists once the card body is tall enough AND its band carries paint: a click that

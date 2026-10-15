@@ -90,7 +90,7 @@ async function openChemFilterPanel(page: Page): Promise<void> {
   catch (e) {
     const seen = await page.evaluate(() => ({
       panelRoot: !!document.querySelector('[name="viewer-Filters"]'),
-      cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
+      cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length,
     }));
     const molecular = await moleculeColumns(page);
     throw new Error('Chem filters are registered (the readiness gate passed) but the Filter Panel produced no ' +
@@ -111,7 +111,7 @@ async function tableViewCount(page: Page): Promise<number> {
 }
 
 async function cardCount(page: Page): Promise<number> {
-  return page.evaluate(() => document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length);
+  return page.evaluate(() => document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length);
 }
 
 interface HeaderCounter { present: boolean; text: string; }
@@ -144,7 +144,7 @@ async function settledHeaderCounter(page: Page): Promise<HeaderCounter> {
 
 async function waitForCardCount(page: Page, expected: number, timeoutMs = 20_000): Promise<void> {
   await page.waitForFunction((n) =>
-    document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length === n,
+    document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length === n,
   expected, {timeout: timeoutMs, polling: 200});
 }
 
@@ -259,7 +259,7 @@ async function installCardFinder(page: Page): Promise<void> {
       const fv = [...(view.viewers ?? [])].find((x: any) => x.type === 'Filters');
       const root: ParentNode | null = fv?.root ?? view.root ?? null;
       if (!root) return null;
-      const card = [...root.querySelectorAll('.d4-filter')].find((c) =>
+      const card = [...root.querySelectorAll('.d4-filter:not(.d4-filter-single-values)')].find((c) =>
         (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col &&
         !!c.querySelector(`[data-source="${source}"]`));
       return (card as HTMLElement) ?? null;
@@ -433,7 +433,7 @@ interface CardBody {
 
 async function cardBodies(page: Page): Promise<CardBody[]> {
   return page.evaluate((type) => {
-    const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const cards = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .filter((c) => !!c.querySelector('.chem-filter'));
     const fg = grok.shell.tv.getFiltersGroup();
     return cards.map((c) => {
@@ -830,7 +830,7 @@ async function setFilterAsYouDraw(page: Page, on: boolean): Promise<{set: boolea
 
 async function panelCardOrder(page: Page): Promise<Array<{column: string; source: string}>> {
   return page.evaluate(() =>
-    [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')].map((c) => ({
+    [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')].map((c) => ({
       column: (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim(),
       source: (c.querySelector('[data-source]') as HTMLElement | null)?.getAttribute('data-source') ?? '',
     })));
@@ -943,7 +943,7 @@ interface CardGeometry {
 
 async function cardOverlayGeometry(page: Page, column: string): Promise<CardGeometry | null> {
   const geom = await page.evaluate(async (col) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === col);
     if (!card) return null;
     // By this point the panel carries ~37 cards and is several viewport-heights tall, so the
@@ -979,7 +979,7 @@ async function selectedCategories(page: Page, column: string): Promise<string[]>
 // the card sits far down a 37-card panel. The scroll above is belt-and-braces for the same reason.
 async function clickCardRow(page: Page, column: string, row: number): Promise<void> {
   await page.evaluate(({col, cx, cy}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => c.querySelector('.d4-filter-column-name')?.textContent?.trim() === col);
     const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return;
@@ -1281,7 +1281,7 @@ test('Filter panel — Chem package filters', async ({page}) => {
       return {
         perColumn: cols.map((c: string) => (fg.getStates(c, type) || []).length),
         chemBodies: document.querySelectorAll('[name="viewer-Filters"] .d4-filter .chem-filter').length,
-        cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter').length,
+        cards: document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').length,
       };
     }, {cols: molColumns, type: SUBSTRUCTURE_FILTER});
     const targetCards = await page.locator(CHEM_CARD).count();

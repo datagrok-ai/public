@@ -46,9 +46,39 @@ export enum FilterSources {
   Selected = 'Selected',
 }
 
+/** Functions with this role supply WebLogo profiles: `(table: dataframe, column: string, profile: string) => object`
+ * returning a {@link WebLogoProfile}; `column` is the viewer's sequence column (e.g. the HMM package's
+ * profile HMM logos). */
+export const WEB_LOGO_PROFILE_ROLE = 'webLogoProfile';
+
+/** A sequence profile drawn instead of the column's composition: per position,
+ * the height of each monomer (e.g. a profile HMM's emission information in bits). */
+export interface WebLogoProfile {
+  /** Shown in tooltips, e.g. 'V-set (PF07686.20)' */
+  title: string;
+  /** Monomer colors: {@link ALPHABET} PT, DNA or RNA */
+  alphabet: string;
+  /** Units of the heights, e.g. 'bits' */
+  units: string;
+  positions: WebLogoProfilePosition[];
+  /** For each position, the 0-based position of the sequence column aligned to it (-1: none), when the column
+   * is aligned to the profile; clicking a letter then selects the rows that have it there. */
+  columnPositions?: number[];
+}
+
+export interface WebLogoProfilePosition {
+  name: string;
+  /** Height of each monomer (non-negative) */
+  heights: { [monomer: string]: number };
+  /** Further values shown in the position tooltip */
+  info?: { [name: string]: string };
+}
+
 export const WebLogoPropsDefault = new class {
   // -- Data --
   sequenceColumnName: string | null = null;
+  /** Profile drawn instead of the column's composition, from a {@link WEB_LOGO_PROFILE_ROLE} function */
+  profile: string | null = null;
   /** Aggregation function for values of {@link valueColumnName} */
   valueAggrType: DG.AggregationType = DG.AGG.TOTAL_COUNT;
   /** Column name for values */

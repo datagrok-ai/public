@@ -1,18 +1,20 @@
-/* Dialog skin (see src/components/dialog.ts). Tokens only — css/tokens.css must be loaded
-   alongside. Metrics codify the platform dialog (d4.css .d4-dialog / -header / -contents). */
+/* Dialog skin (see src/components/containers/dialog.ts). Tokens only — css/tokens.css must be
+   loaded alongside. Metrics codify the platform dialog (d4.css .d4-dialog / -header / -contents).
+   The z-index is inline: dialogs share the platform's dialog band (Overlay.nextDialogZ). */
 .u2-dialog {
   box-sizing: border-box;
   position: fixed;
   display: flex;
   flex-direction: column;
   max-width: 100vw;
+  max-height: 100vh;
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);
   line-height: var(--dg-line-height);
   color: var(--dg-text-color);
   background: var(--dg-bg);
   border: var(--dg-border-width) solid var(--dg-border-subtle);
-  border-radius: var(--dg-radius-l);
+  border-radius: 0;
   box-shadow: var(--dg-shadow-3);
   outline: none;
 }
@@ -23,14 +25,16 @@
   background: var(--dg-backdrop);
 }
 
+/* the platform's header (d4.css .d4-dialog-header): 34px, an 18px regular title */
 .u2-dialog-title {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: var(--dg-space-m);
-  height: var(--dg-button-height);
-  padding: 0 var(--dg-space-s) 0 var(--dg-space-l);
-  font-weight: var(--dg-font-weight-bold);
+  gap: 0;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 18px;
+  font-weight: var(--dg-font-weight-regular);
   white-space: nowrap;
   overflow: hidden;
   cursor: move;
@@ -43,49 +47,121 @@
 
 .u2-dialog-title-text {
   margin-right: auto;
+  padding-right: var(--dg-space-m);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* the platform's 18px ? and ✕ (d4.css .d4-dialog-header .grok-icon), shown while the pointer is
+   over the dialog; transparent rather than hidden, so they stay clickable and reachable by Tab */
+.u2-dialog-help,
 .u2-dialog-close {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--dg-inline-control-height);
-  height: var(--dg-inline-control-height);
+  width: 18px;
+  height: 18px;
   padding: 0;
-  font-family: var(--dg-font-family);
-  font-size: var(--dg-font-size-small);
-  color: var(--dg-text-color-light);
+  font-size: 16px;
+  color: var(--dg-grey-3);
   background: transparent;
   border: none;
-  border-radius: var(--dg-radius);
+  opacity: 0;
   cursor: pointer;
 }
 
+.u2-dialog:hover .u2-dialog-help,
+.u2-dialog:hover .u2-dialog-close,
+.u2-dialog-help:focus-visible,
+.u2-dialog-close:focus-visible {
+  opacity: 1;
+}
+
+.u2-dialog-help:hover,
 .u2-dialog-close:hover {
   color: var(--dg-text-color);
-  background: var(--dg-hover);
 }
 
 .u2-dialog-content {
   flex: 1 1 auto;
+  min-height: 0;
   max-height: 80vh;
   padding: var(--dg-space-l);
   overflow: auto;
 }
 
+/* inputs placed straight in the body read like the platform dialog's form (ui.css
+   .d4-dialog-contents.ui-form): grey right-aligned captions in one column as wide as the longest,
+   set on show (dialog.ts `_alignLabels`), cut with an ellipsis past 200px. A Form in the body
+   keeps its own aligned column (css/form.css). */
+.u2-dialog-content > .u2-input-root > .u2-input-label {
+  display: block;
+  width: var(--u2-dialog-label-width, 140px);
+  min-width: 0;
+  max-width: 200px;
+  line-height: var(--dg-control-height);
+  color: var(--dg-text-color-light);
+  text-align: right;
+}
+
+.u2-dialog-content > .u2-input-required > .u2-input-label {
+  justify-content: flex-end;
+}
+
+.u2-dialog-content > .u2-input-root:not(.u2-input-inline) > .u2-input-error {
+  padding-left: calc(var(--u2-dialog-label-width, 140px) + var(--dg-space-m));
+}
+
+/* the message of an OK that failed, between the body and the buttons; it wraps inside the dialog
+   rather than widening it */
+.u2-dialog-error {
+  flex-shrink: 0;
+  contain: inline-size;
+  max-height: 25vh;
+  margin: 0 var(--dg-space-l) var(--dg-space-m);
+  overflow: auto;
+  font-size: var(--dg-font-size-small);
+  color: var(--dg-error);
+  white-space: pre-wrap;
+}
+
+.u2-dialog-error[hidden] {
+  display: none;
+}
+
+/* the platform's footer (d4.css .d4-command-bar): 45px under a 1px rule */
 .u2-dialog-buttons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   gap: var(--dg-space-m);
-  padding: 0 var(--dg-space-l) var(--dg-space-l);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 
 .u2-dialog-buttons:empty {
   display: none;
+}
+
+/* the spinner a busy OK shows beside its caption, in the caption's colour */
+.u2-dialog-busy {
+  box-sizing: border-box;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-left: var(--dg-space-s);
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  vertical-align: middle;
+  animation: u2-dialog-spin 0.8s linear infinite;
+}
+
+@keyframes u2-dialog-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

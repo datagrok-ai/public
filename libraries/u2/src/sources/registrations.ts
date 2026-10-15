@@ -6,7 +6,6 @@ import {FuncSource} from './func-source.js';
 import {EntitySource} from './entity-source.js';
 import {TableSource} from './table-source.js';
 import {EntityRef} from './entity-ref.js';
-import {DomainSource} from './domain-source.js';
 import {ComponentMeta, Registry, registry as globalRegistry} from '../spec/registry.js';
 
 /** The `grok.dapi.*` collections a spec may list — every one of them a paged entity source. */
@@ -14,13 +13,13 @@ export const COLLECTIONS = ['users', 'groups', 'projects', 'queries', 'connectio
   'spaces'];
 
 const DESIGN_DATA = {
-  name: 'designData', type: 'string', choices: ['live', 'schema', 'sample'],
+  name: 'designData', type: 'string', structural: true, choices: ['live', 'schema', 'sample'],
   description: 'What the designer shows: real runs, the declared shape without running, or ' +
     'the stored `sample`.',
 };
 
 const SAMPLE = {
-  name: 'sample', type: 'object',
+  name: 'sample', type: 'object', structural: true,
   description: 'The preview the `sample` policy builds its outputs from; rows become a table.',
 };
 
@@ -35,13 +34,13 @@ const METAS: ComponentMeta[] = [
       'source re-runs as that input changes; bind a DataFrame output\'s `currentRow` to reach ' +
       'the fields of the current record.',
     props: [
-      {name: 'func', type: 'string',
+      {name: 'func', type: 'string', structural: true,
         description: 'The function name, `Package:Name` for a package function.'},
       {name: 'params', type: 'object', subBindable: true,
         description: 'What it is called with; a `params.<name>` bind makes that param reactive.'},
-      {name: 'auto', type: 'bool',
+      {name: 'auto', type: 'bool', structural: true,
         description: 'Run at construction and whenever a bound param changes (default true).'},
-      {name: 'debounce', type: 'int',
+      {name: 'debounce', type: 'int', structural: true,
         description: 'Milliseconds a param change waits before the re-run (default 300).'},
       DESIGN_DATA,
       SAMPLE,
@@ -58,12 +57,12 @@ const METAS: ComponentMeta[] = [
     usage: 'For a picker over server entities, or a list of them. `names` feeds a choice input ' +
       'directly; `items` carries the entities themselves.',
     props: [
-      {name: 'entity', type: 'string', choices: COLLECTIONS,
+      {name: 'entity', type: 'string', structural: true, choices: COLLECTIONS,
         description: 'The `grok.dapi` collection to list.'},
       {name: 'filter', type: 'string', bindable: true,
         description: 'A smart-search filter; changing it reloads the collection from the first page.'},
-      {name: 'order', type: 'string', description: 'The field to order by.'},
-      {name: 'pageSize', type: 'int', description: 'How many entities one page loads (default 20).'},
+      {name: 'order', type: 'string', structural: true, description: 'The field to order by.'},
+      {name: 'pageSize', type: 'int', structural: true, description: 'How many entities one page loads (default 20).'},
     ],
     defaults: {entity: 'users', pageSize: 20},
     example: {tag: 'u2-entity-source', name: 'people', props: {entity: 'users', pageSize: 20}},
@@ -77,7 +76,7 @@ const METAS: ComponentMeta[] = [
     usage: 'For a form over a table the user already has open. It references the table BY NAME, ' +
       'so prefer a query or a project table for a form that must keep working tomorrow.',
     props: [
-      {name: 'table', type: 'string', description: 'The name of the open table.'},
+      {name: 'table', type: 'string', structural: true, description: 'The name of the open table.'},
     ],
     example: {tag: 'u2-table-source', name: 'demog', props: {table: 'demog'}},
   },
@@ -90,7 +89,7 @@ const METAS: ComponentMeta[] = [
     usage: 'For a form about a single entity. Bind `id` to whatever selects it and every bound ' +
       'field follows; the entity\'s own properties are binding steps.',
     props: [
-      {name: 'entityType', type: 'string', choices: COLLECTIONS,
+      {name: 'entityType', type: 'string', structural: true, choices: COLLECTIONS,
         description: 'Which collection the id belongs to.'},
       {name: 'id', type: 'string', bindable: true, description: 'The entity id to look up.'},
       DESIGN_DATA,
@@ -99,47 +98,6 @@ const METAS: ComponentMeta[] = [
     defaults: {entityType: 'users', designData: 'live'},
     designPreview: {name: 'Sample entity', friendlyName: 'Sample entity'},
     example: {tag: 'u2-entity-ref', name: 'author', props: {entityType: 'users', id: 'current'}},
-  },
-  {
-    tag: 'u2-domain-source',
-    category: 'Data',
-    visual: false,
-    createComponent: (props, env) => new DomainSource(props, env),
-    description: 'A domain (EMS) table as data: its rows, the current row a form edits, the ' +
-      'caller\'s access, and every pending change until `save`.',
-    usage: 'The one source every domain control binds to. Bind `query` to a filter input and ' +
-      '`search` to a search box to narrow the rows; bind a form\'s inputs under `currentRow` to edit ' +
-      'the current row; wire Save and Discard to the `save` and `discard` functions (they go through ' +
-      'the session), and `newRow` to a Create button; `draft: true` is the source of a create form. ' +
-      'Every source in one spec shares the ambient session, so one Save writes them all as one ' +
-      'transaction. Prefer it over a query source for anything a user edits.',
-    props: [
-      {name: 'table', type: 'string', description: 'The table address, `<schema>.<table>`.'},
-      {name: 'query', type: 'string', bindable: true,
-        description: 'A smart-filter string; changing it reloads the rows from the first page.'},
-      {name: 'search', type: 'string', bindable: true,
-        description: 'A case-insensitive text over the table\'s searchable columns, ANDed with the query.'},
-      {name: 'pageSize', type: 'int', description: 'How many rows one page loads (default 50).'},
-      {name: 'withAccess', type: 'bool',
-        description: 'Fetch the per-row access columns with every row (default true); the table-level ' +
-          'access is always fetched.'},
-      {name: 'captions', type: 'string_list',
-        description: 'Ref columns whose target names ride with the rows; every visible ref column by default.'},
-      {name: 'defaults', type: 'object',
-        description: 'Column values every draft row starts with — a parent\'s id on a child table.'},
-      {name: 'empty', type: 'bool',
-        description: 'Load no rows; drafts can still be added — a child collection under a draft parent.'},
-      {name: 'draft', type: 'bool',
-        description: 'Load nothing and start on one pristine draft — what a create form binds to.'},
-      {name: 'deleted', type: 'string', choices: ['exclude', 'include', 'only'],
-        description: 'Which rows the source answers: the live ones (default), the live and the ' +
-          'soft-deleted, or the deleted alone — a trash list, read-only until its rows are restored.'},
-      {name: 'live', type: 'bool', bindable: true,
-        description: 'Follow the server: the source probes the table every 30 s and reloads while there ' +
-          'is nothing unsaved to lose, marking itself stale while there is.'},
-    ],
-    defaults: {pageSize: 50, withAccess: true, empty: false, draft: false, deleted: 'exclude', live: false},
-    example: {tag: 'u2-domain-source', name: 'issues', props: {table: 'grit.issue', pageSize: 50}},
   },
 ];
 

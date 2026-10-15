@@ -38,6 +38,7 @@ Feature: The Activity Cliffs tutorial
     And scatter plot viewer should be visible
     And the "cliffs" reading of scatter plot viewer should be 15
 
+    And the tutorial step "Hover over data points for molecule information" should be current
     When user hovers over the first "marker" area of scatter plot viewer
     Then the tutorial step "Hover over data points for molecule information" should be done
     And tooltip should be visible

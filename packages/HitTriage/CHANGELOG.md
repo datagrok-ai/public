@@ -1,8 +1,9 @@
 # HitTriage changelog
 
-## v.next
+## 1.10.9 (2026-10-15)
 
 * Hit Design, PeptiHit: Fixed the "Campaing Name" typo in the new-campaign form
+* Hit Design, PeptiHit: Fixed column tags (such as `.choices`) and calculated columns' formulas being lost when a campaign was saved and reopened; a reopened calculated column follows its source again
 * AI: Exposed AI view functions on all four Hit apps — the landing views list/open/create/delete campaigns and templates, and the campaign table views get a hit-specific vocabulary (state, molecules, stages, status, save, submit) plus a search/call bridge to the standard table commands.
 
 ## 1.10.6 (2026-07-16)

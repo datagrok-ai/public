@@ -211,12 +211,15 @@ export class ModelHandler extends DG.ObjectHandler {
     if (func instanceof DG.Script && (fpackage == null || func.options['icon'] == null))
       return this.getLanguageIcon(func.language);
 
-    func = DG.Func.find({package: func.package.name, name: func.name})[0];
+    if (fpackage == null)
+      return ui.iconSvg('project');
+
+    func = DG.Func.find({package: fpackage.name, name: func.name})[0];
     fpackage = getPackage(func);
     if (!fpackage)
       return ui.iconSvg('project');
 
-    let iconUrl = fpackage?.getIconUrl();
+    let iconUrl = fpackage.getIconUrl();
 
     if (func.options['icon'] != null) {
       const packagePathSegments = iconUrl.split('/');
@@ -224,7 +227,7 @@ export class ModelHandler extends DG.ObjectHandler {
       packagePathSegments.push(func.options['icon']);
       iconUrl = packagePathSegments.join('/');
     }
-    return ui.iconImage(func.package.name, iconUrl);
+    return ui.iconImage(fpackage.name, iconUrl);
   }
 
   override renderView(x: DG.Func) {
@@ -325,7 +328,7 @@ export class ModelHandler extends DG.ObjectHandler {
     const isFavoritesApplicable = (func: DG.Func) => func instanceof DG.Entity;
     const isFavorite = (func: DG.Func) => grok.shell.favorites.some((f) => f.id == func.id);
     //@ts-ignore
-    funcs.registerParamFunc('Add to favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
+    funcs.registerParamFunc('Add To Favorites', (this.type as DG.Type), async (func: DG.Func) => await DG.Favorites.add(DG.toJs(func)), (func: DG.Func) => {
       const properFunc = DG.toJs(func);
       return this.isApplicable(properFunc) && isFavoritesApplicable(properFunc) && !isFavorite(properFunc);
     });

@@ -2,9 +2,9 @@
    model's charts are real viewers on a table view (a Grid and a Line chart on a table named after
    the model), so the `viewers` tier drives them, and the Open model menu carries the platform's own
    item names (div-Library---Bioreactor), so its entries are plain menu items. */
-import {expect, Page} from '@playwright/test';
+import type {Page} from '@playwright/test';
 import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {atFeatureEnd, takeErrors} from '@datagrok-libraries/bdd/runtime';
+import {atFeatureEnd, expect, pollMs, savedScriptOf, takeErrors} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -45,25 +45,63 @@ export const openLibraryModel = Given('user opens the {string} model of the Diff
   }, {tier: 'ui', description: 'the app\'s own route for a library model; done when the ribbon, the view name and the model inputs are all there'});
 
 /* Saving writes a new .ivp into System:AppData/DiffStudio/library under a name the app picks
-   ("PK-PD(14).ivp" — the count is how many earlier runs left theirs behind), and announces it on
-   the platform's event bus. The step notes what the folder held first and deletes exactly what the
-   save added when the feature ends, so a run leaves the library as it found it. */
-export const saveToLibrary = When('user saves the model to the Diff Studio library', async (page: Page) => {
-  const folder = 'System:AppData/DiffStudio/library';
-  const before: string[] = await page.evaluate(async (f) =>
-    (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), folder);
-  await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
-  await expect.poll(async () => (await page.evaluate(async (f) =>
-    (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), folder)).length,
-  {message: 'files in the Diff Studio library after the save', timeout: 60000}).toBeGreaterThan(before.length);
+   ("PK-PD(14).ivp" — the count is how many earlier runs left theirs behind), registers it in the
+   library's manifest (external-models.json) and announces it on the platform's event bus. The first
+   save of a feature notes what the folder and the manifest held — a manifest entry whose file is gone,
+   which a killed run leaves, is dropped first — and the feature's end deletes exactly the files the
+   saves added, writes the manifest back, announces the change so an open library list drops the
+   entry, and reads both back. */
+const LIBRARY_FOLDER = 'System:AppData/DiffStudio/library';
+const libraryBefore = new WeakMap<Page, {files: string[]; manifest: string | null}>();
+
+async function noteLibrary(page: Page): Promise<void> {
+  if (libraryBefore.has(page))
+    return;
+  const before: {files: string[]; manifest: string | null} = await page.evaluate(async (f) => {
+    const path = `${f}/external-models.json`;
+    let manifest: string | null = await grok.dapi.files.exists(path) ? await grok.dapi.files.readAsText(path) : null;
+    if (manifest !== null) {
+      const parsed = JSON.parse(manifest);
+      const models: any[] = Array.isArray(parsed?.models) ? parsed.models : [];
+      const kept: any[] = [];
+      for (const m of models)
+        if (typeof m?.path !== 'string' || await grok.dapi.files.exists(m.path))
+          kept.push(m);
+      if (kept.length < models.length) {
+        manifest = JSON.stringify({...parsed, models: kept}, null, 2);
+        await grok.dapi.files.writeAsText(path, manifest);
+      }
+    }
+    return {files: (await grok.dapi.files.list(f)).map((x: any) => String(x.name)), manifest};
+  }, LIBRARY_FOLDER);
+  libraryBefore.set(page, before);
   atFeatureEnd(page, async () => {
-    await page.evaluate(async ([f, known]) => {
+    libraryBefore.delete(page);
+    const left = await page.evaluate(async ([f, known, manifest]) => {
+      const path = `${f}/external-models.json`;
+      if (manifest === null)
+        await grok.dapi.files.delete(path).catch(() => undefined);
+      else
+        await grok.dapi.files.writeAsText(path, manifest);
       for (const file of await grok.dapi.files.list(f))
         if (!(known as string[]).includes(String(file.name)))
           await grok.dapi.files.delete(`${f}/${file.name}`).catch(() => undefined);
-    }, [folder, before] as [string, string[]]);
+      grok.events.fireCustomEvent('diff-studio:library-changed', null);
+      const now = (await grok.dapi.files.list(f)).map((x: any) => String(x.name)).filter((n: string) => !(known as string[]).includes(n));
+      const text = await grok.dapi.files.exists(path) ? await grok.dapi.files.readAsText(path) : null;
+      return {files: now, manifestBack: text === manifest};
+    }, [LIBRARY_FOLDER, before.files, before.manifest] as [string, string[], string | null]);
+    expect(left, 'the Diff Studio library after the feature').toEqual({files: [], manifestBack: true});
   });
-}, {tier: 'ui', description: 'the ribbon icon; the file it creates is deleted when the feature ends'});
+}
+
+export const saveToLibrary = When('user saves the model to the Diff Studio library', async (page: Page) => {
+  await noteLibrary(page);
+  const count = () => page.evaluate(async (f) => (await grok.dapi.files.list(f)).length, LIBRARY_FOLDER);
+  const before = await count();
+  await page.locator('.diff-studio-ribbon-save-to-model-catalog-icon').first().click();
+  await expect.poll(count, {message: 'files in the Diff Studio library after the save', timeout: pollMs(60000)}).toBeGreaterThan(before);
+}, {tier: 'ui', description: 'the ribbon icon; the files the feature\'s saves create are deleted and the library manifest put back when the feature ends, both read back'});
 
 /* The Model Hub is Compute2's catalog view, not a plain #app of the registry, so "user opens the
    … app" does not find it — the browse tree node runs Compute2:modelCatalog, and so does this. */
@@ -82,62 +120,16 @@ export const openModelHub = Given('user opens the Model Hub', async (page: Page)
   {message: 'cards in the Model Hub gallery', timeout: 120000}).toBeGreaterThan(0);
 }, {tier: 'api', description: 'the function the browse tree runs for Apps > Compute > Model Hub; done when the catalog has cards'});
 
-/* A script's friendly name can also label a built-in model. Remember its qualified name for the
-   card's platform link, and its ID for cleanup. The script view's path identifies the save,
-   so another user's concurrent save cannot be mistaken for this feature's script. */
-type SavedScript = {id: string; name: string; link: string};
-const savedScript = new WeakMap<Page, SavedScript>();
-
-const freshScript = (page: Page, known: string[]): Promise<SavedScript | null> =>
-  page.evaluate(async (ids) => {
-    const id = String(grok.shell.v?.path ?? '').match(/^\/script\/([^/?#]+)/)?.[1];
-    if (!id || ids.includes(id))
-      return null;
-    const script = (await grok.dapi.scripts.list({pageSize: 1000})).find((s: any) => String(s.id) === id);
-    return script ? {id, name: String(script.name), link: `/func/${script.nqName.replace(/:/g, '.')}`} : null;
-  }, known);
-
-async function removeSavedScript(page: Page, id: string): Promise<void> {
-  await page.evaluate(async (savedId) => {
-    const script = (await grok.dapi.scripts.list({pageSize: 1000}))
-      .find((s: any) => String(s.id) === savedId);
-    if (script)
-      await grok.dapi.scripts.delete(script);
-  }, id);
-}
-
-export const saveScript = When('user saves the script', async (page: Page) => {
-  const before: string[] = await page.evaluate(async () =>
-    (await grok.dapi.scripts.list({pageSize: 1000})).map((s: any) => String(s.id)));
-  const saveButton = page.locator('[name="button-Save"]').filter({visible: true});
-  await saveButton.click();
-  // The server listing can see the script before Save updates its qualified name in the client.
-  await expect(saveButton, 'the script save completed in the editor').toHaveText('Saved', {timeout: 60000});
-  let script: SavedScript | null = null;
-  await expect.poll(async () => {
-    script = await freshScript(page, before);
-    return script !== null;
-  }, {message: "the script view's new script saved on the stand", timeout: 60000}).toBe(true);
-  const saved = script!;
-  savedScript.set(page, saved);
-  atFeatureEnd(page, () => removeSavedScript(page, saved.id));
-}, {tier: 'ui', description: 'the Save button of the script view; the script it creates is deleted when the feature ends'});
-
-function getSavedScript(page: Page): SavedScript {
-  const script = savedScript.get(page);
-  if (!script)
-    throw new Error('no script has been saved in this feature yet');
-  return script;
-}
-
-/** The gallery exposes the entity's qualified link, independent of its duplicate display label. */
+/** A script's friendly name can also label a built-in model, so the card is found by the link the gallery
+ * gives it, the saved script's grok name; the library's "user saves the script" remembers the script and
+ * deletes it when the feature ends. */
 function savedCard(page: Page) {
-  const {link} = getSavedScript(page);
+  const link = `/func/${savedScriptOf(page).nqName.replace(/:/g, '.')}`;
   return page.locator(`.grok-gallery-grid .d4-link-label[data-link=${JSON.stringify(link)}]`);
 }
 
 export const hubListsScript = Then('the Model Hub should list the saved script', async (page: Page) => {
-  await expect(savedCard(page), `the card of the saved script (${getSavedScript(page).name}) in the Model Hub`)
+  await expect(savedCard(page), `the card of the saved script (${savedScriptOf(page).name}) in the Model Hub`)
     .toBeVisible({timeout: 60000});
 }, {tier: 'ui'});
 
@@ -149,15 +141,18 @@ export const openSavedScript = When('user opens the saved script from the Model 
 
 /** Refresh must notice the deletion of this feature's script; same-named models stay intact. */
 export const deleteSavedScript = When('the saved script is deleted on the server', async (page: Page) => {
-  const {id, name} = getSavedScript(page);
-  await removeSavedScript(page, id);
-  await expect.poll(() => page.evaluate(async (savedId) =>
-    (await grok.dapi.scripts.list({pageSize: 1000})).some((s: any) => String(s.id) === savedId), id),
+  const {id, name} = savedScriptOf(page);
+  await page.evaluate(async (savedId) => {
+    const script = await grok.dapi.scripts.find(savedId).catch(() => null);
+    if (script)
+      await grok.dapi.scripts.delete(script);
+  }, id);
+  await expect.poll(() => page.evaluate(async (savedId) => (await grok.dapi.scripts.find(savedId).catch(() => null)) != null, id),
   {message: `"${name}" (${id}) among the scripts on the stand`, timeout: 60000}).toBe(false);
 }, {tier: 'api', description: 'removed behind the back of the view, so the next Refresh has something to notice'});
 
 export const hubDoesNotListScript = Then('the Model Hub should not list the saved script', async (page: Page) => {
-  await expect(savedCard(page), `the card of the saved script (${getSavedScript(page).name}) in the Model Hub`)
+  await expect(savedCard(page), `the card of the saved script (${savedScriptOf(page).name}) in the Model Hub`)
     .toHaveCount(0, {timeout: 60000});
 }, {tier: 'ui'});
 

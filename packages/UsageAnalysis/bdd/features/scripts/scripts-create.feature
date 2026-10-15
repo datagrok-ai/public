@@ -3,9 +3,12 @@ Feature: Creating a script
   A new script from the Scripts view: the New menu offers every language, the template opens in
   the editor unsaved, the sample icon brings its sample table, the Signature editor renames the
   script and adds a parameter that lands in the code, a run with cars answers count = 510 in the
-  results under the editor, and Save stores the script with the parameters the server parses from
-  its header; the JavaScript template raises its browser alert. Translated from
-  files/TestTrack/Scripts/create.md and playwright-public/scripts/scripts-create-debugged.test.ts.
+  results under the editor, and Save stores the script; the JavaScript template raises its browser
+  alert. Translated from files/TestTrack/Scripts/create.md and
+  playwright-public/scripts/scripts-create-debugged.test.ts.
+
+  The parameters the server parses from the header are tested in datlas cvm/script_parsing_test.dart
+  'Parameter declaration'.
 
   The script is a Grok script, which runs in the page; the md's R runs on the server (see the bdd
   library's CLAUDE.md, "What never becomes a feature"), and the flow is the same for every language.
@@ -107,13 +110,10 @@ Feature: Creating a script
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
-  Scenario: Save stores the script with the parameters of its header
+  Scenario: Save stores the script
     When user saves the script
     Then an info balloon containing "Script saved." should have been shown
     And 1 script named "BddScriptCreate{time}" should be on the server
-    And the script "BddScriptCreate{time}" on the server should have an output "count" of type "int"
-    And the script "BddScriptCreate{time}" on the server should have an input "newParam" of type "bool"
-    And the script "BddScriptCreate{time}" on the server should have an input "table" of type "dataframe"
     And the "BddScriptCreate{time}" view should be current
     And no errors should have been logged
 

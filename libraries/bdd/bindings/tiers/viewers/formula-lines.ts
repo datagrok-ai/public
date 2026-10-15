@@ -61,6 +61,9 @@ export const editFormulaLine = When('user changes the formula line {string} in t
     return {rows: Number(s?.values?.['rows'] ?? 0), current: Number(s?.values?.['current row'] ?? 0),
       first: a ? {x: c.x + a.x + a.width / 2, y: c.y + a.y + a.height / 2} : null};
   });
+  // the list can still be in its first layout as the dialog opens (its overlay 300×150): a click aimed
+  // before it lands on the bare canvas, which takes the focus the Down arrow needs
+  await grid.evaluate((el) => (window as any).__bdd.settle(el, 300));
   const st = await status();
   if (!st.first)
     throw new Error('the Formula Lines dialog lists no line');
@@ -123,6 +126,15 @@ export const tableFormulasLack = Then('no formula line of the table should name 
     {message: `formulas of the current table that name "${text}"`}).toEqual([]);
 }, {description: 'the formulas of the table\'s ".formula-lines" (not their titles), of which there must be some'});
 
+/** The `${column} = <number>` line among formula lines (each a JSON list: the viewer's look, its table's
+ * tag) and the number it sits at. */
+function constantLine(looks: string[], column: string): {line: {formula?: string; title?: string}; value: number} | null {
+  const prefix = `\${${column}} = `;
+  const line = looks.flatMap((l) => JSON.parse(l || '[]') as {formula?: string; title?: string}[])
+    .find((l) => l.formula?.startsWith(prefix));
+  return line ? {line, value: Number(line.formula!.substring(prefix.length))} : null;
+}
+
 /** The constant a `${column} = <number>` line of the viewer's look sits at, and the X axis range the
  * viewer reports, in the axis's own units: a date written in other units than the axis (milliseconds
  * against microseconds) lands far outside it. */
@@ -131,15 +143,14 @@ export const lineWithinXAxis = Then('the {string} line of {widget} should lie wi
   const holds = async (): Promise<boolean> => {
     try {
       const look: string = await v.onViewer(page, target, (el) => (window as any).__bdd.viewerOf(el).props.formulaLines ?? '');
-      const prefix = `\${${column}} = `;
-      const line = (JSON.parse(look || '[]') as {formula?: string}[]).find((l) => l.formula?.startsWith(prefix));
+      const found = constantLine([look], column);
       const min = Number(await v.readValue(page, target, 'x axis min'));
       const max = Number(await v.readValue(page, target, 'x axis max'));
-      if (!line) {
-        shown = `no "${prefix}…" line in its formulaLines: ${look}`;
+      if (!found) {
+        shown = `no "\${${column}} = …" line in its formulaLines: ${look}`;
         return false;
       }
-      const value = Number(line.formula!.substring(prefix.length));
+      const value = found.value;
       shown = `the line is at ${value}, the x axis runs ${min} to ${max}`;
       return Number.isFinite(value) && value >= min && value <= max;
     }
@@ -155,3 +166,57 @@ export const lineWithinXAxis = Then('the {string} line of {widget} should lie wi
     throw new Error(`the "${column}" line of ${target.phrase} is not within its x axis: ${shown}`);
   }
 }, {description: 'the value of a constant line on the X column against the "x axis min" and "x axis max" readings'});
+
+/** Where a viewer drew a constant line `${column} = <value>` of its look or of its table: the middle of
+ * the line's `formula line …` area against the point the axis maps the value to on a linear scale — on
+ * the X axis the `view` area and the `x axis min` / `x axis max` readings; on the Y axis a line chart's
+ * own chart (`chart "<column>"`, `y axis min of "<column>"`) or else `view` and `y axis min` / `max`. */
+export const lineDrawnAtValue = Then('the {string} line of {widget} should be drawn at its value on the {word} axis',
+  async (page: Page, column: string, target: ElementRef, axis: string) => {
+    if (axis !== 'x' && axis !== 'y')
+      throw new Error(`the axis is x or y, not "${axis}"`);
+    let shown = '';
+    const holds = async (): Promise<boolean> => {
+      try {
+        const looks: string[] = await v.onViewer(page, target, (el) => {
+          const viewer = (window as any).__bdd.viewerOf(el);
+          return [String(viewer.props.formulaLines ?? ''), String(viewer.dataFrame?.getTag('.formula-lines') ?? '')];
+        });
+        const found = constantLine(looks, column);
+        if (!found) {
+          shown = `no "\${${column}} = …" line in its formulaLines or its table's`;
+          return false;
+        }
+        const {line, value} = found;
+        const areas = await v.hitAreas(page, target);
+        const names = Object.keys(areas).filter((k) => k.startsWith('formula line '));
+        const titled = line.title ? names.find((k) => k === `formula line "${line.title}"` || k === `formula line ${line.title}`) : undefined;
+        const name = titled ?? (names.length === 1 ? names[0] : null);
+        if (!name || !areas[name]) {
+          shown = `no area for the line among ${names.join(', ') || 'no formula line areas'}`;
+          return false;
+        }
+        const chart = axis === 'y' ? areas[`chart "${column}"`] : undefined;
+        const box = chart ?? areas['view'];
+        const [minKey, maxKey] = chart ? [`y axis min of "${column}"`, `y axis max of "${column}"`] : [`${axis} axis min`, `${axis} axis max`];
+        const min = Number(await v.readValue(page, target, minKey));
+        const max = Number(await v.readValue(page, target, maxKey));
+        const at = (value - min) / (max - min);
+        const expected = axis === 'x' ? box.x + at * box.width : box.y + box.height - at * box.height;
+        const area = areas[name];
+        const drawn = axis === 'x' ? area.x + area.width / 2 : area.y + area.height / 2;
+        shown = `the line is at ${value} on an axis from ${min} to ${max}, which maps to ${expected.toFixed(1)} px; it is drawn at ${drawn.toFixed(1)} px`;
+        return Number.isFinite(expected) && Math.abs(drawn - expected) <= 2;
+      }
+      catch (e) {
+        shown = (e as Error).message;
+        return false;
+      }
+    };
+    try {
+      await expect.poll(holds, {timeout: pollMs(5000)}).toBe(true);
+    }
+    catch {
+      throw new Error(`the "${column}" line of ${target.phrase} is not drawn at its value on the ${axis} axis: ${shown}`);
+    }
+  }, {description: 'the middle of the line\'s "formula line …" area, within 2 px of where a linear axis puts its value (the viewer\'s or the table\'s line)'});

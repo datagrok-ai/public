@@ -1,9 +1,6 @@
 import * as DG from 'datagrok-api/dg';
 import type {SunburstViewer} from './sunburst-viewer';
-
-type Box = {x: number, y: number, width: number, height: number};
-
-type Readings = {[name: string]: number | string | boolean};
+import {Box, Readings, treePath} from '../../utils/utils';
 
 /** The side of the square a segment's hit area reports, centred on a point the sector is known to
  * contain. A ring sector's bounding box is not a hit area — for a wide sector its centre is the
@@ -28,7 +25,7 @@ function laidOutSegments(chart: any): Segment[] {
       continue;
 
     const path = segmentPath(data, i);
-    if (path == null || path === '')
+    if (path == null)
       continue;
 
     const point = containedPoint(el, shape);
@@ -41,16 +38,10 @@ function laidOutSegments(chart: any): Segment[] {
 }
 
 /** A segment's path from the root, root excluded — `Cancer | Male` — which is what the click
- * handler builds from `treePathInfo` and what the selection is keyed by. Falls back to the node's
- * own name when the tree is not walkable. */
+ * handler builds from `treePathInfo` and what the selection is keyed by. */
 function segmentPath(data: any, index: number): string | null {
-  let node = data.tree?.getNodeByDataIndex?.(index);
-  if (node == null)
-    return data.getName?.(index) ?? null;
-  const names: string[] = [];
-  for (; node != null && node.parentNode != null; node = node.parentNode)
-    names.unshift(String(node.name ?? ''));
-  return names.join(' | ');
+  const names = treePath(data.tree?.getNodeByDataIndex?.(index));
+  return names.length === 0 ? null : names.join(' | ');
 }
 
 /** The mid-radius, mid-angle point of a sector, in the chart's own pixel space. zrender builds a

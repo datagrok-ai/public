@@ -2,13 +2,14 @@
 /* The run history of the bdd suites. Every `grok-bdd run` leaves its Playwright JSON report in the
    project's bdd/test-results/report.json; `record` keeps the reports of the last full runs as one
    dated record in runs/ (where they ran included: machine and stand), and `html` turns every record
-   there into one standalone page. Nothing records on its own — a record is made when asked for.
+   there into one standalone page. Nothing records on its own — a record is made when asked for, and only
+   the KEEP_RUNS newest records stay: each is committed, so the folder would otherwise grow without end.
 
      node history.mjs record [--note <text>] [--partial] [<report.json | dir>...]
      node history.mjs html [--out <file>]
 */
 import {execSync} from 'node:child_process';
-import {existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
+import {existsSync, mkdirSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync} from 'node:fs';
 import os from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -18,6 +19,7 @@ const RUNS = join(HERE, 'runs');
 const PACKAGES = resolve(HERE, '../../..');
 // a project whose last report is older than the newest one by more than this was not part of the run
 const SAME_RUN_MS = 12 * 3600 * 1000;
+const KEEP_RUNS = 15;
 const GHERKIN = /^(Given|When|Then|And|But|\*)\s/;
 
 function option(args, name) {
@@ -166,6 +168,12 @@ function record(args) {
   const count = (s) => projects.reduce((n, p) => n + p.tests.filter((t) => t.status === s).length, 0);
   console.log(`recorded runs/${name}: ${projects.map((p) => p.name).join(', ')} — ` +
     `${count('passed')} passed, ${count('failed')} failed, ${count('flaky')} flaky, ${count('known')} known-failure tests`);
+  // a record is named after the date its run started, so the names sort oldest first
+  const old = readdirSync(RUNS).filter((f) => f.endsWith('.json')).sort().slice(0, -KEEP_RUNS);
+  for (const f of old)
+    unlinkSync(join(RUNS, f));
+  if (old.length > 0)
+    console.log(`removed the ${old.length} oldest record(s), keeping ${KEEP_RUNS}: ${old.join(', ')}`);
 }
 
 function html(args) {
