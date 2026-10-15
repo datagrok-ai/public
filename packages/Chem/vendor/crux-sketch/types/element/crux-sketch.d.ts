@@ -144,9 +144,10 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     get methylLabels(): MethylLabels;
     set methylLabels(value: MethylLabels);
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1): `'auto'` (the default), `'regular'` or `'compact'`, read back as
-     * the value in force by HTML's rule for enumerated attributes. Setting it redraws the bars at once, and is no edit: no
-     * change event, no undo step, no getter changes. The `density` attribute sets it too.
+     * How large the toolbars' controls are (spike bar-fit, B1; spike compact-default): `'compact'` (the default, in a box of any
+     * size), `'regular'` or `'auto'` (compact under 720 by 600 px, regular otherwise), read back as the value in force by HTML's
+     * rule for enumerated attributes, compact being the missing and invalid value default. Setting it redraws the bars at once,
+     * and is no edit: no change event, no undo step, no getter changes. The `density` attribute sets it too.
      */
     get density(): Density;
     set density(value: Density);
@@ -237,7 +238,8 @@ export declare class CruxSketchElement extends HTMLElement implements SketcherAp
     /**
      * The stereochemistry panel (spike stereo-panel; the product owner's ruling 2): `'closed'` (the default), `'open'` or
      * `'hidden'`, which takes its button and its menu item away and never shows it. Its button and the canvas menu's item set
-     * it too, the user's setting, kept as the others are; and so does the `stereo-panel` attribute. It reads back the value
+     * it too, for this sketcher only, never kept nor shared (spike reports-oct14, report 3); and so does the `stereo-panel`
+     * attribute. It reads back the value
      * in force, by HTML's rule for enumerated attributes. A look: no edit, no event.
      */
     get stereoPanel(): StereoPanel;

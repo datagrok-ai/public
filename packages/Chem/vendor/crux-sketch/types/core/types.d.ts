@@ -356,11 +356,12 @@ export type MethylLabels = 'shown' | 'hidden' | 'all';
  */
 export type AtomNumbers = 'shown' | 'hidden';
 /**
- * How large the toolbars' controls are (spike bar-fit, B1; UI-005): `'auto'` (the default) follows the sketcher's own box,
- * compact (28 px buttons, 20 px icons, a little less padding) under 720 px wide or 600 px tall, such as Datagrok's sketcher
- * dialog, and regular (32 px buttons, 24 px icons) otherwise; `'regular'` and `'compact'` keep that size in any box. No
- * target is ever under 24 px. It changes nothing but sizes: no change event, no undo step, no getter changes. Any other
- * value is `'auto'`, and reads back so.
+ * How large the toolbars' controls are (spike bar-fit, B1; UI-005; spike compact-default): `'compact'` (the default: 28 px
+ * buttons, 20 px icons, a little less padding) and `'regular'` (32 px buttons, 24 px icons) keep that size in a box of any
+ * size; `'auto'` follows the sketcher's own box, compact under 720 px wide or 600 px tall, such as Datagrok's sketcher
+ * dialog, and regular otherwise. No target is ever under 24 px. It changes nothing but sizes: no change event, no undo step,
+ * no getter changes. Any other value is `'compact'` (HTML's rule for enumerated attributes, compact the missing and invalid
+ * value default), and reads back so.
  */
 export type Density = 'auto' | 'regular' | 'compact';
 /**
@@ -436,8 +437,9 @@ export interface CreateSketcherOptions {
      */
     cxsmilesCoordinates?: boolean;
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1): `'auto'` (the default, by the sketcher's box), `'regular'` or
-     * `'compact'`. The `density` attribute of `<crux-sketch>` sets it too; the handle's `density` changes it later.
+     * How large the toolbars' controls are (spike bar-fit, B1; spike compact-default): `'compact'` (the default, in a box of any
+     * size), `'regular'`, or `'auto'` (by the sketcher's box). The `density` attribute of `<crux-sketch>` sets it too; the
+     * handle's `density` changes it later.
      */
     density?: Density;
     /**
@@ -745,8 +747,9 @@ export interface SketcherApi {
     readoutItems: readonly ReadoutItem[];
     /**
      * The stereochemistry panel (spike stereo-panel): `'closed'` (the default), `'open'` or `'hidden'` (no button, no menu
-     * item). Its button in the top bar and the canvas menu's "Stereochemistry panel" open and close it too, a user's setting
-     * kept as the others are. It reads back the value in force; opening and closing it is a look: no edit, no event.
+     * item). Its button in the top bar and the canvas menu's "Stereochemistry panel" open and close it too, for this sketcher
+     * only, never kept nor shared (spike reports-oct14). It reads back the value in force; opening and closing it is a look:
+     * no edit, no event.
      */
     stereoPanel: StereoPanel;
     /**
@@ -906,11 +909,12 @@ export interface SketcherApi {
      */
     methylLabels: MethylLabels;
     /**
-     * How large the toolbars' controls are (spike bar-fit, B1; UI-005, HOST-029): `'auto'` (the default) compact in a box under
-     * 720 px wide or 600 px tall and regular otherwise, following the box as it changes; `'regular'` or `'compact'` in any
-     * box. It reads back the value in force, as `atomColours` does: `'regular'` or `'compact'` only when set to that keyword.
-     * Setting it changes the controls' sizes at once, and nothing else: no change event, no undo step, no getter changes. The
-     * `density` attribute sets it too. Each sketcher has its own.
+     * How large the toolbars' controls are (spike bar-fit, B1; UI-005, HOST-029; spike compact-default): `'compact'` (the
+     * default) or `'regular'` in a box of any size; `'auto'` compact in a box under 720 px wide or 600 px tall and regular
+     * otherwise, following the box as it changes. It reads back the value in force, as `atomColours` does: `'regular'` or
+     * `'auto'` only when set to that keyword, `'compact'` for anything else. Setting it changes the controls' sizes at once,
+     * and nothing else: no change event, no undo step, no getter changes. The `density` attribute sets it too. Each sketcher
+     * has its own.
      */
     density: Density;
     /**

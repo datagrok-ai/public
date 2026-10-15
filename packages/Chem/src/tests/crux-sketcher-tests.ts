@@ -426,6 +426,36 @@ category('Crux sketcher', () => {
     }
   });
 
+  // The product owner (2026-10-15): in the context panel's Filter pane of a molecule column, Crux stayed 500 px wide and
+  // ran past the panel, where Ketcher takes the pane's width: Crux's preferred size (css/crux-sketcher.css) was the
+  // pane's minimum content width. In the context panel Crux takes the pane's width.
+  test('fits the context panel\'s filter pane', async () => {
+    const df = DG.DataFrame.fromCsv(`smiles\n${SMILES}\nc1ccccc1O\nCCO`);
+    await grok.data.detectSemanticTypes(df);
+    grok.chem.currentSketcherType = 'Crux';
+    const showContextPanel = grok.shell.windows.showContextPanel;
+    const tv = grok.shell.addTableView(df);
+    try {
+      grok.shell.windows.showContextPanel = true;
+      grok.shell.o = df.col('smiles');
+      const filterHeader = () => [...document.querySelectorAll<HTMLElement>('.grok-prop-panel .d4-accordion-pane-header')]
+        .find((h) => h.textContent?.trim() === 'Filter');
+      await awaitCheck(() => filterHeader() !== undefined, 'no Filter pane in the context panel', 10000);
+      if (!filterHeader()!.classList.contains('expanded'))
+        filterHeader()!.click();
+      await awaitCheck(() => document.querySelector('.grok-prop-panel .crux-sketcher crux-sketch') !== null,
+        'no Crux in the Filter pane', 15000);
+      await delay(SETTLE_MS);
+      const pane = document.querySelector('.grok-prop-panel .d4-pane-filter')!.getBoundingClientRect().width;
+      const crux = document.querySelector('.grok-prop-panel .crux-sketcher')!.getBoundingClientRect().width;
+      expect(crux <= pane + 1, true, `Crux ${Math.round(crux)} px wide in a ${Math.round(pane)} px pane`);
+      expect(crux >= pane - 40, true, `Crux ${Math.round(crux)} px wide does not fill a ${Math.round(pane)} px pane`);
+    } finally {
+      grok.shell.windows.showContextPanel = showContextPanel;
+      tv.close();
+    }
+  }, {timeout: 60000});
+
   test('smiles', async () => {
     const s = await openCrux();
     try {

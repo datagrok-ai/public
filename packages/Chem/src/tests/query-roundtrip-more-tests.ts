@@ -511,6 +511,70 @@ const OVERLAPPING = [
   'M  END', '',
 ].join('\n');
 
+/** Nitrobenzene drawn with a pentavalent N, N(=O)=O, its ring Kekulé (RDKit's layout). */
+const NITRO_PENTAVALENT = [
+  '', '  nitro-pentavalent', '',
+  '  9  9  0  0  0  0  0  0  0  0999 V2000',
+  '    3.7500   -1.2990    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    3.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    3.7500    1.2990    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  2  0', '  2  3  2  0', '  2  4  1  0', '  4  5  2  0', '  5  6  1  0', '  6  7  2  0', '  7  8  1  0',
+  '  8  9  2  0', '  9  4  1  0',
+  'M  END', '',
+].join('\n');
+
+/** Methyl azide drawn with a pentavalent N, C-N=N#N. */
+const AZIDE_PENTAVALENT = [
+  '', '  azide-pentavalent', '',
+  '  4  3  0  0  0  0  0  0  0  0999 V2000',
+  '    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.2990    0.7500    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    2.5981    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    3.8971    0.7500    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  1  0', '  2  3  2  0', '  3  4  3  0',
+  'M  END', '',
+].join('\n');
+
+/** Pyridine N-oxide drawn with a pentavalent N, N=O, its ring Kekulé. */
+const N_OXIDE_PENTAVALENT = [
+  '', '  n-oxide-pentavalent', '',
+  '  7  7  0  0  0  0  0  0  0  0999 V2000',
+  '    3.0000    0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.5000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.7500   -1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.7500    1.2990    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  2  0', '  2  3  2  0', '  3  4  1  0', '  4  5  2  0', '  5  6  1  0', '  6  7  2  0', '  7  2  1  0',
+  'M  END', '',
+].join('\n');
+
+/** Indole as OpenChemLib writes [nH] (its V2000, Kekulé): an H count query (hhh 2, at least one H) on the ring NH. */
+const OCL_INDOLE_HCOUNT = [
+  '', 'Actelion Java MolfileCreator 1.0', '',
+  '  9 10  0  0  0  0  0  0  0  0999 V2000',
+  '    0.4158    1.9563   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.5352    1.6473   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '   -0.7431    0.6691   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000   -0.0000   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.0000   -1.0000   -0.0000 N   0  0  0  2  0  0  0  0  0  0  0  0',
+  '    0.9511   -1.3090   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.5388   -0.5000   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    0.9511    0.3090   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '    1.1590    1.2872   -0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0',
+  '  1  2  2  0  0  0  0', '  2  3  1  0  0  0  0', '  3  4  2  0  0  0  0', '  4  5  1  0  0  0  0',
+  '  5  6  1  0  0  0  0', '  6  7  2  0  0  0  0', '  7  8  1  0  0  0  0', '  4  8  1  0  0  0  0',
+  '  8  9  2  0  0  0  0', '  1  9  1  0  0  0  0',
+  'M  END', '',
+].join('\n');
+
 // ---------------------------------------------------------------- the cases
 
 const BENZENE = '[#6]1:[#6]:[#6]:[#6]:[#6]:[#6]:1';
@@ -519,6 +583,20 @@ const TRIAZOLE_COMPLEX = '[#7]1:[#7]:[#6](-[#6,#7]):[#7](-[#6;x0]):[#6]:1-[#6;a]
 const PYRROLIDINE_COMPLEX = '[#6]-[#6]1(-[#7,#8;D2])-[#6]-[#6]-[#7;x2]-[#6;R1]-1';
 const ALANINE = '[#6]-[#6](-[#7])-[#6](=[#8])-[#8]';
 const query = (q: string, ...items: string[]): string[] => ['query', `query.${q}`, ...items.map((i) => `query.${q}.${i}`)];
+/** Indole, its ring N with at least one H (OpenChemLib's [nH]). */
+const INDOLE_NH = '[#6]1:[#6]:[#6]:[#6]2:[#7&h{1-}]:[#6]:[#6]:[#6]:2:[#6]:1';
+/** [the molecule, its dataset, Crux's drawing (the last bond to the N added by Crux's bond tool), the molfile Ketcher and
+ * OpenChemLib are given, the query intended (charge-separated)]. No pyridine N-oxide: none of the datasets holds one
+ * (`a pentavalent N drawn matches the molecule holding it charge-separated` has it). */
+const PENTAVALENT_N: [string, Ds, Draw, string, string][] = [
+  ['a nitrobenzene', 'smiles.csv', {crux: 'O=Nc1ccccc1', steps: [['tool', 'bond.double', 'atom', 1], ['label', 8, 'O']]},
+    NITRO_PENTAVALENT, `[#8-]-[#7+](=[#8])-${BENZENE}`],
+  ['methyl azide', 'mol1K', {crux: 'CN=N', steps: [['tool', 'bond.triple', 'atom', 2], ['label', 3, 'N']]},
+    AZIDE_PENTAVALENT, '[#6]-[#7]=[#7+]=[#7-]'],
+];
+/** [a molblock drawn with a pentavalent N, a molecule holding the group charge-separated] */
+const PENTAVALENT_N_MOLECULES: [string, string][] = [[NITRO_PENTAVALENT, '[O-][N+](=O)c1ccc(C)cc1'],
+  [AZIDE_PENTAVALENT, 'CCN=[N+]=[N-]'], [N_OXIDE_PENTAVALENT, '[O-][n+]1ccc(C)cc1']];
 
 const COMPLEX: Case[] = [
   // Crux, by its own controls
@@ -569,6 +647,18 @@ const COMPLEX: Case[] = [
   {name: 'any bonds around a ring', ds: 'SPGI', sketcher: 'OpenChemLib', draw: {ocl: V2000_ANY_RING}, intended: ANY_RING_SMARTS},
   {name: 'a NOT list on a fused Kekulé ring', ds: 'mol1K', sketcher: 'OpenChemLib', draw: {ocl: V2000_NOT_QUINOLINE},
     intended: NOT_QUINOLINE_SMARTS},
+  // the product owner (2026-10-14): an H count on a ring NH in a Kekulé V2000 found no rows (RDKit's V2000 reader gave the
+  // atom of an hhh no implicit H: read sanitized, the N was a radical and its ring not aromatic)
+  {name: 'an H count on the ring NH of a Kekulé indole (its V2000)', ds: 'mol1K', sketcher: 'OpenChemLib',
+    draw: {ocl: OCL_INDOLE_HCOUNT}, intended: INDOLE_NH, through: []},
+  // the product owner (2026-10-14): a pentavalent N drawn (a nitro N(=O)=O, an azide N=N#N, an N-oxide N=O) found no rows,
+  // the molecules holding it charge-separated; the query intended is the charge-separated one. Not switched through the
+  // other sketchers: each writes the N in its own form, which the search reads alike
+  ...PENTAVALENT_N.flatMap(([what, ds, crux, molfile, intended]): Case[] => [
+    {name: `${what} drawn with a pentavalent N`, ds, sketcher: 'Crux', draw: crux, intended, through: []},
+    {name: `${what} drawn with a pentavalent N`, ds, sketcher: 'Ketcher', draw: {ketcher: molfile}, intended, through: []},
+    {name: `${what} drawn with a pentavalent N`, ds, sketcher: 'OpenChemLib', draw: {ocl: molfile}, intended, through: []},
+  ]),
 ];
 
 /** Ketcher's structures, laid out by RDKit once its module is in (`before`). */
@@ -1083,6 +1173,23 @@ category('query back and forth: complex queries', () => {
   });
   after(async () => roundTripAfter(sketcherType));
   caseTests(COMPLEX);
+  // the product owner (2026-10-14): a pentavalent N drawn found no rows; read as the search reads a query molblock, each
+  // matches a molecule that holds the group charge-separated (as RDKit and the datasets hold it)
+  test('a pentavalent N drawn (nitro, azide, N-oxide) matches the molecule holding it charge-separated', async () => {
+    const missed: string[] = [];
+    for (const [molBlock, smiles] of PENTAVALENT_N_MOLECULES) {
+      const q = getQueryMolSafe(molBlock, '', rdkit);
+      const mol = rdkit.get_mol(smiles);
+      try {
+        if (!q || mol.get_substruct_match(q) === '{}')
+          missed.push(`${q?.get_smarts() ?? 'no query'} does not match ${smiles}`);
+      } finally {
+        q?.delete();
+        mol.delete();
+      }
+    }
+    expect(missed.length, 0, missed.join('; '));
+  });
 });
 
 category('query back and forth: entered as text', () => {

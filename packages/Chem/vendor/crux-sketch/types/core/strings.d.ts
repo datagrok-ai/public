@@ -149,10 +149,10 @@ export declare const STRINGS: {
      * everything), which say how they differ (spike bar-fit, B8, the product owner's: layout.md L2, L3).
      */
     readonly layoutTip: 'Layout: redraw from scratch and fit the view (the selection, if any)';
-    readonly cleanUpTip: 'Clean Up: tidy bonds and angles, keeping the drawing in place (the selection, if any)';
+    readonly cleanUpTip: 'Clean Up: tidy bonds and angles and fit the view (the selection, if any)';
     /** Clean Up's menu (B8): its name, its opener's too, and the line under each item. */
     readonly cleanUpMenu: 'Clean Up and Layout';
-    readonly cleanUpLine: 'Tidy bonds and angles, keep the drawing in place';
+    readonly cleanUpLine: 'Tidy bonds and angles, fit the view';
     readonly layoutLine: 'Redraw from scratch, fit the view';
     /**
      * The explicit hydrogens' commands (spike hydrogens-and-dative, R1; ATOM-028): the top bar's Hydrogens menu button and its
@@ -620,6 +620,12 @@ export declare const STRINGS: {
     readonly atropM: 'M';
     readonly noAxisConfig: 'No {config} configuration for this axis';
     /**
+     * Spike linear-ez (crux-core `sketch-linear-ez`, the product owner's option B): a double bond touching a linear (sp) centre,
+     * an atom with two double bonds and no lone pair (an azide's N⁺, an allene's central C), has no E/Z: crossing it is refused
+     * (the crossed and wavy tools, 2 and y over it, the menu's Crossed double bond, greyed out there with this as its reason).
+     */
+    readonly noEzLinearCentre: 'No E/Z for this double bond: it touches a linear centre';
+    /**
      * Spike stereo-panel (docs/research/stereo-panel/design.md, "Wording"; sentence case): the stereochemistry panel, its
      * button and canvas menu item, its rows' kinds and names, its group chip and menu, its summary, its empty states and its
      * foot's commands. The groups' names (abs, &1, or1) are notations, never translated.
@@ -672,6 +678,8 @@ export declare const STRINGS: {
     readonly recomputeWedgesButton: 'Recompute wedges';
     readonly removeStereoTip: 'Make the selected centres and axes unspecified (all, with nothing selected)';
     readonly recomputeWedgesTip: 'Place the wedges anew from the configuration (the selected, or all with nothing selected)';
+    /** An icon button's tooltip (spike reports-oct14, report 5): its name, then what it does or why it cannot. */
+    readonly commandTip: '{name}: {tip}';
     /**
      * Spike abbreviations (docs/decisions/abbreviations.md, A5 to A8; I18N-006: the abbreviations' names are notations, never
      * translated, and are passed into these as they are): a contracted abbreviation's menu, named "Abbreviation", and its
