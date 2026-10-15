@@ -205,6 +205,9 @@ export class PortalView {
   private discussion: {d: ProgramDiscussion | null, error?: string, all: boolean} = {d: null, all: false};
   /** Owns the u2 controls of the program page as last drawn; disposed when it is drawn again or cleared. */
   private detailScope: Scope | null = null;
+  /** Counts the program page's loads: only the latest draws, so a slow load begun before a change
+   * (a follow from the context panel) cannot draw over the reload that came after it. */
+  private pageLoads = 0;
   /** Owns the u2 controls of the board as last drawn: its cards, mode and persona. */
   private boardScope: Scope | null = null;
   /** The program page last drawn: Discuss and Ask SME beside a criterion, run or document use it. */
@@ -502,6 +505,7 @@ export class PortalView {
       this.picked = {programId: id, off: new Set(), links: []};
     this.selected = id;
     this.viewedStage = viewedStage;
+    const load = ++this.pageLoads;
     const program = this.programs.find((x) => x.id === id);
     this.markSelected(program ?? null);
     if (program) {
@@ -606,8 +610,8 @@ export class PortalView {
     // the discussion (F-51): the platform chat on the program's folder
     const discussion = await discussionOf(ctx.program).then((d) => ({d}))
       .catch((e: any) => ({d: null, error: e?.message ?? String(e)}));
-    // another program was opened meanwhile: its page is not this one's to draw
-    if (this.selected !== id)
+    // another program was opened meanwhile, or this one read again: the page is not this load's to draw
+    if (this.selected !== id || load !== this.pageLoads)
       return;
     this.designs = {sets: designSets, selections, refused: designRefused};
     this.dmta = dmta;

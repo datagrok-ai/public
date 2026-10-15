@@ -48,7 +48,13 @@ export function programPanel(programId: string): HTMLElement {
   return host;
 }
 
+/** The latest fill of each panel: an earlier one still reading when a change refills the panel
+ * must not draw over it. */
+const fills = new WeakMap<HTMLElement, number>();
+
 async function fill(host: HTMLElement, programId: string): Promise<void> {
+  const fillNo = (fills.get(host) ?? 0) + 1;
+  fills.set(host, fillNo);
   const program = await portalDb.programs.get(programId).catch(() => null);
   const portfolio = program ? await portalDb.portfolios.get(program.portfolio_id).catch(() => null) : null;
   if (!program || !portfolio) {
@@ -66,6 +72,8 @@ async function fill(host: HTMLElement, programId: string): Promise<void> {
       Promise.resolve(false),
   ]);
   const viewers = approver && portfolio.viewers ? await grok.dapi.groups.find(portfolio.viewers).catch(() => null) : null;
+  if (fills.get(host) !== fillNo)
+    return;
   // drawn again after a change, and the page too when it shows this program
   const changed = async () => {
     await openPortal()?.portal.refreshProgram(programId);
