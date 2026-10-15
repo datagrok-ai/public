@@ -2,9 +2,34 @@
 
 ## v.next
 
+* Run compare: Selected runs and workflow steps load in parallel; a run that fails to load no longer stops the others, and runs with steps that could not be loaded show a warning
+* Run compare: Empty index cells no longer show up as an `undefined` category on a categorical index
+* Run compare: Fixed a blank chart when the first checked value disappears while others stay checked; a charted value stays listed when Hide equal values would hide it
+* Run compare: Chart and export columns carry their units in the name (`Biomass (g/L)`, `Time (h)`), and the Compare list shows each value's units
+* Run compare: A run that has the value in other units shows `units differ (mg/L)` instead of `no similar data`
+* Run compare: Clicking the selected value again clears the selection; the expand chevron takes its whole cell, so clicks near it no longer change the selection
+* Run compare: Unit mappings (`1 g/L = 1000 mg/L`) in the Mappings dialog let values in other units join a row; they are multiplied into the first run's units when the chart is built
+* Run compare: Units compare case-sensitively (`MPa` ≠ `mPa`), folding only spacing, micro signs, superscripts, `l`/`L` and time unit spellings; the time units picker reads the same spellings, so `H` (henry) is no longer taken for hours
+* Run compare: The Multiple values toggle sits next to the value filter, and the name mappings icon got a label
+* Run compare: Charts of several values show every run any of them has, and the partial badge no longer depends on which value was checked first
+* Run compare: Fixed repeated workflow steps (e.g. one per day) overwriting each other's tables and showing as identical rows; each occurrence is now its own row labeled with its step, and runs pair by step
+* RFV: Dataframe outputs annotated `hidden: true` are hidden, like scalar and graphics outputs
+* TreeWizard: Step tooltips no longer name inputs that were only changed among those with warnings
+* TreeWizard: Removing a step or workflow from the tree asks for confirmation
+* Replaced hardcoded colours with the platform design tokens
+* TreeWizard: The selected step shows its actions without hovering, and tree icons are labelled for assistive tools
+* TreeWizard: Each step status has its own icon, so statuses no longer differ only by colour
+* RFV: Added the Feedback menu (Report a bug, Request a feature) to the standalone view
+* Inspector: Links tab shows each link as written, empty aliases, targets dropped by `$linked` and action visibility, and no longer mixes up the spec of links that share an id across steps; Config tab shows the config as written with resolved step io; links generated from annotations are shown in the Links and Log tabs only with the Annotation links toggle, and missing-value checks are never shown
+* TreeWizard: Added duplicating a dynamic workflow item (step or nested workflow) from the tree; the copy keeps input and state values, and the outputs of a run step, and does not rerun init hooks
+* TreeWizard: The workflow Excel export adds a `000_summary.xlsx` with each step's status, run error, messages and inconsistent inputs, and each workflow's validations and step counts; custom exports get the same data from `getExportSummary` and `reportSummaryExcel`, and the step callback gets the `status`
 * TreeWizard: Step forms only render and bind (`skipLogic`): the workflow owns values, choices, validation, visibility and enabled state, and the form no longer overrides them
 * TreeWizard: Opt-in compact view for single-step workflows (`compactView: true`; no tree or navigation; save, share, history and export on the step ribbon, history always available)
 * RFV: Default Excel export includes validation and consistency
+* Run compare: Fixed a fuzzy-named value taking a run's slot from an exact match declared after it
+* RFV: Graphics outputs (R/Python plots) render as images in their own panel instead of base64 text, and export to Excel
+* TreeWizard: Fixed validation advice actions running without their `additionalParams`
+* TreeWizard: The failed step tooltip shows the run error
 
 ## 1.6.0 (2026-09-23)
 

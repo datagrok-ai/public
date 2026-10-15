@@ -3,11 +3,13 @@ import * as DG from 'datagrok-api/dg';
 import * as ui from 'datagrok-api/ui';
 import * as grok from 'datagrok-api/grok';
 
-import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator} from './constants';
+import {HIGHLIGHT_WIDTH, LINE_MAX_WIDTH, LINE_MIN_WIDTH, MAXIMUM_COLUMN_NUMBER, MAXIMUM_ROW_NUMBER, MAXIMUM_SERIES_NUMBER, MOUSE_OVER_GROUP_COLOR, RadarIndicator, WARNING_CLASS} from './constants';
 import {StringUtils} from '@datagrok-libraries/utils/src/string-utils';
 import {EChartViewer} from '../echart/echart-viewer';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
 import {ERROR_CLASS, MessageHandler} from '../../utils/utils';
+import {radarStatus} from './radar-status';
+import {Observable} from 'rxjs';
 import _ from 'lodash';
 
 import '../../../css/radar-viewer.css';
@@ -15,7 +17,6 @@ import '../../../css/radar-viewer.css';
 type MinimalIndicator = '1' | '5' | '10' | '25';
 type MaximumIndicator = '75' | '90' | '95' | '99';
 type Normalization = 'Column' | 'Global';
-const WARNING_CLASS = 'radar-warning';
 
 // Based on this example: https://echarts.apache.org/examples/en/editor.html?c=radar
 @grok.decorators.viewer({
@@ -50,6 +51,14 @@ export class RadarViewer extends EChartViewer {
 
   private static _canvas: HTMLCanvasElement | null = null;
   private static _ctx: CanvasRenderingContext2D | null = null;
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {return MessageHandler._getMessage(this.root);}
+
+  getWidgetStatus(): DG.IWidgetStatus {return radarStatus(this);}
 
   constructor() {
     super();
@@ -248,10 +257,12 @@ export class RadarViewer extends EChartViewer {
       }
     }));
     this.subs.push(
-      DG.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+      this.signals.debounce(ui.onSizeChanged(this.root), 50).subscribe((_) => {
+        const release = this.signals.hold();
         requestAnimationFrame(() => {
           this.chart?.resize();
           this.render();
+          release();
         });
       }),
     );
@@ -542,6 +553,10 @@ export class RadarViewer extends EChartViewer {
   }
 
   render(indexes?: number[]) {
+    this.signals.render(() => this.draw(indexes));
+  }
+
+  private draw(indexes?: number[]) {
     if (!this.dataFrame)
       return;
 

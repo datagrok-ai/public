@@ -64,6 +64,15 @@ table('headerVisible: false drops the header row entirely', () => {
   t.dispose();
 });
 
+table('fixedLayout opts into the fixed, host-wide layout; the default stays content-sized', () => {
+  const fixed = new BasicTable({columns: columns(), items: ITEMS, fixedLayout: true});
+  assert.equal(fixed.root.classList.contains('u2-table-fixed'), true);
+  fixed.dispose();
+  const auto = new BasicTable({columns: columns(), items: ITEMS});
+  assert.equal(auto.root.classList.contains('u2-table-fixed'), false);
+  auto.dispose();
+});
+
 table('string cells become text, element cells are appended, alignment is a class', () => {
   const t = new BasicTable({
     columns: [

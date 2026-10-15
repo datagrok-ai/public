@@ -64,8 +64,10 @@
   object-fit: cover;
 }
 
+/* a long unbroken token — a SMILES, an id — wraps at the card's edge instead of spilling past it */
 .u2-card-body {
   min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .u2-card-footer {
@@ -99,6 +101,15 @@
   outline-offset: calc(-1 * var(--dg-border-width));
 }
 
+.u2-card-compact {
+  gap: var(--dg-space-s);
+  padding: var(--dg-space-m);
+}
+
+.u2-card-compact .u2-card-title {
+  font-size: var(--dg-font-size);
+}
+
 .u2-stat-card {
   position: relative;
   gap: var(--dg-space-xs);
@@ -109,6 +120,12 @@
   font-weight: var(--dg-font-weight-medium);
   line-height: 1.2;
   color: var(--dg-text-color);
+  overflow-wrap: anywhere;
+}
+
+/* the icon is pinned to the top-right corner: a long value wraps before it instead of under it */
+.u2-stat-card:has(> .u2-stat-icon) .u2-stat-value {
+  padding-right: calc(var(--dg-font-size) + var(--dg-space-m));
 }
 
 .u2-stat-value .u2-skeleton {

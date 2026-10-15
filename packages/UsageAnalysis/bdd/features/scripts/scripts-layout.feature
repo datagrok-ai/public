@@ -1,7 +1,8 @@
 @journey @serial @realizes:views.scripts
 Feature: The layout of a script's result
-  A script that outputs a dataframe gets a Layout tab: run it there, arrange the viewers the result
-  opens with, and Save stores them with the script. Translated from files/TestTrack/Scripts/layout.md
+  A script that outputs a dataframe gets a Layout tab: run it there, arrange the viewers, colours and
+  columns the result opens with, and Save stores them with the script; a run of the saved script opens
+  its result that way. Translated from files/TestTrack/Scripts/layout.md
   and playwright-public/scripts/scripts-layout.test.ts, which reapplied the layout through the JS
   API and skipped its own save when the dialog did not close — so it proved the API, not the view.
 
@@ -48,8 +49,29 @@ Feature: The layout of a script's result
     And no errors should have been logged
     And no error or warning balloon should have been shown
 
+  Scenario: A colouring and a hidden column join the layout
+    Then the "color of cell 1 of length" and "color of cell 2 of length" readings of grid should be the same
+    When user picks "Color Coding > Linear" from the context menu of the "header length" area of grid
+    Then the "color of cell 1 of length" and "color of cell 2 of length" readings of grid should differ
+    When user picks "Hide" from the context menu of the "header model" area of grid
+    Then grid should not have a "header model" area
+    And no errors should have been logged
+
   Scenario: Save stores the layout with the script
     When user saves the script
     Then no error or warning balloon should have been shown
     And the script "BddScriptLayout{time}" on the server should have a layout
     And no errors should have been logged
+
+  Scenario: Run... from the Scripts view opens the result with the saved layout
+    When user closes all views
+    Given user opens the Scripts view
+    When user types "BddScriptLayout{time}" into gallery search
+    And user picks "Run..." from the context menu of "BddScriptLayout{time}" link in gallery
+    Then the current view should be a TableView view
+    And the table should have 30 rows
+    And the open tableview should have 1 bar chart viewer
+    And grid should not have a "header model" area
+    And the "color of cell 1 of length" and "color of cell 2 of length" readings of grid should differ
+    And no errors should have been logged
+    And no error or warning balloon should have been shown

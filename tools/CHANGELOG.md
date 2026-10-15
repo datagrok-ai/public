@@ -2,6 +2,23 @@
 
 ## v.next
 
+* `grok add app --domain`, `grok api --ui`: scaffold against `@datagrok-libraries/ems`
+* GROK-20884: Added `grok s o errors get <signature|problem>`: each occurrence of an error with its time, user, function and session, so an error incident leads to its calls
+* GROK-20884: Added `grok s o logs container [<name|id>]`: a docker container's log lines cut by `--since`/`--from`/`--to` and `--grep`; no name lists the containers
+* GROK-20884: `grok s o problems get` prints one field per line with every detail in full, and `errors top --limit` returns that many rows instead of the top of every source
+* GROK-20884: Added `grok s observe` (alias `grok s o`): problems and their alerts, problem rules, logger settings with expiring user and group entries, errors, the timeline and cloud logs (CloudWatch and the log archive)
+* GROK-20884: Added `grok s o logs capture <login|group> [--for 30m]`: saves every API request of a user or a group until the entry expires (a `logger set` of `saveHttpRequests`; an entry that expires later keeps its time); `logs capture stop` removes an expiring entry that holds only the capture, `logs capture` lists the active ones
+* GROK-20298: `grok s domains apply` sends the manifest JSON's `version` as the now-required `ifVersion` of a user-managed schema, accepts `--if-version current` to take the registered one, refuses such an apply without either, and forwards `friendlyName`, `description` and `storage` from the JSON for a user-managed schema (a package schema keeps its key set)
+* GROK-20298: `domain-schema.schema.json` accepts the root `storage` key (`{kind: external, connection, schema?, catalog?}`) and the remote-name keys `table`/`column`; `grok api` types an external table's rows with `id` only, an empty expand map, and emits no `<Schema>TransactionOp`/`transaction` for an external schema
+
+## 6.7.8 (2026-10-13)
+
+* Fixed `grok api` (and every command other than `grok s`) exiting with code 1 and its usage text in 6.7.7: the new `--send-email` flag reached every command as `send-email: false`, which `grok api` rejected as an unknown option
+
+## 6.7.7 (2026-10-09)
+
+* GROK-21156: `grok s users invite [<email>] [--prefix <P>] [--send-email]`: invites a user and prints a link that logs them in (no email sent; the email may be omitted); `--prefix` starts the code with `<P>`; `--send-email` mails the invitation instead
+* `grok test --skip-gc` launches the browser without `--expose-gc`, so the test runner skips its garbage collection after every test; a suite of small unit tests runs several times faster (ComputeUtils driver tests: 92 s to 19 s)
 * `grok setup` installs corepack when it is missing instead of asking for it by hand: Node 25 no longer bundles corepack, so every fresh checkout on current Node stopped at that step
 * `grok setup` also removes the `.js`/`.d.ts` files the npm-era tsc emitted beside js-api and library sources: the workspace emits into `dist/`, and a leftover `js-api/grok.js` shadowed the `grok` command in cmd.exe
 * GROK-20753: `domain-schema.schema.json` accepts the `hierarchy` table key (the table is a tree: exactly one ref column targeting itself) — without it `grok api` / `grok check` refused a manifest the server accepts

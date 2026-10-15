@@ -130,6 +130,24 @@ smoke('the counter walks the steps and the last one says DONE', async () => {
   assert.deepEqual(results, ['done']);
 });
 
+smoke('a step whose target is missing is not counted, and the last shown step says DONE', async () => {
+  target('a', 10, 10, 30, 30);
+  target('b', 60, 10, 30, 30);
+  const tour = start({steps: [
+    {target: 'a', content: 'First.'},
+    {target: 'gone', content: 'Never shown.'},
+    {target: 'b', content: 'Second.'},
+    {target: 'alsoGone', content: 'Never shown either.'},
+  ]});
+  assert.equal(counter(tour), '1 / 2');
+  assert.equal(nextButton(tour).textContent, 'NEXT');
+
+  tour.next();
+  assert.equal(tour.step.value, 2);
+  assert.equal(counter(tour), '2 / 2');
+  assert.equal(nextButton(tour).textContent, 'DONE');
+});
+
 smoke('custom button labels override the defaults', async () => {
   target('a', 10, 10, 30, 30);
   const tour = start({steps: [{target: 'a', content: 'Only step.'}],

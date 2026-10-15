@@ -11,61 +11,38 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
   The marker itself is a dot the grid paints on its canvas and reports nowhere; the tooltip shown
   over the cell's top right corner is built from the same values the dot is drawn for, so the values
   are claimed there. The blue circle on a sticky column's header is painted the same way and is not
-  claimed. The batch edit is claimed in the sticky columns and again after the table is reopened, so
-  what reached the server is read, not what the view keeps.
+  claimed. The batch edit is claimed in the sticky columns; that the values written are read back
+  from the server is tested in ApiTests src/dapi/sticky_meta.ts ('get values').
 
-  The cell's dialog and pane list one section per schema that matches molecules, and a section has no
-  container of its own, so its fields are named across all of them: the feature needs a stand where its
-  schema is the only one matching molecules (dev has four more — MISSING.md, section 8).
+  The cell's dialog and pane list one section per schema that matches molecules, each named after its
+  schema, so the fields are named in the feature's own section and another schema matching molecules on
+  the stand (dev has four) is no concern.
 
-  The entity type and the schema are made through the UI in the Background and deleted through the UI
-  in the last scenarios, which a journey runs even after a failure; the server-side sweep the library
-  does not have yet is in sticky-meta/MISSING.md. Serial: a schema matching molecules adds a section
-  to the Sticky meta pane of every molecule column on the stand.
+  The entity type and the schema are made through the API in the Background (the New Entity Type and New
+  Schema dialogs are schema-and-type's subject) and removed at feature end, an earlier run's after an hour.
+  Serial: a schema matching molecules adds a section to the Sticky meta pane of every molecule column on
+  the stand.
 
   Background:
     Given user is logged in
     And the "Chem" package is installed
-    And the browse panel is open
+    And a Sticky Meta schema "bdd-sm-cells-{time}" for molecules, with the entity type "bdd-sm-cells-type-{time}", is on the server with the properties:
+      | rating      | int      |
+      | notes       | string   |
+      | verified    | bool     |
+      | review_date | datetime |
     And the context panel is open
-    When user expands "Platform" tree node inside browse tree
-    And user expands "Platform > Sticky Meta" tree node inside browse tree
-    And user clicks on "Platform > Sticky Meta > Types" tree node inside browse tree
-    And user clicks on "New Entity Type..." button
-    And user enters "bdd-sm-cells-type-{time}" into "Name" input in "Create a new entity type" dialog
-    And user enters "semtype=molecule" into "Matching expression" input in "Create a new entity type" dialog
-    And user clicks on OK button in "Create a new entity type" dialog
-    Then the "Create a new entity type" dialog should close
-    When user clicks on "Platform > Sticky Meta > Schemas" tree node inside browse tree
-    And user clicks on "New Schema..." button
-    And user enters "bdd-sm-cells-{time}" into "Name" input in "Create a new schema" dialog
-    And user clicks on "select entities" action in "Create a new schema" dialog
-    And user checks "bdd-sm-cells-type-{time}" property in "Select types for bdd-sm-cells-{time}" dialog
-    And user clicks on OK button in "Select types for bdd-sm-cells-{time}" dialog
-    And user enters "rating" into second "Name" input in "Create a new schema" dialog
-    And user selects "int" in "Property Type" input in "Create a new schema" dialog
-    And user clicks on "Add new property to schema" button in "Create a new schema" dialog
-    And user enters "notes" into third "Name" input in "Create a new schema" dialog
-    And user selects "string" in second "Property Type" input in "Create a new schema" dialog
-    And user clicks on "Add new property to schema" button in "Create a new schema" dialog
-    And user enters "verified" into fourth "Name" input in "Create a new schema" dialog
-    And user selects "bool" in third "Property Type" input in "Create a new schema" dialog
-    And user clicks on "Add new property to schema" button in "Create a new schema" dialog
-    And user enters "review_date" into fifth "Name" input in "Create a new schema" dialog
-    And user selects "datetime" in fourth "Property Type" input in "Create a new schema" dialog
-    And user clicks on OK button in "Create a new schema" dialog
-    Then the "Create a new schema" dialog should close
     Given user opens spgi dataset
 
   Scenario: Metadata written for one cell shows in its tooltip and stays in its dialog (2.1)
     When user picks "Sticky meta > Edit for current cell..." from the context menu of the "cell 1 of Structure" area of grid
     Then "Sticky meta" dialog should be visible
-    When user enters "5" into Rating input in "Sticky meta" dialog
-    And user enters "test note" into Notes input in "Sticky meta" dialog
-    And user checks Verified input in "Sticky meta" dialog
-    Then Save button in "Sticky meta" dialog should be enabled
-    When user clicks on Save button in "Sticky meta" dialog
-    Then Save button in "Sticky meta" dialog should be disabled
+    When user enters "5" into Rating input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    And user enters "test note" into Notes input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    And user checks Verified input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    Then Save button in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should be enabled
+    When user clicks on Save button in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    Then Save button in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should be disabled
     When user clicks on CANCEL button in "Sticky meta" dialog
     Then the "Sticky meta" dialog should close
     When user hovers over the "top right corner of cell 1 of Structure" area of grid
@@ -73,9 +50,9 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
     And the tooltip should show "notes" as "test note"
     And the tooltip should show "verified" as "true"
     When user picks "Sticky meta > Edit for current cell..." from the context menu of the "cell 1 of Structure" area of grid
-    Then Rating input in "Sticky meta" dialog should have value "5"
-    And Notes input in "Sticky meta" dialog should have value "test note"
-    And Verified input in "Sticky meta" dialog should be checked
+    Then Rating input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should have value "5"
+    And Notes input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should have value "test note"
+    And Verified input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should be checked
     When user clicks on CANCEL button in "Sticky meta" dialog
     Then the "Sticky meta" dialog should close
     When user hovers over the "top right corner of cell 2 of Structure" area of grid
@@ -102,9 +79,9 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
 
   Scenario: A sticky column sorts like any column (2.2)
     When user picks "Sticky meta > Edit for current cell..." from the context menu of the "cell 2 of Structure" area of grid
-    And user enters "9" into Rating input in "Sticky meta" dialog
-    And user clicks on Save button in "Sticky meta" dialog
-    Then Save button in "Sticky meta" dialog should be disabled
+    And user enters "9" into Rating input in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    And user clicks on Save button in "bdd-sm-cells-{time}" section in "Sticky meta" dialog
+    Then Save button in "bdd-sm-cells-{time}" section in "Sticky meta" dialog should be disabled
     When user clicks on CANCEL button in "Sticky meta" dialog
     Then the "Sticky meta" dialog should close
     And the value of "rating" column in row 2 should be "9"
@@ -144,49 +121,3 @@ Feature: Sticky metadata on a molecule cell, as sticky columns and on several ro
     And the value of "notes" column in row 4 should be ""
     And no errors should have been logged
     And no error or warning balloon should have been shown
-
-  Scenario: What was written is read back from the server after the table is reopened
-    When user closes all views
-    And user opens spgi dataset
-    And user clicks on the "header Structure" area of grid
-    Then the context panel should show "Structure"
-    Given "Sticky meta" pane in context panel is expanded
-    When user clicks on "Add bdd-sm-cells-{time}'s properties as columns" button in context panel
-    Then the table should have a column "rating"
-    And the table should have a column "notes"
-    And the table should have a column "verified"
-    And the value of "rating" column in row 1 should be "5"
-    And the value of "notes" column in row 1 should be "batch note"
-    And the value of "notes" column in row 2 should be "batch note"
-    And the value of "verified" column in row 2 should be "true"
-    And the value of "notes" column in row 3 should be "batch note"
-    And the value of "verified" column in row 3 should be "true"
-    And the value of "notes" column in row 4 should be ""
-    And no errors should have been logged
-
-  Scenario: The schema is deleted
-    When user closes all views
-    And user clicks on "Platform > Sticky Meta > Schemas" tree node inside browse tree
-    And user types "bdd-sm-cells-{time}" into gallery search
-    Then "bdd-sm-cells-{time}" link in gallery should be visible
-    When user remembers the gallery counter
-    And user picks "Delete" from the context menu of "bdd-sm-cells-{time}" link in gallery
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And the gallery counter should be lower than remembered
-    And "bdd-sm-cells-{time}" link in gallery should be absent
-    When user clears gallery search
-    Then no errors should have been logged
-
-  Scenario: The entity type is deleted
-    When user clicks on "Platform > Sticky Meta > Types" tree node inside browse tree
-    And user types "bdd-sm-cells-type-{time}" into gallery search
-    Then "bdd-sm-cells-type-{time}" link in gallery should be visible
-    When user remembers the gallery counter
-    And user picks "Delete" from the context menu of "bdd-sm-cells-type-{time}" link in gallery
-    And user clicks on DELETE button in "Are you sure?" dialog
-    Then the "Are you sure?" dialog should close
-    And the gallery counter should be lower than remembered
-    And "bdd-sm-cells-type-{time}" link in gallery should be absent
-    When user clears gallery search
-    Then no errors should have been logged

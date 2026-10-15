@@ -134,6 +134,40 @@ category('Add new column', () => {
     expect(t.col('parsed errors'), null);
   });
 
+  test('a suggested error column name follows the result name, a typed one stays', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromStrings('s', ['2023-01-05', 'n/a'])]);
+    const expression = 'DateParse(${s})';
+    const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, expression}));
+    await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+    const type = (input: HTMLInputElement, value: string) => {
+      input.value = value;
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+      input.dispatchEvent(new Event('change', {bubbles: true}));
+    };
+    try {
+      dlg.showErrorBehaviorPopup();
+      const popup = document.querySelector('.add-new-column-error-popup')!;
+      const popupInput = (label: string) => Array.from(popup.querySelectorAll('.ui-input-root'))
+        .find((root) => root.querySelector('label')?.textContent?.includes(label))!.querySelector('input')!;
+      popupInput('Error column').click();
+      const name = dlg.inputName!.input as HTMLInputElement;
+      const previewHas = (col: string) => dlg.gridPreview!.dataFrame.col(col) != null;
+      type(name, 'c2');
+      await awaitCheck(() => previewHas('c2 errors'), 'the preview has no error column for c2', 5000);
+      type(name, 'c3');
+      await awaitCheck(() => previewHas('c3 errors'), 'the preview error column does not follow the name', 500);
+      expect(dlg.getErrorBehaviorParam()?.errorColName, 'c3 errors');
+
+      type(popupInput('Column name'), 'mine');
+      await awaitCheck(() => previewHas('mine'), 'the preview does not use the typed name', 5000);
+      type(name, 'c4');
+      expect(dlg.getErrorBehaviorParam()?.errorColName, 'mine');
+    } finally {
+      document.body.dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+      dlg.close();
+    }
+  });
+
   test('hints', async () => {
     const call = DG.Func.find({ name: 'AddNewColumn' })[0].prepare({'table': df});
     const dlg = new AddNewColumnDialog(call);
@@ -265,6 +299,48 @@ category('Add new column', () => {
       grok.shell.closeTable(other);
       dlg.uiDialog!.close();
     }
+  });
+
+  test('the edit dialog previews the column under its own name', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
+    await t.columns.addNewCalculated('c3', '${n} * 2');
+    const dlg = new AddNewColumnDialog(prepareAddNewColumnFuncCall(t.col('c3')!));
+    try {
+      await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+      await dlg.updatePreview('${n} * 3', false);
+      const names = dlg.gridPreview!.dataFrame.columns.names();
+      expect(names.includes('c3') && !names.includes('c3 (2)'), true, `preview columns: ${names.join(', ')}`);
+    }
+    finally {
+      dlg.close();
+    }
+  });
+
+  test('a numeric formula is added as a string or as plain text', async () => {
+    const t = DG.DataFrame.fromColumns([DG.Column.fromList(DG.COLUMN_TYPE.INT, 'n', [1, 2])]);
+    const expression = '${n} + 1';
+    const add = async (name: string, type: string) => {
+      const dlg = new AddNewColumnDialog(DG.Func.find({name: 'AddNewColumn'})[0].prepare({table: t, name, expression}));
+      try {
+        await awaitCheck(() => dlg.codeMirror != null, 'cannot load CodeMirror', 5000);
+        dlg.inputType!.value = type;
+        await dlg.updatePreview(expression, false);
+        expect(dlg.error, '', `type ${type} refuses a number`);
+        const preview = dlg.gridPreview!.dataFrame.col(dlg.currentCalculatedColName)?.get(0);
+        await dlg.addNewColumnAction();
+        return preview;
+      }
+      finally {
+        dlg.close();
+      }
+    };
+    await add('r', DG.COLUMN_TYPE.STRING);
+    expect(t.col('r')!.type, DG.COLUMN_TYPE.STRING);
+    expect(t.col('r')!.get(0), '2');
+
+    const preview = await add('p', 'plain text');
+    expect(preview, t.col('p')!.get(0), 'the plain text preview is not the text the column gets');
+    expect(preview, '1 + 1');
   });
 
   test('insert function on click', async () => {

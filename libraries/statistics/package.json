@@ -8,7 +8,7 @@
     "access": "public"
   },
   "friendlyName": "statistics",
-  "version": "1.12.14",
+  "version": "1.12.15",
   "description": "Statistics utilities",
   "author": {
     "name": "Dmytro Kovalyov",

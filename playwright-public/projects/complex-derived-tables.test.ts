@@ -14,10 +14,11 @@ test.use(projectsTestOptions);
  * Projects created by THIS run, found by the stamp every entity it creates carries — including a
  * stray project named after the joined table, which is what the invariant is looking for.
  * Counting all projects instead cannot work: dev holds 5000+ of them, and anyone saving one
- * concurrently moves the number.
+ * concurrently moves the number. A bare filter('<stamp>') is a fuzzy trigram match and also returns
+ * a parallel spec's project whose stamp shares the leading digits, so match the substring instead.
  */
 function readRunProjectCount(page: Page, stamp: number): Promise<number> {
-  return evalJs(page, `(async () => (await grok.dapi.projects.filter('${stamp}').list({pageSize: 100})).length)()`);
+  return evalJs(page, `(async () => (await grok.dapi.projects.filter('name like "${stamp}"').list({pageSize: 100})).length)()`);
 }
 
 async function closeAll(page: Page) {

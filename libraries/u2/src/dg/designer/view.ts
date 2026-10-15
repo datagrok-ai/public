@@ -156,7 +156,7 @@ export class SpecDesigner extends Control {
     // a click on the row that is already selected moves no signal, so the selection effect below
     // never re-fires — the click itself has to re-assert it, past the guard that effect needs;
     // a modifier click is a multi-selection gesture, and re-asserting would collapse the set (F5)
-    this._listen(this._tree.root, 'click', (e) => {
+    this.scope.listen(this._tree.root, 'click', (e) => {
       const me = e as MouseEvent;
       if (me.ctrlKey || me.metaKey || me.shiftKey)
         return;
@@ -164,51 +164,51 @@ export class SpecDesigner extends Control {
       if (node)
         this._select(node);
     });
-    this._listen(this._pane, 'click', (e) => this._selection.onCanvasClick(e as MouseEvent));
-    this._listen(this._pane, 'mousedown', (e) => this._dragLayer.onPaneDown(e as MouseEvent));
-    this._listen(this._pane, 'contextmenu',
+    this.scope.listen(this._pane, 'click', (e) => this._selection.onCanvasClick(e as MouseEvent));
+    this.scope.listen(this._pane, 'mousedown', (e) => this._dragLayer.onPaneDown(e as MouseEvent));
+    this.scope.listen(this._pane, 'contextmenu',
       (e) => this._verbs.onContextMenu(e as MouseEvent, this._selection.hit(e as MouseEvent)));
-    this._listen(this._pane, 'mousemove',
+    this.scope.listen(this._pane, 'mousemove',
       (e) => this._selection.setHovered(this._dragging ? null : this._selection.hit(e as MouseEvent)));
-    this._listen(this._pane, 'mouseleave', () => this._selection.setHovered(null));
+    this.scope.listen(this._pane, 'mouseleave', () => this._selection.setHovered(null));
     // the second hover source: a tree row highlights its node on the canvas (run mode draws
     // nothing — `reposition` suppresses the adorners while the pane is detached)
-    this._listen(this._tree.root, 'mouseover', (e) =>
+    this.scope.listen(this._tree.root, 'mouseover', (e) =>
       this._selection.setHovered(this._dragging ? null : this._tree.nodeForRow(e.target)?.data ?? null));
-    this._listen(this._tree.root, 'mouseleave', () => this._selection.setHovered(null));
+    this.scope.listen(this._tree.root, 'mouseleave', () => this._selection.setHovered(null));
     // the platform wraps every JS view in a widget whose ancestor-level bubble contextmenu
     // listener opens its own 'Properties...' menu — nothing may propagate past the designer
     // while it is designing; Run mode keeps the platform menu
     // preventDefault too: a KEYBOARD contextmenu (Shift+F10) targets the focused designer root
     // itself, below the pane's own handler, and would otherwise pop the browser menu
-    this._listen(this.root, 'contextmenu', (e) => {
+    this.scope.listen(this.root, 'contextmenu', (e) => {
       if (this._pane.isConnected) {
         e.preventDefault();
         e.stopPropagation();
       }
     });
-    this._listen(this._surface, 'scroll', () => this._selection.reposition(), true);
-    this._listen(window, 'resize', () => this._selection.reposition());
+    this.scope.listen(this._surface, 'scroll', () => this._selection.reposition(), {capture: true});
+    this.scope.listen(window, 'resize', () => this._selection.reposition());
     // a drag that starts on a palette row leaves the pane at once, and Escape has to reach it
     // wherever the focus is; all three do nothing while no drag is in flight
-    this._listen(document, 'mousemove', (e) => this._dragLayer.onMove(e as MouseEvent));
-    this._listen(document, 'mouseup', () => this._endDrag(true));
-    this._listen(document, 'keydown', (e) => dragKey(e as KeyboardEvent, host));
+    this.scope.listen(document, 'mousemove', (e) => this._dragLayer.onMove(e as MouseEvent));
+    this.scope.listen(document, 'mouseup', () => this._endDrag(true));
+    this.scope.listen(document, 'keydown', (e) => dragKey(e as KeyboardEvent, host));
 
     this.open(spec);
 
     this._palette = this.runInScope(() => new Palette(this._instance?.registry ?? this._registry));
     this.toolbox = divV([h3('Palette'), this._palette.root, h3('Structure'), this._tree.root],
       'u2-designer-toolbox');
-    this._listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
-    this._listen(this.toolbox, 'contextmenu', (e) => {
+    this.scope.listen(this._palette.root, 'mousedown', (e) => this._dragLayer.onPaletteDown(e as MouseEvent));
+    this.scope.listen(this.toolbox, 'contextmenu', (e) => {
       // keyboard contextmenu with focus on the tree/palette chrome — no menu of any kind
       e.preventDefault();
       e.stopPropagation();
     });
-    this._listen(this._mode.root, 'click', () => this._refocus());
-    this._listen(this.root, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
-    this._listen(this.toolbox, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+    this.scope.listen(this._mode.root, 'click', () => this._refocus());
+    this.scope.listen(this.root, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
+    this.scope.listen(this.toolbox, 'keydown', (e) => keyDown(e as KeyboardEvent, host));
 
     this.effect(() => {
       const rows = this._tree.selectedNodes.value;
@@ -424,11 +424,6 @@ export class SpecDesigner extends Control {
     if (this._editor.peek()?.dirty.peek())
       parts.push('modified');
     this._status.value = parts.join(' · ');
-  }
-
-  private _listen(target: EventTarget, type: string, handler: (e: Event) => void, capture = false): void {
-    target.addEventListener(type, handler, capture);
-    this.own(() => target.removeEventListener(type, handler, capture));
   }
 }
 

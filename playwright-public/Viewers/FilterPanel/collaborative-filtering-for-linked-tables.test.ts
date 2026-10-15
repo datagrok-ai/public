@@ -170,7 +170,7 @@ async function switchToView(page: Page, name: string): Promise<void> {
 
 async function openFilterPanelViaRibbon(page: Page): Promise<void> {
   await page.locator('.d4-ribbon-panel [name="icon-filter"]').first().click();
-  await page.locator('[name="viewer-Filters"] .d4-filter').first().waitFor({timeout: 15_000});
+  await page.locator('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)').first().waitFor({timeout: 15_000});
 }
 
 async function selectTopFiveRows(page: Page): Promise<FrameState & {name: string}> {

@@ -1,5 +1,5 @@
 import {category, test, before} from '@datagrok-libraries/test/src/test';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineConfiguration, PipelineOutline, isFuncCallState, isStaticPipelineState, isDynamicPipelineState} from '@datagrok-libraries/compute-utils';
 import {getProcessedConfig} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {PipelineNodeBase} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
@@ -559,6 +559,44 @@ category('ComputeUtils: Driver pipeline validators: getOutline', async () => {
         },
       });
     });
+  });
+
+  test('Public state guards narrow the outline', async () => {
+    let shape: any;
+    const describe = (node: PipelineOutline): any => {
+      if (isFuncCallState(node))
+        return node.configId;
+      if (isStaticPipelineState(node))
+        return ['static', node.steps.map(describe)];
+      if (isDynamicPipelineState(node))
+        return ['dynamic', node.steps.map(describe)];
+    };
+    const config: PipelineConfiguration = {
+      id: 'pipeline1',
+      type: 'static',
+      steps: [
+        {id: 'step1', nqName: 'LibTests:TestAdd2'},
+        {id: 'dyn', type: 'parallel', stepTypes: [{id: 'item', nqName: 'LibTests:TestMul2'}], initialSteps: ['item']},
+      ],
+      links: [{
+        id: 'check',
+        type: 'pipelineValidator',
+        from: 'a:step1/a',
+        to: 'check',
+        handler({controller}) {
+          shape = describe(controller.getOutline());
+          controller.setValidation('check');
+        },
+      }],
+    };
+    const pconf = await getProcessedConfig(config);
+    testScheduler.run(({cold}) => {
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true});
+      tree.init().subscribe();
+      cold('-a').subscribe(() => tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore().setState('a', 5));
+      cold('300ms a').subscribe();
+    });
+    expectDeepEqual(shape, ['static', ['step1', ['dynamic', ['item']]]]);
   });
 
   test('getOutline reflects link-defining pipeline, not the `to` target', async () => {

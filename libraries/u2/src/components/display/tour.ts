@@ -146,9 +146,7 @@ export class Tour {
     Overlay.host.append(this.overlay, this.popup);
     this._active.value = true;
 
-    const onKeyDown = (e: Event) => this._onKeyDown(e as KeyboardEvent);
-    document.addEventListener('keydown', onKeyDown, true);
-    this._scope.own(() => document.removeEventListener('keydown', onKeyDown, true));
+    this._scope.listen(document, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent), {capture: true});
     this._scope.own(() => this._stopAutoUpdate());
     this._show(0);
   }
@@ -168,22 +166,27 @@ export class Tour {
     }
 
     const step = this._steps[at];
+    // the step's content lives as long as the step, whoever called next() (an auto-advance effect run)
+    const scope = new Scope(undefined, {label: 'tour-step'});
+    this._stepScope = scope;
     this._step.value = at;
     this._content.replaceChildren();
     if (typeof step.content === 'string')
       this._content.textContent = step.content;
     else
-      this._content.append(typeof step.content === 'function' ? step.content() : step.content);
-    this._counter.textContent = `${at + 1} / ${this._steps.length}`;
-    this._next.textContent = at === this._steps.length - 1 ? this._doneLabel : this._nextLabel;
+      this._content.append(typeof step.content === 'function' ? Scope.runWith(scope, step.content) : step.content);
+    // a step whose target is not on screen is skipped, so it is not counted either
+    const live = this._steps.map((s, i) => i === at || Tour._renderable(this._element(s.target)));
+    const position = live.slice(0, at + 1).filter(Boolean).length;
+    const count = live.filter(Boolean).length;
+    this._counter.textContent = `${position} / ${count}`;
+    this._next.textContent = position === count ? this._doneLabel : this._nextLabel;
 
     const placement = step.position ?? 'bottom';
     this._place(placement);
     this._stopAutoUpdate = autoUpdate(this._target!, this.popup, () => this._place(placement),
       {animationFrame: true});
 
-    const scope = new Scope();
-    this._stepScope = scope;
     const advanceOn = step.advanceOn;
     if (advanceOn instanceof Promise)
       void advanceOn.then(() => this._advance(scope));

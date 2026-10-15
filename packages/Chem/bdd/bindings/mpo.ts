@@ -1,9 +1,9 @@
-/* The MPO Profiles app: what the mpo domain table holds, and the gestures the profile editor needs
-   (its screen parts are registered in elements.ts). A profile a feature saves is removed when the feature ends, with the pMPO
-   model file a data-driven save writes beside it. */
+/* The MPO Profiles app: what the mpo domain table holds (the profile editor's screen parts are registered
+   in elements.ts). A profile a feature saves is removed when the feature ends, with the pMPO model file a
+   data-driven save writes beside it. */
 import {Page} from '@playwright/test';
-import {Given, Then, When} from '@datagrok-libraries/bdd';
-import {type ElementRef, atFeatureEnd, expect, gestures, locate} from '@datagrok-libraries/bdd/runtime';
+import {Given, Then} from '@datagrok-libraries/bdd';
+import {atFeatureEnd, expect} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -95,20 +95,3 @@ export const pmpoModelFile = Then('the pMPO model file of {string} should hold i
     }, pmpoFileOf(name)), {message: `the name and description in the pMPO model file ${pmpoFileOf(name)}`}).toBe(`${name} | ${description}`),
 {tier: 'api', description: `the model file a data-driven save writes to ${PMPO_FOLDER}, named after the profile and holding its name and description`});
 
-/** One pass at a person's pace, never retyped: the library's typing retypes until the field holds
- * the text, which a field that drops keys only on its first rename would survive. */
-export const typeKeyByKey = When('user types {string} key by key into {element}', async (page: Page, text: string, target: ElementRef) => {
-  const editor = await gestures.editorOf(page, target);
-  await editor.click();
-  await editor.press('ControlOrMeta+A');
-  await page.keyboard.type(text, {delay: 120});
-}, {tier: 'ui', description: 'clicks the field, selects its text and types once at 120 ms a key; the field is not read back here'});
-
-/** A triple click: the profile title swallows the select-all key, so the text a user retypes is
- * selected with the pointer. */
-export const selectTextOf = When('user selects the text of {element}', async (page: Page, target: ElementRef) => {
-  const loc = await locate(page, target);
-  await loc.click({clickCount: 3});
-  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString() ?? ''),
-    {message: `the selected text of ${target.phrase}`}).toBe((await loc.innerText()).trim());
-}, {tier: 'ui', description: 'a triple click on the element, checked by what the page reports as selected'});

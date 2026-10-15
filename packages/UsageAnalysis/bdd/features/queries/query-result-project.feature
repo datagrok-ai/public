@@ -16,6 +16,7 @@ Feature: A query result saved as a project
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no project named "BDD-Q-proj-{time}" is on the server
 

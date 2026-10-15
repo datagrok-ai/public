@@ -1,8 +1,9 @@
+/* eslint-disable max-len */
 import {MolNotationType, OCLServiceCall} from '../consts';
 import * as OCL from 'openchemlib/full';
 import {MAX_SMILES_LENGTH} from '../../../utils/chem-constants';
 
-type OCLWorkerReturnType = {res: {[key: string]: Array<number>}, errors: string[]};
+type OCLWorkerReturnType = {res: {[key: string]: Array<number | string>}, errors: string[]};
 
 onmessage = ({data: {op, data, argList, notationType}}) => {
   switch (op) {
@@ -143,6 +144,7 @@ const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
   'Stereo centers': {name: 'Stereo centers', type: 'int',
     valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).stereoCenterCount},
   'Molecule charge': {name: 'Molecule charge', type: 'int', valueFunc: (m: OCL.Molecule) => getMoleculeCharge(m)},
+  'Molecular formula': {name: 'Molecular formula', type: 'string', valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().formula},
 };
 
 function getMoleculeCharge(mol: OCL.Molecule): number {
@@ -159,4 +161,4 @@ interface IChemProperty {
   type: IChemPropertyType;
 }
 // we need this instead of DG.TYPE.FLOAT or int, because anything used by workers can not import DG, as it is external
-type IChemPropertyType = 'float' | 'int';
+type IChemPropertyType = 'float' | 'int' | 'string';

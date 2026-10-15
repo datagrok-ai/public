@@ -18,5 +18,5 @@ Feature: Export only the filtered rows
     Then grid should show 2550 rows
     When user clicks on Export icon in toolbar
     And user downloads a file through "As CSV" text in toolbar
-    Then the downloaded file should contain "RA"
+    Then the downloaded file should contain 2550 occurrences of ",RA,"
     And the downloaded file should not contain "Psoriasis"

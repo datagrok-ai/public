@@ -153,6 +153,12 @@ export async function closeTopMenu(page: Page): Promise<void> {
   await expect(page.locator('[role="menubar"] .d4-vert-menu').filter({visible: true})).toHaveCount(0);
 }
 
+/** Arms the next data query call, for `waitCommand`: a query run from a link or an icon. */
+export async function armQuery(page: Page): Promise<void> {
+  await installViewerRuntime(page);
+  await page.evaluate(() => (window as any).__bdd.armCommand(null));
+}
+
 /** Resolves once the last menu command's function call has ended (the platform's
  * `onAfterRunAction` for it); the name of the function. */
 export async function waitCommand(page: Page, capMs = 120000): Promise<string> {

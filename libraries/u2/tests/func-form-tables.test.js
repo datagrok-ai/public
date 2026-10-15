@@ -350,7 +350,7 @@ w3('auto-fill: no current table falls back to the first open one; zero tables st
   assert.equal(placeholder.length, 1, 'no crash, no disable (P-W3-5)');
   assert.equal(placeholder[0].value, '');
   assert.equal(placeholder[0].disabled, true, 'a disabled placeholder, never a pickable blank');
-  assert.equal(placeholder[0].textContent, 'No open tables — open or import one');
+  assert.equal(placeholder[0].textContent, 'No open tables');
   f.dispose();
 });
 

@@ -6,6 +6,11 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
   name without a "Replace profile" prompt (GROK-20822), and both are deleted from the list's own row
   menu, which is where the walk ends with the list holding neither.
 
+  The MPO profiles node of the Browse tree, expanded once at the start, follows every save, rename
+  and delete without a refresh: a saved profile appears under it, a renamed one shows its new name
+  only, and a deleted one leaves no stale entry behind while a profile still stored, the shipped
+  ADME Test, stays listed (GROK-19624).
+
   A table opened after the profile tab is offered in that tab's Dataset list (GROK-20821), and a
   data-driven profile is saved under the name and the description typed on the tab, with the pMPO
   model file beside it (GROK-20830). GROK-20830 was reported against a "Save model" dialog prefilled
@@ -26,6 +31,7 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
     Given user is logged in
     And the package autostarts have completed
     And no MPO profile named "BDD MPO {run}, BDD MPO {run} (Copy), BDD MPO renamed {run}, BDD MPO data-driven {run}" is on the server
+    And the shipped MPO profile "ADME Test" is on the server
     And the browse panel is open
     And Apps tree node inside browse tree is expanded
     And Apps---Chem tree node inside browse tree is expanded
@@ -35,7 +41,8 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
     Then the "MPO Profiles" view should be current
     And "Create profile" button should be visible
     And 0 MPO profiles named "BDD MPO {run}" should be on the server
-    And no errors should have been logged
+    When user expands Apps---Chem---MPO-profiles tree node inside browse tree
+    Then no errors should have been logged
 
   Scenario: A property name typed key by key stays in its field
     When user clicks on "Create profile" button
@@ -54,6 +61,7 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
     And 1 MPO profile named "BDD MPO {run}" should be on the server
     And the MPO profile "BDD MPO {run}" should have the properties "HeavyAtomCount"
     And the "BDD MPO {run}" view should be current
+    And "BDD MPO {run}" tree node inside browse tree should be visible
     And no errors should have been logged
 
   Scenario: The list holds the saved profile
@@ -86,6 +94,8 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
     And 1 MPO profile named "BDD MPO renamed {run}" should be on the server
     And 0 MPO profiles named "BDD MPO {run}" should be on the server
     And the "BDD MPO renamed {run}" view should be current
+    And "BDD MPO renamed {run}" tree node inside browse tree should be visible
+    And "BDD MPO {run}" tree node inside browse tree should be absent
     And no errors should have been logged
 
   Scenario: A table opened after the profile tab is offered in its Dataset list
@@ -119,9 +129,13 @@ Feature: The MPO profile editor, from the Browse tree to a deleted profile
     When user clicks on OK button in "Delete profile" dialog
     Then 0 MPO profiles named "BDD MPO renamed {run}" should be on the server
     And "BDD MPO renamed {run}" MPO profile should be absent
+    And "BDD MPO renamed {run}" tree node inside browse tree should be absent
+    And "BDD MPO {run} (Copy)" tree node inside browse tree should be visible
     When user clicks on actions of "BDD MPO {run} (Copy)" MPO profile
     And user picks "Delete" from the open menu
     And user clicks on OK button in "Delete profile" dialog
     Then 0 MPO profiles named "BDD MPO {run} (Copy)" should be on the server
     And "BDD MPO {run} (Copy)" MPO profile should be absent
+    And "BDD MPO {run} (Copy)" tree node inside browse tree should be absent
+    And "ADME Test" tree node inside browse tree should be visible
     And no errors should have been logged

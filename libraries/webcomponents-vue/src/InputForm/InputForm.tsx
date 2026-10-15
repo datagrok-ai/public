@@ -56,7 +56,7 @@ export const InputForm = Vue.defineComponent({
     formReplaced: (_a: DG.InputForm | undefined) => true,
     inputChanged: (_a: DG.EventData<DG.InputArgs>) => true,
     validationChanged: (_a: boolean) => true,
-    actionRequested: (_actionUuid: string) => true,
+    actionRequested: (_actionUuid: string, _additionalParams?: Record<string, any>) => true,
     consistencyReset: (_ioName: string) => true,
   },
   setup(props, {emit}) {

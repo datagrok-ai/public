@@ -1,9 +1,13 @@
-/* Generic kinds: "<qualifier> <kind>" resolves without a registry entry. Every `data-u2` value the
-   u2 library stamps (grep `dataset.u2 =` under libraries/u2/src) has a kind here — u2 is the
-   standard UI, so the base vocabulary covers it whole; the Dart client's `name=` conventions
-   (`annotate()` in html_utils.dart) ride along as `dartNames`, so the same phrase works on both UI
-   generations. Inputs share the u2 parts (label, editor, options, error) as `<part> of <input>`. */
-import {kind, KindDef, MatchStrategy} from '../../src/registry.js';
+/* Generic kinds: "<qualifier> <kind>" resolves without a registry entry. The u2 nouns come from the
+   u2 and EMS manifests (u2-kinds.g.ts, `npm run vocab`): every `data-u2` value the libraries stamp has
+   a kind there, and `OVERRIDES` adds only what the manifests cannot know — the Dart client's
+   selectors and `name=` conventions (`annotate()` in html_utils.dart), legacy aliases, part names and
+   gestures, and the strategy order of a noun whose phrases resolve today — so the same phrase works on
+   both UI generations. Inputs share the u2 parts (label, editor, options, error) as `<part> of <input>`.
+   The kinds below the u2 nouns are not u2's: the Dart shell, item kinds and generic words. */
+import {kind, MatchStrategy} from '../../src/registry.js';
+import {registerU2Kinds, type U2Override} from '../../src/u2-vocabulary.js';
+import {U2_KINDS} from './u2-kinds.g.js';
 
 const INPUT_LABEL = '[data-u2-part="label"], .u2-input-label, .ui-input-label';
 const INPUT_EDITOR = '[data-u2-part="editor"] input, [data-u2-part="editor"] select, [data-u2-part="editor"] textarea, ' +
@@ -18,106 +22,136 @@ const INPUT_MATCH: MatchStrategy[] = ['name', 'label', 'placeholder', 'dart'];
 // the primary text of a u2 row — the name a row goes by when it also shows a signature, a login or a shortcut
 const PRIMARY_TEXT = '.u2-fb-label, .u2-tree-label, .u2-typeahead-text, .u2-typeahead-user-name, .u2-multi-select-text, ' +
   '.u2-menu-label, .u2-card-title, .d4-tree-view-node-label';
+const ITEM_LABEL = '[data-u2-part="item-label"]';
 
 function u2(...ids: string[]): string {
   return ids.map((id) => `[data-u2="${id}"]`).join(', ');
 }
 
-function inputKind(name: string, ids: string[], dart: string, aliases: string[] = [], extra: Partial<KindDef> = {}): void {
-  kind(name, {
-    aliases,
-    selector: [u2(...ids), dart].filter((s) => s).join(', '),
-    match: INPUT_MATCH,
-    labelSelector: INPUT_LABEL,
-    dartNames: ['input-host-{q}'],
-    editorSelector: INPUT_EDITOR,
-    parts: INPUT_PARTS,
-    ...extra,
-  });
+/** A u2 input noun as the Dart client spells it too: its `.ui-input-<type>` root, `input-host-<Caption>`. */
+function input(dart: string, aliases: string[] = [], extra: U2Override = {}): U2Override {
+  return {...dart ? {selector: dart} : {}, aliases, match: INPUT_MATCH, labelSelector: INPUT_LABEL,
+    dartNames: ['input-host-{q}'], editorSelector: INPUT_EDITOR, parts: INPUT_PARTS, ...extra};
 }
 
+// a noun whose phrases resolve by data-u2-name today: the manifest's aria source would be tried first
+const BY_NAME: U2Override = {match: ['name']};
+
+const OVERRIDES: Record<string, U2Override> = {
+  // --- inputs ---
+  // a bare <input> outside any input host that names itself (aria-label) is a text input too: the
+  // Save project dialog's Name
+  'text input': input('.ui-input-text, input[aria-label]:not([type="checkbox"]):not(.ui-input-root *)', ['text field', 'textbox'],
+    {match: [...INPUT_MATCH, 'aria']}),
+  'text area': input('.ui-input-textarea', ['textarea', 'multiline input']),
+  'choice input': input('.ui-input-choice', ['dropdown', 'choice', 'select']),
+  'multi choice input': input('', ['multi choice']),
+  'number input': input('.ui-input-int, .ui-input-float', ['numeric input', 'number field']),
+  // a bare box outside any input host that names itself (aria-label): the Binding site popover's "Show side chains"
+  'checkbox': input('.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option, ' +
+    'input[type="checkbox"][aria-label]:not(.ui-input-root *)', ['bool input', 'switch', 'toggle'],
+  {match: [...INPUT_MATCH, 'text', 'aria'], items: false}),
+  'date input': input('.ui-input-date', ['date field', 'datetime input', 'date picker']),
+  'color input': input('.ui-input-color', ['color picker']),
+  'font input': input('', ['font picker']),
+  'icon input': input('', ['icon picker']),
+  'image input': input('', ['image picker']),
+  'list input': input(''),
+  'map input': input('', ['key value input']),
+  'message input': input('', ['prompt input', 'chat input']),
+  'radio input': input('.ui-input-radio', ['radio group', 'radio']),
+  'slider': input('.ui-input-slider', ['slider input']),
+  'range slider': input('svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']}),
+  'suggest input': input('', ['autocomplete', 'typeahead']),
+  'combobox': input('.ui-input-editable-choice', ['combo box', 'editable choice']),
+  'multi select': input('.ui-input-multi-choice', ['multi select input']),
+  'tags input': input('.ui-input-tags', ['tags field']),
+  'file input': input('.ui-input-file', ['file field', 'files input']),
+  'columns input': input('.ui-input-columns', ['columns picker']),
+  'column input': input('.d4-column-selector', ['column picker', 'column selector', 'column combobox'],
+    {match: ['name', 'label', 'dart'], dartNames: ['div-column-combobox-{q}', 'div-column-combobox-{q}-', 'input-host-{q}'],
+      gestures: {open: 'mousedown'}}),
+  'function input': input('', ['func input']),
+  'dynamic input': input(''),
+  'rsa input': input('', ['key input']),
+  'dart input': input('', ['bridged input']),
+
+  // --- actions ---
+  'button': {selector: 'button, [role="button"], .u2-btn, .ui-btn', match: ['name', 'text', 'aria', 'dart'],
+    dartNames: ['button-{q}'], items: false},
+  'icon button': {selector: 'button.u2-icon-btn', dartNames: ['icon-{q}']},
+  'row actions': BY_NAME,
+
+  // --- forms and collections ---
+  'form': {selector: u2('object-form', 'func-form') + ', .ui-form'},
+  'list': {u2Selector: '[data-u2="list"]:not([role="tree"])', selector: '[role="listbox"], .u2-list:not([role="tree"]), .d4-list'},
+  'tree': {selector: '[role="tree"], .d4-tree-view'},
+  'table': {selector: 'table'},
+  'grid': {selector: '.d4-grid'},
+  'functions browser': BY_NAME,
+  'history browser': BY_NAME,
+
+  // --- display ---
+  'icon': {selector: '.u2-icon, .grok-icon, [name^="icon-"], i[class*="fa-"]', match: ['aria', 'name', 'dart'], dartNames: ['icon-{q}', '{q}']},
+  'tag': {selector: '.d4-tag', items: false},
+  'notification': {u2Selector: '[data-u2="notify"] .u2-notify', selector: '.d4-balloon'},
+  'progress bar': {selector: '[role="progressbar"]', labelSelector: '.u2-progress-description'},
+  'stat card': {labelSelector: '.u2-stat-label'},
+  'tooltip': {selector: '[role="tooltip"], .d4-tooltip'},
+  'async view': BY_NAME,
+  'tray': BY_NAME,
+
+  // --- navigation ---
+  'toolbar': {selector: '[role="toolbar"], .d4-ribbon'},
+  // the Dart main menu keeps a permanent [role="menu"] container per group — not a popup
+  'menu': {selector: '.d4-menu-popup, [role="menu"]:not(.d4-menu-item-container)'},
+  'menu bar': {selector: '[role="menubar"]'},
+
+  // --- containers ---
+  // a container's label and parts are its own, never the title, close or footer part of a tab, a
+  // section or a card inside it — the manifest's [data-u2-part] selectors reach those too
+  'dialog': {selector: '.d4-dialog, [role="dialog"]', match: ['name', 'title', 'dart'],
+    labelSelector: '.u2-dialog-title-text, .d4-dialog-title', dartNames: ['dialog-{q}'],
+    parts: {title: '.u2-dialog-title, .d4-dialog-title', 'close button': '.u2-dialog-close, .d4-dialog-close',
+      footer: '.u2-dialog-buttons, .u2-dialog-footer, .d4-dialog-footer'}},
+  'tabs': {selector: '.d4-tab-control'},
+  'section': {selector: '.u2-section, .u2-accordion-pane, [name^="div-section--"], .d4-accordion-pane', match: ['name', 'title', 'dart'],
+    labelSelector: '.u2-section-title, .u2-section-header, .u2-accordion-title, .d4-accordion-pane-header',
+    dartNames: ['div-section--{q}', 'pane-{q}']},
+  'accordion': {selector: '.d4-accordion'},
+  'card': {selector: u2('stat-card', 'entity-card') + ', .d4-item-card', labelSelector: '.u2-card-title, .card-label'},
+  'splitter': BY_NAME,
+
+  // --- entities and the designer ---
+  // the chips of a chips input are its items, addressed by key (data-u2-item)
+  'chip': {selector: '[data-u2="chips-input"] [data-u2-item]', match: ['text', 'item', 'name']},
+  'palette': BY_NAME,
+  'designer': BY_NAME,
+};
+
+registerU2Kinds(U2_KINDS, OVERRIDES);
+
 // --- inputs ---------------------------------------------------------------------------------------
+// a u2 input bridging a Dart one (dart-input) holds the Dart `.ui-input-root`: that inner root is not a
+// second input
 kind('input', {
   aliases: ['field'],
-  selector: '[data-u2$="-input"], ' + u2('combobox', 'multi-select', 'column-picker', 'column-combo', 'range-slider', 'typeahead') + ', .ui-input-root',
+  selector: '[data-u2$="-input"], ' + u2('combobox', 'multi-select', 'column-picker', 'column-combo', 'range-slider', 'typeahead') +
+    ', .ui-input-root:not([data-u2="dart-input"] .ui-input-root)',
   match: INPUT_MATCH,
   labelSelector: INPUT_LABEL,
   dartNames: ['input-host-{q}'],
   editorSelector: INPUT_EDITOR,
   parts: INPUT_PARTS,
 });
-// a bare <input> outside any input host that names itself (aria-label) is a text input too: the
-// Save project dialog's Name
-inputKind('text input', ['text-input'], '.ui-input-text, input[aria-label]:not(.ui-input-root *)', ['text field', 'textbox'],
-  {match: [...INPUT_MATCH, 'aria']});
-inputKind('text area', ['text-area'], '.ui-input-textarea', ['textarea', 'multiline input']);
-inputKind('choice input', ['choice-input'], '.ui-input-choice', ['dropdown', 'choice', 'select']);
-inputKind('multi choice input', ['multi-choice-input'], '', ['multi choice']);
-inputKind('number input', ['number-input', 'bigint-input', 'qnum-input'], '.ui-input-int, .ui-input-float', ['numeric input', 'number field']);
-inputKind('checkbox', ['bool-input'], '.ui-input-bool, .ui-input-bool-switch, .u2-multi-choice-item, .u2-columns-option', ['bool input', 'switch', 'toggle'],
-  {match: [...INPUT_MATCH, 'text']});
-inputKind('date input', ['date-input', 'datetime-input'], '.ui-input-date', ['date field', 'datetime input', 'date picker']);
-inputKind('color input', ['color-input'], '.ui-input-color', ['color picker']);
-inputKind('font input', ['font-input'], '', ['font picker']);
-inputKind('icon input', ['icon-input'], '', ['icon picker']);
-inputKind('image input', ['image-input'], '', ['image picker']);
-inputKind('list input', ['list-input'], '', []);
-inputKind('map input', ['map-input'], '', ['key value input']);
-inputKind('message input', ['message-input'], '', ['prompt input', 'chat input']);
-inputKind('radio input', ['radio-input'], '.ui-input-radio', ['radio group', 'radio']);
-inputKind('slider', ['slider-input'], '.ui-input-slider', ['slider input']);
-inputKind('range slider', ['range-slider'], 'svg[type="range-slider"]', ['range input'], {dartNames: ['input-host-{q}', '{q}']});
 kind('slider handle', {
   aliases: ['handle', 'thumb'],
   selector: '[role="slider"], svg[type="range-slider"] [name$="-handle"]',
   match: ['aria', 'name', 'text', 'dart'],
   dartNames: ['{q}-handle', '{q}'],
 });
-inputKind('suggest input', ['suggest-input', 'typeahead'], '', ['autocomplete', 'typeahead']);
-inputKind('combobox', ['combobox'], '.ui-input-editable-choice', ['combo box', 'editable choice']);
-inputKind('multi select', ['multi-select'], '.ui-input-multi-choice', ['multi select input']);
-inputKind('tags input', ['tags-input'], '.ui-input-tags', ['tags field']);
-inputKind('file input', ['file-input', 'files-input'], '.ui-input-file', ['file field', 'files input']);
-inputKind('columns input', ['columns-input', 'columns-map-input', 'aggregated-columns-input'], '.ui-input-columns', ['columns picker']);
-inputKind('column input', ['column-combo', 'column-picker'], '.d4-column-selector', ['column picker', 'column selector', 'column combobox'],
-  {match: ['name', 'label', 'dart'], dartNames: ['div-column-combobox-{q}', 'div-column-combobox-{q}-', 'input-host-{q}'], gestures: {open: 'mousedown'}});
-inputKind('function input', ['function-input', 'func-call-input'], '', ['func input']);
-inputKind('dynamic input', ['dynamic-input'], '', []);
-inputKind('rsa input', ['rsa-input'], '', ['key input']);
-inputKind('dart input', ['dart-input'], '', ['bridged input']);
-
-// --- actions --------------------------------------------------------------------------------------
-kind('button', {
-  selector: 'button, [role="button"], .u2-btn, .ui-btn',
-  match: ['name', 'text', 'aria', 'dart'],
-  dartNames: ['button-{q}'],
-});
-kind('icon button', {
-  selector: u2('icon-button') + ', button.u2-icon-btn',
-  match: ['name', 'aria', 'dart'],
-  dartNames: ['icon-{q}'],
-});
-kind('dropdown button', {
-  aliases: ['menu button', 'split button'],
-  selector: u2('dropdown-button'),
-  match: ['name', 'text', 'aria'],
-});
-kind('button group', {aliases: ['segmented control'], selector: u2('button-group'), match: ['name', 'aria']});
-kind('row actions', {aliases: ['actions'], selector: u2('row-actions'), match: ['name']});
 
 // --- forms ----------------------------------------------------------------------------------------
-kind('form', {
-  selector: u2('form', 'object-form', 'func-form') + ', .ui-form',
-  match: ['name', 'aria'],
-});
-kind('function form', {
-  aliases: ['func form'],
-  selector: u2('func-form'),
-  match: ['name', 'aria'],
-  parts: {'run button': u2('ff-run'), 'history icon': u2('ff-history-icon')},
-});
-kind('object form', {selector: u2('object-form'), match: ['name', 'aria']});
-kind('property grid', {aliases: ['property editor'], selector: u2('property-grid', 'property-editor'), match: ['name', 'aria']});
 kind('property', {
   aliases: ['property row'],
   selector: '.u2-propgrid-row, tr.property-grid-item',
@@ -136,72 +170,33 @@ kind('category', {
   dartNames: ['prop-category-{q}'],
 });
 
-// --- collections ----------------------------------------------------------------------------------
-kind('list', {
-  selector: '[data-u2="list"]:not([role="tree"]), [role="listbox"], .u2-list:not([role="tree"]), .d4-list',
-  match: ['name', 'aria'],
-});
+// --- items of u2 collections: also addressed by key (data-u2-item), revealed for a gesture when not rendered
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '[data-u2="item"], .u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
-  match: ['text', 'label', 'aria', 'name'],
-  labelSelector: PRIMARY_TEXT,
+  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  match: ['text', 'label', 'aria', 'item', 'name'],
+  items: true,
+  labelSelector: `${PRIMARY_TEXT}, ${ITEM_LABEL}`,
 });
-kind('tree', {selector: u2('tree') + ', [role="tree"], .d4-tree-view', match: ['name', 'aria']});
 // the Dart tree wraps every row in a .d4-tree-view-group[role=treeitem] that carries the row's
 // text too, so the wrapper is excluded and the row — which owns name="tree-My-stuff---Favorites" —
 // is the node
 kind('tree node', {
   aliases: ['node', 'tree item'],
   selector: '[role="tree"] .u2-list-row, [role="treeitem"]:not(.d4-tree-view-group), .d4-tree-view-node',
-  match: ['dart', 'label', 'text', 'name'],
-  labelSelector: '.u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label',
+  match: ['dart', 'label', 'text', 'item', 'name'],
+  items: true,
+  labelSelector: '.u2-tree-label, .d4-tree-view-node-label, .d4-tree-view-group-label, .d4-tree-view-item-label, ' + ITEM_LABEL,
   dartNames: ['tree-{q}'],
 });
-kind('table', {selector: u2('table') + ', table', match: ['name', 'aria']});
 kind('table row', {
-  selector: u2('table') + ' tbody tr, table tbody tr',
-  match: ['label', 'text'],
-  labelSelector: 'td:first-child, th:first-child',
-});
-kind('grid', {aliases: ['virtual grid', 'cell grid'], selector: u2('grid') + ', .d4-grid', match: ['name', 'aria']});
-kind('functions browser', {
-  selector: u2('functions-browser'),
-  match: ['name'],
-  parts: {search: u2('fb-search'), list: u2('fb-list'), status: u2('fb-status'), 'clear button': u2('fb-clear'),
-    roles: u2('fb-roles'), tags: u2('fb-tags'), 'empty message': u2('fb-empty')},
-});
-kind('history browser', {
-  aliases: ['func call history browser', 'run history'],
-  selector: u2('func-call-history-browser'),
-  match: ['name'],
-  parts: {list: u2('fch-list'), 'retry button': u2('fch-retry'), state: u2('fch-state')},
+  selector: u2('table') + ' tbody tr, table tbody tr, [data-u2="data-table"] [data-u2-item]',
+  match: ['label', 'text', 'item'],
+  items: true,
+  labelSelector: `td:first-child, th:first-child, ${ITEM_LABEL}`,
 });
 
 // --- display --------------------------------------------------------------------------------------
-kind('icon', {
-  selector: u2('icon') + ', .u2-icon, .grok-icon, [name^="icon-"], i[class*="fa-"]',
-  match: ['aria', 'name', 'dart'],
-  dartNames: ['icon-{q}', '{q}'],
-});
-kind('badge', {selector: u2('badge', 'count-badge', 'dot'), match: ['text', 'name', 'aria']});
-kind('tag', {selector: u2('tag') + ', .d4-tag', match: ['text', 'name']});
-kind('notification', {
-  aliases: ['balloon', 'toast', 'message'],
-  selector: '[data-u2="notify"] .u2-notify, .d4-balloon',
-  match: ['text'],
-});
-kind('progress bar', {
-  aliases: ['progress'],
-  selector: u2('progress-bar') + ', [role="progressbar"]',
-  match: ['name', 'label', 'aria'],
-  labelSelector: '.u2-progress-description',
-});
-kind('stat card', {aliases: ['stat'], selector: u2('stat-card'), match: ['name', 'label', 'text'], labelSelector: '.u2-stat-label'});
-kind('tooltip', {selector: u2('tooltip') + ', [role="tooltip"], .d4-tooltip', match: ['text']});
-kind('tour', {selector: u2('tour'), match: ['name']});
-kind('async view', {aliases: ['loading view'], selector: u2('async-view'), match: ['name']});
-kind('tray', {selector: u2('tray'), match: ['name']});
 kind('heading', {aliases: ['header', 'title'], selector: 'h1, h2, h3, h4, h5, h6', match: ['text']});
 kind('text', {aliases: ['label'], selector: '*', match: ['exact-text']});
 kind('link', {selector: 'a, .d4-link-label', match: ['text', 'name', 'aria', 'dart'], dartNames: ['label-{q}']});
@@ -209,16 +204,13 @@ kind('action', {aliases: ['action link'], selector: '.d4-link-action', match: ['
   description: 'a function link of the context panel\'s Actions pane ("Convert Notation...")'});
 
 // --- navigation -----------------------------------------------------------------------------------
-kind('toolbar', {selector: u2('toolbar') + ', [role="toolbar"], .d4-ribbon', match: ['name', 'aria']});
-// the Dart main menu keeps a permanent [role="menu"] container per group — not a popup
-kind('menu', {selector: u2('menu') + ', .d4-menu-popup, [role="menu"]:not(.d4-menu-item-container)', match: ['name', 'aria']});
-kind('menu bar', {selector: u2('menu-bar') + ', [role="menubar"]', match: ['name', 'aria']});
 // a group item (u2 nests its submenu inside the item, Dart its children) contains its
 // children's labels, so an item's own label is the direct child
 kind('menu item', {
   selector: '.u2-menu-item, [role="menuitem"], .d4-menu-item',
-  match: ['label', 'text', 'name', 'dart'],
-  labelSelector: ':scope > .u2-menu-label, :scope > .d4-menu-item-label',
+  match: ['label', 'text', 'item', 'name', 'dart'],
+  items: true,
+  labelSelector: `:scope > .u2-menu-label, :scope > .d4-menu-item-label, :scope > ${ITEM_LABEL}`,
   dartNames: ['div-{q}'],
 });
 // the platform's ribbon holds its commands as plain divs, named by the text or the icon they show
@@ -227,29 +219,21 @@ kind('ribbon item', {
   selector: '.d4-ribbon-item',
   match: ['text', 'name', 'aria'],
 });
-kind('breadcrumbs', {aliases: ['breadcrumb bar'], selector: u2('breadcrumbs'), match: ['name', 'aria']});
 kind('breadcrumb', {
   aliases: ['crumb'],
   selector: '.u2-breadcrumbs-item, .u2-breadcrumbs-current, ' + u2('breadcrumbs') + ' a',
-  match: ['text', 'aria'],
+  match: ['text', 'aria', 'item'],
+  items: true,
 });
 
 // --- containers -----------------------------------------------------------------------------------
-kind('dialog', {
-  selector: u2('dialog') + ', .d4-dialog, [role="dialog"]',
-  match: ['name', 'title', 'dart'],
-  labelSelector: '.u2-dialog-title-text, .d4-dialog-title',
-  dartNames: ['dialog-{q}'],
-  parts: {title: '.u2-dialog-title, .d4-dialog-title', 'close button': '.u2-dialog-close, .d4-dialog-close',
-    footer: '.u2-dialog-footer, .d4-dialog-footer'},
-});
-kind('tabs', {aliases: ['tab strip', 'tab control'], selector: u2('tabs') + ', .d4-tab-control', match: ['name', 'aria']});
 // .tab-handle is the Dart dock manager's tab, .dockspan-tab-handle the dock-spawn-ts one a function
 // view keeps in its shadow root (which a CSS locator reaches); the label is a child either way
 kind('tab', {
   selector: '[role="tab"], .d4-tab-header, .tab-handle, .dockspan-tab-handle',
-  match: ['name', 'label', 'text', 'aria', 'dart'],
-  labelSelector: '.tab-handle-text, .dockspan-tab-handle-text',
+  match: ['name', 'label', 'text', 'aria', 'item', 'dart'],
+  items: true,
+  labelSelector: '.tab-handle-text, .dockspan-tab-handle-text, ' + ITEM_LABEL,
   dartNames: ['{q}', 'tab-{q}'],
 });
 /** The tab of an open view in the shell's tab strip (`name="view-handle: <view>"`), by the view's
@@ -260,14 +244,6 @@ kind('view tab', {
   labelSelector: '.tab-handle-text',
 });
 kind('tab panel', {aliases: ['tab page'], selector: '[role="tabpanel"], .d4-tab-content', match: ['name', 'aria']});
-kind('section', {
-  aliases: ['pane', 'accordion pane'],
-  selector: u2('section') + ', .u2-section, .u2-accordion-pane, [name^="div-section--"], .d4-accordion-pane',
-  match: ['name', 'title', 'dart'],
-  labelSelector: '.u2-section-title, .u2-section-header, .u2-accordion-title, .d4-accordion-pane-header',
-  dartNames: ['div-section--{q}', 'pane-{q}'],
-});
-kind('accordion', {selector: u2('accordion') + ', .d4-accordion', match: ['name', 'aria']});
 kind('accordion header', {
   aliases: ['pane header'],
   selector: u2('accordion') + ' [role="button"], .d4-accordion-pane-header',
@@ -275,11 +251,6 @@ kind('accordion header', {
   // exact-text match would find
   match: ['dart', 'text', 'aria'],
   dartNames: ['div-section--{q}'],
-});
-kind('card', {
-  selector: u2('card', 'stat-card', 'entity-card') + ', .d4-item-card',
-  match: ['name', 'title', 'text'],
-  labelSelector: '.u2-card-title, .card-label',
 });
 /** The entity cards of a Dart gallery (a connection's queries, the scripts browser, the Plugins
  * view's package cards): named `div-<Name>` and titled by their own label, not the
@@ -294,23 +265,21 @@ kind('gallery card', {
 /** The toggles of the status bar's windows manager (Tabs, Toolbox, Context Panel, Console,
  * Presentation mode …), by their aria-label; `active` is the only state they publish. */
 kind('status bar toggle', {selector: '.layout-status-bar [name^="toggle-"]', match: ['aria']});
-kind('wizard', {selector: u2('wizard'), match: ['name', 'aria']});
-kind('wizard step', {aliases: ['step'], selector: '.u2-wizard-step', match: ['label', 'text'], labelSelector: '.u2-wizard-title'});
+kind('wizard step', {
+  aliases: ['step'],
+  selector: '.u2-wizard-step',
+  match: ['label', 'text', 'item'],
+  items: true,
+  labelSelector: '.u2-wizard-title, ' + ITEM_LABEL,
+});
 kind('dock panel', {
   selector: '.panel-base',
   match: ['label', 'text'],
   labelSelector: '.panel-titlebar-text',
   description: 'a panel of the dock manager by the title its titlebar (or its tab handle) shows — "Activity cliffs"',
 });
-kind('splitter', {aliases: ['split panel'], selector: u2('splitter'), match: ['name']});
 kind('splitter panel', {aliases: ['split pane'], selector: '.u2-splitter-panel', match: ['name']});
 kind('sash', {aliases: ['splitter sash', 'divider'], selector: '.u2-sash, .u2-splitter-sash', match: ['aria', 'name']});
-
-// --- entities and the designer ---------------------------------------------------------------------
-kind('chip', {selector: u2('chip', 'bind-chip', 'msg-chip'), match: ['text', 'name']});
-kind('entity card', {aliases: ['entity'], selector: u2('entity-card'), match: ['name', 'text']});
-kind('palette', {selector: u2('palette'), match: ['name']});
-kind('designer', {selector: u2('designer'), match: ['name']});
 
 // --- the Dart shell -------------------------------------------------------------------------------
 // the title bar belongs to the dock panel around the viewer, hence the ancestor walk
@@ -334,7 +303,10 @@ kind('viewer', {
     'legend splitter': '[name="legend-splitter"]',
     'legend inner splitter': '[name="legend-inner-splitter"]',
     'legend close chevron': '[name="icon-hide-corner-legend"]',
-    'legend markers selector': '[name="legend-markers-selector"]',
+    // the legend's one column selector, named after the property it is bound to, as every on-viewer selector
+    'legend markers selector': '[name="legend"] [name^="div-column-combobox-"]',
+    // the date map (year, quarter, …) the markers selector shows beside a datetime column
+    'legend markers map': '[name="legend"] select[name^="input-aggr-selector-"]',
   },
 });
 // an entry of a viewer's legend: "R_ONE" legend item in legend of scatter plot viewer; selected while
@@ -355,7 +327,7 @@ kind('filter card', {
   dartNames: ['filter-card-{q}'],
   parts: {caption: '.d4-filter-column-name', checkbox: '.d4-filter-bool-input', indicator: '.d4-filter-indicator',
     mode: '[name="filter-mode-toggle"]', summary: '.d4-filter-summary', body: '.d4-filter-element',
-    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input'},
+    close: '[name="icon-times"]', 'search icon': '[name="icon-search"]', search: '.d4-filter-element input.d4-search-input'},
 });
 // the membership editor (membership_editor.dart): a member already in is a row, a search match a candidate
 const MEMBERSHIP_PARTS = {checkbox: '.membership-row-admin input', 'checkbox label': '.membership-row-admin'};
@@ -392,3 +364,7 @@ kind('element', {
   match: ['name', 'dart'],
   dartNames: ['{q}'],
 });
+// a "name = value" status line: <div role="status"><label>name = </label><output>value</output></div>
+kind('readout', {aliases: ['read-out'], selector: '[role="status"]', match: ['label', 'aria', 'name'],
+  labelSelector: ':scope > label', parts: {label: ':scope > label', value: ':scope > output'},
+  description: 'a "name = value" status line; "value of <name> readout" is the value alone'});

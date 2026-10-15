@@ -4,6 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Control} from '../../core/component.js';
 import {Signal, ReadonlySignal, rawEffect} from '../../core/signals.js';
+import {host} from './host.js';
 
 type ChromeItem = Control | HTMLElement;
 
@@ -30,15 +31,12 @@ export interface AppViewOptions {
 
 export function appView(options: AppViewOptions): DG.ViewBase {
   const content = options.content;
-  const view = DG.View.fromRoot(content.root);
+  const view = DG.View.fromRoot(host(content));
   view.name = options.name;
   // the app's automation scope root: page-level selectors compose from the view down
   // ([data-u2-name="Reports"] … [data-u2-name="org"]); an explicitly named content wins
   if (content.name === undefined)
     content.name = options.name;
-  // core contract (2026-08): a docked pane's ✕ kills elements carrying this attribute
-  content.root.setAttribute('data-kill-on-close', 'true');
-  DG.Widget.registerCleanup(content.root, () => content.dispose());
 
   const place = (item: ChromeItem): HTMLElement => {
     if (!Control.is(item))

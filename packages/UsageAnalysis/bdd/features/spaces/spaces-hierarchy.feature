@@ -21,45 +21,45 @@ Feature: Nested spaces and moving between them
     And user clicks on OK button in Create Space dialog
     Then 1 space named "BDD-Hier-Root" should be on the server
     And the "Create Space" dialog should close
-    When user picks "Create Child Space..." from the context menu of BDD-Hier-Root tree node inside browse tree
+    When user picks "Create Child Space..." from the context menu of Spaces---BDD-Hier-Root tree node inside browse tree
     And user enters "BDD-Hier-Child" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then BDD-Hier-Child tree node inside browse tree should be visible
 
   Scenario: The parent's view lists the child
-    When user double-clicks on BDD-Hier-Root tree node inside browse tree
+    When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
-    And space gallery should be visible
-    And BDD-Hier-Child link in space gallery should be visible
+    And gallery should be visible
+    And BDD-Hier-Child link in gallery should be visible
 
   Scenario: A grandchild is created from the child's card
-    When user picks "Create Child Space..." from the context menu of BDD-Hier-Child link in space gallery
+    When user picks "Create Child Space..." from the context menu of BDD-Hier-Child link in gallery
     And user enters "BDD-Hier-Grand" into Name input in Create Space dialog
     And user clicks on OK button in Create Space dialog
     Then the "Create Space" dialog should close
     And BDD-Hier-Grand tree node inside browse tree should be present
 
   Scenario: Opening the child shows the grandchild
-    When user double-clicks on BDD-Hier-Child link in space gallery
+    When user double-clicks on BDD-Hier-Child link in gallery
     Then the "BDD-Hier-Child" view should be current
-    And BDD-Hier-Grand link in space gallery should be visible
-    And BDD-Hier-Child link in space gallery should be absent
+    And BDD-Hier-Grand link in gallery should be visible
+    And BDD-Hier-Child link in gallery should be absent
 
   Scenario: Opening the grandchild leaves an empty space
-    When user double-clicks on BDD-Hier-Grand link in space gallery
+    When user double-clicks on BDD-Hier-Grand link in gallery
     Then the "BDD-Hier-Grand" view should be current
-    And BDD-Hier-Grand link in space gallery should be absent
+    And BDD-Hier-Grand link in gallery should be absent
 
   Scenario: Going back up the tree finds the content again
-    When user double-clicks on BDD-Hier-Root tree node inside browse tree
+    When user double-clicks on Spaces---BDD-Hier-Root tree node inside browse tree
     Then the "BDD-Hier-Root" view should be current
-    And BDD-Hier-Child link in space gallery should be visible
-    When user double-clicks on BDD-Hier-Child link in space gallery
+    And BDD-Hier-Child link in gallery should be visible
+    When user double-clicks on BDD-Hier-Child link in gallery
     Then the "BDD-Hier-Child" view should be current
-    And BDD-Hier-Grand link in space gallery should be visible
+    And BDD-Hier-Grand link in gallery should be visible
 
   Scenario: Search still works after the walk
-    When user enters "zzz-no-such-space" into space search
-    Then BDD-Hier-Grand link in space gallery should be absent
-    When user clears space search
-    Then BDD-Hier-Grand link in space gallery should be visible
+    When user enters "zzz-no-such-space" into gallery search
+    Then BDD-Hier-Grand link in gallery should be absent
+    When user clears gallery search
+    Then BDD-Hier-Grand link in gallery should be visible

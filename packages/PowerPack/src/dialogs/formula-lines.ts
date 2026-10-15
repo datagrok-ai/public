@@ -2163,7 +2163,7 @@ export class FormulaLinesDialog {
         return;
 
       this.tabs.currentPane = this.tabs.getPane(this.showValueOnOpen.isDataFrame ? ITEM_SOURCE.DATAFRAME : ITEM_SOURCE.VIEWER);
-      if (this.showValueOnOpen.index !== undefined) {
+      if (this.showValueOnOpen.index != null) {
         const isFormulaLine = !this.showValueOnOpen.isAnnotationArea;
         this.currentTable.update(this.showValueOnOpen.index, isFormulaLine);
       } else {

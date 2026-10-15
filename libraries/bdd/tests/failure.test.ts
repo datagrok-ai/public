@@ -23,6 +23,13 @@ test('a Playwright timeout reads as seconds; the selector it waited for goes, th
   assert.ok(!isWaitFailure(new Error(IN_PAGE)));
 });
 
+test('several elements where a gesture needs one is a wait failure, so the report lists them', () => {
+  const strict = new Error('locator.click: Error: strict mode violation: locator(\'[data-u2$="-input"]\').filter({ visible: true }) ' +
+    'resolved to 2 elements:\n    1) <div data-u2="text-input">…</div> aka getByText(\'Name\').first()\n    2) <div data-u2="text-input">…</div>');
+  assert.ok(isWaitFailure(strict));
+  assert.match(reasonOf(strict), /^strict mode violation: .* resolved to 2 elements:/);
+});
+
 test('a step failure is the feature line, the step, the reason and what the page showed — no frames', () => {
   const f = failure('features/viewers/box-plot.feature:43', 'When user right-clicks on the "statsff" area of box plot viewer',
     new Error(IN_PAGE), 'visible menu items in context menu: Table | Show P Value');

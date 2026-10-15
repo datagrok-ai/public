@@ -26,6 +26,7 @@ export class ProgressBar extends Control {
     this.root.dataset.u2 = 'progress-bar';
 
     this._track.className = 'u2-progress-track';
+    this._track.dataset.u2Part = 'track';
     this._track.setAttribute('role', 'progressbar');
     this._track.setAttribute('aria-valuemin', '0');
     this._track.setAttribute('aria-valuemax', '1');
@@ -37,15 +38,20 @@ export class ProgressBar extends Control {
     row.append(this._track);
     if (options?.showPercent) {
       this._percent = span('', 'u2-progress-percent');
+      this._percent.dataset.u2Part = 'percent';
       row.append(this._percent);
     }
     this.root.append(row);
 
     const description = options?.description;
-    if (description !== undefined)
-      this.root.append(this.runInScope(() => span(description, 'u2-progress-description')));
+    if (description !== undefined) {
+      const label = this.runInScope(() => span(description, 'u2-progress-description'));
+      label.dataset.u2Part = 'label';
+      this.root.append(label);
+    }
 
     this.root.classList.toggle('u2-progress-indeterminate', this._indeterminate);
+    this.root.setAttribute('aria-busy', String(this._indeterminate));
     this.effect(() => this._apply(this.value.value));
   }
 
@@ -56,7 +62,14 @@ export class ProgressBar extends Control {
   set indeterminate(x: boolean) {
     this._indeterminate = x;
     this.root.classList.toggle('u2-progress-indeterminate', x);
+    this.root.setAttribute('aria-busy', String(x));
     this._apply(this.value.peek());
+  }
+
+  /** The base state plus the fraction done, the percent shown, and busy while indeterminate. */
+  getState(): ReturnType<Control['getState']> {
+    const percent = Math.round(this.value.peek() * 100);
+    return {...super.getState(), value: this.value.peek(), text: this._indeterminate ? '' : `${percent}%`};
   }
 
   private _apply(v: number): void {

@@ -18,9 +18,9 @@
    `current card` / `pinned card <n>`. The two card viewers do not share the key shape; making them
    share it — in the library step or in one of the two statuses — is the fix, and this is the
    stand-in until then. */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 

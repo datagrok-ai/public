@@ -4,6 +4,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Card} from '../src/components/containers/card.js';
@@ -192,4 +193,11 @@ ui('the body is exposed, so content can be appended after construction', () => {
   assert.equal(card.body.children.length, 2);
   assert.equal(card.body.textContent, 'firstsecond');
   card.dispose();
+});
+
+test('a long unbroken token in the body wraps at the card\'s edge instead of spilling past it', () => {
+  const sheet = readFileSync(new URL('../css/card.css', import.meta.url), 'utf8');
+  const at = sheet.indexOf('.u2-card-body {');
+  assert.notEqual(at, -1);
+  assert.match(sheet.slice(at, sheet.indexOf('}', at)), /overflow-wrap: break-word;/);
 });

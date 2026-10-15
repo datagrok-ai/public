@@ -5,8 +5,8 @@
 }
 
 .u2-input-root[data-u2='filter-builder'] > .u2-input-box {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: var(--dg-form-min-editor-width);
 }
 
 .u2-input-editor.u2-fb {
@@ -25,8 +25,30 @@
   height: auto;
 }
 
-/* the problems are told per row (below); the input-level verdict would collide with the header */
-.u2-input-root[data-u2='filter-builder'] > .u2-input-error {
+/* the problems are told per row (below); the input-level verdict would collide with the header —
+   except on a builder with no condition, where it is the only place a required one can say so */
+.u2-input-root[data-u2='filter-builder']:not(.u2-fb-blank) > .u2-input-error {
+  display: none;
+}
+
+/* shown explicitly: an older copy of this sheet, bundled by another package, hides every verdict */
+.u2-input-root[data-u2='filter-builder'].u2-fb-blank > .u2-input-error:not(:empty) {
+  display: -webkit-box;
+}
+
+/* disabled, what edits the tree reads as unavailable too */
+.u2-input-disabled .u2-fb .u2-btn.u2-icon-btn,
+.u2-input-disabled .u2-fb .u2-fb-mode {
+  color: var(--dg-text-color-light);
+}
+
+/* read-only, nothing that edits the tree shows; the pickers drop their chevron and the root
+   refuses every gesture (Input.readOnly) */
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-add,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-add-group,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-remove,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-handle,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-mode {
   display: none;
 }
 
@@ -204,11 +226,11 @@
   color: var(--dg-text-color-light);
 }
 
-/* the value editors shrink before a row overflows its host: every box on the way down gives up
-   its content-sized floor */
+/* the value editors take the rest of the row and shrink before it overflows its host: every box
+   on the way down gives up its content-sized floor */
 .u2-fb-values {
   display: flex;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--dg-space-xs) var(--dg-space-s);
@@ -220,7 +242,12 @@
   min-width: 0;
 }
 
+.u2-fb-values > .u2-input-root {
+  flex: 1 1 auto;
+}
+
 .u2-fb-values .u2-input-box {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -229,11 +256,18 @@
   max-width: 100%;
 }
 
+/* a typed value fills the column instead of the 100px an inline text box keeps elsewhere */
+.u2-fb-cond .u2-fb-values .u2-input-root[data-u2='text-input'] > .u2-input-box > input.u2-input-editor,
+.u2-fb-cond .u2-fb-values .u2-input-root[data-u2='suggest-input'] > .u2-input-box > input.u2-input-editor {
+  flex: 1 1 auto;
+  width: auto;
+}
+
 .u2-fb-cond > .u2-fb-remove {
   margin-left: auto;
 }
 
-/* the row's first problem, a line of its own under the controls */
+/* the row's first problem, a line of its own under the value it is about */
 .u2-fb-problem {
   flex: 1 0 100%;
   font-size: var(--dg-font-size-small);

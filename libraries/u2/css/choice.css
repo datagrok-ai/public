@@ -12,19 +12,30 @@ select.u2-input-editor {
   padding: 0 20px 0 0;
   border-bottom: var(--dg-input-border);
   cursor: pointer;
-  /* Chevron drawn from two gradients rather than a data-URI icon: a mask would hide the
-     select's own text, pseudo-elements don't render on <select>, and an inline SVG can't be
-     tinted from a token. */
+  /* The platform's chevron.svg — a stroked "v" in the text colour, its point 8px in from the
+     right edge, a touch below the middle — drawn as one diagonal stroke per half from two gradients
+     rather than a data-URI icon: a mask would hide the select's own text, pseudo-elements don't
+     render on <select>, and an inline SVG can't be tinted from a token. */
   background-image:
-    linear-gradient(45deg, transparent 50%, var(--dg-text-color-light) 50%),
-    linear-gradient(135deg, var(--dg-text-color-light) 50%, transparent 50%);
+    linear-gradient(to top right, transparent calc(50% - 0.8px), var(--dg-text-color) calc(50% - 0.8px),
+      var(--dg-text-color) calc(50% + 0.8px), transparent calc(50% + 0.8px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.8px), var(--dg-text-color) calc(50% - 0.8px),
+      var(--dg-text-color) calc(50% + 0.8px), transparent calc(50% + 0.8px));
   background-repeat: no-repeat;
-  background-position: right 9px center, right 4px center;
-  background-size: 5px 5px, 5px 5px;
+  background-position: right 8px top 55%, right 3.5px top 55%;
+  background-size: 4.5px 4.5px, 4.5px 4.5px;
 }
 
-.u2-form select.u2-input-editor {
+.u2-form select.u2-input-editor,
+.u2-dialog-content > .u2-input-root select.u2-input-editor {
   padding-left: var(--dg-space-s);
+}
+
+/* the width a form measured for it (form.ts _fitChoices) stays with the input wherever it moves,
+   as the platform's InputForm writes its widths inline; no weightier than the 200px above, so a
+   host that sizes its selects (the filter builder, a property grid) still does */
+:where([data-u2='choice-input'] > .u2-input-box) > select.u2-input-editor {
+  width: var(--u2-choice-width, 200px);
 }
 
 select.u2-input-editor:focus {
@@ -36,20 +47,20 @@ select.u2-input-editor.u2-invalid:focus {
   border-bottom: var(--dg-border-width) solid var(--dg-error);
 }
 
-.u2-input-disabled select.u2-input-editor {
+.u2-input-disabled select.u2-input-editor,
+.u2-input-readonly select.u2-input-editor {
   background-image: none;
+  cursor: default;
 }
 
 /* multi choice */
-.u2-input-root[data-u2='multi-choice-input'] {
-  align-items: flex-start;
-}
-
-/* the platform's check list is a bare column — no frame, no rail underline — of 20px rows whose
-   boxes sit 4px in and 8px off their labels (`multi_choice_input.dart`, ui.css:903) */
+/* the platform's check list is a bare column — no frame, no rail underline, at least 150px wide —
+   of 20px rows whose boxes sit 4px in and 8px off their labels (`multi_choice_input.dart`,
+   ui.css:903, 1596-1601) */
 div.u2-input-editor.u2-multi-choice {
   display: flex;
   flex-direction: column;
+  min-width: 150px;
   height: auto;
   padding: var(--dg-space-s) 0;
   border: none;

@@ -206,7 +206,8 @@ async function rowsWithoutPicked(page: Page, picked: {column: string; value: str
     const w = window as any;
     const df = w.grok.shell.tv.dataFrame;
     const rdkit = await w.grok.functions.call('Chem:getRdKitModule');
-    const query = rdkit.get_qmol(p.value);
+    // the molecule itself as the query: a Kekulé molblock read by get_qmol matches no aromatic ring, not even its own
+    const query = rdkit.get_mol(p.value);
     const rows = Array.from(df.filter.getSelectedIndexes() as Iterable<number>);
     const without: number[] = [];
     try {

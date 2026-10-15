@@ -54,7 +54,7 @@ export function addView(view: DG.ViewBase): DG.ViewBase {
 }
 
 // eslint-disable-next-line no-unused-vars
-enum NODE_TYPE {
+export enum NODE_TYPE {
   // eslint-disable-next-line no-unused-vars
   PACKAGE = 'Package',
   // eslint-disable-next-line no-unused-vars
@@ -766,7 +766,11 @@ export class TestManager extends DG.ViewBase {
           second: '2-digit',
           hour12: false,
         }) + '.' + currentDate.getMilliseconds().toString().padStart(3, '0');
-        testInfo.rows.addNew([formattedDate, false, 'unhandled', 0, false, '', '', testInfo.get('package', 0), '']);
+        const values = {date: formattedDate, success: false, category: 'unhandled', result: unhandled, ms: 0,
+          skipped: false, package: testInfo.get('package', 0)};
+        const idx = testInfo.rows.addNew().idx;
+        for (const [name, value] of Object.entries(values))
+          testInfo.col(name)?.set(idx, value);
       }
       if (!isTooltip) {
         const resStr = ui.div();

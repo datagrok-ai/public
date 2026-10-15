@@ -1,0 +1,9 @@
+target,evalue,score,reported_domains
+pfam37-1-cysPrx-C-tandem,1.9e-46,146.9,2
+pfam37-1-cysPrx-C-exact,5.6e-28,87.8,1
+pfam37-1-cysPrx-C-mut10,1.3e-27,86.7,1
+pfam37-1-cysPrx-C-indel,2e-25,79.6,1
+sp|Q00000|PFAM37-1-CYSPRX-C_LOWER,4.1e-23,72.3,1
+pfam37-1-cysPrx-C-flanked,6.3e-20,62.1,1
+pfam37-1-cysPrx-C-fragment,1.6e-16,51.2,1
+pfam37-1-cysPrx-C-mut25,2.8e-10,31.2,1

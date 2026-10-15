@@ -9,138 +9,56 @@ import {useElementHover} from '@vueuse/core';
 import {OpenIcon} from '@he-tree/vue';
 import {ConsistencyInfo, FuncCallStateInfo} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {ValidationResult} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/common-types';
-import {couldBeSaved, hasAddControls, PipelineWithAdd, hasInconsistencies, hasAnyInconsistency} from '../../utils';
+import {
+  couldBeSaved, hasAddControls, PipelineWithAdd, hasAnyInconsistency, statusToTooltip, statesToStatus, statusInputs,
+  friendlyIoName,
+} from '../../utils';
 import {isFuncCallState} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 import type {StepDynamicDescription} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 const statusToIcon: Record<Status, string> = {
   ['next']: 'arrow-right',
-  ['next warn']: 'arrow-right',
-  ['next error']: 'arrow-right',
-  [`pending`]: 'circle',
-  [`pending executed`]: 'dot-circle',
+  ['next warn']: 'exclamation-triangle',
+  ['next error']: 'pen',
+  [`pending`]: 'clock',
+  [`pending executed`]: 'history',
   ['running']: 'hourglass-half',
   ['succeeded']: 'check-circle',
-  ['succeeded info']: 'check-circle',
-  ['succeeded warn']: 'dot-circle',
-  ['succeeded inconsistent']: 'dot-circle',
+  ['succeeded info']: 'info-circle',
+  ['succeeded warn']: 'exclamation-circle',
+  ['succeeded inconsistent']: 'unlink',
   ['failed']: 'times-circle',
 };
 
 const statusToColor: Record<Status, string> = {
-  ['next']: 'green',
-  ['next warn']: 'orange',
-  ['next error']: 'black',
-  [`pending`]: 'gray',
-  [`pending executed`]: 'gray',
-  ['running']: 'blue',
-  ['succeeded']: 'green',
-  ['succeeded info']: 'blue',
-  ['succeeded warn']: 'orange',
-  ['succeeded inconsistent']: 'red',
-  ['failed']: 'red',
+  ['next']: 'var(--success)',
+  ['next warn']: 'var(--orange-2)',
+  ['next error']: 'var(--red-3)',
+  [`pending`]: 'var(--grey-5)',
+  [`pending executed`]: 'var(--grey-5)',
+  ['running']: 'var(--blue-1)',
+  ['succeeded']: 'var(--success)',
+  ['succeeded info']: 'var(--blue-1)',
+  ['succeeded warn']: 'var(--orange-2)',
+  ['succeeded inconsistent']: 'var(--red-3)',
+  ['failed']: 'var(--red-3)',
 };
 
-const statusToTooltip: Record<Status, string> = {
-  [`next`]: `This step is avaliable to run`,
-  [`next warn`]: `This step is avaliable to run, but has warnings`,
-  [`next error`]: `This step needs user input`,
-  ['pending']: 'This step has pending dependencies',
-  ['pending executed']: 'This step has changed dependencies',
-  ['running']: 'This step is running',
-  ['succeeded']: 'This step is succeeded',
-  ['succeeded info']: 'This step is succeeded with changes',
-  ['succeeded warn']: 'This step is succeeded, but has warnings',
-  ['succeeded inconsistent']: 'This step is succeeded, but has inconsistent inputs',
-  ['failed']: 'Run failed',
-};
-
-const statesToStatus = (
-  callState: FuncCallStateInfo,
-  validationsState?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): Status => {
-  if (callState.isRunning) return 'running';
-  if (callState.runError)
-    return 'failed';
-  if (callState.pendingDependencies?.length)
-    return callState.isOutputOutdated ? 'pending' : 'pending executed';
-  if (!callState.isOutputOutdated) {
-    if (hasInconsistencies(consistencyStates))
-      return 'succeeded inconsistent';
-    if (hasWarnings(validationsState) || hasErrors(validationsState))
-      return 'succeeded warn';
-    if (hasChanges(consistencyStates))
-      return 'succeeded info';
-    return 'succeeded';
-  }
-  if (hasErrors(validationsState))
-    return 'next error';
-  if (hasWarnings(validationsState) || hasInconsistencies(consistencyStates))
-    return 'next warn';
-
-  return 'next';
-};
-
-const listContributingIos = (
-  status: Status,
-  validationStates?: Record<string, ValidationResult>,
-  consistencyStates?: Record<string, ConsistencyInfo>,
-): string[] => {
-  const result = new Set<string>();
-  const valEntries = Object.entries(validationStates ?? {});
-  const consEntries = Object.entries(consistencyStates ?? {});
-  const addIf = (name: string, cond: boolean) => { if (cond) result.add(name); };
-  if (status === 'next error')
-    valEntries.forEach(([n, v]) => addIf(n, !!v.errors?.length));
-  else if (status === 'next warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!v.warnings?.length));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded warn') {
-    valEntries.forEach(([n, v]) => addIf(n, !!(v.warnings?.length || v.errors?.length)));
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  } else if (status === 'succeeded info')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent && c.restriction === 'info'));
-  else if (status === 'succeeded inconsistent')
-    consEntries.forEach(([n, c]) => addIf(n, !!c.inconsistent));
-  return [...result];
-};
-
-const friendlyIoName = (funcCall: DG.FuncCall | undefined, ioName: string): string => {
-  const prop =
-    funcCall?.func?.inputs?.find((p: DG.Property) => p.name === ioName) ??
-    funcCall?.func?.outputs?.find((p: DG.Property) => p.name === ioName);
-  return prop?.friendlyName ?? prop?.caption ?? ioName;
-};
-
-const getToolTip = (
+export const getToolTip = (
   status: Status,
   isReadonly: boolean,
   funcCall?: DG.FuncCall,
   validationStates?: Record<string, ValidationResult>,
   consistencyStates?: Record<string, ConsistencyInfo>,
+  runError?: string,
 ): string | undefined => {
   if (isReadonly && status === 'next') return 'This step is locked';
   const base = statusToTooltip[status];
-  const ios = listContributingIos(status, validationStates, consistencyStates);
+  if (status === 'failed' && runError)
+    return `${base}: ${runError}`;
+  const ios = statusInputs(status, validationStates, consistencyStates);
   if (!ios.length) return base;
   return `${base}: ${ios.map((io) => friendlyIoName(funcCall, io)).join(', ')}`;
-};
-
-const hasWarnings = (validationsState?: Record<string, ValidationResult>) => {
-  const firstWarning = Object.values(validationsState || {}).find((val) => val.warnings?.length);
-  return firstWarning;
-};
-
-const hasChanges = (consistencyStates?: Record<string, ConsistencyInfo>) => {
-  const firstInconsistency = Object.values(consistencyStates || {}).find(
-    (val) => val.inconsistent && (val.restriction === 'info'));
-  return firstInconsistency;
-};
-
-const hasErrors = (validationsState?: Record<string, ValidationResult>) => {
-  const firstError = Object.values(validationsState || {}).find((val) => val.errors?.length);
-  return firstError;
 };
 
 export const TreeNode = Vue.defineComponent({
@@ -168,13 +86,16 @@ export const TreeNode = Vue.defineComponent({
     isDraggable: {
       type: Boolean,
     },
-    isDroppable: {
-      type: Boolean,
-    },
     isDeletable: {
       type: Boolean,
     },
+    isDuplicable: {
+      type: Boolean,
+    },
     isReadonly: {
+      type: Boolean,
+    },
+    isSelected: {
       type: Boolean,
     },
     hasInconsistentSubsteps: {
@@ -184,6 +105,7 @@ export const TreeNode = Vue.defineComponent({
   emits: {
     addNode: (_data: {itemId: string, position: number}) => true,
     removeNode: () => true,
+    duplicateNode: () => true,
     toggleNode: () => true,
     runSubtree: (_startUuid: string, _rerunWithConsistent?: boolean) => true,
     runStep: (_uuid: string) => true,
@@ -209,7 +131,7 @@ export const TreeNode = Vue.defineComponent({
       return <IconFA
         name={isReadOnly ? 'lock' : statusToIcon[status]}
         animation={status === `running` ? 'spin': null}
-        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates) ?? null}
+        tooltip={getToolTip(status, isReadOnly, funcCall, props.validationStates, props.consistencyStates, props.callState?.runError) ?? null}
         style={{
           color: statusToColor[status],
           alignSelf: 'center',
@@ -280,7 +202,7 @@ export const TreeNode = Vue.defineComponent({
         >{ props.descriptions?.title ?? nodeLabel(props.stat) }</span>
         {
           <div class='flex items-center px-2 w-fit justify-end ml-auto'>
-            { ...isHovered.value ? [
+            { ...isHovered.value || props.isSelected ? [
               ...couldBeSaved(props.stat.data) && !isRoot.value ? [<IconFA
                 name='save'
                 tooltip={'Save this subtree'}
@@ -290,6 +212,7 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...hasAddControls(props.stat.data) ? [<ComboPopup
                 caption={ui.iconFA('plus')}
+                tooltip='Add a step'
                 rightAligned
                 items={props.stat.data.stepTypes
                   .filter((stepType: StepDynamicDescription) => !stepType.disableUIAdding)
@@ -309,11 +232,19 @@ export const TreeNode = Vue.defineComponent({
               />]: [],
               ...props.isDraggable ? [<IconFA
                 name='grip-vertical'
+                tooltip='Drag to move'
                 cursor='grab'
+                class='d4-ribbon-item'
+              />]: [],
+              ...props.isDuplicable ? [<IconFA
+                name='copy'
+                tooltip='Duplicate'
+                onClick={(e: Event) => {emit('duplicateNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],
               ...props.isDeletable ? [<IconFA
                 name='times'
+                tooltip='Remove'
                 onClick={(e: Event) => {emit('removeNode'); e.stopPropagation();}}
                 class='d4-ribbon-item'
               />]: [],

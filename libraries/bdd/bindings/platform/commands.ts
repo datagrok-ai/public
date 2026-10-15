@@ -5,7 +5,9 @@
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
+import type {ElementRef} from '../../src/runtime/args.js';
+import {click} from '../../src/runtime/gestures.js';
+import {armQuery, closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
 const PATH = '"Bio > Analyze > Sequence Space..." — the labels as the menu shows them, separated by ">" or "|"';
 // the time a command may run before that is a platform failure (a WASM alignment, a dimensionality reduction)
@@ -36,6 +38,14 @@ export const topMenuLists = Then('the top menu should list:', async (page: Page,
     await closeTopMenu(page);
   }
 }, {tier: 'ui', description: `one path per row (${PATH}); every group opens once and each of its leaves is found visible, then the menu closes`});
+
+/* A query view's Run query... shows the result as soon as it has one and opens it again when the call ends if no
+   view shows it then: a view closed in between comes back. */
+export const clickRunsQuery = When('user clicks on {element} and the query it runs completes', async (page: Page, target: ElementRef) => {
+  await armQuery(page);
+  await click(page, target);
+  await waitCommand(page, COMMAND_CAP);
+}, {tier: 'ui', description: 'the next data query call is watched from before the click to its end (onAfterRunAction of the platform)'});
 
 export const commandCompleted = Then('the top menu command should have completed', async (page: Page) => {
   await waitCommand(page, COMMAND_CAP);

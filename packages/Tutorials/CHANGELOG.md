@@ -2,6 +2,11 @@
 
 ## v.next
 
+* Filters: Fixed the "Save the current filter as a column" step not completing when Filter to Column is run from the top menu or the context panel
+* Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
+* GROK-20298: The plugin-declared Northwind domain schema is `northwind_demo` (was `northwind`): the name `northwind` is the EXTERNAL binding of the same data (a domain schema over the Northwind connection), and two packages may not ship one schema name
+* Activity Cliffs: Fixed the OK step's text, which had become 'Click "OK"' with the step-skipping change; it is "Click OK" again, as in the other Chem tutorials
+* Tests: Data Aggregation and Multivariate Analysis wait for the package autostarts before their top-menu pick
 * GROK-20153: Tutorials | Sticky meta: Stuck on annotate dataset step in some cases
 * Tutorials: Fixed the step counters of Scatter Plot, Embedded Viewers, Filters, Grid Customization, Calculated Columns and Data Aggregation (each declared one step more than it lists), so "Step N of M" names the step in progress
 * Tutorials: Fixed hints captured when their step began: they follow their element now, so one that appears later is still highlighted — the new connection's tree node and the query's row (Dashboards, Data Connectors), the New Entity Type and New Schema buttons (Sticky Meta), the Chem and ML menus (Activity Cliffs, R-Groups Analysis, Multivariate Analysis)

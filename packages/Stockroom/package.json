@@ -8,6 +8,7 @@
   },
   "description": "Stockroom — chemical inventory on the GHS classification; the zero-code reference app for entity-mapped domain schemas: everything is declared in schema.json",
   "dependencies": {
+    "@datagrok-libraries/ems": "workspace:^",
     "@datagrok-libraries/test": "workspace:^",
     "@datagrok-libraries/u2": "workspace:^",
     "@datagrok-libraries/utils": "workspace:^",

@@ -133,6 +133,31 @@ bridge('mirrors the value both ways, with the platform value canonical', () => {
   input.dispose();
 });
 
+bridge('the echo check compares what the platform holds, not the fresh object its getter answers (P46)', () => {
+  const handle = {};
+  for (const [stored, copy] of [
+    [['a', 'b'], (x) => [...x]],
+    [{dart: handle}, (x) => ({dart: x.dart})],
+    [new Date(2026, 9, 15), (x) => new Date(x.getTime())],
+  ]) {
+    const dg = dartInput({value: stored});
+    const {set} = Object.getOwnPropertyDescriptor(dg, 'value');
+    Object.defineProperty(dg, 'value', {get() { return copy(this._value); }, set});
+    const input = mount(fromDartInput(dg));
+    assert.equal(dg.writes, 0, 'constructing writes nothing back');
+    dg.value = copy(stored);
+    assert.equal(dg.writes, 1, 'a platform edit is not echoed back');
+    input.value.value = copy(stored);
+    assert.equal(dg.writes, 1, 'an equal value writes nothing');
+    input.dispose();
+  }
+  const dg = dartInput({value: new Date(2026, 9, 15)});
+  const input = mount(fromDartInput(dg));
+  input.value.value = new Date(2026, 9, 16);
+  assert.equal(dg.writes, 1, 'a different time is written');
+  input.dispose();
+});
+
 bridge('validity mirrors the platform validation messages and clears with them', () => {
   installValidation();
   const source = dart(['Not a valid SMILES']);
