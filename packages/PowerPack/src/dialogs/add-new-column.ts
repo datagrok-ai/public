@@ -1826,7 +1826,14 @@ export class AddNewColumnDialog {
   /** Runs the formula on the preview table. [errorColIds] gets the column of per-row messages, when one is asked for. */
   async getPreviewResults(colName: string, colType: string, expression: string, potentialColIds: string[],
     errorColIds: string[] = []): Promise<void> {
-    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto'};
+    // the preview table still holds the column being edited, next to which the result would be named "<name> (2)"
+    const edited = this.edit ? this.previwDf!.col(this.call.getParamValue('name')) : null;
+    if (edited)
+      this.previwDf!.columns.remove(edited.name);
+    const treatAsString = !this.widget && this.inputType ? this.getSelectedType()[1] :
+      this.call.getParamValue('treatAsString') ?? false;
+    const params: {[key: string]: unknown} = {table: this.previwDf!, name: colName, expression: expression, type: 'auto',
+      treatAsString: treatAsString, subscribeOnChanges: false};
     const errorBehavior = this.errorBehaviorIcon ? this.getErrorBehaviorParam() : null;
     // The preview is of the type the formula returns; a value for another type the user picked applies on OK.
     if (errorBehavior?.valueOnError != null && this.resultColumnType != null && this.resultColumnType !== this.getErrorValueType())
