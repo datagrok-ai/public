@@ -2,7 +2,7 @@
  * and rebuilt only when their inputs change. A renderer receives the arrays through its sink and draws a frame from
  * the returned description; it never reads the viewer itself, so both backends draw the same thing. */
 import * as DG from 'datagrok-api/dg';
-import {isDotRenderer, MARKER_TYPES, readLook, ScatterLook} from './scatterplot-look';
+import {isDotRenderer, MARKER_TYPES, plotCanvases, readLook, ScatterLook} from './scatterplot-look';
 import {scatterDebug} from './scatterplot-debug';
 const CIRCLE_BORDER = MARKER_TYPES.indexOf('circle border');
 /** The size the core draws a row with an empty Size value at, when *Show Markers With Empty Size* is on. */
@@ -77,7 +77,8 @@ function noneValue(col: DG.Column, raw: ArrayLike<number>): number {
   return raw instanceof Float32Array ? Math.fround(DG.FLOAT_NULL) : DG.FLOAT_NULL;
 }
 
-export function largestMarker(sc: DG.ScatterPlotViewer, look: ScatterLook): number {
+export function largestMarker(sc: DG.ScatterPlotViewer,
+  look: Pick<ScatterLook, 'sizeColumnName' | 'markerMaxSize'>): number {
   return Math.max(look.sizeColumnName ? look.markerMaxSize : sc.getMarkerSize(0), EMPTY_SIZE_MARKER_SIZE);
 }
 
@@ -211,7 +212,7 @@ export class ScatterData {
 
     const left = Math.floor(viewBox.x * dpr);
     const top = Math.floor(viewBox.y * dpr);
-    const viewer = sc.canvas;
+    const viewer = plotCanvases(sc).canvas;
     return {
       dots, dpr, viewBox, xform, origin: [left, top],
       size: [Math.max(1, Math.ceil((viewBox.x + viewBox.width) * dpr) - left),

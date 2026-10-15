@@ -7,7 +7,7 @@
  * Engine set-ups, rebuilds of the per-row data, slow frames and the reasons a plot stays on the CPU print at once. */
 import * as DG from 'datagrok-api/dg';
 import type {Frame} from './scatterplot-data';
-import {MARKER_TYPES} from './scatterplot-look';
+import {MARKER_TYPES, plotCanvases} from './scatterplot-look';
 
 const KEY = 'PowerGrid.scatterPlotDebug';
 const PREFIX = '[Scatter plot GPU]';
@@ -16,6 +16,8 @@ const SUMMARY_MS = 1000;
 const SLOW_FRAME_MS = 16;
 /** Input that has not moved the view for this long is not waiting for a frame any more. */
 const MAX_INPUT_LAG_MS = 3000;
+/** The core's work after a gesture (filter by zoom, the frame after it) lands within this of a plot's last report. */
+const LONG_FRAME_GRACE_MS = 2000;
 
 /** An entry of the Long Animation Frames API, which the TypeScript DOM library does not have yet. */
 interface LongFrame extends PerformanceEntry {
@@ -120,9 +122,15 @@ function longFramesText(frames: LongFrame[]): string {
 
 let current: Summary | null = null;
 let longFrameObserver: PerformanceObserver | null = null;
+let lastActivity = -Infinity;
 
-/** The summary of this second, started on the first thing it has to report. */
+/** The summary of this second, started on the first thing a plot reports. */
 function summary(): Summary {
+  lastActivity = performance.now();
+  return openSummary();
+}
+
+function openSummary(): Summary {
   if (!current) {
     const s = current = new Summary();
     setTimeout(() => {
@@ -135,9 +143,10 @@ function summary(): Summary {
     }, SUMMARY_MS);
   }
   if (!longFrameObserver && PerformanceObserver.supportedEntryTypes?.includes('long-animation-frame')) {
+    // long frames well after the plots went quiet belong to something else on the page
     longFrameObserver = new PerformanceObserver((list) => {
-      if (enabled())
-        summary().longFrames.push(...list.getEntries() as LongFrame[]);
+      if (enabled() && performance.now() - lastActivity < LONG_FRAME_GRACE_MS)
+        openSummary().longFrames.push(...list.getEntries() as LongFrame[]);
     });
     longFrameObserver.observe({type: 'long-animation-frame'});
   }
@@ -234,7 +243,8 @@ export const scatterDebug = {
     const drawn = performance.now();
     const s = summary();
     s.frames++;
-    s.plots.add(sc.canvas);
+    const canvas = plotCanvases(sc).canvas;
+    s.plots.add(canvas);
     s.engine = engine;
     s.plot = `last: ${sc.dataFrame.rowCount.toLocaleString()} rows, ` +
       `${(frame.rows.filtered + frame.rows.filteredOut).toLocaleString()} drawn, ${markers(frame)}, ` +
@@ -247,7 +257,7 @@ export const scatterDebug = {
     }
     gpuDone.then(() => s.gpu.add(performance.now() - drawn));
 
-    const watch = watchInput(sc.canvas);
+    const watch = watchInput(canvas);
     const view = frame.xform.join();
     if (view != watch.view) {
       if (watch.view)

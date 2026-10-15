@@ -4,6 +4,7 @@
 import * as DG from 'datagrok-api/dg';
 import {Frame, RowList} from '../scatterplot-data';
 import {Renderers, ScatterRenderer} from '../scatterplot-renderer';
+import {plotCanvases} from '../scatterplot-look';
 import {ANY_KIND, DRAW_SHADER, FLAGS, FRAME_BYTES, PICK_SHADER, PICK_WORKGROUP} from './shaders';
 
 const STORAGE = ['x', 'y', 'colors', 'sizes', 'types', 'selection', 'filtered', 'filteredOut', 'selected'] as const;
@@ -79,11 +80,12 @@ export function adapterName(device: GPUDevice): string {
 export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean,
   device: GPUDevice | null): HTMLCanvasElement | null {
   let renderer = renderers.get(sc);
-  if (renderer && (!show || !device || renderer.device !== device || !sc.canvas.isConnected)) {
+  const connected = plotCanvases(sc).canvas.isConnected;
+  if (renderer && (!show || !device || renderer.device !== device || !connected)) {
     renderer.dispose();
     renderer = undefined;
   }
-  if (!show || !device || !sc.canvas.isConnected)
+  if (!show || !device || !connected)
     return null;
   renderer ??= new ScatterPlotGPU(sc, device);
   renderer.render(sc);
@@ -91,8 +93,8 @@ export function scWebGPURender(sc: DG.ScatterPlotViewer, show: boolean,
 }
 
 /** The row under [pt], or null when [sc] is not drawn with WebGPU and the CPU has to answer. */
-export function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> | null {
-  return renderers.get(sc)?.hitTest(sc, pt) ?? null;
+export function scWebGPUPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number | null> | null {
+  return renderers.get(sc)?.hitTest(pt) ?? null;
 }
 
 export function disposeWebGPURenderers(): void {
@@ -175,8 +177,11 @@ class ScatterPlotGPU extends ScatterRenderer {
     return this.device.queue.onSubmittedWorkDone();
   }
 
-  async hitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): Promise<number> {
-    const frame = this.data.update(sc);
+  /** The row under [pt] in the frame last drawn, or null before the first frame. */
+  async hitTest(pt: DG.Point): Promise<number | null> {
+    const frame = this.frame;
+    if (!frame)
+      return null;
     const count = frame.rows.filtered;
     if (count == 0)
       return -1;

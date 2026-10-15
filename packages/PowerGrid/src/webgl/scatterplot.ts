@@ -3,7 +3,7 @@
  * Per-row data lives in vertex buffers addressed by row index, and every pass draws a list of row indexes as point
  * sprites; the fragment shader shapes the markers as the core's `Marker.draw` does. */
 import * as DG from 'datagrok-api/dg';
-import {ScatterLook} from '../scatterplot-look';
+import {CheckLook, plotCanvases} from '../scatterplot-look';
 import {Frame, largestMarker, RowList} from '../scatterplot-data';
 import {Renderers, ScatterRenderer} from '../scatterplot-renderer';
 import {ANY_KIND, DOT_FRAGMENT, DOT_VERTEX, PICK_FRAGMENT, PICK_VERTEX, SHAPE_VERTEX, shapeFragment} from './shaders';
@@ -53,7 +53,7 @@ const renderers = new Renderers<ScatterPlotGL>();
 
 /** Why WebGL cannot draw [sc], or null: the largest marker has to fit in a point sprite, and a context be free for a
  * plot that has none yet. */
-export function whyNotWebGL(sc: DG.ScatterPlotViewer, look: ScatterLook): string | null {
+export function whyNotWebGL(sc: DG.ScatterPlotViewer, look: CheckLook): string | null {
   const sprite = spriteSize(largestMarker(sc, look), look.markerBorderWidth, window.devicePixelRatio);
   const maxPointSize = webGLCapabilities()!.maxPointSize;
   if (sprite > maxPointSize)
@@ -65,7 +65,7 @@ export function whyNotWebGL(sc: DG.ScatterPlotViewer, look: ScatterLook): string
 /** Draws [sc], or releases its renderer when not [show]; answers the canvas drawn on. */
 export function scWebGLRender(sc: DG.ScatterPlotViewer, show: boolean): HTMLCanvasElement | null {
   let renderer = renderers.get(sc);
-  if (!show || !sc.canvas.isConnected) {
+  if (!show || !plotCanvases(sc).canvas.isConnected) {
     renderer?.dispose();
     return null;
   }
@@ -76,7 +76,7 @@ export function scWebGLRender(sc: DG.ScatterPlotViewer, show: boolean): HTMLCanv
 
 /** The row under [pt], or null when [pt] is off the GPU canvas and the CPU has to answer. */
 export function scWebGLPointHitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): number | null {
-  return renderers.get(sc)?.hitTest(sc, pt) ?? null;
+  return renderers.get(sc)?.hitTest(pt) ?? null;
 }
 
 export function disposeWebGLRenderers(): void {
@@ -233,14 +233,17 @@ class ScatterPlotGL extends ScatterRenderer {
     });
   }
 
-  hitTest(sc: DG.ScatterPlotViewer, pt: DG.Point): number | null {
+  /** The row under [pt] in the frame last drawn, or null before the first frame or off the canvas. */
+  hitTest(pt: DG.Point): number | null {
     const gl = this.gl;
-    const frame = this.data.update(sc);
+    const drawn = this.frame;
+    if (!drawn)
+      return null;
     // GL drops a point whose center is off the viewport, so the pick viewport reaches past the canvas by the largest
     // hit radius: a marker centered off the plot still takes the mouse on it, as on the CPU
-    const margin = Math.ceil((frame.largestMarker / 2 + 2) * frame.dpr);
-    frame.origin = [frame.origin[0] - margin, frame.origin[1] - margin];
-    frame.size = [frame.size[0] + 2 * margin, frame.size[1] + 2 * margin];
+    const margin = Math.ceil((drawn.largestMarker / 2 + 2) * drawn.dpr);
+    const frame: Frame = {...drawn, origin: [drawn.origin[0] - margin, drawn.origin[1] - margin],
+      size: [drawn.size[0] + 2 * margin, drawn.size[1] + 2 * margin]};
     const px = Math.floor(pt.x * frame.dpr) - frame.origin[0];
     const py = Math.floor(pt.y * frame.dpr) - frame.origin[1];
     if (px < 0 || py < 0 || px >= frame.size[0] || py >= frame.size[1])
