@@ -1,6 +1,6 @@
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {signal, computed, Scope, button, div, divV, divH, span, h3} from '@datagrok-libraries/u2';
+import {signal, computed, Scope, Form, button, div, divV, divH, span, h3} from '@datagrok-libraries/u2';
 import {funcForm, FuncCallForm, ObjectForm, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
 import {kindOf} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
 import type {Kind} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
@@ -618,6 +618,16 @@ export function funcConvergencePage(): HTMLElement {
           ab.full(note(text));
       }
     }
+    // moved out of their form, the u2 choices take the width it would have measured for them,
+    // again when a provider's items arrive
+    const roots = form.inputs.map((input) => input.root);
+    const fit = () => Form.fitChoices(abGrid, roots);
+    fit();
+    const refit = new MutationObserver(fit);
+    for (const root of roots)
+      if (root.dataset.u2 === 'choice-input')
+        refit.observe(root.querySelector('select')!, {childList: true});
+    scope.own(() => refit.disconnect());
     return {dart: dartForm, form};
   }
 

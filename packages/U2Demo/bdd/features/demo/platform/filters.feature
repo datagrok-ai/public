@@ -8,6 +8,7 @@ Feature: Filter builder
     Given user opens the "Filters" demo page
 
   Scenario: A condition built in the builder filters the dataframe on Apply
+    Then "Entity type" tab should be 34 px tall
     When user clicks on "Add condition" button
     And user selects "city" in property of filter row
     And user selects "equals" in operator of filter row

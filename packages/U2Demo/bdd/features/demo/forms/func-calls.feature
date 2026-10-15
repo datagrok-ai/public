@@ -8,6 +8,11 @@ Feature: FuncCalls
   Background:
     Given user opens the "FuncCalls" demo page
 
+  Scenario: The two sides never lie on one another, side by side or stacked
+    Then Stage input in "u2" section should not overlap Stage input in "Platform" section
+    And editor of Stage input in "u2" section should be as wide as editor of Stage input in "Platform" section
+    And demo page should have no layout problems
+
   Scenario: A stage picked on either side writes the call and shows on the other
     When user selects "Phase II" in Stage input in "u2" section
     Then Stage input in "Platform" section should have value "Phase II"

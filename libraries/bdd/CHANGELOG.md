@@ -2,6 +2,10 @@
 
 ## v.next
 
+* Geometry: Added width claims — `{element} should be as wide as {element}`, `… should be {int} px wide`, `… should be at least {int} px wide` and `… should be at most {int} px wide` — so an editor too short next to its Dart twin fails a feature
+* Geometry: Added `{element} should be inside the window` (a dialog or popup no ancestor clips) and `the window is {int} by {int} px`, which resizes the window until the test ends
+* Layout audit: Inputs inside another input's editor (a columns map's key rows) no longer count as rows of the form in the label-column rule
+* Runner: Added `BDD_VIEWPORT=<w>x<h>`, which runs a suite at another screen size than 1920×1080, so the layout audit checks it there
 * Vocabulary: The u2 and EMS nouns are generated from the manifests' kind catalogs (`tool/gen-u2-kinds.mjs` → `bindings/common/u2-kinds.g.ts`, `npm run vocab`; `kindDefsFrom`/`registerU2Kinds`); `kinds.ts` keeps only what u2 cannot know — Dart selectors and names, legacy aliases and parts, strategy pins; container parts are anchored at their component's root; `npm test` fails on a stale vocabulary, and a snapshot of the kind table guards compatibility
 * Kinds: Added nouns for the new u2 and EMS kinds: access grid, chips input, filter builder, filter query, filter group, filter row, read-only field, pick input, ref input, the domain and manifest kinds, layout panel, and the vertical and horizontal stacks
 * Kinds: Added the generic `readout` kind: a `[role="status"]` "name = value" line (`<label>` + `<output>`), where "value of <name> readout" is the value alone

@@ -30,9 +30,9 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: var(--dg-space-m);
+  gap: 0;
   height: 34px;
-  padding: 0 var(--dg-space-s) 0 10px;
+  padding: 0 10px;
   font-size: 18px;
   font-weight: var(--dg-font-weight-regular);
   white-space: nowrap;
@@ -47,31 +47,40 @@
 
 .u2-dialog-title-text {
   margin-right: auto;
+  padding-right: var(--dg-space-m);
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* the platform's 18px ? and ✕ (d4.css .d4-dialog-header .grok-icon), shown while the pointer is
+   over the dialog; transparent rather than hidden, so they stay clickable and reachable by Tab */
+.u2-dialog-help,
 .u2-dialog-close {
-  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--dg-inline-control-height);
-  height: var(--dg-inline-control-height);
+  width: 18px;
+  height: 18px;
   padding: 0;
-  font-family: var(--dg-font-family);
-  font-size: var(--dg-font-size-small);
-  color: var(--dg-text-color-light);
+  font-size: 16px;
+  color: var(--dg-grey-3);
   background: transparent;
   border: none;
-  border-radius: var(--dg-radius);
+  opacity: 0;
   cursor: pointer;
 }
 
+.u2-dialog:hover .u2-dialog-help,
+.u2-dialog:hover .u2-dialog-close,
+.u2-dialog-help:focus-visible,
+.u2-dialog-close:focus-visible {
+  opacity: 1;
+}
+
+.u2-dialog-help:hover,
 .u2-dialog-close:hover {
   color: var(--dg-text-color);
-  background: var(--dg-hover);
 }
 
 .u2-dialog-content {
@@ -121,13 +130,15 @@
   display: none;
 }
 
+/* the platform's footer (d4.css .d4-command-bar): 45px under a 1px rule */
 .u2-dialog-buttons {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
   gap: var(--dg-space-m);
-  padding: 0 var(--dg-space-l) var(--dg-space-l);
+  padding: var(--dg-space-m) var(--dg-space-l);
+  border-top: var(--dg-border-width) solid var(--dg-border-subtle);
 }
 
 .u2-dialog-buttons:empty {

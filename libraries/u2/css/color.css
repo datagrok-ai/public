@@ -20,10 +20,14 @@ input.u2-input-editor.u2-color-text {
   margin-left: 0;
 }
 
+/* 18px, the platform's color button (ui.css:989-995): exactly what the field gave back, so the
+   field ends with its box instead of spilling past it */
 .u2-color-box {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  min-width: 18px;
 }
 
 /* `d4-color-bar` metrics: a 12px square inside a transparent 1px frame the hover fills in

@@ -365,6 +365,14 @@ ui('MenuBar and Toolbar list their items; a toolbar toggle is selected while pre
   toolbar.dispose();
 });
 
+ui('Toolbar: a button icon is a Font Awesome name, the same one a menu item takes', () => {
+  const toolbar = new Toolbar().addButton('Open', () => {}, {icon: 'folder-open'});
+  const icon = toolbar.root.querySelector('[data-u2-item="Open"] .u2-toolbar-icon');
+  assert.ok(icon.classList.contains('fa-folder-open'));
+  assert.equal(icon.textContent, '');
+  toolbar.dispose();
+});
+
 // the shim loads no stylesheets: the cascade the » logic depends on is pinned at the source
 test('toolbar.css: a hidden item outranks the button display, and the toolbar never sizes to its items', () => {
   const css = readFileSync(new URL('../css/toolbar.css', import.meta.url), 'utf8');

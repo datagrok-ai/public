@@ -73,7 +73,7 @@ interface Load<T> {
   error?: string;
 }
 
-const INDENT = 12;
+const INDENT = 20;
 
 /** The tree's scroller: its `[role=tree]` root answers for the tree, so whoever lands on it reads
  * the nodes, not the flattened rows. */
@@ -127,7 +127,7 @@ export class VirtualTree<T = unknown> extends Control {
     this._checkLabel = options.checkLabel;
     const contextActions = options.contextActions;
     this._list = new TreeRows<T>({
-      itemHeight: options.itemHeight ?? 22,
+      itemHeight: options.itemHeight ?? 20,
       rowRole: 'treeitem',
       keyOf: VirtualTree._key,
       labelOf: (row) => row.node.label,
@@ -420,7 +420,7 @@ export class VirtualTree<T = unknown> extends Control {
     if (row.kind !== 'node') {
       // a status row is not an item: nothing addresses "Loading…"
       rowEl.removeAttribute('data-u2-item');
-      el.append(VirtualTree._span('u2-tree-twistie u2-tree-twistie-hidden', '▸'),
+      el.append(VirtualTree._twistie(false, false),
         VirtualTree._span(`u2-tree-${row.kind}`, row.kind === 'loading' ? 'Loading…' : row.message ?? ''));
       return el;
     }
@@ -428,12 +428,11 @@ export class VirtualTree<T = unknown> extends Control {
       rowEl.setAttribute('aria-expanded', String(row.open));
     if (row.checked !== undefined)
       rowEl.setAttribute('aria-checked', String(row.checked));
-    const twistie = row.branch ? 'u2-tree-twistie' : 'u2-tree-twistie u2-tree-twistie-hidden';
     const label = this._render === undefined ? VirtualTree._span('u2-tree-label', row.label) :
       this._render(row.node);
     label.classList.add('u2-tree-label');
     label.dataset.u2Part = 'item-label';
-    el.append(VirtualTree._span(twistie, row.open ? '▾' : '▸'));
+    el.append(VirtualTree._twistie(row.branch, row.open));
     if (row.checked !== undefined)
       el.append(this._checkbox(row));
     el.append(label);

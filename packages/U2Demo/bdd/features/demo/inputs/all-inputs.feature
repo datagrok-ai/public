@@ -14,9 +14,18 @@ Feature: All inputs
     And editor of Name input in "u2" section should be left-aligned with editor of Stage input in "u2" section
     And editor of Stage input in "u2" section should be left-aligned with editor of Replicates input in "u2" section
     And editor of Replicates input in "u2" section should be left-aligned with editor of Active checkbox in "u2" section
+    And editor of Targets input in "u2" section should be at least 150 px wide
 
   Scenario: The u2 checkbox row is as tall as the platform's
     Then Active checkbox in "u2" section should be as tall as Active checkbox in "Platform" section
+
+  Scenario: The two sides never lie on one another, side by side or stacked
+    Then Name input in "u2" section should not overlap Name input in "Platform" section
+    And "API key" input in "u2" section should not overlap "API key" input in "Platform" section
+
+  Scenario: The platform editors take their cell as in a form, as wide as the u2 ones
+    Then editor of Name input in "Platform" section should be as wide as editor of Name input in "u2" section
+    And editor of "API key" input in "Platform" section should be as wide as editor of "API key" input in "u2" section
 
   Scenario: The page shows no layout problems
     Then demo page should have no layout problems

@@ -1,7 +1,7 @@
 /* The kind catalog: one entry per `data-u2` value u2 stamps — what a test calls it, where its
    name and parts are, which state keys it fills and what a user does to it. Data only: the manifest
    generator merges it with the registry into the manifest's `kinds`, and the bdd library generates its
-   vocabulary from that. Contract: core/docs/features/ui2/overhaul/CONTRACT.md §4–§5. A new `data-u2`
+   vocabulary from that. Contract: core/docs/features/ui2/CONTRACT.md §4–§5. A new `data-u2`
    value gets its entry here (tests/kinds.test.js fails until it has one). */
 
 export type U2Family = 'input' | 'action' | 'container' | 'collection' | 'navigation' | 'display' |

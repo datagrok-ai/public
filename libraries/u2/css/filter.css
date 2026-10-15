@@ -31,6 +31,27 @@
   display: none;
 }
 
+/* shown explicitly: an older copy of this sheet, bundled by another package, hides every verdict */
+.u2-input-root[data-u2='filter-builder'].u2-fb-blank > .u2-input-error:not(:empty) {
+  display: -webkit-box;
+}
+
+/* disabled, what edits the tree reads as unavailable too */
+.u2-input-disabled .u2-fb .u2-btn.u2-icon-btn,
+.u2-input-disabled .u2-fb .u2-fb-mode {
+  color: var(--dg-text-color-light);
+}
+
+/* read-only, nothing that edits the tree shows; the pickers drop their chevron and the root
+   refuses every gesture (Input.readOnly) */
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-add,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-add-group,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-remove,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-handle,
+.u2-input-root[data-u2='filter-builder'].u2-input-readonly .u2-fb-mode {
+  display: none;
+}
+
 .u2-input-editor.u2-fb.u2-invalid {
   border-bottom: none;
 }

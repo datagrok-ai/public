@@ -164,6 +164,18 @@ async function abandon(page: Page): Promise<number> {
   return dropped;
 }
 
+const runSize = new WeakMap<Page, {width: number; height: number}>();
+
+/** Another window size until the test ends: the shell reset puts back the size the run started with.
+ * Resolves after two frames, so what listens to the window's resize has laid out. */
+export async function resizeWindow(page: Page, width: number, height: number): Promise<void> {
+  const size = page.viewportSize();
+  if (size && !runSize.has(page))
+    runSize.set(page, size);
+  await page.setViewportSize({width, height});
+  await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(null)))));
+}
+
 /** Runs when the feature ends, whatever its scenarios did — for state a step created on the server
  * (a project, an uploaded table); a page that crashed runs none, and the feature fails for them. */
 export function atFeatureEnd(page: Page, cleanup: () => Promise<void>, first = false): void {
@@ -436,7 +448,12 @@ async function closeOverlays(page: Page, keep = 0): Promise<void> {
  * of the DOM behind the platform's back. Errors the teardown itself raises (work cancelled by
  * `closeAll`) are dropped. */
 export async function resetShell(page: Page): Promise<void> {
-  const inShell = await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
+  const size = runSize.get(page);
+  if (size) {
+    runSize.delete(page);
+    await page.setViewportSize(size);
+  }
+  const inShell =await page.evaluate(() => typeof (window as any).grok?.shell?.closeAll === 'function').catch(() => false);
   if (!inShell)
     return;
   await settleWork(page);

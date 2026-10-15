@@ -6,8 +6,8 @@ import {after, before, test} from 'node:test';
 import {type Browser, chromium, type Page} from '@playwright/test';
 
 import '../bindings/common/kinds.js';
-import {above, asTallAs, below, centeredWith, clearOf, inside, leftAligned, leftOf, noLayoutProblems, notClipped, rightOf, tallPx,
-  topAligned} from '../bindings/common/geometry.js';
+import {above, asTallAs, asWideAs, atLeastWidePx, atMostWidePx, below, centeredWith, clearOf, inside, insideWindow, leftAligned, leftOf,
+  noLayoutProblems, notClipped, rightOf, tallPx, topAligned, widePx} from '../bindings/common/geometry.js';
 import {el} from '../src/runtime/args.js';
 import {type AllowEntry, auditLayout, type LayoutResult, rectOf} from '../src/runtime/layout.js';
 import {whileExpectedToFail} from '../src/runtime/patience.js';
@@ -119,6 +119,14 @@ scenario('label-column: a form whose third editor starts 6 px right of the other
   assert.equal(broken.findings[0].detail,
     'the editors of "Patient" form do not start in one column: "Dose" text input at 106 px; the other 2 at 100 px');
   assert.deepEqual((await auditOf(form(''))).findings, []);
+});
+
+scenario('label-column: inputs inside another input\'s editor (a columns map\'s key rows) are not rows of the form', async () => {
+  const key = {label: 'width: 20px'};
+  const map = `<div data-u2="columns-map-input" style="height: auto; align-items: flex-start"><label data-u2-part="label">Mapping</label>` +
+    `<span data-u2-part="editor">${INPUT('x', key)}${INPUT('y', key)}</span></div>`;
+  const r = await auditOf(`<div data-u2="form" aria-label="Plot">${INPUT('Table')}${map}${INPUT('Color')}</div>`);
+  assert.deepEqual(r.findings, []);
 });
 
 scenario('clipped-text and truncated-text: a label cut, a label ellipsized; an ellipsized item label is a list\'s design', async () => {
@@ -249,6 +257,10 @@ scenario('the geometry claims hold where the boxes stand so', async () => {
   await centeredWith(p, e('alpha'), e('beta'));
   await asTallAs(p, e('alpha'), e('beta'));
   await tallPx(p, e('alpha'), 30);
+  await asWideAs(p, e('alpha'), e('beta'));
+  await widePx(p, e('alpha'), 100);
+  await atLeastWidePx(p, e('alpha'), 80);
+  await atMostWidePx(p, e('alpha'), 120);
   await notClipped(p, e('alpha'));
   assert.deepEqual(await rectOf(p, e('alpha')), {x: 10, y: 10, width: 100, height: 30, what: '"alpha"'});
 });
@@ -269,11 +281,30 @@ scenario('the geometry claims fail with both boxes in one sentence', async () =>
     [() => centeredWith(p, e('gamma'), e('alpha')), /gamma element is not vertically centered with alpha element — its middle is 75 px below the other's/],
     [() => asTallAs(p, e('gamma'), e('alpha')), /gamma element is not as tall as alpha element — it is 100 px tall, the other 30 px/],
     [() => tallPx(p, e('alpha'), 40), /alpha element is 30 px tall, not 40/],
+    [() => asWideAs(p, e('gamma'), e('alpha')), /gamma element is not as wide as alpha element — it is 210 px wide, the other 100 px/],
+    [() => widePx(p, e('alpha'), 120), /alpha element is 100 px wide, not 120/],
+    [() => atLeastWidePx(p, e('alpha'), 150), /alpha element is 100 px wide, not at least 150/],
+    [() => atMostWidePx(p, e('alpha'), 60), /alpha element is 100 px wide, not at most 60/],
     [() => notClipped(p, e('wide')), /wide element is clipped: it is cut off by a div it sits in: 40 px on the right/],
     [() => notClipped(p, e('caption')), /caption element is clipped: its text needs \d+ px and has 40, ending in an ellipsis/],
     [() => leftOf(p, e('omega'), e('alpha')), /omega element is not shown/],
     [() => leftOf(p, e('twin'), e('alpha')), /^twin element names 2 shown elements: "twin" ×2$/],
   ]);
+});
+
+scenario('inside the window: a fixed box within the window holds; one past its bottom fails with the window\'s size', async () => {
+  const size = page!.viewportSize()!;
+  await page!.setViewportSize({width: 800, height: 600});
+  try {
+    await page!.setContent(`<div data-u2-name="shown" style="position: fixed; left: 10px; top: 10px; width: 100px; height: 30px"></div>
+      <div data-u2-name="low" style="position: fixed; left: 10px; top: 580px; width: 100px; height: 40px"></div>`);
+    await insideWindow(page!, e('shown'));
+    await failWith([[() => insideWindow(page!, e('low')),
+      /low element is not inside the window — it sticks out 20 px at the bottom: it spans 10\.\.110 × 580\.\.620, the window 800×600/]]);
+  }
+  finally {
+    await page!.setViewportSize(size);
+  }
 });
 
 scenario('no layout problems: the audit over the element\'s subtree, failing with its findings or when it holds no u2 control', async () => {

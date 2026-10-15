@@ -65,12 +65,21 @@
    layouts (the max-width it once had clamped its flex basis, so it fit beside the editor and
    shrank it instead) */
 .u2-form:not(.u2-form-tall) .u2-input-error {
-  padding-left: var(--u2-form-label-width, 100px);
+  padding-left: calc(var(--u2-form-label-width, 100px) + var(--dg-space-m));
 }
 
+.u2-form-tall .u2-input-error {
+  padding-left: 0;
+}
+
+/* a platform input bridged into a platform form or dialog (asDartInput) brings only its box: it
+   grows there as the platform's own text editors do (ui.css:659-664) */
 .u2-form input.u2-input-editor,
 .u2-form textarea.u2-input-editor,
-.u2-form .u2-input-editor.u2-input-search {
+.u2-form .u2-input-editor.u2-input-search,
+.ui-form .ui-input-root > .u2-input-box > input.u2-input-editor,
+.ui-form .ui-input-root > .u2-input-box > textarea.u2-input-editor,
+.ui-form .ui-input-root > .u2-input-box > .u2-input-editor.u2-input-search {
   flex: 1;
   min-width: 0;
 }
@@ -78,10 +87,27 @@
 /* the growing editors sit inside the options box, so the box is the flex child that has to grow */
 .u2-form .u2-input-box:has(> input.u2-input-editor),
 .u2-form .u2-input-box:has(> textarea.u2-input-editor),
-.u2-form .u2-input-box:has(> .u2-input-editor.u2-input-search) {
+.u2-form .u2-input-box:has(> .u2-input-editor.u2-input-search),
+.ui-form .ui-input-root > .u2-input-box:has(> input.u2-input-editor),
+.ui-form .ui-input-root > .u2-input-box:has(> textarea.u2-input-editor),
+.ui-form .ui-input-root > .u2-input-box:has(> .u2-input-editor.u2-input-search) {
   flex: 1;
   min-width: 0;
   max-width: none;
+}
+
+/* the platform's form grows its div editors as well, all but the check and radio lists
+   (ui.css:659-664, 1100-1104); a kind that pins a width (number, date, slider) keeps it as a cap.
+   A u2 Dialog's body is the platform dialog's form, so an input placed straight in it grows too */
+.u2-form .u2-input-box:has(> div.u2-input-editor:not(.u2-multi-choice):not(.u2-radio):not(.u2-image)),
+.u2-dialog-content > .u2-input-root > .u2-input-box:has(> div.u2-input-editor:not(.u2-multi-choice):not(.u2-radio):not(.u2-image)) {
+  flex-grow: 1;
+  max-width: none;
+}
+
+.u2-form .u2-input-box > div.u2-input-editor:not(.u2-multi-choice):not(.u2-radio):not(.u2-image),
+.u2-dialog-content > .u2-input-root > .u2-input-box > div.u2-input-editor:not(.u2-multi-choice):not(.u2-radio):not(.u2-image) {
+  flex-grow: 1;
 }
 
 /* the category heading FuncCallForm groups params under — the platform's h2: 13px bold in the
@@ -147,7 +173,7 @@
 .u2-form-wide .u2-input-root[data-u2='bool-input'] .u2-input-editor,
 .u2-form-wide .u2-input-root[data-u2='radio-input'] .u2-input-editor,
 .u2-form-wide .u2-input-root[data-u2='multi-choice-input'] .u2-input-editor {
-  flex-grow: 0;
+  flex: none;
   width: auto;
 }
 

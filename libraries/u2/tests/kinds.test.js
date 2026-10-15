@@ -1,7 +1,7 @@
 /* The kind catalog (R11) against the code: every data-u2 value u2 stamps has an entry in
    src/core/kinds.ts and every entry names a stamped value, every visual registry tag builds a
    catalogued kind, and manifest.json carries what the generator makes of them. Contract:
-   core/docs/features/ui2/overhaul/CONTRACT.md §4. */
+   core/docs/features/ui2/CONTRACT.md §4. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';

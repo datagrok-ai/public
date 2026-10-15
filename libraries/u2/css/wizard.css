@@ -109,6 +109,7 @@
   min-height: 0;
   overflow: auto;
   padding: var(--dg-space-l);
+  overflow-wrap: anywhere;
 }
 
 .u2-wizard-buttons {

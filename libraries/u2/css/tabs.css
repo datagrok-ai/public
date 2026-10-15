@@ -1,6 +1,7 @@
 /* Tab strip skin. Tokens only — css/tokens.css must be loaded alongside.
-   Default = the platform's `ui.tabControl` (.d4-tab-header): accent text, 2px accent underline on
-   the selected tab, no stripe chrome. `.u2-tabs-document` is the IDE document-tab variant,
+   Default = the platform's `ui.tabControl` (tab_control.css .d4-tab-header): a 34px stripe with no
+   rule of its own, tabs padded 8px 16px in accent text, the selected one underlined 2px in accent
+   7px above the stripe's bottom. `.u2-tabs-document` is the IDE document-tab variant,
    `.u2-tabs-vertical` the left-hand column with a 4px accent bar (.d4-tab-vertical). */
 .u2-tabs {
   display: flex;
@@ -52,6 +53,20 @@
 .u2-tabs-tab-active {
   border-bottom-color: var(--dg-accent);
   cursor: default;
+}
+
+.u2-tabs:not(.u2-tabs-document):not(.u2-tabs-vertical) > .u2-tabs-header {
+  height: 34px;
+  box-shadow: none;
+}
+
+.u2-tabs:not(.u2-tabs-document):not(.u2-tabs-vertical) > .u2-tabs-header .u2-tabs-tab {
+  padding: var(--dg-space-m) var(--dg-space-xl);
+}
+
+.u2-tabs:not(.u2-tabs-document):not(.u2-tabs-vertical) > .u2-tabs-header .u2-tabs-tab-active {
+  margin-bottom: 7px;
+  padding-bottom: 1px;
 }
 
 .u2-tabs-tab:focus-visible {

@@ -172,6 +172,13 @@ textarea.u2-input-editor {
   border-bottom: var(--dg-border-width) solid var(--dg-error);
 }
 
+/* the check and radio lists are never underlined, so an invalid one is not either: the line would
+   run under its last option only */
+.u2-input-editor.u2-radio.u2-invalid,
+.u2-input-editor.u2-multi-choice.u2-invalid {
+  border-bottom: none;
+}
+
 /* the bridged molecule editor is a canvas the Dart input measures and repaints itself, at the
    100×70 chem.css gives it (molecule_input.dart:65-69, 116-124); the editor skin above stretched
    it to the form's full width at one row's height, where the depiction renders blank */
@@ -201,6 +208,12 @@ textarea.u2-input-editor {
 
 .u2-input-error:empty {
   display: none;
+}
+
+/* a loose captioned input's verdict starts under its editor, past the caption's 100px floor; forms
+   and dialogs indent by their own aligned column */
+:where(.u2-input-root:not(.u2-input-caption-after):not(.u2-input-inline) > .u2-input-label:not(:empty)) ~ .u2-input-error {
+  padding-left: calc(100px + var(--dg-space-m));
 }
 
 /* editor + options rail: one element, so the pair survives the platform bridge (the Dart proxy
@@ -309,9 +322,18 @@ textarea.u2-input-editor {
   height: var(--dg-inline-control-height);
 }
 
+/* the platform's disabled input: grey-4 text throughout, and a near-white field
+   (ui.css:1006-1023) */
 .u2-input-disabled,
 .u2-input-disabled .u2-input-editor {
-  color: var(--dg-text-color-disabled);
+  color: var(--dg-text-color-light);
+}
+
+.u2-input-disabled input.u2-input-editor,
+.u2-input-disabled select.u2-input-editor,
+.u2-input-disabled textarea.u2-input-editor,
+.u2-input-disabled .u2-input-editor.u2-columns {
+  background-color: color-mix(in srgb, var(--dg-grey-1) 40%, var(--dg-bg));
 }
 
 /* events die on the CHILDREN, never on the root: the root must stay hit-testable or its title
@@ -326,7 +348,7 @@ textarea.u2-input-editor {
 
 .u2-input-disabled .u2-input-options,
 .u2-input-disabled .u2-input-options > .u2-btn.u2-icon-btn {
-  color: var(--dg-text-color-disabled);
+  color: var(--dg-text-color-light);
 }
 
 /* search variant */
@@ -651,25 +673,34 @@ textarea.u2-list-area {
   white-space: pre;
 }
 
-/* image variant — preview with a REMOVE link revealed on hover. The preview never shrinks, so
-   where it does not fit beside its caption it goes under it */
+/* image variant — preview with a REMOVE link revealed on hover. Where the preview does not fit
+   beside its caption it scales down into what the caption leaves, rather than going under it or
+   past its box; a wide form does not stretch the editor past the preview, which the link rides */
 .u2-input-root[data-u2='image-input'] > .u2-input-box {
-  min-width: auto;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .u2-input-editor.u2-image {
   position: relative;
   display: inline-flex;
   align-items: center;
+  max-width: 100%;
   height: auto;
   padding: 0;
+}
+
+.u2-form-wide .u2-input-root[data-u2='image-input'] .u2-input-editor.u2-image {
+  flex: 0 1 auto;
 }
 
 /* the platform gives every preview the same box whatever the source measures
    (`d4/lib/src/viewers/viewers.css:69-72`) */
 .u2-image-preview {
   width: 300px;
-  height: 200px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
 }
 
 .u2-image-preview[hidden] {
@@ -734,10 +765,12 @@ textarea.u2-list-area {
   color: var(--dg-text-color-light);
 }
 
+/* never under the platform form's 100px input floor (js-api ui.ts getInputsMinWidths) */
 .u2-input-editor.u2-columns {
   display: flex;
   align-items: center;
   gap: var(--dg-space-s);
+  min-width: 100px;
   border-bottom: var(--dg-input-border);
   cursor: pointer;
 }
@@ -752,16 +785,24 @@ textarea.u2-list-area {
   text-overflow: ellipsis;
 }
 
-/* the platform's `d4-column-selector-triangle` (`columns_input.dart:53`, placed by
-   `ui.css:344-349`) as a border triangle — the icomoon glyph it draws is a platform font */
+/* the platform's chevron at the right end of the field, the choice input's stroked "v"
+   (css/choice.css) drawn in the current colour; the span reaches over the editor's 4px end padding
+   so the point sits 8px in from the edge, as a select's does */
 .u2-columns-chevron {
   flex-shrink: 0;
-  width: 0;
-  height: 0;
-  margin-left: auto;
-  border-right: 4px solid transparent;
-  border-left: 4px solid transparent;
-  border-top: 5px solid var(--dg-text-color-light);
+  align-self: stretch;
+  width: 16px;
+  height: auto;
+  margin: 0 calc(-1 * var(--dg-space-s)) 0 auto;
+  border: none;
+  background-image:
+    linear-gradient(to top right, transparent calc(50% - 0.8px), currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px), transparent calc(50% + 0.8px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.8px), currentColor calc(50% - 0.8px),
+      currentColor calc(50% + 0.8px), transparent calc(50% + 0.8px));
+  background-repeat: no-repeat;
+  background-position: right 8px top 55%, right 3.5px top 55%;
+  background-size: 4.5px 4.5px, 4.5px 4.5px;
 }
 
 /* a columns input with no table yet: visibly inert until one is picked (the popup stays closed) */
@@ -769,22 +810,16 @@ textarea.u2-list-area {
   cursor: default;
 }
 
-.u2-columns[aria-disabled='true'] .u2-columns-summary {
+.u2-columns[aria-disabled='true'] .u2-columns-summary,
+.u2-columns[aria-disabled='true'] .u2-columns-chevron {
   color: var(--dg-text-color-disabled);
 }
 
-.u2-columns[aria-disabled='true'] .u2-columns-chevron {
-  border-top-color: var(--dg-text-color-disabled);
-}
-
-/* an invalid columns input reddens the summary and the triangle, not just the underline
+/* an invalid columns input reddens the summary and the chevron, not just the underline
    (`ui.css:306-313`) */
-.u2-columns.u2-invalid .u2-columns-summary {
-  color: var(--dg-error);
-}
-
+.u2-columns.u2-invalid .u2-columns-summary,
 .u2-columns.u2-invalid .u2-columns-chevron {
-  border-top-color: var(--dg-error);
+  color: var(--dg-error);
 }
 
 /* Overlay.show writes min-width and max-height inline from the space around the control, so a
@@ -804,9 +839,18 @@ textarea.u2-list-area {
 }
 
 .u2-columns-buttons {
+  flex-shrink: 0;
   justify-content: flex-end;
   gap: var(--dg-space-s);
   padding-top: var(--dg-space-xs);
+}
+
+/* the platform's column grid gives way first too, so OK and CANCEL stay inside a popup the
+   overlay squeezed near the window's bottom edge */
+.u2-columns-popup > .d4-column-grid {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .u2-columns-actions {
@@ -870,6 +914,11 @@ textarea.u2-list-area {
 /* the rows are input roots: the first gives up its top padding, so it sits on the caption's line */
 .u2-columns-map > .u2-input-root:first-child {
   padding-top: 0;
+}
+
+/* the x / y captions take their own width, not the form's label column */
+.u2-input-editor.u2-columns-map .u2-input-label {
+  min-width: 0;
 }
 
 .u2-aggregations-row {

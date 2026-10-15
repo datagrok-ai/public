@@ -7,10 +7,9 @@
   container-name: u2demo;
 }
 
-/* Below this a 22/78 split leaves the demo a sliver — text breaks mid-word, the range slider
-   collapses onto its own handles. The nav stops shrinking with the host and becomes a fixed rail
-   instead, so every pixel the fold frees goes to the demo; the sash goes with it, since there is
-   nothing left to trade. */
+/* Below this the nav has given way to the content down to its rail: it stays a fixed rail, so
+   every pixel the fold frees goes to the demo; the sash goes with it, since there is nothing left
+   to trade. */
 @container u2demo (max-width: 720px) {
   .u2demo-shell > .u2-splitter-panel:first-child {
     min-width: 148px;
@@ -29,13 +28,13 @@
 }
 
 /* Narrower than the rail plus a readable column: the nav folds away deliberately rather than
-   thinning to nothing. Every sub-demo is still one Browse click or one URL away. */
+   thinning to nothing, and the ribbon's Show navigation brings the rail back (src/demo.ts NAV_FOLD). */
 @container u2demo (max-width: 460px) {
-  .u2demo-shell > .u2-splitter-panel:first-child {
+  .u2demo-root:not(.u2demo-nav-shown) .u2demo-shell > .u2-splitter-panel:first-child {
     display: none;
   }
 
-  .u2demo-shell > .u2-splitter-panel:nth-child(2) {
+  .u2demo-root:not(.u2demo-nav-shown) .u2demo-shell > .u2-splitter-panel:nth-child(2) {
     min-width: 100%;
     max-width: 100%;
   }
@@ -67,9 +66,10 @@
   background: var(--dg-bg);
 }
 
-/* the ribbon's Inspect toggle: the shared pressed skin is a grey a shade off hover, so an armed
-   toggle reads as a hovered button — the accent wash is what a platform ribbon toggle wears */
-.u2-btn.u2demo-inspect.u2-icon-btn-pressed {
+/* the ribbon's toggles (Inspect, Show navigation): the shared pressed skin is a grey a shade off
+   hover, so an armed toggle reads as a hovered button — the accent wash is what a platform ribbon
+   toggle wears */
+.u2-btn.u2demo-toggle.u2-icon-btn-pressed {
   color: var(--dg-accent);
   background: var(--dg-selection-bg);
   border-color: var(--dg-accent);
@@ -84,10 +84,15 @@
   min-width: 280px;
 }
 
-/* the Overview's area column: one common width so the leaf lists line up */
+/* the Overview's areas: one common caption column, so the leaf lists line up and wrap beside it */
+.u2demo-overview-line {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: var(--dg-space-m);
+  align-items: baseline;
+}
+
 .u2demo-overview-area {
-  flex: none;
-  width: 90px;
   font-weight: var(--dg-font-weight-medium);
 }
 
@@ -313,9 +318,19 @@
   display: contents;
 }
 
+/* an input's own caption only: the platform column selector keeps a caption of its own inside its
+   editor */
 .u2demo-ab .u2-input-label,
-.u2demo-ab .ui-input-label {
+.u2demo-ab .ui-input-root > .ui-input-label {
   min-width: 100px;
+}
+
+/* the platform side is hosted as a ui.form hosts it: its editors take the cell (ui.css:659-664) */
+.u2demo-ab-platform .ui-input-root > div.ui-input-editor,
+.u2demo-ab-platform .ui-input-root > textarea.ui-input-editor,
+.u2demo-ab-platform .ui-input-root > input.ui-input-editor:not([type='checkbox']) {
+  flex-grow: 1;
+  padding: 0 var(--dg-space-s);
 }
 
 /* the platform's checkbox outside a ui.form keeps the browser's 3px margins on a baseline line box
@@ -339,15 +354,8 @@
   background: var(--dg-selection-bg);
 }
 
-/* the 300x200 image preview is intrinsically wider than a cell — without this it bleeds over the
-   next column, pushes a page scrollbar, and wraps its own label onto a line of its own. It takes
-   what the label leaves and fits into it. */
-.u2demo-ab [data-u2='image-input'] .u2-input-box {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-.u2demo-ab .u2-image-preview,
+/* the platform's 300x200 image preview is intrinsically wider than a cell: it fits into what its
+   label leaves (u2's own preview does so by itself) */
 .u2demo-ab .ui-input-image img {
   max-width: 100%;
   height: auto;
@@ -372,8 +380,9 @@
 
 /* Two columns stop fitting at the widest cell (~310px): a narrower pane — Browse and the context
    panel both open, or a small screen — stacks each u2 cell under its platform twin, so the rows
-   still compare one to one and nothing is cut or scrolled sideways. The sides then share the
-   editor column: each lets clicks through to the other's cells. */
+   still compare one to one and nothing is cut or scrolled sideways. The sides would then lie on
+   one another over the editor column, so they lose their boxes: their headers and cells are the
+   grid's own items there. */
 @container u2demo-pane (max-width: 760px) {
   .u2demo-ab {
     grid-template-columns: var(--ab-first) minmax(0, 1fr);
@@ -384,14 +393,12 @@
   }
 
   .u2demo-ab > .u2demo-ab-side {
-    grid-row: 1 / span calc(var(--ab-rows) * 2);
-    grid-column: 2;
-    pointer-events: none;
+    display: contents;
   }
 
   .u2demo-ab-side > .u2-section-header,
   .u2demo-ab-side > .u2-section-body > * {
-    pointer-events: auto;
+    grid-column: 2;
   }
 
   .u2demo-ab-platform > .u2-section-body > * {
@@ -515,4 +522,18 @@
   flex: 1 1 320px;
   min-width: 280px;
   gap: var(--dg-space-s);
+}
+
+/* the list and a 280px form no longer fit side by side: the list goes over the detail */
+@container u2demo-pane (max-width: 600px) {
+  .u2demo-funcs-split {
+    flex-direction: column;
+  }
+
+  .u2demo-funcs-list {
+    width: auto;
+    height: 240px;
+    border-right: none;
+    border-bottom: var(--dg-border-width) solid var(--dg-border);
+  }
 }

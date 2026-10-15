@@ -238,7 +238,7 @@ export class Menu {
     label.textContent = node.label;
     const accel = document.createElement('span');
     accel.className = isGroup ? 'u2-menu-arrow' : 'u2-menu-shortcut';
-    accel.textContent = isGroup ? '▸' : (options.shortcut ?? '');
+    accel.textContent = isGroup ? '' : (options.shortcut ?? '');
     el.append(icon, label, accel);
     return el;
   }

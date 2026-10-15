@@ -9,6 +9,8 @@ import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {Overlay, OverlayDialog} from '../../core/overlay.js';
 import {button} from '../../core/elements.js';
+import {icon} from '../display/icon.js';
+import {Form} from '../forms/form.js';
 
 export interface DialogOptions {
   /** The automation id (`data-u2-name`). */
@@ -56,7 +58,9 @@ export class Dialog extends Control implements OverlayDialog {
   private readonly _error = signal<string | null>(null);
   private readonly _title = document.createElement('div');
   private readonly _bar = document.createElement('div');
-  private readonly _closeBtn = document.createElement('button');
+  private readonly _closeBtn = Dialog._titleButton('u2-dialog-close', 'close', 'times', 'Close');
+  private _helpBtn: HTMLButtonElement | undefined;
+  private _onHelp: (() => unknown) | undefined;
   private readonly _content = document.createElement('div');
   private readonly _errorRow = document.createElement('div');
   private readonly _buttons = document.createElement('div');
@@ -109,12 +113,6 @@ export class Dialog extends Control implements OverlayDialog {
     this.root.setAttribute('aria-labelledby', id);
 
     const close = this._closeBtn;
-    close.type = 'button';
-    close.className = 'u2-dialog-close';
-    close.dataset.u2Part = 'close';
-    close.textContent = '✕';
-    close.setAttribute('aria-label', 'Close');
-
     this._bar.className = 'u2-dialog-title';
     this._bar.append(this._title, close);
     this._content.className = 'u2-dialog-content';
@@ -142,10 +140,14 @@ export class Dialog extends Control implements OverlayDialog {
     scope.listen(this.root, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     scope.listen(this._content, 'input', () => this._error.value = null);
     scope.listen(this._content, 'change', () => this._error.value = null);
-    scope.listen(window, 'resize', () => {
+    const refit = () => {
       if (this._unstack !== undefined)
         this._place(this._at.x, this._at.y);
-    });
+    };
+    scope.listen(window, 'resize', refit);
+    const resize = new ResizeObserver(refit);
+    resize.observe(this.root);
+    this.own(() => resize.disconnect());
     this.effect(() => {
       const message = this._error.value;
       this._errorRow.textContent = message ?? '';
@@ -183,11 +185,23 @@ export class Dialog extends Control implements OverlayDialog {
     return this;
   }
 
+  /** The ? in the title bar, beside ✕: the platform dialog's help. */
+  onHelp(fn: () => unknown): this {
+    this._onHelp = Dialog._owned(fn);
+    if (!this._helpBtn) {
+      this._helpBtn = Dialog._titleButton('u2-dialog-help', 'help', 'question', 'Help');
+      this.scope.listen(this._helpBtn, 'click', () => this._onHelp?.());
+      this._bar.insertBefore(this._helpBtn, this._closeBtn);
+    }
+    return this;
+  }
+
   /** A button by its caption, case-insensitive: the footer's, OK and CANCEL included, and the ✕
-   * (`Close`). */
+   * (`Close`) and ? (`Help`). */
   getButton(text: string): HTMLButtonElement | undefined {
     const wanted = text.trim().toLowerCase();
-    return [this._closeBtn, ...this._buttons.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+    return [...this._bar.querySelectorAll<HTMLButtonElement>('button'),
+      ...this._buttons.querySelectorAll<HTMLButtonElement>('button')].find((b) =>
       (b.textContent ?? '').trim().toLowerCase() === wanted || b.getAttribute('aria-label')?.toLowerCase() === wanted);
   }
 
@@ -271,6 +285,8 @@ export class Dialog extends Control implements OverlayDialog {
     this._place(options.x, options.y);
     const first = Dialog._focusable(this._content)[0];
     (first ?? this._okBtn ?? this.root).focus();
+    if (first instanceof HTMLInputElement || first instanceof HTMLTextAreaElement)
+      first.select();
     return this;
   }
 
@@ -479,6 +495,9 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   private _place(x?: number, y?: number): void {
+    // a fixed box shrinks to the room right of its left edge: measured there, a dialog dragged
+    // right would keep the width the window squeezed it to
+    this.root.style.left = '0px';
     const rect = this.root.getBoundingClientRect();
     const left = x ?? (window.innerWidth - rect.width) / 2;
     const top = y ?? (window.innerHeight - rect.height) / 2;
@@ -487,7 +506,7 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   private _onPointerDown(e: PointerEvent): void {
-    if (e.button !== 0 || (e.target as HTMLElement).closest('.u2-dialog-close'))
+    if (e.button !== 0 || (e.target as HTMLElement).closest('button'))
       return;
     e.preventDefault();
     const rect = this.root.getBoundingClientRect();
@@ -503,10 +522,13 @@ export class Dialog extends Control implements OverlayDialog {
   }
 
   /** Captions straight in the body share one column, as wide as the longest of them up to a cap;
-   * a caption cut there keeps its full text as the tooltip. A Form keeps its own column. */
+   * a caption cut there keeps its full text as the tooltip, and a choice gets the width a form
+   * would give it. A Form keeps its own column. */
   private _alignLabels(): void {
-    const labels = Array.from(this._content.children)
-      .filter((row) => row.classList.contains('u2-input-root'))
+    const rows = Array.from(this._content.children)
+      .filter((row): row is HTMLElement => row.classList.contains('u2-input-root'));
+    Form.fitChoices(this._content, rows);
+    const labels = rows
       .map((row) => row.querySelector<HTMLElement>('.u2-input-label'))
       .filter((label): label is HTMLElement => label !== null);
     if (labels.length === 0)
@@ -574,6 +596,16 @@ export class Dialog extends Control implements OverlayDialog {
   private static _owned<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {
     const owner = Scope.ambient;
     return (...args: A) => batch(() => Scope.runWith(owner?.isDisposed ? undefined : owner, () => fn(...args)));
+  }
+
+  private static _titleButton(cls: string, part: string, glyph: string, label: string): HTMLButtonElement {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = cls;
+    b.dataset.u2Part = part;
+    b.setAttribute('aria-label', label);
+    b.append(icon(glyph));
+    return b;
   }
 
   private static _focusable(el: HTMLElement): HTMLElement[] {

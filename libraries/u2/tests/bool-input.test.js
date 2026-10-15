@@ -39,11 +39,12 @@ test('the box precedes its postfix inside the input box; the hint is on the opti
 
 test('the bool editor never shrinks: the skin says so, at a specificity the wide form\'s stretch does not reach', () => {
   assert.match(rule(css('inputs.css'), '.u2-input-box > .u2-input-editor.u2-input-bool'), /flex: none;/);
-  // the wide form's exception only stops the growth: the skin's `flex: none` (0,3,0) outranks
-  // its `flex: 1` (0,2,0) on shrink and basis, and the (0,4,0) exception leaves both alone
+  // the wide form's exception is `flex: none` too: stopping only the growth would leave its
+  // `flex: 1` basis of 0 on the radio and check lists, which have no skin rule of their own and
+  // collapsed to 0px
   const wide = rule(css('form.css'), '.u2-form-wide .u2-input-root[data-u2=\'bool-input\'] .u2-input-editor');
-  assert.match(wide, /flex-grow: 0;/);
-  assert.doesNotMatch(wide, /flex: 1|flex-shrink|flex-basis/);
+  assert.match(wide, /flex: none;/);
+  assert.doesNotMatch(wide, /flex: 1|flex-grow|flex-shrink|flex-basis/);
 });
 
 test('captionAfter: the checklist row — box first, its caption after it, tied by for; no label column', async () => {

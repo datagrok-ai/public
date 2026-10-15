@@ -14,6 +14,7 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {openDemoPage} from '../../../bindings/demo.js';
+import {tallPx} from '@datagrok-libraries/bdd/bindings/common/geometry';
 import {clickOn, shouldBe, shouldContainText, shouldHaveRows, shouldHaveText} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
@@ -24,17 +25,18 @@ test.describe("Tables and grids", () => {
     await session.step(7, "Given user opens the \"Tables\" demo page", () => openDemoPage(page, "Tables"));
     enter(page, "U2 Demo");
     await session.step(10, "Then table should have 5 rows", () => shouldHaveRows(page, el("table"), 5));
-    await session.step(11, "And Caffeine table row should contain text \"28\"", () => shouldContainText(page, el("Caffeine table row"), "28"));
-    await session.step(12, "When user clicks on Caffeine table row", () => clickOn(page, el("Caffeine table row")));
-    await session.step(13, "Then Caffeine table row should be selected", () => shouldBe(page, el("Caffeine table row"), "selected"));
-    await session.step(14, "And value of selectedIndex readout should have text \"1\"", () => shouldHaveText(page, el("value of selectedIndex readout"), "1"));
+    await session.step(11, "And Caffeine table row should be 22 px tall", () => tallPx(page, el("Caffeine table row"), 22));
+    await session.step(12, "And Caffeine table row should contain text \"28\"", () => shouldContainText(page, el("Caffeine table row"), "28"));
+    await session.step(13, "When user clicks on Caffeine table row", () => clickOn(page, el("Caffeine table row")));
+    await session.step(14, "Then Caffeine table row should be selected", () => shouldBe(page, el("Caffeine table row"), "selected"));
+    await session.step(15, "And value of selectedIndex readout should have text \"1\"", () => shouldHaveText(page, el("value of selectedIndex readout"), "1"));
   });
   test("A virtual grid of 20,000 cells", {tag: ["@demo", "@realizes:u2.table", "@realizes:u2.grid"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(7, "Given user opens the \"Tables\" demo page", () => openDemoPage(page, "Tables"));
     enter(page, "U2 Demo");
-    await session.step(17, "When user clicks on \"#7\" item in virtual grid", () => clickOn(page, el("\"#7\" item in virtual grid")));
-    await session.step(18, "Then \"#7\" item in virtual grid should be selected", () => shouldBe(page, el("\"#7\" item in virtual grid"), "selected"));
-    await session.step(19, "And value of \"selected cell\" readout should have text \"7\"", () => shouldHaveText(page, el("value of \"selected cell\" readout"), "7"));
+    await session.step(18, "When user clicks on \"#7\" item in virtual grid", () => clickOn(page, el("\"#7\" item in virtual grid")));
+    await session.step(19, "Then \"#7\" item in virtual grid should be selected", () => shouldBe(page, el("\"#7\" item in virtual grid"), "selected"));
+    await session.step(20, "And value of \"selected cell\" readout should have text \"7\"", () => shouldHaveText(page, el("value of \"selected cell\" readout"), "7"));
   });
 });

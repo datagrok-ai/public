@@ -2,6 +2,33 @@
 
 ## v.next
 
+* Inputs: Fixed div-based editors (slider, list, column and columns pickers, comboboxes) staying short in a Form's normal state and in a Dialog body; they now grow as in `ui.form`, except the check and radio lists
+* Inputs: Fixed a u2 input bridged into a platform dialog (`asDartInput`) staying 143 px; it now fills the row like the platform's own editor
+* Form: Fixed radio and multi-choice collapsing to 0 px in a wide form
+* Inputs: Multi-choice now has the platform's 150 px floor; the Columns picker has a 100 px floor and the platform's chevron
+* Form: A choice keeps the width its form measured after it moves elsewhere; added `Form.fitChoices`
+* Property grid: Number rows now fill the cell like the other rows
+* Inputs: Disabled inputs use the platform's grey text and near-white field
+* Inputs: Error lines start under the editor, in forms and in loose captioned inputs; an invalid radio or check list no longer draws an underline
+* Inputs: The color field no longer spills out of its box; the image preview scales into its row instead of wrapping under its caption
+* Inputs: The Columns popup keeps OK and CANCEL visible when the window's bottom edge squeezes it
+* Inputs: Mapping's nested x/y captions take their own width
+* Dialog: A choice placed straight in a dialog body takes the width a form measures for it (longest option plus 30 px), as in ui.dialog
+* Accordion: The open pane's content sits 2 px under its header, 10 px above the next and 20 px in, in grey-5, as the platform's
+* BasicTable: Rows are 22 px, inset 12 px, with no rules and a 13 px bold header, as ui.table
+* VirtualTree: Rows are 20 px with a caret icon twistie and a 20 px indent per level, as the platform tree
+* TabStrip: The default strip is 34 px, with tabs padded 8 px 16 px and no full-width rule, as ui.tabControl
+* FilterBuilder: Disabled dims + / − and Advanced; read-only hides add, remove, the drag handles and Advanced; a blank required builder shows its error even where an older copy of the stylesheet is loaded
+* Dialog: Fixed a dialog whose content grows after show running off the window, so OK is reachable
+* Dialog: Fixed a dialog dragged to the right being crushed when the window narrows
+* Dialog: Matched the platform's backdrop, shadow, footer rule and spacing, and its 18 px close icon shown on hover
+* Dialog: Added `onHelp`, the platform's "?" in the title bar
+* Dialog: The first text editor's text is selected on show, as in the platform
+* Menu: Re-skinned popup menus to the platform's look, with a chevron for submenus
+* Tooltip: Matched the platform's tooltip size, font, translucency and border
+* Breadcrumbs: Widened the separator spacing to the platform's
+* Wizard: Long values wrap instead of being clipped
+* Toolbar: Breaking: `addButton`'s `icon` is a Font Awesome name, as a menu item's is (it was shown as text), so a button folded into the » menu keeps its icon
 * Inputs: A captioned editor shrinks to a 60px floor before it drops under its caption, as the platform's row never wraps
 * Inputs: Captions sit on the first line of multi-line editors (text area, radio, map, aggregations, checklists), as in the platform
 * Inputs: Fixed the invalid underline on list, password, columns, file and saved-run editors, which showed only under the rail icon

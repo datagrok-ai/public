@@ -27,3 +27,12 @@ export const openDemoPage = Given('user opens the {string} demo page', async (pa
   const status = new RegExp(`/ ${label.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
   await page.locator('.d4-view-status-panel').filter({hasText: status}).first().waitFor({state: 'attached', timeout: 60000});
 }, {tier: 'ui', enters: 'U2 Demo', description: 'a sub-demo by its navigation label; needs this package published'});
+
+/** The nav folds away in a pane too narrow to keep it beside the demo (Browse and the context panel
+ * open on a small screen); the ribbon's Show navigation brings it back, as a person would. */
+export const navigationShown = Given('the demo navigation is shown', async (page: Page) => {
+  const nav = page.locator('.u2demo-nav');
+  if (!await nav.isVisible())
+    await page.locator('[data-u2-name="showNavigation"]').click();
+  await nav.waitFor({state: 'visible', timeout: 15000});
+}, {tier: 'ui', description: 'presses the ribbon\'s Show navigation toggle when the nav has folded away'});

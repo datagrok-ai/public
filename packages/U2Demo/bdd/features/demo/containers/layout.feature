@@ -8,6 +8,7 @@ Feature: Layout containers
 
   Scenario: Accordion panes expand and collapse
     Then General pane should be expanded
+    And General pane should be 58 px tall
     And Advanced pane should be collapsed
     When user expands Advanced pane
     Then Advanced pane should be expanded

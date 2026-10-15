@@ -27,11 +27,10 @@ export function msaWorkbenchPage(): HTMLElement {
   const settingsOn = signal(false);
   const toolbar = new Toolbar({ariaLabel: 'Workbench toolbar'});
   toolbar.name = 'workbenchToolbar';
-  toolbar.addButton('Open', () => openDatasetDialog(), {icon: '📂', tooltip: 'Open a dataset'});
-  toolbar.addButton('Run', () => openMsaDialog(), {icon: '▶', tooltip: 'Run the alignment'});
-  const toolbarSave = button('Save', () => notify.info('Saved from the toolbar'));
-  toolbarSave.dataset.u2Name = 'toolbarSave';
-  toolbar.add(toolbarSave);
+  toolbar.addButton('Open', () => openDatasetDialog(), {icon: 'folder-open', tooltip: 'Open a dataset'});
+  toolbar.addButton('Run', () => openMsaDialog(), {icon: 'play', tooltip: 'Run the alignment'});
+  toolbar.addButton('Save', () => notify.info('Saved from the toolbar'), {icon: 'save', tooltip: 'Save the alignment'});
+  toolbar.root.querySelector<HTMLElement>('[data-u2-item="Save"]')!.dataset.u2Name = 'toolbarSave';
   toolbar.addSeparator();
   toolbar.addToggle('Settings', settingsOn, {tooltip: 'Show the settings panel'});
 

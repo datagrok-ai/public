@@ -5,10 +5,12 @@ import {Scope} from '../../core/scope.js';
 import {Control} from '../../core/component.js';
 import {Tooltip} from '../../core/tooltip.js';
 import {Menu} from './menu.js';
+import {icon as iconElement} from '../display/icon.js';
 import type {IItemsState} from '../../core/widget-like.js';
 
 export interface ToolbarButtonOptions {
   tooltip?: string;
+  /** A Font Awesome name, as for a menu item: the » menu shows the same icon when the item folds. */
   icon?: string;
 }
 
@@ -127,12 +129,8 @@ export class Toolbar extends Control {
     el.className = 'u2-toolbar-btn';
     el.dataset.u2Item = label;
     el.tabIndex = -1;
-    if (options && options.icon) {
-      const icon = document.createElement('span');
-      icon.className = 'u2-toolbar-icon';
-      icon.textContent = options.icon;
-      el.append(icon);
-    }
+    if (options && options.icon)
+      el.append(iconElement(options.icon, {cls: 'u2-toolbar-icon'}));
     const text = document.createElement('span');
     text.className = 'u2-toolbar-label';
     text.dataset.u2Part = 'item-label';

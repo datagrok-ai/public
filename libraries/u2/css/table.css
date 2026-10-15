@@ -1,5 +1,5 @@
-/* u2 basic table (see src/components/table.ts). Compact platform density: one line per row,
-   hairline separators, muted header. */
+/* u2 basic table (see src/components/table.ts), as the platform's `ui.table` (`d4-item-table`):
+   22px rows inset 12px, no rules, a 13px bold header. */
 /* Content-sized like the platform's `d4-item-table`; stretch with `width: 100%` where a panel
    wants it. */
 .u2-table {
@@ -26,8 +26,8 @@
 .u2-table th,
 .u2-table td {
   height: var(--dg-inline-control-height);
-  padding: 0 var(--dg-space-m);
-  border-bottom: var(--dg-border-width) solid var(--dg-border-subtle);
+  padding: 0 0 0 var(--dg-space-l);
+  border-bottom: none;
   text-align: left;
   vertical-align: middle;
   white-space: nowrap;
@@ -36,9 +36,9 @@
 }
 
 .u2-table th {
-  color: var(--dg-text-color-light);
-  font-size: var(--dg-font-size-small);
-  font-weight: var(--dg-font-weight-regular);
+  color: var(--dg-text-color);
+  font-size: var(--dg-font-size);
+  font-weight: var(--dg-font-weight-bold);
 }
 
 .u2-table thead th {

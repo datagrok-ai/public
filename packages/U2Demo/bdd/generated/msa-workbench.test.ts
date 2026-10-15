@@ -15,7 +15,8 @@ import '@datagrok-libraries/bdd/bindings/platform/datasets';
 import '@datagrok-libraries/bdd/bindings/platform/elements';
 import '@datagrok-libraries/bdd/bindings/tiers/molecules/crux';
 import {openWorkbench} from '../bindings/steps.js';
-import {clickOn, selectIn, shouldBe, shouldContainText, shouldHaveItems, shouldHaveText, shouldHaveValue, shouldNotBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
+import {asTallAs, atLeastWidePx, atMostWidePx, tallPx, topAligned} from '@datagrok-libraries/bdd/bindings/common/geometry';
+import {clickOn, close, selectIn, shouldBe, shouldContainText, shouldHaveItems, shouldHaveText, shouldHaveValue, shouldNotBe, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {el, enter, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("MSA workbench", () => {
@@ -47,16 +48,35 @@ test.describe("MSA workbench", () => {
     await session.step(28, "And status line should have text \"No alignment yet\"", () => shouldHaveText(page, el("status line"), "No alignment yet"));
     await session.step(29, "And aligned sequences list should have 0 items", () => shouldHaveItems(page, el("aligned sequences list"), 0));
   });
+  test("A choice straight in a dialog body is as wide as its longest option, as in ui.dialog", {tag: ["@demo", "@realizes:u2.dialog", "@realizes:u2.tabs"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(8, "Given user opens the MSA workbench", () => openWorkbench(page));
+    enter(page, "MSA workbench");
+    await session.step(32, "When user clicks on Open button in toolbar", () => clickOn(page, el("Open button in toolbar")));
+    await session.step(33, "Then dialog should be visible", () => shouldBe(page, el("dialog"), "visible"));
+    await session.step(34, "And editor of Dataset input in dialog should be at most 120 px wide", () => atMostWidePx(page, el("editor of Dataset input in dialog"), 120));
+    await session.step(35, "And editor of Dataset input in dialog should be at least 60 px wide", () => atLeastWidePx(page, el("editor of Dataset input in dialog"), 60));
+    await session.step(36, "When user closes dialog", () => close(page, el("dialog")));
+    await session.step(37, "Then dialog should be hidden", () => shouldBe(page, el("dialog"), "hidden"));
+  });
+  test("The toolbar's Save is one of its items", {tag: ["@demo", "@realizes:u2.dialog", "@realizes:u2.tabs"]}, async ({browser}) => {
+    const page = await session.page(browser);
+    await session.step(8, "Given user opens the MSA workbench", () => openWorkbench(page));
+    enter(page, "MSA workbench");
+    await session.step(40, "Then save button inside toolbar should be as tall as Open button in toolbar", () => asTallAs(page, el("save button inside toolbar"), el("Open button in toolbar")));
+    await session.step(41, "And save button inside toolbar should be top-aligned with Open button in toolbar", () => topAligned(page, el("save button inside toolbar"), el("Open button in toolbar")));
+  });
   test("Switching result tabs", {tag: ["@demo", "@realizes:u2.dialog", "@realizes:u2.tabs"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(8, "Given user opens the MSA workbench", () => openWorkbench(page));
     enter(page, "MSA workbench");
-    await session.step(32, "When user selects \"muscle\" in method input in alignment panel", () => selectIn(page, "muscle", el("method input in alignment panel")));
-    await session.step(33, "And user clicks on run msa button in alignment panel", () => clickOn(page, el("run msa button in alignment panel")));
-    await session.step(34, "And user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));
-    await session.step(35, "And user clicks on Log tab in results", () => clickOn(page, el("Log tab in results")));
-    await session.step(36, "Then Log tab in results should be selected", () => shouldBe(page, el("Log tab in results"), "selected"));
-    await session.step(37, "And log should contain text \"muscle\"", () => shouldContainText(page, el("log"), "muscle"));
-    await session.step(38, "And Alignment tab in results should not be selected", () => shouldNotBe(page, el("Alignment tab in results"), "selected"));
+    await session.step(44, "When user selects \"muscle\" in method input in alignment panel", () => selectIn(page, "muscle", el("method input in alignment panel")));
+    await session.step(45, "And user clicks on run msa button in alignment panel", () => clickOn(page, el("run msa button in alignment panel")));
+    await session.step(46, "And user clicks on OK button in MSA dialog", () => clickOn(page, el("OK button in MSA dialog")));
+    await session.step(47, "And user clicks on Log tab in results", () => clickOn(page, el("Log tab in results")));
+    await session.step(48, "Then Log tab in results should be selected", () => shouldBe(page, el("Log tab in results"), "selected"));
+    await session.step(49, "And Alignment tab in results should be 34 px tall", () => tallPx(page, el("Alignment tab in results"), 34));
+    await session.step(50, "And log should contain text \"muscle\"", () => shouldContainText(page, el("log"), "muscle"));
+    await session.step(51, "And Alignment tab in results should not be selected", () => shouldNotBe(page, el("Alignment tab in results"), "selected"));
   });
 });

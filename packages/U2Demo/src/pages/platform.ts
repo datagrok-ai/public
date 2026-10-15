@@ -4,7 +4,7 @@ import * as DG from 'datagrok-api/dg';
 import {
   signal, computed, Scope,
   divV, divH, span, h3, button,
-  TextInput, TypeAhead,
+  Form, TextInput, TypeAhead,
 } from '@datagrok-libraries/u2';
 import {asDartInput, tableInput, columnInput, leakReport, propertyForm, IProperty,
   userInput, entityInput, chip, EntityChip, entityCard, handlerRenderer,
@@ -17,6 +17,8 @@ export function filesPage(): HTMLElement {
   const file = fileInput('File');
   const files = filesInput('Files');
   const key = rsaInput('Private key');
+  const form = new Form();
+  form.addAll([file, files, key]);
 
   return divV([
     span('Inputs that need the platform: file shares and keys through dapi — the pickers, not the ' +
@@ -25,10 +27,11 @@ export function filesPage(): HTMLElement {
       'nothing, so a path settles on "does not exist" — the state the machine is supposed to reach.',
     'u2demo-hint'),
     h3('File and key pickers'),
-    file, readout('file', computed(() => file.value.value?.name ?? '(none)')),
-    files, readout('files', computed(() =>
+    form.root,
+    readout('file', computed(() => file.value.value?.name ?? '(none)')),
+    readout('files', computed(() =>
       files.value.value.map((f) => f.name).join(', ') || '(none)')),
-    key, readout('key', computed(() => {
+    readout('key', computed(() => {
       const v = key.value.value;
       return v ? `${v.length} characters` : '(none)';
     })),
@@ -46,15 +49,19 @@ export function dataframesPage(): HTMLElement {
   const mapping = columnsMapInput('Mapping', ['x', 'y'], demog);
   const aggregations = aggregatedColumnsInput('Aggregations', demog);
 
+  // a form gives the pickers one label column and one editor width
+  const form = new Form();
+  form.addAll([table, demogColumn, column, tables, columns, mapping, aggregations]);
   return divV([
     h3('Tables and columns'),
-    table, readout('table', table.value),
-    demogColumn, readout('demog column', demogColumn.value),
-    column, readout('column', computed(() => column.value.value ?? '(none)')),
-    tables, readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
-    columns, readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
-    mapping, readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
-    aggregations, readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
+    form.root,
+    readout('table', table.value),
+    readout('demog column', demogColumn.value),
+    readout('column', computed(() => column.value.value ?? '(none)')),
+    readout('tables', computed(() => tables.value.value.join(', ') || '(none)')),
+    readout('columns', computed(() => columns.value.value.join(', ') || '(none)')),
+    readout('mapping', computed(() => JSON.stringify(mapping.value.value))),
+    readout('aggregations', computed(() => JSON.stringify(aggregations.value.value))),
   ], 'u2demo-page');
 }
 

@@ -1,7 +1,7 @@
 /* EMS's kind catalog: one entry per `data-u2` value EMS stamps, in u2's shape (u2
    `src/core/kinds.ts`). The manifest generator turns it into this library's manifest `kinds`;
    tests/kinds.test.js fails while a stamped value has no entry. Contract:
-   core/docs/features/ui2/overhaul/CONTRACT.md §4, §5.8. */
+   core/docs/features/ui2/CONTRACT.md §4, §5.8. */
 
 import type {U2KindDef, U2StateKey} from '@datagrok-libraries/u2';
 

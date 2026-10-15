@@ -26,8 +26,16 @@ select.u2-input-editor {
   background-size: 4.5px 4.5px, 4.5px 4.5px;
 }
 
-.u2-form select.u2-input-editor {
+.u2-form select.u2-input-editor,
+.u2-dialog-content > .u2-input-root select.u2-input-editor {
   padding-left: var(--dg-space-s);
+}
+
+/* the width a form measured for it (form.ts _fitChoices) stays with the input wherever it moves,
+   as the platform's InputForm writes its widths inline; no weightier than the 200px above, so a
+   host that sizes its selects (the filter builder, a property grid) still does */
+:where([data-u2='choice-input'] > .u2-input-box) > select.u2-input-editor {
+  width: var(--u2-choice-width, 200px);
 }
 
 select.u2-input-editor:focus {
@@ -46,11 +54,13 @@ select.u2-input-editor.u2-invalid:focus {
 }
 
 /* multi choice */
-/* the platform's check list is a bare column — no frame, no rail underline — of 20px rows whose
-   boxes sit 4px in and 8px off their labels (`multi_choice_input.dart`, ui.css:903) */
+/* the platform's check list is a bare column — no frame, no rail underline, at least 150px wide —
+   of 20px rows whose boxes sit 4px in and 8px off their labels (`multi_choice_input.dart`,
+   ui.css:903, 1596-1601) */
 div.u2-input-editor.u2-multi-choice {
   display: flex;
   flex-direction: column;
+  min-width: 150px;
   height: auto;
   padding: var(--dg-space-s) 0;
   border: none;

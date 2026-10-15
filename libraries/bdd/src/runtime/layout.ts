@@ -361,6 +361,11 @@ const audit = async (host: Element, a: AuditArg): Promise<LayoutResult> => {
     const form = i.e.parentElement?.closest('[data-u2="form"], [data-u2="object-form"], [data-u2="func-form"]');
     if (!form || !isControl.has(form))
       continue;
+    // an input inside another control's editor (a columns map's key rows) is that control's content,
+    // not a row of the form
+    const host = i.e.parentElement?.closest('[data-u2-part="editor"]');
+    if (host && form.contains(host))
+      continue;
     const inputs = forms.get(form) ?? [];
     inputs.push(i);
     forms.set(form, inputs);
@@ -423,7 +428,7 @@ export async function rectOf(page: Page, target: ElementRef): Promise<Box & {wha
 }
 
 export type Placement = 'left of' | 'right of' | 'above' | 'below' | 'inside' | 'clear of' | 'left-aligned with' |
-  'top-aligned with' | 'vertically centered with' | 'as tall as';
+  'top-aligned with' | 'vertically centered with' | 'as tall as' | 'as wide as';
 
 const num = (n: number) => String(Math.round(n * 10) / 10);
 const span = (b: Box) => `${num(b.x)}..${num(b.x + b.width)} × ${num(b.y)}..${num(b.y + b.height)}`;
@@ -452,6 +457,7 @@ const PLACEMENTS: Record<Placement, (a: Box, b: Box) => string | null> = {
     return Math.abs(d) <= 1 ? null : `its middle is ${side(d, 'below', 'above')} the other's`;
   },
   'as tall as': (a, b) => Math.abs(a.height - b.height) <= 1 ? null : `it is ${num(a.height)} px tall, the other ${num(b.height)} px`,
+  'as wide as': (a, b) => Math.abs(a.width - b.width) <= 1 ? null : `it is ${num(a.width)} px wide, the other ${num(b.width)} px`,
 };
 
 /** `a` stands as `placement` says against `b`, polled; the failure gives both boxes. */
@@ -478,6 +484,34 @@ export async function expectHeight(page: Page, target: ElementRef, height: numbe
       return box;
     return Math.abs(box.height - height) <= 1 ? 'holds' : `${target.phrase} is ${num(box.height)} px tall, not ${height}: it spans ${span(box)}`;
   }, 'holds', `the height of ${target.phrase}`);
+}
+
+/** Every edge within the browser window: a fixed or portaled element (a dialog, a popup) that no
+ * ancestor clips is checked against the window itself. */
+export async function expectInWindow(page: Page, target: ElementRef): Promise<void> {
+  const loc = await locateActionable(page, target);
+  await until(async () => {
+    const box = await readBox(loc, target.phrase);
+    if (typeof box === 'string')
+      return box;
+    const view = await page.evaluate(() => ({x: 0, y: 0, width: innerWidth, height: innerHeight}));
+    const miss = PLACEMENTS.inside(box, view);
+    return miss === null ? 'holds' : `${target.phrase} is not inside the window — ${miss}: it spans ${span(box)}, ` +
+      `the window ${num(view.width)}×${num(view.height)}`;
+  }, 'holds', `${target.phrase} inside the window`);
+}
+
+/** The box width within 1 px of `width`, or with `bound` no narrower (`at least`) or no wider (`at most`) than it. */
+export async function expectWidth(page: Page, target: ElementRef, width: number, bound?: 'at least' | 'at most'): Promise<void> {
+  const loc = await locateActionable(page, target);
+  await until(async () => {
+    const box = await readBox(loc, target.phrase);
+    if (typeof box === 'string')
+      return box;
+    const holds = bound === 'at least' ? box.width >= width - 1 : bound === 'at most' ? box.width <= width + 1 :
+      Math.abs(box.width - width) <= 1;
+    return holds ? 'holds' : `${target.phrase} is ${num(box.width)} px wide, not ${bound ? bound + ' ' : ''}${width}: it spans ${span(box)}`;
+  }, 'holds', `the width of ${target.phrase}`);
 }
 
 /** The element whole inside every ancestor that clips it (an absolutely positioned one only by its

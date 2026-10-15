@@ -249,7 +249,9 @@ are the project's, in `bdd.config.json`:
 ```
 
 Without the block, layout and errors are `report` and leaks `off`; `BDD_AUDIT=<mode>` sets all three
-for a run, `BDD_AUDIT_LAYOUT`, `BDD_AUDIT_ERRORS` and `BDD_AUDIT_LEAKS` one each. Every allowlist entry
+for a run, `BDD_AUDIT_LAYOUT`, `BDD_AUDIT_ERRORS` and `BDD_AUDIT_LEAKS` one each. The suite runs in a
+1920×1080 window; `BDD_VIEWPORT=<w>x<h>` (say `1280x800`) runs it at another size, so the layout audit
+checks every scenario's end state on a smaller screen. Every allowlist entry
 says why the finding is no defect (`reason`, required): a layout entry drops the findings of its rule
 whose element is inside `selector`; `message`, `url`, `label` and `stack` are regular expressions, a
 leak's label being the scope's label, `<kind> timer` or `<target> <type> listener`.
@@ -413,9 +415,12 @@ both boxes in one sentence:
 |---|---|
 | `{element} should be left of / right of / above / below {element}` | the facing edges do not cross |
 | `{element} should be inside {element}` | every edge within the other's box |
+| `{element} should be inside the window` | every edge within the browser window — a dialog or popup that no ancestor clips |
+| `the window is {int} by {int} px` | resizes the browser window until the test ends (the shell reset puts back the run's size) |
 | `{element} should not overlap {element}` | the boxes share at most 1 px |
 | `{element} should be left-aligned / top-aligned / vertically centered with {element}` | the left edges, top edges or middles agree |
 | `{element} should be as tall as {element}`, `{element} should be {int} px tall` | the height — a u2 editor beside the Dart one it matches |
+| `{element} should be as wide as {element}`, `{element} should be {int} px wide`, `{element} should be at least {int} px wide`, `{element} should be at most {int} px wide` | the width — an editor as wide as its Dart twin, no shorter than a floor, no wider than a cap |
 | `{element} should not be clipped` | inside every ancestor that clips it, its text not cut or ellipsized |
 | `{element} should have no layout problems` | the layout audit ("Audits", above) over its u2 controls finds nothing |
 

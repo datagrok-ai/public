@@ -397,6 +397,51 @@ test('form.css: the auto form keeps ui.form widths in its wide state; the error 
   assert.match(error, /box-sizing: border-box;/, 'the form indents it by padding, inside its 100% basis');
 });
 
+ui('Form.fitChoices: a dialog body that lays inputs out as a form measures its choices the same way', async () => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const stage = new ChoiceInput({label: 'Stage', name: 'stage', items: ['I', 'Preclinical'], value: 'I'});
+  const name = new TextInput({label: 'Name', name: 'name'});
+  host.append(stage.root, name.root);
+  const append = host.append.bind(host);
+  host.append = (el) => {
+    el.getBoundingClientRect = () => ({width: el.textContent.length * 7});
+    append(el);
+  };
+  Form.fitChoices(host, [stage.root, name.root]);
+  assert.equal(stage.root.style.getPropertyValue('--u2-choice-width'), `${'Preclinical'.length * 7 + 30}px`);
+  assert.equal(name.root.style.getPropertyValue('--u2-choice-width'), '', 'only choices are measured');
+  stage.dispose();
+  name.dispose();
+});
+
+// the shim cannot lay out: the platform's form widths are pinned at the source
+test('form.css / choice.css / inputs.css: the platform form widths hold in every host', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  const choice = readFileSync(new URL('../css/choice.css', import.meta.url), 'utf8');
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const block = (sheet, selector) => {
+    const at = sheet.indexOf(selector);
+    assert.notEqual(at, -1, `${selector} is a rule`);
+    return sheet.slice(sheet.indexOf('{', at) + 1, sheet.indexOf('}', at));
+  };
+  const grow = ':not(.u2-multi-choice):not(.u2-radio):not(.u2-image)';
+  assert.match(block(form, `.u2-form .u2-input-box > div.u2-input-editor${grow}`), /flex-grow: 1;/,
+    'a normal-state form (dialog-hosted, nested) grows its div editors, as ui.form does');
+  assert.ok(form.includes(`.u2-dialog-content > .u2-input-root > .u2-input-box > div.u2-input-editor${grow}`),
+    'and so does a u2 Dialog body');
+  assert.match(block(form, '.ui-form .ui-input-root > .u2-input-box:has(> input.u2-input-editor)'), /flex: 1;/,
+    'a box bridged into a platform form or dialog grows like the platform text editor');
+  assert.match(block(form, '.u2-form-wide .u2-input-root[data-u2=\'multi-choice-input\'] .u2-input-editor'), /flex: none;/,
+    'the wide form\'s list exception keeps no 0 basis');
+  assert.match(block(form, '.u2-form:not(.u2-form-tall) .u2-input-error'),
+    /padding-left: calc\(var\(--u2-form-label-width, 100px\) \+ var\(--dg-space-m\)\);/, 'the verdict starts under the editor');
+  assert.match(block(choice, ':where([data-u2=\'choice-input\'] > .u2-input-box) > select.u2-input-editor'),
+    /width: var\(--u2-choice-width, 200px\);/, 'the measured choice width travels with the input');
+  assert.match(block(choice, 'div.u2-input-editor.u2-multi-choice'), /min-width: 150px;/);
+  assert.match(block(inputs, '\n.u2-input-editor.u2-columns {'), /min-width: 100px;/);
+});
+
 ui('the auto layout marks itself, so the platform widths hold in its wide state', async () => {
   const auto = new Form();
   assert.equal(auto.root.classList.contains('u2-form-auto'), true);

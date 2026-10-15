@@ -1,7 +1,7 @@
 /* EMS's kind catalog (R11) against the code: every data-u2 value EMS stamps has an entry in
    src/core/kinds.ts and every entry names a stamped value, no kind collides with u2's, and
    manifest.json carries what the generator makes of them. Contract:
-   core/docs/features/ui2/overhaul/CONTRACT.md §4. */
+   core/docs/features/ui2/CONTRACT.md §4. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';

@@ -2,6 +2,18 @@
 
 ## v.next
 
+* Shell: Added a ribbon Show navigation toggle that brings back the 148px nav rail when the pane is too narrow and the nav has folded away
+* Shell: The nav is now 180px wide and keeps that width across window resizes; double-clicking the sash resets it
+* All inputs, FuncCalls: Fixed the stacked layout of the A/B grids, where the two side sections lay on one another; the platform side's editors now fill their cells as in a form
+* Functions: In a narrow pane the function list moves above the forms instead of making the page scroll sideways
+* Dataframes, Files: The pickers are now in a form, so their captions and editors line up
+* Overview: The "What is where" lists line up beside their area captions
+* MSA workbench: The toolbar uses font icons, and Save is one of its items
+* Popups: The dialog has a help button and an Add rows button that grows its content after it opens
+* Popups: Added an Opacity slider and a Targets multi-choice to the dialog form
+* FuncCalls: The u2 choices in the A/B grid take the platform's measured widths, and refit when a provider's items arrive
+* All inputs: Removed the image box rule that u2 now covers
+* BDD: The suite runs green at 1920×1080, 1440×900, 1280×800 and 1024×768, with geometry claims that pin the layout of the shell, the A/B grids, Dataframes, the MSA toolbar, menus, dialogs and their editors, pickers, the property grid, tables, trees, tabs, the accordion and the filter builder states
 * Demo shell: Turned Inspect off by default, and kept the focus in the clicked field when Inspect opens the context panel
 * Demo shell: Capped the navigation pane at 40% and kept at least 480 px for the content, on drag and on resize
 * All inputs, FuncCalls: Fitted the A/B grid to the pane — narrow panes stack each u2 editor under its platform twin, tagged u2, instead of clipping or scrolling sideways

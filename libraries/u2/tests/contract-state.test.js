@@ -1,7 +1,7 @@
 /* The u2 ↔ bdd contract on the base classes: label/editor/error wiring and ARIA state on every
    input, the state block `DG.U2.state(el)` reads, the element → control door across portaled
    popups, and the registry walk (every visual tag stamps `data-u2`, every input example is named).
-   Contract: core/docs/features/ui2/overhaul/CONTRACT.md §1–§2. */
+   Contract: core/docs/features/ui2/CONTRACT.md §1–§2. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';

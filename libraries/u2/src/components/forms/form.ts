@@ -245,7 +245,7 @@ export class Form extends Control {
       this.root.style.setProperty('--u2-form-label-width', `${width}px`);
     else
       this.root.style.removeProperty('--u2-form-label-width');
-    this._fitChoices();
+    Form.fitChoices(this.root, this._inputs.map((input) => input.root));
     if (this._layout !== 'auto')
       return;
     // the platform exempts dialog forms from the auto switch (js-api ui.ts:1437-1441), and a
@@ -293,24 +293,25 @@ export class Form extends Control {
     return this._minEditor;
   }
 
-  /** The platform's choice width (js-api ui.ts getInputsMinWidths): the longest option's text, at
-   * least 40px, plus 30px for the chevron, at most 80% of the window. Measured off a probe in the
-   * form's own font; a detached form keeps the stylesheet's width. */
-  private _fitChoices(): void {
-    if (!this.root.isConnected)
+  /** The platform's choice width (js-api ui.ts getInputsMinWidths) for the choice inputs among
+   * `roots`: the longest option's text, at least 40px, plus 30px for the chevron, at most 80% of
+   * the window. Measured off a probe in `host`'s own font — a form, or a dialog body that lays
+   * inputs out as one; a detached host keeps the stylesheet's width. */
+  static fitChoices(host: HTMLElement, roots: Iterable<HTMLElement>): void {
+    if (!host.isConnected)
       return;
     const probe = document.createElement('span');
     probe.style.cssText = 'position: absolute; visibility: hidden; white-space: pre; padding: 0; margin: 0;';
-    this.root.append(probe);
-    for (const input of this._inputs) {
-      if (input.root.dataset.u2 !== 'choice-input')
+    host.append(probe);
+    for (const root of roots) {
+      if (root.dataset.u2 !== 'choice-input')
         continue;
       let width = 40;
-      for (const option of input.root.querySelectorAll('option')) {
+      for (const option of root.querySelectorAll('option')) {
         probe.textContent = option.textContent;
         width = Math.max(width, Math.ceil(probe.getBoundingClientRect().width));
       }
-      input.root.style.setProperty('--u2-choice-width', `${Math.min(width + 30, innerWidth * 0.8)}px`);
+      root.style.setProperty('--u2-choice-width', `${Math.min(width + 30, innerWidth * 0.8)}px`);
     }
     probe.remove();
   }
