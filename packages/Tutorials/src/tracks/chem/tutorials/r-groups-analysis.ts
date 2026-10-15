@@ -19,7 +19,7 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     'impact on crucial compound properties, and find gaps.';
   }
 
-  get steps() {return 14;}
+  get steps() {return 15;}
 
   get icon() {
     return '🧬🧩';
@@ -101,17 +101,9 @@ export class RGroupsAnalysisTutorial extends Tutorial {
       observer.observe($('.grok-prop-panel').get(0)!, { childList: true, subtree: true });
     }), getPieChartHeader() as HTMLElement);
 
-    await this.action('Under Pie chart tab > Data, set Category to LC/MS', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          if (m.previousSibling?.textContent === 'LC/MS') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, { childList: true, subtree: true });
-    }));
+    const innerLook = () => (v!.getOptions().look as any).innerViewerLook ?? {};
+    await this.action('Under Pie chart tab > Data, set Category to LC/MS',
+      interval(200).pipe(filter(() => innerLook().categoryColumnName === 'LC/MS')));
 
     this.title('Analyze and explore', true);
     this.describe(`All datagrok viewers are synchronized, and share the same filter and selection.
@@ -180,20 +172,12 @@ export class RGroupsAnalysisTutorial extends Tutorial {
     get a different view of your data. Let’s change a pie chart to a histogram and set it up.`);
 
     await this.action('In the top-left corner of the trellis plot, select Histogram.',
-      v!.onEvent('d4-trellis-plot-viewer-type-changed').pipe(filter((s: string) => s === 'Histogram')),
+      interval(200).pipe(filter(() => v!.props.viewerType === 'Histogram')),
       v!.root.querySelector('.d4-combo-popup') as HTMLElement);
 
-    await this.action('Set Value to In-Vivo Activity', new Observable((subscriber: any) => {
-      const observer = new MutationObserver((mutationsList, observer) => {
-        mutationsList.forEach((m) => {
-          if (m.previousSibling?.textContent === 'In-vivo Activity') {
-            subscriber.next(true);
-            observer.disconnect();
-          }
-        });
-      });
-      observer.observe($('.grok-prop-panel').get(0)!, {childList: true, subtree: true});
-    }), undefined, `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
+    await this.action('Set Value to In-Vivo Activity',
+      interval(200).pipe(filter(() => innerLook().valueColumnName === 'In-vivo Activity')), undefined,
+      `Use the <b>Gear</b> icon next to the <b>Viewer</b> control to access
       the histogram’s settings, and under <b>Histogram</b> tab set <b>Value</b> to <b>In-vivo Activity</b>.`);
 
     this.title('Switch axes', true);
