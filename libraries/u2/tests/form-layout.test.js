@@ -10,6 +10,7 @@ import {fire, flush, resetDom} from './dom-shim.js';
 import {signal, Scope} from '../src/index.js';
 import {Form} from '../src/components/forms/form.js';
 import {TextInput} from '../src/components/inputs/text-input.js';
+import {ChoiceInput} from '../src/components/inputs/choice-input.js';
 
 function ui(name, body) {
   test(name, async () => {
@@ -348,4 +349,59 @@ ui('auto survives a missing ResizeObserver (the headless guard)', async () => {
   } finally {
     globalThis.ResizeObserver = saved;
   }
+});
+
+ui('validity skips hidden and disabled inputs (P79); validate() shows every counted verdict', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const hidden = new TextInput({label: 'Code', name: 'code', required: true});
+  const off = new TextInput({label: 'Note', name: 'note', required: true, enabled: false});
+  f.addAll([hidden, off]);
+  hidden.visible = false;
+  assert.equal(f.validity.peek(), null);
+  assert.equal(f.validate(), true);
+  hidden.visible = true;
+  assert.notEqual(f.validity.peek(), null, 'shown again, it fails the form');
+  assert.equal(f.validate(), false);
+  f.dispose();
+  hidden.dispose();
+  off.dispose();
+});
+
+ui('choices take the platform width: the longest option plus 30px, measured into --u2-choice-width', async () => {
+  const f = mount(new Form({layout: 'normal'}));
+  const role = new ChoiceInput({label: 'Role', name: 'role', items: ['Viewer', 'Administrator'], value: 'Viewer'});
+  f.add(role);
+  const probes = [];
+  const append = f.root.append.bind(f.root);
+  f.root.append = (el) => {
+    probes.push(el);
+    el.getBoundingClientRect = () => ({width: el.textContent.length * 7});
+    append(el);
+  };
+  await flush();
+  assert.equal(role.root.style.getPropertyValue('--u2-choice-width'), `${'Administrator'.length * 7 + 30}px`);
+  assert.equal(probes.length, 1, 'one probe per pass, removed after');
+  assert.equal(probes[0].parentNode, null);
+  f.dispose();
+  role.dispose();
+});
+
+test('form.css: the auto form keeps ui.form widths in its wide state; the error line stays inside the row', () => {
+  const form = readFileSync(new URL('../css/form.css', import.meta.url), 'utf8');
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\)\[data-u2='choice-input'\] select\.u2-input-editor/);
+  assert.match(form, /width: var\(--u2-choice-width, 200px\);/);
+  assert.match(form, /\.u2-form-auto\.u2-form-wide \.u2-input-root:not\(\.u2-input-fill\) \.u2-input-editor\.u2-number/);
+  const inputs = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const at = inputs.indexOf('\n.u2-input-error {');
+  const error = inputs.slice(at, inputs.indexOf('}', at));
+  assert.match(error, /box-sizing: border-box;/, 'the form indents it by padding, inside its 100% basis');
+});
+
+ui('the auto layout marks itself, so the platform widths hold in its wide state', async () => {
+  const auto = new Form();
+  assert.equal(auto.root.classList.contains('u2-form-auto'), true);
+  const wide = new Form({layout: 'wide'});
+  assert.equal(wide.root.classList.contains('u2-form-auto'), false);
+  auto.dispose();
+  wide.dispose();
 });

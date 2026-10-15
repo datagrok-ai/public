@@ -241,3 +241,15 @@ smoke('the summary checkbox shares the item checkboxes\' class and column struct
     'exactly as in an item row — the Dart -20px offset is deliberately not copied');
   input.dispose();
 });
+
+smoke('items are addressable: data-u2-item and data-value on each row, the caption as item-label (P81)', async () => {
+  const input = mount(new MultiChoiceInput({label: 'Organs', items: [{value: 'lv', label: 'Liver'}, 'Kidney'],
+    value: ['Kidney']}));
+  const rows = [...input.root.querySelectorAll('.u2-multi-choice-item')];
+  assert.deepEqual(rows.map((r) => [r.dataset.u2Item, r.dataset.value]), [['lv', 'lv'], ['Kidney', 'Kidney']]);
+  assert.deepEqual(rows.map((r) => r.querySelector('[data-u2-part="item-label"]').textContent), ['Liver', 'Kidney']);
+  const items = input.getItems();
+  assert.deepEqual(items.list.map((i) => [i.key, i.label, i.checked]), [['lv', 'Liver', false], ['Kidney', 'Kidney', true]]);
+  assert.equal(input.getState().text, 'Kidney');
+  input.dispose();
+});

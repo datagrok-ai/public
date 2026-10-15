@@ -1,6 +1,7 @@
 import {batch, computed, signal, ReadonlySignal, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Input, LiveOption} from '../../core/input-base.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export type FormLayout = 'auto' | 'normal' | 'wide' | 'tall';
 
@@ -8,17 +9,18 @@ export interface FormOptions {
   /** `'auto'` (the default) picks by fit, following resizes: `'wide'` (caption left, editors
    * filling the row) while the label column plus `--dg-form-min-editor-width` fit, `'tall'`
    * (caption above) when they don't, with a 10px hysteresis; dialog-hosted and nested forms
-   * never switch and keep the plain caption-left look, as the platform's do. `'normal'`:
-   * caption left, platform-pinned editor widths, never switches. `'wide'`: caption left,
-   * editors fill the row. `'tall'`: caption above on its own small grey line, editor
-   * full-width below; bool stays inline. */
+   * never switch and keep the plain caption-left look, as the platform's do. Either way the
+   * editors keep the widths `ui.form` gives them: text fills the row, a number is 150px, a choice
+   * as wide as its longest option plus 30px. `'normal'`: caption left, those platform widths,
+   * never switches. `'wide'`: caption left, every editor fills the row (`ui-form-wide`).
+   * `'tall'`: caption above on its own small grey line, editor full-width below; bool stays
+   * inline. */
   layout?: FormLayout;
   /** Caption text alignment in caption-left layouts; `'right'` (the platform default) or
    * `'left'`. Live: a signal is followed as a pure CSS class toggle. */
   captionAlign?: LiveOption<'right' | 'left'>;
 }
 
-const FOCUSABLE = 'input, textarea, select, button, [tabindex]';
 /** Platform chrome shares the aligned label column: a bridged input brings its own `ui-` label. */
 const LABELS = '.u2-input-label, .ui-input-label';
 
@@ -37,6 +39,8 @@ export class Form extends Control {
   private _frame = 0;
   private _minEditor: number | undefined;
   private readonly _labelMemo = new WeakMap<HTMLElement, number>();
+  /** Re-fits the choice widths when a select's options change. */
+  private _choices: MutationObserver | undefined;
 
   constructor(options: FormOptions = {}) {
     super();
@@ -45,6 +49,9 @@ export class Form extends Control {
     this.root.classList.add('u2-form');
     this.root.dataset.u2 = 'form';
     this._layout = options.layout ?? 'auto';
+    // the auto form's roomy state is wide, but its editors keep the platform widths ui.form gives
+    if (this._layout === 'auto')
+      this.root.classList.add('u2-form-auto');
     if (this._layout === 'wide')
       this.root.classList.add('u2-form-wide');
     if (this._layout === 'tall')
@@ -63,6 +70,7 @@ export class Form extends Control {
     this.own(() => {
       if (this._frame)
         cancelAnimationFrame(this._frame);
+      this._choices?.disconnect();
     });
     if (this._layout === 'auto' && typeof ResizeObserver !== 'undefined') {
       const observer = new ResizeObserver(() => this._scheduleAlign());
@@ -90,6 +98,9 @@ export class Form extends Control {
     }
     this._inputs.push(input);
     (host ?? this._rows).append(input.root);
+    const select = input.root.dataset.u2 === 'choice-input' ? input.root.querySelector('select') : null;
+    if (select !== null && typeof MutationObserver !== 'undefined')
+      (this._choices ??= new MutationObserver(() => this._scheduleAlign())).observe(select, {childList: true});
     this._rebuildValidity();
     this._scheduleAlign();
     return this;
@@ -122,18 +133,36 @@ export class Form extends Control {
    * `where`, the first input it accepts, else the first. */
   focusFirst(where?: (input: Input<any>) => boolean): void {
     const input = (where === undefined ? undefined : this._inputs.find(where)) ?? this._inputs[0];
-    if (input !== undefined)
-      Form._focus(input);
+    input?.focus();
   }
 
+  /** Shows every verdict the form counts — inputs that are visible and enabled — and focuses the
+   * first failing one. */
   validate(): boolean {
+    let failing: Input<any> | undefined;
     for (const input of this._inputs) {
-      if (input.validity.peek() !== null) {
-        Form._focus(input);
-        return false;
-      }
+      if (!input.validates)
+        continue;
+      input.touch();
+      if (failing === undefined && input.validity.peek() !== null)
+        failing = input;
     }
-    return true;
+    failing?.focus();
+    return failing === undefined;
+  }
+
+  /** The base state plus the form's verdict (the first message of a counted input) and one item per
+   * input: key = its form key, label = its caption, `invalid`, `disabled`. */
+  getState(): ReturnType<Control['getState']> {
+    const error = this.validity.peek();
+    return {...super.getState(), valid: error === null, error};
+  }
+
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const list = this._inputs.map((input, index) => ({key: input.name ?? `#${index}`, label: input.label, index,
+      ...input.validity.peek() !== null ? {invalid: true} : {}, ...input.enabled ? {} : {disabled: true},
+      rendered: input.root.isConnected}));
+    return Input.itemsState(list, opts?.all);
   }
 
   getValues(): Record<string, unknown> {
@@ -158,7 +187,7 @@ export class Form extends Control {
     const inputs = this._inputs.slice();
     this._first.value = computed(() => {
       for (const input of inputs) {
-        const message = input.validity.value;
+        const message = input.validates ? input.validity.value : null;
         if (message)
           return message;
       }
@@ -174,7 +203,7 @@ export class Form extends Control {
     if (index < 0 || index === this._inputs.length - 1)
       return;
     e.preventDefault();
-    Form._focus(this._inputs[index + 1]);
+    this._inputs[index + 1].focus();
   }
 
   private _scheduleAlign(): void {
@@ -196,11 +225,15 @@ export class Form extends Control {
     this.root.style.setProperty('--u2-form-label-width', '0px');
     let width = 0;
     for (const input of this._inputs) {
+      // a checklist row's caption follows its box and reserves no column
+      if (input.root.classList.contains('u2-input-caption-after'))
+        continue;
       const labels = input.root.querySelectorAll<HTMLElement>(LABELS);
       for (let i = 0; i < labels.length; i++) {
         // a hidden label (collapsed section, expression-hidden row) measures 0 — its remembered
-        // width stands in, so folding a section never reflows the shared column
-        let w = labels[i].offsetWidth;
+        // width stands in, so folding a section never reflows the shared column; the fraction
+        // rounds up, as the platform's column does (js-api ui.ts getLabelWidth)
+        let w = Math.max(labels[i].offsetWidth, Math.ceil(labels[i].getBoundingClientRect().width));
         if (w)
           this._labelMemo.set(labels[i], w);
         else
@@ -212,6 +245,7 @@ export class Form extends Control {
       this.root.style.setProperty('--u2-form-label-width', `${width}px`);
     else
       this.root.style.removeProperty('--u2-form-label-width');
+    this._fitChoices();
     if (this._layout !== 'auto')
       return;
     // the platform exempts dialog forms from the auto switch (js-api ui.ts:1437-1441), and a
@@ -259,11 +293,25 @@ export class Form extends Control {
     return this._minEditor;
   }
 
-  private static _focus(input: Input<any>): void {
-    const editor = input.root.querySelector('.u2-input-editor') as HTMLElement | null;
-    if (!editor)
+  /** The platform's choice width (js-api ui.ts getInputsMinWidths): the longest option's text, at
+   * least 40px, plus 30px for the chevron, at most 80% of the window. Measured off a probe in the
+   * form's own font; a detached form keeps the stylesheet's width. */
+  private _fitChoices(): void {
+    if (!this.root.isConnected)
       return;
-    const focusable = editor.matches(FOCUSABLE) ? editor : editor.querySelector<HTMLElement>(FOCUSABLE);
-    (focusable ?? editor).focus();
+    const probe = document.createElement('span');
+    probe.style.cssText = 'position: absolute; visibility: hidden; white-space: pre; padding: 0; margin: 0;';
+    this.root.append(probe);
+    for (const input of this._inputs) {
+      if (input.root.dataset.u2 !== 'choice-input')
+        continue;
+      let width = 40;
+      for (const option of input.root.querySelectorAll('option')) {
+        probe.textContent = option.textContent;
+        width = Math.max(width, Math.ceil(probe.getBoundingClientRect().width));
+      }
+      input.root.style.setProperty('--u2-choice-width', `${Math.min(width + 30, innerWidth * 0.8)}px`);
+    }
+    probe.remove();
   }
 }

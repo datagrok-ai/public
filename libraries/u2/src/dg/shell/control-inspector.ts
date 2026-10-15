@@ -27,15 +27,11 @@ export function controlPropDescriptors(control: Control): PropDescriptor[] {
 
 /** A grid over one control, two-way where the property has a setter. Disposed by the caller. */
 export function controlProperties(control: Control): PropertyGrid {
-  const grid = new PropertyGrid();
   const descriptors = controlPropDescriptors(control);
   const props = control.getProperties();
+  const grid = new PropertyGrid({onChanged: (change) =>
+    props.find((p) => p.name === change.name)?.set?.(control.propertyTarget, change.value)});
   grid.setProperties(descriptors, Object.fromEntries(props.map((p) => [p.name, p.get?.(control.propertyTarget)])));
-  grid.scope.effect(() => {
-    const change = grid.onChanged.value;
-    if (change)
-      props.find((p) => p.name === change.name)?.set?.(control.propertyTarget, change.value);
-  });
   return grid;
 }
 
@@ -57,6 +53,9 @@ class NoControl {}
 export const noControl = new NoControl();
 
 let panel: Scope | undefined;
+/** Live {@link registerControlInspector} registrations; the platform cannot drop a handler, so
+ * with none left the handlers stop claiming anything. */
+let users = 0;
 
 export function disposePanel(): void {
   panel?.dispose();
@@ -66,8 +65,9 @@ export function disposePanel(): void {
 class ControlHandler extends DG.ObjectHandler<Control> {
   get type(): string { return 'u2-control'; }
 
-  // Control.is only — disjoint from the designer's SpecNodeRef and U2Demo's PropRow handlers
-  isApplicable(x: any): boolean { return Control.is(x); }
+  // u2 controls only: every DG.Widget is a Control too, and a viewer or a platform widget keeps
+  // the platform's own handler. Disjoint from the designer's SpecNodeRef and U2Demo's PropRow
+  isApplicable(x: any): boolean { return users > 0 && Control.is(x) && !(x instanceof DG.Widget); }
 
   getCaption(x: Control): string { return x.componentMeta?.tag ?? x.root.dataset.u2 ?? 'control'; }
 
@@ -83,16 +83,19 @@ class ControlHandler extends DG.ObjectHandler<Control> {
       return divV([h3(caption), span(`No inspectable properties: ${caption} is not a registered ` +
         'u2 component, so nothing describes its properties.', 'u2-async-empty')], 'u2-inspector');
     }
-    panel = new Scope();
-    const grid = Scope.runWith(panel, () => controlProperties(x));
-    return divV([h3(caption), grid], 'u2-inspector');
+    const scope = panel = new Scope(undefined, {label: 'inspector'});
+    const grid = Scope.runWith(scope, () => controlProperties(x));
+    const root = divV([h3(caption), grid], 'u2-inspector');
+    // the context panel kills what it shows before it renders the next object
+    DG.Widget.registerCleanup(root, () => scope.dispose());
+    return root;
   }
 }
 
 class NoControlHandler extends DG.ObjectHandler<NoControl> {
   get type(): string { return 'u2-no-control'; }
 
-  isApplicable(x: any): boolean { return x instanceof NoControl; }
+  isApplicable(x: any): boolean { return users > 0 && x instanceof NoControl; }
 
   getCaption(): string { return 'Not a u2 component'; }
 
@@ -105,11 +108,23 @@ class NoControlHandler extends DG.ObjectHandler<NoControl> {
 
 let registered = false;
 
-export function registerControlInspector(): void {
-  if (registered)
-    return;
-  registered = true;
-  registerAll();
-  DG.ObjectHandler.register(new ControlHandler());
-  DG.ObjectHandler.register(new NoControlHandler());
+/** Turns the inspector on; the handlers are registered with the platform once per session.
+ * Answers the unregister: once every registration is undone, u2 controls go back to whatever
+ * else handles them and the open panel is disposed. */
+export function registerControlInspector(): () => void {
+  if (!registered) {
+    registered = true;
+    registerAll();
+    DG.ObjectHandler.register(new ControlHandler());
+    DG.ObjectHandler.register(new NoControlHandler());
+  }
+  users++;
+  let done = false;
+  return () => {
+    if (done)
+      return;
+    done = true;
+    if (--users === 0)
+      disposePanel();
+  };
 }

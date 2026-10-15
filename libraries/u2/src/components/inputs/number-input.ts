@@ -49,14 +49,51 @@ const FLOAT = /^-?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/;
  *   unguarded); u2 clamps only the step from an in-range value, the one divergence kept from
  *   wave 1. */
 export class NumberInput extends Input<number | null, NumberInputOptions> {
-  private _input!: HTMLInputElement;
   // assigned in createEditor, which the base constructor runs before field initializers
-  private _slider!: HTMLInputElement | null;
-  private _bad!: Signal<boolean>;
+  private declare _input: HTMLInputElement;
+  private declare _slider: HTMLInputElement | null;
+  private declare _bad: Signal<boolean>;
 
   constructor(options: NumberInputOptions = {}) {
     super(options, null);
     this.root.dataset.u2 = 'number-input';
+  }
+
+  get min(): number | undefined {
+    return this.options.min;
+  }
+
+  set min(x: number | undefined) {
+    this._setBound('min', x);
+  }
+
+  get max(): number | undefined {
+    return this.options.max;
+  }
+
+  set max(x: number | undefined) {
+    this._setBound('max', x);
+  }
+
+  get step(): number | undefined {
+    return this.options.step;
+  }
+
+  set step(x: number | undefined) {
+    this._setBound('step', x);
+  }
+
+  /** A changed bound: the stepper, the slider and the range check read it from here on. */
+  private _setBound(name: 'min' | 'max' | 'step', x: number | undefined): void {
+    this.options[name] = x ?? undefined;
+    const {min, max, step} = this.options;
+    if (this._slider !== null && min !== undefined && max !== undefined) {
+      this._slider.min = String(min);
+      this._slider.max = String(max);
+      this._slider.step = String(step ?? (this._int ? 1 : (max - min) / 100));
+      this._syncSlider();
+    }
+    this.revalidate();
   }
 
   protected createEditor(): HTMLElement {
@@ -68,30 +105,29 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     input.autocomplete = 'off';
     input.inputMode = this._int ? 'numeric' : 'decimal';
 
+    // set by an edit that changed the value, consumed by the effect run it causes — after the
+    // handler, when its batch ends — so the text being typed is never reformatted
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
       if (echo)
-        return;
-      input.value = this._format(value);
+        echo = false;
+      else
+        input.value = this._format(value);
       this._syncSlider();
     });
-    this._listen(input, 'input', () => {
+    this.scope.listen(input, 'input', () => {
       const parsed = this._parse(input.value);
       this._bad.value = parsed === undefined;
-      if (parsed === undefined)
+      if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      echo = true;
-      try {
-        this.value.value = parsed;
-      } finally {
-        echo = false;
-      }
-      this._syncSlider();
+      const before = this.value.peek();
+      this.value.value = parsed;
+      echo = !Object.is(this.value.peek(), before);
     });
-    this._listen(input, 'blur', () => this._commit());
-    this._listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(input, 'wheel', (e) => {
+    this.scope.listen(input, 'blur', () => this._commit());
+    this.scope.listen(input, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(input, 'wheel', (e) => {
       if (document.activeElement !== input)
         return;
       e.preventDefault();
@@ -130,7 +166,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     const spinner = document.createElement('span');
     spinner.className = 'u2-number-spinner';
     spinner.append(this._createStep('▴', 1, 'Increase'), this._createStep('▾', -1, 'Decrease'));
-    this._listen(spinner, 'mousedown', (e) => e.preventDefault());
+    this.scope.listen(spinner, 'mousedown', (e) => e.preventDefault());
     return spinner;
   }
 
@@ -140,7 +176,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     step.className = 'u2-number-spin';
     step.textContent = glyph;
     step.setAttribute('aria-label', label);
-    this._listen(step, 'click', () => this._step(direction));
+    this.scope.listen(step, 'click', () => this._step(direction));
     return step;
   }
 
@@ -165,7 +201,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     slider.min = String(min);
     slider.max = String(max);
     slider.step = String(step ?? (this._int ? 1 : (max - min) / 100));
-    this._listen(slider, 'input', () => {
+    this.scope.listen(slider, 'input', () => {
       const value = Number(slider.value);
       this._set(this._int ? Math.round(value) : value);
     });
@@ -178,7 +214,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
     if (this._slider === null)
       return;
     const value = this.value.peek();
-    this._slider.value = value === null ? '' : String(value);
+    this._slider.value = value == null ? '' : String(value);
   }
 
   private _onKeyDown(e: KeyboardEvent): void {
@@ -195,7 +231,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   private _step(multiplier: number): void {
     const current = this.value.peek();
-    if (current === null)
+    if (current == null || this.readOnly)
       return;
     const next = current + multiplier * (this.options.step ?? 1);
     const rounded = this._int ? Math.round(next) : Number(next.toPrecision(12));
@@ -233,7 +269,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
 
   private _outOfRange(value: number | null): string | null {
     const {min, max} = this.options;
-    if (value === null)
+    if (value == null)
       return null;
     if (min !== undefined && value < min)
       return `Value must be at least ${min}`;
@@ -243,7 +279,7 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
   }
 
   private _format(value: number | null): string {
-    if (value === null)
+    if (value == null)
       return '';
     const format = this.options.format;
     if (format !== undefined)
@@ -276,11 +312,5 @@ export class NumberInput extends Input<number | null, NumberInputOptions> {
       return 0;
     const dot = text.lastIndexOf('.');
     return dot < 0 ? 0 : text.length - dot - 1;
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void,
-    options?: AddEventListenerOptions): void {
-    el.addEventListener(type, handler, options);
-    this.own(() => el.removeEventListener(type, handler, options));
   }
 }

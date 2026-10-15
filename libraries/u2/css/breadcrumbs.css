@@ -1,10 +1,13 @@
 /* Breadcrumbs skin. Tokens only — css/tokens.css must be loaded alongside.
-   The row never wraps: overflow is what the component measures to collapse the middle. */
+   The row never wraps: overflow is what the component measures to collapse the middle. An empty
+   path keeps the row's height, so the strip neither collapses out of sight nor jumps when a path
+   arrives. */
 .u2-breadcrumbs {
   display: flex;
   box-sizing: border-box;
   align-items: center;
   min-width: 0;
+  min-height: var(--dg-inline-control-height);
   overflow: hidden;
   font-family: var(--dg-font-family);
   font-size: var(--dg-font-size);

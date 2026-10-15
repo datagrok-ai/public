@@ -1,6 +1,8 @@
 /* AccessGrid: inherited rows read-only above the editable ones, a checkbox change rewrites the
-   row, remove drops it, the picker adds a principal with the default grant and leaves out the
-   ones already there, a locked capability cannot be granted; registered as u2-access-grid. */
+   row, remove drops it, the picker adds a principal with the first unlocked grant and leaves out the
+   ones already there, a locked capability cannot be granted — not after an enable either (P98); the
+   add select adds on a pick or Enter, not on an arrow key (P99); principals follow (P103); rows are
+   kept by principal and addressable as items; registered as u2-access-grid. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -89,16 +91,17 @@ ui('a locked capability keeps its box, disabled and unchecked whatever the row h
   g.dispose();
 });
 
-ui('the focused cell stays focused across the re-render a change causes', () => {
+ui('the focused cell is kept and stays focused across a change; a removed row hands focus on', () => {
   const g = grid({value: [{principal: 'Sales', can: {view: true, edit: false, delete: false}},
     {principal: 'Developers', can: {view: true, edit: false, delete: false}}]});
   const edit = boxes(rows(g)[2])[1];
+  const row = rows(g)[2];
   edit.focus();
   edit.click();
   assert.equal(g.value.value[1].can.edit, true);
-  const again = boxes(rows(g)[2])[1];
-  assert.equal(again !== edit, true, 'the rows were rebuilt');
-  assert.equal(document.activeElement === again, true, 'Developers › Edit is focused again');
+  assert.equal(rows(g)[2] === row && boxes(row)[1] === edit, true, 'the row was patched, not rebuilt');
+  assert.equal(edit.checked, true);
+  assert.equal(document.activeElement === edit, true, 'Developers › Edit keeps the focus');
   const remove = rows(g)[1].querySelector('.u2-access-grid-remove');
   remove.focus();
   fire(remove, 'click');
@@ -124,4 +127,116 @@ ui('registered as u2-access-grid with the value prop two-way', () => {
     value: [{principal: 'Sales', can: {view: true}}]});
   assert.deepEqual(built.root.querySelectorAll('th').map((th) => th.textContent), ['Group', 'View', 'Edit', '']);
   built.dispose();
+});
+
+const P98 = {inherited: [{principal: 'You (creator)', can: {view: true, edit: true, delete: true}, from: ''}],
+  locked: ['edit', 'delete']};
+
+ui('P98: built disabled then enabled, inherited rows and locked capabilities stay disabled', () => {
+  const enabled = signal(false);
+  const g = grid({...P98, enabled});
+  assert.deepEqual(boxes(rows(g)[1]).map((b) => b.disabled), [true, true, true]);
+  enabled.value = true;
+  assert.deepEqual(boxes(rows(g)[0]).map((b) => b.disabled), [true, true, true], 'the inherited row');
+  assert.deepEqual(boxes(rows(g)[1]).map((b) => b.disabled), [false, true, true], 'the locked ones');
+  assert.equal(rows(g)[1].querySelector('.u2-access-grid-remove').disabled, false);
+  g.enabled = true;
+  assert.deepEqual(boxes(rows(g)[1]).map((b) => b.disabled), [false, true, true], 'a repeated enable sweep too');
+  g.enabled = false;
+  g.value.value = [...g.value.peek(), {principal: 'Developers', can: {view: true}}];
+  assert.deepEqual(boxes(rows(g)[2]).map((b) => b.disabled), [true, true, true], 'a row added while disabled');
+  g.dispose();
+});
+
+ui('P98: a click on a locked box, an inherited box or a disabled grid changes nothing', () => {
+  const g = grid(P98);
+  const edit = boxes(rows(g)[1])[1];
+  edit.disabled = false;
+  edit.click();
+  assert.equal(edit.checked, false, 'springs back');
+  assert.deepEqual(g.value.value, [{principal: 'Sales', can: {view: true, edit: false, delete: false}}]);
+  const inherited = boxes(rows(g)[0])[0];
+  inherited.disabled = false;
+  inherited.click();
+  assert.equal(inherited.checked, true);
+  g.enabled = false;
+  const view = boxes(rows(g)[1])[0];
+  view.disabled = false;
+  view.click();
+  assert.equal(view.checked, true);
+  fire(rows(g)[1].querySelector('.u2-access-grid-remove'), 'click');
+  assert.deepEqual(g.value.value.map((r) => r.principal), ['Sales'], 'nor removes a row');
+  g.dispose();
+});
+
+ui('P98: an added principal is granted the first capability not locked', () => {
+  const g = grid({locked: ['view']});
+  const picker = g.root.querySelector('.u2-access-grid-add');
+  picker.value = 'Developers';
+  fire(picker, 'change');
+  assert.deepEqual(g.value.value[1], {principal: 'Developers', can: {view: false, edit: true, delete: false}});
+  assert.deepEqual(boxes(rows(g)[2]).map((b) => b.checked), [false, true, false], 'what the boxes show');
+  g.dispose();
+});
+
+ui('P99: a key that moves the add select\'s choice only moves it; Enter adds; leaving it resets; a later pick adds', async () => {
+  const g = grid();
+  const picker = g.root.querySelector('.u2-access-grid-add');
+  picker.focus();
+  // the browser moves a closed select's choice on ArrowDown and fires change at once
+  fire(picker, 'keydown', {key: 'ArrowDown'});
+  picker.value = 'Developers';
+  fire(picker, 'change');
+  assert.equal(g.value.value.length, 1, 'nothing added by the arrow');
+  assert.equal(fire(picker, 'keydown', {key: 'Enter'}), false, 'Enter is the select\'s');
+  assert.deepEqual(g.value.value.map((r) => r.principal), ['Sales', 'Developers']);
+  fire(picker, 'keydown', {key: 'c'});
+  picker.value = 'Chemists';
+  fire(picker, 'change');
+  assert.equal(g.value.value.length, 2, 'nor by a letter');
+  picker.blur();
+  assert.equal(picker.value, '', 'back to the placeholder');
+  picker.focus();
+  fire(picker, 'keydown', {key: 'ArrowDown'});
+  await flush();
+  picker.value = 'Chemists';
+  fire(picker, 'change');
+  assert.deepEqual(g.value.value.map((r) => r.principal), ['Sales', 'Developers', 'Chemists'],
+    'a pick from the list the key opened (macOS), in a later task, adds');
+  g.dispose();
+});
+
+ui('P103: setPrincipals and a bound principals list feed the picker and the row labels', () => {
+  const g = grid();
+  const offered = () => g.root.querySelector('.u2-access-grid-add').childNodes.map((o) => o.value);
+  g.setPrincipals([{value: 'Sales', label: 'Sales team'}, 'Biologists']);
+  assert.deepEqual(offered(), ['', 'Biologists']);
+  assert.equal(rows(g)[1].querySelector('.u2-access-grid-principal').textContent, 'Sales team');
+  assert.deepEqual(g.principals.map((p) => typeof p === 'string' ? p : p.value), ['Sales', 'Biologists']);
+  g.dispose();
+  const reg = new Registry();
+  registerAll(reg);
+  const principals = signal(['Sales']);
+  const built = reg.get('u2-access-grid').create({label: 'Access', capabilities: ['view'], principals, value: []});
+  principals.value = ['Sales', 'Chemists'];
+  assert.deepEqual(built.root.querySelector('.u2-access-grid-add').childNodes.map((o) => o.value), ['', 'Sales', 'Chemists']);
+  built.dispose();
+});
+
+ui('rows are items keyed by principal: data-u2-item, role row, item-label; inherited ones disabled', async () => {
+  const g = grid();
+  assert.deepEqual(rows(g).map((r) => [r.dataset.u2Item, r.getAttribute('role'),
+    r.querySelector('[data-u2-part="item-label"]').textContent]),
+  [['inherited:You (creator)', 'row', 'You (creator)'], ['Sales', 'row', 'Sales']]);
+  const state = g.getState();
+  assert.deepEqual(state.items.list.map((i) => [i.key, i.label, i.disabled]),
+    [['inherited:You (creator)', 'You (creator)', true], ['Sales', 'Sales', undefined]]);
+  assert.equal(state.readOnly, false);
+  assert.equal(state.text, 'Sales', 'the editable rows, as shown');
+  assert.equal(state.label, 'Access');
+  assert.equal(g.root.querySelector('table').getAttribute('role'), 'grid');
+  assert.equal(await g.revealItem('sales') === rows(g)[1], true);
+  g.value.value = null;
+  assert.deepEqual(rows(g).map((r) => r.dataset.u2Item), ['inherited:You (creator)'], 'a null value shows no rows');
+  g.dispose();
 });

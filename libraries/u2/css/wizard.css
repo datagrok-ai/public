@@ -20,10 +20,12 @@
   list-style: none;
 }
 
+/* margin: the platform's `li + li` top margin would drop every step but the first */
 .u2-wizard-step {
   display: flex;
   align-items: center;
   gap: var(--dg-space-s);
+  margin: 0;
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
   outline: none;
@@ -136,7 +138,8 @@
   min-width: 0;
 }
 
-.u2-wizard-status-error {
+.u2-wizard-status-error,
+.u2-wizard-error {
   color: var(--dg-error);
 }
 

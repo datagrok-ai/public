@@ -34,6 +34,6 @@ Feature: Layout containers
     Then value of toolbar readout should contain text "u2: next-gen Datagrok UI library"
 
   Scenario: The splitter reports its sizes
-    Then value of sizes readout should have text "0.3 / 0.7"
+    Then value of sizes readout should have text "30% / 70%"
     When user drags sash in splitter to Content heading
-    Then value of sizes readout should not contain text "0.3 / 0.7"
+    Then value of sizes readout should not contain text "30% / 70%"

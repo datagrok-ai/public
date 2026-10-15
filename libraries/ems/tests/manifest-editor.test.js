@@ -146,7 +146,7 @@ ui('the locked boxes show what the plan grants: nothing beyond View on a read-on
   e.dispose();
 });
 
-ui('the Writable toggle rebuilds the panel with focus kept: the box itself, or a grid cell', async () => {
+ui('the Writable toggle keeps the part it sits in, focus included; a replaced grid hands focus to the same cell', async () => {
   const e = await editor();
   e.access.addGroup({kind: 'schema'}, {id: 'g-sales', label: 'Sales'});
   await flush();
@@ -156,12 +156,15 @@ ui('the Writable toggle rebuilds the panel with focus kept: the box itself, or a
   box.click();
   await flush();
   assert.equal(e.model.writable.value, true);
-  assert.equal(writable() !== box, true, 'the panel was rebuilt');
-  assert.equal(document.activeElement === writable(), true, 'a second Space toggles it back');
+  assert.equal(writable() === box, true, 'the form shows what the box holds: kept');
+  assert.equal(document.activeElement === box, true, 'a second Space toggles it back');
   const cells = () => panel(e).querySelectorAll('.u2-access-grid tbody tr')[1].querySelectorAll('.u2-access-grid-check');
-  cells()[0].focus();
+  const view = cells()[0];
+  view.focus();
   e.model.setWritable(false);
   await flush();
+  assert.equal(cells()[0] !== view, true, 'Edit and Delete locked: the access part was replaced');
+  assert.equal(writable().checked, false, 'a change made elsewhere replaces the form too');
   assert.equal(document.activeElement === cells()[0], true, 'Sales › View, in the rebuilt grid');
   cells()[1].focus();
   e.model.setWritable(true);
@@ -170,7 +173,7 @@ ui('the Writable toggle rebuilds the panel with focus kept: the box itself, or a
   e.dispose();
 });
 
-ui('Tab out of a field that commits on change: the rebuild waits for the Tab to land, then keeps its target', async () => {
+ui('Tab out of a field that commits on change: the form shows what was typed, so it stays and the Tab target keeps focus', async () => {
   const e = await editor();
   await select(e, 'orders');
   const friendly = panel(e).querySelector('[data-u2-name="friendlyName"] input');
@@ -181,13 +184,18 @@ ui('Tab out of a field that commits on change: the rebuild waits for the Tab to 
   friendly.value = 'Sales orders';
   fire(friendly, 'change');
   assert.equal(e.model.table('orders').friendlyName, 'Sales orders', 'committed');
-  assert.equal(panel(e).querySelector('[data-u2-name="friendlyName"] input') === friendly, true, 'not rebuilt yet');
+  assert.equal(panel(e).querySelector('[data-u2-name="friendlyName"] input') === friendly, true, 'kept');
   const next = panel(e).querySelector('[data-u2-name="nameColumn"] select');
   next.focus();
   await flush();
-  const rebuilt = panel(e).querySelector('[data-u2-name="nameColumn"] select');
-  assert.equal(rebuilt !== next, true, 'rebuilt once the Tab landed');
-  assert.equal(document.activeElement === rebuilt, true, 'on the field the Tab went to');
+  assert.equal(panel(e).querySelector('[data-u2-name="nameColumn"] select') === next, true, 'nothing rebuilt');
+  assert.equal(document.activeElement === next, true, 'on the field the Tab went to');
+  e.model.setFriendlyName('orders', 'Orders');
+  await flush();
+  const field = panel(e).querySelector('[data-u2-name="friendlyName"] input');
+  assert.equal(field !== friendly && field.value === 'Orders', true, 'a change made elsewhere replaces the form');
+  assert.equal(document.activeElement === panel(e).querySelector('[data-u2-name="nameColumn"] select'), true,
+    'focus follows its keys into the new form');
   e.dispose();
 });
 
@@ -234,7 +242,7 @@ ui('the column panel: logical name, the type beside the warehouse type, required
     'one per table');
   assert.equal(panel(e).querySelectorAll('.u2-manifest-panel-note').length, 1, 'only the visibility note stands alone');
   assert.equal(panel(e).querySelector('.u2-manifest-relation'), null, 'no foreign key, no Reference section');
-  const chips = panel(e).querySelectorAll('.u2-chip');
+  const chips = panel(e).querySelectorAll('.u2-chips-chip');
   assert.deepEqual(chips.map((c) => c.textContent), ['Sales', 'Developers']);
   assert.equal(chips[0].disabled, true, 'everyone may see the row until "only these groups" is chosen');
   // the shim does not uncheck a radio's siblings on click
@@ -242,7 +250,7 @@ ui('the column panel: logical name, the type beside the warehouse type, required
   radios[0].checked = false;
   radios[1].click();
   await flush();
-  fire(panel(e).querySelectorAll('.u2-chip')[0], 'click');
+  fire(panel(e).querySelectorAll('.u2-chips-chip')[0], 'click');
   assert.deepEqual(e.access.visibility.value, [{table: 'orders', column: 'shipname',
     groups: [{id: 'Sales', label: 'Sales'}]}]);
 
@@ -282,10 +290,10 @@ ui('a principal picker feeds the access grid and the visibility chips; the value
   radios[1].click();
   await flush();
   assert.equal(visiblePicker().style.display, '', 'only these groups: the picker is offered');
-  assert.deepEqual(panel(e).querySelectorAll('.u2-chip').map((c) => c.textContent), [], 'nothing offered up front');
+  assert.deepEqual(panel(e).querySelectorAll('.u2-chips-chip').map((c) => c.textContent), [], 'nothing offered up front');
   visiblePicker().click();
   await flush();
-  assert.deepEqual(panel(e).querySelectorAll('.u2-chip').map((c) => [c.textContent, c.getAttribute('aria-pressed')]),
+  assert.deepEqual(panel(e).querySelectorAll('.u2-chips-chip').map((c) => [c.textContent, c.getAttribute('aria-pressed')]),
     [['Sales', 'true']]);
   assert.deepEqual(e.access.visibilityOf('orders', 'shipname'), [{id: 'g-sales', label: 'Sales'}]);
   e.dispose();

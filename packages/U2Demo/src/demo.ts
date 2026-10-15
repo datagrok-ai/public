@@ -1,10 +1,15 @@
 import * as grok from 'datagrok-api/grok';
+import * as ui from 'datagrok-api/ui';
 import {signal, computed, untracked, Control, Scope, Splitter, VirtualTree, divV} from '@datagrok-libraries/u2';
 import type {Signal, ReadonlySignal} from '@datagrok-libraries/u2';
 import {controlAt} from '@datagrok-libraries/u2/src/dg/index.js';
 import {DEMO_TREE, DemoContext, DemoLeaf, leafById, pageShown} from './nav';
 
 const LAST_TAB = 'u2demo.tab';
+const NAV_MIN = 140;
+const NAV_MAX = 0.4;
+/** What the widest sub-demo form needs; the nav gives way before the content goes under it. */
+const CONTENT_MIN = 480;
 
 export interface DemoOptions {
   /** The leaf to open on; falls back to `localStorage['u2demo.tab']`, then the first leaf. */
@@ -32,7 +37,7 @@ export function buildDemo(options?: DemoOptions): DemoParts {
     const last = signal('');
     // `navigate` is declared below and only ever called from a click, long after this runs
     const ctx: DemoContext = {status: last, navigate: (id) => navigate(id)};
-    const inspect = signal(true);
+    const inspect = signal(false);
 
     const initial = leafById(options?.initial ?? '') ??
       leafById(localStorage.getItem(LAST_TAB) ?? '') ??
@@ -51,6 +56,7 @@ export function buildDemo(options?: DemoOptions): DemoParts {
       pageScope?.dispose();
       pageScope = new Scope();
       last.value = '';
+      ui.empty(host);
       host.replaceChildren(Scope.runWith(pageScope, () => leaf.build(ctx)));
       current.value = leaf;
       localStorage.setItem(LAST_TAB, leaf.id);
@@ -59,6 +65,7 @@ export function buildDemo(options?: DemoOptions): DemoParts {
 
     const tree = new VirtualTree<DemoLeaf>();
     tree.root.classList.add('u2demo-nav');
+    tree.root.setAttribute('aria-label', 'Demos');
     tree.setRoots(DEMO_TREE.map((g) => ({id: g.id, label: g.label,
       children: g.children.map((leaf) =>
         ({id: leaf.id, label: leaf.label, tooltip: leaf.description, data: leaf}))})));
@@ -90,8 +97,13 @@ export function buildDemo(options?: DemoOptions): DemoParts {
       if (!control)
         return;
       if (!panelOpened) {
+        // docking the panel re-parents the view, which blurs the field this click just focused:
+        // hand the focus back, or the first keystrokes after an Inspect click go nowhere
+        const focused = document.activeElement;
         grok.shell.windows.showContextPanel = true;
         panelOpened = true;                      // open once per view, then respect the user
+        if (focused instanceof HTMLElement && focused !== document.activeElement && host.contains(focused))
+          focused.focus();
       }
       grok.shell.setCurrentObject(control, false, false);
     }, true);
@@ -144,8 +156,24 @@ export function buildDemo(options?: DemoOptions): DemoParts {
     navigate(initial.id);
 
     const split = new Splitter([tree.root, host],
-      {direction: 'horizontal', sizes: [22, 78], minSize: 140});
+      {direction: 'horizontal', sizes: [22, 78], minSize: NAV_MIN});
     split.root.classList.add('u2demo-shell');
+
+    // the splitter holds one minimum for both panels; the nav also stops at NAV_MAX, and gives
+    // way whenever the content would go under CONTENT_MIN — on a drag and on a resize alike
+    const clampNav = (): void => {
+      const width = split.root.clientWidth;
+      const most = Math.max(NAV_MIN / width, Math.min(NAV_MAX, 1 - CONTENT_MIN / width));
+      if (width > 0 && split.sizes.peek()[0] > most)
+        split.sizes.value = [most, 1 - most];
+    };
+    root.effect(() => {
+      split.sizes.value;
+      untracked(clampNav);
+    });
+    const resize = new ResizeObserver(clampNav);
+    resize.observe(split.root);
+    root.own(() => resize.disconnect());
     return divV([split], 'u2demo-root');
   });
   return {content, shell, status};

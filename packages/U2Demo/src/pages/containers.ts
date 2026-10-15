@@ -12,7 +12,7 @@ export function containersPage(): HTMLElement {
   const split = new Splitter([left, right], {direction: 'horizontal', sizes: [30, 70]});
   split.root.classList.add('u2demo-split');
   right.append(readout('sizes', computed(() =>
-    split.sizes.value.map((s) => s.toFixed(1)).join(' / '))));
+    split.sizes.value.map((s) => `${Math.round(s * 100)}%`).join(' / '))));
 
   const acc = new Accordion();
   acc.addPane('General', divV([span('Eagerly built pane.')]), true);
@@ -102,7 +102,7 @@ export function popupsPage(status: Signal<string>): HTMLElement {
   const dlgName = new TextInput({label: 'Name', value: 'u2'});
   dlgName.addValidator((v) => v.trim() ? null : 'Required');
   const dlgForm = new Form().add(dlgName);
-  const dialog = Dialog.create('u2 dialog')
+  const dialog = Dialog.create('u2 dialog', {keepAlive: true})
     .add(span('Modal, draggable by the title bar, Esc cancels, Enter accepts.'))
     .add(dlgForm)
     .onOK(() => log(`Dialog OK, name = ${dlgName.value.value}`))

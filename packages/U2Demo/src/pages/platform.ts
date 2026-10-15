@@ -101,6 +101,8 @@ export function spacesPage(): HTMLElement {
       .filter((s) => s.friendlyName.toLowerCase().includes(q.toLowerCase())),
     renderer: handlerRenderer<DG.Project>(),
     placeholder: 'Choose a space…',
+    label: 'Space',
+    openOnFocus: true,
   });
   const project = entityInput<DG.Project>('Choose a project or dashboard…', () => grok.dapi.projects,
     {filter: (q) => q ? `friendlyName like "${q}"` : undefined});
@@ -109,7 +111,9 @@ export function spacesPage(): HTMLElement {
   scope.effect(() => { const s = space.selected.value; if (s) picked.value = s; });
   scope.effect(() => { const p = project.selected.value; if (p) picked.value = p; });
 
-  const preview = divV([], 'u2demo-row');
+  const preview = divV([], 'u2demo-stack');
+  preview.setAttribute('role', 'region');
+  preview.setAttribute('aria-label', 'Preview');
   let shown: Scope | undefined;
   scope.own(() => shown?.dispose());
   scope.effect(() => {
@@ -120,7 +124,7 @@ export function spacesPage(): HTMLElement {
       divV([
         entityCard(x).root,
         divH([chip(x).root, button('Open', () => void x.open())], 'u2demo-row'),
-      ], 'u2demo-row') :
+      ], 'u2demo-stack') :
       span('Pick a space or a project to preview it.', 'u2demo-hint')));
   });
 
@@ -170,6 +174,7 @@ export function moleculesPage(): HTMLElement {
       listItem: (d) => divH([rowMol.listItem!(d.smiles), span(d.name)], 'u2demo-mol-row'),
     },
     placeholder: 'Find a compound…',
+    openOnFocus: true,
   });
 
   return divV([
@@ -195,9 +200,17 @@ export function moleculesPage(): HTMLElement {
 }
 
 export function bridgePage(): HTMLElement {
-  const bridged = new TextInput({label: 'Compound', value: 'Aspirin'});
-  bridged.addValidator((v) => v.trim() ? null : 'Required');
-  const dart = asDartInput(bridged);
+  const compound = signal('Aspirin');
+  // closing a DG.Dialog detaches the DartInput it hosted, so every open builds its own
+  const openDialog = (): void => {
+    const bridged = new TextInput({label: 'Compound', value: compound.value,
+      onChanged: (v) => compound.value = v});
+    bridged.addValidator((v) => v.trim() ? null : 'Required');
+    ui.dialog('u2 input, platform dialog')
+      .add(asDartInput(bridged))
+      .onOK(() => grok.shell.info(`Compound: ${bridged.value.value}`))
+      .show();
+  };
 
   const leaks = signal('(press the button)');
 
@@ -206,12 +219,9 @@ export function bridgePage(): HTMLElement {
       'asDartInput() makes any u2 input a DG.InputBase.', 'u2demo-hint'),
     h3('DartInput bridge'),
     divH([
-      button('Open a DG.Dialog with a u2 input', () => ui.dialog('u2 input, platform dialog')
-        .add(dart)
-        .onOK(() => grok.shell.info(`Compound: ${bridged.value.value}`))
-        .show()),
+      button('Open a DG.Dialog with a u2 input', openDialog),
     ], 'u2demo-row'),
-    readout('bridged value', bridged.value),
+    readout('bridged value', compound),
     h3('Leak detector'),
     divH([
       button('leakReport()', () => leaks.value = JSON.stringify(leakReport())),

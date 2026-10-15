@@ -58,6 +58,10 @@
   text-align: right;
 }
 
+.u2-menu-shortcut:not(:empty) {
+  margin-left: var(--dg-space-xl);
+}
+
 .u2-menu-arrow {
   font-size: var(--dg-font-size-small);
   text-align: right;

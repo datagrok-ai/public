@@ -3,9 +3,11 @@
    editor-group model and the widget layer we skipped). The overflow dropdown is a plain
    absolutely-positioned div rather than the Overlay layer: it is anchored inside the header and
    must not outlive it. */
-import {signal, untracked, Signal, ReadonlySignal} from '../../core/signals.js';
+import {signal, untracked, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {iconOf} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface TabOptions {
   id: string;
@@ -27,6 +29,8 @@ export interface TabStripOptions {
   orientation?: TabOrientation;
   /** `platform` (default) is `ui.tabControl`; `document` is the IDE document-tab skin. */
   variant?: TabVariant;
+  /** Also the `tabClosed` event (`strip.on('tabClosed', …)`): one call per close, a repeated id included. */
+  onTabClosed?: (id: string, strip: TabStrip) => void;
 }
 
 interface Tab {
@@ -39,9 +43,9 @@ interface Tab {
 
 let stripCount = 0;
 
+/** Events: `tabClosed` (the tab id). */
 export class TabStrip extends Control {
   readonly activeTab: Signal<string | null> = signal<string | null>(null);
-  readonly onTabClosed: ReadonlySignal<string | null>;
   readonly orientation: TabOrientation;
 
   private readonly _idPrefix = `u2-tabs-${++stripCount}`;
@@ -52,11 +56,9 @@ export class TabStrip extends Control {
   private readonly _content = document.createElement('div');
   private readonly _tabs = signal<Tab[]>([]);
   private readonly _menuOpen = signal(false);
-  private readonly _closed = signal<string | null>(null);
 
   constructor(options?: TabStripOptions) {
     super();
-    this.onTabClosed = this._closed;
     this.orientation = options?.orientation ?? 'horizontal';
 
     this.root.classList.add('u2-tabs');
@@ -81,12 +83,14 @@ export class TabStrip extends Control {
     this._content.className = 'u2-tabs-content';
     this.root.append(this._header, this._content);
 
-    this._listen(this._scroller, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent));
-    this._listen(this._scroller, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
-    this._listen(this._overflow, 'click', () => this._menuOpen.value = !this._menuOpen.peek());
-    this._listen(this._menu, 'click', (e) => this._onMenuClick(e));
-    this._listen(document, 'pointerdown', (e) => this._onDocumentPointerDown(e));
-    this._listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent));
+    const scope = this.scope;
+    scope.listen(this._scroller, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent));
+    scope.listen(this._scroller, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    scope.listen(this._overflow, 'click', () => this._menuOpen.value = !this._menuOpen.peek());
+    scope.listen(this._menu, 'click', (e) => this._onMenuClick(e));
+    const onTabClosed = options?.onTabClosed;
+    if (onTabClosed)
+      this.on('tabClosed', (id, strip) => onTabClosed(id as string, strip));
 
     const resize = new ResizeObserver(() => this._updateOverflow());
     resize.observe(this._header);
@@ -104,6 +108,7 @@ export class TabStrip extends Control {
     header.className = 'u2-tabs-tab';
     header.id = `${this._idPrefix}-tab-${tab.id}`;
     header.dataset.id = tab.id;
+    header.dataset.u2Item = tab.id;
     header.tabIndex = -1;
     header.title = tab.tooltip ?? tab.label;
     header.setAttribute('role', 'tab');
@@ -112,11 +117,14 @@ export class TabStrip extends Control {
 
     const label = document.createElement('span');
     label.className = 'u2-tabs-label';
+    label.dataset.u2Part = 'item-label';
     label.textContent = tab.label;
     const mark = document.createElement('span');
     mark.className = tab.closable ? 'u2-tabs-close' : 'u2-tabs-mark';
-    if (tab.closable)
+    if (tab.closable) {
       mark.title = 'Close';
+      mark.dataset.u2Part = 'close';
+    }
     if (tab.icon !== undefined)
       header.append(TabStrip._icon(tab.icon));
     header.append(label, mark);
@@ -149,7 +157,23 @@ export class TabStrip extends Control {
     if (this.activeTab.peek() === id)
       this.activeTab.value = rest.length > 0 ? rest[Math.min(index, rest.length - 1)].options.id : null;
     this._updateOverflow();
-    this._closed.value = id;
+    this.fireEvent('tabClosed', id);
+  }
+
+  /** The base state plus the active tab and the tabs as items. */
+  getState(): ReturnType<Control['getState']> {
+    const active = this.activeTab.peek();
+    return {...super.getState(), ...active === null ? {} : {current: active}};
+  }
+
+  getItems(): IItemsState {
+    const active = this.activeTab.peek();
+    const list = this._tabs.peek().map((tab, index) => {
+      const {id, label, tooltip} = tab.options;
+      return {key: id, label: label || tooltip || id, index, selected: id === active, current: id === active,
+        rendered: true};
+    });
+    return {count: list.length, list, truncated: false};
   }
 
   setDirty(id: string, dirty: boolean): void {
@@ -163,6 +187,18 @@ export class TabStrip extends Control {
     wrap.className = 'u2-tabs-icon';
     wrap.append(iconOf(source));
     return wrap;
+  }
+
+  /** Renames a tab in place — a bound tab title following its source. */
+  setTabLabel(id: string, label: string): void {
+    const tab = this._find(id);
+    if (tab === undefined)
+      return;
+    tab.options = {...tab.options, label};
+    tab.header.querySelector('.u2-tabs-label')!.textContent = label;
+    if (tab.options.tooltip === undefined)
+      tab.header.title = label;
+    this._tabs.value = [...this._tabs.peek()];
   }
 
   private _find(id: string): Tab | undefined {
@@ -182,7 +218,9 @@ export class TabStrip extends Control {
       if (!tab.built) {
         tab.built = true;
         const content = tab.options.content;
-        untracked(() => tab.panel.append(typeof content === 'function' ? content() : content));
+        // built once and kept: owned by the strip, not by this effect run (disposed on the next switch)
+        Scope.runWith(this.scope.child('tab'), () =>
+          untracked(() => tab.panel.append(typeof content === 'function' ? content() : content)));
       }
       tab.header.scrollIntoView({block: 'nearest', inline: 'nearest'});
     }
@@ -278,15 +316,13 @@ export class TabStrip extends Control {
   }
 
   private _onDocumentPointerDown(e: Event): void {
-    if (!this._menuOpen.peek())
-      return;
     const target = e.target as Node;
     if (!this._menu.contains(target) && !this._overflow.contains(target))
       this._menuOpen.value = false;
   }
 
   private _onDocumentKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && this._menuOpen.peek()) {
+    if (e.key === 'Escape') {
       this._menuOpen.value = false;
       this._overflow.focus();
     }
@@ -299,6 +335,10 @@ export class TabStrip extends Control {
       this._menu.textContent = '';
       return;
     }
+    // the page is watched only while the menu is open: this run's scope drops the listeners
+    const run = Scope.ambient!;
+    run.listen(document, 'pointerdown', (e) => this._onDocumentPointerDown(e));
+    run.listen(document, 'keydown', (e) => this._onDocumentKeyDown(e as KeyboardEvent));
     const active = this.activeTab.value;
     this._menu.replaceChildren(...this._tabs.value.map((tab) => {
       const {id, label, icon, tooltip} = tab.options;
@@ -323,10 +363,5 @@ export class TabStrip extends Control {
     this._overflow.tabIndex = overflowing ? 0 : -1;
     if (!overflowing)
       this._menuOpen.value = false;
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

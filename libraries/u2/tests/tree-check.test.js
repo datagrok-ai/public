@@ -1,7 +1,7 @@
 /* VirtualTree checkboxes: a node with `checked` carries a box, `locked` refuses the toggle, `disabled`
    greys the row; a click on the box reports the flipped state through `onCheck` without moving
-   the selection, and Space toggles the selected row. Every test leaves the live-scope count
-   where it found it. */
+   the selection or flipping the box itself (P104), and Space toggles the selected row. Every test
+   leaves the live-scope count where it found it. */
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
@@ -51,7 +51,9 @@ ui('a node with `checked` carries a box; locked refuses the toggle (greyed only 
   assert.equal(row(tree, 2).querySelector('.u2-tree-row').classList.contains('u2-tree-row-disabled'), true);
   assert.equal(row(tree, 2).getAttribute('aria-disabled'), 'true');
   assert.equal(box(tree, 3), null, 'Beta has no checkbox');
-  assert.equal(box(tree, 0).getAttribute('aria-label'), 'Include Alpha');
+  assert.equal(box(tree, 0).getAttribute('aria-label'), 'Alpha', 'named by the node, not a hard-coded verb');
+  assert.deepEqual([0, 1, 2, 3].map((i) => row(tree, i).getAttribute('aria-checked')), ['true', 'true', 'false', null],
+    'the treeitem says what its box says');
   tree.dispose();
 });
 

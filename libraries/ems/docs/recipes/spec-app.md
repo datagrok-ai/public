@@ -1,7 +1,8 @@
 # Recipe: a domain app as a spec (configuration)
 
 The second tier of a domain (EMS) app: the same page the [zero-code tier](crud-app.md) renders,
-laid out as a `dg-ui/1` spec — a `u2-domain-source` and the `u2-domain-*` controls bound to it.
+laid out as a `dg-ui/1` spec — a `u2-domain-source` on the components tray and the `u2-domain-*`
+controls bound to it.
 No TypeScript beyond mounting the spec; the designer edits it; an LLM can emit it. Reference:
 **Stockroom**'s `src/app.spec.json` (`packages/Stockroom`), abridged here.
 
@@ -9,8 +10,9 @@ No TypeScript beyond mounting the spec; the designer edits it; an LLM can emit i
 
 ```json
 {"$schema": "dg-ui/1",
+ "components": [
+   {"tag": "u2-domain-source", "name": "substances", "props": {"table": "stockroom.substance", "pageSize": 50}}],
  "root": {"tag": "u2-panel", "name": "app", "children": [
-   {"tag": "u2-domain-source", "name": "substances", "props": {"table": "stockroom.substance", "pageSize": 50}},
    {"tag": "u2-splitter", "props": {"direction": "horizontal", "sizes": [0.35, 0.65]}, "children": [
      {"tag": "u2-panel", "children": [
        {"tag": "u2-domain-search",  "bind": {"source": "$.substances.source"}, "props": {"placeholder": "Name or CAS"}},
@@ -32,9 +34,11 @@ control, so it is the view's content; the designer opens the same file for editi
 ```ts
 import {renderSpec} from '@datagrok-libraries/u2';
 import {appView, designerView, registerPlatformComponents} from '@datagrok-libraries/u2/src/dg/index.js';
+import {installEms} from '@datagrok-libraries/ems/src/dg';
 import spec from './app.spec.json';                              // tsconfig: resolveJsonModule
 
 registerPlatformComponents();                                    // once per package: every u2-* tag
+installEms();                                                    // the u2-domain-* tags and the spec session
 export function stockroomApp(): DG.ViewBase {
   return appView({name: 'Stockroom', content: renderSpec(spec)});
 }
@@ -47,7 +51,7 @@ export function stockroomDesigner(): DG.ViewBase {
 
 | Tag | What it is |
 |---|---|
-| `u2-domain-source` | the data: `table`, `query` and `search` (bindable), `pageSize`, `defaults` (a parent's id on a child table), `empty`, `draft` (a create form's source). Functions for `cmd:`: `save`, `discard`, `newRow` |
+| `u2-domain-source` | the data, on the `components` tray — never in the visual tree, where it renders as a placeholder: `table`, `query` and `search` (bindable), `pageSize`, `defaults` (a parent's id on a child table), `empty`, `draft` (a create form's source). Functions for `cmd:`: `save`, `discard`, `newRow` |
 | `bind: {source: "$.substances.source"}` | how every control takes its source — whole, through the `source` step; the control inherits the source's access. `$.substances` alone is the rows, `$.substances.currentRow.<col>` a value a plain input may bind to |
 | `u2-domain-list` (`mode`, `itemHeight`, `empty`) | the rows, one line or a card each; selecting a row makes it the source's current row; Open / Delete / the table's actions per row |
 | `u2-domain-form` (`include`, `exclude`, `layout`) | the current row's editors under the row's access; readonly is text |
@@ -60,15 +64,18 @@ export function stockroomDesigner(): DG.ViewBase {
 | `cmd:substances.save` / `.discard` / `.newRow` | a button's `on.click`: the named source's functions. Save goes through the session, so it lands every source of the spec |
 
 Every tag's registry entry carries its props, defaults and a `usage` line — what the designer's
-palette and an LLM read. `u2-domain-source` is in `manifest.json` (the platform-free registry);
-the `u2-domain-*` controls are platform-side and arrive with `registerPlatformComponents`
-(`src/dg/domain/registrations.ts`).
+palette and an LLM read. `u2-domain-source` is in ems's `manifest.json` (the platform-free
+registry); the `u2-domain-*` controls are platform-side (`src/dg/registrations.ts`). Neither is
+registered by u2: `installEms()` adds both, once — without it every domain tag renders as a
+placeholder that says so. A headless host (the memory backend, a test) installs the source alone
+with `registry.use(emsSourcesPlugin)`.
 
 ## The session
 
-Every `u2-domain-source` of one spec instance joins the instance's `SharedSession` (the ambient
-session `renderSpec` builds under). Two sources on one page — a `projects` source and an `issues`
-source with `defaults: {project_id: ...}` — are one unit of work: one Save button, wired to either
+Every `u2-domain-source` of one spec instance joins the instance's `SharedSession`
+(`SharedSession.of(instance)`) — the spec ambient `installEms()` puts on the registry. Two
+sources on one page — a `projects` source and an `issues` source with
+`defaults: {project_id: ...}` — are one unit of work: one Save button, wired to either
 source's `save`, writes both as one transaction; the parent may still be a draft (the child holds
 its `~new:` id, the server orders the inserts); Discard drops both; the summary counts both. A
 `u2-domain-children` adds its child sources to the parent's session by itself.
@@ -91,6 +98,8 @@ the [code tier](custom-app.md): the spec keeps the layout, the code fills the ta
 
 ## Anti-patterns
 
+- A `u2-domain-source` in the visual tree — it belongs in `components`; in the tree it is a
+  placeholder and every control bound to it is one too.
 - Binding `$.substances` or `$.substances.currentRow` to a domain control — the control needs
   the source: `$.substances.source`.
 - A Save button per control, or `cmd:substances.save` beside `cmd:containers.save` — one session,

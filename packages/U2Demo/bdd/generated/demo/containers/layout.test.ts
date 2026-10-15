@@ -59,8 +59,8 @@ test.describe("Layout containers", () => {
     const page = await session.page(browser);
     await session.step(7, "Given user opens the \"Layout\" demo page", () => openDemoPage(page, "Layout"));
     enter(page, "U2 Demo");
-    await session.step(37, "Then value of sizes readout should have text \"0.3 / 0.7\"", () => shouldHaveText(page, el("value of sizes readout"), "0.3 / 0.7"));
+    await session.step(37, "Then value of sizes readout should have text \"30% / 70%\"", () => shouldHaveText(page, el("value of sizes readout"), "30% / 70%"));
     await session.step(38, "When user drags sash in splitter to Content heading", () => dragTo(page, el("sash in splitter"), el("Content heading")));
-    await session.step(39, "Then value of sizes readout should not contain text \"0.3 / 0.7\"", () => shouldNotContainText(page, el("value of sizes readout"), "0.3 / 0.7"));
+    await session.step(39, "Then value of sizes readout should not contain text \"30% / 70%\"", () => shouldNotContainText(page, el("value of sizes readout"), "30% / 70%"));
   });
 });

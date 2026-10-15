@@ -133,12 +133,15 @@ function _open(source: DomainSource, props: IProperty[], items: {value: string, 
     if (done)
       return;
     done = true;
-    dialog.dispose();
     resolve(n);
   };
-  dialog.onOK(() => {
+  // busy until the write ends; a failed one (its balloon is up) keeps what the user checked and typed
+  dialog.onOK(async () => {
     const columns = props.map((p) => p.name!).filter((name) => include.get(name)!.peek());
-    void _run(source, columns, values, target.value.peek() === SELECTED).then(finish);
+    const written = await _run(source, columns, values, target.value.peek() === SELECTED);
+    if (written === null)
+      return false;
+    finish(written);
   }).okEnabled(computed(() => problem.value === null))
     .onCancel(() => finish(null)).show({modal: true, width: 460});
 }

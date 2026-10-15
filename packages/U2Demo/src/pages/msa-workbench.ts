@@ -72,6 +72,7 @@ export function msaWorkbenchPage(): HTMLElement {
   // --- settings -----------------------------------------------------------------------------------
   const settings = new Section({title: 'Settings'});
   settings.name = 'settingsPanel';
+  settings.root.classList.add('u2demo-msa-card');
   settings.body.append(new ChoiceInput({label: 'Theme', name: 'theme', items: ['light', 'dark'], value: 'light'}).root);
   toolbar.effect(() => settings.root.hidden = !settingsOn.value);
 
@@ -110,7 +111,7 @@ export function msaWorkbenchPage(): HTMLElement {
   }
 
   const header = divH([h1('MSA workbench'), toolbar.root], 'u2demo-msa-header');
-  const layout = div([alignmentPanel, divV([results, settings.root])], 'u2demo-msa-layout');
+  const layout = div([alignmentPanel, divV([results, settings.root], 'u2demo-msa-column')], 'u2demo-msa-layout');
   const root = divV([header, layout], 'u2demo-page u2demo-msa');
   root.dataset.u2Name = 'msaWorkbench';
   return root;

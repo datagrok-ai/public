@@ -81,6 +81,7 @@
 .u2-form .u2-input-box:has(> .u2-input-editor.u2-input-search) {
   flex: 1;
   min-width: 0;
+  max-width: none;
 }
 
 /* the category heading FuncCallForm groups params under — the platform's h2: 13px bold in the
@@ -104,12 +105,41 @@
 .u2-form-wide .u2-input-box {
   flex: 1;
   min-width: 0;
+  max-width: none;
 }
 
 .u2-form-wide .u2-input-editor {
   flex: 1;
   width: auto;
   max-width: none;
+  min-width: 0;
+}
+
+/* the widths ui.form gives, in the plain caption-left layout and in the auto form's roomy wide
+   state: a choice as wide as its longest option plus 30px (form.ts measures it into
+   --u2-choice-width, as js-api ui.ts getInputsMinWidths does), a number 150px (ui.css:261-271
+   grown by the form's flex-grow); an explicit wide form stretches both, as ui-form-wide does */
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='choice-input'] select.u2-input-editor {
+  flex: none;
+  width: var(--u2-choice-width, 200px);
+  max-width: none;
+}
+
+.u2-form:not(.u2-form-wide):not(.u2-form-tall) .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill) .u2-input-editor.u2-number {
+  flex: none;
+  width: 150px;
+  max-width: 150px;
+}
+
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='bigint-input'] > .u2-input-box > input.u2-input-editor,
+.u2-form-auto.u2-form-wide .u2-input-root:not(.u2-input-fill)[data-u2='qnum-input'] > .u2-input-box > input.u2-input-editor {
+  max-width: 150px;
+}
+
+/* a checklist row's caption follows its box and takes no part in the label column */
+.u2-form .u2-input-caption-after > .u2-input-label {
   min-width: 0;
 }
 
@@ -221,6 +251,19 @@
   max-width: 260px;
 }
 
+/* a failure or a notice takes a line of its own under the editor, inside the box, instead of
+   widening the box past the row beside it */
+.u2-input-box:has(> .u2-param-source-error),
+.u2-input-box:has(> .u2-param-source-notice) {
+  flex-wrap: wrap;
+}
+
+.u2-input-box > .u2-param-source-error,
+.u2-input-box > .u2-param-source-notice {
+  flex: 1 0 100%;
+  max-width: none;
+}
+
 /* the message wraps up to three lines so a long failure never blows up the row; the full text is its title */
 .u2-param-source-error .u2-param-source-message,
 .u2-param-source-notice .u2-param-source-message {
@@ -234,6 +277,7 @@
 /* the guess mark on an auto-filled table or auto-picked column field, gone once the user edits */
 .u2-param-auto {
   align-self: center;
+  margin-left: var(--dg-space-s);
   font-size: var(--dg-font-size-small);
   color: var(--dg-text-color-light);
   user-select: none;

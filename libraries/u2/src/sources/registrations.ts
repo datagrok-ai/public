@@ -13,13 +13,13 @@ export const COLLECTIONS = ['users', 'groups', 'projects', 'queries', 'connectio
   'spaces'];
 
 const DESIGN_DATA = {
-  name: 'designData', type: 'string', choices: ['live', 'schema', 'sample'],
+  name: 'designData', type: 'string', structural: true, choices: ['live', 'schema', 'sample'],
   description: 'What the designer shows: real runs, the declared shape without running, or ' +
     'the stored `sample`.',
 };
 
 const SAMPLE = {
-  name: 'sample', type: 'object',
+  name: 'sample', type: 'object', structural: true,
   description: 'The preview the `sample` policy builds its outputs from; rows become a table.',
 };
 
@@ -34,13 +34,13 @@ const METAS: ComponentMeta[] = [
       'source re-runs as that input changes; bind a DataFrame output\'s `currentRow` to reach ' +
       'the fields of the current record.',
     props: [
-      {name: 'func', type: 'string',
+      {name: 'func', type: 'string', structural: true,
         description: 'The function name, `Package:Name` for a package function.'},
       {name: 'params', type: 'object', subBindable: true,
         description: 'What it is called with; a `params.<name>` bind makes that param reactive.'},
-      {name: 'auto', type: 'bool',
+      {name: 'auto', type: 'bool', structural: true,
         description: 'Run at construction and whenever a bound param changes (default true).'},
-      {name: 'debounce', type: 'int',
+      {name: 'debounce', type: 'int', structural: true,
         description: 'Milliseconds a param change waits before the re-run (default 300).'},
       DESIGN_DATA,
       SAMPLE,
@@ -57,12 +57,12 @@ const METAS: ComponentMeta[] = [
     usage: 'For a picker over server entities, or a list of them. `names` feeds a choice input ' +
       'directly; `items` carries the entities themselves.',
     props: [
-      {name: 'entity', type: 'string', choices: COLLECTIONS,
+      {name: 'entity', type: 'string', structural: true, choices: COLLECTIONS,
         description: 'The `grok.dapi` collection to list.'},
       {name: 'filter', type: 'string', bindable: true,
         description: 'A smart-search filter; changing it reloads the collection from the first page.'},
-      {name: 'order', type: 'string', description: 'The field to order by.'},
-      {name: 'pageSize', type: 'int', description: 'How many entities one page loads (default 20).'},
+      {name: 'order', type: 'string', structural: true, description: 'The field to order by.'},
+      {name: 'pageSize', type: 'int', structural: true, description: 'How many entities one page loads (default 20).'},
     ],
     defaults: {entity: 'users', pageSize: 20},
     example: {tag: 'u2-entity-source', name: 'people', props: {entity: 'users', pageSize: 20}},
@@ -76,7 +76,7 @@ const METAS: ComponentMeta[] = [
     usage: 'For a form over a table the user already has open. It references the table BY NAME, ' +
       'so prefer a query or a project table for a form that must keep working tomorrow.',
     props: [
-      {name: 'table', type: 'string', description: 'The name of the open table.'},
+      {name: 'table', type: 'string', structural: true, description: 'The name of the open table.'},
     ],
     example: {tag: 'u2-table-source', name: 'demog', props: {table: 'demog'}},
   },
@@ -89,7 +89,7 @@ const METAS: ComponentMeta[] = [
     usage: 'For a form about a single entity. Bind `id` to whatever selects it and every bound ' +
       'field follows; the entity\'s own properties are binding steps.',
     props: [
-      {name: 'entityType', type: 'string', choices: COLLECTIONS,
+      {name: 'entityType', type: 'string', structural: true, choices: COLLECTIONS,
         description: 'Which collection the id belongs to.'},
       {name: 'id', type: 'string', bindable: true, description: 'The entity id to look up.'},
       DESIGN_DATA,

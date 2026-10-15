@@ -13,9 +13,11 @@ import convergenceSource from './convergence?raw';
 import funcConvergenceSource from './func-convergence?raw';
 import funcsSource from './funcs?raw';
 import funcHistorySource from './func-history?raw';
+import catalogSource from './pages/catalog?raw';
 import collectionsSource from './pages/collections?raw';
 import containersSource from './pages/containers?raw';
 import displaySource from './pages/display?raw';
+import filtersSource from './pages/filters?raw';
 import formsSource from './pages/forms?raw';
 import inputsSource from './pages/inputs?raw';
 import overviewSource from './pages/overview?raw';
@@ -32,9 +34,11 @@ const SOURCES: Record<string, string> = {
   [`${SRC_ROOT}/func-convergence.ts`]: funcConvergenceSource,
   [`${SRC_ROOT}/funcs.ts`]: funcsSource,
   [`${SRC_ROOT}/func-history.ts`]: funcHistorySource,
+  [`${SRC_ROOT}/pages/catalog.ts`]: catalogSource,
   [`${SRC_ROOT}/pages/collections.ts`]: collectionsSource,
   [`${SRC_ROOT}/pages/containers.ts`]: containersSource,
   [`${SRC_ROOT}/pages/display.ts`]: displaySource,
+  [`${SRC_ROOT}/pages/filters.ts`]: filtersSource,
   [`${SRC_ROOT}/pages/forms.ts`]: formsSource,
   [`${SRC_ROOT}/pages/inputs.ts`]: inputsSource,
   [`${SRC_ROOT}/pages/overview.ts`]: overviewSource,

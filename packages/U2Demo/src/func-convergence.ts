@@ -4,6 +4,7 @@ import {signal, computed, Scope, button, div, divV, divH, span, h3} from '@datag
 import {funcForm, FuncCallForm, ObjectForm, IProperty} from '@datagrok-libraries/u2/src/dg/index.js';
 import {kindOf} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
 import type {Kind} from '@datagrok-libraries/u2/src/dg/forms/object-form.js';
+import {AbGrid, readout} from './pages/common';
 
 const RUN = 'Local mode: `grok-core local stage U2Demo`, `grok-core local watch U2Demo`, ' +
   'open http://localhost:63343/login.html?mode=local. Dev stand: `npm run debug-u2demo`, ' +
@@ -581,14 +582,14 @@ export function funcConvergencePage(): HTMLElement {
       if (prop?.name != null)
         dartByName.set(prop.name, input);
     }
-    abGrid.append(span(''), h3('Dart — DG.InputForm.forFuncCall'), h3('u2 — funcForm'));
+    const ab = Scope.runWith(scope, () => new AbGrid(abGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
     for (const category of categories) {
       // the default group gets no invented header — only real categories announce themselves
       if (category.name !== 'Misc') {
-        abGrid.append(div([category.name], 'u2demo-ab-cat'));
+        ab.full(div([category.name], 'u2demo-ab-cat'));
         const catNote = catNotes?.get(category.name);
         if (catNote != null)
-          abGrid.append(note(catNote));
+          ab.full(note(catNote));
       }
       for (const p of category.params) {
         const u2Input = form.getInput(p.name);
@@ -602,7 +603,7 @@ export function funcConvergencePage(): HTMLElement {
           u2Input.root];
         for (const cell of cells)
           cell.dataset.row = p.name;
-        abGrid.append(...cells);
+        ab.row(cells[0], cells[1], cells[2]);
         // a hidden u2 row takes its name and Dart cells with it: a display:none grid item
         // leaves the flow, and one missing cell silently breaks the 3-column alignment
         const syncRow = () => {
@@ -614,7 +615,7 @@ export function funcConvergencePage(): HTMLElement {
         scope.own(() => observer.disconnect());
         syncRow();
         for (const text of rowNotes.get(p.name) ?? [])
-          abGrid.append(note(text));
+          ab.full(note(text));
       }
     }
     return {dart: dartForm, form};
@@ -651,13 +652,13 @@ export function funcConvergencePage(): HTMLElement {
     refreshGate();
 
     const gateName = gateParam.name;
-    gateGrid.append(span(''), h3('Dart'), h3('u2'));
+    const gateAb = Scope.runWith(scope, () => new AbGrid(gateGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
     const gateCells = [span(gateName, 'u2demo-code'), dartGate.inputs[0].root,
       gateForm.getInput(gateName)!.root];
     for (const cell of gateCells)
       cell.dataset.row = gateName;
-    gateGrid.append(...gateCells);
-    gateGrid.append(note(REQUIRED));
+    gateAb.row(gateCells[0], gateCells[1], gateCells[2]);
+    gateAb.full(note(REQUIRED));
 
     await buildAb(dynCall, dynGrid, toDartDyn, toU2Dyn, tickDyn, new Map<string, string[]>([
       ['city', [DEP_REFRESH, PRUNE]],
@@ -698,13 +699,13 @@ export function funcConvergencePage(): HTMLElement {
     // form build (ib:296-298), and per-row isolation keeps the crash in the left cell (#21)
     const slowForm = Scope.runWith(scope, () => funcForm(w4SlowCall, {twoWayBinding: true}));
     const slowDartCell = div([]);
-    w4SlowGrid.append(span(''), h3('Dart'), h3('u2'));
+    const slowAb = Scope.runWith(scope, () => new AbGrid(w4SlowGrid, 'DG.InputForm.forFuncCall', 'funcForm'));
     const slowCells = [span('slow', 'u2demo-code'), slowDartCell,
       slowForm.getInput('slow')!.root];
     for (const cell of slowCells)
       cell.dataset.row = 'slow';
-    w4SlowGrid.append(...slowCells);
-    w4SlowGrid.append(note(W4_SLOW));
+    slowAb.row(slowCells[0], slowCells[1], slowCells[2]);
+    slowAb.full(note(W4_SLOW));
     try {
       const dartSlow = await DG.InputForm.forFuncCall(w4SlowCall, {twoWayBinding: true});
       slowDartCell.append(dartSlow.root);
@@ -739,47 +740,43 @@ export function funcConvergencePage(): HTMLElement {
     prose(INTRO),
     prose(RUN),
     grid,
-    divH([span('sync = '), span(computed(() =>
-      `u2 → Dart ${toDart.value} · Dart → u2 ${toU2.value}`))], 'u2demo-status'),
-    divH([span('fields = '), span(fields)], 'u2demo-status'),
-    divH([span('inputs = '), span(computed(() => {
+    readout('sync', computed(() => `u2 → Dart ${toDart.value} · Dart → u2 ${toU2.value}`)),
+    readout('fields', fields),
+    readout('inputs', computed(() => {
       tick.value;
       return inputsText(call);
-    }))], 'u2demo-status'),
+    })),
     h3('isValid — required parameter'),
     prose(GATE),
     gateGrid,
-    divH([span('isValid = '), span(gateStatus)], 'u2demo-status'),
+    readout('isValid', gateStatus),
     h3('Dynamic sources'),
     prose(DYN_INTRO),
     dynGrid,
-    divH([span('sync = '), span(computed(() =>
-      `u2 → Dart ${toDartDyn.value} · Dart → u2 ${toU2Dyn.value}`))], 'u2demo-status'),
-    divH([span('inputs = '), span(computed(() => {
+    readout('sync', computed(() => `u2 → Dart ${toDartDyn.value} · Dart → u2 ${toU2Dyn.value}`)),
+    readout('inputs', computed(() => {
       tickDyn.value;
       return inputsText(dynCall);
-    }))], 'u2demo-status'),
+    })),
     h3('Tables & columns'),
     prose(W3_INTRO),
     w3Grid,
-    divH([span('sync = '), span(computed(() =>
-      `u2 → Dart ${toDartW3.value} · Dart → u2 ${toU2W3.value}`))], 'u2demo-status'),
-    divH([span('inputs = '), span(computed(() => {
+    readout('sync', computed(() => `u2 → Dart ${toDartW3.value} · Dart → u2 ${toU2W3.value}`)),
+    readout('inputs', computed(() => {
       tickW3.value;
       return inputsText(w3Call);
-    }))], 'u2demo-status'),
+    })),
     prose(W3_UNASSOC),
     h3('Expressions & validation'),
     prose(W4_INTRO),
     w4Grid,
     // 'w4 ' prefixes: the func-form/async/tables e2e lanes address the plain 'sync = ' /
     // 'inputs = ' lines positionally (first / second / last) — these must not join that list
-    divH([span('w4 sync = '), span(computed(() =>
-      `u2 → Dart ${toDartW4.value} · Dart → u2 ${toU2W4.value}`))], 'u2demo-status'),
-    divH([span('w4 inputs = '), span(computed(() => {
+    readout('w4 sync', computed(() => `u2 → Dart ${toDartW4.value} · Dart → u2 ${toU2W4.value}`)),
+    readout('w4 inputs', computed(() => {
       tickW4.value;
       return inputsText(w4Call);
-    }))], 'u2demo-status'),
+    })),
     divH([w4Run, span(w4RunResult)], 'u2demo-row u2demo-w4-gate'),
     prose(W4_GATE),
     w4SlowGrid,

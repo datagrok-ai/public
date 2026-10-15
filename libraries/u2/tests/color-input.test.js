@@ -137,3 +137,18 @@ smoke('two inputs on one signal stay in step; dispose kills the listeners', asyn
   type(first, '#333333');
   assert.equal(first.value.value, '#222222', 'listeners died with the scope');
 });
+
+smoke('required: black by default, as the platform; an empty value is invalid, a cleared field too', async () => {
+  const fresh = mount(new ColorInput({label: 'Color', required: true}));
+  assert.equal(fresh.getState().valid, true);
+  const empty = mount(new ColorInput({label: 'Color', required: true, value: ''}));
+  assert.equal(empty.getState().valid, false);
+  empty.value.value = '#ff0000';
+  assert.equal(empty.getState().valid, true);
+  const text = fresh.root.querySelector('.u2-color-text');
+  text.value = '';
+  fire(text, 'input');
+  assert.equal(fresh.getState().valid, false);
+  fresh.dispose();
+  empty.dispose();
+});

@@ -1,1 +1,1 @@
-{"tiers": ["viewers", "molecules"]}
+{"tiers": ["viewers", "molecules"], "audits": {"layout": "fail", "errors": "fail", "leaks": "fail"}}

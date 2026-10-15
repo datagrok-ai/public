@@ -56,12 +56,12 @@ export function basicInputsPage(): HTMLElement {
 export function rangeSliderPage(): HTMLElement {
   const lo = signal(20);
   const hi = signal(70);
-  const range = new RangeSlider({min: 0, max: 100, step: 1, minRange: 5, lo, hi,
+  const range = new RangeSlider({label: 'Percent', min: 0, max: 100, step: 1, minRange: 5, lo, hi,
     format: (value) => `${value.toFixed(0)}%`});
 
   const from = signal(0);
   const to = signal(1000);
-  const dose = new RangeSlider({min: 0, max: 1000, step: 10, lo: from, hi: to,
+  const dose = new RangeSlider({label: 'Dose', min: 0, max: 1000, step: 10, lo: from, hi: to,
     format: (value) => `${value.toFixed(0)} mg`});
 
   return divV([

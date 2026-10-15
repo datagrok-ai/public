@@ -650,7 +650,9 @@ scoped('the shared overlay host does not outlive the dialogs in it', async () =>
   issues.edit.peek().setValue('i1', 'title', 'X');
   const gate = confirmDiscard(session, {action: 'reload the rows'});
   await flush();
-  assert.equal(document.body.querySelectorAll('.u2-overlay').length, 1, 'the layer host is up with the dialog');
+  assert.equal(document.body.querySelectorAll('.u2-dialog').length, 1, 'the dialog is up');
+  assert.equal(document.body.querySelectorAll('.u2-overlay').length, 0,
+    'in the dialog band, beside the popup host rather than in it');
   fire(buttonNamed('DISCARD'), 'click');
   assert.equal(await gate, true);
   await flush();

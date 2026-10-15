@@ -211,7 +211,7 @@ scoped('registerPlatformComponents is the core registry plus the viewers; the co
   assert.equal(fci.props.find((p) => p.name === 'value').twoWay, true);
   assert.equal(fci.props.find((p) => p.name === 'functionName').bindable, true);
   const ff = reg.get('u2-func-form');
-  assert.notEqual(ff.props.find((p) => p.name === 'functionName').bindable, true, 're-render tier');
+  assert.equal(ff.props.find((p) => p.name === 'functionName').structural, true, 'read once');
   assert.equal(ff.props.find((p) => p.name === 'callId').bindable, true);
   assert.equal(ff.props.find((p) => p.name === 'showHistory').bindable, true);
   assert.equal(ff.props.find((p) => p.name === 'showRun').bindable, true);

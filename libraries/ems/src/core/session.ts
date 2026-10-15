@@ -4,8 +4,7 @@
    is a session of one; the sources built for one spec instance or one app share the ambient
    session (`SharedSession.runWith`), and a hand-built page passes `{session}` explicitly. */
 import {emsBackends} from './domain-backend.js';
-import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, setSpecAmbient,
-  Rows} from '@datagrok-libraries/u2';
+import {signal, computed, ReadonlySignal, Emitter, plural, notify, Dialog, Rows} from '@datagrok-libraries/u2';
 import type {ObservableLike, SpecInstance, RowView} from '@datagrok-libraries/u2';
 import type {DomainSource} from './domain-source.js';
 
@@ -35,7 +34,8 @@ export class SharedSession implements DomainSession {
    * and per app; a source built outside any gets a session of its own. */
   static ambient: SharedSession | undefined;
 
-  /** The session the sources of one rendered spec share. */
+  /** The session the sources of one rendered spec share — none unless the spec's registry has ems
+   * installed ({@link sessionAmbient}). */
   static of(instance: SpecInstance): SharedSession | undefined {
     return specSessions.get(instance);
   }
@@ -288,7 +288,7 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
       if (decided)
         return;
       decided = true;
-      dialog.dispose();
+      dialog.close();
       resolve(answer);
     };
     dialog.add(text)
@@ -302,10 +302,11 @@ export function confirmDiscard(session: DomainSession, options: {action?: string
   });
 }
 
-// every source a spec declares joins one session: one Save, one transaction
-setSpecAmbient(<T>(instance: SpecInstance, build: () => T): T => {
+/** The spec ambient the ems plugins install: every source a spec instance declares joins the
+ * instance's one session — one Save, one transaction. */
+export function sessionAmbient<T>(instance: SpecInstance, build: () => T): T {
   let session = specSessions.get(instance);
   if (session === undefined)
     specSessions.set(instance, session = new SharedSession());
   return SharedSession.runWith(session, build);
-});
+}

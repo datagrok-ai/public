@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Added ui/widgets/u2-debug.js (a leak check with `DG.U2.debug` snapshot/diff; a `Scope.bind` handler stops with its scope) and ui/widgets/u2-status.js (`DG.U2.state`, `status`, `items` and `revealItem` on a control)
 * GROK-20298: Added dapi/domains/authoring.js (authoring an external binding: `draft` over a connection, the dry run, `createSchema(name, {manifest})`, a table grant, `validate()`, `delete()`)
 * GROK-20298: Added dapi/domains/external-binding.js (a domain table bound to an external database: ids are the remote key, the storage switches in `access().support`, refusals by name) and dapi/domains/external-write.js (writing through a binding: a client-supplied key on insert, `update(id, values, {expected})` guarding on the values last read, the `DomainVersionConflictError` naming `expected`/`current`)
 

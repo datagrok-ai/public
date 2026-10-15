@@ -1,5 +1,6 @@
 import {Input, InputOptions} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
+import {text} from '../../core/text.js';
 
 const INTEGER = /^[+-]?\d+$/;
 
@@ -14,9 +15,9 @@ export interface BigIntInputOptions extends InputOptions<bigint | null> {
  * Dart reports null for text that is not an integer (`big_int_input.dart:29` throws on it, in
  * fact); u2 keeps the text, marks the input invalid and leaves the value at the last good one. */
 export class BigIntInput extends Input<bigint | null, BigIntInputOptions> {
-  private _input!: HTMLInputElement;
   // assigned in createEditor, which the base constructor runs before field initializers
-  private _bad!: Signal<boolean>;
+  private declare _input: HTMLInputElement;
+  private declare _bad: Signal<boolean>;
 
   constructor(options: BigIntInputOptions = {}) {
     super(options, null);
@@ -40,42 +41,43 @@ export class BigIntInput extends Input<bigint | null, BigIntInputOptions> {
     input.inputMode = 'numeric';
     input.placeholder = this.options.placeholder ?? '';
 
+    // set by an edit that changed the value, consumed by the effect run it causes — after the
+    // handler, when its batch ends — so the text being typed is never rewritten
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
       if (echo)
-        return;
-      input.value = value === null ? '' : String(value);
+        echo = false;
+      else
+        input.value = text(value);
     });
-    this._listen(input, 'input', () => {
+    this.scope.listen(input, 'input', () => {
       const parsed = BigIntInput.parse(input.value);
       this._bad.value = parsed === undefined;
-      if (parsed === undefined)
+      if (parsed === undefined || this.options.commitOn === 'change')
         return;
-      echo = true;
-      try {
-        this.value.value = parsed;
-      } finally {
-        echo = false;
-      }
+      const before = this.value.peek();
+      this.value.value = parsed;
+      echo = !Object.is(this.value.peek(), before);
     });
-    this._listen(input, 'blur', () => this._commit());
+    this.scope.listen(input, 'blur', () => this._commit());
+    this.scope.listen(input, 'keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter')
+        this._commit();
+    });
 
     // registered here, before the base builds its validation effect, so the effect tracks `_bad`
     this.addValidator(() => this._bad.value ? 'Not an integer' : null);
     return input;
   }
 
-  /** Redraws the committed value on blur, so `+007` settles as `7`. */
+  /** Writes the text on blur or Enter (`commitOn: 'change'` waits for it) and redraws the value,
+   * so `+007` settles as `7`. */
   private _commit(): void {
-    if (!this._bad.peek()) {
-      const value = this.value.peek();
-      this._input.value = value === null ? '' : String(value);
-    }
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
+    const parsed = BigIntInput.parse(this._input.value);
+    if (parsed === undefined)
+      return;
+    this.value.value = parsed;
+    this._input.value = text(this.value.peek());
   }
 }

@@ -1,5 +1,6 @@
 export type {ObservableLike, IEventType, IRectBounds, IInputStatus, IWidgetStatus, FuncLike,
-  NamedProperty, BindProp, BindSource, ComponentMetaBase} from 'datagrok-api/u2core';
+  NamedProperty, BindProp, BindSource, ComponentMetaBase, IItemState, IItemsState} from 'datagrok-api/u2core';
+export {ITEMS_CAP} from 'datagrok-api/u2core';
 import type {IInputStatus} from 'datagrok-api/u2core';
 import type {FieldAccess} from './access.js';
 

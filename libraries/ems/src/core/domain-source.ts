@@ -346,6 +346,9 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * refresh outran — touch nothing. An empty source loads no rows; a draft one starts on a
    * pristine draft. */
   async refresh(): Promise<void> {
+    // after dispose a load would wire subscriptions nothing releases
+    if (this.scope.isDisposed)
+      return;
     const gen = ++this._gen;
     this._restart = false;
     // the rows about to arrive are the server's again, and the next probe baselines on them
@@ -543,6 +546,7 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
    * from the offset the server agrees with, the total counted again, and every other live source
    * of the same table reloaded — it is holding the rows this batch just rewrote. */
   async afterSave(): Promise<void> {
+    const gen = this._gen;
     // the batch moved the collection itself: the next probe baselines on what we just wrote
     this._probed = undefined;
     await this._rebase();
@@ -553,8 +557,11 @@ export class DomainSource<TRow extends DomainRowLike = DomainRowLike> extends Co
       if (source !== this && source.table === this.table && !source.isDirty.peek())
         source.refresh().catch((e) => source.fail(e));
     }
-    if (!this._noRows && this._table !== undefined)
-      this._total.value = await this._count(this._table);
+    if (!this._noRows && this._table !== undefined) {
+      const total = await this._count(this._table);
+      if (gen === this._gen)
+        this._total.value = total;
+    }
   }
 
   /** After a landed batch: every draft id it assigned taken out of this source's {@link query} and

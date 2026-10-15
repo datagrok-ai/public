@@ -1,6 +1,7 @@
 import {Input, InputOptions} from '../../core/input-base.js';
 import {signal, Signal} from '../../core/signals.js';
 import {icon} from '../display/icon.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export type MapInputOptions = InputOptions<Record<string, string>>;
 
@@ -8,29 +9,35 @@ export type MapInputOptions = InputOptions<Record<string, string>>;
  * divergences: duplicate keys report through the standard validity signal instead of Dart's
  * silent `validate()` override, and a row whose key is empty never reaches the value. */
 export class MapInput extends Input<Record<string, string>, MapInputOptions> {
-  private _rows!: [string, string][];
-  private _body!: HTMLElement;
-  private _dup!: Signal<boolean>;
-  private _echo!: boolean;
+  private declare _rows: [string, string][];
+  private declare _body: HTMLElement;
+  private declare _dup: Signal<boolean>;
 
   constructor(options: MapInputOptions = {}) {
     super(options, {});
     this.root.dataset.u2 = 'map-input';
   }
 
+  /** The rows, keyed by their key (`#<index>` while a row's key is empty). */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    return Input.itemsState(this._rows.map(([key], index) =>
+      ({key: MapInput._key(key, index), label: key, index, rendered: true})), opts?.all);
+  }
+
   protected createEditor(): HTMLElement {
     this._dup = signal(false);
-    this._echo = false;
     const body = document.createElement('div');
     this._body = body;
     body.className = 'u2-map';
+    body.setAttribute('role', 'grid');
+    // an edit's own write reads back as the rows it came from: only another writer reloads them
     this.effect(() => {
       const value = this.value.value;
-      if (!this._echo)
+      if (this._rows === undefined || !MapInput._same(value, this._value()))
         this._load(value);
     });
-    this._listen(body, 'input', (e) => this._onInput(e.target as HTMLElement));
-    this._listen(body, 'click', (e) => this._onClick(e.target as HTMLElement));
+    this.scope.listen(body, 'input', (e) => this._onInput(e.target as HTMLElement));
+    this.scope.listen(body, 'click', (e) => this._onClick(e.target as HTMLElement));
     // registered here, before the base builds its validation effect, so the effect tracks `_dup`
     this.addValidator(() => this._dup.value ? 'Duplicate keys are not allowed' : null);
     return body;
@@ -54,6 +61,8 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
   private _row(index: number): HTMLElement {
     const row = document.createElement('div');
     row.className = 'u2-map-row';
+    row.setAttribute('role', 'row');
+    row.dataset.u2Item = MapInput._key(this._rows[index][0], index);
     const actions = document.createElement('div');
     actions.className = 'u2-map-actions';
     actions.append(this._button(index, 'add', 'plus', 'Add row'),
@@ -68,6 +77,7 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     cell.autocomplete = 'off';
     cell.className = part === 0 ? 'u2-map-key' : 'u2-map-value';
     cell.placeholder = placeholder;
+    cell.setAttribute('aria-label', placeholder);
     cell.value = this._rows[index][part];
     cell.dataset.row = String(index);
     cell.dataset.part = String(part);
@@ -90,7 +100,10 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
     const part = target.dataset.part;
     if (part === undefined)
       return;
-    this._rows[Number(target.dataset.row)][Number(part)] = (target as HTMLInputElement).value;
+    const index = Number(target.dataset.row);
+    this._rows[index][Number(part)] = (target as HTMLInputElement).value;
+    if (part === '0')
+      (target.closest('.u2-map-row') as HTMLElement).dataset.u2Item = MapInput._key(this._rows[index][0], index);
     this._commit();
   }
 
@@ -112,20 +125,24 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
   /** Rewrites the value from the rows, and only when it actually changed — adding or clearing an
    * empty row must not read as an edit to whoever listens on the signal. */
   private _commit(): void {
+    const value = this._value();
+    this._mark();
+    if (!MapInput._same(this.value.peek(), value))
+      this.value.value = value;
+  }
+
+  /** The value the rows stand for: the last of a repeated key wins, a row without a key is left out. */
+  private _value(): Record<string, string> {
     const value: Record<string, string> = {};
     for (const [key, item] of this._rows) {
       if (key !== '')
         value[key] = item;
     }
-    this._mark();
-    if (MapInput._same(this.value.peek(), value))
-      return;
-    this._echo = true;
-    try {
-      this.value.value = value;
-    } finally {
-      this._echo = false;
-    }
+    return value;
+  }
+
+  private static _key(key: string, index: number): string {
+    return key === '' ? `#${index}` : key;
   }
 
   private _mark(): void {
@@ -157,10 +174,5 @@ export class MapInput extends Input<Record<string, string>, MapInputOptions> {
         return false;
     }
     return true;
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

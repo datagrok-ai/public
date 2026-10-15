@@ -51,12 +51,20 @@ export function readFilterPath(path: string): boolean {
   return params.has('tab') || params.has('q');
 }
 
-/** The two editors over one tree, with the query readout — the shape every tab repeats. */
+/** The two editors over one tree, with the query readout — the shape every tab repeats — and the
+ * check a run makes first. A typed query that does not parse leaves the tree as it was, so the
+ * query speaks first, then the tree's own rows; both editors show their verdicts either way. */
 function editors(schema: FilterSchema, tree: Signal<FilterGroup>, name: string, placeholder: string,
-  target: 'dataframe' | 'domain'): HTMLElement[] {
+  target: 'dataframe' | 'domain'): {roots: HTMLElement[], problem: () => string} {
   const fb = new FilterBuilder({label: 'Criteria', schema, bind: tree, name, target, showQuery: true});
   const q = new FilterQueryInput({label: 'Query', schema, bind: tree, name: `${name}Query`, target, placeholder});
-  return [q.root, fb.root];
+  const problem = (): string => {
+    fb.touch();
+    q.touch();
+    const parsed = q.commit();
+    return (parsed ? Filters.validate(tree.peek(), schema, target) : q.problems.peek())[0]?.message ?? '';
+  };
+  return {roots: [q.root, fb.root], problem};
 }
 
 /** A pane's tree: the tab's query where it parses, else empty; the tab's query follows the tree
@@ -90,12 +98,12 @@ function dataFramePane(scope: Scope): HTMLElement {
   grid.root.classList.add('u2demo-filters-grid');
   const rows = signal(`${df.rowCount} of ${df.rowCount}`);
   const message = signal(problem);
+  const filter = editors(schema, tree, 'orders', 'city = "Basel" and total > 500', 'dataframe');
   const apply = async (): Promise<void> => {
-    const root = tree.peek();
-    const problems = Filters.validate(root, schema, 'dataframe');
-    message.value = problems[0]?.message ?? '';
-    if (problems.length > 0)
+    message.value = filter.problem();
+    if (message.peek() !== '')
       return;
+    const root = tree.peek();
     if (Filters.count(root) === 0)
       df.filter.setAll(true);
     else
@@ -108,7 +116,7 @@ function dataFramePane(scope: Scope): HTMLElement {
   return divV([
     span('Six demo orders, filtered right here in the browser: describe the rows you want, and ' +
       'Apply narrows the table below.', 'u2demo-hint'),
-    ...editors(schema, tree, 'orders', 'city = "Basel" and total > 500', 'dataframe'),
+    ...filter.roots,
     divH([button('Apply', () => void apply(), {primary: true}),
       button('Clear', () => tree.value = Filters.group('and'))], 'u2demo-row'),
     readout('rows', rows),
@@ -122,6 +130,8 @@ function entityTypePane(): HTMLElement {
     const scope = Scope.ambient!;
     const {tree} = restored(scope, 'entity', schema, 'domain');
     const count = signal('(not run)');
+    const message = signal('');
+    const filter = editors(schema, tree, 'users', 'login like "adm" and joined > -1y', 'domain');
     const picked = divH([], 'u2demo-row');
     const chips: EntityChip[] = [];
     scope.own(() => {
@@ -129,6 +139,9 @@ function entityTypePane(): HTMLElement {
         c.dispose();
     });
     const run = async (): Promise<void> => {
+      message.value = filter.problem();
+      if (message.peek() !== '')
+        return;
       const users = await grok.dapi.users.filter(Filters.format(tree.peek())).list({pageSize: 20});
       for (const c of chips)
         c.dispose();
@@ -147,9 +160,10 @@ function entityTypePane(): HTMLElement {
     return [
       span('Find the platform\'s users by what is known about them — their login, when they joined, ' +
         'the groups they belong to.', 'u2demo-hint'),
-      ...editors(schema, tree, 'users', 'login like "adm" and joined > -1y', 'domain'),
+      ...filter.roots,
       divH([button('Run', start, {primary: true})], 'u2demo-row'),
       readout('users', count),
+      readout('problem', computed(() => message.value || '(none)')),
       picked,
     ];
   }).root;
@@ -167,7 +181,12 @@ function domainTablePane(): HTMLElement {
     pane = asyncPane(() => domainFilterSchema(a), (schema) => {
       const {tree} = restored(Scope.ambient!, 'domain', schema, 'domain');
       const count = signal('(not run)');
+      const message = signal('');
+      const filter = editors(schema, tree, 'domain', 'name like "a" and created_on > -1m', 'domain');
       const run = async (): Promise<void> => {
+        message.value = filter.problem();
+        if (message.peek() !== '')
+          return;
         const root = tree.peek();
         const q = grok.dapi.domains.table(a).query();
         // u2's platform-free tree type and the API's are the same shape, spelled apart
@@ -178,9 +197,10 @@ function domainTablePane(): HTMLElement {
       if (Filters.count(tree.peek()) > 0)
         start();
       return [
-        ...editors(schema, tree, 'domain', 'name like "a" and created_on > -1m', 'domain'),
+        ...filter.roots,
         divH([button('Count', start, {primary: true})], 'u2demo-row'),
         readout('rows', count),
+        readout('problem', computed(() => message.value || '(none)')),
       ];
     });
     host.replaceChildren(pane.root);

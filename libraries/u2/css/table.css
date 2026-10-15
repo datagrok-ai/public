@@ -11,9 +11,16 @@
   outline: none;
 }
 
-.u2-table:focus {
+.u2-table:focus-visible {
   outline: var(--dg-focus-ring);
   outline-offset: calc(-1 * var(--dg-focus-ring-width));
+}
+
+/* `fixedLayout`: the table takes its host's width and columns share it, so a long cell ends in
+   an ellipsis instead of widening the table */
+.u2-table-fixed {
+  table-layout: fixed;
+  width: 100%;
 }
 
 .u2-table th,
@@ -32,6 +39,13 @@
   color: var(--dg-text-color-light);
   font-size: var(--dg-font-size-small);
   font-weight: var(--dg-font-weight-regular);
+}
+
+.u2-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--dg-bg);
 }
 
 .u2-table .u2-table-align-right {
@@ -58,6 +72,13 @@
 .u2-table-row-selected:hover {
   background: var(--dg-selection-bg);
   color: var(--dg-selection-text);
+}
+
+/* a section header (`{section}` item): spans the columns, reads like the property grid's category */
+.u2-table .u2-table-section th {
+  color: var(--dg-text-color);
+  font-weight: var(--dg-font-weight-bold);
+  background: var(--dg-bg-secondary);
 }
 
 /* key/value table (tableFromMap): no separators, muted keys; values wrap next to their keys

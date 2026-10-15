@@ -7,7 +7,7 @@ export type {DomainListOptions, DomainListMode} from './list.js';
 export {DomainPick, PickInput} from './pick.js';
 export type {DomainPickOptions, PickInputOptions, PickItem} from './pick.js';
 export type {SessionTarget, SessionButtonOptions} from './buttons.js';
-export {registerDomainComponents, registerEmsComponents} from './registrations.js';
+export {emsPlugin, installEms, registerDomainComponents, registerEmsComponents} from './registrations.js';
 export {DomainSearch} from './search.js';
 export type {DomainSearchOptions} from './search.js';
 export {DomainFilters} from './filters.js';

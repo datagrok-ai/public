@@ -24,8 +24,10 @@ Dependencies run `ems → u2 → datagrok-api`; u2 never imports this library.
 
 ## Registration
 
-`registerEmsComponents()` adds the source and every `u2-domain-*` control. The tags keep their
-`u2-` names so stored specs still resolve.
+`installEms()` adds the source and every `u2-domain-*` control to a registry (the global one by
+default) — once, as a `registry.use()` plugin that also brings the ems unit of work to every spec
+rendered over it — and answers the uninstall. The tags keep their `u2-` names so stored specs
+still resolve.
 
 ## Development
 

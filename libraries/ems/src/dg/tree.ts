@@ -75,7 +75,7 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     // clicking the selected node again, and Escape, clear the selection — a tree is a navigator,
     // and "nothing selected" (the whole table) is one of its states. Capture, so the list's own
     // click handler does not re-select the row on the way down.
-    this._listen('click', (e) => {
+    this.scope.listen(this.root, 'click', (e) => {
       const target = e.target as Element | null;
       if (target === null || target.closest('.u2-tree-twistie') !== null)
         return;
@@ -84,13 +84,13 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
         return;
       e.stopPropagation();
       this.tree.clearSelection();
-    });
-    this._listen('keydown', (e) => {
+    }, {capture: true});
+    this.scope.listen(this.root, 'keydown', (e) => {
       if ((e as KeyboardEvent).key !== 'Escape' || this.tree.selectedNode.peek() === null)
         return;
       e.stopPropagation();
       this.tree.clearSelection();
-    });
+    }, {capture: true});
     this.effect(() => {
       const problem = this._error.value;
       if (this._loading.value)
@@ -184,12 +184,6 @@ export class DomainTree<TRow extends DomainRowLike = DomainRowLike> extends Cont
     const nodes = rows.map((row) => this._node(row as unknown as RowView<TRow>));
     const all = this._options.allNode;
     return id === null && all !== undefined ? [{id: ALL, label: all, tooltip: all}, ...nodes] : nodes;
-  }
-
-  /** Capture phase on the tree's own root, which is above the list's handlers. */
-  private _listen(type: string, handler: (e: Event) => void): void {
-    this.root.addEventListener(type, handler, true);
-    this.own(() => this.root.removeEventListener(type, handler, true));
   }
 
   private _node(row: RowView<TRow>): TreeNode<RowView<TRow>> {

@@ -1,5 +1,11 @@
 /* Fluent primitives skin — buttons, links, panels. Tokens only; css/tokens.css must be
    loaded alongside. Metrics codify the current platform (ui.css .ui-btn / .ui-link / .ui-panel). */
+
+/* `visible = false` is the `hidden` attribute; a root whose class sets `display` would show anyway */
+.u2-component[hidden] {
+  display: none !important;
+}
+
 .u2-div-v {
   display: flex;
   flex-direction: column;
@@ -16,6 +22,8 @@
   padding: var(--dg-space-l);
 }
 
+/* the platform's 4px `ui-btn` margin is left to the containers, which space their buttons with a
+   gap */
 .u2-btn {
   box-sizing: border-box;
   display: inline-flex;
@@ -23,12 +31,11 @@
   justify-content: center;
   flex-shrink: 0;
   gap: var(--dg-space-s);
-  height: var(--dg-button-height);
+  height: var(--dg-control-height);
   padding: 0 var(--dg-space-m);
   font-family: var(--dg-font-family);
-  font-size: var(--dg-font-size-xs);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: var(--dg-font-size);
+  font-weight: var(--dg-font-weight-bold);
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--dg-accent);
@@ -53,15 +60,23 @@
   pointer-events: none;
 }
 
+/* `ui-btn-raised`: accent fill, regular weight, the platform's hover and press filters */
 .u2-btn-primary {
+  font-weight: var(--dg-font-weight-regular);
   color: var(--dg-white);
-  background: var(--dg-accent-secondary);
+  background: var(--dg-accent);
 }
 
-.u2-btn-primary:hover:not(:disabled),
+.u2-btn-primary:hover:not(:disabled) {
+  color: var(--dg-white);
+  background: var(--dg-accent);
+  filter: contrast(90%) brightness(110%);
+}
+
 .u2-btn-primary:active:not(:disabled) {
   color: var(--dg-white);
   background: var(--dg-accent);
+  filter: brightness(85%);
 }
 
 .u2-btn-primary:disabled {

@@ -3,6 +3,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
 import {ListInput} from '../src/components/inputs/list-input.js';
@@ -210,4 +211,30 @@ smoke('a disabled map input stays disabled through a programmatic write', () => 
   for (let i = 0; i < cells.length; i++)
     assert.equal(cells[i].disabled, true, 'rebuilt rows keep the disabled state');
   input.dispose();
+});
+
+smoke('MapInput: required — no keys is empty, invalid once touched; a key makes it valid', async () => {
+  const input = mount(new MapInput({label: 'Params', required: true}));
+  assert.equal(input.getState().valid, false);
+  assert.equal(input.getState().error, null, 'not shown before a touch');
+  type(keys(input)[0], 'solvent');
+  assert.equal(input.getState().valid, true);
+  type(keys(input)[0], '');
+  assert.equal(input.getState().valid, false);
+  assert.notEqual(input.getState().error, null, 'the edit touched it');
+  input.dispose();
+});
+
+test('MapInput shrinks into a narrow row: the captioned box grows from 0 to the editor floor, its cells give up their width', () => {
+  const sheet = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const rule = (selector) => {
+    const at = sheet.indexOf(selector);
+    assert.notEqual(at, -1, `${selector} is a rule`);
+    return sheet.slice(sheet.indexOf('{', at) + 1, sheet.indexOf('}', at));
+  };
+  const box = rule(".u2-input-root:not(.u2-input-inline)[data-u2='map-input'] > .u2-input-box");
+  assert.match(box, /flex: 1 1 0;/);
+  assert.match(box, /min-width: var\(--dg-form-min-editor-width\);/);
+  assert.match(rule(".u2-input-root:not(.u2-input-inline)[data-u2='map-input'] .u2-map-value"), /width: 0;/);
+  assert.match(rule('.u2-input-editor.u2-map {'), /min-width: 0;/);
 });

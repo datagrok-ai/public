@@ -53,6 +53,8 @@ export class DomainList extends Control {
     this.list = this.runInScope(() => new VirtualList<RowView>({
       itemHeight,
       keyOf: (row) => row.id,
+      // a row is a live proxy over the frame: an edit changes it without a new object
+      liveItems: true,
       render: (row, _index, el) => this._row(row, el),
       // with several rows picked the menu is two submenus and nothing flat: "Aspirin ▸" is the
       // clicked row, "2 issues ▸" the selection — either target named, neither of them implied
