@@ -1,5 +1,9 @@
 # API Tests changelog
 
+## v.next
+
+* GROK-21058: Resolve renderers of grid-less value cells without dereferencing a null grid column
+
 ## 1.10.3 (WIP)
 
 U2: `u2/u2.ts` covers `DG.U2.debug` snapshot/diff, `Scope.bind` after dispose, `DG.U2.state` of a control, the state a `DG.Widget` status carries, and `Widget.onEvent` seeing `fireEvent`
