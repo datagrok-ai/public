@@ -7,6 +7,7 @@ import './tests/scatterplot-gpu-tests';
 import './tests/summary-columns-tests';
 import './tests/forms-tests';
 import './tests/binary-image-tests';
+import './tests/piechart-tests';
 
 
 export const _package = new DG.Package();
