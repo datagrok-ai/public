@@ -1,6 +1,6 @@
 # Tutorials changelog
 
-## v.next
+## 1.11.7 (2026-10-15)
 
 * Sticky Meta: Fixed the Annotate dataset step not completing
 * Differential Equations, Parameter Optimization, Sensitivity Analysis: Report the missing Diff Studio or Compute2 package before starting instead of stopping silently at step 2
