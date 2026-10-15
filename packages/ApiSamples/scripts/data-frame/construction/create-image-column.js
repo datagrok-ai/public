@@ -1,8 +1,9 @@
-// Note that bytearray column is empty by default and cant be created so far with Column.fromList method
-// double click on cell to insert image
+// A byte array column holds binary values; PowerGrid draws PNG, JPEG, GIF, WebP and BMP bytes as pictures.
+// Double-click an image to preview or replace it, or an empty cell to pick an image file.
 
-let t = DG.DataFrame.fromColumns([
-  DG.Column.fromStrings('images', ['im1', 'im2', 'im3']),
-  DG.Column.fromType(DG.COLUMN_TYPE.BYTE_ARRAY, 'byte array col', 3),
+const photo = await grok.dapi.files.readAsBytes('System:DemoFiles/images/cats/cat1.jpg');
+const t = DG.DataFrame.fromColumns([
+  DG.Column.fromStrings('name', ['cat', 'empty']),
+  DG.Column.fromList(DG.COLUMN_TYPE.BYTE_ARRAY, 'image', [photo, null]),
 ]);
 grok.shell.addTableView(t);

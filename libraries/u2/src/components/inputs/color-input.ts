@@ -16,10 +16,10 @@ export interface ColorInputOptions extends InputOptions<string> {
  * the options rail right of it, and `swatchOnly` hides the field and drops the rail underline, as
  * `ui-input-color-box-only` does (`ui.css:256-260,898-901`). */
 export class ColorInput extends Input<string, ColorInputOptions> {
-  private _text!: HTMLInputElement;
-  private _picker!: HTMLInputElement;
-  private _swatch!: HTMLElement;
-  private _bad!: Signal<boolean>;
+  private declare _text: HTMLInputElement;
+  private declare _picker: HTMLInputElement;
+  private declare _swatch: HTMLElement;
+  private declare _bad: Signal<boolean>;
 
   constructor(options: ColorInputOptions = {}) {
     super(options, '#000000');
@@ -50,30 +50,32 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     picker.tabIndex = -1;
     picker.setAttribute('aria-hidden', 'true');
 
+    // set by a typed write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
-      if (!echo)
+      if (echo)
+        echo = false;
+      else {
+        // a value set from outside replaces what was typed, its "not a color" included
         text.value = value;
+        this._bad.value = false;
+      }
       this._paint(value);
     });
-    this._listen(text, 'input', () => {
+    this.scope.listen(text, 'input', () => {
       const typed = text.value.trim();
       this._bad.value = !HEX.test(typed);
-      if (this._bad.peek())
+      if (this._bad.peek() || typed === this.value.peek())
         return;
       echo = true;
-      try {
-        this.value.value = typed;
-      } finally {
-        echo = false;
-      }
+      this.value.value = typed;
     });
-    this._listen(picker, 'input', () => {
+    this.scope.listen(picker, 'input', () => {
       this._bad.value = false;
       this.value.value = picker.value;
     });
-    this._listen(swatch, 'click', () => picker.click());
+    this.scope.listen(swatch, 'click', () => picker.click());
 
     const box = document.createElement('span');
     box.className = 'u2-color-box';
@@ -88,6 +90,12 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     return text;
   }
 
+  protected resetEditor(): void {
+    this._bad.value = false;
+    this._text.value = this.value.peek();
+    this._paint(this.value.peek());
+  }
+
   private _paint(color: string): void {
     this._swatch.style.background = color;
     this._picker.value = ColorInput.toHex6(color);
@@ -98,10 +106,5 @@ export class ColorInput extends Input<string, ColorInputOptions> {
     const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(color);
     return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`.toLowerCase() :
       color.toLowerCase();
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

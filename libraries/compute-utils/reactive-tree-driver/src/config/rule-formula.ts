@@ -1,8 +1,8 @@
 import {Grammars, IToken, Parser} from 'ebnf';
 import {RestrictionType} from '../data/common-types';
-import {driverOpNames, isLiteral} from '../runtime/rule-expressions';
+import {driverOpNames, isLiteral, scopedOps} from '../runtime/rule-expressions';
 import {
-  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource,
+  PipelineCheckConfiguration, PipelineRuleConfiguration, RuleEffect, RuleExpr, RuleLogic, RuleSource, SourceKind,
 } from './PipelineConfiguration';
 
 /* eslint-disable max-len */
@@ -44,12 +44,9 @@ export const formulaOps = new Set([
   ...driverOpNames,
 ]);
 
-// the element of these ops' second argument is `$it`; `reduce` reads `current` and `accumulator` instead
-const elementOps = new Set(['map', 'filter', 'all', 'some', 'none']);
 const ELEMENT = '$it';
 
 type EffectName = RuleEffect['effect'];
-type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
 
 // the effect object behind a name; found by membership because hide and show share one shape
 type EffectOf<E extends EffectName> = RuleEffect extends infer R ? R extends {effect: infer N} ?
@@ -205,7 +202,7 @@ function expression(node: IToken, text: string, inElement = false): any {
     const op = has(renamed, name) ? renamed[name] : name;
     // the second argument of an array op runs over each element, which reduce reads as current, not $it
     const scoped = (arg: IToken, idx: number) => {
-      if (idx === 1 && (elementOps.has(name) || name === 'reduce'))
+      if (idx === 1 && scopedOps.has(name))
         return expression(arg, text, name !== 'reduce');
       return expression(arg, text, inElement);
     };

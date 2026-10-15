@@ -3,6 +3,7 @@ import * as DG from 'datagrok-api/dg';
 import {signal, computed, Scope, div, divV, divH, span, h3, button} from '@datagrok-libraries/u2';
 import {funcForm, FuncCallForm, functionsBrowser} from '@datagrok-libraries/u2/src/dg/index.js';
 import {ensureFuncs, ensureTable, fmt, gateTitle, prose} from './func-convergence';
+import {readout} from './pages/common';
 
 const INTRO = 'One FuncCall, two editors: the platform\'s `DG.InputForm.forFuncCall` on the ' +
   'left, u2\'s `funcForm` on the right — both edit the same freshly prepared call, so an edit ' +
@@ -158,8 +159,7 @@ export function funcsPage(): HTMLElement {
               gate.invalidFields.value);
           });
         }
-        const status = divH([span(computed(() => failed.value ? '' : 'result = ')), span(result)],
-          'u2demo-status');
+        const status = readout('result', result);
         Scope.ambient!.effect(() => status.classList.toggle('u2demo-error', failed.value));
         detail.append(divH([run], 'u2demo-row'), status);
       });

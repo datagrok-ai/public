@@ -4,9 +4,10 @@ Feature: Sequence Space
   scatter plot over them; run with the defaults, then again with another method and metric — the
   second run must be a second result, computed with what was edited, clustered again.
 
-  Not translated, and why: the HELM and MSA runs of the manual cases are in other-notations. The
-  project save and reopen of the result (bio-lifecycle-macromolecule-column S3, GROK-19928)
-  belongs to the Bio project round-trip scenarios, not to this feature.
+  The HELM and MSA runs of the manual cases are tested in Bio src/tests/sequence-space-test.ts
+  ('sequenceSpaceHelm', 'sequenceSpaceMsa'), the project save and reopen of the result
+  (bio-lifecycle-macromolecule-column S3, GROK-19928) in src/tests/projects-tests.ts
+  ('sequence_space').
 
   Background:
     Given user is logged in

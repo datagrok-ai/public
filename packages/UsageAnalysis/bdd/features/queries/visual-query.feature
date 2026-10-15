@@ -9,13 +9,13 @@ Feature: A visual query built on a table
   The query is named with the run's time and removed when the feature ends; @serial for the same
   reason as the other features that save into NorthwindTest.
 
-  Not translated, and why: the Where condition and its "Expose as function parameter" checkbox
-  carry no names, and the rows of a picker opened inside the row-table menu of a joined query
-  cannot be typed into — both are in the core PR of this round, and the join scenarios wait for
-  them. The Debug tab's log is not claimed: it reports nothing a step could read yet.
+  The Where condition exposed as a function parameter, Pivot and Having, the columns of a joined
+  table, and the saved query's share, layout and preview are visual-query-parameter.feature, on the
+  platform's own database. The Debug tab's log is not claimed: it reports nothing a step could read yet.
 
   Background:
     Given user is logged in
+    And the stand has a reachable "PostgresTest" connection
     And the browse panel is open
     And no query named "BDD-Q-vq-{time}" is on the server
 
@@ -40,7 +40,7 @@ Feature: A visual query built on a table
     And user clicks on Save button
     Then 1 query named "BDD-Q-vq-{time}" should be on the server
     Given the toolbox pane is shown
-    When user clicks on "Run query..." action in toolbox
+    When user clicks on "Run query..." action in toolbox and the query it runs completes
     Then the current view should be a TableView view
     And the table should have 91 rows
     And the table should have a column "companyname"

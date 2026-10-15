@@ -4,8 +4,10 @@ Feature: Control comparisons
   Asian control, Dunnett by default. Translated from the package's
   playwright/control-comparisons.test.ts; there is no Test Track case for it.
 
-  The group sizes count nonmissing AGE values: 157 Black, 5266 Caucasian and 354 Other. What a
-  filtered run should count is filtered-group-comparison.feature.
+  The comparison's statistics are tested in EDA src/tests/control-comparisons-tests.ts
+  ('Control comparisons: demog.csv references'). The group sizes count nonmissing AGE values: 157
+  Black, 5266 Caucasian and 354 Other. What a filtered run should count is
+  filtered-group-comparison.feature.
 
   Background:
     Given user is logged in
@@ -28,20 +30,12 @@ Feature: Control comparisons
     And table "Control comparisons result" should be open
     And table "Control comparisons result" should have 3 rows
     And table "Control comparisons result" should have columns "Conclusion, Group, n, Mean diff, 95% CI low, 95% CI high, t, df, p (raw), p (adj), Hedges' g"
-    And table "Control comparisons result" should have no missing values in "Mean diff" column
-    And table "Control comparisons result" should have no missing values in "95% CI low" column
-    And table "Control comparisons result" should have no missing values in "95% CI high" column
-    And table "Control comparisons result" should have no missing values in "t" column
-    And table "Control comparisons result" should have no missing values in "df" column
-    And table "Control comparisons result" should have no missing values in "p (raw)" column
-    And table "Control comparisons result" should have no missing values in "p (adj)" column
-    And table "Control comparisons result" should have no missing values in "Hedges' g" column
     And second grid viewer should be bound to table "Control comparisons result"
     And the "text of cell 1 of Group" reading of second grid viewer should be "Black"
-    And the "text of cell 1 of n" reading of second grid viewer should be "157"
     And the "text of cell 2 of Group" reading of second grid viewer should be "Caucasian"
-    And the "text of cell 2 of n" reading of second grid viewer should be "5266"
     And the "text of cell 3 of Group" reading of second grid viewer should be "Other"
+    And the "text of cell 1 of n" reading of second grid viewer should be "157"
+    And the "text of cell 2 of n" reading of second grid viewer should be "5266"
     And the "text of cell 3 of n" reading of second grid viewer should be "354"
     And no error or warning balloon should have been shown
     And no errors should have been logged

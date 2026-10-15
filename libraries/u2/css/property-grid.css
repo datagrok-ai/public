@@ -56,11 +56,19 @@
   min-width: 0;
 }
 
+/* the number field's own 150px cap (css/number.css) would leave it short of the other rows */
+.u2-propgrid-editor .u2-input-editor.u2-number {
+  max-width: none;
+}
+
 /* the editor sits inside the options box, so the box is the flex child that has to fill the cell —
-   the row's own box, not one belonging to an input nested inside a composite editor */
+   the row's own box, not one belonging to an input nested inside a composite editor. The floor
+   keeps the full-width error line off the editor's line: at 0px the two fit on one and the editor
+   collapses */
 .u2-propgrid-editor > .u2-input-root > .u2-input-box {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 60px;
+  max-width: none;
 }
 
 .u2-propgrid-category {

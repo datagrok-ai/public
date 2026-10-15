@@ -38,7 +38,8 @@ export function formPage(): HTMLElement {
 }
 
 export function propertyGridPage(): HTMLElement {
-  const pg = new PropertyGrid();
+  const lastChange = signal('(none)');
+  const pg = new PropertyGrid({onChanged: (c) => lastChange.value = `${c.name} → ${String(c.value)}`});
   pg.setProperties([
     {name: 'title', type: 'string', description: 'Viewer title'},
     {name: 'opacity', type: 'double', min: 0, max: 1},
@@ -52,10 +53,7 @@ export function propertyGridPage(): HTMLElement {
     h3('PropertyGrid'),
     span('The value record is replaced on every edit — bind to it directly.', 'u2demo-hint'),
     pg,
-    readout('last change', computed(() => {
-      const c = pg.onChanged.value;
-      return c ? `${c.name} → ${String(c.value)}` : '(none)';
-    })),
+    readout('last change', lastChange),
     readout('values', computed(() => JSON.stringify(pg.values.value))),
   ], 'u2demo-page');
 }

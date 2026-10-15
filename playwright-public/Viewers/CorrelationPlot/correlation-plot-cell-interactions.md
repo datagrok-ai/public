@@ -59,7 +59,7 @@ expected_results:
       tooltip (not a correlation R value tooltip).
   - anchor: "Scenario 4 Step 2"
     expectation: >-
-      The right-click context menu on a correlation cell contains Show Pearson R
+      The right-click context menu on a correlation cell contains Show Coefficients
       as a toggle item, a Tooltip submenu with Edit..., Visible, and
       Properties... as items, and a Columns submenu with X Columns and Y Columns
       entries.
@@ -177,7 +177,7 @@ Expected:
 Steps:
 1. Right-click the center of an off-diagonal correlation cell.
 2. Confirm the context menu opens. Verify that the following items are present
-   in the menu: the **Show Pearson R** toggle item, the **Columns** submenu
+   in the menu: the **Show Coefficients** toggle item, the **Columns** submenu
    entry containing X Columns and Y Columns, and the **Tooltip** submenu entry.
 3. Expand the **Tooltip** submenu (hover or click the Tooltip group item).
 4. Confirm the Tooltip submenu contains at minimum: **Edit...**, **Visible**,
@@ -193,7 +193,7 @@ Steps:
 8. Close the context menu if still open (press Escape or click elsewhere).
 
 Expected:
-- The context menu contains Show Pearson R, a Columns submenu with X/Y Columns,
+- The context menu contains Show Coefficients, a Columns submenu with X/Y Columns,
   and a Tooltip submenu with Edit..., Visible, Properties... (Step 2-4).
 - Clicking Tooltip > Edit... opens the "Edit Tooltip" modal which closes without
   errors (Step 5).

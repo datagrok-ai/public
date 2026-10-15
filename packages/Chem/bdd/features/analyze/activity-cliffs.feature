@@ -3,12 +3,14 @@ Feature: Activity Cliffs over molecules and their activity
   Chem | Analyze | Activity Cliffs... opens on the molecule column of activity-cliffs (29 molecules in
   smiles with an Activity column) with UMAP, Tanimoto and a similarity cutoff of 80. OK embeds the
   molecules, plots them, and reports the cliffs it found on the plot; the cliff link opens the
-  Activity cliffs panel. Show only cliffs keeps the rows that take part in one
-  and switching it off lets every row through again. The similarity cutoff decides how many pairs count as
-  cliffs: 52 of them at 20, two at the default 80 and one at 95. A fresh table carries each run,
-  since a second run plots itself beside the first. The command ends once the plot is added; the
-  plot's initialization then finds the cliffs, adds the SALI column and only then reports them, so
-  each count is read after that column is there.
+  Activity cliffs panel. Show only cliffs keeps the rows that take part in one and switching it off
+  lets every row through again. The similarity cutoff the dialog takes decides how many pairs count
+  as cliffs: two at the default 80 and one at 95, on a fresh table, since a second run plots itself
+  beside the first. The command ends once the plot is added; the plot's initialization then finds
+  the cliffs, adds the SALI column and only then reports them, so each count is read after that
+  column is there.
+
+  The counts at the cutoffs 20 and 95 are tested in Chem src/tests/menu-tests-cliffs.ts 'activityCliffs.cutoff20' and 'activityCliffs.cutoff95'.
 
   Background:
     Given user is logged in
@@ -49,17 +51,6 @@ Feature: Activity Cliffs over molecules and their activity
     When user switches off "Show only cliffs" input
     Then the "only cliffs" reading of scatter plot viewer should be "false"
     And all rows should pass the filter
-    And no errors should have been logged
-
-  Scenario: A lower similarity cutoff finds many more cliffs
-    Given user opens activity-cliffs dataset
-    When user picks "Chem > Analyze > Activity Cliffs..." from the top menu
-    And user enters "20" into "Similarity cutoff" input in "Activity Cliffs" dialog
-    Then "Similarity cutoff" input in "Activity Cliffs" dialog should have value "20"
-    When user clicks on OK button in "Activity Cliffs" dialog
-    Then the top menu command should have completed
-    And a new column matching "^sali_" should have been added
-    And the "cliffs" reading of scatter plot viewer should be 52
     And no errors should have been logged
 
   Scenario: A stricter similarity cutoff finds fewer

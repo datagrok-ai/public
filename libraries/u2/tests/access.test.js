@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/core/scope.js';
 import {Access} from '../src/core/access.js';
+import {Rows} from '../src/sources/rows-like.js';
 import {rowActions, actionsMenu} from '../src/components/actions/actions.js';
 
 function scoped(name, body) {
@@ -111,6 +112,20 @@ scoped('field folds the write capability in: editable needs edit on a row, inser
   assert.equal(draft.forDraft(), draft, 'already the draft view');
   assert.equal(draft.row({'~can_edit': false}).field('title'), 'editable',
     'a row narrowing edit keeps the draft view, which gates on insert');
+
+  // an immutable field (the key of an external table) is typed once, on the draft
+  const keyed = Access.from({can: {view: true, insert: true, edit: true, delete: false, share: false},
+    fields: {key: 'immutable', title: 'editable'}});
+  assert.equal(keyed.field('key'), 'readonly', 'a saved row: the key is text');
+  assert.equal(keyed.forDraft().field('key'), 'editable', 'a draft: the key is an input');
+  assert.equal(keyed.row({[Rows.STATE]: 'new'}).field('key'), 'editable', 'the editor\'s draft row too');
+  assert.equal(keyed.row({'~can_edit': true}).field('key'), 'readonly', 'a row grant does not reopen it');
+  assert.equal(keyed.columnPolicy().field('key'), 'readonly',
+    'column security alone: still a saved row; a draft policy answers editable');
+  assert.equal(keyed.columnPolicy().forDraft().field('key'), 'editable', 'the draft policy: an input');
+  const noInsert = Access.from({can: {view: true, insert: false, edit: true, delete: false, share: false},
+    fields: {key: 'immutable'}});
+  assert.equal(noInsert.forDraft().field('key'), 'readonly', 'no insert right: the write fold still applies');
 
   // a draft reports itself through the editor's state column: its ~can_* cells are the frame's
   // defaults, not truth, so row() answers the draft view whatever they hold

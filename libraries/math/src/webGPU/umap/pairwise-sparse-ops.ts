@@ -1,4 +1,5 @@
 import {getGPUDevice} from '../getGPUDevice';
+import {WORKGROUP_DIM} from '../workgroup';
 
 /* eslint-disable max-len */
 
@@ -27,7 +28,7 @@ export async function pairwiseOpSparse(
   op: '+' | '*' | '-' | '/'
 ) {
   // this function is only meant for regular knn matrix, not for sparse matrix for of knn.
-  const threadsPerWorkgroupDim = 10;
+  const threadsPerWorkgroupDim = WORKGROUP_DIM;
   const threadsPerWorkgroup = threadsPerWorkgroupDim * threadsPerWorkgroupDim;
   const requiredWorkgroups = Math.ceil(numOfEntries / threadsPerWorkgroup);
   const numOfWorkgroupsPerDim = Math.ceil(Math.sqrt(requiredWorkgroups));

@@ -166,6 +166,13 @@ export const getPropViewers = (prop: DG.Property): {name: string, config: Record
     {name: prop.name, config: []};
 };
 
+// Graphics values are either a base64 PNG or SVG markup; '<' is outside the base64 alphabet
+export const isSvgGraphics = (value: string) => value.trimStart().startsWith('<');
+
+export const graphicsDataUrl = (value: string) => isSvgGraphics(value) ?
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(value)}` :
+  `data:image/png;base64,${value}`;
+
 export const getFuncCallDefaultFilename = (funcCall: DG.FuncCall) => {
   return `${funcCall.func.nqName} - ${getStartedOrNull(funcCall) ?? 'Not completed'}.xlsx`;
 };

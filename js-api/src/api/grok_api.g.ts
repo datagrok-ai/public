@@ -1047,6 +1047,7 @@ export interface IDartApi {
   grok_BrowsePanel_Get_LocalTree(view: any): any;
   grok_BrowsePanel_Get_MainTree(view: any): any;
   grok_BrowsePanel_BindItemTooltip(view: any, content: any, el: any): any;
+  grok_BrowsePanel_ExpandPath(view: any, path: String): Promise<any>;
   grok_InfoPanels_GetAccordion(x: any): any;
   grok_TreeViewGroup_Load_Sources(node: any, source: any): Promise<any>;
   grok_ReportsRule_Add_Dialog(): Promise<any>;
@@ -1177,6 +1178,7 @@ export interface IDartApi {
   grok_Dapi_Log_CloudLogEvents(connection: String, group: String, start: any, end: any, filter: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveObjects(connection: String, prefix: String, limit: Num): Promise<any>;
   grok_Dapi_Log_ArchiveEvents(connection: String, key: String): Promise<any>;
+  grok_Dapi_Log_Timeline(query: String): Promise<any>;
   grok_Dapi_LogTypes(): any;
   grok_Dapi_Dockers(): any;
   grok_Dapi_DockerImages(): any;
@@ -1229,6 +1231,7 @@ export interface IDartApi {
   grok_Dapi_Get_CurrentUserGroups(): Promise<any>;
   grok_Dapi_Get_Permissions(e: any): Promise<any>;
   grok_Dapi_Check_Permissions(e: any, permission: String): Promise<any>;
+  grok_Dapi_Check_Global_Permission(permission: String): Promise<any>;
   grok_Dapi_Set_Permission(e: any, g: any, edit: Bool): Promise<any>;
   grok_Dapi_Delete_Permission(e: any, g: any): Promise<any>;
   grok_LayoutsDataSource_Applicable(s: any, t: any): Promise<any>;
@@ -1264,7 +1267,7 @@ export interface IDartApi {
   grok_Dapi_Domains_Query(c: any, schema: String, table: String, spec: any): Promise<any>;
   grok_Dapi_Domains_GetRow(c: any, schema: String, table: String, id: String, withAccess: Bool, deleted: String): Promise<any>;
   grok_Dapi_Domains_Insert(c: any, schema: String, table: String, rows: any, errorOnDuplicate: Bool): Promise<any>;
-  grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, version: Num): Promise<any>;
+  grok_Dapi_Domains_Patch(c: any, schema: String, table: String, id: String, values: any, options: any): Promise<any>;
   grok_Dapi_Domains_Delete(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Restore(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_DeleteWhere(c: any, schema: String, table: String, filter: any, limit: any): Promise<any>;
@@ -1286,11 +1289,17 @@ export interface IDartApi {
   grok_Dapi_Domains_Watch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_Unwatch(c: any, schema: String, table: String, id: String): Promise<any>;
   grok_Dapi_Domains_IsWatching(c: any, schema: String, table: String, id: String): Promise<any>;
-  grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String): Promise<any>;
+  grok_Dapi_Domains_CreateSchema(c: any, name: String, friendlyName: String, description: String, options: any): Promise<any>;
+  grok_Dapi_Domains_DraftSchema(c: any, body: any): Promise<any>;
+  grok_Dapi_Domains_DraftFor(c: any, schema: String, tables: any): Promise<any>;
+  grok_Dapi_Domains_SchemaAccess(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_ValidateSchema(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_GetManifest(c: any, schema: String): Promise<any>;
   grok_Dapi_Domains_ApplySchema(c: any, schema: String, body: any, dryRun: Bool): Promise<any>;
   grok_Dapi_Domains_SchemaAudit(c: any, schema: String, limit: any): Promise<any>;
-  grok_Dapi_Domains_DeleteSchema(c: any, schema: String): Promise<any>;
+  grok_Dapi_Domains_DeleteSchema(c: any, schema: String, ifIncarnation: String): Promise<any>;
+  grok_Dapi_Domains_SchemaCreated(c: any, name: String): any;
+  grok_Dapi_Domains_SchemaAltered(c: any, name: String): any;
   grok_Dapi_Domains_TableGrants(c: any, schema: String, table: String): Promise<any>;
   grok_Dapi_Domains_TableGrant(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
   grok_Dapi_Domains_TableRevoke(c: any, schema: String, table: String, group: String, permission: String): Promise<any>;
@@ -1307,6 +1316,7 @@ export interface IDartApi {
   grok_DomainSchema_Get_PgSchema(s: any): any;
   grok_DomainSchema_Get_ManagedBy(s: any): any;
   grok_DomainSchema_Get_Version(s: any): any;
+  grok_DomainSchema_Get_Description(s: any): any;
   grok_DomainSchema_Get_Tables(s: any): any;
   grok_DomainTable_Get_Schema(t: any): any;
   grok_DomainTable_Get_SecurityMode(t: any): any;
@@ -1850,6 +1860,7 @@ export interface IDartApi {
   grok_DataConnection_Query(c: any, name: String, sql: String): any;
   grok_DataConnection_Get_Credentials(c: any): any;
   grok_DataConnection_Get_DataSource(c: any): any;
+  grok_DataConnection_Get_IsDatabase(c: any): any;
   grok_DataConnection_Test(c: any): Promise<any>;
   grok_Credentials_Parameters(c: any): any;
   grok_Credentials_OpenParameters(c: any): any;

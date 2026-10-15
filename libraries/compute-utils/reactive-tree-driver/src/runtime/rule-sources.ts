@@ -2,7 +2,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import dayjs from 'dayjs';
 import {IControllerBase} from '../RuntimeControllers';
-import {RuleExpr, RuleSource} from '../config/PipelineConfiguration';
+import {RuleExpr, RuleSource, SourceKind} from '../config/PipelineConfiguration';
 import {evaluate, RuleContext, usedAliases} from './rule-expressions';
 
 export type ValidatorVerdict = {message: string, isError: boolean, isHelper: boolean};
@@ -251,7 +251,19 @@ async function resolveQuery(spec: QuerySource, ctx: RuleContext) {
   return connection.query('adhoc', sql).apply(args);
 }
 
-const sourceKinds = ['validators', 'choices', 'js', 'func', 'query', 'file', 'table'];
+type SourceSpec<K extends SourceKind> = Extract<RuleSource, Record<K, unknown>>[K];
+type SourceResolver = (controller: IControllerBase, spec: any, ctx: RuleContext) => any;
+
+// typed per kind, so a new RuleSource kind fails the build until it gets a resolver
+const resolvers: {[K in SourceKind]: (controller: IControllerBase, spec: SourceSpec<K>, ctx: RuleContext) => any} = {
+  validators: (controller, spec) => resolveValidators(controller, spec),
+  choices: (controller, spec) => resolveChoices(controller, spec),
+  js: (controller, spec) => resolveJs(controller, spec),
+  func: (_controller, spec, ctx) => resolveFunc(spec, ctx),
+  query: (_controller, spec, ctx) => resolveQuery(spec, ctx),
+  file: (_controller, spec) => resolveFile(spec),
+  table: (_controller, spec) => resolveTable(spec),
+};
 
 /** Resolves the values a rule declares in `sources`; each alias becomes a context variable.
  *  Returns a plain object when nothing had to be awaited. */
@@ -261,21 +273,15 @@ export function resolveSources(
   const resolved: Record<string, any> = {};
   const pending: Promise<void>[] = [];
   for (const [alias, source] of Object.entries(sources ?? {})) {
-    if (!sourceKinds.some((kind) => kind in source))
-      throw new Error(`Unknown rule source ${JSON.stringify(source)} for alias ${alias}`);
     const cache = controller.sourceCache;
     const constant = !!cache && isConstant(source);
     let value: any;
     if (constant && cache.has(alias))
       value = cache.get(alias);
     else {
-      value = 'js' in source ? resolveJs(controller, source.js) :
-        'func' in source ? resolveFunc(source.func, ctx) :
-          'query' in source ? resolveQuery(source.query, ctx) :
-            'file' in source ? resolveFile(source.file) :
-              'table' in source ? resolveTable(source.table) :
-                'choices' in source ? resolveChoices(controller, source.choices) :
-                  resolveValidators(controller, source.validators);
+      // expandRule has checked the source, so it has exactly one known kind
+      const kind = Object.keys(source)[0] as SourceKind;
+      value = (resolvers[kind] as SourceResolver)(controller, (source as Record<SourceKind, unknown>)[kind], ctx);
       if (constant) {
         cache.set(alias, value);
         if (value instanceof Promise)

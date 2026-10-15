@@ -24,7 +24,7 @@ async function resetToAromaTextFilter(page: Page): Promise<void> {
     {timeout: 30_000, polling: 50});
   await addCardViaPicker(page, 'Aroma');
   await page.waitForFunction(() => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent ?? '').trim() === 'Aroma');
     if (!card) return false;
     if (!card.querySelector('.d4-text-filter')) return false;
@@ -35,7 +35,7 @@ async function resetToAromaTextFilter(page: Page): Promise<void> {
 
 async function addAromaTerm(page: Page, term: string): Promise<number> {
   return page.evaluate(async (t) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const input = card.querySelector('.d4-search-input') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
@@ -51,7 +51,7 @@ async function addAromaTerm(page: Page, term: string): Promise<number> {
 
 async function setAromaFuzziness(page: Page, value: number, capMs = 1800): Promise<number> {
   return page.evaluate(async ({val, capMs}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => ((c.querySelector('.d4-filter-column-name'))?.textContent || '').trim() === 'Aroma') as HTMLElement;
     const range = card.querySelector('input[type="range"]') as HTMLInputElement;
     const setInp = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;

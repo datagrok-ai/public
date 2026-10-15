@@ -6,7 +6,8 @@
    is what this step adds, and it is the claim that shows a bound the slider clamped is still
    displayed as the user typed it. Everything else in the histogram features is the library's
    `viewers` tier and the platform's data steps (`grok-bdd list-steps`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '@datagrok-libraries/bdd/runtime';
 import {Then} from '@datagrok-libraries/bdd';
 
 export const rangeInputReads = Then('the range {word} input of histogram viewer should read {string}',

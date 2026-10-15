@@ -45,23 +45,10 @@ export class TopFunctionErrorsViewer extends UaFilterableQueryViewer {
             `Errors: ${args.args.categories[0]}`,
             'Errors');
 
-          const isError = ui.input.bool('Is error', {value: eventInfo.get('is_error', 0)});
-            const comment = ui.input.string('Comment', {value: eventInfo.get('comment', 0)});
           const acc = DG.Accordion.create('ErrorInfo');
 
-          acc.addPane('Error details', () => {
-            const button = ui.buttonsInput([ui.bigButton('Save', async () => {
-              await grok.data.query('UsageAnalysis:UpdateEventsIsErrorComment', {
-                errorMessage: errorMessage,
-                friendlyName: friendlyName,
-                isError: isError.value,
-                comment: comment.value,
-              });
-              grok.shell.info('Event type saved');
-            })]);
-            return ui.divV([ui.h2(eventInfo.get('error_message', 0)), ui.divText(eventInfo.get('error_stack_trace', 0),
-              {style: {maxHeight: '250px', overflowY: 'scroll'}}), isError.root, comment.root, button]);
-          });
+          acc.addPane('Error details', () => ui.divV([ui.h2(eventInfo.get('error_message', 0)),
+            ui.divText(eventInfo.get('error_stack_trace', 0), {style: {maxHeight: '250px', overflowY: 'scroll'}})]));
           grok.shell.o = ui.divV([
             pp.getRoot(),
             acc,

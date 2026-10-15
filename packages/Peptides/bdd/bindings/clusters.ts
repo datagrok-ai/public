@@ -1,6 +1,6 @@
 import type {Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {el, expect, locate, viewers, type ElementRef} from '@datagrok-libraries/bdd/runtime';
+import {expect, locate, type ElementRef} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 
@@ -42,32 +42,6 @@ async function sourceClusters(page: Page, source: string): Promise<ClusterSource
     return {total: activities.length, clusters};
   }, source);
 }
-
-export const clusterSummaries = Then('the cluster summaries should match the source rows of table {string}',
-  async (page: Page, source: string) => {
-    const expected = await sourceClusters(page, source);
-    const target = el('Logo Summary Table viewer');
-    await viewers.settle(page, target);
-    const values = await viewers.onViewer(page, target, (root) =>
-      (window as any).__bdd.viewerOf(root).getWidgetStatus().values);
-    expect(values.clusters, 'one summary row for every source cluster').toBe(Object.keys(expected.clusters).length);
-    expect(values['members total'], 'cluster members account for every source row').toBe(expected.total);
-    for (const [cluster, stats] of Object.entries(expected.clusters)) {
-      expect(values[`Members of cluster ${cluster}`], `source members of cluster ${cluster}`).toBe(stats.count);
-      const difference = values[`Mean difference of cluster ${cluster}`];
-      expect(Number.isFinite(difference), `finite mean difference of cluster ${cluster}`).toBe(true);
-      // The displayed summary columns are Float32; arithmetic above uses the source Activity values.
-      expect(Math.abs(difference - stats.meanDifference), `mean difference of cluster ${cluster} against the rest`)
-        .toBeLessThanOrEqual(Math.max(Math.abs(stats.meanDifference) * 1e-6, 1e-10));
-      const pValue = values[`P-Value of cluster ${cluster}`];
-      if (stats.hasPValue) {
-        expect(Number.isFinite(pValue), `finite p-value of cluster ${cluster}`).toBe(true);
-        expect(pValue, `p-value of cluster ${cluster}`).toBeGreaterThanOrEqual(0);
-        expect(pValue, `p-value of cluster ${cluster}`).toBeLessThanOrEqual(1);
-      } else
-        expect(pValue, `no t-test when cluster ${cluster} or its complement has fewer than two rows`).toBe('');
-    }
-  }, {description: 'all LST membership counts and mean differences against source Cluster (MCL)/Activity rows; valid p-values where a t-test is defined'});
 
 export const clusterStatistics = Then('the cluster statistics in {element} should match cluster {string} of table {string}',
   async (page: Page, target: ElementRef, cluster: string, source: string) => {

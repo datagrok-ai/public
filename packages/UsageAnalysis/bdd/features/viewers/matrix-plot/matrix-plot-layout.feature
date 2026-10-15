@@ -6,12 +6,10 @@ Feature: Matrix plot — the chrome around the grid and the layout that decides 
   width: `x axis shown` is the computed `showXAxes` getter (matrix_plot_core.dart:311), the same one
   the layout uses, and the `x axis` region is reported only while that getter and the element's own
   display agree — where the spec this replaces polled `.d4-layout-top canvas`.width until it hit 0.
-  Not translated: GROK-18736, the Font property reaching the labels. `label font` is the look read
-  back, and nothing else the plot reports moves with it — the label strip is a fixed 20 px and every
-  label box, every cell box and every cell signature is identical at 10 px and at 24 px (measured).
-  The old spec read `getComputedStyle(div).font` off whichever leaf div held the text "AGE"; an
-  honest successor needs the strip's effective label height, or the labels' computed font, in the
-  status.
+  The Font property reaching the labels (GROK-18736) is claimed on the font the browser renders a
+  column label with: `label font` is only the look read back, and nothing else the plot reports
+  moves with it — the label strip is a fixed 20 px and every label box, every cell box and every
+  cell signature is identical at 10 px and at 24 px (measured).
 
   Background:
     Given user is logged in
@@ -75,6 +73,16 @@ Feature: Matrix plot — the chrome around the grid and the layout that decides 
     And matrix plot viewer should have a "y labels" area
     And matrix plot viewer should have a "y label WEIGHT" area
     And matrix plot viewer should not have an "x label SEX" area
+    And no errors should have been logged
+
+  @GROK-18736
+  Scenario: The Font property reaches the column labels
+    Then the "font-size" style of "AGE" text in matrix plot viewer should contain "10px"
+    When user sets "font" property of matrix plot viewer to 'normal normal 24px "Roboto"'
+    Then the "font-size" style of "AGE" text in matrix plot viewer should contain "24px"
+    And the "font-size" style of "WEIGHT" text in matrix plot viewer should contain "24px"
+    When user sets "font" property of matrix plot viewer to 'normal normal 10px "Roboto"'
+    Then the "font-size" style of "AGE" text in matrix plot viewer should contain "10px"
     And no errors should have been logged
 
   Scenario: The title shows and the description sits above the grid, then below it

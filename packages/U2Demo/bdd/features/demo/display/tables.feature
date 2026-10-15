@@ -8,6 +8,7 @@ Feature: Tables and grids
 
   Scenario: A basic table with selectable rows
     Then table should have 5 rows
+    And Caffeine table row should be 22 px tall
     And Caffeine table row should contain text "28"
     When user clicks on Caffeine table row
     Then Caffeine table row should be selected

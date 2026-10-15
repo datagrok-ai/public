@@ -23,6 +23,7 @@ export class PackageFunctions {
   static async previewPdf(
     file: DG.FileInfo): Promise<DG.View> {
     const view = DG.View.create();
+    view.name = file.name;
     const root = ui.div();
     root.classList.add('fe-pdf-preview');
     view.append(root);
@@ -97,6 +98,7 @@ export class PackageFunctions {
   static async previewDocx(
     file: DG.FileInfo): Promise<DG.View> {
     const view = DG.View.create();
+    view.name = file.name;
     view.root.classList.add('fe-docx-preview');
     const bytes = await file.readAsBytes();
     renderAsync(bytes, view.root, undefined, {inWrapper: false, ignoreWidth: true, ignoreHeight: true});
@@ -121,6 +123,7 @@ export class PackageFunctions {
     file: DG.FileInfo): Promise<DG.View> {
     await DG.Utils.loadJsCss([`${_package.webRoot}/dist/package-rtf.js`]);
     const view = DG.View.create();
+    view.name = file.name;
 
     file.readAsBytes().then((bytes) => {
       //@ts-ignore

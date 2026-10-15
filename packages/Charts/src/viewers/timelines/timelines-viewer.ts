@@ -7,10 +7,14 @@ import * as echarts from 'echarts';
 import {format} from 'echarts/lib/util/time';
 import $ from 'cash-dom';
 
+import {Observable} from 'rxjs';
+
 import {EChartViewer} from '../echart/echart-viewer';
 import {options, deepCopy} from './echarts-options';
 import {ColumnData, ColumnsData, Indexable, markerPosition, markerType, timePoint, DateFormats} from './constants';
 import {LegendHelper, VISIBILITY_MODE, VisibilityMode} from '../../utils/legend-utils';
+import {ERROR_CLASS} from '../../utils/utils';
+import {timelinesStatus} from './timelines-status';
 
 export class TimelinesViewer extends EChartViewer {
   splitByColumnName: string;
@@ -49,6 +53,17 @@ export class TimelinesViewer extends EChartViewer {
   legendHelper: LegendHelper = new LegendHelper();
   colorMap: Indexable | null = null;
   dataMax: any;
+  private zoomOwedUntil = 0;
+
+  get onRendered(): Observable<void> {return this.signals.rendered;}
+
+  get isRenderPending(): boolean {return this.signals.pending;}
+
+  get renderError(): string | null {
+    return this.titleDiv.classList.contains(ERROR_CLASS) ? this.titleDiv.textContent : null;
+  }
+
+  getWidgetStatus(): DG.IWidgetStatus {return timelinesStatus(this);}
 
   constructor() {
     super();
@@ -105,6 +120,13 @@ export class TimelinesViewer extends EChartViewer {
           this.zoomState[i][0] = z.start!;
           this.zoomState[i][1] = z.end!;
         });
+        this.zoomOwedUntil = 0;
+        this.signals.settle();
+      });
+      // the inside zoom dispatches its action throttled (20 ms with animation off), outside `render`
+      this.chart.getZr().on('mousewheel', () => {
+        this.zoomOwedUntil = Date.now() + 100;
+        this.signals.settle();
       });
 
       this.subs.push(this.onEvent('d4-context-menu').subscribe((data) => {
@@ -638,7 +660,15 @@ export class TimelinesViewer extends EChartViewer {
     $(this.chart.getDom()).show();
   }
 
+  protected frameOwed(): boolean {
+    return Date.now() < this.zoomOwedUntil || super.frameOwed();
+  }
+
   render(): void {
+    this.signals.render(() => this.draw());
+  }
+
+  private draw(): void {
     this.updateContainers();
     if (!this.splitByColumnName || ((!this.startColumnName && !this.endColumnName) &&
         (!this.eventsColumnNames || this.eventsColumnNames.length === 0))) {

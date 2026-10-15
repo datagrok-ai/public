@@ -119,6 +119,7 @@ interface WorkflowStep {
   funcCallId: string;
 }
 
+// a node's own segment included; repeated steps (dynamic items) are told apart by position
 interface StepPath {
   ids: string[];
   names: string[];
@@ -130,17 +131,24 @@ const traverseSteps = buildTraverseD<PipelineSerializedState, StepPath, boolean>
     if (isFuncCallSerializedState(state))
       return [];
     // the root pipeline name is shared by every step, so it is left out of friendly paths
-    const names = isRoot ? path.names : [...path.names, state.friendlyName ?? state.configId];
-    return state.steps.map((step) =>
-      [step, {ids: [...path.ids, state.configId], names}, false] as const);
+    const base = isRoot ? {ids: [state.configId], names: []} : path;
+    return state.steps.map((step, i) => {
+      const name = step.friendlyName ?? step.configId;
+      const repeats = state.steps.filter((item) => item.configId === step.configId).length > 1;
+      const position = state.steps.slice(0, i + 1).filter((item) => item.configId === step.configId).length;
+      return [step, {
+        ids: [...base.ids, repeats ? `${step.configId}[${position}]` : step.configId],
+        names: [...base.names, repeats ? `${name} ${position}` : name],
+      }, false] as const;
+    });
   }, true);
 
-function collectWorkflowSteps(state: PipelineSerializedState): WorkflowStep[] {
+export function collectWorkflowSteps(state: PipelineSerializedState): WorkflowStep[] {
   return traverseSteps(state, (acc: WorkflowStep[], item, path) => {
     if (isFuncCallSerializedState(item) && item.funcCallId) {
       acc.push({
-        path: [...path.ids, item.configId].join('/'),
-        friendlyPath: [...path.names, item.friendlyName ?? item.configId].join(' · '),
+        path: path.ids.length ? path.ids.join('/') : item.configId,
+        friendlyPath: path.names.length ? path.names.join(' · ') : item.friendlyName ?? item.configId,
         funcCallId: item.funcCallId,
       });
     }
@@ -153,6 +161,7 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
   const scalars: ScalarNodeInfo[] = [];
   const tables: TableNodeInfo[] = [];
   const dataFrames = new Map<string, DG.DataFrame>();
+  const failedSteps: string[] = [];
   const addNodes = (nodes: CallNodes) => {
     scalars.push(...nodes.scalars);
     tables.push(...nodes.tables);
@@ -169,14 +178,16 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
       // legacy or malformed serialized configs degrade to an entry with no steps
       console.warn('Run comparison: failed to parse workflow config', e);
     }
-    for (const step of steps) {
-      try {
-        const stepCall = await historyUtils.loadRun(step.funcCallId);
-        addNodes(extractCallNodes(stepCall, step.path, step.friendlyPath));
-      } catch (e) {
-        console.warn(`Run comparison: failed to load step run ${step.funcCallId}`, e);
+    const results = await Promise.allSettled(steps.map(async (step) =>
+      extractCallNodes(await historyUtils.loadRun(step.funcCallId), step.path, step.friendlyPath)));
+    results.forEach((result, i) => {
+      if (result.status === 'rejected') {
+        console.warn(`Run comparison: failed to load step run ${steps[i].funcCallId}`, result.reason);
+        failedSteps.push(steps[i].friendlyPath);
+        return;
       }
-    }
+      addNodes(result.value);
+    });
   } else {
     addNodes(extractCallNodes(call, '', ''));
   }
@@ -190,6 +201,7 @@ export async function entryFromFuncCall(call: DG.FuncCall): Promise<ComparisonEn
     modelName,
     nodes: {entryId: call.id, entryName: name, sourceKind, scalars, tables},
     dataFrames,
+    ...failedSteps.length > 0 ? {failedSteps} : {},
   };
 }
 

@@ -1,6 +1,6 @@
-import {expect, type Page} from '@playwright/test';
+import {type Page} from '@playwright/test';
 import {Then} from '@datagrok-libraries/bdd';
-import {el, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 declare const grok: any;
 declare const DG: any;

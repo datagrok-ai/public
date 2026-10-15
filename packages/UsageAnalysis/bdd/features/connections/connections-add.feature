@@ -15,10 +15,14 @@ Feature: Adding a database connection
   its tree node here; the second connection of the md repeats the first with other names, so it is
   one scenario, not two.
 
+  The fields are claimed on Postgres and on MS SQL, a provider behind the tree's "Show more"; Oracle,
+  MySQL and MariaDB ask for the same fields and are not repeated.
+
   Background:
     Given user is logged in
     And the browse panel is open
     And Databases tree node inside browse tree is expanded
+    And the hidden providers of the Databases tree are shown
 
   Scenario Outline: The New connection dialog of <provider> asks for its fields
     When user picks "New connection..." from the context menu of Databases---<node> tree node inside browse tree
@@ -39,9 +43,6 @@ Feature: Adding a database connection
       | provider | node     |
       | Postgres | Postgres |
       | MS SQL   | MS-SQL   |
-      | Oracle   | Oracle   |
-      | MySQL    | MySQL    |
-      | MariaDB  | MariaDB  |
 
   Scenario: A connection string replaces the server fields
     When user picks "New connection..." from the context menu of Databases---Postgres tree node inside browse tree

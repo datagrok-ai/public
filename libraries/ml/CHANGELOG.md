@@ -2,6 +2,7 @@
 
 ## v.next
 
+* UMAP: The CPU fit runs its epochs in slices of about a frame instead of one timer per epoch; on a few hundred rows the fit took ~3 s, mostly the browser's timer clamp
 * Activity cliffs: Fixed "Cannot read properties of null (reading 'getSortedOrder')" thrown a second after a click in the cliffs table when the view was closed meanwhile
 * Activity cliffs: the scatter plot reports the number of cliffs found as a `cliffs` status reading (what its "N cliffs" button shows), whether only cliffs are shown, and the cliff-count button carries a name
 * `SearchBaseViewer`: Added `isRenderPending` / `onRendered`; a render that throws no longer leaves the viewer pending for ever

@@ -72,7 +72,7 @@ spec('manifest: survives JSON and describes every component', () => {
   const restored = JSON.parse(JSON.stringify(manifest));
   assert.deepEqual(restored, manifest);
   assert.equal(restored.schema, 'dg-ui/1');
-  assert.match(restored.binding, /bindable: true marks live/,
+  assert.match(restored.binding, /follows it live, except props marked structural/,
     'the binding rule is stated once at the top level (UB-9)');
   for (const meta of restored.components) {
     assert.equal('create' in meta, false, `${meta.tag} leaks its factory into the manifest`);
@@ -415,9 +415,9 @@ spec('manifest: the child hooks stay out of it, the metadata they need stays in'
   assert.deepEqual(metas.get('u2-accordion').childProps.map((p) => p.name), ['title', 'icon']);
   const tabProps = Object.fromEntries(metas.get('u2-tabs').props.map((p) => [p.name, p.choices]));
   assert.deepEqual(tabProps, {orientation: ['horizontal', 'vertical'], variant: ['platform', 'document'],
-    activeTab: undefined});
+    activeTab: undefined, visible: undefined});
   assert.deepEqual(metas.get('u2-tabs').defaults, {orientation: 'horizontal', variant: 'platform'});
-  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object']);
+  assert.deepEqual(metas.get('u2-property-grid').props.map((p) => p.type), ['object', 'object', 'bool']);
 });
 
 spec('dump: a splitter of a form and an accordion round-trips the document, not the live values', () => {

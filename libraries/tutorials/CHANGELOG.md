@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Package prerequisites check that the package is installed, so a tutorial reports a package the server only lists from its repository
 * A tutorial finished while the panel is open marks its card done in `data-status` too, not only visually
 * Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
 * Tutorial: A step whose event stream fails (a control that never appeared) is no longer shown as done: it keeps `aria-checked="false"`, gets `aria-invalid`, and the tutorial stops at the failure card instead of congratulating

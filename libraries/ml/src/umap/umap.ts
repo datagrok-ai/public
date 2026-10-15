@@ -1018,22 +1018,26 @@ export class UMAP {
     epochCallback: (epochNumber: number) => void | boolean = () => true
   ): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const step = async () => {
+      // epochs run in slices of about a frame: a timer per epoch pays the browser's 4 ms timer clamp
+      // every time, which on small data is most of the fit
+      const step = () => {
         try {
-          const {nEpochs, currentEpoch} = this.optimizationState;
-          this.embedding = this.optimizeLayoutStep(currentEpoch);
-          const epochCompleted = this.optimizationState.currentEpoch;
-          const shouldStop = epochCallback(epochCompleted) === false;
-          const isFinished = epochCompleted === nEpochs;
-          if (!shouldStop && !isFinished)
-            setTimeout(() => step(), 0);
-          else
-            return resolve(isFinished);
+          const sliceEnd = performance.now() + 16;
+          do {
+            const {nEpochs, currentEpoch} = this.optimizationState;
+            this.embedding = this.optimizeLayoutStep(currentEpoch);
+            const epochCompleted = this.optimizationState.currentEpoch;
+            const shouldStop = epochCallback(epochCompleted) === false;
+            const isFinished = epochCompleted === nEpochs;
+            if (shouldStop || isFinished)
+              return resolve(isFinished);
+          } while (performance.now() < sliceEnd);
+          setTimeout(step, 0);
         } catch (err) {
           reject(err);
         }
       };
-      setTimeout(() => step(), 0);
+      setTimeout(step, 0);
     });
   }
 

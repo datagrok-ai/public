@@ -1,7 +1,7 @@
 /* The `crosshairs` toggle needs an ambient scope, so the caller wraps this in `content.run(...)`. */
 import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
-import {dropDownButton, iconButton, notify} from '@datagrok-libraries/u2';
+import {Scope, dropDownButton, iconButton, notify} from '@datagrok-libraries/u2';
 import {leakReport} from '@datagrok-libraries/u2/src/dg/index.js';
 import type {DemoShell} from './demo';
 import {pageShown} from './nav';
@@ -17,8 +17,14 @@ function addTable(table: DG.DataFrame): void {
 export function demoRibbon(shell: DemoShell): HTMLElement[] {
   const inspect = iconButton('crosshairs', () => {}, {toggle: shell.inspect,
     tooltip: 'Inspect: click any control to see its properties in the context panel'});
-  inspect.classList.add('u2demo-inspect');
+  inspect.classList.add('u2demo-toggle');
+  // the nav folds away when the pane is too narrow to keep it beside the demo: this brings it back
+  const nav = iconButton('bars', () => {}, {toggle: shell.navShown, tooltip: 'Show navigation'});
+  nav.classList.add('u2demo-toggle');
+  nav.dataset.u2Name = 'showNavigation';
+  Scope.ambient!.effect(() => nav.style.display = shell.navFolded.value ? '' : 'none');
   return [
+    nav,
     iconButton('code', () => pageShown(shell.current.peek(), true),
       {tooltip: 'Show this demo\'s source in the context panel'}),
     inspect,

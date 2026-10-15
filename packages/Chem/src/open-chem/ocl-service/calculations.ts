@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import * as OCL from 'openchemlib/full';
 import {IChemProperty} from './types';
 
@@ -14,6 +15,7 @@ export const CHEM_PROP_MAP: {[k: string]: IChemProperty} = {
   'Stereo centers': {name: 'Stereo centers', type: 'int',
     valueFunc: (m: OCL.Molecule) => new OCL.MoleculeProperties(m).stereoCenterCount},
   'Molecule charge': {name: 'Molecule charge', type: 'int', valueFunc: (m: OCL.Molecule) => getMoleculeCharge(m)},
+  'Molecular formula': {name: 'Molecular formula', type: 'string', valueFunc: (m: OCL.Molecule) => m.getMolecularFormula().formula},
 };
 
 export function getMoleculeCharge(mol: OCL.Molecule): number {

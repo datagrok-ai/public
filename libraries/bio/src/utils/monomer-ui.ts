@@ -1,15 +1,29 @@
 import * as ui from 'datagrok-api/ui';
-import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 
 import {Monomer} from '../types/monomer-library';
 import {MonomerTypes, PolymerTypes} from '../helm/consts';
+import {MonomerType, PolymerType} from '../helm/types';
 
+/** The fields of the monomer editor that a caller reads and sets by name. */
+export interface MonomerFormFields {
+  /** The structure, as SMILES with its R groups ([*:1], [*:2], ...). */
+  molecule: string;
+  polymerType: PolymerType;
+  monomerType: MonomerType;
+  symbol: string;
+  name: string;
+  id: number | null;
+  naturalAnalog: string;
+}
+
+/** The monomer editor of the monomer manager. */
 export interface INewMonomerForm {
-  get fieldInputs(): { [key: string]: DG.InputBase<any> | grok.chem.Sketcher };
   get form(): HTMLElement;
-  get rgroupInputs(): { [key: string]: DG.InputBase<any> }[];
-  get metaInputs(): { [key: string]: DG.InputBase<any> }[];
+  /** The fields as the editor holds them now. */
+  getFields(): MonomerFormFields;
+  /** Sets the fields given; the others keep their values. */
+  setFields(fields: Partial<MonomerFormFields>): void;
   setMonomer(monomer: Monomer): void;
 }
 

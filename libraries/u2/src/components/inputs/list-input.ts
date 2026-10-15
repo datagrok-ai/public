@@ -1,5 +1,6 @@
 import {Input, InputOptions, LiveOption} from '../../core/input-base.js';
 import {button} from '../../core/elements.js';
+import type {IItemsState} from '../../core/widget-like.js';
 import {icon} from '../display/icon.js';
 
 /** Splits on commas outside double quotes — the same lookahead Dart's `ListInput` uses. */
@@ -14,11 +15,11 @@ export interface ListInputOptions extends InputOptions<string[]> {
  * (`list_input.dart:40-53`) — that swaps the one-line field for a textarea. Both fields exist all
  * along and carry the same text, so expanding never loses what is being typed. */
 export class ListInput extends Input<string[], ListInputOptions> {
-  private _field!: HTMLInputElement;
-  private _area!: HTMLTextAreaElement;
-  private _toggle!: HTMLElement;
-  private _glyph!: HTMLElement;
-  private _expanded!: boolean;
+  private declare _field: HTMLInputElement;
+  private declare _area: HTMLTextAreaElement;
+  private declare _toggle: HTMLElement;
+  private declare _glyph: HTMLElement;
+  private declare _expanded: boolean;
 
   constructor(options: ListInputOptions = {}) {
     super(options, []);
@@ -43,6 +44,12 @@ export class ListInput extends Input<string[], ListInputOptions> {
   /** Quotes the items that carry a comma, so {@link parse} gets them back whole. */
   static join(items: string[]): string {
     return items.map((item) => `${item}`.includes(',') ? `"${item}"` : `${item}`).join(',');
+  }
+
+  /** The values, one item each; they live in one text box, so none has an element of its own. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    return Input.itemsState(this.value.peek().map((item, index) => ({key: item, label: item, index,
+      rendered: false})), opts?.all);
   }
 
   get expanded(): boolean {
@@ -71,11 +78,14 @@ export class ListInput extends Input<string[], ListInputOptions> {
     area.className = 'u2-list-text u2-list-area';
     area.hidden = true;
 
+    // set by a typed write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
-      if (echo)
+      if (echo) {
+        echo = false;
         return;
+      }
       const text = ListInput.join(value);
       field.value = text;
       area.value = text;
@@ -83,15 +93,11 @@ export class ListInput extends Input<string[], ListInputOptions> {
     const onInput = (source: HTMLInputElement | HTMLTextAreaElement) => {
       const text = source.value;
       echo = true;
-      try {
-        this.value.value = ListInput.parse(text);
-      } finally {
-        echo = false;
-      }
+      this.value.value = ListInput.parse(text);
       (source === field ? area : field).value = text;
     };
-    this._listen(field, 'input', () => onInput(field));
-    this._listen(area, 'input', () => onInput(area));
+    this.scope.listen(field, 'input', () => onInput(field));
+    this.scope.listen(area, 'input', () => onInput(area));
 
     this._glyph = icon('expand');
     this._toggle = button(this._glyph, () => this.expanded = !this._expanded);
@@ -103,10 +109,5 @@ export class ListInput extends Input<string[], ListInputOptions> {
     editor.append(field, area);
     this.addOptions(this._toggle);
     return editor;
-  }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

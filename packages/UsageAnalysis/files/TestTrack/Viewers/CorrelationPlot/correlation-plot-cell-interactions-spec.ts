@@ -359,7 +359,7 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
       expect(r.hasRLine).toBe(false);
     });
 
-    await softStep('Scenario 4 Step 2-4 — right-click menu has Show Pearson R, Columns > X/Y, and a Tooltip submenu with Edit.../Visible/Properties...', async () => {
+    await softStep('Scenario 4 Step 2-4 — right-click menu has Show Coefficients, Columns > X/Y, and a Tooltip submenu with Edit.../Visible/Properties...', async () => {
       await page.mouse.move(geom.rootX + 5, geom.rootY + geom.headerH + 200);
       await v.pollValue(() => tooltipShown(page), (shown) => !shown, 400, 50);
       const c = cellCenter(geom, xiHeight, yiAge);
@@ -368,7 +368,7 @@ test('Correlation Plot — Cell Interactions', async ({page}) => {
       const menu = await page.evaluate(() => {
         const labels = Array.from(document.querySelectorAll('.d4-menu-item-label')).map((l) => (l.textContent ?? '').trim());
         return {
-          showPearsonR: labels.includes('Show Pearson R'),
+          showPearsonR: labels.includes('Show Coefficients'),
           columns: labels.includes('Columns'),
           xColumns: labels.includes('X Columns'),
           yColumns: labels.includes('Y Columns'),
