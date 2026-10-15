@@ -7,8 +7,9 @@
    bound property are not safely mutable, so the caller rebuilds instead
    (`DG.Property.fromOptions`) — see plan.md §5. */
 import type {IProperty} from 'datagrok-api/dg';
-import type {NamedProperty} from '../../core/widget-like.js';
+import type {IItemsState, NamedProperty} from '../../core/widget-like.js';
 import {Control} from '../../core/component.js';
+import {Input} from '../../core/input-base.js';
 import {Scope} from '../../core/scope.js';
 import {signal, Signal} from '../../core/signals.js';
 import {ObjectForm, propertyForm} from './object-form.js';
@@ -94,6 +95,8 @@ export class PropertyEditor extends Control {
   private _record: IProperty = {};
   private _scope: Scope | undefined;
   private _typedScope: Scope | undefined;
+  private _identityForm: ObjectForm | undefined;
+  private _typedForm: ObjectForm | undefined;
   private _rebuilding = false;
 
   constructor(target: IProperty, options: PropertyEditorOptions = {}) {
@@ -134,6 +137,13 @@ export class PropertyEditor extends Control {
     });
   }
 
+  /** One item per field, identity fields first: key = the field name, label = its caption. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const list = [this._identityForm, this._typedForm].flatMap((form) => form?.getItems({all: true}).list ?? [])
+      .map((item, index) => ({...item, index}));
+    return Input.itemsState(list, opts?.all);
+  }
+
   private _render(): void {
     this._typedScope?.dispose();
     this._scope?.dispose();
@@ -141,7 +151,8 @@ export class PropertyEditor extends Control {
     this._scope = scope;
     this.root.textContent = '';
     Scope.runWith(scope, () => {
-      this.root.append(this._form(IDENTITY).root, this._typed);
+      this._identityForm = this._form(IDENTITY);
+      this.root.append(this._identityForm.root, this._typed);
       this._renderTyped();
     });
   }
@@ -153,7 +164,10 @@ export class PropertyEditor extends Control {
     this._typed.textContent = '';
     const type = this._record.type ?? '';
     const fields = TYPED.filter((field) => PropertyEditor._applies(field, type));
-    Scope.runWith(scope, () => this._typed.append(this._form(fields).root));
+    Scope.runWith(scope, () => {
+      this._typedForm = this._form(fields);
+      this._typed.append(this._typedForm.root);
+    });
   }
 
   private _form(fields: FieldMeta[]): ObjectForm {

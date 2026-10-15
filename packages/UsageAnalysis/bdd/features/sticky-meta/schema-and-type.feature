@@ -11,14 +11,14 @@ Feature: An entity type and a metadata schema, from creation to deletion
   a search for its name. The type matches molecules ("semtype=molecule"), as the case asks.
 
   Everything is made through the UI under names unique to the run, and the last two scenarios
-  delete it through the UI as well; a journey runs them even when an earlier scenario failed. What
-  the library does not have yet — reading the type and the schema back from the server, and sweeping
-  them at the feature's start and end — is listed in sticky-meta/MISSING.md, as are the property
-  types the Edit dialog shows (the case's "rating/int, notes/string…" is claimed for the names and
-  the order only).
+  delete it through the UI as well; a journey runs them even when an earlier scenario failed, and the
+  Background's sweep removes both at feature end and an earlier run's after an hour. Each OK and
+  DELETE is proven on the server, the schema's property types with it: the Edit dialog shows the
+  names in inputs but the types in no readable control.
 
   Background:
     Given user is logged in
+    And the Sticky Meta schema "bdd-sm-schema-{time}" and entity type "bdd-sm-type-{time}" are removed now and at feature end
     And the browse panel is open
     And the context panel is open
     When user expands "Platform" tree node inside browse tree
@@ -36,6 +36,7 @@ Feature: An entity type and a metadata schema, from creation to deletion
     Then OK button in "Create a new entity type" dialog should be enabled
     When user clicks on OK button in "Create a new entity type" dialog
     Then the "Create a new entity type" dialog should close
+    And the entity type "bdd-sm-type-{time}" should be on the server
     When user types "bdd-sm-type-{time}" into gallery search
     Then "bdd-sm-type-{time}" link in gallery should be visible
     And no errors should have been logged
@@ -73,6 +74,7 @@ Feature: An entity type and a metadata schema, from creation to deletion
     Then OK button in "Create a new schema" dialog should be enabled
     When user clicks on OK button in "Create a new schema" dialog
     Then the "Create a new schema" dialog should close
+    And the Sticky Meta schema "bdd-sm-schema-{time}" should be on the server with the properties "rating: int, notes: string, verified: bool, review_date: datetime"
     When user types "bdd-sm-schema-{time}" into gallery search
     Then "bdd-sm-schema-{time}" link in gallery should be visible
     And no errors should have been logged
@@ -101,6 +103,7 @@ Feature: An entity type and a metadata schema, from creation to deletion
     Then the "Are you sure?" dialog should close
     And the gallery counter should be lower than remembered
     And "bdd-sm-schema-{time}" link in gallery should be absent
+    And no Sticky Meta schema named "bdd-sm-schema-{time}" should be on the server
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown
@@ -117,6 +120,7 @@ Feature: An entity type and a metadata schema, from creation to deletion
     Then the "Are you sure?" dialog should close
     And the gallery counter should be lower than remembered
     And "bdd-sm-type-{time}" link in gallery should be absent
+    And no entity type named "bdd-sm-type-{time}" should be on the server
     When user clears gallery search
     Then no errors should have been logged
     And no error or warning balloon should have been shown

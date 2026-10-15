@@ -9,8 +9,8 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Rows} from '@datagrok-libraries/u2';
-import type {DomainSource} from '@datagrok-libraries/u2';
-import {domains, DomainApp, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import type {DomainSource} from '@datagrok-libraries/ems';
+import {domains, DomainApp, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
 const ITEMS = 'apitests.item';
 const BASE = '/apps/U2Demo/trash';

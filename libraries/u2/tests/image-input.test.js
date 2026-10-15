@@ -2,6 +2,7 @@
 
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {Scope} from '../src/index.js';
 import {ImageInput} from '../src/components/inputs/image-input.js';
@@ -79,4 +80,13 @@ smoke('validators come from the input base; dispose kills the listeners', async 
   assert.equal(Scope.liveCount, before);
   fire(remove(input), 'click');
   assert.equal(input.value.value, LOGO, 'listeners died with the scope');
+});
+
+smoke('the caption sits on the preview\'s first line, not the middle of the 200px box', async () => {
+  const sheet = readFileSync(new URL('../css/inputs.css', import.meta.url), 'utf8');
+  const selector = '.u2-input-root {';
+  const at = sheet.indexOf(selector);
+  assert.notEqual(at, -1, `${selector} is a rule`);
+  assert.match(sheet.slice(at, sheet.indexOf('}', at)), /align-items: flex-start;/,
+    'every input root keeps its caption on the editor\'s first line');
 });

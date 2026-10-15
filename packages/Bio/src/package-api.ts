@@ -587,6 +587,10 @@ export namespace funcs {
     return await grok.functions.call('Bio:SearchSubsequenceEditor', { call });
   }
 
+  /**
+   * @param {DG.Column} macromolecules
+   *   semType: Macromolecule
+   */
   export async function subsequenceSearchTopMenu(macromolecules: DG.Column ): Promise<void> {
     return await grok.functions.call('Bio:SubsequenceSearchTopMenu', { macromolecules });
   }

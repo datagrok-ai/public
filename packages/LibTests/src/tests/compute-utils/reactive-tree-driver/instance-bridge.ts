@@ -471,4 +471,26 @@ category('ComputeUtils: Driver instance bridge', async () => {
       expectObservable(bridge.getStateChanges('res'), '^ 1000ms !').toBe('ab', {a: undefined, b: undefined});
     });
   });
+
+  test('A none restriction does not copy a dataframe', async () => {
+    const original = DG.DataFrame.prototype.clone;
+    let clones = 0;
+    DG.DataFrame.prototype.clone = function(this: DG.DataFrame, ...args: any[]) {
+      clones++;
+      return (original as any).apply(this, args);
+    };
+    try {
+      testScheduler.run(({cold}) => {
+        const adapter = new FuncCallMockAdapter(io, false);
+        const bridge = new FuncCallInstancesBridge(io, [], false);
+        cold('-a').subscribe(() => {
+          bridge.init({adapter, restrictions: {}, isOutputOutdated: true, initValues: false});
+          bridge.setRestriction('arg1', DG.DataFrame.fromCsv('x\n1'), 'none');
+        });
+      });
+    } finally {
+      DG.DataFrame.prototype.clone = original;
+    }
+    expectDeepEqual(clones, 0);
+  });
 });

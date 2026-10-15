@@ -3,7 +3,8 @@
    "cards" / "records shown" / "pinned records" / "fields" / "sort column", the properties, the
    selection, the filter, renaming a column, the current column, a click on an area with a chord
    held — is the library's viewers tier and the platform's data steps (`grok-bdd list-steps`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
+import {expect} from '@datagrok-libraries/bdd/runtime';
 import {Then} from '@datagrok-libraries/bdd';
 
 declare const grok: any;

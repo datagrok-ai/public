@@ -38,11 +38,11 @@ interface FileLoad {
  * same in a browser and in a test. */
 export class FilesInput extends Input<DG.FileInfo[], FilesInputOptions> {
   // all assigned in createEditor, which the base constructor runs before field initializers
-  private _items!: Signal<FileLoad[]>;
-  private _list!: HTMLElement;
-  private _summary!: HTMLElement;
-  private _progress!: ProgressBar;
-  private _echo!: boolean;
+  private declare _items: Signal<FileLoad[]>;
+  private declare _list: HTMLElement;
+  private declare _summary: HTMLElement;
+  private declare _progress: ProgressBar;
+  private declare _echo: boolean;
 
   constructor(options: FilesInputOptions = {}) {
     super(options, []);

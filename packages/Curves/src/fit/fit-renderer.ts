@@ -31,7 +31,7 @@ import {
   areAxesLabelsShown, areAxesShown, areDroplineLabelsShown, areDroplinesShown, inflateScreenBounds, isTitleShown,
   layoutChart, shownAxesNames,
 } from './fit-layout';
-import {handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
+import {contextValue, handleClick, handleMouseMove, inspectCurve} from './fit-interaction';
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
@@ -132,6 +132,11 @@ export class FitChartCellRenderer extends DG.GridCellRenderer {
   onMouseMove(gridCell: DG.GridCell, e: MouseEvent): void {
     handleMouseMove(gridCell, e, this);
   }
+
+  /** Without it the platform replaces the cell with its semantic value once the current cell settles. */
+  hasContextValue(gridCell: DG.GridCell): boolean { return !!gridCell.cell.value; }
+
+  async getContextValue(gridCell: DG.GridCell): Promise<any> { return contextValue(gridCell); }
 
   /** [fitIdentities] key the fits for a caller with no grid cell; only here are the log options final. */
   renderCurves(g: CanvasRenderingContext2D, screenBounds: DG.Rect, data: IFitChartData, gridCell?: DG.GridCell,

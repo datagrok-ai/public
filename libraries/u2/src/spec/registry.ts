@@ -3,15 +3,18 @@ import type {Signal} from '../core/signals.js';
 import {APPEARANCE_PROPS, appearanceFor, applyAppearance} from './appearance.js';
 import type {NamedProperty} from '../core/widget-like.js';
 import type {ComponentMetaBase} from '../core/widget-like.js';
-import type {SpecNode} from './spec.js';
+import type {SpecInstance, SpecNode} from './spec.js';
 
 /** Envelope version of the JSON spec: `{"$schema": "dg-ui/1", "root": {…}}`. */
 export const SPEC_SCHEMA = 'dg-ui/1';
 
 /** The binding rule, stated once at the manifest's top level (UB-9) — no per-prop repetition. */
-const BINDING_RULE = 'Every declared prop accepts a "bind" entry. bindable: true marks live ' +
-  'in-place consumption (twoWay marks write-back); a bind on any other declared prop re-renders ' +
-  'the node when the bound source changes. A bind on an undeclared prop is an error.';
+const BINDING_RULE = 'Every declared prop accepts a "bind" entry and follows it live, except props ' +
+  'marked structural, which read a bind once. A bind on an undeclared prop is an error.';
+
+/** Injected wherever the appearance group is (every visual tag but a viewer, whose look is its own),
+ * listed with the component's own props; live through `Control.visible`. */
+const VISIBLE: SpecPropMeta = {name: 'visible', type: 'bool', description: 'false hides the node; true by default.'};
 
 /** A component prop, described the way the platform describes every property — so the property
  * grid, validation and the manifest all read one shape. `type` carries a platform TYPE string
@@ -26,6 +29,10 @@ export interface SpecPropMeta extends NamedProperty {
   /** An object prop that accepts dotted `bind` keys (`params.days`) — sub-binds, delivered raw
    * through the components engine and resolved at start. */
   subBindable?: boolean;
+  /** Only a rebuild can change it (an input's `inline`, a splitter's `direction`): a bind reads it
+   * once and warns; the designer's set-prop patch rebuilds the node. Every other prop is live —
+   * bindable, or written through the component's setter on every change. */
+  structural?: boolean;
 }
 
 /** What a design-time action wants done, described against the node's current state — the
@@ -86,9 +93,13 @@ export interface ComponentMeta extends ComponentMetaBase {
   /** Hands each rendered child to the component's own add-method (`Form.add`) instead of appending
    * it to the root; implies children are accepted. */
   adopt?: (parent: Control, child: Control | HTMLElement, index: number) => void;
-  /** Moves view state a re-render would lose (a tab strip's active tab) from the outgoing instance
-   * to the fresh one; a closure, so {@link Registry.manifest} strips it. */
+  /** Moves view state a designer rebuild would lose (a tab strip's active tab) from the outgoing
+   * instance to the fresh one; a closure, so {@link Registry.manifest} strips it. */
   carry?: (node: SpecNode, prev: Component | HTMLElement, next: Component | HTMLElement) => void;
+  /** Writes a bound {@link childProps} entry of the child at `index` in place (a tab's title) on
+   * every change of its source — every child prop not marked structural. A closure, so
+   * {@link Registry.manifest} strips it. */
+  setChildProp?: (parent: Control, index: number, name: string, value: unknown) => void;
   description: string;
   /** A sentence of judgment for the manifest reader (an LLM or a reviewer): when to reach for
    * this component, and when something else serves better. Reference facts stay in
@@ -118,9 +129,69 @@ export interface ComponentMeta extends ComponentMetaBase {
   icon?: () => HTMLElement;
 }
 
+/** A companion library (ems, later chem/bio control sets) plugging into a registry through
+ * {@link Registry.use}. */
+export interface U2Plugin {
+  /** One install per name and registry: a second copy of the library on the page joins the first. */
+  name: string;
+  /** Tag prefixes the plugin owns ('u2-domain-'): an unregistered tag with one names the plugin. */
+  tagPrefixes?: string[];
+  register(registry: Registry): void;
+  /** Wraps the build of every tray component of a spec rendered over the registry — the ems unit
+   * of work. Several plugins nest in install order, the first installed outermost. */
+  specAmbient?: <T>(instance: SpecInstance, build: () => T) => T;
+}
+
+/** Libraries whose tags a stored spec may name before the host has installed them. */
+const KNOWN_PLUGINS: Record<string, string> = {
+  'u2-domain-': '@datagrok-libraries/ems — call installEms()',
+  'u2-manifest-': '@datagrok-libraries/ems — call installEms()',
+};
+
 /** Tag → component metadata, and the source of the machine-readable manifest. */
 export class Registry {
   private readonly _metas = new Map<string, ComponentMeta>();
+  private readonly _plugins: {plugin: U2Plugin, uninstall: () => void}[] = [];
+
+  /** Installs a plugin once per name: its tags register, and its spec ambient wraps every spec
+   * rendered over this registry from then on. Answers the uninstall, which removes the tags it
+   * registered and the ambient; a second install of the same name answers the first one's. */
+  use(plugin: U2Plugin): () => void {
+    const installed = this._plugins.find((p) => p.plugin.name === plugin.name);
+    if (installed !== undefined) {
+      if (installed.plugin !== plugin)
+        console.warn(`u2 registry: "${plugin.name}" is installed already, from another copy — that one stays`);
+      return installed.uninstall;
+    }
+    const before = new Set(this._metas.keys());
+    plugin.register(this);
+    const tags = [...this._metas.keys()].filter((tag) => !before.has(tag));
+    const entry = {plugin, uninstall: (): void => {
+      const at = this._plugins.indexOf(entry);
+      if (at < 0)
+        return;
+      this._plugins.splice(at, 1);
+      for (const tag of tags)
+        this._metas.delete(tag);
+    }};
+    this._plugins.push(entry);
+    return entry.uninstall;
+  }
+
+  /** Install order — the order the spec ambients nest in. */
+  plugins(): readonly U2Plugin[] {
+    return this._plugins.map((p) => p.plugin);
+  }
+
+  /** What would register an unknown tag: the installed plugin owning its prefix, else the library
+   * known to own it; null when nothing claims the tag. */
+  missingTagHint(tag: string): string | null {
+    const owner = this._plugins.find((p) => p.plugin.tagPrefixes?.some((prefix) => tag.startsWith(prefix)));
+    if (owner !== undefined)
+      return `${owner.plugin.name} is installed and registers no such tag`;
+    const known = Object.keys(KNOWN_PLUGINS).find((prefix) => tag.startsWith(prefix));
+    return known === undefined ? null : `it comes with ${KNOWN_PLUGINS[known]}`;
+  }
 
   /** The construction hooks are wrapped so that everything the registry builds carries its
    * metadata and the props it was built from — the source of the component's introspection
@@ -136,21 +207,22 @@ export class Registry {
       throw new Error(`u2 registry: "${meta.tag}" needs ${meta.visual === false ?
         'createComponent' : 'create or createWithChildren'}`);
     }
-    const injected = meta.visual === false || meta.appearance === false ? [] : appearanceFor(meta.props);
+    const looks = meta.visual !== false && meta.appearance !== false;
+    const injected = looks ? appearanceFor(meta.props) : [];
+    const visible = looks && !meta.props.some((p) => p.name === VISIBLE.name) ? [VISIBLE] : [];
+    const finish = (built: Control, props: Record<string, unknown>): Control => {
+      Registry._stamp(built, stamped, props);
+      applyAppearance(built, props, injected);
+      if (visible.length > 0 && typeof props.visible === 'boolean')
+        built.visible = props.visible;
+      return built;
+    };
     const stamped: ComponentMeta = {
       ...meta,
-      props: [...meta.props, ...injected],
-      create: create ? (props) => {
-        const built = Registry._stamp(create(props), stamped, props);
-        applyAppearance(built, props, injected);
-        return built;
-      } : undefined,
+      props: [...meta.props, ...visible, ...injected],
+      create: create ? (props) => finish(create(props), props) : undefined,
       createWithChildren: withChildren ?
-        (props, children, nodes) => {
-          const built = Registry._stamp(withChildren(props, children, nodes), stamped, props);
-          applyAppearance(built, props, injected);
-          return built;
-        } :
+        (props, children, nodes) => finish(withChildren(props, children, nodes), props) :
         undefined,
       createComponent: component ?
         (props, env) => Registry._stamp(component(props, env), stamped, props) :
@@ -170,11 +242,12 @@ export class Registry {
 
   /** Everything a spec author, an LLM or a generated wrapper needs — the metadata minus its hooks. */
   manifest(): object {
-    const components: Omit<ComponentMeta,
-      'create' | 'createWithChildren' | 'createComponent' | 'adopt' | 'carry' | 'designerActions' | 'icon'>[] = [];
+    const components: Omit<ComponentMeta, 'create' | 'createWithChildren' | 'createComponent' | 'adopt' |
+      'carry' | 'setChildProp' | 'designerActions' | 'icon'>[] = [];
     for (const meta of this._metas.values()) {
       const {create: _create, createWithChildren: _createWithChildren, createComponent: _createComponent,
-        adopt: _adopt, carry: _carry, designerActions: _designerActions, icon: _icon, ...rest} = meta;
+        adopt: _adopt, carry: _carry, setChildProp: _setChildProp, designerActions: _designerActions,
+        icon: _icon, ...rest} = meta;
       rest.props = rest.props.filter((p) => !APPEARANCE_PROPS.includes(p));
       components.push(rest);
     }

@@ -302,6 +302,13 @@ export async function tooltipColumns(page: Page): Promise<string[]> {
 
 export async function expectTooltipColumns(page: Page, list: string, negate = false): Promise<void> {
   const want = [...new Set(list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0))].sort();
-  const poll = expect.poll(() => tooltipColumns(page), {timeout: pollMs(5000), message: negate ? 'the tooltip shows exactly these columns' : 'the tooltip does not show these columns'});
+  const poll = expect.poll(() => tooltipColumns(page), {timeout: pollMs(5000), message: negate ? 'the tooltip does not show exactly these columns' : 'the tooltip shows exactly these columns'});
   await (negate ? poll.not : poll).toEqual(want);
+}
+
+/** The tooltip's columns top to bottom as they come, a column listed twice twice; case aside. */
+export async function expectTooltipColumnsInOrder(page: Page, list: string): Promise<void> {
+  const want = list.split(/\s*,\s*/).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0);
+  await expect.poll(async () => (await page.locator(TOOLTIP_COLUMNS).allTextContents()).map((c) => c.trim().toUpperCase()).filter((c) => c.length > 0),
+    {timeout: pollMs(5000), message: 'the columns of the tooltip, top to bottom'}).toEqual(want);
 }

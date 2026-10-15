@@ -269,7 +269,7 @@ combo('Esc and an outside click both close without a write', () => {
 
 combo('reopening the popup leaves nothing behind', () => {
   const input = make();
-  const disposers = input.scope._disposers.length;
+  const disposers = input.scope._disposers?.size ?? 0;
   const live = Scope.liveCount;
   for (let i = 0; i < 10; i++) {
     open(input);
@@ -277,7 +277,7 @@ combo('reopening the popup leaves nothing behind', () => {
   }
   assert.equal(popup(), null);
   assert.equal(Scope.liveCount, live, 'each open owns its own scope, and closing releases it');
-  assert.equal(input.scope._disposers.length, disposers, 'no per-open cleanup piles up on the input');
+  assert.equal(input.scope._disposers?.size ?? 0, disposers, 'no per-open cleanup piles up on the input');
   input.dispose();
 });
 
@@ -473,5 +473,18 @@ combo('platform backend: Esc from the search box closes even though the Dart box
   assert.deepEqual(writes, [], 'no write');
   assert.equal(input.value.value, 'sex');
   assert.equal(document.activeElement, control(input), 'focus returns to the combo editor');
+  input.dispose();
+});
+
+combo('state: open follows the popup; items are the columns on offer, the picked one selected', () => {
+  const input = make({value: 'sex'});
+  assert.equal(input.getState().open, false);
+  assert.deepEqual(input.getItems().list.map((i) => [i.key, i.selected]),
+    [['age', false], ['height', false], ['sex', true], ['started', false]]);
+  assert.deepEqual(input.getState().selection, ['sex']);
+  open(input);
+  assert.equal(input.getState().open, true);
+  fire(document.body, 'pointerdown');
+  assert.equal(input.getState().open, false);
   input.dispose();
 });

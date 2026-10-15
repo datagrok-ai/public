@@ -13,7 +13,17 @@ import './test/run-comparison-extraction';
 import './test/run-comparison-matching';
 import './test/run-comparison-selection';
 import './test/run-comparison-builders';
-import './test/viewer-look-swap-probe';
+import './test/run-comparison-target-selection';
+import './test/run-comparison-chart-spec';
+import './test/viewer-frame-swap-contract';
+import './test/graphics-output';
+import './test/dock-layout';
+import './test/validation-actions';
+import './test/tree-node';
+import './test/export-summary';
+import './test/feedback';
+import './test/tree-utils';
+import './test/inspector-annotation-links';
 
 export const _package = new DG.Package();
 export {tests};

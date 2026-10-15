@@ -1,6 +1,7 @@
 import * as DG from 'datagrok-api/dg';
 import {runTests, tests, TestContext, initAutoTests as initTests} from '@datagrok-libraries/test/src/test';
 import './tests/retrosynthesis-panel-test';
+import './tests/crux-demo-tests';
 
 export const _package = new DG.Package();
 export {tests};

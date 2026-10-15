@@ -10,6 +10,8 @@ Feature: Tell whether groups differ, and compare each group with a control
   The same analysis, run from a dialog, is ML > Analyze > Group Comparison > Control
   Comparisons... (help/explore/group-comparison.md). Demo: demog, HEIGHT by RACE: the overall test
   says the races differ, and against Caucasian the Asian and Other groups do while Black does not.
+  Those conclusions are computed in dml and tested in test/stat_control_comparisons_test.dart
+  ('Control comparisons: demog.csv references').
 
   Scenario: Test the groups of a box plot, then compare each group with a control group
     Given user is logged in
@@ -29,7 +31,4 @@ Feature: Tell whether groups differ, and compare each group with a control
     When user picks "Add Control Comparisons Table" from the context menu of the "group comparison" area of box plot viewer
     Then table "Control Comparisons: HEIGHT by RACE vs Caucasian" should be open
     And table "Control Comparisons: HEIGHT by RACE vs Caucasian" should have 3 rows
-    And the value of "Conclusion" column in row 1 should be "Significant"
     And the value of "Group" column in row 2 should be "Black"
-    And the value of "Conclusion" column in row 2 should be "Not significant"
-    And the value of "Conclusion" column in row 3 should be "Significant"

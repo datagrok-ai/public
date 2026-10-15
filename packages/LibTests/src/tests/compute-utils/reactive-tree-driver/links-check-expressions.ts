@@ -7,27 +7,12 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {FuncCallInstancesBridge} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/FuncCallInstancesBridge';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {PipelineLinkConfigurationInput} from
-  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
+import {createTestScheduler, expectThrowsAsync, twoSteps, errors} from '../../../test-utils';
 
 const EXPRESSIONS = 'LibTests:TestExpressionInputs';
 
-const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
-  id: 'pipeline1',
-  type: 'static',
-  steps: [
-    {id: 'step1', nqName: 'LibTests:TestAdd2'},
-    {id: 'step2', nqName: 'LibTests:TestMul2'},
-  ],
-  links,
-});
-
-const errors = (...descriptions: string[]) =>
-  ({errors: descriptions.map((description) => ({description})), warnings: [], notifications: []});
 
 // GrokScript expression checks need platform 1.28.0 or later
 category('ComputeUtils: Driver links check expressions', async () => {
@@ -84,7 +69,7 @@ category('ComputeUtils: Driver links check expressions', async () => {
     const hidden: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const bridge = tree.nodeTree.getNode([{idx: 0}]).getItem().getStateStore() as FuncCallInstancesBridge;
@@ -102,7 +87,7 @@ category('ComputeUtils: Driver links check expressions', async () => {
     const snapshots: any[] = [];
     testScheduler.run((helpers) => {
       const {cold} = helpers;
-      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, defaultValidators: true});
+      const tree = StateTree.fromPipelineConfig({config: pconf, mockMode: true, annotationChecks: true});
       StateTree.loadOrCreateCalls(tree, true).subscribe();
       tree.init().subscribe();
       const node = tree.nodeTree.getNode([{idx: 0}]).getItem() as FuncCallNode;

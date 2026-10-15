@@ -50,6 +50,11 @@
   }
 }
 
+/* a reload under way: the last answer stays, dimmed, until the next one lands */
+.u2-async-stale > * {
+  opacity: 0.6;
+}
+
 .u2-async-empty {
   padding: var(--dg-space-xl);
   text-align: center;

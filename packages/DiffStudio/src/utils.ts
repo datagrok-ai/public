@@ -763,13 +763,10 @@ export function removeTitle(node: DG.DockNode) {
   }, UI_TIME.TITLE_REMOVING);
 }
 
-/** Remove titlebar of dock node*/
+/** Remove titlebar of dock node: at once, since the dock creates it with the node, and removing it later
+ * moved the docked inputs up under the pointer half a second after they had shown */
 export function removeTitleBar(node: DG.DockNode) {
-  setTimeout(() => {
-    const head = node.container.containerElement.querySelector('div[class="panel-titlebar disable-selection"]');
-    if (head)
-      head.remove();
-  }, UI_TIME.TITLE_REMOVING);
+  node.container.containerElement.querySelector('div[class="panel-titlebar disable-selection"]')?.remove();
 }
 
 /** No models message */

@@ -94,6 +94,19 @@ test('Viewers: uniform default tooltip', async ({page}) => {
   });
   await page.locator('.d4-grid[name="viewer-Grid"]').waitFor({timeout: 30000});
 
+  await softStep('Grid: Show Tooltip = inherit from table, Show Visible Columns In Tooltip on', async () => {
+    await page.evaluate(() => {
+      const grid: any = (grok as any).shell.tv.grid;
+      grid.props.showTooltip = 'inherit from table';
+      grid.props.showVisibleColumnsInTooltip = true;
+    });
+    const props = await page.evaluate(() => {
+      const grid: any = (grok as any).shell.tv.grid;
+      return {showTooltip: grid.props.showTooltip, visible: grid.props.showVisibleColumnsInTooltip};
+    });
+    expect(props).toEqual({showTooltip: 'inherit from table', visible: true});
+  });
+
   await softStep('Open a scatter plot and a box plot', async () => {
     await page.evaluate(() => {
       (document.querySelector('[name="icon-scatter-plot"]') as HTMLElement).click();

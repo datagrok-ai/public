@@ -67,10 +67,117 @@
     overflow-y: auto;
 }
 
-.monomer-manager-form-tab-control input.d4-invalid {
-    background: #ff000030;
-}
-
 .monomer-lib-controls-form .ui-input-root {
     flex-wrap: nowrap !important;
+}
+
+/* the editor docked left of the grid: library, sketcher and tabs scroll as one column above Save */
+.monomer-manager-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.monomer-manager-editor-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+/* the sketcher sizes itself to 100% of its host; here it keeps a drawing-sized block */
+.monomer-manager-editor-body > .monomer-manager-sketcher {
+    flex: 0 0 auto;
+    height: clamp(240px, 45vh, 460px) !important;
+}
+
+/* one label column for the library, the Monomer, Meta and Colors tabs and Save: switching tabs moves no input */
+.monomer-manager-editor .u2-form {
+    --u2-form-label-width: 110px !important;
+}
+
+/* inset as the tab content is, so the library, the tabs' inputs and Save start in one column */
+.monomer-manager-library {
+    padding: 4px var(--dg-space-m);
+}
+
+.monomer-manager-editor-body > .u2-tabs {
+    flex: 0 0 auto;
+}
+
+.monomer-manager-save {
+    flex: none;
+    padding: 0 var(--dg-space-m) 10px;
+}
+
+/* once the dock is too narrow for captions beside inputs, Save starts at the left edge with them */
+.monomer-manager-editor:has(.monomer-manager-library.u2-form-tall) .monomer-manager-save .u2-form-buttons-editors {
+    padding-left: 0;
+}
+
+
+.monomer-rgroups-empty {
+    color: var(--grey-4);
+}
+
+.monomer-rgroups-structure {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--red-3);
+}
+
+/* an R group: its cap as a short choice, what the cap is, and the pencil */
+.monomer-rgroups-editor > .u2-form {
+    --u2-form-label-width: 28px !important;
+}
+
+.monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] {
+    --u2-choice-width: 110px !important;
+}
+
+/* the box starts from nothing and takes the row, so a long description shortens instead of wrapping the row */
+.monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] > .u2-input-box {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+}
+
+.monomer-rgroups-editor .u2-input-root[data-u2='choice-input'] .u2-input-options {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.monomer-rgroup-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: var(--grey-5);
+    cursor: default;
+}
+
+.monomer-rgroup-fields {
+    margin: 0 0 8px 24px;
+    padding-left: 10px;
+    border-left: 2px solid var(--grey-2);
+}
+
+.monomer-manager-prompt {
+    display: block;
+    margin-bottom: 10px;
+    white-space: pre-line;
+}
+
+.monomer-manager-cards {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.monomer-manager-card {
+    align-items: center;
 }

@@ -12,6 +12,7 @@ import './tests/detectors-benchmark-tests';
 import './tests/msa-tests';
 import './tests/splitters-test';
 import './tests/monomer-libraries-tests';
+import './tests/monomer-manager-tests';
 import './tests/renderers-test';
 import './tests/renderers-monomer-placer-tests';
 import './tests/converters-test';
@@ -40,6 +41,7 @@ import './tests/editor-loop-tests';
 import './tests/scoring';
 import './tests/projects-tests';
 import './tests/antibody-numbering-tests';
+import './tests/liability-scanner-tests';
 
 
 export const _package = new DG.Package();

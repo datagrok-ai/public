@@ -43,30 +43,74 @@ export interface DataTableOptions<T> extends Omit<VirtualRowsOptions<T>, 'itemHe
   cellState?: CellStateLike;
   /** Enter on the selected row, or a double-click on it. */
   onActivate?(item: T, index: number): void;
+  /** Items are live views (a frame row proxy) whose content changes without a new object: every
+   * items change renders the window again. Default: on for a `RowsLike` or a signal (a source's
+   * rows), off for a plain array — whose rows are rendered again only when their item is a new
+   * object, or on {@link VirtualRows.refresh}. */
+  liveItems?: boolean;
+  /** The text a row is found by (`revealItem`, the state block): the first column's value by
+   * default. */
+  labelOf?: (item: T) => string;
 }
 
 export class DataTable<T> extends VirtualRows<T> {
-  private readonly _columns: DataTableColumn<T>[];
+  private _columns: DataTableColumn<T>[];
   private readonly _cellState: CellStateLike | undefined;
   private readonly _onActivate: ((item: T, index: number) => void) | undefined;
   private readonly _optionKeyOf: ((item: T) => string) | undefined;
-  private readonly _template: string;
+  private readonly _liveOption: boolean | undefined;
+  private _template: string;
+  private _head: HTMLElement;
   private readonly _cellBaseline = new Map<string, string>();
+  /** Bumped by a {@link columns} change: a row whose cells are older is given new ones on its next fill. */
+  private _shape = 0;
+  private readonly _rowShape = new WeakMap<HTMLElement, number>();
+  /** Whether the current items are live — decided per {@link setItems}, so the base keeps every
+   * row whose item is unchanged and {@link placeRow} asks for a render where they are live. */
+  private _liveNow = false;
 
   constructor(options: DataTableOptions<T>) {
-    super({...options, itemHeight: options.rowHeight ?? 24},
-      {host: 'u2-data-table', u2: 'data-table', role: 'grid'});
+    const first = options.columns[0];
+    super({...options, itemHeight: options.rowHeight ?? 24, liveItems: false,
+      labelOf: options.labelOf ?? (first === undefined ? undefined : (item: T) => DataTable._text(item, first.name))},
+    {host: 'u2-data-table', u2: 'data-table', role: 'grid'});
     this._columns = options.columns;
     this._cellState = options.cellState;
     this._onActivate = options.onActivate;
     this._optionKeyOf = options.keyOf;
-    this._template = options.columns.map((c) => c.width ?? 'minmax(0, 1fr)').join(' ');
-    this.root.prepend(this._header());
+    this._liveOption = options.liveItems;
+    this._template = DataTable._templateOf(options.columns);
+    this._head = this._header();
+    this.root.prepend(this._head);
     if (options.items)
       this.setItems(options.items);
   }
 
+  /** `name`, or `name:Header` — the column a spec's string names. */
+  static column<T>(spec: string): DataTableColumn<T> {
+    const at = spec.indexOf(':');
+    return at < 0 ? {name: spec} : {name: spec.slice(0, at), header: spec.slice(at + 1)};
+  }
+
+  /** The columns shown, in order; a string entry is read by {@link column}. A change rebuilds the
+   * header and gives each row its new cells on its next render — the rows, their keys and the
+   * selection stay. */
+  get columns(): DataTableColumn<T>[] {
+    return this._columns;
+  }
+
+  set columns(x: readonly (DataTableColumn<T> | string)[]) {
+    this._columns = x.map((c) => typeof c === 'string' ? DataTable.column<T>(c) : c);
+    this._template = DataTable._templateOf(this._columns);
+    this._shape++;
+    const head = this._header();
+    this._head.replaceWith(head);
+    this._head = head;
+    this.refresh();
+  }
+
   setItems(items: readonly T[] | RowsLike<T> | ReadonlySignal<T[]>): void {
+    this._liveNow = this._liveOption ?? !Array.isArray(items);
     if (Array.isArray(items) || items instanceof Signal) {
       this.keyOf = this._optionKeyOf;
       super.setItems(items as readonly T[] | ReadonlySignal<T[]>);
@@ -88,22 +132,38 @@ export class DataTable<T> extends VirtualRows<T> {
     row.className = 'u2-data-table-row';
     row.setAttribute('role', 'row');
     row.style.height = `${this.itemHeight}px`;
+    this._cells(row);
+    return row;
+  }
+
+  private _cells(row: HTMLElement): void {
     row.style.gridTemplateColumns = this._template;
-    for (const column of this._columns) {
+    row.replaceChildren(...this._columns.map((column) => {
       const cell = document.createElement('div');
       cell.setAttribute('role', 'gridcell');
       cell.className = DataTable._cellClass(column);
-      row.append(cell);
       VirtualRows.capture(cell, this._cellBaseline);
-    }
-    return row;
+      return cell;
+    }));
+    this._rowShape.set(row, this._shape);
+  }
+
+  /** A kept row at its new place; live items are rendered again, since their content may have
+   * changed under the same object. */
+  protected placeRow(row: HTMLElement, index: number): boolean {
+    // the header is row 1, so the data rows start at 2
+    row.setAttribute('aria-rowindex', String(index + 2));
+    return !this._liveNow;
   }
 
   /** The row's cells rendered in place — each restored to a fresh cell's attributes first, so a
    * `render` that set a title, a dataset key or an aria flag does not follow the pool. */
   protected fillRow(row: HTMLElement, index: number): void {
-    // the header is row 1, so the data rows start at 2
-    row.setAttribute('aria-rowindex', String(index + 2));
+    if (this._rowShape.get(row) !== this._shape)
+      this._cells(row);
+    else if (this._shape > 0)
+      row.style.gridTemplateColumns = this._template;
+    this.placeRow(row, index);
     const item = this.items[index];
     const keyOf = this.keyOf;
     const state = this._cellState;
@@ -113,6 +173,8 @@ export class DataTable<T> extends VirtualRows<T> {
       const cell = cells[i] as HTMLElement;
       VirtualRows.restore(cell, this._cellBaseline);
       cell.className = DataTable._cellClass(column);
+      if (i === 0)
+        cell.setAttribute('data-u2-part', 'item-label');
       const content = column.render === undefined ? DataTable._text(item, column.name) :
         column.render(item, index, cell);
       if (typeof content === 'string')
@@ -160,6 +222,10 @@ export class DataTable<T> extends VirtualRows<T> {
       header.append(cell);
     }
     return header;
+  }
+
+  private static _templateOf<T>(columns: DataTableColumn<T>[]): string {
+    return columns.map((c) => c.width ?? 'minmax(0, 1fr)').join(' ');
   }
 
   private static _cellClass<T>(column: DataTableColumn<T>): string {
