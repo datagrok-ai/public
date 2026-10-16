@@ -2,6 +2,7 @@
 
 ## v.next
 
+* u2: Stopped bundling u2's stylesheets (nor the standalone Font Awesome fonts); u2 installs its stylesheet once per page, the newest copy any package carries
 * EMS: imports `domains` from `@datagrok-libraries/ems`
 * GROK-20298: Added `editDomainBinding` (`tags: domainAuthoring`, `meta.mode: edit`; `createDomainBinding` is `meta.mode: create`) — the u2 "Edit binding" dialog over a registered external binding (Design › Review › Saved), the function the platform's "Edit binding..." command on a binding's node runs
 * GROK-20298: `createDomainBinding` answers the created schema's name out of the dialog's `{name, access}` result (the dialog now ends on a Created step when access rows were applied)

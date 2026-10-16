@@ -6,7 +6,8 @@ import * as ui from 'datagrok-api/ui';
 import * as DG from 'datagrok-api/dg';
 
 import {IMonomerManager, INewMonomerForm, MonomerFormFields} from '@datagrok-libraries/bio/src/utils/monomer-ui';
-import {findProviderWithLibraryName, IMonomerLib, IMonomerLibProvider, Monomer, RGroup} from '@datagrok-libraries/bio/src/types/monomer-library';
+import {DEFAULT_FILES_LIB_PROVIDER_NAME, findProviderWithLibraryName, IMonomerLib, IMonomerLibProvider, Monomer, RGroup}
+  from '@datagrok-libraries/bio/src/types/monomer-library';
 import {DUMMY_MONOMER, HELM_RGROUP_FIELDS} from '@datagrok-libraries/bio/src/utils/const';
 import {mostSimilarNaturalAnalog} from '@datagrok-libraries/bio/src/utils/macromolecule/monomers';
 import {ChoiceInput, Dialog, Form, TextInput, span} from '@datagrok-libraries/u2';
@@ -19,8 +20,6 @@ import {CapGroups} from './cap-groups';
 
 import {MONOMER_RENDERER_TAGS} from '@datagrok-libraries/bio/src/utils/cell-renderer';
 import {BioTags, MONOMER_MOTIF_SPLITTER} from '@datagrok-libraries/bio/src/utils/macromolecule/consts';
-//@ts-ignore
-import '@datagrok-libraries/u2/css/all.css';
 //@ts-ignore
 import '../../../../css/monomer-manager.css';
 import {Subscription} from 'rxjs';
@@ -182,10 +181,17 @@ export async function getMonomersDataFrame(monomers: Monomer[]) {
 }
 
 export class MonomerManager implements IMonomerManager {
+  /** Bumped by every table the grid gets: a jump scheduled for one table is dropped once another is shown. */
+  private _tables = 0;
+  private _rowSub: Subscription | null = null;
+
   private adjustTable() {
-    if (this.tv?.dataFrame) {
-      grok.data.detectSemanticTypes(this.tv.dataFrame);
-      this.tv.dataFrame.meta.detectSemanticTypes();
+    this._tables++;
+    const df = this.tv?.dataFrame;
+    if (df) {
+      grok.data.detectSemanticTypes(df);
+      df.meta.detectSemanticTypes();
+      this._followRows(df);
     }
     setTimeout(() => {
       if (this.tv?.grid) {
@@ -231,6 +237,17 @@ export class MonomerManager implements IMonomerManager {
     return new MonomerManager(monManager);
   }
 
+  /** The editor loads the grid's current row while the user has not changed the monomer it holds. */
+  private _followRows(df: DG.DataFrame): void {
+    this._rowSub?.unsubscribe();
+    this._rowSub = df.onCurrentRowChanged.subscribe(() => {
+      const row = df.currentRowIdx;
+      if (row < 0 || this._editor === null || this._editor.edited.peek())
+        return;
+      this.editMonomer(df.rows.get(row)).catch((e) => console.error(e));
+    });
+  }
+
   /** Reloads the grid from the open library, making `scrollToSymbol` the current row. */
   async refreshTable(scrollToSymbol?: string): Promise<void> {
     if (!this._libName || !this.tv?.dataFrame)
@@ -241,8 +258,10 @@ export class MonomerManager implements IMonomerManager {
     this._editor?.libraryReloaded();
     if (scrollToSymbol == undefined)
       return;
+    // the view hands out a new wrapper for its table every time: the table is told apart by the count
+    const table = this._tables;
     setTimeout(() => {
-      if (this.tv?.dataFrame !== df)
+      if (this._tables !== table || !this.tv)
         return;
       const scrollToRow = df.col(MONOMER_DF_COLUMN_NAMES.SYMBOL)!.toList().indexOf(scrollToSymbol);
       if (scrollToRow === -1)
@@ -259,9 +278,13 @@ export class MonomerManager implements IMonomerManager {
       if (!provider)
         throw new Error(`Provider ${providerName} not found`);
       const monomersMapped = _monomers.map((m) => ({...m, lib: undefined, wem: undefined}));
+      const before = await provider.listLibraries();
       await provider.addOrUpdateLibrary(libName, monomersMapped);
+      await provider.refreshLists();
+      // the name the storage lists it under, which is the one the views pick it by
+      const created = (await provider.listLibraries()).find((name) => !before.includes(name)) ?? libName;
       await this.monomerLibManamger.loadMonomerLib(false);
-      grok.shell.v = await this.getViewRoot(libName);
+      grok.shell.v = await this.getViewRoot(created);
     } catch (e) {
       grok.shell.error('Error creating library');
       console.error(e);
@@ -314,12 +337,15 @@ export class MonomerManager implements IMonomerManager {
       nullable: false, readOnly: providersNames.length === 1, tooltipText: 'Select storage provider for the new library'});
     const libNameInput = new TextInput({label: 'Library Name', name: 'libraryName', required: true,
       placeholder: 'Enter library name'});
-    // a library is a .json file: the name is stored, listed and picked with the extension
+    const bare = (name: string) => name.trim().replace(/\.json$/i, '').toLowerCase();
+    // a file library is listed and picked with its .json; a database one under its name as it is
     const fileName = () => {
       const name = libNameInput.value.peek().trim();
-      return name.toLowerCase().endsWith('.json') ? name : `${name}.json`;
+      return providerInput.value.peek() !== DEFAULT_FILES_LIB_PROVIDER_NAME || name.toLowerCase().endsWith('.json') ?
+        name : `${name}.json`;
     };
-    libNameInput.addValidator(() => monomerLibs.includes(fileName()) ? 'Library with this name already exists' : null);
+    libNameInput.addValidator((value) => monomerLibs.some((lib) => bare(lib) === bare(value)) ?
+      'A library with this name already exists' : null);
     Dialog.create('Create New Library', {name: 'newLibraryDialog'})
       .add(new Form().addAll([libNameInput, providerInput]))
       .onOK(() => this.createNewMonomerLib(providerInput.value.peek()!, fileName(), monomers ?? []), {text: 'Create'})

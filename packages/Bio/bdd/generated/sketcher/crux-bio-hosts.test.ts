@@ -74,8 +74,7 @@ test.describe("Crux in Bio's hosts", () => {
     await session.step(58, "And user clicks on crux R2 button", () => clickOn(page, el("crux R2 button")));
     await session.step(59, "And user clicks on crux R-Group OK button", () => clickOn(page, el("crux R-Group OK button")));
     await session.step(60, "Then the \"smiles\" reading of crux sketcher widget should be the molecule \"[*:1]C[*:2]\"", () => readingIsMolecule(page, "smiles", el("crux sketcher widget"), "[*:1]C[*:2]"));
-    await session.step(61, "When user clicks on \"R-groups\" tab", () => clickOn(page, el("\"R-groups\" tab")));
-    await session.step(62, "Then \"R1\" input in monomer form should have value \"H\"", () => shouldHaveValue(page, el("\"R1\" input in monomer form"), "H"));
-    await session.step(63, "And \"R2\" input in monomer form should have value \"OH\"", () => shouldHaveValue(page, el("\"R2\" input in monomer form"), "OH"));
+    await session.step(61, "And \"R1\" input in monomer form should have value \"H\"", () => shouldHaveValue(page, el("\"R1\" input in monomer form"), "H"));
+    await session.step(62, "And \"R2\" input in monomer form should have value \"OH\"", () => shouldHaveValue(page, el("\"R2\" input in monomer form"), "OH"));
   });
 });

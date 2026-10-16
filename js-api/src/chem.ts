@@ -210,6 +210,8 @@ export namespace chem {
     _highlight = true;
     /** Message from the validation function for the last value set, or null. */
     error: string | null = null;
+    /** Numbers the molecule lookups {@link setValue} starts: only the latest one's answer is applied. */
+    private _lookup = 0;
     errorDiv = ui.divText('Malformed molecule');
     alighInput: InputBase;
     highlightInput: InputBase;
@@ -379,20 +381,32 @@ export namespace chem {
       const extractor = extractors
         .find((f) => new RegExp(f.options['inputRegexp']).test(x));
 
-          if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
-            this.calculating = true;
-            extractor
-              .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
-              .then((mol) => {
-                mol ? this.setMolecule(mol) : this.setMolecule('');
-              }).catch(() => {
-                this.setMolecule('');
-              }).finally(() => {
-                this.calculating = false;
-              });
+      const lookup = ++this._lookup;
+      if (extractor != null && !checkSmiles(x) && !isMolBlock(x)) {
+        this.calculating = true;
+        // a lookup answered after a newer value was set is dropped; one that finds nothing keeps the drawing
+        const recognized = (mol: string | null | undefined) => {
+          if (lookup !== this._lookup)
+            return;
+          if (mol)
+            this.setMolecule(mol);
+          else {
+            this.error = `Could not recognize "${x}"`;
+            this.updateInvalidMoleculeWarning();
           }
-          else
-            this.setMolecule(x);
+        };
+        extractor
+          .apply([new RegExp(extractor.options['inputRegexp']).exec(x)![1]])
+          .then(recognized, () => recognized(null))
+          .finally(() => {
+            if (lookup === this._lookup)
+              this.calculating = false;
+          });
+      }
+      else {
+        this.calculating = false;
+        this.setMolecule(x);
+      }
     }
 
     /** Runs the validation function from the constructor, sets {@link error} and toggles the warning. */

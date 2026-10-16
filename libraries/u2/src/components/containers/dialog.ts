@@ -8,6 +8,7 @@ import {signal, computed, batch, ReadonlySignal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
 import {Scope} from '../../core/scope.js';
 import {Overlay, OverlayDialog} from '../../core/overlay.js';
+import {Tooltip} from '../../core/tooltip.js';
 import {button} from '../../core/elements.js';
 import {icon} from '../display/icon.js';
 import {Form} from '../forms/form.js';
@@ -71,10 +72,21 @@ export class Dialog extends Control implements OverlayDialog {
   private _okBtn: HTMLButtonElement | undefined;
   private _cancelBtn: HTMLButtonElement | undefined;
   private readonly _okOn = signal<ReadonlySignal<boolean> | undefined>(undefined);
-  /** The verdict of the form in the body, found on show: OK waits for it, as the platform's does. */
-  private readonly _formValidity = signal<ReadonlySignal<string | null> | undefined>(undefined);
-  private readonly _okAllowed = computed(() =>
-    (this._okOn.value?.value ?? true) && (this._formValidity.value?.value ?? null) === null);
+  private readonly _okOff = signal<ReadonlySignal<boolean | string | null> | undefined>(undefined);
+  /** The form in the body, found on show: OK waits for its verdict, as the platform's does. */
+  private readonly _form = signal<Form | undefined>(undefined);
+  /** Why OK is off — '' when it is off for no stated reason; null while it is on. */
+  private readonly _okReason = computed<string | null>(() => {
+    // the form's fields first: the reasons read top to bottom, as the user fills the dialog in
+    const field = this._form.value?.problem.value ?? null;
+    if (field !== null)
+      return field;
+    const off = this._okOff.value?.value;
+    if (typeof off === 'string' && off !== '')
+      return off;
+    return off === true || this._okOn.value?.value === false ? '' : null;
+  });
+  private readonly _okAllowed = computed(() => this._okReason.value === null);
   private _onOK: ((ctx: DialogOkContext) => unknown) | undefined;
   private _onCancel: (() => unknown) | undefined;
   private _closeGuard: (() => boolean) | undefined;
@@ -224,6 +236,15 @@ export class Dialog extends Control implements OverlayDialog {
     return this;
   }
 
+  /** OK is off while `reason` says why — a string becomes the button's tooltip, so the user learns
+   * what is missing (`'Select at least one monomer'`); `true` turns it off without a reason, `null`
+   * or `false` leave it on. A form in the body adds its own: "Name: Value can't be empty". */
+  okDisabled(reason: ReadonlySignal<boolean | string | null>): this {
+    this._okButton();
+    this._okOff.value = reason;
+    return this;
+  }
+
   /** Vetoes every close — ✕, Esc and the buttons — while `fn` answers false: work in flight the
    * dialog must outlive. */
   closeGuard(fn: () => boolean): this {
@@ -285,7 +306,7 @@ export class Dialog extends Control implements OverlayDialog {
     document.body.append(this.root);
     this._unstack = Overlay.pushDialog(this);
     this._open.value = true;
-    this._formValidity.value = Dialog._formOf(this._content)?.validity;
+    this._form.value = Dialog._formOf(this._content);
     this._alignLabels();
     this._at = {x: options.x, y: options.y};
     this._place(options.x, options.y);
@@ -349,10 +370,10 @@ export class Dialog extends Control implements OverlayDialog {
       valid: Dialog._formOf(this._content)?.validity?.peek() == null};
   }
 
-  private static _formOf(content: HTMLElement): {validity?: ReadonlySignal<string | null>} | undefined {
+  private static _formOf(content: HTMLElement): Form | undefined {
     const formEl = content.querySelector<HTMLElement>('.u2-form');
-    return formEl === null ? undefined :
-      Control.forElement(formEl) as unknown as {validity?: ReadonlySignal<string | null>} | undefined;
+    const form = formEl === null ? undefined : Control.forElement(formEl);
+    return form instanceof Form ? form : undefined;
   }
 
   /** The title — read off the element, so a dialog not shown (not in the document) still has it. */
@@ -364,6 +385,7 @@ export class Dialog extends Control implements OverlayDialog {
   private _okButton(text?: string): HTMLButtonElement {
     if (!this._okBtn) {
       const ok = this._okBtn = this._button(text ?? 'OK', () => this._accept());
+      Tooltip.bind(ok, () => this._okReason.peek() ?? '', this.scope);
       this._buttons.append(ok);
       this._cancelButton();
       this.effect(() => {

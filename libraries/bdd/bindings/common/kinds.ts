@@ -84,7 +84,7 @@ const OVERRIDES: Record<string, U2Override> = {
 
   // --- forms and collections ---
   'form': {selector: u2('object-form', 'func-form') + ', .ui-form'},
-  'list': {u2Selector: '[data-u2="list"]:not([role="tree"])', selector: '[role="listbox"], .u2-list:not([role="tree"]), .d4-list'},
+  'list': {u2Selector: '[data-u2="list"]:not([role="tree"])', selector: '[role="listbox"], [role="list"], .u2-list:not([role="tree"]), .d4-list'},
   'tree': {selector: '[role="tree"], .d4-tree-view'},
   'table': {selector: 'table'},
   'grid': {selector: '.d4-grid'},
@@ -173,7 +173,7 @@ kind('category', {
 // --- items of u2 collections: also addressed by key (data-u2-item), revealed for a gesture when not rendered
 kind('item', {
   aliases: ['list item', 'row', 'option', 'entry'],
-  selector: '.u2-list-row, [role="option"], [role="row"], .d4-list-item, li',
+  selector: '.u2-list-row, [role="option"], [role="row"], [role="listitem"], .d4-list-item, li',
   match: ['text', 'label', 'aria', 'item', 'name'],
   items: true,
   labelSelector: `${PRIMARY_TEXT}, ${ITEM_LABEL}`,

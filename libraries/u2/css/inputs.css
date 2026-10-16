@@ -1006,3 +1006,31 @@ textarea.u2-list-area {
 .u2-suggest-retry:hover {
   background: var(--dg-hover);
 }
+
+/* quiet (Form `quiet`, or the u2-quiet class on any host): values read as text. An editor's
+   underline shows while it is hovered, focused, empty or wrong — the focus and error rules set
+   their own — and a key/value row's buttons while the row is hovered or focused, and on its last row */
+.u2-quiet {
+  --dg-input-border: var(--dg-border-width) solid transparent;
+}
+
+/* text on whatever the host is drawn on — a tinted group, a card — not on white boxes; a value too long
+   for its box ends in an ellipsis until it is edited */
+.u2-quiet :is(.u2-input-editor, .u2-map-key, .u2-map-value) {
+  background-color: transparent;
+}
+
+.u2-quiet :is(input.u2-input-editor, .u2-map-key, .u2-map-value):not(:focus) {
+  text-overflow: ellipsis;
+}
+
+.u2-quiet .u2-input-root:not([data-u2='map-input']):hover,
+.u2-quiet .u2-input-root.u2-input-empty,
+.u2-quiet .u2-map-row:hover,
+.u2-quiet :is(input, textarea):placeholder-shown {
+  --dg-input-border: var(--dg-border-width) solid var(--dg-border);
+}
+
+.u2-quiet .u2-map-row:not(:hover):not(:focus-within):not(:last-child) > .u2-map-actions {
+  visibility: hidden;
+}

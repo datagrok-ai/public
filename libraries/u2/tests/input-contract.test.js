@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import {readFileSync, readdirSync} from 'node:fs';
 import {fire, flush, resetDom} from './dom-shim.js';
 import {state} from 'datagrok-api/u2core';
-import {signal, Scope, Input, TextInput, TextArea, NumberInput, BoolInput, ChoiceInput, MultiChoiceInput,
+import {signal, batch, Scope, Input, TextInput, TextArea, NumberInput, BoolInput, ChoiceInput, MultiChoiceInput,
   RadioInput, SliderInput, QNumInput, Form, EMPTY, registry, registerAll, renderSpec, SpecContext, each} from '../src/index.js';
 import {BigIntInput} from '../src/components/inputs/bigint-input.js';
 
@@ -353,6 +353,89 @@ smoke('reset: a fresh start for another record — no waiting verdict, no unread
   id.reset(0);
   assert.equal(id.validity.value, null, 'the same value, its text read again');
   assert.equal(editor.value, '0');
+  name.dispose();
+  id.dispose();
+});
+
+smoke('onInput: the user\'s own edits only — never a write from code, a reset, a follow or the input\'s pruning', async () => {
+  const inputs = [];
+  const changes = [];
+  const lib = mount(new ChoiceInput({label: 'Library', items: ['A', 'B', 'C'], value: 'A',
+    onInput: (v) => inputs.push(v), onChanged: (v) => changes.push(v)}));
+  const events = [];
+  lib.on('userInput', (v) => events.push(v));
+  const select = lib.root.querySelector('select');
+  select.value = 'B';
+  fire(select, 'change');
+  assert.deepEqual(inputs, ['B'], 'a pick in the editor is the user\'s');
+  lib.value.value = 'C';
+  lib.reset('A');
+  const source = signal('B');
+  lib.follow(() => source.value);
+  source.value = 'C';
+  Input.system(() => lib.value.value = 'A');
+  assert.deepEqual(inputs, ['B'], 'code, reset, follow and system writes are not');
+  assert.deepEqual(changes, ['B', 'C', 'A'], 'onChanged still hears the program\'s writes');
+  assert.deepEqual(events, ['B']);
+  const button = document.createElement('button');
+  document.body.append(button);
+  button.addEventListener('click', () => lib.value.value = 'B');
+  fire(button, 'click');
+  assert.deepEqual(inputs, ['B'], 'a write made by a click elsewhere is the program\'s');
+  lib.dispose();
+  button.remove();
+});
+
+smoke('onInput: the input\'s own pruning inside a user\'s event is not the user\'s, batched or not', async () => {
+  const inputs = [];
+  const lib = mount(new ChoiceInput({label: 'Library', items: ['A', 'B'], value: 'A', onInput: (v) => inputs.push(v)}));
+  const select = lib.root.querySelector('select');
+  lib.root.addEventListener('change', () => batch(() => lib.setItems(['A'])));
+  select.value = 'B';
+  fire(select, 'change');
+  assert.equal(lib.value.value, null, 'B left the list and was dropped');
+  assert.deepEqual(inputs, ['B'], 'the pick was the user\'s; the drop that followed is the input\'s own');
+  lib.dispose();
+});
+
+smoke('choice items as a signal: followed live, and the value may come before its item', async () => {
+  const libs = signal(['HELMCoreLibrary.json']);
+  const lib = mount(new ChoiceInput({label: 'Library', items: libs}));
+  const select = lib.root.querySelector('select');
+  lib.value.value = 'zz-new.json';
+  libs.value = ['HELMCoreLibrary.json', 'zz-new.json'];
+  assert.equal(lib.value.value, 'zz-new.json');
+  assert.equal(select.value, 'zz-new.json', 'selected once its item arrived');
+  libs.value = ['HELMCoreLibrary.json'];
+  assert.equal(lib.value.value, null, 'a value whose item left is dropped');
+  lib.dispose();
+});
+
+smoke('a decimal in a whole-number field says so', async () => {
+  const id = mount(new NumberInput({label: 'ID', mode: 'int', value: 0}));
+  const editor = id.root.querySelector('input');
+  editor.value = '1.5';
+  fire(editor, 'input');
+  assert.equal(id.validity.value, 'Must be a whole number');
+  editor.value = 'abc';
+  fire(editor, 'input');
+  assert.equal(id.validity.value, 'Not a number');
+  id.dispose();
+});
+
+smoke('error and touched: what the input shows — a required verdict waits for the touch, validity does not', async () => {
+  const name = mount(new TextInput({label: 'Name', required: true}));
+  assert.equal(name.validity.value, EMPTY);
+  assert.equal(name.error.value, null, 'a fresh form shows nothing');
+  assert.equal(name.touched.value, false);
+  name.touch();
+  assert.equal(name.error.value, EMPTY);
+  assert.equal(name.touched.value, true);
+  name.reset('');
+  assert.equal(name.error.value, null);
+  const id = mount(new NumberInput({label: 'ID', value: 1}));
+  id.addValidator((v) => v > 0 ? 'Positive is taken' : null);
+  assert.equal(id.error.value, 'Positive is taken', 'a validator speaks at once');
   name.dispose();
   id.dispose();
 });

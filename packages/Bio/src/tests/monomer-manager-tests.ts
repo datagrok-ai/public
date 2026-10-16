@@ -10,6 +10,8 @@ import {RGroupsEditor} from '../utils/monomer-lib/monomer-manager/rgroups-editor
 import {MonomerEditor} from '../utils/monomer-lib/monomer-manager/monomer-editor';
 import {MonomerManager} from '../utils/monomer-lib/monomer-manager/monomer-manager';
 import {MonomerLibManager} from '../utils/monomer-lib/lib-manager';
+import {MonomerCollectionsView} from '../utils/monomer-lib/monomer-collections-view';
+import {CollectionDialogs} from '../utils/monomer-lib/collection-dialogs';
 
 const rg = (label: string, smiles: string, name: string, alternateId: string): RGroup =>
   ({label, capGroupSMILES: smiles, capGroupName: name, alternateId});
@@ -203,7 +205,7 @@ category('monomerManager: editor', () => {
       expect(saved.d, true);
       expect('colors' in saved, false, 'colors nobody changed are not written');
       editor.setFields({name: ''});
-      expect(editor.problem.value, 'Monomer Name is required');
+      expect(editor.problem.value, 'Name: Value can\'t be empty');
       editor.setFields({name: 'test alanine'});
       editor.rgroups.setCap('R2', 'NH2');
       expectArray(editor.buildMonomer().rgroups.map((r) => r.capGroupName), ['H', 'NH2']);
@@ -212,6 +214,22 @@ category('monomerManager: editor', () => {
       expect(editor.id.value.value, 0, 'a new monomer starts at ID 0, as the view does');
       const save = editor.root.querySelector<HTMLButtonElement>('.monomer-manager-save button')!;
       expect(save.disabled, true, 'Save waits for a structure');
+      // the sketcher, the scrolling fields (identity, R groups, Details last), then Save pinned at the bottom
+      const rows = [...editor.root.querySelector('.monomer-manager-editor-layout')!.children].map((el) => el.className);
+      expect(rows[1].includes('monomer-manager-sketcher'), true, 'the sketcher comes before the fields');
+      expect(rows[2].includes('monomer-manager-scroller'), true, 'the fields scroll on their own');
+      expect(rows[3].includes('monomer-manager-footer'), true, 'Save is the last row');
+      expect(editor.root.querySelector('.monomer-manager-footer > .u2-form-buttons') !== null, true,
+        'the row is the form\'s own button row: Save keeps the platform\'s form-button look');
+      const fields = [...editor.root.querySelector('.monomer-manager-fields > .u2-form-rows')!.children];
+      expect(fields[fields.length - 1] === editor.details.root, true, 'Details opens right above Save');
+      expect(editor.details.root.querySelector('[role="group"]')?.textContent?.startsWith('Colors'), true,
+        'one Colors row in Details');
+      const line = editor.root.querySelector('.u2-status-line')!;
+      expect(line.textContent, MonomerEditor.DRAW, 'the line beside Save says what to do first');
+      expect(line.classList.contains('u2-status-line-problem'), false, 'nothing drawn yet is no error');
+      expect(editor.root.querySelector('.monomer-manager-save')!.contains(editor.details.header), true,
+        'the Details toggle is in the row with Save');
     } finally {
       editor.root.remove();
       editor.dispose();
@@ -239,5 +257,39 @@ category('monomerManager: editor', () => {
     } finally {
       Array.from(grok.shell.tableViews).find((v) => v.name === MonomerManager.VIEW_NAME)?.close();
     }
+  });
+});
+
+category('monomerCollections: view', () => {
+  test('a card per collection and a New card; the search, the selection and the author gate', async () => {
+    const libHelper = await MonomerLibManager.getInstance();
+    await libHelper.awaitLoaded();
+    const live = Scope.liveCount;
+    const view = new MonomerCollectionsView(libHelper, libHelper.getMonomerLib(), 'zz-nobody');
+    document.body.append(view.root);
+    try {
+      await view.refresh();
+      const names = view.names.value;
+      expect(names.length > 0, true, 'the package ships collections');
+      const cards = () => [...view.root.querySelectorAll<HTMLElement>('[data-u2="card"]')];
+      expect(cards().length, names.length + 1, 'a card per collection, then New Collection');
+      expect(cards()[cards().length - 1].dataset.u2Name, 'New-Collection');
+      const first = CollectionDialogs.displayName(names[0]);
+      view.search.value.value = first;
+      expect(view.shown.value.includes(names[0]), true);
+      view.search.value.value = 'zz-no-such-collection';
+      expect(view.shown.value.length, 0);
+      expect(view.root.querySelector('.monomer-collections-empty')!.textContent!.includes('No collection'), true);
+      view.search.value.value = '';
+      cards()[0].click();
+      expectArray([...view.selected.value], [names[0]]);
+      const buttons = [...cards()[0].querySelectorAll<HTMLButtonElement>('.u2-card-footer button')];
+      // another author's collection cannot be changed
+      expectArray(buttons.map((b) => b.disabled), [true, true]);
+    } finally {
+      view.root.remove();
+      view.dispose();
+    }
+    expect(Scope.liveCount, live, 'scopes left behind by the view');
   });
 });
