@@ -2,6 +2,7 @@
 
 ## v.next
 
+* Tutorial: `Tutorial.closeActive()` closes the tutorial in progress, so a tutorial the user leaves no longer keeps running in the background
 * Package prerequisites check that the package is installed, so a tutorial reports a package the server only lists from its repository
 * A tutorial finished while the panel is open marks its card done in `data-status` too, not only visually
 * Tutorial: Step entries carry `role="checkbox"`, `aria-checked`, `aria-current="step"` and `data-step`, the progress bar `role="progressbar"` with `aria-valuenow`/`aria-valuemax`, and the `tutorial-step-completed` / `tutorial-completed` custom events fire, so tests read the tutorial's state instead of its CSS classes
