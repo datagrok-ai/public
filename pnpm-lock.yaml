@@ -1783,6 +1783,9 @@ importers:
       '@datagrok-libraries/bdd':
         specifier: workspace:^
         version: link:../../libraries/bdd
+      '@playwright/test':
+        specifier: ^1.48.0
+        version: 1.63.0
 
   packages/DBTests:
     dependencies:

@@ -20,7 +20,8 @@
     "rxjs": "catalog:"
   },
   "devDependencies": {
-    "@datagrok-libraries/bdd": "workspace:^"
+    "@datagrok-libraries/bdd": "workspace:^",
+    "@playwright/test": "^1.48.0"
   },
   "scripts": {
     "build": "grok build",
