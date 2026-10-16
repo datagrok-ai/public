@@ -3,9 +3,6 @@ import {getProcessedConfig} from
   '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
 import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTree';
 import {FuncCallNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
-import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
-import {PipelineLinkConfigurationInput} from
-  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
 import {
   compileCheckFormulas, compileEffect, compileExpression, compileRuleFormulas, compileSource, compileValue, formulaOps,
 } from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/rule-formula';
@@ -14,17 +11,7 @@ import {expandChecks} from '@datagrok-libraries/compute-utils/reactive-tree-driv
 import {evaluate} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/rule-expressions';
 import {TestScheduler} from 'rxjs/testing';
 import {expectDeepEqual} from '@datagrok-libraries/utils/src/expect';
-import {createTestScheduler, expectThrowsAsync} from '../../../test-utils';
-
-const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
-  id: 'pipeline1',
-  type: 'static',
-  steps: [
-    {id: 'step1', nqName: 'LibTests:TestAdd2'},
-    {id: 'step2', nqName: 'LibTests:TestMul2'},
-  ],
-  links,
-});
+import {createTestScheduler, expectThrowsAsync, twoSteps} from '../../../test-utils';
 
 const symbolicOps = new Set(['!', '!!', '==', '!=', '===', '!==', '>', '>=', '<', '<=', '+', '-', '*', '/', '%']);
 
@@ -99,6 +86,11 @@ const effectCases: [string, any][] = [
   ['hide(t1)', {effect: 'hide', targets: 't1'}],
   ['show([tol, col])', {effect: 'show', targets: ['tol', 'col']}],
   ['show(u, when: gt(m, 0))', {effect: 'show', targets: 'u', when: {'>': [{var: 'm'}, 0]}}],
+  ['hideAction(days, "addDay")', {effect: 'hideAction', targets: 'days', action: 'addDay'}],
+  ['showAction([a, b], "fix", when: gt(m, 0))',
+    {effect: 'showAction', targets: ['a', 'b'], action: 'fix', when: {'>': [{var: 'm'}, 0]}}],
+  ['describe(title, cat("Day ", $position))',
+    {effect: 'describe', targets: 'title', value: {cat: ['Day ', {var: '$position'}]}}],
   ['items(col, columns(df, "numerical"))',
     {effect: 'items', targets: 'col', items: {columns: [{var: 'df'}, 'numerical']}}],
   ['meta(t, units: "K", twice: mul(m, 2))',
@@ -281,8 +273,6 @@ category('ComputeUtils: Driver rule formulas', async () => {
     same(choices.sources!.region_choices, compileSource('choices(region)'), 'choices source');
     same(choices.effects, [
       compileEffect('items(region_target, region_choices.items, when: bool(region_choices))'),
-      compileEffect('warning(region_target, "Not in the lookup table", ' +
-        'when: and(bool(region_choices), not(region_choices.inList)))'),
       compileEffect('warning(region_target, region_choices.rowErrors, when: bool(region_choices))'),
     ], 'choices effects');
     same(lookup.effects, [compileEffect(
@@ -476,59 +466,6 @@ category('ComputeUtils: Driver rule formulas', async () => {
     }]));
     expectDeepEqual(formulas.links!.map((l) => l.id), objects.links!.map((l) => l.id));
     formulas.links!.forEach((link, idx) => same(link.params, objects.links![idx].params, link.id));
-  });
-
-  test('Docs rules match their object forms', async () => {
-    const pairs: [any, any][] = [[{
-      when: 'eq(mode, "advanced")',
-      effects: ['show([tol, col])', 'items(col, columns(df, "numerical"))', 'clear(col)',
-        'error(init, cat("Must exceed ambient ", amb))'],
-    }, {
-      when: {'==': [{var: 'mode'}, 'advanced']},
-      effects: [
-        {effect: 'show', targets: ['tol', 'col']},
-        {effect: 'items', targets: 'col', items: {columns: [{var: 'df'}, 'numerical']}},
-        {effect: 'clear', targets: 'col'},
-        {effect: 'error', targets: 'init', message: {cat: ['Must exceed ambient ', {var: 'amb'}]}},
-      ],
-    }], [{
-      sources: {v: 'validators(tol, names: ["Pkg:checkTolerance"])'},
-      when: 'eq(mode, "advanced")',
-      effects: ['show(t)', 'verdicts(t, v)', 'warning(t, "Custom tolerance is slower")',
-        'error(init, cat("Must exceed ambient ", amb))', 'set(init, amb, restriction: "restricted")'],
-    }, {
-      sources: {v: {validators: {input: 'tol', names: ['Pkg:checkTolerance']}}},
-      when: {'==': [{var: 'mode'}, 'advanced']},
-      effects: [
-        {effect: 'show', targets: 't'},
-        {effect: 'verdicts', targets: 't', source: 'v'},
-        {effect: 'warning', targets: 't', message: 'Custom tolerance is slower'},
-        {effect: 'error', targets: 'init', message: {cat: ['Must exceed ambient ', {var: 'amb'}]}},
-        {effect: 'set', targets: 'init', value: {var: 'amb'}, restriction: 'restricted'},
-      ],
-    }], [{
-      when: 'gt(threshold, 0.5)',
-      effects: ['warning(n, "Consider more iterations for a strict threshold")'],
-    }, {
-      when: {'>': [{var: 'threshold'}, 0.5]},
-      effects: [{effect: 'warning', targets: 'n', message: 'Consider more iterations for a strict threshold'}],
-    }], [{
-      sources: {presets: 'file("System:AppData/Pkg/presets.csv")'},
-      effects: ['items(k, column(presets, "preset"))',
-        'assign(row(presets, "preset", key), restriction: "restricted", when: in(key, column(presets, "preset")))'],
-    }, {
-      sources: {presets: {file: 'System:AppData/Pkg/presets.csv'}},
-      effects: [
-        {effect: 'items', targets: 'k', items: {column: [{var: 'presets'}, 'preset']}},
-        {effect: 'assign', values: {row: [{var: 'presets'}, 'preset', {var: 'key'}]}, restriction: 'restricted',
-          when: {in: [{var: 'key'}, {column: [{var: 'presets'}, 'preset']}]}},
-      ],
-    }]];
-    pairs.forEach(([formula, object], idx) => {
-      const compiled = compileRuleFormulas({id: 'r', type: 'rule', from: [], to: [], ...formula});
-      same({when: compiled.when, sources: compiled.sources, effects: compiled.effects},
-        {when: object.when, sources: object.sources, effects: object.effects}, `docs rule ${idx}`);
-    });
   });
 
   test('Formula rules run like object rules', async () => {

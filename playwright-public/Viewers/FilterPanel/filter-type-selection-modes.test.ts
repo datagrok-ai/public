@@ -25,7 +25,7 @@ async function orderedCaptions(page: Page): Promise<string[]> {
 
 async function cardFilterType(page: Page, column: string): Promise<string | null> {
   return page.evaluate((col) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => ((c.querySelector('.d4-filter-column-name') as HTMLElement | null)?.textContent ?? '').trim() === col);
     if (!card) return null;
     if (card.querySelector('[name="filter-grid"]')) return 'categorical';
@@ -36,7 +36,7 @@ async function cardFilterType(page: Page, column: string): Promise<string | null
 
 async function cardBody(page: Page, column: string): Promise<{grid: boolean; histo: boolean; menuIcon: boolean}> {
   return page.evaluate((col) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     return {
       grid: !!card?.querySelector('[name="filter-grid"]'),
@@ -48,7 +48,7 @@ async function cardBody(page: Page, column: string): Promise<{grid: boolean; his
 
 async function cardCanvasBox(page: Page, column: string): Promise<{w: number; h: number} | null> {
   return page.evaluate((col) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     const canvas = card?.querySelector('canvas') as HTMLCanvasElement | null;
     if (!canvas) return null;
@@ -59,7 +59,7 @@ async function cardCanvasBox(page: Page, column: string): Promise<{w: number; h:
 
 async function clickCardTypeSwitch(page: Page, column: string, icon: 'icon-list' | 'icon-signal'): Promise<void> {
   await page.evaluate(async ({col, ic}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     if (!card) throw new Error(`the panel carries no ${col} card to switch the filter type on`);
     const target = card.querySelector(`[name="${ic}"]`) as HTMLElement | null;
@@ -79,7 +79,7 @@ async function clickCardTypeSwitch(page: Page, column: string, icon: 'icon-list'
 async function cardIndicatorMenu(page: Page, column: string,
   opts: {hover?: string[]; path?: string[]} = {}): Promise<string[]> {
   return page.evaluate(async ({col, hover, path}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     if (!card) throw new Error(`the panel carries no ${col} card to open an indicator menu on`);
     const indicator = card.querySelector('.d4-filter-indicator') as HTMLElement | null;
@@ -190,7 +190,7 @@ async function clickCategoryRow(page: Page, column: string, rowIndex: number,
   target: 'checkbox' | 'name'): Promise<RowClick> {
   const y = rowCentreY(rowIndex);
   const res = await page.evaluate(async ({col, cx, cy, cap}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col);
     const overlay = card?.querySelector('[name="filter-grid"] [name="overlay"]') as HTMLElement | null;
     if (!overlay) return null;
@@ -278,7 +278,7 @@ async function heldTrueCount(page: Page, expected: number, why: string, holdMs =
 
 async function inCardSearch(page: Page, column: string, fragment: string): Promise<number> {
   return page.evaluate(async ({col, frag}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col) as HTMLElement;
     const w = window as any;
     // The callers read the header counter right after this returns, and the panel repaints it a
@@ -302,7 +302,7 @@ async function inCardSearch(page: Page, column: string, fragment: string): Promi
 
 async function clearInCardSearch(page: Page, column: string): Promise<void> {
   await page.evaluate(async (col) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col) as HTMLElement;
     const input = card.querySelector('input.d4-search-input[placeholder="Search"]') as HTMLInputElement;
     if (input) {
@@ -321,7 +321,7 @@ async function clearInCardSearch(page: Page, column: string): Promise<void> {
 
 async function pasteInCardSearch(page: Page, column: string, values: string[], trailingSep: boolean): Promise<number> {
   return page.evaluate(async ({col, vals, trail}) => {
-    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+    const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
       .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === col) as HTMLElement;
     const w = window as any;
     // The callers read the header counter right after this returns, and the panel repaints it a
@@ -754,7 +754,7 @@ test('Filter Panel — Filter type switching and category selection modes', asyn
     expect(canvas!.h, 'the zero-variance card canvas must have a non-zero height to click').toBeGreaterThan(0);
 
     const clicked = await page.evaluate(async () => {
-      const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter')]
+      const card = [...document.querySelectorAll('[name="viewer-Filters"] .d4-filter:not(.d4-filter-single-values)')]
         .find((c) => (c.querySelector('.d4-filter-column-name')?.textContent ?? '').trim() === 'probe_constant');
       const canvas = card?.querySelector('canvas') as HTMLCanvasElement | null;
       if (!canvas) throw new Error('the probe_constant card lost its canvas between the presence check and the click');

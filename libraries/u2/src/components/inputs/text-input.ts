@@ -21,8 +21,8 @@ export interface TextInputOptions extends InputOptions<string> {
  * (`text_input.dart:131-141`, `ui.css:540-546`); u2 additionally keeps it out of an empty field,
  * where there is nothing to clear. */
 export class TextInput extends Input<string, TextInputOptions> {
-  private _input!: HTMLInputElement;
-  private _remeasure?: () => void;
+  private declare _input: HTMLInputElement;
+  private declare _remeasure?: () => void;
 
   constructor(options: TextInputOptions = {}) {
     super(options, '');
@@ -59,12 +59,10 @@ export class TextInput extends Input<string, TextInputOptions> {
     clear.className = 'u2-input-clear';
     clear.textContent = '✕';
     clear.setAttribute('aria-label', 'Clear');
-    const onClear = () => {
+    this.scope.listen(clear, 'click', () => {
       this.value.value = '';
       input.focus();
-    };
-    clear.addEventListener('click', onClear);
-    this.own(() => clear.removeEventListener('click', onClear));
+    });
     this.effect(() => clear.hidden = this.value.value === '');
     editor.append(input, clear);
     return editor;
@@ -79,15 +77,13 @@ export class TextInput extends Input<string, TextInputOptions> {
     eye.setAttribute('aria-label', 'Show password');
     const glyph = icon('eye');
     eye.append(glyph);
-    const onClick = () => {
+    this.scope.listen(eye, 'click', () => {
       const masked = this._input.type === 'password';
       this._input.type = masked ? 'text' : 'password';
       glyph.classList.toggle('fa-eye', !masked);
       glyph.classList.toggle('fa-eye-slash', masked);
       eye.setAttribute('aria-label', masked ? 'Hide password' : 'Show password');
-    };
-    eye.addEventListener('click', onClick);
-    this.own(() => eye.removeEventListener('click', onClick));
+    });
     editor.append(this._input, eye);
     return editor;
   }
@@ -117,10 +113,12 @@ export class TextInput extends Input<string, TextInputOptions> {
 export interface TextAreaOptions extends InputOptions<string> {
   placeholder?: LiveOption<string>;
   autoGrow?: boolean;
+  /** Visible text lines (the textarea's `rows`); the editor never drops below two control heights. */
+  rows?: number;
 }
 
 export class TextArea extends Input<string, TextAreaOptions> {
-  private _area!: HTMLTextAreaElement;
+  private declare _area: HTMLTextAreaElement;
 
   constructor(options: TextAreaOptions = {}) {
     super(options, '');
@@ -136,9 +134,23 @@ export class TextArea extends Input<string, TextAreaOptions> {
     this._area.placeholder = x;
   }
 
+  /** Visible text lines. */
+  get rows(): number {
+    return this._area.rows;
+  }
+
+  set rows(x: number) {
+    if (x == null)
+      this._area.removeAttribute('rows');
+    else
+      this._area.rows = x;
+  }
+
   protected createEditor(): HTMLElement {
     const area = document.createElement('textarea');
     this._area = area;
+    if (this.options.rows !== undefined)
+      area.rows = this.options.rows;
     bindValue(this.scope, area, this.value, this.options.commitOn);
     if (this.options.autoGrow)
       this.effect(() => this._grow(this.value.value));

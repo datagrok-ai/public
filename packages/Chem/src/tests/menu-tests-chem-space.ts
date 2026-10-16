@@ -12,6 +12,7 @@ import {BitArrayMetricsNames} from '@datagrok-libraries/ml/src/typed-metrics';
 import {MALFORMED_DATA_WARNING_CLASS} from '../constants';
 import {DimReductionMethods} from '@datagrok-libraries/ml/src/multi-column-dimensionality-reduction/types';
 import { getGPUDevice } from '@datagrok-libraries/math/src/webGPU/getGPUDevice';
+import {PackageFunctions} from '../package';
 
 
 category('top menu chem space', async () => {
@@ -60,6 +61,26 @@ category('top menu chem space', async () => {
       },
       'cannot find warning balloon', 5000);
     } finally {DG.Balloon.closeAll();}
+  });
+
+  test('chemSpace.allEmpty', async () => {
+    const df = DG.DataFrame.fromColumns([
+      DG.Column.fromInt32Array('id', Int32Array.from({length: 10}, (_, i) => i + 1)),
+      DG.Column.fromStrings('structure', new Array(10).fill('')),
+    ]);
+    df.col('structure')!.semType = DG.SEMTYPE.MOLECULE;
+    const tv = grok.shell.addTableView(df);
+    try {
+      const sp = await PackageFunctions.chemSpaceTopMenu(df, df.col('structure')!, DimReductionMethods.UMAP,
+        BitArrayMetricsNames.Tanimoto, true, undefined, undefined, true);
+      expect(sp?.type, DG.VIEWER.SCATTER_PLOT);
+      for (const prefix of ['Embed_X_', 'Embed_Y_']) {
+        const col = df.columns.toList().find((c) => c.name.startsWith(prefix));
+        expect(col?.stats.missingValueCount, 0, `${prefix} column is missing or has empty values`);
+      }
+      expect(df.col('Cluster (DBSCAN)')?.length, 10);
+      expect(df.rowCount, 10);
+    } finally {tv.close();}
   });
 });
 

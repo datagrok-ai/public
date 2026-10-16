@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: color-mix(in srgb, var(--white) 85%, transparent);
   z-index: 3000;
   opacity: 0;
   pointer-events: none;

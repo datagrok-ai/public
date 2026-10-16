@@ -13,6 +13,8 @@ export interface StepModel {
   line: number;
   table?: string[][];
   docString?: string;
+  /** What a guide's video says for the step (`# caption: …` on the comment lines right above it). */
+  caption?: string;
 }
 
 export interface ScenarioModel {
@@ -43,6 +45,7 @@ export function parseFeature(path: string, source: string): FeatureModel {
     throw new GherkinParseError(`${path}: ${(e as Error).message}`);
   }
   const feature = doc.feature;
+  comments = new Map(doc.comments.map((c) => [c.location.line, c.text.trim()]));
   const model: FeatureModel = {path, name: feature?.name ?? '', description: feature?.description?.trim() ?? '',
     tags: feature?.tags.map((t) => t.name) ?? [], background: [], scenarios: []};
   if (!feature)
@@ -71,15 +74,30 @@ function walkRule(rule: messages.Rule, model: FeatureModel): void {
   }
 }
 
+/** The comments of the document being parsed, by line. */
+let comments = new Map<number, string>();
+
+/** A guide's caption for the step at `line`: a `# caption: <text>` among the comment lines right
+ * above it (the nearest one) — what the video says where the step's own text is for the test. */
+function captionAbove(line: number): string | undefined {
+  for (let l = line - 1; comments.has(l); l--) {
+    const m = /^#\s*caption:\s*(.+)$/i.exec(comments.get(l)!);
+    if (m)
+      return m[1].trim();
+  }
+  return undefined;
+}
+
 function toSteps(steps: readonly messages.Step[]): StepModel[] {
   let type: StepType = 'Context';
   return steps.map((s) => {
     const kt = s.keywordType as string | undefined;
     if (kt === 'Context' || kt === 'Action' || kt === 'Outcome')
       type = kt;
+    const caption = captionAbove(s.location.line);
     return {keyword: s.keyword.trim(), type, text: s.text, line: s.location.line,
       table: s.dataTable ? s.dataTable.rows.map((r) => r.cells.map((c) => c.value)) : undefined,
-      docString: s.docString?.content};
+      docString: s.docString?.content, ...(caption ? {caption} : {})};
   });
 }
 
@@ -96,6 +114,7 @@ function expand(scenario: messages.Scenario, inherited: string[]): ScenarioModel
       const values = row.cells.map((c) => c.value);
       const subst = (s: string) => header.reduce((acc, h, i) => acc.split(`<${h}>`).join(values[i] ?? ''), s);
       const steps = base.map((st) => ({...st, text: subst(st.text),
+        ...(st.caption ? {caption: subst(st.caption)} : {}),
         table: st.table?.map((r) => r.map(subst)),
         docString: st.docString === undefined ? undefined : subst(st.docString)}));
       const label = header.map((h, i) => `${h}=${values[i] ?? ''}`).join(', ');

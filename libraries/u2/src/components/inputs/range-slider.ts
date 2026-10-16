@@ -1,8 +1,9 @@
 /* Two-handle range selector — the counterpart of Dart's `RangeSlider` (d4 range_selector), DOM
    instead of SVG. Drag a handle to move one end, the band to move the whole window, click the
    track to pull the nearest handle; each handle is a keyboard slider. Vertical runs bottom-to-top. */
-import {signal, batch, Signal} from '../../core/signals.js';
+import {signal, batch, untracked, Signal} from '../../core/signals.js';
 import {Control} from '../../core/component.js';
+import {Scope} from '../../core/scope.js';
 import {div} from '../../core/elements.js';
 import {Tooltip} from '../../core/tooltip.js';
 
@@ -19,13 +20,17 @@ export interface RangeSliderOptions {
   /** Initial value, or an external two-way signal the slider adopts. */
   lo?: number | Signal<number>;
   hi?: number | Signal<number>;
-  onChanged?: (lo: number, hi: number) => void;
+  /** Runs after each change of either end, owned by whoever built the slider. */
+  onChanged?: (lo: number, hi: number, slider: RangeSlider) => void;
   /** Tooltip and `aria-valuetext`; the plain number by default. */
   format?: (value: number) => string;
+  /** The accessible name of the pair (`aria-label` on the root); the handles are its minimum and maximum. */
+  label?: string;
 }
 
 type DragKind = 'lo' | 'hi' | 'band';
 
+/** `on('change', ([lo, hi], slider) => …)` fires on every change of either end. */
 export class RangeSlider extends Control {
   readonly lo: Signal<number>;
   readonly hi: Signal<number>;
@@ -47,27 +52,37 @@ export class RangeSlider extends Control {
     this.root.classList.add('u2-range-slider');
     this.root.classList.toggle('u2-range-slider-vertical', this.vertical);
     this.root.dataset.u2 = 'range-slider';
+    this.root.setAttribute('role', 'group');
+    if (options.label)
+      this.root.setAttribute('aria-label', options.label);
     this._loHandle = this._createHandle('lo', 'Minimum');
     this._hiHandle = this._createHandle('hi', 'Maximum');
     this.root.append(this._track, this._band, this._loHandle, this._hiHandle);
 
     this.effect(() => this._render());
-    const onChanged = options.onChanged;
-    if (onChanged) {
-      let initial = true;
-      this.effect(() => {
-        const lo = this.lo.value;
-        const hi = this.hi.value;
-        if (initial)
-          initial = false;
-        else
-          onChanged(lo, hi);
-      });
-    }
+    const onChanged = options.onChanged && (Scope.ambient ?? this.scope).bind(options.onChanged);
+    let initial = true;
+    this.effect(() => {
+      const lo = this.lo.value;
+      const hi = this.hi.value;
+      if (initial)
+        initial = false;
+      else {
+        untracked(() => {
+          onChanged?.(lo, hi, this);
+          this.fireEvent('change', [lo, hi]);
+        });
+      }
+    });
 
-    const onPointerDown = (e: Event) => this._onPointerDown(e as PointerEvent);
-    this.root.addEventListener('pointerdown', onPointerDown);
-    this.own(() => this.root.removeEventListener('pointerdown', onPointerDown));
+    this.scope.listen(this.root, 'pointerdown', (e) => this._onPointerDown(e as PointerEvent));
+  }
+
+  /** Both ends as the value (`[lo, hi]`) and as the handles read them. */
+  getState(): ReturnType<Control['getState']> {
+    const lo = this.lo.peek();
+    const hi = this.hi.peek();
+    return {...super.getState(), value: [lo, hi], text: `${this._format(lo)} – ${this._format(hi)}`};
   }
 
   get min(): number {
@@ -110,6 +125,18 @@ export class RangeSlider extends Control {
     return this.options.vertical ?? false;
   }
 
+  /** The accessible name of the pair. */
+  get label(): string {
+    return this.root.getAttribute('aria-label') ?? '';
+  }
+
+  set label(x: string) {
+    if (x)
+      this.root.setAttribute('aria-label', x);
+    else
+      this.root.removeAttribute('aria-label');
+  }
+
   private _relayout(): void {
     this._layout.value = this._layout.peek() + 1;
   }
@@ -135,9 +162,7 @@ export class RangeSlider extends Control {
     handle.setAttribute('aria-label', label);
     if (this.vertical)
       handle.setAttribute('aria-orientation', 'vertical');
-    const onKeyDown = (e: Event) => this._onKeyDown(e as KeyboardEvent, kind);
-    handle.addEventListener('keydown', onKeyDown);
-    this.own(() => handle.removeEventListener('keydown', onKeyDown));
+    this.scope.listen(handle, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent, kind));
     Tooltip.bind(handle, () => this._format((kind === 'lo' ? this.lo : this.hi).peek()), this.scope);
     return handle;
   }

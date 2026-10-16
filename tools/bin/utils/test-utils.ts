@@ -873,6 +873,8 @@ export async function runBrowser(
       }, defaultLaunchParameters);
       if (browserOptions.gui)
         params['headless'] = false;
+      if (browserOptions.skipGc)
+        params.args = params.args.filter((arg: string) => arg !== '--js-flags=--expose-gc');
       const out = await getBrowserPage(puppeteer, params, browserOptions.urlParams);
       browser = out.browser;
       page = out.page;
@@ -1050,7 +1052,7 @@ export interface BrowserOptions {
   path?: string, catchUnhandled?: boolean, core?: boolean,
   report?: boolean, record?: boolean, verbose?: boolean, benchmark?: boolean, platform?: boolean, category?: string, test?: string,
   stressTest?: boolean, gui?: boolean, stopOnTimeout?: boolean, reproduce?: boolean, ciCd?: boolean, debug?: boolean,
-  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean, urlParams?: string
+  skipToCategory?: string, skipToTest?: string, keepBrowserOpen?: boolean, urlParams?: string, skipGc?: boolean
 }
 
 export type ResultObject = {

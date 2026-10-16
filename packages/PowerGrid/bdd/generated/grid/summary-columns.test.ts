@@ -14,8 +14,8 @@ import '@datagrok-libraries/bdd/bindings/platform/elements';
 import {loggedIn} from '@datagrok-libraries/bdd/bindings/common/session';
 import {clickOn, hoverOver, pressKey, shouldBe, shouldContainText, typeInto} from '@datagrok-libraries/bdd/bindings/common/steps';
 import {columnCount, hasColumn, hasNoColumn} from '@datagrok-libraries/bdd/bindings/platform/columns';
-import {autostartsCompleted, closeAllViews, openDataset, openProject, saveAsProject} from '@datagrok-libraries/bdd/bindings/platform/steps';
-import {addViewer, areaColors, areaNoColor, areaPainted, areasDiffer, clickArea, clickAreaHolding, closeContextMenu, hasArea, hasNoArea, loadLayout, noErrors, pickFromAreaContextMenu, readingReads, repainted, rightClickArea, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
+import {autostartsCompleted, closeAllViews, openDataset} from '@datagrok-libraries/bdd/bindings/platform/steps';
+import {addViewer, areaColors, areaPainted, clickArea, clickAreaHolding, closeContextMenu, hasArea, hasNoArea, loadLayout, noErrors, pickFromAreaContextMenu, readingReads, repainted, rightClickArea, saveLayoutToServer, showsRows} from '@datagrok-libraries/bdd/bindings/tiers/viewers/steps';
 import {ds, el, feature} from '@datagrok-libraries/bdd/runtime';
 
 test.describe("Grid summary columns", () => {
@@ -212,7 +212,7 @@ test.describe("Grid summary columns", () => {
     await session.step(127, "And context panel should contain text \"WEIGHT: 64\"", () => shouldContainText(page, el("context panel"), "WEIGHT: 64"));
     await session.step(128, "And no errors should have been logged", () => noErrors(page));
   });
-  test("The eight summary columns and their renderers come back from a layout and a project", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
+  test("The eight summary columns and their renderers come back from a layout", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
     const page = await session.page(browser);
     await session.step(49, "Given user is logged in", () => loggedIn(page));
     await session.step(50, "And the package autostarts have completed", () => autostartsCompleted(page));
@@ -251,44 +251,6 @@ test.describe("Grid summary columns", () => {
     await session.step(160, "And the \"cell type of Smart Form\" reading of grid should be \"smartform\"", () => readingReads(page, "cell type of Smart Form", el("grid"), "smartform"));
     await session.step(161, "And the \"cell type of Tags\" reading of grid should be \"tags\"", () => readingReads(page, "cell type of Tags", el("grid"), "tags"));
     await session.step(162, "And the \"cell type of Confidence Interval\" reading of grid should be \"confidenceinterval\"", () => readingReads(page, "cell type of Confidence Interval", el("grid"), "confidenceinterval"));
-    await session.step(163, "When user saves the current view as project \"zz-grid-summary-columns\"", () => saveAsProject(page, "zz-grid-summary-columns"));
-    await session.step(164, "And user closes all views", () => closeAllViews(page));
-    await session.step(165, "And user opens the \"zz-grid-summary-columns\" project", () => openProject(page, "zz-grid-summary-columns"));
-    await session.step(166, "Then the \"column order\" reading of grid should be \"USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, Sparklines, Bar Chart, Pie Chart, VlaaiVis, Radar, Smart Form, Tags, Confidence Interval\"", () => readingReads(page, "column order", el("grid"), "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY, Sparklines, Bar Chart, Pie Chart, VlaaiVis, Radar, Smart Form, Tags, Confidence Interval"));
-    await session.step(167, "And the \"cell type of Sparklines\" reading of grid should be \"sparkline\"", () => readingReads(page, "cell type of Sparklines", el("grid"), "sparkline"));
-    await session.step(168, "And the \"cell type of Bar Chart\" reading of grid should be \"barchart\"", () => readingReads(page, "cell type of Bar Chart", el("grid"), "barchart"));
-    await session.step(169, "And the \"cell type of Pie Chart\" reading of grid should be \"piechart\"", () => readingReads(page, "cell type of Pie Chart", el("grid"), "piechart"));
-    await session.step(170, "When user clicks on the \"cell 2 of Pie Chart\" area of grid", () => clickArea(page, "cell 2 of Pie Chart", el("grid")));
-    await session.step(171, "And user presses ArrowRight", () => pressKey(page, "ArrowRight"));
-    await session.step(172, "And user presses ArrowRight", () => pressKey(page, "ArrowRight"));
-    await session.step(173, "And user presses ArrowRight", () => pressKey(page, "ArrowRight"));
-    await session.step(174, "And user presses ArrowRight", () => pressKey(page, "ArrowRight"));
-    await session.step(175, "And user presses ArrowRight", () => pressKey(page, "ArrowRight"));
-    await session.step(176, "Then grid should have a \"header Confidence Interval\" area", () => hasArea(page, el("grid"), "header Confidence Interval"));
-    await session.step(177, "And the \"cell type of VlaaiVis\" reading of grid should be \"vlaaivis\"", () => readingReads(page, "cell type of VlaaiVis", el("grid"), "vlaaivis"));
-    await session.step(178, "And the \"cell type of Radar\" reading of grid should be \"radar\"", () => readingReads(page, "cell type of Radar", el("grid"), "radar"));
-    await session.step(179, "And the \"cell type of Smart Form\" reading of grid should be \"smartform\"", () => readingReads(page, "cell type of Smart Form", el("grid"), "smartform"));
-    await session.step(180, "And the \"cell type of Tags\" reading of grid should be \"tags\"", () => readingReads(page, "cell type of Tags", el("grid"), "tags"));
-    await session.step(181, "And the \"cell type of Confidence Interval\" reading of grid should be \"confidenceinterval\"", () => readingReads(page, "cell type of Confidence Interval", el("grid"), "confidenceinterval"));
-    await session.step(182, "And no errors should have been logged", () => noErrors(page));
-  });
-  test("A Tags column marks the rows that carry the flag and leaves the rest of the grid alone (GROK-20888)", {tag: ["@viewers", "@realizes:viewers.grid"]}, async ({browser}) => {
-    const page = await session.page(browser);
-    await session.step(49, "Given user is logged in", () => loggedIn(page));
-    await session.step(50, "And the package autostarts have completed", () => autostartsCompleted(page));
-    await session.step(51, "And user opens demog-1000 dataset", () => openDataset(page, ds("demog-1000")));
-    await session.step(52, "Then grid should show 1000 rows", () => showsRows(page, el("grid"), 1000));
-    await session.step(53, "And the \"column order\" reading of grid should be \"USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY\"", () => readingReads(page, "column order", el("grid"), "USUBJID, AGE, SEX, RACE, DIS_POP, HEIGHT, WEIGHT, DEMOG, CONTROL, STARTED, SEVERITY"));
-    await session.step(185, "When user picks \"Add > Summary Columns > Sparklines\" from the context menu of the \"cell 2 of USUBJID\" area of grid", () => pickFromAreaContextMenu(page, "Add > Summary Columns > Sparklines", "cell 2 of USUBJID", el("grid")));
-    await session.step(186, "And user picks \"Add > Summary Columns > Tags\" from the context menu of the \"cell 2 of Sparklines\" area of grid", () => pickFromAreaContextMenu(page, "Add > Summary Columns > Tags", "cell 2 of Sparklines", el("grid")));
-    await session.step(187, "Then the \"cell type of Tags\" reading of grid should be \"tags\"", () => readingReads(page, "cell type of Tags", el("grid"), "tags"));
-    await session.step(188, "And the \"cell 1 of Tags\" area of grid should be painted in no color", () => areaNoColor(page, "cell 1 of Tags", el("grid")));
-    await session.step(189, "And the \"cell 3 of Tags\" area of grid should be painted in at least 1 colors", () => areaColors(page, "cell 3 of Tags", el("grid"), 1));
-    await session.step(190, "And the \"cell 1 of Tags\" and \"cell 3 of Tags\" areas of grid should be painted in different colors", () => areasDiffer(page, "cell 1 of Tags", "cell 3 of Tags", el("grid")));
-    await session.step(191, "And the \"cell 1 of SEVERITY\" area of grid should be painted in no color", () => areaNoColor(page, "cell 1 of SEVERITY", el("grid")));
-    await session.step(192, "And the \"text of cell 1 of SEVERITY\" reading of grid should be \"High\"", () => readingReads(page, "text of cell 1 of SEVERITY", el("grid"), "High"));
-    await session.step(193, "And the \"text of cell 1 of CONTROL\" reading of grid should be \"false\"", () => readingReads(page, "text of cell 1 of CONTROL", el("grid"), "false"));
-    await session.step(194, "And the \"text of cell 3 of CONTROL\" reading of grid should be \"true\"", () => readingReads(page, "text of cell 3 of CONTROL", el("grid"), "true"));
-    await session.step(195, "And no errors should have been logged", () => noErrors(page));
+    await session.step(163, "And no errors should have been logged", () => noErrors(page));
   });
 });

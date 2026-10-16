@@ -9,7 +9,13 @@ import {StateTree} from '@datagrok-libraries/compute-utils/reactive-tree-driver/
 import {map, mapTo, startWith, switchMap} from 'rxjs/operators';
 import {isFuncCallNode, StateTreeNode} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/runtime/StateTreeNodes';
 import {NodePath} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/data/BaseTree';
-import {PipelineConfigurationProcessed} from '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {getProcessedConfig, PipelineConfigurationProcessed} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/config-processing-utils';
+import {PipelineConfiguration} from '@datagrok-libraries/compute-utils';
+import {PipelineLinkConfigurationInput} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineConfiguration';
+import {isFuncCallSerializedState, PipelineSerializedState} from
+  '@datagrok-libraries/compute-utils/reactive-tree-driver/src/config/PipelineInstance';
 
 declare global {
   var SNAPSHOTS_UPDATE_MODE: boolean;
@@ -85,6 +91,23 @@ export async function runRXTreeSnapshotTest(testName: string, fn: (expectObserva
   }
 }
 
+function expectError(threw: boolean, err: unknown, match?: RegExp) {
+  expectDeepEqual(threw, true);
+  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
+}
+
+export function expectThrows(fn: () => unknown, match?: RegExp) {
+  let threw = false;
+  let err: unknown = undefined;
+  try {
+    fn();
+  } catch (e) {
+    threw = true;
+    err = e;
+  }
+  expectError(threw, err, match);
+}
+
 export async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegExp) {
   let threw = false;
   let err: unknown = undefined;
@@ -94,8 +117,49 @@ export async function expectThrowsAsync(fn: () => Promise<unknown>, match?: RegE
     threw = true;
     err = e;
   }
-  expectDeepEqual(threw, true);
-  if (match) expectDeepEqual(match.test(String((err as Error)?.message ?? err)), true);
+  expectError(threw, err, match);
+}
+
+export const twoSteps = (links: PipelineLinkConfigurationInput<string | string[]>[]): PipelineConfiguration => ({
+  id: 'pipeline1',
+  type: 'static',
+  steps: [
+    {id: 'step1', nqName: 'LibTests:TestAdd2'},
+    {id: 'step2', nqName: 'LibTests:TestMul2'},
+  ],
+  links,
+});
+
+export const errors = (...descriptions: string[]) =>
+  ({errors: descriptions.map((description) => ({description})), warnings: [], notifications: []});
+export const warnings = (...descriptions: string[]) =>
+  ({errors: [], warnings: descriptions.map((description) => ({description})), notifications: []});
+
+// a link controller for sources that read no step call
+export const noCallController = (sourceCache?: Map<string, any>) => ({getFirst: () => undefined, sourceCache}) as any;
+
+export async function makeTree(config: PipelineConfiguration, mockMode = false) {
+  const tree = StateTree.fromPipelineConfig({config: await getProcessedConfig(config), mockMode});
+  await tree.init().toPromise();
+  return tree;
+}
+
+export type TreeShape = string | [string, TreeShape[]];
+
+export const treeShape = (state: PipelineSerializedState): TreeShape =>
+  isFuncCallSerializedState(state) ? state.configId : [state.configId, state.steps.map(treeShape)];
+
+export const savedCallIds = (state: PipelineSerializedState): string[] => isFuncCallSerializedState(state) ?
+  (state.funcCallId ? [state.funcCallId] : []) : state.steps.flatMap(savedCallIds);
+
+// plain calls.delete() silently keeps the call
+export async function deleteRuns(ids: (string | undefined)[]) {
+  const calls = grok.dapi.functions.calls.allPackageVersions();
+  for (const id of ids) {
+    const call = id ? await calls.find(id) : undefined;
+    if (call)
+      await calls.delete(call);
+  }
 }
 
 export function getTreeStates(config: PipelineConfigurationProcessed): [StateTree, Observable<StateTree>] {

@@ -25,27 +25,13 @@ import {newUsersSearch, registerDGUserHandler} from './dg-db';
 import {merge} from 'rxjs';
 import {HelpObjectHandler} from './search/help-entity';
 import {SpotlightWidget} from './spotlight/spotlight-widget';
-import {getAdminGroups, getMyGroupFavorites, pinEntityToGroup} from './spotlight/group-favorites';
-import {isSpotlightEntity} from './spotlight/entity-kinds';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
-import {setupDBQueryCellHandler, setupGlobalDBExplorer, runEnrichmentFromConfig} from './db-explorer';
+import {setupDBQueryCellHandler, setupGlobalDBExplorer} from './db-explorer';
+import {runEnrichmentFromConfig} from './enrichment';
 import {FilterBuilderFilter} from './filter/filter-builder-filter';
-import {domains} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains} from '@datagrok-libraries/ems/src/dg';
 // every sheet the domain stack paints with, in one import
-import '@datagrok-libraries/u2/src/dg/domain/styles.js';
-import '@datagrok-libraries/u2/css/tokens.css';
-import '@datagrok-libraries/u2/css/elements.css';
-import '@datagrok-libraries/u2/css/inputs.css';
-import '@datagrok-libraries/u2/css/number.css';
-import '@datagrok-libraries/u2/css/date.css';
-import '@datagrok-libraries/u2/css/tags.css';
-import '@datagrok-libraries/u2/css/choice.css';
-import '@datagrok-libraries/u2/css/buttons.css';
-import '@datagrok-libraries/u2/css/typeahead.css';
-import '@datagrok-libraries/u2/css/badge.css';
-import '@datagrok-libraries/u2/css/icons.css';
-import '@datagrok-libraries/u2/css/filter.css';
-import '@datagrok-libraries/u2/css/filter-query.css';
+import '@datagrok-libraries/ems/src/dg/styles.js';
 export * from './package.g';
 export const _package = new DG.Package();
 export let _properties: { [propertyName: string]: any };
@@ -140,6 +126,7 @@ export class PackageFunctions {
   @grok.decorators.func({
     name: 'compareColumns',
     'top-menu': 'Data | Compare Columns...',
+    'requiresTable': true,
   })
   static _compareColumns(): void {
     compareColumns();
@@ -218,6 +205,34 @@ export class PackageFunctions {
   })
   static async domainRouteView(address: string): Promise<DG.ViewBase | null> {
     return domains.route(address);
+  }
+
+  @grok.decorators.func({
+    name: 'createDomainBinding',
+    description: 'The "Create domain schema" dialog over an external database: Connection › Design › Review (u2)',
+    tags: ['domainAuthoring'],
+    meta: {mode: 'create'},
+    outputs: [{name: 'result', type: 'string'}],
+  })
+  static async createDomainBinding(
+    @grok.decorators.param({options: {optional: true}}) connection?: DG.DataConnection,
+    @grok.decorators.param({options: {optional: true}}) schema?: string,
+    @grok.decorators.param({options: {optional: true}}) table?: string,
+    @grok.decorators.param({options: {optional: true}}) catalog?: string): Promise<string | null> {
+    const result = await domains.authoring.createBinding({connection: connection ?? undefined,
+      schema: schema ?? undefined, table: table ?? undefined, catalog: catalog ?? undefined});
+    return result?.name ?? null;
+  }
+
+  @grok.decorators.func({
+    name: 'editDomainBinding',
+    description: 'The "Edit binding" dialog over a registered external binding: Design › Review › Saved (u2)',
+    tags: ['domainAuthoring'],
+    meta: {mode: 'edit'},
+    outputs: [{name: 'result', type: 'bool'}],
+  })
+  static async editDomainBinding(schema: string): Promise<boolean> {
+    return await domains.authoring.editBinding(schema) !== null;
   }
 
   @grok.decorators.func({})
@@ -511,44 +526,6 @@ grok.events.onContextMenu.subscribe((args) => {
   }
 
   menu?.item('Formula Lines...', () => PackageFunctions.formulaLinesDialog(src));
-});
-
-function getEntity(x: any) {
-  if (x instanceof DG.TreeViewGroup)
-    return x.value;
-  return null;
-}
-
-grok.events.onContextMenu.subscribe((args) => {
-  const item = args?.args?.item;
-  const entity = DG.toJs(item?.value ?? item);
-  if (!(entity instanceof DG.Entity) || !isSpotlightEntity(entity))
-    return;
-
-  const menu: DG.Menu = args.args.menu;
-  Promise.all([getAdminGroups(), getMyGroupFavorites()]).then(([allAdminGroups, groupFavorites]) => {
-    if (allAdminGroups.length === 0)
-      return;
-    const pinnedGroupIds = new Set<string>();
-    for (const gf of groupFavorites)
-      if (gf.entities.some((e) => e.id === entity.id))
-        pinnedGroupIds.add(gf.group.id);
-
-    allAdminGroups.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
-    menu.group('Group favorites').items(allAdminGroups, async (group) => {
-      if (pinnedGroupIds.has(group.id)) {
-        await DG.Favorites.remove(entity, group);
-        grok.shell.info(`Unpinned "${entity.friendlyName}" from ${group.friendlyName}`);
-      }
-      else {
-        await pinEntityToGroup(entity, group);
-        grok.shell.info(`Pinned "${entity.friendlyName}" to ${group.friendlyName}`);
-      }
-    }, {
-      isChecked: (group) => pinnedGroupIds.has(group.id),
-      toString: (group) => group.friendlyName,
-    }).endGroup();
-  });
 });
 
 //name: configViewerGallery

@@ -1,10 +1,10 @@
 import * as DG from 'datagrok-api/dg';
-import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
-import {isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
-import {callHandler, indexFromEnd} from '../utils';
+import {AbstractPipelineActionConfiguration, AbstractPipelineDynamicConfiguration, AbstractPipelineStaticConfiguration, LoadedPipeline, DataActionConfiguraion, NestedItemContext, PipelineConfigurationInitial, PipelineConfigurationDynamicInitial, PipelineConfigurationStaticInitial, PipelineInitConfiguration, PipelineLinkConfigurationBase, PipelineLinkConfigurationInput, PipelineMutationConfiguration, PipelineRefInitial, PipelineSelfRef, PipelineStepConfiguration, FuncCallActionConfiguration, PipelineReturnConfiguration, PipelineDynamicItem} from './PipelineConfiguration';
+import {AnnotationLinkKind, isDynamicType, ItemId, LinkSpecString, NqName} from '../data/common-types';
+import {callHandler, indexFromEnd, IOTolerance, ToleranceSpec} from '../utils';
 import {LinkIOParsed, LinkSelectorSegment, parseLinkIO} from './LinkSpec';
 import {normalizeIdRef} from './PipelineInstance';
-import {annotationRules, expandLinks} from './rule-expansion';
+import {annotationCheckLinks, annotationRules, expandLink, narrowToFamilyTargets} from './rule-expansion';
 import {CheckOptions, isOptionalAnnotation, parseAnnotationChecks, parseChoices} from './checks';
 import wu from 'wu';
 import {getViewersHook} from '../../../shared-utils/utils';
@@ -23,6 +23,8 @@ export type FuncCallIODescription = {
   checks?: CheckOptions;
   /** Choices the platform evaluates (a function, query or file); `propagate` for `propagateChoice: all`. */
   dynamicChoices?: {propagate: boolean};
+  /** Consistency comparison tolerance from the `consistencyTolerance`/`consistencyRelTolerance` annotations. */
+  tolerance?: IOTolerance;
 }
 
 type PipelineStepConfigurationInitial = PipelineStepConfiguration<never>;
@@ -59,8 +61,15 @@ function isPipelineConfigInitial(c: ConfigInitialTraverseItem): c is PipelineCon
 }
 
 export async function getProcessedConfig(conf: PipelineConfigurationInitial, logger?: DriverLogger): Promise<PipelineConfigurationProcessed> {
-  const pconf = await configProcessing(conf, new Map(), logger);
-  return pconf as PipelineConfigurationProcessed;
+  const ownsCache = funcIOCache == null;
+  funcIOCache ??= new Map();
+  try {
+    const pconf = await configProcessing(conf, new Map(), logger);
+    return pconf as PipelineConfigurationProcessed;
+  } finally {
+    if (ownsCache)
+      funcIOCache = undefined;
+  }
 }
 
 export type PipelineRefStore<T> = Map<string, Map<string | undefined, T>>;
@@ -83,11 +92,36 @@ export function containsPipelineRef<T>(store: PipelineRefStore<T>, nqName: strin
   return false;
 }
 
+type ProcessedConfigItem =
+  PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> |
+  AbstractPipelineActionConfiguration | PipelineSelfRef;
+
+const originalConfigs = new WeakMap<object, object>();
+
+/** The config item, link or action as written: before links were parsed and expanded
+ * and nested pipelines were loaded. */
+export function getOriginalConfig(processed: object): object | undefined {
+  return originalConfigs.get(processed);
+}
+
 async function configProcessing(
   conf: ConfigInitialTraverseItem,
   loadedPipelines: PipelineRefStore<null>,
   logger?: DriverLogger,
-): Promise<PipelineConfigurationProcessed | PipelineStepConfiguration<FuncCallIODescription[]> | AbstractPipelineActionConfiguration | PipelineSelfRef> {
+  original: object = conf,
+): Promise<ProcessedConfigItem> {
+  const processed = await processConfigItem(conf, loadedPipelines, logger);
+  // a loaded ref is already recorded with the config its provider returned
+  if (!originalConfigs.has(processed))
+    originalConfigs.set(processed, original);
+  return processed;
+}
+
+async function processConfigItem(
+  conf: ConfigInitialTraverseItem,
+  loadedPipelines: PipelineRefStore<null>,
+  logger?: DriverLogger,
+): Promise<ProcessedConfigItem> {
   if (isPipelineConfigInitial(conf) && conf.nqName)
     addPipelineRef(loadedPipelines, conf.nqName, conf.version, null);
 
@@ -99,7 +133,7 @@ async function configProcessing(
   } else if (isPipelineStaticInitial(conf)) {
     const pconf = processStaticConfig(conf, logger);
     const steps = await Promise.all(conf.steps.map(async (step) => {
-      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger);
+      const sconf = await configProcessing(processUIFlags(step), loadedPipelines, logger, step);
       return sconf;
     }));
     checkUniqId(steps, logger);
@@ -107,7 +141,7 @@ async function configProcessing(
   } else if (isPipelineDynamicInitial(conf)) {
     const pconf = processDynamicConfig(conf, logger);
     const stepTypes = await Promise.all(conf.stepTypes.map(async (item) => {
-      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger);
+      const nconf = await configProcessing(processUIFlags(item), loadedPipelines, logger, item);
       return nconf;
     }));
     checkUniqId(stepTypes, logger);
@@ -129,19 +163,19 @@ function processUIFlags<T extends PipelineDynamicItem<never>>(item: T): T {
 }
 
 function processStaticConfig(conf: PipelineConfigurationStaticInitial, logger?: DriverLogger) {
-  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
-  const actions = processPipelineActions(conf.actions ?? [], logger);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
+  const links = conf.links ? processLinks(conf.links) : undefined;
+  const actions = processActions(conf.actions ?? [], logger);
+  const onInit = processHook<PipelineInitConfiguration<LinkIOParsed[]>>(conf.onInit);
+  const onReturn = processHook<PipelineReturnConfiguration<LinkIOParsed[]>>(conf.onReturn);
   const states = conf.states?.map((s) => normalizeIdRef(s));
   return {...conf, links, actions, onInit, onReturn, states};
 }
 
 function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?: DriverLogger) {
-  const links = conf.links ? expandLinks(conf.links).map((link) => processLinkData(link)) : undefined;
-  const actions = processPipelineActions(conf.actions ?? [], logger);
-  const onInit = processInitHook(conf.onInit);
-  const onReturn = processReturnHook(conf.onReturn);
+  const links = conf.links ? processLinks(conf.links) : undefined;
+  const actions = processActions(conf.actions ?? [], logger);
+  const onInit = processHook<PipelineInitConfiguration<LinkIOParsed[]>>(conf.onInit);
+  const onReturn = processHook<PipelineReturnConfiguration<LinkIOParsed[]>>(conf.onReturn);
   const initialSteps = conf.initialSteps?.map((s) => normalizeIdRef(s));
   const states = conf.states?.map((s) => normalizeIdRef(s));
   return {...conf, actions, links, onInit, onReturn, initialSteps, states};
@@ -149,10 +183,15 @@ function processDynamicConfig(conf: PipelineConfigurationDynamicInitial, logger?
 
 async function processStepConfig(conf: PipelineStepConfiguration<never>, logger?: DriverLogger) {
   const io = getFuncCallIO(conf.nqName);
-  const allLinks = [...(conf.links ?? []), ...annotationRules(conf.nqName, io, logger)];
-  const links = allLinks.length ? expandLinks(allLinks).map((link) => processLinkData(link)) : undefined;
-  const actions = processStepActions(conf.actions ?? [], logger);
   const func = DG.Func.byName(conf.nqName);
+  readTolerances(func, io, logger);
+  const allLinks = [
+    ...processLinks(conf.links ?? []),
+    ...markAnnotation(processLinks(annotationRules(conf.nqName, io, logger)), 'rule'),
+    ...annotationCheckLinks(io).flatMap(({kind, link}) => markAnnotation(processLinks([link]), kind)),
+  ];
+  const links = allLinks.length ? allLinks : undefined;
+  const actions = processActions(conf.actions ?? [], logger);
   const viewersHookMakerName = getViewersHook(func);
   let viewersHook = conf.viewersHook;
   if (!viewersHook && viewersHookMakerName) {
@@ -182,21 +221,69 @@ function processActionConfig(conf: AbstractPipelineActionConfiguration & NestedI
   } as PipelineConfigurationStaticProcessed;
 }
 
+function parseTolerance(value: string | undefined, isDataFrame: boolean): ToleranceSpec | undefined {
+  if (value == null)
+    return undefined;
+  const text = String(value).trim();
+  if (!text.startsWith('{')) {
+    const tolerance = Number(text);
+    if (!text || isNaN(tolerance))
+      throw new Error(`${text} is not a number`);
+    return tolerance;
+  }
+  if (!isDataFrame)
+    throw new Error('column tolerances need a dataframe input');
+  const columns: Record<string, number> = {};
+  for (const [name, tolerance] of Object.entries(JSON.parse(text))) {
+    if (typeof tolerance !== 'number')
+      throw new Error(`column ${name}: ${tolerance} is not a number`);
+    columns[name.toLowerCase()] = tolerance;
+  }
+  return columns;
+}
+
+function readTolerances(func: DG.Func, io: FuncCallIODescription[], logger?: DriverLogger) {
+  for (const prop of func.inputs) {
+    const {consistencyTolerance, consistencyRelTolerance} = prop.options ?? {};
+    if (consistencyTolerance == null && consistencyRelTolerance == null)
+      continue;
+    const isDataFrame = prop.propertyType === DG.TYPE.DATA_FRAME;
+    try {
+      if (!isDataFrame && prop.propertyType !== DG.TYPE.FLOAT)
+        throw new Error('consistency tolerance applies to double and dataframe inputs only');
+      const tolerance = {
+        abs: parseTolerance(consistencyTolerance, isDataFrame),
+        rel: parseTolerance(consistencyRelTolerance, isDataFrame),
+      };
+      io.find((d) => d.id === prop.name && d.direction === 'input')!.tolerance = tolerance;
+    } catch (e) {
+      reportError('warning', 'configProcessing', `${func.nqName}, input ${prop.name}: ${(e as Error).message}`, logger);
+    }
+  }
+}
+
+// io read from annotations, kept for one processing run; the FuncCall prepared to read them is dropped,
+// calls that are run or saved are never taken from here
+let funcIOCache: Map<NqName, FuncCallIODescription[]> | undefined;
+
 function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
+  const cached = funcIOCache?.get(nqName) ?? readFuncCallIO(nqName);
+  funcIOCache?.set(nqName, cached);
+  return cached.map((io) => ({...io}));
+}
+
+function readFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   const func = DG.Func.byName(nqName);
   if (!func)
     throw new Error(`Function '${nqName}' not found`);
   const fc = func.prepare();
   const params = [...fc.inputParams.values()];
-  const defaultTable = params.find((p) => p.property.propertyType === DG.TYPE.DATA_FRAME)?.property.name;
   const inputs = params.map((p) => {
     const io: FuncCallIODescription = {
       id: p.property.name, type: p.property.propertyType as any, direction: 'input' as const,
       nullable: isOptionalAnnotation(p.property),
     };
     const checks = parseAnnotationChecks(p.property);
-    if (p.property.propertyType === DG.TYPE.COLUMN && checks.table == null && defaultTable)
-      checks.table = defaultTable;
     if (Object.keys(checks).length)
       io.checks = checks;
     const choices = p.property.options?.choices;
@@ -211,16 +298,30 @@ function getFuncCallIO(nqName: NqName): FuncCallIODescription[] {
   return [...inputs, ...outputs];
 }
 
-function processPipelineActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
+type ActionInput = DataActionConfiguraion<LinkSpecString> | PipelineMutationConfiguration<LinkSpecString> |
+  FuncCallActionConfiguration<LinkSpecString>;
+
+function processActions<A extends ActionInput>(actionsInput: A[], logger?: DriverLogger) {
   checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
-  return actions;
+  return actionsInput.map((action) =>
+    withOriginal({...processLinkData(action), ...processActionVisibility(action)}, action));
 }
 
-function processStepActions(actionsInput: (DataActionConfiguraion<LinkSpecString> | FuncCallActionConfiguration<LinkSpecString>)[], logger?: DriverLogger) {
-  checkUniqId(actionsInput, logger);
-  const actions = actionsInput.map((action) => ({...processLinkData(action), ...processActionVisibility(action)}));
-  return actions;
+function processLinks(links: PipelineLinkConfigurationInput<LinkSpecString>[]) {
+  return links.flatMap((link) => expandLink(link).map((expanded) =>
+    withOriginal(narrowToFamilyTargets(expanded, processLinkData(expanded)), link)));
+}
+
+// in place, so the links keep their originals
+function markAnnotation<L extends {annotation?: AnnotationLinkKind}>(links: L[], kind: AnnotationLinkKind) {
+  for (const link of links)
+    link.annotation = kind;
+  return links;
+}
+
+function withOriginal<T extends object>(processed: T, original: object): T {
+  originalConfigs.set(processed, original);
+  return processed;
 }
 
 function processActionVisibility(action: {showWhen?: LinkSpecString, hideWhen?: LinkSpecString}) {
@@ -229,14 +330,8 @@ function processActionVisibility(action: {showWhen?: LinkSpecString, hideWhen?: 
   return {showWhen, hideWhen};
 }
 
-function processReturnHook(hooksInput?: PipelineReturnConfiguration<LinkSpecString>) {
-  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineReturnConfiguration<LinkIOParsed[]> | undefined;
-  return hook;
-}
-
-function processInitHook(hooksInput?: PipelineInitConfiguration<LinkSpecString>) {
-  const hook = (hooksInput ? processLinkData(hooksInput) : undefined) as PipelineInitConfiguration<LinkIOParsed[]> | undefined;
-  return hook;
+function processHook<R>(hookInput?: PipelineLinkConfigurationBase<LinkSpecString>) {
+  return (hookInput ? processLinkData(hookInput) : undefined) as R | undefined;
 }
 
 function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>>(link: L) {
@@ -248,6 +343,12 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   const not = processLink(link.not ?? [], 'not');
   const actions = processLink(link.actions ?? [], 'actions');
   const linkType = (link as any).type;
+  if (linkType !== 'pipelineValidator') {
+    for (const io of to) {
+      if (io.flags?.includes('node'))
+        throw new Error(`Link ${link.id}: output ${io.name} uses (node); only rules and pipeline validators allow it.`);
+    }
+  }
   if (linkType !== 'funccall') {
     for (const io of from) {
       if (io.flags?.includes('call') && !io.flags?.includes('optional'))
@@ -276,7 +377,10 @@ function processLinkData<L extends PipelineLinkConfigurationBase<LinkSpecString>
   };
   checkSingleIoTarget(from, false);
   checkSingleIoTarget(to, true);
-  return {...link, from, to, base, not, actions};
+  const processed = {...link, from, to, base, not, actions};
+  // only markAnnotation sets the kind; a link written with one in its config is not generated
+  delete (processed as {annotation?: unknown}).annotation;
+  return processed;
 }
 
 export function normalizeLinkSpec(io?: LinkSpecString): string[] {

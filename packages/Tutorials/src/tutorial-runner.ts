@@ -10,6 +10,22 @@ export class TutorialRunner {
   root: HTMLDivElement = ui.panel([], 'tutorial');
   track: Track;
 
+  static dock(trackRoots: HTMLElement[]): void {
+    Tutorial.closeActive();
+    const root = ui.div([
+      ...trackRoots,
+      ui.panel([], {id: 'tutorial-child-node', style: {paddingTop: '10px'}}),
+    ], 'tutorials-root');
+
+    const existingTutorials = document.querySelector('.tutorials-root') as HTMLElement;
+    if (existingTutorials) {
+      const existingDock = grok.shell.dockManager.findNode(existingTutorials);
+      if (existingDock)
+        grok.shell.dockManager.close(existingDock);
+    }
+    grok.shell.dockManager.dock(root, DG.DOCK_TYPE.LEFT, null, 'Tutorials', 0.22);
+  }
+
   async run(t: Tutorial): Promise<void> {
     if (t instanceof TutorialSubstitute)
       t = await TutorialSubstitute.getTutorial(t, this.track);

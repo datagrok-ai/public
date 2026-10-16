@@ -21,6 +21,15 @@ here are u2 primitives; the reference implementation is the U2Demo Reports Brows
 - **People render as markup, not plain text**: icon + name via the entity renderer
   (`chip(user)` from u2/dg — handler markup, tooltip, click → context panel for free).
 
+## Short keyed lists outside a VirtualList: `each` / `show`
+
+For a handful of items rendered in place (chips, access rows, a popup's options), `each(host,
+items, keyOf, build, {update?, empty?})` keeps one element per key: built once in its own scope,
+patched or moved in place, disposed when its key leaves — focus and caret survive an edit.
+`show(host, when, build, otherwise?)` is the conditional sibling. Both need an owner (call them
+inside a control's `runInScope`). Cards in a grid take `onClick(e, card)` — the event and the
+card — and `selectMode: 'toggle' | 'select'`.
+
 ## Actions: one list, two surfaces
 
 Declare the item's actions once (`Action[]`), then:

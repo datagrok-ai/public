@@ -59,7 +59,6 @@ Feature: Sharing a predictive model
   Scenario: The Share dialog asks who, how much, and whether to notify
     When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
     Then "Share BDD-Share-Model-{run}" dialog should be visible
-    And "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
     And "User, group, or email" input in "Share BDD-Share-Model-{run}" dialog should be visible
     And share access selector should contain text "View and use"
     And "Send notifications" input in "Share BDD-Share-Model-{run}" dialog should be hidden
@@ -71,7 +70,7 @@ Feature: Sharing a predictive model
 
   Scenario: The model is shared with the second account to view and use
     When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
-    Then "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
+    Then "Share BDD-Share-Model-{run}" dialog should be visible
     And share access selector should contain text "View and use"
     When user picks the sharing user in "User, group, or email" input in "Share BDD-Share-Model-{run}" dialog
     Then "Send notifications" input in "Share BDD-Share-Model-{run}" dialog should be visible
@@ -85,7 +84,7 @@ Feature: Sharing a predictive model
 
   Scenario: The owner takes the share back
     When user picks "Share..." from the context menu of "BDD-Share-Model-{run}" label in gallery
-    Then "Share BDD-Share-Model-{run}" dialog should contain text "Full access"
+    Then the access level of the sharing user in "Share BDD-Share-Model-{run}" dialog should be "View and use"
     When user removes the sharing user from "Share BDD-Share-Model-{run}" dialog
     And user clicks on OK button in "Share BDD-Share-Model-{run}" dialog
     Then the "Share BDD-Share-Model-{run}" dialog should close

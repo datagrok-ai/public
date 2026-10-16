@@ -3,7 +3,9 @@ import * as DG from 'datagrok-api/dg';
 import {Observable} from 'rxjs';
 import type {RulesLogic} from 'json-logic-js';
 import {IRuntimeLinkController, IRuntimeMetaController, IRuntimePipelineMutationController, INameSelectorController, IRuntimeValidatorController, IFuncallActionController, IRuntimeReturnController, IRuntimePipelineValidatorController} from '../RuntimeControllers';
-import {DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult} from '../data/common-types';
+import {
+  AnnotationLinkKind, DynamicPipelineType, ItemId, NqName, RestrictionType, LinkSpecString, ValidationResult,
+} from '../data/common-types';
 import {PipelineState, StepDynamicInitialConfig} from './PipelineInstance';
 import {LinkIOParsed} from './LinkSpec';
 import type ExcelJS from 'exceljs';
@@ -48,12 +50,48 @@ export type FunccallActionHandler = HandlerBase<{ controller: IFuncallActionCont
 export type PipelineProvider = HandlerBase<{ version?: string }, LoadedPipeline>;
 export type ReturnHandler = HandlerBase<{ controller: IRuntimeReturnController }, void>;
 
+export type StepStatus = 'next' | 'next warn' | 'next error' |
+  'pending' | 'pending executed' |
+  'running' |
+  'succeeded' | 'succeeded info' | 'succeeded warn' | 'succeeded inconsistent' |
+  'failed';
+
+export interface ExportSummaryRollup {
+  steps: number,
+  notLoaded: number,
+  failed: number,
+  outdated: number,
+  withErrors: number,
+  withWarnings: number,
+  inconsistent: number,
+}
+
+export interface ExportSummaryItem {
+  kind: 'step' | 'workflow',
+  /** Folders in the exported zip */
+  path: string[],
+  name: string,
+  title?: string,
+  /** The step workbook in the zip; absent for workflows and for steps that are not loaded */
+  fileName?: string,
+  /** The status the tree shows; absent for workflows and for steps that are not loaded */
+  status?: StepStatus,
+  runError?: string,
+  errors: string[],
+  warnings: string[],
+  notifications: string[],
+  inconsistentInputs: string[],
+  /** Workflows only: counts over all steps below */
+  rollup?: ExportSummaryRollup,
+}
+
 export interface ExportCbInput {
   fc: DG.FuncCall,
   wb: ExcelJS.Workbook,
   archive: Zippable,
   path: string[],
   fileName: string,
+  status?: StepStatus,
   isOutputOutdated?: boolean,
   runError?: string,
   validation?: Record<string, ValidationResult>,
@@ -63,7 +101,9 @@ export interface ExportCbInput {
 }
 
 export type ExportUtils = {
-  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string]>;
+  reportStateExcel: (pipelineState: PipelineState, cb?: <T>(input: ExportCbInput) => Promise<T>) => Promise<readonly [Blob, Zippable, string, ExportSummaryItem[]]>;
+  getExportSummary: (pipelineState: PipelineState) => ExportSummaryItem[];
+  reportSummaryExcel: (pipelineState: PipelineState) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   reportFuncCallExcel: (fc: DG.FuncCall, uuid: string) => Promise<readonly [Blob, ExcelJS.Workbook]>;
   getFuncCallCustomExports: (fc: DG.FuncCall) => string[];
   runFuncCallCustomExport: (fc: DG.FuncCall, uuid: string, exportName: string) => Promise<any>;
@@ -85,6 +125,8 @@ export type PipelineLinkConfigurationBase<P> = {
   defaultRestrictions?: Record<string, RestrictionType> | RestrictionType;
   nodePriority?: number;
   params?: Record<string, any>;
+  /** Set by config processing on links generated from function annotations. */
+  annotation?: [P] extends [LinkSpecString] ? never : AnnotationLinkKind;
 }
 
 export type PipelineHandlerConfiguration<P> = PipelineLinkConfigurationBase<P> & {
@@ -128,7 +170,6 @@ export type PipelineReturnConfiguration<P> = PipelineLinkConfigurationBase<P> & 
 
 export type PipelineSelectorConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'nodemeta' | 'selector', // selector for API compat
-  actions?: undefined;
   handler: SelectorHandler;
   runOnInit?: undefined;
   sequential?: boolean;
@@ -170,6 +211,10 @@ type RuleEffectWhen = {when?: RuleLogic};
 
 export type RuleMetaEffect = RuleEffectWhen & (
   | {effect: 'hide' | 'show', targets: RuleTargets}
+  /** Hides or shows the action with id `action` on the nodes of the `actions` aliases. */
+  | {effect: 'hideAction' | 'showAction', targets: RuleTargets, action: string}
+  /** Sets the description field (`title`, `description`, `tags`, `body`) the target's query ends with. */
+  | {effect: 'describe', targets: RuleTargets, value: RuleExpr}
   | {effect: 'items', targets: RuleTargets, items: RuleExpr}
   | {effect: 'meta', targets: RuleTargets, meta: Record<string, RuleExpr>});
 
@@ -208,6 +253,8 @@ export type RuleSource =
   /** A table given in the config: a dataframe, or CSV text parsed with optional import options, once per link. */
   {table: DG.DataFrame | string | {csv: string, options?: DG.CsvImportOptions}};
 
+export type SourceKind = RuleSource extends infer S ? S extends unknown ? keyof S : never : never;
+
 export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   type: 'rule';
   when?: RuleLogic;
@@ -218,7 +265,6 @@ export type PipelineRuleConfiguration<P> = PipelineLinkConfigurationBase<P> & {
   debounce?: number;
   runOnInit?: boolean;
   handler?: undefined;
-  actions?: undefined;
   params?: undefined;
 };
 
@@ -244,7 +290,7 @@ export type PipelineCheckConfiguration<P> = {
 export type PipelineLinkConfigurationInput<P> = PipelineLinkConfiguration<P> | PipelineRuleConfiguration<P> | PipelineCheckConfiguration<P>;
 
 /** Action fields shared between config-time (ActionInfo<P>) and the UI-facing ViewAction.
- *  Excludes runtime-only matcher fields (showWhen/hideWhen) and UI-only fields (uuid/visible). */
+ *  Excludes the visibility fields (showWhen/hideWhen) and the UI-only uuid. */
 export type ActionInfoBase = {
   id: string;
   position: ActionPositions;
@@ -260,10 +306,10 @@ export type ActionInfoBase = {
 
 export type ActionInfo<P> = ActionInfoBase & {
   runOnInit?: undefined;
-  /** LQL string or array. Action's ViewAction.visible is true only when all
-   *  required entries match. (optional) entries are ignored. Empty / absent => no positive gate. */
+  /** LQL string or array. The action is hidden unless every required entry matches a node.
+   *  (optional) entries are ignored. Empty / absent => no positive gate. */
   showWhen?: P;
-  /** LQL string or array. Action's ViewAction.visible is false when any entry matches.
+  /** LQL string or array. The action is hidden when any entry matches a node.
    *  Mirrors the link-level `not` field. Empty / absent => no negative gate. */
   hideWhen?: P;
 };
@@ -334,7 +380,6 @@ export type PipelineConfigurationBase<S> = {
   disableHistory?: boolean;
   disableDefaultExport?: boolean;
   compactView?: boolean;
-  approversGroup?: string; // not used rn
 };
 
 export type NestedItemContext = {

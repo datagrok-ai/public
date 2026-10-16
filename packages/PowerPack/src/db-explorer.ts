@@ -7,22 +7,8 @@ import {DBExplorerConfig} from '@datagrok-libraries/db-explorer/src/types';
 import {DBExplorer} from '@datagrok-libraries/db-explorer/src/db-explorer';
 import {DBExplorerEditor} from '@datagrok-libraries/db-explorer/src/editor';
 import {DB_EXPLORER_OBJ_HANDLER_TYPE, DBExplorerObjectHandler} from '@datagrok-libraries/db-explorer/src/object-handlers';
-
-/** Cache for full-schema calls, keyed by "nqName/schema/db". Evicts on rejection; capped at 50 entries. */
-const schemaCache = new Map<string, Promise<DG.TableInfo[]>>();
-const SCHEMA_CACHE_MAX = 50;
-
-function getCachedSchema(conn: DG.DataConnection, schema: string | null, db: string | null): Promise<DG.TableInfo[]> {
-  const key = `${conn.nqName}/${schema ?? ''}/${db ?? ''}`;
-  if (!schemaCache.has(key)) {
-    if (schemaCache.size >= SCHEMA_CACHE_MAX)
-      schemaCache.delete(schemaCache.keys().next().value!);
-    const p = grok.dapi.connections.getSchema(conn, schema, null, db);
-    p.catch(() => schemaCache.delete(key));
-    schemaCache.set(key, p);
-  }
-  return schemaCache.get(key)!;
-}
+import {FkRef, convertTableQueryToEnrichment, deleteEnrichment, executeEnrichQuery, getEnrichConfigsNames, getFkRefs,
+  readEnrichConfig, saveEnrichment} from './enrichment';
 
 /** Sets up editing of the db explorers config(s) */
 export async function setupGlobalDBExplorer() {
@@ -432,32 +418,7 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
       const mainTable: DG.TableInfo = tables[0];
       const schema = mainTable.tags.get(DG.Tags.TableSchema);
 
-      // Walk FK chain to collect references
-      const fkRefs: FkRef[] = [];
-      try {
-        const allTables: DG.TableInfo[] = await getCachedSchema(conn, schemaName, dbName ?? null);
-        const visited = new Set<string>();
-        let curTable = mainTable.friendlyName;
-        let curColumn = dbColName;
-        while (true) {
-          const tableInfo = allTables.find((t) => t.friendlyName === curTable);
-          const colInfo = tableInfo?.columns.find((c) => c.name === curColumn);
-          const refSchema = colInfo?.tags[DG.Tags.ReferencesSchema];
-          const refTable = colInfo?.tags[DG.Tags.ReferencesTable];
-          const refColumn = colInfo?.tags[DG.Tags.ReferencesColumn];
-          if (!refSchema || !refTable || !refColumn)
-            break;
-          const fkKey = `${refSchema}.${refTable}.${refColumn}`;
-          if (visited.has(fkKey))
-            break;
-          visited.add(fkKey);
-          fkRefs.push({schema: refSchema, table: refTable, column: refColumn});
-          curTable = refTable;
-          curColumn = refColumn;
-        }
-      }
-      catch (_) { }
-
+      const fkRefs = await getFkRefs(conn, schemaName, mainTable.friendlyName, dbColName, dbName ?? null);
       const enrichmentsRoot = getEnrichmentsDiv(conn, schema, mainTable.friendlyName, dbColName, dbName, df, fkRefs);
       const addEnrichBtn = document.createElement('button');
       addEnrichBtn.append(ui.icons.add(() => {}, 'Add'), ui.span(['Add enrichment']));
@@ -473,8 +434,6 @@ function getEnrichDiv(col: DG.Column): HTMLElement {
   });
   return ui.divV([enrichAcc.root]); // wraping in div for consistent styling
 }
-
-interface FkRef { schema: string; table: string; column: string; }
 
 function getEnrichmentsDiv(conn: DG.DataConnection, schema: string, table: string, column: string, db: string, df: DG.DataFrame, fkRefs?: FkRef[]) {
   return ui.wait(async () => {
@@ -631,133 +590,7 @@ function showEnrichDialog(mainTable: DG.TableInfo, df: DG.DataFrame, dbColName: 
   dialog.show();
 }
 
-async function getEnrichConfigsNames(connectionNqName: string, schema: string, table: string, column: string, db: string | null = null): Promise<string[]> {
-  try {
-    const files = await grok.dapi.files
-      .list(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}${db ? `/${db}` : ''}/${schema}/${table}/${column}`);
-    return files.map((f) => f.name.substring(0, f.name.lastIndexOf('.')));
-  } catch (_: any) {
-    return [];
-  }
-}
-
-async function deleteEnrichment(connectionNqName: string, schema: string, table: string, column: string, name: string, db: string | null = null): Promise<boolean> {
-  try {
-    await grok.dapi.files
-      .delete(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}${db ? `/${db}` : ''}/${schema}/${table}/${column}/${name}.json`);
-    return true;
-  } catch (_: any) {
-    new DG.Balloon().error('Something went wrong while deleting enrichment. Please, try again.');
-    return false;
-  }
-}
-
-async function readEnrichConfig(connectionNqName: string, schema: string, table: string, column: string, name: string, db: string | null = null): Promise<Enrichment | null> {
-  try {
-    const data = await grok.dapi.files
-      .readAsText(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}${db ? `/${db}` : ''}/${schema}/${table}/${column}/${name}.json`);
-    return JSON.parse(data);
-  } catch (_: any) {
-    return null;
-  }
-}
-
-async function saveEnrichment(e: Enrichment, connectionNqName: string): Promise<void> {
-  try {
-    await grok.dapi.files
-      .writeAsText(`System:AppData/PowerPack/enrichments/${nqNameToPath(connectionNqName)}${e.keyDb ? `/${e.keyDb}` : ''}/${e.keySchema}/${e.keyTable}/${e.keyColumn}/${e.name}.json`,
-        JSON.stringify(e));
-  } catch (_: any) {
-    new DG.Balloon().error('Could not save enrichment config. Please try again.');
-  }
-}
-
-function nqNameToPath(connectionNqName: string) {
-  return connectionNqName.replace(':', '_');
-}
-
-function convertTableQueryToEnrichment(query: DG.TableQuery, name: string, keySchema: string, keyTable: string, keyColumn: string, keyDb: string | null = null): Enrichment {
-  return {name: name, keySchema: keySchema, keyTable: keyTable, keyColumn: keyColumn, fields: query.fields, joins: query.joins, keyDb: keyDb};
-}
-
-function convertEnrichmentToQuery(e: Enrichment, conn: DG.DataConnection): DG.TableQuery {
-  const query = conn.tableQuery();
-  query.table = `${e.keySchema}.${e.keyTable}`;
-  query.fields = e.fields;
-  query.joins = e.joins;
-  return query;
-}
-
-export async function runEnrichmentFromConfig(conn: DG.DataConnection, schema: string, table: string, column: string, name: string, df: DG.DataFrame, db: string | null = null, localColumn: string | null = null): Promise<void> {
-  const config = await readEnrichConfig(conn.nqName, schema, table, column, name, db);
-  if (!config) {
-    new DG.Balloon().error('Could not find enrichment. Please try again or create a new one.');
-    return;
-  }
-  const query = convertEnrichmentToQuery(config, conn);
-  await executeEnrichQuery(query, df, column, localColumn ?? undefined);
-}
-
-async function executeEnrichQuery(query: DG.TableQuery, df: DG.DataFrame, keyCol: string, localKeyCol?: string): Promise<void> {
-  try {
-    query.limit = undefined;
-    const dfKeyCol = df.columns.firstWhere(col => col.tags.get(DG.Tags.DbColumn) === (localKeyCol ?? keyCol));
-    if (!dfKeyCol) {
-      grok.shell.error('Could not resolve the column.');
-      return;
-    }
-    const keyColValues = dfKeyCol.toList();
-    const dataType = dfKeyCol.type;
-    let res: DG.DataFrame | undefined;
-    for (let i = 0; i < keyColValues.length; i += 200) {
-      const inValues = keyColValues.slice(i, i + 200);
-      query.where = [{field: `${query.table}.${keyCol}`, pattern: `in (${inValues.join(',')})`, dataType}];
-      const queryCall = query.prepare();
-      const run = await queryCall.call(false, undefined,
-        {processed: true, report: false});
-      const queryResult = run.getOutputParamValue();
-      if (!queryResult)
-        break;
-      if (!res)
-        res = queryResult;
-      else
-        res.append(queryResult, true);
-    }
-    if (!res) {
-      grok.shell.error('Something went wrong and query result returned null.');
-      return;
-    }
-
-    await grok.data.detectSemanticTypes(res);
-    const joinTable = DG.Func.byName('JoinTables');
-    const previousName = df.name;
-    joinTable.applySync({
-      'table1': df,
-      'table2': res,
-      'keys1': [dfKeyCol.name],
-      'keys2': [keyCol],
-      'values1': df.columns.names(),
-      'values2': res.columns.names().filter((n) => n !== keyCol),
-      'joinType': 'left',
-      'inPlace': true
-    });
-    df.name = previousName;
-  } catch (e: any) {
-    grok.shell.error(`Failed to enrich:\n ${e}`);
-  }
-}
-
 function isGuid(str: string): boolean {
   const guidRegex = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
   return guidRegex.test(str);
-}
-
-interface Enrichment {
-  name: string;
-  keyDb: string | null;
-  keySchema: string;
-  keyTable: string,
-  keyColumn: string;
-  fields: string[];
-  joins: DG.TableJoin[];
 }

@@ -9,7 +9,7 @@ Link ::= Name FlagList? (':' Tail?)?
 Tail ::= '.' '/' Segments? | '.' '/'? | Segments {fragment=true}
 Segments ::= (Segment '/')* (IOSegment | Segment) {fragment=true}
 FlagList ::= WS* '(' WS* Flag WS* (',' WS* Flag WS*)* ')' WS* {fragment=true}
-Flag ::= "call" | "optional" | "template"
+Flag ::= "call" | "optional" | "template" | "node"
 Segment ::= WS* (Selector | TargetIds | TagSpec) WS* {fragment=true}
 IOSegment ::= WS* IOSelector WS* {fragment=true}
 TagSpec ::= WS* '#' WS* TagSelectorType '(' TagSelectorArgs ')' WS*
@@ -44,9 +44,9 @@ export type LinkRefSelectors = 'after+' | 'after*' | 'after' | 'before+' | 'befo
 export type TagRefSelectors = 'after*' | 'after' | 'before*' | 'before' | 'same';
 export type LinkNonRefSelectors = 'first' | 'last' | 'all' | 'expand';
 export type IOExpandSelectors = 'inputs' | 'outputs';
-export type IOExcludeKind = 'nonscalar' | 'linked';
-const ioExcludeKinds: IOExcludeKind[] = ['nonscalar', 'linked'];
-export type LinkFlags = 'call' | 'optional' | 'template';
+const ioExcludeKinds = ['nonscalar', 'linked'] as const;
+export type IOExcludeKind = typeof ioExcludeKinds[number];
+export type LinkFlags = 'call' | 'optional' | 'template' | 'node';
 export type LinkSelectors = LinkRefSelectors | LinkNonRefSelectors;
 export type TagSelectors = LinkNonRefSelectors | TagRefSelectors;
 
@@ -139,6 +139,8 @@ export function parseLinkIO(io: string, ioType: IOType): LinkIOParsed[] {
     if (isBase || isVisibility)
       throw new Error(`Link io ${io}: (call) flag is not allowed in ${ioType} queries`);
   }
+  if (flags.includes('node') && ioType !== 'output')
+    throw new Error(`Link io ${io}: (node) flag is not allowed in ${ioType} queries`);
 
   type Segment = LinkSelectorSegment | LinkTagSegment;
   const segments = ast.children.map((node): Segment | undefined => {

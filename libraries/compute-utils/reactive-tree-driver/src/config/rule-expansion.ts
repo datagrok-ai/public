@@ -1,20 +1,30 @@
 import * as DG from 'datagrok-api/dg';
-import {LinkSpecString} from '../data/common-types';
+import {AnnotationLinkKind, LinkSpecString} from '../data/common-types';
 import {
   PipelineCheckConfiguration, PipelineHandlerConfiguration, PipelineLinkConfiguration, PipelineLinkConfigurationInput,
-  PipelineMetaConfiguration, PipelineRuleConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr, RuleSource,
+  PipelineMetaConfiguration, PipelinePipelineValidatorConfiguration, PipelineRuleConfiguration,
+  PipelineSelectorConfiguration, PipelineValidatorConfiguration, RuleEffect, RuleExpr, RuleSource,
 } from './PipelineConfiguration';
 import {CALL, CheckOptions, expandChecks, TABLE, TARGET, VALUE, validateCheckOptions} from './checks';
-import {parseLinkIO} from './LinkSpec';
+import {LinkIOParsed, parseLinkIO} from './LinkSpec';
 import {compileCheckFormulas, compileRuleFormulas} from './rule-formula';
 import {FuncCallIODescription, IOType, expandDeferredIOs, normalizeLinkSpec} from './config-processing-utils';
-import {ruleDataHandler, ruleMetaHandler, ruleValidatorHandler} from '../runtime/rule-handlers';
+import {
+  ruleDataHandler, ruleMetaHandler, ruleNodeMetaHandler, ruleValidatorHandler,
+} from '../runtime/rule-handlers';
+import {descriptionOutputs} from '../runtime/StateTreeNodes';
+import {indexFromEnd} from '../utils';
 import {ruleTargets, usedAliases} from '../runtime/rule-expressions';
 import {DriverLogger, reportError} from '../data/Logger';
 
 const metaEffects = new Set(['hide', 'show', 'items', 'meta']);
 const validatorEffects = new Set(['error', 'warning', 'notification', 'verdicts']);
 const dataEffects = new Set(['set', 'clear', 'assign']);
+const nodeEffects = new Set(['error', 'warning', 'notification']);
+const actionEffects = new Set(['hideAction', 'showAction']);
+const driverValues = new Set(['$position', '$steps']);
+
+type Family = 'meta' | 'validator' | 'data' | 'nodemeta' | 'pipelineValidator';
 
 export function isRuleLink(
   link: PipelineLinkConfigurationInput<LinkSpecString>,
@@ -29,8 +39,8 @@ export function isCheckLink(
 }
 
 /** The rules a step's annotations stand for: for each input whose choices the platform evaluates,
- *  the item list and a warning for a value outside it, and for the first
- *  `propagateChoice: all` input the lookup writing the picked row into the other scalar inputs. */
+ *  the item list, and for the first `propagateChoice: all` input the lookup writing the picked row
+ *  into the other scalar inputs, with a warning for cells that do not fit their inputs. */
 export function annotationRules(
   nqName: string, io: FuncCallIODescription[], logger?: DriverLogger,
 ): PipelineRuleConfiguration<LinkSpecString>[] {
@@ -63,11 +73,6 @@ export function annotationRules(
       sources: source,
       effects: [
         {effect: 'items', targets: target, items: {var: `${choices}.items`}, when: {'!!': {var: choices}}},
-        {
-          effect: 'warning', targets: target,
-          message: lookup ? 'Not in the lookup table' : 'Not in the list of choices',
-          when: {and: [{'!!': {var: choices}}, {'!': {var: `${choices}.inList`}}]},
-        },
         ...(lookup ? [{
           effect: 'warning' as const, targets: target, message: {var: `${choices}.rowErrors`},
           when: {'!!': {var: choices}},
@@ -92,11 +97,36 @@ export function annotationRules(
   });
 }
 
-export function expandLinks(
-  links: PipelineLinkConfigurationInput<LinkSpecString>[],
+/** The checks a step's annotations stand for, one link per input and check; a GrokScript expression
+ *  sees every input of the step under its own name. */
+export function annotationCheckLinks(
+  io: FuncCallIODescription[],
+): {kind: AnnotationLinkKind, link: PipelineLinkConfiguration<LinkSpecString>}[] {
+  const inputs = io.filter((item) => item.direction === 'input');
+  const inputQueries = inputs.filter((other) => other.id !== VALUE).map((other) => `${other.id}:${other.id}`);
+  return inputs.flatMap((item) =>
+    expandChecks({...item.checks, nullable: item.nullable}, {validatorsViaCall: true})
+      .map(({key, family, needsCall, needsInputs, params}) => {
+        const kind: AnnotationLinkKind = key === 'required' ? 'required' : 'check';
+        const common = {
+          id: `::${item.id}:${key}`,
+          from: [`${VALUE}:${item.id}`, ...(needsCall ? [`${CALL}(call,optional):.`] : []),
+            ...(needsInputs ? inputQueries : [])],
+          to: `${TARGET}:${item.id}`,
+          params,
+        };
+        const link: PipelineMetaConfiguration<LinkSpecString> | PipelineValidatorConfiguration<LinkSpecString> =
+          family === 'meta' ? {...common, type: 'meta', handler: ruleMetaHandler} :
+            {...common, type: 'validator', handler: ruleValidatorHandler, debounce: 0};
+        return {kind, link};
+      }));
+}
+
+export function expandLink(
+  link: PipelineLinkConfigurationInput<LinkSpecString>,
 ): PipelineLinkConfiguration<LinkSpecString>[] {
-  return links.flatMap((link) => isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
-    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link]);
+  return isRuleLink(link) ? expandRule(compileRuleFormulas(link)) :
+    isCheckLink(link) ? expandCheck(compileCheckFormulas(link)) : [link];
 }
 
 function singleQuery(id: string, field: string, query: LinkSpecString | undefined): string | undefined {
@@ -160,13 +190,21 @@ function expandCheck(check: PipelineCheckConfiguration<LinkSpecString>): Pipelin
   });
 }
 
-function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType) {
+// `nodes` collects the (node) aliases; parseLinkIO allows them only in `to`
+function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOType, nodes?: Set<string>) {
   const aliases = new Map<string, string>();
+  // a node meta link does not expand its actions queries
+  const allowed = ioType === 'actions' ? ['optional'] : ['optional', 'template', 'node'];
   for (const raw of normalizeLinkSpec(ios)) {
     for (const parsed of expandDeferredIOs(parseLinkIO(raw, ioType), ruleId)) {
-      const badFlag = parsed.flags?.find((flag) => flag !== 'optional' && flag !== 'template');
+      const badFlag = parsed.flags?.find((flag) => !allowed.includes(flag));
       if (badFlag)
         throw new Error(`Rule ${ruleId}: (${badFlag}) flag is not allowed in rule queries (${raw})`);
+      if (parsed.flags?.includes('node')) {
+        if (parsed.flags.includes('template'))
+          throw new Error(`Rule ${ruleId}: (node) and (template) flags cannot be combined (${raw})`);
+        nodes!.add(parsed.name);
+      }
       if (parsed.name.startsWith('$'))
         throw new Error(`Rule ${ruleId}: alias ${parsed.name} is reserved for the driver`);
       aliases.set(parsed.name, raw);
@@ -177,6 +215,7 @@ function aliasesOf(ruleId: string, ios: LinkSpecString | undefined, ioType: IOTy
 
 function effectExpressions(effect: RuleEffect): RuleExpr[] {
   switch (effect.effect) {
+  case 'describe': return [effect.value];
   case 'items': return [effect.items];
   case 'meta': return Object.values(effect.meta);
   case 'error':
@@ -187,6 +226,16 @@ function effectExpressions(effect: RuleEffect): RuleExpr[] {
   case 'assign': return [effect.values];
   default: return [];
   }
+}
+
+// a template query yields every io it matches, so a family link keeps only the aliases its own effects target
+const familyTargetsOf = new WeakMap<object, Set<string>>();
+
+export function narrowToFamilyTargets<L extends {to: LinkIOParsed[]}>(expanded: object, processed: L): L {
+  const targets = familyTargetsOf.get(expanded);
+  if (targets)
+    processed.to = processed.to.filter((io) => targets.has(io.name));
+  return processed;
 }
 
 // expects compiled formulas: every effect and source is an object
@@ -200,12 +249,23 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     throw new Error(`Rule ${id}: effects list is empty`);
 
   const fromAliases = aliasesOf(id, rule.from, 'input');
-  const toAliases = aliasesOf(id, rule.to, 'output');
+  const nodeAliases = new Set<string>();
+  const toAliases = aliasesOf(id, rule.to, 'output', nodeAliases);
+  const actionAliases = aliasesOf(id, rule.actions, 'actions');
+  for (const alias of actionAliases.keys()) {
+    if (fromAliases.has(alias) || toAliases.has(alias))
+      throw new Error(`Rule ${id}: actions alias ${alias} collides with an io alias`);
+  }
   const from = [...normalizeLinkSpec(rule.from)];
   const isAlias = (name: string) => fromAliases.has(name) || Object.hasOwn(sources ?? {}, name);
   const checkExpr = (expr: RuleExpr | undefined) => {
     const fields = new Set<string>();
     for (const alias of usedAliases(expr, fields)) {
+      if (driverValues.has(alias)) {
+        if (alias === '$position' && !rule.base)
+          throw new Error(`Rule ${id}: $position needs a base`);
+        continue;
+      }
       if (!isAlias(alias))
         throw new Error(`Rule ${id}: expression references unknown input alias ${alias}`);
     }
@@ -297,39 +357,95 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
 
   checkExpr(when);
 
+  // describe targets a description field, so it is not one of the io aliases assign defaults to
+  const describeTargets = new Set(effects.flatMap((effect) =>
+    effect.effect === 'describe' && effect.targets != null ? ruleTargets(effect.targets) : []));
   const effectTargets = (effect: RuleEffect) => {
     if (effect.targets == null) {
       if (effect.effect !== 'assign')
         throw new Error(`Rule ${id}: effect ${effect.effect} needs targets`);
-      return [...toAliases.keys()];
+      return [...toAliases.keys()].filter((alias) => !nodeAliases.has(alias) && !describeTargets.has(alias));
     }
     return ruleTargets(effect.targets);
   };
 
+  const targetFamily = (effect: RuleEffect, target: string): Family => {
+    if (actionAliases.has(target)) {
+      if (!actionEffects.has(effect.effect))
+        throw new Error(`Rule ${id}: actions alias ${target} takes only hideAction or showAction`);
+      return 'nodemeta';
+    }
+    if (actionEffects.has(effect.effect))
+      throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown actions alias ${target}`);
+    if (!toAliases.has(target))
+      throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
+    if (nodeAliases.has(target)) {
+      if (!nodeEffects.has(effect.effect))
+        throw new Error(`Rule ${id}: (node) alias ${target} takes only error, warning or notification`);
+      return 'pipelineValidator';
+    }
+    if (effect.effect === 'describe') {
+      for (const parsed of parseLinkIO(toAliases.get(target)!, 'output')) {
+        const field = indexFromEnd(parsed.segments);
+        if (parsed.flags?.includes('template') || field?.type !== 'selector' ||
+          !(descriptionOutputs as readonly string[]).includes(field.ids[0])) {
+          throw new Error(`Rule ${id}: describe target ${target} must end with one of ` +
+            `${descriptionOutputs.join(', ')}`);
+        }
+      }
+      return 'nodemeta';
+    }
+    return metaEffects.has(effect.effect) ? 'meta' : validatorEffects.has(effect.effect) ? 'validator' : 'data';
+  };
+
+  const families = new Map<RuleEffect, Family>();
+  const aliasKinds = new Map<string, string>();
   const targeted = new Set<string>();
   const visibilityTargets = new Set<string>();
   for (const effect of effects) {
-    if (!metaEffects.has(effect.effect) && !validatorEffects.has(effect.effect) && !dataEffects.has(effect.effect))
+    if (!metaEffects.has(effect.effect) && !validatorEffects.has(effect.effect) && !dataEffects.has(effect.effect) &&
+      !actionEffects.has(effect.effect) && effect.effect !== 'describe')
       throw new Error(`Rule ${id}: unknown effect ${(effect as any).effect}`);
     if (effect.effect === 'verdicts' && !('validators' in (sources?.[effect.source] ?? {})))
       throw new Error(`Rule ${id}: verdicts effect references unknown validators source ${effect.source}`);
+    if ((effect.effect === 'hideAction' || effect.effect === 'showAction') &&
+      (typeof effect.action !== 'string' || !effect.action))
+      throw new Error(`Rule ${id}: ${effect.effect} needs an action id`);
     for (const target of effectTargets(effect)) {
-      if (!toAliases.has(target))
-        throw new Error(`Rule ${id}: effect ${effect.effect} targets unknown output alias ${target}`);
+      const family = targetFamily(effect, target);
+      if (families.has(effect) && families.get(effect) !== family)
+        throw new Error(`Rule ${id}: effect ${effect.effect} mixes targets of different kinds`);
+      families.set(effect, family);
+      const kind = family === 'nodemeta' ? (actionAliases.has(target) ? 'action' : 'field') :
+        family === 'pipelineValidator' ? 'node' : 'io';
+      if (aliasKinds.has(target) && aliasKinds.get(target) !== kind)
+        throw new Error(`Rule ${id}: alias ${target} is targeted as both ${aliasKinds.get(target)} and ${kind}`);
+      aliasKinds.set(target, kind);
       targeted.add(target);
-      if (effect.effect === 'hide' || effect.effect === 'show') {
-        if (visibilityTargets.has(target))
-          throw new Error(`Rule ${id}: hide/show applied twice to output alias ${target}`);
-        visibilityTargets.add(target);
+      const key = effect.effect === 'hide' || effect.effect === 'show' ? `output alias ${target}` :
+        effect.effect === 'hideAction' || effect.effect === 'showAction' ? `action ${target}/${effect.action}` :
+          undefined;
+      if (key) {
+        if (visibilityTargets.has(key))
+          throw new Error(`Rule ${id}: hide/show applied twice to ${key}`);
+        visibilityTargets.add(key);
       }
     }
     effectExpressions(effect).forEach(checkExpr);
     checkExpr(effect.when);
   }
-  for (const alias of toAliases.keys()) {
-    if (!targeted.has(alias))
-      throw new Error(`Rule ${id}: output alias ${alias} is not targeted by any effect`);
+  for (const [kind, aliases] of [['output', toAliases], ['actions', actionAliases]] as const) {
+    for (const alias of aliases.keys()) {
+      if (!targeted.has(alias))
+        throw new Error(`Rule ${id}: ${kind} alias ${alias} is not targeted by any effect`);
+    }
   }
+
+  // a link re-runs on every rewire when its own expressions read $steps; `when` and sources are shared
+  const readsStepsIn = (expr: RuleExpr | undefined) => usedAliases(expr).includes('$steps');
+  const sourceArgs = Object.values(expandedSources).flatMap((source) => Object.values(
+    'func' in source ? source.func.args ?? {} : 'query' in source ? source.query.args ?? {} : {}));
+  const sharedSteps = readsStepsIn(when) || sourceArgs.some(readsStepsIn);
 
   const common = {
     from,
@@ -339,36 +455,64 @@ function expandRule(rule: PipelineRuleConfiguration<LinkSpecString>): PipelineLi
     dataFrameMutations: rule.dataFrameMutations,
   };
 
-  const familyLink = (family: Set<string>) => {
-    const familyEffects = effects.filter((effect) => family.has(effect.effect));
+  const familyLink = (family: Family) => {
+    const familyEffects = effects.filter((effect) => families.get(effect) === family);
     if (!familyEffects.length)
       return undefined;
     const familyTargets = new Set(familyEffects.flatMap(effectTargets));
-    const to = [...new Set([...toAliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw))];
-    return {to, params: {when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {})}};
+    const raws = (aliases: Map<string, string>) =>
+      [...new Set([...aliases].filter(([alias]) => familyTargets.has(alias)).map(([, raw]) => raw))];
+    const readsSteps = sharedSteps ||
+      familyEffects.some((effect) => [...effectExpressions(effect), effect.when].some(readsStepsIn));
+    const params = {
+      when, effects: familyEffects, ...(sources ? {sources: expandedSources} : {}), ...(readsSteps ? {readsSteps} : {}),
+    };
+    return {to: raws(toAliases), actions: raws(actionAliases), params, familyTargets};
   };
 
   const result: PipelineLinkConfiguration<LinkSpecString>[] = [];
-  const meta = familyLink(metaEffects);
+  const meta = familyLink('meta');
   if (meta) {
     const link: PipelineMetaConfiguration<LinkSpecString> = {
-      ...common, ...meta, id: `${id}::meta`, type: 'meta', handler: ruleMetaHandler,
+      ...common, to: meta.to, params: meta.params, id: `${id}::meta`, type: 'meta', handler: ruleMetaHandler,
     };
+    familyTargetsOf.set(link, meta.familyTargets);
     result.push(link);
   }
-  const validator = familyLink(validatorEffects);
+  const validator = familyLink('validator');
   if (validator) {
     const link: PipelineValidatorConfiguration<LinkSpecString> = {
-      ...common, ...validator, id: `${id}::validator`, type: 'validator', handler: ruleValidatorHandler,
-      debounce: rule.debounce,
+      ...common, to: validator.to, params: validator.params, id: `${id}::validator`, type: 'validator',
+      handler: ruleValidatorHandler, debounce: rule.debounce,
     };
+    familyTargetsOf.set(link, validator.familyTargets);
     result.push(link);
   }
-  const data = familyLink(dataEffects);
+  const data = familyLink('data');
   if (data) {
     const link: PipelineHandlerConfiguration<LinkSpecString> = {
-      ...common, ...data, id: `${id}::data`, type: 'data', handler: ruleDataHandler, runOnInit: rule.runOnInit,
+      ...common, to: data.to, params: data.params, id: `${id}::data`, type: 'data', handler: ruleDataHandler,
+      runOnInit: rule.runOnInit,
     };
+    familyTargetsOf.set(link, data.familyTargets);
+    result.push(link);
+  }
+  const nodeMeta = familyLink('nodemeta');
+  if (nodeMeta) {
+    const link: PipelineSelectorConfiguration<LinkSpecString> = {
+      ...common, to: nodeMeta.to, actions: nodeMeta.actions, params: nodeMeta.params, id: `${id}::nodemeta`,
+      type: 'nodemeta', handler: ruleNodeMetaHandler,
+    };
+    familyTargetsOf.set(link, nodeMeta.familyTargets);
+    result.push(link);
+  }
+  const pipelineValidator = familyLink('pipelineValidator');
+  if (pipelineValidator) {
+    const link: PipelinePipelineValidatorConfiguration<LinkSpecString> = {
+      ...common, to: pipelineValidator.to, params: pipelineValidator.params, id: `${id}::pipelineValidator`,
+      type: 'pipelineValidator', handler: ruleValidatorHandler, debounce: rule.debounce,
+    };
+    familyTargetsOf.set(link, pipelineValidator.familyTargets);
     result.push(link);
   }
   return result;

@@ -14,6 +14,7 @@ import {ChoiceInput} from '../../components/inputs/choice-input.js';
 import {columnInput, onColumnRenamed} from './pickers.js';
 import {platformColumnGrid} from './column-combo.js';
 import {columnRenderer} from '../entities/column-renderer.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 const ROW_HEIGHT = 24;
 
@@ -71,12 +72,12 @@ export interface ColumnsInputOptions extends InputOptions<string[]> {
  * click or Esc cancels, OK commits, and clicking the control again closes it. A column dropped
  * from the table leaves the value with it. */
 export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
-  private _table!: DG.DataFrame | null;
-  private _filter: ((column: DG.Column) => boolean) | undefined;
-  private _control!: HTMLElement;
-  private _summary!: HTMLElement;
-  private _unfollow: (() => void) | undefined;
-  private _popupScope: Scope | undefined;
+  private declare _table: DG.DataFrame | null;
+  private declare _filter: ((column: DG.Column) => boolean) | undefined;
+  private declare _control: HTMLElement;
+  private declare _summary: HTMLElement;
+  private declare _unfollow: (() => void) | undefined;
+  private declare _popupScope: Scope | undefined;
 
   constructor(options: ColumnsInputOptions) {
     super(options, []);
@@ -85,6 +86,21 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
 
   get table(): DG.DataFrame | null {
     return this._table;
+  }
+
+  /** Whether the picker is open. */
+  getState(): ReturnType<Input<string[]>['getState']> {
+    return {...super.getState(), open: this._popupScope !== undefined};
+  }
+
+  /** The columns on offer, the picked ones selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const table = this._table;
+    const picked = new Set(this.value.peek());
+    const names = table === null ? [] :
+      this._filter ? table.columns.toList().filter(this._filter).map((c) => c.name) : table.columns.names();
+    return Input.itemsState(names.map((name, index) => ({key: name, label: name, index,
+      selected: picked.has(name), rendered: false})), opts?.all);
   }
 
   /** Swaps the source table, and the filter with it (omit it to select from every column): the
@@ -114,8 +130,8 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     this._summary = span('', 'u2-columns-summary');
     editor.append(this._summary, span('', 'u2-columns-chevron'));
     this._reflectTable();
-    this._listen(editor, 'click', () => this._togglePopup());
-    this._listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
+    this.scope.listen(editor, 'click', () => this._togglePopup());
+    this.scope.listen(editor, 'keydown', (e) => this._onKeyDown(e as KeyboardEvent));
     this.effect(() => this._renderSummary(this.value.value));
     this._follow();
     this.own(() => {
@@ -172,7 +188,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       return;
     const renamed = value.slice();
     renamed[index] = newName;
-    Input.system(() => this.value.value = renamed);
+    this.systemWrite(renamed);
   }
 
   private _prune(): void {
@@ -180,7 +196,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     const value = this.value.peek();
     const kept = value.filter((name) => available.includes(name));
     if (kept.length !== value.length)
-      Input.system(() => this.value.value = kept);
+      this.systemWrite(kept);
     else
       this._renderSummary(value); // the 'All' threshold moves with the column count
   }
@@ -301,6 +317,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
       if (!picked.delete(name))
         picked.add(name);
       refresh();
+      list.refresh(name);
     };
     // All and None act on what the search left visible, so they read as 'all of these'
     const setAll = (on: boolean) => {
@@ -311,6 +328,7 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
           picked.delete(name);
       }
       refresh();
+      list.refresh();
     };
     const ok = () => {
       this._commit(order.filter((name) => picked.has(name)));
@@ -409,11 +427,6 @@ export class ColumnsInput extends Input<string[], ColumnsInputOptions> {
     scope.dispose();
     this._control.setAttribute('aria-expanded', 'false');
   }
-
-  private _listen(el: HTMLElement, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
-  }
 }
 
 export function columnsInput(label: string, table: DG.DataFrame,
@@ -437,7 +450,7 @@ export interface ColumnsMapInputOptions extends InputOptions<Record<string, stri
  * with its modal unrolled into a row per key, since there is nothing else in that modal. Unmapped
  * keys stay out of the value (Dart keeps them as nulls and labels the button `(mapped/total)`). */
 export class ColumnsMapInput extends Input<Record<string, string>, ColumnsMapInputOptions> {
-  private _pickers!: {key: string, input: ChoiceInput}[];
+  private declare _pickers: {key: string, input: ChoiceInput}[];
 
   constructor(options: ColumnsMapInputOptions) {
     super(options, {});
@@ -506,11 +519,11 @@ export interface AggregatedColumnsInputOptions extends InputOptions<ColumnAggreg
  * follows the column's type ({@link aggregationsFor}); a column change that invalidates the row's
  * aggregation resets it to the type's default, as Dart does (`:49-52`). */
 export class AggregatedColumnsInput extends Input<ColumnAggregation[], AggregatedColumnsInputOptions> {
-  private _rows!: ColumnAggregation[];
-  private _body!: HTMLElement;
+  private declare _rows: ColumnAggregation[];
+  private declare _body: HTMLElement;
   // the row editors are rebuilt whenever rows are added or removed; each generation owns its
   // inputs and tooltips, and is released before the next one is built
-  private _rowScope: Scope | undefined;
+  private declare _rowScope: Scope | undefined;
 
   constructor(options: AggregatedColumnsInputOptions) {
     super(options, []);

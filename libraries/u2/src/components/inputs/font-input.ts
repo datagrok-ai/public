@@ -5,6 +5,7 @@
    is what the platform does too; the value is normalized on the next edit. */
 import {Input, InputOptions} from '../../core/input-base.js';
 import {Overlay, OVERLAY_CLOSE_EVENT} from '../../core/overlay.js';
+import type {IItemsState} from '../../core/widget-like.js';
 import {icon} from '../display/icon.js';
 
 /** Written unquoted and lowercase by {@link FontInput.compose} (`font_input.dart:41-42`). */
@@ -33,14 +34,14 @@ export interface FontInputOptions extends InputOptions<string> {
 export class FontInput extends Input<string, FontInputOptions> {
   private static _seq = 0;
 
-  private _id!: string;
-  private _size!: HTMLInputElement;
-  private _family!: HTMLSelectElement;
-  private _bold!: HTMLElement;
-  private _italic!: HTMLElement;
-  private _popup!: HTMLElement;
-  private _font!: Font;
-  private _closeOverlay: (() => void) | undefined;
+  private declare _id: string;
+  private declare _size: HTMLInputElement;
+  private declare _family: HTMLSelectElement;
+  private declare _bold: HTMLElement;
+  private declare _italic: HTMLElement;
+  private declare _popup: HTMLElement;
+  private declare _font: Font;
+  private declare _closeOverlay: (() => void) | undefined;
 
   constructor(options: FontInputOptions = {}) {
     super(options, FontInput.compose({bold: false, italic: false, size: DEFAULT_SIZE,
@@ -125,35 +126,38 @@ export class FontInput extends Input<string, FontInputOptions> {
       const row = document.createElement('div');
       row.className = 'u2-font-size-option';
       row.dataset.size = String(value);
+      row.dataset.u2Item = String(value);
       row.setAttribute('role', 'option');
       row.textContent = String(value);
       this._popup.append(row);
     }
 
+    // set by an edit's write, dropped by the effect run it causes (handlers run batched)
     let echo = false;
     this.effect(() => {
       const value = this.value.value;
-      if (!echo)
+      if (echo)
+        echo = false;
+      else
         this._apply(value);
     });
     const commit = () => {
+      const value = FontInput.compose(this._font);
+      if (value === this.value.peek())
+        return;
       echo = true;
-      try {
-        this.value.value = FontInput.compose(this._font);
-      } finally {
-        echo = false;
-      }
+      this.value.value = value;
     };
-    this._listen(size, 'input', () => {
+    this.scope.listen(size, 'input', () => {
       const typed = size.value.trim();
       this._font.size = INT.test(typed) ? Number(typed) : DEFAULT_SIZE;
       commit();
     });
     // mousedown, not click: it beats the blur that closes the popup, so a click on an open box
     // toggles it shut instead of closing and reopening (`font_input.dart:230-234`)
-    this._listen(size, 'mousedown', () => this._toggleSizes());
-    this._listen(size, 'blur', () => this._closeSizes());
-    this._listen(family, 'change', () => {
+    this.scope.listen(size, 'mousedown', () => this._toggleSizes());
+    this.scope.listen(size, 'blur', () => this._closeSizes());
+    this.scope.listen(family, 'change', () => {
       this._font.family = family.value;
       commit();
     });
@@ -165,20 +169,20 @@ export class FontInput extends Input<string, FontInputOptions> {
       this._size.value = String(next);
       commit();
     };
-    this._listen(minus, 'click', () => step(-1));
-    this._listen(plus, 'click', () => step(1));
-    this._listen(this._bold, 'click', () => {
+    this.scope.listen(minus, 'click', () => step(-1));
+    this.scope.listen(plus, 'click', () => step(1));
+    this.scope.listen(this._bold, 'click', () => {
       this._font.bold = !this._font.bold;
       this._paint();
       commit();
     });
-    this._listen(this._italic, 'click', () => {
+    this.scope.listen(this._italic, 'click', () => {
       this._font.italic = !this._font.italic;
       this._paint();
       commit();
     });
     // pointerdown, not click: the size box blurs on click, and its blur closes the popup first
-    this._listen(this._popup, 'pointerdown', (e) => {
+    this.scope.listen(this._popup, 'pointerdown', (e) => {
       const row = (e.target as HTMLElement).closest('.u2-font-size-option') as HTMLElement | null;
       if (!row)
         return;
@@ -188,7 +192,7 @@ export class FontInput extends Input<string, FontInputOptions> {
       this._closeSizes();
       commit();
     });
-    this._listen(this._popup, OVERLAY_CLOSE_EVENT, () => this._closeOverlay = undefined);
+    this.scope.listen(this._popup, OVERLAY_CLOSE_EVENT, () => this._closeOverlay = undefined);
 
     const editor = document.createElement('div');
     editor.className = 'u2-font';
@@ -253,6 +257,29 @@ export class FontInput extends Input<string, FontInputOptions> {
     el.setAttribute('aria-pressed', String(on));
   }
 
+  /** Whether the sizes are open; the text is the composed font. */
+  getState(): ReturnType<Input<string>['getState']> {
+    return {...super.getState(), open: this._closeOverlay !== undefined};
+  }
+
+  /** The sizes on offer, the current one selected. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const open = this._closeOverlay !== undefined;
+    return Input.itemsState((this.options.sizes ?? SIZES).map((size, index) => ({key: String(size),
+      label: String(size), index, selected: size === this._font.size, rendered: open})), opts?.all);
+  }
+
+  /** Opens the sizes and resolves to the size's row. */
+  revealItem(keyOrLabel: string): Promise<HTMLElement | null> {
+    if (this._closeOverlay === undefined)
+      this._toggleSizes();
+    return super.revealItem(keyOrLabel);
+  }
+
+  protected displayText(): string {
+    return this.value.peek();
+  }
+
   private _toggleSizes(): void {
     if (this._closeOverlay)
       this._closeSizes();
@@ -265,10 +292,5 @@ export class FontInput extends Input<string, FontInputOptions> {
     this._closeOverlay = undefined;
     if (close)
       close();
-  }
-
-  private _listen(el: EventTarget, type: string, handler: (e: Event) => void): void {
-    el.addEventListener(type, handler);
-    this.own(() => el.removeEventListener(type, handler));
   }
 }

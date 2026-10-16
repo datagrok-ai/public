@@ -5,7 +5,9 @@
 import {Page} from '@playwright/test';
 import {expect, pollMs} from '../../src/runtime/patience.js';
 import {Then, When} from '../../src/registry.js';
-import {closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
+import type {ElementRef} from '../../src/runtime/args.js';
+import {click} from '../../src/runtime/gestures.js';
+import {armQuery, closeTopMenu, columnsSince, menuNames, openTopMenu, pickTopMenu, visibleLabels, waitCommand} from '../../src/runtime/menus.js';
 
 const PATH = '"Bio > Analyze > Sequence Space..." — the labels as the menu shows them, separated by ">" or "|"';
 // the time a command may run before that is a platform failure (a WASM alignment, a dimensionality reduction)
@@ -36,6 +38,35 @@ export const topMenuLists = Then('the top menu should list:', async (page: Page,
     await closeTopMenu(page);
   }
 }, {tier: 'ui', description: `one path per row (${PATH}); every group opens once and each of its leaves is found visible, then the menu closes`});
+
+/** Opens the leaf's group, reads whether the leaf is greyed out (aria-disabled), closes the menu. */
+async function topMenuState(page: Page, path: string): Promise<string> {
+  const {segments, names} = menuNames(path);
+  if (segments.length < 2)
+    throw new Error(`"${path}" names a group, not a command: a command is "Group > Item"`);
+  await openTopMenu(page, segments.slice(0, -1).join(' > '), false);
+  const leaf = page.locator(`[name="${names[names.length - 1]}"]`).first();
+  const state = await leaf.waitFor({state: 'visible', timeout: 5000}).then(
+    async () => await leaf.getAttribute('aria-disabled') === 'true' ? 'disabled' : 'enabled', () => 'not listed');
+  await closeTopMenu(page);
+  return state;
+}
+
+export const topMenuListsDisabled = Then('the top menu should list {string} as disabled', async (page: Page, path: string) => {
+  expect(await topMenuState(page, path), `"${path}" in the top menu`).toBe('disabled');
+}, {tier: 'ui', description: `the leaf of ${PATH} is listed greyed out — the platform greys out a command whose function needs a column, a table or a view the current one lacks (#4226); the menu is opened and closed again`});
+
+export const topMenuListsEnabled = Then('the top menu should list {string} as enabled', async (page: Page, path: string) => {
+  expect(await topMenuState(page, path), `"${path}" in the top menu`).toBe('enabled');
+}, {tier: 'ui', description: `the leaf of ${PATH} is listed and can be picked; the menu is opened and closed again`});
+
+/* A query view's Run query... shows the result as soon as it has one and opens it again when the call ends if no
+   view shows it then: a view closed in between comes back. */
+export const clickRunsQuery = When('user clicks on {element} and the query it runs completes', async (page: Page, target: ElementRef) => {
+  await armQuery(page);
+  await click(page, target);
+  await waitCommand(page, COMMAND_CAP);
+}, {tier: 'ui', description: 'the next data query call is watched from before the click to its end (onAfterRunAction of the platform)'});
 
 export const commandCompleted = Then('the top menu command should have completed', async (page: Page) => {
   await waitCommand(page, COMMAND_CAP);

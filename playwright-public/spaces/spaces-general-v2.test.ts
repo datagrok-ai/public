@@ -11,6 +11,7 @@
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
 import * as path from 'path';
+import { setPersonalFavorite } from '../browse/helpers';
 
 const BASE = process.env.DATAGROK_URL!;
 // CI default: share with the auto-provisioned `test2` user
@@ -22,6 +23,8 @@ const SHARING_PASSWORD = process.env.DATAGROK_SHARING_PASSWORD || '';
 const AUTH_STATE = path.resolve(__dirname, '..', '.auth.json');
 // The top "Current object" ribbon repeats the entity name as a hidden 0x0 link label.
 const LINK_LABEL = '.d4-link-label:not(.grok-context-ribbon *)';
+// Since core#840 a favorite space is an expandable tree node, not a link label
+const FAV_NODE = '.grok-browse-favorite > .d4-tree-view-node > .d4-tree-view-group-label:visible';
 
 // ===========================================================================
 // Helpers
@@ -626,14 +629,14 @@ test('5. Delete: cancel preserves, selective delete keeps sibling, cascade remov
 // ===========================================================================
 
 test('6. Favorites: add and remove space from favorites', async () => {
-  // Add to favorites → appears; remove → gone
+  // Add To Favorites → appears; remove → gone
   const FAV = 'PW-Gen-Fav-8';
   try {
     await resetToSpaces(page);
     await uiCreateRootSpace(page, FAV);
 
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Add to favorites');
+    await setPersonalFavorite(page, true);
 
     // Verify in browse tree Favorites section
     await page.evaluate(() => {
@@ -641,16 +644,16 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(FAV_NODE).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).toBeVisible({ timeout: 8_000 });
 
     // Verify in sidebar favorites pane (star icon)
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();
     await expect(page.locator('.grok-favorites-pane').first()).toBeVisible({ timeout: 5_000 });
     await expect(page.locator('.grok-favorites-pane').filter({ hasText: new RegExp(FAV) }).first()).toBeVisible({ timeout: 8_000 });
 
-    // Remove from favorites
+    // Remove from favorites (uncheck)
     await rightClickSpace(page, FAV);
-    await clickMenuItem(page, 'Remove from favorites');
+    expect(await setPersonalFavorite(page, false), 'the space must be a favorite before removing').toBe(true);
 
     // Verify gone from browse tree Favorites
     await page.evaluate(() => {
@@ -658,7 +661,7 @@ test('6. Favorites: add and remove space from favorites', async () => {
         .find((e) => e.textContent?.trim() === 'Favorites') as HTMLElement | undefined;
       if (el) el.click();
     });
-    await expect(page.locator(LINK_LABEL).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
+    await expect(page.locator(FAV_NODE).filter({ hasText: new RegExp(`^${FAV}$`) }).first()).not.toBeVisible({ timeout: 8_000 });
 
     // Verify gone from sidebar favorites pane
     await page.locator('.d4-tab-header-stripe.layout-sidebar.vertical > div:nth-child(6)').click();

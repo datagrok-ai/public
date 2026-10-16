@@ -1,5 +1,9 @@
 # Admetica changelog
 
+## v.next
+
+* [public#4226](https://github.com/datagrok-ai/public/issues/4226): Chem | Admetica | Calculate is disabled unless the current table view has a molecule column, instead of showing a message
+
 ## 1.3.2 (2026-09-16)
 
 * Docker: Cleared reported CVEs — added `apt upgrade` for base-image OS packages, upgraded pip/setuptools/wheel in the conda env, and pinned urllib3/idna to fixed releases

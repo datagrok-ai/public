@@ -344,6 +344,16 @@ export class FuncOptions {
 
   static AutostartImmediate = 'autostartImmediate';
 
+  /** 'true' for a function that needs an open table without taking one. */
+  static RequiresTable = 'requiresTable';
+
+  /** 'true' for a function that works on the current table view rather than on the tables it takes. */
+  static RequiresTableView = 'requiresTableView';
+
+  /** Semantic type of a column the required table needs; the current table view's unless
+   * [RequiresTable] is set or the function takes a table. */
+  static RequiresSemType = 'requiresSemType';
+
   /** Returns a table or a column to pass to another function in a formula, such as `Column("x")`.
    * Offered in formula editors although its result is not a scalar. */
   static Accessor = 'accessor';

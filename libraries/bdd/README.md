@@ -67,7 +67,10 @@ Under the pnpm workspace the package and the library resolve to one `@playwright
 A slow stand may need longer budgets: `BDD_EXPECT_TIMEOUT` raises what every check waits (15 s)
 and `BDD_COMMAND_TIMEOUT` how long a top-menu command has to add its columns (180 s).
 `BDD_FRESH_PAGE=1` reloads the shell before every feature instead of resetting it, which tells a
-feature that fails on what an earlier one left behind.
+feature that fails on what an earlier one left behind. `BDD_MOLECULE_SKETCHER=<name>` runs the
+suite with one molecule sketcher: `Given the molecule sketcher is "…"` pins that one instead of the
+feature's own, and a feature about one sketcher's own controls, tagged `@sketcher-controls`, skips
+with its reason under an override that names another.
 
 `grok-bdd link` exists because Playwright refuses to be loaded twice in one process and the
 library's runtime resolves it from its own directory; the command moves the package's copy to
@@ -105,7 +108,7 @@ against a `bdd…` fixture account.
 ```
 <package>/bdd/
   package.json        {"type": "module"}   — the specs and bindings here are ES modules
-  bdd.config.json     {"tiers": ["viewers"]}   — optional: library tiers beyond the base
+  bdd.config.json     {"tiers": ["viewers"]}   — optional: library tiers beyond the base, the audits' modes
   features/**.feature what you write, any hierarchy
   bindings/**.ts      the package's own elements, contexts and steps (optional)
   generated/**.test.ts what `grok-bdd compile` writes — committed, never edited by hand
@@ -173,6 +176,14 @@ time — a fuzzy gallery search that brings up the fixtures other features creat
 not fail the test, and its passing does ("the bug is fixed, remove the tag"). Nothing is softened
 to stay green. Outside a journey the tag works on a scenario and on an outline's `Examples` block:
 the Background runs plainly, and only the scenario's own steps are the expected failure.
+`@known-failure:<line>` pins the defect to the step at that feature line: a failure of any other step
+fails the test as a plain failure would. Pin every tag — a scenario that breaks earlier for another
+reason stays green under a bare one.
+
+**`@skip`** on a scenario, or on a journey's feature, declares the test and does not run it; the run
+reports it skipped. It is for a test the lead has set aside (a flaky feature of an app nobody uses),
+never for a defect (`@known-failure`) or a stand without a capability (the gates). The feature's
+description says, in a `TODO:` paragraph, why and what brings it back.
 
 The [known-failure audit](KNOWN_FAILURES.md) records the reproduced defects and the stale tag
 removed in September 2026. Inspect the failing step inside each tagged scenario: a green journey
@@ -200,8 +211,54 @@ scenario in that shape. A stack trace appears only for a programming error in a 
 
 Every run also leaves Playwright's JSON report in the project's `test-results/report.json`, with
 the stand and the machine it ran on: the failed step of a test is its deepest step with an `error`.
+A `--reporter` given on the command line gets `json` added, to the same file; one that names `json`
+itself (`--reporter=list,json`) sends the report to stdout, unless `PLAYWRIGHT_JSON_OUTPUT_FILE` names
+a file.
 The run history of UsageAnalysis (`packages/UsageAnalysis/bdd/history`) keeps such reports, when
 asked to, as dated records with a page to follow times, failures and flakes over them.
+
+## Audits
+
+Every scenario that passed as expected on a page showing u2 (in the current view, or a u2 dialog,
+popup or menu over it) is audited by the harness, with no step in the feature:
+
+- **layout** — the scenario's final state, before the shell reset, through the layout audit over
+  the visible u2 controls (`src/runtime/layout.ts`): a control that shows something but has no size
+  or is out of reach, two controls lying on one another (compared within one layer: a dialog never
+  overlaps the page under it), text cut off or ellipsized, content spilling out of its control, a
+  label off its editor, form editors out of their column. No screenshot is compared; a busy control
+  (`aria-busy`) is waited for up to 2 s, then left out.
+- **errors** — the console errors and uncaught exceptions the scenario logged, before the reset too.
+- **leaks** — after the reset has closed the view: what u2 created since the scenario started and
+  still holds live — scopes, timers, global listeners, each with its creation stack (`DG.U2.debug`).
+  u2 tracks them only in the pages of a project that audits leaks (`__U2_DEBUG__`, set before the
+  platform loads); a scenario that starts on a page not yet in the shell has no baseline and no check.
+
+A `@journey` audits layout and errors as each scenario ends and leaks once, at the end of the test;
+a test with a `@known-failure` scenario skips its end-of-test audits, leaks included. The modes —
+`fail`, `report` (printed and annotated on the test as `bdd-audit`) or `off` — and the allowlists
+are the project's, in `bdd.config.json`:
+
+```json
+{"tiers": ["viewers"],
+ "audits": {"layout": "fail", "errors": "fail", "leaks": "report",
+   "allow": {
+     "layout": [{"rule": "overlap", "selector": ".my-pkg-slider", "reason": "the thumb overlaps the track on purpose"}],
+     "errors": [{"message": "^Unable to get project asset", "url": "my-pkg", "reason": "the stand has no Chem"}],
+     "leaks": [{"label": "interval timer", "stack": "pollQueue", "reason": "the queue poll outlives the view by design"}]}}}
+```
+
+Without the block, layout and errors are `report` and leaks `off`; `BDD_AUDIT=<mode>` sets all three
+for a run, `BDD_AUDIT_LAYOUT`, `BDD_AUDIT_ERRORS` and `BDD_AUDIT_LEAKS` one each. The suite runs in a
+1920×1080 window; `BDD_VIEWPORT=<w>x<h>` (say `1280x800`) runs it at another size, so the layout audit
+checks every scenario's end state on a smaller screen. Every allowlist entry
+says why the finding is no defect (`reason`, required): a layout entry drops the findings of its rule
+whose element is inside `selector`; `message`, `url`, `label` and `stack` are regular expressions, a
+leak's label being the scope's label, `<kind> timer` or `<target> <type> listener`.
+`node tool/audit-summary.mjs <report.json> [memory.jsonl …]` reads a run's report: which audits ran,
+the findings by rule, by feature (leaked scopes, timers and listeners apart) and by scenario, the most
+frequent ones, and with `BDD_MEMORY_LOG` files each worker's heap and renderer from its first feature
+to its last.
 
 ## Element phrases
 
@@ -216,14 +273,37 @@ A phrase resolves, in this order, at every level:
 | `sequence column input`                    | a generic **kind** by its longest suffix, qualified by the rest  |
 | `"Run MSA" button`, `"First name" input`   | a quoted qualifier: scope words inside it are kept, and a leading "first"/"last" is not read as an ordinal |
 
-**Kinds** cover the whole u2 library (every `data-u2` value it stamps: inputs, buttons, forms,
-lists, trees, tables, dialogs, tabs, sections, accordions, cards, wizards, menus, notifications,
-tooltips …) plus the Dart shell's conventions (`icon-scatter-plot`, `viewer-Grid`,
-`div-section--Viewers`, `input-host-Caption`), and the shell's `viewer`, `view`, `element`. Each
-kind knows how its qualifier narrows the candidates — `data-u2-name`, the label or title part,
-the text, an aria label, a placeholder, a Dart `name=`. A row goes by its primary text. Every
-suffix split is kept: `sequence column input` is tried as `column input` qualified "sequence"
-and as `input` qualified "sequence column". `grok-bdd lint` prints how each phrase resolved.
+**Kinds** cover the whole u2 library and EMS: one noun for every `data-u2` kind they stamp (inputs,
+buttons, forms, lists, trees, tables, dialogs, tabs, sections, accordions, cards, wizards, menus,
+notifications, tooltips, the filter builder, the domain controls …), generated from the libraries'
+manifests into `bindings/common/u2-kinds.g.ts`; `kinds.ts` adds only what a manifest cannot know —
+the Dart shell's selectors and conventions (`icon-scatter-plot`, `viewer-Grid`,
+`div-section--Viewers`, `input-host-Caption`), legacy aliases, parts and gestures — and the shell's
+`viewer`, `view`, `element`. A `readout` is a "name = value" status line (`[role="status"]` with a
+`<label>` and an `<output>`): `value of rows readout` is the value alone. A row goes by its primary
+text. Every suffix split is kept: `sequence column input` is tried as `column input` qualified
+"sequence" and as `input` qualified "sequence column". `grok-bdd lint` prints how each phrase resolved.
+
+**What the user sees comes first.** A qualifier narrows a kind's candidates by what a person sees —
+the kind's own order among its label (an input's label part, a dialog's or a section's title), the
+accessible name the browser associates (`<label for>`, `aria-labelledby`, `aria-label`, right after
+the label), the title, the text, the placeholder and an item's key — and by `data-u2-name` only
+after all of them; a Dart `name=` keeps the place its kind gives it. The first that finds something
+wins: `"Search users…" typeahead` is the typeahead showing that placeholder, and a control named in
+code is reached by the label a person reads. `BDD_RESOLVE_TRACE=<file>` writes a
+JSON line for every phrase this order resolves by another strategy than the kind declares, and
+whether both reach the same elements.
+
+**Items of a u2 collection** (an item or option, a tree node, a table row, a tab, a wizard step, a
+menu item, a breadcrumb, a chip) match by what they show, then by their key (`data-u2-item`: the
+value, the tab id, the menu path `File > Open`). An item that is not rendered — a virtual list's
+row scrolled away, a closed popup's option — is brought into view by u2 (`DG.U2.revealItem`) when
+the phrase names its collection (`<item> in <collection>`) and nothing visible matches.
+
+**Several matches are an error for a gesture.** A click, a hover or a check whose phrase matches
+more than one visible element fails naming each candidate the way a person tells them apart — its
+label, the section, dialog, form, tab or card around it, and `[name=…]` where the label differs —
+instead of acting on the first (typing still goes to the first match's editor).
 
 **Look before you phrase.** Open the page in devtools and read the u2 contract — `data-u2`,
 `data-u2-name`, `data-u2-part`, the ARIA roles and states — and write the phrase that matches what
@@ -249,8 +329,9 @@ export const openWorkbench = Given('user opens the MSA workbench', async (page) 
 
 Inside a context, its names and the generic kinds are looked up in the context root first, then
 on the whole page (dialogs and notifications are portaled out of it). A package can also register
-a generic kind of its own with `kind()` for a repeated structure that carries no `data-u2`
-(U2Demo's `readout`). Selectors inside `labelSelector`, `parts` and `has`-style filters are
+a generic kind of its own with `kind()` for a repeated structure that carries no `data-u2` (Chem's
+`calculator`); markup a library kind already reads needs none — U2Demo's status lines are
+`readout`s. Selectors inside `labelSelector`, `parts` and `has`-style filters are
 evaluated *from the element*: `span:first-child`, not `.x > span:first-child`.
 
 ## Steps
@@ -261,9 +342,13 @@ list is the reference; this is the map:
 - **Gestures and outcomes on any element** (`bindings/common/steps.ts`): clicks, hovers, typing
   (`types` / `enters` = types and commits), keys, `selects`, checks, expands, drags, `fills in:`;
   `should be/become {state}`, text, value and item counts, a visible count remembered and then
-  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list). States: visible, hidden, present,
+  claimed `fewer`/`more … than remembered` (a search that narrows a stand-sized list), a value
+  remembered and claimed again after a reload (`should (not) have the remembered value`), one choice
+  a dropdown does or does not offer, and the downloads (none at all, a file by a name pattern, the
+  occurrences of a text in the last one). States: visible, hidden, present,
   absent, enabled, disabled, checked, unchecked, partially checked, selected, empty, expanded,
-  collapsed, focused, invalid, valid, ready — each read from the ARIA state the element uses.
+  collapsed, focused, invalid, valid, ready, read-only, editable, busy, required — each read from
+  the u2 status or the ARIA state the element uses (below).
   `ready` requires explicit `aria-busy="false"` and no `aria-invalid="true"`; absent readiness
   markup never counts as a completed result.
 - **The shell** (`bindings/platform/steps.ts`): `user is logged in`, `user opens {dataset}
@@ -282,16 +367,62 @@ list is the reference; this is the map:
   files or a space for the feature (deleted at feature end), a file dropped from disk, the file
   chooser a menu opens.
 - **The current table through the JS API** (`platform/data.ts`, `columns.ts`): selection and
-  filter set and checked row by row, cells (every value, some value, distinct lengths, two columns
-  equal row by row), calculated and renamed columns, colour coding,
-  other open tables, links between tables, the filter panel's cards through its own API.
+  filter set and checked row by row (and how many selected rows the filter lets through), cells
+  (every value, some value, distinct lengths, two columns equal row by row), calculated and renamed
+  columns, colour coding, other open tables, links between tables, the filter panel's cards through
+  its own API.
 - **The top menu and its commands** (`platform/commands.ts`): a path picked by real pointer moves,
   the function call it starts awaited, the columns it added read back.
-- **Package functions and their results** (`platform/functions.ts`: empty, text, a number or a
-  range, methods, a list, a table, a returned column's length, rows and prefix), **custom platform events**
+- **A package function the UI offers no entry to**, called for what it shows (`platform/functions.ts`;
+  what it returns is a package test), **custom platform events**
   and the task bar's progress entries (`platform/events.ts`), the clipboard and a file chooser
   (`common/steps.ts`).
+- **u2 controls through their status** (`common/u2-steps.ts`) and **geometry** (`common/geometry.ts`),
+  tabled below.
 - **The `viewers` tier** (below).
+
+**The status first.** On the root of a u2 control, a state or a value claim reads what the control
+reports (`DG.U2.state`) and falls back to the DOM for a key it does not report; a part, a wrapper
+and a Dart widget are read from the DOM. When both answer and disagree, the claim follows the status
+and prints `bdd: u2 contract: …` once per phrase and page — a finding for u2. A value failure names
+what was read and the control: `the value of Stage input is "Discovery", expected "Phase II" (u2:
+choice-input "Stage", enabled, valid)`.
+
+**The visible match first.** A value or a state reads the first visible match, else the first (a tab
+panel not shown keeps its own copy first in the DOM); `contain`/`have text` over several matches
+reads the visible ones when there are any, else all — any of them for a positive claim, none for a
+negative. A hidden match never satisfies a claim while a visible one exists. Several visible matches
+keep each step's rule: the u2 steps fail naming them, a value reads the first, a flag state
+(`enabled`, `invalid` …) keeps its every/any reading.
+
+The u2 steps answer from the status alone and fail on an element that is not a u2 control root
+(the error steps fall back to the error part):
+
+| Phrase | Claims |
+|---|---|
+| `{element} should have the error {string}`, `… should have no error` | the validation message, exactly |
+| `{element} should have {int} item(s) in total` | every item, the rows a virtual list has not rendered included (`should have {int} item(s)` counts the rendered ones) |
+| `{element} should (not) list the item {string}` | an item, rendered or not, by key, else label |
+| `item {string} of {element} should be {state}` | one item: selected, (un/partially) checked, expanded, collapsed, enabled, disabled, valid, invalid |
+| `{element} should have the selection {string}`, `… should have nothing selected` | the selected items as a set, a comma-separated list of keys or labels |
+| `{element} should be on the {string} step`, `{element} should show the {string} tab` | the current step or tab, by key, else title |
+| `{element} should report the value {string}` | the raw value where the shown text formats it: as JSON when the argument parses, else as text |
+
+The geometry claims poll the box of the one visible match of each phrase, allow 1 px and fail with
+both boxes in one sentence:
+
+| Phrase | Claims |
+|---|---|
+| `{element} should be left of / right of / above / below {element}` | the facing edges do not cross |
+| `{element} should be inside {element}` | every edge within the other's box |
+| `{element} should be inside the window` | every edge within the browser window — a dialog or popup that no ancestor clips |
+| `the window is {int} by {int} px` | resizes the browser window until the test ends (the shell reset puts back the run's size) |
+| `{element} should not overlap {element}` | the boxes share at most 1 px |
+| `{element} should be left-aligned / top-aligned / vertically centered with {element}` | the left edges, top edges or middles agree |
+| `{element} should be as tall as {element}`, `{element} should be {int} px tall` | the height — a u2 editor beside the Dart one it matches |
+| `{element} should be as wide as {element}`, `{element} should be {int} px wide`, `{element} should be at least {int} px wide`, `{element} should be at most {int} px wide` | the width — an editor as wide as its Dart twin, no shorter than a floor, no wider than a cap |
+| `{element} should not be clipped` | inside every ancestor that clips it, its text not cut or ellipsized |
+| `{element} should have no layout problems` | the layout audit ("Audits", above) over its u2 controls finds nothing |
 
 A step definition is an exported `const`; the generated spec imports it by name:
 
@@ -342,14 +473,17 @@ The `viewers` tier drives viewers the way the platform sees them:
   areas alike or different, the selection highlight (with a margin the selection warrants), the
   value range and the colour scale against before; an area `painted in no color` (greys only).
 - **The legend** (read from its `data-legend-*` attributes: its mode — docked, in a corner,
-  collapsed to the mini icon, placed nowhere — its slot, its items and their colors, its size
-  against before after a splitter drag, whether its items are drawn as structures or as text), the row tooltip, viewer events,
+  collapsed to the mini icon, shown in the mini icon's tooltip, placed nowhere — its slot, its items
+  and their colors, its size against before after a splitter drag, whether its box stays clear of a
+  hit area, whether its items are drawn as structures or as text), the row tooltip, viewer events,
   layouts saved and loaded, sizes held and restored, and the floors: `no errors should have been
   logged`, `no error or warning balloon should have been shown`; a balloon that should have been
   shown by kind and text (`an error or warning balloon matching "<regex>"` for either kind).
 - **`widgets.ts`** holds the steps first written for one viewer that a second wanted: the viewer's
   own menu, the description's place, empty plot space, range sliders, on-viewer column selectors,
-  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins.
+  inner viewers, card readings, lassos, cross-widget drags, tabbed panels, grid pins, a right-click
+  on the empty space past a grid row's last column, the columns a column picker offers (read from
+  its own table and dismissed), and a Select columns list exactly or without a column.
 - **`formula-lines.ts`**: the Formula Lines dialog (a line added, its range, an edit), the lines a
   viewer draws (the `formula line <title>` / `formula band <title>` areas it reports only for what
   it drew), their ranges, and the formulas of the viewer and the table naming only existing columns.
@@ -368,6 +502,19 @@ Area hovers also settle before the next step. Grid cell tooltip requests partici
 core viewer's pending-work signal, including the nested correlation grid. Tooltip text checks
 consider visible tooltips only; hidden retained text and an absent tooltip satisfy a negative
 check. A served core must include the tracked grid tooltip debounce for these absence checks.
+
+**The `molecules` tier** is for a package whose features draw or read molecules wherever a host opens a sketcher (a
+cell editor, a molecule input's dialog, an app's inline sketcher): `crux sketcher widget` (Crux Sketch, Chem's own
+sketcher, its root named `cruxSketch`: its atoms and bonds as `atom N` and `bond N` areas; its parts as areas and as
+`<part> of crux sketcher widget`, `canvas`, `actions`, `tools`, `elements`, `templates` and `label editor`; each control
+a toolbar shows as a `tool <name>` area, by Crux's name for it (`tool ring.benzene`); its `ready`, `pending`, `smiles`,
+`atoms`, `bonds`, `mode`, `selected atoms`, `selected bonds`, `tool`, `query`, `empty` and `changes` readings; its
+gestures settle on its `isRenderPending` and `onRendered`), Crux's controls by their test ids (`crux canvas`, `crux single bond tool`, `crux benzene tool`,
+`crux nitrogen tool`, `crux R-group tool`, `crux R1 button`, `crux clear button`, …), `the "<reading>" reading of
+<widget> should be the molecule "<SMILES>"` and `… the molecule in row N of "<column>" column`, `the molecule in row N
+of "<column>" column should be "<SMILES>"` (each read by RDKit, any notation), and `the semantic types of the current
+table are detected`. It needs Chem on the stand, so a package other than Chem gates on it (`Given the "Chem" package
+is installed`); a feature that draws on Crux pins it (`the molecule sketcher is "Crux"`) and is `@sketcher-controls`.
 
 A JS viewer takes part by giving the runtime what a Dart viewer gives it: `getWidgetStatus()`
 with its canvas under `parts`, `hitAreas` in CSS px of it and named `values`; a `get
@@ -392,6 +539,18 @@ place; later providers override earlier entries. Providers run on each status re
 no longer drawn. Detach removes providers; a viewer reattached to a different table needs its
 table-specific providers registered again.
 
+A widget that is no viewer and lives outside one (a molecule sketcher in a dialog) takes part the
+same way: its own status provider, registered on itself, makes it a widget the platform knows, and
+the viewers tier's area and reading steps find it as the nearest such widget up from the element a
+phrase names. Chem's Crux sketcher reports its atoms and bonds as `atom N` and `bond N` areas and
+readings such as `smiles`, `atoms` and `pending`, and a `get isRenderPending()` its gestures settle on:
+
+```gherkin
+When user clicks on crux single bond tool
+And user drags the "atom 1" area of crux sketcher widget by 60 pixels to the right
+Then the "atoms" reading of crux sketcher widget should be 3
+```
+
 ## Guides: a scenario as a how-to video
 
 A scenario that answers "how do I …" is also its own demonstration. `grok-bdd guide
@@ -405,9 +564,13 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   starting where the previous action ended (the renderer refuses to make a video in which it
   skips); an icon-sized target
   (28 px or less each way: an icon, a checkbox) is zoomed into first, anything larger is clicked
-  where it is; the page after the step is revealed, and a caption above the page (clear of a
+  where it is; a gesture on a hit area of a viewer or a widget (a grid cell, an atom of a sketcher)
+  lights that area, not the viewer round it; the page after the step is revealed, and a caption above the page (clear of a
   player's timeline) reads the step as an instruction ("Click on Open local file icon in browse
-  toolbar"); a caption too long for the strip is set smaller, then on two lines, and the lines of a
+  toolbar"), or says what a `# caption: <text>` comment on the lines right above the step says — for a
+  step whose text is for the test (an atom's index, a drag in pixels, a reading), so the video speaks as
+  a person would ("Click the acid's carbon", "The centre flips from R to S"); a check with a caption is
+  shown even where `HIDDEN_CHECKS` would leave it out; a caption too long for the strip is set smaller, then on two lines, and the lines of a
   pasted text (`\n` in the step) read as values separated by commas. A choice is shown being made: a native `<select>` opens its list, the option is typed
   so the list highlights it, Enter takes it; a column selector opens its picker, the name is typed
   into the search short of its last letter (a complete unique name is taken on the spot) and the
@@ -425,6 +588,11 @@ scenario into `guides/<feature slug>/<scenario slug>/`:
   (the renderer prints a press more than 2 px off, or outside the element its stop lit);
 - with `--gif` also `guide.gif` and `guide-thumb.png`, the docs' own pair (the GIF's palette
   always holds the press colours).
+
+A set-up step can frame the video to a part of the page — `guideFrame(page, box, margin)` from
+`@datagrok-libraries/bdd/runtime` (Chem's `the Crux sketcher is open on …` frames its sketcher's
+dialog, so a guide about the sketcher shows the sketcher alone): the renderer cuts every picture to
+that box, and moves every point and box into it.
 
 Guide mode (`BDD_GUIDE=<dir>`, set by the command) records at the step: the page before and after
 it (`BDD_GUIDE_SETTLE`, 500 ms by default, lets a dialog or a balloon finish appearing), the last
@@ -499,10 +667,18 @@ on Reload Window; `taskkill /F /IM rg.exe` (or `pkill rg`) clears the ones alrea
 package's `grok-bdd` loads: while any of those sources is newer than its build (a pull, an edit),
 every command but `init` and `link` stops and names the file, rather than failing a sound feature on
 a kind or a step only the sources have. `npm run
-test:unit` runs the engine tests (nouns, compile, project, init, failure) and the locator test,
-which drives the kinds and the platform names over a static page in the library's Chromium (and
-skips itself where none is installed); the library is a project itself (`features/platform`):
-`npm test` builds, drift-checks it and runs the unit tests — what the libraries CI runs on Node 18,
+test:unit` runs the engine tests (nouns, compile, project, init, failure, vocabulary, audit …) and
+the ones that drive a static page in the library's Chromium (locate, addressing, u2-state, layout …;
+each skips itself where none is installed); the library is a project itself (`features/platform`):
+`npm test` builds, checks the vocabulary, drift-checks the project and runs the unit tests — what the libraries CI runs on Node 18,
 which is why `@playwright/test` is pinned to the last minor that runs there — and `npm run
 test:suite` runs it against a stand. Translating a hand-written spec into a feature, and proving
 the feature tests what it claims, is the `/bdd-translate` skill.
+
+The u2 and EMS nouns are generated: after any change to `libraries/u2/manifest.json` or
+`libraries/ems/manifest.json`, `npm run vocab` rewrites `bindings/common/u2-kinds.g.ts`; `npm run
+vocab:check`, `npm test` and the vocabulary unit test fail while it is older than a manifest. What a
+manifest cannot say (a Dart selector, a legacy alias, a strategy order a suite relies on) goes into
+the `OVERRIDES` of `bindings/common/kinds.ts`; a compat test holds every key, selector, strategy,
+part and Dart name of the hand-written table the generated one replaced
+(`tests/fixtures/kinds-before.json`), but for the narrowings it lists (`REPLACED`).

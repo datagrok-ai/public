@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <!-- the pages link the sheets they show; u2 controls must not install the whole stylesheet too -->
+  <meta name="u2-styles" content="linked">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>u2 gallery</title>
   <link rel="icon" href="data:,">
@@ -234,7 +236,7 @@
       ['Feedback & display', [['tooltip', 'Tooltip'], ['notify', 'Notifications'],
         ['badges', 'Badges & progress'], ['async', 'Async states'], ['tour', 'Tour']]],
       ['Data', [['entities', 'Object renderers'], ['pager', 'Async pager'], ['filters', 'Filter builder'],
-        ['filter-query', 'Filter query input'], ['domain', 'Domain source'], ['session', 'Domain session']]],
+        ['filter-query', 'Filter query input']]],
     ];
     const navTree = new VirtualTree({itemHeight: 24});
     navTree.setRoots(NAV.map(([group, pages]) => ({id: `g:${group}`, label: group,
@@ -255,7 +257,8 @@
       if (!navSyncing && node && groupOf(node.id) && location.hash.slice(1) !== node.id)
         location.hash = node.id;
     });
-    const propsGrid = new PropertyGrid();
+    const propsGrid = new PropertyGrid({onChanged: (change) =>
+      selected?.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value)});
     const propsTitle = document.getElementById('props-title');
     document.getElementById('props-host').append(propsGrid.root);
     const EDITABLE = new Set(['string', 'int', 'double', 'bool', 'string_list']);
@@ -282,12 +285,6 @@
       if (control)
         selectControl(control);
     });
-    new U2Scope().effect(() => {
-      const change = propsGrid.onChanged.value;
-      if (change && selected)
-        selected.getProperties().find((p) => p.name === change.name)?.set?.(selected.propertyTarget, change.value);
-    });
-
     window.addEventListener('hashchange', route);
     try {
       const u2 = await import('../src/index.js');

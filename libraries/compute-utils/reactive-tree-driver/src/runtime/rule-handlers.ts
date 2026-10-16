@@ -1,5 +1,5 @@
 import {
-  Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, Validator,
+  Handler, MetaHandler, RuleDataEffect, RuleExpr, RuleMetaEffect, RuleSource, RuleValidatorEffect, SelectorHandler,
 } from '../config/PipelineConfiguration';
 import {ValidationResult} from '../data/common-types';
 import {IControllerBase} from '../RuntimeControllers';
@@ -60,9 +60,35 @@ export const ruleMetaHandler: MetaHandler = ({controller}) => {
   });
 };
 
+export const ruleNodeMetaHandler: SelectorHandler = ({controller}) => {
+  const {when, effects, sources} = ruleParams<RuleMetaEffect>(controller);
+  return withContext(controller, sources, (ctx) => {
+    const ruleOn = isOn(when, ctx);
+    // like items and meta, an effect that is off adds nothing, so it never erases another one's value
+    const descriptions = new Map<string, any>();
+    for (const effect of effects) {
+      const on = ruleOn && isOn(effect.when, ctx);
+      for (const target of ruleTargets(effect.targets)) {
+        if (effect.effect === 'describe') {
+          if (on)
+            descriptions.set(target, evaluate(effect.value, ctx));
+          else if (!descriptions.has(target))
+            descriptions.set(target, undefined);
+        } else if (effect.effect === 'hideAction' || effect.effect === 'showAction')
+          controller.setActionVisible(target, effect.action, effect.effect === 'showAction' ? on : !on);
+      }
+    }
+    for (const [target, value] of descriptions)
+      controller.setDescriptionItem(target, value);
+  });
+};
+
 const severityKey = {error: 'errors', warning: 'warnings', notification: 'notifications'} as const;
 
-export const ruleValidatorHandler: Validator = ({controller}) => {
+type ValidationTarget = IControllerBase & {setValidation(name: string, validation?: ValidationResult): void};
+
+// validator and pipeline validator controllers share this shape
+export const ruleValidatorHandler = ({controller}: {controller: ValidationTarget}) => {
   const {when, effects, sources} = ruleParams<RuleValidatorEffect>(controller);
   return withContext(controller, sources, (ctx) => {
     const ruleOn = isOn(when, ctx);
@@ -82,9 +108,10 @@ export const ruleValidatorHandler: Validator = ({controller}) => {
             (result[isError ? 'errors' : 'warnings'] ??= []).push({description: message});
           continue;
         }
-        // an array message yields one item per element, an empty array none
+        // an array message yields one item per element, an empty array none; empty values add nothing
         const message = evaluate(effect.message, ctx);
-        const descriptions = (Array.isArray(message) ? message : [message]).map((item) => String(item));
+        const descriptions = (Array.isArray(message) ? message : [message])
+          .filter((item) => item != null).map((item) => String(item));
         if (!descriptions.length)
           continue;
         const result = results[target] ??= {};

@@ -222,6 +222,7 @@ export function similaritySearchViewer() : any {
 
 //name: Similarity Search
 //top-menu: Chem | Search | Similarity Search...
+//meta.requiresSemType: Molecule
 export function similaritySearchTopMenu() : void {
   PackageFunctions.similaritySearchTopMenu();
 }
@@ -236,6 +237,7 @@ export function diversitySearchViewer() : any {
 
 //name: Diversity Search
 //top-menu: Chem | Search | Diversity Search...
+//meta.requiresSemType: Molecule
 export function diversitySearchTopMenu() : void {
   PackageFunctions.diversitySearchTopMenu();
 }
@@ -414,6 +416,7 @@ export async function getFingerprints(col: DG.Column, _metric: string | undefine
 //input: bool clusterMCS { optional: true }
 //output: viewer result
 //top-menu: Chem | Analyze | Chemical Space...
+//meta.requiresTableView: true
 //editor: Chem:ChemSpaceEditor
 export async function chemSpaceTopMenu(table: DG.DataFrame, molecules: DG.Column, methodName: any, similarityMetric: any, plotEmbeddings: boolean, options?: any, preprocessingFunction?: any, clusterEmbeddings?: boolean, clusterMCS?: boolean) : Promise<any> {
   return await PackageFunctions.chemSpaceTopMenu(table, molecules, methodName, similarityMetric, plotEmbeddings, options, preprocessingFunction, clusterEmbeddings, clusterMCS);
@@ -496,6 +499,7 @@ export function runElementalAnalysis(table: DG.DataFrame, molecules: DG.Column) 
 
 //name: R-Groups Analysis
 //top-menu: Chem | Analyze | R-Groups Analysis...
+//meta.requiresSemType: Molecule
 export function rGroupsAnalysisMenu() : void {
   PackageFunctions.rGroupsAnalysisMenu();
 }
@@ -534,6 +538,7 @@ export function ActivityCliffsEditor(call: DG.FuncCall) : any {
 //input: bool isDemo { optional: true }
 //input: bool isTest { optional: true }
 //top-menu: Chem | Analyze | Activity Cliffs...
+//meta.requiresTableView: true
 //editor: Chem:ActivityCliffsEditor
 export async function activityCliffs(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column, similarity: number, methodName: any, similarityMetric: any, preprocessingFunction: any, options?: any, isDemo?: boolean, isTest?: boolean) : Promise<void> {
   await PackageFunctions.activityCliffs(table, molecules, activities, similarity, methodName, similarityMetric, preprocessingFunction, options, isDemo, isTest);
@@ -903,6 +908,14 @@ export function openChemLibSketcher() : any {
   return PackageFunctions.openChemLibSketcher();
 }
 
+//name: Crux
+//description: Crux Sketch: a molecule sketcher on the Crux chemistry engine (WebAssembly)
+//output: widget sketcher
+//meta.role: moleculeSketcher
+export function cruxSketcher() : any {
+  return PackageFunctions.cruxSketcher();
+}
+
 //description: Opens SDF file
 //input: list bytes 
 //output: list<dataframe> result
@@ -1083,13 +1096,14 @@ export async function callChemDiversitySearch(col: DG.Column, metricName: any, f
 //input: bool rotatableBonds = false { caption: Rotatable bonds }
 //input: bool stereoCenters = false { caption: Stereo centers }
 //input: bool moleculeCharge = false { caption: Molecule charge }
+//input: bool molecularFormula = false { caption: Molecular formula }
 //meta.function_family: biochem-calculator
 //meta.method_info.author: Open Chem Lib Team
 //meta.method_info.year: 2024
 //meta.method_info.github: https://github.com/actelion/openchemlib
 //meta.role: hitTriageFunction,transform
-export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean) : Promise<void> {
-  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge);
+export async function addChemPropertiesColumns(table: DG.DataFrame, molecules: DG.Column, MW?: boolean, HBA?: boolean, HBD?: boolean, logP?: boolean, logS?: boolean, PSA?: boolean, rotatableBonds?: boolean, stereoCenters?: boolean, moleculeCharge?: boolean, molecularFormula?: boolean) : Promise<void> {
+  await PackageFunctions.addChemPropertiesColumns(table, molecules, MW, HBA, HBD, logP, logS, PSA, rotatableBonds, stereoCenters, moleculeCharge, molecularFormula);
 }
 
 //name: Chemical Properties
@@ -1128,6 +1142,7 @@ export async function getToxicityRisks(molecules: DG.Column, risks?: string[]) :
 
 //description: Generates a hierarchical tree based on the scaffolds presented in dataset
 //top-menu: Chem | Analyze | Scaffold Tree
+//meta.requiresSemType: Molecule
 export function addScaffoldTree() : void {
   PackageFunctions.addScaffoldTree();
 }
@@ -1158,6 +1173,7 @@ export function MMPEditor(call: DG.FuncCall) : any {
 //input: bool runOnFilteredData { optional: true; nullable: true }
 //editor: Chem:MMPEditor
 //top-menu: Chem | Analyze | Matched Molecular Pairs...
+//meta.requiresTableView: true
 export async function mmpAnalysis(table: DG.DataFrame, molecules: DG.Column, activities: DG.Column[], diffTypes: any, scalings: any, fragmentCutoff: number, runOnFilteredData: boolean) : Promise<void> {
   await PackageFunctions.mmpAnalysis(table, molecules, activities, diffTypes, scalings, fragmentCutoff, runOnFilteredData);
 }
@@ -1201,6 +1217,7 @@ export function sarMatrixEditor(call: DG.FuncCall) : any {
 //input: column_list rGroupColumns { nullable: true; caption: R-groups; description: Columns with the substituent at each attachment point of the core }
 //input: string matrixColumns { nullable: true; caption: Matrix columns; description: The R-group whose substituents become the matrix columns. The core and the other R-groups make up the rows }
 //top-menu: Chem | Analyze | SAR Matrix...
+//meta.requiresTableView: true
 //editor: Chem:SarMatrixEditor
 export async function sarMatrixAnalysis(table: DG.DataFrame, molecules: DG.Column, activity: DG.Column, scaling: string, activityDirection: string, fragmentCutoff: number, fragmentationLevels: number, predictVirtual: boolean, useMcsAnchors: boolean, seriesColumn: string, coreColumn: any, rGroupColumns: DG.Column[], matrixColumns: string) : Promise<void> {
   await PackageFunctions.sarMatrixAnalysis(table, molecules, activity, scaling, activityDirection, fragmentCutoff, fragmentationLevels, predictVirtual, useMcsAnchors, seriesColumn, coreColumn, rGroupColumns, matrixColumns);
@@ -1386,6 +1403,7 @@ export async function isInteractiveNN(df: DG.DataFrame, predictColumn: DG.Column
 //input: string fragment = 'O=C(OCC1c2ccccc2-c2ccccc21)[*:1]' { semType: Molecule }
 //meta.role: transform
 //top-menu: Chem | Transform | Reactions | Deprotect...
+//meta.requiresTableView: true
 //editor: Chem:DeprotectEditor
 export async function deprotect(table: DG.DataFrame, molecules: DG.Column, fragment: string) : Promise<void> {
   await PackageFunctions.deprotect(table, molecules, fragment);
@@ -1416,6 +1434,7 @@ export async function convertToV3KViaOCL(mols: string[]) : Promise<string[]> {
 //name: mpo
 //description: Calculates the MPO score for the column of molecules
 //top-menu: Chem | Calculate | MPO Score...
+//meta.requiresSemType: Molecule
 export async function _mpo() : Promise<void> {
   await PackageFunctions._mpo();
 }
@@ -1506,6 +1525,7 @@ export async function mixtureTreeWidget(mixture: string) : Promise<any> {
 //name: Chemical Properties
 //description: Dynamically discovers and executes tagged biochemical calculators
 //top-menu: Chem | Calculate | Chemical Properties...
+//meta.requiresSemType: Molecule
 export async function biochemPropsWidget() : Promise<void> {
   await PackageFunctions.biochemPropsWidget();
 }
@@ -1561,6 +1581,7 @@ export async function removeWaterAndSaltsTopMenu(table: DG.DataFrame, molecules:
 //name: Run Reaction
 //description: Runs reaction based on the reaction SMARTS and list of reactants
 //top-menu: Chem | Transform | Reactions | Transformation...
+//meta.requiresSemType: Molecule
 export async function transformationReactionsTopMenu() : Promise<void> {
   await PackageFunctions.transformationReactionsTopMenu();
 }
@@ -1590,6 +1611,7 @@ export async function toSdf(table: DG.DataFrame, molecules: DG.Column, molBlockF
 //name: Two-Component Reaction
 //description: Runs a reaction between molecules from two columns
 //top-menu: Chem | Transform | Reactions | Two-Component Reaction...
+//meta.requiresSemType: Molecule
 export async function twoComponentReactionTopMenu() : Promise<void> {
   await PackageFunctions.twoComponentReactionTopMenu();
 }

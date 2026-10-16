@@ -176,7 +176,10 @@ export function isOn(when: RuleExpr | undefined, ctx: RuleContext): boolean {
 }
 
 export function buildRuleContext(controller: IControllerBase): RuleContext {
-  const ctx: RuleContext = {$all: {}};
+  const ctx: RuleContext = {$all: {}, $steps: controller.getStepsCount()};
+  const position = controller.getBasePosition()?.position;
+  if (position !== undefined)
+    ctx.$position = position;
   for (const name of controller.getMatchedInputs()) {
     const all = controller.getAll(name) ?? [];
     ctx[name] = all[0];
@@ -185,7 +188,8 @@ export function buildRuleContext(controller: IControllerBase): RuleContext {
   return ctx;
 }
 
-const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
+/** Array ops whose second argument runs over each element. */
+export const scopedOps = new Set(['map', 'filter', 'reduce', 'all', 'some', 'none']);
 
 /** Root input aliases referenced by `var`, `missing` and `missing_some`, with the `$all.` prefix stripped.
  *  `fields` collects the roots read as `{var: 'name'}` in the element argument of an array op, which JSON Logic

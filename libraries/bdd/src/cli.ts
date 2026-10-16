@@ -4,8 +4,10 @@
      lint                  diagnostics only, notes included
      list-steps            the vocabulary this project sees (base tiers + its tiers + its own bindings)
      run [playwright args] compile --check, then Playwright over generated/ with the library's config
-     guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [playwright args]
-                           run the scenarios in guide mode, render each into a how-to video (tool/guide-render.py)
+     guide <features> [--gif] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>]
+           [--fps <n>] [--colors <n>] [--size <px>] [--hold <s>] [playwright args]
+                           run the scenarios in guide mode, render each into a how-to video (tool/guide-render.py);
+                           --help-mode films a help-page GIF (an 800x500 window at 2x, the bare shell, no captions)
      link [--undo]         wire the package to this checkout of the library (one Playwright per run) */
 import {spawn} from 'node:child_process';
 import {copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmdirSync, rmSync,
@@ -178,11 +180,14 @@ function helpRoot(from: string): string | undefined {
   return undefined;
 }
 
-/** `guide <feature|spec paths…> [--gif] [--help-pages] [--out <dir>] [--settle <ms>] [playwright args]`:
- * the scenarios run on one worker with `BDD_GUIDE` set, then every manifest the run wrote goes
- * through `tool/guide-render.py`. A `.feature` path names its generated spec. `--help-pages` adds
- * every feature tagged `@help:<page dir>` and copies each scenario's GIF and thumb into
- * `<help root>/<page dir>/img/<scenario slug>.gif` — the docs' own layout. */
+/** `guide <feature|spec paths…> [--gif] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>] [GIF options]
+ * [playwright args]`: the scenarios run on one worker with `BDD_GUIDE` set, then every manifest the run wrote
+ * goes through `tool/guide-render.py`. A `.feature` path names its generated spec. `--help-mode` films a GIF
+ * for a help page (an 800x500 window unless BDD_GUIDE_VIEWPORT says otherwise, filmed at 2x; the bare shell,
+ * no captions, no set-up); `--help-pages` is that for every feature tagged `@help:<page dir>`, and puts each
+ * scenario's GIF and thumb into `<help root>/<page dir>/img/<scenario slug>.gif` — beside the one there, as
+ * `<slug>.new.gif`, for the reviewer to swap in. `--fps`, `--colors`, `--size` and `--hold` set the GIF's rate,
+ * palette, width and the hold of its last frame. */
 async function guide(project: Project, flags: string[]): Promise<number> {
   const args = [...flags];
   const take = (name: string): boolean => {
@@ -198,9 +203,15 @@ async function guide(project: Project, flags: string[]): Promise<number> {
     return args.splice(i, 2)[1];
   };
   const helpPages = take('--help-pages');
-  const gif = take('--gif') || helpPages;
+  const help = take('--help-mode') || helpPages;
+  const gif = take('--gif') || help;
   const out = resolve(project.root, option('--out') ?? 'guides');
   const settle = option('--settle');
+  const render = [['--fps', '--gif-fps'], ['--colors', '--colors'], ['--size', '--gif-width'], ['--hold', '--end-hold']]
+    .flatMap(([name, as]) => {
+      const value = option(name);
+      return value === undefined ? [] : [as, value];
+    });
   const tagged = helpPages ?
     listFiles(project.featuresDir, '.feature').map((file) => parseFeature(file, readFileSync(file, 'utf8')))
       .filter((f) => f.tags.some((t) => t.startsWith('@help:'))) :
@@ -220,8 +231,9 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   if (compiled !== 0)
     return compiled;
   const started = Date.now();
-  const code = await launch(project, ['--workers=1', ...specs, ...rest],
-    {BDD_GUIDE: out, ...(settle ? {BDD_GUIDE_SETTLE: settle} : {})});
+  const code = await launch(project, ['--workers=1', ...specs, ...rest], {BDD_GUIDE: out,
+    ...(settle ? {BDD_GUIDE_SETTLE: settle} : {}),
+    ...(help ? {BDD_GUIDE_HELP: '1', BDD_GUIDE_VIEWPORT: process.env.BDD_GUIDE_VIEWPORT ?? '800x500'} : {})});
   const manifests = listFiles(out, '.json')
     .filter((f) => basename(f) === 'steps.json' && statSync(f).mtimeMs >= started);
   if (manifests.length === 0) {
@@ -234,29 +246,31 @@ async function guide(project: Project, flags: string[]): Promise<number> {
   for (const manifest of manifests) {
     const dir = dirname(manifest);
     console.log(`guide: ${relative(project.root, dir)}`);
-    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : [])], project.root);
+    const exit = await exec(python, [script, dir, ...(gif ? ['--gif'] : []), ...(help ? ['--help'] : []), ...render], project.root);
     if (exit !== 0) {
       console.error(`guide: rendering failed (${exit}) — ${python} ${script}`);
       failed++;
     }
   }
   if (helpPages && failed === 0) {
-    const help = helpRoot(project.packageDir);
-    if (!help) {
+    const helpDir = helpRoot(project.packageDir);
+    if (!helpDir) {
       console.error('guide: no help/ tree found above the package (BDD_HELP_ROOT names one)');
       return 1;
     }
     for (const feature of tagged) {
       const page = feature.tags.find((t) => t.startsWith('@help:'))!.slice('@help:'.length);
-      const img = join(help, ...page.split('/'), 'img');
+      const img = join(helpDir, ...page.split('/'), 'img');
       mkdirSync(img, {recursive: true});
       for (const scenario of feature.scenarios) {
         const from = join(out, slugOf(feature.name), slugOf(scenario.name));
         if (!existsSync(join(from, 'guide.gif')))
           continue;
-        copyFileSync(join(from, 'guide.gif'), join(img, `${slugOf(scenario.name)}.gif`));
-        copyFileSync(join(from, 'guide-thumb.png'), join(img, `${slugOf(scenario.name)}-thumb.png`));
-        console.log(`guide: ${relative(help, img)}/${slugOf(scenario.name)}.gif`);
+        // a GIF the page already has is replaced only once the reviewer approves the new one
+        const name = existsSync(join(img, `${slugOf(scenario.name)}.gif`)) ? `${slugOf(scenario.name)}.new` : slugOf(scenario.name);
+        copyFileSync(join(from, 'guide.gif'), join(img, `${name}.gif`));
+        copyFileSync(join(from, 'guide-thumb.png'), join(img, `${name}-thumb.png`));
+        console.log(`guide: ${relative(helpDir, img)}/${name}.gif${name.endsWith('.new') ? ' — beside the one the page shows, for review' : ''}`);
       }
     }
   }
@@ -378,7 +392,7 @@ async function main(): Promise<number> {
   const [command = 'compile', ...flags] = process.argv.slice(2);
   if (command === '--help' || command === '-h' || command === 'help') {
     console.log('grok-bdd init | link [--undo] | compile [--check] [--verbose] | lint | list-steps | ' +
-      'run [playwright args] | guide <features> [--gif] [--help-pages] [--out <dir>] [--settle <ms>]');
+      'run [playwright args] | guide <features> [--gif] [--help-mode] [--help-pages] [--out <dir>] [--settle <ms>]');
     return 0;
   }
   if (command === 'init')
@@ -410,7 +424,7 @@ async function main(): Promise<number> {
       return guide(project, flags);
     default:
       console.error(`unknown command "${command}" — init | link [--undo] | compile [--check] [--verbose] | lint | ` +
-        'list-steps | run [playwright args] | guide <features> [--gif] [--help-pages]');
+        'list-steps | run [playwright args] | guide <features> [--gif] [--help-mode] [--help-pages]');
       return 2;
   }
 }

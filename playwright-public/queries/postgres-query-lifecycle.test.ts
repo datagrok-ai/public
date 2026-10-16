@@ -178,6 +178,11 @@ test.describe.serial(`Query lifecycle (${PROVIDER} / ${POSTGRES_CONNECTION})`, (
       const pane = page.locator(`[name="div-section--${section}"]`).first();
       await expect(pane).toBeVisible({ timeout: 10_000 });
       await pane.scrollIntoViewIfNeeded();
+      // A stand without KetcherSketcher raises Chem's fallback warning over the top panes, and it eats the click
+      await page.evaluate(() => {
+        for (const b of Array.from(document.querySelectorAll('.d4-balloon')))
+          if (/Package with Ketcher function is not installed/.test(b.textContent ?? '')) b.remove();
+      });
       await pane.click();
       await page.waitForTimeout(150);
     }

@@ -1,5 +1,6 @@
 /* eslint-disable max-len */
 import {MCLOpReturnType} from './types';
+import {WORKGROUP_DIM} from '../workgroup';
 
 /**
  * inflation operator in place
@@ -24,7 +25,7 @@ export async function expandNoRevive(
   device: GPUDevice, knnSimilarities: Float32Array, knnIndexes: Uint32Array, offsets: Uint32Array, _nRows: number
 ): Promise<MCLOpReturnType> {
   const neededThreads = 90000;
-  const workGroupThreadsPerDim = 10;
+  const workGroupThreadsPerDim = WORKGROUP_DIM;
   const totalWorkgroupThreads = workGroupThreadsPerDim * workGroupThreadsPerDim;
   const neededWorkGroups = Math.ceil(neededThreads / totalWorkgroupThreads);
   const workGroupDim = Math.ceil(Math.sqrt(neededWorkGroups));

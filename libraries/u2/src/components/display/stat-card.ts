@@ -39,17 +39,32 @@ export class StatCard extends Control {
     this.root.classList.add('u2-card', 'u2-stat-card');
     this.root.dataset.u2 = 'stat-card';
     this._valueEl = div(undefined, 'u2-stat-value');
+    this._valueEl.dataset.u2Part = 'value';
     this._deltaEl = options.delta === undefined ? undefined : div(undefined, 'u2-stat-delta');
+    if (this._deltaEl)
+      this._deltaEl.dataset.u2Part = 'delta';
     this.runInScope(() => {
       if (options.icon !== undefined)
         this.root.append(icon(options.icon, {cls: 'u2-stat-icon'}));
-      this.root.append(this._valueEl, span(options.label, 'u2-stat-label'));
+      const label = span(options.label, 'u2-stat-label');
+      label.dataset.u2Part = 'label';
+      this.root.append(this._valueEl, label);
       if (this._deltaEl)
         this.root.append(this._deltaEl);
     });
     this.effect(() => this._renderValue());
     if (this._deltaEl)
       this.effect(() => this._renderDelta());
+  }
+
+  /** The base state plus the value (raw), as shown, and the delta in `extra.delta`. */
+  getState(): ReturnType<Control['getState']> {
+    const source = this._options.source?.state.peek();
+    const value = source === undefined ? StatCard._peek(this._options.value) :
+      source.kind === 'ready' ? source.value : undefined;
+    const delta = StatCard._peek(this._options.delta);
+    return {...super.getState(), value: value ?? null, text: Control.text(this._valueEl),
+      ...delta !== undefined && Number.isFinite(delta) ? {extra: {delta}} : {}};
   }
 
   private _renderValue(): void {
@@ -90,6 +105,10 @@ export class StatCard extends Control {
     if (format)
       return format(x);
     return typeof x === 'number' ? x.toLocaleString() : x;
+  }
+
+  private static _peek<T>(x: T | ReadonlySignal<T> | undefined): T | undefined {
+    return x instanceof Signal ? (x as ReadonlySignal<T>).peek() : x as T | undefined;
   }
 
   private static _current<T>(x: T | ReadonlySignal<T> | undefined): T | undefined {

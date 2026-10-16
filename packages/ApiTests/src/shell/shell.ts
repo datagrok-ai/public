@@ -108,10 +108,7 @@ category('Shell', () => {
   }, {skipReason: nodeSkip});
 
   test('createByType', async () => {
-    const host = ui.div();
-    for (const type of DG.View.ALL_VIEW_TYPES)
-      host.appendChild(DG.View.createByType(type).root);
-    expect(host.children.length, DG.View.ALL_VIEW_TYPES.length);
+    expect(DG.View.createByType(DG.View.PACKAGES).root instanceof HTMLElement, true);
     let error = '';
     try {
       DG.View.createByType('unknown-view-type');

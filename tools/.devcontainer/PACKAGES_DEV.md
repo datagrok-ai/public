@@ -66,7 +66,7 @@ Host machine
 │  │    │       └── <folder>/     ← bind mount of user's repo   │  │
 │  │    ├── /var/run/docker.sock  ← host Docker for stand mgmt  │  │
 │  │    ├── entrypoint.sh         ← bind-mounted from tools/    │  │
-│  │    ├── Claude Code + MCP plugins (Jira, GitHub)            │  │
+│  │    ├── Claude Code + MCP plugins (GitHub, Jira)            │  │
 │  │    ├── Playwright + Chrome for testing                     │  │
 │  │    └── grok CLI for build/publish/test                     │  │
 │  └────────────────────────────────────────────────────────────┘  │
@@ -197,30 +197,31 @@ Based on `node:22-bookworm-slim`. Pre-installed:
 
 Runs as **root** in compose (entrypoint drops to `node` user for the main process).
 
-## MCP plugins: Jira and GitHub
+## MCP plugins: GitHub and Jira
 
 The agent uses MCP plugins to search for similar issues, read context, and update
-status. Set tokens in `.env` or the agent will ask interactively on first use.
+status. Tickets are GitHub issues (`datagrok-ai/public`); Jira holds only read-only
+`GROK-NNNNN` history. Set tokens in `.env` or the agent will ask interactively on first use.
 
-### Jira (Atlassian)
+### GitHub
 
 ```bash
 # Inside tools-dev, register the MCP server:
+claude mcp add github -s user -- \
+  npx -y @modelcontextprotocol/server-github
+```
+
+Requires `GITHUB_TOKEN` in the environment (already passed from `.env`).
+
+### Jira (optional, read-only history)
+
+```bash
 claude mcp add mcp-atlassian -s user -- \
   npx -y mcp-atlassian \
   --jira-url "$JIRA_URL" \
   --jira-username "$JIRA_USERNAME" \
   --jira-token "$JIRA_TOKEN"
 ```
-
-### GitHub
-
-```bash
-claude mcp add github -s user -- \
-  npx -y @modelcontextprotocol/server-github
-```
-
-Requires `GITHUB_TOKEN` in the environment (already passed from `.env`).
 
 ## Testing
 

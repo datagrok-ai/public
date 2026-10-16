@@ -5,9 +5,9 @@
    `core/client/d4/lib/src/viewers/pc_plot/CLAUDE.md`).
    The axis-order claim stays here until a second viewer has named axes; its slider drag and its
    row-membership claim are in the library now (`bindings/tiers/viewers/widgets.ts`). */
-import {expect, Page} from '@playwright/test';
+import {Page} from '@playwright/test';
 import {Then, When} from '@datagrok-libraries/bdd';
-import {el, ElementRef, viewers} from '@datagrok-libraries/bdd/runtime';
+import {el, ElementRef, expect, viewers} from '@datagrok-libraries/bdd/runtime';
 
 const PLOT = (): ElementRef => el('pc plot viewer');
 

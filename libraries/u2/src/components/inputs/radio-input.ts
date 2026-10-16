@@ -1,4 +1,5 @@
 import {Input, InputOptions} from '../../core/input-base.js';
+import type {IItemsState} from '../../core/widget-like.js';
 
 export interface RadioInputOptions extends InputOptions<string | null> {
   items: string[];
@@ -8,18 +9,38 @@ export interface RadioInputOptions extends InputOptions<string | null> {
 }
 
 /** Radio group over native `input[type=radio]` sharing one `name`, so arrow-key navigation,
- * label clicks and screen readers work without machinery of our own. */
+ * label clicks and screen readers work without machinery of our own. Each row is an addressable
+ * item (`data-u2-item`); the radio inside it carries the role and the checked state, and its
+ * `data-value`, as the platform's radios do. */
 export class RadioInput extends Input<string | null, RadioInputOptions> {
   private static _seq = 0;
 
-  private _group!: HTMLElement;
-  private _name!: string;
-  private _items!: string[];
-  private _radios!: HTMLInputElement[];
+  private declare _group: HTMLElement;
+  private declare _name: string;
+  private declare _items: string[];
+  private declare _radios: HTMLInputElement[];
 
   constructor(options: RadioInputOptions) {
     super(options, null);
     this.root.dataset.u2 = 'radio-input';
+  }
+
+  get items(): string[] {
+    return this._items;
+  }
+
+  set items(x: string[]) {
+    this.setItems(x ?? []);
+  }
+
+  get itemTooltips(): Record<string, string> | undefined {
+    return this.options.itemTooltips;
+  }
+
+  set itemTooltips(x: Record<string, string> | undefined) {
+    this.options.itemTooltips = x ?? undefined;
+    this._fill();
+    this._apply(this.value.peek());
   }
 
   /** Replaces the item list, keeping the current value if it is still one of the items. */
@@ -27,8 +48,20 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
     this._items = items;
     this._fill();
     const value = this.value.peek();
-    this.value.value = value !== null && items.includes(value) ? value : null;
+    this.value.value = value != null && items.includes(value) ? value : null;
     this._apply(this.value.peek());
+  }
+
+  /** One item per radio, keyed by its value, the chosen one checked. */
+  getItems(opts?: {all?: boolean}): IItemsState {
+    const value = this.value.peek();
+    return Input.itemsState(this._items.map((item, index) =>
+      ({key: item, label: item, index, checked: item === value, rendered: true})), opts?.all);
+  }
+
+  /** The chosen item. */
+  protected displayText(): string {
+    return this.value.peek() ?? '';
   }
 
   protected createEditor(): HTMLElement {
@@ -42,12 +75,10 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
       group.classList.add('u2-radio-buttons');
     this._fill();
 
-    const onChange = () => {
+    this.scope.listen(group, 'change', () => {
       const checked = this._radios.find((r) => r.checked);
       this.value.value = checked ? checked.value : null;
-    };
-    group.addEventListener('change', onChange);
-    this.own(() => group.removeEventListener('change', onChange));
+    });
     this.effect(() => this._apply(this.value.value));
     return group;
   }
@@ -59,12 +90,15 @@ export class RadioInput extends Input<string | null, RadioInputOptions> {
     for (const item of this._items) {
       const row = document.createElement('label');
       row.className = 'u2-radio-item';
+      row.dataset.u2Item = item;
       const radio = document.createElement('input');
       radio.type = 'radio';
       radio.name = this._name;
       radio.value = item;
+      radio.dataset.value = item;
       radio.className = 'u2-input-radio';
       const text = document.createElement('span');
+      text.dataset.u2Part = 'item-label';
       text.textContent = item;
       row.append(radio, text);
       const tooltip = tooltips ? tooltips[item] : undefined;

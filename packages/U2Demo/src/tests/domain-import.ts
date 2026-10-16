@@ -5,7 +5,7 @@ import * as grok from 'datagrok-api/grok';
 import * as DG from 'datagrok-api/dg';
 import {after, before, category, delay, expect, test} from '@datagrok-libraries/test/src/test';
 import {Control} from '@datagrok-libraries/u2';
-import {domains, DomainTable} from '@datagrok-libraries/u2/src/dg/index.js';
+import {domains, DomainTable} from '@datagrok-libraries/ems/src/dg';
 
 const ITEMS = 'apitests.item';
 

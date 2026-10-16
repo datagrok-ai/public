@@ -6,7 +6,9 @@ Feature: The property grid
     Given user opens the "Property grid" demo page
 
   Scenario: Editing a property replaces the value record
-    Then value of "last change" readout should have text "(none)"
+    Then editor of number input in opacity property should be as wide as editor of text input in title property
+    And editor of number input in width property should be as wide as editor of text input in title property
+    And value of "last change" readout should have text "(none)"
     When user types "Heatmap" into title property
     Then value of "last change" readout should have text "title → Heatmap"
     And value of values readout should contain text "\"title\":\"Heatmap\""

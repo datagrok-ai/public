@@ -65,6 +65,26 @@ export async function deleteChatsOf(page: Page, id: string): Promise<void> {
     await api.remove(`/chats/${chat}`);
 }
 
+/** The script the script view's Save made in a feature: its id for the cleanup, its name and grok name for
+ * the claims that look for it elsewhere (a gallery card links to the grok name). */
+export type SavedScript = {id: string; name: string; nqName: string};
+const savedScripts = new WeakMap<Page, SavedScript>();
+
+/** The page outlives the feature: the script is forgotten when the feature that saved it ends. */
+export function rememberSavedScript(page: Page, script: SavedScript | null): void {
+  if (script)
+    savedScripts.set(page, script);
+  else
+    savedScripts.delete(page);
+}
+
+export function savedScriptOf(page: Page): SavedScript {
+  const script = savedScripts.get(page);
+  if (!script)
+    throw new Error('no script has been saved in this feature yet: "user saves the script" comes first');
+  return script;
+}
+
 /** The picture the Save dialog or the Layouts pane stores for an entity (`<pictureId>.png`): the server
  * keeps it when it deletes the entity, so the feature that made the entity deletes it, read back gone.
  * The thumbnails the server cuts from it (`<pictureId>_<width>.png`) have no delete of their own. A copy
