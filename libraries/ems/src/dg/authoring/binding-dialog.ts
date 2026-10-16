@@ -64,6 +64,11 @@ export async function createBinding(options: CreateBindingOptions = {}): Promise
 /** The domain handle is a database to the platform, but not one to bind. */
 const DOMAIN_SOURCE = 'Domain';
 
+/** Database sources the server's bind policy always refuses (`ExternalBinding.check`): the ones the
+ * platform serves itself rather than GrokConnect, and the ones that interpolate values into SQL. */
+const UNBINDABLE_SOURCES = [DOMAIN_SOURCE, 'PostgresDart', 'Web', 'ODATA', 'Sparql', 'MLFlow',
+  'Athena', 'SQLite', 'Neptune'];
+
 const DML = ['AddRows', 'ChangeValues', 'RemoveRows'];
 
 const PAGE = 500;
@@ -369,9 +374,20 @@ export class BindingDialog extends BindingWizard<BindingResult> {
     const preset = this._options.connection;
     this._connections = preset !== undefined && !list.some((c) => c.id === preset.id) ? [preset, ...list] : list;
     this.connection.setItems(this._connections.map((c) =>
-      ({value: c.id, label: `${c.friendlyName} (${c.dataSource})`})));
+      ({value: c.id, label: `${BindingDialog._nameOf(c)} (${c.dataSource})`})));
     if (preset !== undefined && this.connection.value.peek() === null)
       this.connection.value.value = preset.id;
+  }
+
+  /** What the bind policy can accept, as far as the connection says: a database, none of
+   * {@link UNBINDABLE_SOURCES}, on the JDBC engine. The provider's own checks stay the server's. */
+  private static _bindable(c: DG.DataConnection): boolean {
+    const engine = c.parameters?.connectionType;
+    return c.isDatabase && !UNBINDABLE_SOURCES.includes(c.dataSource) && (engine == null || engine === 'JDBC');
+  }
+
+  private static _nameOf(c: DG.DataConnection): string {
+    return c.friendlyName || c.name;
   }
 
   /** Every connection, page by page: the list is not capped. */
@@ -380,11 +396,11 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       const list: DG.DataConnection[] = [];
       for (let page = 1; ; page++) {
         const batch = await grok.dapi.connections.list({pageSize: PAGE, pageNumber: page, order: 'id'});
-        list.push(...batch.filter((c) => c.isDatabase && c.dataSource !== DOMAIN_SOURCE));
+        list.push(...batch.filter((c) => BindingDialog._bindable(c)));
         if (batch.length < PAGE)
           break;
       }
-      list.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
+      list.sort((a, b) => BindingDialog._nameOf(a).localeCompare(BindingDialog._nameOf(b)));
       this._offerConnections(list);
     } catch (e) {
       if (preset === undefined)
@@ -497,7 +513,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
           onPick: (g, label) => onPick({id: g.id, label}),
         }).root,
       }));
-      const label = `${conn.friendlyName} ${schema}`;
+      const label = `${BindingDialog._nameOf(conn)} ${schema}`;
       const unchecked = await this._clearName(editor.model, label);
       if (this.scope.isDisposed || this._draft.peek() !== draft) {
         editor.dispose();
@@ -521,7 +537,7 @@ export class BindingDialog extends BindingWizard<BindingResult> {
       this._editor.value = editor;
       const notes: string[] = [];
       if (reset !== undefined)
-        notes.push(`The design was reset: ${conn.friendlyName} · ${schema} is a new draft`);
+        notes.push(`The design was reset: ${BindingDialog._nameOf(conn)} · ${schema} is a new draft`);
       if (only !== undefined && table === undefined)
         notes.push(`Table ${only} is not in ${schema} — every table starts included`);
       if (unchecked !== null)

@@ -509,6 +509,31 @@ scoped('every connection past the first page is offered; the identifier is probe
   }
 });
 
+scoped('only connections the bind policy can accept are offered; a nameless one is shown and proposed by its name', async () => {
+  const calls = [];
+  stub(calls, () => ({status: 'ok', issues: []}));
+  const NAMELESS = {id: 'c-nn', nqName: 'P:Scratch', name: 'Scratch', friendlyName: '', dataSource: 'MS SQL', isDatabase: true};
+  const refused = ['Web', 'ODATA', 'Sparql', 'MLFlow', 'PostgresDart', 'Athena', 'SQLite', 'Neptune']
+    .map((dataSource) => ({id: `c-${dataSource}`, friendlyName: `A ${dataSource}`, dataSource, isDatabase: true}));
+  const adbc = {id: 'c-adbc', friendlyName: 'Arrow', dataSource: 'Postgres', isDatabase: true,
+    parameters: {connectionType: 'ADBC'}};
+  grok.dapi.connections.list = async () => [CONN, NAMELESS, adbc, ...refused, ...NOT_BINDABLE];
+  const dialog = new domains.authoring.BindingDialog();
+  const done = dialog.open();
+  await flush();
+  assert.deepEqual(dialog.connection.items.map((i) => i.label), ['PostgresNorthwind (Postgres)', 'Scratch (MS SQL)']);
+  dialog.connection.value.value = NAMELESS.id;
+  await flush();
+  dialog.schema.value.value = 'public';
+  await flush();
+  dialog.wizard.next();
+  await flush();
+  assert.equal(dialog.editor.model.friendlyName.value, 'Scratch public');
+  buttonNamed('CANCEL').click();
+  await flush();
+  assert.equal(await done, null);
+});
+
 scoped('a warehouse read that never answers fails by name after the timeout; the dialog stays usable', async () => {
   const calls = [];
   stub(calls, () => ({status: 'ok', issues: []}));
