@@ -2,3 +2,5 @@
 import {SampleResolution} from './src/generated/db';
 
 export const values: SampleResolution[] = ['Fixed', `Won't fix`, 'a\\b'];
+// @ts-expect-error a value outside the choices stays rejected
+export const outside: SampleResolution = 'nope';
