@@ -28,6 +28,22 @@ category('Word cloud', () => {
     expect((await getOptions(restored!)).wordColumnName, 'race');
   });
 
+  test('Long words', async () => {
+    const words = Array.from({length: 5}, (_, i) => `w${i} ${'x'.repeat(5000)}`);
+    const longDf = DG.DataFrame.fromColumns([DG.Column.fromStrings('text', words.concat(words))]);
+    const longTv = grok.shell.addTableView(longDf);
+    try {
+      const viewer = longTv.addViewer(TYPE, {wordColumnName: 'text'});
+      const status = () => DG.Widget.find(viewer.root)!.getWidgetStatus();
+      await awaitCheck(() => status().values?.['words'] === words.length, 'long words were not laid out', 5000);
+      expect(status().hitAreas[`word "${words[0]}"`] !== undefined, true);
+    }
+    finally {
+      longTv.close();
+      grok.shell.closeTable(longDf);
+    }
+  });
+
   after(async () => {
     tv.close();
     grok.shell.closeTable(df);
