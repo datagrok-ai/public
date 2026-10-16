@@ -67,6 +67,11 @@ export class DgDomainBackend implements DomainBackend {
         if (refusal !== null && (refusal.editor === null || refusal.editor === state.editor))
           state.problem = refusal.message;
       }
+      // as `DomainErrors.report`: the server contradicted the access the affordances were built from
+      if (refusal?.code === 'forbidden') {
+        grok.dapi.domains.invalidateUiCaches();
+        this.invalidate();
+      }
       return false;
     } finally {
       session.dispose();

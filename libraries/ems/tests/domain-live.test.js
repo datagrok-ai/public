@@ -513,3 +513,23 @@ scoped('the trash reads newest-deleted first, and leaving it gives the order bac
   app.dispose();
   assert.equal(DomainApp.live.size, 0, 'no app left behind');
 });
+
+scoped('saveAll: a forbidden refusal drops the access caches so the affordances re-gate; another refusal keeps them', async () => {
+  const DG = await import('datagrok-api/dg');
+  const be = new DgDomainBackend();
+  let dropped = 0;
+  be.invalidate = () => dropped++;
+  const state = {editor: {}, problem: null};
+  const before = grok.dapi.domains.invalidated;
+  try {
+    DG.DomainSession.next = {message: 'Value can\'t be empty', editor: null, code: 'validation'};
+    assert.equal(await be.saveAll([state]), false);
+    assert.deepEqual([grok.dapi.domains.invalidated - before, dropped], [0, 0], 'a validation refusal keeps them');
+    DG.DomainSession.next = {message: 'Edit is required on "grit.issue"', editor: null, code: 'forbidden'};
+    assert.equal(await be.saveAll([state]), false);
+    assert.equal(state.problem, 'Edit is required on "grit.issue"');
+    assert.deepEqual([grok.dapi.domains.invalidated - before, dropped], [1, 1], 'the platform caches and the handles');
+  } finally {
+    DG.DomainSession.next = true;
+  }
+});
