@@ -23,6 +23,14 @@ import {MonomerLibFromFilesProvider} from './library-file-manager/monomers-lib-p
 const MONOMER_COLLECTION_STORAGE_PATH = 'System:AppData/Bio/monomer-collections/';
 
 type MonomerLibWindowType = Window & { $monomerLibHelperPromise?: Promise<MonomerLibManager> };
+
+export class MonomerLibLoadTimeoutError extends Error {
+  constructor(timeout: number) {
+    super(`Loading monomer libraries timeout ${timeout} ms.`);
+    this.name = 'MonomerLibLoadTimeoutError';
+  }
+}
+
 declare const window: MonomerLibWindowType;
 
 /** Singleton wrapper for MonomerLib, provides API for managing libraries on
@@ -97,7 +105,7 @@ export class MonomerLibManager implements IMonomerLibHelper {
       })(),
     ]).then((res) => {
       if (!res)
-        throw new Error(`Loading monomer libraries timeout ${timeout} ms.`);
+        throw new MonomerLibLoadTimeoutError(timeout);
     });
   }
 
