@@ -661,7 +661,7 @@
       }],
       noSuchMethod$1: ["super$Interceptor$noSuchMethod", function(receiver, invocation) {
         throw H.wrapException(P.NoSuchMethodError$(receiver, invocation.get$memberName(), invocation.get$positionalArguments(), invocation.get$namedArguments(), null));
-      }, null, "get$noSuchMethod", 2, 0, null, 178],
+      }, null, "get$noSuchMethod", 2, 0, null, 215],
       get$runtimeType: function(receiver) {
         return new H.TypeImpl(H.getRuntimeTypeString(receiver), null);
       },
@@ -698,7 +698,7 @@
       },
       noSuchMethod$1: [function(receiver, invocation) {
         return this.super$Interceptor$noSuchMethod(receiver, invocation);
-      }, null, "get$noSuchMethod", 2, 0, null, 178],
+      }, null, "get$noSuchMethod", 2, 0, null, 215],
       $isNull: 1
     },
     JavaScriptObject: {
@@ -1246,7 +1246,7 @@
           if (J.$eq$(receiver[i], other) === true)
             return true;
         return false;
-      }, "call$1", "get$contains", 2, 0, 25, 133],
+      }, "call$1", "get$contains", 2, 0, 25, 118],
       get$isEmpty: function(receiver) {
         return receiver.length === 0;
       },
@@ -2008,7 +2008,7 @@
         return H.stringContainsUnchecked(receiver, other, startIndex);
       }, function($receiver, other) {
         return this.contains$2($receiver, other, 0);
-      }, "contains$1", "call$2", "call$1", "get$contains", 2, 2, 421, 96, 133, 301],
+      }, "contains$1", "call$2", "call$1", "get$contains", 2, 2, 421, 101, 118, 299],
       get$isEmpty: function(receiver) {
         return receiver.length === 0;
       },
@@ -2560,7 +2560,7 @@
         return H.computeSignature(function(E) {
           return {func: 1, ret: [P.Iterable, E], args: [{func: 1, ret: P.bool, args: [E]}]};
         }, this.$receiver, "ListIterable");
-      }, 111],
+      }, 116],
       map$1: function(_, f) {
         return new H.MappedListIterable(this, f, [H.getRuntimeTypeArgument(this, "ListIterable", 0), null]);
       },
@@ -3159,7 +3159,7 @@
         return H.computeSignature(function(E) {
           return {func: 1, ret: [P.Iterable, E], args: [{func: 1, ret: P.bool, args: [E]}]};
         }, this.$receiver, "EmptyIterable");
-      }, 111],
+      }, 116],
       map$1: function(_, f) {
         return C.C_EmptyIterable;
       },
@@ -3626,7 +3626,7 @@
         case "error":
           throw H.wrapException(t1.$index(msg, "msg"));
       }
-    }, null, null, 4, 0, null, 508, 13],
+    }, null, null, 4, 0, null, 309, 13],
     IsolateNatives_handleSpawnWorkerRequest: function(msg) {
       var t1, replyPort;
       t1 = J.getInterceptor$asx(msg);
@@ -3744,7 +3744,7 @@
       message = $event.message;
       onError.call$1(message == null ? "Error spawning worker for " + H.S(uri) : "Error spawning worker for " + H.S(uri) + " (" + message + ")");
       return true;
-    }, null, null, 6, 0, null, 161, 385, 320],
+    }, null, null, 6, 0, null, 171, 320, 510],
     _clone: function(message) {
       return new H._Deserializer(true, []).deserialize$1(new H._Serializer(false, P._LinkedIdentityHashMap__LinkedIdentityHashMap$es6(null, P.int)).serialize$1(message));
     },
@@ -3766,7 +3766,7 @@
         _Manager__serializePrintMessage: [function(object) {
           var t1 = P.LinkedHashMap__makeLiteral(["command", "print", "msg", object]);
           return new H._Serializer(true, P._LinkedIdentityHashMap__LinkedIdentityHashMap$es6(null, P.int)).serialize$1(t1);
-        }, null, null, 2, 0, null, 84]
+        }, null, null, 2, 0, null, 83]
       }
     },
     _IsolateContext: {
@@ -4117,7 +4117,7 @@
       "^": "Closure:4;replyPort",
       call$1: [function(errorMessage) {
         J.send$1$x(this.replyPort, ["spawn failed", errorMessage]);
-      }, null, null, 2, 0, null, 319, "call"]
+      }, null, null, 2, 0, null, 305, "call"]
     },
     IsolateNatives_spawn_closure: {
       "^": "Closure:0;completer",
@@ -4135,7 +4135,7 @@
       "^": "Closure:4;completer",
       call$1: [function(message) {
         return this.completer.completeError$1(message);
-      }, null, null, 2, 0, null, 45, "call"]
+      }, null, null, 2, 0, null, 43, "call"]
     },
     IsolateNatives__startNonWorker_closure: {
       "^": "Closure:2;_box_0,functionName,isSpawnUri,startPaused,replyPort",
@@ -5296,7 +5296,7 @@
           return H._callInIsolate(isolate, new H.invokeClosure_closure3(closure, arg1, arg2, arg3, arg4));
       }
       throw H.wrapException(P.Exception_Exception("Unsupported number of arguments for wrapped closure"));
-    }, null, null, 14, 0, null, 432, 450, 461, 230, 282, 379, 475],
+    }, null, null, 14, 0, null, 403, 502, 503, 232, 227, 300, 304],
     convertDartClosureToJS: function(closure, arity) {
       var $function;
       if (closure == null)
@@ -6106,7 +6106,7 @@
     }, "call$1", "_js_helper___matchString$closure", 2, 0, 255],
     _stringIdentity: [function(string) {
       return string;
-    }, "call$1", "_js_helper___stringIdentity$closure", 2, 0, 16],
+    }, "call$1", "_js_helper___stringIdentity$closure", 2, 0, 19],
     stringReplaceAllFuncUnchecked: function(receiver, pattern, onMatch, onNonMatch) {
       var t1, startIndex, t2, match;
       if (onMatch == null)
@@ -6379,7 +6379,7 @@
         if (J.$lt$n(parameter, t1) === true)
           return;
         return this.data[3 + parameter - t1];
-      }, "call$1", "get$defaultValue", 2, 0, 17, 513],
+      }, "call$1", "get$defaultValue", 2, 0, 16, 308],
       defaultValueInOrder$1: function(parameter) {
         var t1 = this.requiredParameterCount;
         if (parameter < t1)
@@ -7117,7 +7117,7 @@
       },
       hasMatch$1: [function(string) {
         return this._nativeRegExp.test(H.checkString(string));
-      }, "call$1", "get$hasMatch", 2, 0, 46, 506],
+      }, "call$1", "get$hasMatch", 2, 0, 46, 330],
       allMatches$2: function(_, string, start) {
         var t1;
         H.checkString(string);
@@ -7200,7 +7200,7 @@
         if (index >>> 0 !== index || index >= t1.length)
           return H.ioore(t1, index);
         return t1[index];
-      }, "call$1", "get$group", 2, 0, 51, 80],
+      }, "call$1", "get$group", 2, 0, 51, 82],
       $index: function(_, index) {
         var t1 = this._match;
         if (index >>> 0 !== index || index >= t1.length)
@@ -7220,7 +7220,7 @@
           out.push(t2[i]);
         }
         return out;
-      }, "call$1", "get$groups", 2, 0, 180, 307],
+      }, "call$1", "get$groups", 2, 0, 180, 419],
       $isMatch: 1
     },
     _AllMatchesIterable: {
@@ -7279,7 +7279,7 @@
         if (J.$eq$(group_, 0) !== true)
           throw H.wrapException(P.RangeError$value(group_, null, null));
         return this.pattern;
-      }, "call$1", "get$group", 2, 0, 51, 350],
+      }, "call$1", "get$group", 2, 0, 51, 455],
       groups$1: [function(groups_) {
         var result, t1, t2, g;
         result = H.setRuntimeTypeInfo([], [P.String]);
@@ -7290,7 +7290,7 @@
           result.push(t2);
         }
         return result;
-      }, "call$1", "get$groups", 2, 0, 180, 360],
+      }, "call$1", "get$groups", 2, 0, 180, 499],
       $isMatch: 1
     },
     _StringAllMatchesIterable: {
@@ -8392,7 +8392,7 @@
       P._schedulePriorityAsyncCallback(new P._rootHandleUncaughtError_closure(t1, stackTrace));
     }, "call$5", "async___rootHandleUncaughtError$closure", 10, 0, function() {
       return {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]};
-    }, 54, 53, 52, 41, 34],
+    }, 50, 51, 52, 41, 34],
     _rootRun: [function($self, $parent, zone, f) {
       var old, previous, t1;
       if (J.$eq$($.Zone__current, zone) === true)
@@ -8408,7 +8408,7 @@
       }
     }, "call$4", "async___rootRun$closure", 8, 0, function() {
       return {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]};
-    }, 54, 53, 52, 18],
+    }, 50, 51, 52, 18],
     _rootRunUnary: [function($self, $parent, zone, f, arg) {
       var old, previous, t1;
       if (J.$eq$($.Zone__current, zone) === true)
@@ -8424,7 +8424,7 @@
       }
     }, "call$5", "async___rootRunUnary$closure", 10, 0, function() {
       return {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1, args: [,]},,]};
-    }, 54, 53, 52, 18, 65],
+    }, 50, 51, 52, 18, 68],
     _rootRunBinary: [function($self, $parent, zone, f, arg1, arg2) {
       var old, previous, t1;
       if (J.$eq$($.Zone__current, zone) === true)
@@ -8440,40 +8440,40 @@
       }
     }, "call$6", "async___rootRunBinary$closure", 12, 0, function() {
       return {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1, args: [,,]},,,]};
-    }, 54, 53, 52, 18, 230, 282],
+    }, 50, 51, 52, 18, 232, 227],
     _rootRegisterCallback: [function($self, $parent, zone, f) {
       return f;
     }, "call$4", "async___rootRegisterCallback$closure", 8, 0, function() {
       return {func: 1, ret: {func: 1}, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]};
-    }, 54, 53, 52, 18],
+    }, 50, 51, 52, 18],
     _rootRegisterUnaryCallback: [function($self, $parent, zone, f) {
       return f;
     }, "call$4", "async___rootRegisterUnaryCallback$closure", 8, 0, function() {
       return {func: 1, ret: {func: 1, args: [,]}, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1, args: [,]}]};
-    }, 54, 53, 52, 18],
+    }, 50, 51, 52, 18],
     _rootRegisterBinaryCallback: [function($self, $parent, zone, f) {
       return f;
     }, "call$4", "async___rootRegisterBinaryCallback$closure", 8, 0, function() {
       return {func: 1, ret: {func: 1, args: [,,]}, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1, args: [,,]}]};
-    }, 54, 53, 52, 18],
+    }, 50, 51, 52, 18],
     _rootErrorCallback: [function($self, $parent, zone, error, stackTrace) {
       return;
-    }, "call$5", "async___rootErrorCallback$closure", 10, 0, 675, 54, 53, 52, 41, 34],
+    }, "call$5", "async___rootErrorCallback$closure", 10, 0, 675, 50, 51, 52, 41, 34],
     _rootScheduleMicrotask: [function($self, $parent, zone, f) {
       var t1 = C.C__RootZone !== zone;
       if (t1)
         f = zone.bindCallback$2$runGuarded(f, !(!t1 || C.C__RootZone.get$errorZone() === zone.get$errorZone()));
       P._scheduleAsyncCallback(f);
-    }, "call$4", "async___rootScheduleMicrotask$closure", 8, 0, 676, 54, 53, 52, 18],
+    }, "call$4", "async___rootScheduleMicrotask$closure", 8, 0, 676, 50, 51, 52, 18],
     _rootCreateTimer: [function($self, $parent, zone, duration, callback) {
       return P.Timer__createTimer(duration, C.C__RootZone !== zone ? zone.bindCallback$1(callback) : callback);
-    }, "call$5", "async___rootCreateTimer$closure", 10, 0, 677, 54, 53, 52, 266, 160],
+    }, "call$5", "async___rootCreateTimer$closure", 10, 0, 677, 50, 51, 52, 223, 153],
     _rootCreatePeriodicTimer: [function($self, $parent, zone, duration, callback) {
       return P.Timer__createPeriodicTimer(duration, C.C__RootZone !== zone ? zone.bindUnaryCallback$1(callback) : callback);
-    }, "call$5", "async___rootCreatePeriodicTimer$closure", 10, 0, 678, 54, 53, 52, 266, 160],
+    }, "call$5", "async___rootCreatePeriodicTimer$closure", 10, 0, 678, 50, 51, 52, 223, 153],
     _rootPrint: [function($self, $parent, zone, line) {
       H.printString(H.S(line));
-    }, "call$4", "async___rootPrint$closure", 8, 0, 679, 54, 53, 52, 66],
+    }, "call$4", "async___rootPrint$closure", 8, 0, 679, 50, 51, 52, 67],
     _printToZone: [function(line) {
       J.print$1$x($.Zone__current, line);
     }, "call$1", "async___printToZone$closure", 2, 0, 105],
@@ -8516,7 +8516,7 @@
       t2 = specification.handleUncaughtError;
       t1._handleUncaughtError = t2 != null ? new P._ZoneFunction(t1, t2, [{func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}]) : zone.get$_handleUncaughtError();
       return t1;
-    }, "call$5", "async___rootFork$closure", 10, 0, 680, 54, 53, 52, 343, 505],
+    }, "call$5", "async___rootFork$closure", 10, 0, 680, 50, 51, 52, 321, 322],
     runZoned: function(body, onError, zoneSpecification, zoneValues) {
       var t1, errorHandler, zone;
       t1 = onError != null;
@@ -8567,7 +8567,7 @@
       "^": "Closure:0;bodyFunction",
       call$1: [function(result) {
         return this.bodyFunction.call$2(0, result);
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     _awaitOnObject_closure0: {
       "^": "Closure:206;bodyFunction",
@@ -8579,7 +8579,7 @@
       "^": "Closure:270;$protected",
       call$2: [function(errorCode, result) {
         this.$protected(errorCode, result);
-      }, null, null, 4, 0, null, 306, 50, "call"]
+      }, null, null, 4, 0, null, 418, 53, "call"]
     },
     _IterationMarker: {
       "^": "Object;value>,state>",
@@ -8996,7 +8996,7 @@
           }
         } else if (t2 === 0 && !this.eagerError)
           this.result._completeError$2(t1.error, t1.stackTrace);
-      }, null, null, 4, 0, null, 382, 487, "call"]
+      }, null, null, 4, 0, null, 432, 450, "call"]
     },
     Future_wait_closure: {
       "^": "Closure;_box_0,eagerError,cleanUp,result,pos",
@@ -9344,7 +9344,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, ret: [P.Future, T], args: [P.Duration], named: {onTimeout: {func: 1}}};
         }, this.$receiver, "_Future");
-      }, 1, 224, 225],
+      }, 1, 283, 286],
       $isFuture: 1,
       static: {
         _Future$value: function(value, $T) {
@@ -9649,7 +9649,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, ret: [P.Stream, T], args: [{func: 1, ret: P.bool, args: [T]}]};
         }, this.$receiver, "Stream");
-      }, 111],
+      }, 116],
       map$1: function(_, convert) {
         return new P._MapStream(convert, this, [H.getRuntimeTypeArgument(this, "Stream", 0), null]);
       },
@@ -9701,7 +9701,7 @@
         t1.subscription = null;
         t1.subscription = this.listen$4$cancelOnError$onDone$onError(new P.Stream_contains_closure(t1, this, needle, future), true, new P.Stream_contains_closure0(future), future.get$_completeError());
         return future;
-      }, "call$1", "get$contains", 2, 0, 350, 227],
+      }, "call$1", "get$contains", 2, 0, 350, 230],
       forEach$1: function(_, action) {
         var t1, future;
         t1 = {};
@@ -9862,7 +9862,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, ret: [P.Stream, T], args: [P.Duration], named: {onTimeout: {func: 1, v: true, args: [[P.EventSink, T]]}}};
         }, this.$receiver, "Stream");
-      }, 1, 224, 225],
+      }, 1, 283, 286],
       first$0: function($receiver) {
         return this.get$first(this).call$0();
       }
@@ -9957,7 +9957,7 @@
       "^": "Closure:1;result",
       call$2: [function(e, st) {
         this.result._completeError$2(e, st);
-      }, null, null, 4, 0, null, 13, 298, "call"]
+      }, null, null, 4, 0, null, 13, 520, "call"]
     },
     Stream_fold_closure0: {
       "^": "Closure:2;_box_0,result",
@@ -10404,7 +10404,7 @@
         J.cancel$0$x(t1.timer);
         t1.controller.add$1(0, $event);
         t1.timer = t1.zone.createTimer$2(this.timeLimit, t1.timeout);
-      }, null, null, 2, 0, null, 161, "call"],
+      }, null, null, 2, 0, null, 171, "call"],
       $signature: function() {
         return H.computeSignature(function(T) {
           return {func: 1, v: true, args: [T]};
@@ -11188,7 +11188,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, v: true, args: [[P._EventDispatch, T]]};
         }, this.$receiver, "_PendingEvents");
-      }, 303],
+      }, 525],
       cancelSchedule$0: function() {
         if (this._state === 1)
           this._state = 3;
@@ -12197,7 +12197,7 @@
       "^": "Closure:0;$this,registered",
       call$1: [function(arg) {
         return this.$this.runUnaryGuarded$2(this.registered, arg);
-      }, null, null, 2, 0, null, 65, "call"]
+      }, null, null, 2, 0, null, 68, "call"]
     },
     _rootHandleUncaughtError_closure: {
       "^": "Closure:2;_box_0,stackTrace",
@@ -12404,7 +12404,7 @@
       "^": "Closure:0;$this,f",
       call$1: [function(arg) {
         return this.$this.runUnaryGuarded$2(this.f, arg);
-      }, null, null, 2, 0, null, 65, "call"]
+      }, null, null, 2, 0, null, 68, "call"]
     },
     runZoned_closure: {
       "^": "Closure:658;onError",
@@ -12427,7 +12427,7 @@
           else
             return $parent.handleUncaughtError$3(zone, e, s);
         }
-      }, null, null, 10, 0, null, 54, 53, 52, 41, 34, "call"]
+      }, null, null, 10, 0, null, 50, 51, 52, 41, 34, "call"]
     }
   }], ["dart.collection", "dart:collection",, P, {
     "^": "",
@@ -13175,7 +13175,7 @@
           return nums == null ? false : nums[object] != null;
         } else
           return this._contains$1(object);
-      }, "call$1", "get$contains", 2, 0, 25, 84],
+      }, "call$1", "get$contains", 2, 0, 25, 83],
       _contains$1: ["super$_HashSet$_contains", function(object) {
         var rest = this._collection$_rest;
         if (rest == null)
@@ -13418,7 +13418,7 @@
         if (this._validKey.call$1(object) !== true)
           return false;
         return this.super$_HashSet$_contains(object);
-      }, "call$1", "get$contains", 2, 0, 25, 84],
+      }, "call$1", "get$contains", 2, 0, 25, 83],
       lookup$1: function(object) {
         if (this._validKey.call$1(object) !== true)
           return;
@@ -13500,7 +13500,7 @@
           return nums[object] != null;
         } else
           return this._contains$1(object);
-      }, "call$1", "get$contains", 2, 0, 25, 84],
+      }, "call$1", "get$contains", 2, 0, 25, 83],
       _contains$1: function(object) {
         var rest = this._collection$_rest;
         if (rest == null)
@@ -13602,7 +13602,7 @@
           return this._collection$_removeHashTableEntry$2(this._collection$_nums, object);
         else
           return this._remove$1(0, object);
-      }, "call$1", "get$remove", 2, 0, 25, 84],
+      }, "call$1", "get$remove", 2, 0, 25, 83],
       _remove$1: function(_, object) {
         var rest, bucket, index;
         rest = this._collection$_rest;
@@ -14142,7 +14142,7 @@
         return H.computeSignature(function(E) {
           return {func: 1, ret: [P.Iterable, E], args: [{func: 1, ret: P.bool, args: [E]}]};
         }, this.$receiver, "ListMixin");
-      }, 111],
+      }, 116],
       map$1: function(receiver, f) {
         return new H.MappedListIterable(receiver, f, [H.getRuntimeTypeArgument(receiver, "ListMixin", 0), null]);
       },
@@ -14385,7 +14385,7 @@
         }
       }, function($receiver, start, end, iterable) {
         return this.setRange$4($receiver, start, end, iterable, 0);
-      }, "setRange$3", null, null, "get$setRange", 6, 2, null, 96],
+      }, "setRange$3", null, null, "get$setRange", 6, 2, null, 101],
       replaceRange$3: function(receiver, start, end, newContents) {
         var t1, removeLength, insertLength, t2, delta, insertEnd, newLength;
         P.RangeError_checkValidRange(start, end, this.get$length(receiver), null, null, null);
@@ -15244,7 +15244,7 @@
     },
     _defaultToEncodable: [function(object) {
       return object.toJson$0();
-    }, "call$1", "convert___defaultToEncodable$closure", 2, 0, 0, 84],
+    }, "call$1", "convert___defaultToEncodable$closure", 2, 0, 0, 83],
     _JsonMap: {
       "^": "Object;_original,_processed,_convert$_data",
       $index: function(_, key) {
@@ -15985,7 +15985,7 @@
         if (typeof t3 !== "number")
           return H.iae(t3);
         this._bufferIndex = t4 + t3;
-      }, "call$1", "get$add", 2, 0, 430, 358],
+      }, "call$1", "get$add", 2, 0, 430, 302],
       close$0: [function(_) {
         this._callback.call$1(C.NativeUint8List_methods.sublist$2(this._convert$_buffer, 0, this._bufferIndex));
       }, "call$0", "get$close", 0, 0, 6]
@@ -16046,7 +16046,7 @@
       "^": "Closure:0;",
       call$1: [function(buffer) {
         return J.toString$0$(buffer);
-      }, null, null, 2, 0, null, 102, "call"]
+      }, null, null, 2, 0, null, 111, "call"]
     },
     JsonUnsupportedObjectError: {
       "^": "Error;unsupportedObject,cause",
@@ -17658,7 +17658,7 @@
     },
     Uri_decodeComponent: [function(encodedComponent) {
       return P._Uri__uriDecode(encodedComponent, 0, J.get$length$asx(encodedComponent), C.Utf8Codec_false, false);
-    }, "call$1", "core_Uri_decodeComponent$closure", 2, 0, 16, 396],
+    }, "call$1", "core_Uri_decodeComponent$closure", 2, 0, 19, 307],
     Uri_splitQueryString: function(query, encoding) {
       return J.fold$2$ax(J.split$1$s(query, "&"), P.LinkedHashMap__makeEmpty(), new P.Uri_splitQueryString_closure(encoding));
     },
@@ -18746,7 +18746,7 @@
         return H.computeSignature(function(E) {
           return {func: 1, ret: [P.Iterable, E], args: [{func: 1, ret: P.bool, args: [E]}]};
         }, this.$receiver, "Iterable");
-      }, 111],
+      }, 116],
       expand$1: function(_, f) {
         return new H.ExpandIterable(this, f, [H.getRuntimeTypeArgument(this, "Iterable", 0), null]);
       },
@@ -20361,7 +20361,7 @@
           J.$indexSet$ax(map, P._Uri__uriDecode(key, 0, J.get$length$asx(key), t1, true), P._Uri__uriDecode(value, 0, J.get$length$asx(value), t1, true));
         }
         return map;
-      }, null, null, 4, 0, null, 74, 28, "call"]
+      }, null, null, 4, 0, null, 76, 28, "call"]
     },
     Uri__parseIPv4Address_error: {
       "^": "Closure:301;host",
@@ -22498,31 +22498,31 @@
       },
       debug$1: [function(arg) {
         return typeof console != "undefined" ? console.debug(arg) : null;
-      }, "call$1", "get$debug", 2, 0, 50, 65],
+      }, "call$1", "get$debug", 2, 0, 50, 68],
       dir$1: [function(_, arg) {
         return typeof console != "undefined" ? console.dir(arg) : null;
-      }, "call$1", "get$dir", 2, 0, 50, 65],
+      }, "call$1", "get$dir", 2, 0, 50, 68],
       error$1: [function(_, arg) {
         return typeof console != "undefined" ? console.error(arg) : null;
-      }, "call$1", "get$error", 2, 0, 50, 65],
+      }, "call$1", "get$error", 2, 0, 50, 68],
       group$1: [function(arg) {
         return typeof console != "undefined" ? console.group(arg) : null;
-      }, "call$1", "get$group", 2, 0, 50, 65],
+      }, "call$1", "get$group", 2, 0, 50, 68],
       info$1: [function(arg) {
         return typeof console != "undefined" ? console.info(arg) : null;
-      }, "call$1", "get$info", 2, 0, 50, 65],
+      }, "call$1", "get$info", 2, 0, 50, 68],
       log$1: [function(arg) {
         return typeof console != "undefined" ? console.log(arg) : null;
-      }, "call$1", "get$log", 2, 0, 50, 65],
+      }, "call$1", "get$log", 2, 0, 50, 68],
       table$1: [function(arg) {
         return typeof console != "undefined" ? console.table(arg) : null;
-      }, "call$1", "get$table", 2, 0, 50, 65],
+      }, "call$1", "get$table", 2, 0, 50, 68],
       time$1: [function(_, title) {
         return typeof console != "undefined" ? console.time(title) : null;
-      }, "call$1", "get$time", 2, 0, 105, 460],
+      }, "call$1", "get$time", 2, 0, 105, 310],
       timeStamp$1: [function(_, arg) {
         return typeof console != "undefined" ? console.timeStamp(arg) : null;
-      }, "call$1", "get$timeStamp", 2, 0, 50, 65]
+      }, "call$1", "get$timeStamp", 2, 0, 50, 68]
     },
     ContentElement: {
       "^": "HtmlElement;",
@@ -22549,7 +22549,7 @@
         return receiver.get();
       }, function($receiver) {
         return this.$get$1($receiver, null);
-      }, "$get$0", "call$1", "call$0", "get$get", 0, 2, 416, 1, 136],
+      }, "$get$0", "call$1", "call$0", "get$get", 0, 2, 416, 1, 142],
       "%": "CredentialsContainer"
     },
     CrossOriginServiceWorkerClient: {
@@ -22798,7 +22798,7 @@
       "^": "Node;hidden=,origin=",
       query$1: [function(receiver, relativeSelectors) {
         return receiver.querySelector(relativeSelectors);
-      }, "call$1", "get$query", 2, 0, 127, 196],
+      }, "call$1", "get$query", 2, 0, 127, 187],
       "%": "XMLDocument;Document"
     },
     DocumentFragment: {
@@ -22818,7 +22818,7 @@
       },
       query$1: [function(receiver, relativeSelectors) {
         return receiver.querySelector(relativeSelectors);
-      }, "call$1", "get$query", 2, 0, 127, 196],
+      }, "call$1", "get$query", 2, 0, 127, 187],
       $isInterceptor: 1,
       $isObject: 1,
       "%": ";DocumentFragment"
@@ -23038,7 +23038,7 @@
       },
       contains$1: [function(receiver, token) {
         return receiver.contains(token);
-      }, "call$1", "get$contains", 2, 0, 46, 202],
+      }, "call$1", "get$contains", 2, 0, 46, 188],
       remove$1: function(receiver, tokens) {
         return receiver.remove(tokens);
       },
@@ -23251,7 +23251,7 @@
       },
       query$1: [function(receiver, relativeSelectors) {
         return receiver.querySelector(relativeSelectors);
-      }, "call$1", "get$query", 2, 0, 127, 196],
+      }, "call$1", "get$query", 2, 0, 127, 187],
       get$offset: function(receiver) {
         return P.Rectangle$(C.JSNumber_methods.round$0(receiver.offsetLeft), C.JSNumber_methods.round$0(receiver.offsetTop), C.JSNumber_methods.round$0(receiver.offsetWidth), C.JSNumber_methods.round$0(receiver.offsetHeight), null);
       },
@@ -23889,7 +23889,7 @@
         return receiver.start(timeslice);
       }, function($receiver) {
         return $receiver.start();
-      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 477, 1, 321],
+      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 477, 1, 340],
       stop$0: [function(receiver) {
         return receiver.stop();
       }, "call$0", "get$stop", 0, 0, 6],
@@ -24377,7 +24377,7 @@
       },
       contains$1: [function(receiver, other) {
         return receiver.contains(other);
-      }, "call$1", "get$contains", 2, 0, 481, 133],
+      }, "call$1", "get$contains", 2, 0, 481, 118],
       insertBefore$2: function(receiver, node, child) {
         return receiver.insertBefore(node, child);
       },
@@ -24560,7 +24560,7 @@
       "^": "Interceptor;",
       query$1: [function(receiver, permission) {
         return receiver.query(P.convertDartToNative_Dictionary(permission, null));
-      }, "call$1", "get$query", 2, 0, 242, 417],
+      }, "call$1", "get$query", 2, 0, 242, 397],
       request$1: [function(receiver, permissions) {
         return receiver.request(P.convertDartToNative_Dictionary(permissions, null));
       }, "call$1", "get$request", 2, 0, 242],
@@ -25325,7 +25325,7 @@
       },
       $get$1: [function(receiver, property) {
         return receiver.get(property);
-      }, "call$1", "get$get", 2, 0, 630, 288],
+      }, "call$1", "get$get", 2, 0, 630, 224],
       $set$2: [function(receiver, property, value) {
         return receiver.set(property, value);
       }, "call$2", "get$set", 4, 0, 654],
@@ -25617,10 +25617,10 @@
       "^": "Interceptor;length=",
       end$1: [function(receiver, index) {
         return receiver.end(index);
-      }, "call$1", "get$end", 2, 0, 19, 80],
+      }, "call$1", "get$end", 2, 0, 18, 82],
       start$1: [function(receiver, index) {
         return receiver.start(index);
-      }, "call$1", "get$start", 2, 0, 19, 80],
+      }, "call$1", "get$start", 2, 0, 18, 82],
       "%": "TimeRanges"
     },
     Touch: {
@@ -25786,7 +25786,7 @@
       },
       start$1: [function(receiver, stream) {
         return receiver.start(stream);
-      }, "call$1", "get$start", 2, 0, 418, 283],
+      }, "call$1", "get$start", 2, 0, 418, 226],
       "%": "UnderlyingSourceBase"
     },
     Url: {
@@ -25805,7 +25805,7 @@
       },
       $get$1: [function(receiver, $name) {
         return receiver.get($name);
-      }, "call$1", "get$get", 2, 0, 16, 8],
+      }, "call$1", "get$get", 2, 0, 19, 8],
       $set$2: [function(receiver, $name, value) {
         return receiver.set($name, value);
       }, "call$2", "get$set", 4, 0, 192],
@@ -27307,13 +27307,13 @@
       "^": "Closure:0;completer",
       call$1: [function(result) {
         return this.completer.complete$1(0, result);
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     convertNativePromiseToDartFuture_closure0: {
       "^": "Closure:0;completer",
       call$1: [function(result) {
         return this.completer.completeError$1(result);
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     FilteredElementList: {
       "^": "ListBase;_node,_childNodes",
@@ -27352,7 +27352,7 @@
         if (!J.getInterceptor(needle).$isElement)
           return false;
         return needle.parentNode === this._node;
-      }, "call$1", "get$contains", 2, 0, 25, 227],
+      }, "call$1", "get$contains", 2, 0, 25, 230],
       get$reversed: function(_) {
         var t1 = P.List_List$from(this.get$_html_common$_iterable(), false, W.Element);
         return new H.ReversedListIterable(t1, [H.getTypeArgumentByIndex(t1, 0)]);
@@ -27465,7 +27465,7 @@
       "^": "Closure:0;",
       call$1: [function(n) {
         return H.interceptedTypeCast(n, "$isElement");
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     FilteredElementList_removeRange_closure: {
       "^": "Closure:0;",
@@ -27719,7 +27719,7 @@
       dartArgs = P.List_List$from(J.map$1$ax($arguments, P.js___convertToDart$closure()), true, null);
       t1 = H.Primitives_applyFunctionWithPositionalArguments(callback, dartArgs);
       return P._convertToJS(t1);
-    }, null, null, 8, 0, null, 160, 384, 54, 272],
+    }, null, null, 8, 0, null, 153, 425, 50, 294],
     _defineProperty: function(o, $name, value) {
       var exception;
       try {
@@ -27815,7 +27815,7 @@
     _callDartFunctionFast: [function(callback, $arguments) {
       var t1 = H.Primitives_applyFunctionWithPositionalArguments(callback, $arguments);
       return t1;
-    }, null, null, 4, 0, null, 160, 272],
+    }, null, null, 4, 0, null, 153, 294],
     allowInterop: function(f) {
       if (typeof f == "function")
         return f;
@@ -29260,13 +29260,13 @@
         return this.start$3($receiver, when, null, null);
       }, "start$1", function($receiver, when, grainOffset) {
         return this.start$3($receiver, when, grainOffset, null);
-      }, "start$2", "call$3", "call$1", "call$2", "get$start", 2, 4, 360, 1, 1, 157, 386, 402],
+      }, "start$2", "call$3", "call$1", "call$2", "get$start", 2, 4, 360, 1, 1, 175, 488, 490],
       stop$1: [function(receiver, when) {
         if (!!receiver.stop)
           receiver.stop(when);
         else
           receiver.noteOff(when);
-      }, "call$1", "get$stop", 2, 0, 414, 157],
+      }, "call$1", "get$stop", 2, 0, 414, 175],
       "%": "AudioBufferSourceNode"
     },
     AudioContext: {
@@ -29309,12 +29309,12 @@
         return receiver.start(when);
       }, function($receiver) {
         return $receiver.start();
-      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 163, 1, 157],
+      }, "start$0", "call$1", "call$0", "get$start", 0, 2, 163, 1, 175],
       stop$1: [function(receiver, when) {
         return receiver.stop(when);
       }, function($receiver) {
         return $receiver.stop();
-      }, "stop$0", "call$1", "call$0", "get$stop", 0, 2, 163, 1, 157],
+      }, "stop$0", "call$1", "call$0", "get$stop", 0, 2, 163, 1, 175],
       "%": "Oscillator|OscillatorNode"
     }
   }], ["dart.dom.web_gl", "dart:web_gl",, P, {
@@ -29327,7 +29327,7 @@
       "^": "Interceptor;",
       isEnabled$1: [function(receiver, cap) {
         return receiver.isEnabled(cap);
-      }, "call$1", "get$isEnabled", 2, 0, 18, 262],
+      }, "call$1", "get$isEnabled", 2, 0, 17, 285],
       $isObject: 1,
       "%": "WebGLRenderingContext"
     },
@@ -29335,7 +29335,7 @@
       "^": "Interceptor;",
       isEnabled$1: [function(receiver, cap) {
         return receiver.isEnabled(cap);
-      }, "call$1", "get$isEnabled", 2, 0, 18, 262],
+      }, "call$1", "get$isEnabled", 2, 0, 17, 285],
       $isInterceptor: 1,
       $isObject: 1,
       "%": "WebGL2RenderingContext"
@@ -29573,7 +29573,7 @@
         if (index >>> 0 !== index || index >= t1.length)
           return H.ioore(t1, index);
         return J.get$name$x(t1[index]);
-      }, "call$1", "get$fileName", 2, 0, 51, 80],
+      }, "call$1", "get$fileName", 2, 0, 51, 82],
       get$first: function(_) {
         return C.JSArray_methods.get$first(this.files);
       },
@@ -32778,7 +32778,7 @@
       "^": "Closure:0;",
       call$1: [function(pair) {
         return J.get$first$ax(pair);
-      }, null, null, 2, 0, null, 181, "call"]
+      }, null, null, 2, 0, null, 191, "call"]
     },
     CanonicalizedMap_putIfAbsent_closure: {
       "^": "Closure:2;key,ifAbsent",
@@ -32790,7 +32790,7 @@
       "^": "Closure:0;",
       call$1: [function(pair) {
         return J.get$last$ax(pair);
-      }, null, null, 2, 0, null, 181, "call"]
+      }, null, null, 2, 0, null, 191, "call"]
     },
     CanonicalizedMap_toString_closure: {
       "^": "Closure:1;_box_0,result",
@@ -32971,7 +32971,7 @@
         return H.computeSignature(function(E) {
           return {func: 1, ret: [P.Iterable, E], args: [{func: 1, ret: P.bool, args: [E]}]};
         }, this.$receiver, "_DelegatingIterableBase");
-      }, 111],
+      }, 116],
       toString$0: function(_) {
         return P.IterableBase_iterableToFullString(this._wrappers$_base, "[", "]");
       },
@@ -33069,7 +33069,7 @@
         C.JSArray_methods.setRange$4(this._wrappers$_base, start, end, iterable, skipCount);
       }, function($receiver, start, end, iterable) {
         return this.setRange$4($receiver, start, end, iterable, 0);
-      }, "setRange$3", null, null, "get$setRange", 6, 2, null, 96],
+      }, "setRange$3", null, null, "get$setRange", 6, 2, null, 101],
       sort$1: function(_, compare) {
         C.JSArray_methods.sort$1(this._wrappers$_base, compare);
       },
@@ -34312,7 +34312,7 @@
       return N.joinTables(table1, table2, keys1, keys2, values1, values2, inPlace, joinType, null).result;
     }, function(table1, table2, keys1, keys2, values1, values2) {
       return N.join(table1, table2, keys1, keys2, values1, values2, false, "inner");
-    }, "call$8$inPlace$joinType", "call$6", "ddt__join$closure", 12, 5, 689, 308, 21, 435, 352, 184, 185, 255, 243, 186, 187],
+    }, "call$8$inPlace$joinType", "call$6", "ddt__join$closure", 12, 5, 689, 511, 21, 295, 527, 194, 195, 260, 281, 196, 198],
     _mutationPredicateFromMap: function(w) {
       var matcherMap, t1, predicate, t2;
       matcherMap = J.$index$asx(w, "matcher");
@@ -35261,7 +35261,7 @@
       return t;
     }, function(table) {
       return N.Aggregate(table, null, null, null, null, null, null, null);
-    }, "call$8$aggregations$fields$filter$groupByFields$joins$pivots$whereClauses", "call$1", "ddt__Aggregate$closure", 2, 15, 690, 1, 1, 1, 1, 1, 1, 1, 16, 101, 188, 154, 189, 153, 137, 239],
+    }, "call$8$aggregations$fields$filter$groupByFields$joins$pivots$whereClauses", "call$1", "ddt__Aggregate$closure", 2, 15, 690, 1, 1, 1, 1, 1, 1, 1, 16, 91, 200, 169, 202, 172, 128, 233],
     unpivot: [function(table, copyColumns, mergeColumns, categoryColumnName, valueColumnName) {
       var t1, t2, t3, result, t4, colName, copyColumn, t5, mergeCols, dataTypes, dataType, coercion;
       t1 = J.getInterceptor$asx(mergeColumns);
@@ -35295,7 +35295,7 @@
       return result;
     }, function(table, copyColumns, mergeColumns) {
       return N.unpivot(table, copyColumns, mergeColumns, "Category", "Value");
-    }, "call$5$categoryColumnName$valueColumnName", "call$3", "ddt__unpivot$closure", 6, 5, 691, 325, 329, 16, 362, 366, 220, 218],
+    }, "call$5$categoryColumnName$valueColumnName", "call$3", "ddt__unpivot$closure", 6, 5, 691, 349, 359, 16, 380, 384, 234, 258],
     binBySpecificLimits: [function(x, limits) {
       var t1, t2, i, t3;
       if (x == null || J.get$isEmpty$asx(limits) === true)
@@ -35318,7 +35318,7 @@
         ++i;
       }
       throw H.wrapException("Incorrect limits: " + H.S(t1.join$1(limits, ", ")));
-    }, "call$2", "ddt__binBySpecificLimits$closure", 4, 0, 692, 0, 235],
+    }, "call$2", "ddt__binBySpecificLimits$closure", 4, 0, 692, 0, 259],
     binByDateTime: [function(dt, levels, levelIndex) {
       var p, t1;
       if (dt == null || J.get$isEmpty$asx(levels) === true || levelIndex == null)
@@ -35356,13 +35356,13 @@
       if (t1.$eq(p, "ms") === true)
         return dt.get$millisecond();
       throw H.wrapException("Incorrect DateTime level");
-    }, "call$3", "ddt__binByDateTime$closure", 6, 0, 693, 51, 217, 219],
+    }, "call$3", "ddt__binByDateTime$closure", 6, 0, 693, 54, 265, 279],
     renameColumnImpl: [function(table, oldColName, newColName) {
       var t1 = J.getInterceptor$asx(table);
       if (t1.$index(table, oldColName) == null)
         return;
       J.set$name$x(t1.$index(table, oldColName), newColName);
-    }, "call$3", "ddt__renameColumnImpl$closure", 6, 0, 694, 16, 483, 485],
+    }, "call$3", "ddt__renameColumnImpl$closure", 6, 0, 694, 16, 433, 437],
     extractNumbers: [function(table, column, decimalSeparator, useKMMultipliers) {
       var t1, rex, strings, multipliers, t2, t3, n, t4, matches, $length, n0, list, m, mul, t5, col, multiplier, t6, t7;
       t1 = useKMMultipliers === true;
@@ -35490,15 +35490,15 @@
       }
     }, function(table, column) {
       return N.extractNumbers(table, column, ".", false);
-    }, "call$4$decimalSeparator$useKMMultipliers", "call$2", "ddt__extractNumbers$closure", 4, 5, 695, 21, 486, 16, 77, 497, 501],
+    }, "call$4$decimalSeparator$useKMMultipliers", "call$2", "ddt__extractNumbers$closure", 4, 5, 695, 21, 442, 16, 72, 451, 453],
     subsetTable: [function(table, columns, rows) {
       var t1 = rows == null ? null : N.BitSet$(table.get$rowCount(), false);
       t1.init$1(0, rows.makePredicate$0().call$1(table));
       return J.clone$2$colFilter$rowMask$x(table, columns.makePredicate$0(), t1);
-    }, "call$3", "ddt__subsetTable$closure", 6, 0, 696, 16, 138, 42],
+    }, "call$3", "ddt__subsetTable$closure", 6, 0, 696, 16, 121, 45],
     extractValueImpl: [function(table, column, $function) {
       N.ValueFunction_byName($function).addDerivedColumn$2(table, column);
-    }, "call$3", "ddt__extractValueImpl$closure", 6, 0, 257, 16, 77, 140],
+    }, "call$3", "ddt__extractValueImpl$closure", 6, 0, 257, 16, 72, 135],
     ColumnFunctionsUtils_setFormulaAndVectorFunc: function(col, expression, isVectorFunc) {
       col.setTag$2("formula", expression == null ? "" : expression);
       if (isVectorFunc === true)
@@ -35677,7 +35677,7 @@
     deleteColumnsImpl: [function(table, where) {
       var delWhere = where.makePredicate$0();
       J.removeWhere$1$ax(J.get$columns$x(table), new N.deleteColumnsImpl_closure(delWhere));
-    }, "call$2", "ddt__deleteColumnsImpl$closure", 4, 0, 258, 16, 99],
+    }, "call$2", "ddt__deleteColumnsImpl$closure", 4, 0, 258, 16, 98],
     getAndAddColumns: function(table, expression, $name, context, currentCall, errorBehavior, progress, subscribeOnChanges, treatAsString, type) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, t2, addColumn, columns, errors, inLayout, t3, t4, t5, t6, t7, col, t8, t9, t10;
       var $async$getAndAddColumns = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -35773,7 +35773,7 @@
       return P._asyncStart($async$addNewColumn, $async$completer);
     }, function(table, expression, $name) {
       return N.addNewColumn(table, expression, $name, null, null, null, null, true, false, "auto");
-    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumn$closure", 6, 15, 699, 1, 1, 212, 21, 60, 1, 1, 16, 148, 8, 29, 183, 63, 209, 237, 242, 201],
+    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumn$closure", 6, 15, 699, 1, 1, 214, 21, 60, 1, 1, 16, 148, 8, 29, 213, 61, 211, 254, 256, 210],
     addNewColumnList: [function(table, expression, $name, context, currentCall, errorBehavior, progress, subscribeOnChanges, treatAsString, type) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue;
       var $async$addNewColumnList = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -35799,7 +35799,7 @@
       return P._asyncStart($async$addNewColumnList, $async$completer);
     }, function(table, expression, $name) {
       return N.addNewColumnList(table, expression, $name, null, null, null, null, true, false, "auto");
-    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumnList$closure", 6, 15, 700, 1, 1, 212, 21, 60, 1, 1, 16, 148, 8, 29, 183, 63, 209, 237, 242, 201],
+    }, "call$10$context$currentCall$errorBehavior$progress$subscribeOnChanges$treatAsString$type", "call$3", "ddt__addNewColumnList$closure", 6, 15, 700, 1, 1, 214, 21, 60, 1, 1, 16, 148, 8, 29, 213, 61, 211, 254, 256, 210],
     applyFormula: function(column, expression, errorBehavior, processed, treatAsString, type, updateDependent) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, table, t1, current, behavior, isList, t2, t3, c, value, result, newColumn, errors;
       var $async$applyFormula = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -35911,7 +35911,7 @@
       return P._asyncStart($async$editColumnFormula, $async$completer);
     }, function(table, $name, expression) {
       return N.editColumnFormula(table, $name, expression, null, false, "auto");
-    }, "call$6$errorBehavior$treatAsString$type", "call$3", "ddt__editColumnFormula$closure", 6, 7, 701, 212, 21, 1, 16, 8, 148, 63, 209, 201],
+    }, "call$6$errorBehavior$treatAsString$type", "call$3", "ddt__editColumnFormula$closure", 6, 7, 701, 214, 21, 1, 16, 8, 148, 61, 211, 210],
     updateDependentColumns: function(column, calcCols, dependencyGraph, dependentNames, forceUpdate, indexes) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), t1, dataFrame, updatedColName, t2, grouped;
       var $async$updateDependentColumns = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -36528,27 +36528,27 @@
     keepColumnsImpl: [function(table, columnFilter) {
       var keepWhere = columnFilter.makePredicate$0();
       J.removeWhere$1$ax(J.get$columns$x(table), new N.keepColumnsImpl_closure(keepWhere));
-    }, "call$2", "ddt__keepColumnsImpl$closure", 4, 0, 258, 16, 142],
+    }, "call$2", "ddt__keepColumnsImpl$closure", 4, 0, 258, 16, 137],
     selectTableColumns: [function(table, columnFilter, flag) {
       var t1;
       for (t1 = J.get$iterator$ax(J.where$1$ax(J.get$columns$x(table), columnFilter.makePredicate$0())); t1.moveNext$0() === true;)
         t1.get$current().set$isSelected(flag);
     }, function(table, columnFilter) {
       return N.selectTableColumns(table, columnFilter, true);
-    }, "call$3$flag", "call$2", "ddt__selectTableColumns$closure", 4, 3, 702, 60, 16, 142, 94],
+    }, "call$3$flag", "call$2", "ddt__selectTableColumns$closure", 4, 3, 702, 60, 16, 137, 99],
     tagColumns: [function(table, columnFilter, tag, tagValue) {
       var t1;
       for (t1 = J.get$iterator$ax(J.where$1$ax(J.get$columns$x(table), columnFilter.makePredicate$0())); t1.moveNext$0() === true;)
         J.$indexSet$ax(t1.get$current().get$tags(), tag, tagValue);
     }, function(table, columnFilter, tag) {
       return N.tagColumns(table, columnFilter, tag, null);
-    }, "call$4$tagValue", "call$3", "ddt__tagColumns$closure", 6, 3, 703, 1, 16, 142, 73, 361],
+    }, "call$4$tagValue", "call$3", "ddt__tagColumns$closure", 6, 3, 703, 1, 16, 137, 73, 306],
     __date: [function(year, month, day) {
       return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(year, month, day, 0, 0, 0, 0, true)), true);
-    }, "call$3", "ddt____date$closure", 6, 0, 704, 249, 250, 251],
+    }, "call$3", "ddt____date$closure", 6, 0, 704, 269, 275, 216],
     __dateTime: [function(year, month, day, hours, minutes, seconds, milliseconds) {
       return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(year, month, day, hours, minutes, seconds, J.$add$ns(milliseconds, 0), true)), true);
-    }, "call$7", "ddt____dateTime$closure", 14, 0, 705, 249, 250, 251, 177, 194, 193, 127],
+    }, "call$7", "ddt____dateTime$closure", 14, 0, 705, 269, 275, 216, 208, 207, 206, 125],
     __dateNow: [function() {
       return new P.DateTime(Date.now(), false);
     }, "call$0", "ddt____dateNow$closure", 0, 0, 259],
@@ -36561,10 +36561,10 @@
       t2 = new P.DateTime(t1, false);
       t2.DateTime$_withValue$2$isUtc(t1, false);
       return t2;
-    }, "call$1", "ddt____dateFromUnixTimestamp$closure", 2, 0, 186, 387],
+    }, "call$1", "ddt____dateFromUnixTimestamp$closure", 2, 0, 186, 326],
     __unixTimestamp: [function(dt) {
       return dt == null ? dt : dt.get$microsecondsSinceEpoch();
-    }, "call$1", "ddt____unixTimestamp$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____unixTimestamp$closure", 2, 0, 31, 54],
     __today: [function() {
       var t1, t2, t3;
       t1 = new P.DateTime(Date.now(), false);
@@ -36575,13 +36575,13 @@
     }, "call$0", "ddt____today$closure", 0, 0, 259],
     __year: [function(dt) {
       return dt == null ? dt : dt.get$year();
-    }, "call$1", "ddt____year$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____year$closure", 2, 0, 31, 54],
     __month: [function(dt) {
       return dt == null ? dt : dt.get$month();
-    }, "call$1", "ddt____month$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____month$closure", 2, 0, 31, 54],
     __dayOfMonth: [function(dt) {
       return dt == null ? dt : dt.get$day();
-    }, "call$1", "ddt____dayOfMonth$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____dayOfMonth$closure", 2, 0, 31, 54],
     __dayOfYear: [function(dt) {
       var t1;
       if (dt == null)
@@ -36591,10 +36591,10 @@
         t1 = J.$add$ns(dt.difference$1(new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, 1, 1, 0, 0, 0, 0, true)), true)).get$inDays(), 1);
       }
       return t1;
-    }, "call$1", "ddt____dayOfYear$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____dayOfYear$closure", 2, 0, 31, 54],
     __dayOfWeek: [function(dt) {
       return dt == null ? dt : dt.get$weekday();
-    }, "call$1", "ddt____dayOfWeek$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____dayOfWeek$closure", 2, 0, 31, 54],
     __weeknum: [function(dt) {
       var t1;
       if (dt == null)
@@ -36604,7 +36604,7 @@
         t1 = J.ceil$0$n(J.$div$n(dt.difference$1(new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, 1, 1, 0, 0, 0, 0, true)), true)).get$inDays(), 7));
       }
       return t1;
-    }, "call$1", "ddt____weeknum$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____weeknum$closure", 2, 0, 31, 54],
     __hour: [function(dt) {
       var t1, t2, t3;
       if (dt == null)
@@ -36616,7 +36616,7 @@
         t1 = dt.difference$1(new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, 0, 0, 0, 0, true)), true)).get$inHours();
       }
       return t1;
-    }, "call$1", "ddt____hour$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____hour$closure", 2, 0, 31, 54],
     __minute: [function(dt) {
       var t1, t2, t3, t4;
       if (dt == null)
@@ -36629,13 +36629,13 @@
         t1 = dt.difference$1(new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, t4, 0, 0, 0, true)), true)).get$inMinutes();
       }
       return t1;
-    }, "call$1", "ddt____minute$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____minute$closure", 2, 0, 31, 54],
     __second: [function(dt) {
       return dt == null ? null : dt.difference$1(G.minute(dt)).get$inSeconds();
-    }, "call$1", "ddt____second$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____second$closure", 2, 0, 31, 54],
     __millisecond: [function(dt) {
       return dt == null ? null : dt.difference$1(G.second(dt)).get$inMilliseconds();
-    }, "call$1", "ddt____millisecond$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____millisecond$closure", 2, 0, 31, 54],
     __quarter: [function(dt) {
       var t1;
       if (dt == null)
@@ -36647,7 +36647,7 @@
         t1 = 1 + t1;
       }
       return t1;
-    }, "call$1", "ddt____quarter$closure", 2, 0, 31, 51],
+    }, "call$1", "ddt____quarter$closure", 2, 0, 31, 54],
     _dateParse: [function(s) {
       return N.parseDateTime(s, null);
     }, "call$1", "ddt___dateParse$closure", 2, 0, 14, 4],
@@ -36656,56 +36656,56 @@
       H.interceptedTypeCast(column, "$isDateTimeColumn");
       getDurationPart = $.$get$DurationUnits_partExtractors().$index(0, units);
       J.init$1$x(J.get$columns$x(table).addNewInt$1(newName), new N.dateDifference_closure(date, column, getDurationPart));
-    }, "call$5", "ddt__dateDifference$closure", 10, 0, 708, 16, 77, 25, 215, 263],
+    }, "call$5", "ddt__dateDifference$closure", 10, 0, 708, 16, 72, 24, 205, 225],
     dateDifferenceWithColumn: [function(table, column1, column2, newName, units) {
       var getDurationPart;
       H.interceptedTypeCast(column1, "$isDateTimeColumn");
       H.interceptedTypeCast(column2, "$isDateTimeColumn");
       getDurationPart = $.$get$DurationUnits_partExtractors().$index(0, units);
       J.init$1$x(J.get$columns$x(table).addNewInt$1(newName), new N.dateDifferenceWithColumn_closure(column1, column2, getDurationPart));
-    }, "call$5", "ddt__dateDifferenceWithColumn$closure", 10, 0, 709, 16, 421, 424, 215, 263],
+    }, "call$5", "ddt__dateDifferenceWithColumn$closure", 10, 0, 709, 16, 351, 352, 205, 225],
     __timeSpan: [function(days, hours, minutes, seconds, milliseconds) {
       return J.$add$ns(J.$add$ns(J.$add$ns(J.$add$ns(J.$mul$ns(days, 86400000), J.$mul$ns(hours, 3600000)), J.$mul$ns(minutes, 60000)), J.$mul$ns(seconds, 1000)), milliseconds);
-    }, "call$5", "ddt____timeSpan$closure", 10, 0, 710, 431, 177, 194, 193, 127],
+    }, "call$5", "ddt____timeSpan$closure", 10, 0, 710, 353, 208, 207, 206, 125],
     __inDays: [function(ts) {
       return ts == null ? null : J.$tdiv$n(ts, 86400000);
-    }, "call$1", "ddt____inDays$closure", 2, 0, 17, 70],
+    }, "call$1", "ddt____inDays$closure", 2, 0, 16, 69],
     __inHours: [function(ts) {
       return ts == null ? null : J.$tdiv$n(ts, 3600000);
-    }, "call$1", "ddt____inHours$closure", 2, 0, 17, 70],
+    }, "call$1", "ddt____inHours$closure", 2, 0, 16, 69],
     __inMinutes: [function(ts) {
       return ts == null ? null : J.$tdiv$n(ts, 60000);
-    }, "call$1", "ddt____inMinutes$closure", 2, 0, 17, 70],
+    }, "call$1", "ddt____inMinutes$closure", 2, 0, 16, 69],
     __inSeconds: [function(ts) {
       return ts == null ? null : J.$tdiv$n(ts, 1000);
-    }, "call$1", "ddt____inSeconds$closure", 2, 0, 17, 70],
+    }, "call$1", "ddt____inSeconds$closure", 2, 0, 16, 69],
     __inMilliseconds: [function(ts) {
       return ts;
-    }, "call$1", "ddt____inMilliseconds$closure", 2, 0, 17, 70],
+    }, "call$1", "ddt____inMilliseconds$closure", 2, 0, 16, 69],
     __totalDays: [function(ts) {
       return ts == null ? null : J.$div$n(ts, 86400000);
-    }, "call$1", "ddt____totalDays$closure", 2, 0, 19, 70],
+    }, "call$1", "ddt____totalDays$closure", 2, 0, 18, 69],
     __totalHours: [function(ts) {
       return ts == null ? null : J.$div$n(ts, 3600000);
-    }, "call$1", "ddt____totalHours$closure", 2, 0, 19, 70],
+    }, "call$1", "ddt____totalHours$closure", 2, 0, 18, 69],
     __totalMinutes: [function(ts) {
       return ts == null ? null : J.$div$n(ts, 60000);
-    }, "call$1", "ddt____totalMinutes$closure", 2, 0, 19, 70],
+    }, "call$1", "ddt____totalMinutes$closure", 2, 0, 18, 69],
     __totalSeconds: [function(ts) {
       return ts == null ? null : J.$div$n(ts, 1000);
-    }, "call$1", "ddt____totalSeconds$closure", 2, 0, 19, 70],
+    }, "call$1", "ddt____totalSeconds$closure", 2, 0, 18, 69],
     __totalMilliseconds: [function(ts) {
       return ts == null ? null : J.$add$ns(ts, 0);
-    }, "call$1", "ddt____totalMilliseconds$closure", 2, 0, 19, 70],
+    }, "call$1", "ddt____totalMilliseconds$closure", 2, 0, 18, 69],
     __dateDiff: [function(dt1, dt2) {
       return dt1 == null || dt2 == null ? null : dt1.difference$1(dt2).get$inMilliseconds();
-    }, "call$2", "ddt____dateDiff$closure", 4, 0, 188, 441, 448],
+    }, "call$2", "ddt____dateDiff$closure", 4, 0, 188, 360, 361],
     __dateAdd: [function(dt, ts) {
       return dt == null || ts == null ? null : J.add$1$ax(dt, P.Duration$(0, 0, 0, ts, 0, 0));
-    }, "call$2", "ddt____dateAdd$closure", 4, 0, 711, 51, 70],
+    }, "call$2", "ddt____dateAdd$closure", 4, 0, 711, 54, 69],
     __time: [function(hours, minutes, seconds, milliseconds) {
       return P.DateTime_parse("0000-01-01 " + H.S(J.padLeft$2$s(J.toString$0$(hours), 2, "0")) + ":" + H.S(J.padLeft$2$s(J.toString$0$(minutes), 2, "0")) + ":" + H.S(J.padLeft$2$s(J.toString$0$(seconds), 2, "0")) + "." + H.S(J.padLeft$2$s(J.toString$0$(milliseconds), 3, "0")));
-    }, "call$4", "ddt____time$closure", 8, 0, 712, 177, 194, 193, 127],
+    }, "call$4", "ddt____time$closure", 8, 0, 712, 208, 207, 206, 125],
     __timeParse: [function(s) {
       return N.parseDateTime("0001-01-01 " + H.S(s), null);
     }, "call$1", "ddt____timeParse$closure", 2, 0, 14, 4],
@@ -36757,7 +36757,7 @@
       table.get$eventBus().fire$1(C.EventType_mOu);
     }, function(table, columnFilter, mode) {
       return N.roundNumbers(table, columnFilter, mode, 0);
-    }, "call$4$decimalPlaces", "call$3", "ddt__roundNumbers$closure", 6, 3, 713, 96, 16, 142, 449, 151],
+    }, "call$4$decimalPlaces", "call$3", "ddt__roundNumbers$closure", 6, 3, 713, 101, 16, 137, 363, 145],
     normalizeColumn: [function(table, column, method) {
       var t1, normalized;
       if (column.get$isNumerical() === true) {
@@ -36776,7 +36776,7 @@
       }
     }, function(table, column) {
       return N.normalizeColumn(table, column, "Min-max");
-    }, "call$3$method", "call$2", "ddt__normalizeColumn$closure", 4, 3, 714, 451, 16, 77, 452],
+    }, "call$3$method", "call$2", "ddt__normalizeColumn$closure", 4, 3, 714, 381, 16, 72, 383],
     randBetween: [function(a, b) {
       var t1, t2;
       if (a == null || b == null)
@@ -36897,14 +36897,14 @@
       var t1 = J.get$columns$x(table).addNewBool$1(columnName);
       J.get$data$x(t1).copyFrom$1(table.get$selection());
       return t1;
-    }, "call$2", "ddt__selectionToColumnImpl$closure", 4, 0, 261, 16, 198],
+    }, "call$2", "ddt__selectionToColumnImpl$closure", 4, 0, 261, 16, 203],
     filterToColumnImpl: [function(table, columnName) {
       var t1, t2;
       t1 = J.getInterceptor$x(table);
       t2 = t1.get$columns(table).addNewBool$1(columnName);
       J.get$data$x(t2).copyFrom$1(t1.get$filter(table));
       return t2;
-    }, "call$2", "ddt__filterToColumnImpl$closure", 4, 0, 261, 16, 198],
+    }, "call$2", "ddt__filterToColumnImpl$closure", 4, 0, 261, 16, 203],
     cloneColumn: [function(table, column, newName) {
       var t1, t2, t3, t4;
       t1 = J.getInterceptor$x(table);
@@ -36914,20 +36914,20 @@
       t1 = t1.get$columns(table);
       J.set$name$x(t4, t1.getUnusedName$1$prefix(newName == null ? "copy(" + H.S(t3.get$name(column)) + ")" : newName));
       J.add$1$ax(t2, t4);
-    }, "call$3", "ddt__cloneColumn$closure", 6, 0, 257, 16, 77, 215],
+    }, "call$3", "ddt__cloneColumn$closure", 6, 0, 257, 16, 72, 205],
     expectMethod: [function(value, expected, message) {
       if (new N.expectMethod_isEquals().call$2(value, expected) !== true)
         throw H.wrapException(message == null ? 'Value "' + H.S(J.toString$0$(value)) + '" is not equal to "' + H.S(J.toString$0$(expected)) + '"' : message);
     }, function(value, expected) {
       return N.expectMethod(value, expected, null);
-    }, "call$3$message", "call$2", "ddt__expectMethod$closure", 4, 3, 717, 1, 14, 454, 45],
+    }, "call$3$message", "call$2", "ddt__expectMethod$closure", 4, 3, 717, 1, 14, 385, 43],
     delay: [function(milliseconds) {
       var t1 = new P._Future(0, $.Zone__current, null, [null]);
       if (typeof milliseconds !== "number")
         return H.iae(milliseconds);
       P.Timer_Timer(new P.Duration(0 + 1000 * milliseconds + 0), new N.delay_closure(new P._AsyncCompleter(t1, [null])));
       return t1;
-    }, "call$1", "ddt__delay$closure", 2, 0, 718, 127],
+    }, "call$1", "ddt__delay$closure", 2, 0, 718, 125],
     gsPrint: [function(context, msg) {
       return context.info$1(msg);
     }, "call$2", "ddt__gsPrint$closure", 4, 0, 114, 29, 89],
@@ -36955,7 +36955,7 @@
           context.info$1(H.S(t3.get$name(prop)) + ":\t " + H.S(t3.$get$1(prop, object)));
         }
       }
-    }, "call$2", "ddt__gsDescribe$closure", 4, 0, 721, 29, 84],
+    }, "call$2", "ddt__gsDescribe$closure", 4, 0, 721, 29, 83],
     checkMacroExpression: function(context, expression) {
       var result, parser, parsed, exception, varName, t1;
       result = new N.CheckMacroExpressionResult(null, null);
@@ -37014,26 +37014,26 @@
       return P._asyncStart($async$batchCall, $async$completer);
     }, function(table, expression) {
       return N.batchCall(table, expression, null, null);
-    }, "call$4$context$progress", "call$2", "ddt__batchCall$closure", 4, 5, 722, 1, 1, 16, 148, 29, 183],
+    }, "call$4$context$progress", "call$2", "ddt__batchCall$closure", 4, 5, 722, 1, 1, 16, 148, 29, 213],
     deleteRowsImpl: [function(table, where) {
       var mask = N.BitSet$(table.get$rowCount(), false);
       mask.init$1(0, where.makePredicate$0().call$1(table));
       J.get$rows$x(table).removeByMask$2$compact(mask, true);
-    }, "call$2", "ddt__deleteRowsImpl$closure", 4, 0, 148, 16, 99],
+    }, "call$2", "ddt__deleteRowsImpl$closure", 4, 0, 148, 16, 98],
     keepRowsImpl: [function(table, where) {
       var mask = N.BitSet$(table.get$rowCount(), false);
       mask.init$1(0, where.makePredicate$0().call$1(table));
       mask.invert$0();
       J.get$rows$x(table).removeByMask$2$compact(mask, true);
-    }, "call$2", "ddt__keepRowsImpl$closure", 4, 0, 148, 16, 99],
+    }, "call$2", "ddt__keepRowsImpl$closure", 4, 0, 148, 16, 98],
     filterRowsImpl: [function(table, where) {
       J.get$filter$x(table).setWhere$2$allowClear(where.makePredicate$0().call$1(table), false);
-    }, "call$2", "ddt__filterRowsImpl$closure", 4, 0, 148, 16, 99],
+    }, "call$2", "ddt__filterRowsImpl$closure", 4, 0, 148, 16, 98],
     selectRows: [function(table, where, clear, flag) {
       table.get$selection().setWhere$3$clear$value(where.makePredicate$0().call$1(table), clear, flag);
     }, function(table, where) {
       return N.selectRows(table, where, false, true);
-    }, "call$4$clear$flag", "call$2", "ddt__selectRows$closure", 4, 5, 724, 60, 21, 16, 99, 94, 455],
+    }, "call$4$clear$flag", "call$2", "ddt__selectRows$closure", 4, 5, 724, 60, 21, 16, 98, 99, 386],
     selectNone: [function(table) {
       J.setAll$1$ax(table.get$selection(), false);
     }, "call$1", "ddt__selectNone$closure", 2, 0, 146, 16],
@@ -37048,7 +37048,7 @@
       if (J.containsKey$1$x(clone.get$tags(), ".script") === true)
         J.remove$1$ax(clone.get$tags(), ".script");
       return clone;
-    }, "call$2", "ddt__extractRows$closure", 4, 0, 262, 16, 99],
+    }, "call$2", "ddt__extractRows$closure", 4, 0, 262, 16, 98],
     saveAsColumn: [function(table, where) {
       var mask, t1, column;
       mask = N.BitSet$(table.get$rowCount(), false);
@@ -37060,47 +37060,47 @@
       column.set$name(0, H.MappedIterable_MappedIterable(t1, new N.saveAsColumn_closure(), H.getRuntimeTypeArgument(t1, "Iterable", 0), null).firstWhere$1(0, new N.saveAsColumn_closure0(table)));
       J.add$1$ax(J.get$columns$x(table), column);
       return table;
-    }, "call$2", "ddt__saveAsColumn$closure", 4, 0, 262, 16, 99],
+    }, "call$2", "ddt__saveAsColumn$closure", 4, 0, 262, 16, 98],
     _length: [function(s) {
       return J.get$length$asx(s);
     }, "call$1", "ddt___length$closure", 2, 0, 56, 4],
     _toUpperCase: [function(s) {
       return J.toUpperCase$0$s(s);
-    }, "call$1", "ddt___toUpperCase$closure", 2, 0, 16, 4],
+    }, "call$1", "ddt___toUpperCase$closure", 2, 0, 19, 4],
     _toLowerCase: [function(s) {
       return J.toLowerCase$0$s(s);
-    }, "call$1", "ddt___toLowerCase$closure", 2, 0, 16, 4],
+    }, "call$1", "ddt___toLowerCase$closure", 2, 0, 19, 4],
     _substring: [function(s, start, end) {
       return J.substring$2$s(s, start, end);
-    }, "call$3", "ddt___substring$closure", 6, 0, 726, 4, 122, 125],
+    }, "call$3", "ddt___substring$closure", 6, 0, 726, 4, 140, 132],
     _trim: [function(s) {
       return J.trim$0$s(s);
-    }, "call$1", "ddt___trim$closure", 2, 0, 16, 4],
+    }, "call$1", "ddt___trim$closure", 2, 0, 19, 4],
     _replaceAll: [function(s, from, replace) {
       return J.replaceAll$2$s(s, from, replace);
-    }, "call$3", "ddt___replaceAll$closure", 6, 0, 115, 4, 482, 489],
+    }, "call$3", "ddt___replaceAll$closure", 6, 0, 115, 4, 407, 416],
     _splitString: [function(s, separator, i) {
       return J.$index$asx(J.split$1$s(s, separator), i);
-    }, "call$3", "ddt___splitString$closure", 6, 0, 728, 4, 498, 5],
+    }, "call$3", "ddt___splitString$closure", 6, 0, 728, 4, 417, 5],
     _padLeft: [function(s, width, padding) {
       return J.padLeft$2$s(s, width, padding == null ? " " : padding);
     }, function(s, width) {
       return N._padLeft(s, width, " ");
-    }, "call$3$padding", "call$2", "ddt___padLeft$closure", 4, 3, 264, 284, 4, 285, 286],
+    }, "call$3$padding", "call$2", "ddt___padLeft$closure", 4, 3, 264, 235, 4, 246, 247],
     _padRight: [function(s, width, padding) {
       return J.padRight$2$s(s, width, padding == null ? " " : padding);
     }, function(s, width) {
       return N._padRight(s, width, " ");
-    }, "call$3$padding", "call$2", "ddt___padRight$closure", 4, 3, 264, 284, 4, 285, 286],
+    }, "call$3$padding", "call$2", "ddt___padRight$closure", 4, 3, 264, 235, 4, 246, 247],
     _startsWith: [function(s, prefix) {
       return J.startsWith$1$s(s, prefix);
-    }, "call$2", "ddt___startsWith$closure", 4, 0, 92, 4, 287],
+    }, "call$2", "ddt___startsWith$closure", 4, 0, 92, 4, 250],
     _endsWith: [function(s, postfix) {
       return J.endsWith$1$s(s, postfix);
-    }, "call$2", "ddt___endsWith$closure", 4, 0, 92, 4, 507],
+    }, "call$2", "ddt___endsWith$closure", 4, 0, 92, 4, 436],
     _contains: [function(s, sub) {
       return J.contains$1$asx(s, sub);
-    }, "call$2", "ddt___contains$closure", 4, 0, 92, 4, 110],
+    }, "call$2", "ddt___contains$closure", 4, 0, 92, 4, 112],
     _checkNum: function(x) {
       if (typeof x !== "number")
         throw H.wrapException('"' + H.S(x) + '" is not a number');
@@ -37120,7 +37120,7 @@
     }, "call$1", "ddt___ln$closure", 2, 0, 20, 12],
     _log: [function(a, base) {
       return a == null || base == null ? null : Math.log(N._checkNum(a)) / Math.log(N._checkNum(base));
-    }, "call$2", "ddt___log$closure", 4, 0, 65, 12, 530],
+    }, "call$2", "ddt___log$closure", 4, 0, 65, 12, 439],
     _log10: [function(a) {
       return a == null ? null : Math.log(N._checkNum(a)) / 2.302585092994046;
     }, "call$1", "ddt___log10$closure", 2, 0, 20, 12],
@@ -37129,7 +37129,7 @@
     }, "call$2", "ddt___atan2$closure", 4, 0, 65, 12, 11],
     _pow: [function(x, exponent) {
       return x == null || exponent == null ? null : Math.pow(N._checkNum(x), N._checkNum(exponent));
-    }, "call$2", "ddt___pow$closure", 4, 0, 107, 0, 531],
+    }, "call$2", "ddt___pow$closure", 4, 0, 107, 0, 441],
     _sin: [function(x) {
       return x == null ? null : Math.sin(N._checkNum(x));
     }, "call$1", "ddt___sin$closure", 2, 0, 20, 0],
@@ -37167,16 +37167,16 @@
     }, "call$1", "ddt___neg$closure", 2, 0, 267, 0],
     _sub: [function(x, y) {
       return x == null || y == null ? null : N._checkNum(x) - N._checkNum(y);
-    }, "call$2", "ddt___sub$closure", 4, 0, 107, 0, 61],
+    }, "call$2", "ddt___sub$closure", 4, 0, 107, 0, 62],
     _mul: [function(x, y) {
       return x == null || y == null ? null : N._checkNum(x) * N._checkNum(y);
-    }, "call$2", "ddt___mul$closure", 4, 0, 107, 0, 61],
+    }, "call$2", "ddt___mul$closure", 4, 0, 107, 0, 62],
     _div: [function(x, y) {
       return x == null || y == null ? null : N._checkNum(x) / N._checkNum(y);
-    }, "call$2", "ddt___div$closure", 4, 0, 107, 0, 61],
+    }, "call$2", "ddt___div$closure", 4, 0, 107, 0, 62],
     _mod: [function(x, y) {
       return x == null || y == null ? null : C.JSNumber_methods.$mod(N._checkNum(x), N._checkNum(y));
-    }, "call$2", "ddt___mod$closure", 4, 0, 24, 0, 61],
+    }, "call$2", "ddt___mod$closure", 4, 0, 24, 0, 62],
     _add: [function(x, y) {
       var t1, t2, t3;
       if (typeof x === "string" && typeof y === "string")
@@ -37190,10 +37190,10 @@
         return P.DateTime$_withValue(J.$add$ns(t3, new P.Duration(P.Duration$(0, 0, 0, J.$sub$n(t2, t3), 0, 0)._duration + P.Duration$(0, 0, 0, J.$sub$n(y._value, t3), 0, 0)._duration).get$inMilliseconds()), t1.isUtc);
       }
       return N._checkNum(x) + N._checkNum(y);
-    }, "call$2", "ddt___add$closure", 4, 0, 1, 0, 61],
+    }, "call$2", "ddt___add$closure", 4, 0, 1, 0, 62],
     _round10: [function(x, decimalPlaces) {
       return N._roundFloat(x, decimalPlaces);
-    }, "call$2", "ddt___round10$closure", 4, 0, 65, 0, 151],
+    }, "call$2", "ddt___round10$closure", 4, 0, 65, 0, 145],
     _roundFloat: [function(x, decimalPlaces) {
       var d;
       if (x == null)
@@ -37202,12 +37202,12 @@
       if (J.$gt$n(decimalPlaces, 0) === true)
         return C.JSNumber_methods.round$0(N._checkNum(x) * d) / d;
       return C.JSDouble_methods.round$0(N._checkNum(x) / d) * d + 0;
-    }, "call$2", "ddt___roundFloat$closure", 4, 0, 65, 0, 151],
+    }, "call$2", "ddt___roundFloat$closure", 4, 0, 65, 0, 145],
     _formatFloat: [function(x, format) {
       if (x == null)
         return;
       return N.fmt(x, null, null, null, format, 2);
-    }, "call$2", "ddt___formatFloat$closure", 4, 0, 734, 0, 162],
+    }, "call$2", "ddt___formatFloat$closure", 4, 0, 734, 0, 155],
     _fixed: [function(x, decimalPlaces) {
       var t1, t2;
       if (decimalPlaces == null)
@@ -37227,19 +37227,19 @@
         }
       }
       return N._formatFloat(x, t1);
-    }, "call$2", "ddt___fixed$closure", 4, 0, 735, 0, 151],
+    }, "call$2", "ddt___fixed$closure", 4, 0, 735, 0, 145],
     _greater: [function(x, y) {
       return x == null || y == null ? false : N._checkNum(x) > N._checkNum(y);
-    }, "call$2", "ddt___greater$closure", 4, 0, 104, 0, 61],
+    }, "call$2", "ddt___greater$closure", 4, 0, 104, 0, 62],
     _smaller: [function(x, y) {
       return x == null || y == null ? false : N._checkNum(x) < N._checkNum(y);
-    }, "call$2", "ddt___smaller$closure", 4, 0, 104, 0, 61],
+    }, "call$2", "ddt___smaller$closure", 4, 0, 104, 0, 62],
     _notGreater: [function(x, y) {
       return x == null || y == null ? false : N._checkNum(x) <= N._checkNum(y);
-    }, "call$2", "ddt___notGreater$closure", 4, 0, 104, 0, 61],
+    }, "call$2", "ddt___notGreater$closure", 4, 0, 104, 0, 62],
     _notSmaller: [function(x, y) {
       return x == null || y == null ? false : N._checkNum(x) >= N._checkNum(y);
-    }, "call$2", "ddt___notSmaller$closure", 4, 0, 104, 0, 61],
+    }, "call$2", "ddt___notSmaller$closure", 4, 0, 104, 0, 62],
     _rnd: [function(limit) {
       var t1, t2;
       t1 = $.$get$_random().nextInt$1(4294967295);
@@ -37247,7 +37247,7 @@
       if (typeof t2 !== "number")
         return H.iae(t2);
       return C.JSNumber_methods.$mod(t1, t2);
-    }, "call$1", "ddt___rnd$closure", 2, 0, 17, 156],
+    }, "call$1", "ddt___rnd$closure", 2, 0, 16, 165],
     _parseInt: [function(s) {
       return H.Primitives_parseInt(s, null, null);
     }, "call$1", "ddt___parseInt$closure", 2, 0, 56, 4],
@@ -37295,22 +37295,22 @@
     },
     _and: [function(x, y) {
       return N._checkBool(x, y, new N._and_closure());
-    }, "call$2", "ddt___and$closure", 4, 0, 119, 0, 61],
+    }, "call$2", "ddt___and$closure", 4, 0, 119, 0, 62],
     _or: [function(x, y) {
       return N._checkBool(x, y, new N._or_closure());
-    }, "call$2", "ddt___or$closure", 4, 0, 119, 0, 61],
+    }, "call$2", "ddt___or$closure", 4, 0, 119, 0, 62],
     _xor: [function(x, y) {
       return N._checkBool(x, y, new N._xor_closure());
-    }, "call$2", "ddt___xor$closure", 4, 0, 119, 0, 61],
+    }, "call$2", "ddt___xor$closure", 4, 0, 119, 0, 62],
     _not: [function(x) {
       return N._checkBool(x, true, new N._not_closure());
     }, "call$1", "ddt___not$closure", 2, 0, 167, 0],
     dup: [function(s) {
       return H.S(s) + " " + H.S(s) + " (core)";
-    }, "call$1", "ddt__dup$closure", 2, 0, 16, 4],
+    }, "call$1", "ddt__dup$closure", 2, 0, 19, 4],
     __in: [function(a, lst) {
       return J.contains$1$asx(lst, a);
-    }, "call$2", "ddt____in$closure", 4, 0, 1, 12, 381],
+    }, "call$2", "ddt____in$closure", 4, 0, 1, 12, 452],
     _getStats: function(data) {
       var t1, t2, list, i, t3;
       if (data == null)
@@ -37474,7 +37474,7 @@
       if (t1 < 0 || t1 >= sortedNums.length)
         return H.ioore(sortedNums, t1);
       return sortedNums[t1];
-    }, "call$2", "ddt____percentile$closure", 4, 0, 740, 48, 291],
+    }, "call$2", "ddt____percentile$closure", 4, 0, 740, 48, 262],
     CloneTable: [function(table) {
       return J.clone$1$saveSelection$x(table, true);
     }, "call$1", "ddt__CloneTable$closure", 2, 0, 741, 16],
@@ -37615,39 +37615,39 @@
       }
     }, function(table, col, regExp) {
       return N.splitColumnByRegExp(table, col, regExp, "r");
-    }, "call$4$prefix", "call$3", "ddt__splitColumnByRegExp$closure", 6, 3, 742, 19, 16, 6, 305, 287],
+    }, "call$4$prefix", "call$3", "ddt__splitColumnByRegExp$closure", 6, 3, 742, 19, 16, 6, 497, 250],
     transformString: [function(table, columnFilter, action) {
       var t1, col;
       for (t1 = J.get$iterator$ax(J.where$1$ax(J.get$columns$x(table), columnFilter.makePredicate$0())); t1.moveNext$0() === true;) {
         col = t1.get$current();
         J.init$1$x(col, new N.transformString_closure(action, col));
       }
-    }, "call$3", "ddt__transformString$closure", 6, 0, 743, 16, 142, 179],
+    }, "call$3", "ddt__transformString$closure", 6, 0, 743, 16, 137, 199],
     strFind: [function(s, sub) {
       var t1 = J.getInterceptor$asx(s);
       if (t1.get$isEmpty(s) === true || J.get$isEmpty$asx(sub) === true)
         return -1;
       return t1.indexOf$1(s, sub);
-    }, "call$2", "ddt__strFind$closure", 4, 0, 198, 4, 110],
+    }, "call$2", "ddt__strFind$closure", 4, 0, 198, 4, 112],
     strLeft: [function(s, count) {
       var t1, t2;
       t1 = J.$lt$n(count, 0) === true ? J.$add$ns(J.get$length$asx(s), count) : count;
       t2 = J.getInterceptor$asx(s);
       return t2.substring$2(s, 0, J.clamp$2$n(t1, 0, t2.get$length(s)));
-    }, "call$2", "ddt__strLeft$closure", 4, 0, 109, 4, 113],
+    }, "call$2", "ddt__strLeft$closure", 4, 0, 109, 4, 103],
     strRight: [function(s, count) {
       var t1, t2, t3;
       t1 = J.getInterceptor$asx(s);
       t2 = t1.get$length(s);
       t3 = J.$lt$n(count, 0) === true ? J.$add$ns(t1.get$length(s), count) : count;
       return t1.substring$2(s, J.$sub$n(t2, J.clamp$2$n(t3, 0, t1.get$length(s))), t1.get$length(s));
-    }, "call$2", "ddt__strRight$closure", 4, 0, 109, 4, 113],
+    }, "call$2", "ddt__strRight$closure", 4, 0, 109, 4, 103],
     strRepeat: [function(s, n) {
       return J.$mul$ns(s, n);
-    }, "call$2", "ddt__strRepeat$closure", 4, 0, 109, 4, 24],
+    }, "call$2", "ddt__strRepeat$closure", 4, 0, 109, 4, 25],
     regExpReplace: [function(s, pattern, sub) {
       return J.replaceAllMapped$2$s(s, N.StringUtils_regExp(pattern), new N.regExpReplace_closure(sub));
-    }, "call$3", "ddt__regExpReplace$closure", 6, 0, 115, 4, 33, 110],
+    }, "call$3", "ddt__regExpReplace$closure", 6, 0, 115, 4, 35, 112],
     regExpExtract: [function(s, pattern, i, group) {
       var matches, t1;
       matches = J.toList$0$ax(J.allMatches$1$s(N.StringUtils_regExp(pattern), s));
@@ -37655,10 +37655,10 @@
       return t1.get$isEmpty(matches) === true ? null : t1.$index(matches, i).group$1(group);
     }, function(s, pattern, i) {
       return N.regExpExtract(s, pattern, i, 0);
-    }, "call$4$group", "call$3", "ddt__regExpExtract$closure", 6, 3, 744, 96, 4, 33, 5, 273],
+    }, "call$4$group", "call$3", "ddt__regExpExtract$closure", 6, 3, 744, 101, 4, 35, 5, 282],
     regExpContains: [function(s, pattern) {
       return J.contains$1$asx(s, N.StringUtils_regExp(pattern));
-    }, "call$2", "ddt__regExpContains$closure", 4, 0, 92, 4, 33],
+    }, "call$2", "ddt__regExpContains$closure", 4, 0, 92, 4, 35],
     ArrowReader_read: function(bytes) {
       var t1, view, p, dictionaries, $frames, t2, schema, t3, metaLength, message, t4, o, t5, headerType, header, data, batch, t6, rowCount, t7, t8, df, i;
       t1 = J.getInterceptor$x(bytes);
@@ -39666,7 +39666,7 @@
       return t1 ? C.JSString_methods.$add('"', s) + '"' : s;
     }, function(s) {
       return N.csvQuote(s, ",");
-    }, "call$2$delimiter", "call$1", "ddt__csvQuote$closure", 2, 3, 745, 463, 4, 297],
+    }, "call$2$delimiter", "call$1", "ddt__csvQuote$closure", 2, 3, 745, 506, 4, 509],
     _parseLinesImpl: function(s, onLine, delim, mergeDelimiters, guessDelimiter) {
       var x, t1, t2, t3, lastColCount, state, start, i, t4, i0, i1, hasEscapedQuotes, value, t5, t6, q;
       x = H.setRuntimeTypeInfo([], [P.String]);
@@ -39830,7 +39830,7 @@
         }
     },
     findAndReplace: function(columns, findWhat, replaceWith, filteredRowsOnly, matchCase, matchWholeWord, selectedRowsOnly, useRegExp) {
-      var _box_0, t1, t, t2, wordBounds, pattern, indexes, replace, findWhatRegex, replaceWithGroupMatches, replaceRegex, col, matcher, newValue, t3;
+      var _box_0, t1, t, t2, source, query, indexes, col, matcher, newValue, t3;
       _box_0 = {};
       _box_0.replaceWith = replaceWith;
       if (replaceWith == null)
@@ -39839,19 +39839,19 @@
       if (t1.get$isEmpty(columns) === true)
         return;
       t = t1.get$first(columns).get$parentDataFrame();
-      t2 = matchWholeWord === true;
-      wordBounds = t2 ? "\\b" : "";
-      pattern = useRegExp === true || t2 || matchCase !== true ? P.RegExp_RegExp(C.JSString_methods.$add(wordBounds, findWhat) + wordBounds, matchCase, false) : findWhat;
+      if (J.$eq$(findWhat, "") === true)
+        t2 = null;
+      else {
+        source = useRegExp === true ? findWhat : N.escapeRegExp(findWhat);
+        t2 = P.RegExp_RegExp(matchWholeWord === true ? "\\b(?:" + H.S(source) + ")\\b" : source, matchCase, false);
+      }
+      query = new N._FindQuery(findWhat, useRegExp, t2);
       indexes = J.get$rows$x(t).indexes$2$onlyFiltered$onlySelected(filteredRowsOnly, selectedRowsOnly);
-      replace = new N.findAndReplace_replace(_box_0, pattern);
-      findWhatRegex = J.$eq$(findWhat, "") === true ? null : P.RegExp_RegExp(findWhat, true, false);
-      replaceWithGroupMatches = P.RegExp_RegExp("\\$[0-9]", true, false).allMatches$1(0, _box_0.replaceWith);
-      replaceRegex = new N.findAndReplace_replaceRegex(_box_0, findWhatRegex, replaceWithGroupMatches);
       for (t1 = t1.get$iterator(columns); t1.moveNext$0() === true;) {
         col = t1.get$current();
         t2 = J.getInterceptor(col);
         if (!!t2.$isStringColumn)
-          t2.init$2$indexes(col, new N.findAndReplace_closure(col, J.toList$0$ax(J.map$1$ax(col._categories, new N.findAndReplace_closure0(_box_0, findWhat, replace, replaceWithGroupMatches, replaceRegex)))), indexes);
+          t2.init$2$indexes(col, new N.findAndReplace_closure(col, J.toList$0$ax(J.map$1$ax(col._categories, new N.findAndReplace_closure0(_box_0, query)))), indexes);
         else {
           matcher = col.get$meta().getMatcher$1(findWhat);
           newValue = J.parse$2$x(col.get$meta(), _box_0.replaceWith, new N.findAndReplace_closure1());
@@ -39861,7 +39861,7 @@
             t3 = true;
           if (t3)
             continue;
-          t2.init$2$indexes(col, new N.findAndReplace_closure2(findWhat, col, matcher, newValue), indexes);
+          t2.init$2$indexes(col, new N.findAndReplace_closure2(query, col, matcher, newValue), indexes);
         }
       }
       t.get$eventBus().fire$1(C.EventType_mOu);
@@ -41921,7 +41921,7 @@
       return t1.get$isEmpty(items) === true ? null : t1.get$first(items);
     }, "call$1", "ddt__firstOrNull$closure", 2, 0, function() {
       return {func: 1, args: [P.Iterable]};
-    }, 81],
+    }, 79],
     maxBy: function(items, f, ifNone) {
       var t1, first, maxItem, max, item, tmp;
       for (t1 = J.get$iterator$ax(items), first = true, maxItem = null, max = null; t1.moveNext$0() === true;) {
@@ -42076,7 +42076,7 @@
       "^": "Closure:424;",
       call$5: [function(col, bitset, flag, bins, logScale) {
         return N.ColumnHistogram_histogram(col, bitset, flag, bins, logScale);
-      }, null, null, 10, 0, null, 6, 180, 94, 339, 375, "call"]
+      }, null, null, 10, 0, null, 6, 197, 99, 512, 514, "call"]
     },
     initApiDdt_closure0: {
       "^": "Closure:2;",
@@ -58032,7 +58032,7 @@
       },
       getBit$1: [function(pos) {
         return this.$index(0, pos);
-      }, "call$1", "get$getBit", 2, 0, 18, 270],
+      }, "call$1", "get$getBit", 2, 0, 17, 217],
       setBit$3$notify: function(pos, bit, notify) {
         var t1;
         this.setFast$2(pos, bit);
@@ -58986,7 +58986,7 @@
       }],
       isFinite$1: [function(_, idx) {
         return this.isNone$1(idx) !== true;
-      }, "call$1", "get$isFinite", 2, 0, 18],
+      }, "call$1", "get$isFinite", 2, 0, 17],
       toDoubleAll$1$requestCopy: function(requestCopy) {
         var t1, result, n, t2;
         t1 = H._checkLength(this.get$length(this));
@@ -59549,7 +59549,7 @@
       call$2: [function(c, semType) {
         c.set$semType(semType);
         return semType;
-      }, null, null, 4, 0, null, 3, 97, "call"]
+      }, null, null, 4, 0, null, 3, 95, "call"]
     },
     closure434: {
       "^": "Closure:0;strings,parser",
@@ -59992,7 +59992,7 @@
       },
       contains$1: [function(_, columnId) {
         return this.$index(0, columnId) != null;
-      }, "call$1", "get$contains", 2, 0, 60, 67],
+      }, "call$1", "get$contains", 2, 0, 60, 65],
       get$length: function(_) {
         return J.get$length$asx(this.list);
       },
@@ -60570,7 +60570,7 @@
           return 26789344063684636e-50;
         else
           return J.toDouble$0$n(J.$index$asx(this._data, idx));
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         return J.$index$asx(this._data, idx) == null ? "" : J.toString$0$(J.$index$asx(this._data, idx));
       },
@@ -60588,7 +60588,7 @@
       },
       isNone$1: [function(idx) {
         return J.$index$asx(this._data, idx) == null;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       sizeInBytes$0: function() {
         var size, i, t1;
         size = 0;
@@ -60774,7 +60774,7 @@
             return;
           else
             return N.BigInt_parse(J.trim$0$s(text));
-        }, "call$1", "ddt_BigIntColumn_parse$closure", 2, 0, 687, 91]
+        }, "call$1", "ddt_BigIntColumn_parse$closure", 2, 0, 687, 96]
       }
     },
     Column_ColumnIterableMixin: {
@@ -60927,7 +60927,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     BoolColumn: {
       "^": "Column_ColumnIterableMixin0;meta@,_data@,categories@,_indexes,_parents,_valueComparer,_ddt$_name,_isSelected,_version,_cache,_cacheVersion,_hasNonesCheckVersion,_hasNonesCheckResult,_stats,_filteredRowsStats,_minMaxVersion,_min,_max,_temp,_sortOrder,_sortVersion,_sortFilter,_sortFilterVersion,_sortComparer,GrokJsObject__jsObject,MetaMixin__instanceId,ObservableTagMixin_suppressNotification,ObservableTagMixin__tags,Notifier__changes",
@@ -61049,7 +61049,7 @@
       },
       toDouble$1: [function(_, idx) {
         return J.$index$asx(this._data, idx) === true ? 1 : 0;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         return J.toString$0$(J.$index$asx(this._data, idx));
       },
@@ -61058,14 +61058,14 @@
       },
       isNone$1: [function(idx) {
         return false;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       $index: function(_, idx) {
         return J.$index$asx(this._data, idx);
       },
       getItem$1: [function(_, pos) {
         var t1 = J.$index$asx(this._data, pos);
         return t1;
-      }, "call$1", "get$getItem", 2, 0, 18],
+      }, "call$1", "get$getItem", 2, 0, 17],
       $indexSet: function(_, idx, value) {
         var t1, t2;
         t1 = this._data;
@@ -61165,7 +61165,7 @@
           else
             t1 = t1.$eq(text, "false") === true || t1.$eq(text, "n") === true ? false : null;
           return t1;
-        }, "call$1", "ddt_BoolColumn_parse$closure", 2, 0, 46, 91]
+        }, "call$1", "ddt_BoolColumn_parse$closure", 2, 0, 46, 96]
       }
     },
     Column_ColumnIterableMixin0: {
@@ -61326,7 +61326,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     ByteArrayColumn: {
       "^": "Column_ColumnIterableMixin_CategoricalColumnMixin0;meta@,_data@,CategoricalColumnMixin__isCategorical,CategoricalColumnMixin__categories,CategoricalColumnMixin__indexes,_parents,_valueComparer,_ddt$_name,_isSelected,_version,_cache,_cacheVersion,_hasNonesCheckVersion,_hasNonesCheckResult,_stats,_filteredRowsStats,_minMaxVersion,_min,_max,_temp,_sortOrder,_sortVersion,_sortFilter,_sortFilterVersion,_sortComparer,GrokJsObject__jsObject,MetaMixin__instanceId,ObservableTagMixin_suppressNotification,ObservableTagMixin__tags,Notifier__changes",
@@ -61443,7 +61443,7 @@
       },
       toDouble$1: [function(_, idx) {
         return 0;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         var t1 = J.$index$asx(this._data, idx);
         t1 = t1 == null ? t1 : J.get$length$asx(t1);
@@ -61461,7 +61461,7 @@
       },
       isNone$1: [function(idx) {
         return J.$index$asx(this._data, idx) == null;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       $index: function(_, idx) {
         return J.$index$asx(this._data, idx);
       },
@@ -61554,7 +61554,7 @@
       call$2: [function(sum, element) {
         var t1 = element == null ? element : J.get$length$asx(element);
         return J.$add$ns(sum, t1 == null ? 0 : t1);
-      }, null, null, 4, 0, null, 261, 28, "call"]
+      }, null, null, 4, 0, null, 231, 28, "call"]
     },
     _ByteArrayMeta: {
       "^": "ColumnTypeMeta;formats,parseFormats,aggregations",
@@ -61720,7 +61720,7 @@
       },
       toDouble$1: [function(_, idx) {
         return 26789344063684636e-50;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         return J.$index$asx(this._data, idx) == null ? "" : J.toString$0$(J.$index$asx(this._data, idx));
       },
@@ -61729,7 +61729,7 @@
       },
       isNone$1: [function(idx) {
         return J.$index$asx(this._data, idx) == null;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       $index: function(_, idx) {
         return J.$index$asx(this._data, idx);
       },
@@ -62019,7 +62019,7 @@
         if (J.$eq$(J.$index$asx(this._data, idx), 26789344063684636e-50) === true || J.get$isNaN$n(J.$index$asx(this._data, idx)) === true)
           return 26789344063684636e-50;
         return J.$index$asx(this._data, idx);
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         var t1, t2, t3;
         if (J.$eq$(J.$index$asx(this._data, idx), 26789344063684636e-50) === true || J.get$isNaN$n(J.$index$asx(this._data, idx)) === true)
@@ -62043,7 +62043,7 @@
       },
       isNone$1: [function(idx) {
         return J.$eq$(J.$index$asx(this._data, idx), 26789344063684636e-50) === true || J.get$isNaN$n(J.$index$asx(this._data, idx)) === true;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       setText$3$notify: function(idx, text, notify) {
         var t1 = J.getInterceptor(text);
         if (t1.$eq(text, "") === true || text == null || t1.$eq(text, "NA") === true) {
@@ -62439,14 +62439,14 @@
       },
       aggrMin$1: [function(items) {
         return L.min(J.where$1$ax(items, new N.DateTimeMeta_aggrMin_closure()), null);
-      }, "call$1", "get$aggrMin", 2, 0, 131, 81],
+      }, "call$1", "get$aggrMin", 2, 0, 131, 79],
       aggrMax$1: [function(items) {
         return L.max0(J.where$1$ax(items, new N.DateTimeMeta_aggrMax_closure()), null);
-      }, "call$1", "get$aggrMax", 2, 0, 131, 81],
+      }, "call$1", "get$aggrMax", 2, 0, 131, 79],
       aggrRange$1: [function(items) {
         var max = this.aggrMax$1(items);
         return max == null ? null : max.difference$1(this.aggrMin$1(items)).get$inSeconds();
-      }, "call$1", "get$aggrRange", 2, 0, 304, 81],
+      }, "call$1", "get$aggrRange", 2, 0, 304, 79],
       aggrAvg$1: [function(items) {
         var t1, mean, n, x, t2;
         for (t1 = J.get$iterator$ax(items), mean = 0, n = 0; t1.moveNext$0() === true;) {
@@ -62468,7 +62468,7 @@
           t1 = t2;
         }
         return t1;
-      }, "call$1", "get$aggrAvg", 2, 0, 131, 81],
+      }, "call$1", "get$aggrAvg", 2, 0, 131, 79],
       DateTimeMeta$0: function() {
         var t1, _i, aggr, t2, t3;
         C.JSArray_methods.addAll$1(this.formats, $.$get$standardDateTimeFormats());
@@ -62524,7 +62524,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     DateTimeMeta_closure0: {
       "^": "Closure:7;",
@@ -62685,7 +62685,7 @@
         x = J.$index$asx(this._data, idx);
         t1 = J.getInterceptor(x);
         return t1.$eq(x, 1 / 0) !== true && t1.$eq(x, -1 / 0) !== true ? x : 26789344063684636e-50;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toDoubleAll$1$requestCopy: function(requestCopy) {
         var t1, t2;
         t1 = this._data;
@@ -62721,13 +62721,13 @@
       },
       isNone$1: [function(idx) {
         return J.$eq$(J.$index$asx(this._data, idx), 26789344063684636e-50);
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       isFinite$1: [function(_, idx) {
         var x, t1;
         x = J.$index$asx(this._data, idx);
         t1 = J.getInterceptor(x);
         return t1.$eq(x, 26789344063684636e-50) !== true && t1.$eq(x, 1 / 0) !== true && t1.$eq(x, -1 / 0) !== true;
-      }, "call$1", "get$isFinite", 2, 0, 18],
+      }, "call$1", "get$isFinite", 2, 0, 17],
       $index: function(_, idx) {
         return J.$index$asx(this._data, idx);
       },
@@ -62942,7 +62942,7 @@
           if (text == null || J.$eq$(text, "") === true)
             return;
           return H.Primitives_parseDouble(text, new N.FloatColumn_parse_closure());
-        }, "call$1", "ddt_FloatColumn_parse$closure", 2, 0, 113, 91]
+        }, "call$1", "ddt_FloatColumn_parse$closure", 2, 0, 113, 96]
       }
     },
     Column_ColumnIterableMixin4: {
@@ -63004,7 +63004,7 @@
       "^": "Closure:0;",
       call$1: [function(d) {
         return d == null ? false : J.$ge$n(J.get$length$asx(J.where$1$ax(J.get$codeUnits$s(d), new N.FloatColumn$fromStrings__closure())), 8);
-      }, null, null, 2, 0, null, 103, "call"]
+      }, null, null, 2, 0, null, 105, "call"]
     },
     FloatColumn$fromStrings__closure: {
       "^": "Closure:0;",
@@ -63231,7 +63231,7 @@
             t1 = t1[1];
           }
           return t1;
-        }, "call$1", "ddt_FloatMeta__percentFormatter$closure", 2, 0, 16],
+        }, "call$1", "ddt_FloatMeta__percentFormatter$closure", 2, 0, 19],
         FloatMeta__thousandSeparatorFormatter: [function(str) {
           var t1 = P.RegExp_RegExp("^([0-9]{1,3}(,[0-9]{3})*(.[0-9]+)?|.[0-9]+)$", true, false).firstMatch$1(str);
           if (!(t1 == null)) {
@@ -63241,7 +63241,7 @@
             t1 = t1[0];
           }
           return t1 == null ? t1 : J.replaceAll$2$s(t1, ",", "");
-        }, "call$1", "ddt_FloatMeta__thousandSeparatorFormatter$closure", 2, 0, 16],
+        }, "call$1", "ddt_FloatMeta__thousandSeparatorFormatter$closure", 2, 0, 19],
         FloatMeta__moneyFormatter: [function(str) {
           var t1 = P.RegExp_RegExp("^\\$([0-9]{1,3}(,[0-9]{3})*(.[0-9]+)?|.[0-9]+)$", true, false).firstMatch$1(str);
           if (!(t1 == null)) {
@@ -63252,7 +63252,7 @@
           }
           t1 = t1 == null ? t1 : J.replaceAll$2$s(t1, ",", "");
           return t1 == null ? t1 : J.replaceAll$2$s(t1, "$", "");
-        }, "call$1", "ddt_FloatMeta__moneyFormatter$closure", 2, 0, 16],
+        }, "call$1", "ddt_FloatMeta__moneyFormatter$closure", 2, 0, 19],
         FloatMeta__extractNumbersFormatter: [function(str) {
           var t1 = P.RegExp_RegExp("-?(?:0|[1-9]\\d*)(?:\\.\\d+)?(?:[eE][+\\-]?\\d+)?", true, false).firstMatch$1(J.replaceAll$2$s(str, ",", ""));
           if (!(t1 == null)) {
@@ -63262,7 +63262,7 @@
             t1 = t1[0];
           }
           return t1;
-        }, "call$1", "ddt_FloatMeta__extractNumbersFormatter$closure", 2, 0, 16]
+        }, "call$1", "ddt_FloatMeta__extractNumbersFormatter$closure", 2, 0, 19]
       }
     },
     FloatMeta_formatNumber_closure: {
@@ -63343,7 +63343,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     FloatMeta_closure0: {
       "^": "Closure:54;",
@@ -63498,7 +63498,7 @@
           return 26789344063684636e-50;
         else
           return J.toDouble$0$n(J.$index$asx(this._data, idx));
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         var t1, t2, t3;
         t1 = this.meta;
@@ -63520,7 +63520,7 @@
       },
       isNone$1: [function(idx) {
         return J.$eq$(J.$index$asx(this._data, idx), -2147483648);
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       setAllValues$3$indexes$notify: function(value, indexes, notify) {
         var _box_0, t1, i, t2, t3;
         _box_0 = {};
@@ -63553,7 +63553,7 @@
       },
       getItem$1: [function(_, pos) {
         return J.$eq$(J.$index$asx(this._data, pos), -2147483648) === true ? null : J.$index$asx(this._data, pos);
-      }, "call$1", "get$getItem", 2, 0, 17],
+      }, "call$1", "get$getItem", 2, 0, 16],
       $indexSet: function(_, idx, value) {
         var t1, t2;
         if (value == null)
@@ -63722,7 +63722,7 @@
           } else
             t1 = true;
           return t1 ? null : x;
-        }, "call$1", "ddt_IntColumn_parse$closure", 2, 0, 56, 91]
+        }, "call$1", "ddt_IntColumn_parse$closure", 2, 0, 56, 96]
       }
     },
     Column_ColumnIterableMixin5: {
@@ -63921,7 +63921,7 @@
           }
           list = list == null ? list : J.split$1$s(list, ".");
           return list == null ? null : J.$index$asx(list, 0);
-        }, "call$1", "ddt_IntMeta__doubleFormatter$closure", 2, 0, 16, 304],
+        }, "call$1", "ddt_IntMeta__doubleFormatter$closure", 2, 0, 19, 505],
         IntMeta__extractNumbersFormatter: [function(str) {
           var t1;
           str = P.RegExp_RegExp("[0-9.]+", true, false).firstMatch$1(J.replaceAll$2$s(str, ",", ""));
@@ -63932,7 +63932,7 @@
             str = t1[0];
           }
           return str == null ? null : N.IntMeta__doubleFormatter(str);
-        }, "call$1", "ddt_IntMeta__extractNumbersFormatter$closure", 2, 0, 16]
+        }, "call$1", "ddt_IntMeta__extractNumbersFormatter$closure", 2, 0, 19]
       }
     },
     IntMeta_toStr_closure: {
@@ -63945,7 +63945,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     IntMeta_closure0: {
       "^": "Closure:0;",
@@ -64081,7 +64081,7 @@
           return 26789344063684636e-50;
         else
           return J.toDouble$0$n(J.get$hashCode$(J.$index$asx(this._data, idx)));
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         return J.$index$asx(this._data, idx) == null ? "" : J.toString$0$(J.$index$asx(this._data, idx));
       },
@@ -64090,7 +64090,7 @@
       },
       isNone$1: [function(idx) {
         return J.$index$asx(this._data, idx) == null;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       setText$3$notify: function(idx, text, notify) {
         return H.throwExpression("setText does not work for generic column.");
       },
@@ -64225,7 +64225,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     ByteBufferColumn: {
       "^": "Column;_data@,_ddt$_length*,$ti",
@@ -64395,7 +64395,7 @@
         t2.setInt8(7, t1 & 252);
         x = t2.getFloat64(0, false);
         return isFinite(x) ? x : 26789344063684636e-50;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         var t1, t2, t3;
         t1 = this.meta;
@@ -64420,10 +64420,10 @@
         x = J.$index$asx(this._data, idx);
         t1 = J.getInterceptor$n(x);
         return t1.$ge(x, 26789344063684636e-50) === true && t1.$le(x, $.$get$QNum__noneWithQualifier()) === true || t1.get$isNaN(x) === true;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       isFinite$1: [function(_, idx) {
         return !this.isNone$1(idx);
-      }, "call$1", "get$isFinite", 2, 0, 18],
+      }, "call$1", "get$isFinite", 2, 0, 17],
       _getMinMax$0: function() {
         var raw, data, none, t1, i, t2, aMin, aMax, x;
         raw = this._data;
@@ -64481,7 +64481,7 @@
       },
       getItem$1: [function(_, pos) {
         return this.isNone$1(pos) ? null : J.$index$asx(this._data, pos);
-      }, "call$1", "get$getItem", 2, 0, 19],
+      }, "call$1", "get$getItem", 2, 0, 18],
       $indexSet: function(_, idx, value) {
         var t1, t2, t3;
         if (value == null)
@@ -64799,7 +64799,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     StringColumn: {
       "^": "Column_ColumnIterableMixin7;meta@,_categories@,_values<,_data@,_ddt$_length*,_emptyCatIdx@,_parents,_valueComparer,_ddt$_name,_isSelected,_version,_cache,_cacheVersion,_hasNonesCheckVersion,_hasNonesCheckResult,_stats,_filteredRowsStats,_minMaxVersion,_min,_max,_temp,_sortOrder,_sortVersion,_sortFilter,_sortFilterVersion,_sortComparer,GrokJsObject__jsObject,MetaMixin__instanceId,ObservableTagMixin_suppressNotification,ObservableTagMixin__tags,Notifier__changes",
@@ -65227,7 +65227,7 @@
       },
       toDouble$1: [function(_, idx) {
         return J.$eq$(J.$index$asx(this._data, idx), -1) === true || J.$eq$(J.$index$asx(this._categories, J.$index$asx(this._data, idx)), "") === true ? 26789344063684636e-50 : J.toDouble$0$n(J.$index$asx(this._data, idx));
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       toStr$1: function(idx) {
         return this.$index(0, idx);
       },
@@ -65245,7 +65245,7 @@
       },
       isNone$1: [function(idx) {
         return J.$eq$(J.$index$asx(this._data, idx), this._emptyCatIdx);
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       $index: function(_, idx) {
         var t1 = this._values;
         if (t1 != null)
@@ -65599,7 +65599,7 @@
       "^": "Closure:0;",
       call$1: [function(cat) {
         return J.get$length$asx(cat);
-      }, null, null, 2, 0, null, 163, "call"]
+      }, null, null, 2, 0, null, 150, "call"]
     },
     StringColumn_init_closure: {
       "^": "Closure:0;$this",
@@ -65689,14 +65689,14 @@
       },
       _concatUnique$1: [function(values) {
         return J.join$1$ax(J.toSet$0$ax(values), ",");
-      }, "call$1", "get$_concatUnique", 2, 0, 133, 31],
+      }, "call$1", "get$_concatUnique", 2, 0, 133, 32],
       _concatAll$1: [function(values) {
         return J.join$1$ax(values, ",");
-      }, "call$1", "get$_concatAll", 2, 0, 133, 31],
+      }, "call$1", "get$_concatAll", 2, 0, 133, 32],
       _uniqueValueOrUniqueCount$1: [function(values) {
         var t1 = J.getInterceptor$ax(values);
         return J.$eq$(J.get$length$asx(t1.toSet$0(values)), 1) === true ? t1.get$first(values) : J.toString$0$(J.get$length$asx(t1.toSet$0(values)));
-      }, "call$1", "get$_uniqueValueOrUniqueCount", 2, 0, 133, 31],
+      }, "call$1", "get$_uniqueValueOrUniqueCount", 2, 0, 133, 32],
       decode$2: function(buf, column) {
         var t1;
         this.super$ColumnTypeMeta$decode(buf, column);
@@ -65783,13 +65783,13 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     _StringMeta_closure0: {
       "^": "Closure:98;",
       call$1: [function(items) {
         return N.maxBy(items, new N._StringMeta__closure9(), new N._StringMeta__closure10());
-      }, null, null, 2, 0, null, 81, "call"]
+      }, null, null, 2, 0, null, 79, "call"]
     },
     _StringMeta__closure9: {
       "^": "Closure:4;",
@@ -65826,7 +65826,7 @@
       "^": "Closure:98;",
       call$1: [function(items) {
         return N.minBy(items, new N._StringMeta__closure5(), new N._StringMeta__closure6());
-      }, null, null, 2, 0, null, 81, "call"]
+      }, null, null, 2, 0, null, 79, "call"]
     },
     _StringMeta__closure5: {
       "^": "Closure:4;",
@@ -65864,7 +65864,7 @@
       call$1: [function(items) {
         var counts = this.$this.getCounts$1(items);
         return N.maxBy(counts.get$keys(counts), new N._StringMeta__closure1(counts), new N._StringMeta__closure2());
-      }, null, null, 2, 0, null, 81, "call"]
+      }, null, null, 2, 0, null, 79, "call"]
     },
     _StringMeta__closure1: {
       "^": "Closure:0;counts",
@@ -65887,7 +65887,7 @@
         sorted = P.List_List$from(t1, true, H.getRuntimeTypeArgument(t1, "Iterable", 0));
         C.JSArray_methods.sort$1(sorted, new N._StringMeta__closure(counts));
         return new H.MappedListIterable(sorted, new N._StringMeta__closure0(counts), [H.getTypeArgumentByIndex(sorted, 0), null]).join$1(0, ",");
-      }, null, null, 2, 0, null, 81, "call"]
+      }, null, null, 2, 0, null, 79, "call"]
     },
     _StringMeta__closure: {
       "^": "Closure:1;counts",
@@ -65965,7 +65965,7 @@
         t1 = H.numTypeCast(this.getValue.call$1(idx));
         t1.toString;
         return t1;
-      }, "call$1", "get$toDouble", 2, 0, 19, 20],
+      }, "call$1", "get$toDouble", 2, 0, 18, 20],
       replaceData$1: function(_, column) {
         this.getValue = column.get$getValue();
         this._type = column.get$_type();
@@ -65979,7 +65979,7 @@
       },
       isNone$1: [function(idx) {
         return this.getValue.call$1(idx) == null;
-      }, "call$1", "get$isNone", 2, 0, 18, 20],
+      }, "call$1", "get$isNone", 2, 0, 17, 20],
       setText$3$notify: function(idx, text, notify) {
         return H.throwExpression("setText does not work for generic column.");
       },
@@ -66111,7 +66111,7 @@
       "^": "Closure:0;aggr",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1).getValue$1(this.aggr);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     DataFrameMeta: {
       "^": "Object;table@",
@@ -66342,7 +66342,7 @@
       },
       cell$2: [function(columnId, row) {
         return new N.Cell(this, J.$index$asx(this.get$columns(this), columnId), row, null, null);
-      }, "call$2", "get$cell", 4, 0, 348, 67, 57],
+      }, "call$2", "get$cell", 4, 0, 348, 65, 57],
       get$meta: function() {
         var t1 = this._meta;
         if (t1 == null) {
@@ -67205,31 +67205,31 @@
       "^": "Closure:11;",
       call$1: [function(df) {
         return df.get$mouseOverRow();
-      }, null, null, 2, 0, null, 116, "call"]
+      }, null, null, 2, 0, null, 106, "call"]
     },
     closure934: {
       "^": "Closure:11;",
       call$1: [function(df) {
         return df.get$currentCell();
-      }, null, null, 2, 0, null, 116, "call"]
+      }, null, null, 2, 0, null, 106, "call"]
     },
     closure935: {
       "^": "Closure:11;",
       call$1: [function(df) {
         return J.get$filter$x(df);
-      }, null, null, 2, 0, null, 116, "call"]
+      }, null, null, 2, 0, null, 106, "call"]
     },
     closure936: {
       "^": "Closure:11;",
       call$1: [function(df) {
         return df.get$selection();
-      }, null, null, 2, 0, null, 116, "call"]
+      }, null, null, 2, 0, null, 106, "call"]
     },
     closure937: {
       "^": "Closure:11;",
       call$1: [function(df) {
         return J.get$columns$x(df);
-      }, null, null, 2, 0, null, 116, "call"]
+      }, null, null, 2, 0, null, 106, "call"]
     },
     DataFrame_clone_closure: {
       "^": "Closure:0;colFilter",
@@ -67330,7 +67330,7 @@
       }
     },
     DataFrame__sortByCategory_slot: {
-      "^": "Closure:17;sign,empty,k",
+      "^": "Closure:16;sign,empty,k",
       call$1: function(c) {
         var t1;
         if (c < 0 || c === this.empty)
@@ -67516,7 +67516,7 @@
       "^": "Closure:0;_box_0",
       call$1: [function(elem) {
         return J.contains$1$asx(this._box_0.filteredSelectedRowIndexes, elem);
-      }, null, null, 2, 0, null, 258, "call"]
+      }, null, null, 2, 0, null, 242, "call"]
     },
     DataFrame_toCsv_closure4: {
       "^": "Closure:0;toStr,row",
@@ -69230,7 +69230,7 @@
       "^": "Closure:0;",
       call$1: [function(cat) {
         return J.$add$ns(J.get$length$asx(cat), 4);
-      }, null, null, 2, 0, null, 163, "call"]
+      }, null, null, 2, 0, null, 150, "call"]
     },
     StringPrefixEncoder: {
       "^": "ColumnEncoder;",
@@ -69382,7 +69382,7 @@
       "^": "Closure:0;prefix",
       call$1: [function(cat) {
         return J.$sub$n(J.get$length$asx(cat), J.get$length$asx(this.prefix));
-      }, null, null, 2, 0, null, 163, "call"]
+      }, null, null, 2, 0, null, 150, "call"]
     },
     StringPrefixEncoder_encode_closure: {
       "^": "Closure:0;prefix",
@@ -70906,7 +70906,7 @@
       }, null, null, 2, 0, null, 0, "call"]
     },
     NumericMatcher_toSparql_filter: {
-      "^": "Closure:16;",
+      "^": "Closure:19;",
       call$1: function(s) {
         return "FILTER(" + s + ")";
       }
@@ -71167,13 +71167,13 @@
       "^": "Closure:0;",
       call$1: [function(lcv) {
         return J.trim$0$s(lcv);
-      }, null, null, 2, 0, null, 257, "call"]
+      }, null, null, 2, 0, null, 243, "call"]
     },
     StringMatcher_match_closure0: {
       "^": "Closure:0;s",
       call$1: [function(lcv) {
         return J.contains$1$asx(J.toLowerCase$0$s(this.s), lcv);
-      }, null, null, 2, 0, null, 257, "call"]
+      }, null, null, 2, 0, null, 243, "call"]
     },
     StringMatcher_getIndexPredicate_getIdx: {
       "^": "Closure:84;cc",
@@ -71255,7 +71255,7 @@
           t2.reportChange$1(notify === true ? C.EventType_mOu : null);
       }, function(values) {
         return this.setValues$2$notify(values, true);
-      }, "setValues$1", "call$2$notify", "call$1", "get$setValues", 2, 3, 488, 60, 31, 27],
+      }, "setValues$1", "call$2$notify", "call$1", "get$setValues", 2, 3, 488, 60, 32, 27],
       get$values: function(_) {
         var t1, t2, t3, values, t4, i, t5;
         t1 = this._dataFrame;
@@ -71288,7 +71288,7 @@
       cell$1: [function(columnId) {
         var t1 = this._dataFrame;
         return new N.Cell(t1, J.$index$asx(t1, columnId), this.idx, null, null);
-      }, "call$1", "get$cell", 2, 0, 493, 67],
+      }, "call$1", "get$cell", 2, 0, 493, 65],
       getField$1: function(columnId) {
         var t1 = J.getInterceptor(columnId);
         if (!!t1.$isColumn)
@@ -71300,7 +71300,7 @@
       },
       isNone$1: [function(columnId) {
         return J.$index$asx(this._dataFrame, columnId).isNone$1(this.idx);
-      }, "call$1", "get$isNone", 2, 0, 60, 67],
+      }, "call$1", "get$isNone", 2, 0, 60, 65],
       get$isSelected: function() {
         return J.$index$asx(this._dataFrame.get$selection(), this.idx);
       },
@@ -71342,7 +71342,7 @@
             return this.getField$1($name);
         }
         this.super$Object$noSuchMethod(0, invocation);
-      }, null, "get$noSuchMethod", 2, 0, null, 178],
+      }, null, "get$noSuchMethod", 2, 0, null, 215],
       toMap$0: function() {
         return P.LinkedHashMap_LinkedHashMap$fromIterable(J.get$columns$x(this._dataFrame), new N.Row_toMap_closure(), new N.Row_toMap_closure0(this), null, null);
       }
@@ -71460,25 +71460,25 @@
       "^": "Closure:39;",
       call$1: [function(cell) {
         return cell.get$row();
-      }, null, null, 2, 0, null, 93, "call"]
+      }, null, null, 2, 0, null, 97, "call"]
     },
     closure939: {
       "^": "Closure:39;",
       call$1: [function(cell) {
         return cell.get$column();
-      }, null, null, 2, 0, null, 93, "call"]
+      }, null, null, 2, 0, null, 97, "call"]
     },
     closure940: {
       "^": "Closure:39;",
       call$1: [function(cell) {
         return cell.get$dataFrame();
-      }, null, null, 2, 0, null, 93, "call"]
+      }, null, null, 2, 0, null, 97, "call"]
     },
     closure941: {
       "^": "Closure:39;",
       call$1: [function(cell) {
         return J.get$value$x(cell);
-      }, null, null, 2, 0, null, 93, "call"]
+      }, null, null, 2, 0, null, 97, "call"]
     },
     RowGroup: {
       "^": "Object_GrokJsObject0;",
@@ -71571,7 +71571,7 @@
         return this.indexes$2$onlyFiltered$onlySelected(false, false);
       }, "indexes$0", function(onlyFiltered) {
         return this.indexes$2$onlyFiltered$onlySelected(onlyFiltered, false);
-      }, "indexes$1$onlyFiltered", "call$2$onlyFiltered$onlySelected", "call$0", "call$1$onlyFiltered", "get$indexes", 0, 5, 521, 21, 21, 256, 294],
+      }, "indexes$1$onlyFiltered", "call$2$onlyFiltered$onlySelected", "call$0", "call$1$onlyFiltered", "get$indexes", 0, 5, 521, 21, 21, 248, 249],
       select$1: function(_, rowPredicate) {
         J.init$1$x(this.dataFrame.get$selection(), rowPredicate);
         return this;
@@ -71579,7 +71579,7 @@
       filter$1: [function(_, rowPredicate) {
         J.init$1$x(J.get$filter$x(this.dataFrame), rowPredicate);
         return this;
-      }, "call$1", "get$filter", 2, 0, 526, 380],
+      }, "call$1", "get$filter", 2, 0, 526, 344],
       clear$1$notify: function(_, notify) {
         var t1;
         this.dataFrame.get$selection().beginUpdate$0();
@@ -71913,7 +71913,7 @@
           t2.colName = t1[2];
           t2.aggType = aggType;
           return t2;
-        }, "call$1", "ddt_GroupAggregation_fromSql$closure", 2, 0, 688, 182]
+        }, "call$1", "ddt_GroupAggregation_fromSql$closure", 2, 0, 688, 193]
       }
     },
     PropMixin_$GroupAggregation: {
@@ -71963,67 +71963,67 @@
         return this.add$3$resultColName(0, "key", col, resultColName);
       }, function($receiver, col) {
         return this.key$2$resultColName($receiver, col, null);
-      }, "key$1", "call$2$resultColName", "call$1", "get$key", 2, 3, 40, 1, 6, 58],
+      }, "key$1", "call$2$resultColName", "call$1", "get$key", 2, 3, 40, 1, 6, 55],
       missingValueCount$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "nulls", col, resultColName);
       }, function(col) {
         return this.missingValueCount$2$resultColName(col, null);
-      }, "missingValueCount$1", "call$2$resultColName", "call$1", "get$missingValueCount", 2, 3, 40, 1, 6, 58],
+      }, "missingValueCount$1", "call$2$resultColName", "call$1", "get$missingValueCount", 2, 3, 40, 1, 6, 55],
       valueCount$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "values", col, resultColName);
       }, function(col) {
         return this.valueCount$2$resultColName(col, null);
-      }, "valueCount$1", "call$2$resultColName", "call$1", "get$valueCount", 2, 3, 40, 1, 6, 58],
+      }, "valueCount$1", "call$2$resultColName", "call$1", "get$valueCount", 2, 3, 40, 1, 6, 55],
       min$2$resultColName: [function(_, col, resultColName) {
         return this.add$3$resultColName(0, "min", col, resultColName);
       }, function($receiver, col) {
         return this.min$2$resultColName($receiver, col, null);
-      }, "min$1", "call$2$resultColName", "call$1", "get$min", 2, 3, 40, 1, 6, 58],
+      }, "min$1", "call$2$resultColName", "call$1", "get$min", 2, 3, 40, 1, 6, 55],
       max$2$resultColName: [function(_, col, resultColName) {
         return this.add$3$resultColName(0, "max", col, resultColName);
       }, function($receiver, col) {
         return this.max$2$resultColName($receiver, col, null);
-      }, "max$1", "call$2$resultColName", "call$1", "get$max", 2, 3, 40, 1, 6, 58],
+      }, "max$1", "call$2$resultColName", "call$1", "get$max", 2, 3, 40, 1, 6, 55],
       sum$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "sum", col, resultColName);
       }, function(col) {
         return this.sum$2$resultColName(col, null);
-      }, "sum$1", "call$2$resultColName", "call$1", "get$sum", 2, 3, 40, 1, 6, 58],
+      }, "sum$1", "call$2$resultColName", "call$1", "get$sum", 2, 3, 40, 1, 6, 55],
       med$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "med", col, resultColName);
       }, function(col) {
         return this.med$2$resultColName(col, null);
-      }, "med$1", "call$2$resultColName", "call$1", "get$med", 2, 3, 40, 1, 6, 58],
+      }, "med$1", "call$2$resultColName", "call$1", "get$med", 2, 3, 40, 1, 6, 55],
       avg$3$function$resultColName: [function(col, $function, resultColName) {
         return this.add$4$function$resultColName(0, "avg", col, $function, resultColName);
       }, function(col) {
         return this.avg$3$function$resultColName(col, null, null);
-      }, "avg$1", "call$3$function$resultColName", "call$1", "get$avg", 2, 5, 244, 1, 1, 6, 140, 58],
+      }, "avg$1", "call$3$function$resultColName", "call$1", "get$avg", 2, 5, 244, 1, 1, 6, 135, 55],
       stdev$3$function$resultColName: [function(col, $function, resultColName) {
         return this.add$4$function$resultColName(0, "stdev", col, $function, resultColName);
       }, function(col) {
         return this.stdev$3$function$resultColName(col, null, null);
-      }, "stdev$1", "call$3$function$resultColName", "call$1", "get$stdev", 2, 5, 244, 1, 1, 6, 140, 58],
+      }, "stdev$1", "call$3$function$resultColName", "call$1", "get$stdev", 2, 5, 244, 1, 1, 6, 135, 55],
       variance$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "variance", col, resultColName);
       }, function(col) {
         return this.variance$2$resultColName(col, null);
-      }, "variance$1", "call$2$resultColName", "call$1", "get$variance", 2, 3, 40, 1, 6, 58],
+      }, "variance$1", "call$2$resultColName", "call$1", "get$variance", 2, 3, 40, 1, 6, 55],
       q1$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "q1", col, resultColName);
       }, function(col) {
         return this.q1$2$resultColName(col, null);
-      }, "q1$1", "call$2$resultColName", "call$1", "get$q1", 2, 3, 40, 1, 6, 58],
+      }, "q1$1", "call$2$resultColName", "call$1", "get$q1", 2, 3, 40, 1, 6, 55],
       q2$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "q2", col, resultColName);
       }, function(col) {
         return this.q2$2$resultColName(col, null);
-      }, "q2$1", "call$2$resultColName", "call$1", "get$q2", 2, 3, 40, 1, 6, 58],
+      }, "q2$1", "call$2$resultColName", "call$1", "get$q2", 2, 3, 40, 1, 6, 55],
       q3$2$resultColName: [function(col, resultColName) {
         return this.add$3$resultColName(0, "q3", col, resultColName);
       }, function(col) {
         return this.q3$2$resultColName(col, null);
-      }, "q3$1", "call$2$resultColName", "call$1", "get$q3", 2, 3, 40, 1, 6, 58],
+      }, "q3$1", "call$2$resultColName", "call$1", "get$q3", 2, 3, 40, 1, 6, 55],
       whereBitSet$1: function(filter) {
         this.filter = filter;
         return this;
@@ -72036,7 +72036,7 @@
         var t1 = N._Range$(this.dataFrame.get$rowCount(), null, null);
         this._indexes = new H.WhereIterable(t1, check, [H.getRuntimeTypeArgument(t1, "Iterable", 0)]);
         return this;
-      }, "call$1", "get$where", 2, 0, 538, 105],
+      }, "call$1", "get$where", 2, 0, 538, 107],
       aggregate$3$autoName$getColumnName$groupIndexes: function(autoName, getColumnName, groupIndexes) {
         var context, t1, join, $name, t2, rightTable, agg, t3;
         context = J.$index$asx($.Zone__current, C.Symbol_rootFuncCall);
@@ -72167,25 +72167,25 @@
       "^": "Closure:0;table1",
       call$1: [function(columnId) {
         return J.$index$asx(this.table1, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     _mergeJoin_closure0: {
       "^": "Closure:0;table2",
       call$1: [function(columnId) {
         return J.$index$asx(this.table2, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     _mergeJoin_closure1: {
       "^": "Closure:0;table1",
       call$1: [function(columnId) {
         return J.$index$asx(this.table1, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     _mergeJoin_closure2: {
       "^": "Closure:0;table2",
       call$1: [function(columnId) {
         return J.$index$asx(this.table2, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     _mergeJoin_closure3: {
       "^": "Closure:0;",
@@ -72226,25 +72226,25 @@
       "^": "Closure:0;_box_0",
       call$1: [function(columnId) {
         return J.$index$asx(this._box_0.table1, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     joinTables_closure0: {
       "^": "Closure:0;_box_0",
       call$1: [function(columnId) {
         return J.$index$asx(this._box_0.table2, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     joinTables_closure1: {
       "^": "Closure:0;_box_0",
       call$1: [function(columnId) {
         return J.$index$asx(this._box_0.table1, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     joinTables_closure2: {
       "^": "Closure:0;_box_0",
       call$1: [function(columnId) {
         return J.$index$asx(this._box_0.table2, columnId);
-      }, null, null, 2, 0, null, 67, "call"]
+      }, null, null, 2, 0, null, 65, "call"]
     },
     joinTables_closure3: {
       "^": "Closure:0;",
@@ -72405,7 +72405,7 @@
           if (t5.$eq(linkType, "selection to selection") === true)
             this.bitsetToBitset$3(t4.get$selection(), t2.get$selection(), false);
         }
-      }, "call$1", "get$syncSelection", 2, 0, 71, 169],
+      }, "call$1", "get$syncSelection", 2, 0, 71, 166],
       syncFilter$1: [function(eventArgs) {
         var t1, t2, t3, t4, t5, linkType, t6;
         if (this.enabled !== true)
@@ -72418,7 +72418,7 @@
           if (t6.$eq(linkType, "filter to filter") === true)
             t5.get$rows(t4).requestFilter$0();
         }
-      }, "call$1", "get$syncFilter", 2, 0, 71, 169],
+      }, "call$1", "get$syncFilter", 2, 0, 71, 166],
       syncCurrentRow$1: [function(eventArgs) {
         var t1, t2, t3, t4, linkType, t5;
         if (this.enabled !== true)
@@ -72433,7 +72433,7 @@
           if (t5.$eq(linkType, "row to row") === true)
             this.rowToRow$2(t4, t2);
         }
-      }, "call$1", "get$syncCurrentRow", 2, 0, 71, 169],
+      }, "call$1", "get$syncCurrentRow", 2, 0, 71, 166],
       syncMouseOverRow$1: [function(eventArgs) {
         var t1, t2, t3, t4, linkType, t5;
         if (this.enabled !== true)
@@ -72446,7 +72446,7 @@
           if (t5.$eq(linkType, "mouse-over to selection") === true)
             this.rowToBitset$3(t4.get$mouseOverRow(), t2.get$selection(), false);
         }
-      }, "call$1", "get$syncMouseOverRow", 2, 0, 71, 169],
+      }, "call$1", "get$syncMouseOverRow", 2, 0, 71, 166],
       rowToBitset$4$filter: function(row1, bitSet2, isBS2Filtering, filter) {
         var compare = N.DataFrameLink__getRowComparer(this.dataFrame1, this.dataFrame2, this.keyColumns1, this.keyColumns2);
         if (J.$eq$(row1, -1) === true || row1 == null)
@@ -72574,7 +72574,7 @@
         index = index == null ? index : J.indexOf$1$asx(index, nca.get$oldName());
         if (J.$ge$n(index == null ? -1 : index, 0) === true)
           J.$indexSet$ax(t1.keyColumns1, index, nca.get$newName());
-      }, null, null, 2, 0, null, 244, "call"]
+      }, null, null, 2, 0, null, 257, "call"]
     },
     DataFrameLink_attach_closure0: {
       "^": "Closure:0;$this",
@@ -72601,7 +72601,7 @@
         index = index == null ? index : J.indexOf$1$asx(index, nca.get$oldName());
         if (J.$ge$n(index == null ? -1 : index, 0) === true)
           J.$indexSet$ax(t1.keyColumns2, index, nca.get$newName());
-      }, null, null, 2, 0, null, 244, "call"]
+      }, null, null, 2, 0, null, 257, "call"]
     },
     DataFrameLink_attach_closure1: {
       "^": "Closure:0;",
@@ -72721,13 +72721,13 @@
         t1.push(matcher);
       }, function(columnName, pattern) {
         return this._addMatcher$3$throwOnError(columnName, pattern, true);
-      }, "_addMatcher$2", "call$3$throwOnError", "call$2", "get$_addMatcher", 4, 3, 555, 60, 198, 33, 406],
+      }, "_addMatcher$2", "call$3$throwOnError", "call$2", "get$_addMatcher", 4, 3, 555, 60, 203, 35, 358],
       match$1: [function(_, row) {
         var t1, t2;
         t1 = this.and;
         t2 = this.matchers;
         return t1 === true ? C.JSArray_methods.every$1(t2, new N.RowMatcher_match_closure(this, row)) : C.JSArray_methods.any$1(t2, new N.RowMatcher_match_closure0(this, row));
-      }, "call$1", "get$match", 2, 0, 18, 57],
+      }, "call$1", "get$match", 2, 0, 17, 57],
       get$rows: function(_) {
         return J.where$1$ax(J.get$rows$x(this.dataFrame), new N.RowMatcher_rows_closure(this));
       },
@@ -72963,13 +72963,13 @@
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     UpdateRows_whereClauses_closure: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return N._mutationPredicateFromMap(w);
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     DeleteRows: {
       "^": "TableMutation_$DeleteRows;whereOp@,allowFullTable@,expectAffected@,where*,$$DeleteRows_ancestors,$$DeleteRows_includeDefaultValues,tableName,schema,catalog,dryRun,confirmDestructive,$$TableMutation_ancestors,$$TableMutation_includeDefaultValues,DataQuery_namespace,DataQuery_source,query,connection,parameters,DataQuery_params,script,postProcessScript,DataQuery_isCancelable,PackageEntityMixin_id,PackageEntityMixin_package,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,MetaParamsMixin__metaParams,TagsMixin__tags,TagsMixin_entityTags,GrokJsObject__jsObject,$$DataQuery_ancestors,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -73009,13 +73009,13 @@
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     DeleteRows_whereClauses_closure: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return N._mutationPredicateFromMap(w);
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     MutationBatch: {
       "^": "TableMutation_$MutationBatch;operations@,$$MutationBatch_ancestors,$$MutationBatch_includeDefaultValues,tableName,schema,catalog,dryRun,confirmDestructive,$$TableMutation_ancestors,$$TableMutation_includeDefaultValues,DataQuery_namespace,DataQuery_source,query,connection,parameters,DataQuery_params,script,postProcessScript,DataQuery_isCancelable,PackageEntityMixin_id,PackageEntityMixin_package,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,MetaParamsMixin__metaParams,TagsMixin__tags,TagsMixin_entityTags,GrokJsObject__jsObject,$$DataQuery_ancestors,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -73303,7 +73303,7 @@
         return this;
       }, function($receiver, field, pattern) {
         return this.where$3$dataType($receiver, field, pattern, null);
-      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 766, 1, 83, 33, 107],
+      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 766, 1, 84, 35, 108],
       whereAll$1: function(clauses) {
         C.JSArray_methods.addAll$1(this._where, clauses);
         this._whereOp = "and";
@@ -73399,7 +73399,7 @@
       "^": "Closure:0;",
       call$1: [function(ga) {
         return ga.get$colName() != null && ga.get$aggType() != null;
-      }, null, null, 2, 0, null, 504, "call"]
+      }, null, null, 2, 0, null, 362, "call"]
     },
     _pivot_closure1: {
       "^": "Closure:0;",
@@ -73411,7 +73411,7 @@
         } else
           t1 = false;
         return t1;
-      }, null, null, 2, 0, null, 108, "call"]
+      }, null, null, 2, 0, null, 109, "call"]
     },
     _pivot_closure2: {
       "^": "Closure:0;",
@@ -73444,19 +73444,19 @@
       "^": "Closure:0;type",
       call$1: [function(agg) {
         return J.$eq$(agg.get$aggType(), this.type);
-      }, null, null, 2, 0, null, 108, "call"]
+      }, null, null, 2, 0, null, 109, "call"]
     },
     _pivot_toColList_closure0: {
       "^": "Closure:0;",
       call$1: [function(agg) {
         return agg.get$colName();
-      }, null, null, 2, 0, null, 108, "call"]
+      }, null, null, 2, 0, null, 109, "call"]
     },
     _pivot_closure4: {
       "^": "Closure:0;",
       call$1: [function(agg) {
         return J.$eq$(agg.get$aggType(), "key") !== true && J.$eq$(agg.get$aggType(), "pivot") !== true;
-      }, null, null, 2, 0, null, 108, "call"]
+      }, null, null, 2, 0, null, 109, "call"]
     },
     _pivot_closure5: {
       "^": "Closure:0;m",
@@ -73530,7 +73530,7 @@
       "^": "Closure:0;firstIndex",
       call$1: [function(pc) {
         return pc.toStr$1(this.firstIndex);
-      }, null, null, 2, 0, null, 509, "call"]
+      }, null, null, 2, 0, null, 367, "call"]
     },
     _pivot_closure12: {
       "^": "Closure:0;_box_0,df",
@@ -73847,7 +73847,7 @@
       "^": "Closure:0;",
       call$1: [function(join) {
         return join.toJson$0();
-      }, null, null, 2, 0, null, 510, "call"]
+      }, null, null, 2, 0, null, 373, "call"]
     },
     TableQuery_joinsDb_closure: {
       "^": "Closure:0;",
@@ -73855,13 +73855,13 @@
         var t1 = new N.TableJoin(null, null, null, null, null, null, null, false, false, []);
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_whereClausesDb_closure0: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_whereClausesDb_closure: {
       "^": "Closure:0;",
@@ -73869,13 +73869,13 @@
         var t1 = new N.FieldPredicate(null, null, null, false, null, null, false, false, []);
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_aggregationsDb_closure0: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_aggregationsDb_closure: {
       "^": "Closure:0;",
@@ -73883,13 +73883,13 @@
         var t1 = new N.GroupAggregation(null, null, null, null, null, null, null, false, false, []);
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_havingDb_closure0: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_havingDb_closure: {
       "^": "Closure:0;",
@@ -73897,13 +73897,13 @@
         var t1 = new N.HavingPredicate(null, ["FieldPredicate"], null, "int", null, false, null, null, false, false, []);
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_orderByDb_closure0: {
       "^": "Closure:0;",
       call$1: [function(w) {
         return w.toJson$0();
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_orderByDb_closure: {
       "^": "Closure:0;",
@@ -73911,13 +73911,13 @@
         var t1 = new N.FieldOrder(null, true, null, false, false, []);
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     TableQuery_toScript_closure: {
       "^": "Closure:0;",
       call$1: [function(aggr) {
         return aggr.toSqlString$0();
-      }, null, null, 2, 0, null, 511, "call"]
+      }, null, null, 2, 0, null, 376, "call"]
     },
     TableQuery_toScript_closure0: {
       "^": "Closure:0;",
@@ -74001,12 +74001,12 @@
         return this.selectAggr$4$as$function("avg", col, as, $function);
       }, function(col) {
         return this.avg$3$as$function(col, null, null);
-      }, "avg$1", "call$3$as$function", "call$1", "get$avg", 2, 5, 254, 1, 1, 6, 140, 59],
+      }, "avg$1", "call$3$as$function", "call$1", "get$avg", 2, 5, 254, 1, 1, 6, 135, 59],
       stdev$3$as$function: [function(col, as, $function) {
         return this.selectAggr$4$as$function("stdev", col, as, $function);
       }, function(col) {
         return this.stdev$3$as$function(col, null, null);
-      }, "stdev$1", "call$3$as$function", "call$1", "get$stdev", 2, 5, 254, 1, 1, 6, 140, 59],
+      }, "stdev$1", "call$3$as$function", "call$1", "get$stdev", 2, 5, 254, 1, 1, 6, 135, 59],
       variance$2$as: [function(col, as) {
         return this.selectAggr$3$as("variance", col, as);
       }, function(col) {
@@ -74068,7 +74068,7 @@
         return this;
       }, function($receiver, field, pattern) {
         return this.where$3$dataType($receiver, field, pattern, null);
-      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 154, 1, 83, 33, 107],
+      }, "where$2", "call$3$dataType", "call$2", "get$where", 4, 3, 154, 1, 84, 35, 108],
       wherePattern$1: function(wherePattern) {
         var t1, subQueries, colNameRegexp, hasAnd, hasOr, t2, wheres, q, match, t3, t4, part1, part2, ti, colName, fullColName, col, expression, matcher;
         t1 = this.query.get$table();
@@ -74151,7 +74151,7 @@
         return this;
       }, function(field, pattern) {
         return this.having$3$dataType(field, pattern, null);
-      }, "having$2", "call$3$dataType", "call$2", "get$having", 4, 3, 154, 1, 83, 33, 107],
+      }, "having$2", "call$3$dataType", "call$2", "get$having", 4, 3, 154, 1, 84, 35, 108],
       whereAll$1: function(whereClauses) {
         J.addAll$1$ax(this.query.get$whereClauses(), whereClauses);
         this.query.set$whereOp("and");
@@ -74177,7 +74177,7 @@
       limit$1: [function(n) {
         this.query.set$limit(n);
         return this;
-      }, "call$1", "get$limit", 2, 0, 674, 24],
+      }, "call$1", "get$limit", 2, 0, 674, 25],
       join$6$leftTable$rightTableAlias: function(_, rightTable, joinType, leftTableKeys, rightTableKeys, leftTable, rightTableAlias) {
         var t1, t2;
         t1 = this.query.get$joins();
@@ -74232,7 +74232,7 @@
       "^": "Closure:0;part1",
       call$1: [function(ti) {
         return N.equalsIgnoreCase(ti.get$friendlyName(), this.part1);
-      }, null, null, 2, 0, null, 171, "call"]
+      }, null, null, 2, 0, null, 163, "call"]
     },
     QueryBuilder_wherePattern_closure0: {
       "^": "Closure:2;q",
@@ -74376,7 +74376,7 @@
         return H.throwExpression(new P.UnsupportedError("Having is not supported for in memory dataframes"));
       }, function(field, pattern) {
         return this.having$3$dataType(field, pattern, null);
-      }, "having$2", "call$3$dataType", "call$2", "get$having", 4, 3, 154, 1, 83, 33, 107],
+      }, "having$2", "call$3$dataType", "call$2", "get$having", 4, 3, 154, 1, 84, 35, 108],
       add$6$condition$function$optional$resultColName: function(_, agg, col, condition, $function, optional, resultColName) {
         var t1;
         if (J.$eq$(agg, "count") === true)
@@ -74399,7 +74399,7 @@
       },
       _resolveColumnName$1: [function($name) {
         return J.$index$asx(this.table, $name) == null ? J.get$last$ax(J.split$1$s($name, ".")) : $name;
-      }, "call$1", "get$_resolveColumnName", 2, 0, 16, 8],
+      }, "call$1", "get$_resolveColumnName", 2, 0, 19, 8],
       InMemoryTableQueryBuilder$2$context: function(table, context) {
         var t1, tableInfo;
         if (this.context == null) {
@@ -74426,7 +74426,7 @@
       "^": "Closure:0;",
       call$1: [function(d) {
         return O.TableInfo_TableInfo$fromTable(d, true);
-      }, null, null, 2, 0, null, 103, "call"]
+      }, null, null, 2, 0, null, 105, "call"]
     },
     InMemoryTableQueryBuilder_execute_closure: {
       "^": "Closure:0;$this",
@@ -74434,7 +74434,7 @@
         var t1 = this.$this._resolveColumnName$1(agg.get$colName());
         agg.set$colName(t1);
         return t1;
-      }, null, null, 2, 0, null, 108, "call"]
+      }, null, null, 2, 0, null, 109, "call"]
     },
     InMemoryTableQueryBuilder_execute_closure0: {
       "^": "Closure:256;$this",
@@ -74656,7 +74656,7 @@
       call$1: [function(typedEventArgs) {
         var t1 = J.getInterceptor$x(typedEventArgs);
         return this.other.fire$2(t1.get$type(typedEventArgs), t1.get$data(typedEventArgs));
-      }, null, null, 2, 0, null, 299, "call"]
+      }, null, null, 2, 0, null, 382, "call"]
     },
     EventBusProvider: {
       "^": "Object;"
@@ -75156,7 +75156,7 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return it.eval$0();
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register_num2: {
       "^": "Closure:260;none,jsNumbers,k",
@@ -75164,7 +75164,7 @@
         var t1 = new N._Kernel(2, new N._Kernels__register_num2_closure(this.none, this.jsNumbers, op), "num", "num", false);
         this.k.$indexSet(0, $name, t1);
         return t1;
-      }, null, null, 4, 0, null, 8, 241, "call"]
+      }, null, null, 4, 0, null, 8, 278, "call"]
     },
     _Kernels__register_num2_closure: {
       "^": "Closure:1;none,jsNumbers,op",
@@ -75290,7 +75290,7 @@
           }
         }
         return N._Vec$ofNums(out, isInt, false);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_cmp: {
       "^": "Closure:260;none,k",
@@ -75298,7 +75298,7 @@
         var t1 = new N._Kernel(2, new N._Kernels__register_cmp_closure(this.none, op), "num", "bool", false);
         this.k.$indexSet(0, $name, t1);
         return t1;
-      }, null, null, 4, 0, null, 8, 241, "call"]
+      }, null, null, 4, 0, null, 8, 278, "call"]
     },
     _Kernels__register_cmp_closure: {
       "^": "Closure:1;none,op",
@@ -75362,13 +75362,13 @@
           out[i] = t9;
         }
         return N._Vec$ofBools(out);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_closure: {
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__mapNum(N._Kernels__vec(args, 0), N._Kernels__rowCount(n), new N._Kernels__register__closure41(), null, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure41: {
       "^": "Closure:0;",
@@ -75380,7 +75380,7 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__mapNum(N._Kernels__vec(args, 0), N._Kernels__rowCount(n), new N._Kernels__register__closure40(), null, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure40: {
       "^": "Closure:0;",
@@ -75393,7 +75393,7 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__mapNum(N._Kernels__vec(args, 0), N._Kernels__rowCount(n), new N._Kernels__register__closure39(), null, true);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure39: {
       "^": "Closure:0;",
@@ -75405,13 +75405,13 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__logic(N._Kernels__vec(args, 0), N._Kernels__vec(args, 1), N._Kernels__rowCount(n), true);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure3: {
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__logic(N._Kernels__vec(args, 0), N._Kernels__vec(args, 1), N._Kernels__rowCount(n), false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure4: {
       "^": "Closure:1;",
@@ -75449,7 +75449,7 @@
           out[i] = t2;
         }
         return N._Vec$ofBools(out);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_closure5: {
       "^": "Closure:1;none",
@@ -75663,7 +75663,7 @@
               r.fail$2(i, n);
           }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_closure6: {
       "^": "Closure:0;",
@@ -75703,7 +75703,7 @@
           out[i] = t3;
         }
         return N._Vec$ofStrings(out, cats, null);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__q: {
       "^": "Closure:102;none",
@@ -75773,10 +75773,10 @@
           out[i] = t5;
         }
         return N._Vec$ofNums(out, false, false);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__qAt: {
-      "^": "Closure:17;b,qs",
+      "^": "Closure:16;b,qs",
       call$1: function(i) {
         var t1, idx;
         t1 = this.b;
@@ -75819,7 +75819,7 @@
         var t1 = new N._CustomKernel(new N._Kernels__register_emptiness_closure(), "bool", null, 1, new N._Kernels__register_emptiness_closure0(this.none, whenEmpty), null, null, false);
         this.k.$indexSet(0, $name, t1);
         return t1;
-      }, null, null, 4, 0, null, 8, 535, "call"]
+      }, null, null, 4, 0, null, 8, 387, "call"]
     },
     _Kernels__register_emptiness_closure: {
       "^": "Closure:0;",
@@ -75899,10 +75899,10 @@
           }
         }
         return N._Vec$ofBools(out);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_emptiness__empty: {
-      "^": "Closure:18;none,a",
+      "^": "Closure:17;none,a",
       call$1: function(i) {
         var t1, t2, t3;
         t1 = this.a;
@@ -75962,7 +75962,7 @@
         var t1 = new N._CustomKernel(new N._Kernels__register_equality_closure(), "bool", null, 2, new N._Kernels__register_equality_closure0(this.none, whenEqual), null, null, false);
         this.k.$indexSet(0, $name, t1);
         return t1;
-      }, null, null, 4, 0, null, 8, 309, "call"]
+      }, null, null, 4, 0, null, 8, 388, "call"]
     },
     _Kernels__register_equality_closure: {
       "^": "Closure:0;",
@@ -76118,7 +76118,7 @@
             out[i] = t1;
           }
         return N._Vec$ofBools(out);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_equality__emptyOf: {
       "^": "Closure:265;none",
@@ -76159,7 +76159,7 @@
       }
     },
     _Kernels__register_equality__eq: {
-      "^": "Closure:18;_box_0,a,b,emptyOf",
+      "^": "Closure:17;_box_0,a,b,emptyOf",
       call$1: function(i) {
         var t1, t2, ea, t3, eb, x, y;
         t1 = this.emptyOf;
@@ -76331,7 +76331,7 @@
           out[i] = t3;
         }
         return N._Vec$ofBools(out);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__closure32: {
       "^": "Closure:0;",
@@ -76349,10 +76349,10 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return J.$index$asx(it.get$categories(), it.get$strIndex());
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register__inTexts: {
-      "^": "Closure:17;a,hasNull,texts",
+      "^": "Closure:16;a,hasNull,texts",
       call$1: function(idx) {
         var t1 = J.getInterceptor(idx);
         if (t1.$eq(idx, -3) === true)
@@ -76380,7 +76380,7 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return it.get$num();
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register__inNums: {
       "^": "Closure:102;none,hasNull,nums",
@@ -76433,7 +76433,7 @@
           out[i] = t2;
         }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__has0: {
       "^": "Closure:24;a,b",
@@ -76443,13 +76443,13 @@
       }
     },
     _Kernels__register__hasB: {
-      "^": "Closure:17;b,has",
+      "^": "Closure:16;b,has",
       call$1: function(x) {
         return this.has.call$2(x, this.b.strIndex);
       }
     },
     _Kernels__register__nullAt: {
-      "^": "Closure:18;a,b",
+      "^": "Closure:17;a,b",
       call$1: function(i) {
         var t1 = this.a;
         if (t1.isScalar)
@@ -76477,7 +76477,7 @@
       }
     },
     _Kernels__register__test: {
-      "^": "Closure:17;a,b,has,byA,hasB",
+      "^": "Closure:16;a,b,has,byA,hasB",
       call$1: function(i) {
         var t1, t2;
         t1 = this.byA;
@@ -76562,7 +76562,7 @@
         t3 = N._Kernels__rowCount(n);
         t1 = t1.$gt(places, 0) === true ? new N._Kernels__register__closure29(d) : new N._Kernels__register__closure30(d);
         return N._Kernels__mapNum(t2, t3, t1, this.notFinite, true);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure29: {
       "^": "Closure:0;d",
@@ -76670,7 +76670,7 @@
         }
         t1 = a.isInt && b.isInt && !negative;
         return N._Kernels__binNum(args, n, new N._Kernels__register__closure27(), null, t1);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__closure27: {
       "^": "Closure:1;",
@@ -76690,14 +76690,14 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return J.$eq$(J.get$kind$x(it), "date");
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register_dates_closure0: {
       "^": "Closure:0;",
       call$1: [function(it) {
         var t1 = J.getInterceptor$x(it);
         return J.$eq$(t1.get$kind(it), "date") === true || J.$eq$(t1.get$kind(it), "null") === true;
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register_listStat: {
       "^": "Closure:732;none,k,dates",
@@ -76785,7 +76785,7 @@
           out[i] = t7;
         }
         return N._Vec$ofNums(out, t4, !t4 && C.JSArray_methods.any$1(items, new N._Kernels__register_listStat__closure()));
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_listStat__closure: {
       "^": "Closure:0;",
@@ -76852,7 +76852,7 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__binNum(args, n, new N._Kernels__register__closure24(), null, true);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure24: {
       "^": "Closure:1;",
@@ -76961,7 +76961,7 @@
           out[i] = t4;
         }
         return N._Vec$ofNums(out, true, false);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_datePart__f: {
       "^": "Closure:106;none,part,unit,modulus",
@@ -77008,7 +77008,7 @@
         t2 = J.toInt$0$n(N._Kernels__vec(args, 1).num);
         t3 = J.toInt$0$n(N._Kernels__vec(args, 2).num);
         return N._Vec$ofNum(1000 * H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, 0, 0, 0, 0, true)), true, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure25: {
       "^": "Closure:0;",
@@ -77021,7 +77021,7 @@
       call$2: [function(args, n) {
         var now = new P.DateTime(Date.now(), false);
         return N._Vec$ofNum(1000 * H.checkInt(H.Primitives_valueFromDecomposedDate(H.Primitives_getYear(now), H.Primitives_getMonth(now), H.Primitives_getDay(now), 0, 0, 0, 0, true)), true, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure27: {
       "^": "Closure:0;",
@@ -77057,7 +77057,7 @@
         t1 = v.isScalar ? N._Vec$ofNum(v.num, true, false) : N._Vec$ofNums(v.nums, false, true);
         t1.copyFailures$1(v);
         return t1;
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure21: {
       "^": "Closure:1;jsNumbers",
@@ -77097,7 +77097,7 @@
         t1 = v.isScalar ? N._Vec$ofNum(v.num, false, true) : N._Vec$ofNums(v.nums, true, false);
         t1.copyFailures$1(v);
         return t1;
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure29: {
       "^": "Closure:0;",
@@ -77181,7 +77181,7 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__binNum(args, n, new N._Kernels__register__closure20(), null, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure20: {
       "^": "Closure:1;",
@@ -77193,7 +77193,7 @@
       "^": "Closure:1;",
       call$2: [function(args, n) {
         return N._Kernels__binNum(args, n, new N._Kernels__register__closure19(), null, false);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure19: {
       "^": "Closure:1;",
@@ -77225,7 +77225,7 @@
           t1 = N._Kernels__binNum(args, n, new N._Kernels__register__closure17(), t1, true);
         }
         return t1;
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register__closure15: {
       "^": "Closure:0;",
@@ -77306,7 +77306,7 @@
           out[i] = t6;
         }
         return N._Vec$ofNums(out, this.toInt, false);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_closure46: {
       "^": "Closure:0;",
@@ -77487,7 +77487,7 @@
         t1 = pickedInt ? r : N._Vec$ofNums(out, false, false);
         t1.copyFailures$1(r);
         return t1;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__closure12: {
       "^": "Closure:1;items,i",
@@ -77655,10 +77655,10 @@
           ++i;
         }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_textMap__mapped: {
-      "^": "Closure:17;_box_1,f,a,cats,tail",
+      "^": "Closure:16;_box_1,f,a,cats,tail",
       call$1: function(idx) {
         var r, t1, t2, r0, exception;
         t1 = J.getInterceptor(idx);
@@ -77853,7 +77853,7 @@
         } else
           t1 = "";
         return t1;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     _Kernels__register_textTo: {
       "^": "Closure:471;none,k,textArgs,rest",
@@ -77927,10 +77927,10 @@
           out[i] = t4;
         }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register_textTo__val: {
-      "^": "Closure:19;kind,f,a,tail",
+      "^": "Closure:18;kind,f,a,tail",
       call$1: function(idx) {
         var r, t1, t2, exception;
         t1 = J.getInterceptor(idx);
@@ -78072,7 +78072,7 @@
             out[i] = t2;
           }
         return N._Vec$ofStrings(out, cats.list, null);
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__show: {
       "^": "Closure:51;none,jsNumbers,a",
@@ -78135,7 +78135,7 @@
       }
     },
     _Kernels__register__showCat: {
-      "^": "Closure:17;a,cats",
+      "^": "Closure:16;a,cats",
       call$1: function(idx) {
         var t1 = J.getInterceptor(idx);
         if (t1.$eq(idx, -3) === true)
@@ -78169,7 +78169,7 @@
       call$2: [function(args, n) {
         var t1 = J.getInterceptor$asx(args);
         return J.$eq$(J.get$kind$x(t1.$index(args, 0)), "string") === true || J.$eq$(J.get$kind$x(t1.$index(args, 1)), "string") === true ? N._Kernels__concat(args, n) : this.numericAdd.body.call$2(args, n);
-      }, null, null, 4, 0, null, 15, 24, "call"]
+      }, null, null, 4, 0, null, 15, 25, "call"]
     },
     _Kernels__register_closure76: {
       "^": "Closure:0;",
@@ -78266,13 +78266,13 @@
           out[i] = t1;
         }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__closure6: {
       "^": "Closure:0;",
       call$1: [function(it) {
         return it.get$isInt() === true ? J.toInt$0$n(it.get$num()) : it.get$num();
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register__interval: {
       "^": "Closure:102;limits",
@@ -78327,7 +78327,7 @@
       }
     },
     _Kernels__register__binText: {
-      "^": "Closure:17;none,a,bin",
+      "^": "Closure:16;none,a,bin",
       call$1: function(idx) {
         var x, t1, exception;
         t1 = J.getInterceptor(idx);
@@ -78363,7 +78363,7 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return J.get$kind$x(it);
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register__closure5: {
       "^": "Closure:0;",
@@ -78521,7 +78521,7 @@
             r.fail$2(i, n);
         }
         return r;
-      }, null, null, 4, 0, null, 15, 32, "call"]
+      }, null, null, 4, 0, null, 15, 31, "call"]
     },
     _Kernels__register__closure: {
       "^": "Closure:0;",
@@ -78586,7 +78586,7 @@
           t1 = new Int32Array(H._ensureNativeList(J.toList$0$ax(J.map$1$ax(it.get$categories(), t1.get$put(t1)))));
         }
         return t1;
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register_closure81: {
       "^": "Closure:0;",
@@ -78601,7 +78601,7 @@
       "^": "Closure:0;",
       call$1: [function(it) {
         return J.get$kind$x(it);
-      }, null, null, 2, 0, null, 82, "call"]
+      }, null, null, 2, 0, null, 80, "call"]
     },
     _Kernels__register__closure3: {
       "^": "Closure:0;",
@@ -78623,7 +78623,7 @@
       }
     },
     _Kernels__concat_cat: {
-      "^": "Closure:17;parts,cats,buf",
+      "^": "Closure:16;parts,cats,buf",
       call$1: function(i) {
         var t1, t2, t3, j, t4, idx;
         for (t1 = this.parts, t2 = t1.length, t3 = this.buf, j = 0; j < t2; ++j) {
@@ -78841,7 +78841,7 @@
         if (slot >= t1.length)
           return H.ioore(t1, slot);
         return t1[slot];
-      }, "call$2", "get$get", 4, 0, 697, 20, 236],
+      }, "call$2", "get$get", 4, 0, 697, 20, 284],
       static: {
         _ByCat$: function(v) {
           var t1, t2;
@@ -78871,7 +78871,7 @@
         if (slot >= t1.length)
           return H.ioore(t1, slot);
         return t1[slot];
-      }, "call$2", "get$get", 4, 0, 309, 20, 236]
+      }, "call$2", "get$get", 4, 0, 309, 20, 284]
     },
     _NumCache: {
       "^": "Object;_ddt$_lo,_ddt$_hi,_vals,_used,_mask,_ddt$_count,_ddt$_f,_bits",
@@ -79658,7 +79658,7 @@
         return this.run$5$context$processed$queue$report($call, null, null, null, null);
       }, "run$1", function($call, processed, report) {
         return this.run$5$context$processed$queue$report($call, null, processed, null, report);
-      }, "run$3$processed$report", "call$5$context$processed$queue$report", "call$1", "call$3$processed$report", "get$run", 2, 9, 311, 1, 1, 1, 1, 10, 29, 78, 190, 228],
+      }, "run$3$processed$report", "call$5$context$processed$queue$report", "call$1", "call$3$processed$report", "get$run", 2, 9, 311, 1, 1, 1, 1, 10, 29, 77, 186, 220],
       resolve$1: ["super$Func$resolve", function($call) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this;
         var $async$resolve$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -80286,7 +80286,7 @@
       "^": "Closure:0;",
       call$1: [function(d) {
         return d == null || J.get$isEmpty$asx(d) === true;
-      }, null, null, 2, 0, null, 103, "call"]
+      }, null, null, 2, 0, null, 105, "call"]
     },
     Func_toJson_closure: {
       "^": "Closure:5;",
@@ -80749,7 +80749,7 @@
         return this.run$4$context$processed$queue$report(null, processed, null, report);
       }, "run$2$processed$report", function(processed, queue, report) {
         return this.run$4$context$processed$queue$report(null, processed, queue, report);
-      }, "run$3$processed$queue$report", "call$4$context$processed$queue$report", "call$0", "call$1$report", "call$2$processed$report", "call$1$processed", "call$1$context", "call$2$context$report", "call$2$processed$report", "call$3$processed$queue$report", "get$run", 0, 9, 435, 1, 1, 1, 1, 29, 78, 190, 228],
+      }, "run$3$processed$queue$report", "call$4$context$processed$queue$report", "call$0", "call$1$report", "call$2$processed$report", "call$1$processed", "call$1$context", "call$2$context$report", "call$2$processed$report", "call$3$processed$queue$report", "get$run", 0, 9, 435, 1, 1, 1, 1, 29, 77, 186, 220],
       _setAppPath$0: function() {
         var t1, t2;
         if (this._func.hasTagOrRole$1("app") === true) {
@@ -81493,7 +81493,7 @@
       },
       getValue$1: [function(paramName) {
         return J.get$value$x(this.get$paramMap().$index(0, paramName));
-      }, "call$1", "get$getValue", 2, 0, 4, 348],
+      }, "call$1", "get$getValue", 2, 0, 4, 421],
       getDataFrame$1: function(paramName) {
         return J.get$value$x(this.get$paramMap().$index(0, paramName));
       },
@@ -81543,7 +81543,7 @@
         return this;
       }, function(values) {
         return this.setValues$2$optional(values, null);
-      }, "setValues$1", "call$2$optional", "call$1", "get$setValues", 2, 3, 451, 1, 31, 351],
+      }, "setValues$1", "call$2$optional", "call$1", "get$setValues", 2, 3, 451, 1, 32, 422],
       setResult$1: function(result) {
         var t1, t2, dfName;
         if (J.$gt$n(J.get$length$asx(this.get$outputParams()), 0) === true)
@@ -81799,7 +81799,7 @@
       "^": "Closure:0;p",
       call$1: [function(fp) {
         return J.$eq$(J.get$name$x(fp), J.get$name$x(this.p.get$param()));
-      }, null, null, 2, 0, null, 226, "call"]
+      }, null, null, 2, 0, null, 221, "call"]
     },
     FuncCall_func_closure2: {
       "^": "Closure:2;p",
@@ -82080,7 +82080,7 @@
       call$1: [function(fcp) {
         var v = J.get$value$x(fcp);
         return v instanceof N.ColumnList ? v.list : v;
-      }, null, null, 2, 0, null, 359, "call"]
+      }, null, null, 2, 0, null, 426, "call"]
     },
     FuncCall_validateParameterValues_closure: {
       "^": "Closure:0;",
@@ -82319,7 +82319,7 @@
         else
           t1 = true;
         return t1;
-      }, null, null, 2, 0, null, 172, "call"]
+      }, null, null, 2, 0, null, 174, "call"]
     },
     CompilableFunc_getCompiled_closure2: {
       "^": "Closure:0;",
@@ -82421,7 +82421,7 @@
       "^": "Closure:1;vals",
       call$2: [function(key, func) {
         J.$indexSet$ax(this.vals, key, func.call$0());
-      }, null, null, 4, 0, null, 17, 38, "call"]
+      }, null, null, 4, 0, null, 17, 36, "call"]
     },
     CompilableFunc_processCompilableFunc_getValues_closure0: {
       "^": "Closure:1;vals",
@@ -82432,13 +82432,13 @@
         if (!J.getInterceptor(t2.$index(t1, key)).$isList)
           t2.$indexSet(t1, key, []);
         J.forEach$1$ax(funcList, new N.CompilableFunc_processCompilableFunc_getValues__closure(t1, key));
-      }, null, null, 4, 0, null, 17, 372, "call"]
+      }, null, null, 4, 0, null, 17, 435, "call"]
     },
     CompilableFunc_processCompilableFunc_getValues__closure: {
       "^": "Closure:1;vals,key",
       call$2: [function(i, func) {
         J.$indexSet$ax(J.$index$asx(this.vals, this.key), i, func.call$0());
-      }, null, null, 4, 0, null, 5, 38, "call"]
+      }, null, null, 4, 0, null, 5, 36, "call"]
     },
     FuncCallParam: {
       "^": "Model_PropMixin_$FuncCallParam_GrokJsObject;$call@,param@,dbValueArray@,dbValueString@,dbValueUuid@,restoreValuesLock,aux@,dataFrameValueName@,dataFrameValueTags@,key*,token@,hidden*,sentToClient@,_notifier,_ddt$_value,valueUnresolved@,isResolved@,GrokJsObject__jsObject,$$FuncCallParam_ancestors,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,Model_id,Model_included,Model_isOnServer,Model_isDirty,$ti",
@@ -83837,7 +83837,7 @@
       "^": "Closure:0;$this",
       call$1: [function(n) {
         return this.$this.$index(0, n);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     Context_printVariables_closure1: {
       "^": "Closure:0;",
@@ -84244,7 +84244,7 @@
       "^": "Closure:13;$this",
       call$1: [function(run) {
         return J.get$value$x(J.$index$asx(run.get$paramMap(), this.$this.name));
-      }, null, null, 2, 0, null, 120, "call"]
+      }, null, null, 2, 0, null, 127, "call"]
     },
     FuncParam_closure0: {
       "^": "Closure;T,$this",
@@ -84261,7 +84261,7 @@
           t4.$indexSet(t1, t3, t5);
         }
         J.set$value$x(J.$index$asx(run.get$paramMap(), t2.name), x);
-      }, null, null, 4, 0, null, 120, 0, "call"],
+      }, null, null, 4, 0, null, 127, 0, "call"],
       $signature: function() {
         return H.computeSignature(function(T) {
           return {func: 1, args: [N.FuncCall, T]};
@@ -84273,7 +84273,7 @@
       call$1: [function(run) {
         var t1 = J.$index$asx(run.get$paramMap(), this.name);
         return t1 == null ? t1 : J.get$value$x(t1);
-      }, null, null, 2, 0, null, 120, "call"]
+      }, null, null, 2, 0, null, 127, "call"]
     },
     FuncParam$typed_closure0: {
       "^": "Closure;T,$this,name",
@@ -84289,7 +84289,7 @@
           t3.$indexSet(t1, t2, t4);
         }
         J.set$value$x(J.$index$asx(run.get$paramMap(), t2), x);
-      }, null, null, 4, 0, null, 120, 0, "call"],
+      }, null, null, 4, 0, null, 127, 0, "call"],
       $signature: function() {
         return H.computeSignature(function(T) {
           return {func: 1, args: [N.FuncCall, T]};
@@ -84759,7 +84759,7 @@
           }
         }
         return result;
-      }, "call$1", "get$_clean", 2, 0, 207, 36],
+      }, "call$1", "get$_clean", 2, 0, 207, 38],
       args$0: [function() {
         return new L.ActionParser(this.get$_clean(), this.super$CmdGrammarDefinition$args());
       }, "call$0", "get$args", 0, 0, 2],
@@ -84981,7 +84981,7 @@
         coalesce.source = t1 == null ? t1 : J.get$source$x(t1);
         coalesce.setValues$1([ifFuncs]);
         return coalesce;
-      }, "call$1", "get$_handleCaseWhen", 2, 0, 276, 36]
+      }, "call$1", "get$_handleCaseWhen", 2, 0, 276, 38]
     },
     CmdParserDefinition_trueToken_closure: {
       "^": "Closure:0;",
@@ -85162,7 +85162,7 @@
           r0.setValues$1([r, J.$index$asx(index, 1)]);
         }
         return r;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_unaryExpression_closure: {
       "^": "Closure:21;",
@@ -85201,7 +85201,7 @@
             fc.setValues$1([t1.$index(list, 1)]);
           return fc;
         }
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_mapLiteral_closure: {
       "^": "Closure:21;",
@@ -85218,7 +85218,7 @@
             map.$indexSet(0, t2.$index(keyPair, 0), t2.$index(keyPair, 2));
           }
         return map;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_processCommand_extractFromRet: {
       "^": "Closure:0;",
@@ -85230,7 +85230,7 @@
       "^": "Closure:21;$this",
       call$1: [function(list) {
         return this.$this.processCommand$1(list);
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_columnName_closure: {
       "^": "Closure:21;",
@@ -85250,7 +85250,7 @@
           action.setValues$1([result, rhs]);
         }
         return result;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_columnName__buildColRef: {
       "^": "Closure:283;",
@@ -85296,7 +85296,7 @@
       "^": "Closure:21;",
       call$1: [function(list) {
         return J.$index$asx(list, 1);
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_logicalExpression_closure: {
       "^": "Closure:21;",
@@ -85332,7 +85332,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_comparingExpression_closure: {
       "^": "Closure:21;",
@@ -85375,7 +85375,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_powerExpression_closure: {
       "^": "Closure:21;",
@@ -85402,7 +85402,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_inExpression_closure: {
       "^": "Closure:21;",
@@ -85423,7 +85423,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_multiplicativeExpression_closure: {
       "^": "Closure:21;",
@@ -85465,7 +85465,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_additiveExpression_closure: {
       "^": "Closure:21;",
@@ -85493,7 +85493,7 @@
           t1.removeRange$2(list, 0, 2);
         }
         return value;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParserDefinition_expression_closure: {
       "^": "Closure:0;",
@@ -85570,7 +85570,7 @@
         if (comment != null)
           result.set$comment(comment);
         return result;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     CmdParser: {
       "^": "GrammarParser;delegate",
@@ -85729,7 +85729,7 @@
       "^": "Closure:0;",
       call$1: [function(m) {
         return J.get$values$x(m);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     Funcs_funcNames_closure: {
       "^": "Closure:0;",
@@ -85859,7 +85859,7 @@
           t1 = j;
         }
         return t1;
-      }, null, null, 2, 0, null, 191, "call"]
+      }, null, null, 2, 0, null, 184, "call"]
     },
     Aggregate_closure1: {
       "^": "Closure:0;",
@@ -85873,7 +85873,7 @@
           t1 = w;
         }
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     unpivot_closure: {
       "^": "Closure:0;mergeColumns,copyColumn",
@@ -86940,13 +86940,13 @@
       "^": "Closure:0;",
       call$1: [function(m) {
         return m.group$1(1);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     getColumnNameRecursive_closure: {
       "^": "Closure:0;",
       call$1: [function(pp) {
         return pp.get$func() instanceof N.ResolveColumnFunc;
-      }, null, null, 2, 0, null, 173, "call"]
+      }, null, null, 2, 0, null, 152, "call"]
     },
     updateColumnValues_closure: {
       "^": "Closure:0;col",
@@ -87042,7 +87042,7 @@
       call$1: [function(ed) {
         var t1 = ed == null ? ed : ed.get$column();
         return (t1 == null ? t1 : J.get$name$x(t1)) != null;
-      }, null, null, 2, 0, null, 119, "call"]
+      }, null, null, 2, 0, null, 130, "call"]
     },
     addCalcColSubscriptions_closure0: {
       "^": "Closure:10;_box_0,dependentNamesMap,recalculateDepGraph",
@@ -87070,7 +87070,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 119, "call"]
+      }, null, null, 2, 0, null, 130, "call"]
     },
     addCalcColSubscriptions__closure4: {
       "^": "Closure:2;_box_0,name",
@@ -87130,7 +87130,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 119, "call"]
+      }, null, null, 2, 0, null, 130, "call"]
     },
     addCalcColSubscriptions__closure1: {
       "^": "Closure:0;escapedOldName",
@@ -87342,14 +87342,14 @@
       "^": "Closure:0;",
       call$1: [function(ed) {
         return J.$eq$(J.get$key$x(ed), "formula");
-      }, null, null, 2, 0, null, 119, "call"]
+      }, null, null, 2, 0, null, 130, "call"]
     },
     addCalcColSubscriptions_closure5: {
       "^": "Closure:0;_box_0",
       call$1: [function(ed) {
         this._box_0.depGraphIsStale = true;
         return true;
-      }, null, null, 2, 0, null, 119, "call"]
+      }, null, null, 2, 0, null, 130, "call"]
     },
     groupColsByVectorFuncs_startVectorGroup: {
       "^": "Closure:291;_box_0",
@@ -88790,13 +88790,13 @@
       "^": "Closure:21;",
       call$1: [function(values) {
         return J.firstWhere$2$orElse$ax(values, new N._closure4(), new N._closure5());
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     _closure4: {
       "^": "Closure:0;",
       call$1: [function(val) {
         return val != null;
-      }, null, null, 2, 0, null, 383, "call"]
+      }, null, null, 2, 0, null, 449, "call"]
     },
     _closure5: {
       "^": "Closure:2;",
@@ -89210,7 +89210,7 @@
         if (semType != null && J.$eq$(cell.get$column().get$semType(), semType) === true)
           return O.SemanticValue$fromCell(cell, null);
         return J.get$value$x(cell);
-      }, null, null, 6, 0, null, 7, 97, 29, "call"]
+      }, null, null, 6, 0, null, 7, 95, 29, "call"]
     },
     GetCurrentRowFieldFunc_getCompiled_closure: {
       "^": "Closure:2;_box_0,$this,name,sem,context",
@@ -89344,7 +89344,7 @@
       call$3: [function(tableName, colName, context) {
         var t = context.resolveDataFrame$1(tableName);
         return t != null && J.$index$asx(t, colName) != null;
-      }, null, null, 6, 0, null, 88, 214, 29, "call"]
+      }, null, null, 6, 0, null, 86, 190, 29, "call"]
     },
     TableAccessorFunc: {
       "^": "FuncSync;saveLog:TableAccessorFunc_saveLog@,_params,tableName@,result*,source,helpUrl,description,dialogFunc,checkEnabled,batchEstimatorFunc,toolbox,topMenu,_nameLowerCase,_descriptionLowerCase,needsValidation,saveLog,isBatchable,maxBatchSize,shortcut,synonyms,params,options,aux,runs,Func_recurrence,Func_recurrenceRunAs,Func_nextRunTime,Func_lastRunTime,isDataTransformationValue,_inputParams,_outputParams,_roleSet,_paramMap,isCancelable,AuthorMixin_author,AuthorMixin_createdOn,AuthorMixin_updatedOn,ScheduleMixin_recurrence,ScheduleMixin_recurrenceRunAs,ScheduleMixin_nextRunTime,ScheduleMixin_lastRunTime,GrokJsObject__jsObject,TagsMixin__tags,TagsMixin_entityTags,Entity_id,securityObject,_bindId,projectRelations,isDeleted,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,_grok_shared$_name,_friendlyName,namespace,Model_id,Model_included,Model_isOnServer,Model_isDirty",
@@ -91024,7 +91024,7 @@
       "^": "Closure:0;preColumns",
       call$1: [function(n) {
         return this.preColumns.$index(0, n);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     FuncBatchRunner_vectorCall_closure6: {
       "^": "Closure:0;param",
@@ -91338,7 +91338,7 @@
       "^": "Closure:0;",
       call$1: [function(message) {
         return H.throwExpression(message);
-      }, null, null, 2, 0, null, 45, "call"]
+      }, null, null, 2, 0, null, 43, "call"]
     },
     saveAsColumn_closure: {
       "^": "Closure:0;",
@@ -91724,7 +91724,7 @@
         else
           t1 = t1.$eq(q, ">") === true ? 3 : 2;
         return N.QNum_create(x, t1);
-      }, null, null, 4, 0, null, 0, 72, "call"]
+      }, null, null, 4, 0, null, 0, 78, "call"]
     },
     _and_closure: {
       "^": "Closure:1;",
@@ -91879,7 +91879,7 @@
       "^": "Closure:0;",
       call$1: [function(cc) {
         return J.get$name$x(cc);
-      }, null, null, 2, 0, null, 213, "call"]
+      }, null, null, 2, 0, null, 183, "call"]
     },
     splitColumn_closure: {
       "^": "Closure:0;",
@@ -91908,7 +91908,7 @@
         t2 = J.getInterceptor$x(t1);
         J.set$name$x(col, t2.get$columns(t1).getUnusedName$2$prefix$startWith(this.prefix, 1));
         return J.add$2$shouldNotify$ax(t2.get$columns(t1), col, false);
-      }, null, null, 2, 0, null, 416, "call"]
+      }, null, null, 2, 0, null, 454, "call"]
     },
     transformString_closure: {
       "^": "Closure:0;action,col",
@@ -91956,7 +91956,7 @@
         } else
           t1 = "";
         return t1;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     _FlatBufTable: {
       "^": "Object;bytes<,view>,pos",
@@ -91991,7 +91991,7 @@
         return t1;
       }, function(fieldId) {
         return this.boolean$2(fieldId, false);
-      }, "boolean$1", "call$2", "call$1", "get$boolean", 2, 2, 321, 21, 221, 418],
+      }, "boolean$1", "call$2", "call$1", "get$boolean", 2, 2, 321, 21, 237, 456],
       int16$2: function(fieldId, def) {
         var o, t1;
         o = this._slot$1(fieldId);
@@ -92047,7 +92047,7 @@
         if (typeof t2 !== "number")
           return H.iae(t2);
         return new N._FlatBufTable(this.bytes, t1, p + t2);
-      }, "call$1", "get$table", 2, 0, 323, 221],
+      }, "call$1", "get$table", 2, 0, 323, 237],
       string$1: function(fieldId) {
         var o, p, t1, t2, t3, s, len;
         o = this._slot$1(fieldId);
@@ -92617,7 +92617,7 @@
           buffer.writeUint32List$1(t2);
       }, function(buffer) {
         return this.serialize$2$archive(buffer, 0);
-      }, "serialize$1", "call$2$archive", "call$1", "get$serialize", 2, 3, 324, 96, 102, 420],
+      }, "serialize$1", "call$2$archive", "call$1", "get$serialize", 2, 3, 324, 101, 111, 461],
       _ddt$_writeToList$1: function(list) {
         var t1, i, t2;
         t1 = list.length;
@@ -93194,7 +93194,7 @@
       "^": "Object;fcmPredictor,dfcmPredictor",
       estimate$1: [function(values) {
         return -1;
-      }, "call$1", "get$estimate", 2, 0, 326, 31],
+      }, "call$1", "get$estimate", 2, 0, 326, 32],
       encode$2: function(buf, values) {
         var t1, lenM2, i, t2, t3, t4, dBits, diff1d, t5, diff2d, predictor1BetterForD, eBits, diff1e, diff2e, predictor1BetterForE, code;
         this.fcmPredictor = N._FcmPredictor$(17);
@@ -93551,7 +93551,7 @@
           this.lengthSymbols = t2;
         }
         return t2 * (this.symbolsDataType === 41218 ? 4 : 8) + t1;
-      }, "call$1", "get$estimate", 2, 0, 327, 31],
+      }, "call$1", "get$estimate", 2, 0, 327, 32],
       encode$3: function(buffer, values, archive) {
         var t1, t2, symbols, repeats, t3, prev, t4, idxSymbols, idxRepeats, cntSymbols, isBlock, n, t5, curr, idxRepeats0, idxSymbols0;
         t1 = this.lengthSymbols;
@@ -93741,14 +93741,14 @@
         buffer.writeInt32$1(this.blockLength);
         buffer.writeInt32$1(this.blocksPerCycle);
         buffer.writeInt32$1(this.length);
-      }, "call$1", "get$serialize", 2, 0, 66, 102],
+      }, "call$1", "get$serialize", 2, 0, 66, 111],
       deserialize$1: [function(buffer) {
         this.start = buffer.readInt32$0();
         this.step = buffer.readInt32$0();
         this.blockLength = buffer.readInt32$0();
         this.blocksPerCycle = buffer.readInt32$0();
         this.length = buffer.readInt32$0();
-      }, "call$1", "get$deserialize", 2, 0, 66, 102],
+      }, "call$1", "get$deserialize", 2, 0, 66, 111],
       toString$0: function(_) {
         return "{start: " + H.S(this.start) + ", step: " + H.S(this.step) + ", cycle: " + H.S(this.blocksPerCycle) + ", length: " + H.S(this.length) + "}";
       },
@@ -93944,7 +93944,7 @@
         if (N.mostSignificantBitIndex(J.$sub$n(max, min)) > 31)
           return -1;
         return J.$add$ns(N.BitIntList_sizeInBytes(this.lengthRepeats, 0, 65534), N.BitIntList_sizeInBytes(this.lengthSymbols, min, max));
-      }, "call$2", "get$estimate", 4, 0, 331, 31, 425],
+      }, "call$2", "get$estimate", 4, 0, 331, 32, 462],
       encode$4: function(buffer, values, minimum, archive) {
         var repeats, t1, symbols, none, replaceNone, t2, vn, vnm1, prev, t3, idxSymbols, idxRepeats, cntSymbols, isBlock, n, t4, curr, idxRepeats0, idxSymbols0;
         if (this.lengthSymbols == null)
@@ -94111,13 +94111,13 @@
       }
     },
     IntRle_estimate_replaceNone: {
-      "^": "Closure:17;none",
+      "^": "Closure:16;none",
       call$1: function(x) {
         return J.$eq$(x, -2147483648) === true ? this.none : x;
       }
     },
     IntRle_encode_replaceNone: {
-      "^": "Closure:17;none",
+      "^": "Closure:16;none",
       call$1: function(x) {
         return J.$eq$(x, -2147483648) === true ? this.none : x;
       }
@@ -94902,7 +94902,7 @@
         for (squashed = 0, n = 0; n < t2; ++n)
           squashed += 1 - compare[n];
         return J.$add$ns(J.$mul$ns(t1.get$length(values), J.$sub$n(J.get$length$asx(t1.$index(values, 0)), squashed)), J.get$length$asx(t1.$index(values, 0)));
-      }, "call$1", "get$estimate", 2, 0, 339, 31],
+      }, "call$1", "get$estimate", 2, 0, 339, 32],
       encode$3: function(buffer, values, archive) {
         var t1, t2, compare, n, t3, m, intValues;
         t1 = J.getInterceptor$asx(values);
@@ -97217,7 +97217,7 @@
       "^": "Closure:162;",
       call$2: [function(pos, x) {
         return H.S(x) + " (" + H.S(pos) + ")";
-      }, null, null, 4, 0, null, 270, 0, "call"]
+      }, null, null, 4, 0, null, 217, 0, "call"]
     },
     CsvParser__onRowFromTokenizer_closure: {
       "^": "Closure:0;",
@@ -97275,7 +97275,7 @@
         return rowCellCounts;
       }, function(delim) {
         return this.call$2$rowCount(delim, 10);
-      }, "call$1", null, null, null, 2, 3, null, 434, 536, 32, "call"]
+      }, "call$1", null, null, null, 2, 3, null, 464, 476, 31, "call"]
     },
     CsvParser__guessDelimiter__closure0: {
       "^": "Closure:1;_box_0,delim,rowCount,rowCellCounts",
@@ -97306,7 +97306,7 @@
         if (t2 >>> 0 !== t2 || t2 >= t1.length)
           return H.ioore(t1, t2);
         return J.$eq$(rowCellCount, J.$index$asx(t1[t2], 0));
-      }, null, null, 2, 0, null, 436, "call"]
+      }, null, null, 2, 0, null, 483, "call"]
     },
     CsvParser__guessDelimiter_closure1: {
       "^": "Closure:0;rowCellCounts",
@@ -97320,47 +97320,10 @@
     CsvChunkTokenizer: {
       "^": "Object;delim,mergeDelimiters<,onRow,_leftover,_finished,_scanPos,_quoteParity,_nl3,_nl2,_nl1"
     },
-    findAndReplace_replace: {
-      "^": "Closure:16;_box_0,pattern",
-      call$1: function(x) {
-        return J.replaceAll$2$s(x, this.pattern, this._box_0.replaceWith);
-      }
-    },
-    findAndReplace_replaceRegex: {
-      "^": "Closure:16;_box_0,findWhatRegex,replaceWithGroupMatches",
-      call$1: function(x) {
-        var t1, valueMatch, result, t2, t3, groupIdx;
-        t1 = this.findWhatRegex;
-        if (t1 == null)
-          return x;
-        valueMatch = t1.firstMatch$1(x);
-        result = this._box_0.replaceWith;
-        if (valueMatch != null)
-          for (t1 = this.replaceWithGroupMatches, t1 = new H._AllMatchesIterator(t1._re, t1._string, t1.__js_helper$_start, null), t2 = valueMatch._match; t1.moveNext$0();) {
-            t3 = t1._current._match;
-            if (0 >= t3.length)
-              return H.ioore(t3, 0);
-            groupIdx = H.Primitives_parseInt(J.$index$asx(t3[0], 1), null, null);
-            if (J.$le$n(groupIdx, t2.length - 1) === true) {
-              if (0 >= t3.length)
-                return H.ioore(t3, 0);
-              t3 = t3[0];
-              if (groupIdx >>> 0 !== groupIdx || groupIdx >= t2.length)
-                return H.ioore(t2, groupIdx);
-              result = J.replaceAll$2$s(result, t3, t2[groupIdx]);
-            }
-          }
-        return result;
-      }
-    },
     findAndReplace_closure0: {
-      "^": "Closure:0;_box_0,findWhat,replace,replaceWithGroupMatches,replaceRegex",
+      "^": "Closure:0;_box_0,query",
       call$1: [function(value) {
-        var t1;
-        if (J.$eq$(this.findWhat, "") === true)
-          return J.$eq$(value, "") === true ? this._box_0.replaceWith : value;
-        t1 = this.replaceWithGroupMatches;
-        return !t1.get$iterator(t1).moveNext$0() ? this.replace.call$1(value) : this.replaceRegex.call$1(value);
+        return this.query.replace$2(0, value, this._box_0.replaceWith);
       }, null, null, 2, 0, null, 14, "call"]
     },
     findAndReplace_closure: {
@@ -97376,19 +97339,51 @@
       }, null, null, 2, 0, null, 23, "call"]
     },
     findAndReplace_closure2: {
-      "^": "Closure:12;findWhat,col,matcher,newValue",
+      "^": "Closure:12;query,col,matcher,newValue",
       call$1: [function(i) {
-        var t1, x;
+        var t1, t2;
         t1 = this.col;
-        x = J.$index$asx(t1, i);
-        return J.match$2$column$x(this.matcher, x, t1) === true || J.$eq$(t1.toStr$1(i), this.findWhat) === true ? this.newValue : x;
+        t2 = J.getInterceptor$asx(t1);
+        return J.match$2$column$x(this.matcher, t2.$index(t1, i), t1) === true || J.$eq$(t1.toStr$1(i), this.query.findWhat) === true ? this.newValue : t2.$index(t1, i);
       }, null, null, 2, 0, null, 5, "call"]
+    },
+    _FindQuery: {
+      "^": "Object;findWhat,useRegExp,regex",
+      replace$2: function(_, value, replaceWith) {
+        var t1, t2;
+        t1 = this.regex;
+        if (t1 == null)
+          return J.$eq$(value, "") === true ? replaceWith : value;
+        t2 = J.getInterceptor$s(value);
+        return this.useRegExp === true ? t2.replaceAllMapped$2(value, t1, new N._FindQuery_replace_closure(replaceWith)) : t2.replaceAll$2(value, t1, replaceWith);
+      }
+    },
+    _FindQuery_replace_closure: {
+      "^": "Closure:0;replaceWith",
+      call$1: [function(m) {
+        return J.replaceAllMapped$2$s(this.replaceWith, $.$get$_FindQuery__groupRef(), new N._FindQuery_replace__closure(m));
+      }, null, null, 2, 0, null, 30, "call"]
+    },
+    _FindQuery_replace__closure: {
+      "^": "Closure:0;m",
+      call$1: [function(ref) {
+        var group, t1;
+        group = H.Primitives_parseInt(ref.group$1(1), null, null);
+        t1 = this.m;
+        if (J.$le$n(group, t1.get$groupCount()) === true) {
+          t1 = t1.group$1(group);
+          if (t1 == null)
+            t1 = "";
+        } else
+          t1 = ref.group$1(0);
+        return t1;
+      }, null, null, 2, 0, null, 484, "call"]
     },
     appendTables_closure: {
       "^": "Closure:413;",
       call$2: [function(sum, t) {
         return J.$add$ns(sum, t.get$rowCount());
-      }, null, null, 4, 0, null, 261, 9, "call"]
+      }, null, null, 4, 0, null, 231, 9, "call"]
     },
     appendTables_closure0: {
       "^": "Closure:0;",
@@ -97995,7 +97990,7 @@
       "^": "Closure:0;",
       call$1: [function(w) {
         return J.open$0$x(w);
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     IsolateWorkersHub_get_closure: {
       "^": "Closure:0;",
@@ -98341,7 +98336,7 @@
         throw H.wrapException('Statistics "' + H.S(stat) + '" is not defined.');
       }, function(stat) {
         return this.getValue$2$whenNull(stat, 26789344063684636e-50);
-      }, "getValue$1", "call$2$whenNull", "call$1", "get$getValue", 2, 3, 426, 438, 440, 453],
+      }, "getValue$1", "call$2$whenNull", "call$1", "get$getValue", 2, 3, 426, 485, 486, 487],
       _ready$2: function(colVer, maskVer) {
         var t1 = this._column;
         if (t1 != null)
@@ -99192,7 +99187,7 @@
         if (J.$eq$(s2, "") === true)
           return -1;
         return t1.compareTo$1(s1, s2);
-      }, null, null, 4, 0, null, 222, 223, "call"]
+      }, null, null, 4, 0, null, 238, 240, "call"]
     },
     StringComparers_fromMap_closure: {
       "^": "Closure:0;",
@@ -99226,7 +99221,7 @@
           return 1;
         if (m2 == null)
           return -1;
-      }, null, null, 4, 0, null, 222, 223, "call"]
+      }, null, null, 4, 0, null, 238, 240, "call"]
     },
     TestData_molecules_closure: {
       "^": "Closure:0;",
@@ -99477,7 +99472,7 @@
       }, null, null, 2, 0, null, 5, "call"]
     },
     TestData_wells_getRow: {
-      "^": "Closure:17;rows,cols",
+      "^": "Closure:16;rows,cols",
       call$1: [function(i) {
         var t1 = this.cols;
         t1 = J.$tdiv$n(J.$mod$n(i, this.rows * t1), t1);
@@ -99487,7 +99482,7 @@
       }, null, null, 2, 0, null, 5, "call"]
     },
     TestData_wells_getCol: {
-      "^": "Closure:17;rows,cols",
+      "^": "Closure:16;rows,cols",
       call$1: [function(i) {
         var t1 = this.cols;
         t1 = J.$mod$n(J.$mod$n(i, this.rows * t1), t1);
@@ -99522,7 +99517,7 @@
       }
     },
     TestData_wells_getConc: {
-      "^": "Closure:19;cols,getCol,roles",
+      "^": "Closure:18;cols,getCol,roles",
       call$1: [function(i) {
         var t1 = this.getCol;
         if (this.roles.containsKey$1(0, t1.call$1(i)))
@@ -99579,7 +99574,7 @@
       "^": "Closure:0;rndRange,minY,range",
       call$1: [function(y) {
         return J.$add$ns(J.$add$ns(J.$negate$n(this.minY), y), this.rndRange.call$2(0, this.range));
-      }, null, null, 2, 0, null, 61, "call"]
+      }, null, null, 2, 0, null, 62, "call"]
     },
     TestData_wells_closure: {
       "^": "Closure:0;getSample",
@@ -99803,7 +99798,7 @@
       "^": "Closure:46;existing",
       call$1: [function(candidate) {
         return J.any$1$ax(this.existing, new N.getUniqueName_unique_closure(J.toLowerCase$0$s(candidate))) !== true;
-      }, null, null, 2, 0, null, 484, "call"]
+      }, null, null, 2, 0, null, 498, "call"]
     },
     getUniqueName_unique_closure: {
       "^": "Closure:0;lowerCandidate",
@@ -100155,7 +100150,7 @@
       call$1: [function(date) {
         var t1 = date.get$year();
         return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, 1, 1, 0, 0, 0, 0, true)), true);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure1: {
       "^": "Closure:8;",
@@ -100164,7 +100159,7 @@
         t1 = date.get$year();
         t2 = date.get$month();
         return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, 1, 0, 0, 0, 0, true)), true);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure2: {
       "^": "Closure:8;",
@@ -100176,7 +100171,7 @@
         t3 = t1.get$month();
         t1 = t1.get$day();
         return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t2, t3, t1, 0, 0, 0, 0, true)), true);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure3: {
       "^": "Closure:8;",
@@ -100186,7 +100181,7 @@
         t2 = date.get$month();
         t3 = date.get$day();
         return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, 0, 0, 0, 0, true)), true);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure4: {
       "^": "Closure:8;",
@@ -100197,37 +100192,37 @@
         t3 = date.get$day();
         t4 = date.get$hour();
         return new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, t4, 0, 0, 0, true)), true);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure5: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return G.minute(date);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure6: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return G.second(date);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure7: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$year();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure8: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return H.S(date.get$year());
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure9: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$month();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure10: {
       "^": "Closure:8;",
@@ -100238,7 +100233,7 @@
         if (t2 >>> 0 !== t2 || t2 >= t1.length)
           return H.ioore(t1, t2);
         return t1[t2];
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure11: {
       "^": "Closure:8;",
@@ -100247,7 +100242,7 @@
         if (typeof t1 !== "number")
           return H.iae(t1);
         return "Q" + H.S(1 + t1);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure12: {
       "^": "Closure:8;",
@@ -100256,7 +100251,7 @@
         if (typeof t1 !== "number")
           return H.iae(t1);
         return 1 + t1;
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure13: {
       "^": "Closure:8;",
@@ -100267,7 +100262,7 @@
         if (typeof t2 !== "number")
           return H.iae(t2);
         return t1 + H.S(1 + t2);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure14: {
       "^": "Closure:8;",
@@ -100279,55 +100274,55 @@
         if (t3 >>> 0 !== t3 || t3 >= t2.length)
           return H.ioore(t2, t3);
         return t1 + H.S(t2[t3]);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure15: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return C.JSString_methods.substring$2(G.firstSunday(date).toString$0(0), 0, 10);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure16: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return J.substring$2$s(J.toString$0$(date), 0, 10);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure17: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$day();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure18: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$hour();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure19: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$minute();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure20: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$second();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure21: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$millisecond();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure22: {
       "^": "Closure:8;",
       call$1: [function(date) {
         return date.get$weekday();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure23: {
       "^": "Closure:8;",
@@ -100338,7 +100333,7 @@
         if (t2 >>> 0 !== t2 || t2 >= 7)
           return H.ioore(t1, t2);
         return t1[t2];
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure24: {
       "^": "Closure:8;",
@@ -100348,7 +100343,7 @@
         t2 = date.get$month();
         t3 = date.get$day();
         return date.difference$1(new P.DateTime(H.checkInt(H.Primitives_valueFromDecomposedDate(t1, t2, t3, 0, 0, 0, 0, true)), true)).get$inMinutes();
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     },
     ValueFunction__initDerivedFunctions_closure25: {
       "^": "Closure:8;",
@@ -100359,7 +100354,7 @@
         if (typeof t2 !== "number")
           return H.iae(t2);
         return C.JSNumber_methods._tdivFast$1(C.JSNumber_methods._tdivFast$1(P.Duration$(0, 0, 0, t1 - t2, 0, 0)._duration, 864e8), 365);
-      }, null, null, 2, 0, null, 25, "call"]
+      }, null, null, 2, 0, null, 24, "call"]
     }
   }], ["ddt_cmd", "package:ddt/ddt.dcmd.g.dart",, M, {
     "^": "",
@@ -100894,7 +100889,7 @@
       "^": "Closure:1;",
       call$2: [function(s, sub) {
         return N.strFind(s, sub);
-      }, null, null, 4, 0, null, 4, 110, "call"]
+      }, null, null, 4, 0, null, 4, 112, "call"]
     },
     closure4877: {
       "^": "Closure:0;",
@@ -100910,7 +100905,7 @@
       "^": "Closure:1;",
       call$2: [function(s, count) {
         return N.strLeft(s, N.FuncCallParam_convert(count, "int"));
-      }, null, null, 4, 0, null, 4, 113, "call"]
+      }, null, null, 4, 0, null, 4, 103, "call"]
     },
     closure4875: {
       "^": "Closure:0;",
@@ -100926,7 +100921,7 @@
       "^": "Closure:1;",
       call$2: [function(s, count) {
         return N.strRight(s, N.FuncCallParam_convert(count, "int"));
-      }, null, null, 4, 0, null, 4, 113, "call"]
+      }, null, null, 4, 0, null, 4, 103, "call"]
     },
     closure4873: {
       "^": "Closure:0;",
@@ -100942,7 +100937,7 @@
       "^": "Closure:1;",
       call$2: [function(s, n) {
         return J.$mul$ns(s, N.FuncCallParam_convert(n, "int"));
-      }, null, null, 4, 0, null, 4, 24, "call"]
+      }, null, null, 4, 0, null, 4, 25, "call"]
     },
     closure4871: {
       "^": "Closure:0;",
@@ -100958,7 +100953,7 @@
       "^": "Closure:112;",
       call$3: [function(s, pattern, sub) {
         return N.regExpReplace(s, pattern, sub);
-      }, null, null, 6, 0, null, 4, 33, 110, "call"]
+      }, null, null, 6, 0, null, 4, 35, 112, "call"]
     },
     closure4869: {
       "^": "Closure:0;",
@@ -100976,7 +100971,7 @@
         return N.regExpExtract(s, pattern, N.FuncCallParam_convert(i, "int"), N.FuncCallParam_convert(group, "int"));
       }, function(s, pattern, i) {
         return this.call$4$group(s, pattern, i, 0);
-      }, "call$3", null, null, null, 6, 3, null, 96, 4, 33, 5, 273, "call"]
+      }, "call$3", null, null, null, 6, 3, null, 101, 4, 35, 5, 282, "call"]
     },
     closure4867: {
       "^": "Closure:0;",
@@ -100992,7 +100987,7 @@
       "^": "Closure:1;",
       call$2: [function(s, pattern) {
         return J.contains$1$asx(s, N.StringUtils_regExp(pattern));
-      }, null, null, 4, 0, null, 4, 33, "call"]
+      }, null, null, 4, 0, null, 4, 35, "call"]
     },
     closure4865: {
       "^": "Closure:0;",
@@ -101088,7 +101083,7 @@
       "^": "Closure:1;",
       call$2: [function(x, limits) {
         return N.binBySpecificLimits(N.FuncCallParam_convert(x, "num"), limits);
-      }, null, null, 4, 0, null, 0, 235, "call"]
+      }, null, null, 4, 0, null, 0, 259, "call"]
     },
     closure4853: {
       "^": "Closure:0;",
@@ -101104,7 +101099,7 @@
       "^": "Closure:112;",
       call$3: [function(dt, levels, levelIndex) {
         return N.binByDateTime(N.FuncCallParam_convert(dt, "datetime"), levels, N.FuncCallParam_convert(levelIndex, "int"));
-      }, null, null, 6, 0, null, 51, 217, 219, "call"]
+      }, null, null, 6, 0, null, 54, 265, 279, "call"]
     },
     closure4851: {
       "^": "Closure:0;",
@@ -101659,13 +101654,13 @@
       "^": "Closure:0;",
       call$1: [function(n) {
         return J.$lt$n(n.get$stats().get$perNodeMaxCount(), 2);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     _visit_closure0: {
       "^": "Closure:0;",
       call$1: [function(n) {
         return J.$ge$n(n.get$stats().get$perNodeMaxCount(), 2);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     readXml_closure: {
       "^": "Closure:2;_box_0,e",
@@ -101678,7 +101673,7 @@
       call$1: [function(n) {
         n.set$perNodeCount(0);
         return 0;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     readXml_closure1: {
       "^": "Closure:2;_box_0,e",
@@ -101695,7 +101690,7 @@
         t2 = Math.max(H.checkNum(t1), H.checkNum(t2));
         n.set$perNodeMaxCount(t2);
         return t2;
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     readXml_closure3: {
       "^": "Closure:0;statsRoot",
@@ -101708,7 +101703,7 @@
       "^": "Closure:0;",
       call$1: [function(node) {
         return J.get$name$x(node);
-      }, null, null, 2, 0, null, 175, "call"]
+      }, null, null, 2, 0, null, 144, "call"]
     },
     readXml_closure5: {
       "^": "Closure:0;columnNames,sb",
@@ -101992,7 +101987,7 @@
         return this.$get$3$headers$suppressException($receiver, url, headers, false);
       }, "$get$2$headers", function($receiver, url, suppressException) {
         return this.$get$3$headers$suppressException($receiver, url, null, suppressException);
-      }, "$get$2$suppressException", "call$3$headers$suppressException", "call$1", "call$2$headers", "call$2$suppressException", "get$get", 2, 5, 472, 1, 21, 152, 118, 496],
+      }, "$get$2$suppressException", "call$3$headers$suppressException", "call$1", "call$2$headers", "call$2$suppressException", "get$get", 2, 5, 472, 1, 21, 173, 126, 504],
       read$2$headers: [function(_, url, headers) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$next = [], $async$self = this, response, t1, exception;
         var $async$read$2$headers = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -102029,7 +102024,7 @@
         return P._asyncStart($async$read$2$headers, $async$completer);
       }, function($receiver, url) {
         return this.read$2$headers($receiver, url, null);
-      }, "read$1", "call$2$headers", "call$1", "get$read", 2, 3, 171, 1, 152, 118],
+      }, "read$1", "call$2$headers", "call$1", "get$read", 2, 3, 171, 1, 173, 126],
       readBytes$2$headers: function(url, headers) {
         return J.then$1$x(this.$get$2$headers(0, url, headers), new E.DelegatingHttpClient_readBytes_closure());
       },
@@ -102132,13 +102127,13 @@
       "^": "Closure:0;",
       call$1: [function(response) {
         return E.DelegatingHttpClient_checkError(response).get$bodyBytes();
-      }, null, null, 2, 0, null, 174, "call"]
+      }, null, null, 2, 0, null, 147, "call"]
     },
     DelegatingHttpClient_readBytesWithPost_closure: {
       "^": "Closure:0;",
       call$1: [function(response) {
         return E.DelegatingHttpClient_checkError(response).get$bodyBytes();
-      }, null, null, 2, 0, null, 174, "call"]
+      }, null, null, 2, 0, null, 147, "call"]
     },
     DelegatingHttpClient_onDelete_closure: {
       "^": "Closure:0;",
@@ -102552,7 +102547,7 @@
       "^": "Closure:0;$this",
       call$1: [function(message) {
         return this.$this.send$1(0, message);
-      }, null, null, 2, 0, null, 45, "call"]
+      }, null, null, 2, 0, null, 43, "call"]
     },
     DapiSocket_init_closure: {
       "^": "Closure:10;$this",
@@ -103247,7 +103242,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 45, "call"]
+      }, null, null, 2, 0, null, 43, "call"]
     },
     SocketReceiver_listen__closure: {
       "^": "Closure:0;$this,onError,batch,acked",
@@ -103651,7 +103646,7 @@
       return P._asyncStart($async$_DbTableMutations_insert, $async$completer);
     }, function(connectionId, tableName, df, optionsJson) {
       return X._DbTableMutations_insert(connectionId, tableName, df, optionsJson, false);
-    }, "call$5$upsert", "call$4", "grok_api__DbTableMutations_insert$closure", 8, 3, 746, 21, 114, 88, 116, 502, 503],
+    }, "call$5$upsert", "call$4", "grok_api__DbTableMutations_insert$closure", 8, 3, 746, 21, 113, 86, 106, 507, 508],
     _DbTableMutations_upsert: [function(connectionId, tableName, df, optionsJson) {
       return X._DbTableMutations_insert(connectionId, tableName, df, optionsJson, true);
     }, "call$4", "grok_api__DbTableMutations_upsert$closure", 8, 0, 231],
@@ -104075,7 +104070,7 @@
           }
       });
       return P._asyncStart($async$domainInteropCall, $async$completer);
-    }, "call$1", "grok_api__domainInteropCall$closure", 2, 0, 752, 179],
+    }, "call$1", "grok_api__domainInteropCall$closure", 2, 0, 752, 199],
     initJsApi: function() {
       var t1, jsUtils, _floatArray, t2, t3;
       t1 = {};
@@ -105217,146 +105212,146 @@
       "^": "Closure:1;execute",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$0(), new X.ra0___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra0___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra1_closure: {
       "^": "Closure:0;execute",
       call$1: [function(p1) {
         var t1 = P.allowInterop(new X.ra1__closure(this.execute, p1));
         return new self.Promise(t1, null);
-      }, null, null, 2, 0, null, 98, "call"]
+      }, null, null, 2, 0, null, 100, "call"]
     },
     ra1__closure: {
       "^": "Closure:1;execute,p1",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$1(this.p1), new X.ra1___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra1___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra2_closure: {
       "^": "Closure:1;execute",
       call$2: [function(p1, p2) {
         var t1 = P.allowInterop(new X.ra2__closure(this.execute, p1, p2));
         return new self.Promise(t1, null);
-      }, null, null, 4, 0, null, 98, 109, "call"]
+      }, null, null, 4, 0, null, 100, 114, "call"]
     },
     ra2__closure: {
       "^": "Closure:1;execute,p1,p2",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$2(this.p1, this.p2), new X.ra2___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra2___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra3_closure: {
       "^": "Closure:112;execute",
       call$3: [function(p1, p2, p3) {
         var t1 = P.allowInterop(new X.ra3__closure(this.execute, p1, p2, p3));
         return new self.Promise(t1, null);
-      }, null, null, 6, 0, null, 98, 109, 121, "call"]
+      }, null, null, 6, 0, null, 100, 114, 133, "call"]
     },
     ra3__closure: {
       "^": "Closure:1;execute,p1,p2,p3",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$3(this.p1, this.p2, this.p3), new X.ra3___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra3___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra4_closure: {
       "^": "Closure:152;execute",
       call$4: [function(p1, p2, p3, p4) {
         var t1 = P.allowInterop(new X.ra4__closure(this.execute, p1, p2, p3, p4));
         return new self.Promise(t1, null);
-      }, null, null, 8, 0, null, 98, 109, 121, 146, "call"]
+      }, null, null, 8, 0, null, 100, 114, 133, 160, "call"]
     },
     ra4__closure: {
       "^": "Closure:1;execute,p1,p2,p3,p4",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$4(this.p1, this.p2, this.p3, this.p4), new X.ra4___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra4___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra5_closure: {
       "^": "Closure:484;execute",
       call$5: [function(p1, p2, p3, p4, p5) {
         var t1 = P.allowInterop(new X.ra5__closure(this.execute, p1, p2, p3, p4, p5));
         return new self.Promise(t1, null);
-      }, null, null, 10, 0, null, 98, 109, 121, 146, 211, "call"]
+      }, null, null, 10, 0, null, 100, 114, 133, 160, 182, "call"]
     },
     ra5__closure: {
       "^": "Closure:1;execute,p1,p2,p3,p4,p5",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$5(this.p1, this.p2, this.p3, this.p4, this.p5), new X.ra5___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra5___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra6_closure: {
       "^": "Closure:491;execute",
       call$6: [function(p1, p2, p3, p4, p5, p6) {
         var t1 = P.allowInterop(new X.ra6__closure(this.execute, p1, p2, p3, p4, p5, p6));
         return new self.Promise(t1, null);
-      }, null, null, 12, 0, null, 98, 109, 121, 146, 211, 229, "call"]
+      }, null, null, 12, 0, null, 100, 114, 133, 160, 182, 261, "call"]
     },
     ra6__closure: {
       "^": "Closure:1;execute,p1,p2,p3,p4,p5,p6",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$6(this.p1, this.p2, this.p3, this.p4, this.p5, this.p6), new X.ra6___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra6___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     ra7_closure: {
       "^": "Closure:501;execute",
       call$7: [function(p1, p2, p3, p4, p5, p6, p7) {
         var t1 = P.allowInterop(new X.ra7__closure(this.execute, p1, p2, p3, p4, p5, p6, p7));
         return new self.Promise(t1, null);
-      }, null, null, 14, 0, null, 98, 109, 121, 146, 211, 229, 519, "call"]
+      }, null, null, 14, 0, null, 100, 114, 133, 160, 182, 261, 531, "call"]
     },
     ra7__closure: {
       "^": "Closure:1;execute,p1,p2,p3,p4,p5,p6,p7",
       call$2: [function(resolve, reject) {
         J.then$2$onError$x(this.execute.call$7(this.p1, this.p2, this.p3, this.p4, this.p5, this.p6, this.p7), new X.ra7___closure(resolve), reject);
-      }, null, null, 4, 0, null, 87, 86, "call"]
+      }, null, null, 4, 0, null, 87, 88, "call"]
     },
     ra7___closure: {
       "^": "Closure:0;resolve",
       call$1: [function(result) {
         return this.resolve.call$1($.javaScriptRunner.toJs$1(result));
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     initJsApi_closure: {
       "^": "Closure:2;_floatArray",
@@ -105398,14 +105393,14 @@
       "^": "Closure:503;",
       call$2: [function(x, index) {
         return J.$index$asx(J.get$value$x(x), index);
-      }, null, null, 4, 0, null, 0, 80, "call"]
+      }, null, null, 4, 0, null, 0, 82, "call"]
     },
     initJsApi_closure6: {
       "^": "Closure:173;",
       call$3: [function(x, index, element) {
         J.$indexSet$ax(J.get$value$x(x), index, element);
         return element;
-      }, null, null, 6, 0, null, 0, 80, 28, "call"]
+      }, null, null, 6, 0, null, 0, 82, 28, "call"]
     },
     initJsApi_closure7: {
       "^": "Closure:124;",
@@ -105417,7 +105412,7 @@
       "^": "Closure:173;",
       call$3: [function(x, index, element) {
         return J.insert$2$ax(J.get$value$x(x), index, element);
-      }, null, null, 6, 0, null, 0, 80, 28, "call"]
+      }, null, null, 6, 0, null, 0, 82, 28, "call"]
     },
     initJsApi_closure9: {
       "^": "Closure:174;",
@@ -105453,25 +105448,25 @@
       "^": "Closure:0;",
       call$1: [function(js) {
         return O.jsToMap(js, false);
-      }, null, null, 2, 0, null, 524, "call"]
+      }, null, null, 2, 0, null, 532, "call"]
     },
     initJsApi_closure15: {
       "^": "Closure:520;",
       call$2: [function(c, result) {
         return J.complete$1$x(c, result);
-      }, null, null, 4, 0, null, 3, 50, "call"]
+      }, null, null, 4, 0, null, 3, 53, "call"]
     },
     initJsApi_closure16: {
       "^": "Closure:532;",
       call$3: [function(c, result, stack) {
         return c.completeError$2(result, typeof stack === "string" ? new P._StringStackTrace(stack) : stack);
-      }, null, null, 6, 0, null, 3, 50, 526, "call"]
+      }, null, null, 6, 0, null, 3, 53, 296, "call"]
     },
     initJsApi_closure17: {
       "^": "Closure:536;",
       call$2: [function(stream, onData) {
         return stream.listen$1(onData);
-      }, null, null, 4, 0, null, 283, 296, "call"]
+      }, null, null, 4, 0, null, 226, 297, "call"]
     },
     initJsApi_closure18: {
       "^": "Closure:175;",
@@ -105673,7 +105668,7 @@
       "^": "Closure:578;",
       call$5: [function(logClient, entityId, start, end, favoritesOnly) {
         return J.filter$4$end$entityId$favoritesOnly$start$x(logClient, end, entityId, favoritesOnly, start);
-      }, null, null, 10, 0, null, 295, 123, 122, 125, 231, "call"]
+      }, null, null, 10, 0, null, 298, 138, 140, 132, 263, "call"]
     },
     initJsApi_closure46: {
       "^": "Closure:38;",
@@ -105816,7 +105811,7 @@
       "^": "Closure:643;",
       call$4: [function(activityClient, userId, start, end) {
         return J.filter$3$end$start$userId$x(activityClient, end, start, userId);
-      }, null, null, 8, 0, null, 300, 232, 122, 125, "call"]
+      }, null, null, 8, 0, null, 301, 264, 140, 132, "call"]
     },
     initJsApi_closure64: {
       "^": "Closure:140;",
@@ -105840,7 +105835,7 @@
       "^": "Closure:140;",
       call$2: [function(s, include) {
         return s.include$1(include);
-      }, null, null, 4, 0, null, 4, 302, "call"]
+      }, null, null, 4, 0, null, 4, 303, "call"]
     },
     initJsApi_closure68: {
       "^": "Closure:67;",
@@ -106305,13 +106300,13 @@
       "^": "Closure:140;",
       call$2: [function(s, w) {
         return s.whereSmart$1(w);
-      }, null, null, 4, 0, null, 4, 44, "call"]
+      }, null, null, 4, 0, null, 4, 42, "call"]
     },
     initJsApi_closure112: {
       "^": "Closure:284;",
       call$3: [function(s, $name, desc) {
         return J.order$2$desc$x(s, $name, desc);
-      }, null, null, 6, 0, null, 4, 8, 170, "call"]
+      }, null, null, 6, 0, null, 4, 8, 157, "call"]
     },
     initJsApi_closure113: {
       "^": "Closure:2;",
@@ -106377,7 +106372,7 @@
       "^": "Closure:290;",
       call$3: [function(s, types, includeLinked) {
         return J.filter$2$includeLinked$types$x(s, includeLinked, types);
-      }, null, null, 6, 0, null, 4, 233, 234, "call"]
+      }, null, null, 6, 0, null, 4, 266, 267, "call"]
     },
     initJsApi_closure124: {
       "^": "Closure:79;",
@@ -108154,26 +108149,26 @@
         var t1 = state == null ? null : C.JsonCodec_null_null.decode$1(state);
         layout.set$viewStateMap(t1);
         return t1;
-      }, null, null, 4, 0, null, 106, 168, "call"]
+      }, null, null, 4, 0, null, 115, 159, "call"]
     },
     initJsApi_closure217: {
       "^": "Closure:141;",
       call$1: [function(layout) {
         return layout.get$viewStateMap() == null ? null : C.JsonCodec_null_null.encode$1(layout.get$viewStateMap());
-      }, null, null, 2, 0, null, 106, "call"]
+      }, null, null, 2, 0, null, 115, "call"]
     },
     initJsApi_closure218: {
       "^": "Closure:322;",
       call$3: [function(layout, key, data) {
         J.$indexSet$ax(layout.get$userData(), key, data);
         return data;
-      }, null, null, 6, 0, null, 106, 17, 39, "call"]
+      }, null, null, 6, 0, null, 115, 17, 39, "call"]
     },
     initJsApi_closure219: {
       "^": "Closure:195;",
       call$2: [function(layout, key) {
         return J.$index$asx(layout.get$userData(), key);
-      }, null, null, 4, 0, null, 106, 17, "call"]
+      }, null, null, 4, 0, null, 115, 17, "call"]
     },
     initJsApi_closure220: {
       "^": "Closure:4;",
@@ -108182,7 +108177,7 @@
         t1 = new O.ViewLayout(P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), null, [], "/images/datasets/no_picture.png", null, null, null, null, [], null, "", null, null, null, null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$2$ignoreNulls(C.JsonCodec_null_null.decode$1(json), false);
         return t1;
-      }, null, null, 2, 0, null, 124, "call"]
+      }, null, null, 2, 0, null, 117, "call"]
     },
     initJsApi_closure221: {
       "^": "Closure:4;",
@@ -108192,19 +108187,19 @@
         t1.PackageEntityMixin_id = $.$get$Model__uuid().v1$0();
         t1.viewStateMap = C.JsonCodec_null_null.decode$1(state);
         return t1;
-      }, null, null, 2, 0, null, 168, "call"]
+      }, null, null, 2, 0, null, 159, "call"]
     },
     initJsApi_closure222: {
       "^": "Closure:141;",
       call$1: [function(layout) {
         return layout.toJsonStr$0();
-      }, null, null, 2, 0, null, 106, "call"]
+      }, null, null, 2, 0, null, 115, "call"]
     },
     initJsApi_closure223: {
       "^": "Closure:141;",
       call$1: [function(layout) {
         return J.get$columns$x(layout);
-      }, null, null, 2, 0, null, 106, "call"]
+      }, null, null, 2, 0, null, 115, "call"]
     },
     initJsApi_closure224: {
       "^": "Closure:197;",
@@ -108212,38 +108207,38 @@
         var t1 = state == null ? null : C.JsonCodec_null_null.decode$1(state);
         info.set$viewStateMap(t1);
         return t1;
-      }, null, null, 4, 0, null, 62, 168, "call"]
+      }, null, null, 4, 0, null, 63, 159, "call"]
     },
     initJsApi_closure225: {
       "^": "Closure:91;",
       call$1: [function(info) {
         return info.get$viewStateMap() == null ? null : C.JsonCodec_null_null.encode$1(info.get$viewStateMap());
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure226: {
       "^": "Closure:325;",
       call$3: [function(info, key, data) {
         J.$indexSet$ax(info.get$userData(), key, data);
         return data;
-      }, null, null, 6, 0, null, 62, 17, 39, "call"]
+      }, null, null, 6, 0, null, 63, 17, 39, "call"]
     },
     initJsApi_closure227: {
       "^": "Closure:197;",
       call$2: [function(info, key) {
         return J.$index$asx(info.get$userData(), key);
-      }, null, null, 4, 0, null, 62, 17, "call"]
+      }, null, null, 4, 0, null, 63, 17, "call"]
     },
     initJsApi_closure228: {
       "^": "Closure:91;",
       call$1: [function(info) {
         return J.get$view$x(info);
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure229: {
       "^": "Closure:91;",
       call$1: [function(info) {
         return info.get$table();
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure230: {
       "^": "Closure:4;",
@@ -108252,7 +108247,7 @@
         t1 = new O.ViewInfo(null, null, null, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), "/images/datasets/no_picture.png", null, null, null, null, [], null, "", null, null, null, null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$2$ignoreNulls(C.JsonCodec_null_null.decode$1(json), false);
         return t1;
-      }, null, null, 2, 0, null, 124, "call"]
+      }, null, null, 2, 0, null, 117, "call"]
     },
     initJsApi_closure231: {
       "^": "Closure:4;",
@@ -108262,13 +108257,13 @@
         t1.PackageEntityMixin_id = $.$get$Model__uuid().v1$0();
         t1.viewStateMap = C.JsonCodec_null_null.decode$1(state);
         return t1;
-      }, null, null, 2, 0, null, 168, "call"]
+      }, null, null, 2, 0, null, 159, "call"]
     },
     initJsApi_closure232: {
       "^": "Closure:91;",
       call$1: [function(info) {
         return info.toJsonStr$0();
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure233: {
       "^": "Closure:4;",
@@ -108293,7 +108288,7 @@
       "^": "Closure:199;",
       call$2: [function(table, rowIdx) {
         return new N.Row(table, rowIdx);
-      }, null, null, 4, 0, null, 16, 310, "call"]
+      }, null, null, 4, 0, null, 16, 311, "call"]
     },
     initJsApi_closure237: {
       "^": "Closure:200;",
@@ -108316,25 +108311,25 @@
         t1 = new N.DataFrame(null, null, null, null, null, rowCount, -1, -1, null, null, null, t1, 0, null, null, false, false, null, false, null, null, null, false, null, null, null, null);
         t1.report$0();
         return t1;
-      }, null, null, 2, 0, null, 32, "call"]
+      }, null, null, 2, 0, null, 31, "call"]
     },
     initJsApi_closure240: {
       "^": "Closure:11;",
       call$1: [function(d) {
         return O.TableInfo_TableInfo$fromTable(d, true);
-      }, null, null, 2, 0, null, 103, "call"]
+      }, null, null, 2, 0, null, 105, "call"]
     },
     initJsApi_closure241: {
       "^": "Closure:328;",
       call$1: [function(columns) {
         return N.DataFrame$fromColumns(columns, null, -1, null);
-      }, null, null, 2, 0, null, 138, "call"]
+      }, null, null, 2, 0, null, 121, "call"]
     },
     initJsApi_closure242: {
       "^": "Closure:4;",
       call$1: [function(json) {
         return Q.readJson(C.JsonCodec_null_null.decode$1(json), null);
-      }, null, null, 2, 0, null, 124, "call"]
+      }, null, null, 2, 0, null, 117, "call"]
     },
     initJsApi_closure243: {
       "^": "Closure:11;",
@@ -108424,7 +108419,7 @@
       call$2: [function(t, cell) {
         t.set$currentCell(cell);
         return cell;
-      }, null, null, 4, 0, null, 9, 93, "call"]
+      }, null, null, 4, 0, null, 9, 97, "call"]
     },
     initJsApi_closure257: {
       "^": "Closure:11;",
@@ -108454,7 +108449,7 @@
       "^": "Closure:145;",
       call$2: [function(t, colName) {
         return J.$index$asx(t, colName);
-      }, null, null, 4, 0, null, 9, 214, "call"]
+      }, null, null, 4, 0, null, 9, 190, "call"]
     },
     initJsApi_closure262: {
       "^": "Closure:335;",
@@ -108472,26 +108467,26 @@
           t1.fromMap$1(O.jsToMap(options, false));
         }
         return t.toCsv$1(t1);
-      }, null, null, 6, 0, null, 9, 136, 311, "call"]
+      }, null, null, 6, 0, null, 9, 142, 312, "call"]
     },
     initJsApi_closure263: {
       "^": "Closure:336;",
       call$2: [function(t, colNames) {
         return t.groupBy$1(colNames);
-      }, null, null, 4, 0, null, 9, 312, "call"]
+      }, null, null, 4, 0, null, 9, 313, "call"]
     },
     initJsApi_closure264: {
       "^": "Closure:337;",
       call$5: [function(t, copyColumnNames, mergeColumnNames, categoryColumnName, valueColumnName) {
         var t1 = categoryColumnName == null ? "Category" : categoryColumnName;
         return N.unpivot(t, copyColumnNames, mergeColumnNames, t1, valueColumnName == null ? "Value" : valueColumnName);
-      }, null, null, 10, 0, null, 9, 313, 314, 220, 218, "call"]
+      }, null, null, 10, 0, null, 9, 314, 315, 234, 258, "call"]
     },
     initJsApi_closure265: {
       "^": "Closure:338;",
       call$5: [function(t, rowMask, columnIds, saveSelection, saveTags) {
         return J.clone$4$columnIds$rowMask$saveSelection$saveTags$x(t, columnIds, rowMask, saveSelection, saveTags);
-      }, null, null, 10, 0, null, 9, 315, 316, 317, 318, "call"]
+      }, null, null, 10, 0, null, 9, 316, 317, 318, 319, "call"]
     },
     initJsApi_closure266: {
       "^": "Closure:11;",
@@ -108521,7 +108516,7 @@
       "^": "Closure:340;",
       call$3: [function(t, $event, f) {
         return t.get$eventBus().onEventName$1($event).listen$1(f);
-      }, null, null, 6, 0, null, 9, 161, 18, "call"]
+      }, null, null, 6, 0, null, 9, 171, 18, "call"]
     },
     initJsApi_closure271: {
       "^": "Closure:11;",
@@ -108533,13 +108528,13 @@
       "^": "Closure:341;",
       call$4: [function(t, columns, newType, format) {
         return N.ChangeColumnsTypeAction_changeColumnsType(t, columns, newType, format);
-      }, null, null, 8, 0, null, 9, 138, 238, 162, "call"]
+      }, null, null, 8, 0, null, 9, 121, 280, 155, "call"]
     },
     initJsApi_closure273: {
       "^": "Closure:203;",
       call$4: [function(t1, t2, inPlace, columnsToAppend) {
         return J.append$3$columnsToAppend$inPlace$x(t1, t2, columnsToAppend, inPlace);
-      }, null, null, 8, 0, null, 208, 207, 187, 322, "call"]
+      }, null, null, 8, 0, null, 181, 180, 198, 323, "call"]
     },
     initJsApi_closure274: {
       "^": "Closure:203;",
@@ -108551,7 +108546,7 @@
       "^": "Closure:204;",
       call$2: [function($parent, t) {
         return $parent.appendMerge$1(t);
-      }, null, null, 4, 0, null, 53, 9, "call"]
+      }, null, null, 4, 0, null, 51, 9, "call"]
     },
     initJsApi_closure276: {
       "^": "Closure:204;",
@@ -108610,13 +108605,13 @@
       "^": "Closure:345;",
       call$4: [function(t, sortByColumnIds, sortOrders, mask) {
         return t.getSortedOrder$3$rowMask$sortOrders(sortByColumnIds, mask, sortOrders);
-      }, null, null, 8, 0, null, 9, 323, 324, 205, "call"]
+      }, null, null, 8, 0, null, 9, 324, 325, 179, "call"]
     },
     initJsApi_closure282: {
       "^": "Closure:346;",
       call$1: [function(bytes) {
         return O.TablesBlob$fromByteArray(bytes).getTable$1(0);
-      }, null, null, 2, 0, null, 326, "call"]
+      }, null, null, 2, 0, null, 327, "call"]
     },
     initJsApi_closure283: {
       "^": "Closure:11;",
@@ -108628,7 +108623,7 @@
       "^": "Closure:347;",
       call$2: [function(t, compress) {
         return t.toParquet$1$compress(J.$eq$(compress, true));
-      }, null, null, 4, 0, null, 9, 327, "call"]
+      }, null, null, 4, 0, null, 9, 328, "call"]
     },
     initJsApi_closure285: {
       "^": "Closure:11;",
@@ -108646,50 +108641,50 @@
       "^": "Closure:120;",
       call$2: [function(map, key) {
         return J.$index$asx(map, key);
-      }, null, null, 4, 0, null, 74, 17, "call"]
+      }, null, null, 4, 0, null, 76, 17, "call"]
     },
     initJsApi_closure288: {
       "^": "Closure:349;",
       call$3: [function(map, key, value) {
         J.$indexSet$ax(map, key, value);
         return value;
-      }, null, null, 6, 0, null, 74, 17, 14, "call"]
+      }, null, null, 6, 0, null, 76, 17, 14, "call"]
     },
     initJsApi_closure289: {
       "^": "Closure:120;",
       call$2: [function(map, key) {
         return J.remove$1$ax(map, key) != null;
-      }, null, null, 4, 0, null, 74, 17, "call"]
+      }, null, null, 4, 0, null, 76, 17, "call"]
     },
     initJsApi_closure290: {
       "^": "Closure:120;",
       call$2: [function(map, key) {
         return J.containsKey$1$x(map, key);
-      }, null, null, 4, 0, null, 74, 17, "call"]
+      }, null, null, 4, 0, null, 76, 17, "call"]
     },
     initJsApi_closure291: {
       "^": "Closure:29;",
       call$1: [function(map) {
         return J.get$keys$x(map);
-      }, null, null, 2, 0, null, 74, "call"]
+      }, null, null, 2, 0, null, 76, "call"]
     },
     initJsApi_closure292: {
       "^": "Closure:29;",
       call$1: [function(map) {
         return J.get$values$x(map);
-      }, null, null, 2, 0, null, 74, "call"]
+      }, null, null, 2, 0, null, 76, "call"]
     },
     initJsApi_closure293: {
       "^": "Closure:29;",
       call$1: [function(map) {
         return J.clear$0$ax(map);
-      }, null, null, 2, 0, null, 74, "call"]
+      }, null, null, 2, 0, null, 76, "call"]
     },
     initJsApi_closure294: {
       "^": "Closure:29;",
       call$1: [function(map) {
         return J.get$length$asx(map);
-      }, null, null, 2, 0, null, 74, "call"]
+      }, null, null, 2, 0, null, 76, "call"]
     },
     initJsApi_closure295: {
       "^": "Closure:59;",
@@ -108831,19 +108826,19 @@
       "^": "Closure:353;",
       call$2: [function(b, autoName) {
         return b.aggregate$1$autoName(autoName);
-      }, null, null, 4, 0, null, 11, 328, "call"]
+      }, null, null, 4, 0, null, 11, 329, "call"]
     },
     initJsApi_closure312: {
       "^": "Closure:354;",
       call$2: [function(b, bitset) {
         return b.whereBitSet$1(bitset);
-      }, null, null, 4, 0, null, 11, 180, "call"]
+      }, null, null, 4, 0, null, 11, 197, "call"]
     },
     initJsApi_closure313: {
       "^": "Closure:355;",
       call$4: [function(b, agg, colName, resultColName) {
         return J.add$3$resultColName$ax(b, agg, colName, resultColName);
-      }, null, null, 8, 0, null, 11, 108, 214, 58, "call"]
+      }, null, null, 8, 0, null, 11, 109, 190, 55, "call"]
     },
     initJsApi_closure314: {
       "^": "Closure:356;",
@@ -108856,38 +108851,38 @@
       "^": "Closure:357;",
       call$2: [function(b, pattern) {
         return b.wherePattern$1(typeof pattern === "string" ? pattern : O.jsToMap(pattern, false));
-      }, null, null, 4, 0, null, 11, 33, "call"]
+      }, null, null, 4, 0, null, 11, 35, "call"]
     },
     initJsApi_closure316: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return cols.get$df();
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure317: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return J.get$length$asx(cols);
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure318: {
       "^": "Closure:359;",
       call$2: [function(cols, index) {
         return J.$index$asx(J.get$list$x(cols), index);
-      }, null, null, 4, 0, null, 30, 80, "call"]
+      }, null, null, 4, 0, null, 33, 82, "call"]
     },
     initJsApi_closure319: {
       "^": "Closure:95;",
       call$2: [function(cols, semType) {
         var t1 = cols.bySemType$1(semType);
         return t1 == null ? t1 : t1.toJs$0();
-      }, null, null, 4, 0, null, 30, 97, "call"]
+      }, null, null, 4, 0, null, 33, 95, "call"]
     },
     initJsApi_closure320: {
       "^": "Closure:95;",
       call$2: [function(cols, semType) {
         return J.toList$0$ax(J.map$1$ax(cols.bySemTypeAll$1(semType), new X.initJsApi__closure26()));
-      }, null, null, 4, 0, null, 30, 97, "call"]
+      }, null, null, 4, 0, null, 33, 95, "call"]
     },
     initJsApi__closure26: {
       "^": "Closure:0;",
@@ -108899,13 +108894,13 @@
       "^": "Closure:95;",
       call$2: [function(cols, $name) {
         return cols.byName$1($name);
-      }, null, null, 4, 0, null, 30, 8, "call"]
+      }, null, null, 4, 0, null, 33, 8, "call"]
     },
     initJsApi_closure322: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return J.toList$0$ax(J.map$1$ax(cols, new X.initJsApi__closure25()));
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi__closure25: {
       "^": "Closure:0;",
@@ -108917,25 +108912,25 @@
       "^": "Closure:361;",
       call$3: [function(cols, col, notify) {
         return J.add$2$shouldNotify$ax(cols, col, notify);
-      }, null, null, 6, 0, null, 30, 6, 27, "call"]
+      }, null, null, 6, 0, null, 33, 6, 27, "call"]
     },
     initJsApi_closure324: {
       "^": "Closure:362;",
       call$4: [function(cols, col, index, notify) {
         return J.add$3$index$shouldNotify$ax(cols, col, index, notify);
-      }, null, null, 8, 0, null, 30, 6, 80, 27, "call"]
+      }, null, null, 8, 0, null, 33, 6, 82, 27, "call"]
     },
     initJsApi_closure325: {
       "^": "Closure:363;",
       call$3: [function(cols, $name, type) {
         return cols.addNew$2($name, type);
-      }, null, null, 6, 0, null, 30, 8, 63, "call"]
+      }, null, null, 6, 0, null, 33, 8, 61, "call"]
     },
     initJsApi_closure326: {
       "^": "Closure:364;",
       call$3: [function(qnum, qualifier, value) {
         return qnum.initFromQualifierAndValue$2(qualifier, value);
-      }, null, null, 6, 0, null, 330, 331, 14, "call"]
+      }, null, null, 6, 0, null, 331, 332, 14, "call"]
     },
     initJsApi_closure327: {
       "^": "Closure:365;",
@@ -108975,79 +108970,79 @@
       "^": "Closure:367;",
       call$5: [function(cols, $name, getValue, setValue, type) {
         return cols.addNewVirtual$4$setValue$type($name, getValue, setValue, type);
-      }, null, null, 10, 0, null, 30, 8, 332, 333, 63, "call"]
+      }, null, null, 10, 0, null, 33, 8, 333, 334, 61, "call"]
     },
     initJsApi_closure330: {
       "^": "Closure:368;",
       call$3: [function(cols, $name, notify) {
         return J.remove$2$notify$ax(cols, cols.byName$1($name), notify);
-      }, null, null, 6, 0, null, 30, 8, 27, "call"]
+      }, null, null, 6, 0, null, 33, 8, 27, "call"]
     },
     initJsApi_closure331: {
       "^": "Closure:95;",
       call$2: [function(cols, $name) {
         return J.contains$1$asx(cols, cols.byName$1($name));
-      }, null, null, 4, 0, null, 30, 8, "call"]
+      }, null, null, 4, 0, null, 33, 8, "call"]
     },
     initJsApi_closure332: {
       "^": "Closure:369;",
       call$4: [function(cols, columnToReplace, newColumn, notify) {
         return J.replace$3$notify$x(cols, columnToReplace, newColumn, notify);
-      }, null, null, 8, 0, null, 30, 334, 335, 27, "call"]
+      }, null, null, 8, 0, null, 33, 335, 336, 27, "call"]
     },
     initJsApi_closure333: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return cols.get$categorical();
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure334: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return cols.get$numerical();
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure335: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return J.get$dateTime$x(cols);
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure336: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return cols.get$numericalNoDateTime();
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure337: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return cols.get$boolean();
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure338: {
       "^": "Closure:49;",
       call$1: [function(cols) {
         return J.get$selected$x(cols);
-      }, null, null, 2, 0, null, 30, "call"]
+      }, null, null, 2, 0, null, 33, "call"]
     },
     initJsApi_closure339: {
       "^": "Closure:370;",
       call$2: [function(cols, desiredTags) {
         return cols.byTags$1(O.jsToMap(desiredTags, false));
-      }, null, null, 4, 0, null, 30, 336, "call"]
+      }, null, null, 4, 0, null, 33, 337, "call"]
     },
     initJsApi_closure340: {
       "^": "Closure:371;",
       call$3: [function(cols, $name, choices) {
         return cols.getUnusedName$2$choices$prefix(choices, $name);
-      }, null, null, 6, 0, null, 30, 8, 337, "call"]
+      }, null, null, 6, 0, null, 33, 8, 338, "call"]
     },
     initJsApi_closure341: {
       "^": "Closure:372;",
       call$2: [function(columns, columnNames) {
         return columns.setOrder$1(columnNames);
-      }, null, null, 4, 0, null, 138, 338, "call"]
+      }, null, null, 4, 0, null, 121, 339, "call"]
     },
     initJsApi_closure342: {
       "^": "Closure:373;",
@@ -109055,7 +109050,7 @@
         var t1 = N.Column_Column$fromStrings(list, true, null, null, null);
         J.set$name$x(t1, $name);
         return t1;
-      }, null, null, 4, 0, null, 8, 36, "call"]
+      }, null, null, 4, 0, null, 8, 38, "call"]
     },
     initJsApi_closure343: {
       "^": "Closure:374;",
@@ -109065,7 +109060,7 @@
         t1._ddt$_length = $length == null ? J.get$length$asx(t1._data) : $length;
         t1.set$name(0, $name);
         return t1;
-      }, null, null, 6, 0, null, 8, 39, 92, "call"]
+      }, null, null, 6, 0, null, 8, 39, 90, "call"]
     },
     initJsApi_closure344: {
       "^": "Closure:375;",
@@ -109075,7 +109070,7 @@
         t1._ddt$_length = $length == null ? J.get$length$asx(t1._data) : $length;
         t1.set$name(0, $name);
         return t1;
-      }, null, null, 6, 0, null, 8, 39, 92, "call"]
+      }, null, null, 6, 0, null, 8, 39, 90, "call"]
     },
     initJsApi_closure345: {
       "^": "Closure:376;",
@@ -109085,13 +109080,13 @@
         t1._ddt$_length = $length == null ? J.get$length$asx(t1._data) : $length;
         t1.set$name(0, $name);
         return t1;
-      }, null, null, 6, 0, null, 8, 39, 92, "call"]
+      }, null, null, 6, 0, null, 8, 39, 90, "call"]
     },
     initJsApi_closure346: {
       "^": "Closure:377;",
       call$3: [function(type, $name, list) {
         return N.Column_fromJsList(type, $name, list);
-      }, null, null, 6, 0, null, 63, 8, 36, "call"]
+      }, null, null, 6, 0, null, 61, 8, 38, "call"]
     },
     initJsApi_closure347: {
       "^": "Closure:378;",
@@ -109105,13 +109100,13 @@
         t1._ddt$_length = J.get$length$asx(t1._data);
         t1.set$name(0, $name);
         return t1;
-      }, null, null, 6, 0, null, 8, 340, 341, "call"]
+      }, null, null, 6, 0, null, 8, 341, 342, "call"]
     },
     initJsApi_closure348: {
       "^": "Closure:176;",
       call$3: [function(type, $name, $length) {
         return N.__col(type, $name, $length);
-      }, null, null, 6, 0, null, 63, 8, 92, "call"]
+      }, null, null, 6, 0, null, 61, 8, 90, "call"]
     },
     initJsApi_closure349: {
       "^": "Closure:379;",
@@ -109123,7 +109118,7 @@
         t1.report$0();
         t1.set$name(0, $name);
         return t1;
-      }, null, null, 4, 0, null, 8, 180, "call"]
+      }, null, null, 4, 0, null, 8, 197, "call"]
     },
     initJsApi_closure350: {
       "^": "Closure:7;",
@@ -109163,7 +109158,7 @@
           t2.id = t3;
           t1.fire$2(C.EventType_Bg6, t2);
         }
-      }, null, null, 4, 0, null, 3, 97, "call"]
+      }, null, null, 4, 0, null, 3, 95, "call"]
     },
     initJsApi_closure355: {
       "^": "Closure:7;",
@@ -109215,7 +109210,7 @@
         return c.setRawData$2(rawData, notify);
       }, function(c, rawData) {
         return this.call$3(c, rawData, true);
-      }, "call$2", null, null, null, 4, 2, null, 60, 3, 342, 27, "call"]
+      }, "call$2", null, null, null, 4, 2, null, 60, 3, 343, 27, "call"]
     },
     initJsApi_closure363: {
       "^": "Closure:7;",
@@ -109312,7 +109307,7 @@
       "^": "Closure:385;",
       call$2: [function(c, order) {
         return c.setCategoryOrder$1(order);
-      }, null, null, 4, 0, null, 3, 200, "call"]
+      }, null, null, 4, 0, null, 3, 189, "call"]
     },
     initJsApi_closure379: {
       "^": "Closure:386;",
@@ -109330,7 +109325,7 @@
       "^": "Closure:387;",
       call$3: [function(c, newType, format) {
         return N.ChangeColumnsTypeAction_convertTo(c, newType, format);
-      }, null, null, 6, 0, null, 3, 238, 162, "call"]
+      }, null, null, 6, 0, null, 3, 280, 155, "call"]
     },
     initJsApi_closure382: {
       "^": "Closure:7;",
@@ -109348,19 +109343,19 @@
       "^": "Closure:37;",
       call$2: [function(c, filter) {
         return J.matches$1$x(c, filter);
-      }, null, null, 4, 0, null, 3, 239, "call"]
+      }, null, null, 4, 0, null, 3, 233, "call"]
     },
     initJsApi_closure385: {
       "^": "Closure:388;",
       call$2: [function(c, indexToValue) {
         return J.init$1$x(c, indexToValue);
-      }, null, null, 4, 0, null, 3, 344, "call"]
+      }, null, null, 4, 0, null, 3, 345, "call"]
     },
     initJsApi_closure386: {
       "^": "Closure:208;",
       call$2: [function(c, mask) {
         return J.clone$1$x(c, mask);
-      }, null, null, 4, 0, null, 3, 205, "call"]
+      }, null, null, 4, 0, null, 3, 179, "call"]
     },
     initJsApi_closure387: {
       "^": "Closure:390;",
@@ -109379,7 +109374,7 @@
       call$2: [function(c, valueComparer) {
         c.set$valueComparer(valueComparer);
         return valueComparer;
-      }, null, null, 4, 0, null, 3, 345, "call"]
+      }, null, null, 4, 0, null, 3, 346, "call"]
     },
     initJsApi_closure390: {
       "^": "Closure:7;",
@@ -109416,31 +109411,31 @@
       call$2: [function(col, aggrType) {
         var t1 = J.$index$asx(col.get$meta().get$aggregations(), aggrType);
         return t1 == null ? t1 : t1.calculate$1(col);
-      }, null, null, 4, 0, null, 6, 346, "call"]
+      }, null, null, 4, 0, null, 6, 347, "call"]
     },
     initJsApi_closure396: {
       "^": "Closure:7;",
       call$1: [function(column) {
         return column.get$meta().getAutoFormat$1(column);
-      }, null, null, 2, 0, null, 77, "call"]
+      }, null, null, 2, 0, null, 72, "call"]
     },
     initJsApi_closure397: {
       "^": "Closure:7;",
       call$1: [function(column) {
         return column.get$isCategorical();
-      }, null, null, 2, 0, null, 77, "call"]
+      }, null, null, 2, 0, null, 72, "call"]
     },
     initJsApi_closure398: {
       "^": "Closure:7;",
       call$1: [function(column) {
         return column.get$isNumerical();
-      }, null, null, 2, 0, null, 77, "call"]
+      }, null, null, 2, 0, null, 72, "call"]
     },
     initJsApi_closure399: {
       "^": "Closure:7;",
       call$1: [function(column) {
         return column.fireValuesChanged$0();
-      }, null, null, 2, 0, null, 77, "call"]
+      }, null, null, 2, 0, null, 72, "call"]
     },
     initJsApi_closure400: {
       "^": "Closure:393;",
@@ -109453,7 +109448,7 @@
       call$2: [function(c, doublePrecision) {
         c.set$doublePrecision(doublePrecision);
         return doublePrecision;
-      }, null, null, 4, 0, null, 3, 347, "call"]
+      }, null, null, 4, 0, null, 3, 348, "call"]
     },
     initJsApi_closure402: {
       "^": "Closure:395;",
@@ -109478,13 +109473,13 @@
       "^": "Closure:4;",
       call$1: [function(bigint) {
         return N.BigInt_parse(bigint);
-      }, null, null, 2, 0, null, 245, "call"]
+      }, null, null, 2, 0, null, 289, "call"]
     },
     initJsApi_closure405: {
       "^": "Closure:397;",
       call$1: [function(bigint) {
         return bigint == null ? bigint : J.toString$0$(bigint);
-      }, null, null, 2, 0, null, 245, "call"]
+      }, null, null, 2, 0, null, 289, "call"]
     },
     initJsApi_closure406: {
       "^": "Closure:398;",
@@ -109516,19 +109511,19 @@
         var t1 = P.List_List$from(J.map$1$ax(arr, O.js_utils__toDart$closure()), true, null);
         J.set$columns$x(args, t1);
         return t1;
-      }, null, null, 4, 0, null, 15, 349, "call"]
+      }, null, null, 4, 0, null, 15, 350, "call"]
     },
     initJsApi_closure410: {
       "^": "Closure:208;",
       call$2: [function(c, mask) {
         return new N.Stats(null, null, c, mask, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1);
-      }, null, null, 4, 0, null, 3, 205, "call"]
+      }, null, null, 4, 0, null, 3, 179, "call"]
     },
     initJsApi_closure411: {
       "^": "Closure:402;",
       call$1: [function(values) {
         return new N.Stats(null, values, null, null, null, null, null, null, null, 26789344063684636e-50, null, null, null, null, null, null, null, null, null, null, null, null, 0, null, null, null, null, null, null, null, -1, -1, -1, -1, -1, -1);
-      }, null, null, 2, 0, null, 31, "call"]
+      }, null, null, 2, 0, null, 32, "call"]
     },
     initJsApi_closure412: {
       "^": "Closure:22;",
@@ -109630,31 +109625,31 @@
       "^": "Closure:209;",
       call$2: [function(s, other) {
         return s.corr$1(other);
-      }, null, null, 4, 0, null, 4, 133, "call"]
+      }, null, null, 4, 0, null, 4, 118, "call"]
     },
     initJsApi_closure429: {
       "^": "Closure:209;",
       call$2: [function(s, other) {
         return s.spearman$1(other);
-      }, null, null, 4, 0, null, 4, 133, "call"]
+      }, null, null, 4, 0, null, 4, 118, "call"]
     },
     initJsApi_closure430: {
       "^": "Closure:404;",
       call$5: [function(s, orderBy, ascending, by, order) {
         return s.cumSum$4$ascending$by$order$orderBy(ascending, by, order, orderBy);
-      }, null, null, 10, 0, null, 4, 159, 246, 247, 200, "call"]
+      }, null, null, 10, 0, null, 4, 168, 218, 219, 189, "call"]
     },
     initJsApi_closure431: {
       "^": "Closure:405;",
       call$7: [function(s, $window, minPeriods, orderBy, ascending, by, order) {
         return s.movingAvg$6$ascending$by$minPeriods$order$orderBy($window, ascending, by, minPeriods == null ? 1 : minPeriods, order, orderBy);
-      }, null, null, 14, 0, null, 4, 353, 354, 159, 246, 247, 200, "call"]
+      }, null, null, 14, 0, null, 4, 354, 355, 168, 218, 219, 189, "call"]
     },
     initJsApi_closure432: {
       "^": "Closure:406;",
       call$2: [function(valueColumn, catColumn) {
         return N.ColumnHistogram_histogramsByCategories(valueColumn, catColumn, 10, null, false, null, null);
-      }, null, null, 4, 0, null, 355, 356, "call"]
+      }, null, null, 4, 0, null, 356, 537, "call"]
     },
     initJsApi_closure433: {
       "^": "Closure:210;",
@@ -109664,19 +109659,19 @@
         return this.call$4(rows, idx, 1, true);
       }, "call$2", function(rows, idx, count) {
         return this.call$4(rows, idx, count, true);
-      }, "call$3", null, null, null, null, 4, 4, null, 176, 60, 42, 20, 113, 27, "call"]
+      }, "call$3", null, null, null, null, 4, 4, null, 201, 60, 45, 20, 103, 27, "call"]
     },
     initJsApi_closure434: {
       "^": "Closure:408;",
       call$2: [function(rows, check) {
         return J.removeWhere$1$ax(rows, check);
-      }, null, null, 4, 0, null, 42, 105, "call"]
+      }, null, null, 4, 0, null, 45, 107, "call"]
     },
     initJsApi_closure435: {
       "^": "Closure:211;",
       call$2: [function(rows, check) {
         return rows.removeWhereIdx$1(check);
-      }, null, null, 4, 0, null, 42, 105, "call"]
+      }, null, null, 4, 0, null, 45, 107, "call"]
     },
     initJsApi_closure436: {
       "^": "Closure:210;",
@@ -109686,7 +109681,7 @@
         return this.call$4(rows, idx, 1, true);
       }, "call$2", function(rows, idx, count) {
         return this.call$4(rows, idx, count, true);
-      }, "call$3", null, null, null, null, 4, 4, null, 176, 60, 42, 20, 113, 27, "call"]
+      }, "call$3", null, null, null, null, 4, 4, null, 201, 60, 45, 20, 103, 27, "call"]
     },
     initJsApi_closure437: {
       "^": "Closure:410;",
@@ -109696,147 +109691,147 @@
         return this.call$3(rows, null, true);
       }, "call$1", function(rows, values) {
         return this.call$3(rows, values, true);
-      }, "call$2", null, null, null, null, 2, 4, null, 1, 60, 42, 31, 27, "call"]
+      }, "call$2", null, null, null, null, 2, 4, null, 1, 60, 45, 32, 27, "call"]
     },
     initJsApi_closure438: {
       "^": "Closure:211;",
       call$2: [function(rows, check) {
         return J.select$1$x(rows, check);
-      }, null, null, 4, 0, null, 42, 105, "call"]
+      }, null, null, 4, 0, null, 45, 107, "call"]
     },
     initJsApi_closure439: {
       "^": "Closure:411;",
       call$4: [function(rows, idx, values, notify) {
         var t1 = J.$index$asx(rows, idx);
         return t1.setValues$2$notify(values, notify == null ? true : notify);
-      }, null, null, 8, 0, null, 42, 20, 31, 27, "call"]
+      }, null, null, 8, 0, null, 45, 20, 32, 27, "call"]
     },
     initJsApi_closure440: {
       "^": "Closure:129;",
       call$1: [function(rows) {
         return rows.requestFilter$0();
-      }, null, null, 2, 0, null, 42, "call"]
+      }, null, null, 2, 0, null, 45, "call"]
     },
     initJsApi_closure441: {
       "^": "Closure:212;",
       call$2: [function(rows, query) {
         return J.match$1$x(rows, typeof query === "string" ? query : O.jsToMap(query, false));
-      }, null, null, 4, 0, null, 42, 158, "call"]
+      }, null, null, 4, 0, null, 45, 170, "call"]
     },
     initJsApi_closure442: {
       "^": "Closure:129;",
       call$1: [function(rows) {
         return new X.DartHandle(rows.get$filters(), [null]);
-      }, null, null, 2, 0, null, 42, "call"]
+      }, null, null, 2, 0, null, 45, "call"]
     },
     initJsApi_closure443: {
       "^": "Closure:212;",
       call$2: [function(rows, obj) {
         return J.add$1$ax(rows.get$filterStates(), O.jsToMap(obj, false));
-      }, null, null, 4, 0, null, 42, 248, "call"]
+      }, null, null, 4, 0, null, 45, 222, "call"]
     },
     initJsApi_closure444: {
       "^": "Closure:213;",
       call$2: [function(rows, check) {
         rows.set$mouseOverRowFunc(check);
         return check;
-      }, null, null, 4, 0, null, 42, 105, "call"]
+      }, null, null, 4, 0, null, 45, 107, "call"]
     },
     initJsApi_closure445: {
       "^": "Closure:129;",
       call$1: [function(rows) {
         return rows.get$mouseOverRowFunc();
-      }, null, null, 2, 0, null, 42, "call"]
+      }, null, null, 2, 0, null, 45, "call"]
     },
     initJsApi_closure446: {
       "^": "Closure:213;",
       call$2: [function(rows, check) {
         return J.where$1$ax(rows.indexes$1$onlyFiltered(true), check);
-      }, null, null, 4, 0, null, 42, 105, "call"]
+      }, null, null, 4, 0, null, 45, 107, "call"]
     },
     initJsApi_closure447: {
       "^": "Closure:415;",
       call$3: [function(rows, onlyFiltered, onlySelected) {
         return rows.indexes$2$onlyFiltered$onlySelected(onlyFiltered, onlySelected);
-      }, null, null, 6, 0, null, 42, 256, 294, "call"]
+      }, null, null, 6, 0, null, 45, 248, 249, "call"]
     },
     initJsApi_closure448: {
       "^": "Closure:96;",
       call$1: [function(m) {
         return J.select$0$x(m);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure449: {
       "^": "Closure:96;",
       call$1: [function(m) {
         return J.filter$0$x(m);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure450: {
       "^": "Closure:96;",
       call$1: [function(m) {
         return J.highlight$0$x(m);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure451: {
       "^": "Closure:96;",
       call$1: [function(m) {
         return m.toDataFrame$0();
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure452: {
       "^": "Closure:417;",
       call$1: [function(g) {
         return g.get$dataFrame();
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     initJsApi_closure453: {
       "^": "Closure:37;",
       call$2: [function(col, pattern) {
         return N.ValueMatcher_forType(J.get$type$x(col), pattern);
-      }, null, null, 4, 0, null, 6, 33, "call"]
+      }, null, null, 4, 0, null, 6, 35, "call"]
     },
     initJsApi_closure454: {
       "^": "Closure:37;",
       call$2: [function(col, pattern) {
         return N.ValueMatcher_forType(J.get$type$x(col), pattern);
-      }, null, null, 4, 0, null, 6, 33, "call"]
+      }, null, null, 4, 0, null, 6, 35, "call"]
     },
     initJsApi_closure455: {
       "^": "Closure:4;",
       call$1: [function(pattern) {
         return N.NumericMatcher_NumericMatcher$parse(pattern, false, null);
-      }, null, null, 2, 0, null, 33, "call"]
+      }, null, null, 2, 0, null, 35, "call"]
     },
     initJsApi_closure456: {
       "^": "Closure:4;",
       call$1: [function(pattern) {
         return N.StringMatcher_StringMatcher$parse(pattern, null, "equals", false);
-      }, null, null, 2, 0, null, 33, "call"]
+      }, null, null, 2, 0, null, 35, "call"]
     },
     initJsApi_closure457: {
       "^": "Closure:4;",
       call$1: [function(pattern) {
         return N.DateTimeMatcher_DateTimeMatcher$parse(pattern, true, false, null, null);
-      }, null, null, 2, 0, null, 33, "call"]
+      }, null, null, 2, 0, null, 35, "call"]
     },
     initJsApi_closure458: {
       "^": "Closure:4;",
       call$1: [function(pattern) {
         return N.BoolMatcher_BoolMatcher$parse(pattern, false, null);
-      }, null, null, 2, 0, null, 33, "call"]
+      }, null, null, 2, 0, null, 35, "call"]
     },
     initJsApi_closure459: {
       "^": "Closure:214;",
       call$1: [function(m) {
         return m.get$expression();
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure460: {
       "^": "Closure:214;",
       call$1: [function(m) {
         return m.get$op();
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi__matcherValue: {
       "^": "Closure:123;",
@@ -109855,13 +109850,13 @@
       "^": "Closure:123;_matcherValue",
       call$2: [function(m, value) {
         return J.match$1$x(m, this._matcherValue.call$2(m, value));
-      }, null, null, 4, 0, null, 35, 14, "call"]
+      }, null, null, 4, 0, null, 30, 14, "call"]
     },
     initJsApi_closure462: {
       "^": "Closure:123;_matcherValue",
       call$2: [function(m, value) {
         return m.validate$1(this._matcherValue.call$2(m, value));
-      }, null, null, 4, 0, null, 35, 14, "call"]
+      }, null, null, 4, 0, null, 30, 14, "call"]
     },
     initJsApi_closure463: {
       "^": "Closure:199;",
@@ -110067,7 +110062,7 @@
       "^": "Closure:217;",
       call$2: [function(g, admin) {
         return J.toList$0$ax(J.map$1$ax(J.where$1$ax(J.get$children$x(g), new X.initJsApi__closure23(admin)), new X.initJsApi__closure24()));
-      }, null, null, 4, 0, null, 43, 150, "call"]
+      }, null, null, 4, 0, null, 44, 154, "call"]
     },
     initJsApi__closure23: {
       "^": "Closure:0;admin",
@@ -110085,13 +110080,13 @@
       "^": "Closure:218;",
       call$3: [function(g, c, admin) {
         return g.addChild$2$admin(c, admin);
-      }, null, null, 6, 0, null, 43, 3, 150, "call"]
+      }, null, null, 6, 0, null, 44, 3, 154, "call"]
     },
     initJsApi_closure496: {
       "^": "Closure:219;",
       call$2: [function(g, c) {
         return J.removeWhere$1$ax(J.get$children$x(g), new X.initJsApi__closure22(c));
-      }, null, null, 4, 0, null, 43, 3, "call"]
+      }, null, null, 4, 0, null, 44, 3, "call"]
     },
     initJsApi__closure22: {
       "^": "Closure:0;c",
@@ -110103,7 +110098,7 @@
       "^": "Closure:217;",
       call$2: [function(g, admin) {
         return J.toList$0$ax(J.map$1$ax(J.where$1$ax(g.get$parents(), new X.initJsApi__closure20(admin)), new X.initJsApi__closure21()));
-      }, null, null, 4, 0, null, 43, 150, "call"]
+      }, null, null, 4, 0, null, 44, 154, "call"]
     },
     initJsApi__closure20: {
       "^": "Closure:0;admin",
@@ -110121,13 +110116,13 @@
       "^": "Closure:218;",
       call$3: [function(g, c, admin) {
         return g.addParent$2$admin(c, admin);
-      }, null, null, 6, 0, null, 43, 3, 150, "call"]
+      }, null, null, 6, 0, null, 44, 3, 154, "call"]
     },
     initJsApi_closure499: {
       "^": "Closure:219;",
       call$2: [function(g, c) {
         return J.removeWhere$1$ax(g.get$parents(), new X.initJsApi__closure19(c));
-      }, null, null, 4, 0, null, 43, 3, "call"]
+      }, null, null, 4, 0, null, 44, 3, "call"]
     },
     initJsApi__closure19: {
       "^": "Closure:0;c",
@@ -110139,33 +110134,33 @@
       "^": "Closure:93;",
       call$1: [function(g) {
         return g.get$personal();
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     initJsApi_closure501: {
       "^": "Closure:220;",
       call$2: [function(g, x) {
         g.set$personal(x);
         return x;
-      }, null, null, 4, 0, null, 43, 0, "call"]
+      }, null, null, 4, 0, null, 44, 0, "call"]
     },
     initJsApi_closure502: {
       "^": "Closure:93;",
       call$1: [function(g) {
         return J.get$hidden$x(g);
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     initJsApi_closure503: {
       "^": "Closure:220;",
       call$2: [function(g, x) {
         J.set$hidden$x(g, x);
         return x;
-      }, null, null, 4, 0, null, 43, 0, "call"]
+      }, null, null, 4, 0, null, 44, 0, "call"]
     },
     initJsApi_closure504: {
       "^": "Closure:93;",
       call$1: [function(g) {
         return g.get$user();
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     initJsApi_closure505: {
       "^": "Closure:2;",
@@ -110217,7 +110212,7 @@
         t1.defaultValue = defaultValue;
         t1.hasDefaultValue = defaultValue != null;
         return t1;
-      }, null, null, 10, 0, null, 8, 63, 363, 364, 365, "call"]
+      }, null, null, 10, 0, null, 8, 61, 364, 365, 366, "call"]
     },
     initJsApi_closure513: {
       "^": "Closure:5;",
@@ -110619,13 +110614,13 @@
       "^": "Closure:44;",
       call$2: [function(p, propertyName) {
         return J.getPropertyValue$1$x(p, propertyName);
-      }, null, null, 4, 0, null, 2, 149, "call"]
+      }, null, null, 4, 0, null, 2, 146, "call"]
     },
     initJsApi_closure566: {
       "^": "Closure:432;",
       call$3: [function(p, propertyName, propertyValue) {
         return p.setPropertyValue$2(propertyName, propertyValue);
-      }, null, null, 6, 0, null, 2, 149, 367, "call"]
+      }, null, null, 6, 0, null, 2, 146, 368, "call"]
     },
     initJsApi_closure567: {
       "^": "Closure:5;",
@@ -110639,7 +110634,7 @@
       "^": "Closure:9;",
       call$2: [function(p, options) {
         return p.fromMap$1(O.jsToMap(options, false));
-      }, null, null, 4, 0, null, 2, 136, "call"]
+      }, null, null, 4, 0, null, 2, 142, "call"]
     },
     initJsApi_closure569: {
       "^": "Closure:433;",
@@ -110648,7 +110643,7 @@
         if (!!J.getInterceptor(provider.get$properties()).$isList)
           J.add$1$ax(H.listTypeCast(provider.get$properties()), p);
         return;
-      }, null, null, 4, 0, null, 368, 2, "call"]
+      }, null, null, 4, 0, null, 369, 2, "call"]
     },
     initJsApi_closure570: {
       "^": "Closure:5;",
@@ -110668,7 +110663,7 @@
         var t1 = new O.SemanticValue(value, semType, null, null, null, null, null, null, null, null, null, null, null, null, false, false, [], [null]);
         t1.tags = P.LinkedHashMap__makeEmpty();
         return t1;
-      }, null, null, 4, 0, null, 14, 97, "call"]
+      }, null, null, 4, 0, null, 14, 95, "call"]
     },
     initJsApi_closure573: {
       "^": "Closure:73;",
@@ -110727,7 +110722,7 @@
       call$2: [function(v, cell) {
         v.set$cell(cell);
         return cell;
-      }, null, null, 4, 0, null, 7, 93, "call"]
+      }, null, null, 4, 0, null, 7, 97, "call"]
     },
     initJsApi_closure582: {
       "^": "Closure:73;",
@@ -110752,7 +110747,7 @@
       "^": "Closure:39;",
       call$1: [function(cell) {
         return O.SemanticValue$fromCell(cell, null);
-      }, null, null, 2, 0, null, 93, "call"]
+      }, null, null, 2, 0, null, 97, "call"]
     },
     initJsApi_closure586: {
       "^": "Closure:4;",
@@ -110775,7 +110770,7 @@
       "^": "Closure:439;",
       call$3: [function(semType, regexp, description) {
         return O.SemTypeInfo_registerRegExpDetector(semType, regexp, description);
-      }, null, null, 6, 0, null, 97, 369, 370, "call"]
+      }, null, null, 6, 0, null, 95, 370, 371, "call"]
     },
     initJsApi_closure588: {
       "^": "Closure:38;",
@@ -110785,33 +110780,33 @@
         t1._grok_shared$_name = matching;
         t1._friendlyName = $name;
         return self.DG.toJs(t1);
-      }, null, null, 4, 0, null, 8, 371, "call"]
+      }, null, null, 4, 0, null, 8, 372, "call"]
     },
     initJsApi_closure589: {
       "^": "Closure:225;",
       call$1: [function(et) {
         return et.get$friendlyName();
-      }, null, null, 2, 0, null, 126, "call"]
+      }, null, null, 2, 0, null, 143, "call"]
     },
     initJsApi_closure590: {
       "^": "Closure:226;",
       call$2: [function(et, s) {
         et.set$friendlyName(s);
         return s;
-      }, null, null, 4, 0, null, 126, 4, "call"]
+      }, null, null, 4, 0, null, 143, 4, "call"]
     },
     initJsApi_closure591: {
       "^": "Closure:225;",
       call$1: [function(et) {
         return J.get$name$x(et);
-      }, null, null, 2, 0, null, 126, "call"]
+      }, null, null, 2, 0, null, 143, "call"]
     },
     initJsApi_closure592: {
       "^": "Closure:226;",
       call$2: [function(et, s) {
         J.set$name$x(et, s);
         return s;
-      }, null, null, 4, 0, null, 126, 4, "call"]
+      }, null, null, 4, 0, null, 143, 4, "call"]
     },
     initJsApi_closure593: {
       "^": "Closure:38;",
@@ -110822,7 +110817,7 @@
         t1.name = $name;
         t1.EntityProperty_propertyType = propType;
         return self.DG.toJs(t1);
-      }, null, null, 4, 0, null, 8, 373, "call"]
+      }, null, null, 4, 0, null, 8, 374, "call"]
     },
     initJsApi_closure594: {
       "^": "Closure:4;",
@@ -110871,7 +110866,7 @@
         var t1 = J.toList$0$ax(J.map$1$ax(et, new X.initJsApi__closure14()));
         s.set$entityTypes(t1);
         return t1;
-      }, null, null, 4, 0, null, 4, 126, "call"]
+      }, null, null, 4, 0, null, 4, 143, "call"]
     },
     initJsApi__closure14: {
       "^": "Closure:0;",
@@ -110979,7 +110974,7 @@
       "^": "Closure:12;",
       call$1: [function($length) {
         return N.BitSet$($length, false);
-      }, null, null, 2, 0, null, 92, "call"]
+      }, null, null, 2, 0, null, 90, "call"]
     },
     initJsApi_closure605: {
       "^": "Closure:27;",
@@ -111072,7 +111067,7 @@
         b1.beginUpdate$0();
         b1.copyFrom$1(b2);
         b1.endUpdate$1$notify(notify);
-      }, null, null, 6, 0, null, 374, 252, 27, "call"]
+      }, null, null, 6, 0, null, 375, 228, 27, "call"]
     },
     initJsApi_closure620: {
       "^": "Closure:27;",
@@ -111084,7 +111079,7 @@
       "^": "Closure:453;",
       call$2: [function(b, handler) {
         return b.get$changed().listen$1(new X.initJsApi__closure12(handler));
-      }, null, null, 4, 0, null, 11, 376, "call"]
+      }, null, null, 4, 0, null, 11, 377, "call"]
     },
     initJsApi__closure12: {
       "^": "Closure:0;handler",
@@ -111102,13 +111097,13 @@
       "^": "Closure:454;",
       call$3: [function(b, b2, metric) {
         return b.similarityTo$2(b2, metric);
-      }, null, null, 6, 0, null, 11, 252, 377, "call"]
+      }, null, null, 6, 0, null, 11, 228, 378, "call"]
     },
     initJsApi_closure624: {
       "^": "Closure:4;",
       call$1: [function(zeroOnes) {
         return N.BitSet_BitSet$fromString(zeroOnes);
-      }, null, null, 2, 0, null, 378, "call"]
+      }, null, null, 2, 0, null, 379, "call"]
     },
     initJsApi_closure625: {
       "^": "Closure:27;",
@@ -111122,7 +111117,7 @@
         var t1 = N.BitSet$fromBytes(J.asByteData$0$x(buffer));
         t1.setLength$1($length);
         return t1;
-      }, null, null, 4, 0, null, 102, 92, "call"]
+      }, null, null, 4, 0, null, 111, 90, "call"]
     },
     initJsApi_closure627: {
       "^": "Closure:86;",
@@ -111203,7 +111198,7 @@
       "^": "Closure:459;",
       call$2: [function(p, link) {
         return J.toList$0$ax(J.map$1$ax(J.where$1$ax(p.get$relations(), new X.initJsApi__closure10(link)), new X.initJsApi__closure11()));
-      }, null, null, 4, 0, null, 2, 253, "call"]
+      }, null, null, 4, 0, null, 2, 229, "call"]
     },
     initJsApi__closure10: {
       "^": "Closure:0;link",
@@ -111221,7 +111216,7 @@
       "^": "Closure:460;",
       call$3: [function(p, e, link) {
         return J.add$2$link$ax(p, e, link);
-      }, null, null, 6, 0, null, 2, 13, 253, "call"]
+      }, null, null, 6, 0, null, 2, 13, 229, "call"]
     },
     initJsApi_closure640: {
       "^": "Closure:461;",
@@ -111282,19 +111277,19 @@
       "^": "Closure:87;",
       call$1: [function(ti) {
         return ti.get$dataFrame();
-      }, null, null, 2, 0, null, 171, "call"]
+      }, null, null, 2, 0, null, 163, "call"]
     },
     initJsApi_closure650: {
       "^": "Closure:87;",
       call$1: [function(ti) {
         return J.get$columns$x(ti);
-      }, null, null, 2, 0, null, 171, "call"]
+      }, null, null, 2, 0, null, 163, "call"]
     },
     initJsApi_closure651: {
       "^": "Closure:87;",
       call$1: [function(ti) {
         return ti.get$metaParams();
-      }, null, null, 2, 0, null, 171, "call"]
+      }, null, null, 2, 0, null, 163, "call"]
     },
     initJsApi_closure652: {
       "^": "Closure:464;",
@@ -111306,25 +111301,25 @@
       "^": "Closure:88;",
       call$1: [function(ci) {
         return J.get$type$x(ci);
-      }, null, null, 2, 0, null, 144, "call"]
+      }, null, null, 2, 0, null, 167, "call"]
     },
     initJsApi_closure654: {
       "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$semType();
-      }, null, null, 2, 0, null, 144, "call"]
+      }, null, null, 2, 0, null, 167, "call"]
     },
     initJsApi_closure655: {
       "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$layoutColumnId();
-      }, null, null, 2, 0, null, 144, "call"]
+      }, null, null, 2, 0, null, 167, "call"]
     },
     initJsApi_closure656: {
       "^": "Closure:88;",
       call$1: [function(ci) {
         return ci.get$metaParams();
-      }, null, null, 2, 0, null, 144, "call"]
+      }, null, null, 2, 0, null, 167, "call"]
     },
     initJsApi_closure657: {
       "^": "Closure:229;",
@@ -111367,51 +111362,51 @@
       "^": "Closure:101;",
       call$1: [function(q) {
         return J.get$query$x(q);
-      }, null, null, 2, 0, null, 72, "call"]
+      }, null, null, 2, 0, null, 78, "call"]
     },
     initJsApi_closure664: {
       "^": "Closure:230;",
       call$2: [function(q, s) {
         J.set$query$x(q, s);
         return s;
-      }, null, null, 4, 0, null, 72, 4, "call"]
+      }, null, null, 4, 0, null, 78, 4, "call"]
     },
     initJsApi_closure665: {
       "^": "Closure:101;",
       call$1: [function(q) {
         return false;
-      }, null, null, 2, 0, null, 72, "call"]
+      }, null, null, 2, 0, null, 78, "call"]
     },
     initJsApi_closure666: {
       "^": "Closure:469;",
       call$2: [function(q, adHoc) {
-      }, null, null, 4, 0, null, 72, 199, "call"]
+      }, null, null, 4, 0, null, 78, 177, "call"]
     },
     initJsApi_closure667: {
       "^": "Closure:101;",
       call$1: [function(q) {
         return J.get$connection$x(q);
-      }, null, null, 2, 0, null, 72, "call"]
+      }, null, null, 2, 0, null, 78, "call"]
     },
     initJsApi_closure668: {
       "^": "Closure:470;",
       call$2: [function(q, dc) {
         J.set$connection$x(q, dc);
         return dc;
-      }, null, null, 4, 0, null, 72, 195, "call"]
+      }, null, null, 4, 0, null, 78, 178, "call"]
     },
     initJsApi_closure669: {
       "^": "Closure:101;",
       call$1: [function(q) {
         return q.get$postProcessScript();
-      }, null, null, 2, 0, null, 72, "call"]
+      }, null, null, 2, 0, null, 78, "call"]
     },
     initJsApi_closure670: {
       "^": "Closure:230;",
       call$2: [function(q, script) {
         q.set$postProcessScript(script);
         return script;
-      }, null, null, 4, 0, null, 72, 40, "call"]
+      }, null, null, 4, 0, null, 78, 40, "call"]
     },
     initJsApi_closure671: {
       "^": "Closure:269;",
@@ -111446,14 +111441,14 @@
         var t1 = N.TableQuery$create();
         t1.connection = dc;
         return t1;
-      }, null, null, 2, 0, null, 195, "call"]
+      }, null, null, 2, 0, null, 178, "call"]
     },
     initJsApi_closure673: {
       "^": "Closure:473;",
       call$2: [function(tc, tableName) {
         tc.set$tableName(tableName);
         return tableName;
-      }, null, null, 4, 0, null, 46, 88, "call"]
+      }, null, null, 4, 0, null, 46, 86, "call"]
     },
     initJsApi_closure674: {
       "^": "Closure:55;",
@@ -111466,7 +111461,7 @@
       call$2: [function(tc, fields) {
         tc.set$fields(fields);
         return fields;
-      }, null, null, 4, 0, null, 46, 101, "call"]
+      }, null, null, 4, 0, null, 46, 91, "call"]
     },
     initJsApi_closure676: {
       "^": "Closure:55;",
@@ -111512,7 +111507,7 @@
       call$2: [function(tc, wl) {
         tc.set$whereClausesDb(wl);
         return wl;
-      }, null, null, 4, 0, null, 46, 145, "call"]
+      }, null, null, 4, 0, null, 46, 162, "call"]
     },
     initJsApi_closure680: {
       "^": "Closure:55;",
@@ -111525,7 +111520,7 @@
       call$2: [function(tc, wl) {
         tc.set$aggregationsDb(wl);
         return wl;
-      }, null, null, 4, 0, null, 46, 145, "call"]
+      }, null, null, 4, 0, null, 46, 162, "call"]
     },
     initJsApi_closure682: {
       "^": "Closure:55;",
@@ -111538,7 +111533,7 @@
       call$2: [function(tc, wl) {
         tc.set$havingDb(wl);
         return wl;
-      }, null, null, 4, 0, null, 46, 145, "call"]
+      }, null, null, 4, 0, null, 46, 162, "call"]
     },
     initJsApi_closure684: {
       "^": "Closure:55;",
@@ -111551,7 +111546,7 @@
       call$2: [function(tc, wl) {
         tc.set$orderByDb(wl);
         return wl;
-      }, null, null, 4, 0, null, 46, 145, "call"]
+      }, null, null, 4, 0, null, 46, 162, "call"]
     },
     initJsApi_closure686: {
       "^": "Closure:55;",
@@ -111564,7 +111559,7 @@
       call$2: [function(tc, limit) {
         tc.set$limit(limit);
         return limit;
-      }, null, null, 4, 0, null, 46, 156, "call"]
+      }, null, null, 4, 0, null, 46, 165, "call"]
     },
     initJsApi_closure688: {
       "^": "Closure:55;",
@@ -111577,7 +111572,7 @@
       call$2: [function(tc, joins) {
         tc.set$joinsDb(joins);
         return joins;
-      }, null, null, 4, 0, null, 46, 153, "call"]
+      }, null, null, 4, 0, null, 46, 172, "call"]
     },
     initJsApi_closure690: {
       "^": "Closure:4;",
@@ -111595,7 +111590,7 @@
       "^": "Closure:62;",
       call$2: [function(table, connection) {
         return N.DbTableQueryBuilder_DbTableQueryBuilder$from(table, connection);
-      }, null, null, 4, 0, null, 16, 259, "call"]
+      }, null, null, 4, 0, null, 16, 236, "call"]
     },
     initJsApi_closure693: {
       "^": "Closure:87;",
@@ -111607,85 +111602,85 @@
       "^": "Closure:233;",
       call$1: [function(dtqb) {
         return dtqb.selectAll$0();
-      }, null, null, 2, 0, null, 55, "call"]
+      }, null, null, 2, 0, null, 58, "call"]
     },
     initJsApi_closure695: {
       "^": "Closure:480;",
       call$2: [function(dtqb, fields) {
         return J.select$1$x(dtqb, fields);
-      }, null, null, 4, 0, null, 55, 101, "call"]
+      }, null, null, 4, 0, null, 58, 91, "call"]
     },
     initJsApi_closure696: {
       "^": "Closure:121;",
       call$4: [function(dtqb, func, field, alias) {
         return dtqb.selectAggr$3$as(func, field, alias);
-      }, null, null, 8, 0, null, 55, 38, 83, 388, "call"]
+      }, null, null, 8, 0, null, 58, 36, 84, 389, "call"]
     },
     initJsApi_closure697: {
       "^": "Closure:482;",
       call$2: [function(dtqb, aggregations) {
         return dtqb.selectAggrAll$1(aggregations);
-      }, null, null, 4, 0, null, 55, 154, "call"]
+      }, null, null, 4, 0, null, 58, 169, "call"]
     },
     initJsApi_closure698: {
       "^": "Closure:234;",
       call$2: [function(dtqb, fields) {
         return dtqb.groupBy$1(fields);
-      }, null, null, 4, 0, null, 55, 101, "call"]
+      }, null, null, 4, 0, null, 58, 91, "call"]
     },
     initJsApi_closure699: {
       "^": "Closure:234;",
       call$2: [function(dtqb, fields) {
         return dtqb.pivotOn$1(fields);
-      }, null, null, 4, 0, null, 55, 101, "call"]
+      }, null, null, 4, 0, null, 58, 91, "call"]
     },
     initJsApi_closure700: {
       "^": "Closure:121;",
       call$4: [function(dtqb, field, pattern, dataType) {
         return J.where$3$dataType$ax(dtqb, field, pattern, dataType);
-      }, null, null, 8, 0, null, 55, 83, 33, 107, "call"]
+      }, null, null, 8, 0, null, 58, 84, 35, 108, "call"]
     },
     initJsApi_closure701: {
       "^": "Closure:121;",
       call$4: [function(dtqb, field, pattern, dataType) {
         return dtqb.having$3$dataType(field, pattern, dataType);
-      }, null, null, 8, 0, null, 55, 83, 33, 107, "call"]
+      }, null, null, 8, 0, null, 58, 84, 35, 108, "call"]
     },
     initJsApi_closure702: {
       "^": "Closure:235;",
       call$2: [function(dtqb, whereClauses) {
         return dtqb.whereAll$1(whereClauses);
-      }, null, null, 4, 0, null, 55, 137, "call"]
+      }, null, null, 4, 0, null, 58, 128, "call"]
     },
     initJsApi_closure703: {
       "^": "Closure:235;",
       call$2: [function(dtqb, whereClauses) {
         return dtqb.whereAny$1(whereClauses);
-      }, null, null, 4, 0, null, 55, 137, "call"]
+      }, null, null, 4, 0, null, 58, 128, "call"]
     },
     initJsApi_closure704: {
       "^": "Closure:485;",
       call$3: [function(dtqb, field, asc) {
         return dtqb.sortBy$2$asc(field, asc);
-      }, null, null, 6, 0, null, 55, 83, 389, "call"]
+      }, null, null, 6, 0, null, 58, 84, 390, "call"]
     },
     initJsApi_closure705: {
       "^": "Closure:486;",
       call$2: [function(dtqb, n) {
         return dtqb.limit$1(n);
-      }, null, null, 4, 0, null, 55, 24, "call"]
+      }, null, null, 4, 0, null, 58, 25, "call"]
     },
     initJsApi_closure706: {
       "^": "Closure:487;",
       call$7: [function(dtqb, rightTable, joinType, leftTableKeys, rightTableKeys, rightTableAlias, leftTable) {
         return J.join$6$leftTable$rightTableAlias$ax(dtqb, rightTable, joinType, leftTableKeys, rightTableKeys, leftTable, rightTableAlias);
-      }, null, null, 14, 0, null, 55, 390, 186, 391, 392, 393, 394, "call"]
+      }, null, null, 14, 0, null, 58, 391, 196, 392, 393, 394, 395, "call"]
     },
     initJsApi_closure707: {
       "^": "Closure:233;",
       call$1: [function(dtqb) {
         return dtqb.build$0();
-      }, null, null, 2, 0, null, 55, "call"]
+      }, null, null, 2, 0, null, 58, "call"]
     },
     initJsApi_closure708: {
       "^": "Closure:36;",
@@ -111791,7 +111786,7 @@
         var t1 = O.DataConnection_DataConnection$create(dataSource, O.jsToMap(options, false));
         t1._friendlyName = $name;
         return t1;
-      }, null, null, 6, 0, null, 8, 395, 136, "call"]
+      }, null, null, 6, 0, null, 8, 396, 142, "call"]
     },
     initJsApi_closure722: {
       "^": "Closure:75;",
@@ -111803,7 +111798,7 @@
       "^": "Closure:490;",
       call$3: [function(c, $name, sql) {
         return J.query$2$name$sql$x(c, $name, sql);
-      }, null, null, 6, 0, null, 3, 8, 182, "call"]
+      }, null, null, 6, 0, null, 3, 8, 193, "call"]
     },
     initJsApi_closure724: {
       "^": "Closure:75;",
@@ -111848,7 +111843,7 @@
         var t1 = new O.Credentials(null, null, null, null, null, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), false, null, null, null, null, [], false, null, false, false, [], null, null, "core:", null, false, false, false);
         t1.fromMap$1(json);
         return t1;
-      }, null, null, 2, 0, null, 124, "call"]
+      }, null, null, 2, 0, null, 117, "call"]
     },
     initJsApi_closure731: {
       "^": "Closure:4;",
@@ -111869,38 +111864,38 @@
       "^": "Closure:68;",
       call$1: [function(pi) {
         return pi.get$canceled();
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi_closure734: {
       "^": "Closure:68;",
       call$1: [function(pi) {
         return J.get$percent$x(pi);
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi_closure735: {
       "^": "Closure:68;",
       call$1: [function(pi) {
         return J.get$description$x(pi);
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi_closure736: {
       "^": "Closure:494;",
       call$2: [function(pi, s) {
         J.set$description$x(pi, s);
         return s;
-      }, null, null, 4, 0, null, 79, 4, "call"]
+      }, null, null, 4, 0, null, 81, 4, "call"]
     },
     initJsApi_closure737: {
       "^": "Closure:495;",
       call$3: [function(pi, x, d) {
         return J.update$2$description$x(pi, x, d);
-      }, null, null, 6, 0, null, 79, 0, 103, "call"]
+      }, null, null, 6, 0, null, 81, 0, 105, "call"]
     },
     initJsApi_closure738: {
       "^": "Closure:496;",
       call$2: [function(pi, x) {
         return pi.log$1(x);
-      }, null, null, 4, 0, null, 79, 0, "call"]
+      }, null, null, 4, 0, null, 81, 0, "call"]
     },
     initJsApi_closure739: {
       "^": "Closure:2;",
@@ -111915,25 +111910,25 @@
       "^": "Closure:68;",
       call$1: [function(pi) {
         return pi.get$onProgressUpdated();
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi_closure741: {
       "^": "Closure:68;",
       call$1: [function(pi) {
         return J.map$1$ax(pi.get$onLogUpdated(), new X.initJsApi__closure9());
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi__closure9: {
       "^": "Closure:497;",
       call$1: [function(m) {
         return m.toJson$0();
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     initJsApi_closure742: {
       "^": "Closure:68;",
       call$1: [function(pi) {
         return pi.get$onCancel();
-      }, null, null, 2, 0, null, 79, "call"]
+      }, null, null, 2, 0, null, 81, "call"]
     },
     initJsApi_closure743: {
       "^": "Closure:72;",
@@ -111973,7 +111968,7 @@
       "^": "Closure:498;",
       call$4: [function(s, capitalizeFirst, capitalizeNext, capitalizeConjunctions) {
         return G.camelCaseToWords(s, capitalizeConjunctions, capitalizeFirst, capitalizeNext, " ");
-      }, null, null, 8, 0, null, 4, 397, 398, 399, "call"]
+      }, null, null, 8, 0, null, 4, 398, 399, 400, "call"]
     },
     initJsApi_closure746: {
       "^": "Closure:2;",
@@ -112010,13 +112005,13 @@
       "^": "Closure:32;",
       call$1: [function(func) {
         return J.get$options$x(func);
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure752: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.get$aux();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure753: {
       "^": "Closure:13;",
@@ -112041,7 +112036,7 @@
       "^": "Closure:239;",
       call$2: [function($call, input) {
         return input === true ? $call.get$inputParamMap() : $call.get$outputParamMap();
-      }, null, null, 4, 0, null, 10, 400, "call"]
+      }, null, null, 4, 0, null, 10, 401, "call"]
     },
     initJsApi_closure757: {
       "^": "Closure:13;",
@@ -112054,7 +112049,7 @@
       call$2: [function($call, func) {
         $call.set$func(func);
         return func;
-      }, null, null, 4, 0, null, 10, 38, "call"]
+      }, null, null, 4, 0, null, 10, 36, "call"]
     },
     initJsApi_closure759: {
       "^": "Closure:13;",
@@ -112073,7 +112068,7 @@
         t2.DateTime$_withValue$2$isUtc(t1, false);
         $call.set$started(t2);
         return t2;
-      }, null, null, 4, 0, null, 10, 401, "call"]
+      }, null, null, 4, 0, null, 10, 402, "call"]
     },
     initJsApi_closure761: {
       "^": "Closure:13;",
@@ -112092,7 +112087,7 @@
       call$2: [function($call, $status) {
         J.set$status$x($call, $status);
         return $status;
-      }, null, null, 4, 0, null, 10, 260, "call"]
+      }, null, null, 4, 0, null, 10, 239, "call"]
     },
     initJsApi_closure764: {
       "^": "Closure:13;",
@@ -112163,7 +112158,7 @@
       call$2: [function(f, adHoc) {
         f.set$adHoc(adHoc);
         return adHoc;
-      }, null, null, 4, 0, null, 18, 199, "call"]
+      }, null, null, 4, 0, null, 18, 177, "call"]
     },
     initJsApi_closure775: {
       "^": "Closure:13;",
@@ -112224,13 +112219,13 @@
       call$2: [function(s, options) {
         var t1 = X.cvmImportOptionsFromJs(options);
         return new N.CsvParser("#", null, P.HashMap_HashMap(null, null, null, N.StringColumn, [P.List, P.String]), 0, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false).parse$2$options(0, s, t1);
-      }, null, null, 4, 0, null, 4, 136, "call"]
+      }, null, null, 4, 0, null, 4, 142, "call"]
     },
     initJsApi_closure783: {
       "^": "Closure:509;",
       call$3: [function(s, rows, columns) {
         return N.TestData_make(s, rows, columns);
-      }, null, null, 6, 0, null, 4, 42, 138, "call"]
+      }, null, null, 6, 0, null, 4, 45, 121, "call"]
     },
     initJsApi_closure784: {
       "^": "Closure:510;",
@@ -112245,19 +112240,19 @@
           link.syncCurrentRow$1(null);
           link.syncMouseOverRow$1(null);
         }
-      }, null, null, 14, 0, null, 208, 207, 184, 185, 403, 404, 405, "call"]
+      }, null, null, 14, 0, null, 181, 180, 194, 195, 404, 405, 406, "call"]
     },
     initJsApi_closure785: {
       "^": "Closure:767;",
       call$8: [function(t1, t2, keys1, keys2, values1, values2, joinType, inPlace) {
         return N.joinTables(t1, t2, keys1, keys2, values1, values2, inPlace, joinType, null).result;
-      }, null, null, 16, 0, null, 208, 207, 184, 185, 255, 243, 186, 187, "call"]
+      }, null, null, 16, 0, null, 181, 180, 194, 195, 260, 281, 196, 198, "call"]
     },
     initJsApi_closure786: {
       "^": "Closure:512;",
       call$1: [function(sub) {
         return J.cancel$0$x(sub);
-      }, null, null, 2, 0, null, 110, "call"]
+      }, null, null, 2, 0, null, 112, "call"]
     },
     initJsApi_closure787: {
       "^": "Closure:126;",
@@ -112334,26 +112329,26 @@
       "^": "Closure:32;",
       call$1: [function(func) {
         return J.get$source$x(func);
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure793: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.getUrl$0();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure794: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return J.get$helpUrl$x(func);
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure795: {
       "^": "Closure:240;",
       call$2: [function(func, x) {
         J.set$helpUrl$x(func, x);
         return x;
-      }, null, null, 4, 0, null, 38, 0, "call"]
+      }, null, null, 4, 0, null, 36, 0, "call"]
     },
     initJsApi_closure796: {
       "^": "Closure:32;",
@@ -112365,50 +112360,50 @@
         } else
           t1 = null;
         return t1;
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure797: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.get$isVectorFunc();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure798: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.get$topMenu();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure799: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return J.get$description$x(func);
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure800: {
       "^": "Closure:240;",
       call$2: [function(func, x) {
         J.set$description$x(func, x);
         return x;
-      }, null, null, 4, 0, null, 38, 0, "call"]
+      }, null, null, 4, 0, null, 36, 0, "call"]
     },
     initJsApi_closure801: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.get$inputParams();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure802: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return func.get$outputParams();
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure803: {
       "^": "Closure:32;",
       call$1: [function(func) {
         return J.toList$0$ax(func.get$tags());
-      }, null, null, 2, 0, null, 38, "call"]
+      }, null, null, 2, 0, null, 36, "call"]
     },
     initJsApi_closure804: {
       "^": "Closure:514;",
@@ -112416,13 +112411,13 @@
         var t1 = P.LinkedHashSet_LinkedHashSet$from(tags, null);
         func.set$tags(t1);
         return t1;
-      }, null, null, 4, 0, null, 38, 56, "call"]
+      }, null, null, 4, 0, null, 36, 56, "call"]
     },
     initJsApi_closure805: {
       "^": "Closure:241;",
       call$2: [function(func, parameters) {
         return func.prepare$1$paramValues(O.jsToMap(parameters, false));
-      }, null, null, 4, 0, null, 38, 407, "call"]
+      }, null, null, 4, 0, null, 36, 408, "call"]
     },
     initJsApi_closure806: {
       "^": "Closure:241;",
@@ -112436,7 +112431,7 @@
         var t1 = N.Funcs_find(functionName, O.jsToMap(meta, false), packageName, resultSemType, resultType, null, tags);
         t1 = H.MappedIterable_MappedIterable(t1, new X.initJsApi__closure6(), H.getRuntimeTypeArgument(t1, "Iterable", 0), null);
         return P.List_List$from(t1, true, H.getRuntimeTypeArgument(t1, "Iterable", 0));
-      }, null, null, 12, 0, null, 408, 409, 56, 410, 411, 412, "call"]
+      }, null, null, 12, 0, null, 409, 410, 56, 411, 412, 413, "call"]
     },
     initJsApi__closure6: {
       "^": "Closure:0;",
@@ -112486,7 +112481,7 @@
       call$3: [function($call, processed, report) {
         var t1 = processed == null ? true : processed;
         return $call.runSync$2$processed$report(t1, report == null ? true : report).toJs$0();
-      }, null, null, 6, 0, null, 10, 190, 78, "call"]
+      }, null, null, 6, 0, null, 10, 186, 77, "call"]
     },
     initJsApi_closure811: {
       "^": "Closure:4;",
@@ -112498,7 +112493,7 @@
       "^": "Closure:519;",
       call$3: [function(inputs, outputs, script) {
         return O.Script_fromParams(inputs, outputs, script);
-      }, null, null, 6, 0, null, 413, 414, 40, "call"]
+      }, null, null, 6, 0, null, 414, 415, 40, "call"]
     },
     initJsApi_closure813: {
       "^": "Closure:0;",
@@ -112625,21 +112620,21 @@
       "^": "Closure:524;",
       call$3: [function(obj, eventName, f) {
         return obj.get$eventBus().onEventName$1(eventName).listen$1(f);
-      }, null, null, 6, 0, null, 248, 240, 18, "call"]
+      }, null, null, 6, 0, null, 222, 241, 18, "call"]
     },
     initJsApi_closure829: {
       "^": "Closure:525;",
       call$2: [function(path, data) {
         var t1 = O.FileInfo_FileInfo$fromContent(path, data);
         return $.javaScriptRunner.toJs$1(t1);
-      }, null, null, 4, 0, null, 206, 39, "call"]
+      }, null, null, 4, 0, null, 185, 39, "call"]
     },
     initJsApi_closure830: {
       "^": "Closure:38;",
       call$2: [function(path, data) {
         var t1 = O.FileInfo_FileInfo$fromContent(path, C.Utf8Codec_false.get$encoder().convert$1(data));
         return $.javaScriptRunner.toJs$1(t1);
-      }, null, null, 4, 0, null, 206, 39, "call"]
+      }, null, null, 4, 0, null, 185, 39, "call"]
     },
     initJsApi_closure831: {
       "^": "Closure:23;",
@@ -112737,14 +112732,14 @@
       call$1: [function(root) {
         $._root = root;
         return root;
-      }, null, null, 2, 0, null, 264, "call"]
+      }, null, null, 2, 0, null, 244, "call"]
     },
     initJsApi_closure847: {
       "^": "Closure:4;",
       call$1: [function(token) {
         $._token = token;
         return token;
-      }, null, null, 2, 0, null, 202, "call"]
+      }, null, null, 2, 0, null, 188, "call"]
     },
     initJsApi_closure848: {
       "^": "Closure:2;",
@@ -112757,7 +112752,7 @@
       call$1: [function(token) {
         $.impersonationToken = token;
         return token;
-      }, null, null, 2, 0, null, 202, "call"]
+      }, null, null, 2, 0, null, 188, "call"]
     },
     initJsApi_closure850: {
       "^": "Closure:2;",
@@ -112903,87 +112898,87 @@
       "^": "Closure:531;",
       call$1: [function(iterable) {
         return J.get$iterator$ax(iterable);
-      }, null, null, 2, 0, null, 419, "call"]
+      }, null, null, 2, 0, null, 420, "call"]
     },
     initJsApi_closure871: {
       "^": "Closure:243;",
       call$1: [function(iterator) {
         return iterator.moveNext$0();
-      }, null, null, 2, 0, null, 265, "call"]
+      }, null, null, 2, 0, null, 245, "call"]
     },
     initJsApi_closure872: {
       "^": "Closure:243;",
       call$1: [function(iterator) {
         return iterator.get$current();
-      }, null, null, 2, 0, null, 265, "call"]
+      }, null, null, 2, 0, null, 245, "call"]
     },
     initJsApi_closure873: {
       "^": "Closure:128;",
       call$1: [function(logEventType) {
         return J.get$name$x(logEventType);
-      }, null, null, 2, 0, null, 139, "call"]
+      }, null, null, 2, 0, null, 122, "call"]
     },
     initJsApi_closure874: {
       "^": "Closure:128;",
       call$1: [function(logEventType) {
         return logEventType.get$comment();
-      }, null, null, 2, 0, null, 139, "call"]
+      }, null, null, 2, 0, null, 122, "call"]
     },
     initJsApi_closure875: {
       "^": "Closure:534;",
       call$2: [function(logEventType, comment) {
         logEventType.set$comment(comment);
         return comment;
-      }, null, null, 4, 0, null, 139, 422, "call"]
+      }, null, null, 4, 0, null, 122, 423, "call"]
     },
     initJsApi_closure876: {
       "^": "Closure:128;",
       call$1: [function(logEventType) {
         return logEventType.get$isError();
-      }, null, null, 2, 0, null, 139, "call"]
+      }, null, null, 2, 0, null, 122, "call"]
     },
     initJsApi_closure877: {
       "^": "Closure:535;",
       call$2: [function(logEventType, isError) {
         logEventType.set$isError(isError);
         return isError;
-      }, null, null, 4, 0, null, 139, 423, "call"]
+      }, null, null, 4, 0, null, 122, 424, "call"]
     },
     initJsApi_closure878: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return J.get$description$x(logEvent);
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure879: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return J.get$name$x(logEvent);
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure880: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return J.get$session$x(logEvent);
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure881: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return logEvent.get$parameters();
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure882: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return logEvent.get$eventType();
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure883: {
       "^": "Closure:63;",
       call$1: [function(logEvent) {
         return logEvent.get$eventTime();
-      }, null, null, 2, 0, null, 112, "call"]
+      }, null, null, 2, 0, null, 110, "call"]
     },
     initJsApi_closure884: {
       "^": "Closure:245;",
@@ -113019,19 +113014,19 @@
       "^": "Closure:539;",
       call$1: [function(target) {
         return target.get$properties();
-      }, null, null, 2, 0, null, 204, "call"]
+      }, null, null, 2, 0, null, 176, "call"]
     },
     initJsApi_closure890: {
       "^": "Closure:540;",
       call$2: [function(target, propertyName) {
         return J.getPropertyValue$1$x(target, propertyName);
-      }, null, null, 4, 0, null, 204, 149, "call"]
+      }, null, null, 4, 0, null, 176, 146, "call"]
     },
     initJsApi_closure891: {
       "^": "Closure:541;",
       call$3: [function(target, propertyName, x) {
         return target.setPropertyValue$2(propertyName, x);
-      }, null, null, 6, 0, null, 204, 149, 0, "call"]
+      }, null, null, 6, 0, null, 176, 146, 0, "call"]
     },
     initJsApi_closure892: {
       "^": "Closure:542;",
@@ -113085,13 +113080,13 @@
       "^": "Closure:548;",
       call$1: [function(dc) {
         return J.get$status$x(dc);
-      }, null, null, 2, 0, null, 195, "call"]
+      }, null, null, 2, 0, null, 178, "call"]
     },
     initJsApi_closure901: {
       "^": "Closure:549;",
       call$5: [function(dataFrame, xBins, yBins, xColName, yColName) {
         return N.getDensity(dataFrame, xBins, yBins, xColName, yColName, null, null, null, null, null, false, false);
-      }, null, null, 10, 0, null, 426, 427, 428, 429, 430, "call"]
+      }, null, null, 10, 0, null, 427, 428, 429, 430, 431, "call"]
     },
     initJsApi_closure902: {
       "^": "Closure:12;",
@@ -113103,13 +113098,13 @@
         t2 = new P.DateTime(t1, false);
         t2.DateTime$_withValue$2$isUtc(t1, false);
         return t2;
-      }, null, null, 2, 0, null, 127, "call"]
+      }, null, null, 2, 0, null, 125, "call"]
     },
     initJsApi_closure903: {
       "^": "Closure:4;",
       call$1: [function(type) {
         return P.allowInterop($.$get$Types_testDataGenerators().$index(0, type));
-      }, null, null, 2, 0, null, 63, "call"]
+      }, null, null, 2, 0, null, 61, "call"]
     },
     initJsApi_closure904: {
       "^": "Closure:12;",
@@ -113135,109 +113130,109 @@
         t1.data = t2;
         t1.fromMap$2$ignoreNulls(C.JsonCodec_null_null.decode$1(json), false);
         return t1;
-      }, null, null, 2, 0, null, 124, "call"]
+      }, null, null, 2, 0, null, 117, "call"]
     },
     initJsApi_closure907: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return J.get$id$x(report);
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure908: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$isResolved();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure909: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$jiraTicket();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure910: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$assignee();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure911: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$reporter();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure912: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$correctedDescription();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure913: {
       "^": "Closure:61;",
       call$1: [function(report) {
         return report.get$createdOn().get$millisecondsSinceEpoch();
-      }, null, null, 2, 0, null, 78, "call"]
+      }, null, null, 2, 0, null, 77, "call"]
     },
     initJsApi_closure914: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$user();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure915: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$name$x(notification);
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure916: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$friendlyName();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure917: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$text$x(notification);
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure918: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$data$x(notification);
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure919: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$sender();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure920: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$createdAt();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure921: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$readAt();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure922: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return notification.get$isRead();
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure923: {
       "^": "Closure:45;",
       call$1: [function(notification) {
         return J.get$id$x(notification);
-      }, null, null, 2, 0, null, 76, "call"]
+      }, null, null, 2, 0, null, 74, "call"]
     },
     initJsApi_closure924: {
       "^": "Closure:4;",
@@ -113273,13 +113268,13 @@
       "^": "Closure:0;",
       call$1: [function(param) {
         return self.DG.toJs(param);
-      }, null, null, 2, 0, null, 172, "call"]
+      }, null, null, 2, 0, null, 174, "call"]
     },
     initJsApi_closure928: {
       "^": "Closure:552;",
       call$6: [function(logger, level, message, params, auditType, stackTrace) {
         return (logger == null ? $.$get$log() : logger).log$5$auditType$params$stackTrace(level, message, auditType, params, stackTrace);
-      }, null, null, 12, 0, null, 433, 267, 45, 75, 268, 34, "call"]
+      }, null, null, 12, 0, null, 434, 251, 43, 75, 252, 34, "call"]
     },
     initJsApi_closure929: {
       "^": "Closure:108;",
@@ -113291,7 +113286,7 @@
       "^": "Closure:247;",
       call$2: [function(p, file) {
         return p.getModuleName$1(file);
-      }, null, null, 4, 0, null, 2, 269, "call"]
+      }, null, null, 4, 0, null, 2, 253, "call"]
     },
     initJsApi_closure931: {
       "^": "Closure:108;",
@@ -113304,7 +113299,7 @@
       call$2: [function(p, version) {
         J.set$version$x(p, version);
         return version;
-      }, null, null, 4, 0, null, 2, 437, "call"]
+      }, null, null, 4, 0, null, 2, 438, "call"]
     },
     initJsApi_closure933: {
       "^": "Closure:108;",
@@ -113322,13 +113317,13 @@
       "^": "Closure:134;",
       call$1: [function(db) {
         return J.get$name$x(db);
-      }, null, null, 2, 0, null, 203, "call"]
+      }, null, null, 2, 0, null, 192, "call"]
     },
     initJsApi_closure936: {
       "^": "Closure:556;",
       call$2: [function(db, propName) {
         return db.getProp$1(propName);
-      }, null, null, 4, 0, null, 203, 439, "call"]
+      }, null, null, 4, 0, null, 192, 440, "call"]
     },
     initJsApi_closure937: {
       "^": "Closure:248;",
@@ -113405,7 +113400,7 @@
       call$1: [function(db) {
         var t1 = J.get$connection$x(db);
         return self.DG.toJs(t1);
-      }, null, null, 2, 0, null, 203, "call"]
+      }, null, null, 2, 0, null, 192, "call"]
     },
     initJsApi_closure940: {
       "^": "Closure:558;",
@@ -113450,32 +113445,32 @@
       "^": "Closure:560;",
       call$2: [function(rel, $name) {
         return rel.getProp$1($name);
-      }, null, null, 4, 0, null, 271, 8, "call"]
+      }, null, null, 4, 0, null, 255, 8, "call"]
     },
     initJsApi_closure944: {
       "^": "Closure:561;",
       call$1: [function(rel) {
         var t1 = J.get$connection$x(rel);
         return self.DG.toJs(t1);
-      }, null, null, 2, 0, null, 271, "call"]
+      }, null, null, 2, 0, null, 255, "call"]
     },
     initJsApi_closure945: {
       "^": "Closure:135;",
       call$1: [function(info) {
         return J.get$name$x(info);
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure946: {
       "^": "Closure:135;",
       call$1: [function(info) {
         return info.get$catalog();
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure947: {
       "^": "Closure:563;",
       call$2: [function(info, $name) {
         return info.getProp$1($name);
-      }, null, null, 4, 0, null, 62, 8, "call"]
+      }, null, null, 4, 0, null, 63, 8, "call"]
     },
     initJsApi_closure948: {
       "^": "Closure:564;",
@@ -113523,7 +113518,7 @@
       call$1: [function(info) {
         var t1 = J.get$connection$x(info);
         return self.DG.toJs(t1);
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     initJsApi_closure951: {
       "^": "Closure:566;",
@@ -113547,7 +113542,7 @@
       "^": "Closure:4;",
       call$1: [function(type) {
         return O.DataSource_byType(type, new X.initJsApi__closure1());
-      }, null, null, 2, 0, null, 63, "call"]
+      }, null, null, 2, 0, null, 61, "call"]
     },
     initJsApi__closure1: {
       "^": "Closure:2;",
@@ -113559,55 +113554,55 @@
       "^": "Closure:30;",
       call$1: [function(ds) {
         return J.get$type$x(ds);
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure956: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$category();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure957: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$requiresServer();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure958: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return J.get$description$x(ds);
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure959: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$commentStart();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure960: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$nameBrackets();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure961: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$canBrowseSchema();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure962: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$supportCatalogs();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure963: {
       "^": "Closure:30;",
       call$1: [function(ds) {
         return ds.get$queryLanguage();
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi_closure964: {
       "^": "Closure:30;",
@@ -113616,7 +113611,7 @@
         t1 = t1 == null ? t1 : J.map$1$ax(t1, new X.initJsApi__closure0());
         t1 = t1 == null ? t1 : J.toList$0$ax(t1);
         return t1 == null ? [] : t1;
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi__closure0: {
       "^": "Closure:0;",
@@ -113631,7 +113626,7 @@
         t1 = t1 == null ? t1 : J.map$1$ax(t1, new X.initJsApi__closure());
         t1 = t1 == null ? t1 : J.toList$0$ax(t1);
         return t1 == null ? [] : t1;
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     initJsApi__closure: {
       "^": "Closure:0;",
@@ -113699,7 +113694,7 @@
         t1 = new O.ColumnInfo(null, null, null, null, null, null, null, null, null, [], null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$1(O.jsToMap(cio, false));
         return t1;
-      }, null, null, 2, 0, null, 442, "call"]
+      }, null, null, 2, 0, null, 443, "call"]
     },
     callFuncFromJs_closure: {
       "^": "Closure:0;",
@@ -113840,7 +113835,7 @@
         return P._asyncStart($async$sendEmail$6$attachments$bcc$html$text, $async$completer);
       }, function(subject, to) {
         return this.sendEmail$6$attachments$bcc$html$text(subject, to, null, null, null, null);
-      }, "sendEmail$2", "call$6$attachments$bcc$html$text", "call$2", "get$sendEmail", 4, 9, 570, 1, 1, 1, 1, 443, 444, 91, 445, 446, 447],
+      }, "sendEmail$2", "call$6$attachments$bcc$html$text", "call$2", "get$sendEmail", 4, 9, 570, 1, 1, 1, 1, 444, 445, 96, 446, 447, 448],
       pushMessage$3$sessionIds: function(messageType, message, sessionIds) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, body, t1, t2, $async$temp1, $async$temp2;
         var $async$pushMessage$3$sessionIds = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -113935,7 +113930,7 @@
         t1 = new O.EntityRecord(null, null, [], null, [], [], null, null, null, null, [], null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$1(m);
         return t1;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     GrokClientBase: {
       "^": "Object;",
@@ -114273,7 +114268,7 @@
         if (item instanceof O.Entity)
           item.set$isOnServer(true);
         return item;
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     ConnectionsClient: {
       "^": "HttpDataSource;uploader,name,_json,getTypeFromResponse,_allPackageVersions,_allPackageVersionsHooked,GrokClientBase_customHttp,wheres,orders,byCount,pageNumber,textFilter,includes,semSearchConstraint",
@@ -115270,7 +115265,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 571, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 117, 114, 95, 90, 115, 135, 100, 69, 104, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 571, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 134, 113, 94, 93, 104, 124, 92, 70, 102, 56],
       $asObjectDataSource: function() {
         return [O.DataConnection];
       },
@@ -115325,7 +115320,7 @@
       "^": "Closure:1;",
       call$2: [function(r1, r2) {
         return J.$sub$n(J.get$length$asx(J.get$path$x(r2)), J.get$length$asx(J.get$path$x(r1)));
-      }, null, null, 4, 0, null, 456, 457, "call"]
+      }, null, null, 4, 0, null, 457, 458, "call"]
     },
     ConnectionsClient__parseResponse_closure: {
       "^": "Closure:0;",
@@ -115619,12 +115614,12 @@
             }
         });
         return P._asyncStart($async$lastRun$1, $async$completer);
-      }, "call$1", "get$lastRun", 2, 0, 110, 90],
+      }, "call$1", "get$lastRun", 2, 0, 110, 93],
       filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags: [function(_, connectionId, datasetId, datasource, jobId, jobRunId, projectId, queryId, queryRunId, tableId, tags) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 573, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 117, 114, 95, 90, 115, 135, 100, 69, 104, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 573, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 134, 113, 94, 93, 104, 124, 92, 70, 102, 56],
       $asObjectDataSource: function() {
         return [O.DataQuery];
       },
@@ -115719,12 +115714,12 @@
             }
         });
         return P._asyncStart($async$lastRun$1, $async$completer);
-      }, "call$1", "get$lastRun", 2, 0, 110, 95],
+      }, "call$1", "get$lastRun", 2, 0, 110, 94],
       filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags: [function(_, connectionId, datasetId, datasource, jobId, jobRunId, projectId, queryId, queryRunId, tableId, tags) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 574, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 117, 114, 95, 90, 115, 135, 100, 69, 104, 56],
+      }, "filter$0", "call$10$connectionId$datasetId$datasource$jobId$jobRunId$projectId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 21, 574, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 134, 113, 94, 93, 104, 124, 92, 70, 102, 56],
       $asObjectDataSource: function() {
         return [O.DataJob];
       }
@@ -115753,7 +115748,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 575, 1, 1, 1, 1, 1, 1, 1, 1, 1, 117, 114, 95, 90, 115, 135, 100, 104, 56],
+      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 575, 1, 1, 1, 1, 1, 1, 1, 1, 1, 134, 113, 94, 93, 104, 124, 92, 102, 56],
       $asObjectDataSource: function() {
         return [N.FuncCall];
       },
@@ -115811,7 +115806,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["datasource", datasource, "connectionId", connectionId, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "datasetId", datasetId, "tableId", tableId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags($receiver, null, null, null, null, null, null, null, null, null);
-      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 576, 1, 1, 1, 1, 1, 1, 1, 1, 1, 117, 114, 95, 90, 115, 135, 100, 104, 56],
+      }, "filter$0", "call$9$connectionId$datasetId$datasource$jobId$jobRunId$queryId$queryRunId$tableId$tags", "call$0", "get$filter", 0, 19, 576, 1, 1, 1, 1, 1, 1, 1, 1, 1, 134, 113, 94, 93, 104, 124, 92, 102, 56],
       $asObjectDataSource: function() {
         return [N.FuncCall];
       },
@@ -115982,7 +115977,7 @@
         t1 = new O.DataSource(null, null, true, null, "//", "[]", null, null, null, P.LinkedHashMap__makeEmpty(), null, [t2, t1], null, null, false, null, null, null, false, false, false, false, false, false, false, false, false, null, false, null, null, null, null, false, false, []);
         t1.fromMap$1(info);
         return t1;
-      }, null, null, 2, 0, null, 62, "call"]
+      }, null, null, 2, 0, null, 63, "call"]
     },
     ConnectClient__getDataSources_closure0: {
       "^": "Closure:577;",
@@ -116181,7 +116176,7 @@
         return P._asyncStart($async$run$2, $async$completer);
       }, function(id) {
         return this.run$2(id, false);
-      }, "run$1", "call$2", "call$1", "get$run", 2, 2, 249, 21, 37, 458],
+      }, "run$1", "call$2", "call$1", "get$run", 2, 2, 249, 21, 37, 459],
       stop$2: [function(_, id, awaitStop) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2, response;
         var $async$stop$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -116210,7 +116205,7 @@
         return P._asyncStart($async$stop$2, $async$completer);
       }, function($receiver, id) {
         return this.stop$2($receiver, id, false);
-      }, "stop$1", "call$2", "call$1", "get$stop", 2, 2, 249, 21, 37, 459],
+      }, "stop$1", "call$2", "call$1", "get$stop", 2, 2, 249, 21, 37, 460],
       getContainerLogs$2$limit: function(id, limit) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, uri, response;
         var $async$getContainerLogs$2$limit = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -116463,7 +116458,7 @@
       table$2: [function(schemaName, tableName) {
         var t1 = this._tables;
         return t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
-      }, "call$2", "get$table", 4, 0, 580, 132, 88],
+      }, "call$2", "get$table", 4, 0, 580, 136, 86],
       _grok_http_client_impl$_resolve$2: function(label, $find) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, e, t1, t2;
         var $async$_grok_http_client_impl$_resolve$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -116522,12 +116517,12 @@
         var t1 = this._tables;
         t1 = t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
         return t1 == null ? t1 : t1.get$businessKey();
-      }, "call$2", "get$businessKey", 4, 0, 581, 132, 88],
+      }, "call$2", "get$businessKey", 4, 0, 581, 136, 86],
       nameColumn$2: [function(schemaName, tableName) {
         var t1 = this._tables;
         t1 = t1 == null ? null : t1.$index(0, H.S(schemaName) + "." + H.S(tableName));
         return t1 == null ? t1 : t1.get$nameColumn();
-      }, "call$2", "get$nameColumn", 4, 0, 250, 132, 88],
+      }, "call$2", "get$nameColumn", 4, 0, 250, 136, 86],
       rowProperties$1: function(typeName) {
         var t1 = this._tables;
         if (t1 == null || !t1.containsKey$1(0, typeName))
@@ -116936,7 +116931,7 @@
         return P._asyncStart($async$query$3, $async$completer);
       }, function($receiver, schema, table) {
         return this.query$3($receiver, schema, table, null);
-      }, "query$2", "call$3", "call$2", "get$query", 4, 2, 585, 1, 164, 16, 462],
+      }, "query$2", "call$3", "call$2", "get$query", 4, 2, 585, 1, 149, 16, 463],
       _postDf$2: function(path, spec) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, body, t1, response;
         var $async$_postDf$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -117185,7 +117180,7 @@
             }
         });
         return P._asyncStart($async$version$2, $async$completer);
-      }, "call$2", "get$version", 4, 0, 586, 164, 16],
+      }, "call$2", "get$version", 4, 0, 586, 149, 16],
       getByKey$3: function(schema, table, keyValues) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, tree, t1, t2, k, rows;
         var $async$getByKey$3 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -117219,7 +117214,7 @@
       },
       rows$2: [function(_, schema, table) {
         return new Q.DomainRowsDataSource(schema, table, new Q.DomainsClient(C.Map_794C7, null), null, null, "exclude", null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
-      }, "call$2", "get$rows", 4, 0, 587, 164, 16],
+      }, "call$2", "get$rows", 4, 0, 587, 149, 16],
       _decodeError$1: function(response) {
         var err, t1, exception, $status, message;
         err = null;
@@ -118665,7 +118660,7 @@
         return P._asyncStart($async$watch$3$id, $async$completer);
       }, function(schema, table) {
         return this.watch$3$id(schema, table, null);
-      }, "watch$2", "call$3$id", "call$2", "get$watch", 4, 3, 588, 1, 164, 16, 37],
+      }, "watch$2", "call$3$id", "call$2", "get$watch", 4, 3, 588, 1, 149, 16, 37],
       unwatch$3$id: function(schema, table, id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, res, $async$temp1;
         var $async$unwatch$3$id = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -118729,7 +118724,7 @@
         t1 = new O.DomainSavedFilter(null, null, P.LinkedHashMap__makeEmpty(), null, null, null, null, null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$1(m);
         return t1;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     DomainsClient_fetchFields_closure: {
       "^": "Closure:0;",
@@ -118768,12 +118763,12 @@
       }, "call$0", "get$list", 0, 0, 251],
       where$1: [function(_, filters) {
         return this.super$ObjectDataSource$where(0, filters);
-      }, "call$1", "get$where", 2, 0, 590, 197],
+      }, "call$1", "get$where", 2, 0, 590, 204],
       order$2$desc: [function(_, $name, desc) {
         return this.super$ObjectDataSource$order(0, $name, desc);
       }, function($receiver, $name) {
         return this.order$2$desc($receiver, $name, false);
-      }, "order$1", "call$2$desc", "call$1", "get$order", 2, 3, 591, 21, 8, 170],
+      }, "order$1", "call$2$desc", "call$1", "get$order", 2, 3, 591, 21, 8, 157],
       save$2$update: function(_, item, update) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, client;
         var $async$save$2$update = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -119444,7 +119439,7 @@
       "^": "Closure:0;",
       call$1: [function(g) {
         return J.get$id$x(g);
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     EntityTypesClient: {
       "^": "HttpDataSource;name,_json,getTypeFromResponse,_allPackageVersions,_allPackageVersionsHooked,GrokClientBase_customHttp,wheres,orders,byCount,pageNumber,textFilter,includes,semSearchConstraint",
@@ -119680,7 +119675,7 @@
         return P._asyncStart($async$readAsBytes$2$format, $async$completer);
       }, function(file) {
         return this.readAsBytes$2$format(file, null);
-      }, "readAsBytes$1", "call$2$format", "call$1", "get$readAsBytes", 2, 3, 593, 1, 269, 162],
+      }, "readAsBytes$1", "call$2$format", "call$1", "get$readAsBytes", 2, 3, 593, 1, 253, 155],
       readBinaryDataFrames$1: function(file) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, $async$temp1;
         var $async$readBinaryDataFrames$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -119880,7 +119875,7 @@
         return this.list$4$ext$recursive$root($receiver, folderPathOrFileInfo, null, false, "");
       }, "list$1", function($receiver, folderPathOrFileInfo, ext, recursive) {
         return this.list$4$ext$recursive$root($receiver, folderPathOrFileInfo, ext, recursive, "");
-      }, "list$3$ext$recursive", "call$4$ext$recursive$root", "call$1", "call$3$ext$recursive", "get$list", 2, 7, 594, 21, 1, 464, 465, 466, 467, 264],
+      }, "list$3$ext$recursive", "call$4$ext$recursive$root", "call$1", "call$3$ext$recursive", "get$list", 2, 7, 594, 21, 1, 465, 466, 467, 468, 244],
       saveFileInfo$1: function(f) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1, $async$temp2;
         var $async$saveFileInfo$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -120720,7 +120715,7 @@
       call$1: [function(request) {
         if (this.$this._allPackageVersions)
           J.$indexSet$ax(J.get$headers$x(request), $.DapiHttpHeaders_ALL_PACKAGE_VERSIONS, "true");
-      }, null, null, 2, 0, null, 468, "call"]
+      }, null, null, 2, 0, null, 469, "call"]
     },
     HttpDataSource_list_closure: {
       "^": "Closure:2;$this",
@@ -120901,7 +120896,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 596, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 596, 1, 1, 56, 70],
       $asObjectDataSource: function() {
         return [O.ViewLayout];
       },
@@ -120931,7 +120926,7 @@
         t1.fromMap$1(m);
         t1.Model_isOnServer = true;
         return t1;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     FuncCallsClient: {
       "^": "HttpDataSource;name,_json,getTypeFromResponse,_allPackageVersions,_allPackageVersionsHooked,GrokClientBase_customHttp,wheres,orders,byCount,pageNumber,textFilter,includes,semSearchConstraint",
@@ -121067,7 +121062,7 @@
             }
         });
         return P._asyncStart($async$run$1, $async$completer);
-      }, "call$1", "get$run", 2, 0, 599, 120],
+      }, "call$1", "get$run", 2, 0, 599, 127],
       lastRun$1: [function(id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, lastCall, t1, t2, exception, $async$exception;
         var $async$lastRun$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -121158,7 +121153,7 @@
         if (f instanceof O.Entity)
           f.set$isOnServer(true);
         return f;
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     ActivityClient: {
       "^": "HttpDataSource;name,_json,getTypeFromResponse,_allPackageVersions,_allPackageVersionsHooked,GrokClientBase_customHttp,wheres,orders,byCount,pageNumber,textFilter,includes,semSearchConstraint",
@@ -121172,7 +121167,7 @@
         return this.filter$3$end$start$userId($receiver, null, null, null);
       }, "filter$0", function($receiver, end) {
         return this.filter$3$end$start$userId($receiver, end, null, null);
-      }, "filter$1$end", "call$3$end$start$userId", "call$0", "call$1$end", "get$filter", 0, 7, 600, 1, 1, 1, 232, 122, 125],
+      }, "filter$1$end", "call$3$end$start$userId", "call$0", "call$1$end", "get$filter", 0, 7, 600, 1, 1, 1, 264, 140, 132],
       $asObjectDataSource: function() {
         return [O.LogEvent];
       },
@@ -121204,7 +121199,7 @@
         return this.filter$4$end$entityId$favoritesOnly$start($receiver, null, null, false, null);
       }, "filter$0", function($receiver, end) {
         return this.filter$4$end$entityId$favoritesOnly$start($receiver, end, null, false, null);
-      }, "filter$1$end", "call$4$end$entityId$favoritesOnly$start", "call$0", "call$1$end", "get$filter", 0, 9, 603, 1, 1, 1, 21, 123, 122, 125, 231],
+      }, "filter$1$end", "call$4$end$entityId$favoritesOnly$start", "call$0", "call$1$end", "get$filter", 0, 9, 603, 1, 1, 1, 21, 138, 140, 132, 263],
       audit$1: [function(audit) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, t1, t2, exception, $async$exception;
         var $async$audit$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -121261,7 +121256,7 @@
             }
         });
         return P._asyncStart($async$audit$1, $async$completer);
-      }, "call$1", "get$audit", 2, 0, 604, 469],
+      }, "call$1", "get$audit", 2, 0, 604, 470],
       saveLog$2: [function(funcCallId, logs) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2;
         var $async$saveLog$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -121284,7 +121279,7 @@
             }
         });
         return P._asyncStart($async$saveLog$2, $async$completer);
-      }, "call$2", "get$saveLog", 4, 0, 605, 470, 471],
+      }, "call$2", "get$saveLog", 4, 0, 605, 471, 472],
       timeline$4$limit$to: function(_, session, from, limit, to) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, t3, t4, $async$temp1;
         var $async$timeline$4$limit$to = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -121529,7 +121524,7 @@
         return P._asyncStart($async$run$2$columnNamesMap, $async$completer);
       }, function(tableId) {
         return this.run$2$columnNamesMap(tableId, null);
-      }, "run$1", "call$2$columnNamesMap", "call$1", "get$run", 2, 3, 607, 1, 100, 472],
+      }, "run$1", "call$2$columnNamesMap", "call$1", "get$run", 2, 3, 607, 1, 92, 473],
       save$2$update: function(_, model, update) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$save$2$update = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -121687,7 +121682,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 609, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 609, 1, 1, 56, 70],
       $asObjectDataSource: function() {
         return [O.PredictiveModelInfo];
       },
@@ -121710,7 +121705,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 610, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 610, 1, 1, 56, 70],
       $asObjectDataSource: function() {
         return [O.Notebook];
       },
@@ -122141,12 +122136,12 @@
             }
         });
         return P._asyncStart($async$path$2, $async$completer);
-      }, "call$2", "get$path", 4, 0, 611, 69, 123],
+      }, "call$2", "get$path", 4, 0, 611, 70, 138],
       filter$3$entityId$projectId$type: [function(_, entityId, projectId, type) {
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "entityId", entityId, "type", type]));
       }, function($receiver) {
         return this.filter$3$entityId$projectId$type($receiver, null, null, null);
-      }, "filter$0", "call$3$entityId$projectId$type", "call$0", "get$filter", 0, 7, 612, 1, 1, 1, 69, 123, 63],
+      }, "filter$0", "call$3$entityId$projectId$type", "call$0", "get$filter", 0, 7, 612, 1, 1, 1, 70, 138, 61],
       $asObjectDataSource: function() {
         return [O.ProjectRelation];
       },
@@ -122269,7 +122264,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["authorId", authorId, "entityId", entityId, "tableId", tableId, "projectId", projectId, "includeRoot", t1, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$6$authorId$entityId$includeRoot$projectId$tableId$tags($receiver, null, null, null, null, null, null);
-      }, "filter$0", "call$6$authorId$entityId$includeRoot$projectId$tableId$tags", "call$0", "get$filter", 0, 13, 614, 1, 1, 1, 1, 1, 1, 473, 123, 69, 100, 56, 474],
+      }, "filter$0", "call$6$authorId$entityId$includeRoot$projectId$tableId$tags", "call$0", "get$filter", 0, 13, 614, 1, 1, 1, 1, 1, 1, 474, 138, 70, 92, 56, 475],
       tags$1$query: [function(query) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$self = this, t1, t2, $async$temp1;
         var $async$tags$1$query = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -122305,7 +122300,7 @@
         return P._asyncStart($async$tags$1$query, $async$completer);
       }, function() {
         return this.tags$1$query(null);
-      }, "tags$0", "call$1$query", "call$0", "get$tags", 0, 3, 615, 1, 158],
+      }, "tags$0", "call$1$query", "call$0", "get$tags", 0, 3, 615, 1, 170],
       ProjectClient$1: function(url) {
         this.relations = new Q.ProjectRelationClient("projects/relations", C.Map_794C7, false, false, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
         this.namespaces = new Q.NamespacesClient("projects/namespaces", C.Map_794C7, false, false, false, null, P.LinkedHashMap__makeEmpty(), [], null, null, null, [], null);
@@ -122639,7 +122634,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["projectId", projectId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$2$projectId$tags($receiver, null, null);
-      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 617, 1, 1, 56, 69],
+      }, "filter$0", "call$2$projectId$tags", "call$0", "get$filter", 0, 5, 617, 1, 1, 56, 70],
       lastRun$1: [function(id) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, t1, t2, t3, exception, $async$exception, $async$temp1, $async$temp2;
         var $async$lastRun$1 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -122935,17 +122930,17 @@
       }, "call$0", "get$list", 0, 0, 251],
       where$1: [function(_, filters) {
         return this.super$ObjectDataSource$where(0, filters);
-      }, "call$1", "get$where", 2, 0, 619, 197],
+      }, "call$1", "get$where", 2, 0, 619, 204],
       order$2$desc: [function(_, $name, desc) {
         return this.super$ObjectDataSource$order(0, $name, desc);
       }, function($receiver, $name) {
         return this.order$2$desc($receiver, $name, false);
-      }, "order$1", "call$2$desc", "call$1", "get$order", 2, 3, 620, 21, 8, 170],
+      }, "order$1", "call$2$desc", "call$1", "get$order", 2, 3, 620, 21, 8, 157],
       filter$2$includeLinked$types: [function(_, includeLinked, types) {
         return this.super$ObjectDataSource$where(0, P.LinkedHashMap__makeLiteral(["types", types, "includeLinked", J.$eq$(includeLinked, true) === true ? "true" : "false"]));
       }, function($receiver) {
         return this.filter$2$includeLinked$types($receiver, null, null);
-      }, "filter$0", "call$2$includeLinked$types", "call$0", "get$filter", 0, 5, 621, 1, 1, 233, 234],
+      }, "filter$0", "call$2$includeLinked$types", "call$0", "get$filter", 0, 5, 621, 1, 1, 266, 267],
       $asObjectDataSource: function() {
         return [O.EntityRecord];
       },
@@ -123572,7 +123567,7 @@
         return this.where$1(0, P.LinkedHashMap__makeLiteral(["text", text, "jobId", jobId, "queryId", queryId, "jobRunId", jobRunId, "projectId", projectId, "queryRunId", queryRunId, "tags", tags == null ? tags : J.join$1$ax(tags, ",")]));
       }, function($receiver) {
         return this.filter$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text($receiver, null, null, null, null, null, null, null);
-      }, "filter$0", "call$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text", "call$0", "get$filter", 0, 15, 624, 1, 1, 1, 1, 1, 1, 1, 91, 95, 90, 115, 104, 69, 56],
+      }, "filter$0", "call$7$jobId$jobRunId$projectId$queryId$queryRunId$tags$text", "call$0", "get$filter", 0, 15, 624, 1, 1, 1, 1, 1, 1, 1, 96, 94, 93, 104, 102, 70, 56],
       $asObjectDataSource: function() {
         return [O.TableInfo];
       },
@@ -124042,7 +124037,7 @@
         return P._asyncStart($async$$get$2$currentUser, $async$completer);
       }, function($receiver, $name) {
         return this.$get$2$currentUser($receiver, $name, true);
-      }, "$get$1", "call$2$currentUser", "call$1", "get$get", 2, 3, 628, 60, 8, 274],
+      }, "$get$1", "call$2$currentUser", "call$1", "get$get", 2, 3, 628, 60, 8, 268],
       getValue$3$currentUser: [function($name, key, currentUser) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, $async$handler = 2, $async$currentError, $async$next = [], $async$self = this, data, t1, t2, exception, $async$exception;
         var $async$getValue$3$currentUser = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124107,7 +124102,7 @@
         return P._asyncStart($async$getValue$3$currentUser, $async$completer);
       }, function($name, key) {
         return this.getValue$3$currentUser($name, key, true);
-      }, "getValue$2", "call$3$currentUser", "call$2", "get$getValue", 4, 3, 629, 60, 8, 17, 274],
+      }, "getValue$2", "call$3$currentUser", "call$2", "get$getValue", 4, 3, 629, 60, 8, 17, 268],
       delete$3$currentUser: function(_, $name, key, currentUser) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$self = this, t1, t2;
         var $async$delete$3$currentUser = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124365,7 +124360,7 @@
     },
     testMethod: [function(column, parameter1) {
       return parameter1;
-    }, "call$2", "grok_shared__testMethod$closure", 4, 0, 754, 77, 476],
+    }, "call$2", "grok_shared__testMethod$closure", 4, 0, 754, 72, 477],
     setConnectionCache: function(records, common) {
       var l, t1, t2;
       if (common.get$cache() === true && J.get$isNotEmpty$asx(records) === true) {
@@ -124751,7 +124746,7 @@
           }
       });
       return P._asyncStart($async$dropConnectionCache, $async$completer);
-    }, "call$1", "grok_shared__dropConnectionCache$closure", 2, 0, 757, 259],
+    }, "call$1", "grok_shared__dropConnectionCache$closure", 2, 0, 757, 236],
     gsOpenFile: [function(fullPath) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, tables, t1;
       var $async$gsOpenFile = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124777,7 +124772,7 @@
           }
       });
       return P._asyncStart($async$gsOpenFile, $async$completer);
-    }, "call$1", "grok_shared__gsOpenFile$closure", 2, 0, 758, 477],
+    }, "call$1", "grok_shared__gsOpenFile$closure", 2, 0, 758, 478],
     dropQueryCache: [function(query) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$dropQueryCache = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124793,7 +124788,7 @@
           }
       });
       return P._asyncStart($async$dropQueryCache, $async$completer);
-    }, "call$1", "grok_shared__dropQueryCache$closure", 2, 0, 269, 158],
+    }, "call$1", "grok_shared__dropQueryCache$closure", 2, 0, 269, 170],
     dropFuncCache: [function(query) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$dropFuncCache = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124809,7 +124804,7 @@
           }
       });
       return P._asyncStart($async$dropFuncCache, $async$completer);
-    }, "call$1", "grok_shared__dropFuncCache$closure", 2, 0, 759, 158],
+    }, "call$1", "grok_shared__dropFuncCache$closure", 2, 0, 759, 170],
     gsStorageStats: [function() {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
       var $async$gsStorageStats = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124859,7 +124854,7 @@
       return P._asyncStart($async$gsCallQuery, $async$completer);
     }, function(queryName, queryParameters) {
       return O.gsCallQuery(queryName, queryParameters, false);
-    }, "call$3$adHoc", "call$2", "grok_shared__gsCallQuery$closure", 4, 3, 761, 21, 478, 479, 199],
+    }, "call$3$adHoc", "call$2", "grok_shared__gsCallQuery$closure", 4, 3, 761, 21, 479, 480, 177],
     gsJob: [function(context, jobName, jobParameters) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, t1, job, run, $async$temp1;
       var $async$gsJob = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124899,7 +124894,7 @@
           }
       });
       return P._asyncStart($async$gsJob, $async$completer);
-    }, "call$3", "grok_shared__gsJob$closure", 6, 0, 762, 29, 480, 481],
+    }, "call$3", "grok_shared__gsJob$closure", 6, 0, 762, 29, 481, 482],
     gsDbQuery: [function(conn, tableName, aggregations, fields, groupByFields, having, havingOp, joins, limit, orderBy, pivots, schemaName, whereClauses, whereOp) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, q, t1, t2;
       var $async$gsDbQuery = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -124955,7 +124950,7 @@
       return O.gsDbQuery(conn, tableName, null, null, null, null, null, null, null, null, null, null, null, "and");
     }, function(conn, tableName, limit) {
       return O.gsDbQuery(conn, tableName, null, null, null, null, null, null, limit, null, null, null, null, "and");
-    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbQuery$closure", 4, 25, 763, 1, 1, 1, 165, 1, 1, 1, 1, 1, 1, 1, 1, 275, 88, 132, 101, 188, 276, 137, 154, 189, 277, 278, 159, 156, 153],
+    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbQuery$closure", 4, 25, 763, 1, 1, 1, 151, 1, 1, 1, 1, 1, 1, 1, 1, 270, 86, 136, 91, 200, 271, 128, 169, 202, 272, 273, 168, 165, 172],
     gsDbScalarQuery: [function(conn, tableName, aggregations, fields, groupByFields, having, havingOp, joins, limit, orderBy, pivots, schemaName, whereClauses, whereOp) {
       var $async$goto = 0, $async$completer = P.Completer_Completer$sync(), $async$returnValue, q, t1, t2;
       var $async$gsDbScalarQuery = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -125011,7 +125006,7 @@
       return O.gsDbScalarQuery(conn, tableName, null, null, null, null, null, null, null, null, null, null, null, "and");
     }, function(conn, tableName, limit) {
       return O.gsDbScalarQuery(conn, tableName, null, null, null, null, null, null, limit, null, null, null, null, "and");
-    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbScalarQuery$closure", 4, 25, 764, 1, 1, 1, 165, 1, 1, 1, 1, 1, 1, 1, 1, 275, 88, 132, 101, 188, 276, 137, 154, 189, 277, 278, 159, 156, 153],
+    }, "call$14$aggregations$fields$groupByFields$having$havingOp$joins$limit$orderBy$pivots$schemaName$whereClauses$whereOp", "call$2", "call$3$limit", "grok_shared__gsDbScalarQuery$closure", 4, 25, 764, 1, 1, 1, 151, 1, 1, 1, 1, 1, 1, 1, 1, 270, 86, 136, 91, 200, 271, 128, 169, 202, 272, 273, 168, 165, 172],
     SqlAnnotator_annotate: function(query, table) {
       var _box_0, put, sql, t1, _i, t2, idx, exclude, tableNamesRegexp, columnNamesRegexp, tableMatches, columnMatch, tableAliases, t3, t4, t5, fullTableName, tableParts, tableName, t6, tableAlias, columnAliases, columns, parts, columnName, columnAlias, dbPath, column, dbColumnName;
       _box_0 = {};
@@ -126313,7 +126308,7 @@
         t1 = new O.DockerImage(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, false, t1, null, null, null, [], false, null, false, false, t1, null, null, "core:", null, false, false, false);
         t1.fromMap$1(O.jsToMap(map, false));
         return t1;
-      }, null, null, 2, 0, null, 74, "call"]
+      }, null, null, 2, 0, null, 76, "call"]
     },
     initApiGrokShared_closure5: {
       "^": "Closure:2;",
@@ -149709,20 +149704,20 @@
               case 5:
                 // returning from await.
                 t1 = _box_0.$call.get$func();
-                t2 = $.Zone__current;
-                t3 = [null];
+                t2 = [null];
+                t3 = $.Zone__current;
                 if (t1 instanceof O.DataQuery) {
                   t1 = logger;
-                  t3 = new P._Future(0, t2, null, t3);
-                  t3._asyncComplete$1(null);
-                  socketReceiver = new Y.StreamedDfReceiver(null, new O.ServerExecutableMixin_executeCall_closure6(_box_0), 0, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), t1, socket, 0, 0, 1, 1, null, null, t3, 0);
+                  t2 = new P._Future(0, t3, null, t2);
+                  t2._asyncComplete$1(null);
+                  socketReceiver = new Y.StreamedDfReceiver(null, new O.ServerExecutableMixin_executeCall_closure6(_box_0), 0, null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), t1, socket, 0, 0, 1, 1, null, null, t2, 0);
                   if (t1 == null)
                     socketReceiver.logger = $.$get$log();
                 } else {
                   t1 = logger;
-                  t3 = new P._Future(0, t2, null, t3);
-                  t3._asyncComplete$1(null);
-                  socketReceiver = new Y.BinaryDataSocketReceiver(null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), t1, socket, 0, 0, 1, 1, null, null, t3, 0);
+                  t2 = new P._Future(0, t3, null, t2);
+                  t2._asyncComplete$1(null);
+                  socketReceiver = new Y.BinaryDataSocketReceiver(null, P.LinkedHashMap__makeEmpty(), P.LinkedHashMap__makeEmpty(), t1, socket, 0, 0, 1, 1, null, null, t2, 0);
                   if (t1 == null)
                     socketReceiver.logger = $.$get$log();
                 }
@@ -150018,7 +150013,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 45, "call"]
+      }, null, null, 2, 0, null, 43, "call"]
     },
     ServerExecutableMixin_executeCall_closure1: {
       "^": "Closure:2;c",
@@ -150102,13 +150097,13 @@
       "^": "Closure:0;_box_0",
       call$1: [function(fc) {
         return J.$eq$(fc, this._box_0.$call);
-      }, null, null, 2, 0, null, 279, "call"]
+      }, null, null, 2, 0, null, 274, "call"]
     },
     ServerExecutableMixin_executeCall_closure5: {
       "^": "Closure:0;socket",
       call$1: [function(fc) {
         return this.socket.send$1(0, "CANCEL");
-      }, null, null, 2, 0, null, 279, "call"]
+      }, null, null, 2, 0, null, 274, "call"]
     },
     ServerExecutableMixin_executeCall_closure6: {
       "^": "Closure:2;_box_0",
@@ -150134,13 +150129,13 @@
       "^": "Closure:0;p",
       call$1: [function(rp) {
         return J.$eq$(J.get$name$x(rp), J.get$name$x(this.p));
-      }, null, null, 2, 0, null, 488, "call"]
+      }, null, null, 2, 0, null, 489, "call"]
     },
     ServerExecutableMixin_getParamsFromRemoteCall_closure0: {
       "^": "Closure:0;p",
       call$1: [function(fp) {
         return J.$eq$(J.get$name$x(fp), J.get$name$x(this.p));
-      }, null, null, 2, 0, null, 226, "call"]
+      }, null, null, 2, 0, null, 221, "call"]
     },
     ServerExecutableMixin_getParamsFromRemoteCall_closure1: {
       "^": "Closure:10;socketReceiver",
@@ -150173,19 +150168,19 @@
       "^": "Closure:0;p",
       call$1: [function(pp) {
         return J.$eq$(pp.get$parentTableParam(), this.p.get$param());
-      }, null, null, 2, 0, null, 173, "call"]
+      }, null, null, 2, 0, null, 152, "call"]
     },
     ServerExecutableMixin_sendParam_closure0: {
       "^": "Closure:0;p",
       call$1: [function(pp) {
         return pp.get$isInput() === true && J.$eq$(pp.get$propertyType(), "column") === true && J.$eq$(pp.get$parentTableParam(), this.p.get$param()) === true;
-      }, null, null, 2, 0, null, 173, "call"]
+      }, null, null, 2, 0, null, 152, "call"]
     },
     ServerExecutableMixin_sendParam_closure1: {
       "^": "Closure:0;p",
       call$1: [function(pp) {
         return pp.get$isInput() === true && J.$eq$(pp.get$propertyType(), "column_list") === true && J.$eq$(pp.get$parentTableParam(), this.p.get$param()) === true;
-      }, null, null, 2, 0, null, 173, "call"]
+      }, null, null, 2, 0, null, 152, "call"]
     },
     ServerExecutableMixin_sendParam_closure2: {
       "^": "Closure:0;",
@@ -150225,7 +150220,7 @@
         var t1 = new N.FieldPredicate(null, null, null, false, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(h));
         return t1;
-      }, null, null, 2, 0, null, 166, "call"]
+      }, null, null, 2, 0, null, 156, "call"]
     },
     gsDbQuery_closure1: {
       "^": "Closure:0;",
@@ -150233,7 +150228,7 @@
         var t1 = new N.HavingPredicate(null, ["FieldPredicate"], null, "int", null, false, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(h));
         return t1;
-      }, null, null, 2, 0, null, 166, "call"]
+      }, null, null, 2, 0, null, 156, "call"]
     },
     gsDbQuery_closure2: {
       "^": "Closure:0;",
@@ -150241,7 +150236,7 @@
         var t1 = new N.TableJoin(null, null, null, null, null, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(j));
         return t1;
-      }, null, null, 2, 0, null, 191, "call"]
+      }, null, null, 2, 0, null, 184, "call"]
     },
     gsDbScalarQuery_closure: {
       "^": "Closure:0;",
@@ -150257,7 +150252,7 @@
         var t1 = new N.FieldPredicate(null, null, null, false, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(h));
         return t1;
-      }, null, null, 2, 0, null, 166, "call"]
+      }, null, null, 2, 0, null, 156, "call"]
     },
     gsDbScalarQuery_closure1: {
       "^": "Closure:0;",
@@ -150265,7 +150260,7 @@
         var t1 = new N.HavingPredicate(null, ["FieldPredicate"], null, "int", null, false, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(h));
         return t1;
-      }, null, null, 2, 0, null, 166, "call"]
+      }, null, null, 2, 0, null, 156, "call"]
     },
     gsDbScalarQuery_closure2: {
       "^": "Closure:0;",
@@ -150273,7 +150268,7 @@
         var t1 = new N.TableJoin(null, null, null, null, null, null, null, false, false, []);
         t1.fromMap$1(C.JsonCodec_null_null.decode$1(j));
         return t1;
-      }, null, null, 2, 0, null, 191, "call"]
+      }, null, null, 2, 0, null, 184, "call"]
     },
     TaskBarInterface: {
       "^": "Object;"
@@ -150296,7 +150291,7 @@
       },
       log$1: [function($event) {
         this.eventBus.fire$2(C.EventType_ezg, $event);
-      }, "call$1", "get$log", 2, 0, 632, 161],
+      }, "call$1", "get$log", 2, 0, 632, 171],
       cancel$0: function(_) {
         this.canceled = true;
         this.eventBus.fire$1(C.EventType_c4R);
@@ -150435,7 +150430,7 @@
         return this.run$6$cancelable$onFinish$pausable$spinner($name, action, false, null, false, false);
       }, "run$2", "call$6$cancelable$onFinish$pausable$spinner", "call$2", "get$run", 4, 9, function() {
         return {func: 1, ret: P.Future, args: [P.String, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}], named: {cancelable: P.bool, onFinish: {func: 1, v: true, args: [O.ProgressIndicator]}, pausable: P.bool, spinner: P.bool}};
-      }, 1, 21, 21, 21, 8, 179, 490, 491, 492, 493]
+      }, 1, 21, 21, 21, 8, 199, 491, 492, 493, 494]
     },
     ApiError: {
       "^": "PropMixin_$ApiError;code*,message*,innerMessage@,stackTrace@,log@,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors",
@@ -150784,7 +150779,7 @@
         return this.query$4$name$params$shortName$sql($receiver, $name, null, null, sql);
       }, "query$2$name$sql", function($receiver, $name) {
         return this.query$4$name$params$shortName$sql($receiver, $name, null, null, null);
-      }, "query$1$name", "call$4$name$params$shortName$sql", "call$0", "call$2$name$sql", "call$1$name", "get$query", 0, 9, 633, 1, 1, 1, 1, 8, 494, 182, 75],
+      }, "query$1$name", "call$4$name$params$shortName$sql", "call$0", "call$2$name$sql", "call$1$name", "get$query", 0, 9, 633, 1, 1, 1, 1, 8, 495, 193, 75],
       toString$0: function(_) {
         var t1 = this._friendlyName;
         if (t1 == null) {
@@ -151073,7 +151068,7 @@
       "^": "Closure:30;$this",
       call$1: [function(ds) {
         return J.$eq$(J.get$type$x(ds), this.$this.dataSource);
-      }, null, null, 2, 0, null, 68, "call"]
+      }, null, null, 2, 0, null, 66, "call"]
     },
     DataConnection_saveCredentials_closure0: {
       "^": "Closure:2;",
@@ -151648,7 +151643,7 @@
         if (param != null && param.get$param().get$isInput() === true && N.Types_isScalar(param.get$param().get$propertyType()))
           return J.toString$0$(param.getValueForMap$0());
         return m.group$1(0);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     DataQuery_extractParamsFromSql_closure: {
       "^": "Closure:2;",
@@ -151969,7 +151964,7 @@
       }
     },
     SqlAnnotator__annotateTableQuery_resolveColumnName: {
-      "^": "Closure:16;",
+      "^": "Closure:19;",
       call$1: function(field) {
         return J.get$last$ax(J.split$1$s(field, "."));
       }
@@ -155759,7 +155754,7 @@
         } else
           t1 = false;
         return t1;
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     EntitySyncFunc__findPeerGroupByName_closure0: {
       "^": "Closure:2;",
@@ -156191,7 +156186,7 @@
       "^": "Closure:0;",
       call$1: [function(m) {
         return m.group$1(1);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     EntitySyncFunc__referencedFilePaths_closure0: {
       "^": "Closure:0;",
@@ -157101,13 +157096,13 @@
       "^": "Closure:0;",
       call$1: [function(g) {
         return J.get$parent$x(g) != null;
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     UserGroup_getParents_closure0: {
       "^": "Closure:0;",
       call$1: [function(g) {
         return J.get$parent$x(g);
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     GroupRelation: {
       "^": "Model_PropMixin_$GroupRelation;parent*,child@,isAdmin@,origin*,$$GroupRelation_ancestors,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors,Model_id,Model_included,Model_isOnServer,Model_isDirty"
@@ -157338,7 +157333,7 @@
         } else
           t1 = false;
         return t1;
-      }, null, null, 2, 0, null, 43, "call"]
+      }, null, null, 2, 0, null, 44, "call"]
     },
     UserPasswordMixin: {
       "^": "Object;pwdSalt:UserPasswordMixin_pwdSalt@,pwdHash:UserPasswordMixin_pwdHash@"
@@ -157605,7 +157600,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, ret: [O.ObjectDataSource, T], args: [P.Map]};
         }, this.$receiver, "ObjectDataSource");
-      }, 197],
+      }, 204],
       whereSmart$1: function(text) {
         this.textFilter = text;
         return this;
@@ -157625,7 +157620,7 @@
         return H.computeSignature(function(T) {
           return {func: 1, ret: [O.ObjectDataSource, T], args: [P.String], named: {desc: P.bool}};
         }, this.$receiver, "ObjectDataSource");
-      }, 21, 8, 170],
+      }, 21, 8, 157],
       include$1: function(include) {
         this.includes.push(include);
         return this;
@@ -157843,7 +157838,7 @@
         }
       }, function($receiver, tag) {
         return this.tag$3$owner$type($receiver, tag, null, null);
-      }, "tag$1", "call$3$owner$type", "call$1", "get$tag", 2, 5, 640, 1, 1, 73, 495, 63],
+      }, "tag$1", "call$3$owner$type", "call$1", "get$tag", 2, 5, 640, 1, 1, 73, 496, 61],
       unTag$1: function(tag) {
         this.TagsMixin__tags = null;
         J.removeWhere$1$ax(this.TagsMixin_entityTags, new O.TagsMixin_unTag_closure(tag));
@@ -158516,26 +158511,26 @@
       call$1: [function(cc) {
         var t1 = J.getInterceptor(cc);
         return t1.$eq(cc, ")") !== true && t1.$eq(cc, "(") !== true;
-      }, null, null, 2, 0, null, 213, "call"]
+      }, null, null, 2, 0, null, 183, "call"]
     },
     FilterParserDefinition_conditions__closure0: {
       "^": "Closure:0;",
       call$1: [function(cc) {
         var t1 = J.getInterceptor(cc);
         return t1.$eq(cc, ")") !== true && t1.$eq(cc, "(") !== true;
-      }, null, null, 2, 0, null, 213, "call"]
+      }, null, null, 2, 0, null, 183, "call"]
     },
     FilterParserDefinition_andToken_closure: {
       "^": "Closure:0;",
       call$1: [function(and) {
         return "and";
-      }, null, null, 2, 0, null, 165, "call"]
+      }, null, null, 2, 0, null, 151, "call"]
     },
     FilterParserDefinition_orToken_closure: {
       "^": "Closure:0;",
       call$1: [function(and) {
         return "or";
-      }, null, null, 2, 0, null, 165, "call"]
+      }, null, null, 2, 0, null, 151, "call"]
     },
     FilterParserDefinition_trueToken_closure: {
       "^": "Closure:0;",
@@ -158813,7 +158808,7 @@
         t3 = new S.PossessiveRepeatingParser(0, -1, t2);
         t3.RepeatingParser$3(t2, 0, -1);
         return t1.seq$1(t3).seq$1(D.char(q, null));
-      }, "call$1", "get$quotedBy", 2, 0, 4, 72],
+      }, "call$1", "get$quotedBy", 2, 0, 4, 78],
       stringPrimitive$0: ["super$FilterGrammarDefinition$stringPrimitive", function() {
         var t1 = this.get$quotedBy();
         return this.ref$2(t1, '"').or$1(this.ref$2(t1, "'"));
@@ -159374,7 +159369,7 @@
         t1.tags = P.LinkedHashMap__makeEmpty();
         t1.fromMap$1(w);
         return t1;
-      }, null, null, 2, 0, null, 44, "call"]
+      }, null, null, 2, 0, null, 42, "call"]
     },
     Project_getTables_closure: {
       "^": "Closure:0;",
@@ -159745,13 +159740,13 @@
         t2 = J.$index$asx(J.get$options$x(t1.get$param()), "pattern");
         t1 = J.get$stringValue$x(t1);
         return N.ValueMatcher_ValueMatcher$byType(t2, t1 == null ? "" : t1, null, null).toSparql$1(m.group$1(1));
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     },
     SparqlDataProvider_executeImpl_closure2: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return J.startsWith$1$s(line, "#") !== true;
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     WebDataProvider: {
       "^": "DataProvider;",
@@ -160208,7 +160203,7 @@
       "^": "Closure:0;",
       call$1: [function(line) {
         return "\t\t" + H.S(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     JsScriptHandler_makeVectorCode_closure3: {
       "^": "Closure:0;",
@@ -160382,7 +160377,7 @@
       "^": "Closure:0;$this",
       call$1: [function(dp) {
         return H.S(this.$this.get$commentStart()) + "input: dataframe " + H.S(J.get$name$x(dp)) + " ";
-      }, null, null, 2, 0, null, 280, "call"]
+      }, null, null, 2, 0, null, 276, "call"]
     },
     ScriptHandler_makeVectorHeader_closure1: {
       "^": "Closure:0;",
@@ -160394,7 +160389,7 @@
       "^": "Closure:0;$this",
       call$1: [function(dp) {
         return H.S(this.$this.get$commentStart()) + "output: dataframe " + H.S(J.get$name$x(dp)) + " ";
-      }, null, null, 2, 0, null, 280, "call"]
+      }, null, null, 2, 0, null, 276, "call"]
     },
     PackageScriptHandler: {
       "^": "ScriptHandler_$PackageScriptHandler;runScript@,makeVector@,parser@,$$PackageScriptHandler_ancestors,language,extensions,commentStart,requiresServer,supportsParquet,supportsVectorization,isCancelable,hasCustomParser,_iconPath,_codeEditorMode,editorFunc,_friendlyName,hasCustomTemplate,templateScript,requiredCapabilities,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors",
@@ -160536,7 +160531,7 @@
             }
         });
         return P._asyncStart($async$call$1, $async$completer);
-      }, null, null, 2, 0, null, 281, "call"]
+      }, null, null, 2, 0, null, 277, "call"]
     },
     PackageScriptHandler$create_closure0: {
       "^": "Closure:641;packageHandlerFunc",
@@ -160770,7 +160765,7 @@
       }
     },
     ScriptParser_parseParamLine_getOutputName: {
-      "^": "Closure:16;commentStart",
+      "^": "Closure:19;commentStart",
       call$1: function(line) {
         var match, $name, t1;
         match = P.RegExp_RegExp(J.$add$ns(this.commentStart, "( ?\\S+)[:]( ?)(\\S+)( )(\\w+)"), true, false).firstMatch$1(line);
@@ -160800,13 +160795,13 @@
       "^": "Closure:0;",
       call$1: [function(l) {
         return J.trim$0$s(l);
-      }, null, null, 2, 0, null, 167, "call"]
+      }, null, null, 2, 0, null, 158, "call"]
     },
     ScriptParser_detectCommentStart_closure0: {
       "^": "Closure:0;",
       call$1: [function(l) {
         return J.$gt$n(J.get$length$asx(l), 0);
-      }, null, null, 2, 0, null, 167, "call"]
+      }, null, null, 2, 0, null, 158, "call"]
     },
     ScriptParser_detectCommentStart_closure1: {
       "^": "Closure:0;line",
@@ -160821,7 +160816,7 @@
       }
     },
     ScriptParser_parseViewers_removeQuotes: {
-      "^": "Closure:16;",
+      "^": "Closure:19;",
       call$1: function(s) {
         var t1 = J.getInterceptor$s(s);
         return t1.startsWith$1(s, '"') === true && t1.endsWith$1(s, '"') === true ? t1.substring$2(s, 1, J.$sub$n(t1.get$length(s), 1)) : s;
@@ -160831,7 +160826,7 @@
       "^": "Closure:0;",
       call$1: [function(l) {
         return J.trim$0$s(l);
-      }, null, null, 2, 0, null, 167, "call"]
+      }, null, null, 2, 0, null, 158, "call"]
     },
     ScriptParser_getHeaderLines_closure0: {
       "^": "Closure:0;tag",
@@ -161467,7 +161462,7 @@
       "^": "Closure:0;",
       call$1: [function(cat) {
         return J.$eq$(cat, "") !== true;
-      }, null, null, 2, 0, null, 163, "call"]
+      }, null, null, 2, 0, null, 150, "call"]
     },
     SemanticTypeDetector__containsAllMulti_closure: {
       "^": "Closure:0;c",
@@ -161721,7 +161716,7 @@
       $asPropMixin: Isolate.functionThatReturnsNull
     },
     SocrataQuery_run_toSoqlName: {
-      "^": "Closure:16;",
+      "^": "Closure:19;",
       call$1: function($name) {
         return J.$eq$($name, "bom") === true ? "$$" + H.S($name) : "$" + H.S($name);
       }
@@ -162284,7 +162279,7 @@
       "^": "Closure:0;",
       call$1: [function(elem) {
         return N.FuncCall_FuncCall$fromCommand(elem, null, true);
-      }, null, null, 2, 0, null, 258, "call"]
+      }, null, null, 2, 0, null, 242, "call"]
     },
     TableInfo_execDataSync_closure0: {
       "^": "Closure:0;tableName",
@@ -163216,7 +163211,7 @@
         }
         t2 = $.$get$DatabaseProperties_CatalogSchema();
         return P.LinkedHashMap__makeLiteral(["entityId", t1, "property", H.S(t2.get$name(t2)) + ":" + H.S(J.get$name$x(property))]);
-      }, null, null, 2, 0, null, 288, "call"]
+      }, null, null, 2, 0, null, 224, "call"]
     },
     TablesBlob: {
       "^": "PropMixin_$TablesBlob;version*,tables@,buffer*,tablesOffsets@,columnsOffsets@,length*,PropMixin_changeController,PropMixin_updating,PropMixin_includeDefaultValues,PropMixin_ancestors",
@@ -164081,7 +164076,7 @@
       "^": "Closure:0;",
       call$1: [function(param) {
         return J.$eq$(J.$index$asx(J.$index$asx(J.get$options$x(param.get$param()), "properties"), "in"), "body");
-      }, null, null, 2, 0, null, 172, "call"]
+      }, null, null, 2, 0, null, 174, "call"]
     },
     WebQuery_run_closure0: {
       "^": "Closure:2;",
@@ -164093,7 +164088,7 @@
       "^": "Closure:0;",
       call$1: [function(param) {
         return J.$eq$(J.$index$asx(J.$index$asx(J.get$options$x(param.get$param()), "properties"), "in"), "body") !== true;
-      }, null, null, 2, 0, null, 172, "call"]
+      }, null, null, 2, 0, null, 174, "call"]
     },
     WebQuery_run_getProperty: {
       "^": "Closure:645;",
@@ -167727,7 +167722,7 @@
       return map;
     }, function(jsObject) {
       return O.jsToMap(jsObject, false);
-    }, "call$2$deep", "call$1", "js_utils__jsToMap$closure", 2, 3, 765, 21, 499, 500],
+    }, "call$2$deep", "call$1", "js_utils__jsToMap$closure", 2, 3, 765, 21, 500, 501],
     mapToJs: function(a, assignTo, deep) {
       var json, object;
       if (a == null)
@@ -167969,7 +167964,7 @@
       "^": "Closure:0;",
       call$1: [function(l) {
         return "\t" + H.S(l);
-      }, null, null, 2, 0, null, 167, "call"]
+      }, null, null, 2, 0, null, 158, "call"]
     },
     Logger: {
       "^": "Object;eventBus<,lastLogs@,maxLogs,exportsMessage,params@,settings<,_userErrors",
@@ -167983,7 +167978,7 @@
         return this.info$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time(message, null, null, null, flag, null, null, null, null, null, null);
       }, "info$2$flag", function(message, canPrint, flag, params) {
         return this.info$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time(message, null, canPrint, null, flag, null, null, null, null, params, null);
-      }, "info$4$canPrint$flag$params", "call$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$info", 2, 21, 646, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 45, 75, 94, 130, 210, 129, 128, 131, 143, 134, 141],
+      }, "info$4$canPrint$flag$params", "call$11$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$info", 2, 21, 646, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 43, 75, 99, 123, 209, 120, 119, 141, 139, 129, 131],
       debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time: [function(message, canPost, canPrint, canSave, flag, includeTime, mustPost, mustPrint, mustSave, params, stackTrace, time) {
         return this.log$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace("debug", J.toString$0$(message), canPost, canPrint, canSave, flag, includeTime, mustPost, mustPrint, mustSave, params, stackTrace);
       }, function(message) {
@@ -167994,7 +167989,7 @@
         return this.debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time(message, null, null, null, flag, null, null, null, null, null, null, null);
       }, "debug$2$flag", function(message, canPrint, flag, params) {
         return this.debug$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time(message, null, canPrint, null, flag, null, null, null, null, params, null, null);
-      }, "debug$4$canPrint$flag$params", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$debug", 2, 23, 647, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 45, 75, 94, 289, 34, 130, 129, 128, 131, 143, 134, 141],
+      }, "debug$4$canPrint$flag$params", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$debug", 2, 23, 647, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 43, 75, 99, 287, 34, 123, 120, 119, 141, 139, 129, 131],
       warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time: [function(message, canPost, canPrint, canSave, flag, local, mustPost, mustPrint, mustSave, params, severity, stackTrace, time) {
         return this.log$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace("warning", message, canPost, canPrint, canSave, flag, local, mustPost, mustPrint, mustSave, params, severity, stackTrace);
       }, function(message) {
@@ -168005,12 +168000,12 @@
         return this.warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time(message, null, null, null, flag, null, null, null, null, null, "normal", null, null);
       }, "warning$2$flag", function(message, canPrint, flag, params) {
         return this.warning$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time(message, null, canPrint, null, flag, null, null, null, null, params, "normal", null, null);
-      }, "warning$4$canPrint$flag$params", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$warning", 2, 25, 648, 1, 1, 290, 1, 1, 1, 1, 1, 1, 1, 1, 1, 45, 75, 94, 192, 34, 130, 210, 129, 128, 131, 143, 134, 141],
+      }, "warning$4$canPrint$flag$params", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace$time", "call$1", "call$3$flag$params", "call$2$flag", "call$4$canPrint$flag$params", "get$warning", 2, 25, 648, 1, 1, 288, 1, 1, 1, 1, 1, 1, 1, 1, 1, 43, 75, 99, 212, 34, 123, 209, 120, 119, 141, 139, 129, 131],
       error$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time: [function(_, exception, stackTrace, canPost, canPrint, canSave, mustPost, mustPrint, mustSave, params, remote, severity, time) {
         return this.log$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace("error", exception, canPost, canPrint, canSave, mustPost, mustPrint, mustSave, params, remote, severity, stackTrace);
       }, function($receiver, exception, stackTrace) {
         return this.error$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time($receiver, exception, stackTrace, null, null, null, null, null, null, null, null, "normal", null);
-      }, "error$2", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time", "call$2", "get$error", 4, 21, 649, 1, 290, 1, 1, 1, 1, 1, 1, 1, 1, 512, 34, 75, 192, 292, 130, 129, 128, 131, 143, 134, 141],
+      }, "error$2", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$time", "call$2", "get$error", 4, 21, 649, 1, 288, 1, 1, 1, 1, 1, 1, 1, 1, 513, 34, 75, 212, 290, 123, 120, 119, 141, 139, 129, 131],
       log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time: [function(level, messageOrException, auditType, canPost, canPrint, canSave, flag, includeTime, local, mustPost, mustPrint, mustSave, params, remote, severity, stackTrace, time) {
         var t1;
         if (stackTrace == null && !!J.getInterceptor(messageOrException).$isError)
@@ -168050,7 +168045,7 @@
         return this.log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time(level, messageOrException, auditType, null, null, null, null, null, null, null, null, null, params, null, null, null, null);
       }, "log$4$auditType$params", function(level, messageOrException, auditType, params, stackTrace) {
         return this.log$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time(level, messageOrException, auditType, null, null, null, null, null, null, null, null, null, params, null, null, stackTrace, null);
-      }, "log$5$auditType$params$stackTrace", "call$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time", "call$2", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace", "call$5$auditType$canPrint$params", "call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$4$auditType$params", "call$5$auditType$params$stackTrace", "get$log", 4, 31, 650, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 267, 514, 75, 94, 192, 34, 268, 292, 289, 130, 210, 129, 128, 131, 143, 134, 141],
+      }, "log$5$auditType$params$stackTrace", "call$17$auditType$canPost$canPrint$canSave$flag$includeTime$local$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace$time", "call$2", "call$12$canPost$canPrint$canSave$flag$includeTime$mustPost$mustPrint$mustSave$params$stackTrace", "call$13$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$severity$stackTrace", "call$12$canPost$canPrint$canSave$mustPost$mustPrint$mustSave$params$remote$severity$stackTrace", "call$5$auditType$canPrint$params", "call$12$canPost$canPrint$canSave$flag$local$mustPost$mustPrint$mustSave$params$time", "call$4$auditType$params", "call$5$auditType$params$stackTrace", "get$log", 4, 31, 650, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 251, 515, 75, 99, 212, 34, 252, 290, 287, 123, 209, 120, 119, 141, 139, 129, 131],
       userError$2$params: [function(x, params) {
         var t1, t2, signature, key, t3, last, t4;
         t1 = J.getInterceptor$x(x);
@@ -168085,7 +168080,7 @@
         return this.log$4$auditType$params("audit", message, type, params);
       }, function(type, message) {
         return this.audit$3(type, message, null);
-      }, "audit$2", "call$3", "call$2", "get$audit", 4, 2, 652, 1, 63, 45, 75],
+      }, "audit$2", "call$3", "call$2", "get$audit", 4, 2, 652, 1, 61, 43, 75],
       postMessage$2: function(_, message, settings) {
         var $async$goto = 0, $async$completer = P.Completer_Completer$sync();
         var $async$postMessage$2 = P._wrapJsFunctionForAsync(function($async$errorCode, $async$result) {
@@ -168307,7 +168302,7 @@
         t1 = J.getInterceptor$asx(m);
         q = J.$gt$n(J.get$length$asx(t1.$index(m, 0)), J.get$length$asx(t1.$index(m, 1))) === true && C.JSString_methods.contains$1("\"'", J.$index$asx(t1.$index(m, 0), J.get$length$asx(t1.$index(m, 1)))) === true ? J.$index$asx(t1.$index(m, 0), J.get$length$asx(t1.$index(m, 1))) : "";
         return H.S(t1.$index(m, 1)) + H.S(q) + "[REDACTED]" + H.S(q);
-      }, null, null, 2, 0, null, 35, "call"]
+      }, null, null, 2, 0, null, 30, "call"]
     }
   }], ["", "package:http/src/base_client.dart",, E, {
     "^": "",
@@ -168317,7 +168312,7 @@
         return this._sendUnstreamed$3("GET", url, headers);
       }, function($receiver, url) {
         return this.$get$2$headers($receiver, url, null);
-      }, "$get$1", "call$2$headers", "call$1", "get$get", 2, 3, 653, 1, 152, 118],
+      }, "$get$1", "call$2$headers", "call$1", "get$get", 2, 3, 653, 1, 173, 126],
       post$4$body$encoding$headers: ["super$BaseClient$post", function(url, body, encoding, headers) {
         return this._sendUnstreamed$5("POST", url, headers, body, encoding);
       }],
@@ -168333,7 +168328,7 @@
         return J.then$1$x(this.$get$2$headers(0, url, headers), new E.BaseClient_read_closure(this, url));
       }, function($receiver, url) {
         return this.read$2$headers($receiver, url, null);
-      }, "read$1", "call$2$headers", "call$1", "get$read", 2, 3, 171, 1, 152, 118],
+      }, "read$1", "call$2$headers", "call$1", "get$read", 2, 3, 171, 1, 173, 126],
       readBytes$2$headers: function(url, headers) {
         return J.then$1$x(this.$get$2$headers(0, url, headers), new E.BaseClient_readBytes_closure(this, url));
       },
@@ -168416,14 +168411,14 @@
       call$1: [function(response) {
         this.$this._checkResponseSuccess$2(this.url, response);
         return J.get$body$x(response);
-      }, null, null, 2, 0, null, 174, "call"]
+      }, null, null, 2, 0, null, 147, "call"]
     },
     BaseClient_readBytes_closure: {
       "^": "Closure:0;$this,url",
       call$1: [function(response) {
         this.$this._checkResponseSuccess$2(this.url, response);
         return response.get$bodyBytes();
-      }, null, null, 2, 0, null, 174, "call"]
+      }, null, null, 2, 0, null, 147, "call"]
     }
   }], ["", "package:http/src/base_request.dart",, G, {
     "^": "",
@@ -168440,7 +168435,7 @@
       "^": "Closure:1;",
       call$2: [function(key1, key2) {
         return J.$eq$(J.toLowerCase$0$s(key1), J.toLowerCase$0$s(key2));
-      }, null, null, 4, 0, null, 515, 516, "call"]
+      }, null, null, 4, 0, null, 516, 517, "call"]
     },
     BaseRequest_closure0: {
       "^": "Closure:0;",
@@ -168591,7 +168586,7 @@
         t3 = t2.get$statusCode(t1);
         t4 = t2.get$request(t1);
         return U.Response$bytes(body, t3, t2.get$headers(t1), t1.get$isRedirect(), t1.get$persistentConnection(), t1.get$reasonPhrase(), t4);
-      }, null, null, 2, 0, null, 517, "call"]
+      }, null, null, 2, 0, null, 518, "call"]
     }
   }], ["", "package:http/src/streamed_response.dart",, X, {
     "^": "",
@@ -168645,7 +168640,7 @@
       call$1: [function(pair) {
         var t1 = J.getInterceptor$asx(pair);
         return H.S(t1.$index(pair, 0)) + "=" + H.S(t1.$index(pair, 1));
-      }, null, null, 2, 0, null, 181, "call"]
+      }, null, null, 2, 0, null, 191, "call"]
     }
   }], ["", "package:http_parser/src/case_insensitive_map.dart",, Z, {
     "^": "",
@@ -168805,7 +168800,7 @@
           t1._contents = t2 + '"';
         } else
           t1._contents += H.S(value);
-      }, null, null, 4, 0, null, 518, 14, "call"]
+      }, null, null, 4, 0, null, 519, 14, "call"]
     },
     MediaType_toString__closure: {
       "^": "Closure:0;",
@@ -168871,7 +168866,7 @@
     },
     Intl__throwLocaleError: [function(localeName) {
       throw H.wrapException(P.ArgumentError$("Invalid locale '" + H.S(localeName) + "'"));
-    }, "call$1", "intl_Intl__throwLocaleError$closure", 2, 0, 16],
+    }, "call$1", "intl_Intl__throwLocaleError$closure", 2, 0, 19],
     Intl_shortLocale: function(aLocale) {
       var t1 = J.getInterceptor$asx(aLocale);
       if (J.$lt$n(t1.get$length(aLocale), 2) === true)
@@ -168989,7 +168984,7 @@
         withExtras = H.S(prefix) + formatted + H.S(suffix);
         this._style = null;
         return withExtras;
-      }, "call$1", "get$format", 2, 0, 111, 293],
+      }, "call$1", "get$format", 2, 0, 111, 291],
       _fractionDigitsAfter$1: function(remainingSignificantDigits) {
         var newFractionDigits, t1, t2;
         newFractionDigits = this.super$NumberFormat$_fractionDigitsAfter(remainingSignificantDigits);
@@ -169131,7 +169126,7 @@
           C.JSArray_methods.add$1(t2._styles, new T._CompactStyleWithNegative(t2._createStyle$2(t1.get$first(patterns), impliedDigits), t2._createStyle$2(t1.get$last(patterns), impliedDigits)));
         } else
           C.JSArray_methods.add$1(t2._styles, t2._createStyle$2(pattern, impliedDigits));
-      }, null, null, 4, 0, null, 520, 33, "call"]
+      }, null, null, 4, 0, null, 521, 35, "call"]
     },
     _CompactNumberFormat__stylesForSearching_closure: {
       "^": "Closure:0;",
@@ -169154,7 +169149,7 @@
         return result;
       }, function($receiver) {
         return this.read$1($receiver, 1);
-      }, "read$0", "call$1", "call$0", "get$read", 0, 2, 655, 176, 521],
+      }, "read$0", "call$1", "call$0", "get$read", 0, 2, 655, 201, 522],
       startsWith$1: function(_, pattern) {
         var t1 = this.contents;
         if (typeof t1 === "string")
@@ -169208,7 +169203,7 @@
         t2 = t3._contents += t1.get$isNegative(number) === true ? this._negativeSuffix : this._positiveSuffix;
         t3._contents = "";
         return t2.charCodeAt(0) == 0 ? t2 : t2;
-      }, "call$1", "get$format", 2, 0, 111, 293],
+      }, "call$1", "get$format", 2, 0, 111, 291],
       parse$1: ["super$NumberFormat$parse", function(_, text) {
         var t1, t2;
         t1 = new T._NumberParser(this, text, new T._Stream(text, 0), null, new P.StringBuffer(""), false, false, false, false, false, false, 1, null);
@@ -170184,7 +170179,7 @@
       },
       extension$1: [function(path) {
         return X.ParsedPath_ParsedPath$parse(path, this.style)._splitExtension$0()[1];
-      }, "call$1", "get$extension", 2, 0, 16, 206],
+      }, "call$1", "get$extension", 2, 0, 19, 185],
       join$8: function(_, part1, part2, part3, part4, part5, part6, part7, part8) {
         var parts = H.setRuntimeTypeInfo([part1, part2, part3, part4, part5, part6, part7, part8], [P.String]);
         M._validateArgList("join", parts);
@@ -170437,7 +170432,7 @@
       "^": "Closure:0;",
       call$1: [function(arg) {
         return arg == null ? "null" : '"' + H.S(arg) + '"';
-      }, null, null, 2, 0, null, 65, "call"]
+      }, null, null, 2, 0, null, 68, "call"]
     }
   }], ["", "package:path/src/internal_style.dart",, B, {
     "^": "",
@@ -170911,7 +170906,7 @@
       "^": "Closure:0;",
       call$1: [function(part) {
         return J.$eq$(part, "") !== true;
-      }, null, null, 2, 0, null, 291, "call"]
+      }, null, null, 2, 0, null, 262, "call"]
     }
   }], ["", "package:path/src/utils.dart",, B, {
     "^": "",
@@ -171108,7 +171103,7 @@
       return new D.CharacterParser(C.C_DigitCharPredicate, message);
     }, function() {
       return F.digit("digit expected");
-    }, "call$1", "call$0", "digit__digit$closure", 0, 2, 142, 522, 45],
+    }, "call$1", "call$0", "digit__digit$closure", 0, 2, 142, 523, 43],
     DigitCharPredicate: {
       "^": "Object;",
       test$1: function(value) {
@@ -171123,7 +171118,7 @@
       return new D.CharacterParser(C.C_LetterCharPredicate, message);
     }, function() {
       return U.letter("letter expected");
-    }, "call$1", "call$0", "letter__letter$closure", 0, 2, 142, 523, 45],
+    }, "call$1", "call$0", "letter__letter$closure", 0, 2, 142, 524, 43],
     LetterCharPredicate: {
       "^": "Object;",
       test$1: function(value) {
@@ -171211,13 +171206,13 @@
       "^": "Closure:0;",
       call$1: [function(range) {
         return J.get$start$x(range);
-      }, null, null, 2, 0, null, 254, "call"]
+      }, null, null, 2, 0, null, 292, "call"]
     },
     optimizedRanges_closure1: {
       "^": "Closure:0;",
       call$1: [function(range) {
         return J.get$stop$x(range);
-      }, null, null, 2, 0, null, 254, "call"]
+      }, null, null, 2, 0, null, 292, "call"]
     }
   }], ["petitparser.core.characters.parser", "package:petitparser/src/core/characters/parser.dart",, D, {
     "^": "",
@@ -171274,20 +171269,20 @@
       call$1: [function(elements) {
         var t1 = J.getInterceptor$asx(elements);
         return V.RangeCharPredicate$(V.toCharCode(t1.$index(elements, 0)), V.toCharCode(t1.$index(elements, 2)));
-      }, null, null, 2, 0, null, 525, "call"]
+      }, null, null, 2, 0, null, 526, "call"]
     },
     _createPatternParser_closure2: {
       "^": "Closure:21;",
       call$1: [function(predicates) {
         return E.optimizedRanges(P.List_List$from(predicates, false, V.RangeCharPredicate));
-      }, null, null, 2, 0, null, 216, "call"]
+      }, null, null, 2, 0, null, 293, "call"]
     },
     _createPatternParser_closure1: {
       "^": "Closure:21;",
       call$1: [function(predicates) {
         var t1 = J.getInterceptor$asx(predicates);
         return t1.$index(predicates, 0) == null ? t1.$index(predicates, 1) : new Q.NotCharacterPredicate(t1.$index(predicates, 1));
-      }, null, null, 2, 0, null, 216, "call"]
+      }, null, null, 2, 0, null, 293, "call"]
     }
   }], ["petitparser.core.characters.range", "package:petitparser/src/core/characters/range.dart",, V, {
     "^": "",
@@ -171876,7 +171871,7 @@
         return new A.EndOfInputParser(message, this);
       }, function($receiver) {
         return this.end$1($receiver, "end of input expected");
-      }, "end$0", "call$1", "call$0", "get$end", 0, 2, 142, 527, 45],
+      }, "end$0", "call$1", "call$0", "get$end", 0, 2, 142, 528, 43],
       map$1: function(_, $function) {
         return new L.ActionParser($function, this);
       },
@@ -171941,7 +171936,7 @@
       "^": "Closure:21;index",
       call$1: [function(list) {
         return J.$index$asx(list, this.index);
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     Parser_separatedBy_closure: {
       "^": "Closure:21;separator,includeSeparators,optionalSeparatorAtEnd",
@@ -171959,7 +171954,7 @@
         if (t3 && this.optionalSeparatorAtEnd && t1.$index(list, 2) !== this.separator)
           result.push(t1.$index(list, 2));
         return result;
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     }
   }], ["petitparser.core.predicates.any", "package:petitparser/src/core/predicates/any.dart",, N, {
     "^": "",
@@ -173464,7 +173459,7 @@
       call$1: [function(item) {
         var t1 = this.p;
         return G.mapToObject(item, null, false, null, t1 == null ? t1 : t1.get$propertySubType());
-      }, null, null, 2, 0, null, 528, "call"]
+      }, null, null, 2, 0, null, 529, "call"]
     },
     TypeDescriptor: {
       "^": "Object;type*,$ti",
@@ -173490,7 +173485,7 @@
       }
     },
     _DurationTypeDescriptor_parse_get: {
-      "^": "Closure:17;match",
+      "^": "Closure:16;match",
       call$1: function(pos) {
         var t1 = this.match._match;
         if (pos >= t1.length)
@@ -173793,7 +173788,7 @@
         this.set.call$2(object, value);
         if (!!J.getInterceptor(object).$isPropMixin)
           object.notify$1(this.$this);
-      }, null, null, 4, 0, null, 84, 14, "call"]
+      }, null, null, 4, 0, null, 83, 14, "call"]
     }
   }], ["quiver.collection", "package:quiver/collection.dart",, S, {
     "^": "",
@@ -173984,7 +173979,7 @@
       "^": "Closure:0;",
       call$1: [function(n) {
         return J.get$next$x(n);
-      }, null, null, 2, 0, null, 24, "call"]
+      }, null, null, 2, 0, null, 25, "call"]
     },
     LinkedLruHashMap_keys_closure: {
       "^": "Closure:0;",
@@ -175111,7 +175106,7 @@
         return t1.charCodeAt(0) == 0 ? t1 : t1;
       }, function($receiver, message) {
         return this.message$2$color($receiver, message, null);
-      }, "message$1", "call$2$color", "call$1", "get$message", 2, 3, 661, 1, 45, 529],
+      }, "message$1", "call$2$color", "call$1", "get$message", 2, 3, 661, 1, 43, 530],
       highlight$1$color: [function(_, color) {
         var t1, newSpan, t2, t3, t4;
         t1 = !!this.$isSourceSpanWithContext;
@@ -175256,13 +175251,13 @@
       "^": "Closure:0;",
       call$1: [function(trace) {
         return new Y.Trace(P.List_List$unmodifiable(Y.Trace__parseVM(trace), A.Frame), new P._StringStackTrace(trace));
-      }, null, null, 2, 0, null, 155, "call"]
+      }, null, null, 2, 0, null, 164, "call"]
     },
     closure2262: {
       "^": "Closure:0;",
       call$1: [function(trace) {
         return Y.Trace$parseFriendly(trace);
-      }, null, null, 2, 0, null, 155, "call"]
+      }, null, null, 2, 0, null, 164, "call"]
     },
     Chain_toTrace_closure: {
       "^": "Closure:0;",
@@ -175274,25 +175269,25 @@
       "^": "Closure:0;",
       call$1: [function(trace) {
         return J.fold$2$ax(J.map$1$ax(trace.get$frames(), new U.Chain_toString__closure0()), 0, P.math__max$closure());
-      }, null, null, 2, 0, null, 155, "call"]
+      }, null, null, 2, 0, null, 164, "call"]
     },
     Chain_toString__closure0: {
       "^": "Closure:0;",
       call$1: [function(frame) {
         return J.get$length$asx(J.get$location$x(frame));
-      }, null, null, 2, 0, null, 147, "call"]
+      }, null, null, 2, 0, null, 161, "call"]
     },
     Chain_toString_closure: {
       "^": "Closure:0;longest",
       call$1: [function(trace) {
         return J.join$0$ax(J.map$1$ax(trace.get$frames(), new U.Chain_toString__closure(this.longest)));
-      }, null, null, 2, 0, null, 155, "call"]
+      }, null, null, 2, 0, null, 164, "call"]
     },
     Chain_toString__closure: {
       "^": "Closure:0;longest",
       call$1: [function(frame) {
         return H.S(J.padRight$1$s(J.get$location$x(frame), this.longest)) + "  " + H.S(frame.get$member()) + "\n";
-      }, null, null, 2, 0, null, 147, "call"]
+      }, null, null, 2, 0, null, 161, "call"]
     }
   }], ["", "package:stack_trace/src/frame.dart",, A, {
     "^": "",
@@ -175613,62 +175608,62 @@
       "^": "Closure:0;",
       call$1: [function(line) {
         return A.Frame_Frame$parseVM(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseV8_closure: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return J.startsWith$1$s(line, $.$get$_v8TraceLine()) !== true;
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseV8_closure0: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return A.Frame_Frame$parseV8(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseJSCore_closure: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return J.$eq$(line, "\tat ") !== true;
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseJSCore_closure0: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return A.Frame_Frame$parseV8(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseFirefox_closure: {
       "^": "Closure:0;",
       call$1: [function(line) {
         var t1 = J.getInterceptor$asx(line);
         return t1.get$isNotEmpty(line) === true && t1.$eq(line, "[native code]") !== true;
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseFirefox_closure0: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return A.Frame_Frame$parseFirefox(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseFriendly_closure: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return J.startsWith$1$s(line, "=====") !== true;
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace$parseFriendly_closure0: {
       "^": "Closure:0;",
       call$1: [function(line) {
         return A.Frame_Frame$parseFriendly(line);
-      }, null, null, 2, 0, null, 66, "call"]
+      }, null, null, 2, 0, null, 67, "call"]
     },
     Trace_toString_closure0: {
       "^": "Closure:0;",
       call$1: [function(frame) {
         return J.get$length$asx(J.get$location$x(frame));
-      }, null, null, 2, 0, null, 147, "call"]
+      }, null, null, 2, 0, null, 161, "call"]
     },
     Trace_toString_closure: {
       "^": "Closure:0;longest",
@@ -175677,7 +175672,7 @@
         if (!!t1.$isUnparsedFrame)
           return H.S(frame) + "\n";
         return H.S(J.padRight$1$s(t1.get$location(frame), this.longest)) + "  " + H.S(frame.get$member()) + "\n";
-      }, null, null, 2, 0, null, 147, "call"]
+      }, null, null, 2, 0, null, 161, "call"]
     }
   }], ["", "package:stack_trace/src/unparsed_frame.dart",, N, {
     "^": "",
@@ -175805,7 +175800,7 @@
         return this.error$4$length$match$position($receiver, message, null, null, null);
       }, "error$1", function($receiver, message, $length, position) {
         return this.error$4$length$match$position($receiver, message, $length, null, position);
-      }, "error$3$length$position", "call$4$length$match$position", "call$1", "call$3$length$position", "get$error", 2, 7, 663, 1, 1, 1, 45, 85, 532, 92]
+      }, "error$3$length$position", "call$4$length$match$position", "call$1", "call$3$length$position", "get$error", 2, 7, 663, 1, 1, 1, 43, 85, 533, 90]
     }
   }], ["", "package:term_glyph/src/generated/unicode_glyph_set.dart",, K, {
     "^": "",
@@ -176560,7 +176555,7 @@
           return U.XmlElement$(t3, P.List_List$from(t4, true, A.XmlAttribute), t2);
         } else
           throw H.wrapException(P.ArgumentError$("Expected </" + H.S(t1.$index(list, 1)) + ">, but found </" + H.S(J.$index$asx(t1.$index(list, 4), 3)) + ">"));
-      }, null, null, 2, 0, null, 36, "call"]
+      }, null, null, 2, 0, null, 38, "call"]
     },
     XmlGrammarDefinition_processing_closure: {
       "^": "Closure:0;$this",
@@ -176810,7 +176805,7 @@
       "^": "Closure:0;",
       call$1: [function(node) {
         return J.get$text$x(node);
-      }, null, null, 2, 0, null, 175, "call"]
+      }, null, null, 2, 0, null, 144, "call"]
     }
   }], ["xml.nodes.parent", "package:xml/xml/nodes/parent.dart",, R, {
     "^": "",
@@ -176849,7 +176844,7 @@
       "^": "Closure:0;",
       call$1: [function(node) {
         return H.interceptedTypeCast(node, "$isXmlElement");
-      }, null, null, 2, 0, null, 175, "call"]
+      }, null, null, 2, 0, null, 144, "call"]
     }
   }], ["xml.nodes.processing", "package:xml/xml/nodes/processing.dart",, S, {
     "^": "",
@@ -176885,7 +176880,7 @@
         var t1 = new V.XmlText(null, null);
         t1.set$text(0, text);
         return t1;
-      }, "call$1", "get$createText", 2, 0, 665, 91],
+      }, "call$1", "get$createText", 2, 0, 665, 96],
       $asXmlGrammarDefinition: function() {
         return [V.XmlNode, L.XmlName];
       }
@@ -177401,7 +177396,7 @@
       call$1: [function(node) {
         T.XmlNodeTypeError_checkValidType(node, this.$this.validNodeTypes);
         return node.copy$0();
-      }, null, null, 2, 0, null, 175, "call"]
+      }, null, null, 2, 0, null, 144, "call"]
     }
   }], ["xml.utils.node_type", "package:xml/xml/utils/node_type.dart",, E, {
     "^": "",
@@ -177564,7 +177559,7 @@
         return J.accept$1$x(visitable, this);
       }, "call$1", "get$visit", 2, 0, function() {
         return {func: 1, args: [X.XmlVisitable]};
-      }, 533],
+      }, 534],
       visitName$1: function($name) {
         return;
       },
@@ -178100,7 +178095,7 @@
       "^": "Closure:668;",
       call$2: [function(eventName, f) {
         return $.$get$_nodeEventBus().onEventName$1(eventName).listen$1(f);
-      }, null, null, 4, 0, null, 240, 18, "call"]
+      }, null, null, 4, 0, null, 241, 18, "call"]
     },
     main_closure8: {
       "^": "Closure:2;",
@@ -178109,8 +178104,8 @@
         t1 = new self.DG.ComponentBuildInfo();
         t2 = J.getInterceptor$x(t1);
         t2.set$branch(t1, "master");
-        t2.set$commit(t1, "df4cb9ed77ece3b6588de7c2a29179a44c005896");
-        t2.set$date(t1, "2026-10-15T22:47:04.727Z");
+        t2.set$commit(t1, "23d9a20324a08567c635d4935ae91344aa5bba85");
+        t2.set$date(t1, "2026-10-16T22:46:50.531Z");
         t2.set$version(t1, "1.27.12");
         return t1;
       }, null, null, 0, 0, null, "call"]
@@ -178273,7 +178268,7 @@
         t2 = new X.StreamedResponse(B.toByteStream(stream), null, $status, statusText, null, t1, false, true);
         t2.BaseResponse$7$contentLength$headers$isRedirect$persistentConnection$reasonPhrase$request($status, null, t1, false, true, statusText, null);
         this.completer.complete$1(0, t2);
-      }, null, null, 8, 0, null, 102, 260, 534, 118, "call"]
+      }, null, null, 8, 0, null, 111, 239, 535, 126, "call"]
     },
     FetchClient_send_closure1: {
       "^": "Closure:0;completer",
@@ -178356,7 +178351,7 @@
         }
       }, function(message) {
         return this.call$2(message, false);
-      }, "call$1", null, null, null, 2, 2, null, 21, 45, 415, "call"]
+      }, "call$1", null, null, null, 2, 2, null, 21, 43, 536, "call"]
     },
     NodeWebSocketChannel_closure2: {
       "^": "Closure:0;$this",
@@ -178368,7 +178363,7 @@
       "^": "Closure:1;$this",
       call$2: [function(code, reason) {
         this.$this._grok_shared0$_controller.close$0(0);
-      }, null, null, 4, 0, null, 281, 357, "call"]
+      }, null, null, 4, 0, null, 277, 357, "call"]
     },
     _registerNodeJsFunc_closure: {
       "^": "Closure:0;",
@@ -178546,7 +178541,7 @@
         this.$this._handleJsResults$3(this.$call, result, new X.NodeJsFunc_runImpl__closure(t1));
         if (J.$eq$(t1.future._state, 0) === true)
           t1.complete$0(0);
-      }, null, null, 2, 0, null, 50, "call"]
+      }, null, null, 2, 0, null, 53, "call"]
     },
     NodeJsFunc_runImpl__closure: {
       "^": "Closure:0;completer",
@@ -178721,7 +178716,7 @@
       "^": "Closure:0;",
       call$1: [function(d) {
         return d.get$friendlyName();
-      }, null, null, 2, 0, null, 103, "call"]
+      }, null, null, 2, 0, null, 105, "call"]
     }
   }, 1], ["", "package:term_glyph/term_glyph.dart",, D, {
     "^": ""
@@ -186783,7 +186778,9 @@
     return C.JSArray_methods.toSet$0(["NULL", "NA", "N/A", "null"]);
   }, "CsvParser_defaultNullStrings", "CsvParser_autoConverters", "$get$CsvParser_autoConverters", function() {
     return [new N._MoneyColumnConverter()];
-  }, "CsvParser_autoConverters", "DateUtils_monthIndex", "$get$DateUtils_monthIndex", function() {
+  }, "CsvParser_autoConverters", "_FindQuery__groupRef", "$get$_FindQuery__groupRef", function() {
+    return P.RegExp_RegExp("\\$([0-9])", true, false);
+  }, "_FindQuery__groupRef", "DateUtils_monthIndex", "$get$DateUtils_monthIndex", function() {
     return N.DateUtils_initFromLists([$.$get$months(), $.$get$monthsAbbr()]);
   }, "DateUtils_monthIndex", "dateTimeFormatters", "$get$dateTimeFormatters", function() {
     return P.LinkedHashMap__makeLiteral(["d", new N.closure501(), "dd", new N.closure502(), "ddd", new N.closure503(), "dddd", new N.closure504(), "h", new N.closure505(), "hh", new N.closure506(), "H", new N.closure507(), "HH", new N.closure508(), "m", new N.closure509(), "mm", new N.closure510(), "M", new N.closure511(), "MM", new N.closure512(), "MMM", new N.closure513(), "MMMM", new N.closure514(), "s", new N.closure515(), "ss", new N.closure516(), "f", new N.closure517(), "ff", new N.closure518(), "fff", new N.closure519(), "tt", new N.closure520(), "yy", new N.closure521(), "yyyy", new N.closure522()]);
@@ -196372,8 +196369,8 @@
   }, "funcsInitCompleter"]);
   Isolate = Isolate.$finishIsolateConstructor(Isolate);
   $ = new Isolate();
-  init.metadata = ["x", null, "p", "c", "s", "i", "col", "v", "name", "t", "call", "b", "a", "e", "value", "args", "table", "key", "f", "r", "idx", false, "each", "_", "n", "date", "k", "notify", "element", "context", "cols", "values", "rowCount", "pattern", "stackTrace", "m", "list", "id", "func", "data", "script", "error", "rows", "g", "w", "message", "tc", "u", "nums", "o", "result", "dt", "zone", "parent", "self", "dtqb", "tags", "row", "resultColName", "as", true, "y", "info", "type", "num", "arg", "line", "columnId", "ds", "projectId", "ts", "fi", "q", "tag", "map", "params", "notification", "column", "report", "pi", "index", "items", "it", "field", "object", "match", "reject", "resolve", "tableName", "msg", "queryId", "text", "length", "cell", "flag", "jobId", 0, "semType", "p1", "where", "tableId", "fields", "buffer", "d", "queryRunId", "check", "layout", "dataType", "agg", "p2", "sub", "test", "logEvent", "count", "connectionId", "jobRunId", "df", "datasource", "headers", "ed", "run", "p3", "start", "entityId", "json", "end", "et", "milliseconds", "canPost", "canSave", "time", "canPrint", "schemaName", "other", "mustPost", "datasetId", "options", "whereClauses", "columns", "logEventType", "function", "mustPrint", "columnFilter", "mustSave", "ci", "wl", "p4", "frame", "expression", "propertyName", "admin", "decimalPlaces", "url", "joins", "aggregations", "trace", "limit", "when", "query", "orderBy", "callback", "event", "format", "cat", "schema", "and", "h", "l", "state", "eventArgs", "desc", "ti", "param", "pp", "response", "node", 1, "hours", "invocation", "action", "bitset", "pair", "sql", "progress", "keys1", "keys2", "joinType", "inPlace", "pivots", "groupByFields", "processed", "j", "severity", "seconds", "minutes", "dc", "relativeSelectors", "filters", "columnName", "adHoc", "order", "errorBehavior", "token", "db", "target", "mask", "path", "t2", "t1", "treatAsString", "local", "p5", "auto", "cc", "colName", "newName", "predicates", "levels", "valueColumnName", "levelIndex", "categoryColumnName", "fieldId", "s1", "s2", "timeLimit", "onTimeout", "fp", "needle", "queue", "p6", "arg1", "favoritesOnly", "userId", "types", "includeLinked", "limits", "compute", "subscribeOnChanges", "newType", "filter", "eventName", "op", "currentCall", "values2", "nca", "bigint", "ascending", "by", "obj", "year", "month", "day", "b2", "link", "range", "values1", "onlyFiltered", "lcv", "elem", "connection", "status", "sum", "cap", "units", "root", "iterator", "duration", "level", "auditType", "file", "pos", "rel", "arguments", "group", "currentUser", "conn", "whereOp", "havingOp", "having", "fc", "dp", "code", "arg2", "stream", " ", "width", "padding", "prefix", "property", "includeTime", "normal", "part", "remote", "number", "onlySelected", "logClient", "onData", "delimiter", "st", "typedEventArgs", "activityClient", "startIndex", "include", "dispatch", "str", "regExp", "errorCode", "groups", "inner", "whenEqual", "rowIdx", "grid", "colNames", "copyColumnNames", "mergeColumnNames", "rowMask", "columnIds", "saveSelection", "saveTags", "errorMessage", "onError", "timeslice", "columnsToAppend", "sortByColumnIds", "sortOrders", "Category", "bytes", "compress", "autoName", "Value", "qnum", "qualifier", "getValue", "setValue", "columnToReplace", "newColumn", "desiredTags", "choices", "columnNames", "bins", "categories", "indexes", "rawData", "specification", "indexToValue", "valueComparer", "aggrType", "doublePrecision", "paramName", "arr", "group_", "optional", "table2", "window", "minPeriods", "valueColumn", "catColumn", "reason", "chunk", "fcp", "groups_", "tagValue", "copyColumns", "getter", "setter", "defaultValue", "mergeColumns", "propertyValue", "typeName", "regexp", "description", "matching", "funcList", "propType", "b1", "logScale", "handler", "metric", "zeroOnes", "arg3", "rowPredicate", "lst", "theError", "val", "captureThis", "uri", "grainOffset", "timestamp", "alias", "asc", "rightTable", "leftTableKeys", "rightTableKeys", "rightTableAlias", "leftTable", "dataSource", "encodedComponent", "capitalizeFirst", "capitalizeNext", "capitalizeConjunctions", "input", "millisecondSinceEpoch", "grainDuration", "linkTypes", "initialSync", "filterAllOnNoRowsSelected", "throwOnError", "parameters", "packageName", "functionName", "meta", "resultType", "resultSemType", "inputs", "outputs", "isBinary", "strings", "permission", "def", "iterable", "archive", "column1", "comment", "isError", "column2", "minimum", "dataFrame", "xBins", "yBins", "xColName", "yColName", "days", "closure", "logger", 10, "table1", "rowCellCount", "version", 26789344063684636e-50, "propName", "stat", "dt1", "cio", "subject", "to", "html", "bcc", "attachments", "dt2", "mode", "isolate", "Min-max", "method", "whenNull", "expected", "clear", "r1", "r2", "awaitStart", "awaitStop", "title", "numberOfArguments", "spec", ",", "", "folderPathOrFileInfo", "recursive", "ext", "request", "audit", "funcCallId", "logs", "columnNamesMap", "authorId", "includeRoot", "arg4", "parameter1", "fullPath", "queryName", "queryParameters", "jobName", "jobParameters", "from", "oldColName", "candidate", "newColName", ".", "theStackTrace", "rp", "replace", "onFinish", "cancelable", "pausable", "spinner", "shortName", "owner", "suppressException", "useKMMultipliers", "separator", "jsObject", "deep", "decimalSeparator", "optionsJson", "upsert", "ga", "zoneValues", "string", "postfix", "sender", "pc", "join", "aggr", "exception", "parameter", "messageOrException", "key1", "key2", "body", "attribute", "p7", "impliedDigits", "howMany", "digit expected", "letter expected", "js", "elements", "stack", "end of input expected", "item", "color", "base", "exponent", "position", "visitable", "statusText", "whenEmpty", "delim"];
-  init.types = [{func: 1, args: [,]}, {func: 1, args: [,,]}, {func: 1}, {func: 1, ret: P.Future}, {func: 1, args: [P.String]}, {func: 1, args: [G.Property]}, {func: 1, v: true}, {func: 1, args: [N.Column]}, {func: 1, args: [P.DateTime]}, {func: 1, args: [G.Property,,]}, {func: 1, ret: P.Future, args: [,]}, {func: 1, args: [N.DataFrame]}, {func: 1, args: [P.int]}, {func: 1, args: [N.FuncCall]}, {func: 1, ret: P.DateTime, args: [P.String]}, {func: 1, ret: Q.Parser}, {func: 1, ret: P.String, args: [P.String]}, {func: 1, ret: P.int, args: [P.int]}, {func: 1, ret: P.bool, args: [P.int]}, {func: 1, ret: P.double, args: [P.int]}, {func: 1, ret: P.double, args: [P.num]}, {func: 1, args: [P.List]}, {func: 1, args: [N.Stats]}, {func: 1, args: [O.FileInfo]}, {func: 1, ret: P.int, args: [P.int, P.int]}, {func: 1, ret: P.bool, args: [P.Object]}, {func: 1, args: [N.FuncCallParam]}, {func: 1, args: [N.BitSet]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String}}, {func: 1, args: [P.Map]}, {func: 1, args: [O.DataSource]}, {func: 1, ret: P.int, args: [P.DateTime]}, {func: 1, args: [N.Func]}, {func: 1, args: [O.DockerImage]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String]}, {func: 1, args: [O.DomainRow]}, {func: 1, args: [O.Entity]}, {func: 1, args: [N.Column, P.String]}, {func: 1, args: [P.String, P.String]}, {func: 1, args: [N.Cell]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {resultColName: P.String}}, {func: 1, args: [O.Project]}, {func: 1, ret: P.double, args: [,]}, {func: 1, args: [O.User]}, {func: 1, args: [G.Property, P.String]}, {func: 1, args: [O.UserNotification]}, {func: 1, ret: P.bool, args: [P.String]}, {func: 1, ret: P.double, args: [N.BitSet, N.BitSet]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,]}, {func: 1, args: [N.ColumnList]}, {func: 1, v: true, args: [P.Object]}, {func: 1, ret: P.String, args: [P.int]}, {func: 1, args: [O.DockerImage, P.String]}, {func: 1, args: [P.Duration]}, {func: 1, args: [P.num]}, {func: 1, args: [N.TableQuery]}, {func: 1, ret: P.int, args: [P.String]}, {func: 1, args: [Q.DomainsClient, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall]}, {func: 1, args: [N.FuncCall, P.String]}, {func: 1, ret: P.bool, args: [,]}, {func: 1, args: [O.UserReport]}, {func: 1, args: [P.String,,]}, {func: 1, args: [O.LogEvent]}, {func: 1, args: [P.double], opt: [P.String]}, {func: 1, ret: P.double, args: [P.num, P.num]}, {func: 1, v: true, args: [N.BufferAccessor]}, {func: 1, args: [O.ObjectDataSource]}, {func: 1, args: [O.ProgressIndicator]}, {func: 1, ret: N.EncodingEstimate, args: [N.IntColumn]}, {func: 1, args: [N.Column, P.int]}, {func: 1, v: true, args: [,]}, {func: 1, ret: P.Future, args: [P.String]}, {func: 1, args: [O.SemanticValue]}, {func: 1, args: [P.bool]}, {func: 1, args: [O.DataConnection]}, {func: 1, args: [O.Script]}, {func: 1, args: [, P.String]}, {func: 1, args: [P.int, P.int]}, {func: 1, args: [Q.SpaceFilesClient,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.FloatColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.StringColumn]}, {func: 1, args: [O.DomainSchema]}, {func: 1, args: [N.EventData]}, {func: 1, ret: P.int, args: [,]}, {func: 1, args: [O.User, P.String]}, {func: 1, args: [N.BitSet, N.BitSet, P.bool]}, {func: 1, args: [O.TableInfo]}, {func: 1, args: [O.ColumnInfo]}, {func: 1, args: [N.TableQuery, [P.List, P.Map]]}, {func: 1, args: [O.Script, P.String]}, {func: 1, args: [O.ViewInfo]}, {func: 1, ret: P.bool, args: [P.String, P.String]}, {func: 1, args: [O.UserGroup]}, {func: 1, v: true, args: [P.Object], opt: [P.StackTrace]}, {func: 1, args: [N.ColumnList, P.String]}, {func: 1, args: [N.RowMatcher]}, {func: 1, args: [O.Entity, P.String]}, {func: 1, args: [[P.Iterable, P.String]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String]}, {func: 1, args: [P.Match]}, {func: 1, args: [O.DataQuery]}, {func: 1, ret: P.int, args: [P.double]}, {func: 1, args: [O.DomainTable]}, {func: 1, ret: P.bool, args: [P.num, P.num]}, {func: 1, v: true, args: [P.String]}, {func: 1, ret: P.double, args: [P.double]}, {func: 1, ret: P.num, args: [P.num, P.num]}, {func: 1, args: [O.GrokPublishedPackage]}, {func: 1, ret: P.String, args: [P.String, P.int]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String]}, {func: 1, ret: P.String, args: [,]}, {func: 1, args: [,,,]}, {func: 1, ret: P.double, args: [P.String]}, {func: 1, v: true, args: [N.Context1, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.String]}, {func: 1, args: [O.EntityPropertySchema]}, {func: 1, ret: N.EncodingEstimate, args: [N.DateTimeColumn]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String]}, {func: 1, ret: P.bool, args: [P.bool, P.bool]}, {func: 1, args: [P.Map,,]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.String]}, {func: 1, args: [O.TagsMixin, P.String]}, {func: 1, args: [N.ValueMatcher,,]}, {func: 1, args: [[X.DartHandle, P.List]]}, {func: 1, args: [Q.SpacesClient, P.String]}, {func: 1, args: [P.String,, P.bool]}, {func: 1, ret: W.Element, args: [P.String]}, {func: 1, args: [O.LogEventType]}, {func: 1, args: [N.RowList]}, {func: 1, args: [O.LogEventParameterValue]}, {func: 1, ret: P.DateTime, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [O.UserSession]}, {func: 1, ret: P.String, args: [[P.Iterable, P.String]]}, {func: 1, args: [O.DbInfo]}, {func: 1, args: [O.DbSchemaInfo]}, {func: 1, ret: N.EncodingEstimate, args: [N.BigIntColumn]}, {func: 1, args: [G.Property, P.bool]}, {func: 1, ret: P.String}, {func: 1, args: [N.EventType]}, {func: 1, args: [O.ObjectDataSource, P.String]}, {func: 1, args: [O.ViewLayout]}, {func: 1, ret: Q.Parser, opt: [P.String]}, {func: 1, v: true, args: [{func: 1, v: true}]}, {func: 1, v: true, args: [, P.StackTrace]}, {func: 1, args: [N.DataFrame, P.String]}, {func: 1, v: true, args: [N.DataFrame]}, {func: 1, args: [Q.DomainsClient, P.String,,]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, args: [,], opt: [,]}, {func: 1, args: [N.DataFrame, P.Function]}, {func: 1, ret: P.int, args: [P.num]}, {func: 1, args: [,,,,]}, {func: 1, args: [P.Iterable, N.Column, N.GroupAggregation]}, {func: 1, ret: N.QueryBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ObjectDataSource, O.Entity]}, {func: 1, args: [N.TypedEventArgs]}, {func: 1, args: [N.FuncParam]}, {func: 1, v: true, args: [P.Map]}, {func: 1, args: [Q.Parser]}, {func: 1, ret: P.bool, args: [,,]}, {func: 1, args: [P.String, P.String, N.Context1]}, {func: 1, args: [P.int, P.String]}, {func: 1, v: true, opt: [P.num]}, {func: 1, args: [P.String, P.String,,]}, {func: 1, v: true, args: [P.double]}, {func: 1, args: [P.String, P.double]}, {func: 1, ret: P.bool, args: [P.bool]}, {func: 1, v: true, args: [N.Func], named: {override: P.bool}}, {func: 1, v: true, args: [, P.String]}, {func: 1, args: [Q._NodeStats]}, {func: 1, ret: [P.Future, P.String], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [, P.EventSink]}, {func: 1, args: [[X.DartHandle, P.List], P.int,,]}, {func: 1, args: [[X.DartHandle, P.List],,]}, {func: 1, args: [P.Object]}, {func: 1, args: [P.String, P.String, P.int]}, {func: 1, args: [P.Symbol0,,]}, {func: 1, ret: P.String, args: [N.Column, P.int]}, {func: 1, args: [Q.UserClient]}, {func: 1, ret: [P.List, P.String], args: [[P.List, P.int]]}, {func: 1, args: [P.String, P.String, P.bool]}, {func: 1, args: [P.bool], opt: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.int]}, {func: 1, args: [Q.SpaceClient, P.String]}, {func: 1, args: [Q.SpaceClient]}, {func: 1, ret: P.DateTime, args: [P.int]}, {func: 1, args: [Q.SpaceFilesClient,, P.String]}, {func: 1, ret: P.int, args: [P.DateTime, P.DateTime]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,]}, {func: 1, ret: P.int, args: [P.double, P.double]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String]}, {func: 1, v: true, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String]}, {func: 1, ret: P.int, args: [P.Object, P.Object]}, {func: 1, args: [O.ViewLayout, P.String]}, {func: 1, ret: P.bool, args: [P.double]}, {func: 1, args: [O.ViewInfo, P.String]}, {func: 1, ret: P.int, args: [P.String, P.String]}, {func: 1, args: [N.DataFrame, P.int]}, {func: 1, args: [N.Row]}, {func: 1, args: [N.DataFrame, P.num]}, {func: 1, v: true, args: [P.Uint8List, P.String, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.bool, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [N.FuncCall, P.String, N.FuncCallParam]}, {func: 1, args: [, P.StackTrace]}, {func: 1, ret: P.List, args: [P.List]}, {func: 1, args: [N.Column, N.BitSet]}, {func: 1, args: [N.Stats, N.Column]}, {func: 1, args: [N.RowList, P.int], opt: [P.int, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.RowList,,]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.ValueMatcher]}, {func: 1, ret: P.Int16List}, {func: 1, ret: P.Int8List}, {func: 1, args: [O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup]}, {func: 1, args: [O.UserGroup,,]}, {func: 1, v: true, args: [P.Int16List]}, {func: 1, v: true, args: [P.Int8List]}, {func: 1, args: [O.SemanticValue,,]}, {func: 1, args: [O.SemanticValue, P.String]}, {func: 1, args: [O.EntityType]}, {func: 1, args: [O.EntityType, P.String]}, {func: 1, args: [O.EntityPropertySchema, P.List]}, {func: 1, args: [N.BitSet, P.int, P.bool]}, {func: 1, args: [O.HistoryEntry]}, {func: 1, args: [O.DataQuery, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String]}, {func: 1, ret: P.bool, args: [P.DateTime, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, P.String]]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.FieldPredicate]]}, {func: 1, args: [O.Credentials]}, {func: 1, ret: P.double}, {func: 1, args: [N.FuncCall, P.String,,]}, {func: 1, args: [N.FuncCall, P.bool]}, {func: 1, args: [N.Func, P.String]}, {func: 1, args: [N.Func,,]}, {func: 1, ret: P.Future, args: [P.Map]}, {func: 1, args: [P.Iterator]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {function: P.String, resultColName: P.String}}, {func: 1, args: [O.LogEventParameter]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.bool]}, {func: 1, args: [O.GrokPublishedPackage, P.String]}, {func: 1, ret: P.Future, args: [O.DbInfo]}, {func: 1, ret: P.Future, args: [P.String], opt: [P.bool]}, {func: 1, ret: P.String, args: [P.String, P.String]}, {func: 1, ret: [P.Future, [P.List, O.Entity]]}, {func: 1, v: true, args: [P.String,,]}, {func: 1, ret: [P.Future, N.DataFrame]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String, function: P.String}}, {func: 1, ret: P.String, args: [P.Match]}, {func: 1, args: [N.FieldPredicate]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall]}, {func: 1, ret: P.DateTime}, {func: 1, ret: N._Kernel, args: [P.String, P.int]}, {func: 1, ret: N.Column, args: [N.DataFrame, P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, ret: N._Kernel, args: [P.String, P.bool]}, {func: 1, ret: P.String, args: [P.String, P.int], named: {padding: P.String}}, {func: 1, ret: P.bool, args: [N._Vec, P.int]}, {func: 1, ret: P.bool, args: [[P.List, N._Node0]]}, {func: 1, ret: P.num, args: [P.num]}, {func: 1, ret: P.String, args: [P.num]}, {func: 1, ret: P.Future, args: [O.DataQuery]}, {func: 1, args: [P.int,,]}, {func: 1, args: [Q.CredentialsClient, O.Entity]}, {func: 1, args: [Q.CredentialsClient, O.Credentials]}, {func: 1, args: [P.String, P.String, P.String, P.bool]}, {func: 1, ret: P.int, args: [N.BigInt, N.BigInt]}, {func: 1, args: [P.String, P.bool]}, {func: 1, ret: N.FuncCall, args: [P.List]}, {func: 1, ret: P.int, args: [P.bool, P.bool]}, {func: 1, ret: P.Number, args: [P.int]}, {func: 1, ret: P.int, args: [P.Uint8List, P.Uint8List]}, {func: 1, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.Entity, O.UserGroup]}, {func: 1, args: [Q.LayoutClient, N.DataFrame]}, {func: 1, ret: N.FuncCall, args: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.String, P.bool]}, {func: 1, ret: P.int, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [Q.SpaceClient,, P.bool]}, {func: 1, ret: P.bool}, {func: 1, args: [Q.SpaceClient, P.String, P.bool]}, {func: 1, v: true, args: [[P.Iterable, P.String]]}, {func: 1, args: [Q.SpaceChildrenClient, P.String, P.bool]}, {func: 1, v: true, args: [N.Column, P.String]}, {func: 1, args: [Q.SpaceFilesClient,, [P.List, P.int]]}, {func: 1, ret: N.Column, args: [N.Column, P.String]}, {func: 1, args: [Q.SpaceFilesClient, P.List,,]}, {func: 1, args: [Q.SpaceFilesClient, P.List, P.String]}, {func: 1, args: [Q.DomainsClient]}, {func: 1, ret: N.Column}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.bool, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,,]}, {func: 1, v: true, args: [P.String, P.int]}, {func: 1, ret: P.Point0, args: [P.int]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,,]}, {func: 1, ret: P.int, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.String,,]}, {func: 1, ret: P.num, args: [P.int]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,]}, {func: 1, args: [Q.DomainsClient,,]}, {func: 1, ret: P.double, args: [P.int, {func: 1, ret: P.double, args: [P.int]}]}, {func: 1, args: [Q.DomainsClient, P.String,, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.String]}, {func: 1, v: true, args: [P.String], opt: [,]}, {func: 1, args: [{func: 1, v: true}]}, {func: 1, ret: P.String, args: [P.double]}, {func: 1, args: [N.Context1]}, {func: 1, ret: N.DataFrame, args: [P.String]}, {func: 1, ret: N.Column, args: [P.String]}, {func: 1, v: true, args: [N.FuncCall, N.Column]}, {func: 1, ret: P.bool, args: [P.int], opt: [P.bool]}, {func: 1, args: [O.ViewLayout, P.String, P.String]}, {func: 1, ret: N._FlatBufTable, args: [P.int]}, {func: 1, v: true, args: [N.BufferAccessor], named: {archive: P.int}}, {func: 1, args: [O.ViewInfo, P.String, P.String]}, {func: 1, ret: P.int, args: [P.Float32List]}, {func: 1, ret: P.int, args: [[P.List, P.double]]}, {func: 1, args: [[P.List, N.Column]]}, {func: 1, ret: P.Uint8List, args: [,,]}, {func: 1, args: [N.DataFrame, P.String,,]}, {func: 1, ret: P.int, args: [[P.List, P.int], P.int]}, {func: 1, args: [N.DataFrame, N.Column]}, {func: 1, args: [N.DataFrame, N.Cell]}, {func: 1, args: [N.DataFrame, P.int, P.String]}, {func: 1, args: [N.DataFrame,,,]}, {func: 1, args: [N.DataFrame, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, args: [N.DataFrame, N.BitSet, [P.List, N.Column], P.bool, P.bool]}, {func: 1, ret: P.int, args: [[P.List, P.String]]}, {func: 1, args: [N.DataFrame, P.String, P.Function]}, {func: 1, args: [N.DataFrame, P.List, P.String, P.String]}, {func: 1, v: true, args: [P.int]}, {func: 1, v: true, args: [P.int, P.int, P.int, P.int]}, {func: 1, ret: P.Future, args: [[P.List, N.DataFrame]]}, {func: 1, args: [N.DataFrame, P.List, P.List, N.BitSet]}, {func: 1, args: [P.Uint8List]}, {func: 1, args: [N.DataFrame, P.bool]}, {func: 1, ret: N.Cell, args: [, P.int]}, {func: 1, args: [P.Map,,,]}, {func: 1, ret: [P.Future, P.bool], args: [P.Object]}, {func: 1, v: true, args: [N.BitSet, N.BitSet]}, {func: 1, args: [P.int, [P.Map, P.int, N.BigInt]]}, {func: 1, args: [N.GroupByBuilder, P.bool]}, {func: 1, args: [N.GroupByBuilder, N.BitSet]}, {func: 1, args: [N.GroupByBuilder, P.String, P.String, P.String]}, {func: 1, args: [N.GroupByBuilder]}, {func: 1, args: [N.GroupByBuilder,,]}, {func: 1, ret: P.Transform, args: [P.int]}, {func: 1, args: [N.ColumnList, P.int]}, {func: 1, v: true, args: [P.num], opt: [P.num, P.num]}, {func: 1, args: [N.ColumnList, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, N.Column, P.int, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.String]}, {func: 1, args: [N.QNumColumn, N.Column, N.Column]}, {func: 1, args: [N.ColumnList, P.String, P.String, P.String, P.bool, P.bool,,]}, {func: 1, ret: P.Future, args: [N.ColumnList, P.String, P.String, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, {func: 1, args: [P.int]}, {func: 1, v: true, args: [P.int,,]}, P.String]}, {func: 1, args: [N.ColumnList, P.String, P.bool]}, {func: 1, args: [N.ColumnList,, N.Column, P.bool]}, {func: 1, args: [N.ColumnList,,]}, {func: 1, args: [N.ColumnList, P.String, [P.List, P.String]]}, {func: 1, args: [N.ColumnList, [P.List, P.String]]}, {func: 1, args: [P.String, [P.List, P.String]]}, {func: 1, args: [P.String, P.Int32List, P.int]}, {func: 1, args: [P.String, P.Float32List, P.int]}, {func: 1, args: [P.String, P.Float64List, P.int]}, {func: 1, args: [P.String, P.String, P.List]}, {func: 1, args: [P.String, [P.List, P.String], P.Int32List]}, {func: 1, args: [P.String, N.BitSet]}, {func: 1, args: [N.Column,,], opt: [P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.BoolColumn]}, {func: 1, args: [N.Column, P.int,, P.bool]}, {func: 1, args: [N.Column, P.int, P.String, P.bool]}, {func: 1, args: [N.Column, P.String,,]}, {func: 1, args: [N.StringColumn, [P.List, P.String]]}, {func: 1, args: [N.StringColumn]}, {func: 1, args: [N.Column, P.String, P.String]}, {func: 1, args: [N.Column, {func: 1, args: [P.int]}]}, {func: 1, v: true, args: [[P.List, P.String]]}, {func: 1, args: [N.Column,,]}, {func: 1, args: [N.Column, {func: 1, ret: P.int, args: [,,]}]}, {func: 1, args: [N.Column, P.String, P.String, P.bool]}, {func: 1, args: [N.FloatColumn]}, {func: 1, args: [N.FloatColumn, P.bool]}, {func: 1, args: [N.BigIntColumn, P.int]}, {func: 1, args: [N.BigIntColumn, P.int, P.String, P.bool]}, {func: 1, args: [N.BigInt]}, {func: 1, args: [N.DateTimeColumn, P.int]}, {func: 1, args: [N.DateTimeColumn, P.int,, P.bool]}, {func: 1, args: [N.ColumnsArgs]}, {func: 1, args: [N.ColumnsArgs,,]}, {func: 1, args: [[P.Iterable, P.double]]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, {func: 1, ret: P.String, args: [[P.List, P.String]]}], named: {prepare: {func: 1, ret: {func: 1, ret: P.String, args: [P.String]}, args: [P.List]}}}, {func: 1, args: [N.Stats, P.List, P.List, P.List, P.List]}, {func: 1, args: [N.Stats, P.int, P.int, P.List, P.List, P.List, P.List]}, {func: 1, args: [N.Column, N.Column]}, {func: 1, args: [P.int, [P.List, P.String]]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [N.Row]}]}, {func: 1, args: [P.String], named: {rowCount: P.int}}, {func: 1, args: [N.RowList], opt: [P.List, P.bool]}, {func: 1, args: [N.RowList, P.int, P.List, P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.ByteArrayColumn]}, {func: 1, args: [P.int, N.DataFrame]}, {func: 1, v: true, args: [P.num]}, {func: 1, args: [N.RowList, P.bool, P.bool]}, {func: 1, ret: P.Future, opt: [P.Map]}, {func: 1, args: [N.RowGroup]}, {func: 1, ret: P.Future, args: [P.Object]}, {func: 1, ret: N.EncodingEstimate, args: [N.DataFrameColumn]}, {func: 1, args: [N.Cell,,]}, {func: 1, ret: P.bool, args: [P.Pattern], opt: [P.int]}, {func: 1, ret: P.String, args: [P.int, P.String]}, {func: 1, v: true, args: [P.Uint8List, P.int, P.int]}, {func: 1, args: [N.Column, N.BitSet, P.bool, P.int, P.bool]}, {func: 1, v: true, args: [N.MapChangeArgs]}, {func: 1, ret: P.double, args: [P.String], named: {whenNull: P.double}}, {func: 1, ret: P.Future, args: [P.int, P.int]}, {func: 1, args: [P.String, P.String, P.Function, P.Function,,]}, {func: 1, v: true, args: [N.Column]}, {func: 1, v: true, args: [[P.Iterable, P.int]]}, {func: 1, ret: P.Int16List, args: [P.Int16List, P.int]}, {func: 1, args: [G.Property, P.String,,]}, {func: 1, args: [P.String, G.Property]}, {func: 1, ret: P.Int8List, args: [P.Int8List, P.int]}, {func: 1, ret: [P.Future, N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, ret: P.double, args: [P.double, P.double]}, {func: 1, args: [O.SemanticValue, N.Cell]}, {func: 1, args: [O.SemanticValue, P.String,,]}, {func: 1, args: [P.String, P.String, P.String]}, {func: 1, ret: P.double, args: [[P.List, P.double], P.double]}, {func: 1, ret: [P.List, P.double], args: [[P.List, P.double]]}, {func: 1, ret: P.Object, opt: [P.Object]}, {func: 1, args: [P.String, {func: 1, args: [,]}, P.String]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema, N.Column]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema]}, {func: 1, args: [N.BitSet, P.Uint32List]}, {func: 1, args: [N.BitSet, P.bool]}, {func: 1, args: [N.BitSet, P.bool, P.bool]}, {func: 1, args: [N.BitSet, P.int]}, {func: 1, args: [N.BitSet, P.int, P.bool, P.bool]}, {func: 1, ret: N.FuncCall, args: [P.List], named: {optional: P.Map}}, {func: 1, ret: P.Object, args: [P.String]}, {func: 1, args: [N.BitSet, P.Function]}, {func: 1, args: [N.BitSet, N.BitSet, P.String]}, {func: 1, args: [P.ByteBuffer, P.int]}, {func: 1, args: [N.BitSet, P.Uint32List, P.bool]}, {func: 1, args: [O.PictureMixin]}, {func: 1, ret: N.EncodingEstimate, args: [N.ObjectColumn]}, {func: 1, args: [O.Project, P.bool]}, {func: 1, args: [O.Project, O.Entity, P.bool]}, {func: 1, args: [O.Project, O.Entity]}, {func: 1, args: [O.Project, P.String]}, {func: 1, ret: N.EncodingEstimate, args: [N.QNumColumn]}, {func: 1, args: [O.TableInfo, P.String]}, {func: 1, v: true, args: [P.String,,], opt: [P.String]}, {func: 1, args: [,,,], named: {group: null}}, {func: 1, ret: N.DateTimeMatcher}, {func: 1, args: [W.Node, W.Node]}, {func: 1, args: [O.DataQuery, P.bool]}, {func: 1, args: [O.DataQuery, O.DataConnection]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, P.String, {func: 1, args: [[P.List, P.String]]}]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String], suppressException: P.bool}}, {func: 1, args: [N.TableQuery, P.String]}, {func: 1, ret: N.NumericMatcher}, {func: 1, args: [N.TableQuery, [P.List, P.String]]}, {func: 1, ret: P.Future, args: [N.TableQuery]}, {func: 1, v: true, opt: [P.int]}, {func: 1, args: [N.TableQuery, P.int]}, {func: 1, args: [N.FuncParam,,]}, {func: 1, args: [N.DbTableQueryBuilder, [P.Iterable, P.String]]}, {func: 1, ret: P.bool, args: [W.Node]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.GroupAggregation]]}, {func: 1, v: true, opt: [P.Object]}, {func: 1, args: [,,,,,]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, v: true, args: [P.List], named: {notify: P.bool}}, {func: 1, ret: P.Future, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.DataConnection, P.String, P.String]}, {func: 1, args: [,,,,,,]}, {func: 1, args: [O.ScriptEnvironment]}, {func: 1, ret: N.Cell, args: [,]}, {func: 1, args: [O.ProgressIndicator, P.String]}, {func: 1, args: [O.ProgressIndicator,,,]}, {func: 1, args: [O.ProgressIndicator,,]}, {func: 1, args: [S.LogMessage]}, {func: 1, args: [P.String, P.bool, P.bool,,]}, {func: 1, args: [N.Context1, P.String]}, {func: 1, args: [N.Context1, P.String,,]}, {func: 1, args: [,,,,,,,]}, {func: 1, ret: P.int, args: [, P.int]}, {func: 1, args: [[X.DartHandle, P.List], P.int]}, {func: 1, args: [N.FuncCall, N.Func]}, {func: 1, args: [N.FuncCall, P.int]}, {func: 1, args: [N.FuncCall, N.FuncCall]}, {func: 1, args: [N.FuncCall, N.Context1]}, {func: 1, args: [N.FuncCallParam, P.Function]}, {func: 1, args: [P.String, P.int, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], P.bool, P.bool]}, {func: 1, args: [, G.Property]}, {func: 1, args: [P.StreamSubscription]}, {func: 1, args: [, [P.Map,, P.Function], [P.Map,, [P.Map, P.int, P.Function]]]}, {func: 1, args: [N.Func, P.List]}, {func: 1, ret: O.SemanticValue, args: [P.String]}, {func: 1, args: [P.String, P.String, [P.List, P.String], P.JsObject, P.String, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall,, O.ProgressIndicator, P.bool, P.bool]}, {func: 1, args: [N.FuncCall, P.bool, P.bool]}, {func: 1, args: [[P.List, G.Property], [P.List, G.Property], P.String]}, {func: 1, args: [P.Completer,,]}, {func: 1, ret: [P.Iterable, P.int], named: {onlyFiltered: P.bool, onlySelected: P.bool}}, {func: 1, args: [O.Script, P.List]}, {func: 1, ret: P.Future, args: [P.String, N.Context1]}, {func: 1, args: [N.EventBusProvider, P.String, P.Function]}, {func: 1, args: [P.String, P.Uint8List]}, {func: 1, ret: N.RowList, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [P.List,,]}, {func: 1, args: [, P.bool, P.String, P.String]}, {func: 1, args: [, [P.List, P.int]]}, {func: 1, args: [, [P.List, N.DataFrame]]}, {func: 1, args: [P.Iterable]}, {func: 1, args: [P.Completer,,,]}, {func: 1, v: true, args: [,], opt: [,]}, {func: 1, args: [O.LogEventType, P.String]}, {func: 1, args: [O.LogEventType, P.bool]}, {func: 1, args: [P.Stream, {func: 1, v: true, args: [,]}]}, {func: 1, args: [P.EventSink]}, {func: 1, ret: N.GroupByBuilder, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [G.PropMixin]}, {func: 1, args: [G.PropMixin, P.String]}, {func: 1, args: [G.PropMixin, P.String,,]}, {func: 1, args: [Q.TablesClient, N.DataFrame]}, {func: 1, args: [Q.TablesClient, P.String]}, {func: 1, args: [Q.DockerImagesClient, P.String]}, {func: 1, args: [[P.List, P.String]]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.int]}, {func: 1, args: [P.String, P.int]}, {func: 1, args: [O.DockerContainer]}, {func: 1, args: [N.DataFrame, P.int, P.int, P.String, P.String]}, {func: 1, v: true, args: [[P.List, N.Column], P.int, P.bool, P.bool]}, {func: 1, args: [[P.List, N.Column], P.int]}, {func: 1, args: [S.Logger, P.String, P.String, P.Map, P.String, P.String]}, {func: 1, ret: [P.List, W.RtcStatsReport]}, {func: 1, args: [Q.AdminClient, P.String, P.Map, [P.List, P.String]]}, {func: 1, v: true, args: [P.String, P.String], named: {throwOnError: P.bool}}, {func: 1, args: [O.DbInfo, P.String]}, {func: 1, ret: P.Future, args: [Q.InfoClient]}, {func: 1, args: [O.DbInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbInfo, P.String, [P.List, P.String], P.String, [P.List, P.String], P.Object]}, {func: 1, args: [O.DbRelationInfo, P.String]}, {func: 1, args: [O.DbRelationInfo]}, {func: 1, ret: P.String, args: [B.NumberSymbols]}, {func: 1, args: [O.DbSchemaInfo, P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbSchemaInfo]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.Object]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.String, P.Object]}, {func: 1, args: [P.String, P.double, P.int, [P.List, P.String]]}, {func: 1, ret: P.String, args: [N.Column]}, {func: 1, ret: P.Future, args: [P.String, [P.List, P.String]], named: {attachments: [P.List, O.FileInfo], bcc: [P.List, P.String], html: P.String, text: P.String}}, {func: 1, ret: Q.ConnectionsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.List, N.Column], args: [P.String]}, {func: 1, ret: Q.QueriesClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.QueryRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [O.DataSource, O.DataSource]}, {func: 1, args: [Q.LogClient, P.String, P.DateTime, P.DateTime, P.bool]}, {func: 1, ret: O.DomainSchema, args: [P.String]}, {func: 1, ret: O.DomainTable, args: [P.String, P.String]}, {func: 1, ret: [P.List, P.String], args: [P.String, P.String]}, {func: 1, args: [P.String, P.String, P.DateTime, P.DateTime, P.String, P.int]}, {func: 1, ret: [P.Future, [P.List, O.DomainRow]]}, {func: 1, ret: [P.Future, O.DomainRow]}, {func: 1, ret: [P.Future, P.List], args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, P.Map], args: [P.String, P.String]}, {func: 1, ret: Q.DomainRowsDataSource, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.bool], args: [P.String, P.String], named: {id: P.String}}, {func: 1, args: [P.String, N.Context1]}, {func: 1, ret: Q.EntitiesClient, args: [P.Map]}, {func: 1, ret: Q.EntitiesClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.EnvironmentsClient, args: [P.String]}, {func: 1, ret: [P.Future, P.Uint8List], args: [,], named: {format: P.String}}, {func: 1, ret: [P.Future, [P.List, O.FileInfo]], args: [,], named: {ext: P.String, recursive: P.bool, root: P.String}}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]]}, {func: 1, ret: Q.LayoutClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, N.Func]]}, {func: 1, ret: Q.FunctionsClient, named: {name: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall]}, {func: 1, ret: Q.ActivityClient, named: {end: P.DateTime, start: P.DateTime, userId: P.String}}, {func: 1, ret: Q.LogClient, args: [P.String]}, {func: 1, ret: [P.Future, O.LogEvent]}, {func: 1, ret: Q.LogClient, named: {end: P.DateTime, entityId: P.String, favoritesOnly: P.bool, start: P.DateTime}}, {func: 1, ret: [P.Future, P.bool], args: [O.LogAudit]}, {func: 1, ret: P.Future, args: [P.String, N.DataFrame]}, {func: 1, ret: Q.MLClient, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String], named: {columnNamesMap: [P.Map, P.String, P.String]}}, {func: 1, ret: [P.Future, P.bool]}, {func: 1, ret: Q.MLClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.NotebooksClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, [P.List, P.String]]], args: [P.String, P.String]}, {func: 1, ret: Q.ProjectRelationClient, named: {entityId: P.String, projectId: P.String, type: P.String}}, {func: 1, ret: Q.ProjectClient, args: [P.String]}, {func: 1, ret: Q.ProjectClient, named: {authorId: P.String, entityId: P.String, includeRoot: P.bool, projectId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, P.String]], named: {query: P.String}}, {func: 1, ret: Q.ScriptRunsClient, args: [P.String]}, {func: 1, ret: Q.ScriptingClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.SpaceClient, args: [P.String]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.Map]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.SpaceChildrenClient, named: {includeLinked: P.bool, types: P.String}}, {func: 1, ret: Q.FuncCallsClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, named: {jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tags: [P.List, P.String], text: P.String}}, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}, {func: 1, ret: [P.Future, O.UserSession]}, {func: 1, ret: [P.Future, O.User]}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]], args: [P.String], named: {currentUser: P.bool}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String], named: {currentUser: P.bool}}, {func: 1, ret: W.StyleValue, args: [P.String]}, {func: 1, ret: N.Column, args: [N.GroupAggregation, P.Iterable]}, {func: 1, v: true, args: [S.LogMessage]}, {func: 1, ret: O.DataQuery, named: {name: P.String, params: [P.Map, P.String, P.String], shortName: P.String, sql: P.String}}, {func: 1, ret: N.Cell, args: [P.int]}, {func: 1, v: true, args: [P.String, P.String, P.String]}, {func: 1, ret: P.String, args: [O._TableRef, P.String]}, {func: 1, ret: O._TableRef, args: [P.String]}, {func: 1, v: true, args: [P.String, P.String, P.String], opt: [P.String, P.String]}, {func: 1, ret: P.bool, args: [O.UserGroup]}, {func: 1, v: true, args: [P.String], named: {owner: O.UserGroup, type: P.String}}, {func: 1, ret: P.Future, args: [O.Script]}, {func: 1, ret: [P.List, P.String], args: [P.String]}, {func: 1, args: [Q.ActivityClient, P.String, P.DateTime, P.DateTime]}, {func: 1, ret: N.DbTableQueryBuilder}, {func: 1, ret: [P.Map, P.String,,], args: [[P.Map, P.String,,], P.String]}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, severity: P.String, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [,,], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String,,], named: {auditType: P.String, canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, stackTrace: null, time: P.DateTime}}, {func: 1, ret: P.bool, args: [N.UserException], named: {params: P.Map}}, {func: 1, ret: P.bool, args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, v: true, args: [P.String, P.Object]}, {func: 1, opt: [P.int]}, {func: 1, ret: Q.Parser, args: [L.Reference]}, {func: 1, v: true, args: [P.int, P.int]}, {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}, {func: 1, ret: Y.FileSpan, args: [P.int], opt: [P.int]}, {func: 1, ret: Y.FileLocation, args: [P.int]}, {func: 1, ret: P.String, args: [P.String], named: {color: null}}, {func: 1, ret: P.String, named: {color: null}}, {func: 1, v: true, args: [P.String], named: {length: P.int, match: P.Match, position: P.int}}, {func: 1, ret: L.XmlName, args: [P.String]}, {func: 1, ret: V.XmlText, args: [P.String]}, {func: 1, ret: [P.Stream, M.XmlEvent]}, {func: 1, args: [,], named: {headers: null}}, {func: 1, args: [P.String, P.Function]}, {func: 1, args: [,], opt: [P.bool]}, {func: 1, ret: N.FuncParam, args: [P.String, P.String]}, {func: 1, ret: P.bool, args: [N.Func], named: {override: P.bool}}, {func: 1, ret: P.num}, {func: 1, ret: P.Length, args: [P.int]}, {func: 1, ret: N.QueryBuilder, args: [P.int]}, {func: 1, ret: P.AsyncError, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Object, P.StackTrace]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true, args: [P.Timer]}]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, P.String]}, {func: 1, ret: P.Zone, args: [P.Zone, P.ZoneDelegate, P.Zone, P.ZoneSpecification, P.Map]}, {func: 1, ret: P.int, args: [,,]}, {func: 1, ret: P.int, args: [P.Comparable, P.Comparable]}, {func: 1, ret: P.bool, args: [P.Object, P.Object]}, {func: 1, ret: P.int, args: [P.Object]}, {func: 1, ret: P.Object, args: [,]}, {func: 1, v: true, args: [P.String,,], opt: [,]}, {func: 1, ret: N.BigInt, args: [P.String]}, {func: 1, ret: N.GroupAggregation, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.DataFrame, P.Iterable, P.Iterable, P.Iterable, P.Iterable], named: {inPlace: P.bool, joinType: P.String}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame], named: {aggregations: [P.List, N.GroupAggregation], fields: [P.List, P.String], filter: N.TableRowFilterCall, groupByFields: [P.List, P.String], joins: [P.List, N.TableJoin], pivots: [P.List, P.String], whereClauses: [P.List, N.FieldPredicate]}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, [P.List, P.String], [P.List, P.String]], named: {categoryColumnName: P.String, valueColumnName: P.String}}, {func: 1, ret: P.String, args: [P.num, [P.List, P.num]]}, {func: 1, ret: P.int, args: [P.DateTime, P.String, P.int]}, {func: 1, v: true, args: [N.DataFrame, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {decimalSeparator: P.String, useKMMultipliers: P.bool}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.ColFilterCall, N.TableRowFilterCall]}, {func: 1, ret: P.int, args: [P.int, {func: 1, ret: P.int, args: [P.int]}]}, {func: 1, args: [Q.ProjectClient, O.Project, P.bool]}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, [P.List, N.Column]], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {errorBehavior: P.Map, treatAsString: P.bool, type: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall], named: {flag: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {tagValue: P.String}}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int, P.int, P.int, P.int]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.bool]}, {func: 1, ret: N._Vec}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.DateTime, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column, N.Column, P.String, P.String]}, {func: 1, ret: P.int, args: [P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.DateTime, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {decimalPlaces: P.int}}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {method: P.String}}, {func: 1, ret: N.FuncCall, args: [,]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String, P.String]}, {func: 1, v: true, args: [,,], named: {message: P.String}}, {func: 1, ret: P.Future, args: [P.int]}, {func: 1, ret: W.Node}, {func: 1, v: true, args: [N.Context1]}, {func: 1, v: true, args: [N.Context1,,]}, {func: 1, ret: P.Future, args: [N.DataFrame, P.String], named: {context: N.Context1, progress: O.ProgressIndicator}}, {func: 1, ret: P.double, args: [P.double, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall], named: {clear: P.bool, flag: P.bool}}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String]}, {func: 1, ret: P.String, args: [P.String, P.int, P.int]}, {func: 1, args: [Q.GroupClient, O.UserGroup]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.UserGroup]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, O.UserGroup]]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [[P.List, P.double]]}]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, P.Map]]}, {func: 1, ret: P.String, args: [P.num, P.String]}, {func: 1, ret: P.String, args: [P.num, P.num]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.int, args: [P.DateTime]}], named: {modulus: P.double, unit: P.double}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [P.double]}], named: {fails: {func: 1, ret: P.bool, args: [P.double]}, result: P.String}}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [N.Stats]}], named: {toInt: P.bool}}, {func: 1, ret: P.num, args: [[P.List, P.num], P.num]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame]}, {func: 1, v: true, args: [N.DataFrame, N.StringColumn, P.String], named: {prefix: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int], named: {group: P.int}}, {func: 1, ret: P.String, args: [P.String], named: {delimiter: P.String}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String], named: {upsert: P.bool}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity,,]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.Function]}, {func: 1, ret: P.Future, args: [{func: 1, ret: P.Future}]}, {func: 1, ret: P.Future, args: [P.String,,, O.ProgressIndicator]}, {func: 1, ret: P.String, args: [O.ColumnInfo, P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.DataFrame]}, {func: 1, ret: [P.Future, P.Uint8List], args: [P.Uint8List]}, {func: 1, ret: P.Future, args: [O.DataConnection]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String]}, {func: 1, ret: P.Future, args: [N.Func]}, {func: 1, ret: P.Future, args: [, [P.List, P.Map]]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String, P.Map], named: {adHoc: P.bool}}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.Context1, P.String, P.Map]}, {func: 1, ret: [P.Future, N.DataFrame], args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Future, args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Map, args: [,], named: {deep: P.bool}}, {func: 1, ret: N.TableMutationBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], [P.List, P.String], P.String, P.bool]}];
+  init.metadata = ["x", null, "p", "c", "s", "i", "col", "v", "name", "t", "call", "b", "a", "e", "value", "args", "table", "key", "f", "r", "idx", false, "each", "_", "date", "n", "k", "notify", "element", "context", "m", "rowCount", "values", "cols", "stackTrace", "pattern", "func", "id", "list", "data", "script", "error", "w", "message", "g", "rows", "tc", "u", "nums", "o", "self", "parent", "zone", "result", "dt", "resultColName", "tags", "row", "dtqb", "as", true, "type", "y", "info", "num", "columnId", "ds", "line", "arg", "ts", "projectId", "fi", "column", "tag", "notification", "params", "map", "report", "q", "items", "it", "pi", "index", "object", "field", "match", "tableName", "resolve", "reject", "msg", "length", "fields", "tableId", "queryId", "jobId", "semType", "text", "cell", "where", "flag", "p1", 0, "queryRunId", "count", "jobRunId", "d", "df", "check", "dataType", "agg", "logEvent", "buffer", "sub", "connectionId", "p2", "layout", "test", "json", "other", "canPost", "canSave", "columns", "logEventType", "time", "datasetId", "milliseconds", "headers", "run", "whereClauses", "mustPost", "ed", "mustPrint", "end", "p3", "datasource", "function", "schemaName", "columnFilter", "entityId", "mustSave", "start", "canPrint", "options", "et", "node", "decimalPlaces", "propertyName", "response", "expression", "schema", "cat", "and", "pp", "callback", "admin", "format", "h", "desc", "l", "state", "p4", "frame", "wl", "ti", "trace", "limit", "eventArgs", "ci", "orderBy", "aggregations", "query", "event", "joins", "url", "param", "when", "target", "adHoc", "dc", "mask", "t2", "t1", "p5", "cc", "j", "path", "processed", "relativeSelectors", "token", "order", "colName", "pair", "db", "sql", "keys1", "keys2", "joinType", "bitset", "inPlace", "action", "pivots", 1, "groupByFields", "columnName", "filters", "newName", "seconds", "minutes", "hours", "local", "errorBehavior", "treatAsString", "severity", "progress", "auto", "invocation", "day", "pos", "ascending", "by", "queue", "fp", "obj", "duration", "property", "units", "stream", "arg2", "b2", "link", "needle", "sum", "arg1", "filter", "categoryColumnName", " ", "connection", "fieldId", "s1", "status", "s2", "eventName", "elem", "lcv", "root", "iterator", "width", "padding", "onlyFiltered", "onlySelected", "prefix", "level", "auditType", "file", "subscribeOnChanges", "rel", "currentCall", "nca", "valueColumnName", "limits", "values1", "p6", "part", "favoritesOnly", "userId", "levels", "types", "includeLinked", "currentUser", "year", "conn", "whereOp", "havingOp", "having", "fc", "month", "dp", "code", "op", "levelIndex", "newType", "values2", "group", "timeLimit", "compute", "cap", "onTimeout", "includeTime", "normal", "bigint", "remote", "number", "range", "predicates", "arguments", "table1", "stack", "onData", "logClient", "startIndex", "arg3", "activityClient", "chunk", "include", "arg4", "errorMessage", "tagValue", "encodedComponent", "parameter", "sender", "title", "rowIdx", "grid", "colNames", "copyColumnNames", "mergeColumnNames", "rowMask", "columnIds", "saveSelection", "saveTags", "uri", "specification", "zoneValues", "columnsToAppend", "sortByColumnIds", "sortOrders", "timestamp", "bytes", "compress", "autoName", "string", "qnum", "qualifier", "getValue", "setValue", "columnToReplace", "newColumn", "desiredTags", "choices", "columnNames", "timeslice", "categories", "indexes", "rawData", "rowPredicate", "indexToValue", "valueComparer", "aggrType", "doublePrecision", "Category", "arr", "column1", "column2", "days", "window", "minPeriods", "valueColumn", "reason", "throwOnError", "Value", "dt1", "dt2", "ga", "mode", "getter", "setter", "defaultValue", "pc", "propertyValue", "typeName", "regexp", "description", "matching", "join", "propType", "b1", "aggr", "handler", "metric", "zeroOnes", "copyColumns", "Min-max", "typedEventArgs", "method", "mergeColumns", "expected", "clear", "whenEmpty", "whenEqual", "alias", "asc", "rightTable", "leftTableKeys", "rightTableKeys", "rightTableAlias", "leftTable", "dataSource", "permission", "capitalizeFirst", "capitalizeNext", "capitalizeConjunctions", "input", "millisecondSinceEpoch", "closure", "linkTypes", "initialSync", "filterAllOnNoRowsSelected", "from", "parameters", "packageName", "functionName", "meta", "resultType", "resultSemType", "inputs", "outputs", "replace", "separator", "errorCode", "groups", "iterable", "paramName", "optional", "comment", "isError", "captureThis", "fcp", "dataFrame", "xBins", "yBins", "xColName", "yColName", "theError", "oldColName", "logger", "funcList", "postfix", "newColName", "version", "base", "propName", "exponent", ".", "cio", "subject", "to", "html", "bcc", "attachments", "val", "theStackTrace", "useKMMultipliers", "lst", "decimalSeparator", "strings", "group_", "def", "r1", "r2", "awaitStart", "awaitStop", "archive", "minimum", "spec", 10, "", "folderPathOrFileInfo", "recursive", "ext", "request", "audit", "funcCallId", "logs", "columnNamesMap", "authorId", "includeRoot", "delim", "parameter1", "fullPath", "queryName", "queryParameters", "jobName", "jobParameters", "rowCellCount", "ref", 26789344063684636e-50, "stat", "whenNull", "grainOffset", "rp", "grainDuration", "onFinish", "cancelable", "pausable", "spinner", "shortName", "owner", "regExp", "candidate", "groups_", "jsObject", "deep", "isolate", "numberOfArguments", "suppressException", "str", ",", "optionsJson", "upsert", "delimiter", "onError", "inner", "bins", "exception", "logScale", "messageOrException", "key1", "key2", "body", "attribute", "st", "impliedDigits", "howMany", "digit expected", "letter expected", "dispatch", "elements", "table2", "end of input expected", "item", "color", "p7", "js", "position", "visitable", "statusText", "isBinary", "catColumn"];
+  init.types = [{func: 1, args: [,]}, {func: 1, args: [,,]}, {func: 1}, {func: 1, ret: P.Future}, {func: 1, args: [P.String]}, {func: 1, args: [G.Property]}, {func: 1, v: true}, {func: 1, args: [N.Column]}, {func: 1, args: [P.DateTime]}, {func: 1, args: [G.Property,,]}, {func: 1, ret: P.Future, args: [,]}, {func: 1, args: [N.DataFrame]}, {func: 1, args: [P.int]}, {func: 1, args: [N.FuncCall]}, {func: 1, ret: P.DateTime, args: [P.String]}, {func: 1, ret: Q.Parser}, {func: 1, ret: P.int, args: [P.int]}, {func: 1, ret: P.bool, args: [P.int]}, {func: 1, ret: P.double, args: [P.int]}, {func: 1, ret: P.String, args: [P.String]}, {func: 1, ret: P.double, args: [P.num]}, {func: 1, args: [P.List]}, {func: 1, args: [N.Stats]}, {func: 1, args: [O.FileInfo]}, {func: 1, ret: P.int, args: [P.int, P.int]}, {func: 1, ret: P.bool, args: [P.Object]}, {func: 1, args: [N.FuncCallParam]}, {func: 1, args: [N.BitSet]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String}}, {func: 1, args: [P.Map]}, {func: 1, args: [O.DataSource]}, {func: 1, ret: P.int, args: [P.DateTime]}, {func: 1, args: [N.Func]}, {func: 1, args: [O.DockerImage]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String]}, {func: 1, args: [O.DomainRow]}, {func: 1, args: [O.Entity]}, {func: 1, args: [N.Column, P.String]}, {func: 1, args: [P.String, P.String]}, {func: 1, args: [N.Cell]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {resultColName: P.String}}, {func: 1, args: [O.Project]}, {func: 1, ret: P.double, args: [,]}, {func: 1, args: [O.User]}, {func: 1, args: [G.Property, P.String]}, {func: 1, args: [O.UserNotification]}, {func: 1, ret: P.bool, args: [P.String]}, {func: 1, ret: P.double, args: [N.BitSet, N.BitSet]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,]}, {func: 1, args: [N.ColumnList]}, {func: 1, v: true, args: [P.Object]}, {func: 1, ret: P.String, args: [P.int]}, {func: 1, args: [O.DockerImage, P.String]}, {func: 1, args: [P.Duration]}, {func: 1, args: [P.num]}, {func: 1, args: [N.TableQuery]}, {func: 1, ret: P.int, args: [P.String]}, {func: 1, args: [Q.DomainsClient, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall]}, {func: 1, args: [N.FuncCall, P.String]}, {func: 1, ret: P.bool, args: [,]}, {func: 1, args: [O.UserReport]}, {func: 1, args: [P.String,,]}, {func: 1, args: [O.LogEvent]}, {func: 1, args: [P.double], opt: [P.String]}, {func: 1, ret: P.double, args: [P.num, P.num]}, {func: 1, v: true, args: [N.BufferAccessor]}, {func: 1, args: [O.ObjectDataSource]}, {func: 1, args: [O.ProgressIndicator]}, {func: 1, ret: N.EncodingEstimate, args: [N.IntColumn]}, {func: 1, args: [N.Column, P.int]}, {func: 1, v: true, args: [,]}, {func: 1, ret: P.Future, args: [P.String]}, {func: 1, args: [O.SemanticValue]}, {func: 1, args: [P.bool]}, {func: 1, args: [O.DataConnection]}, {func: 1, args: [O.Script]}, {func: 1, args: [, P.String]}, {func: 1, args: [P.int, P.int]}, {func: 1, args: [Q.SpaceFilesClient,,]}, {func: 1, ret: N.EncodingEstimate, args: [N.FloatColumn]}, {func: 1, ret: N.EncodingEstimate, args: [N.StringColumn]}, {func: 1, args: [O.DomainSchema]}, {func: 1, args: [N.EventData]}, {func: 1, ret: P.int, args: [,]}, {func: 1, args: [O.User, P.String]}, {func: 1, args: [N.BitSet, N.BitSet, P.bool]}, {func: 1, args: [O.TableInfo]}, {func: 1, args: [O.ColumnInfo]}, {func: 1, args: [N.TableQuery, [P.List, P.Map]]}, {func: 1, args: [O.Script, P.String]}, {func: 1, args: [O.ViewInfo]}, {func: 1, ret: P.bool, args: [P.String, P.String]}, {func: 1, args: [O.UserGroup]}, {func: 1, v: true, args: [P.Object], opt: [P.StackTrace]}, {func: 1, args: [N.ColumnList, P.String]}, {func: 1, args: [N.RowMatcher]}, {func: 1, args: [O.Entity, P.String]}, {func: 1, args: [[P.Iterable, P.String]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String]}, {func: 1, args: [P.Match]}, {func: 1, args: [O.DataQuery]}, {func: 1, ret: P.int, args: [P.double]}, {func: 1, args: [O.DomainTable]}, {func: 1, ret: P.bool, args: [P.num, P.num]}, {func: 1, v: true, args: [P.String]}, {func: 1, ret: P.double, args: [P.double]}, {func: 1, ret: P.num, args: [P.num, P.num]}, {func: 1, args: [O.GrokPublishedPackage]}, {func: 1, ret: P.String, args: [P.String, P.int]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String]}, {func: 1, ret: P.String, args: [,]}, {func: 1, args: [,,,]}, {func: 1, ret: P.double, args: [P.String]}, {func: 1, v: true, args: [N.Context1, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.String]}, {func: 1, args: [O.EntityPropertySchema]}, {func: 1, ret: N.EncodingEstimate, args: [N.DateTimeColumn]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String]}, {func: 1, ret: P.bool, args: [P.bool, P.bool]}, {func: 1, args: [P.Map,,]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, P.String]}, {func: 1, args: [O.TagsMixin, P.String]}, {func: 1, args: [N.ValueMatcher,,]}, {func: 1, args: [[X.DartHandle, P.List]]}, {func: 1, args: [Q.SpacesClient, P.String]}, {func: 1, args: [P.String,, P.bool]}, {func: 1, ret: W.Element, args: [P.String]}, {func: 1, args: [O.LogEventType]}, {func: 1, args: [N.RowList]}, {func: 1, args: [O.LogEventParameterValue]}, {func: 1, ret: P.DateTime, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [O.UserSession]}, {func: 1, ret: P.String, args: [[P.Iterable, P.String]]}, {func: 1, args: [O.DbInfo]}, {func: 1, args: [O.DbSchemaInfo]}, {func: 1, ret: N.EncodingEstimate, args: [N.BigIntColumn]}, {func: 1, args: [G.Property, P.bool]}, {func: 1, ret: P.String}, {func: 1, args: [N.EventType]}, {func: 1, args: [O.ObjectDataSource, P.String]}, {func: 1, args: [O.ViewLayout]}, {func: 1, ret: Q.Parser, opt: [P.String]}, {func: 1, v: true, args: [{func: 1, v: true}]}, {func: 1, v: true, args: [, P.StackTrace]}, {func: 1, args: [N.DataFrame, P.String]}, {func: 1, v: true, args: [N.DataFrame]}, {func: 1, args: [Q.DomainsClient, P.String,,]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, args: [,], opt: [,]}, {func: 1, args: [N.DataFrame, P.Function]}, {func: 1, ret: P.int, args: [P.num]}, {func: 1, args: [,,,,]}, {func: 1, args: [P.Iterable, N.Column, N.GroupAggregation]}, {func: 1, ret: N.QueryBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [O.ObjectDataSource, O.Entity]}, {func: 1, args: [N.TypedEventArgs]}, {func: 1, args: [N.FuncParam]}, {func: 1, v: true, args: [P.Map]}, {func: 1, args: [Q.Parser]}, {func: 1, ret: P.bool, args: [,,]}, {func: 1, args: [P.String, P.String, N.Context1]}, {func: 1, args: [P.int, P.String]}, {func: 1, v: true, opt: [P.num]}, {func: 1, args: [P.String, P.String,,]}, {func: 1, v: true, args: [P.double]}, {func: 1, args: [P.String, P.double]}, {func: 1, ret: P.bool, args: [P.bool]}, {func: 1, v: true, args: [N.Func], named: {override: P.bool}}, {func: 1, v: true, args: [, P.String]}, {func: 1, args: [Q._NodeStats]}, {func: 1, ret: [P.Future, P.String], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, args: [, P.EventSink]}, {func: 1, args: [[X.DartHandle, P.List], P.int,,]}, {func: 1, args: [[X.DartHandle, P.List],,]}, {func: 1, args: [P.Object]}, {func: 1, args: [P.String, P.String, P.int]}, {func: 1, args: [P.Symbol0,,]}, {func: 1, ret: P.String, args: [N.Column, P.int]}, {func: 1, args: [Q.UserClient]}, {func: 1, ret: [P.List, P.String], args: [[P.List, P.int]]}, {func: 1, args: [P.String, P.String, P.bool]}, {func: 1, args: [P.bool], opt: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.int]}, {func: 1, args: [Q.SpaceClient, P.String]}, {func: 1, args: [Q.SpaceClient]}, {func: 1, ret: P.DateTime, args: [P.int]}, {func: 1, args: [Q.SpaceFilesClient,, P.String]}, {func: 1, ret: P.int, args: [P.DateTime, P.DateTime]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,]}, {func: 1, ret: P.int, args: [P.double, P.double]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String]}, {func: 1, v: true, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String]}, {func: 1, ret: P.int, args: [P.Object, P.Object]}, {func: 1, args: [O.ViewLayout, P.String]}, {func: 1, ret: P.bool, args: [P.double]}, {func: 1, args: [O.ViewInfo, P.String]}, {func: 1, ret: P.int, args: [P.String, P.String]}, {func: 1, args: [N.DataFrame, P.int]}, {func: 1, args: [N.Row]}, {func: 1, args: [N.DataFrame, P.num]}, {func: 1, v: true, args: [P.Uint8List, P.String, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, P.bool, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [N.FuncCall, P.String, N.FuncCallParam]}, {func: 1, args: [, P.StackTrace]}, {func: 1, ret: P.List, args: [P.List]}, {func: 1, args: [N.Column, N.BitSet]}, {func: 1, args: [N.Stats, N.Column]}, {func: 1, args: [N.RowList, P.int], opt: [P.int, P.bool]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.RowList,,]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [N.ValueMatcher]}, {func: 1, ret: P.Int16List}, {func: 1, ret: P.Int8List}, {func: 1, args: [O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup, P.bool]}, {func: 1, args: [O.UserGroup, O.UserGroup]}, {func: 1, args: [O.UserGroup,,]}, {func: 1, v: true, args: [P.Int16List]}, {func: 1, v: true, args: [P.Int8List]}, {func: 1, args: [O.SemanticValue,,]}, {func: 1, args: [O.SemanticValue, P.String]}, {func: 1, args: [O.EntityType]}, {func: 1, args: [O.EntityType, P.String]}, {func: 1, args: [O.EntityPropertySchema, P.List]}, {func: 1, args: [N.BitSet, P.int, P.bool]}, {func: 1, args: [O.HistoryEntry]}, {func: 1, args: [O.DataQuery, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String]}, {func: 1, ret: P.bool, args: [P.DateTime, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, P.String]]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.FieldPredicate]]}, {func: 1, args: [O.Credentials]}, {func: 1, ret: P.double}, {func: 1, args: [N.FuncCall, P.String,,]}, {func: 1, args: [N.FuncCall, P.bool]}, {func: 1, args: [N.Func, P.String]}, {func: 1, args: [N.Func,,]}, {func: 1, ret: P.Future, args: [P.Map]}, {func: 1, args: [P.Iterator]}, {func: 1, ret: N.GroupByBuilder, args: [P.String], named: {function: P.String, resultColName: P.String}}, {func: 1, args: [O.LogEventParameter]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.bool]}, {func: 1, args: [O.GrokPublishedPackage, P.String]}, {func: 1, ret: P.Future, args: [O.DbInfo]}, {func: 1, ret: P.Future, args: [P.String], opt: [P.bool]}, {func: 1, ret: P.String, args: [P.String, P.String]}, {func: 1, ret: [P.Future, [P.List, O.Entity]]}, {func: 1, v: true, args: [P.String,,]}, {func: 1, ret: [P.Future, N.DataFrame]}, {func: 1, ret: N.QueryBuilder, args: [P.String], named: {as: P.String, function: P.String}}, {func: 1, ret: P.String, args: [P.Match]}, {func: 1, args: [N.FieldPredicate]}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall]}, {func: 1, ret: P.DateTime}, {func: 1, ret: N._Kernel, args: [P.String, P.int]}, {func: 1, ret: N.Column, args: [N.DataFrame, P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.TableRowFilterCall]}, {func: 1, ret: N._Kernel, args: [P.String, P.bool]}, {func: 1, ret: P.String, args: [P.String, P.int], named: {padding: P.String}}, {func: 1, ret: P.bool, args: [N._Vec, P.int]}, {func: 1, ret: P.bool, args: [[P.List, N._Node0]]}, {func: 1, ret: P.num, args: [P.num]}, {func: 1, ret: P.String, args: [P.num]}, {func: 1, ret: P.Future, args: [O.DataQuery]}, {func: 1, args: [P.int,,]}, {func: 1, args: [Q.CredentialsClient, O.Entity]}, {func: 1, args: [Q.CredentialsClient, O.Credentials]}, {func: 1, args: [P.String, P.String, P.String, P.bool]}, {func: 1, ret: P.int, args: [N.BigInt, N.BigInt]}, {func: 1, args: [P.String, P.bool]}, {func: 1, ret: N.FuncCall, args: [P.List]}, {func: 1, ret: P.int, args: [P.bool, P.bool]}, {func: 1, ret: P.Number, args: [P.int]}, {func: 1, ret: P.int, args: [P.Uint8List, P.Uint8List]}, {func: 1, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.Entity, O.UserGroup]}, {func: 1, args: [Q.LayoutClient, N.DataFrame]}, {func: 1, ret: N.FuncCall, args: [P.String]}, {func: 1, args: [O.ObjectDataSource, P.String, P.bool]}, {func: 1, ret: P.int, args: [N.DataFrame, N.DataFrame]}, {func: 1, args: [Q.SpaceClient,, P.bool]}, {func: 1, ret: P.bool}, {func: 1, args: [Q.SpaceClient, P.String, P.bool]}, {func: 1, v: true, args: [[P.Iterable, P.String]]}, {func: 1, args: [Q.SpaceChildrenClient, P.String, P.bool]}, {func: 1, v: true, args: [N.Column, P.String]}, {func: 1, args: [Q.SpaceFilesClient,, [P.List, P.int]]}, {func: 1, ret: N.Column, args: [N.Column, P.String]}, {func: 1, args: [Q.SpaceFilesClient, P.List,,]}, {func: 1, args: [Q.SpaceFilesClient, P.List, P.String]}, {func: 1, args: [Q.DomainsClient]}, {func: 1, ret: N.Column}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.bool, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.bool]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,,]}, {func: 1, v: true, args: [P.String, P.int]}, {func: 1, ret: P.Point0, args: [P.int]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,,,,]}, {func: 1, ret: P.int, args: [[P.Iterable, P.DateTime]]}, {func: 1, args: [Q.DomainsClient, P.String, P.String,, P.String,,]}, {func: 1, ret: P.num, args: [P.int]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,,]}, {func: 1, args: [Q.DomainsClient,,]}, {func: 1, ret: P.double, args: [P.int, {func: 1, ret: P.double, args: [P.int]}]}, {func: 1, args: [Q.DomainsClient, P.String,, P.bool]}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String, P.String, P.String]}, {func: 1, args: [Q.DomainsClient, P.String, P.String, P.String,, P.String]}, {func: 1, v: true, args: [P.String], opt: [,]}, {func: 1, args: [{func: 1, v: true}]}, {func: 1, ret: P.String, args: [P.double]}, {func: 1, args: [N.Context1]}, {func: 1, ret: N.DataFrame, args: [P.String]}, {func: 1, ret: N.Column, args: [P.String]}, {func: 1, v: true, args: [N.FuncCall, N.Column]}, {func: 1, ret: P.bool, args: [P.int], opt: [P.bool]}, {func: 1, args: [O.ViewLayout, P.String, P.String]}, {func: 1, ret: N._FlatBufTable, args: [P.int]}, {func: 1, v: true, args: [N.BufferAccessor], named: {archive: P.int}}, {func: 1, args: [O.ViewInfo, P.String, P.String]}, {func: 1, ret: P.int, args: [P.Float32List]}, {func: 1, ret: P.int, args: [[P.List, P.double]]}, {func: 1, args: [[P.List, N.Column]]}, {func: 1, ret: P.Uint8List, args: [,,]}, {func: 1, args: [N.DataFrame, P.String,,]}, {func: 1, ret: P.int, args: [[P.List, P.int], P.int]}, {func: 1, args: [N.DataFrame, N.Column]}, {func: 1, args: [N.DataFrame, N.Cell]}, {func: 1, args: [N.DataFrame, P.int, P.String]}, {func: 1, args: [N.DataFrame,,,]}, {func: 1, args: [N.DataFrame, [P.List, P.String]]}, {func: 1, args: [N.DataFrame, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, args: [N.DataFrame, N.BitSet, [P.List, N.Column], P.bool, P.bool]}, {func: 1, ret: P.int, args: [[P.List, P.String]]}, {func: 1, args: [N.DataFrame, P.String, P.Function]}, {func: 1, args: [N.DataFrame, P.List, P.String, P.String]}, {func: 1, v: true, args: [P.int]}, {func: 1, v: true, args: [P.int, P.int, P.int, P.int]}, {func: 1, ret: P.Future, args: [[P.List, N.DataFrame]]}, {func: 1, args: [N.DataFrame, P.List, P.List, N.BitSet]}, {func: 1, args: [P.Uint8List]}, {func: 1, args: [N.DataFrame, P.bool]}, {func: 1, ret: N.Cell, args: [, P.int]}, {func: 1, args: [P.Map,,,]}, {func: 1, ret: [P.Future, P.bool], args: [P.Object]}, {func: 1, v: true, args: [N.BitSet, N.BitSet]}, {func: 1, args: [P.int, [P.Map, P.int, N.BigInt]]}, {func: 1, args: [N.GroupByBuilder, P.bool]}, {func: 1, args: [N.GroupByBuilder, N.BitSet]}, {func: 1, args: [N.GroupByBuilder, P.String, P.String, P.String]}, {func: 1, args: [N.GroupByBuilder]}, {func: 1, args: [N.GroupByBuilder,,]}, {func: 1, ret: P.Transform, args: [P.int]}, {func: 1, args: [N.ColumnList, P.int]}, {func: 1, v: true, args: [P.num], opt: [P.num, P.num]}, {func: 1, args: [N.ColumnList, N.Column, P.bool]}, {func: 1, args: [N.ColumnList, N.Column, P.int, P.bool]}, {func: 1, args: [N.ColumnList, P.String, P.String]}, {func: 1, args: [N.QNumColumn, N.Column, N.Column]}, {func: 1, args: [N.ColumnList, P.String, P.String, P.String, P.bool, P.bool,,]}, {func: 1, ret: P.Future, args: [N.ColumnList, P.String, P.String, P.String, P.bool]}, {func: 1, args: [N.ColumnList, P.String, {func: 1, args: [P.int]}, {func: 1, v: true, args: [P.int,,]}, P.String]}, {func: 1, args: [N.ColumnList, P.String, P.bool]}, {func: 1, args: [N.ColumnList,, N.Column, P.bool]}, {func: 1, args: [N.ColumnList,,]}, {func: 1, args: [N.ColumnList, P.String, [P.List, P.String]]}, {func: 1, args: [N.ColumnList, [P.List, P.String]]}, {func: 1, args: [P.String, [P.List, P.String]]}, {func: 1, args: [P.String, P.Int32List, P.int]}, {func: 1, args: [P.String, P.Float32List, P.int]}, {func: 1, args: [P.String, P.Float64List, P.int]}, {func: 1, args: [P.String, P.String, P.List]}, {func: 1, args: [P.String, [P.List, P.String], P.Int32List]}, {func: 1, args: [P.String, N.BitSet]}, {func: 1, args: [N.Column,,], opt: [P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.BoolColumn]}, {func: 1, args: [N.Column, P.int,, P.bool]}, {func: 1, args: [N.Column, P.int, P.String, P.bool]}, {func: 1, args: [N.Column, P.String,,]}, {func: 1, args: [N.StringColumn, [P.List, P.String]]}, {func: 1, args: [N.StringColumn]}, {func: 1, args: [N.Column, P.String, P.String]}, {func: 1, args: [N.Column, {func: 1, args: [P.int]}]}, {func: 1, v: true, args: [[P.List, P.String]]}, {func: 1, args: [N.Column,,]}, {func: 1, args: [N.Column, {func: 1, ret: P.int, args: [,,]}]}, {func: 1, args: [N.Column, P.String, P.String, P.bool]}, {func: 1, args: [N.FloatColumn]}, {func: 1, args: [N.FloatColumn, P.bool]}, {func: 1, args: [N.BigIntColumn, P.int]}, {func: 1, args: [N.BigIntColumn, P.int, P.String, P.bool]}, {func: 1, args: [N.BigInt]}, {func: 1, args: [N.DateTimeColumn, P.int]}, {func: 1, args: [N.DateTimeColumn, P.int,, P.bool]}, {func: 1, args: [N.ColumnsArgs]}, {func: 1, args: [N.ColumnsArgs,,]}, {func: 1, args: [[P.Iterable, P.double]]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, {func: 1, ret: P.String, args: [[P.List, P.String]]}], named: {prepare: {func: 1, ret: {func: 1, ret: P.String, args: [P.String]}, args: [P.List]}}}, {func: 1, args: [N.Stats, P.List, P.List, P.List, P.List]}, {func: 1, args: [N.Stats, P.int, P.int, P.List, P.List, P.List, P.List]}, {func: 1, args: [N.Column, N.Column]}, {func: 1, args: [P.int, [P.List, P.String]]}, {func: 1, args: [N.RowList, {func: 1, ret: P.bool, args: [N.Row]}]}, {func: 1, args: [P.String], named: {rowCount: P.int}}, {func: 1, args: [N.RowList], opt: [P.List, P.bool]}, {func: 1, args: [N.RowList, P.int, P.List, P.bool]}, {func: 1, ret: N.EncodingEstimate, args: [N.ByteArrayColumn]}, {func: 1, args: [P.int, N.DataFrame]}, {func: 1, v: true, args: [P.num]}, {func: 1, args: [N.RowList, P.bool, P.bool]}, {func: 1, ret: P.Future, opt: [P.Map]}, {func: 1, args: [N.RowGroup]}, {func: 1, ret: P.Future, args: [P.Object]}, {func: 1, ret: N.EncodingEstimate, args: [N.DataFrameColumn]}, {func: 1, args: [N.Cell,,]}, {func: 1, ret: P.bool, args: [P.Pattern], opt: [P.int]}, {func: 1, ret: P.String, args: [P.int, P.String]}, {func: 1, v: true, args: [P.Uint8List, P.int, P.int]}, {func: 1, args: [N.Column, N.BitSet, P.bool, P.int, P.bool]}, {func: 1, v: true, args: [N.MapChangeArgs]}, {func: 1, ret: P.double, args: [P.String], named: {whenNull: P.double}}, {func: 1, ret: P.Future, args: [P.int, P.int]}, {func: 1, args: [P.String, P.String, P.Function, P.Function,,]}, {func: 1, v: true, args: [N.Column]}, {func: 1, v: true, args: [[P.Iterable, P.int]]}, {func: 1, ret: P.Int16List, args: [P.Int16List, P.int]}, {func: 1, args: [G.Property, P.String,,]}, {func: 1, args: [P.String, G.Property]}, {func: 1, ret: P.Int8List, args: [P.Int8List, P.int]}, {func: 1, ret: [P.Future, N.FuncCall], named: {context: N.Context1, processed: P.bool, queue: P.bool, report: P.bool}}, {func: 1, ret: P.double, args: [P.double, P.double]}, {func: 1, args: [O.SemanticValue, N.Cell]}, {func: 1, args: [O.SemanticValue, P.String,,]}, {func: 1, args: [P.String, P.String, P.String]}, {func: 1, ret: P.double, args: [[P.List, P.double], P.double]}, {func: 1, ret: [P.List, P.double], args: [[P.List, P.double]]}, {func: 1, ret: P.Object, opt: [P.Object]}, {func: 1, args: [P.String, {func: 1, args: [,]}, P.String]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema, N.Column]}, {func: 1, ret: P.Future, args: [O.EntityPropertySchema]}, {func: 1, args: [N.BitSet, P.Uint32List]}, {func: 1, args: [N.BitSet, P.bool]}, {func: 1, args: [N.BitSet, P.bool, P.bool]}, {func: 1, args: [N.BitSet, P.int]}, {func: 1, args: [N.BitSet, P.int, P.bool, P.bool]}, {func: 1, ret: N.FuncCall, args: [P.List], named: {optional: P.Map}}, {func: 1, ret: P.Object, args: [P.String]}, {func: 1, args: [N.BitSet, P.Function]}, {func: 1, args: [N.BitSet, N.BitSet, P.String]}, {func: 1, args: [P.ByteBuffer, P.int]}, {func: 1, args: [N.BitSet, P.Uint32List, P.bool]}, {func: 1, args: [O.PictureMixin]}, {func: 1, ret: N.EncodingEstimate, args: [N.ObjectColumn]}, {func: 1, args: [O.Project, P.bool]}, {func: 1, args: [O.Project, O.Entity, P.bool]}, {func: 1, args: [O.Project, O.Entity]}, {func: 1, args: [O.Project, P.String]}, {func: 1, ret: N.EncodingEstimate, args: [N.QNumColumn]}, {func: 1, args: [O.TableInfo, P.String]}, {func: 1, v: true, args: [P.String,,], opt: [P.String]}, {func: 1, args: [,,,], named: {group: null}}, {func: 1, ret: N.DateTimeMatcher}, {func: 1, args: [W.Node, W.Node]}, {func: 1, args: [O.DataQuery, P.bool]}, {func: 1, args: [O.DataQuery, O.DataConnection]}, {func: 1, ret: N._Kernel, args: [P.String, P.int, P.String, {func: 1, args: [[P.List, P.String]]}]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String], suppressException: P.bool}}, {func: 1, args: [N.TableQuery, P.String]}, {func: 1, ret: N.NumericMatcher}, {func: 1, args: [N.TableQuery, [P.List, P.String]]}, {func: 1, ret: P.Future, args: [N.TableQuery]}, {func: 1, v: true, opt: [P.int]}, {func: 1, args: [N.TableQuery, P.int]}, {func: 1, args: [N.FuncParam,,]}, {func: 1, args: [N.DbTableQueryBuilder, [P.Iterable, P.String]]}, {func: 1, ret: P.bool, args: [W.Node]}, {func: 1, args: [N.DbTableQueryBuilder, [P.List, N.GroupAggregation]]}, {func: 1, v: true, opt: [P.Object]}, {func: 1, args: [,,,,,]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.bool]}, {func: 1, args: [N.DbTableQueryBuilder, P.int]}, {func: 1, args: [N.DbTableQueryBuilder, P.String, P.String, [P.List, P.String], [P.List, P.String], P.String, P.String]}, {func: 1, v: true, args: [P.List], named: {notify: P.bool}}, {func: 1, ret: P.Future, args: [O.Entity, O.UserGroup, P.bool]}, {func: 1, args: [O.DataConnection, P.String, P.String]}, {func: 1, args: [,,,,,,]}, {func: 1, args: [O.ScriptEnvironment]}, {func: 1, ret: N.Cell, args: [,]}, {func: 1, args: [O.ProgressIndicator, P.String]}, {func: 1, args: [O.ProgressIndicator,,,]}, {func: 1, args: [O.ProgressIndicator,,]}, {func: 1, args: [S.LogMessage]}, {func: 1, args: [P.String, P.bool, P.bool,,]}, {func: 1, args: [N.Context1, P.String]}, {func: 1, args: [N.Context1, P.String,,]}, {func: 1, args: [,,,,,,,]}, {func: 1, ret: P.int, args: [, P.int]}, {func: 1, args: [[X.DartHandle, P.List], P.int]}, {func: 1, args: [N.FuncCall, N.Func]}, {func: 1, args: [N.FuncCall, P.int]}, {func: 1, args: [N.FuncCall, N.FuncCall]}, {func: 1, args: [N.FuncCall, N.Context1]}, {func: 1, args: [N.FuncCallParam, P.Function]}, {func: 1, args: [P.String, P.int, P.int]}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], P.bool, P.bool]}, {func: 1, args: [, G.Property]}, {func: 1, args: [P.StreamSubscription]}, {func: 1, args: [, [P.Map,, P.Function], [P.Map,, [P.Map, P.int, P.Function]]]}, {func: 1, args: [N.Func, P.List]}, {func: 1, ret: O.SemanticValue, args: [P.String]}, {func: 1, args: [P.String, P.String, [P.List, P.String], P.JsObject, P.String, P.String]}, {func: 1, ret: P.Future, args: [N.FuncCall,, O.ProgressIndicator, P.bool, P.bool]}, {func: 1, args: [N.FuncCall, P.bool, P.bool]}, {func: 1, args: [[P.List, G.Property], [P.List, G.Property], P.String]}, {func: 1, args: [P.Completer,,]}, {func: 1, ret: [P.Iterable, P.int], named: {onlyFiltered: P.bool, onlySelected: P.bool}}, {func: 1, args: [O.Script, P.List]}, {func: 1, ret: P.Future, args: [P.String, N.Context1]}, {func: 1, args: [N.EventBusProvider, P.String, P.Function]}, {func: 1, args: [P.String, P.Uint8List]}, {func: 1, ret: N.RowList, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [P.List,,]}, {func: 1, args: [, P.bool, P.String, P.String]}, {func: 1, args: [, [P.List, P.int]]}, {func: 1, args: [, [P.List, N.DataFrame]]}, {func: 1, args: [P.Iterable]}, {func: 1, args: [P.Completer,,,]}, {func: 1, v: true, args: [,], opt: [,]}, {func: 1, args: [O.LogEventType, P.String]}, {func: 1, args: [O.LogEventType, P.bool]}, {func: 1, args: [P.Stream, {func: 1, v: true, args: [,]}]}, {func: 1, args: [P.EventSink]}, {func: 1, ret: N.GroupByBuilder, args: [{func: 1, ret: P.bool, args: [P.int]}]}, {func: 1, args: [G.PropMixin]}, {func: 1, args: [G.PropMixin, P.String]}, {func: 1, args: [G.PropMixin, P.String,,]}, {func: 1, args: [Q.TablesClient, N.DataFrame]}, {func: 1, args: [Q.TablesClient, P.String]}, {func: 1, args: [Q.DockerImagesClient, P.String]}, {func: 1, args: [[P.List, P.String]]}, {func: 1, args: [Q.DockerContainersClient, P.String, P.int]}, {func: 1, args: [P.String, P.int]}, {func: 1, args: [O.DockerContainer]}, {func: 1, args: [N.DataFrame, P.int, P.int, P.String, P.String]}, {func: 1, v: true, args: [[P.List, N.Column], P.int, P.bool, P.bool]}, {func: 1, args: [[P.List, N.Column], P.int]}, {func: 1, args: [S.Logger, P.String, P.String, P.Map, P.String, P.String]}, {func: 1, ret: [P.List, W.RtcStatsReport]}, {func: 1, args: [Q.AdminClient, P.String, P.Map, [P.List, P.String]]}, {func: 1, v: true, args: [P.String, P.String], named: {throwOnError: P.bool}}, {func: 1, args: [O.DbInfo, P.String]}, {func: 1, ret: P.Future, args: [Q.InfoClient]}, {func: 1, args: [O.DbInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbInfo, P.String, [P.List, P.String], P.String, [P.List, P.String], P.Object]}, {func: 1, args: [O.DbRelationInfo, P.String]}, {func: 1, args: [O.DbRelationInfo]}, {func: 1, ret: P.String, args: [B.NumberSymbols]}, {func: 1, args: [O.DbSchemaInfo, P.String]}, {func: 1, args: [O.DbSchemaInfo, P.String,,]}, {func: 1, ret: P.Future, args: [O.DbSchemaInfo]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.Object]}, {func: 1, args: [O.DbSchemaInfo, P.String, P.String, P.Object]}, {func: 1, args: [P.String, P.double, P.int, [P.List, P.String]]}, {func: 1, ret: P.String, args: [N.Column]}, {func: 1, ret: P.Future, args: [P.String, [P.List, P.String]], named: {attachments: [P.List, O.FileInfo], bcc: [P.List, P.String], html: P.String, text: P.String}}, {func: 1, ret: Q.ConnectionsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.List, N.Column], args: [P.String]}, {func: 1, ret: Q.QueriesClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.QueryRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.JobRunsClient, named: {connectionId: P.String, datasetId: P.String, datasource: P.String, jobId: P.String, jobRunId: P.String, queryId: P.String, queryRunId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, args: [O.DataSource, O.DataSource]}, {func: 1, args: [Q.LogClient, P.String, P.DateTime, P.DateTime, P.bool]}, {func: 1, ret: O.DomainSchema, args: [P.String]}, {func: 1, ret: O.DomainTable, args: [P.String, P.String]}, {func: 1, ret: [P.List, P.String], args: [P.String, P.String]}, {func: 1, args: [P.String, P.String, P.DateTime, P.DateTime, P.String, P.int]}, {func: 1, ret: [P.Future, [P.List, O.DomainRow]]}, {func: 1, ret: [P.Future, O.DomainRow]}, {func: 1, ret: [P.Future, P.List], args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, P.Map], args: [P.String, P.String]}, {func: 1, ret: Q.DomainRowsDataSource, args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.bool], args: [P.String, P.String], named: {id: P.String}}, {func: 1, args: [P.String, N.Context1]}, {func: 1, ret: Q.EntitiesClient, args: [P.Map]}, {func: 1, ret: Q.EntitiesClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.EnvironmentsClient, args: [P.String]}, {func: 1, ret: [P.Future, P.Uint8List], args: [,], named: {format: P.String}}, {func: 1, ret: [P.Future, [P.List, O.FileInfo]], args: [,], named: {ext: P.String, recursive: P.bool, root: P.String}}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]]}, {func: 1, ret: Q.LayoutClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, N.Func]]}, {func: 1, ret: Q.FunctionsClient, named: {name: P.String}}, {func: 1, ret: [P.Future, N.FuncCall], args: [N.FuncCall]}, {func: 1, ret: Q.ActivityClient, named: {end: P.DateTime, start: P.DateTime, userId: P.String}}, {func: 1, ret: Q.LogClient, args: [P.String]}, {func: 1, ret: [P.Future, O.LogEvent]}, {func: 1, ret: Q.LogClient, named: {end: P.DateTime, entityId: P.String, favoritesOnly: P.bool, start: P.DateTime}}, {func: 1, ret: [P.Future, P.bool], args: [O.LogAudit]}, {func: 1, ret: P.Future, args: [P.String, N.DataFrame]}, {func: 1, ret: Q.MLClient, args: [P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String], named: {columnNamesMap: [P.Map, P.String, P.String]}}, {func: 1, ret: [P.Future, P.bool]}, {func: 1, ret: Q.MLClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.NotebooksClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, [P.List, P.String]]], args: [P.String, P.String]}, {func: 1, ret: Q.ProjectRelationClient, named: {entityId: P.String, projectId: P.String, type: P.String}}, {func: 1, ret: Q.ProjectClient, args: [P.String]}, {func: 1, ret: Q.ProjectClient, named: {authorId: P.String, entityId: P.String, includeRoot: P.bool, projectId: P.String, tableId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: [P.Future, [P.List, P.String]], named: {query: P.String}}, {func: 1, ret: Q.ScriptRunsClient, args: [P.String]}, {func: 1, ret: Q.ScriptingClient, named: {projectId: P.String, tags: [P.List, P.String]}}, {func: 1, ret: Q.SpaceClient, args: [P.String]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.Map]}, {func: 1, ret: Q.SpaceChildrenClient, args: [P.String], named: {desc: P.bool}}, {func: 1, ret: Q.SpaceChildrenClient, named: {includeLinked: P.bool, types: P.String}}, {func: 1, ret: Q.FuncCallsClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, args: [P.String]}, {func: 1, ret: Q.TablesClient, named: {jobId: P.String, jobRunId: P.String, projectId: P.String, queryId: P.String, queryRunId: P.String, tags: [P.List, P.String], text: P.String}}, {func: 1, ret: P.Future, args: [O.ProgressIndicator]}, {func: 1, ret: [P.Future, O.UserSession]}, {func: 1, ret: [P.Future, O.User]}, {func: 1, ret: [P.Future, [P.Map, P.String, P.String]], args: [P.String], named: {currentUser: P.bool}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String], named: {currentUser: P.bool}}, {func: 1, ret: W.StyleValue, args: [P.String]}, {func: 1, ret: N.Column, args: [N.GroupAggregation, P.Iterable]}, {func: 1, v: true, args: [S.LogMessage]}, {func: 1, ret: O.DataQuery, named: {name: P.String, params: [P.Map, P.String, P.String], shortName: P.String, sql: P.String}}, {func: 1, ret: N.Cell, args: [P.int]}, {func: 1, v: true, args: [P.String, P.String, P.String]}, {func: 1, ret: P.String, args: [O._TableRef, P.String]}, {func: 1, ret: O._TableRef, args: [P.String]}, {func: 1, v: true, args: [P.String, P.String, P.String], opt: [P.String, P.String]}, {func: 1, ret: P.bool, args: [O.UserGroup]}, {func: 1, v: true, args: [P.String], named: {owner: O.UserGroup, type: P.String}}, {func: 1, ret: P.Future, args: [O.Script]}, {func: 1, ret: [P.List, P.String], args: [P.String]}, {func: 1, args: [Q.ActivityClient, P.String, P.DateTime, P.DateTime]}, {func: 1, ret: N.DbTableQueryBuilder}, {func: 1, ret: [P.Map, P.String,,], args: [[P.Map, P.String,,], P.String]}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, severity: P.String, stackTrace: P.StackTrace, time: P.DateTime}}, {func: 1, ret: P.bool, args: [,,], named: {canPost: P.bool, canPrint: P.bool, canSave: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, time: P.DateTime}}, {func: 1, ret: P.bool, args: [P.String,,], named: {auditType: P.String, canPost: P.bool, canPrint: P.bool, canSave: P.bool, flag: P.String, includeTime: P.bool, local: P.bool, mustPost: P.bool, mustPrint: P.bool, mustSave: P.bool, params: P.Map, remote: P.bool, severity: P.String, stackTrace: null, time: P.DateTime}}, {func: 1, ret: P.bool, args: [N.UserException], named: {params: P.Map}}, {func: 1, ret: P.bool, args: [P.String, P.String], opt: [P.Map]}, {func: 1, ret: [P.Future, U.Response], args: [,], named: {headers: [P.Map, P.String, P.String]}}, {func: 1, v: true, args: [P.String, P.Object]}, {func: 1, opt: [P.int]}, {func: 1, ret: Q.Parser, args: [L.Reference]}, {func: 1, v: true, args: [P.int, P.int]}, {func: 1, args: [P.Zone, P.ZoneDelegate, P.Zone,, P.StackTrace]}, {func: 1, ret: Y.FileSpan, args: [P.int], opt: [P.int]}, {func: 1, ret: Y.FileLocation, args: [P.int]}, {func: 1, ret: P.String, args: [P.String], named: {color: null}}, {func: 1, ret: P.String, named: {color: null}}, {func: 1, v: true, args: [P.String], named: {length: P.int, match: P.Match, position: P.int}}, {func: 1, ret: L.XmlName, args: [P.String]}, {func: 1, ret: V.XmlText, args: [P.String]}, {func: 1, ret: [P.Stream, M.XmlEvent]}, {func: 1, args: [,], named: {headers: null}}, {func: 1, args: [P.String, P.Function]}, {func: 1, args: [,], opt: [P.bool]}, {func: 1, ret: N.FuncParam, args: [P.String, P.String]}, {func: 1, ret: P.bool, args: [N.Func], named: {override: P.bool}}, {func: 1, ret: P.num}, {func: 1, ret: P.Length, args: [P.int]}, {func: 1, ret: N.QueryBuilder, args: [P.int]}, {func: 1, ret: P.AsyncError, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Object, P.StackTrace]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, {func: 1}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true}]}, {func: 1, ret: P.Timer, args: [P.Zone, P.ZoneDelegate, P.Zone, P.Duration, {func: 1, v: true, args: [P.Timer]}]}, {func: 1, v: true, args: [P.Zone, P.ZoneDelegate, P.Zone, P.String]}, {func: 1, ret: P.Zone, args: [P.Zone, P.ZoneDelegate, P.Zone, P.ZoneSpecification, P.Map]}, {func: 1, ret: P.int, args: [,,]}, {func: 1, ret: P.int, args: [P.Comparable, P.Comparable]}, {func: 1, ret: P.bool, args: [P.Object, P.Object]}, {func: 1, ret: P.int, args: [P.Object]}, {func: 1, ret: P.Object, args: [,]}, {func: 1, v: true, args: [P.String,,], opt: [,]}, {func: 1, ret: N.BigInt, args: [P.String]}, {func: 1, ret: N.GroupAggregation, args: [P.String]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.DataFrame, P.Iterable, P.Iterable, P.Iterable, P.Iterable], named: {inPlace: P.bool, joinType: P.String}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame], named: {aggregations: [P.List, N.GroupAggregation], fields: [P.List, P.String], filter: N.TableRowFilterCall, groupByFields: [P.List, P.String], joins: [P.List, N.TableJoin], pivots: [P.List, P.String], whereClauses: [P.List, N.FieldPredicate]}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, [P.List, P.String], [P.List, P.String]], named: {categoryColumnName: P.String, valueColumnName: P.String}}, {func: 1, ret: P.String, args: [P.num, [P.List, P.num]]}, {func: 1, ret: P.int, args: [P.DateTime, P.String, P.int]}, {func: 1, v: true, args: [N.DataFrame, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {decimalSeparator: P.String, useKMMultipliers: P.bool}}, {func: 1, ret: N.DataFrame, args: [N.DataFrame, N.ColFilterCall, N.TableRowFilterCall]}, {func: 1, ret: P.int, args: [P.int, {func: 1, ret: P.int, args: [P.int]}]}, {func: 1, args: [Q.ProjectClient, O.Project, P.bool]}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, [P.List, N.Column]], args: [N.DataFrame, P.String, P.String], named: {context: N.Context1, currentCall: N.FuncCall, errorBehavior: P.Map, progress: O.ProgressIndicator, subscribeOnChanges: P.bool, treatAsString: P.bool, type: P.String}}, {func: 1, ret: [P.Future, N.Column], args: [N.DataFrame, P.String, P.String], named: {errorBehavior: P.Map, treatAsString: P.bool, type: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall], named: {flag: P.bool}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {tagValue: P.String}}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int, P.int, P.int, P.int]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.bool]}, {func: 1, ret: N._Vec}, {func: 1, v: true, args: [N.DataFrame, N.Column, P.DateTime, P.String, P.String]}, {func: 1, v: true, args: [N.DataFrame, N.Column, N.Column, P.String, P.String]}, {func: 1, ret: P.int, args: [P.int, P.int, P.int, P.int, P.int]}, {func: 1, ret: P.DateTime, args: [P.DateTime, P.int]}, {func: 1, ret: P.DateTime, args: [P.int, P.int, P.int, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String], named: {decimalPlaces: P.int}}, {func: 1, v: true, args: [N.DataFrame, N.Column], named: {method: P.String}}, {func: 1, ret: N.FuncCall, args: [,]}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String, P.String]}, {func: 1, v: true, args: [,,], named: {message: P.String}}, {func: 1, ret: P.Future, args: [P.int]}, {func: 1, ret: W.Node}, {func: 1, v: true, args: [N.Context1]}, {func: 1, v: true, args: [N.Context1,,]}, {func: 1, ret: P.Future, args: [N.DataFrame, P.String], named: {context: N.Context1, progress: O.ProgressIndicator}}, {func: 1, ret: P.double, args: [P.double, P.int]}, {func: 1, v: true, args: [N.DataFrame, N.TableRowFilterCall], named: {clear: P.bool, flag: P.bool}}, {func: 1, args: [Q.ConnectionsClient, O.DataConnection, P.String, P.String]}, {func: 1, ret: P.String, args: [P.String, P.int, P.int]}, {func: 1, args: [Q.GroupClient, O.UserGroup]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.UserGroup]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, O.UserGroup]]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [[P.List, P.double]]}]}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, [P.List, P.Map]]}, {func: 1, ret: P.String, args: [P.num, P.String]}, {func: 1, ret: P.String, args: [P.num, P.num]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.int, args: [P.DateTime]}], named: {modulus: P.double, unit: P.double}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity]}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [P.double]}], named: {fails: {func: 1, ret: P.bool, args: [P.double]}, result: P.String}}, {func: 1, ret: N._Kernel, args: [P.String, {func: 1, ret: P.double, args: [N.Stats]}], named: {toInt: P.bool}}, {func: 1, ret: P.num, args: [[P.List, P.num], P.num]}, {func: 1, ret: N.DataFrame, args: [N.DataFrame]}, {func: 1, v: true, args: [N.DataFrame, N.StringColumn, P.String], named: {prefix: P.String}}, {func: 1, v: true, args: [N.DataFrame, N.ColFilterCall, P.String]}, {func: 1, ret: P.String, args: [P.String, P.String, P.int], named: {group: P.int}}, {func: 1, ret: P.String, args: [P.String], named: {delimiter: P.String}}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, N.DataFrame, P.String], named: {upsert: P.bool}}, {func: 1, ret: P.Future, args: [Q.EntitiesClient, O.Entity,,]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.String]}, {func: 1, ret: [P.Future, P.String], args: [P.String, P.String, P.String, P.bool]}, {func: 1, v: true, args: [P.String, P.Function]}, {func: 1, ret: P.Future, args: [{func: 1, ret: P.Future}]}, {func: 1, ret: P.Future, args: [P.String,,, O.ProgressIndicator]}, {func: 1, ret: P.String, args: [O.ColumnInfo, P.String]}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.DataFrame]}, {func: 1, ret: [P.Future, P.Uint8List], args: [P.Uint8List]}, {func: 1, ret: P.Future, args: [O.DataConnection]}, {func: 1, ret: [P.Future, N.DataFrame], args: [P.String]}, {func: 1, ret: P.Future, args: [N.Func]}, {func: 1, ret: P.Future, args: [, [P.List, P.Map]]}, {func: 1, ret: [P.Future, N.FuncCall], args: [P.String, P.Map], named: {adHoc: P.bool}}, {func: 1, ret: [P.Future, N.DataFrame], args: [N.Context1, P.String, P.Map]}, {func: 1, ret: [P.Future, N.DataFrame], args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Future, args: [O.DataConnection, P.String], named: {aggregations: [P.List, P.String], fields: [P.List, P.String], groupByFields: [P.List, P.String], having: [P.List, P.String], havingOp: P.String, joins: [P.List, P.String], limit: P.int, orderBy: [P.List, P.String], pivots: [P.List, P.String], schemaName: P.String, whereClauses: [P.List, P.String], whereOp: P.String}}, {func: 1, ret: P.Map, args: [,], named: {deep: P.bool}}, {func: 1, ret: N.TableMutationBuilder, args: [P.String, P.String], named: {dataType: P.String}}, {func: 1, args: [N.DataFrame, N.DataFrame, [P.List, P.String], [P.List, P.String], [P.List, P.String], [P.List, P.String], P.String, P.bool]}];
   function convertToFastObject(properties) {
     function MyClass() {
     }
