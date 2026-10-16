@@ -50,7 +50,7 @@ import {getMonomerInfoWidget} from './widgets/monomer-info-widget';
 import {saveAsFastaUI} from './utils/save-as-fasta';
 import {BioSubstructureFilter} from './widgets/bio-substructure-filter';
 import {WebLogoViewer} from './viewers/web-logo-viewer';
-import {MonomerLibManager} from './utils/monomer-lib/lib-manager';
+import {MonomerLibLoadTimeoutError, MonomerLibManager} from './utils/monomer-lib/lib-manager';
 import {MonomerCollectionHandler} from './utils/monomer-lib/monomer-collection-handler';
 import {getMonomerLibraryManagerLink, showManageLibrariesDialog, showManageLibrariesView} from './utils/monomer-lib/library-file-manager/ui';
 import {demoBioSimDivLayout} from './demo/bio01-similarity-diversity';
@@ -1923,9 +1923,17 @@ async function initBioInt() {
     libSettings.explicit = [];
     await setUserLibSettings(libSettings);
   }
-  await libHelper.awaitLoaded(Infinity);
-  if (!libHelper.initialLoadCompleted)
-    await libHelper.loadMonomerLib();
+  try {
+    await libHelper.awaitLoaded(Infinity);
+    if (!libHelper.initialLoadCompleted)
+      await libHelper.loadMonomerLib();
+  }
+  catch (err: any) {
+    if (!(err instanceof MonomerLibLoadTimeoutError))
+      throw err;
+    // The files provider still fills the monomer lib in place when its libraries finish loading
+    _package.logger.warning(`${logPrefix}, ${err.message}`);
+  }
   // Do not wait for monomers and sets loaded
   libHelper.loadMonomerSets();
   const monomerLib = libHelper.getMonomerLib();

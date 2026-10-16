@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#876](https://github.com/datagrok-ai/core/issues/876): Init: Fixed 'Package Bio .seqHelper is not initialized' errors in sequence renderers, tooltips and filters when monomer libraries load slowly
 * Manage Monomers: Rebuilt the monomer editor with u2: each R group is a choice of the 15 common cap groups (H, OH, Allyl, Br, Cl, Alkyne, Azide, I, F, NH2, Me, Ac, OMe, SH, Et) read from the library definition however it is written, with what the cap is beside it and its four fields behind a pencil; Save stays at the bottom and its tooltip says why it is disabled; dialogs offer CANCEL
 * Manage Monomers: Fixed the copilot's monomer details leaving out the cap SMILES of every library monomer
 * Manage Monomers: Fixed Fix All turning every nested meta value (monomer colors included) into text; it now says how many monomers it fixed
