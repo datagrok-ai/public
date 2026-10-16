@@ -43,8 +43,10 @@ export class DgDomainBackend implements DomainBackend {
     return grok.dapi.domains.registry.resolveNames(table, [...ids]);
   }
 
-  /** Drops every handle, so the next source re-reads the registry — after a grant change. */
+  /** Drops every handle and the platform's access caches, so the next source re-reads the
+   * registry — after a grant change. */
   invalidate(): void {
+    grok.dapi.domains.invalidateUiCaches();
     this._tables.clear();
   }
 
@@ -68,10 +70,8 @@ export class DgDomainBackend implements DomainBackend {
           state.problem = refusal.message;
       }
       // as `DomainErrors.report`: the server contradicted the access the affordances were built from
-      if (refusal?.code === 'forbidden') {
-        grok.dapi.domains.invalidateUiCaches();
+      if (refusal?.code === 'forbidden')
         this.invalidate();
-      }
       return false;
     } finally {
       session.dispose();

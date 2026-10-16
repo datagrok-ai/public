@@ -278,7 +278,7 @@ scoped('a refused save is one balloon; a failed load is the hint\'s to show, not
   broken.dispose();
 });
 
-scoped('a 403 drops the access caches on top of the balloon', async () => {
+scoped('a 403 balloons; over the memory backend there is no platform access cache to drop', async () => {
   const {src} = await issues();
   emsBackends.domain.transaction = async () => {
     throw Object.assign(new Error('Forbidden'), {code: 'forbidden'});
@@ -288,7 +288,7 @@ scoped('a 403 drops the access caches on top of the balloon', async () => {
   src.rows.byKey('i1').title = 'Ab';
   assert.equal(await src.save(), false);
   await flush();
-  assert.equal(grok.dapi.domains.invalidated, before + 1, 'the form reports the refused save');
+  assert.equal(grok.dapi.domains.invalidated, before, 'the platform backend owns those caches (domain-live.test.js)');
   assert.match(document.body.querySelector('.u2-notify-error').textContent, /Forbidden/);
   form.dispose();
   src.dispose();

@@ -518,7 +518,8 @@ scoped('saveAll: a forbidden refusal drops the access caches so the affordances 
   const DG = await import('datagrok-api/dg');
   const be = new DgDomainBackend();
   let dropped = 0;
-  be.invalidate = () => dropped++;
+  const invalidate = be.invalidate.bind(be);
+  be.invalidate = () => (dropped++, invalidate());
   const state = {editor: {}, problem: null};
   const before = grok.dapi.domains.invalidated;
   try {
@@ -532,4 +533,18 @@ scoped('saveAll: a forbidden refusal drops the access caches so the affordances 
   } finally {
     DG.DomainSession.next = true;
   }
+});
+
+scoped('DomainErrors.report: a 403 drops the platform backend\'s handles and access caches, nothing else does', async () => {
+  const {DomainErrors} = await import('../src/dg/errors.js');
+  const be = new DgDomainBackend();
+  let dropped = 0;
+  const invalidate = be.invalidate.bind(be);
+  be.invalidate = () => (dropped++, invalidate());
+  emsBackends.domain = be;
+  const before = grok.dapi.domains.invalidated;
+  DomainErrors.report(Object.assign(new Error('Bad value'), {code: 'validation'}));
+  assert.deepEqual([grok.dapi.domains.invalidated - before, dropped], [0, 0]);
+  DomainErrors.report(Object.assign(new Error('Forbidden'), {code: 'forbidden'}));
+  assert.deepEqual([grok.dapi.domains.invalidated - before, dropped], [1, 1]);
 });
