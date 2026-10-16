@@ -28,7 +28,7 @@ export class OligoToolkitPackage extends DG.Package implements ITranslationHelpe
   }
 
   public get seqHelper(): ISeqHelper {
-    return this._helmHelper.seqHelper;
+    return this.helmHelper.seqHelper;
   }
 
   /** Central Bio monomer library (HELMCore + any extra libraries the user has

@@ -2,6 +2,7 @@
 
 ## v.next
 
+* [core#863](https://github.com/datagrok-ai/core/issues/863): Oligo Toolkit: Fixed the app failing to open with a 'seqHelper' TypeError when Helm initialization had failed
 * [public#4226](https://github.com/datagrok-ai/public/issues/4226): PolyTool: Convert is disabled until the current table has a macromolecule column and Combine Sequences until an open table has one; fixed Enumerate HELM failing when the current view is not a table view
 * GROK-21149: Pattern: Fixed bulk Convert failing with "Column already exists" when run again on the same table
 * GROK-20959: Warn on Save SDF when a strand cannot be converted instead of linking an empty sense molfile

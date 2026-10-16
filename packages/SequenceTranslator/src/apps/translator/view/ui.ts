@@ -6,7 +6,6 @@ import * as ui from 'datagrok-api/ui';
 import $ from 'cash-dom';
 import {Subject, BehaviorSubject, Observable} from 'rxjs';
 
-import {ISeqHelper} from '@datagrok-libraries/bio/src/utils/seq-helper';
 import {NOTATION} from '@datagrok-libraries/bio/src/utils/macromolecule';
 
 import {DEFAULT_FORMATS} from '../../common/model/const';
@@ -36,7 +35,6 @@ const REQUIRED_COLUMN_LABELS = [REQUIRED_COLUMN_LABEL.SEQUENCE];
 class TranslatorAppLayout {
   private eventBus: EventBus;
   private inputFormats = Object.keys(_package.jsonData.codesToHelmDict).concat(DEFAULT_FORMATS.HELM);
-  private readonly seqHelper: ISeqHelper = _package.seqHelper;
 
   constructor(
     private readonly th: ITranslationHelper,
@@ -173,9 +171,10 @@ class TranslatorAppLayout {
       translatedColumn.semType = DG.SEMTYPE.MACROMOLECULE;
       const units = outputFormat == NUCLEOTIDES_FORMAT ? NOTATION.FASTA : NOTATION.HELM;
       translatedColumn.meta.units = units;
-      const seqHandler = this.seqHelper.getSeqHandler(translatedColumn as DG.Column<string>);
-      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? this.seqHelper.setUnitsToFastaColumn :
-        this.seqHelper.setUnitsToHelmColumn;
+      const seqHelper = _package.seqHelper;
+      const seqHandler = seqHelper.getSeqHandler(translatedColumn as DG.Column<string>);
+      const setUnits = outputFormat == NUCLEOTIDES_FORMAT ? seqHelper.setUnitsToFastaColumn :
+        seqHelper.setUnitsToHelmColumn;
       setUnits(seqHandler);
     }
 
